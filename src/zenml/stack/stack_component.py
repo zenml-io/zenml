@@ -292,6 +292,7 @@ class StackComponent:
         workspace: UUID,
         created: datetime,
         updated: datetime,
+        metadata: Optional[Dict[str, str]],
         *args: Any,
         **kwargs: Any,
     ):
@@ -307,6 +308,7 @@ class StackComponent:
             workspace: The ID of the workspace the component belongs to.
             created: The creation time of the component.
             updated: The last update time of the component.
+            metadata: The metadata of the component.
             *args: Additional positional arguments.
             **kwargs: Additional keyword arguments.
 
@@ -328,6 +330,7 @@ class StackComponent:
         self.workspace = workspace
         self.created = created
         self.updated = updated
+        self.metadata = metadata
 
     @classmethod
     def from_model(

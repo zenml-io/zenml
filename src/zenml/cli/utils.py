@@ -398,11 +398,46 @@ def print_stack_component_configuration(
 
     if len(component.configuration) == 0:
         declare("No configuration options are set for this component.")
+    
+    else:
+        title_ = (
+            f"'{component.name}' {component.type.value.upper()} "
+            f"Component Configuration"
+        )
+
+        if active_status:
+            title_ += " (ACTIVE)"
+        rich_table = table.Table(
+            box=box.HEAVY_EDGE,
+            title=title_,
+            show_lines=True,
+        )
+        rich_table.add_column("COMPONENT_PROPERTY")
+        rich_table.add_column("VALUE", overflow="fold")
+
+        component_dict = component.dict()
+        component_dict.pop("configuration")
+        component_dict.update(component.configuration)
+
+        items = component.configuration.items()
+        for item in items:
+            elements = []
+            for idx, elem in enumerate(item):
+                if idx == 0:
+                    elements.append(f"{elem.upper()}")
+                else:
+                    elements.append(str(elem))
+            rich_table.add_row(*elements)
+
+        console.print(rich_table)
+
+    if len(component.metadata) == 0:
+        declare("No metadata is set for this component.")
         return
 
     title_ = (
         f"'{component.name}' {component.type.value.upper()} "
-        f"Component Configuration"
+        f"Component Metadata"
     )
 
     if active_status:
@@ -415,11 +450,7 @@ def print_stack_component_configuration(
     rich_table.add_column("COMPONENT_PROPERTY")
     rich_table.add_column("VALUE", overflow="fold")
 
-    component_dict = component.dict()
-    component_dict.pop("configuration")
-    component_dict.update(component.configuration)
-
-    items = component.configuration.items()
+    items = component.metadata.items()
     for item in items:
         elements = []
         for idx, elem in enumerate(item):
@@ -1388,15 +1419,28 @@ def list_options(filter_model: Type[BaseFilterModel]) -> Callable[[F], F]:
         data_type_descriptors = set()
         for k, v in filter_model.__fields__.items():
             if k not in filter_model.CLI_EXCLUDE_FIELDS:
-                options.append(
-                    click.option(
-                        f"--{k}",
-                        type=str,
-                        default=v.default,
-                        required=False,
-                        help=create_filter_help_text(filter_model, k),
+                # if k is metadata, add option with multiple values
+                if k == "metadata_values":
+                    options.append(
+                        click.option(
+                            "--metadata",
+                            "-m",
+                            type=str,
+                            multiple=True,
+                            required=False,
+                            help=create_filter_help_text(filter_model, k),
+                        )
                     )
-                )
+                else:
+                    options.append(
+                        click.option(
+                            f"--{k}",
+                            type=str,
+                            default=v.default,
+                            required=False,
+                            help=create_filter_help_text(filter_model, k),
+                        )
+                    )
             if k not in filter_model.FILTER_EXCLUDE_FIELDS:
                 data_type_descriptors.add(
                     create_data_type_help_text(filter_model, k)

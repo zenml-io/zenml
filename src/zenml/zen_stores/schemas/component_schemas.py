@@ -48,6 +48,7 @@ class StackComponentSchema(ShareableSchema, table=True):
     type: StackComponentType
     flavor: str
     configuration: bytes
+    metadata_values: Optional[bytes]
 
     workspace_id: UUID = build_foreign_key_field(
         source=__tablename__,
@@ -98,6 +99,10 @@ class StackComponentSchema(ShareableSchema, table=True):
                 self.configuration = base64.b64encode(
                     json.dumps(component_update.configuration).encode("utf-8")
                 )
+            elif field == "metadata":
+                self.metadata_values = base64.b64encode(
+                    json.dumps(component_update.metadata).encode("utf-8")
+                )
             else:
                 setattr(self, field, value)
 
@@ -123,6 +128,11 @@ class StackComponentSchema(ShareableSchema, table=True):
             configuration=json.loads(
                 base64.b64decode(self.configuration).decode()
             ),
+            metadata=json.loads(
+                base64.b64decode(self.metadata_values).decode()
+            )
+            if self.metadata_values
+            else None,
             created=self.created,
             updated=self.updated,
         )

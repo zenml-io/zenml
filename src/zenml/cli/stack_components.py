@@ -196,6 +196,13 @@ def generate_stack_component_register_command(
         type=str,
     )
     @click.option(
+        "--metadata",
+        "-m",
+        "metadata",
+        help="Metadata to be associated with the component.",
+        multiple=True,
+    )
+    @click.option(
         "--share",
         "share",
         is_flag=True,
@@ -208,6 +215,7 @@ def generate_stack_component_register_command(
         flavor: str,
         share: bool,
         args: List[str],
+        metadata: Optional[List[str]] = None,
     ) -> None:
         """Registers a stack component.
 
@@ -216,6 +224,7 @@ def generate_stack_component_register_command(
             flavor: Flavor of the component to register.
             share: Share the stack with other users.
             args: Additional arguments to pass to the component.
+            metadata: Metadata to be associated with the component.
         """
         if component_type == StackComponentType.SECRETS_MANAGER:
             warn_deprecated_secrets_manager()
@@ -228,6 +237,14 @@ def generate_stack_component_register_command(
             list(args) + [name], expand_args=True
         )
 
+        parsed_metadata = None
+        # split metadata by "=" and create a dict
+        if metadata:
+            parsed_metadata = {}
+            for m in metadata:
+                key, value = m.split("=")
+                parsed_metadata[key] = value
+
         # click<8.0.0 gives flags a default of None
         if share is None:
             share = False
@@ -239,6 +256,7 @@ def generate_stack_component_register_command(
                 flavor=flavor,
                 component_type=component_type,
                 configuration=parsed_args,
+                metadata=parsed_metadata,
                 is_shared=share,
             )
 
@@ -267,15 +285,25 @@ def generate_stack_component_update_command(
         type=str,
         required=False,
     )
+    @click.option(
+        "--metadata",
+        "-m",
+        "metadata",
+        help="Metadata to be associated with the component.",
+        multiple=True,
+    )
     @click.argument("args", nargs=-1, type=click.UNPROCESSED)
     def update_stack_component_command(
-        name_id_or_prefix: Optional[str], args: List[str]
+        name_id_or_prefix: Optional[str],
+        args: List[str],
+        metadata: Optional[List[str]] = None,
     ) -> None:
         """Updates a stack component.
 
         Args:
             name_id_or_prefix: The name or id of the stack component to update.
             args: Additional arguments to pass to the update command.
+            metadata: Metadata to be associated with the component.
         """
         if component_type == StackComponentType.SECRETS_MANAGER:
             warn_deprecated_secrets_manager()
@@ -293,12 +321,21 @@ def generate_stack_component_update_command(
             name_mandatory=False,
         )
 
+        parsed_metadata = None
+        # split metadata by "=" and create a dict
+        if metadata:
+            parsed_metadata = {}
+            for m in metadata:
+                key, value = m.split("=")
+                parsed_metadata[key] = value
+
         with console.status(f"Updating {display_name}...\n"):
             try:
                 updated_component = client.update_stack_component(
                     name_id_or_prefix=name_or_id,
                     component_type=component_type,
                     configuration=parsed_args,
+                    metadata=parsed_metadata,
                 )
             except KeyError as err:
                 cli_utils.error(str(err))
@@ -560,6 +597,7 @@ def generate_stack_component_copy_command(
                 flavor=component_to_copy.flavor,
                 component_type=component_to_copy.type,
                 configuration=component_to_copy.configuration,
+                metadata=component_to_copy.metadata,
                 is_shared=component_to_copy.is_shared,
             )
 
