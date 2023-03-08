@@ -192,7 +192,10 @@ class DockerSettings(BaseSettings):
 
         if values.get("source_files", None):
             # Ignore the copy files value in favor of the new source files
-            logger.warning()
+            logger.warning(
+                "Both `copy_files` and `source_files` specified for the "
+                "DockerSettings, ignoring the `copy_files` value."
+            )
         elif copy_files is True:
             values["source_files"] = SourceFileMode.INCLUDE
         elif copy_files is False:
