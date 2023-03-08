@@ -18,11 +18,11 @@ from uuid import UUID
 
 from github import Github, GithubException, Repository
 
-from zenml.code_repositories import LocalGitRepository
-from zenml.code_repositories.base_code_repository import (
+from zenml.code_repositories import (
     BaseCodeRepository,
     LocalRepository,
 )
+from zenml.code_repositories.git import LocalGitRepository
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
@@ -30,8 +30,6 @@ logger = get_logger(__name__)
 
 class GitHubCodeRepository(BaseCodeRepository):
     """GitHub code repository."""
-
-    _github_session: Github
 
     def __init__(self, id: UUID, owner: str, repository: str, token: str):
         """Initializes a GitHub code repository.
@@ -114,7 +112,6 @@ class GitHubCodeRepository(BaseCodeRepository):
         Returns:
             The local repository.
         """
-        # TODO: correctly initialize the local git repo, catch potential errors
         try:
             local_git_repo = LocalGitRepository(
                 zenml_code_repository=self,
@@ -130,22 +127,22 @@ class GitHubCodeRepository(BaseCodeRepository):
             )
         return local_git_repo
 
-    def check_remote_url(self, owner: str, repository: str, url: str) -> bool:
-        """Checks whether the remote url is correct.
+    def check_remote_url(self, url: str) -> bool:
+        """Checks whether the remote url matches the code repository.
 
         Args:
-            owner: The owner of the repository.
-            repository: The name of the repository.
             url: The remote url.
 
         Returns:
             Whether the remote url is correct.
         """
-        https_url = f"https://github.com/{owner}/{repository}.git"
+        https_url = f"https://github.com/{self._owner}/{self._repository}.git"
         if url == https_url:
             return True
 
-        ssh_regex = re.compile(f".*@github.com:{owner}/{repository}.git")
+        ssh_regex = re.compile(
+            f".*@github.com:{self._owner}/{self._repository}.git"
+        )
         if ssh_regex.fullmatch(url):
             return True
 

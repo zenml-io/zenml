@@ -12,3 +12,9 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Initialization of the ZenML git code repository."""
+
+from zenml.code_repositories.git.local_git_repository import LocalGitRepository
+
+__all__ = [
+    "LocalGitRepository",
+]

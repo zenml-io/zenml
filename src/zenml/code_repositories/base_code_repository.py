@@ -15,6 +15,7 @@ from abc import ABC, abstractmethod
 from typing import Optional, Type, TypeVar
 from uuid import UUID
 
+from zenml.code_repositories import LocalRepository
 from zenml.logger import get_logger
 from zenml.models.code_repository_models import CodeRepositoryResponseModel
 from zenml.utils import source_utils_v2
@@ -22,39 +23,6 @@ from zenml.utils import source_utils_v2
 logger = get_logger(__name__)
 
 C = TypeVar("C", bound="BaseCodeRepository")
-
-
-class LocalRepository(ABC):
-    def __init__(
-        self, zenml_code_repository: "BaseCodeRepository", *args, **kwargs
-    ) -> None:
-        self._zenml_code_repository = zenml_code_repository
-
-    @property
-    def zenml_code_repository(self) -> "BaseCodeRepository":
-        return self._zenml_code_repository
-
-    @property
-    @abstractmethod
-    def root(self) -> str:
-        pass
-
-    @property
-    @abstractmethod
-    def is_dirty(self) -> bool:
-        # uncommited changes
-        pass
-
-    @property
-    @abstractmethod
-    def has_local_changes(self) -> bool:
-        # uncommited or unpushed changes
-        pass
-
-    @property
-    @abstractmethod
-    def current_commit(self) -> str:
-        pass
 
 
 class BaseCodeRepository(ABC):
@@ -95,16 +63,17 @@ class BaseCodeRepository(ABC):
         return self.get_local_repo(path=path) is not None
 
 
+# TODO: move to separate file
 class _DownloadedRepository(LocalRepository):
     def __init__(
         self,
         zenml_code_repository: "BaseCodeRepository",
-        commit: str,
         root: str,
+        commit: str,
     ):
         super().__init__(zenml_code_repository=zenml_code_repository)
-        self._commit = commit
         self._root = root
+        self._commit = commit
 
     @property
     def root(self) -> str:

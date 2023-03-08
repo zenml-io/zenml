@@ -12,15 +12,16 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Implementation of the ZenML local local code repository."""
-from typing import Callable, cast
+from typing import TYPE_CHECKING, Callable, cast
 
-from git.repo.base import Remote, Repo
-
-from zenml.code_repositories.base_code_repository import (
+from zenml.code_repositories import (
     BaseCodeRepository,
     LocalRepository,
 )
 from zenml.logger import get_logger
+
+if TYPE_CHECKING:
+    from git.repo.base import Remote, Repo
 
 logger = get_logger(__name__)
 
@@ -42,28 +43,26 @@ class LocalGitRepository(LocalRepository):
             validate_remote_url: A function that validates the remote url.
         """
         super().__init__(zenml_code_repository=zenml_code_repository)
+
+        # This import fails when git is not installed on the machine
+        from git.repo.base import Repo
+
         self._git_repo = Repo(path=path, search_parent_directories=True)
-        # TODO: write function that get's the correct remote based on url
         for remote in self._git_repo.remotes:
-            if validate_remote_url(
-                zenml_code_repository._owner,
-                zenml_code_repository._repository,
-                remote.url,
-            ):
+            if validate_remote_url(remote.url):
                 self._remote = remote
                 break
+
         if not self._remote:
-            raise ValueError(
-                f"No remote found for the given owner: {zenml_code_repository._owner} and repository: {zenml_code_repository._repository}."
-            )
+            raise RuntimeError("No matching remote found.")
 
     @property
-    def git_repo(self) -> Repo:
+    def git_repo(self) -> "Repo":
         """The git repo."""
         return self._git_repo
 
     @property
-    def remote(self) -> Remote:
+    def remote(self) -> "Remote":
         """The remote."""
         return self._remote
 

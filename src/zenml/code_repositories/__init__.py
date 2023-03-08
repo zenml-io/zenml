@@ -15,9 +15,6 @@
 from zenml.code_repositories.base_code_repository import (
     BaseCodeRepository,
 )
-from zenml.code_repositories.git.git_code_repository import LocalGitRepository
+from zenml.code_repositories.local_repository import LocalRepository
 
-__all__ = [
-    "BaseCodeRepository",
-    "LocalGitRepository",
-]
+__all__ = ["BaseCodeRepository", "LocalRepository"]
