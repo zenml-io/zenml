@@ -55,7 +55,7 @@ from zenml.enums import StackComponentType
 from zenml.exceptions import PipelineInterfaceError
 from zenml.logger import get_logger
 from zenml.models import (
-    CodeRepositoryReferenceRequestModel,
+    CodeReferenceRequestModel,
     PipelineBuildRequestModel,
     PipelineBuildResponseModel,
     PipelineDeploymentRequestModel,
@@ -515,7 +515,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
             )
             build_id = build_model.id if build_model else None
 
-            code_repository_reference = None
+            code_reference = None
             if local_code_repo and not local_code_repo.is_dirty:
                 source_root = source_utils_v2.get_source_root()
                 subdirectory = (
@@ -524,14 +524,12 @@ class BasePipeline(metaclass=BasePipelineMeta):
                     .relative_to(local_code_repo.root)
                 )
 
-                code_repository_reference = (
-                    CodeRepositoryReferenceRequestModel(
-                        user=Client().active_user.id,
-                        workspace=Client().active_workspace.id,
-                        commit=local_code_repo.current_commit,
-                        subdirectory=subdirectory.as_posix(),
-                        code_repository=local_code_repo.code_repository_id,
-                    )
+                code_reference = CodeReferenceRequestModel(
+                    user=Client().active_user.id,
+                    workspace=Client().active_workspace.id,
+                    commit=local_code_repo.current_commit,
+                    subdirectory=subdirectory.as_posix(),
+                    code_repository=local_code_repo.code_repository_id,
                 )
 
             deployment_request = PipelineDeploymentRequestModel(
@@ -541,7 +539,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
                 pipeline=pipeline_id,
                 build=build_id,
                 schedule=schedule_id,
-                code_repository_reference=code_repository_reference,
+                code_reference=code_reference,
                 **deployment.dict(),
             )
             deployment_model = Client().zen_store.create_deployment(

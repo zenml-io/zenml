@@ -268,7 +268,7 @@ def run_pipeline(
         pipeline_instance.run(
             config_path=config_path,
             build=build,
-            prevent_build_reuse=prevent_build_reuse
+            prevent_build_reuse=prevent_build_reuse,
         )
 
 

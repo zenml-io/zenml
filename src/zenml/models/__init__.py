@@ -125,8 +125,8 @@ from zenml.models.code_repository_models import (
     CodeRepositoryRequestModel,
     CodeRepositoryResponseModel,
     CodeRepositoryUpdateModel,
-    CodeRepositoryReferenceRequestModel,
-    CodeRepositoryReferenceResponseModel,
+    CodeReferenceRequestModel,
+    CodeReferenceResponseModel,
 )
 
 ComponentResponseModel.update_forward_refs(
@@ -189,11 +189,11 @@ PipelineDeploymentResponseModel.update_forward_refs(
     StackResponseModel=StackResponseModel,
     PipelineBuildResponseModel=PipelineBuildResponseModel,
     ScheduleResponseModel=ScheduleResponseModel,
-    CodeRepositoryReferenceResponseModel=CodeRepositoryReferenceResponseModel,
+    CodeReferenceResponseModel=CodeReferenceResponseModel,
 )
 
 PipelineDeploymentRequestModel.update_forward_refs(
-    CodeRepositoryReferenceRequestModel=CodeRepositoryReferenceRequestModel
+    CodeReferenceRequestModel=CodeReferenceRequestModel
 )
 
 PipelineRunResponseModel.update_forward_refs(
@@ -227,7 +227,7 @@ CodeRepositoryResponseModel.update_forward_refs(
     UserResponseModel=UserResponseModel,
     WorkspaceResponseModel=WorkspaceResponseModel,
 )
-CodeRepositoryReferenceResponseModel.update_forward_refs(
+CodeReferenceResponseModel.update_forward_refs(
     UserResponseModel=UserResponseModel,
     WorkspaceResponseModel=WorkspaceResponseModel,
 )
@@ -245,8 +245,8 @@ __all__ = [
     "CodeRepositoryRequestModel",
     "CodeRepositoryResponseModel",
     "CodeRepositoryUpdateModel",
-    "CodeRepositoryReferenceRequestModel",
-    "CodeRepositoryReferenceResponseModel",
+    "CodeReferenceRequestModel",
+    "CodeReferenceResponseModel",
     "ComponentRequestModel",
     "ComponentResponseModel",
     "ComponentUpdateModel",

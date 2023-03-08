@@ -199,7 +199,7 @@ class BaseEntrypointConfiguration(ABC):
         if not requires_code_download:
             return
 
-        repo_reference = deployment.code_repository_reference
+        repo_reference = deployment.code_reference
         if not repo_reference:
             raise RuntimeError(
                 "Code download required but no code repository configured."
