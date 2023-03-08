@@ -1284,6 +1284,14 @@ class BasePipeline(metaclass=BasePipelineMeta):
             # local code the user is expecting to run
             return None
 
+        if potential_build.is_local:
+            # TODO: Can we support this by storing the unique Docker ID for the
+            # image and checking if an image with that ID exists locally?
+
+            # The build is local and it's not clear whether the images
+            # exist on the current machine or if they've been overwritten
+            return None
+
         for build_config in stack.get_docker_builds(deployment=deployment):
             try:
                 _ = potential_build.get_image(
