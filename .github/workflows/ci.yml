@@ -15,13 +15,16 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  python_versions: ["3.7", "3.8", "3.9", "3.10"]
+
 jobs:
-  setup-python-environment-ubuntu:
+  ubuntu-setup-python-environment:
     if: github.event.pull_request.draft == false
     strategy:
       matrix:
         os: [ubuntu-latest]
-        python-version: ["3.7", "3.8", "3.9", "3.10"]
+        python-version: ${{ env.python_versions }}
       fail-fast: false
     uses: ./.github/workflows/setup-python-environment.yml
     with:
@@ -29,7 +32,7 @@ jobs:
       os: ${{ matrix.os }}
     secrets: inherit
 
-  setup-python-environment-windows:
+  windows-setup-python-environment:
     if: github.event.pull_request.draft == false
     strategy:
       matrix:
@@ -42,7 +45,7 @@ jobs:
       os: ${{ matrix.os }}
     secrets: inherit
 
-  setup-python-environment-macos:
+  macos-setup-python-environment:
     if: github.event.pull_request.draft == false
     strategy:
       matrix:
@@ -55,8 +58,8 @@ jobs:
       os: ${{ matrix.os }}
     secrets: inherit
 
-  lint-unit-test-ubuntu:
-    needs: setup-python-environment-ubuntu
+  ubuntu-lint-unit-test:
+    needs: ubuntu-setup-python-environment
     strategy:
       matrix:
         os: [ubuntu-latest]
@@ -68,8 +71,8 @@ jobs:
       python-version: ${{ matrix.python-version }}
     secrets: inherit
 
-  lint-unit-test-windows:
-    needs: setup-python-environment-windows
+  windows-lint-unit-test:
+    needs: windows-setup-python-environment
     strategy:
       matrix:
         os: [windows-latest]
@@ -81,8 +84,8 @@ jobs:
       python-version: ${{ matrix.python-version }}
     secrets: inherit
 
-  lint-unit-test-macos:
-    needs: setup-python-environment-macos
+  macos-lint-unit-test:
+    needs: macos-setup-python-environment
     strategy:
       matrix:
         os: [macos-latest]
@@ -94,8 +97,8 @@ jobs:
       python-version: ${{ matrix.python-version }}
     secrets: inherit
 
-  integration-test-ubuntu:
-    needs: lint-unit-test-ubuntu
+  ubuntu-integration-test:
+    needs: ubuntu-lint-unit-test
     strategy:
       matrix:
         os: [ubuntu-latest]
@@ -123,8 +126,8 @@ jobs:
       test_environment: ${{ matrix.test_environment }}
     secrets: inherit
 
-  integration-test-windows:
-    needs: lint-unit-test-windows
+  windows-integration-test:
+    needs: windows-lint-unit-test
     strategy:
       matrix:
         os: [windows-latest]
@@ -140,8 +143,8 @@ jobs:
       test_environment: ${{ matrix.test_environment }}
     secrets: inherit
 
-  integration-test-macos:
-    needs: lint-unit-test-macos
+  macos-integration-test:
+    needs: macos-lint-unit-test
     # Exit if its a commit from Gitbook
     strategy:
       matrix:
