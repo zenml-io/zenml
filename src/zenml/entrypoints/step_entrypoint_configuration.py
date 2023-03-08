@@ -152,7 +152,7 @@ class StepEntrypointConfiguration(BaseEntrypointConfiguration):
         # and stack component flavors are registered.
         integration_registry.activate_integrations()
 
-        self.download_code_if_necessary()
+        self.download_code_if_necessary(deployment=deployment)
 
         step_name = self.entrypoint_args[STEP_NAME_OPTION]
         pipeline_name = deployment.pipeline_configuration.name

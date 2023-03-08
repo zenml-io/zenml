@@ -12,25 +12,20 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING
+from uuid import UUID
 
 from zenml.logger import get_logger
-
-if TYPE_CHECKING:
-    from zenml.code_repositories import BaseCodeRepository
 
 logger = get_logger(__name__)
 
 
 class LocalRepository(ABC):
-    def __init__(
-        self, zenml_code_repository: "BaseCodeRepository", *args, **kwargs
-    ) -> None:
-        self._zenml_code_repository = zenml_code_repository
+    def __init__(self, code_repository_id: UUID) -> None:
+        self._code_repository_id = code_repository_id
 
     @property
-    def zenml_code_repository(self) -> "BaseCodeRepository":
-        return self._zenml_code_repository
+    def code_repository_id(self) -> UUID:
+        return self._code_repository_id
 
     @property
     @abstractmethod

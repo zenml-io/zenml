@@ -67,11 +67,11 @@ class BaseCodeRepository(ABC):
 class _DownloadedRepository(LocalRepository):
     def __init__(
         self,
-        zenml_code_repository: "BaseCodeRepository",
+        code_repository_id: UUID,
         root: str,
         commit: str,
     ):
-        super().__init__(zenml_code_repository=zenml_code_repository)
+        super().__init__(code_repository_id=code_repository_id)
         self._root = root
         self._commit = commit
 

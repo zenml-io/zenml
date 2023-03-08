@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """CLI functionality to interact with code repositories."""
 import os
-from typing import Any
+from typing import Any, Optional
 
 import click
 
@@ -62,11 +62,11 @@ def code_repository() -> None:
     help="Personal access token for the code repository.",
 )
 @click.option(
-    "--source",
-    "-s",
+    "--type",
+    "type_",
     type=click.Choice(["github", "gitlab", "custom"]),
     required=True,
-    help="Source of the code repository.",
+    help="Type of the code repository.",
 )
 @click.option(
     "--source-module-path",
@@ -81,8 +81,8 @@ def connect_code_repository(
     owner: str,
     repository: str,
     token: str,
-    source: str,
-    source_module_path: str,
+    type_: str,
+    source_module_path: Optional[str] = None,
 ) -> None:
     """Connect a code repository
 
@@ -90,7 +90,7 @@ def connect_code_repository(
         name: Name of the code repository
     """
     cli_utils.print_active_config()
-    if source == "custom":
+    if type_ == "custom":
         if not source_module_path:
             cli_utils.error(
                 "Please provide a path to the custom source module."

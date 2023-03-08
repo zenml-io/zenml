@@ -13,15 +13,17 @@
 #  permissions and limitations under the License.
 """Implementation of the ZenML local local code repository."""
 from typing import TYPE_CHECKING, Callable, cast
+from uuid import UUID
 
 from zenml.code_repositories import (
-    BaseCodeRepository,
     LocalRepository,
 )
 from zenml.logger import get_logger
 
 if TYPE_CHECKING:
-    from git.repo.base import Remote, Repo
+    from git.objects import Commit
+    from git.remote import Remote
+    from git.repo.base import Repo
 
 logger = get_logger(__name__)
 
@@ -31,18 +33,18 @@ class LocalGitRepository(LocalRepository):
 
     def __init__(
         self,
-        zenml_code_repository: "BaseCodeRepository",
+        code_repository_id: UUID,
         path: str,
         validate_remote_url: Callable[[str], bool],
     ):
         """Initializes a local git repository.
 
         Args:
-            zenml_code_repository: The ZenML code repository.
+            code_repository_id: The ID of the code repository.
             path: The path to the local git repository.
             validate_remote_url: A function that validates the remote url.
         """
-        super().__init__(zenml_code_repository=zenml_code_repository)
+        super().__init__(code_repository_id=code_repository_id)
 
         # This import fails when git is not installed on the machine
         from git.repo.base import Repo
@@ -95,11 +97,12 @@ class LocalGitRepository(LocalRepository):
 
         try:
             remote_commit = self.remote.refs[active_branch.name].commit
+            remote_commit = cast("Commit", remote_commit)
         except IndexError:
             # Branch doesn't exist on remote
             return True
 
-        return remote_commit != local_commit
+        return bool(remote_commit != local_commit)
 
     @property
     def current_commit(self) -> str:

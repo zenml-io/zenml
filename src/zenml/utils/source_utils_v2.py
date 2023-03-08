@@ -45,7 +45,7 @@ from zenml.utils import source_utils
 from zenml.utils.pagination_utils import depaginate
 
 if TYPE_CHECKING:
-    from zenml.code_repositories.base_code_repository import (
+    from zenml.code_repositories import (
         BaseCodeRepository,
         LocalRepository,
     )
@@ -129,7 +129,7 @@ def resolve(obj: Union[Type[Any], FunctionType, ModuleType]) -> Source:
             subdir = PurePath(source_root).relative_to(local_repo.root)
 
             return CodeRepositorySource(
-                repository_id=local_repo.zenml_code_repository.id,
+                repository_id=local_repo.code_repository_id,
                 commit=local_repo.current_commit,
                 subdirectory=subdir.as_posix(),
                 module=module_name,
@@ -171,7 +171,7 @@ def set_custom_code_repo(
 
     path = os.path.abspath(get_source_root())
     _CODE_REPOSITORY_CACHE[path] = _DownloadedRepository(
-        zenml_code_repository=repo, root=root, commit=commit
+        code_repository_id=repo.id, root=root, commit=commit
     )
 
 
@@ -283,7 +283,7 @@ def _warn_about_potential_source_loading_issues(
             source.repository_id,
             get_source_root(),
         )
-    elif local_repo.zenml_code_repository.id != source.repository_id:
+    elif local_repo.code_repository_id != source.repository_id:
         logger.warning(
             "Potential issue when loading the source `%s`: The source "
             "references the code repository `%s` but there is a different "
@@ -293,7 +293,7 @@ def _warn_about_potential_source_loading_issues(
             "source was originally stored.",
             source.import_path,
             source.repository_id,
-            local_repo.zenml_code_repository.id,
+            local_repo.code_repository_id,
             get_source_root(),
         )
     elif local_repo.current_commit != source.commit:
@@ -387,7 +387,7 @@ def _get_package_for_module(module_name: str) -> Optional[str]:
 
 def _get_package_version(package_name: str) -> Optional[str]:
     try:
-        version = importlib_metadata.version(distribution_name=package_name)
+        version = importlib_metadata.version(distribution_name=package_name)  # type: ignore[no-untyped-call]
         return cast(str, version)
     except (ValueError, importlib_metadata.PackageNotFoundError):
         return None

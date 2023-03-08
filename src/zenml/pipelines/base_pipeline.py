@@ -86,7 +86,7 @@ from zenml.utils.pipeline_docker_image_builder import (
 )
 
 if TYPE_CHECKING:
-    from zenml.code_repositories.base_code_repository import LocalRepository
+    from zenml.code_repositories import LocalRepository
     from zenml.config.base_settings import SettingsOrDict
     from zenml.post_execution import PipelineRunView
 
@@ -524,12 +524,14 @@ class BasePipeline(metaclass=BasePipelineMeta):
                     .relative_to(local_code_repo.root)
                 )
 
-                code_repository_reference = CodeRepositoryReferenceRequestModel(
-                    user=Client().active_user.id,
-                    workspace=Client().active_workspace.id,
-                    commit=local_code_repo.current_commit,
-                    subdirectory=subdirectory.as_posix(),
-                    code_repository=local_code_repo.zenml_code_repository.id,
+                code_repository_reference = (
+                    CodeRepositoryReferenceRequestModel(
+                        user=Client().active_user.id,
+                        workspace=Client().active_workspace.id,
+                        commit=local_code_repo.current_commit,
+                        subdirectory=subdirectory.as_posix(),
+                        code_repository=local_code_repo.code_repository_id,
+                    )
                 )
 
             deployment_request = PipelineDeploymentRequestModel(

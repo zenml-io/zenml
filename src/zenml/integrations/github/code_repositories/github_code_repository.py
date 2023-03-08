@@ -16,7 +16,8 @@ import re
 from typing import Optional
 from uuid import UUID
 
-from github import Github, GithubException, Repository
+from github import Github, GithubException
+from github.Repository import Repository
 
 from zenml.code_repositories import (
     BaseCodeRepository,
@@ -77,7 +78,7 @@ class GitHubCodeRepository(BaseCodeRepository):
             repo_sub_directory: The sub directory to download from.
         """
         contents = self.github_repo.get_dir_contents(
-            repo_sub_directory, ref=commit
+            repo_sub_directory or "", ref=commit
         )
         for content in contents:
             logger.debug(f"Processing {content.path}")
@@ -103,7 +104,7 @@ class GitHubCodeRepository(BaseCodeRepository):
                 except (GithubException, IOError) as e:
                     logger.error("Error processing %s: %s", content.path, e)
 
-    def get_local_repo(self, path: str) -> LocalRepository:
+    def get_local_repo(self, path: str) -> Optional[LocalRepository]:
         """Gets the local repository.
 
         Args:
@@ -114,7 +115,7 @@ class GitHubCodeRepository(BaseCodeRepository):
         """
         try:
             local_git_repo = LocalGitRepository(
-                zenml_code_repository=self,
+                code_repository_id=self.id,
                 path=path,
                 validate_remote_url=self.check_remote_url,
             )
