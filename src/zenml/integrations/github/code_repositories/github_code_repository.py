@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 import os
 import re
-from typing import Optional
+from typing import List, Optional
 from uuid import UUID
 
 from github import Github, GithubException
@@ -75,32 +75,44 @@ class GitHubCodeRepository(BaseCodeRepository):
             directory: The directory to download to.
             repo_sub_directory: The sub directory to download from.
         """
-        contents = self.github_repo.get_dir_contents(
+        contents = self.github_repo.get_contents(
             repo_sub_directory or "", ref=commit
         )
+        if not isinstance(contents, List):
+            raise RuntimeError("Invalid repository subdirectory.")
+
+        os.makedirs(directory, exist_ok=True)
+
         for content in contents:
-            logger.debug(f"Processing {content.path}")
             if content.type == "dir":
-                path = os.path.join(directory, content.name)
-                os.makedirs(path, exist_ok=True)
                 self.download_files(
                     commit=commit,
-                    directory=path,
+                    directory=os.path.join(directory, content.name),
                     repo_sub_directory=content.path,
                 )
             else:
                 try:
-                    path = content.path
-                    content_file = self.github_repo.get_contents(
-                        path, ref=commit
+                    self._download_file(
+                        commit=commit,
+                        local_path=os.path.join(directory, content.name),
+                        repository_path=content.path,
                     )
-                    data = content_file.decoded_content
-                    path = os.path.join(directory, content.name)
-                    with open(path, "wb") as file:
-                        file.write(data)
-                    file.close()
                 except (GithubException, IOError) as e:
                     logger.error("Error processing %s: %s", content.path, e)
+
+    def _download_file(
+        self, commit: str, local_path: str, repository_path: str
+    ) -> None:
+        # TODO: Can we avoid this duplicate call?
+        file_response = self.github_repo.get_contents(
+            repository_path, ref=commit
+        )
+
+        if isinstance(file_response, List) or file_response.type != "file":
+            raise RuntimeError("Invalid file.")
+
+        with open(local_path, "wb") as f:
+            f.write(file_response.decoded_content)
 
     def get_local_repo(self, path: str) -> Optional[LocalRepository]:
         """Gets the local repository.
