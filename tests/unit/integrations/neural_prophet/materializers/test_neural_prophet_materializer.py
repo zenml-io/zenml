@@ -11,10 +11,13 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+import platform
+import sys
 from contextlib import ExitStack as does_not_raise
 
 import numpy as np
 import pandas as pd
+import pytest
 from neuralprophet import NeuralProphet
 
 from tests.unit.test_general import _test_materializer
@@ -23,6 +26,12 @@ from zenml.integrations.neural_prophet.materializers.neural_prophet_materializer
 )
 
 
+@pytest.mark.skipif(
+    platform.system() == "Windows"
+    and sys.version_info.major == 3
+    and sys.version_info.minor == 10,
+    reason="Avoid numpy/numba conflicts with MLflow on Windows & Python 3.10",
+)
 def test_neural_prophet_booster_materializer(clean_client):
     """Tests whether the steps work for the Neural Prophet forecaster materializer."""
     sample_df = pd.DataFrame(
