@@ -49,7 +49,7 @@ def resolve_and_validate_hook(hook_func: "HookSpecification") -> str:
 
     sig = inspect.getfullargspec(inspect.unwrap(func))
 
-    if len(sig.args) != len(sig.annotations):
+    if sig.args and len(sig.args) != len(sig.annotations):
         raise ValueError(
             "If you pass args to a hook, you must annotate them with one "
             "of the following types: `Exception`, `BaseParameters`, "
