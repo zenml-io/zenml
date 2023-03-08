@@ -1,4 +1,4 @@
-name: Unit Test & Upload Coverage
+name: Lint, Unit Test & Upload Coverage
 
 on:
   workflow_call:
@@ -50,8 +50,8 @@ on:
         default: 'no'
 
 jobs:
-  unittest:
-    name: unittest
+  lint-unit-tests:
+    name: lint-unit-tests
     runs-on: ${{ inputs.os }}
     env:
       ZENML_DEBUG: 1

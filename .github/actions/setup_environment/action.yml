@@ -84,9 +84,16 @@ runs:
       run: |
         pip install -e .[server,templates,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,dev]
 
-        # install airflow requirements
-        # pip install --upgrade "numpy>=1.21.0,<1.24.0"
-        # pip install apache-airflow-providers-docker
+      # MLflow, through one of its indirect requirements (the numba library),
+      # forces numpy to be downgraded to 1.23.5. On windows and python 3.10,
+      # this causes a conflict with the neuralprophet library, which expects
+      # a more recent version of numpy. This is a temporary workaround for
+      # this issue.
+    - name: Upgrade numpy
+      if: inputs.os == 'windows-latest' && inputs.python-version == '3.10'
+      shell: bash
+      run: |
+        pip install --upgrade numpy
 
     - name: Check Python environment
       shell: bash

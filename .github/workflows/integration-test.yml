@@ -107,8 +107,8 @@ on:
 
 jobs:
 
-  integrationtest:
-    name: integrationtest
+  integration-tests:
+    name: integration-tests
     runs-on: ${{ inputs.os }}
     env:
       ZENML_DEBUG: 1
