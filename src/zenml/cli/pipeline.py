@@ -208,12 +208,20 @@ def build_pipeline(
     required=False,
     help="ID or path of the build to use.",
 )
+@click.option(
+    "--prevent-build-reuse",
+    is_flag=True,
+    default=False,
+    required=False,
+    help="Prevent automatic build reusing.",
+)
 def run_pipeline(
     pipeline_name_or_id: str,
     version: Optional[str] = None,
     config_path: Optional[str] = None,
     stack_name_or_id: Optional[str] = None,
     build_path_or_id: Optional[str] = None,
+    prevent_build_reuse: bool = False,
 ) -> None:
     """Run a pipeline.
 
@@ -225,6 +233,8 @@ def run_pipeline(
             run.
         build_path_or_id: ID of file path of the build to use for the pipeline
             run.
+        prevent_build_reuse: If True, prevents automatic reusing of previous
+            builds.
     """
     cli_utils.print_active_config()
 
@@ -255,7 +265,11 @@ def run_pipeline(
 
     with cli_utils.temporary_active_stack(stack_name_or_id=stack_name_or_id):
         pipeline_instance = BasePipeline.from_model(pipeline_model)
-        pipeline_instance.run(config_path=config_path, build=build)
+        pipeline_instance.run(
+            config_path=config_path,
+            build=build,
+            allow_build_reuse=not prevent_build_reuse,
+        )
 
 
 @pipeline.command("list", help="List all registered pipelines.")
