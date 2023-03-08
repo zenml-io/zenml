@@ -25,9 +25,6 @@ from zenml.constants import (
     ENV_ZENML_REQUIRES_CODE_DOWNLOAD,
     handle_bool_env_var,
 )
-from zenml.entrypoints.base_entrypoint_configuration import (
-    BaseEntrypointConfiguration,
-)
 from zenml.logger import get_logger
 from zenml.models.pipeline_deployment_models import (
     PipelineDeploymentResponseModel,
