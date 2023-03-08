@@ -92,27 +92,11 @@ class GitHubCodeRepository(BaseCodeRepository):
                 )
             else:
                 try:
-                    self._download_file(
-                        commit=commit,
-                        local_path=os.path.join(directory, content.name),
-                        repository_path=content.path,
-                    )
+                    local_path = os.path.join(directory, content.name)
+                    with open(local_path, "wb") as f:
+                        f.write(content.decoded_content)
                 except (GithubException, IOError) as e:
                     logger.error("Error processing %s: %s", content.path, e)
-
-    def _download_file(
-        self, commit: str, local_path: str, repository_path: str
-    ) -> None:
-        # TODO: Can we avoid this duplicate call?
-        file_response = self.github_repo.get_contents(
-            repository_path, ref=commit
-        )
-
-        if isinstance(file_response, List) or file_response.type != "file":
-            raise RuntimeError("Invalid file.")
-
-        with open(local_path, "wb") as f:
-            f.write(file_response.decoded_content)
 
     def get_local_repo(self, path: str) -> Optional[LocalRepository]:
         """Gets the local repository.
