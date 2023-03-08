@@ -12,21 +12,14 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Base class for entrypoint configurations that run a single step."""
-import os
 from typing import TYPE_CHECKING, Any, List, Set
 
 from zenml.client import Client
-from zenml.code_repositories import BaseCodeRepository
-from zenml.constants import (
-    ENV_ZENML_REQUIRES_CODE_DOWNLOAD,
-    handle_bool_env_var,
-)
 from zenml.entrypoints.base_entrypoint_configuration import (
     BaseEntrypointConfiguration,
 )
 from zenml.integrations.registry import integration_registry
 from zenml.logger import get_logger
-from zenml.utils import source_utils, source_utils_v2
 
 if TYPE_CHECKING:
     from zenml.config.step_configurations import Step
@@ -159,7 +152,7 @@ class StepEntrypointConfiguration(BaseEntrypointConfiguration):
         # and stack component flavors are registered.
         integration_registry.activate_integrations()
 
-        self._download_code_if_necessary(deployment=deployment)
+        self.download_code_if_necessary()
 
         step_name = self.entrypoint_args[STEP_NAME_OPTION]
         pipeline_name = deployment.pipeline_configuration.name
@@ -186,44 +179,3 @@ class StepEntrypointConfiguration(BaseEntrypointConfiguration):
         orchestrator = Client().active_stack.orchestrator
         orchestrator._prepare_run(deployment=deployment)
         orchestrator.run_step(step=step)
-
-    def _download_code_if_necessary(
-        self, deployment: "PipelineDeploymentResponseModel"
-    ) -> None:
-        requires_code_download = handle_bool_env_var(
-            ENV_ZENML_REQUIRES_CODE_DOWNLOAD
-        )
-
-        if not requires_code_download:
-            return
-
-        repo_reference = deployment.code_repository_reference
-        if not repo_reference:
-            raise RuntimeError(
-                "Code download required but no code repository configured."
-            )
-
-        logger.info(
-            "Downloading code from code repository `%s` (commit %s).",
-            repo_reference.code_repository.name,
-            repo_reference.commit,
-        )
-        model = Client().get_code_repository(repo_reference.code_repository.id)
-        repo = BaseCodeRepository.from_model(model)
-        code_repo_root = os.path.abspath("code")
-        download_dir = os.path.join(
-            code_repo_root, repo_reference.subdirectory
-        )
-        os.makedirs(download_dir)
-        repo.login()
-        repo.download_files(
-            commit=repo_reference.commit,
-            directory=download_dir,
-            repo_sub_directory=repo_reference.subdirectory,
-        )
-        source_utils.set_custom_source_root(download_dir)
-        source_utils_v2.set_custom_code_repo(
-            root=code_repo_root, commit=repo_reference.commit, repo=repo
-        )
-
-        logger.info("Code download finished.")

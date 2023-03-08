@@ -14,16 +14,32 @@
 """Abstract base class for entrypoint configurations."""
 
 import argparse
+import os
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, NoReturn, Set
+from typing import TYPE_CHECKING, Any, Dict, List, NoReturn, Set
 from uuid import UUID
 
 from zenml.client import Client
+from zenml.code_repositories import BaseCodeRepository
+from zenml.constants import (
+    ENV_ZENML_REQUIRES_CODE_DOWNLOAD,
+    handle_bool_env_var,
+)
+from zenml.entrypoints.base_entrypoint_configuration import (
+    BaseEntrypointConfiguration,
+)
+from zenml.logger import get_logger
 from zenml.models.pipeline_deployment_models import (
     PipelineDeploymentResponseModel,
 )
-from zenml.utils import source_utils, uuid_utils
+from zenml.utils import source_utils, source_utils_v2, uuid_utils
 
+if TYPE_CHECKING:
+    from zenml.models import (
+        PipelineDeploymentResponseModel,
+    )
+
+logger = get_logger(__name__)
 DEFAULT_ENTRYPOINT_COMMAND = [
     "python",
     "-m",
@@ -175,6 +191,47 @@ class BaseEntrypointConfiguration(ABC):
         """
         deployment_id = UUID(self.entrypoint_args[DEPLOYMENT_ID_OPTION])
         return Client().zen_store.get_deployment(deployment_id=deployment_id)
+
+    def download_code_if_necessary(
+        self, deployment: "PipelineDeploymentResponseModel"
+    ) -> None:
+        requires_code_download = handle_bool_env_var(
+            ENV_ZENML_REQUIRES_CODE_DOWNLOAD
+        )
+
+        if not requires_code_download:
+            return
+
+        repo_reference = deployment.code_repository_reference
+        if not repo_reference:
+            raise RuntimeError(
+                "Code download required but no code repository configured."
+            )
+
+        logger.info(
+            "Downloading code from code repository `%s` (commit %s).",
+            repo_reference.code_repository.name,
+            repo_reference.commit,
+        )
+        model = Client().get_code_repository(repo_reference.code_repository.id)
+        repo = BaseCodeRepository.from_model(model)
+        code_repo_root = os.path.abspath("code")
+        download_dir = os.path.join(
+            code_repo_root, repo_reference.subdirectory
+        )
+        os.makedirs(download_dir)
+        repo.login()
+        repo.download_files(
+            commit=repo_reference.commit,
+            directory=download_dir,
+            repo_sub_directory=repo_reference.subdirectory,
+        )
+        source_utils.set_custom_source_root(download_dir)
+        source_utils_v2.set_custom_code_repo(
+            root=code_repo_root, commit=repo_reference.commit, repo=repo
+        )
+
+        logger.info("Code download finished.")
 
     @abstractmethod
     def run(self) -> None:
