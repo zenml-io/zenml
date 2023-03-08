@@ -1,14 +1,13 @@
 # 🪝 Failure and Success hooks in ZenML
 
-In order to perform an action after a step has completed execution,
-users can leverage hooks. A hook executes right after step execution,
-within the same environment as the step, therefore it has access to all the
-dependencies that a step has.
+Hooks are a way to perform an action after a step has completed execution. They can be useful in a variety of scenarios, such as sending notifications, logging, or cleaning up resources after a step has completed.
 
-Currently, there are two sorts of hooks that can be defined:
+A hook executes right after step execution, within the same environment as the step, therefore it has access to all the dependencies that a step has. Currently, there are two sorts of hooks that can be defined: `on_failure` and `on_success`.
 
 * `on_failure`: This hook triggers in event of a step failing.
 * `on_success`: This hook triggers in event of a step succeeding.
+
+## Defining hooks
 
 A hook can be defined as a callback function, and must be accessible
 within the repository where the pipeline and steps are located:
@@ -21,15 +20,17 @@ def on_success():
     print("Step succeeded!")
 
 @step(on_failure=on_failure)
-def my_failing_step() -> Output(first_num=int):
+def my_failing_step() -> int:
     """Returns an integer."""
     raise ValueError("Error")
 
 @step(on_success=on_success)
-def my_successful_step() -> Output(first_num=int):
+def my_successful_step() -> int:
     """Returns an integer."""
-    raise ValueError("Error")
+    return 1
 ```
+
+In this example, we define two hooks: `on_failure` and `on_success`, which print a message when the step fails or succeeds, respectively. We then use these hooks with two steps, `my_failing_step` and `my_successful_step`. When `my_failing_step` is executed, it raises a `ValueError`, which triggers the `on_failure` hook. Similarly, when `my_successful_step` is executed, it returns an integer successfully, which triggers the on_success hook.
 
 A step can also be specified as a local user-defined function
 path (of the form `mymodule.myfile.my_function`). This is
@@ -38,10 +39,7 @@ a [YAML Config](../pipelines/settings.md).
 
 ## Defining steps on a pipeline level
 
-In some cases, there is a need to define a hook on all steps
-of a given pipeline. Rather than having to define it on all
-steps individually, you can also specify any hook on the pipeline
-level.
+In some cases, there is a need to define a hook on all steps of a given pipeline. Rather than having to define it on all steps individually, you can also specify any hook on the pipeline level. 
 
 Note, that step-level defined hooks take precendence over pipeline-level
 defined hooks.
@@ -59,7 +57,7 @@ the following types:
 
 - `StepContext`: You can pass an object inside a hook of type `StepContext` to
 get access to information such as pipeline name, run name, step name etc
-- `BaseParameters`: You can pass a `BaseParemeters` inside the step
+- `BaseParameters`: You can pass a `BaseParameters` inside the step
 - `Exception`: In case of failure hooks, if you add an `Exception` argument to the hook,
 then ZenML passes the Exception that caused your step to fail.
 
@@ -101,8 +99,7 @@ def on_failure(context: StepContext):
     )
 ```
 
-For convenience, ZenML offers standard failure and success hooks that you can use in your
-pipelines, that utilize any alerter that you have configured in your stack.
+ZenML provides standard failure and success hooks that use the alerter you have configured in your stack. Here's an example of how to use them in your pipelines:
 
 ```python
 from zenml.hooks import alerter_success_hook, alerter_failure_hook
