@@ -1739,3 +1739,4 @@ SecretRequestModel
 SecretResponseModel
 SecretUpdateModel
 SecretsStoreInterface
+NumpyMaterializer
