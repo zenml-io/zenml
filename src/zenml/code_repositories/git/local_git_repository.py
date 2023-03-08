@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Implementation of the ZenML local local code repository."""
-from typing import TYPE_CHECKING, Callable, cast
+from typing import TYPE_CHECKING, Callable, Optional, cast
 from uuid import UUID
 
 from zenml.code_repositories import (
@@ -32,31 +32,52 @@ class LocalGitRepository(LocalRepository):
     """Local git repository."""
 
     def __init__(
-        self,
-        code_repository_id: UUID,
-        path: str,
-        validate_remote_url: Callable[[str], bool],
+        self, code_repository_id: UUID, git_repo: "Repo", remote_name: str
     ):
         """Initializes a local git repository.
 
         Args:
             code_repository_id: The ID of the code repository.
-            path: The path to the local git repository.
-            validate_remote_url: A function that validates the remote url.
+            git_repo: The git repo.
+            remote_name: Name of the remote.
         """
         super().__init__(code_repository_id=code_repository_id)
+        self._git_repo = git_repo
+        self._remote = git_repo.remote(name=remote_name)
 
-        # This import fails when git is not installed on the machine
-        from git.repo.base import Repo
+    @classmethod
+    def at(
+        cls,
+        path: str,
+        code_repository_id: UUID,
+        remote_url_validation_callback: Callable[[str], bool],
+    ) -> Optional["LocalGitRepository"]:
+        try:
+            # These imports fail when git is not installed on the machine
+            from git.exc import InvalidGitRepositoryError
+            from git.repo.base import Repo
+        except ImportError:
+            return None
 
-        self._git_repo = Repo(path=path, search_parent_directories=True)
-        for remote in self._git_repo.remotes:
-            if validate_remote_url(remote.url):
-                self._remote = remote
+        try:
+            git_repo = Repo(path=path, search_parent_directories=True)
+        except InvalidGitRepositoryError:
+            return None
+
+        remote_name = None
+        for remote in git_repo.remotes:
+            if remote_url_validation_callback(remote.url):
+                remote_name = remote.name
                 break
 
-        if not self._remote:
-            raise RuntimeError("No matching remote found.")
+        if not remote_name:
+            return None
+
+        return LocalGitRepository(
+            code_repository_id=code_repository_id,
+            git_repo=git_repo,
+            remote_name=remote_name,
+        )
 
     @property
     def git_repo(self) -> "Repo":
@@ -97,12 +118,11 @@ class LocalGitRepository(LocalRepository):
 
         try:
             remote_commit = self.remote.refs[active_branch.name].commit
-            remote_commit = cast("Commit", remote_commit)
         except IndexError:
             # Branch doesn't exist on remote
             return True
 
-        return bool(remote_commit != local_commit)
+        return cast("Commit", remote_commit) != local_commit
 
     @property
     def current_commit(self) -> str:

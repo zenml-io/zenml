@@ -113,20 +113,11 @@ class GitHubCodeRepository(BaseCodeRepository):
         Returns:
             The local repository.
         """
-        try:
-            local_git_repo = LocalGitRepository(
-                code_repository_id=self.id,
-                path=path,
-                validate_remote_url=self.check_remote_url,
-            )
-        except Exception as e:
-            logger.info(f"Could not initialize local git repository: {str(e)}")
-            return None
-        if local_git_repo.is_dirty or local_git_repo.has_local_changes:
-            logger.info(
-                f"Local git repository has uncommitted or unpushed changes"
-            )
-        return local_git_repo
+        return LocalGitRepository.at(
+            path=path,
+            code_repository_id=self.id,
+            remote_url_validation_callback=self.check_remote_url,
+        )
 
     def check_remote_url(self, url: str) -> bool:
         """Checks whether the remote url matches the code repository.
