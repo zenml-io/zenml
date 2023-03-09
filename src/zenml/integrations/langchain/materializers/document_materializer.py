@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Implementation of ZenML's pydantic materializer."""
+"""Implementation of ZenML's Langchain Document materializer."""
 
 from typing import TYPE_CHECKING, Any, Dict, Type
 
@@ -28,7 +28,7 @@ DEFAULT_FILENAME = "data.json"
 
 
 class LangchainDocumentMaterializer(BaseMaterializer):
-    """Handle Pydantic BaseModel objects."""
+    """Handle Langchain Document objects."""
 
     ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATA
     ASSOCIATED_TYPES = (Document,)
@@ -38,7 +38,7 @@ class LangchainDocumentMaterializer(BaseMaterializer):
         self._pydantic_materializer = PydanticMaterializer(**kwargs)
 
     def load(self, data_type: Type[Document]) -> Any:
-        """Reads BaseModel from JSON.
+        """Reads Langchain Document from JSON.
 
         Args:
             data_type: The type of the data to read.
@@ -49,7 +49,7 @@ class LangchainDocumentMaterializer(BaseMaterializer):
         return self._pydantic_materializer.load(data_type)
 
     def save(self, data: Document) -> None:
-        """Serialize a BaseModel to JSON.
+        """Serialize a Langchain Document to JSON.
 
         Args:
             data: The data to store.
@@ -57,10 +57,10 @@ class LangchainDocumentMaterializer(BaseMaterializer):
         self._pydantic_materializer.save(data)
 
     def extract_metadata(self, data: Document) -> Dict[str, "MetadataType"]:
-        """Extract metadata from the given BaseModel object.
+        """Extract metadata from the given Langchain Document object.
 
         Args:
-            data: The BaseModel object to extract metadata from.
+            data: The Langchain Document object to extract metadata from.
 
         Returns:
             The extracted metadata as a dictionary.

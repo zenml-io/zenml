@@ -18,10 +18,8 @@ from typing import TYPE_CHECKING, Any, Dict, Type
 from llama_index import Document
 
 from zenml.enums import ArtifactType
-from zenml.integrations.langchain.materializers.document_materializer import (
-    LangchainDocumentMaterializer,
-)
 from zenml.materializers.base_materializer import BaseMaterializer
+from zenml.materializers.pydantic_materializer import PydanticMaterializer
 
 if TYPE_CHECKING:
     from zenml.metadata.metadata_types import MetadataType
@@ -35,7 +33,7 @@ class LlamaIndexDocumentMaterializer(BaseMaterializer):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self._langchain_materializer = LangchainDocumentMaterializer(**kwargs)
+        self._pydantic_materializer = PydanticMaterializer(**kwargs)
 
     def load(self, data_type: Type[Document]) -> Any:
         """Reads a llama-index document from JSON.
@@ -46,15 +44,19 @@ class LlamaIndexDocumentMaterializer(BaseMaterializer):
         Returns:
             The data read.
         """
-        self._langchain_materializer.load(data_type)
+
+        return Document.from_langchain_format(
+            self._pydantic_materializer.load(data_type)
+        )
 
     def save(self, data: Document) -> None:
-        """Serialize
+        """Serialize a llama-index document.
 
         Args:
             data: The data to store.
         """
-        self._langchain_materializer.save(data)
+        lc_doc = data.to_langchain_format()
+        self._pydantic_materializer.save(lc_doc)
 
     def extract_metadata(self, data: Document) -> Dict[str, "MetadataType"]:
         """Extract metadata from the given
@@ -65,4 +67,4 @@ class LlamaIndexDocumentMaterializer(BaseMaterializer):
         Returns:
             The extracted metadata as a dictionary.
         """
-        return self._langchain_materializer.extract_metadata(data)
+        return self._pydantic_materializer.extract_metadata(data)
