@@ -11,6 +11,10 @@ A hook executes right after step execution, within the same environment as the s
 * `on_failure`: This hook triggers in event of a step failing.
 * `on_success`: This hook triggers in event of a step succeeding.
 
+Here is a short demo for hooks in ZenML:
+
+{% embed url="https://www.youtube.com/embed/KUW2G3EsqF8" %} Failure and Success Hooks in ZenML Short Demo {% endembed %}
+
 ## Defining hooks
 
 A hook can be defined as a callback function, and must be accessible

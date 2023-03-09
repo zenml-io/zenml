@@ -7,6 +7,10 @@ A hook executes right after step execution, within the same environment as the s
 * `on_failure`: This hook triggers in event of a step failing.
 * `on_success`: This hook triggers in event of a step succeeding.
 
+Here is a short video on how to run this example:
+
+[![Watch the video](https://i9.ytimg.com/vi_webp/KUW2G3EsqF8/mq2.webp?sqp=CJzrp6AG-oaymwEmCMACELQB8quKqQMa8AEB-AH-CYAC0AWKAgwIABABGEsgXihlMA8=&rs=AOn4CLBhKPr8FoHkJeSPghzs9qqzc_Qbjg)](https://youtu.be/KUW2G3EsqF8)
+
 ## Defining hooks
 
 A hook can be defined as a callback function, and must be accessible
