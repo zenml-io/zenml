@@ -61,9 +61,10 @@ def test_stack_recipes_clean(clean_client, cli_runner):
     cli_runner.invoke(pull_command)
 
     clean_command = cli.commands["stack"].commands["recipe"].commands["clean"]
-    cli_runner.invoke(clean_command, ["--yes"])
+    output = cli_runner.invoke(clean_command, ["--yes"])
 
     # Test that the stack recipes are deleted locally
     local_repo_dir = Path(os.path.join(os.getcwd(), STACK_RECIPES_REPO_DIR))
 
-    assert len(os.listdir(local_repo_dir)) == 0
+    # assert that the local repo dir does not exist
+    assert not local_repo_dir.exists()
