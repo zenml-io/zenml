@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """CLI functionality to interact with code repositories."""
 import os
-from typing import Any, Optional
+from typing import Any, List
 
 import click
 
@@ -41,48 +41,32 @@ def code_repository() -> None:
     help="Connect a code repository.",
 )
 @click.option(
-    "--owner",
-    "-o",
-    type=str,
-    required=True,
-    help="Owner of the code repository.",
-)
-@click.option(
-    "--repository",
-    "-r",
-    type=str,
-    required=True,
-    help="Name of the code repository.",
-)
-@click.option(
-    "--token",
-    "-t",
-    type=str,
-    required=True,
-    help="Personal access token for the code repository.",
-)
-@click.option(
     "--type",
+    "-t",
     "type_",
     type=click.Choice(["github", "gitlab", "custom"]),
     required=True,
     help="Type of the code repository.",
 )
 @click.option(
-    "--source-module-path",
-    "-m",
+    "--source",
+    "-s",
     type=str,
     required=False,
-    help="Path to the custom source module.",
+    help="Module containing the code repository implementation.",
 )
 @click.argument("name")
+@click.argument(
+    "args",
+    nargs=-1,
+    type=click.UNPROCESSED,
+    help="Additional arguments to pass to the code repository.",
+)
 def connect_code_repository(
     name: str,
-    owner: str,
-    repository: str,
-    token: str,
     type_: str,
-    source_module_path: Optional[str] = None,
+    source: str,
+    args: List[str],
 ) -> None:
     """Connect a code repository
 
@@ -91,27 +75,35 @@ def connect_code_repository(
     """
     cli_utils.print_active_config()
     if type_ == "custom":
-        if not source_module_path:
+        if not source:
             cli_utils.error(
                 "Please provide a path to the custom source module."
             )
-        if not os.path.exists(source_module_path):
+        if not os.path.exists(source):
             cli_utils.error(
                 "Please provide a valid path to the custom source module."
             )
+
+    # Parse the given args
+    # name is guaranteed to be set by parse_name_and_extra_arguments
+    name, parsed_args = cli_utils.parse_name_and_extra_arguments(  # type: ignore[assignment]
+        list(args) + [name], expand_args=True
+    )
+
+    if "name" in parsed_args:
+        cli_utils.error(
+            "You can't use 'name' as the key for one of your secrets."
+        )
+    elif name == "name":
+        cli_utils.error("Secret names cannot be named 'name'.")
     try:
-        config = {
-            "owner": owner,
-            "repository": repository,
-            "token": token,
-        }
         source = Source(
             module="zenml.integrations.github.code_repositories",
             attribute="GitHubCodeRepository",
             type=SourceType.UNKNOWN,
         )
         Client().create_code_repository(
-            name=name, config=config, source=source
+            name=name, config=parsed_args, source=source
         )
     except EntityExistsError as e:
         cli_utils.error(str(e))
