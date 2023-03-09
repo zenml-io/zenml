@@ -17,6 +17,7 @@ from asyncio.log import logger
 from typing import Any, List
 
 from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import ORJSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from genericpath import isfile
@@ -69,6 +70,7 @@ app = FastAPI(
     title="ZenML",
     version=zenml.__version__,
     root_path=ROOT_URL_PATH,
+    default_response_class=ORJSONResponse,
 )
 
 app.add_middleware(
