@@ -30,7 +30,7 @@ def my_successful_step() -> int:
     return 1
 ```
 
-In this example, we define two hooks: `on_failure` and `on_success`, which print a message when the step fails or succeeds, respectively. We then use these hooks with two steps, `my_failing_step` and `my_successful_step`. When `my_failing_step` is executed, it raises a `ValueError`, which triggers the `on_failure` hook. Similarly, when `my_successful_step` is executed, it returns an integer successfully, which triggers the on_success hook.
+In this example, we define two hooks: `on_failure` and `on_success`, which print a message when the step fails or succeeds, respectively. We then use these hooks with two steps, `my_failing_step` and `my_successful_step`. When `my_failing_step` is executed, it raises a `ValueError`, which triggers the `on_failure` hook. Similarly, when `my_successful_step` is executed, it returns an integer successfully, which triggers the `on_success` hook.
 
 A step can also be specified as a local user-defined function
 path (of the form `mymodule.myfile.my_function`). This is
@@ -39,7 +39,7 @@ a [YAML Config](../pipelines/settings.md).
 
 ## Defining steps on a pipeline level
 
-In some cases, there is a need to define a hook on all steps of a given pipeline. Rather than having to define it on all steps individually, you can also specify any hook on the pipeline level. 
+In some cases, there is a need to define a hook on all steps of a given pipeline rather than just on individual steps. 
 
 Note, that step-level defined hooks take precendence over pipeline-level
 defined hooks.
@@ -52,7 +52,7 @@ def my_pipeline(...):
 
 ## Accessing step information inside a hook
 
-A hook function signature can optionally take three type annotated arguments of
+A hook function signature can optionally take three type-annotated arguments of
 the following types:
 
 - `StepContext`: You can pass an object inside a hook of type `StepContext` to
@@ -74,7 +74,7 @@ from zenml.steps import BaseParameters, StepContext, step
 def on_failure(context: StepContext, params: BaseParameters, exception: Exception):
     print(context.step_name)  # Output will be `my_step`
     print(type(params))  # Of type MyParameters
-    print(type(exception))  # Of type value error
+    print(type(exception))  # Of type ValueError
     print("Step failed!")
 
 

@@ -38,7 +38,6 @@ def resolve_and_validate_hook(hook_func: "HookSpecification") -> str:
     if type(hook_func) is str:
         func = source_utils.load_source_path(hook_func)
     else:
-        # This means hook is a callable
         func = hook_func
 
     if not callable(func):
