@@ -11,9 +11,12 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Initialization of the Llama Index materializer."""
+"""Initialization of the Llama Index materializers."""
 
 from zenml.integrations.llama_index.materializers.gpt_index_materializer import (
     LlamaIndexGPTIndexMaterializer,
     LlamaIndexGPTFaissIndexMaterializer,
+)
+from zenml.integrations.llama_index.materializers.document_materializer import (
+    LlamaIndexDocumentMaterializer,
 )
