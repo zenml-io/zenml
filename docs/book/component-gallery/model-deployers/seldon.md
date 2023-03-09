@@ -225,7 +225,7 @@ export INGRESS_HOST=$(kubectl -n istio-system get service istio-ingressgateway -
 Now register the model deployer:
 
 ```bash
-# Register the Seldon Core Model Deployer with secret registred in ZenML
+# Register the Seldon Core Model Deployer with secret registered in ZenML
 zenml model-deployer register seldon_deployer --flavor=seldon \
   --kubernetes_context=zenml-eks \
   --kubernetes_namespace=zenml-workloads \
