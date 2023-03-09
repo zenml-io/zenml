@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 
 from enum import Enum
-from typing import Any, Optional, Type, TypeVar
+from typing import Any, Optional
 from uuid import UUID
 
 from pydantic import BaseModel, validator
@@ -21,8 +21,6 @@ from pydantic import BaseModel, validator
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
-
-S = TypeVar("S", bound="Source")
 
 
 class SourceType(Enum):
@@ -50,7 +48,7 @@ class Source(BaseModel):
         return super().__new__(cls)
 
     @classmethod
-    def from_import_path(cls: Type[S], import_path: str) -> S:
+    def from_import_path(cls, import_path: str) -> "Source":
         if not import_path:
             raise ValueError(
                 "Invalid empty import path. The import path needs to refer "
@@ -67,7 +65,9 @@ class Source(BaseModel):
             module = import_path
             attribute = None
 
-        return cls(module=module, attribute=attribute, type=SourceType.UNKNOWN)
+        return Source(
+            module=module, attribute=attribute, type=SourceType.UNKNOWN
+        )
 
     @property
     def import_path(self) -> str:
