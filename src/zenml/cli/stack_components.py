@@ -417,9 +417,16 @@ def generate_stack_component_remove_attribute_command(
         type=str,
         required=True,
     )
+    @click.option(
+        "--metadata",
+        "-m",
+        "metadata",
+        help="Metadata to be removed from the component.",
+        multiple=True,
+    )
     @click.argument("args", nargs=-1, type=click.UNPROCESSED)
     def remove_attribute_stack_component_command(
-        name_id_or_prefix: str, args: List[str]
+        name_id_or_prefix: str, args: List[str], metadata: List[str] = None
     ) -> None:
         """Removes one or more attributes from a stack component.
 
@@ -427,6 +434,7 @@ def generate_stack_component_remove_attribute_command(
             name_id_or_prefix: The name of the stack component to remove the
                 attribute from.
             args: Additional arguments to pass to the remove_attribute command.
+            metadata: Metadata to be removed from the component.
         """
         if component_type == StackComponentType.SECRETS_MANAGER:
             warn_deprecated_secrets_manager()
@@ -441,6 +449,7 @@ def generate_stack_component_remove_attribute_command(
                     name_id_or_prefix=name_id_or_prefix,
                     component_type=component_type,
                     configuration={k: None for k in args},
+                    metadata={k: None for k in metadata},
                 )
             except (KeyError, IllegalOperationError) as err:
                 cli_utils.error(str(err))
