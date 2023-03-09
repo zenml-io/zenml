@@ -323,7 +323,7 @@ Core Model Deployer, check out the [API Docs](https://apidocs.zenml.io/latest/in
 
 When you have a custom use-case where Seldon Core pre-packaged inference 
 servers cannot cover your needs, you can leverage the language wrappers to 
-containerise your machine learning model(s) and logic.
+containerize your machine learning model(s) and logic.
 With ZenML's Seldon Core Integration, you can create your own custom model
 deployment code by creating a custom predict function that will be passed
 to a custom deployment step responsible for preparing a Docker image for the

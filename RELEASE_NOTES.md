@@ -1648,7 +1648,7 @@ We also see two new integrations with [Feast](https://feast.dev) as ZenML's firs
 * Abstractions for artifact stores by @bcdurak in https://github.com/zenml-io/zenml/pull/474
 * enable and disable cache from runtime config by @AlexejPenner in https://github.com/zenml-io/zenml/pull/492
 * Basic Seldon Core Deployment Service by @stefannica in https://github.com/zenml-io/zenml/pull/495
-* Parallelise our test suite and make errors more readable by @alex-zenml in https://github.com/zenml-io/zenml/pull/378
+* Parallelize our test suite and make errors more readable by @alex-zenml in https://github.com/zenml-io/zenml/pull/378
 * Provision local zenml service by @jwwwb in https://github.com/zenml-io/zenml/pull/496
 * bugfix/optional-secrets-manager by @safoinme in https://github.com/zenml-io/zenml/pull/493
 * Quick fix for copying folders by @bcdurak in https://github.com/zenml-io/zenml/pull/501
