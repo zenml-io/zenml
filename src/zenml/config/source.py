@@ -52,7 +52,10 @@ class Source(BaseModel):
     @classmethod
     def from_import_path(cls: Type[S], import_path: str) -> S:
         if not import_path:
-            raise ValueError("Invalid import path.")
+            raise ValueError(
+                "Invalid empty import path. The import path needs to refer "
+                "to a Python module and an optional attribute of that module."
+            )
 
         # Remove internal version pins for backwards compatability
         if "@" in import_path:
