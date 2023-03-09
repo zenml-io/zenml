@@ -35,7 +35,7 @@ class SagemakerStepOperatorSettings(BaseSettings):
             independent.
         input_data_s3_uri: S3 URI where training data is located if not locally,
             e.g. s3://my-bucket/my-data/train. How data will be made available
-            to the container is configured with input_mode. Two possible
+            to the container is configured with estimator_args.input_mode. Two possible
             input types:
                 - str: S3 location where training data is saved.
                 - dict[str, str]: (ChannelName, S3Location) which represent
@@ -45,6 +45,9 @@ class SagemakerStepOperatorSettings(BaseSettings):
             Estimator. See
             https://sagemaker.readthedocs.io/en/stable/api/training/estimators.html#sagemaker.estimator.Estimator
             for a full list of arguments.
+            For estimator_args.instance_type, check
+            https://docs.aws.amazon.com/sagemaker/latest/dg/notebooks-available-instance-types.html
+            for a list of available instance types.
 
     """
     experiment_name: Optional[str] = None
