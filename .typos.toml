@@ -8,11 +8,20 @@ K_Scatch = "K_Scatch"
 MCAGA1UECgwZQW1hem9uIFdlYiBTZXJ2aWNlcywgSW5jLjETMBEGA1UECwwKQW1h = "MCAGA1UECgwZQW1hem9uIFdlYiBTZXJ2aWNlcywgSW5jLjETMBEGA1UECwwKQW1h"
 VQQGEwJVUzEQMA4GA1UEBwwHU2VhdHRsZTETMBEGA1UECAwKV2FzaGluZ3RvbjEi = "VQQGEwJVUzEQMA4GA1UEBwwHU2VhdHRsZTETMBEGA1UECAwKV2FzaGluZ3RvbjEi"
 
+
 [default.extend-words]
 # Don't correct the surname "Teh"
 aks = "aks"
 hashi = "hashi"
 womens = "womens"
+prepend = "prepend"
+prepended = "prepended"
+goes = "goes"
+bare = "bare"
+prepending = "prepending"
+prev = "prev"
+creat = "creat"
+ret = "ret"
 
 [default]
 locale = "en-us"
