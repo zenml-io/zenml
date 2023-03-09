@@ -130,7 +130,7 @@ class StepRunner:
             step_failed = False
             try:
                 return_values = step_entrypoint(**function_params)
-            except Exception as step_exception:  # noqa: E722
+            except BaseException as step_exception:  # noqa: E722
                 step_failed = True
                 failure_hook_source = self.configuration.failure_hook_source
                 if failure_hook_source:
