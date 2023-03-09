@@ -537,7 +537,7 @@ class StepRunner:
             )
             logger.debug(f"Running hook {hook} with params: {function_params}")
             hook(**function_params)
-        except BaseException as e:
+        except Exception as e:
             logger.error(
                 f"Failed to load hook source with exception: '{hook_source}': {e}"
             )
