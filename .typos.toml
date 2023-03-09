@@ -14,3 +14,5 @@ aks = "aks"
 hashi = "hashi"
 womens = "womens"
 
+[default]
+locale = "en-us"
