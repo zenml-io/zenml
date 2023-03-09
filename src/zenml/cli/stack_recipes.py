@@ -250,7 +250,9 @@ class StackRecipeRepo:
 
             logger.info(f"Downloading recipes to {self.cloning_path}")
             self.repo = Repo.clone_from(
-                STACK_RECIPES_GITHUB_REPO, self.cloning_path, branch="feature/add-stack-wise-registration"
+                STACK_RECIPES_GITHUB_REPO,
+                self.cloning_path,
+                branch="feature/add-stack-wise-registration",
             )
         except KeyboardInterrupt:
             self.delete()
@@ -632,7 +634,9 @@ def pull(
         path: The path at which you want to install the stack_recipe(s).
     """
     cli_utils.warning(ALPHA_MESSAGE)
-    git_stack_recipes_handler.pull(branch="feature/add-stack-wise-registration", force=force)
+    git_stack_recipes_handler.pull(
+        branch="feature/add-stack-wise-registration", force=force
+    )
 
     stack_recipes_dir = os.path.join(os.getcwd(), path)
     io_utils.create_dir_if_not_exists(stack_recipes_dir)
@@ -953,7 +957,7 @@ def deploy(
                     "exist on your cloud account."
                 ):
                     from zenml.recipes import (
-                        StackRecipeService, 
+                        StackRecipeService,
                         StackRecipeServiceConfig,
                     )
 
@@ -1014,8 +1018,12 @@ def deploy(
                     if secrets_manager:
                         enabled_services.append("secrets_manager")
 
-                    stack_recipe_service.config.enabled_services = enabled_services
-                    stack_recipe_service.config.input_variables = variables_dict
+                    stack_recipe_service.config.enabled_services = (
+                        enabled_services
+                    )
+                    stack_recipe_service.config.input_variables = (
+                        variables_dict
+                    )
                     # start the service (the init and apply operation)
                     stack_recipe_service.start()
 
@@ -1318,8 +1326,10 @@ def destroy(
                     disabled_services.append("container_registry")
                 if secrets_manager:
                     disabled_services.append("secrets_manager")
-                    
-                stack_recipe_service.config.disabled_services = disabled_services
+
+                stack_recipe_service.config.disabled_services = (
+                    disabled_services
+                )
                 # stop the service to destroy resources created by recipe
                 stack_recipe_service.stop()
 
@@ -1365,10 +1375,11 @@ def destroy(
                     "are no active nodes."
                 )
 
+
 # a function to get the value of outputs passed as input, from a stack recipe
 @stack_recipe.command(
     name="output",
-    help="Get a specific output or a list of all outputs from a stack recipe."
+    help="Get a specific output or a list of all outputs from a stack recipe.",
 )
 @click.argument("stack_recipe_name", type=str)
 @click.option(
@@ -1467,11 +1478,8 @@ def get_outputs(
                 else:
                     cli_utils.declare("Outputs: ")
                     # delete all items that have empty values
-                    outputs = {
-                        k: v for k, v in outputs.items() if v is not ''
-                    }
+                    outputs = {k: v for k, v in outputs.items() if v != ""}
                     cli_utils.declare(outputs)
                     return outputs
             except python_terraform.TerraformCommandError as e:
                 cli_utils.error(str(e))
-
