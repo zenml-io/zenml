@@ -132,11 +132,11 @@ def step(
             a function with three possible parameters,
             `StepContext`, `BaseParameters`, and `Exception`,
             or a source path to a function of the same specifications
-            (e.g. `module.my_file.my_function`).
+            (e.g. `module.my_function`).
         on_success: Callback function in event of failure of the step. Can be
             a function with two possible parameters, `StepContext` and
             `BaseParameters, or a source path to a function of the same specifications
-            (e.g. `module.my_file.my_function`).
+            (e.g. `module.my_function`).
 
     Returns:
         The inner decorator which creates the step class based on the

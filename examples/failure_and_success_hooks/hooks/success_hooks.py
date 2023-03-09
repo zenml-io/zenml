@@ -12,8 +12,10 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import logging
+
 from zenml.steps import StepContext
 
 
 def pipeline_success_hook(context: StepContext) -> None:
-    print(f"Step {context.step_name} succeeded!")
+    logging.info(f"Step {context.step_name} succeeded!")

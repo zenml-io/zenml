@@ -14,10 +14,10 @@ within the repository where the pipeline and steps are located:
 
 ```python
 def on_failure():
-    print("Step failed!")
+    logging.info("Step failed!")
 
 def on_success():
-    print("Step succeeded!")
+    logging.info("Step succeeded!")
 
 @step(on_failure=on_failure)
 def my_failing_step() -> int:
@@ -68,14 +68,15 @@ if a `ValueError` is raised inside a step, the exception would also be of type
 `Exception`.
 
 ```python
+import logging
 from zenml.steps import BaseParameters, StepContext, step
 
 # Use one or any of these in the signature
 def on_failure(context: StepContext, params: BaseParameters, exception: Exception):
-    print(context.step_name)  # Output will be `my_step`
-    print(type(params))  # Of type MyParameters
-    print(type(exception))  # Of type ValueError
-    print("Step failed!")
+    logging.info(context.step_name)  # Output will be `my_step`
+    logging.info(type(params))  # Of type MyParameters
+    logging.info(type(exception))  # Of type ValueError
+    logging.info("Step failed!")
 
 
 class MyParameters(BaseParameters):
