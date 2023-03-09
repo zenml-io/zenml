@@ -25,7 +25,7 @@ if TYPE_CHECKING:
 
 
 def alerter_failure_hook(
-    context: "StepContext", params: "BaseParameters", exception: Exception
+    context: "StepContext", params: "BaseParameters", exception: BaseException
 ) -> None:
     """Standard failure hook that executes after step fails.
 

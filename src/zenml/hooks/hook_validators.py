@@ -54,7 +54,7 @@ def resolve_and_validate_hook(hook_func: "HookSpecification") -> str:
     if sig.args and len(sig.args) != len(sig_annotations):
         raise ValueError(
             "If you pass args to a hook, you must annotate them with one "
-            "of the following types: `Exception`, `BaseParameters`, "
+            "of the following types: `BaseException`, `BaseParameters`, "
             "and/or `StepContext`."
         )
 
@@ -64,16 +64,16 @@ def resolve_and_validate_hook(hook_func: "HookSpecification") -> str:
         for annotation in annotations:
             if annotation:
                 if annotation not in (
-                    Exception,
+                    BaseException,
                     BaseParameters,
                     StepContext,
                     # Have to do string version for TYPE_CHECKING
-                    "Exception",
+                    "BaseException",
                     "BaseParameters",
                     "StepContext",
                 ):
                     raise ValueError(
-                        "Hook parameters must be of type `Exception`, `BaseParameters`, "
+                        "Hook parameters must be of type `BaseException`, `BaseParameters`, "
                         f"and/or `StepContext`, not {annotation}"
                     )
 
@@ -81,7 +81,7 @@ def resolve_and_validate_hook(hook_func: "HookSpecification") -> str:
                     raise ValueError(
                         "It looks like your hook function accepts more than of the "
                         "same argument annotation type. Please ensure you pass exactly "
-                        "one of the following: `Exception`, `BaseParameters`, "
+                        "one of the following: `BaseException`, `BaseParameters`, "
                         "and/or `StepContext`. Currently your function has "
                         f"the following annotations: {sig_annotations}"
                     )

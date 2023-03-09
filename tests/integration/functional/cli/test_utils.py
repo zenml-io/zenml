@@ -39,7 +39,7 @@ def test_temporarily_setting_the_active_stack():
 
 def test_error_raises_exception():
     """Tests that the error method raises an exception."""
-    with pytest.raises(Exception):
+    with pytest.raises(BaseException):
         cli_utils.error()
 
 

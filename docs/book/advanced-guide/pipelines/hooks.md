@@ -62,20 +62,20 @@ the following types:
 - `StepContext`: You can pass an object inside a hook of type `StepContext` to
 get access to information such as pipeline name, run name, step name etc
 - `BaseParameters`: You can pass a `BaseParameters` inside the step
-- `Exception`: In case of failure hooks, if you add an `Exception` argument to the hook,
-then ZenML passes the Exception that caused your step to fail.
+- `BaseException`: In case of failure hooks, if you add an `BaseException` argument to the hook,
+then ZenML passes the BaseException that caused your step to fail.
 
-Please note that in case of `BaseParameters` and `Exception` the concrete class
+Please note that in case of `BaseParameters` and `BaseException` the concrete class
 defined by the step will be passed. For example, if a step's parameters class is
 called `MyParameters`, that will be the object that is passed into the hook. Also,
 if a `ValueError` is raised inside a step, the exception would also be of type
-`Exception`.
+`BaseException`.
 
 ```python
 from zenml.steps import BaseParameters, StepContext, step
 
 # Use one or any of these in the signature
-def on_failure(context: StepContext, params: BaseParameters, exception: Exception):
+def on_failure(context: StepContext, params: BaseParameters, exception: BaseException):
     print(context.step_name)  # Output will be `my_step`
     print(type(params))  # Of type MyParameters
     print(type(exception))  # Of type value error

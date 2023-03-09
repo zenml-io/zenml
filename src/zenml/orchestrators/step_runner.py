@@ -99,7 +99,7 @@ class StepRunner:
             step_run_info: The step run info.
 
         Raises:
-            Exception: A general exception if the step fails.
+            BaseException: A general exception if the step fails.
         """
         step_entrypoint = self._load_step_entrypoint()
         output_materializers = self._load_output_materializers()
@@ -280,7 +280,7 @@ class StepRunner:
         self,
         args: List[str],
         annotations: Dict[str, Any],
-        step_exception: Optional[Exception],
+        step_exception: Optional[BaseException],
         output_artifact_uris: Dict[str, str],
         output_materializers: Dict[str, Type[BaseMaterializer]],
     ) -> Dict[str, Any]:
@@ -325,14 +325,14 @@ class StepRunner:
                 )
                 function_params[arg] = context
 
-            elif issubclass(arg_type, Exception):
+            elif issubclass(arg_type, BaseException):
                 function_params[arg] = step_exception
 
             else:
                 # It should not be of any other type
                 raise TypeError(
                     "Hook functions can only take parameters of type `StepContext`,"
-                    f"`BaseParameters`, or `Exception`, not {arg_type}"
+                    f"`BaseParameters`, or `BaseException`, not {arg_type}"
                 )
 
         return function_params
@@ -491,7 +491,7 @@ class StepRunner:
                         return_value
                     )
                     output_artifact_metadata[output_name] = artifact_metadata
-                except Exception as e:
+                except BaseException as e:
                     logger.warning(
                         f"Failed to extract metadata for output artifact "
                         f"'{output_name}' of step '{self.configuration.name}': "
@@ -513,7 +513,7 @@ class StepRunner:
     def load_and_run_hook(
         self,
         hook_source: str,
-        step_exception: Optional[Exception],
+        step_exception: Optional[BaseException],
         output_artifact_uris: Dict[str, str],
         output_materializers: Dict[str, Type[BaseMaterializer]],
     ) -> None:
@@ -537,7 +537,7 @@ class StepRunner:
             )
             logger.debug(f"Running hook {hook} with params: {function_params}")
             hook(**function_params)
-        except Exception as e:
+        except BaseException as e:
             logger.error(
                 f"Failed to load hook source with exception: '{hook_source}': {e}"
             )

@@ -917,13 +917,13 @@ def on_failure_with_params(params: BaseParameters):
     is_hook_called = True
 
 
-def on_failure_with_exception(e: Exception):
+def on_failure_with_exception(e: BaseException):
     global is_hook_called
     is_hook_called = True
 
 
 def on_failure_with_all(
-    context: StepContext, params: BaseParameters, e: Exception
+    context: StepContext, params: BaseParameters, e: BaseException
 ):
     global is_hook_called
     is_hook_called = True
@@ -953,7 +953,7 @@ def on_failure_with_no_params():
 
 @step
 def exception_step(params: BaseParameters) -> None:
-    raise Exception("A cat appeared!")
+    raise BaseException("A cat appeared!")
 
 
 def test_configure_step_with_failure_hook(one_step_pipeline):
@@ -963,7 +963,7 @@ def test_configure_step_with_failure_hook(one_step_pipeline):
 
     # Test 1
     is_hook_called = False
-    with pytest.raises(Exception):
+    with pytest.raises(BaseException):
         one_step_pipeline(
             exception_step().configure(on_failure=on_failure_with_context)
         ).run(unlisted=True)
@@ -971,7 +971,7 @@ def test_configure_step_with_failure_hook(one_step_pipeline):
 
     # Test 2
     is_hook_called = False
-    with pytest.raises(Exception):
+    with pytest.raises(BaseException):
         one_step_pipeline(
             exception_step().configure(on_failure=on_failure_with_params)
         ).run(unlisted=True)
@@ -979,7 +979,7 @@ def test_configure_step_with_failure_hook(one_step_pipeline):
 
     # Test 3
     is_hook_called = False
-    with pytest.raises(Exception):
+    with pytest.raises(BaseException):
         one_step_pipeline(
             exception_step().configure(on_failure=on_failure_with_exception)
         ).run(unlisted=True)
@@ -987,7 +987,7 @@ def test_configure_step_with_failure_hook(one_step_pipeline):
 
     # Test 4
     is_hook_called = False
-    with pytest.raises(Exception):
+    with pytest.raises(BaseException):
         one_step_pipeline(
             exception_step().configure(on_failure=on_failure_with_all)
         ).run(unlisted=True)
@@ -1023,7 +1023,7 @@ def test_configure_step_with_failure_hook(one_step_pipeline):
 
     # Test 8
     is_hook_called = False
-    with pytest.raises(Exception):
+    with pytest.raises(BaseException):
         one_step_pipeline(
             exception_step().configure(on_failure=on_failure_with_no_params)
         ).run(unlisted=True)
@@ -1040,7 +1040,7 @@ def on_success_with_params(params: BaseParameters):
     is_hook_called = True
 
 
-def on_success_with_exception(e: Exception):
+def on_success_with_exception(e: BaseException):
     global is_hook_called
     is_hook_called = True
 
@@ -1168,6 +1168,6 @@ def test_configure_pipeline_with_hooks(one_step_pipeline):
     p = one_step_pipeline(
         exception_step(),
     )
-    with pytest.raises(Exception):
+    with pytest.raises(BaseException):
         p.configure(on_failure=on_failure).run(unlisted=True)
     assert is_failure_hook_called
