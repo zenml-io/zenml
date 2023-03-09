@@ -491,7 +491,7 @@ class StepRunner:
                         return_value
                     )
                     output_artifact_metadata[output_name] = artifact_metadata
-                except BaseException as e:
+                except Exception as e:
                     logger.warning(
                         f"Failed to extract metadata for output artifact "
                         f"'{output_name}' of step '{self.configuration.name}': "
