@@ -1,34 +1,43 @@
 name: Setup the Python Environment
 
-on: workflow_call
-
+on:
+  workflow_call:
+    inputs:
+      os:
+        description: 'OS'
+        type: string
+        required: true
+      python-version:
+        description: 'Python version'
+        type: string
+        required: true
+      enable_tmate:
+        description: 'Enable tmate session for debugging'
+        type: string
+        required: false
+        default: "never"
+      install_integrations:
+        description: 'Install ZenML integrations'
+        type: string
+        required: false
+        default: 'yes'
+        
 jobs:
   setup:
     name: setup
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ inputs.os }}
     env:
       ZENML_DEBUG: 1
       ZENML_ANALYTICS_OPT_IN: false
       PYTHONIOENCODING: 'utf-8'
-    # Exit if its a commit from Gitbook
-    if: ${{ ! startsWith(github.event.head_commit.message, 'GitBook:') }}
-
-    defaults:
-      run:
-        shell: bash
-
-    strategy:
-      matrix:
-        os: [macos-latest, ubuntu-latest, windows-latest]
-        python-version: [ '3.7', '3.8', '3.9', '3.10' ]
-      fail-fast: false
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Setup environment
         uses: ./.github/actions/setup_environment
         with:
           cache_version: ${{ secrets.GH_ACTIONS_CACHE_KEY }}
-          python-version: ${{ matrix.python-version }}
-          os: ${{ matrix.os }}
+          python-version: ${{ inputs.python-version }}
+          os: ${{ inputs.os }}
+          install_integrations: ${{ inputs.install_integrations }}
