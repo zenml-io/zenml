@@ -22,8 +22,8 @@ from sqlalchemy import TEXT, Column
 from sqlmodel import Field, Relationship
 
 from zenml.models.code_repository_models import (
-    CodeRepositoryReferenceRequestModel,
-    CodeRepositoryReferenceResponseModel,
+    CodeReferenceRequestModel,
+    CodeReferenceResponseModel,
     CodeRepositoryRequestModel,
     CodeRepositoryResponseModel,
     CodeRepositoryUpdateModel,
@@ -125,10 +125,10 @@ class CodeRepositorySchema(NamedSchema, table=True):
         return self
 
 
-class CodeRepositoryReferenceSchema(BaseSchema, table=True):
-    """SQL Model for code repository references."""
+class CodeReferenceSchema(BaseSchema, table=True):
+    """SQL Model for code references."""
 
-    __tablename__ = "code_repository_reference"
+    __tablename__ = "code_reference"
 
     workspace_id: UUID = build_foreign_key_field(
         source=__tablename__,
@@ -167,9 +167,9 @@ class CodeRepositoryReferenceSchema(BaseSchema, table=True):
     @classmethod
     def from_request(
         cls,
-        request: "CodeRepositoryReferenceRequestModel",
-    ) -> "CodeRepositoryReferenceSchema":
-        """Convert a `CodeRepositoryReferenceRequestModel` to a `CodeRepositoryReferenceSchema`.
+        request: "CodeReferenceRequestModel",
+    ) -> "CodeReferenceSchema":
+        """Convert a `CodeReferenceRequestModel` to a `CodeReferenceSchema`.
 
         Args:
             request: The request model to convert.
@@ -187,13 +187,13 @@ class CodeRepositoryReferenceSchema(BaseSchema, table=True):
 
     def to_model(
         self,
-    ) -> "CodeRepositoryReferenceResponseModel":
-        """Convert a `CodeRepositoryReferenceSchema` to a `CodeRepositoryReferenceResponseModel`.
+    ) -> "CodeReferenceResponseModel":
+        """Convert a `CodeReferenceSchema` to a `CodeReferenceResponseModel`.
 
         Returns:
-            The created CodeRepositoryReferenceResponseModel.
+            The converted model.
         """
-        return CodeRepositoryReferenceResponseModel(
+        return CodeReferenceResponseModel(
             id=self.id,
             workspace=self.workspace.to_model(),
             user=self.user.to_model(True) if self.user else None,

@@ -45,10 +45,7 @@ from zenml.utils import source_utils
 from zenml.utils.pagination_utils import depaginate
 
 if TYPE_CHECKING:
-    from zenml.code_repositories import (
-        BaseCodeRepository,
-        LocalRepository,
-    )
+    from zenml.code_repositories import BaseCodeRepository, LocalRepository
 
 logger = get_logger(__name__)
 
@@ -160,12 +157,10 @@ def get_source_root() -> str:
     return source_utils.get_source_root_path()
 
 
-def set_custom_code_repo(
+def set_custom_code_repository(
     root: str, commit: str, repo: "BaseCodeRepository"
 ) -> None:
-    from zenml.code_repositories.base_code_repository import (
-        _DownloadedRepository,
-    )
+    from zenml.utils.downloaded_repository import _DownloadedRepository
 
     global _CODE_REPOSITORY_CACHE
 

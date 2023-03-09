@@ -29,8 +29,8 @@ from zenml.models.filter_models import WorkspaceScopedFilterModel
 
 if TYPE_CHECKING:
     from zenml.models import (
-        CodeRepositoryReferenceRequestModel,
-        CodeRepositoryReferenceResponseModel,
+        CodeReferenceRequestModel,
+        CodeReferenceResponseModel,
         PipelineBuildResponseModel,
         PipelineResponseModel,
         ScheduleResponseModel,
@@ -107,10 +107,8 @@ class PipelineDeploymentResponseModel(
     schedule: Optional["ScheduleResponseModel"] = Field(
         title="The schedule associated with the deployment."
     )
-    code_repository_reference: Optional[
-        "CodeRepositoryReferenceResponseModel"
-    ] = Field(
-        title="The code repository reference associated with the deployment."
+    code_reference: Optional["CodeReferenceResponseModel"] = Field(
+        title="The code reference associated with the deployment."
     )
 
 
@@ -162,8 +160,6 @@ class PipelineDeploymentRequestModel(
     schedule: Optional[UUID] = Field(
         title="The schedule associated with the deployment."
     )
-    code_repository_reference: Optional[
-        "CodeRepositoryReferenceRequestModel"
-    ] = Field(
-        title="The code repository reference associated with the deployment."
+    code_reference: Optional["CodeReferenceRequestModel"] = Field(
+        title="The code reference associated with the deployment."
     )

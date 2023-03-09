@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 import os
 import re
-from typing import Optional
+from typing import List, Optional
 from uuid import UUID
 
 from github import Github, GithubException
@@ -63,9 +63,7 @@ class GitHubCodeRepository(BaseCodeRepository):
             user = self._github_session.get_user().login
             logger.debug(f"Logged in as {user}")
         except Exception as e:
-            raise RuntimeError(
-                f'f"An error occurred while logging in: {str(e)}'
-            )
+            raise RuntimeError(f"An error occurred while logging in: {str(e)}")
 
     def download_files(
         self, commit: str, directory: str, repo_sub_directory: Optional[str]
@@ -77,30 +75,26 @@ class GitHubCodeRepository(BaseCodeRepository):
             directory: The directory to download to.
             repo_sub_directory: The sub directory to download from.
         """
-        contents = self.github_repo.get_dir_contents(
+        contents = self.github_repo.get_contents(
             repo_sub_directory or "", ref=commit
         )
+        if not isinstance(contents, List):
+            raise RuntimeError("Invalid repository subdirectory.")
+
+        os.makedirs(directory, exist_ok=True)
+
         for content in contents:
-            logger.debug(f"Processing {content.path}")
+            local_path = os.path.join(directory, content.name)
             if content.type == "dir":
-                path = os.path.join(directory, content.name)
-                os.makedirs(path, exist_ok=True)
                 self.download_files(
                     commit=commit,
-                    directory=path,
+                    directory=local_path,
                     repo_sub_directory=content.path,
                 )
             else:
                 try:
-                    path = content.path
-                    content_file = self.github_repo.get_contents(
-                        path, ref=commit
-                    )
-                    data = content_file.decoded_content
-                    path = os.path.join(directory, content.name)
-                    with open(path, "wb") as file:
-                        file.write(data)
-                    file.close()
+                    with open(local_path, "wb") as f:
+                        f.write(content.decoded_content)
                 except (GithubException, IOError) as e:
                     logger.error("Error processing %s: %s", content.path, e)
 

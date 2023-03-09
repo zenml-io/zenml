@@ -72,8 +72,8 @@ from zenml.models import (
     ArtifactRequestModel,
     ArtifactResponseModel,
     BaseFilterModel,
+    CodeReferenceRequestModel,
     CodeRepositoryFilterModel,
-    CodeRepositoryReferenceRequestModel,
     CodeRepositoryRequestModel,
     CodeRepositoryResponseModel,
     CodeRepositoryUpdateModel,
@@ -164,7 +164,7 @@ from zenml.zen_stores.migrations.alembic import (
 from zenml.zen_stores.schemas import (
     ArtifactSchema,
     BaseSchema,
-    CodeRepositoryReferenceSchema,
+    CodeReferenceSchema,
     CodeRepositorySchema,
     FlavorSchema,
     IdentitySchema,
@@ -2903,13 +2903,13 @@ class SqlZenStore(BaseZenStore):
             The newly created deployment.
         """
         with Session(self.engine) as session:
-            code_repo_reference_id = self._create_or_reuse_code_repository_reference(
+            code_reference_id = self._create_or_reuse_code_reference(
                 session=session,
-                code_repository_reference=deployment.code_repository_reference,
+                code_reference=deployment.code_reference,
             )
 
             new_deployment = PipelineDeploymentSchema.from_request(
-                deployment, code_repository_reference_id=code_repo_reference_id
+                deployment, code_reference_id=code_reference_id
             )
             session.add(new_deployment)
             session.commit()
@@ -4204,46 +4204,38 @@ class SqlZenStore(BaseZenStore):
             session=session,
         )
 
-    def _create_or_reuse_code_repository_reference(
+    def _create_or_reuse_code_reference(
         self,
         session: Session,
-        code_repository_reference: Optional[
-            "CodeRepositoryReferenceRequestModel"
-        ],
+        code_reference: Optional["CodeReferenceRequestModel"],
     ) -> Optional[UUID]:
-        """Creates or reuses a code repository reference.
+        """Creates or reuses a code reference.
 
         Args:
             session: The database session to use.
-            code_repository_reference: Request of the reference to create.
+            code_reference: Request of the reference to create.
 
         Returns:
-            The code repository reference ID.
+            The code reference ID.
         """
-        if not code_repository_reference:
+        if not code_reference:
             return None
 
         existing_reference = session.exec(
-            select(CodeRepositoryReferenceSchema)
+            select(CodeReferenceSchema)
             .where(
-                CodeRepositoryReferenceSchema.code_repository_id
-                == code_repository_reference.code_repository
+                CodeReferenceSchema.code_repository_id
+                == code_reference.code_repository
             )
+            .where(CodeReferenceSchema.commit == code_reference.commit)
             .where(
-                CodeRepositoryReferenceSchema.commit
-                == code_repository_reference.commit
-            )
-            .where(
-                CodeRepositoryReferenceSchema.subdirectory
-                == code_repository_reference.subdirectory
+                CodeReferenceSchema.subdirectory == code_reference.subdirectory
             )
         ).first()
         if existing_reference is not None:
             return existing_reference.id
 
-        new_reference = CodeRepositoryReferenceSchema.from_request(
-            code_repository_reference
-        )
+        new_reference = CodeReferenceSchema.from_request(code_reference)
 
         session.add(new_reference)
         return new_reference.id

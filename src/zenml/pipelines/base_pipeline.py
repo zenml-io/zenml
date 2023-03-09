@@ -55,7 +55,7 @@ from zenml.enums import StackComponentType
 from zenml.exceptions import PipelineInterfaceError
 from zenml.logger import get_logger
 from zenml.models import (
-    CodeRepositoryReferenceRequestModel,
+    CodeReferenceRequestModel,
     PipelineBuildRequestModel,
     PipelineBuildResponseModel,
     PipelineDeploymentRequestModel,
@@ -404,7 +404,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
         extra: Optional[Dict[str, Any]] = None,
         config_path: Optional[str] = None,
         unlisted: bool = False,
-        allow_build_reuse: bool = True,
+        prevent_build_reuse: bool = False,
     ) -> None:
         """Runs the pipeline on the active stack of the current repository.
 
@@ -509,13 +509,13 @@ class BasePipeline(metaclass=BasePipelineMeta):
                 deployment=deployment,
                 pipeline_spec=pipeline_spec,
                 allow_code_download=allow_code_download,
-                allow_build_reuse=allow_build_reuse,
+                allow_build_reuse=not prevent_build_reuse,
                 pipeline_id=pipeline_id,
                 build=build,
             )
             build_id = build_model.id if build_model else None
 
-            code_repository_reference = None
+            code_reference = None
             if local_code_repo and not local_code_repo.is_dirty:
                 source_root = source_utils_v2.get_source_root()
                 subdirectory = (
@@ -524,14 +524,12 @@ class BasePipeline(metaclass=BasePipelineMeta):
                     .relative_to(local_code_repo.root)
                 )
 
-                code_repository_reference = (
-                    CodeRepositoryReferenceRequestModel(
-                        user=Client().active_user.id,
-                        workspace=Client().active_workspace.id,
-                        commit=local_code_repo.current_commit,
-                        subdirectory=subdirectory.as_posix(),
-                        code_repository=local_code_repo.code_repository_id,
-                    )
+                code_reference = CodeReferenceRequestModel(
+                    user=Client().active_user.id,
+                    workspace=Client().active_workspace.id,
+                    commit=local_code_repo.current_commit,
+                    subdirectory=subdirectory.as_posix(),
+                    code_repository=local_code_repo.code_repository_id,
                 )
 
             deployment_request = PipelineDeploymentRequestModel(
@@ -541,7 +539,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
                 pipeline=pipeline_id,
                 build=build_id,
                 schedule=schedule_id,
-                code_repository_reference=code_repository_reference,
+                code_reference=code_reference,
                 **deployment.dict(),
             )
             deployment_model = Client().zen_store.create_deployment(
@@ -1073,7 +1071,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
             The unique identifier of the pipeline.
         """
         hash_ = hashlib.md5()
-        hash_.update(pipeline_spec.json(sort_keys=False).encode())
+        hash_.update(pipeline_spec.unique_id.encode())
 
         for step_spec in pipeline_spec.steps:
             step_source = self.steps[
@@ -1129,7 +1127,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
                 raise RuntimeError(
                     "The `DockerSettings` of the pipeline or one of its "
                     "steps specify that code should be included in the "
-                    "Docker image (`copy_files=ALWAYS`), but there is no "
+                    "Docker image (`source_files='download'`), but there is no "
                     "code repository active at your current source root "
                     f"`{source_utils_v2.get_source_root()}`."
                 )
@@ -1137,7 +1135,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
                 raise RuntimeError(
                     "The `DockerSettings` of the pipeline or one of its "
                     "steps specify that code should be included in the "
-                    "Docker image (`copy_files=ALWAYS`), but the code "
+                    "Docker image (`source_files='download'`), but the code "
                     "repository active at your current source root "
                     f"`{source_utils_v2.get_source_root()}` has uncommited "
                     "changes."
@@ -1146,7 +1144,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
                 raise RuntimeError(
                     "The `DockerSettings` of the pipeline or one of its "
                     "steps specify that code should be included in the "
-                    "Docker image (`copy_files=ALWAYS`), but the code "
+                    "Docker image (`source_files='download'`), but the code "
                     "repository active at your current source root "
                     f"`{source_utils_v2.get_source_root()}` has unpushed "
                     "changes."
@@ -1282,6 +1280,14 @@ class BasePipeline(metaclass=BasePipelineMeta):
         if potential_build.contains_code:
             # The build contains some code which might be different than the
             # local code the user is expecting to run
+            return None
+
+        if potential_build.is_local:
+            # TODO: Can we support this by storing the unique Docker ID for the
+            # image and checking if an image with that ID exists locally?
+
+            # The build is local and it's not clear whether the images
+            # exist on the current machine or if they've been overwritten
             return None
 
         for build_config in stack.get_docker_builds(deployment=deployment):

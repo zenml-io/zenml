@@ -612,7 +612,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         ) as analytics_handler:
             default_store_cfg = self.get_default_store()
             self._configure_store(default_store_cfg)
-            logger.info("Using the default store for the global config.")
+            logger.debug("Using the default store for the global config.")
             analytics_handler.metadata = {
                 "store_type": default_store_cfg.type.value
             }

@@ -151,7 +151,7 @@ def test_loading_unmaterialized_input_artifact(
     step = Step.parse_obj(
         {
             "spec": {
-                "source": "",
+                "source": "module.step_class",
                 "upstream_steps": [],
             },
             "config": {

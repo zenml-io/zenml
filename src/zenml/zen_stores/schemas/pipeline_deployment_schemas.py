@@ -28,7 +28,7 @@ from zenml.models import (
 )
 from zenml.zen_stores.schemas.base_schemas import BaseSchema
 from zenml.zen_stores.schemas.code_repository_schemas import (
-    CodeRepositoryReferenceSchema,
+    CodeReferenceSchema,
 )
 from zenml.zen_stores.schemas.pipeline_build_schemas import PipelineBuildSchema
 from zenml.zen_stores.schemas.pipeline_schemas import PipelineSchema
@@ -111,17 +111,15 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
     )
     workspace: "WorkspaceSchema" = Relationship(back_populates="deployments")
 
-    code_repository_reference_id: Optional[UUID] = build_foreign_key_field(
+    code_reference_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
-        target=CodeRepositoryReferenceSchema.__tablename__,
-        source_column="code_repository_reference_id",
+        target=CodeReferenceSchema.__tablename__,
+        source_column="code_reference_id",
         target_column="id",
         ondelete="SET NULL",
         nullable=True,
     )
-    code_repository_reference: Optional[
-        "CodeRepositoryReferenceSchema"
-    ] = Relationship()
+    code_reference: Optional["CodeReferenceSchema"] = Relationship()
 
     runs: List["PipelineRunSchema"] = Relationship(back_populates="deployment")
 
@@ -134,14 +132,14 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
     def from_request(
         cls,
         request: PipelineDeploymentRequestModel,
-        code_repository_reference_id: Optional[UUID],
+        code_reference_id: Optional[UUID],
     ) -> "PipelineDeploymentSchema":
         """Convert a `PipelineDeploymentRequestModel` to a `PipelineDeploymentSchema`.
 
         Args:
             request: The request to convert.
-            code_repository_reference_id: Optional ID of the code repository
-                reference for the deployment.
+            code_reference_id: Optional ID of the code reference for the
+                deployment.
 
         Returns:
             The created `PipelineDeploymentSchema`.
@@ -153,7 +151,7 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
             build_id=request.build,
             user_id=request.user,
             schedule_id=request.schedule,
-            code_repository_reference_id=code_repository_reference_id,
+            code_reference_id=code_reference_id,
             run_name_template=request.run_name_template,
             pipeline_configuration=request.pipeline_configuration.json(),
             step_configurations=json.dumps(
@@ -182,8 +180,8 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
             ),
             build=self.build.to_model() if self.build else None,
             schedule=self.schedule.to_model() if self.schedule else None,
-            code_repository_reference=self.code_repository_reference.to_model()
-            if self.code_repository_reference
+            code_reference=self.code_reference.to_model()
+            if self.code_reference
             else None,
             created=self.created,
             updated=self.updated,
