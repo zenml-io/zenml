@@ -2038,7 +2038,7 @@ class Client(metaclass=ClientMetaClass):
             ),
         )
         component_filter_model.set_scope_workspace(self.active_workspace.id)
-        breakpoint()
+
         return self.zen_store.list_stack_components(
             component_filter_model=component_filter_model
         )
