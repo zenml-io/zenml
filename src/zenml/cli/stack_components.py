@@ -1359,8 +1359,10 @@ def register_single_stack_component_cli_commands(
 
     # zenml stack-component deploy
     deploy_command = generate_stack_component_deploy_command(component_type)
+    context_settings = {"ignore_unknown_options": True}
     command_group.command(
         "deploy",
+        context_settings=context_settings,
         help=f"Deploy a new {singular_display_name}.",
     )(deploy_command)
 

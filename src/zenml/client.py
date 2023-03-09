@@ -2418,7 +2418,7 @@ class Client(metaclass=ClientMetaClass):
         )
 
         logger.info(
-            "Deleting stack component %s...", component.name,
+            "Deregestering stack component %s...", component.name,
         )
 
         # call the delete stack component function
