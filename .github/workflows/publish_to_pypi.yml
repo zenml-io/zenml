@@ -13,7 +13,7 @@ jobs:
       PYTHONIOENCODING: 'utf-8'
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Get the version from the github tag ref
         id: get_version
