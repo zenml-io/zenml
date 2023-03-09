@@ -38,7 +38,7 @@ class SagemakerStepOperatorSettings(BaseSettings):
             to the container is configured with estimator_args.input_mode. Two possible
             input types:
                 - str: S3 location where training data is saved.
-                - dict[str, str]: (ChannelName, S3Location) which represent
+                - Dict[str, str]: (ChannelName, S3Location) which represent
                     channels (e.g. training, validation, testing) where
                     specific parts of the data are saved in S3.
         estimator_args: Arguments that are directly passed to the SageMaker
