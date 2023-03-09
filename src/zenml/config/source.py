@@ -51,11 +51,19 @@ class Source(BaseModel):
 
     @classmethod
     def from_import_path(cls: Type[S], import_path: str) -> S:
+        if not import_path:
+            raise ValueError("Invalid import path.")
+
         # Remove internal version pins for backwards compatability
         if "@" in import_path:
             import_path = import_path.split("@", 1)[0]
 
-        module, attribute = import_path.rsplit(".", maxsplit=1)
+        if "." in import_path:
+            module, attribute = import_path.rsplit(".", maxsplit=1)
+        else:
+            module = import_path
+            attribute = None
+
         return cls(module=module, attribute=attribute, type=SourceType.UNKNOWN)
 
     @property
