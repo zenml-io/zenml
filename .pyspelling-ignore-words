@@ -1741,3 +1741,4 @@ SecretResponseModel
 SecretUpdateModel
 SecretsStoreInterface
 UDF
+NumpyMaterializer
