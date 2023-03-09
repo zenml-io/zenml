@@ -60,7 +60,6 @@ def code_repository() -> None:
     "args",
     nargs=-1,
     type=click.UNPROCESSED,
-    help="Additional arguments to pass to the code repository.",
 )
 def connect_code_repository(
     name: str,
