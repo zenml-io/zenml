@@ -16,50 +16,96 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  setup-python-environment:
+  ubuntu-setup-python-environment:
     if: github.event.pull_request.draft == false
-    uses: ./.github/workflows/setup-python-environment.yml
-    secrets: inherit
-
-  lint-code:
-    needs: setup-python-environment
-    uses: ./.github/workflows/lint.yml
-    secrets: inherit
-
-  unit-test:
-    needs: setup-python-environment
-    uses: ./.github/workflows/unit-test.yml
-    secrets: inherit
-
-  integration-test:
-    needs: setup-python-environment
-    # Exit if its a commit from Gitbook
-    if: ${{ ! startsWith(github.event.head_commit.message, 'GitBook:') }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [ubuntu-latest]
+        python-version: ["3.7", "3.8", "3.9", "3.10"]
+      fail-fast: false
+    uses: ./.github/workflows/setup-python-environment.yml
+    with:
+      python-version: ${{ matrix.python-version }}
+      os: ${{ matrix.os }}
+    secrets: inherit
+
+  windows-setup-python-environment:
+    if: github.event.pull_request.draft == false
+    strategy:
+      matrix:
+        os: [windows-latest]
+        python-version: ["3.7", "3.8", "3.9", "3.10"]
+      fail-fast: false
+    uses: ./.github/workflows/setup-python-environment.yml
+    with:
+      python-version: ${{ matrix.python-version }}
+      os: ${{ matrix.os }}
+    secrets: inherit
+
+  macos-setup-python-environment:
+    if: github.event.pull_request.draft == false
+    strategy:
+      matrix:
+        os: [macos-latest]
+        python-version: ["3.7", "3.8", "3.9", "3.10"]
+      fail-fast: false
+    uses: ./.github/workflows/setup-python-environment.yml
+    with:
+      python-version: ${{ matrix.python-version }}
+      os: ${{ matrix.os }}
+    secrets: inherit
+
+  ubuntu-lint-unit-test:
+    needs: ubuntu-setup-python-environment
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        python-version: ["3.7", "3.8", "3.9", "3.10"]
+      fail-fast: false
+    uses: ./.github/workflows/lint-unit-test.yml
+    with:
+      os: ${{ matrix.os }}
+      python-version: ${{ matrix.python-version }}
+    secrets: inherit
+
+  windows-lint-unit-test:
+    needs: windows-setup-python-environment
+    strategy:
+      matrix:
+        os: [windows-latest]
+        python-version: ["3.7", "3.8", "3.9", "3.10"]
+      fail-fast: false
+    uses: ./.github/workflows/lint-unit-test.yml
+    with:
+      os: ${{ matrix.os }}
+      python-version: ${{ matrix.python-version }}
+    secrets: inherit
+
+  macos-lint-unit-test:
+    needs: macos-setup-python-environment
+    strategy:
+      matrix:
+        os: [macos-latest]
+        python-version: ["3.7", "3.8", "3.9", "3.10"]
+      fail-fast: false
+    uses: ./.github/workflows/lint-unit-test.yml
+    with:
+      os: ${{ matrix.os }}
+      python-version: ${{ matrix.python-version }}
+    secrets: inherit
+
+  ubuntu-integration-test:
+    needs: ubuntu-lint-unit-test
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
         python-version: ["3.7", "3.8", "3.9", "3.10"]
         test_environment:
           [
             "default",
             "docker-server-docker-orchestrator",
-            "default-kubeflow-orchestrator",
           ]
         exclude:
-          # docker and kubeflow are not supported on windows
-          - os: windows-latest
-            test_environment: default-kubeflow-orchestrator
-          - os: windows-latest
-            test_environment: docker-server-docker-orchestrator
-          # kubeflow is time-consuming to run, so we only run it on 3.8
-          - test_environment: default-kubeflow-orchestrator
-            python-version: "3.7"
-          - test_environment: default-kubeflow-orchestrator
-            python-version: "3.9"
-          - test_environment: default-kubeflow-orchestrator
-            python-version: "3.10"
-          - test_environment: default-kubeflow-orchestrator
-            python-version: "3.8"
           # docker is time-consuming to run, so we only run it on 3.8
           - test_environment: docker-server-docker-orchestrator
             python-version: "3.7"
@@ -67,13 +113,6 @@ jobs:
             python-version: "3.9"
           - test_environment: docker-server-docker-orchestrator
             python-version: "3.10"
-          # disable docker macos tests for now
-          - test_environment: docker-server-docker-orchestrator
-            os: macos-latest
-          - test_environment: default-kubeflow-orchestrator
-            os: macos-latest
-          # disable kubeflow tests for now
-          - test_environment: default-kubeflow-orchestrator
 
       fail-fast: false
 
@@ -84,11 +123,37 @@ jobs:
       test_environment: ${{ matrix.test_environment }}
     secrets: inherit
 
-  markdown-link-check:
-    uses: ./.github/workflows/markdown-link-check.yml
+  windows-integration-test:
+    needs: windows-lint-unit-test
+    strategy:
+      matrix:
+        os: [windows-latest]
+        python-version: ["3.7", "3.8", "3.9", "3.10"]
+        test_environment: ["default"]
 
-  docstring-check:
-    uses: ./.github/workflows/docstring.yml
+      fail-fast: false
 
-  spell-check:
-    uses: ./.github/workflows/spellcheck.yml
+    uses: ./.github/workflows/integration-test.yml
+    with:
+      os: ${{ matrix.os }}
+      python-version: ${{ matrix.python-version }}
+      test_environment: ${{ matrix.test_environment }}
+    secrets: inherit
+
+  macos-integration-test:
+    needs: macos-lint-unit-test
+    # Exit if its a commit from Gitbook
+    strategy:
+      matrix:
+        os: [macos-latest]
+        python-version: ["3.7", "3.8", "3.9", "3.10"]
+        test_environment: ["default"]
+
+      fail-fast: false
+
+    uses: ./.github/workflows/integration-test.yml
+    with:
+      os: ${{ matrix.os }}
+      python-version: ${{ matrix.python-version }}
+      test_environment: ${{ matrix.test_environment }}
+    secrets: inherit
