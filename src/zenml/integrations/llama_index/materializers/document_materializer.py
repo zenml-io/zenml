@@ -12,14 +12,21 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Implementation of the llama-index document materializer."""
+import os
+from typing import TYPE_CHECKING, Dict, Type
 
-from typing import TYPE_CHECKING, Any, Dict, Type
+from langchain.docstore.document import Document as LCDocument
 
-from llama_index import Document
+# from llama_index import Document
+from llama_index.readers.schema.base import Document
 
 from zenml.enums import ArtifactType
+from zenml.integrations.langchain.materializers.document_materializer import (
+    LangchainDocumentMaterializer,
+)
 from zenml.materializers.base_materializer import BaseMaterializer
-from zenml.materializers.pydantic_materializer import PydanticMaterializer
+from zenml.materializers.pydantic_materializer import DEFAULT_FILENAME
+from zenml.utils import yaml_utils
 
 if TYPE_CHECKING:
     from zenml.metadata.metadata_types import MetadataType
@@ -33,9 +40,9 @@ class LlamaIndexDocumentMaterializer(BaseMaterializer):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self._pydantic_materializer = PydanticMaterializer(**kwargs)
+        self._langchain_materializer = LangchainDocumentMaterializer(**kwargs)
 
-    def load(self, data_type: Type[Document]) -> Any:
+    def load(self, data_type: Type[Document]) -> Document:
         """Reads a llama-index document from JSON.
 
         Args:
@@ -44,19 +51,21 @@ class LlamaIndexDocumentMaterializer(BaseMaterializer):
         Returns:
             The data read.
         """
-
-        return Document.from_langchain_format(
-            self._pydantic_materializer.load(data_type)
-        )
+        contents = super().load(data_type)
+        data_path = os.path.join(self.uri, DEFAULT_FILENAME)
+        contents = yaml_utils.read_json(data_path)
+        langchain_document = LCDocument.parse_raw(contents)
+        return Document.from_langchain_format(langchain_document)
 
     def save(self, data: Document) -> None:
-        """Serialize a llama-index document.
+        """Serialize a llama-index document as a Langchain document.
 
         Args:
             data: The data to store.
         """
+        super().save(data)
         lc_doc = data.to_langchain_format()
-        self._pydantic_materializer.save(lc_doc)
+        self._langchain_materializer.save(lc_doc)
 
     def extract_metadata(self, data: Document) -> Dict[str, "MetadataType"]:
         """Extract metadata from the given

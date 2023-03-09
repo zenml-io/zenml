@@ -21,7 +21,8 @@ class LlamaIndexIntegration(Integration):
     """Definition of Llama Index integration for ZenML."""
 
     NAME = LLAMA_INDEX
-    REQUIREMENTS = ["llama_index>=0.4.23"]
+    # requires langchain for the materializer
+    REQUIREMENTS = ["llama_index>=0.4.23", "langchain>=0.0.103"]
 
     @classmethod
     def activate(cls) -> None:
