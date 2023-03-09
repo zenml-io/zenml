@@ -15,8 +15,6 @@
 
 from typing import TYPE_CHECKING, Optional, Type, Union, Dict, Any
 
-import sagemaker
-
 from zenml.config.base_settings import BaseSettings
 from zenml.integrations.aws import AWS_SAGEMAKER_STEP_OPERATOR_FLAVOR
 from zenml.step_operators.base_step_operator import (
