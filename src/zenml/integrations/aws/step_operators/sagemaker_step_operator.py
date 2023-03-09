@@ -159,55 +159,20 @@ class SagemakerStepOperator(BaseStepOperator):
 
         settings = cast(SagemakerStepOperatorSettings, self.get_settings(info))
 
-        session = settings.sagemaker_session or sagemaker.Session(default_bucket=self.config.bucket)
-        instance_type = settings.instance_type or "ml.m5.large"
-        instance_count = settings.instance_count or 1
+        # Get and default fill SageMaker estimator arguments 
+        estimator_args = settings.estimator_args
+        session = estimator_args.sagemaker_session or sagemaker.Session(default_bucket=self.config.bucket)
+        instance_type = estimator_args.instance_type or "ml.m5.large"
+        instance_count = estimator_args.instance_count or 1
 
+        # Create Estimator
         estimator = sagemaker.estimator.Estimator(
             image_name,
             self.config.role,
             environment=environment,
             instance_count=instance_count,
             instance_type=instance_type,
-            keep_alive_period_in_seconds = settings.keep_alive_period_in_seconds,
-            volume_size = settings.volume_size,
-            volume_kms_key = settings.volume_kms_key,
-            max_run = settings.max_run,
-            input_mode = settings.input_mode,
-            output_path = settings.output_path,
-            output_kms_key = settings.output_kms_key,
-            base_job_name = settings.base_job_name,
-            sagemaker_session = session,
-            hyperparameters = settings.hyperparameters,
-            tags = settings.tags,
-            subnets = settings.subnets,
-            security_group_ids = settings.security_group_ids,
-            model_uri = settings.model_uri,
-            model_channel_name = settings.model_channel_name,
-            metric_definitions = settings.metric_definitions,
-            encrypt_inter_container_traffic = settings.encrypt_inter_container_traffic,
-            use_spot_instances = settings.use_spot_instances,
-            max_wait = settings.max_wait,
-            checkpoint_s3_uri = settings.checkpoint_s3_uri,
-            checkpoint_local_path = settings.checkpoint_local_path,
-            enable_network_isolation = settings.enable_network_isolation,
-            rules = settings.rules,
-            debugger_hook_config = settings.debugger_hook_config,
-            tensorboard_output_config = settings.tensorboard_output_config,
-            enable_sagemaker_metrics = settings.enable_sagemaker_metrics,
-            profiler_config = settings.profiler_config,
-            disable_profiler = settings.disable_profiler,
-            environment = settings.environment,
-            max_retry_attempts = settings.max_retry_attempts,
-            source_dir = settings.source_dir,
-            git_config = settings.git_config,
-            container_log_level = settings.container_log_level,
-            code_location = settings.code_location,
-            entry_point = settings.entry_point,
-            dependencies = settings.dependencies,
-            instance_groups = settings.instance_groups,
-            training_repository_access_mode = settings.training_repository_access_mode,
-            training_repository_credentials_provider_arn = settings.training_repository_credentials_provider_arn
+            **estimator_args
         )
 
         # Sagemaker doesn't allow any underscores in job/experiment/trial names
