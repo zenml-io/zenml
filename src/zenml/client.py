@@ -2035,10 +2035,10 @@ class Client(metaclass=ClientMetaClass):
             updated=updated,
             metadata_values=base64.b64encode(
                 json.dumps(parsed_metadata).encode("utf-8")
-            ),
+            ) if metadata else None,
         )
         component_filter_model.set_scope_workspace(self.active_workspace.id)
-
+        breakpoint()
         return self.zen_store.list_stack_components(
             component_filter_model=component_filter_model
         )
