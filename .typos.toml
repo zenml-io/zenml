@@ -1,0 +1,10 @@
+[files]
+extend-exclude = ["*.json", "*.js", "*.ipynb", "src/zenml/zen_stores/migrations/versions/"]
+
+[default.extend-identifiers]
+HashiCorp = "HashiCorp"
+
+[default.extend-words]
+# Don't correct the surname "Teh"
+aks = "aks"
+hashi = "hashi"

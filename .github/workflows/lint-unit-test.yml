@@ -100,8 +100,11 @@ jobs:
         run: |
           bash scripts/lint.sh
 
-      - name: Spell check
-        run: bash scripts/check-spelling.sh
+      - name: Spelling checker
+        uses: crate-ci/typos@master
+        with:
+          files: "."
+          config: ./.typos.toml
         # Only run the spell check on ubuntu-latest and python 3.8
         if: ${{ inputs.os == 'ubuntu-latest' && inputs.python-version == '3.8' }}
 
