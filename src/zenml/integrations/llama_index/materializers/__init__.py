@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Initialization of the Llama Index materializer."""
 
-# from zenml.integrations.llama_index.materializers.llama_index_materializer import (  # noqa
-#     LlamaIndexMaterializer,
-# )
+from zenml.integrations.llama_index.materializers.gpt_index_materializer import (
+    LlamaIndexGPTIndexMaterializer,
+    LlamaIndexGPTFaissIndexMaterializer,
+)
