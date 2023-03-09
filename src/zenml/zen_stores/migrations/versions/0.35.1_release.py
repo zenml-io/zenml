@@ -1,7 +1,7 @@
 """Release [0.35.1].
 
 Revision ID: 0.35.1
-Revises: a2bf3f4cebda
+Revises: 0.35.0
 Create Date: 2023-03-07 15:15:42.057028
 
 """
@@ -9,7 +9,7 @@ Create Date: 2023-03-07 15:15:42.057028
 
 # revision identifiers, used by Alembic.
 revision = "0.35.1"
-down_revision = "a2bf3f4cebda"
+down_revision = "0.35.0"
 branch_labels = None
 depends_on = None
 
