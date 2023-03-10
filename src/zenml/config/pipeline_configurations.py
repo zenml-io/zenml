@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Pipeline configuration classes."""
+import json
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 from uuid import UUID
 
@@ -19,6 +20,7 @@ from pydantic import validator
 
 from zenml.config.constants import DOCKER_SETTINGS_KEY
 from zenml.config.schedule import Schedule
+from zenml.config.source import Source
 from zenml.config.step_configurations import StepConfigurationUpdate, StepSpec
 from zenml.config.strict_base_model import StrictBaseModel
 from zenml.models.pipeline_build_models import PipelineBuildBaseModel
@@ -116,15 +118,12 @@ class PipelineSpec(StrictBaseModel):
         return NotImplemented
 
     @property
-    def unique_id(self) -> str:
-        import json
-
-        # TODO: if we do something like this, we also need to update pipeline
-        # spec equality to only compare the source import paths/don't compare
-        # sources at all
+    def json_with_simple_sources(self) -> str:
         dict_ = self.dict()
 
-        for step_spec in dict_["steps"]:
-            step_spec.pop("source")
+        for step_dict in dict_["steps"]:
+            step_dict["source"] = Source.parse_obj(
+                step_dict["source"]
+            ).import_path
 
-        return json.dumps(dict_, sort_keys=False)
+        return json.dumps(dict_)
