@@ -18,7 +18,6 @@ from typing import Optional, Tuple
 import click
 from rich.progress import track
 
-from zenml.analytics.trackers import track_event_v2
 from zenml.cli.cli import TagGroup, cli
 from zenml.cli.utils import (
     confirmation,
@@ -244,12 +243,9 @@ def install(
 
         for integration_name in integrations_to_install:
             track_event(
-                AnalyticsEvent.INSTALL_INTEGRATION,
-                {"integration_name": integration_name},
-            )
-            track_event_v2(
-                AnalyticsEvent.INSTALL_INTEGRATION,
-                {"integration_name": integration_name},
+                event=AnalyticsEvent.INSTALL_INTEGRATION,
+                metadata={"integration_name": integration_name},
+                v2=True,
             )
 
 

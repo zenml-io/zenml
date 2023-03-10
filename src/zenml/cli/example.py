@@ -25,7 +25,6 @@ from rich.markdown import Markdown
 from rich.text import Text
 
 from zenml import __version__ as zenml_version_installed
-from zenml.analytics.trackers import event_handler_v2
 from zenml.cli.cli import TagGroup, cli
 from zenml.cli.utils import confirmation, declare, error, print_table, warning
 from zenml.console import console
@@ -121,7 +120,7 @@ class LocalExample:
         """Checks if a setup.sh file exists in the example dir.
 
         This indicates the possibility to run the example without any user
-        input. Examples with no setup.sh file need the user to setup
+        input. Examples with no setup.sh file need the user to set up
         infrastructure and/or connect to tools/service providers.
 
         Returns:
@@ -182,23 +181,20 @@ class LocalExample:
         with event_handler(
             event=AnalyticsEvent.RUN_EXAMPLE,
             metadata={"example_name": self.name},
+            v2=True,
         ):
-            with event_handler_v2(
-                event=AnalyticsEvent.RUN_EXAMPLE,
-                metadata={"example_name": self.name},
-            ):
-                call = [sys.executable, self.executable_python_example, *args]
-                try:
-                    subprocess.check_call(
-                        call,
-                        cwd=str(self.path),
-                        shell=click._compat.WIN,
-                        env=os.environ.copy(),
-                    )
-                except Exception as e:
-                    raise RuntimeError(
-                        f"Failed to run example {self.name}."
-                    ) from e
+            call = [sys.executable, self.executable_python_example, *args]
+            try:
+                subprocess.check_call(
+                    call,
+                    cwd=str(self.path),
+                    shell=click._compat.WIN,
+                    env=os.environ.copy(),
+                )
+            except Exception as e:
+                raise RuntimeError(
+                    f"Failed to run example {self.name}."
+                ) from e
 
     def run_example(
         self,
@@ -223,47 +219,43 @@ class LocalExample:
         with event_handler(
             event=AnalyticsEvent.RUN_EXAMPLE,
             metadata={"example_name": self.name},
+            v2=True,
         ):
-            with event_handler_v2(
-                event=AnalyticsEvent.RUN_EXAMPLE,
-                metadata={"example_name": self.name},
-            ):
-
-                if all(map(fileio.exists, example_runner)):
-                    call = (
-                        example_runner
-                        + ["--executable", self.executable_python_example]
-                        + ["-y"] * force
-                        + ["--no-stack-setup"] * prevent_stack_setup
+            if all(map(fileio.exists, example_runner)):
+                call = (
+                    example_runner
+                    + ["--executable", self.executable_python_example]
+                    + ["-y"] * force
+                    + ["--no-stack-setup"] * prevent_stack_setup
+                )
+                try:
+                    # TODO [ENG-271]: Catch errors that might be thrown
+                    #  in subprocess
+                    subprocess.check_call(
+                        call,
+                        cwd=str(self.path),
+                        shell=click._compat.WIN,
+                        env=os.environ.copy(),
                     )
-                    try:
-                        # TODO [ENG-271]: Catch errors that might be thrown
-                        #  in subprocess
-                        subprocess.check_call(
-                            call,
-                            cwd=str(self.path),
-                            shell=click._compat.WIN,
-                            env=os.environ.copy(),
-                        )
-                    except RuntimeError:
+                except RuntimeError:
+                    raise NotImplementedError(
+                        f"Currently the example {self.name} "
+                        "has no implementation for the "
+                        "run method"
+                    )
+                except subprocess.CalledProcessError as e:
+                    if e.returncode == 38:
                         raise NotImplementedError(
                             f"Currently the example {self.name} "
                             "has no implementation for the "
                             "run method"
                         )
-                    except subprocess.CalledProcessError as e:
-                        if e.returncode == 38:
-                            raise NotImplementedError(
-                                f"Currently the example {self.name} "
-                                "has no implementation for the "
-                                "run method"
-                            )
-                        raise
-                else:
-                    raise FileNotFoundError(
-                        "Bash File(s) to run Examples not found at"
-                        f"{example_runner}"
-                    )
+                    raise
+            else:
+                raise FileNotFoundError(
+                    "Bash File(s) to run Examples not found at"
+                    f"{example_runner}"
+                )
 
 
 class Example:

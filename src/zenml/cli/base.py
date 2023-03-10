@@ -22,7 +22,6 @@ from typing import Optional, Tuple
 import click
 
 from zenml import __version__ as zenml_version
-from zenml.analytics.trackers import event_handler_v2
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import cli
 from zenml.cli.server import down
@@ -135,40 +134,39 @@ def init(
         }
 
         with event_handler(
-            event=AnalyticsEvent.GENERATE_TEMPLATE, metadata=metadata
+            event=AnalyticsEvent.GENERATE_TEMPLATE,
+            metadata=metadata,
+            v2=True,
         ):
-            with event_handler_v2(
-                event=AnalyticsEvent.GENERATE_TEMPLATE, metadata=metadata
-            ):
-                console.print(zenml_cli_privacy_message, width=80)
+            console.print(zenml_cli_privacy_message, width=80)
 
-                if not starter:
+            if not starter:
 
-                    from rich.markdown import Markdown
+                from rich.markdown import Markdown
 
-                    prompt_message = Markdown(
-                        """
-    ## 🧑‍🏫 Project template parameters
-    """
-                    )
+                prompt_message = Markdown(
+                    """
+## 🧑‍🏫 Project template parameters
+"""
+                )
 
-                    console.print(prompt_message, width=80)
+                console.print(prompt_message, width=80)
 
-                with Worker(
-                    src_path="gh:zenml-io/zenml-project-templates",
-                    dst_path=path,
-                    data=dict(
-                        template=ZenMLTemplate.STARTER.value,
-                        email=email,
-                    ),
-                    defaults=starter,
-                    user_defaults=dict(
-                        template=ZenMLTemplate.STARTER.value,
-                        email=email,
-                    ),
-                    overwrite=starter,
-                ) as worker:
-                    worker.run_copy()
+            with Worker(
+                src_path="gh:zenml-io/zenml-project-templates",
+                dst_path=path,
+                data=dict(
+                    template=ZenMLTemplate.STARTER.value,
+                    email=email,
+                ),
+                defaults=starter,
+                user_defaults=dict(
+                    template=ZenMLTemplate.STARTER.value,
+                    email=email,
+                ),
+                overwrite=starter,
+            ) as worker:
+                worker.run_copy()
 
     with console.status(f"Initializing ZenML repository at {path}.\n"):
         try:
@@ -332,61 +330,62 @@ def go() -> None:
         gave_email = _prompt_email(AnalyticsEventSource.ZENML_GO)
         metadata = {"gave_email": gave_email}
 
-    with event_handler(event=AnalyticsEvent.RUN_ZENML_GO, metadata=metadata):
-        with event_handler_v2(
-            event=AnalyticsEvent.RUN_ZENML_GO, metadata=metadata
-        ):
-            console.print(zenml_cli_privacy_message, width=80)
+    with event_handler(
+        event=AnalyticsEvent.RUN_ZENML_GO,
+        metadata=metadata,
+        v2=True
+    ):
+        console.print(zenml_cli_privacy_message, width=80)
 
-            zenml_tutorial_path = os.path.join(os.getcwd(), "zenml_tutorial")
+        zenml_tutorial_path = os.path.join(os.getcwd(), "zenml_tutorial")
 
-            if not os.path.isdir(zenml_tutorial_path):
-                try:
-                    from git.repo.base import Repo
-                except ImportError as e:
-                    logger.error(
-                        "At this point we would want to clone our tutorial repo "
-                        "onto your machine to let you dive right into our code. "
-                        "However, this machine has no installation of Git. Feel "
-                        "free to install git and rerun this command. Alternatively "
-                        "you can also download the repo manually here: "
-                        f"{TUTORIAL_REPO}. The tutorial is in the "
-                        f"'examples/quickstart/notebooks' directory."
-                    )
-                    raise GitNotFoundError(e)
-
-                with tempfile.TemporaryDirectory() as tmpdirname:
-                    tmp_cloned_dir = os.path.join(tmpdirname, "zenml_repo")
-                    with console.status(
-                        "Cloning tutorial. This sometimes takes a minute..."
-                    ):
-                        Repo.clone_from(
-                            TUTORIAL_REPO,
-                            tmp_cloned_dir,
-                            branch=f"release/{zenml_version}",
-                        )
-                    example_dir = os.path.join(
-                        tmp_cloned_dir, "examples/quickstart"
-                    )
-                    copy_dir(example_dir, zenml_tutorial_path)
-            else:
-                logger.warning(
-                    f"{zenml_tutorial_path} already exists! Continuing without "
-                    "cloning."
+        if not os.path.isdir(zenml_tutorial_path):
+            try:
+                from git.repo.base import Repo
+            except ImportError as e:
+                logger.error(
+                    "At this point we would want to clone our tutorial repo "
+                    "onto your machine to let you dive right into our code. "
+                    "However, this machine has no installation of Git. Feel "
+                    "free to install git and rerun this command. Alternatively "
+                    "you can also download the repo manually here: "
+                    f"{TUTORIAL_REPO}. The tutorial is in the "
+                    f"'examples/quickstart/notebooks' directory."
                 )
+                raise GitNotFoundError(e)
 
-            # get list of all .ipynb files in zenml_tutorial_path
-            ipynb_files = []
-            for dirpath, _, filenames in os.walk(zenml_tutorial_path):
-                for filename in filenames:
-                    if filename.endswith(".ipynb"):
-                        ipynb_files.append(os.path.join(dirpath, filename))
-
-            ipynb_files.sort()
-            console.print(
-                zenml_go_notebook_tutorial_message(ipynb_files), width=80
+            with tempfile.TemporaryDirectory() as tmpdirname:
+                tmp_cloned_dir = os.path.join(tmpdirname, "zenml_repo")
+                with console.status(
+                    "Cloning tutorial. This sometimes takes a minute..."
+                ):
+                    Repo.clone_from(
+                        TUTORIAL_REPO,
+                        tmp_cloned_dir,
+                        branch=f"release/{zenml_version}",
+                    )
+                example_dir = os.path.join(
+                    tmp_cloned_dir, "examples/quickstart"
+                )
+                copy_dir(example_dir, zenml_tutorial_path)
+        else:
+            logger.warning(
+                f"{zenml_tutorial_path} already exists! Continuing without "
+                "cloning."
             )
-            input("Press ENTER to continue...")
+
+        # get list of all .ipynb files in zenml_tutorial_path
+        ipynb_files = []
+        for dirpath, _, filenames in os.walk(zenml_tutorial_path):
+            for filename in filenames:
+                if filename.endswith(".ipynb"):
+                    ipynb_files.append(os.path.join(dirpath, filename))
+
+        ipynb_files.sort()
+        console.print(
+            zenml_go_notebook_tutorial_message(ipynb_files), width=80
+        )
+        input("Press ENTER to continue...")
         notebook_path = os.path.join(zenml_tutorial_path, "notebooks")
         subprocess.check_call(["jupyter", "notebook"], cwd=notebook_path)
 

@@ -22,7 +22,6 @@ import click
 import yaml
 from rich.errors import MarkupError
 
-from zenml.analytics.trackers import event_handler_v2
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import cli
 from zenml.client import Client
@@ -405,125 +404,122 @@ def deploy(
         gcp_project_id: The project in GCP to deploy the server to.
     """
     with event_handler(
-        AnalyticsEvent.ZENML_SERVER_DEPLOYED
+        event=AnalyticsEvent.ZENML_SERVER_DEPLOYED,
+        v2=True,
     ) as analytics_handler:
-        with event_handler_v2(
-            AnalyticsEvent.ZENML_SERVER_DEPLOYED
-        ) as analytics_handler_v2:
 
-            config_dict: Dict[str, Any] = {}
+        config_dict: Dict[str, Any] = {}
 
-            if config:
-                if os.path.isfile(config):
-                    config_dict = yaml_utils.read_yaml(config)
-                else:
-                    config_dict = yaml.safe_load(config)
-                if not isinstance(config_dict, dict):
-                    cli_utils.error(
-                        "The configuration argument must be JSON/YAML content or "
-                        "point to a valid configuration file."
+        if config:
+            if os.path.isfile(config):
+                config_dict = yaml_utils.read_yaml(config)
+            else:
+                config_dict = yaml.safe_load(config)
+            if not isinstance(config_dict, dict):
+                cli_utils.error(
+                    "The configuration argument must be JSON/YAML content or "
+                    "point to a valid configuration file."
+                )
+
+            name = config_dict.get("name", name)
+            provider = config_dict.get("provider", provider)
+            username = config_dict.get("username", username)
+            password = config_dict.get("password", password)
+
+        if not name:
+            name = click.prompt(
+                "ZenML server name (used as a prefix for the names of deployed "
+                "resources)",
+                default="zenml",
+            )
+        config_dict["name"] = name
+
+        if not provider:
+            provider = click.prompt(
+                "ZenML server provider",
+                type=click.Choice(
+                    [
+                        ServerProviderType.AWS.value,
+                        ServerProviderType.GCP.value,
+                        ServerProviderType.AZURE.value,
+                    ],
+                    case_sensitive=True,
+                ),
+                default=ServerProviderType.AWS.value,
+            )
+        config_dict["provider"] = provider
+
+        if provider == ServerProviderType.GCP.value:
+            if "project_id" not in config_dict:
+                if not gcp_project_id:
+                    gcp_project_id = click.prompt(
+                        "GCP project ID",
                     )
+                config_dict["project_id"] = gcp_project_id
 
-                name = config_dict.get("name", name)
-                provider = config_dict.get("provider", provider)
-                username = config_dict.get("username", username)
-                password = config_dict.get("password", password)
+        if not username:
+            username = click.prompt(
+                "ZenML admin account username", default="default"
+            )
+        config_dict["username"] = username
 
-            if not name:
-                name = click.prompt(
-                    "ZenML server name (used as a prefix for the names of deployed "
-                    "resources)",
-                    default="zenml",
+        password = password or config_dict.get("password", None)
+        if not password:
+            password = click.prompt(
+                "ZenML admin account password", hide_input=True
+            )
+        config_dict["password"] = password
+
+        from zenml.zen_server.deploy.deployment import (
+            ServerDeploymentConfig,
+        )
+
+        server_config = ServerDeploymentConfig.parse_obj(config_dict)
+
+        from zenml.zen_server.deploy.deployer import ServerDeployer
+
+        deployer = ServerDeployer()
+
+        server = get_active_deployment(local=False)
+        if server:
+            if server.config.provider != provider:
+                cli_utils.error(
+                    "ZenML is already deployed using a different provider "
+                    f"({server.config.provider}). Please tear down the "
+                    "existing deployment by running `zenml destroy` before "
+                    "deploying a new one."
                 )
-            config_dict["name"] = name
 
-            if not provider:
-                provider = click.prompt(
-                    "ZenML server provider",
-                    type=click.Choice(
-                        [
-                            ServerProviderType.AWS.value,
-                            ServerProviderType.GCP.value,
-                            ServerProviderType.AZURE.value,
-                        ],
-                        case_sensitive=True,
-                    ),
-                    default=ServerProviderType.AWS.value,
+            if server.config.name != name:
+                cli_utils.error(
+                    f"An existing deployment with a different name "
+                    f"'{server.config.name}' already exists. Please tear down "
+                    f"the existing deployment by running `zenml destroy` "
+                    f"before deploying a new one."
                 )
-            config_dict["provider"] = provider
 
-            if provider == ServerProviderType.GCP.value:
-                if "project_id" not in config_dict:
-                    if not gcp_project_id:
-                        gcp_project_id = click.prompt(
-                            "GCP project ID",
-                        )
-                    config_dict["project_id"] = gcp_project_id
+        server = deployer.deploy_server(server_config, timeout=timeout)
 
-            if not username:
-                username = click.prompt(
-                    "ZenML admin account username", default="default"
-                )
-            config_dict["username"] = username
+        metadata = {
+            "server_deployment": str(server.config.provider),
+        }
 
-            password = password or config_dict.get("password", None)
-            if not password:
-                password = click.prompt(
-                    "ZenML admin account password", hide_input=True
-                )
-            config_dict["password"] = password
+        analytics_handler.metadata = metadata
 
-            from zenml.zen_server.deploy.deployment import (
-                ServerDeploymentConfig,
+        if server.status and server.status.url:
+            cli_utils.declare(
+                f"ZenML server '{name}' running at '{server.status.url}'."
             )
 
-            server_config = ServerDeploymentConfig.parse_obj(config_dict)
-
-            from zenml.zen_server.deploy.deployer import ServerDeployer
-
-            deployer = ServerDeployer()
-
-            server = get_active_deployment(local=False)
-            if server:
-                if server.config.provider != provider:
-                    cli_utils.error(
-                        "ZenML is already deployed using a different provider "
-                        f"({server.config.provider}). Please tear down the "
-                        "existing deployment by running `zenml destroy` before "
-                        "deploying a new one."
-                    )
-
-                if server.config.name != name:
-                    cli_utils.error(
-                        f"An existing deployment with a different name "
-                        f"'{server.config.name}' already exists. Please tear down "
-                        f"the existing deployment by running `zenml destroy` "
-                        f"before deploying a new one."
-                    )
-
-            server = deployer.deploy_server(server_config, timeout=timeout)
-
-            metadata = {
-                "server_deployment": str(server.config.provider),
-            }
-
-            analytics_handler.metadata = metadata
-            analytics_handler_v2.metadata = metadata
-
-            if server.status and server.status.url:
-                cli_utils.declare(
-                    f"ZenML server '{name}' running at '{server.status.url}'."
+            if connect and username:
+                deployer.connect_to_server(
+                    server_config.name,
+                    username,
+                    password or "",
+                    verify_ssl=server.status.ca_crt
+                    if server.status.ca_crt is not None
+                    else False,
                 )
-
-                if connect and username:
-                    deployer.connect_to_server(
-                        server_config.name,
-                        username,
-                        password or "",
-                        verify_ssl=server.status.ca_crt
-                        if server.status.ca_crt is not None
-                        else False,
-                    )
 
 
 @cli.command(

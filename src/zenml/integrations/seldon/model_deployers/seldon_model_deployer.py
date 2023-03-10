@@ -18,7 +18,6 @@ from datetime import datetime
 from typing import TYPE_CHECKING, ClassVar, Dict, List, Optional, Type, cast
 from uuid import UUID
 
-from zenml.analytics.trackers import event_handler_v2
 from zenml.client import Client
 from zenml.config.build_configuration import BuildConfiguration
 from zenml.enums import StackComponentType
@@ -293,78 +292,73 @@ class SeldonModelDeployer(BaseModelDeployer):
                 to start, or if an operational failure is encountered before
                 it reaches a ready state.
         """
-        with event_handler(AnalyticsEvent.MODEL_DEPLOYED) as analytics_handler:
-            with event_handler_v2(
-                AnalyticsEvent.MODEL_DEPLOYED
-            ) as analytics_handler_v2:
-                config = cast(SeldonDeploymentConfig, config)
-                service = None
+        with event_handler(
+            event=AnalyticsEvent.MODEL_DEPLOYED,
+            v2=True
+        ) as analytics_handler:
+            config = cast(SeldonDeploymentConfig, config)
+            service = None
 
-                # if a custom Kubernetes secret is not explicitly specified in the
-                # SeldonDeploymentConfig, try to create one from the ZenML secret
-                # configured for the model deployer
-                config.secret_name = (
-                    config.secret_name
-                    or self._create_or_update_kubernetes_secret()
+            # if a custom Kubernetes secret is not explicitly specified in the
+            # SeldonDeploymentConfig, try to create one from the ZenML secret
+            # configured for the model deployer
+            config.secret_name = (
+                config.secret_name
+                or self._create_or_update_kubernetes_secret()
+            )
+
+            # if replace is True, find equivalent Seldon Core deployments
+            if replace is True:
+                equivalent_services = self.find_model_server(
+                    running=False,
+                    pipeline_name=config.pipeline_name,
+                    pipeline_step_name=config.pipeline_step_name,
+                    model_name=config.model_name,
                 )
 
-                # if replace is True, find equivalent Seldon Core deployments
-                if replace is True:
-                    equivalent_services = self.find_model_server(
-                        running=False,
-                        pipeline_name=config.pipeline_name,
-                        pipeline_step_name=config.pipeline_step_name,
-                        model_name=config.model_name,
-                    )
+                for equivalent_service in equivalent_services:
+                    if service is None:
+                        # keep the most recently created service
+                        service = equivalent_service
+                    else:
+                        try:
+                            # delete the older services and don't wait for
+                            # them to be deprovisioned
+                            service.stop()
+                        except RuntimeError:
+                            # ignore errors encountered while stopping old
+                            # services
+                            pass
 
-                    for equivalent_service in equivalent_services:
-                        if service is None:
-                            # keep the most recently created service
-                            service = equivalent_service
-                        else:
-                            try:
-                                # delete the older services and don't wait for
-                                # them to be deprovisioned
-                                service.stop()
-                            except RuntimeError:
-                                # ignore errors encountered while stopping old
-                                # services
-                                pass
+            if service:
+                # update an equivalent service in place
+                service.update(config)
+                logger.info(
+                    f"Updating an existing Seldon deployment service: {service}"
+                )
+            else:
+                # create a new service
+                service = SeldonDeploymentService(config=config)
+                logger.info(
+                    f"Creating a new Seldon deployment service: {service}"
+                )
 
-                if service:
-                    # update an equivalent service in place
-                    service.update(config)
-                    logger.info(
-                        f"Updating an existing Seldon deployment service: {service}"
-                    )
-                else:
-                    # create a new service
-                    service = SeldonDeploymentService(config=config)
-                    logger.info(
-                        f"Creating a new Seldon deployment service: {service}"
-                    )
+            # start the service which in turn provisions the Seldon Core
+            # deployment server and waits for it to reach a ready state
+            service.start(timeout=timeout)
 
-                # start the service which in turn provisions the Seldon Core
-                # deployment server and waits for it to reach a ready state
-                service.start(timeout=timeout)
-
-                # Add telemetry with metadata that gets the stack metadata and
-                # differentiates between pure model and custom code deployments
-                stack = Client().active_stack
-                stack_metadata = {
-                    component_type.value: component.flavor
-                    for component_type, component in stack.components.items()
-                }
-                analytics_handler.metadata = {
-                    "store_type": Client().zen_store.type.value,
-                    **stack_metadata,
-                    "is_custom_code_deployment": config.is_custom_deployment,
-                }
-                analytics_handler_v2.metadata = {
-                    "store_type": Client().zen_store.type.value,
-                    **stack_metadata,
-                    "is_custom_code_deployment": config.is_custom_deployment,
-                }
+            # Add telemetry with metadata that gets the stack metadata and
+            # differentiates between pure model and custom code deployments
+            stack = Client().active_stack
+            stack_metadata = {
+                component_type.value: component.flavor
+                for component_type, component in stack.components.items()
+            }
+            analytics_handler.metadata = {
+                "store_type": Client().zen_store.type.value,
+                **stack_metadata,
+                "is_custom_code_deployment": config.is_custom_deployment,
+            }
 
             return service
 

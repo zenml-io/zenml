@@ -26,7 +26,6 @@ from pydantic import BaseModel, Field, SecretStr, ValidationError, validator
 from pydantic.main import ModelMetaclass
 
 from zenml import __version__
-from zenml.analytics.trackers import event_handler_v2, track_event_v2
 from zenml.config.secrets_store_config import SecretsStoreConfiguration
 from zenml.config.store_config import StoreConfiguration
 from zenml.constants import (
@@ -663,25 +662,22 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
                 with event_handler(
                     event=AnalyticsEvent.ZENML_SERVER_CONNECTED
                 ):
-                    with event_handler_v2(
-                        event=AnalyticsEvent.ZENML_SERVER_CONNECTED
-                    ):
+                    server_info = self.zen_store.get_store_info()
 
-                        server_info = self.zen_store.get_store_info()
-
-                        identify_group(
-                            AnalyticsGroup.ZENML_SERVER_GROUP,
-                            group_id=str(server_info.id),
-                            group_metadata={
-                                "version": server_info.version,
-                                "deployment_type": str(
-                                    server_info.deployment_type
-                                ),
-                                "database_type": str(
-                                    server_info.database_type
-                                ),
-                            },
-                        )
+                    identify_group(
+                        AnalyticsGroup.ZENML_SERVER_GROUP,
+                        group_id=server_info.id,
+                        group_metadata={
+                            "version": server_info.version,
+                            "deployment_type": str(
+                                server_info.deployment_type
+                            ),
+                            "database_type": str(
+                                server_info.database_type
+                            ),
+                        },
+                        v2=True,
+                    )
 
     @property
     def zen_store(self) -> "BaseZenStore":
@@ -789,10 +785,8 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         # been changed, we also want to update the information.
         if opted_in and email and self.user_email != email:
             identify_user(
-                {
-                    "email": email,
-                    "source": source,
-                }
+                user_metadata={"email": email, "source": source},
+                v2=True,
             )
             self.user_email = email
 
@@ -808,10 +802,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
             track_event(
                 AnalyticsEvent.OPT_IN_OUT_EMAIL,
                 {"opted_in": opted_in, "source": source},
-            )
-            track_event_v2(
-                AnalyticsEvent.OPT_IN_OUT_EMAIL,
-                {"opted_in": opted_in, "source": source},
+                v2=True,
             )
 
             self.user_email_opt_in = opted_in

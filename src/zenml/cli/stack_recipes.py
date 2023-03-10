@@ -24,7 +24,6 @@ import click
 from rich.text import Text
 
 import zenml
-from zenml.analytics.trackers import event_handler_v2
 from zenml.cli import server
 from zenml.cli import utils as cli_utils
 from zenml.cli.stack import import_stack, stack
@@ -802,8 +801,8 @@ def deploy(
         import_stack_flag: Import the stack automatically after the recipe is
             deployed. The stack configuration file is always generated and
             can be imported manually otherwise.
-        log_level: Choose one of TRACE, DEBUG, INFO, WARN or ERROR (case
-            insensitive) as log level for the `deploy` operation.
+        log_level: Choose one of TRACE, DEBUG, INFO, WARN or ERROR
+            (case-insensitive) as log level for the `deploy` operation.
         skip_check: Skip the checking of locals.tf file before executing the
             recipe.
         no_server: Don't deploy ZenML even if there's no active cloud
@@ -816,251 +815,247 @@ def deploy(
     with event_handler(
         event=AnalyticsEvent.RUN_STACK_RECIPE,
         metadata={"stack_recipe_name": stack_recipe_name},
+        v2=True,
     ):
-        with event_handler_v2(
-            event=AnalyticsEvent.RUN_STACK_RECIPE,
-            metadata={"stack_recipe_name": stack_recipe_name},
-        ):
+        import python_terraform
 
-            import python_terraform
+        cli_utils.warning(ALPHA_MESSAGE)
+        stack_recipes_dir = Path(os.getcwd()) / path
 
-            cli_utils.warning(ALPHA_MESSAGE)
-            stack_recipes_dir = Path(os.getcwd()) / path
+        if sys.platform == "win32":
+            logger.info(
+                "If you are running stack_recipes on Windows, make sure that "
+                "you have an associated application with executing .sh files. "
+                "If you don't have any and you see a pop-up during 'zenml "
+                "stack_recipe run', we suggest to use the Git BASH: "
+                "https://gitforwindows.org/"
+            )
 
-            if sys.platform == "win32":
-                logger.info(
-                    "If you are running stack_recipes on Windows, make sure that "
-                    "you have an associated application with executing .sh files. "
-                    "If you don't have any and you see a pop-up during 'zenml "
-                    "stack_recipe run', we suggest to use the Git BASH: "
-                    "https://gitforwindows.org/"
-                )
+        try:
+            if skip_pull:
+                pass
+            else:
+                _ = git_stack_recipes_handler.get_stack_recipes(
+                    stack_recipe_name
+                )[0]
+        except KeyError as e:
+            cli_utils.error(str(e))
+        else:
+            stack_recipe_dir = stack_recipes_dir / stack_recipe_name
+            local_stack_recipe = LocalStackRecipe(
+                stack_recipe_dir, stack_recipe_name
+            )
+
+            if not local_stack_recipe.is_present():
+                if skip_pull:
+                    cli_utils.error(
+                        "You have specified the --skip-pull flag, but the "
+                        "stack recipe is not present locally at the specified "
+                        f"path. Please ensure the {stack_recipe_name} recipe is "
+                        f"present at {stack_recipe_dir} and try again."
+                    )
+                else:
+                    ctx.invoke(
+                        pull,
+                        stack_recipe_name=stack_recipe_name,
+                        path=path,
+                        force=force,
+                    )
 
             try:
-                if skip_pull:
-                    pass
-                else:
-                    _ = git_stack_recipes_handler.get_stack_recipes(
-                        stack_recipe_name
-                    )[0]
-            except KeyError as e:
-                cli_utils.error(str(e))
-            else:
-                stack_recipe_dir = stack_recipes_dir / stack_recipe_name
-                local_stack_recipe = LocalStackRecipe(
-                    stack_recipe_dir, stack_recipe_name
+                # warn that prerequisites should be met
+                metadata = yaml_utils.read_yaml(
+                    file_path=os.path.join(
+                        local_stack_recipe.path, "metadata.yaml"
+                    )
                 )
+                if not cli_utils.confirmation(
+                    "\nPrerequisites for running this recipe are as follows.\n"
+                    f"{metadata['Prerequisites']}"
+                    "\n\n Are all of these conditions met?"
+                ):
+                    cli_utils.warning(
+                        "Prerequisites are not installed. Please make sure "
+                        "they are met and run deploy again."
+                    )
+                    return
 
-                if not local_stack_recipe.is_present():
-                    if skip_pull:
-                        cli_utils.error(
-                            "You have specified the --skip-pull flag, but the "
-                            "stack recipe is not present locally at the specified "
-                            f"path. Please ensure the {stack_recipe_name} recipe is "
-                            f"present at {stack_recipe_dir} and try again."
+                if not skip_check:
+                    logger.info(
+                        "The following values are selected for the "
+                        "configuration of your cloud resources. You can "
+                        "change it by modifying the contents of the locals.tf "
+                        "file here: "
+                        f"{os.path.join(local_stack_recipe.path, 'locals.tf')}\n"
+                    )
+
+                    print(local_stack_recipe.locals_content)
+
+                if skip_check or cli_utils.confirmation(
+                    f"\nDo you wish to deploy the {stack_recipe_name} recipe "
+                    "with the above configuration? Please make sure that "
+                    "resources with the same values as above don't already "
+                    "exist on your cloud account."
+                ):
+                    from zenml.recipes import StackRecipeService
+                    from zenml.services.terraform.terraform_service import (
+                        TerraformServiceConfig,
+                    )
+
+                    terraform_config = TerraformServiceConfig(
+                        root_runtime_path=str(
+                            StackRecipeService.STACK_RECIPES_CONFIG_PATH
+                        ),
+                        directory_path=str(local_stack_recipe.path),
+                        log_level=log_level,
+                        variables_file_path=VARIABLES_FILE,
+                    )
+                    # find an existing service with the same terraform path
+                    # create a new one if not found
+                    stack_recipe_service = StackRecipeService.get_service(
+                        str(local_stack_recipe.path)
+                    )
+                    if stack_recipe_service:
+                        cli_utils.declare(
+                            "An existing deployment of the recipe found. "
+                            f"with path {local_stack_recipe.path}. "
+                            "Proceeding to update or create resources. "
                         )
                     else:
-                        ctx.invoke(
-                            pull,
-                            stack_recipe_name=stack_recipe_name,
-                            path=path,
-                            force=force,
+                        stack_recipe_service = StackRecipeService(
+                            config=terraform_config,
+                            enabled_services=enabled_services,
                         )
 
-                try:
-                    # warn that prerequisites should be met
-                    metadata = yaml_utils.read_yaml(
-                        file_path=os.path.join(
-                            local_stack_recipe.path, "metadata.yaml"
-                        )
-                    )
-                    if not cli_utils.confirmation(
-                        "\nPrerequisites for running this recipe are as follows.\n"
-                        f"{metadata['Prerequisites']}"
-                        "\n\n Are all of these conditions met?"
-                    ):
-                        cli_utils.warning(
-                            "Prerequisites are not installed. Please make sure "
-                            "they are met and run deploy again."
-                        )
-                        return
+                    # start the service (the init and apply operation)
+                    stack_recipe_service.start()
 
-                    if not skip_check:
+                    # invoke server deploy
+                    if no_server:
                         logger.info(
-                            "The following values are selected for the "
-                            "configuration of your cloud resources. You can "
-                            "change it by modifying the contents of the locals.tf "
-                            "file here: "
-                            f"{os.path.join(local_stack_recipe.path, 'locals.tf')}\n"
+                            "The --no-server flag was passed. "
+                            "Skipping the remote deployment of ZenML. "
+                            "Please note that if you wish to use the stack "
+                            "that you created through this recipe, you will "
+                            "need to deploy ZenML on the cloud."
                         )
-
-                        print(local_stack_recipe.locals_content)
-
-                    if skip_check or cli_utils.confirmation(
-                        f"\nDo you wish to deploy the {stack_recipe_name} recipe "
-                        "with the above configuration? Please make sure that "
-                        "resources with the same values as above don't already "
-                        "exist on your cloud account."
-                    ):
-                        from zenml.recipes import StackRecipeService
-                        from zenml.services.terraform.terraform_service import (
-                            TerraformServiceConfig,
-                        )
-
-                        terraform_config = TerraformServiceConfig(
-                            root_runtime_path=str(
-                                StackRecipeService.STACK_RECIPES_CONFIG_PATH
-                            ),
-                            directory_path=str(local_stack_recipe.path),
-                            log_level=log_level,
-                            variables_file_path=VARIABLES_FILE,
-                        )
-                        # find an existing service with the same terraform path
-                        # create a new one if not found
-                        stack_recipe_service = StackRecipeService.get_service(
-                            str(local_stack_recipe.path)
-                        )
-                        if stack_recipe_service:
-                            cli_utils.declare(
-                                "An existing deployment of the recipe found. "
-                                f"with path {local_stack_recipe.path}. "
-                                "Proceeding to update or create resources. "
-                            )
-                        else:
-                            stack_recipe_service = StackRecipeService(
-                                config=terraform_config,
-                                enabled_services=enabled_services,
-                            )
-
-                        # start the service (the init and apply operation)
-                        stack_recipe_service.start()
-
-                        # invoke server deploy
-                        if no_server:
+                    else:
+                        if zen_server_exists():
                             logger.info(
-                                "The --no-server flag was passed. "
-                                "Skipping the remote deployment of ZenML. "
-                                "Please note that if you wish to use the stack "
-                                "that you created through this recipe, you will "
-                                "need to deploy ZenML on the cloud."
+                                "A ZenML deployment exists already with URL: "
+                                f"{GlobalConfiguration().zen_store.url}. "
+                                f"The recipe will mot create a new "
+                                f"installation."
                             )
                         else:
-                            if zen_server_exists():
-                                logger.info(
-                                    "A ZenML deployment exists already with URL: "
-                                    f"{GlobalConfiguration().zen_store.url}. "
-                                    f"The recipe will mot create a new "
-                                    f"installation."
+                            logger.info(
+                                "No remote deployment of ZenML detected. "
+                            )
+                            vars = stack_recipe_service.get_vars()
+                            filter = [
+                                "aws-stores-minimal",
+                                "azureml-minimal",
+                                "vertex-ai",
+                            ]
+                            if Path(
+                                stack_recipe_service.terraform_client.working_dir
+                            ).name in filter and (
+                                "enable_mlflow" not in vars
+                                or vars["enable_mlflow"] is False
+                            ):
+                                logger.warning(
+                                    "This recipe doesn't create a Kubernetes "
+                                    "cluster and as of now, an existing "
+                                    "cluster is required for ZenML deployment. "
+                                    "Please take a look at the "
+                                    "guide for steps on how to proceed: "
+                                    "https://docs.zenml.io/getting-started/deploying-zenml/cli#option-1-starting-from-scratch"
                                 )
+                                logger.info(
+                                    "Not attempting to import the generated "
+                                    "YAML file since there isn't any active "
+                                    "ZenML deployment."
+                                )
+                                return
                             else:
-                                logger.info(
-                                    "No remote deployment of ZenML detected. "
+                                ctx.invoke(
+                                    server.deploy,
+                                    config=stack_recipe_service.get_deployment_info(),
+                                    connect=True,
                                 )
-                                vars = stack_recipe_service.get_vars()
-                                filter = [
-                                    "aws-stores-minimal",
-                                    "azureml-minimal",
-                                    "vertex-ai",
-                                ]
-                                if Path(
-                                    stack_recipe_service.terraform_client.working_dir
-                                ).name in filter and (
-                                    "enable_mlflow" not in vars
-                                    or vars["enable_mlflow"] is False
-                                ):
-                                    logger.warning(
-                                        "This recipe doesn't create a Kubernetes "
-                                        "cluster and as of now, an existing "
-                                        "cluster is required for ZenML deployment. "
-                                        "Please take a look at the "
-                                        "guide for steps on how to proceed: "
-                                        "https://docs.zenml.io/getting-started/deploying-zenml/cli#option-1-starting-from-scratch"
-                                    )
-                                    logger.info(
-                                        "Not attempting to import the generated "
-                                        "YAML file since there isn't any active "
-                                        "ZenML deployment."
-                                    )
-                                    return
-                                else:
-                                    ctx.invoke(
-                                        server.deploy,
-                                        config=stack_recipe_service.get_deployment_info(),
-                                        connect=True,
-                                    )
 
-                        # get the stack yaml path
-                        stack_yaml_file = os.path.join(
-                            local_stack_recipe.path,
-                            stack_recipe_service.stack_file_path[2:],
-                        )
+                    # get the stack yaml path
+                    stack_yaml_file = os.path.join(
+                        local_stack_recipe.path,
+                        stack_recipe_service.stack_file_path[2:],
+                    )
 
+                    logger.info(
+                        "\nA stack configuration YAML file has been generated "
+                        f"as part of the deployment of the {stack_recipe_name} "
+                        f"recipe. Find it at {stack_yaml_file}."
+                    )
+
+                    if import_stack_flag:
                         logger.info(
-                            "\nA stack configuration YAML file has been generated "
-                            f"as part of the deployment of the {stack_recipe_name} "
-                            f"recipe. Find it at {stack_yaml_file}."
+                            "\nThe flag `--import` is set. Proceeding "
+                            "to import a new ZenML stack from the created "
+                            "resources."
+                        )
+                        import_stack_name = (
+                            stack_name if stack_name else stack_recipe_name
+                        )
+                        cli_utils.declare(
+                            "Importing a new stack with the name "
+                            f"{import_stack_name}."
                         )
 
-                        if import_stack_flag:
-                            logger.info(
-                                "\nThe flag `--import` is set. Proceeding "
-                                "to import a new ZenML stack from the created "
-                                "resources."
-                            )
-                            import_stack_name = (
-                                stack_name if stack_name else stack_recipe_name
-                            )
-                            cli_utils.declare(
-                                "Importing a new stack with the name "
-                                f"{import_stack_name}."
-                            )
+                        # import deployed resources as ZenML stack
+                        ctx.invoke(
+                            import_stack,
+                            stack_name=import_stack_name,
+                            filename=stack_yaml_file,
+                            ignore_version_mismatch=True,
+                        )
 
-                            # import deployed resources as ZenML stack
-                            ctx.invoke(
-                                import_stack,
-                                stack_name=import_stack_name,
-                                filename=stack_yaml_file,
-                                ignore_version_mismatch=True,
-                            )
+                        cli_utils.declare(
+                            "Please consider creating any secrets that your "
+                            "stack components like the metadata store might "
+                            "need. You can inspect the fields of a stack "
+                            "component by running a describe command on them."
+                        )
+                        cli_utils.declare(
+                            "\n Run 'terraform output' in the recipe's "
+                            f"directory at {local_stack_recipe.path} to get a "
+                            f"list of outputs. To now retrieve sensitive "
+                            f"outputs, for example, the metadata-db-password "
+                            "use the command 'terraform output "
+                            "metadata-db-password' to get the "
+                            "value in the command-line."
+                        )
 
-                            cli_utils.declare(
-                                "Please consider creating any secrets that your "
-                                "stack components like the metadata store might "
-                                "need. You can inspect the fields of a stack "
-                                "component by running a describe command on them."
-                            )
-                            cli_utils.declare(
-                                "\n Run 'terraform output' in the recipe's "
-                                f"directory at {local_stack_recipe.path} to get a "
-                                f"list of outputs. To now retrieve sensitive "
-                                f"outputs, for example, the metadata-db-password "
-                                "use the command 'terraform output "
-                                "metadata-db-password' to get the "
-                                "value in the command-line."
-                            )
-
-                except RuntimeError as e:
-                    cli_utils.error(
-                        f"Error running recipe {stack_recipe_name}: {str(e)} "
-                        "\nPlease look at the error message to figure out "
-                        "why the command failed. If the error is due some wrong "
-                        "configuration, please consider checking the locals.tf "
-                        "file to verify if the inputs are correct. Most commonly, "
-                        "the command can fail due to a timeout error. In that "
-                        "case, please run zenml stack recipe deploy "
-                        f"{stack_recipe_name} again."
-                    )
-                except python_terraform.TerraformCommandError as e:
-                    cli_utils.error(
-                        f"Error running recipe {stack_recipe_name}: {str(e.err)} "
-                        "\nPlease look at the error message to figure out why the "
-                        "command failed. If the error is due some wrong "
-                        "configuration, please consider checking the locals.tf "
-                        "file to verify if the inputs are correct. Most commonly, "
-                        "the command can fail due to a timeout error. In that "
-                        "case, please run zenml stack recipe deploy "
-                        f"{stack_recipe_name} again."
-                    )
+            except RuntimeError as e:
+                cli_utils.error(
+                    f"Error running recipe {stack_recipe_name}: {str(e)} "
+                    "\nPlease look at the error message to figure out "
+                    "why the command failed. If the error is due some wrong "
+                    "configuration, please consider checking the locals.tf "
+                    "file to verify if the inputs are correct. Most commonly, "
+                    "the command can fail due to a timeout error. In that "
+                    "case, please run zenml stack recipe deploy "
+                    f"{stack_recipe_name} again."
+                )
+            except python_terraform.TerraformCommandError as e:
+                cli_utils.error(
+                    f"Error running recipe {stack_recipe_name}: {str(e.err)} "
+                    "\nPlease look at the error message to figure out why the "
+                    "command failed. If the error is due some wrong "
+                    "configuration, please consider checking the locals.tf "
+                    "file to verify if the inputs are correct. Most commonly, "
+                    "the command can fail due to a timeout error. In that "
+                    "case, please run zenml stack recipe deploy "
+                    f"{stack_recipe_name} again."
+                )
 
 
 def zen_server_exists() -> bool:

@@ -28,7 +28,6 @@ from sqlalchemy.exc import NoResultFound
 from sqlalchemy_utils.types.encrypted.encrypted_type import AesGcmEngine
 from sqlmodel import Session, select
 
-from zenml.analytics.trackers import track_v2
 from zenml.config.secrets_store_config import SecretsStoreConfiguration
 from zenml.enums import (
     SecretScope,
@@ -254,8 +253,7 @@ class SqlSecretsStore(BaseSecretsStore):
 
         return False, ""
 
-    @track(AnalyticsEvent.CREATED_SECRET)
-    @track_v2(AnalyticsEvent.CREATED_SECRET)
+    @track(AnalyticsEvent.CREATED_SECRET, v2=True)
     def create_secret(self, secret: SecretRequestModel) -> SecretResponseModel:
         """Creates a new secret.
 
