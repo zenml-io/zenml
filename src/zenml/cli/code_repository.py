@@ -40,7 +40,6 @@ def code_repository() -> None:
     "connect",
     context_settings={"ignore_unknown_options": True},
     help="Connect a code repository.",
-    context_settings={"ignore_unknown_options": True},
 )
 @click.argument("name", type=click.STRING)
 @click.option(
