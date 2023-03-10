@@ -25,15 +25,15 @@ from zenml import __version__, analytics
 from zenml.constants import ENV_ZENML_SERVER_FLAG
 from zenml.environment import Environment, get_environment
 from zenml.logger import get_logger
-from zenml.utils.analytics_utils import (
-    AnalyticsEvent,
-)
+
 
 if TYPE_CHECKING:
+    from zenml.utils.analytics_utils import AnalyticsEvent
     from zenml.models.server_models import (
         ServerDatabaseType,
         ServerDeploymentType,
     )
+
 Json = Union[Dict[str, Any], List[Any], str, int, float, bool, None]
 
 logger = get_logger(__name__)
@@ -175,7 +175,7 @@ class AnalyticsContext:
 
     def track(
         self,
-        event: AnalyticsEvent,
+        event: "AnalyticsEvent",
         properties: Optional[Dict[str, Any]] = None,
     ) -> bool:
         """Track an event.
@@ -187,6 +187,8 @@ class AnalyticsContext:
         Returns:
             True if tracking information was sent, False otherwise.
         """
+        from zenml.utils.analytics_utils import AnalyticsEvent
+
         if not isinstance(event, AnalyticsEvent):
             raise ValueError(
                 "When tracking events, please provide one of the supported "

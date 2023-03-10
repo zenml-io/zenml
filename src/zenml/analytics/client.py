@@ -21,7 +21,7 @@ import atexit
 import json
 import logging
 import numbers
-from typing import Any, Callable, Dict, Optional, Tuple
+from typing import Any, Callable, Dict, Optional, Tuple, TYPE_CHECKING
 from uuid import UUID
 
 from six import string_types
@@ -29,7 +29,9 @@ from six import string_types
 from zenml.analytics.consumer import Consumer
 from zenml.analytics.request import post
 from zenml.analytics.utils import AnalyticsEncoder
-from zenml.utils.analytics_utils import AnalyticsEvent
+
+if TYPE_CHECKING:
+    from zenml.utils.analytics_utils import AnalyticsEvent
 
 try:
     import queue
@@ -150,7 +152,7 @@ class Client(object):
     def track(
         self,
         user_id: UUID,
-        event: AnalyticsEvent,
+        event: "AnalyticsEvent",
         properties: Optional[Dict[Any, Any]],
     ) -> Tuple[bool, str]:
         """Method to track events.

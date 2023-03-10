@@ -21,7 +21,6 @@ import json
 import logging
 from uuid import UUID
 
-from zenml.utils.analytics_utils import AnalyticsEvent
 
 logger = logging.getLogger(__name__)
 
@@ -31,6 +30,8 @@ class AnalyticsEncoder(json.JSONEncoder):
 
     def default(self, obj):
         """The default method to handle UUID and 'AnalyticsEvent' objects."""
+        from zenml.utils.analytics_utils import AnalyticsEvent
+
         # If the object is UUID, we simply return the value of UUID
         if isinstance(obj, UUID):
             return str(obj)
