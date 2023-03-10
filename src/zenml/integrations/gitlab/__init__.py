@@ -16,7 +16,6 @@ from typing import List, Type
 
 from zenml.integrations.constants import GITLAB
 from zenml.integrations.integration import Integration
-from zenml.stack import Flavor
 
 
 class GitLabIntegration(Integration):
