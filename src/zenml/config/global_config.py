@@ -277,6 +277,10 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         environment_variable_name = f"{CONFIG_ENV_VAR_PREFIX}{key.upper()}"
         try:
             environment_variable_value = os.environ[environment_variable_name]
+
+            if key == "user_id":
+                self.__fields__["user_id"].field_info.allow_mutation = True
+
             # set the environment variable value to leverage Pydantic's type
             # conversion and validation
             super().__setattr__(key, environment_variable_value)
@@ -284,6 +288,9 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
             # set back the old value as we don't want to permanently store
             # the environment variable value here
             super().__setattr__(key, value)
+
+            if key == "user_id":
+                self.__fields__["user_id"].field_info.allow_mutation = True
             return return_value
         except (ValidationError, KeyError, TypeError):
             return value
@@ -694,6 +701,35 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         assert self._zen_store is not None
 
         return self._zen_store
+
+    @property
+    def env_var_dict(self) -> Dict[str, str]:
+        dict_ = {}
+
+        for key in self.__fields__.keys():
+            if key == "store":
+                continue
+
+            value = getattr(self, key)
+            if value is not None:
+                dict_[CONFIG_ENV_VAR_PREFIX + key.upper()] = str(value)
+
+        if self.store:
+            store_dict = self.store.dict(exclude_none=True)
+            secrets_store_dict = store_dict.pop("secrets_store", None) or {}
+
+            for key, value in store_dict.items():
+                if key == "password":
+                    continue
+
+                dict_[ENV_ZENML_STORE_PREFIX + key.upper()] = str(value)
+
+            for key, value in secrets_store_dict.items():
+                dict_[ENV_ZENML_SECRETS_STORE_PREFIX + key.upper()] = str(
+                    value
+                )
+
+        return dict_
 
     def set_active_workspace(
         self, workspace: "WorkspaceResponseModel"

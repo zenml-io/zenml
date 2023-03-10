@@ -570,9 +570,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
             # unexpected behavior
             constants.SHOULD_PREVENT_PIPELINE_EXECUTION = True
             try:
-                stack.deploy_pipeline(
-                    deployment=deployment_model,
-                )
+                stack.deploy_pipeline(deployment=deployment_model)
             finally:
                 constants.SHOULD_PREVENT_PIPELINE_EXECUTION = False
 

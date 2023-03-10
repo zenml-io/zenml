@@ -386,6 +386,7 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
         self,
         deployment: "PipelineDeploymentResponseModel",
         stack: "Stack",
+        environment: Dict[str, str],
     ) -> Any:
         """Creates a kfp yaml file.
 
@@ -492,6 +493,14 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
                     self._configure_container_resources(
                         container_op=container_op,
                         resource_settings=step.config.resource_settings,
+                    )
+
+                for key, value in environment.items():
+                    container_op.container.add_env_variable(
+                        k8s_client.V1EnvVar(
+                            name=key,
+                            value=value,
+                        )
                     )
 
                 # Find the upstream container ops of the current step and

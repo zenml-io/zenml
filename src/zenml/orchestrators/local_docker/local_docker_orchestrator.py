@@ -100,6 +100,7 @@ class LocalDockerOrchestrator(ContainerizedOrchestrator):
         self,
         deployment: "PipelineDeploymentResponseModel",
         stack: "Stack",
+        environment: Dict[str, str],
     ) -> Any:
         """Sequentially runs all pipeline steps in local Docker containers.
 
@@ -132,10 +133,8 @@ class LocalDockerOrchestrator(ContainerizedOrchestrator):
             }
         }
         orchestrator_run_id = str(uuid4())
-        environment = {
-            ENV_ZENML_DOCKER_ORCHESTRATOR_RUN_ID: orchestrator_run_id,
-            ENV_ZENML_LOCAL_STORES_PATH: local_stores_path,
-        }
+        environment[ENV_ZENML_DOCKER_ORCHESTRATOR_RUN_ID] = orchestrator_run_id
+        environment[ENV_ZENML_LOCAL_STORES_PATH] = local_stores_path
         start_time = time.time()
 
         # Run each step

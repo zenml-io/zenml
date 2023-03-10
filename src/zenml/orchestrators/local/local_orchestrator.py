@@ -14,7 +14,7 @@
 """Implementation of the ZenML local orchestrator."""
 
 import time
-from typing import TYPE_CHECKING, Any, Optional, Type
+from typing import TYPE_CHECKING, Any, Dict, Optional, Type
 from uuid import uuid4
 
 from zenml.client import Client
@@ -49,6 +49,7 @@ class LocalOrchestrator(BaseOrchestrator):
         self,
         deployment: "PipelineDeploymentResponseModel",
         stack: "Stack",
+        environment: Dict[str, str],
     ) -> Any:
         """Iterates through all steps and executes them sequentially.
 

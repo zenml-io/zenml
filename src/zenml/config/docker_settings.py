@@ -180,7 +180,7 @@ class DockerSettings(BaseSettings):
     source_files: SourceFileMode = SourceFileMode.DOWNLOAD_OR_INCLUDE
 
     _deprecation_validator = deprecation_utils.deprecate_pydantic_attributes(
-        "copy_files"
+        "copy_files", "copy_global_config"
     )
 
     @root_validator(pre=True)

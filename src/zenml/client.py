@@ -1503,7 +1503,8 @@ class Client(metaclass=ClientMetaClass):
         stack: Optional["StackResponseModel"] = None
 
         if ENV_ZENML_ACTIVE_STACK_ID in os.environ:
-            return self.get_stack(ENV_ZENML_ACTIVE_STACK_ID)
+            stack_id = os.environ[ENV_ZENML_ACTIVE_STACK_ID]
+            return self.get_stack(stack_id)
 
         if self._config:
             stack = self.get_stack(self._config.active_stack_id)
