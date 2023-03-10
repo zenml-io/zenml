@@ -14,7 +14,6 @@
 import os
 import re
 from typing import List, Optional
-from uuid import UUID
 
 from github import Github, GithubException
 from github.Repository import Repository
@@ -23,35 +22,43 @@ from zenml.code_repositories import (
     BaseCodeRepository,
     LocalRepository,
 )
+from zenml.code_repositories.base_code_repository import (
+    BaseCodeRepositoryConfig,
+)
 from zenml.code_repositories.git import LocalGitRepository
 from zenml.logger import get_logger
+from zenml.utils.secret_utils import SecretField
 
 logger = get_logger(__name__)
+
+
+class GitHubCodeRepositoryConfig(BaseCodeRepositoryConfig):
+    """Config for GitHub code repositories."""
+
+    url: Optional[str]
+    owner: str
+    repository: str
+    host: Optional[str]
+    token: str = SecretField()
 
 
 class GitHubCodeRepository(BaseCodeRepository):
     """GitHub code repository."""
 
-    def __init__(self, id: UUID, owner: str, repository: str, token: str):
-        """Initializes a GitHub code repository.
+    @property
+    def config(self) -> GitHubCodeRepositoryConfig:
+        """Returns the `KubeflowOrchestratorConfig` config.
 
-        Args:
-            id: The id of the code repository.
-            owner: The owner of the repository.
-            repository: The name of the repository.
-            token: The GitHub token.
+        Returns:
+            The configuration.
         """
-        super().__init__(id=id)
-        self._owner = owner
-        self._repository = repository
-        self._token = token
-        self.login()
+        return GitHubCodeRepositoryConfig(**self._config)
 
     @property
     def github_repo(self) -> Repository:
         """The GitHub repository."""
         return self._github_session.get_repo(
-            f"{self._owner}/{self._repository}"
+            f"{self.config.owner}/{self.config.repository}"
         )
 
     def login(
@@ -59,7 +66,7 @@ class GitHubCodeRepository(BaseCodeRepository):
     ) -> None:
         """Logs in to GitHub."""
         try:
-            self._github_session = Github(self._token)
+            self._github_session = Github(self.config.token)
             user = self._github_session.get_user().login
             logger.debug(f"Logged in as {user}")
         except Exception as e:
@@ -122,12 +129,12 @@ class GitHubCodeRepository(BaseCodeRepository):
         Returns:
             Whether the remote url is correct.
         """
-        https_url = f"https://github.com/{self._owner}/{self._repository}.git"
+        https_url = f"https://github.com/{self.config.owner}/{self.config.repository}.git"
         if url == https_url:
             return True
 
         ssh_regex = re.compile(
-            f".*@github.com:{self._owner}/{self._repository}.git"
+            f".*@github.com:{self.config.owner}/{self.config.repository}.git"
         )
         if ssh_regex.fullmatch(url):
             return True

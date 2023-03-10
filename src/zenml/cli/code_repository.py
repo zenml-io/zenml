@@ -21,12 +21,12 @@ from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
 from zenml.cli.utils import list_options
 from zenml.client import Client
-from zenml.config.source import Source, SourceType
+from zenml.config.source import Source
 from zenml.console import console
 from zenml.enums import CliCategories
-from zenml.exceptions import EntityExistsError
 from zenml.logger import get_logger
 from zenml.models import CodeRepositoryFilterModel
+from zenml.utils.source_utils_v2 import resolve
 
 logger = get_logger(__name__)
 
@@ -38,8 +38,10 @@ def code_repository() -> None:
 
 @code_repository.command(
     "connect",
+    context_settings={"ignore_unknown_options": True},
     help="Connect a code repository.",
 )
+@click.argument("name", type=click.STRING)
 @click.option(
     "--type",
     "-t",
@@ -53,9 +55,8 @@ def code_repository() -> None:
     "-s",
     type=str,
     required=False,
-    help="Module containing the code repository implementation.",
+    help="Module containing the code repository implementation if type is custom.",
 )
-@click.argument("name")
 @click.argument(
     "args",
     nargs=-1,
@@ -95,19 +96,41 @@ def connect_code_repository(
         )
     elif name == "name":
         cli_utils.error("Secret names cannot be named 'name'.")
-    try:
-        source = Source(
-            module="zenml.integrations.github.code_repositories",
-            attribute="GitHubCodeRepository",
-            type=SourceType.UNKNOWN,
-        )
+
+    if type_ == "github":
+        try:
+            from zenml.integrations.github.code_repositories import (
+                GitHubCodeRepository,
+            )
+        except ImportError:
+            cli_utils.error(
+                "Please install github integration to use this feature."
+                " By running `zenml integration install github`."
+            )
+        source = resolve(GitHubCodeRepository)
+    elif type_ == "gitlab":
+        try:
+            from zenml.integrations.gitlab.code_repositories import (
+                GitLabCodeRepository,
+            )
+        except ImportError:
+            cli_utils.error(
+                "Please install gitlab integration to use this feature."
+                " By running `zenml integration install gitlab`."
+            )
+        source = resolve(GitLabCodeRepository)
+    elif type_ == "custom":
+        source = Source.from_import_path(source)
+
+    with console.status(f"Connecting Code Repository '{name}'...\n"):
+        # Connect to the code repository
         Client().create_code_repository(
-            name=name, config=parsed_args, source=source
+            name=name,
+            config=parsed_args,
+            source=source,
         )
-    except EntityExistsError as e:
-        cli_utils.error(str(e))
-    else:
-        cli_utils.declare(f"Connected to code repository {name}.")
+
+        cli_utils.declare(f"Successfully connected to `{name}`.")
 
 
 @code_repository.command("list", help="List all connected code repositories.")

@@ -32,6 +32,7 @@ class GitLabIntegration(Integration):
         Returns:
             List of stack component flavors for this integration.
         """
+        return []
 
 
 GitLabIntegration.check_installation()
