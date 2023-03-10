@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """CLI functionality to interact with code repositories."""
 import os
-from typing import Any, List
+from typing import Any, List, Optional
 
 import click
 
@@ -40,6 +40,7 @@ def code_repository() -> None:
     "connect",
     context_settings={"ignore_unknown_options": True},
     help="Connect a code repository.",
+    context_settings={"ignore_unknown_options": True},
 )
 @click.argument("name", type=click.STRING)
 @click.option(
@@ -65,7 +66,7 @@ def code_repository() -> None:
 def connect_code_repository(
     name: str,
     type_: str,
-    source: str,
+    source: Optional[str],
     args: List[str],
 ) -> None:
     """Connect a code repository

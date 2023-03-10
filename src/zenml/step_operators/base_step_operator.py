@@ -72,6 +72,7 @@ class BaseStepOperator(StackComponent, ABC):
         self,
         info: "StepRunInfo",
         entrypoint_command: List[str],
+        environment: Dict[str, str],
     ) -> None:
         """Abstract method to execute a step.
 

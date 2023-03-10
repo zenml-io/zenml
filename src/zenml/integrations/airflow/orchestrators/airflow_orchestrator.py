@@ -212,6 +212,7 @@ class AirflowOrchestrator(ContainerizedOrchestrator):
         self,
         deployment: "PipelineDeploymentResponseModel",
         stack: "Stack",
+        environment: Dict[str, str],
     ) -> Any:
         """Creates and writes an Airflow DAG zip file.
 
@@ -245,6 +246,7 @@ class AirflowOrchestrator(ContainerizedOrchestrator):
                 docker_image=image,
                 command=command,
                 arguments=arguments,
+                environment=environment,
                 operator_source=settings.operator,
                 operator_args=settings.operator_args,
             )

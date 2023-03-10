@@ -20,6 +20,7 @@ from pydantic import root_validator
 from zenml.enums import StackComponentType
 from zenml.logger import get_logger
 from zenml.orchestrators.step_launcher import StepLauncher
+from zenml.orchestrators.utils import get_config_environment_vars
 from zenml.stack import Flavor, Stack, StackComponent, StackComponentConfig
 
 if TYPE_CHECKING:
@@ -102,6 +103,7 @@ class BaseOrchestrator(StackComponent, ABC):
         self,
         deployment: "PipelineDeploymentResponseModel",
         stack: "Stack",
+        environment: Dict[str, str],
     ) -> Any:
         """The method needs to be implemented by the respective orchestrator.
 
@@ -156,9 +158,11 @@ class BaseOrchestrator(StackComponent, ABC):
             Orchestrator-specific return value.
         """
         self._prepare_run(deployment=deployment)
+
+        environment = get_config_environment_vars()
         try:
             result = self.prepare_or_run_pipeline(
-                deployment=deployment, stack=stack
+                deployment=deployment, stack=stack, environment=environment
             )
         finally:
             self._cleanup_run()

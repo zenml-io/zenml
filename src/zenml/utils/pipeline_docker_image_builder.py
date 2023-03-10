@@ -16,14 +16,11 @@ import itertools
 import os
 import subprocess
 import sys
-import tempfile
-from pathlib import PurePosixPath
 from typing import TYPE_CHECKING, Dict, List, Optional, Sequence, Tuple
 
 import zenml
 from zenml.config import DockerSettings
 from zenml.config.docker_settings import PythonEnvironmentExportMethod
-from zenml.config.global_config import GlobalConfiguration
 from zenml.constants import (
     ENV_ZENML_CONFIG_PATH,
     ENV_ZENML_ENABLE_REPO_INIT_WARNINGS,
@@ -127,7 +124,6 @@ class PipelineDockerImageBuilder:
                 docker_settings.environment,
                 include_files,
                 download_files,
-                docker_settings.copy_global_config,
                 entrypoint,
                 extra_files,
             ]
@@ -261,19 +257,6 @@ class PipelineDockerImageBuilder:
                 entrypoint=entrypoint,
             )
             build_context.add_file(destination="Dockerfile", source=dockerfile)
-
-            if docker_settings.copy_global_config:
-                with tempfile.TemporaryDirectory() as tmpdir:
-                    GlobalConfiguration().copy_configuration(
-                        tmpdir,
-                        load_config_path=PurePosixPath(
-                            DOCKER_IMAGE_ZENML_CONFIG_PATH
-                        ),
-                    )
-                    build_context.add_directory(
-                        source=tmpdir,
-                        destination=DOCKER_IMAGE_ZENML_CONFIG_DIR,
-                    )
 
             if extra_files:
                 for destination, source in extra_files.items():
@@ -507,19 +490,15 @@ class PipelineDockerImageBuilder:
         if download_files:
             lines.append(f"ENV {ENV_ZENML_REQUIRES_CODE_DOWNLOAD}=True")
 
-        if docker_settings.copy_global_config:
-            lines.append(
-                f"ENV {ENV_ZENML_CONFIG_PATH}={DOCKER_IMAGE_ZENML_CONFIG_PATH}"
-            )
+        lines.append(
+            f"ENV {ENV_ZENML_CONFIG_PATH}={DOCKER_IMAGE_ZENML_CONFIG_PATH}"
+        )
 
         for key, value in docker_settings.environment.items():
             lines.append(f"ENV {key.upper()}={value}")
 
         if include_files:
             lines.append("COPY . .")
-        elif docker_settings.copy_global_config:
-            config_dir = DOCKER_IMAGE_ZENML_CONFIG_DIR
-            lines.append(f"COPY {config_dir} ./{config_dir}")
 
         lines.append("COPY Dockerfile Dockerfile")
         lines.append("RUN chmod -R a+rw .")

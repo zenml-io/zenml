@@ -14,10 +14,12 @@
 """Utility functions for the orchestrator."""
 
 import random
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Dict, Optional
 from uuid import UUID
 
 from zenml.client import Client
+from zenml.config.global_config import GlobalConfiguration
+from zenml.constants import ENV_ZENML_ACTIVE_STACK_ID
 from zenml.logger import get_logger
 from zenml.utils import uuid_utils
 
@@ -81,3 +83,15 @@ def is_setting_enabled(
     if is_enabled_on_pipeline is not None:
         return is_enabled_on_pipeline
     return True
+
+
+def get_config_environment_vars() -> Dict[str, str]:
+    environment = GlobalConfiguration().env_var_dict
+
+    # Make sure to use the correct active stack which might come from a
+    # .zen repository and not the global config
+    environment[ENV_ZENML_ACTIVE_STACK_ID] = str(
+        Client().active_stack_model.id
+    )
+
+    return environment

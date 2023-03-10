@@ -14,6 +14,7 @@
 """Abstract base class for all ZenML pipelines."""
 import hashlib
 import inspect
+import platform
 from abc import abstractmethod
 from datetime import datetime
 from pathlib import Path
@@ -88,6 +89,7 @@ from zenml.utils.pipeline_docker_image_builder import (
 if TYPE_CHECKING:
     from zenml.code_repositories import LocalRepository
     from zenml.config.base_settings import SettingsOrDict
+    from zenml.config.build_configuration import BuildConfiguration
     from zenml.post_execution import PipelineRunView
 
     StepConfigurationUpdateOrDict = Union[
@@ -570,9 +572,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
             # unexpected behavior
             constants.SHOULD_PREVENT_PIPELINE_EXECUTION = True
             try:
-                stack.deploy_pipeline(
-                    deployment=deployment_model,
-                )
+                stack.deploy_pipeline(deployment=deployment_model)
             finally:
                 constants.SHOULD_PREVENT_PIPELINE_EXECUTION = False
 
@@ -1187,7 +1187,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
                 and not deployment.requires_included_files
             ):
                 existing_build = self._find_existing_build(
-                    deployment=deployment, pipeline_id=pipeline_id
+                    deployment=deployment
                 )
 
                 if existing_build:
@@ -1257,57 +1257,38 @@ class BasePipeline(metaclass=BasePipelineMeta):
     def _find_existing_build(
         self,
         deployment: "PipelineDeploymentBaseModel",
-        pipeline_id: Optional[UUID] = None,
     ) -> Optional["PipelineBuildResponseModel"]:
-        if not pipeline_id:
-            return None
-
         client = Client()
         stack = client.active_stack
+
+        python_version = ".".join(platform.python_version_tuple()[:2])
+        required_builds = stack.get_docker_builds(deployment=deployment)
+        build_checksum = self._compute_build_checksum(
+            required_builds, stack=stack
+        )
+
         matches = client.list_builds(
             sort_by="desc:created",
             size=1,
-            pipeline_id=pipeline_id,
             stack_id=stack.id,
+            # TODO: Can we support this by storing the unique Docker ID for the
+            # image and checking if an image with that ID exists locally?
+            # The build is local and it's not clear whether the images
+            # exist on the current machine or if they've been overwritten
+            is_local=False,
+            # The build contains some code which might be different than the
+            # local code the user is expecting to run
+            contains_code=False,
             zenml_version=zenml.__version__,
+            # Match all patch version of the same python major + minor version
+            python_version=f"startswith:{python_version}",
+            checksum=build_checksum,
         )
 
         if not matches.items:
             return None
 
-        potential_build = matches[0]
-
-        if potential_build.contains_code:
-            # The build contains some code which might be different than the
-            # local code the user is expecting to run
-            return None
-
-        if potential_build.is_local:
-            # TODO: Can we support this by storing the unique Docker ID for the
-            # image and checking if an image with that ID exists locally?
-
-            # The build is local and it's not clear whether the images
-            # exist on the current machine or if they've been overwritten
-            return None
-
-        for build_config in stack.get_docker_builds(deployment=deployment):
-            try:
-                _ = potential_build.get_image(
-                    component_key=build_config.key, step=build_config.step_name
-                )
-            except KeyError:
-                # Build is missing an image, can't reuse it
-                return None
-
-            if build_config.compute_settings_checksum(
-                stack=stack
-            ) != potential_build.get_settings_checksum(
-                component_key=build_config.key, step=build_config.step_name
-            ):
-                # Current Docker settings don't match the build, can't reuse it
-                return None
-
-        return potential_build
+        return matches[0]
 
     def _build(
         self,
@@ -1419,13 +1400,38 @@ class BasePipeline(metaclass=BasePipelineMeta):
         logger.info("Finished building Docker image(s).")
 
         is_local = stack.container_registry is None
+        contains_code = any(item.contains_code for item in images.values())
+        build_checksum = self._compute_build_checksum(
+            required_builds, stack=stack
+        )
+
         build_request = PipelineBuildRequestModel(
             user=client.active_user.id,
             workspace=client.active_workspace.id,
             stack=client.active_stack_model.id,
             pipeline=pipeline_id,
             is_local=is_local,
+            contains_code=contains_code,
             images=images,
             zenml_version=zenml.__version__,
+            python_version=platform.python_version(),
+            checksum=build_checksum,
         )
         return client.zen_store.create_build(build_request)
+
+    @staticmethod
+    def _compute_build_checksum(
+        items: List["BuildConfiguration"], stack: "Stack"
+    ) -> str:
+        hash_ = hashlib.md5()
+
+        for item in items:
+            key = PipelineBuildBaseModel.get_image_key(
+                component_key=item.key, step=item.step_name
+            )
+            settings_checksum = item.compute_settings_checksum(stack=stack)
+
+            hash_.update(key.encode())
+            hash_.update(settings_checksum.encode())
+
+        return hash_.hexdigest()

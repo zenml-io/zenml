@@ -31,7 +31,7 @@
 """Kubernetes-native orchestrator."""
 
 import os
-from typing import TYPE_CHECKING, Any, List, Optional, Tuple, Type, cast
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, cast
 
 from kubernetes import client as k8s_client
 from kubernetes import config as k8s_config
@@ -260,6 +260,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         self,
         deployment: "PipelineDeploymentResponseModel",
         stack: "Stack",
+        environment: Dict[str, str],
     ) -> Any:
         """Runs the pipeline in Kubernetes.
 
@@ -351,6 +352,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                 args=args,
                 service_account_name=service_account_name,
                 settings=settings,
+                env=environment,
                 mount_local_stores=self.config.is_local,
             )
 
@@ -374,6 +376,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             args=args,
             service_account_name=service_account_name,
             settings=settings,
+            env=environment,
             mount_local_stores=self.config.is_local,
         )
 

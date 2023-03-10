@@ -201,6 +201,7 @@ def build_cron_job_manifest(
     args: List[str],
     settings: KubernetesOrchestratorSettings,
     service_account_name: Optional[str] = None,
+    env: Optional[Dict[str, str]] = None,
     mount_local_stores: bool = False,
 ) -> k8s_client.V1beta1CronJob:
     """Create a manifest for launching a pod as scheduled CRON job.
@@ -217,6 +218,7 @@ def build_cron_job_manifest(
         service_account_name: Optional name of a service account.
             Can be used to assign certain roles to a pod, e.g., to allow it to
             run Kubernetes commands from within the cluster.
+        env: Environment variables to set.
         mount_local_stores: Whether to mount the local stores path inside the
             pod.
 
@@ -232,6 +234,7 @@ def build_cron_job_manifest(
         args=args,
         settings=settings,
         service_account_name=service_account_name,
+        env=env,
         mount_local_stores=mount_local_stores,
     )
 

@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Implementation of the Sagemaker Step Operator."""
 
-from typing import TYPE_CHECKING, List, Optional, Tuple, Type, cast
+from typing import TYPE_CHECKING, Dict, List, Optional, Tuple, Type, cast
 
 import sagemaker
 
@@ -136,6 +136,7 @@ class SagemakerStepOperator(BaseStepOperator):
         self,
         info: "StepRunInfo",
         entrypoint_command: List[str],
+        environment: Dict[str, str],
     ) -> None:
         """Launches a step on SageMaker.
 
@@ -155,7 +156,7 @@ class SagemakerStepOperator(BaseStepOperator):
             )
 
         image_name = info.get_image(key=SAGEMAKER_DOCKER_IMAGE_KEY)
-        environment = {_ENTRYPOINT_ENV_VARIABLE: " ".join(entrypoint_command)}
+        environment[_ENTRYPOINT_ENV_VARIABLE] = " ".join(entrypoint_command)
 
         settings = cast(SagemakerStepOperatorSettings, self.get_settings(info))
 
