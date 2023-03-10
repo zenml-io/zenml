@@ -310,8 +310,7 @@ class KServeModelDeployer(BaseModelDeployer):
                 **stack_metadata,
                 "is_custom_code_deployment": config.container is not None,
             }
-
-            return service
+        return service
 
     def get_kserve_deployments(
         self, labels: Dict[str, str]

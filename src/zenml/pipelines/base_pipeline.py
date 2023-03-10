@@ -467,8 +467,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
             )
 
             skip_pipeline_registration = constants.handle_bool_env_var(
-                constants.ENV_ZENML_SKIP_PIPELINE_REGISTRATION,
-                default=False,
+                constants.ENV_ZENML_SKIP_PIPELINE_REGISTRATION, default=False,
             )
 
             register_pipeline = not (skip_pipeline_registration or unlisted)
@@ -538,7 +537,6 @@ class BasePipeline(metaclass=BasePipelineMeta):
             analytics_handler.metadata = self._get_pipeline_analytics_metadata(
                 deployment=deployment_model, stack=stack
             )
-
             caching_status = (
                 "enabled"
                 if deployment.pipeline_configuration.enable_cache is not False
@@ -568,8 +566,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
 
             # Log the dashboard URL
             dashboard_utils.print_run_url(
-                run_name=deployment.run_name_template,
-                pipeline_id=pipeline_id,
+                run_name=deployment.run_name_template, pipeline_id=pipeline_id,
             )
 
     @classmethod

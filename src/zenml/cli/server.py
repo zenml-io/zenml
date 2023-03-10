@@ -203,9 +203,7 @@ def up(
         ]:
             config_attrs["ip_address"] = ip_address
 
-        from zenml.zen_server.deploy.deployment import (
-            ServerDeploymentConfig,
-        )
+        from zenml.zen_server.deploy.deployment import ServerDeploymentConfig
 
         server_config = ServerDeploymentConfig(**config_attrs)
 
@@ -270,9 +268,7 @@ def up(
                     f"set the env variable AUTO_OPEN_DASHBOARD=true."
                 )
 
-                if handle_bool_env_var(
-                    ENV_AUTO_OPEN_DASHBOARD, default=True
-                ):
+                if handle_bool_env_var(ENV_AUTO_OPEN_DASHBOARD, default=True):
                     try:
                         import webbrowser
 
@@ -399,7 +395,6 @@ def deploy(
         event=AnalyticsEvent.ZENML_SERVER_DEPLOYED,
         v2=True,
     ) as analytics_handler:
-
         config_dict: Dict[str, Any] = {}
 
         if config:
@@ -462,9 +457,7 @@ def deploy(
             )
         config_dict["password"] = password
 
-        from zenml.zen_server.deploy.deployment import (
-            ServerDeploymentConfig,
-        )
+        from zenml.zen_server.deploy.deployment import ServerDeploymentConfig
 
         server_config = ServerDeploymentConfig.parse_obj(config_dict)
 

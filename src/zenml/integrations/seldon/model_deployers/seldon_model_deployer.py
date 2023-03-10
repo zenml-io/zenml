@@ -359,7 +359,7 @@ class SeldonModelDeployer(BaseModelDeployer):
                 "is_custom_code_deployment": config.is_custom_deployment,
             }
 
-            return service
+        return service
 
     def find_model_server(
         self,
