@@ -146,7 +146,7 @@ class AnalyticsContext:
 
     def group(
         self,
-        group_id: str,
+        group_id: UUID,
         traits: Optional[Dict[str, Any]] = None,
     ) -> bool:
         """Group the user.
