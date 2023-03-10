@@ -67,13 +67,16 @@ class PipelineBuildBaseModel(pydantic_utils.YAMLSerializationMixin):
     is_local: bool = Field(
         title="Whether the build images are stored in a container registry or locally.",
     )
+    contains_code: bool = Field(
+        title="Whether any image of the build contains user code.",
+    )
     zenml_version: Optional[str] = Field(
         title="The version of ZenML used for this build."
     )
-
-    @property
-    def contains_code(self) -> bool:
-        return any(item.contains_code for item in self.images.values())
+    python_version: Optional[str] = Field(
+        title="The Python version used for this build."
+    )
+    checksum: Optional[str] = Field(title="The build checksum.")
 
     @property
     def requires_code_download(self) -> bool:
@@ -200,9 +203,19 @@ class PipelineBuildFilterModel(WorkspaceScopedFilterModel):
     stack_id: Union[UUID, str, None] = Field(
         description="Stack used for the Pipeline Run"
     )
+    is_local: Optional[bool] = Field(
+        description="Whether the build images are stored in a container registry or locally.",
+    )
+    contains_code: Optional[bool] = Field(
+        description="Whether any image of the build contains user code.",
+    )
     zenml_version: Optional[str] = Field(
         description="The version of ZenML used for this build."
     )
+    python_version: Optional[str] = Field(
+        description="The Python version used for this build."
+    )
+    checksum: Optional[str] = Field(description="The build checksum.")
 
 
 # ------- #

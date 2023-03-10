@@ -25,13 +25,5 @@ class GitLabIntegration(Integration):
     NAME = GITLAB
     REQUIREMENTS: List[str] = ["python-gitlab"]
 
-    @classmethod
-    def flavors(cls) -> List[Type[Flavor]]:
-        """Declare the stack component flavors for the GitLab integration.
-
-        Returns:
-            List of stack component flavors for this integration.
-        """
-
 
 GitLabIntegration.check_installation()
