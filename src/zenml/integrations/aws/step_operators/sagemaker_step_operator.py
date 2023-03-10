@@ -172,6 +172,7 @@ class SagemakerStepOperator(BaseStepOperator):
             environment=environment,
             instance_count=instance_count,
             instance_type=instance_type,
+            sagemaker_session=session,
             **estimator_args
         )
 
