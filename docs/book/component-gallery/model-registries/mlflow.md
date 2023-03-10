@@ -60,7 +60,7 @@ configuration.
 
 There are different ways to use the MLflow Model Registry. You can use it in
 your ZenML pipelines with the built-in step, or you can use the ZenML CLI to
-register your model manually or call the Model Registry API withing a custom
+register your model manually or call the Model Registry API within a custom
 step in your pipeline. The following sections show you how to use the MLflow
 Model Registry in your ZenML pipelines and with the ZenML CLI:
 

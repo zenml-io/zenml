@@ -132,7 +132,7 @@ class BentoMLModelDeployer(BaseModelDeployer):
             "BENTO_URI": service_instance.config.bento_uri,
             "SERVICE_PATH": service_instance.status.runtime_path,
             "DAEMON_PID": str(service_instance.status.pid),
-            "PREDICITON_APIS_URLS": predictions_apis_urls,
+            "PREDICTION_APIS_URLS": predictions_apis_urls,
         }
 
     def deploy_model(
