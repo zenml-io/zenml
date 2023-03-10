@@ -75,7 +75,7 @@ def create_entity_docs(
     entity.
 
     Args:
-        api_doc_file_dir: Directory in which to save teh api/docs
+        api_doc_file_dir: Directory in which to save the api/docs
         ignored_modules: List of entities to ignore
         sources_path: Path to the zenml src directory
         index_file_contents: Contents of the index file to append to

@@ -331,7 +331,7 @@ While most of this document has been focusing on the so called
 post-execution workflow (i.e. fetching objects after a pipeline has
 completed), it can also be used within the context of a running pipeline.
 
-This is often desirable in cases where a pipeline is running continously
+This is often desirable in cases where a pipeline is running continuously
 over time and decisions have to be made according to older runs.
 
 E.g. Here, we fetch from within a step the last pipeline run for the same pipeline:

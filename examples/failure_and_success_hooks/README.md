@@ -45,7 +45,7 @@ a [YAML Config](../pipelines/settings.md).
 
 In some cases, there is a need to define a hook on all steps of a given pipeline rather than just on individual steps. 
 
-Note, that step-level defined hooks take precendence over pipeline-level
+Note, that step-level defined hooks take precedence over pipeline-level
 defined hooks.
 
 ```python
