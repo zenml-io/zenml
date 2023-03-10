@@ -384,8 +384,8 @@ def go() -> None:
             zenml_go_notebook_tutorial_message(ipynb_files), width=80
         )
         input("Press ENTER to continue...")
-        notebook_path = os.path.join(zenml_tutorial_path, "notebooks")
-        subprocess.check_call(["jupyter", "notebook"], cwd=notebook_path)
+    notebook_path = os.path.join(zenml_tutorial_path, "notebooks")
+    subprocess.check_call(["jupyter", "notebook"], cwd=notebook_path)
 
 
 def _prompt_email(event_source: AnalyticsEventSource) -> bool:
