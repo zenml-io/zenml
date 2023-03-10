@@ -12,9 +12,10 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Optional, Type
+from typing import TYPE_CHECKING, Any, Dict, Optional, Type
 from uuid import UUID
 
+from zenml.config.secret_reference_mixin import SecretReferenceMixin
 from zenml.logger import get_logger
 from zenml.models.code_repository_models import CodeRepositoryResponseModel
 from zenml.utils import source_utils_v2
@@ -25,9 +26,31 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 
+class BaseCodeRepositoryConfig(SecretReferenceMixin, ABC):
+    """Base config for code repositories."""
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+
 class BaseCodeRepository(ABC):
-    def __init__(self, id: UUID) -> None:
+    def __init__(
+        self,
+        id: UUID,
+        config: Dict[str, Any],
+    ) -> None:
         self._id = id
+        self._config = config
+        self.login()
+
+    @property
+    def config(self) -> BaseCodeRepositoryConfig:
+        """Config class for Code Repository.
+
+        Returns:
+            The config class.
+        """
+        return BaseCodeRepositoryConfig(**self._config)
 
     @classmethod
     def from_model(
@@ -39,11 +62,16 @@ class BaseCodeRepository(ABC):
         ] = source_utils_v2.load_and_validate_class(
             source=model.source, expected_class=BaseCodeRepository
         )
-        return class_(id=model.id, **model.config)
+        return class_(id=model.id, config=model.config)
 
     @property
     def id(self) -> UUID:
         return self._id
+
+    @abstractmethod
+    def login(self) -> None:
+        # Validate credentials and login
+        pass
 
     @abstractmethod
     def download_files(
