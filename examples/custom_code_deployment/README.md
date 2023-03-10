@@ -137,8 +137,6 @@ This stack consists of the following components:
 * a GCP artifact store
 * the local orchestrator
 * a KServe model deployer
-* a local secret manager used to store the credentials needed by KServe to
-access the GCP artifact store
 * a GCP container registry used to store the custom Docker images used by the
 KServe model deployer
 
@@ -184,37 +182,33 @@ zenml model-deployer register kserve_gke --flavor=kserve \
   --base_url=$INGRESS_URL \
   --secret=kserve_secret
 zenml artifact-store register gcp_artifact_store --flavor=fcp --path gs://my-bucket
-zenml secrets-manager register local --flavor=local
 zenml container-registry register gcp_registry --flavor=gcp --uri=eu.gcr.io/container-registry
-zenml stack register local_gcp_kserve_stack -a gcp_artifact_store -o default -d kserve_gke -c gcp_registry -x local --set
+zenml stack register local_gcp_kserve_stack -a gcp_artifact_store -o default -d kserve_gke -c gcp_registry --set
 ```
 
 The next sections cover how to set up the GCP Artifact Store credentials 
 for the KServe model deployer. Please look up the variables relevant to your 
 use case in the [official KServe Storage Credentials](https://kserve.github.io/website/0.8/sdk_docs/docs/KServeClient/#parameters)
-and set them accordingly for your ZenML secrets schemas already built for each 
-storage_type. You can find the relevant variables in the 
-[Kserve integration secret schemas docs](https://apidocs.zenml.io/latest/integration_code_docs/integrations-kserve/#zenml.integrations.kserve.secret_schemas.secret_schemas).
+and set them accordingly for your ZenML secret.
 
-#### GCP Authentication with kserve_gs secret schema
+#### GCP Authentication for KServe
 
 > **Note**
-> If you're coming to this section after deploying the [`gke-kubeflow-kserve` recipe](https://github.com/zenml-io/mlops-stacks/tree/main/gcp-kubeflow-kserve), you already have a service account created for you. The service account key is available as a file named `kserve_sa_key.json` in the root directory of your recipe. You can jump straight to the `zenml secrets-manager secret register` command below to register your secret!
+> If you're coming to this section after deploying the [`gke-kubeflow-kserve` recipe](https://github.com/zenml-io/mlops-stacks/tree/main/gcp-kubeflow-kserve), you already have a service account created for you. The service account key is available as a file named `kserve_sa_key.json` in the root directory of your recipe. You can jump straight to the `zenml secret register` command below to register your secret!
 
-Before setting ZenML secrets, we need to create a service account key. 
+Before setting ZenML secrets, we need to create a service account key.
 This service account will be used to access the GCP Artifact
 Store. for more information, see the [Create and manage service account keys](https://cloud.google.com/iam/docs/creating-managing-service-account-keys#iam-service-account-keys-create-gcloud).
 Once we have the service account key, we can create a ZenML secret with the 
 following command:
 
 ```bash
-zenml secrets-manager secret register -s kserve_gs kserve_secret \
+zenml secret register kserve_secret \
     --credentials="@~/sa-deployment-temp.json" \
 
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━┓
 ┃             SECRET_KEY             │ SECRET_VALUE ┃
 ┠────────────────────────────────────┼──────────────┨
-┃            storage_type            │ ***          ┃
 ┃             credentials            │ ***          ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━┛
 ``` 
@@ -364,8 +358,6 @@ This stack consists of the following components:
 * a GCP artifact store
 * the local orchestrator
 * a Seldon Core model deployer
-* a local secrets manager used to store the credentials needed by Seldon Core to
-access the GCP artifact store
 * a GCP container registry used to store the custom Docker images used by the
 Seldon Core model deployer
 
@@ -407,7 +399,6 @@ zenml model-deployer register seldon_eks --flavor=seldon \
   --base_url=http://$INGRESS_HOST \
   --secret=s3-store
 zenml artifact-store register gcp_artifact_store --flavor=fcp --path gs://my-bucket
-zenml secrets-manager register local --flavor=local
 zenml container-registry register gcp_registry --flavor=gcp --uri=eu.gcr.io/container-registry
 zenml stack register local_gcp_seldon_stack -a gcp_artifact_store -o default -d seldon_eks -c gcp_registry -x local --set
 ```
