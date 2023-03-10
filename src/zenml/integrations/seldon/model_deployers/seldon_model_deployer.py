@@ -293,8 +293,7 @@ class SeldonModelDeployer(BaseModelDeployer):
                 it reaches a ready state.
         """
         with event_handler(
-            event=AnalyticsEvent.MODEL_DEPLOYED,
-            v2=True
+            event=AnalyticsEvent.MODEL_DEPLOYED, v2=True
         ) as analytics_handler:
             config = cast(SeldonDeploymentConfig, config)
             service = None

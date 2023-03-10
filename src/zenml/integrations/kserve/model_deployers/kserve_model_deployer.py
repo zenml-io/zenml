@@ -245,8 +245,7 @@ class KServeModelDeployer(BaseModelDeployer):
             RuntimeError: if the KServe deployment server could not be stopped.
         """
         with event_handler(
-            event=AnalyticsEvent.MODEL_DEPLOYED,
-            v2=True
+            event=AnalyticsEvent.MODEL_DEPLOYED, v2=True
         ) as analytics_handler:
             config = cast(KServeDeploymentConfig, config)
             service = None
@@ -254,9 +253,7 @@ class KServeModelDeployer(BaseModelDeployer):
             # if the secret is passed in the config, use it to set the
             # credentials
             if config.secret_name:
-                self.config.secret = (
-                    config.secret_name or self.config.secret
-                )
+                self.config.secret = config.secret_name or self.config.secret
             self._set_credentials()
 
             # if replace is True, find equivalent KServe deployments

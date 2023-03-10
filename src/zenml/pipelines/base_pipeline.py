@@ -452,8 +452,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
             return
 
         with event_handler(
-            event=AnalyticsEvent.RUN_PIPELINE,
-            v2=True
+            event=AnalyticsEvent.RUN_PIPELINE, v2=True
         ) as analytics_handler:
             deployment, pipeline_spec, schedule, build = self._compile(
                 config_path=config_path,
@@ -472,15 +471,11 @@ class BasePipeline(metaclass=BasePipelineMeta):
                 default=False,
             )
 
-            register_pipeline = not (
-                skip_pipeline_registration or unlisted
-            )
+            register_pipeline = not (skip_pipeline_registration or unlisted)
 
             pipeline_id = None
             if register_pipeline:
-                pipeline_id = self._register(
-                    pipeline_spec=pipeline_spec
-                ).id
+                pipeline_id = self._register(pipeline_spec=pipeline_spec).id
 
             # TODO: check whether orchestrator even support scheduling before
             # registering the schedule
@@ -495,9 +490,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
                         date=date, time=time
                     )
                 components = Client().active_stack_model.components
-                orchestrator = components[StackComponentType.ORCHESTRATOR][
-                    0
-                ]
+                orchestrator = components[StackComponentType.ORCHESTRATOR][0]
                 schedule_model = ScheduleRequestModel(
                     workspace=Client().active_workspace.id,
                     user=Client().active_user.id,
@@ -542,16 +535,13 @@ class BasePipeline(metaclass=BasePipelineMeta):
                 deployment=deployment_request
             )
 
-            analytics_handler.metadata = (
-                self._get_pipeline_analytics_metadata(
-                    deployment=deployment_model, stack=stack
-                )
+            analytics_handler.metadata = self._get_pipeline_analytics_metadata(
+                deployment=deployment_model, stack=stack
             )
 
             caching_status = (
                 "enabled"
-                if deployment.pipeline_configuration.enable_cache
-                is not False
+                if deployment.pipeline_configuration.enable_cache is not False
                 else "disabled"
             )
             logger.info(

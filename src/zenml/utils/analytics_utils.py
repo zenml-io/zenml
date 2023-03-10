@@ -20,8 +20,9 @@ from typing import Any, Callable, ClassVar, Dict, List, Optional, Type, Union
 from uuid import UUID
 
 from pydantic import BaseModel
-from zenml.analytics.context import AnalyticsContext as AnalyticsContextV2
+
 from zenml import __version__
+from zenml.analytics.context import AnalyticsContext as AnalyticsContextV2
 from zenml.constants import IS_DEBUG_ENV, SEGMENT_KEY_DEV, SEGMENT_KEY_PROD
 from zenml.enums import StoreType
 from zenml.environment import Environment, get_environment
@@ -434,16 +435,13 @@ def identify_group(
     if v1:
         with AnalyticsContext() as analytics:
             success = success and analytics.group(
-                group=group,
-                group_id=str(group_id),
-                traits=group_metadata
+                group=group, group_id=str(group_id), traits=group_metadata
             )
 
     if v2:
         with AnalyticsContextV2() as analytics:
             success = success and analytics.group(
-                group_id=group_id,
-                traits=group_metadata
+                group_id=group_id, traits=group_metadata
             )
 
     return success
@@ -476,15 +474,13 @@ def track_event(
     if v1:
         with AnalyticsContext() as analytics:
             success = success and analytics.track(
-                event=event,
-                properties=metadata
+                event=event, properties=metadata
             )
 
     if v2:
         with AnalyticsContextV2() as analytics:
             success = success and analytics.track(
-                event=event,
-                properties=metadata
+                event=event, properties=metadata
             )
 
     return success

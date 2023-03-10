@@ -331,9 +331,7 @@ def go() -> None:
         metadata = {"gave_email": gave_email}
 
     with event_handler(
-        event=AnalyticsEvent.RUN_ZENML_GO,
-        metadata=metadata,
-        v2=True
+        event=AnalyticsEvent.RUN_ZENML_GO, metadata=metadata, v2=True
     ):
         console.print(zenml_cli_privacy_message, width=80)
 

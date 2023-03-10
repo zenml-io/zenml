@@ -26,13 +26,12 @@ from zenml.constants import ENV_ZENML_SERVER_FLAG
 from zenml.environment import Environment, get_environment
 from zenml.logger import get_logger
 
-
 if TYPE_CHECKING:
-    from zenml.utils.analytics_utils import AnalyticsEvent
     from zenml.models.server_models import (
         ServerDatabaseType,
         ServerDeploymentType,
     )
+    from zenml.utils.analytics_utils import AnalyticsEvent
 
 Json = Union[Dict[str, Any], List[Any], str, int, float, bool, None]
 

@@ -672,9 +672,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
                             "deployment_type": str(
                                 server_info.deployment_type
                             ),
-                            "database_type": str(
-                                server_info.database_type
-                            ),
+                            "database_type": str(server_info.database_type),
                         },
                         v2=True,
                     )

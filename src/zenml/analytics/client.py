@@ -21,7 +21,7 @@ import atexit
 import json
 import logging
 import numbers
-from typing import Any, Callable, Dict, Optional, Tuple, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Tuple
 from uuid import UUID
 
 from six import string_types
