@@ -376,6 +376,7 @@ class StackComponent:
             name=component_model.name,
             id=component_model.id,
             config=configuration,
+            metadata=component_model.metadata,
             flavor=component_model.flavor,
             type=component_model.type,
             created=component_model.created,
