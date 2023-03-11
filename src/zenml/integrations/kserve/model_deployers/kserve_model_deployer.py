@@ -244,7 +244,9 @@ class KServeModelDeployer(BaseModelDeployer):
         Raises:
             RuntimeError: if the KServe deployment server could not be stopped.
         """
-        with event_handler(AnalyticsEvent.MODEL_DEPLOYED) as analytics_handler:
+        with event_handler(
+            event=AnalyticsEvent.MODEL_DEPLOYED, v2=True
+        ) as analytics_handler:
             config = cast(KServeDeploymentConfig, config)
             service = None
 

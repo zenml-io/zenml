@@ -27,7 +27,11 @@ resource "helm_release" "zen-server" {
     name  = "zenml.deploymentType"
     value = "gcp"
   }
-  
+  set {
+    name = "zenml.analyticsOptIn"
+    value = var.analytics_opt_in
+  }
+
   # set up the right path for ZenML
   set {
     name  = "zenml.rootUrlPath"

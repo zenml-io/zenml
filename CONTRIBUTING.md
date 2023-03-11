@@ -146,11 +146,6 @@ bash scripts/format.sh
 bash scripts/run-ci-checks.sh
 ```
 
-If the spell checker catches errors, you will have to add the words to
-`.pyspelling-ignore-words`. (Note that if you wish to run the spellchecks
-manually on your local machine, first install `aspell` (using `brew` or
-`apt-get` or whatever package manager you are using on Windows).)
-
 Tests can be run as follows:
 
 ```

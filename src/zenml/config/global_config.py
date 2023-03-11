@@ -666,7 +666,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
 
                     identify_group(
                         AnalyticsGroup.ZENML_SERVER_GROUP,
-                        group_id=str(server_info.id),
+                        group_id=server_info.id,
                         group_metadata={
                             "version": server_info.version,
                             "deployment_type": str(
@@ -674,6 +674,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
                             ),
                             "database_type": str(server_info.database_type),
                         },
+                        v2=True,
                     )
 
     @property
@@ -782,10 +783,8 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         # been changed, we also want to update the information.
         if opted_in and email and self.user_email != email:
             identify_user(
-                {
-                    "email": email,
-                    "source": source,
-                }
+                user_metadata={"email": email, "source": source},
+                v2=True,
             )
             self.user_email = email
 
@@ -801,6 +800,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
             track_event(
                 AnalyticsEvent.OPT_IN_OUT_EMAIL,
                 {"opted_in": opted_in, "source": source},
+                v2=True,
             )
 
             self.user_email_opt_in = opted_in

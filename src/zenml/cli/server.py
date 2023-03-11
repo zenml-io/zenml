@@ -153,6 +153,7 @@ def up(
     with event_handler(
         AnalyticsEvent.ZENML_SERVER_STARTED
     ) as analytics_handler:
+
         from zenml.zen_server.deploy.deployer import ServerDeployer
         from zenml.zen_stores.sql_zen_store import SQLDatabaseDriver
 
@@ -391,7 +392,8 @@ def deploy(
         gcp_project_id: The project in GCP to deploy the server to.
     """
     with event_handler(
-        AnalyticsEvent.ZENML_SERVER_DEPLOYED
+        event=AnalyticsEvent.ZENML_SERVER_DEPLOYED,
+        v2=True,
     ) as analytics_handler:
         config_dict: Dict[str, Any] = {}
 

@@ -292,7 +292,9 @@ class SeldonModelDeployer(BaseModelDeployer):
                 to start, or if an operational failure is encountered before
                 it reaches a ready state.
         """
-        with event_handler(AnalyticsEvent.MODEL_DEPLOYED) as analytics_handler:
+        with event_handler(
+            event=AnalyticsEvent.MODEL_DEPLOYED, v2=True
+        ) as analytics_handler:
             config = cast(SeldonDeploymentConfig, config)
             service = None
 

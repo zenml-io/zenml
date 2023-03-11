@@ -20,6 +20,8 @@ via **Step Fixtures** can, for instance, be used to load the best performing
 prior model to compare newly trained models against.
 * [Controlling the Step Execution Order](./step-order.md) explains how
 to control the order in which steps of a pipeline get executed.
+* [Failure and Success hooks](./hooks) showcases how to use success and
+failure hooks on steps.
 
 {% hint style="info" %}
 We will keep adding more use-cases to the advanced guide of ZenML.

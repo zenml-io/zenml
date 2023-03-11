@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 from typing import Optional, Type
 
+from zenml import __version__ as zenml_version
 from zenml.orchestrators.base_orchestrator import (
     BaseOrchestratorConfig,
     BaseOrchestratorFlavor,
@@ -37,3 +38,35 @@ class AriaOrchestratorFlavor(BaseOrchestratorFlavor):
     @property
     def implementation_class(self) -> Type["LocalOrchestrator"]:
         return LocalOrchestrator
+
+    @property
+    def sdk_docs_url(self) -> Optional[str]:
+        """A url to point at docs explaining this flavor.
+
+        Returns:
+            A flavor docs url.
+        """
+        return self.generate_default_sdk_docs_url()
+
+    @property
+    def docs_url(self) -> Optional[str]:
+        """A url to point at docs explaining this flavor.
+
+        Returns:
+            A flavor docs url.
+        """
+        return self.generate_default_docs_url()
+
+
+def test_sdk_docs_url():
+    """Tests that SDK Docs URLs are correct."""
+    assert AriaOrchestratorFlavor().sdk_docs_url == (
+        f"https://apidocs.zenml.io/{zenml_version}/core_code_docs/core-orchestrators/#tests.unit.test_flavor"
+    )
+
+
+def test_docs_url():
+    """Tests that Docs URLs are correct."""
+    assert AriaOrchestratorFlavor().docs_url == (
+        f"https://docs.zenml.io/v/{zenml_version}/component-gallery/orchestrators/aria"
+    )

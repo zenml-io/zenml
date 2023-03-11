@@ -143,7 +143,8 @@ class PipelineDockerImageBuilder:
                 )
 
             push = (
-                not image_builder.config.is_local or not requires_zenml_build
+                not image_builder.is_building_locally
+                or not requires_zenml_build
             )
 
             if requires_zenml_build:
@@ -235,6 +236,9 @@ class PipelineDockerImageBuilder:
                 # We built a custom parent image and there was no container
                 # registry in the stack to push to, this is a local image
                 pull_parent_image = False
+            elif not image_builder.is_building_locally:
+                # Remote image builders always need to pull the image
+                pull_parent_image = True
             else:
                 # If the image is local, we don't need to pull it. Otherwise
                 # we play it safe and always pull in case the user pushed a new

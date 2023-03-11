@@ -847,8 +847,8 @@ def deploy(
         import_stack_flag: Import the stack automatically after the recipe is
             deployed. The stack configuration file is always generated and
             can be imported manually otherwise.
-        log_level: Choose one of TRACE, DEBUG, INFO, WARN or ERROR (case
-            insensitive) as log level for the `deploy` operation.
+        log_level: Choose one of TRACE, DEBUG, INFO, WARN or ERROR
+            (case-insensitive) as log level for the `deploy` operation.
         skip_check: Skip the checking of locals.tf file before executing the
             recipe.
         no_server: Don't deploy ZenML even if there's no active cloud
@@ -873,8 +873,8 @@ def deploy(
     with event_handler(
         event=AnalyticsEvent.RUN_STACK_RECIPE,
         metadata={"stack_recipe_name": stack_recipe_name},
+        v2=True,
     ):
-
         import python_terraform
         import yaml
 

@@ -122,7 +122,7 @@ def event_context_exit(
     Normally, the analytics context has an exit function which allows the main
     thread to continue by suppressing exceptions which occur during the event
     tracking. However, for the sake of the tests we would like to disable this
-    behaviour, so we can catch the errors which happen during this process.
+    behavior, so we can catch the errors which happen during this process.
     """
 
 
@@ -134,7 +134,7 @@ def test_analytics_event(
 ) -> None:
     """Checks whether the event sent for analytics has the right properties.
 
-    This is achieved by modifying the behaviour of several functionalities
+    This is achieved by modifying the behavior of several functionalities
     within the analytics process:
 
         1 - The environmental variables are patched to set the "ZENML_DEBUG"
