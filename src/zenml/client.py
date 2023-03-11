@@ -2273,7 +2273,7 @@ class Client(metaclass=ClientMetaClass):
             )
         )
         # Create the new component model
-        ctx.invoke(
+        result = ctx.invoke(
             deploy,
             path=path,
             stack_recipe_name=f"{cloud}-modular",
@@ -2281,6 +2281,9 @@ class Client(metaclass=ClientMetaClass):
             no_server=True,
             **component,
         )
+
+        if result == 1:
+            return
 
         # get the outputs from the deployed recipe
         outputs = ctx.invoke(
@@ -2418,7 +2421,8 @@ class Client(metaclass=ClientMetaClass):
         )
 
         logger.info(
-            "Deregestering stack component %s...", component.name,
+            "Deregestering stack component %s...",
+            component.name,
         )
 
         # call the delete stack component function

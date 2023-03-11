@@ -830,7 +830,7 @@ def deploy(
     skip_pull: bool,
     stack_name: Optional[str],
     config: Optional[str],
-) -> None:
+) -> int:
     """Run the stack_recipe at the specified relative path.
 
     `zenml stack_recipe pull <STACK_RECIPE_NAME>` has to be called with the
@@ -869,12 +869,33 @@ def deploy(
             there's only one flavor per cloud provider and that will be deployed.
         config: Use a YAML or JSON configuration or configuration file to pass
             variables to the stack recipe.
+
+    Returns:
+        The exit code of the command. 1 if deployment successful, 0 otherwise.
     """
     with event_handler(
         event=AnalyticsEvent.RUN_STACK_RECIPE,
         metadata={"stack_recipe_name": stack_recipe_name},
-        v2=True,
-    ):
+        v1=True,
+    ) as handler:
+
+        # build a dict of all stack componnet options that have non-null values
+        stack_component_options = {
+            "artifact_store": artifact_store,
+            "orchestrator": orchestrator,
+            "container_registry": container_registry,
+            "model_deployer": model_deployer,
+            "experiment_tracker": experiment_tracker,
+            "secrets_manager": secrets_manager,
+        }
+
+        # filter out null values
+        stack_component_options = {
+            k: v for k, v in stack_component_options.items() if v is not None
+        }
+
+        handler.metadata.update(stack_component_options)
+
         import python_terraform
         import yaml
 
@@ -937,7 +958,7 @@ def deploy(
                         "Prerequisites are not installed. Please make sure "
                         "they are met and run deploy again."
                     )
-                    return
+                    return 1
 
                 if not skip_check:
                     logger.info(
@@ -984,7 +1005,7 @@ def deploy(
                         stack_recipe_service = StackRecipeService(
                             config=terraform_config,
                         )
-                    
+
                     # get input variables
                     variables_dict: Dict[str, Any] = {}
 
@@ -1076,6 +1097,7 @@ def deploy(
                                 return
                             else:
                                 from zenml.cli import server
+
                                 ctx.invoke(
                                     server.deploy,
                                     config=stack_recipe_service.get_deployment_info(),
@@ -1131,7 +1153,10 @@ def deploy(
                             "metadata-db-password' to get the "
                             "value in the command-line."
                         )
-
+                else:
+                    logger.info("Deployment cancelled.")
+                    return 1
+        
             except RuntimeError as e:
                 cli_utils.error(
                     f"Error running recipe {stack_recipe_name}: {str(e)} "

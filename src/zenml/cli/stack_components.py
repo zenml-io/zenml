@@ -1145,8 +1145,6 @@ def generate_stack_component_deploy_command(
             metadata={"cloud": cloud, "created_by": "recipe"},
         )
 
-        cli_utils.declare(f"Successfully deployed {display_name} '{name}'.")
-
     return deploy_stack_component_command
 
 
@@ -1323,6 +1321,22 @@ def register_single_stack_component_cli_commands(
         "explain", help=f"Explaining the {plural_display_name}."
     )(explain_command)
 
+    # zenml stack-component deploy
+    deploy_command = generate_stack_component_deploy_command(component_type)
+    context_settings = {"ignore_unknown_options": True}
+    command_group.command(
+        "deploy",
+        context_settings=context_settings,
+        help=f"Deploy a new {singular_display_name}.",
+    )(deploy_command)
+
+    # zenml stack-component destroy
+    destroy_command = generate_stack_component_destroy_command(component_type)
+    command_group.command(
+        "destroy",
+        help=f"Destroy an existing {singular_display_name}.",
+    )(destroy_command)
+
     # zenml stack-component flavor
     @command_group.group(
         "flavor", help=f"Commands to interact with {plural_display_name}."
@@ -1365,22 +1379,6 @@ def register_single_stack_component_cli_commands(
         "delete",
         help=f"Delete a {plural_display_name} flavor.",
     )(delete_flavor_command)
-
-    # zenml stack-component deploy
-    deploy_command = generate_stack_component_deploy_command(component_type)
-    context_settings = {"ignore_unknown_options": True}
-    command_group.command(
-        "deploy",
-        context_settings=context_settings,
-        help=f"Deploy a new {singular_display_name}.",
-    )(deploy_command)
-
-    # zenml stack-component destroy
-    destroy_command = generate_stack_component_destroy_command(component_type)
-    command_group.command(
-        "destroy",
-        help=f"Destroy an existing {singular_display_name}.",
-    )(destroy_command)
 
 
 def register_all_stack_component_cli_commands() -> None:
