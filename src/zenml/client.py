@@ -1679,6 +1679,9 @@ class Client(metaclass=ClientMetaClass):
             stack_update=update_model,
         )
 
+    def delete_stack_recursively(self, name_id_or_prefix: Union[str, UUID]) -> None :
+        pass
+
     def delete_stack(self, name_id_or_prefix: Union[str, UUID]) -> None:
         """Deregisters a stack.
 

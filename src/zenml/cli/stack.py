@@ -733,11 +733,18 @@ def describe_stack(stack_name_or_id: Optional[str] = None) -> None:
 @stack.command("delete", help="Delete a stack given its name.")
 @click.argument("stack_name_or_id", type=str)
 @click.option("--yes", "-y", is_flag=True, required=False)
-def delete_stack(stack_name_or_id: str, yes: bool = False) -> None:
+@click.option(
+    "--recursive",
+    "-r",
+    is_flag=True,
+    help="Recursively delete all stack components",
+)
+def delete_stack(stack_name_or_id: str, yes: bool = False, recursive: bool = False) -> None:
     """Delete a stack.
 
     Args:
         stack_name_or_id: Name or id of the stack to delete.
+        recursive: Recursively delete all stack components
         yes: Stack will be deleted without prompting for
             confirmation.
     """
@@ -749,9 +756,15 @@ def delete_stack(stack_name_or_id: str, yes: bool = False) -> None:
     if not confirmation:
         cli_utils.declare("Stack deletion canceled.")
         return
+    
+
 
     with console.status(f"Deleting stack '{stack_name_or_id}'...\n"):
         client = Client()
+
+        if recursive:
+            # client.delete_stack()
+            pass
         try:
             client.delete_stack(stack_name_or_id)
         except (KeyError, ValueError, IllegalOperationError) as err:
