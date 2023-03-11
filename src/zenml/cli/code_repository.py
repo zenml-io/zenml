@@ -26,7 +26,7 @@ from zenml.console import console
 from zenml.enums import CliCategories
 from zenml.logger import get_logger
 from zenml.models import CodeRepositoryFilterModel
-from zenml.utils.source_utils_v2 import resolve
+from zenml.utils.source_utils import resolve_class
 
 logger = get_logger(__name__)
 
@@ -108,7 +108,7 @@ def connect_code_repository(
                 "Please install github integration to use this feature."
                 " By running `zenml integration install github`."
             )
-        source = resolve(GitHubCodeRepository)
+        source = Source.from_import_path(resolve_class(GitHubCodeRepository))
     elif type_ == "gitlab":
         try:
             from zenml.integrations.gitlab.code_repositories import (
@@ -119,7 +119,7 @@ def connect_code_repository(
                 "Please install gitlab integration to use this feature."
                 " By running `zenml integration install gitlab`."
             )
-        source = resolve(GitLabCodeRepository)
+        source = Source.from_import_path(resolve_class(GitLabCodeRepository))
     elif type_ == "custom":
         source = Source.from_import_path(source_path)
 
