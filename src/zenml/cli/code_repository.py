@@ -53,6 +53,7 @@ def code_repository() -> None:
 @click.option(
     "--source",
     "-s",
+    "source_path",
     type=str,
     required=False,
     help="Module containing the code repository implementation if type is custom.",
@@ -65,7 +66,7 @@ def code_repository() -> None:
 def connect_code_repository(
     name: str,
     type_: str,
-    source: Optional[str],
+    source_path: Optional[str],
     args: List[str],
 ) -> None:
     """Connect a code repository
@@ -75,11 +76,11 @@ def connect_code_repository(
     """
     cli_utils.print_active_config()
     if type_ == "custom":
-        if not source:
+        if not source_path:
             cli_utils.error(
                 "Please provide a path to the custom source module."
             )
-        if not os.path.exists(source):
+        if not os.path.exists(source_path):
             cli_utils.error(
                 "Please provide a valid path to the custom source module."
             )
@@ -120,7 +121,7 @@ def connect_code_repository(
             )
         source = source_utils_v2.resolve(GitLabCodeRepository)
     elif type_ == "custom":
-        source = Source.from_import_path(source)
+        source = Source.from_import_path(source_path)
 
     with console.status(f"Connecting Code Repository '{name}'...\n"):
         # Connect to the code repository
