@@ -17,24 +17,19 @@ This module is based on the 'analytics-python' package created by Segment.
 The base functionalities are adapted to work with the ZenML analytics server.
 """
 import logging
-from queue import Queue
+from queue import Empty, Queue
 from threading import Thread
-from typing import Callable
+from typing import Callable, List
 
 import backoff
 import monotonic
 
 from zenml.analytics.request import APIError, post
 
-try:
-    from queue import Empty
-except ImportError:
-    from Queue import Empty
-
 MAX_MSG_SIZE = 32 << 10
 
 # Our servers only accept batches less than 500KB. Here limit is set slightly
-# lower to leave space for extra data that will be added later, eg. "sentAt".
+# lower to leave space for extra data that will be added later, e. g. "sentAt".
 BATCH_SIZE_LIMIT = 475000
 
 logger = logging.getLogger(__name__)
@@ -78,7 +73,7 @@ class Consumer(Thread):
         self.retries = retries
         self.timeout = timeout
 
-    def run(self):
+    def run(self) -> None:
         """Runs the consumer."""
         logger.debug("Consumer is running...")
         while self.running:
@@ -86,11 +81,11 @@ class Consumer(Thread):
 
         logger.debug("Consumer exited.")
 
-    def pause(self):
+    def pause(self) -> None:
         """Pause the consumer."""
         self.running = False
 
-    def upload(self):
+    def upload(self) -> bool:
         """Upload the next batch of items, return whether successful."""
         success = False
         batch = self.next()
@@ -111,7 +106,7 @@ class Consumer(Thread):
                 self.queue.task_done()
             return success
 
-    def next(self):
+    def next(self) -> List[str]:
         """Return the next batch of items to upload."""
         queue = self.queue
         items = []

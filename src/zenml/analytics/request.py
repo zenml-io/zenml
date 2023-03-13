@@ -68,7 +68,7 @@ def post(batch: List[str], timeout: int = 15) -> requests.Response:
 class APIError(Exception):
     """Custom exception class for API-related errors."""
 
-    def __init__(self, status, message) -> None:
+    def __init__(self, status: int, message: str) -> None:
         """Initialization.
 
         Args:

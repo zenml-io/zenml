@@ -21,7 +21,8 @@ from types import TracebackType
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, Union
 from uuid import UUID
 
-from zenml import __version__, analytics
+from zenml import __version__
+from zenml.analytics.client import Client
 from zenml.constants import ENV_ZENML_SERVER_FLAG
 from zenml.environment import Environment, get_environment
 from zenml.logger import get_logger
@@ -136,7 +137,7 @@ class AnalyticsContext:
         """
         success = False
         if self.analytics_opt_in:
-            success, _ = analytics.Client().identify(
+            success, _ = Client().identify(
                 user_id=self.user_id,
                 traits=traits,
             )
@@ -164,7 +165,7 @@ class AnalyticsContext:
 
             traits.update({"group_id": group_id})
 
-            success, _ = analytics.Client().group(
+            success, _ = Client().group(
                 user_id=self.user_id,
                 group_id=group_id,
                 traits=traits,
@@ -222,7 +223,7 @@ class AnalyticsContext:
             if isinstance(v, UUID):
                 properties[k] = str(v)
 
-        success, _ = analytics.Client().track(
+        success, _ = Client().track(
             user_id=self.user_id,
             event=event,
             properties=properties,

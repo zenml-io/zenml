@@ -47,6 +47,7 @@ _auth_context: ContextVar[Optional["AuthContext"]] = ContextVar(
 
 def get_auth_context() -> Optional["AuthContext"]:
     """Returns the current authentication context.
+
     Returns:
         The authentication context.
     """
@@ -56,8 +57,10 @@ def get_auth_context() -> Optional["AuthContext"]:
 
 def set_auth_context(auth_context: "AuthContext") -> "AuthContext":
     """Sets the current authentication context.
+
     Args:
         auth_context: The authentication context.
+
     Returns:
         The authentication context.
     """

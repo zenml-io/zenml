@@ -21,6 +21,7 @@ import atexit
 import json
 import logging
 import numbers
+import queue
 from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Tuple
 from uuid import UUID
 
@@ -33,10 +34,6 @@ from zenml.analytics.utils import AnalyticsEncoder
 if TYPE_CHECKING:
     from zenml.utils.analytics_utils import AnalyticsEvent
 
-try:
-    import queue
-except ImportError:
-    import Queue as queue
 
 ID_TYPES = (numbers.Number, string_types)
 

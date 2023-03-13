@@ -656,14 +656,14 @@ class event_handler(object):
         Args:
             event: The type of the analytics event
             metadata: The metadata of the event.
-        v1: Flag to determine whether analytics v1 is included.
-        v2: Flag to determine whether analytics v2 is included.
+            v1: Flag to determine whether analytics v1 is included.
+            v2: Flag to determine whether analytics v2 is included.
         """
         self.event: AnalyticsEvent = event
         self.metadata: Dict[str, Any] = metadata or {}
         self.tracker: Optional[AnalyticsTrackerMixin] = None
-        self.v1: bool = v1
-        self.v2: bool = v2
+        self.v1: Optional[bool] = v1
+        self.v2: Optional[bool] = v2
 
     def __enter__(self) -> "event_handler":
         """Enter function of the event handler.
