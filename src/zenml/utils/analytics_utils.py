@@ -213,12 +213,11 @@ class AnalyticsContext:
             exc_tb: Exception traceback.
 
         Returns:
-            True if exception was handled, False otherwise.
+            True, we should never fail main thread.
         """
         if exc_val is not None:
             logger.debug(f"Sending telemetry data failed: {exc_val}")
 
-        # We should never fail main thread
         return True
 
     def identify(self, traits: Optional[Dict[str, Any]] = None) -> bool:
