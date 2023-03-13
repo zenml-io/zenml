@@ -25,7 +25,7 @@ from zenml.logger import get_logger
 from zenml.materializers import UnmaterializedArtifact
 from zenml.steps import BaseParameters, step
 from zenml.steps.step_context import StepContext
-from zenml.utils import source_utils
+from zenml.utils import source_utils_v2
 from zenml.utils.materializer_utils import load_artifact
 
 logger = get_logger(__name__)
@@ -109,7 +109,7 @@ def bento_builder_step(
         exclude=params.exclude,
         python=params.python,
         docker=params.docker,
-        build_ctx=params.working_dir or source_utils.get_source_root_path(),
+        build_ctx=params.working_dir or source_utils_v2.get_source_root(),
     )
 
     # Return the BentoML Bento bundle

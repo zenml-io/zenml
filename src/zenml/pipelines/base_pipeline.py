@@ -1106,7 +1106,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
             The unique identifier of the pipeline.
         """
         hash_ = hashlib.md5()
-        hash_.update(pipeline_spec.json_with_simple_sources.encode())
+        hash_.update(pipeline_spec.json_with_string_sources.encode())
 
         for step_spec in pipeline_spec.steps:
             step_source = self.steps[

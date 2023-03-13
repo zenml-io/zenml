@@ -37,9 +37,9 @@ def code_repository() -> None:
 
 
 @code_repository.command(
-    "connect",
+    "register",
     context_settings={"ignore_unknown_options": True},
-    help="Connect a code repository.",
+    help="Register a code repository.",
 )
 @click.argument("name", type=click.STRING)
 @click.option(
@@ -63,13 +63,13 @@ def code_repository() -> None:
     nargs=-1,
     type=click.UNPROCESSED,
 )
-def connect_code_repository(
+def register_code_repository(
     name: str,
     type_: str,
     source_path: Optional[str],
     args: List[str],
 ) -> None:
-    """Connect a code repository
+    """Register a code repository.
 
     Args:
         name: Name of the code repository

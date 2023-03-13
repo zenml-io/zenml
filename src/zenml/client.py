@@ -2610,7 +2610,11 @@ class Client(metaclass=ClientMetaClass):
             user_id: The  id of the user to filter by.
             pipeline_id: The id of the pipeline to filter by.
             stack_id: The id of the stack to filter by.
+            is_local: Use to filter local builds.
+            contains_code: Use to filter builds that contain code.
             zenml_version: The version of ZenML to filter by.
+            python_version: The Python version to filter by.
+            checksum: The build checksum to filter by.
 
         Returns:
             A page with builds fitting the filter description

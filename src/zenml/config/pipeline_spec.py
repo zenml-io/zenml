@@ -40,7 +40,12 @@ class PipelineSpec(StrictBaseModel):
         return NotImplemented
 
     @property
-    def json_with_simple_sources(self) -> str:
+    def json_with_string_sources(self) -> str:
+        """JSON representation with sources replaced by their import path.
+
+        Returns:
+            The JSON representation.
+        """
         dict_ = self.dict()
 
         for step_dict in dict_["steps"]:

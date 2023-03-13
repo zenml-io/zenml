@@ -106,7 +106,7 @@ def resolve(obj: Union[Type[Any], FunctionType, ModuleType]) -> Source:
         module = sys.modules[obj.__module__]
         attribute_name = obj.__name__
 
-    if attribute_name and not getattr(module, attribute_name, None) is obj:
+    if attribute_name and getattr(module, attribute_name, None) is not obj:
         raise RuntimeError(
             f"Unable to resolve object `{obj}`. For the resolving to work, the "
             "class or function must be defined as top-level code (= it must "

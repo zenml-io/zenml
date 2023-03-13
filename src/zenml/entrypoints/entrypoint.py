@@ -22,7 +22,7 @@ from zenml.entrypoints.base_entrypoint_configuration import (
     ENTRYPOINT_CONFIG_SOURCE_OPTION,
     BaseEntrypointConfiguration,
 )
-from zenml.utils import source_utils
+from zenml.utils import source_utils_v2
 
 
 def _setup_logging() -> None:
@@ -45,7 +45,7 @@ def main() -> None:
     parser.add_argument(f"--{ENTRYPOINT_CONFIG_SOURCE_OPTION}", required=True)
     args, remaining_args = parser.parse_known_args()
 
-    entrypoint_config_class = source_utils.load_and_validate_class(
+    entrypoint_config_class = source_utils_v2.load_and_validate_class(
         args.entrypoint_config_source,
         expected_class=BaseEntrypointConfiguration,
     )

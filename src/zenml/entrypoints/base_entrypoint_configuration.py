@@ -15,6 +15,7 @@
 
 import argparse
 import os
+import sys
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, Dict, List, NoReturn, Set
 from uuid import UUID
@@ -26,9 +27,6 @@ from zenml.constants import (
     handle_bool_env_var,
 )
 from zenml.logger import get_logger
-from zenml.models.pipeline_deployment_models import (
-    PipelineDeploymentResponseModel,
-)
 from zenml.utils import source_utils, source_utils_v2, uuid_utils
 
 if TYPE_CHECKING:
@@ -131,7 +129,7 @@ class BaseEntrypointConfiguration(ABC):
 
         arguments = [
             f"--{ENTRYPOINT_CONFIG_SOURCE_OPTION}",
-            source_utils.resolve_class(cls),
+            source_utils_v2.resolve(cls).import_path,
             f"--{DEPLOYMENT_ID_OPTION}",
             str(deployment_id),
         ]
@@ -226,6 +224,8 @@ class BaseEntrypointConfiguration(ABC):
         source_utils_v2.set_custom_code_repository(
             root=code_repo_root, commit=repo_reference.commit, repo=repo
         )
+        # Add downloaded file directory to python path
+        sys.path.insert(0, download_dir)
 
         logger.info("Code download finished.")
 
