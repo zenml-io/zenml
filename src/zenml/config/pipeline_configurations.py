@@ -19,6 +19,7 @@ from pydantic import validator
 
 from zenml.config.constants import DOCKER_SETTINGS_KEY
 from zenml.config.schedule import Schedule
+from zenml.config.source import Source
 from zenml.config.step_configurations import StepConfigurationUpdate
 from zenml.config.strict_base_model import StrictBaseModel
 from zenml.models.pipeline_build_models import PipelineBuildBaseModel
@@ -39,8 +40,25 @@ class PipelineConfigurationUpdate(StrictBaseModel):
     enable_artifact_metadata: Optional[bool] = None
     settings: Dict[str, BaseSettings] = {}
     extra: Dict[str, Any] = {}
-    failure_hook_source: Optional[str] = None
-    success_hook_source: Optional[str] = None
+    failure_hook_source: Optional[Source] = None
+    success_hook_source: Optional[Source] = None
+
+    @validator("failure_hook_source", "success_hook_source", pre=True)
+    def _convert_source(
+        cls, value: Union[Source, str, None]
+    ) -> Optional[Source]:
+        """Converts an old source string to a source object.
+
+        Args:
+            value: Source string or object.
+
+        Returns:
+            The converted source.
+        """
+        if isinstance(value, str):
+            value = Source.from_import_path(value)
+
+        return value
 
 
 class PipelineConfiguration(PipelineConfigurationUpdate):

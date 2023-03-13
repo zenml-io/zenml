@@ -55,6 +55,7 @@ from zenml.steps.utils import (
 from zenml.utils import source_utils_v2
 
 if TYPE_CHECKING:
+    from zenml.config.source import Source
     from zenml.config.step_configurations import Step
     from zenml.metadata.metadata_types import MetadataType
     from zenml.stack import Stack
@@ -512,7 +513,7 @@ class StepRunner:
 
     def load_and_run_hook(
         self,
-        hook_source: str,
+        hook_source: "Source",
         step_exception: Optional[BaseException],
         output_artifact_uris: Dict[str, str],
         output_materializers: Dict[str, Type[BaseMaterializer]],
@@ -526,7 +527,7 @@ class StepRunner:
             output_materializers: The output materializers of the step.
         """
         try:
-            hook = source_utils.load_source_path(hook_source)
+            hook = source_utils_v2.load(hook_source)
             hook_spec = inspect.getfullargspec(inspect.unwrap(hook))
             function_params = self._parse_hook_inputs(
                 args=hook_spec.args,

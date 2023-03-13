@@ -25,7 +25,7 @@ if TYPE_CHECKING:
     HookSpecification = Union[str, Source, FunctionType]
 
 
-def resolve_and_validate_hook(hook: "HookSpecification") -> str:
+def resolve_and_validate_hook(hook: "HookSpecification") -> Source:
     """Resolves and validates a hook callback.
 
     Args:

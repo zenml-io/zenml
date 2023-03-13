@@ -101,10 +101,27 @@ class StepConfigurationUpdate(StrictBaseModel):
     parameters: Dict[str, Any] = {}
     settings: Dict[str, BaseSettings] = {}
     extra: Dict[str, Any] = {}
-    failure_hook_source: Optional[str] = None
-    success_hook_source: Optional[str] = None
+    failure_hook_source: Optional[Source] = None
+    success_hook_source: Optional[Source] = None
 
     outputs: Mapping[str, PartialArtifactConfiguration] = {}
+
+    @validator("failure_hook_source", "success_hook_source", pre=True)
+    def _convert_source(
+        cls, value: Union[Source, str, None]
+    ) -> Optional[Source]:
+        """Converts an old source string to a source object.
+
+        Args:
+            value: Source string or object.
+
+        Returns:
+            The converted source.
+        """
+        if isinstance(value, str):
+            value = Source.from_import_path(value)
+
+        return value
 
 
 class PartialStepConfiguration(StepConfigurationUpdate):

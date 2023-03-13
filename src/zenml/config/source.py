@@ -13,10 +13,10 @@
 #  permissions and limitations under the License.
 
 from enum import Enum
-from typing import Any, Optional
+from typing import Optional
 from uuid import UUID
 
-from pydantic import BaseModel, validator
+from pydantic import BaseModel, Extra, validator
 
 from zenml.logger import get_logger
 
@@ -37,16 +37,18 @@ class Source(BaseModel):
     attribute: Optional[str] = None
     type: SourceType
 
-    def __new__(cls, **kwargs: Any) -> "Source":
-        type_ = kwargs.get("type")
-        type_ = SourceType(type_) if type_ else None
+    # TODO: Adding this code messes with FastAPI as they do some kind of
+    # validation the prevents subclasses for response model fields
+    # def __new__(cls, **kwargs: Any) -> "Source":
+    #     type_ = kwargs.get("type")
+    #     type_ = SourceType(type_) if type_ else None
 
-        if type_ == SourceType.CODE_REPOSITORY:
-            return object.__new__(CodeRepositorySource)
-        elif type_ == SourceType.DISTRIBUTION_PACKAGE:
-            return object.__new__(DistributionPackageSource)
+    #     if type_ == SourceType.CODE_REPOSITORY:
+    #         return object.__new__(CodeRepositorySource)
+    #     elif type_ == SourceType.DISTRIBUTION_PACKAGE:
+    #         return object.__new__(DistributionPackageSource)
 
-        return super().__new__(cls)
+    #     return super().__new__(cls)
 
     @classmethod
     def from_import_path(cls, import_path: str) -> "Source":
@@ -90,6 +92,9 @@ class Source(BaseModel):
     @property
     def is_module_source(self) -> bool:
         return self.attribute is None
+
+    class Config:
+        extra = Extra.allow
 
 
 class DistributionPackageSource(Source):

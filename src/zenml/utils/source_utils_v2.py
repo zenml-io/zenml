@@ -59,10 +59,12 @@ def load(source: Union[Source, str]) -> Any:
         source = Source.from_import_path(source)
 
     import_root = None
-    if isinstance(source, CodeRepositorySource):
+    if source.type == SourceType.CODE_REPOSITORY:
+        source = CodeRepositorySource.parse_obj(source)
         _warn_about_potential_source_loading_issues(source=source)
         import_root = get_source_root()
-    elif isinstance(source, DistributionPackageSource):
+    elif source.type == SourceType.DISTRIBUTION_PACKAGE:
+        source = DistributionPackageSource.parse_obj(source)
         if source.version and source.package_name:
             current_package_version = _get_package_version(
                 package_name=source.package_name
