@@ -36,6 +36,8 @@ PARAM_OUTPUT_ARTIFACTS = "output_artifacts"
 PARAM_OUTPUT_MATERIALIZERS = "output_materializers"
 PARAM_SETTINGS = "settings"
 PARAM_EXTRA_OPTIONS = "extra"
+PARAM_ON_FAILURE = "on_failure"
+PARAM_ON_SUCCESS = "on_success"
 
 
 def resolve_type_annotation(obj: Any) -> Any:

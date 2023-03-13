@@ -124,7 +124,7 @@ for storing artifacts, the Minio server is deployed as a Kubernetes pod.
 docker **Container Registry**.
 * The **Kubeflow Orchestrator** is responsible for running your ZenML pipeline
 in Kubeflow Pipelines.
-* The **MLFlow Expirement Tracker** is used to track the experiments and
+* The **MLFlow Experiment Tracker** is used to track the experiments and
 metrics of your pipeline runs. The MLFlow server is deployed as a Kubernetes
 pod.
 

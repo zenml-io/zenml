@@ -116,7 +116,7 @@ mlflow_training_pipeline(
     model_source_uri: URI of the model source. If not provided, the model
         will be fetched from the MLflow tracking server.
     description: Description of the model.
-    matadata: Tags to be added to the model.
+    metadata: Tags to be added to the model.
 """
 ```
 
