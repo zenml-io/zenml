@@ -398,9 +398,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
             )
             return
 
-        store = BaseZenStore.create_store(
-            config, True, **kwargs
-        )
+        store = BaseZenStore.create_store(config, True, **kwargs)
 
         logger.debug(f"Configuring the global store to {store.config}")
         self.store = store.config
