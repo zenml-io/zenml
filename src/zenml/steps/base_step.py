@@ -339,11 +339,15 @@ class BaseStep(metaclass=BaseStepMeta):
         )
 
     @classmethod
-    def load_from_source(cls, source: str) -> "BaseStep":
+    def load_from_source(
+        cls, source: str, name: Optional[str] = None
+    ) -> "BaseStep":
         """Loads a step from source.
 
         Args:
             source: The path to the step source.
+            name: The name parameter of the step in the pipeline. If not provided, the
+                class name of the step will be used.
 
         Returns:
             The loaded step.
@@ -351,7 +355,7 @@ class BaseStep(metaclass=BaseStepMeta):
         step_class: Type[BaseStep] = source_utils.load_and_validate_class(
             source, expected_class=BaseStep
         )
-        return step_class()
+        return step_class(name=name)
 
     @property
     def upstream_steps(self) -> Set[str]:

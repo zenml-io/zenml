@@ -881,7 +881,10 @@ class BasePipeline(metaclass=BasePipelineMeta):
                         "the output of the step was renamed."
                     )
 
-            step = BaseStep.load_from_source(step_spec.source)
+            step = BaseStep.load_from_source(
+                source=step_spec.source,
+                name=step_spec.pipeline_parameter_name,
+            )
             input_names = set(step.INPUT_SIGNATURE)
             spec_input_names = set(step_spec.inputs)
 
