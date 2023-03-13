@@ -52,7 +52,7 @@ class SecretReferenceMixin(BaseModel):
 
             if not secret_utils.is_secret_reference(value):
                 if secret_utils.is_secret_field(field):
-                    logger.warning(
+                    logger.debug(
                         "You specified a plain-text value for the sensitive "
                         f"attribute `{key}`. This is currently only a warning, "
                         "but future versions of ZenML will require you to pass "

@@ -75,7 +75,7 @@ class StackComponentConfig(BaseModel, ABC):
 
             if not secret_utils.is_secret_reference(value):
                 if secret_utils.is_secret_field(field):
-                    logger.warning(
+                    logger.debug(
                         "You specified a plain-text value for the sensitive "
                         f"attribute `{key}` for a `{self.__class__.__name__}` "
                         "stack component. This is currently only a warning, "
