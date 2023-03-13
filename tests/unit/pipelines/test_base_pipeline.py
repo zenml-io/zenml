@@ -606,9 +606,9 @@ def test_loading_pipeline_from_model(clean_workspace, create_pipeline_model):
                 },
                 {
                     "source": "my_steps.s2",
-                    "upstream_steps": ["s1"],
+                    "upstream_steps": ["step_1"],
                     "inputs": {
-                        "inp": {"step_name": "s1", "output_name": "output"}
+                        "inp": {"step_name": "step_1", "output_name": "output"}
                     },
                     "pipeline_parameter_name": "step_2",
                 },
