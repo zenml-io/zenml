@@ -392,31 +392,40 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         """
         from zenml.zen_stores.base_zen_store import BaseZenStore
 
+        if self.store == config and self._zen_store:
+            BaseZenStore.create_store(
+                config, skip_default_registrations, **kwargs
+            )
+            return
+
         store = BaseZenStore.create_store(
-            config, skip_default_registrations, **kwargs
+            config, True, **kwargs
         )
-        if self.store != store.config or not self._zen_store:
-            logger.debug(f"Configuring the global store to {store.config}")
-            self.store = store.config
 
-            # We want to check if the active user has opted in or out for using
-            # an email address for marketing purposes and if so, record it in
-            # the analytics.
-            active_user = store.get_user(include_private=True)
-            if active_user.email_opted_in is not None:
-                self.record_email_opt_in_out(
-                    opted_in=active_user.email_opted_in,
-                    email=active_user.email,
-                    source=AnalyticsEventSource.ZENML_SERVER,
-                )
-            self._zen_store = store
+        logger.debug(f"Configuring the global store to {store.config}")
+        self.store = store.config
+        self._zen_store = store
 
-            # Sanitize the global configuration to reflect the new store
-            self._sanitize_config()
-            self._write_config()
+        if not skip_default_registrations:
+            store._initialize_database()
 
-            local_stores_path = Path(self.local_stores_path)
-            local_stores_path.mkdir(parents=True, exist_ok=True)
+        # We want to check if the active user has opted in or out for using
+        # an email address for marketing purposes and if so, record it in
+        # the analytics.
+        active_user = store.get_user(include_private=True)
+        if active_user.email_opted_in is not None:
+            self.record_email_opt_in_out(
+                opted_in=active_user.email_opted_in,
+                email=active_user.email,
+                source=AnalyticsEventSource.ZENML_SERVER,
+            )
+
+        # Sanitize the global configuration to reflect the new store
+        self._sanitize_config()
+        self._write_config()
+
+        local_stores_path = Path(self.local_stores_path)
+        local_stores_path.mkdir(parents=True, exist_ok=True)
 
     def _sanitize_config(self) -> None:
         """Sanitize and save the global configuration.
