@@ -63,6 +63,7 @@ class GitLabCodeRepository(BaseCodeRepository):
             self._gitlab_session = Gitlab(
                 self.config.url, private_token=self.config.token
             )
+            self._gitlab_session.auth()
             self._gitlab_project = self._gitlab_session.projects.get(
                 f"{self.config.group}/{self.config.project}"
             )
