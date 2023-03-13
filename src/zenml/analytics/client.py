@@ -34,7 +34,6 @@ from zenml.analytics.utils import AnalyticsEncoder
 if TYPE_CHECKING:
     from zenml.utils.analytics_utils import AnalyticsEvent
 
-
 ID_TYPES = (numbers.Number, string_types)
 
 logger = logging.getLogger(__name__)
@@ -215,7 +214,7 @@ class Client(object):
             logger.warning("ZenML analytics-python queue is full")
             return False, msg
 
-    def flush(self):
+    def flush(self) -> None:
         """Method to force a flush from the internal queue to the server."""
         q = self.queue
         size = q.qsize()
@@ -223,7 +222,7 @@ class Client(object):
         # Note that this message may not be precise, because of threading.
         logger.debug("successfully flushed about %s items.", size)
 
-    def join(self):
+    def join(self) -> None:
         """Method to end the consumer thread once the queue is empty."""
         for consumer in self.consumers:
             consumer.pause()
@@ -233,7 +232,7 @@ class Client(object):
                 # consumer thread has not started
                 pass
 
-    def shutdown(self):
+    def shutdown(self) -> None:
         """Method to flush all messages and cleanly shutdown the client."""
         self.flush()
         self.join()

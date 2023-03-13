@@ -19,7 +19,7 @@ The base functionalities are adapted to work with the ZenML analytics server.
 import logging
 from queue import Empty, Queue
 from threading import Thread
-from typing import Callable, List
+from typing import Any, Callable, List
 
 import backoff
 import monotonic
@@ -109,7 +109,7 @@ class Consumer(Thread):
     def next(self) -> List[str]:
         """Return the next batch of items to upload."""
         queue = self.queue
-        items = []
+        items: List[str] = []
 
         start_time = monotonic.monotonic()
         total_size = 0
@@ -139,10 +139,10 @@ class Consumer(Thread):
 
         return items
 
-    def request(self, batch) -> None:
+    def request(self, batch: List[str]) -> None:
         """Attempt to upload the batch and retry before raising an error."""
 
-        def fatal_exception(exc) -> bool:
+        def fatal_exception(exc: Any) -> bool:
             if isinstance(exc, APIError):
                 # retry on server errors and client errors
                 # with 429 status code (rate limited),

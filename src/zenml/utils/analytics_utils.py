@@ -447,7 +447,7 @@ def identify_group(
 
 
 def track_event(
-    event: Union[str, AnalyticsEvent],
+    event: AnalyticsEvent,
     metadata: Optional[Dict[str, Any]] = None,
     v1: Optional[bool] = True,
     v2: Optional[bool] = False,
