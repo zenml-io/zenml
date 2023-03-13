@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 import os
 import re
-from typing import Any, Dict, Optional
+from typing import Optional
 
 from gitlab import Gitlab
 from gitlab.v4.objects import Project
@@ -22,7 +22,9 @@ from zenml.code_repositories import (
     BaseCodeRepository,
     LocalRepository,
 )
-from zenml.code_repositories.base_code_repository import BaseCodeRepositoryConfig
+from zenml.code_repositories.base_code_repository import (
+    BaseCodeRepositoryConfig,
+)
 from zenml.code_repositories.git.local_git_repository import LocalGitRepository
 from zenml.logger import get_logger
 from zenml.utils.secret_utils import SecretField
@@ -53,9 +55,11 @@ class GitLabCodeRepository(BaseCodeRepository):
         return GitLabCodeRepositoryConfig(**self._config)
 
     @property
-    def gitlab_repo(self) -> Project:
+    def gitlab_project(self) -> Project:
         """The GitLab repository."""
-        return self._gitlab_project.repository
+        return self._gitlab_session.projects.get(
+            f"{self.config.group}/{self.config.project}"
+        )
 
     def login(self) -> None:
         """Logs in to GitLab."""
@@ -64,9 +68,6 @@ class GitLabCodeRepository(BaseCodeRepository):
                 self.config.url, private_token=self.config.token
             )
             self._gitlab_session.auth()
-            self._gitlab_project = self._gitlab_session.projects.get(
-                f"{self.config.group}/{self.config.project}"
-            )
             user = self._gitlab_session.user.username
             logger.debug(f"Logged in as {user}")
         except Exception as e:
@@ -82,32 +83,32 @@ class GitLabCodeRepository(BaseCodeRepository):
             directory: The directory to download to.
             repo_sub_directory: The sub directory to download from.
         """
-        contents = self.gitlab_repo.tree(
+        contents = self.gitlab_project.repository_tree(
             ref=commit,
             path=repo_sub_directory or "",
         )
         for content in contents:
-            logger.debug(f"Processing {content.path}")
-            if content.type == "tree":
-                path = os.path.join(directory, content.name)
+            logger.debug(f"Processing {content['path']}")
+            if content["type"] == "tree":
+                path = os.path.join(directory, content["name"])
                 os.makedirs(path, exist_ok=True)
                 self.download_files(
                     commit=commit,
                     directory=path,
-                    repo_sub_directory=content.path,
+                    repo_sub_directory=content["path"],
                 )
             else:
                 try:
-                    path = content.path
-                    content_file = self.gitlab_repo.files.get(
+                    path = content["path"]
+                    file_content = self.gitlab_project.files.get(
                         file_path=path, ref=commit
-                    )
-                    data = content_file.decode().encode()
-                    path = os.path.join(directory, content.name)
+                    ).decode()
+                    data = file_content.encode()
+                    path = os.path.join(directory, content["name"])
                     with open(path, "wb") as file:
                         file.write(data)
                 except Exception as e:
-                    logger.error("Error processing %s: %s", content.path, e)
+                    logger.error("Error processing %s: %s", content["path"], e)
 
     def get_local_repo(self, path: str) -> Optional[LocalRepository]:
         """Gets the local repository.
@@ -133,7 +134,9 @@ class GitLabCodeRepository(BaseCodeRepository):
         Returns:
             Whether the remote url is correct.
         """
-        https_url = f"https://gitlab.com/{self.config.group}/{self.config.project}.git"
+        https_url = (
+            f"https://gitlab.com/{self.config.group}/{self.config.project}.git"
+        )
         if url == https_url:
             return True
 
