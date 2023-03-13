@@ -18,13 +18,13 @@ import subprocess
 import sys
 from importlib.util import find_spec
 from typing import Any, Dict, List, Optional, Tuple
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 import click
 import requests
 from git import GitCommandError
 from git.repo import Repo
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel
 
 from zenml.cli.cli import TagGroup, cli
 from zenml.cli.utils import declare, error, print_table
@@ -63,8 +63,9 @@ class PluginResponseModel(PluginBaseModel):
     version: str
     index_url: Optional[str]
     package_name: Optional[str]
-    logo: Optional[str]
+    logo_url: Optional[str]
     requirements: Optional[List[str]]
+    user: Optional[UUID]
 
 
 def get_server_url() -> str:
@@ -131,7 +132,7 @@ def _hub_request(
     if 200 <= response.status_code < 300:
         return response_json
     error_msg = response_json.get("detail", response.text)
-    error(f"Request to ZenML Hub failed: {error_msg}")
+    raise RuntimeError(f"Request to ZenML Hub failed: {error_msg}")
 
 
 def _list_plugins(**params: Any) -> List[PluginResponseModel]:
@@ -167,10 +168,10 @@ def _get_plugin(
     if plugin_version:
         url += f"?version={plugin_version}"
 
-    response = _hub_request("GET", url)
     try:
+        response = _hub_request("GET", url)
         return PluginResponseModel.parse_obj(response)
-    except ValidationError:
+    except RuntimeError:
         return None
 
 
