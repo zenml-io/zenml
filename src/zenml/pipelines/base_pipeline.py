@@ -49,8 +49,8 @@ from zenml.config.pipeline_configurations import (
     PipelineConfiguration,
     PipelineConfigurationUpdate,
     PipelineRunConfiguration,
-    PipelineSpec,
 )
+from zenml.config.pipeline_spec import PipelineSpec
 from zenml.config.schedule import Schedule
 from zenml.config.step_configurations import StepConfigurationUpdate
 from zenml.enums import StackComponentType

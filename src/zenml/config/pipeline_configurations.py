@@ -12,16 +12,14 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Pipeline configuration classes."""
-import json
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Any, Dict, Optional, Union
 from uuid import UUID
 
 from pydantic import validator
 
 from zenml.config.constants import DOCKER_SETTINGS_KEY
 from zenml.config.schedule import Schedule
-from zenml.config.source import Source
-from zenml.config.step_configurations import StepConfigurationUpdate, StepSpec
+from zenml.config.step_configurations import StepConfigurationUpdate
 from zenml.config.strict_base_model import StrictBaseModel
 from zenml.models.pipeline_build_models import PipelineBuildBaseModel
 from zenml.utils import pydantic_utils
@@ -98,34 +96,3 @@ class PipelineRunConfiguration(
     steps: Dict[str, StepConfigurationUpdate] = {}
     settings: Dict[str, BaseSettings] = {}
     extra: Dict[str, Any] = {}
-
-
-class PipelineSpec(StrictBaseModel):
-    """Specification of a pipeline."""
-
-    version: str = "0.2"
-    steps: List[StepSpec]
-
-    def __eq__(self, other: Any) -> bool:
-        """Returns whether the other object is referring to the same pipeline.
-
-        Args:
-            other: The other object to compare to.
-
-        Returns:
-            True if the other object is referring to the same pipeline.
-        """
-        if isinstance(other, PipelineSpec):
-            return self.steps == other.steps
-        return NotImplemented
-
-    @property
-    def json_with_simple_sources(self) -> str:
-        dict_ = self.dict()
-
-        for step_dict in dict_["steps"]:
-            step_dict["source"] = Source.parse_obj(
-                step_dict["source"]
-            ).import_path
-
-        return json.dumps(dict_)
