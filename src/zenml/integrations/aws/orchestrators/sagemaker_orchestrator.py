@@ -246,7 +246,12 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
         Returns:
             A dictionary of metadata.
         """
-        region_name = self._get_region_name()
+        try:
+            # region_name = self._get_region_name()
+            region_name = "blupus"
+        except RuntimeError:
+            region_name = ""
+
         aws_run_id = os.environ[ENV_ZENML_SAGEMAKER_RUN_ID].split("/")[-1]
         orchestrator_logs_url = f"https://{region_name}.console.aws.amazon.com/cloudwatch/home?region={region_name}#logsV2:log-groups/log-group/$252Faws$252Fsagemaker$252FProcessingJobs$3FlogStreamNameFilter$3Dpipelines-{aws_run_id}-"
 
