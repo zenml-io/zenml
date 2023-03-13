@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""GitLab code repository."""
 import os
 import re
 from typing import Optional
@@ -33,12 +34,20 @@ logger = get_logger(__name__)
 
 
 class GitLabCodeRepositoryConfig(BaseCodeRepositoryConfig):
-    """Config for GitHub code repositories."""
+    """Config for GitLab code repositories.
 
-    url: Optional[str] = "https://gitlab.com"
+    Args:
+        url: The full URL of the GitLab project.
+        group: The group of the project.
+        project: The name of the GitLab project.
+        host: The host of GitLab in case it is self-hosted instance.
+        token: The token to access the repository.
+    """
+
+    url: Optional[str]
     group: str
     project: str
-    host: Optional[str]
+    host: Optional[str] = "gitlab.com"
     token: str = SecretField()
 
 
@@ -56,13 +65,21 @@ class GitLabCodeRepository(BaseCodeRepository):
 
     @property
     def gitlab_project(self) -> Project:
-        """The GitLab repository."""
+        """The GitLab project object from the GitLab API.
+
+        Returns:
+            The GitLab project object.
+        """
         return self._gitlab_session.projects.get(
             f"{self.config.group}/{self.config.project}"
         )
 
     def login(self) -> None:
-        """Logs in to GitLab."""
+        """Logs in to GitLab.
+
+        Raises:
+            RuntimeError: If the login fails.
+        """
         try:
             self._gitlab_session = Gitlab(
                 self.config.url, private_token=self.config.token
@@ -134,14 +151,12 @@ class GitLabCodeRepository(BaseCodeRepository):
         Returns:
             Whether the remote url is correct.
         """
-        https_url = (
-            f"https://gitlab.com/{self.config.group}/{self.config.project}.git"
-        )
+        https_url = f"https://{self.config.host}/{self.config.group}/{self.config.project}.git"
         if url == https_url:
             return True
 
         ssh_regex = re.compile(
-            f".*gitlab.com:{self._owner}/{self._repository}.git"
+            f".*{self.config.host}:{self._owner}/{self._repository}.git"
         )
         if ssh_regex.fullmatch(url):
             return True

@@ -52,6 +52,18 @@ class LocalGitRepository(LocalRepository):
         code_repository_id: UUID,
         remote_url_validation_callback: Callable[[str], bool],
     ) -> Optional["LocalGitRepository"]:
+        """Returns a local git repository at the given path.
+
+        Args:
+            path: The path to the local git repository.
+            code_repository_id: The ID of the code repository.
+            remote_url_validation_callback: A callback that validates the
+                remote URL of the git repository.
+
+        Returns:
+            A local git repository if the path is a valid git repository
+            and the remote URL is valid, otherwise None.
+        """
         try:
             # These imports fail when git is not installed on the machine
             from git.exc import InvalidGitRepositoryError
@@ -81,28 +93,51 @@ class LocalGitRepository(LocalRepository):
 
     @property
     def git_repo(self) -> "Repo":
-        """The git repo."""
+        """The git repo.
+
+        Returns:
+            The git repo object of the local git repository.
+        """
         return self._git_repo
 
     @property
     def remote(self) -> "Remote":
-        """The remote."""
+        """The git remote.
+
+        Returns:
+            The remote of the git repo object of the local git repository.
+        """
         return self._remote
 
     @property
     def root(self) -> str:
-        """The root of the git repo."""
+        """The root of the git repo.
+
+        Returns:
+            The root of the git repo.
+        """
         assert self.git_repo.working_dir
         return str(self.git_repo.working_dir)
 
     @property
     def is_dirty(self) -> bool:
-        """Whether the git repo is dirty."""
+        """Whether the git repo is dirty.
+
+        Returns:
+            True if the git repo is dirty, False otherwise.
+        """
         return self.git_repo.is_dirty(untracked_files=True)
 
     @property
     def has_local_changes(self) -> bool:
-        """Whether the git repo has local changes."""
+        """Whether the git repo has local changes.
+
+        Returns:
+            True if the git repo has local changes, False otherwise.
+
+        Raises:
+            RuntimeError: If the git repo is in a detached head state.
+        """
         if self.is_dirty:
             return True
 
@@ -126,5 +161,9 @@ class LocalGitRepository(LocalRepository):
 
     @property
     def current_commit(self) -> str:
-        """The current commit."""
+        """The current commit.
+
+        Returns:
+            The current commit sha.
+        """
         return cast(str, self.git_repo.head.object.hexsha)

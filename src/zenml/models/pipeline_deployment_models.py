@@ -60,6 +60,11 @@ class PipelineDeploymentBaseModel(BaseModel):
 
     @property
     def requires_included_files(self) -> bool:
+        """Whether the pipeline requires included files.
+
+        Returns:
+            Whether the pipeline requires included files.
+        """
         if (
             self.pipeline_configuration.docker_settings.source_files
             == SourceFileMode.INCLUDE

@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Base class for local code repositories."""
 from abc import ABC, abstractmethod
 from uuid import UUID
 
@@ -20,31 +21,67 @@ logger = get_logger(__name__)
 
 
 class LocalRepository(ABC):
+    """Base class for local code repositories.
+
+    This class is used to represent a local code repository. It is used
+    to track the current state of the repository and to provide
+    information about the repository, such as the root path, the current
+    commit, and whether the repository is dirty.
+    """
+
     def __init__(self, code_repository_id: UUID) -> None:
+        """Initializes a local code repository.
+
+        Args:
+            code_repository_id: The ID of the code repository.
+        """
         self._code_repository_id = code_repository_id
 
     @property
     def code_repository_id(self) -> UUID:
+        """Returns the ID of the code repository.
+
+        Returns:
+            The ID of the code repository.
+        """
         return self._code_repository_id
 
     @property
     @abstractmethod
     def root(self) -> str:
+        """Returns the root path of the code repository.
+
+        Returns:
+            The root path of the code repository.
+        """
         pass
 
     @property
     @abstractmethod
     def is_dirty(self) -> bool:
-        # uncommited changes
+        """Returns whether the code repository is dirty.
+
+        Returns:
+            Whether the code repository is dirty.
+        """
         pass
 
     @property
     @abstractmethod
     def has_local_changes(self) -> bool:
-        # uncommited or unpushed changes
+        """Returns whether the code repository has local changes.
+
+        Returns:
+            Whether the code repository has local changes.
+        """
         pass
 
     @property
     @abstractmethod
     def current_commit(self) -> str:
+        """Returns the current commit of the code repository.
+
+        Returns:
+            The current commit of the code repository.
+        """
         pass

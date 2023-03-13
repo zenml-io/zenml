@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""GitHub code repository."""
 import os
 import re
 from typing import List, Optional
@@ -33,12 +34,20 @@ logger = get_logger(__name__)
 
 
 class GitHubCodeRepositoryConfig(BaseCodeRepositoryConfig):
-    """Config for GitHub code repositories."""
+    """Config for GitHub code repositories.
+
+    Args:
+        url: The URL of the GitHub instance.
+        owner: The owner of the repository.
+        repository: The name of the repository.
+        host: The host of the repository.
+        token: The token to access the repository.
+    """
 
     url: Optional[str]
     owner: str
     repository: str
-    host: Optional[str]
+    host: Optional[str] = "github.com"
     token: str = SecretField()
 
 
@@ -56,7 +65,7 @@ class GitHubCodeRepository(BaseCodeRepository):
 
     @property
     def github_repo(self) -> Repository:
-        """The GitHub repository."""
+        """The GitHub repository object from the GitHub API."""
         return self._github_session.get_repo(
             f"{self.config.owner}/{self.config.repository}"
         )
@@ -64,7 +73,11 @@ class GitHubCodeRepository(BaseCodeRepository):
     def login(
         self,
     ) -> None:
-        """Logs in to GitHub."""
+        """Logs in to GitHub using the token provided in the config.
+
+        Raises:
+            RuntimeError: If the login fails.
+        """
         try:
             self._github_session = Github(self.config.token)
             user = self._github_session.get_user().login
@@ -129,12 +142,12 @@ class GitHubCodeRepository(BaseCodeRepository):
         Returns:
             Whether the remote url is correct.
         """
-        https_url = f"https://github.com/{self.config.owner}/{self.config.repository}.git"
+        https_url = f"https://{self.config.host}/{self.config.owner}/{self.config.repository}.git"
         if url == https_url:
             return True
 
         ssh_regex = re.compile(
-            f".*@github.com:{self.config.owner}/{self.config.repository}.git"
+            f".*@{self.config.host}:{self.config.owner}/{self.config.repository}.git"
         )
         if ssh_regex.fullmatch(url):
             return True

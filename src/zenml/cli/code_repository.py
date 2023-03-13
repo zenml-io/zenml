@@ -71,8 +71,17 @@ def register_code_repository(
 ) -> None:
     """Register a code repository.
 
+    Register a code repository with ZenML. This will allow you ZenML to pull
+    code from a remote repository and use it in when running pipelines remotely.
+    The configuration of the code repository can be different depending on the
+    type of code repository. For more information, please refer to the
+    documentation.
+
     Args:
         name: Name of the code repository
+        type_: Type of the code repository
+        source_path: Path to the source module if type is custom
+        args: Additional arguments to be passed to the code repository
     """
     cli_utils.print_active_config()
     if type_ == "custom":
