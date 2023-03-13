@@ -26,6 +26,7 @@ logger = get_logger(__name__)
 class SourceType(Enum):
     USER = "user"
     BUILTIN = "builtin"  # TODO: maybe store python version?
+    INTERNAL = "internal"
     DISTRIBUTION_PACKAGE = "distribution_package"
     CODE_REPOSITORY = "code_repository"
     UNKNOWN = "unknown"
@@ -84,10 +85,7 @@ class Source(BaseModel):
         }:
             return False
 
-        # Covers both the root `zenml` module and any submodules
-        return self.import_path == "zenml" or self.import_path.startswith(
-            "zenml."
-        )
+        return self.import_path.split(".", maxsplit=1)[0] == "zenml"
 
     @property
     def is_module_source(self) -> bool:

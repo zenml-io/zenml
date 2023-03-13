@@ -97,8 +97,12 @@ def resolve(obj: Union[Type[Any], FunctionType, ModuleType]) -> Source:
     if id(obj) in _SOURCE_MAPPING:
         return _SOURCE_MAPPING[id(obj)]
 
-    module = sys.modules[obj.__module__]
-    attribute_name = None if isinstance(obj, ModuleType) else obj.__name__
+    if isinstance(obj, ModuleType):
+        module = obj
+        attribute_name = None
+    else:
+        module = sys.modules[obj.__module__]
+        attribute_name = obj.__name__
 
     if attribute_name and not getattr(module, attribute_name, None) is obj:
         raise RuntimeError(
@@ -194,6 +198,10 @@ def find_active_code_repository(
     return None
 
 
+def is_internal_source(module_name: str) -> bool:
+    return module_name.split(".", maxsplit=1)[0] == "zenml"
+
+
 def is_user_file(file_path: str) -> bool:
     source_root = get_source_root()
     return Path(source_root) in Path(file_path).resolve().parents
@@ -229,6 +237,9 @@ def get_source_type(module: ModuleType) -> SourceType:
     except (TypeError, OSError):
         # builtin file
         return SourceType.BUILTIN
+
+    if is_internal_source(module_name=module.__name__):
+        return SourceType.INTERNAL
 
     if is_standard_lib_file(file_path=file_path):
         return SourceType.BUILTIN
