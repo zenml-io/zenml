@@ -47,7 +47,7 @@ class GitHubCodeRepository(BaseCodeRepository):
 
     @property
     def config(self) -> GitHubCodeRepositoryConfig:
-        """Returns the `KubeflowOrchestratorConfig` config.
+        """Returns the `GitHubCodeRepositoryConfig` config.
 
         Returns:
             The configuration.
