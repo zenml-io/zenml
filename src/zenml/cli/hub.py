@@ -293,7 +293,7 @@ def list_plugins(mine: bool, installed: bool) -> None:
         mine: Whether to list only plugins that you own.
         installed: Whether to list only plugins that are installed.
     """
-    if not get_auth_token():
+    if mine and not get_auth_token():
         error(
             "You must be logged in to list your own plugins via --mine. Please "
             "run `zenml hub login` to login."
