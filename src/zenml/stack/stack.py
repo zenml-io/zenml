@@ -877,6 +877,8 @@ class Stack:
             RuntimeError: If some required images for the deployment are missing
                 in the build.
         """
+        # TODO: rework this into base pipeline, doesn't include code repo
+        # requirements in checks right now
         required_builds = self.get_docker_builds(deployment=deployment)
 
         if required_builds and not deployment.build:

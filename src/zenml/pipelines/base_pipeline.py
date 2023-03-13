@@ -43,6 +43,7 @@ from packaging import version
 import zenml
 from zenml import constants
 from zenml.client import Client
+from zenml.code_repositories import BaseCodeRepository
 from zenml.config.compiler import Compiler
 from zenml.config.docker_settings import SourceFileMode
 from zenml.config.pipeline_configurations import (
@@ -413,10 +414,21 @@ class BasePipeline(metaclass=BasePipelineMeta):
         allow_code_download = self._verify_code_download_allowed(
             deployment=deployment, local_code_repo=local_code_repo
         )
+        code_repository = (
+            BaseCodeRepository.from_model(
+                Client().get_code_repository(
+                    local_code_repo.code_repository_id
+                )
+            )
+            if local_code_repo and allow_code_download
+            else None
+        )
+
         return self._build(
             deployment=deployment,
             pipeline_id=pipeline_id,
             allow_code_download=allow_code_download,
+            code_repository=code_repository,
         )
 
     def run(
@@ -534,6 +546,15 @@ class BasePipeline(metaclass=BasePipelineMeta):
             allow_code_download = self._verify_code_download_allowed(
                 deployment=deployment, local_code_repo=local_code_repo
             )
+            code_repository = (
+                BaseCodeRepository.from_model(
+                    Client().get_code_repository(
+                        local_code_repo.code_repository_id
+                    )
+                )
+                if local_code_repo and allow_code_download
+                else None
+            )
 
             build_model = self._load_or_create_pipeline_build(
                 deployment=deployment,
@@ -542,6 +563,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
                 allow_build_reuse=not prevent_build_reuse,
                 pipeline_id=pipeline_id,
                 build=build,
+                code_repository=code_repository,
             )
             build_id = build_model.id if build_model else None
 
@@ -1198,6 +1220,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
         allow_build_reuse: bool,
         pipeline_id: Optional[UUID] = None,
         build: Union["UUID", "PipelineBuildBaseModel", None] = None,
+        code_repository: Optional["BaseCodeRepository"] = None,
     ) -> Optional["PipelineBuildResponseModel"]:
         """Loads or creates a pipeline build.
 
@@ -1222,7 +1245,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
                 and not deployment.requires_included_files
             ):
                 existing_build = self._find_existing_build(
-                    deployment=deployment
+                    deployment=deployment, code_repository=code_repository
                 )
 
                 if existing_build:
@@ -1239,6 +1262,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
                 deployment=deployment,
                 allow_code_download=allow_code_download,
                 pipeline_id=pipeline_id,
+                code_repository=code_repository,
             )
 
         logger.info(
@@ -1292,6 +1316,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
     def _find_existing_build(
         self,
         deployment: "PipelineDeploymentBaseModel",
+        code_repository: Optional["BaseCodeRepository"] = None,
     ) -> Optional["PipelineBuildResponseModel"]:
         client = Client()
         stack = client.active_stack
@@ -1299,23 +1324,23 @@ class BasePipeline(metaclass=BasePipelineMeta):
         python_version = ".".join(platform.python_version_tuple()[:2])
         required_builds = stack.get_docker_builds(deployment=deployment)
         build_checksum = self._compute_build_checksum(
-            required_builds, stack=stack
+            required_builds, stack=stack, code_repository=code_repository
         )
 
         matches = client.list_builds(
             sort_by="desc:created",
             size=1,
             stack_id=stack.id,
-            # TODO: Can we support this by storing the unique Docker ID for the
-            # image and checking if an image with that ID exists locally?
             # The build is local and it's not clear whether the images
-            # exist on the current machine or if they've been overwritten
+            # exist on the current machine or if they've been overwritten.
+            # TODO: Should we support this by storing the unique Docker ID for
+            # the image and checking if an image with that ID exists locally?
             is_local=False,
             # The build contains some code which might be different than the
             # local code the user is expecting to run
             contains_code=False,
             zenml_version=zenml.__version__,
-            # Match all patch version of the same python major + minor version
+            # Match all patch versions of the same Python major + minor
             python_version=f"startswith:{python_version}",
             checksum=build_checksum,
         )
@@ -1330,6 +1355,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
         deployment: "PipelineDeploymentBaseModel",
         allow_code_download: bool,
         pipeline_id: Optional[UUID] = None,
+        code_repository: Optional["BaseCodeRepository"] = None,
     ) -> Optional["PipelineBuildResponseModel"]:
         """Builds images and registers the output in the server.
 
@@ -1367,7 +1393,9 @@ class BasePipeline(metaclass=BasePipelineMeta):
             combined_key = PipelineBuildBaseModel.get_image_key(
                 component_key=build_config.key, step=build_config.step_name
             )
-            checksum = build_config.compute_settings_checksum(stack=stack)
+            checksum = build_config.compute_settings_checksum(
+                stack=stack, code_repository=code_repository
+            )
 
             if combined_key in images:
                 previous_checksum = images[combined_key].settings_checksum
@@ -1401,7 +1429,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
                     == SourceFileMode.INCLUDE
                     or (
                         build_config.settings.source_files
-                        is SourceFileMode.DOWNLOAD_OR_INCLUDE
+                        == SourceFileMode.DOWNLOAD_OR_INCLUDE
                         and not allow_code_download
                     )
                 )
@@ -1410,7 +1438,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
                     == SourceFileMode.DOWNLOAD
                     or (
                         build_config.settings.source_files
-                        is SourceFileMode.DOWNLOAD_OR_INCLUDE
+                        == SourceFileMode.DOWNLOAD_OR_INCLUDE
                         and allow_code_download
                     )
                 )
@@ -1422,6 +1450,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
                     download_files=download_files,
                     entrypoint=build_config.entrypoint,
                     extra_files=build_config.extra_files,
+                    code_repository=code_repository,
                 )
                 contains_code = include_files
 
@@ -1437,7 +1466,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
         is_local = stack.container_registry is None
         contains_code = any(item.contains_code for item in images.values())
         build_checksum = self._compute_build_checksum(
-            required_builds, stack=stack
+            required_builds, stack=stack, code_repository=code_repository
         )
 
         build_request = PipelineBuildRequestModel(
@@ -1456,7 +1485,9 @@ class BasePipeline(metaclass=BasePipelineMeta):
 
     @staticmethod
     def _compute_build_checksum(
-        items: List["BuildConfiguration"], stack: "Stack"
+        items: List["BuildConfiguration"],
+        stack: "Stack",
+        code_repository: Optional["BaseCodeRepository"] = None,
     ) -> str:
         hash_ = hashlib.md5()
 

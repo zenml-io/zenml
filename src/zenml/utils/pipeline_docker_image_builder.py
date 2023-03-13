@@ -32,6 +32,7 @@ from zenml.logger import get_logger
 from zenml.utils import docker_utils, io_utils, source_utils_v2
 
 if TYPE_CHECKING:
+    from zenml.code_repositories import BaseCodeRepository
     from zenml.container_registries import BaseContainerRegistry
     from zenml.image_builders import BuildContext
     from zenml.stack import Stack
@@ -62,6 +63,7 @@ class PipelineDockerImageBuilder:
         download_files: bool,
         entrypoint: Optional[str] = None,
         extra_files: Optional[Dict[str, str]] = None,
+        code_repository: Optional["BaseCodeRepository"] = None,
     ) -> str:
         """Builds (and optionally pushes) a Docker image to run a pipeline.
 
@@ -214,6 +216,7 @@ class PipelineDockerImageBuilder:
                 docker_settings=docker_settings,
                 build_context=build_context,
                 stack=stack,
+                code_repository=code_repository,
             )
 
             apt_packages = docker_settings.apt_packages
@@ -250,7 +253,6 @@ class PipelineDockerImageBuilder:
             dockerfile = self._generate_zenml_pipeline_dockerfile(
                 parent_image=parent_image,
                 docker_settings=docker_settings,
-                include_files=include_files,
                 download_files=download_files,
                 requirements_files=requirements_file_names,
                 apt_packages=apt_packages,
@@ -307,6 +309,7 @@ class PipelineDockerImageBuilder:
         docker_settings: DockerSettings,
         build_context: "BuildContext",
         stack: "Stack",
+        code_repository: Optional["BaseCodeRepository"] = None,
     ) -> List[str]:
         """Adds requirements files to the build context.
 
@@ -325,7 +328,9 @@ class PipelineDockerImageBuilder:
         """
         requirements_file_names = []
         requirements_files = cls._gather_requirements_files(
-            docker_settings=docker_settings, stack=stack
+            docker_settings=docker_settings,
+            stack=stack,
+            code_repository=code_repository,
         )
         for filename, file_content in requirements_files:
             build_context.add_file(source=file_content, destination=filename)
@@ -335,7 +340,10 @@ class PipelineDockerImageBuilder:
 
     @staticmethod
     def _gather_requirements_files(
-        docker_settings: DockerSettings, stack: "Stack", log: bool = True
+        docker_settings: DockerSettings,
+        stack: "Stack",
+        code_repository: Optional["BaseCodeRepository"] = None,
+        log: bool = True,
     ) -> List[Tuple[str, str]]:
         """Gathers and/or generates pip requirements files.
 
@@ -427,6 +435,8 @@ class PipelineDockerImageBuilder:
 
         if docker_settings.install_stack_requirements:
             integration_requirements.update(stack.requirements())
+            if code_repository:
+                integration_requirements.update(code_repository.requirements)
 
         if integration_requirements:
             integration_requirements_list = sorted(integration_requirements)
@@ -451,7 +461,6 @@ class PipelineDockerImageBuilder:
     def _generate_zenml_pipeline_dockerfile(
         parent_image: str,
         docker_settings: DockerSettings,
-        include_files: bool,
         download_files: bool,
         requirements_files: Sequence[str] = (),
         apt_packages: Sequence[str] = (),
@@ -497,10 +506,7 @@ class PipelineDockerImageBuilder:
         for key, value in docker_settings.environment.items():
             lines.append(f"ENV {key.upper()}={value}")
 
-        if include_files:
-            lines.append("COPY . .")
-
-        lines.append("COPY Dockerfile Dockerfile")
+        lines.append("COPY . .")
         lines.append("RUN chmod -R a+rw .")
 
         if docker_settings.user:

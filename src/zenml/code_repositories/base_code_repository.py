@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, Dict, Optional, Type
+from typing import TYPE_CHECKING, Any, Dict, Optional, Set, Type
 from uuid import UUID
 
 from zenml.config.secret_reference_mixin import SecretReferenceMixin
@@ -67,6 +67,17 @@ class BaseCodeRepository(ABC):
     @property
     def id(self) -> UUID:
         return self._id
+
+    @property
+    def requirements(self) -> Set[str]:
+        """Set of PyPI requirements for the repository.
+
+        Returns:
+            A set of PyPI requirements for the repository.
+        """
+        from zenml.integrations.utils import get_requirements_for_module
+
+        return set(get_requirements_for_module(self.__module__))
 
     @abstractmethod
     def login(self) -> None:

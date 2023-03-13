@@ -21,6 +21,7 @@ from pydantic import BaseModel
 from zenml.config import DockerSettings
 
 if TYPE_CHECKING:
+    from zenml.code_repositories import BaseCodeRepository
     from zenml.stack import Stack
 
 
@@ -41,7 +42,11 @@ class BuildConfiguration(BaseModel):
     entrypoint: Optional[str] = None
     extra_files: Dict[str, str] = {}
 
-    def compute_settings_checksum(self, stack: "Stack") -> str:
+    def compute_settings_checksum(
+        self,
+        stack: "Stack",
+        code_repository: Optional["BaseCodeRepository"] = None,
+    ) -> str:
         """Checksum for all build settings.
 
         Args:
@@ -67,7 +72,10 @@ class BuildConfiguration(BaseModel):
 
         requirements_files = (
             PipelineDockerImageBuilder._gather_requirements_files(
-                docker_settings=self.settings, stack=stack, log=False
+                docker_settings=self.settings,
+                stack=stack,
+                code_repository=code_repository,
+                log=False,
             )
         )
         for _, requirements in requirements_files:
