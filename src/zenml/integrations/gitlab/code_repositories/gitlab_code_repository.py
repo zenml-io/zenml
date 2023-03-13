@@ -85,8 +85,9 @@ class GitLabCodeRepository(BaseCodeRepository):
                 self.config.url, private_token=self.config.token
             )
             self._gitlab_session.auth()
-            user = self._gitlab_session.user.username
-            logger.debug(f"Logged in as {user}")
+            user = self._gitlab_session.user or None
+            if user:
+                logger.debug(f"Logged in as {user.username}")
         except Exception as e:
             raise RuntimeError(f"An error occurred while logging in: {str(e)}")
 
@@ -120,10 +121,9 @@ class GitLabCodeRepository(BaseCodeRepository):
                     file_content = self.gitlab_project.files.get(
                         file_path=path, ref=commit
                     ).decode()
-                    data = file_content.encode()
                     path = os.path.join(directory, content["name"])
                     with open(path, "wb") as file:
-                        file.write(data)
+                        file.write(file_content)
                 except Exception as e:
                     logger.error("Error processing %s: %s", content["path"], e)
 
@@ -156,7 +156,7 @@ class GitLabCodeRepository(BaseCodeRepository):
             return True
 
         ssh_regex = re.compile(
-            f".*{self.config.host}:{self._owner}/{self._repository}.git"
+            f".*{self.config.host}:{self.config.group}/{self.config.project}.git"
         )
         if ssh_regex.fullmatch(url):
             return True

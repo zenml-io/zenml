@@ -129,7 +129,7 @@ def register_code_repository(
                 " By running `zenml integration install gitlab`."
             )
         source = source_utils_v2.resolve(GitLabCodeRepository)
-    elif type_ == "custom":
+    elif type_ == "custom" and source_path:
         source = Source.from_import_path(source_path)
 
     with console.status(f"Connecting Code Repository '{name}'...\n"):

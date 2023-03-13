@@ -30,8 +30,12 @@ logger = get_logger(__name__)
 class BaseCodeRepositoryConfig(SecretReferenceMixin, ABC):
     """Base config for code repositories."""
 
-    def __init__(self, **kwargs):
-        """Initializes a code repository config."""
+    def __init__(self, **kwargs: Any) -> None:
+        """Initializes a code repository config.
+
+        Args:
+            **kwargs: Keyword arguments.
+        """
         super().__init__(**kwargs)
 
 
@@ -60,7 +64,7 @@ class BaseCodeRepository(ABC):
         self.login()
 
     @property
-    def config(self) -> BaseCodeRepositoryConfig:
+    def config(self) -> "BaseCodeRepositoryConfig":
         """Config class for Code Repository.
 
         Returns:
