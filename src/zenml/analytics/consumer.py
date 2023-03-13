@@ -139,10 +139,10 @@ class Consumer(Thread):
 
         return items
 
-    def request(self, batch):
+    def request(self, batch) -> None:
         """Attempt to upload the batch and retry before raising an error."""
 
-        def fatal_exception(exc):
+        def fatal_exception(exc) -> bool:
             if isinstance(exc, APIError):
                 # retry on server errors and client errors
                 # with 429 status code (rate limited),
@@ -158,7 +158,7 @@ class Consumer(Thread):
             max_tries=self.retries + 1,
             giveup=fatal_exception,
         )
-        def send_request():
+        def send_request() -> None:
             """Function to send a batch of messages."""
             post(timeout=self.timeout, batch=batch)
 
