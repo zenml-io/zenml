@@ -1523,6 +1523,25 @@
 
 
 <h1 id="welcome-to-the-zenml-api-docs">Welcome to the ZenML Api Docs</h1>
+<h1 id="visualizers"><a href="zenml/visualizers">Visualizers</a></h1>
+
+
+  <div class="doc doc-object doc-module">
+
+<a id="zenml.visualizers"></a>
+    <div class="doc doc-contents first">
+
+      <p>Initialization of the visualizers module.</p>
+<p>The <code>visualizers</code> module offers a way of constructing and displaying
+visualizations of steps and pipeline results. The <code>BaseVisualizer</code> class is at
+the root of all the other visualizers, including options to view the results of
+pipeline runs, steps and pipelines themselves.</p>
+
+
+    </div>
+
+  </div>
+
 <h1 id="model-deployers"><a href="zenml/model_deployers">Model Deployers</a></h1>
 
 
@@ -1551,23 +1570,90 @@ an external model server managed through ZenML.</p>
 
   </div>
 
-<h1 id="secret"><a href="zenml/secret">Secret</a></h1>
+<h1 id="secrets-managers"><a href="zenml/secrets_managers">Secrets Managers</a></h1>
 
 
   <div class="doc doc-object doc-module">
 
-<a id="zenml.secret"></a>
+<a id="zenml.secrets_managers"></a>
     <div class="doc doc-contents first">
 
-      <p>Initialization of the ZenML Secret module.</p>
-<p>A ZenML Secret is a grouping of key-value pairs. These are accessed and
-administered via the ZenML Secret Manager (a stack component).</p>
-<p>Secrets are distinguished by having different schemas. An AWS SecretSchema, for
-example, has key-value pairs for <code>AWS_ACCESS_KEY_ID</code> and <code>AWS_SECRET_ACCESS_KEY</code>
-as well as an optional <code>AWS_SESSION_TOKEN</code>. If you don't specify a schema at the
-point of registration, ZenML will set the schema as <code>ArbitrarySecretSchema</code>, a
-kind of default schema where things that aren't attached to a grouping can be
-stored.</p>
+      <p>Initialization for the ZenML secrets manager module.</p>
+
+
+    </div>
+
+  </div>
+
+<h1 id="models"><a href="zenml/models">Models</a></h1>
+
+
+  <div class="doc doc-object doc-module">
+
+<a id="zenml.models"></a>
+    <div class="doc doc-contents first">
+
+      <p>Pydantic models for the various concepts in ZenML.</p>
+
+
+    </div>
+
+  </div>
+
+<h1 id="container-registries"><a href="zenml/container_registries">Container Registries</a></h1>
+
+
+  <div class="doc doc-object doc-module">
+
+<a id="zenml.container_registries"></a>
+    <div class="doc doc-contents first">
+
+      <p>Initialization for ZenML's container registries module.</p>
+<p>A container registry is a store for (Docker) containers. A ZenML workflow
+involving a container registry would automatically containerize your code to
+be transported across stacks running remotely. As part of the deployment to
+the cluster, the ZenML base image would be downloaded (from a cloud container
+registry) and used as the basis for the deployed 'run'.</p>
+<p>For instance, when you are running a local container-based stack, you would
+therefore have a local container registry which stores the container images
+you create that bundle up your pipeline code. You could also use a remote
+container registry like the Elastic Container Registry at AWS in a more
+production setting.</p>
+
+
+    </div>
+
+  </div>
+
+<h1 id="model-registries"><a href="zenml/model_registries">Model Registries</a></h1>
+
+
+  <div class="doc doc-object doc-module">
+
+<a id="zenml.model_registries"></a>
+    <div class="doc doc-contents first">
+
+      <p>Initialization of the MLflow Service.</p>
+<p>Model registries are centralized repositories that facilitate the collaboration
+and management of machine learning models. They provide functionalities such as
+version control, metadata tracking, and storage of model artifacts, enabling 
+data scientists to efficiently share and keep track of their models within
+a team or organization.</p>
+
+
+    </div>
+
+  </div>
+
+<h1 id="repository"><a href="zenml/repository">Repository</a></h1>
+
+
+  <div class="doc doc-object doc-module">
+
+<a id="zenml.repository"></a>
+    <div class="doc doc-contents first">
+
+      <p>Deprecated Repository implementation.</p>
 
 
     </div>
@@ -1598,25 +1684,309 @@ MLOps platform.</p>
 
   </div>
 
-<h1 id="container-registries"><a href="zenml/container_registries">Container Registries</a></h1>
+<h1 id="step-operators"><a href="zenml/step_operators">Step Operators</a></h1>
 
 
   <div class="doc doc-object doc-module">
 
-<a id="zenml.container_registries"></a>
+<a id="zenml.step_operators"></a>
     <div class="doc doc-contents first">
 
-      <p>Initialization for ZenML's container registries module.</p>
-<p>A container registry is a store for (Docker) containers. A ZenML workflow
-involving a container registry would automatically containerize your code to
-be transported across stacks running remotely. As part of the deployment to
-the cluster, the ZenML base image would be downloaded (from a cloud container
-registry) and used as the basis for the deployed 'run'.</p>
-<p>For instance, when you are running a local container-based stack, you would
-therefore have a local container registry which stores the container images
-you create that bundle up your pipeline code. You could also use a remote
-container registry like the Elastic Container Registry at AWS in a more
-production setting.</p>
+      <p>Step operators allow you to run steps on custom infrastructure.</p>
+<p>While an orchestrator defines how and where your entire pipeline runs, a step
+operator defines how and where an individual step runs. This can be useful in a
+variety of scenarios. An example could be if one step within a pipeline should
+run on a separate environment equipped with a GPU (like a trainer step).</p>
+
+
+    </div>
+
+  </div>
+
+<h1 id="experiment-trackers"><a href="zenml/experiment_trackers">Experiment Trackers</a></h1>
+
+
+  <div class="doc doc-object doc-module">
+
+<a id="zenml.experiment_trackers"></a>
+    <div class="doc doc-contents first">
+
+      <p>Experiment trackers let you track your ML experiments.</p>
+<p>They log the parameters used and allow you to compare between runs. In the ZenML
+world, every pipeline run is considered an experiment, and ZenML facilitates the
+storage of experiment results through ExperimentTracker stack components. This
+establishes a clear link between pipeline runs and experiments.</p>
+
+
+    </div>
+
+  </div>
+
+<h1 id="exceptions"><a href="zenml/exceptions">Exceptions</a></h1>
+
+
+  <div class="doc doc-object doc-module">
+
+<a id="zenml.exceptions"></a>
+    <div class="doc doc-contents first">
+
+      <p>ZenML specific exception definitions.</p>
+
+
+    </div>
+
+  </div>
+
+<h1 id="utils"><a href="zenml/utils">Utils</a></h1>
+
+
+  <div class="doc doc-object doc-module">
+
+<a id="zenml.utils"></a>
+    <div class="doc doc-contents first">
+
+      <p>Initialization of the utils module.</p>
+<p>The <code>utils</code> module contains utility functions handling analytics, reading and
+writing YAML data as well as other general purpose functions.</p>
+
+
+    </div>
+
+  </div>
+
+<h1 id="metadata"><a href="zenml/metadata">Metadata</a></h1>
+
+
+  <div class="doc doc-object doc-module">
+
+<a id="zenml.metadata"></a>
+    <div class="doc doc-contents first">
+
+      <p>Initialization of ZenML metadata.</p>
+<p>ZenML metadata is any additional, dynamic information that is associated with
+your pipeline runs and artifacts at runtime.</p>
+
+
+    </div>
+
+  </div>
+
+<h1 id="zen-stores"><a href="zenml/zen_stores">Zen Stores</a></h1>
+
+
+  <div class="doc doc-object doc-module">
+
+<a id="zenml.zen_stores"></a>
+    <div class="doc doc-contents first">
+
+      <p>ZenStores define ways to store ZenML relevant data locally or remotely.</p>
+
+
+    </div>
+
+  </div>
+
+<h1 id="secret"><a href="zenml/secret">Secret</a></h1>
+
+
+  <div class="doc doc-object doc-module">
+
+<a id="zenml.secret"></a>
+    <div class="doc doc-contents first">
+
+      <p>Initialization of the ZenML Secret module.</p>
+<p>A ZenML Secret is a grouping of key-value pairs. These are accessed and
+administered via the ZenML Secret Manager (a stack component).</p>
+<p>Secrets are distinguished by having different schemas. An AWS SecretSchema, for
+example, has key-value pairs for <code>AWS_ACCESS_KEY_ID</code> and <code>AWS_SECRET_ACCESS_KEY</code>
+as well as an optional <code>AWS_SESSION_TOKEN</code>. If you don't specify a schema at the
+point of registration, ZenML will set the schema as <code>ArbitrarySecretSchema</code>, a
+kind of default schema where things that aren't attached to a grouping can be
+stored.</p>
+
+
+    </div>
+
+  </div>
+
+<h1 id="console"><a href="zenml/console">Console</a></h1>
+
+
+  <div class="doc doc-object doc-module">
+
+<a id="zenml.console"></a>
+    <div class="doc doc-contents first">
+
+      <p>ZenML console implementation.</p>
+
+
+    </div>
+
+  </div>
+
+<h1 id="client"><a href="zenml/client">Client</a></h1>
+
+
+  <div class="doc doc-object doc-module">
+
+<a id="zenml.client"></a>
+    <div class="doc doc-contents first">
+
+      <p>Client implementation.</p>
+
+
+    </div>
+
+  </div>
+
+<h1 id="materializers"><a href="zenml/materializers">Materializers</a></h1>
+
+
+  <div class="doc doc-object doc-module">
+
+<a id="zenml.materializers"></a>
+    <div class="doc doc-contents first">
+
+      <p>Initialization of ZenML materializers.</p>
+<p>Materializers are used to convert a ZenML artifact into a specific format. They
+are most often used to handle the input or output of ZenML steps, and can be
+extended by building on the <code>BaseMaterializer</code> class.</p>
+
+
+    </div>
+
+  </div>
+
+<h1 id="recipes"><a href="zenml/recipes">Recipes</a></h1>
+
+
+  <div class="doc doc-object doc-module">
+
+<a id="zenml.recipes"></a>
+    <div class="doc doc-contents first">
+
+      <p>Recipes for ZenML stacks.</p>
+
+
+    </div>
+
+  </div>
+
+<h1 id="annotators"><a href="zenml/annotators">Annotators</a></h1>
+
+
+  <div class="doc doc-object doc-module">
+
+<a id="zenml.annotators"></a>
+    <div class="doc doc-contents first">
+
+      <p>Initialization of the ZenML annotator stack component.</p>
+
+
+    </div>
+
+  </div>
+
+<h1 id="zen-server"><a href="zenml/zen_server">Zen Server</a></h1>
+
+
+  <div class="doc doc-object doc-module">
+
+<a id="zenml.zen_server"></a>
+    <div class="doc doc-contents first">
+
+      <p>ZenML Server Implementation.</p>
+<p>The ZenML Server is a centralized service meant for use in a collaborative
+setting in which stacks, stack components, flavors, pipeline and pipeline runs
+can be shared over the network with other users.</p>
+<p>You can use the <code>zenml server up</code> command to spin up ZenML server instances
+that are either running locally as daemon processes or docker containers, or
+to deploy a ZenML server remotely on a managed cloud platform. The other CLI
+commands in the same <code>zenml server</code> group can be used to manage the server
+instances deployed from your local machine.</p>
+<p>To connect the local ZenML client to one of the managed ZenML servers, call
+<code>zenml server connect</code> with the name of the server you want to connect to.</p>
+
+
+    </div>
+
+  </div>
+
+<h1 id="environment"><a href="zenml/environment">Environment</a></h1>
+
+
+  <div class="doc doc-object doc-module">
+
+<a id="zenml.environment"></a>
+    <div class="doc doc-contents first">
+
+      <p>Environment implementation.</p>
+
+
+    </div>
+
+  </div>
+
+<h1 id="post-execution"><a href="zenml/post_execution">Post Execution</a></h1>
+
+
+  <div class="doc doc-object doc-module">
+
+<a id="zenml.post_execution"></a>
+    <div class="doc doc-contents first">
+
+      <p>Initialization for the post-execution module.</p>
+<p>After executing a pipeline, the user needs to be able to fetch it from history
+and perform certain tasks. The post_execution submodule provides a set of
+interfaces with which the user can interact with artifacts, the pipeline, steps,
+and the post-run pipeline object.</p>
+
+
+    </div>
+
+  </div>
+
+<h1 id="constants"><a href="zenml/constants">Constants</a></h1>
+
+
+  <div class="doc doc-object doc-module">
+
+<a id="zenml.constants"></a>
+    <div class="doc doc-contents first">
+
+      <p>ZenML constants.</p>
+
+
+    </div>
+
+  </div>
+
+<h1 id="alerter"><a href="zenml/alerter">Alerter</a></h1>
+
+
+  <div class="doc doc-object doc-module">
+
+<a id="zenml.alerter"></a>
+    <div class="doc doc-contents first">
+
+      <p>Alerters allow you to send alerts from within your pipeline.</p>
+<p>This is useful to immediately get notified when failures happen,
+and also for general monitoring / reporting.</p>
+
+
+    </div>
+
+  </div>
+
+<h1 id="image-builders"><a href="zenml/image_builders">Image Builders</a></h1>
+
+
+  <div class="doc doc-object doc-module">
+
+<a id="zenml.image_builders"></a>
+    <div class="doc doc-contents first">
+
+      <p>Image builders allow you to build container images.</p>
 
 
     </div>
@@ -1659,97 +2029,6 @@ pipelines can be created as well from scratch, building on the <code>BasePipelin
 
   </div>
 
-<h1 id="config"><a href="zenml/config">Config</a></h1>
-
-
-  <div class="doc doc-object doc-module">
-
-<a id="zenml.config"></a>
-    <div class="doc doc-contents first">
-
-      <p>The <code>config</code> module contains classes and functions that manage user-specific configuration.</p>
-<p>ZenML's configuration is stored in a file called
-<code>config.yaml</code>, located on the user's directory for configuration files.
-(The exact location differs from operating system to operating system.)</p>
-<p>The <code>GlobalConfiguration</code> class is the main class in this module. It provides
-a Pydantic configuration object that is used to store and retrieve
-configuration. This <code>GlobalConfiguration</code> object handles the serialization and
-deserialization of the configuration options that are stored in the file in
-order to persist the configuration across sessions.</p>
-
-
-    </div>
-
-  </div>
-
-<h1 id="repository"><a href="zenml/repository">Repository</a></h1>
-
-
-  <div class="doc doc-object doc-module">
-
-<a id="zenml.repository"></a>
-    <div class="doc doc-contents first">
-
-      <p>Deprecated Repository implementation.</p>
-
-
-    </div>
-
-  </div>
-
-<h1 id="experiment-trackers"><a href="zenml/experiment_trackers">Experiment Trackers</a></h1>
-
-
-  <div class="doc doc-object doc-module">
-
-<a id="zenml.experiment_trackers"></a>
-    <div class="doc doc-contents first">
-
-      <p>Experiment trackers let you track your ML experiments.</p>
-<p>They log the parameters used and allow you to compare between runs. In the ZenML
-world, every pipeline run is considered an experiment, and ZenML facilitates the
-storage of experiment results through ExperimentTracker stack components. This
-establishes a clear link between pipeline runs and experiments.</p>
-
-
-    </div>
-
-  </div>
-
-<h1 id="image-builders"><a href="zenml/image_builders">Image Builders</a></h1>
-
-
-  <div class="doc doc-object doc-module">
-
-<a id="zenml.image_builders"></a>
-    <div class="doc doc-contents first">
-
-      <p>Image builders allow you to build container images.</p>
-
-
-    </div>
-
-  </div>
-
-<h1 id="visualizers"><a href="zenml/visualizers">Visualizers</a></h1>
-
-
-  <div class="doc doc-object doc-module">
-
-<a id="zenml.visualizers"></a>
-    <div class="doc doc-contents first">
-
-      <p>Initialization of the visualizers module.</p>
-<p>The <code>visualizers</code> module offers a way of constructing and displaying
-visualizations of steps and pipeline results. The <code>BaseVisualizer</code> class is at
-the root of all the other visualizers, including options to view the results of
-pipeline runs, steps and pipelines themselves.</p>
-
-
-    </div>
-
-  </div>
-
 <h1 id="orchestrators"><a href="zenml/orchestrators">Orchestrators</a></h1>
 
 
@@ -1772,47 +2051,6 @@ orchestrator to handle the steps of your pipeline.</p>
 
   </div>
 
-<h1 id="io"><a href="zenml/io">Io</a></h1>
-
-
-  <div class="doc doc-object doc-module">
-
-<a id="zenml.io"></a>
-    <div class="doc doc-contents first">
-
-      <p>The <code>io</code> module handles file operations for the ZenML package.</p>
-<p>It offers a standard interface for reading, writing and manipulating files and
-directories. It is heavily influenced and inspired by the <code>io</code> module of <code>tfx</code>.</p>
-
-
-    </div>
-
-  </div>
-
-<h1 id="feature-stores"><a href="zenml/feature_stores">Feature Stores</a></h1>
-
-
-  <div class="doc doc-object doc-module">
-
-<a id="zenml.feature_stores"></a>
-    <div class="doc doc-contents first">
-
-      <p>A feature store enables an offline and online serving of feature data.</p>
-<p>Feature stores allow data teams to serve data via an offline store and an online
-low-latency store where data is kept in sync between the two. It also offers a
-centralized registry where features (and feature schemas) are stored for use
-within a team or wider organization.</p>
-<p>As a data scientist working on training your model, your requirements for how
-you access your batch / 'offline' data will almost certainly be different from
-how you access that data as part of a real-time or online inference setting.
-Feast solves the problem of developing train-serve skew where those two sources
-of data diverge from each other.</p>
-
-
-    </div>
-
-  </div>
-
 <h1 id="entrypoints"><a href="zenml/entrypoints">Entrypoints</a></h1>
 
 
@@ -1828,24 +2066,25 @@ of data diverge from each other.</p>
 
   </div>
 
-<h1 id="steps"><a href="zenml/steps">Steps</a></h1>
+<h1 id="artifact-stores"><a href="zenml/artifact_stores">Artifact Stores</a></h1>
 
 
   <div class="doc doc-object doc-module">
 
-<a id="zenml.steps"></a>
+<a id="zenml.artifact_stores"></a>
     <div class="doc doc-contents first">
 
-      <p>Initializer for ZenML steps.</p>
-<p>A step is a single piece or stage of a ZenML pipeline. Think of each step as
-being one of the nodes of a Directed Acyclic Graph (or DAG). Steps are
-responsible for one aspect of processing or interacting with the data /
-artifacts in the pipeline.</p>
-<p>Conceptually, a Step is a discrete and independent part of a pipeline that is
-responsible for one particular aspect of data manipulation inside a ZenML
-pipeline.</p>
-<p>Steps can be subclassed from the <code>BaseStep</code> class, or used via our <code>@step</code>
-decorator.</p>
+      <p>ZenML's artifact-store stores artifacts in a file system.</p>
+<p>In ZenML, the inputs and outputs which go through any step is treated as an
+artifact and as its name suggests, an <code>ArtifactStore</code> is a place where these
+artifacts get stored.</p>
+<p>Out of the box, ZenML comes with the <code>BaseArtifactStore</code> and
+<code>LocalArtifactStore</code> implementations. While the <code>BaseArtifactStore</code> establishes
+an interface for people who want to extend it to their needs, the
+<code>LocalArtifactStore</code> is a simple implementation for a local setup.</p>
+<p>Moreover, additional artifact stores can be found in specific <code>integrations</code>
+modules, such as the <code>GCPArtifactStore</code> in the <code>gcp</code> integration and the
+<code>AzureArtifactStore</code> in the <code>azure</code> integration.</p>
 
 
     </div>
@@ -1878,169 +2117,39 @@ of artifacts is defined by the appropriate Materializer.</p>
 
   </div>
 
-<h1 id="utils"><a href="zenml/utils">Utils</a></h1>
+<h1 id="feature-stores"><a href="zenml/feature_stores">Feature Stores</a></h1>
 
 
   <div class="doc doc-object doc-module">
 
-<a id="zenml.utils"></a>
+<a id="zenml.feature_stores"></a>
     <div class="doc doc-contents first">
 
-      <p>Initialization of the utils module.</p>
-<p>The <code>utils</code> module contains utility functions handling analytics, reading and
-writing YAML data as well as other general purpose functions.</p>
+      <p>A feature store enables an offline and online serving of feature data.</p>
+<p>Feature stores allow data teams to serve data via an offline store and an online
+low-latency store where data is kept in sync between the two. It also offers a
+centralized registry where features (and feature schemas) are stored for use
+within a team or wider organization.</p>
+<p>As a data scientist working on training your model, your requirements for how
+you access your batch / 'offline' data will almost certainly be different from
+how you access that data as part of a real-time or online inference setting.
+Feast solves the problem of developing train-serve skew where those two sources
+of data diverge from each other.</p>
 
 
     </div>
 
   </div>
 
-<h1 id="secrets-managers"><a href="zenml/secrets_managers">Secrets Managers</a></h1>
+<h1 id="data-validators"><a href="zenml/data_validators">Data Validators</a></h1>
 
 
   <div class="doc doc-object doc-module">
 
-<a id="zenml.secrets_managers"></a>
+<a id="zenml.data_validators"></a>
     <div class="doc doc-contents first">
 
-      <p>Initialization for the ZenML secrets manager module.</p>
-
-
-    </div>
-
-  </div>
-
-<h1 id="zen-server"><a href="zenml/zen_server">Zen Server</a></h1>
-
-
-  <div class="doc doc-object doc-module">
-
-<a id="zenml.zen_server"></a>
-    <div class="doc doc-contents first">
-
-      <p>ZenML Server Implementation.</p>
-<p>The ZenML Server is a centralized service meant for use in a collaborative
-setting in which stacks, stack components, flavors, pipeline and pipeline runs
-can be shared over the network with other users.</p>
-<p>You can use the <code>zenml server up</code> command to spin up ZenML server instances
-that are either running locally as daemon processes or docker containers, or
-to deploy a ZenML server remotely on a managed cloud platform. The other CLI
-commands in the same <code>zenml server</code> group can be used to manage the server
-instances deployed from your local machine.</p>
-<p>To connect the local ZenML client to one of the managed ZenML servers, call
-<code>zenml server connect</code> with the name of the server you want to connect to.</p>
-
-
-    </div>
-
-  </div>
-
-<h1 id="metadata"><a href="zenml/metadata">Metadata</a></h1>
-
-
-  <div class="doc doc-object doc-module">
-
-<a id="zenml.metadata"></a>
-    <div class="doc doc-contents first">
-
-      <p>Initialization of ZenML metadata.</p>
-<p>ZenML metadata is any additional, dynamic information that is associated with
-your pipeline runs and artifacts at runtime.</p>
-
-
-    </div>
-
-  </div>
-
-<h1 id="models"><a href="zenml/models">Models</a></h1>
-
-
-  <div class="doc doc-object doc-module">
-
-<a id="zenml.models"></a>
-    <div class="doc doc-contents first">
-
-      <p>Pydantic models for the various concepts in ZenML.</p>
-
-
-    </div>
-
-  </div>
-
-<h1 id="console"><a href="zenml/console">Console</a></h1>
-
-
-  <div class="doc doc-object doc-module">
-
-<a id="zenml.console"></a>
-    <div class="doc doc-contents first">
-
-      <p>ZenML console implementation.</p>
-
-
-    </div>
-
-  </div>
-
-<h1 id="model-registries"><a href="zenml/model_registries">Model Registries</a></h1>
-
-
-  <div class="doc doc-object doc-module">
-
-<a id="zenml.model_registries"></a>
-    <div class="doc doc-contents first">
-
-      <p>Initialization of the MLflow Service.</p>
-<p>Model registries are centralized repositories that facilitate the collaboration
-and management of machine learning models. They provide functionalities such as
-version control, metadata tracking, and storage of model artifacts, enabling 
-data scientists to efficiently share and keep track of their models within
-a team or organization.</p>
-
-
-    </div>
-
-  </div>
-
-<h1 id="client"><a href="zenml/client">Client</a></h1>
-
-
-  <div class="doc doc-object doc-module">
-
-<a id="zenml.client"></a>
-    <div class="doc doc-contents first">
-
-      <p>Client implementation.</p>
-
-
-    </div>
-
-  </div>
-
-<h1 id="annotators"><a href="zenml/annotators">Annotators</a></h1>
-
-
-  <div class="doc doc-object doc-module">
-
-<a id="zenml.annotators"></a>
-    <div class="doc doc-contents first">
-
-      <p>Initialization of the ZenML annotator stack component.</p>
-
-
-    </div>
-
-  </div>
-
-<h1 id="environment"><a href="zenml/environment">Environment</a></h1>
-
-
-  <div class="doc doc-object doc-module">
-
-<a id="zenml.environment"></a>
-    <div class="doc doc-contents first">
-
-      <p>Environment implementation.</p>
+      <p>Data validators are stack components responsible for data profiling and validation.</p>
 
 
     </div>
@@ -2062,36 +2171,24 @@ a team or organization.</p>
 
   </div>
 
-<h1 id="post-execution"><a href="zenml/post_execution">Post Execution</a></h1>
+<h1 id="steps"><a href="zenml/steps">Steps</a></h1>
 
 
   <div class="doc doc-object doc-module">
 
-<a id="zenml.post_execution"></a>
+<a id="zenml.steps"></a>
     <div class="doc doc-contents first">
 
-      <p>Initialization for the post-execution module.</p>
-<p>After executing a pipeline, the user needs to be able to fetch it from history
-and perform certain tasks. The post_execution submodule provides a set of
-interfaces with which the user can interact with artifacts, the pipeline, steps,
-and the post-run pipeline object.</p>
-
-
-    </div>
-
-  </div>
-
-<h1 id="alerter"><a href="zenml/alerter">Alerter</a></h1>
-
-
-  <div class="doc doc-object doc-module">
-
-<a id="zenml.alerter"></a>
-    <div class="doc doc-contents first">
-
-      <p>Alerters allow you to send alerts from within your pipeline.</p>
-<p>This is useful to immediately get notified when failures happen,
-and also for general monitoring / reporting.</p>
+      <p>Initializer for ZenML steps.</p>
+<p>A step is a single piece or stage of a ZenML pipeline. Think of each step as
+being one of the nodes of a Directed Acyclic Graph (or DAG). Steps are
+responsible for one aspect of processing or interacting with the data /
+artifacts in the pipeline.</p>
+<p>Conceptually, a Step is a discrete and independent part of a pipeline that is
+responsible for one particular aspect of data manipulation inside a ZenML
+pipeline.</p>
+<p>Steps can be subclassed from the <code>BaseStep</code> class, or used via our <code>@step</code>
+decorator.</p>
 
 
     </div>
@@ -2114,137 +2211,40 @@ and also for general monitoring / reporting.</p>
 
   </div>
 
-<h1 id="recipes"><a href="zenml/recipes">Recipes</a></h1>
+<h1 id="config"><a href="zenml/config">Config</a></h1>
 
 
   <div class="doc doc-object doc-module">
 
-<a id="zenml.recipes"></a>
+<a id="zenml.config"></a>
     <div class="doc doc-contents first">
 
-      <p>Recipes for ZenML stacks.</p>
+      <p>The <code>config</code> module contains classes and functions that manage user-specific configuration.</p>
+<p>ZenML's configuration is stored in a file called
+<code>config.yaml</code>, located on the user's directory for configuration files.
+(The exact location differs from operating system to operating system.)</p>
+<p>The <code>GlobalConfiguration</code> class is the main class in this module. It provides
+a Pydantic configuration object that is used to store and retrieve
+configuration. This <code>GlobalConfiguration</code> object handles the serialization and
+deserialization of the configuration options that are stored in the file in
+order to persist the configuration across sessions.</p>
 
 
     </div>
 
   </div>
 
-<h1 id="constants"><a href="zenml/constants">Constants</a></h1>
+<h1 id="io"><a href="zenml/io">Io</a></h1>
 
 
   <div class="doc doc-object doc-module">
 
-<a id="zenml.constants"></a>
+<a id="zenml.io"></a>
     <div class="doc doc-contents first">
 
-      <p>ZenML constants.</p>
-
-
-    </div>
-
-  </div>
-
-<h1 id="data-validators"><a href="zenml/data_validators">Data Validators</a></h1>
-
-
-  <div class="doc doc-object doc-module">
-
-<a id="zenml.data_validators"></a>
-    <div class="doc doc-contents first">
-
-      <p>Data validators are stack components responsible for data profiling and validation.</p>
-
-
-    </div>
-
-  </div>
-
-<h1 id="exceptions"><a href="zenml/exceptions">Exceptions</a></h1>
-
-
-  <div class="doc doc-object doc-module">
-
-<a id="zenml.exceptions"></a>
-    <div class="doc doc-contents first">
-
-      <p>ZenML specific exception definitions.</p>
-
-
-    </div>
-
-  </div>
-
-<h1 id="materializers"><a href="zenml/materializers">Materializers</a></h1>
-
-
-  <div class="doc doc-object doc-module">
-
-<a id="zenml.materializers"></a>
-    <div class="doc doc-contents first">
-
-      <p>Initialization of ZenML materializers.</p>
-<p>Materializers are used to convert a ZenML artifact into a specific format. They
-are most often used to handle the input or output of ZenML steps, and can be
-extended by building on the <code>BaseMaterializer</code> class.</p>
-
-
-    </div>
-
-  </div>
-
-<h1 id="zen-stores"><a href="zenml/zen_stores">Zen Stores</a></h1>
-
-
-  <div class="doc doc-object doc-module">
-
-<a id="zenml.zen_stores"></a>
-    <div class="doc doc-contents first">
-
-      <p>ZenStores define ways to store ZenML relevant data locally or remotely.</p>
-
-
-    </div>
-
-  </div>
-
-<h1 id="artifact-stores"><a href="zenml/artifact_stores">Artifact Stores</a></h1>
-
-
-  <div class="doc doc-object doc-module">
-
-<a id="zenml.artifact_stores"></a>
-    <div class="doc doc-contents first">
-
-      <p>ZenML's artifact-store stores artifacts in a file system.</p>
-<p>In ZenML, the inputs and outputs which go through any step is treated as an
-artifact and as its name suggests, an <code>ArtifactStore</code> is a place where these
-artifacts get stored.</p>
-<p>Out of the box, ZenML comes with the <code>BaseArtifactStore</code> and
-<code>LocalArtifactStore</code> implementations. While the <code>BaseArtifactStore</code> establishes
-an interface for people who want to extend it to their needs, the
-<code>LocalArtifactStore</code> is a simple implementation for a local setup.</p>
-<p>Moreover, additional artifact stores can be found in specific <code>integrations</code>
-modules, such as the <code>GCPArtifactStore</code> in the <code>gcp</code> integration and the
-<code>AzureArtifactStore</code> in the <code>azure</code> integration.</p>
-
-
-    </div>
-
-  </div>
-
-<h1 id="step-operators"><a href="zenml/step_operators">Step Operators</a></h1>
-
-
-  <div class="doc doc-object doc-module">
-
-<a id="zenml.step_operators"></a>
-    <div class="doc doc-contents first">
-
-      <p>Step operators allow you to run steps on custom infrastructure.</p>
-<p>While an orchestrator defines how and where your entire pipeline runs, a step
-operator defines how and where an individual step runs. This can be useful in a
-variety of scenarios. An example could be if one step within a pipeline should
-run on a separate environment equipped with a GPU (like a trainer step).</p>
+      <p>The <code>io</code> module handles file operations for the ZenML package.</p>
+<p>It offers a standard interface for reading, writing and manipulating files and
+directories. It is heavily influenced and inspired by the <code>io</code> module of <code>tfx</code>.</p>
 
 
     </div>
