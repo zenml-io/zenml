@@ -59,7 +59,7 @@ runs:
         requirement_files: 'pyproject.toml'
         # The pip download cache can be updated on a weekly basis as new packages
         # don't appear that often
-        custom_cache_key_element: ${{ inputs.cache_version }}-${{steps.date.outputs.week}}
+        custom_cache_key_element: ${{ inputs.cache_version }}-${{ inputs.python-version }}-${{steps.date.outputs.week}}
 
     - name: Install ZenML
       if: steps.cache-virtualenv.outputs.cache-hit != 'true'
