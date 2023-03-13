@@ -69,6 +69,8 @@ class StepConfigurationUpdate(StrictBaseModel):
     parameters: Dict[str, Any] = {}
     settings: Dict[str, BaseSettings] = {}
     extra: Dict[str, Any] = {}
+    failure_hook_source: Optional[str] = None
+    success_hook_source: Optional[str] = None
 
     outputs: Mapping[str, PartialArtifactConfiguration] = {}
 

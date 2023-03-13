@@ -39,6 +39,7 @@
   * [Scheduling Pipeline Runs](./advanced-guide/pipelines/scheduling-runs.md)
   * [Accessing Metadata within Steps](./advanced-guide/pipelines/step-metadata.md)
   * [Controlling the Step Execution Order](./advanced-guide/pipelines/step-order.md)
+  * [Failure and Success Hooks](./advanced-guide/pipelines/hooks.md)
 * [Extending Stacks](./advanced-guide/stacks/stacks.md)
   * [Writing Custom Flavors](./advanced-guide/stacks/custom-flavors.md)
   * [Managing Stack Component States](./advanced-guide/stacks/stack-state-management.md)

@@ -59,7 +59,7 @@ class SlackAlerter(BaseAlerter):
         return cast(SlackAlerterConfig, self._config)
 
     def _get_channel_id(
-        self, params: Optional[BaseAlerterStepParameters]
+        self, params: Optional[BaseAlerterStepParameters] = None
     ) -> str:
         """Get the Slack channel ID to be used by post/ask.
 
@@ -74,12 +74,13 @@ class SlackAlerter(BaseAlerter):
             ValueError: if a slack channel was neither defined in the config
                 nor in the slack alerter component.
         """
-        if not isinstance(params, BaseAlerterStepParameters):
+        if params and not isinstance(params, BaseAlerterStepParameters):
             raise RuntimeError(
                 "The config object must be of type `BaseAlerterStepParameters`."
             )
         if (
-            isinstance(params, SlackAlerterParameters)
+            params
+            and isinstance(params, SlackAlerterParameters)
             and hasattr(params, "slack_channel_id")
             and params.slack_channel_id is not None
         ):
@@ -131,7 +132,7 @@ class SlackAlerter(BaseAlerter):
         return DEFAULT_DISAPPROVE_MSG_OPTIONS
 
     def post(
-        self, message: str, params: Optional[BaseAlerterStepParameters]
+        self, message: str, params: Optional[BaseAlerterStepParameters] = None
     ) -> bool:
         """Post a message to a Slack channel.
 
@@ -156,7 +157,7 @@ class SlackAlerter(BaseAlerter):
             return False
 
     def ask(
-        self, message: str, params: Optional[BaseAlerterStepParameters]
+        self, message: str, params: Optional[BaseAlerterStepParameters] = None
     ) -> bool:
         """Post a message to a Slack channel and wait for approval.
 
