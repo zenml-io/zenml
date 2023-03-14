@@ -29,7 +29,6 @@ def test_check_user_is_set():
         PipelineDockerImageBuilder._generate_zenml_pipeline_dockerfile(
             "image:tag",
             docker_settings,
-            include_files=True,
             download_files=False,
         )
     )
@@ -40,7 +39,6 @@ def test_check_user_is_set():
         PipelineDockerImageBuilder._generate_zenml_pipeline_dockerfile(
             "image:tag",
             docker_settings,
-            include_files=True,
             download_files=False,
         )
     )

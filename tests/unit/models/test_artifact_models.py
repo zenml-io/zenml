@@ -54,35 +54,3 @@ def test_artifact_base_model_fails_with_long_uri():
             data_type="abc",
             is_cached=False,
         )
-
-
-def test_artifact_base_model_fails_with_long_materializer():
-    """Test that the artifact base model fails with long materializer strings."""
-    with pytest.raises(ValidationError):
-        long_materializer = "a" * (STR_FIELD_MAX_LENGTH + 1)
-        ArtifactBaseModel(
-            name="abc",
-            parent_step_id=UUID(UUID_BASE_STRING),
-            producer_step_id=UUID(UUID_BASE_STRING),
-            type=ArtifactType.DATA,
-            uri="abc",
-            materializer=long_materializer,
-            data_type="abc",
-            is_cached=False,
-        )
-
-
-def test_artifact_base_model_fails_with_long_data_type():
-    """Test that the artifact base model fails with long data type strings."""
-    with pytest.raises(ValidationError):
-        long_data_type = "a" * (STR_FIELD_MAX_LENGTH + 1)
-        ArtifactBaseModel(
-            name="abc",
-            parent_step_id=UUID(UUID_BASE_STRING),
-            producer_step_id=UUID(UUID_BASE_STRING),
-            type=ArtifactType.DATA,
-            uri="abc",
-            materializer="abc",
-            data_type=long_data_type,
-            is_cached=False,
-        )

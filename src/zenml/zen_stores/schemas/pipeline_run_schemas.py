@@ -18,6 +18,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING, List, Optional
 from uuid import UUID
 
+from pydantic.json import pydantic_encoder
 from sqlalchemy import TEXT, Column
 from sqlmodel import Field, Relationship
 
@@ -164,7 +165,9 @@ class PipelineRunSchema(NamedSchema, table=True):
         Returns:
             The created `PipelineRunSchema`.
         """
-        configuration = json.dumps(request.pipeline_configuration)
+        configuration = json.dumps(
+            request.pipeline_configuration, default=pydantic_encoder
+        )
         client_environment = json.dumps(request.client_environment)
         orchestrator_environment = json.dumps(request.orchestrator_environment)
 

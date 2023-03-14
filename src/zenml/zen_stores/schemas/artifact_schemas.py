@@ -73,6 +73,7 @@ class ArtifactSchema(NamedSchema, table=True):
 
     type: ArtifactType
     uri: str
+    # TODO: make these text type for longer strings
     materializer: str
     data_type: str
 

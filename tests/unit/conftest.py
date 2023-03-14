@@ -574,4 +574,5 @@ def sample_build_response_model(
         workspace=sample_workspace_model,
         images={},
         is_local=False,
+        contains_code=True,
     )
