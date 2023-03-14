@@ -33,7 +33,7 @@ from zenml.integrations.aws.flavors.sagemaker_orchestrator_flavor import (
     SagemakerOrchestratorSettings,
 )
 from zenml.logger import get_logger
-from zenml.metadata.metadata_types import MetadataType
+from zenml.metadata.metadata_types import MetadataType, Uri
 from zenml.orchestrators import ContainerizedOrchestrator
 from zenml.orchestrators.utils import get_orchestrator_run_name
 from zenml.stack import StackValidator
@@ -247,15 +247,19 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
             A dictionary of metadata.
         """
         try:
-            # region_name = self._get_region_name()
-            region_name = "blupus"
+            region_name = self._get_region_name()
         except RuntimeError:
             region_name = ""
 
         aws_run_id = os.environ[ENV_ZENML_SAGEMAKER_RUN_ID].split("/")[-1]
-        orchestrator_logs_url = f"https://{region_name}.console.aws.amazon.com/cloudwatch/home?region={region_name}#logsV2:log-groups/log-group/$252Faws$252Fsagemaker$252FProcessingJobs$3FlogStreamNameFilter$3Dpipelines-{aws_run_id}-"
+        orchestrator_logs_url = (
+            f"https://{region_name}.console.aws.amazon.com/"
+            f"cloudwatch/home?region={region_name}#logsV2:log-groups/log-group"
+            f"/$252Faws$252Fsagemaker$252FProcessingJobs$3FlogStreamNameFilter"
+            f"$3Dpipelines-{aws_run_id}-"
+        )
 
         return {
-            METADATA_ORCHESTRATOR_URL: orchestrator_logs_url,
+            METADATA_ORCHESTRATOR_URL: Uri(orchestrator_logs_url),
             "pipeline_execution_arn": os.environ[ENV_ZENML_SAGEMAKER_RUN_ID],
         }
