@@ -42,7 +42,9 @@ logger = get_logger(__name__)
 class StackComponentConfig(BaseModel, ABC):
     """Base class for all ZenML stack component configs."""
 
-    def __init__(self, **kwargs: Any) -> None:
+    def __init__(
+        self, warn_about_plain_text_secrets: bool = False, **kwargs: Any
+    ) -> None:
         """Ensures that secret references don't clash with pydantic validation.
 
         StackComponents allow the specification of all their string attributes
@@ -55,6 +57,7 @@ class StackComponentConfig(BaseModel, ABC):
         custom pydantic validation are set as secret references.
 
         Args:
+            warn_about_plain_text_secrets: If true, then warns about using plain-text secrets.
             **kwargs: Arguments to initialize this stack component.
 
         Raises:
@@ -74,8 +77,11 @@ class StackComponentConfig(BaseModel, ABC):
                 continue
 
             if not secret_utils.is_secret_reference(value):
-                if secret_utils.is_secret_field(field):
-                    logger.debug(
+                if (
+                    secret_utils.is_secret_field(field)
+                    and warn_about_plain_text_secrets
+                ):
+                    logger.warning(
                         "You specified a plain-text value for the sensitive "
                         f"attribute `{key}` for a `{self.__class__.__name__}` "
                         "stack component. This is currently only a warning, "

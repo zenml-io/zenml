@@ -25,13 +25,16 @@ logger = get_logger(__name__)
 class SecretReferenceMixin(BaseModel):
     """Mixin class for secret references in pydantic model attributes."""
 
-    def __init__(self, **kwargs: Any) -> None:
+    def __init__(
+        self, warn_about_plain_text_secrets: bool = False, **kwargs: Any
+    ) -> None:
         """Ensures that secret references are only passed for valid fields.
 
         This method ensures that secret references are not passed for fields
         that explicitly prevent them or require pydantic validation.
 
         Args:
+            warn_about_plain_text_secrets: If true, then warns about using plain-text secrets.
             **kwargs: Arguments to initialize this object.
 
         Raises:
@@ -51,7 +54,10 @@ class SecretReferenceMixin(BaseModel):
                 continue
 
             if not secret_utils.is_secret_reference(value):
-                if secret_utils.is_secret_field(field):
+                if (
+                    secret_utils.is_secret_field(field)
+                    and warn_about_plain_text_secrets
+                ):
                     logger.debug(
                         "You specified a plain-text value for the sensitive "
                         f"attribute `{key}`. This is currently only a warning, "
