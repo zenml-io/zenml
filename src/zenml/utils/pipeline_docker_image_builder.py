@@ -514,7 +514,9 @@ class PipelineDockerImageBuilder:
         Raises:
             ValueError: If a required hub plugin has an invalid format.
         """
-        from zenml.cli.hub import _get_plugin  # TODO: move this to utils?
+        from zenml.cli.hub import HubClient, get_hub_url
+
+        client = HubClient(get_hub_url())
 
         hub_packages: defaultdict[str, List[str]] = defaultdict(list)
         hub_requirements: List[str] = []
@@ -534,7 +536,7 @@ class PipelineDockerImageBuilder:
                     "`plugin_name`."
                 )
 
-            plugin = _get_plugin(plugin_name, plugin_version)
+            plugin = client.get_plugin(plugin_name, plugin_version)
             if plugin and plugin.index_url and plugin.package_name:
                 hub_packages[plugin.index_url].append(plugin.package_name)
                 if plugin.requirements:
