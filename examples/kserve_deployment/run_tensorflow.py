@@ -23,7 +23,7 @@ from steps.deployment_trigger import (
     deployment_trigger,
 )
 from steps.prediction_service_loader import (
-    PredectionServiceLoaderStepParameters,
+    PredictionServiceLoaderStepParameters,
     prediction_service_loader,
 )
 from steps.tensorflow_steps import (
@@ -120,7 +120,7 @@ def main(
         inference = tensorflow_inference_pipeline(
             predict_preprocessor=tf_predict_preprocessor(),
             prediction_service_loader=prediction_service_loader(
-                PredectionServiceLoaderStepParameters(
+                PredictionServiceLoaderStepParameters(
                     pipeline_name=deployment_pipeline_name,
                     step_name=deployer_step_name,
                     model_name=model_name,

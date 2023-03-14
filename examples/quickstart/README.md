@@ -153,7 +153,7 @@ zenml up
 zenml data-validator register evidently_data_validator --flavor=evidently
 zenml experiment-tracker register mlflow_tracker --flavor=mlflow
 zenml model-deployer register mlflow_deployer --flavor=mlflow
-!zenml model-registry register mlflow_registry --flavor=mlflow
+zenml model-registry register mlflow_registry --flavor=mlflow
 
 
 # Register a new stack with the new stack components

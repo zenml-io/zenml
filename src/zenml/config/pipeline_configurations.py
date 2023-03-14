@@ -39,6 +39,8 @@ class PipelineConfigurationUpdate(StrictBaseModel):
     enable_artifact_metadata: Optional[bool] = None
     settings: Dict[str, BaseSettings] = {}
     extra: Dict[str, Any] = {}
+    failure_hook_source: Optional[str] = None
+    success_hook_source: Optional[str] = None
 
 
 class PipelineConfiguration(PipelineConfigurationUpdate):

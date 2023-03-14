@@ -38,6 +38,8 @@ def _compile_step(step: BaseStep) -> Step:
         pipeline_settings={},
         pipeline_extra={},
         stack=None,
+        pipeline_failure_hook_source=None,
+        pipeline_success_hook_source=None,
     )
 
 

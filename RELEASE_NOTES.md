@@ -1,6 +1,132 @@
 <!-- markdown-link-check-disable -->
 
-# 0.35.0
+# 0.35.1
+
+**Note:** *This release replaces the previous 0.35.0 release that was yanked from
+PyPI due to a bug. If you already installed 0.35.0 and are experiencing issues,
+we recommend you downgrade to 0.34.0 before installing and upgrading to 0.35.1.*
+
+This release is packed with big features as well as documentation updates and
+some bug fixes.
+
+The 0.35.1 release puts models front and center in ZenML with the addition of
+the **Model Registry** abstraction and Stack Component. You can now register,
+version and manage models as first class citizens in ZenML. This is a major
+milestone for ZenML and we are excited to see what you build with it!
+The introduction of Model Registries greatly simplifies the journey that the
+model takes from training to deployment and extends the ZenML ecosystem to
+include model registry tools and libraries. The first Model Registry integration
+included in this release is MLFlow, with many more to come in the future.
+
+This release also continues the deprecation of Secrets Managers and the
+introduction of Secret Stores. You now have the option of configuring the ZenML
+server to use AWS, GCP, Azure or Hashicorp Vault directly as a centralized
+secrets store back-end. This is meant to replace all Secrets Manager flavors
+which were previously used to store secrets using the same cloud services.
+
+Please be reminded that all Secrets Managers are now deprecated and will be
+removed in the near future. We recommend that you migrate all your secrets from
+the Secrets Manager stack components to the centralized secrets store by means
+of the included `zenml secrets-manager secret migrate` CLI command.
+
+Last but not least, this release includes an updated Evidently integration that
+is compatible with the latest and greatest features from Evidently: reports and
+test suites. Check out the updated example to get a feel for the new features.
+
+## Breaking Changes
+
+This release introduces a few breaking changes. Please update your code to
+reflect the changes below:
+
+* the order of pipelines and runs in the post-execution results has been
+reversed. This means that the most recent pipeline and pipeline run can be
+accessed using the first index of the respective lists instead of the last
+index. This change was made to make the post-execution results more intuitive
+and to allow returning multi-page results in the future. This is a code snippet
+outlining the changes that you need to make in your post-execution code:
+
+    ```python
+    from zenml.post_execution import get_pipelines, get_unlisted_runs
+
+    pipelines = get_pipelines()
+
+    # instead of calling this to get the pipeline last created
+    latest_pipeline = pipelines[-1]
+
+    # you now have to call this
+    latest_pipeline = pipelines[0]
+
+    # and instead of calling this to get the latest run of a pipeline
+    latest_pipeline_run = latest_pipeline.get_runs()[-1]
+    # or
+    latest_pipeline_run = latest_pipeline.runs[-1]
+    
+    # you now have to call this
+    latest_pipeline_run = latest_pipeline.get_runs()[0]
+    # or
+    latest_pipeline_run = latest_pipeline.runs[0]
+
+    # the same applies to the unlisted runs; instead of
+    last_unlisted_run = get_unlisted_runs()[-1]
+
+    # you now have to call this
+    last_unlisted_run = get_unlisted_runs()[0]
+    ```
+
+* if you were using the `StepEnvironment` to fetch the name of the active step
+in your step implementation, this name no longer reflects the name of the step
+function. Instead, it now reflects the name of the step used in the pipeline
+DAG, similar to what you would see in the ZenML dashboard when visualizing the
+pipeline. This is also implicitly reflected in the output of `zenml model-deployer model`
+CLI commands.
+
+## What's Changed
+* Upgrade dev dependencies by @strickvl in https://github.com/zenml-io/zenml/pull/1334
+* Add warning when attempting server connection without user permissions by @strickvl in https://github.com/zenml-io/zenml/pull/1314
+* Keep CLI help text for `zenml pipeline` to a single line by @strickvl in https://github.com/zenml-io/zenml/pull/1338
+* Rename page attributes by @schustmi in https://github.com/zenml-io/zenml/pull/1266
+* Add missing docs for pipeline build by @schustmi in https://github.com/zenml-io/zenml/pull/1341
+* Sagemaker orchestrator docstring and example update by @strickvl in https://github.com/zenml-io/zenml/pull/1350
+* Fix `secret create` docs error for secret store by @strickvl in https://github.com/zenml-io/zenml/pull/1355
+* Update README for test environment provisioning by @strickvl in https://github.com/zenml-io/zenml/pull/1336
+* Disable name prefix matching when updating/deleting entities by @schustmi in https://github.com/zenml-io/zenml/pull/1345
+* Add Kubeflow Pipeline UI Port to deprecated config by @safoinme in https://github.com/zenml-io/zenml/pull/1358
+* Small clarifications for slack alerter by @htahir1 in https://github.com/zenml-io/zenml/pull/1365
+* update Neptune integration for v1.0 compatibility by @AleksanderWWW in https://github.com/zenml-io/zenml/pull/1335
+* Integrations conditional requirements by @safoinme in https://github.com/zenml-io/zenml/pull/1255
+* Fix fetching versioned pipelines in post execution by @schustmi in https://github.com/zenml-io/zenml/pull/1363
+* Load artifact store before loading artifact to register filesystem by @schustmi in https://github.com/zenml-io/zenml/pull/1367
+* Remove poetry from CI by @schustmi in https://github.com/zenml-io/zenml/pull/1346
+* Fix Sagemaker example readme by @strickvl in https://github.com/zenml-io/zenml/pull/1370
+* Update evidently to include reports and tests by @wjayesh in https://github.com/zenml-io/zenml/pull/1283
+* Fix neptune linting error on `develop` (and bump ruff) by @strickvl in https://github.com/zenml-io/zenml/pull/1372
+* Add pydantic materializer by @htahir1 in https://github.com/zenml-io/zenml/pull/1371
+* Registering GIFs added by @htahir1 in https://github.com/zenml-io/zenml/pull/1368
+* Refresh CLI cheat sheet by @strickvl in https://github.com/zenml-io/zenml/pull/1347
+* Add dependency resolution docs by @strickvl in https://github.com/zenml-io/zenml/pull/1337
+* [BUGFIX] Fix error while using an existing SQL server with GCP ZenServer by @wjayesh in https://github.com/zenml-io/zenml/pull/1353
+* Update step name assignment with the parameter name by @strickvl in https://github.com/zenml-io/zenml/pull/1310
+* Copy huggingface data directory to local before loading in materializers by @TimovNiedek in https://github.com/zenml-io/zenml/pull/1351
+* Update huggingface token classification example by @strickvl in https://github.com/zenml-io/zenml/pull/1369
+* Use the most specialized materializer based on MRO by @schustmi in https://github.com/zenml-io/zenml/pull/1376
+* Update Kserve to support 0.10.0 by @safoinme in https://github.com/zenml-io/zenml/pull/1373
+* Add more examples to integration tests by @schustmi in https://github.com/zenml-io/zenml/pull/1245
+* Fix order of runs and order of pipelines in post-execution by @stefannica in https://github.com/zenml-io/zenml/pull/1380
+* Add Cloud Secrets Store back-ends by @stefannica in https://github.com/zenml-io/zenml/pull/1348
+* Model Registry Stack Component + MLFlow integration by @safoinme in https://github.com/zenml-io/zenml/pull/1309
+* Fix broken docs URLs and add SDK docs url by @strickvl in https://github.com/zenml-io/zenml/pull/1349
+* Fix label studio `dataset delete` command by @strickvl in https://github.com/zenml-io/zenml/pull/1377
+* Add missing links to Quickstart by @strickvl in
+  https://github.com/zenml-io/zenml/pull/1379
+* Fix PyPI readme logo display by @strickvl in https://github.com/zenml-io/zenml/pull/1382
+* Fixed broken migration for flavors by @AlexejPenner in https://github.com/zenml-io/zenml/pull/1386
+* Add debug mode flag for `zenml info` by @strickvl in https://github.com/zenml-io/zenml/pull/1374
+* Update issue creation for bugs by @strickvl in https://github.com/zenml-io/zenml/pull/1387
+* Integration sdk docs generated correctly now by @AlexejPenner in https://github.com/zenml-io/zenml/pull/1389
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.34.0...0.35.0
+
+# 0.35.0 (YANKED)
 
 This release is packed with big features as well as documentation updates and
 some bug fixes.
@@ -52,7 +178,7 @@ outlining the changes that you need to make in your post-execution code:
     # you now have to call this
     latest_pipeline = pipelines[0]
 
-    # and instead of calling this to get the latest run of a pipeine
+    # and instead of calling this to get the latest run of a pipeline
     latest_pipeline_run = latest_pipeline.get_runs()[-1]
     # or
     latest_pipeline_run = latest_pipeline.runs[-1]
@@ -205,7 +331,7 @@ models sent from/to the server need to contain a `workspace` instead of a
 * Integration tests for post execution functions by @fa9r in https://github.com/zenml-io/zenml/pull/1264
 * Introduce `post_execution.BaseView` by @fa9r in https://github.com/zenml-io/zenml/pull/1238
 * Make `/cloud` point to enterprise page by @strickvl in https://github.com/zenml-io/zenml/pull/1268
-* update mlflow to verion greater than 2.0 by @safoinme in https://github.com/zenml-io/zenml/pull/1249
+* update mlflow to version greater than 2.0 by @safoinme in https://github.com/zenml-io/zenml/pull/1249
 * Store run start time by @schustmi in https://github.com/zenml-io/zenml/pull/1271
 * Relax pydantic dependency by @jlopezpena in https://github.com/zenml-io/zenml/pull/1262
 * Fix failing filter on stacks by component id by @AlexejPenner in https://github.com/zenml-io/zenml/pull/1276
@@ -521,7 +647,7 @@ you'll need to update the method signature to include a `step_failed` parameter.
 * Update Neptune Example by @safoinme in https://github.com/zenml-io/zenml/pull/1124
 * Add debugging guide to docs by @dnth in https://github.com/zenml-io/zenml/pull/1097
 * Fix stack component attribute removal CLI command by @schustmi in https://github.com/zenml-io/zenml/pull/1127
-* Improving error messages when fetching entitites by @bcdurak in https://github.com/zenml-io/zenml/pull/1117
+* Improving error messages when fetching entities by @bcdurak in https://github.com/zenml-io/zenml/pull/1117
 * Introduce username and password to kubeflow for more native multi-tenant support by @htahir1 in https://github.com/zenml-io/zenml/pull/1123
 * Add support for Label Studio OCR config generation by @shivalikasingh95 in https://github.com/zenml-io/zenml/pull/1062
 * Misc doc updates by @schustmi in https://github.com/zenml-io/zenml/pull/1131
@@ -730,7 +856,7 @@ ZenML 0.20.5 fixes another series of minor bugs, significantly improves the perf
 * Improve docker and k8s detection by @schustmi in https://github.com/zenml-io/zenml/pull/991
 * Update GH actions example by @schustmi in https://github.com/zenml-io/zenml/pull/993
 * Update `MissingStepParameterError` exception message by @gabrielmbmb in https://github.com/zenml-io/zenml/pull/996
-* Seprated code docs into `core` and `integration` docs by @AlexejPenner in https://github.com/zenml-io/zenml/pull/983
+* Separated code docs into `core` and `integration` docs by @AlexejPenner in https://github.com/zenml-io/zenml/pull/983
 * Add docs/mkdocstrings_helper.py to format script sources by @fa9r in https://github.com/zenml-io/zenml/pull/997
 * Further CLI optimization by @bcdurak in https://github.com/zenml-io/zenml/pull/992
 
@@ -748,7 +874,7 @@ This release fixes another series of minor bugs that were introduced in 0.20.0.
 * Update ZenBytes links in docs by @fa9r in https://github.com/zenml-io/zenml/pull/968
 * Fix the API docs builder by @stefannica in https://github.com/zenml-io/zenml/pull/967
 * Fix `gpu_limit` condition in `VertexOrchestrator` by @gabrielmbmb in https://github.com/zenml-io/zenml/pull/963
-* Add simple node affinitiy configurations by @schustmi in https://github.com/zenml-io/zenml/pull/973
+* Add simple node affinity configurations by @schustmi in https://github.com/zenml-io/zenml/pull/973
 * First iteration of the CLI optimization by @bcdurak in https://github.com/zenml-io/zenml/pull/962
 
 **Full Changelog**: https://github.com/zenml-io/zenml/compare/0.20.3...0.20.4
@@ -1012,7 +1138,7 @@ The [KServe](https://github.com/zenml-io/zenml/tree/main/examples/kserve_deploym
 integration allows you to deploy any PyTorch, TensorFlow or SKLearn from within your ZenML pipelines!
 
 We also added functionality to specify hardware resources on a step level to control the amount of memory, CPUs and GPUs that
-each ZenML step has access to. This is curretly limited to the Kubeflow and Vertex orchestrator but will be expanded in upcoming releases.
+each ZenML step has access to. This is currently limited to the Kubeflow and Vertex orchestrator but will be expanded in upcoming releases.
 
 Additionally, we've added support for scoped secrets in our AWS, GCP and Vault Secrets Managers. These updated Secrets Managers allow
 you to configure a scope which determines if secrets are shared with other ZenML Secrets Managers using the same backend.
@@ -1522,7 +1648,7 @@ We also see two new integrations with [Feast](https://feast.dev) as ZenML's firs
 * Abstractions for artifact stores by @bcdurak in https://github.com/zenml-io/zenml/pull/474
 * enable and disable cache from runtime config by @AlexejPenner in https://github.com/zenml-io/zenml/pull/492
 * Basic Seldon Core Deployment Service by @stefannica in https://github.com/zenml-io/zenml/pull/495
-* Parallelise our test suite and make errors more readable by @alex-zenml in https://github.com/zenml-io/zenml/pull/378
+* Parallelize our test suite and make errors more readable by @alex-zenml in https://github.com/zenml-io/zenml/pull/378
 * Provision local zenml service by @jwwwb in https://github.com/zenml-io/zenml/pull/496
 * bugfix/optional-secrets-manager by @safoinme in https://github.com/zenml-io/zenml/pull/493
 * Quick fix for copying folders by @bcdurak in https://github.com/zenml-io/zenml/pull/501

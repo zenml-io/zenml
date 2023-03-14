@@ -30,7 +30,6 @@ class FacetsIntegration(Integration):
     REQUIREMENTS = [
         "facets-overview>=1.0.0",
         "IPython",
-        "numpy>=1.16.0,<1.23.0",
     ]
 
 
