@@ -541,7 +541,7 @@ class AnalyticsTrackerMixin(ABC):
     @abstractmethod
     def track_event(
         self,
-        event: Union[str, AnalyticsEvent],
+        event: AnalyticsEvent,
         metadata: Optional[Dict[str, Any]],
     ) -> None:
         """Track an event.
