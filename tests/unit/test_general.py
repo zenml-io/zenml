@@ -34,6 +34,7 @@ def _test_materializer(
     step_output_type: Optional[Type[Any]] = None,
     materializer_class: Optional[Type[BaseMaterializer]] = None,
     validation_function: Optional[Callable[[str], Any]] = None,
+    return_metadata: bool = False,
 ) -> Any:
     """Test whether the materialization of a given step output works.
 
@@ -85,6 +86,10 @@ def _test_materializer(
         # Run additional validation function if provided
         if validation_function:
             validation_function(artifact_uri)
+
+        # Return the loaded data and metadata if requested
+        if return_metadata:
+            return loaded_data, metadata
 
         # Return the loaded data
         return loaded_data
