@@ -15,19 +15,19 @@ will train a classifier using [Tensorflow (Keras)](https://www.tensorflow.org/).
 We will run two experiments with different parameters (epochs and learning rate)
 and log these experiments into a local mlflow backend.
 
-This example uses an mlflow setup that is based on the local filesystem for
-things like the artifact store. See the [mlflow
+This example uses an MLflow setup that is based on the local filesystem for
+things like the artifact store. See the [MLflow
 documentation](https://www.mlflow.org/docs/latest/tracking.html#scenario-1-mlflow-on-localhost) 
 for details.
 
-In the example script the [mlflow autologger for
+In the example script the [MLflow autologger for
 Keras](https://www.mlflow.org/docs/latest/tracking.html#tensorflow-and-keras) is
 used within the training step to directly hook into the TensorFlow training, and
 it will log out all relevant parameters, metrics and output files. Additionally,
 we explicitly log the test accuracy within the evaluation step.
 
 This example uses an mlflow setup that is based on the local filesystem as
-orchestrator and artifact store. See the [mlflow
+orchestrator and artifact store. See the [MLflow
 documentation](https://www.mlflow.org/docs/latest/tracking.html#scenario-1-mlflow-on-localhost)
 for details.
 
@@ -138,7 +138,7 @@ zenml experiment-tracker register mlflow_tracker --flavor=mlflow
 zenml stack register mlflow_stack \
     -a default \
     -o default \
-    -e mlflow_tracker
+    -e mlflow_tracker \
     --set
 ```
 
@@ -155,8 +155,38 @@ Alternatively, if you want to run based on the config.yaml you can run with:
 zenml pipeline run pipelines/training_pipeline/training_pipeline.py -c config.yaml
 ```
 
+## Running on a local Kubernetes cluster
+
+
+## 📄 Infrastructure Requirements (Pre-requisites)
+
+You don't need to set up any infrastructure to run your pipelines with MLflow on a Kubernetes cluster, locally. However, you need the following tools installed:
+  * Docker must be installed on your local machine.
+  * Install k3d by running `curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | bash`.
+
+## Create a local MLflow Stack
+
+To get a stack with MLflow installed with authentication and potential other components, you can make use of ZenML's Stack Recipes that are a set of terraform based modules that take care of setting up a cluster with MLflow among other things.
+
+Run the following command to deploy the local MLflow stack:
+
+```bash
+zenml stack recipe deploy k3d-modular
+```
+
+>**Note**:
+> This recipe comes with MLflow, Kubeflow and Minio enabled by default. If you want any other components like KServe, Seldon or Tekton, you can specify that using the `--install/-i` flag.
+
+This will deploy a local Kubernetes cluster with MLflow installed. 
+It will also generate a stack YAML file that you can import as a ZenML stack by running 
+
+```bash
+zenml stack import -f <path-to-stack-yaml>
+```
+Once the stack is set, you can then simply proceed to running your pipelines.
+
 ### 🔮 See results
-Now we just need to start the mlflow UI to have a look at our two pipeline runs.
+Now we just need to start the MLflow UI to have a look at our two pipeline runs.
 To do this we need to run:
 
 ```shell
@@ -164,8 +194,9 @@ mlflow ui --backend-store-uri <SPECIFIC_MLRUNS_PATH_GOES_HERE>
 ```
 
 Check the terminal output of the pipeline run to see the exact path appropriate
-in your specific case. This will start mlflow at `localhost:5000`. If this port
-is already in use on your machine you may have to specify another port:
+in your specific case. This will start MLflow at [`localhost:5000`](http://localhost:5000/).
+If this port. If this port is already in use on your machine you may have to
+specify another port:
 
 ```shell
  mlflow ui --backend-store-uri <SPECIFIC_MLRUNS_PATH_GOES_HERE> -p 5001

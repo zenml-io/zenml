@@ -18,7 +18,7 @@ import shutil
 import subprocess
 import sys
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 import click
 from rich.text import Text
@@ -489,7 +489,9 @@ def list_stack_recipes(
     help="Relative path at which you want to clean the stack_recipe(s)",
 )
 @pass_git_stack_recipes_handler
-def clean(git_stack_recipes_handler: GitStackRecipesHandler, path: str) -> None:
+def clean(
+    git_stack_recipes_handler: GitStackRecipesHandler, path: str
+) -> None:
     """Deletes the stack recipes directory from your working directory.
 
     Args:
@@ -686,6 +688,16 @@ def pull(
                     f"in the file: {os.path.join(destination_dir, 'locals.tf')} "
                     "before you run the deploy command."
                 )
+        # also copy the modules folder from the repo (if it exists)
+        # this is a temporary fix until we have a proper module registry
+        modules_dir = os.path.join(
+            git_stack_recipes_handler.stack_recipes_dir, "modules"
+        )
+        if os.path.exists(modules_dir):
+            cli_utils.declare("Copying modules folder...")
+            io_utils.copy_dir(
+                modules_dir, os.path.join(stack_recipes_dir, "modules"), True
+            )
 
 
 @stack_recipe.command(
@@ -751,6 +763,12 @@ def pull(
     "if you have a local copy of your recipe already. Use the `--path` or `-p` flag to "
     "specify the directory that hosts your recipe(s).",
 )
+@click.option(
+    "--install",
+    "-i",
+    "enabled_services",
+    multiple=True,
+)
 @pass_git_stack_recipes_handler
 @click.pass_context
 def deploy(
@@ -765,6 +783,7 @@ def deploy(
     no_server: bool,
     skip_pull: bool,
     stack_name: Optional[str],
+    enabled_services: Tuple[str],
 ) -> None:
     """Run the stack_recipe at the specified relative path.
 
@@ -790,6 +809,8 @@ def deploy(
             deployment.
         skip_pull: Skip the pull of the stack recipe before deploying. This
             should be used if you have a local copy of your recipe already.
+        enabled_services: A list of services to install. Choose from mlflow, seldon,
+            kserve, kubeflow, tekton.
     """
     with event_handler(
         event=AnalyticsEvent.RUN_STACK_RECIPE,
@@ -902,7 +923,8 @@ def deploy(
                         )
                     else:
                         stack_recipe_service = StackRecipeService(
-                            config=terraform_config
+                            config=terraform_config,
+                            enabled_services=enabled_services,
                         )
 
                     # start the service (the init and apply operation)
@@ -1058,7 +1080,6 @@ def zen_server_exists() -> bool:
     help="Relative path at which you want to install the stack_recipe(s)",
 )
 @pass_git_stack_recipes_handler
-@click.pass_context
 def destroy(
     git_stack_recipes_handler: GitStackRecipesHandler,
     stack_recipe_name: str,
@@ -1135,12 +1156,16 @@ def destroy(
                 stack_recipe_service.stop()
 
                 cli_utils.declare(
-                    "\n" + "Your active stack might now be invalid. Please run:"
+                    "\n"
+                    + "Your active stack might now be invalid. Please run:"
                 )
-                text = Text("zenml stack describe", style="markdown.code_block")
+                text = Text(
+                    "zenml stack describe", style="markdown.code_block"
+                )
                 cli_utils.declare(text)
                 cli_utils.declare(
-                    "\n" + "to investigate and switch to a new stack if needed."
+                    "\n"
+                    + "to investigate and switch to a new stack if needed."
                 )
 
             except python_terraform.TerraformCommandError as e:

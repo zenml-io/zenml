@@ -33,12 +33,13 @@ from zenml.models.step_run_models import (
 from zenml.zen_stores.schemas.artifact_schemas import ArtifactSchema
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.pipeline_run_schemas import PipelineRunSchema
-from zenml.zen_stores.schemas.project_schemas import ProjectSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.user_schemas import UserSchema
+from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
 
 if TYPE_CHECKING:
     from zenml.models import ArtifactResponseModel
+    from zenml.zen_stores.schemas.run_metadata_schemas import RunMetadataSchema
 
 
 class StepRunSchema(NamedSchema, table=True):
@@ -54,7 +55,9 @@ class StepRunSchema(NamedSchema, table=True):
         ondelete="CASCADE",
         nullable=False,
     )
-    pipeline_run: "PipelineRunSchema" = Relationship(back_populates="step_runs")
+    pipeline_run: "PipelineRunSchema" = Relationship(
+        back_populates="step_runs"
+    )
     original_step_run_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
         target=__tablename__,
@@ -74,17 +77,18 @@ class StepRunSchema(NamedSchema, table=True):
     )
     user: Optional["UserSchema"] = Relationship(back_populates="step_runs")
 
-    project_id: UUID = build_foreign_key_field(
+    workspace_id: UUID = build_foreign_key_field(
         source=__tablename__,
-        target=ProjectSchema.__tablename__,
-        source_column="project_id",
+        target=WorkspaceSchema.__tablename__,
+        source_column="workspace_id",
         target_column="id",
         ondelete="CASCADE",
         nullable=False,
     )
-    project: "ProjectSchema" = Relationship(back_populates="step_runs")
+    workspace: "WorkspaceSchema" = Relationship(back_populates="step_runs")
 
     enable_cache: Optional[bool] = Field(nullable=True)
+    enable_artifact_metadata: Optional[bool] = Field(nullable=True)
     code_hash: Optional[str] = Field(nullable=True)
     cache_key: Optional[str] = Field(nullable=True)
     start_time: Optional[datetime] = Field(nullable=True)
@@ -97,8 +101,12 @@ class StepRunSchema(NamedSchema, table=True):
         sa_column=Column(TEXT, nullable=True)
     )
     docstring: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
+    source_code: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
     num_outputs: Optional[int]
 
+    run_metadata: List["RunMetadataSchema"] = Relationship(
+        back_populates="step_run", sa_relationship_kwargs={"cascade": "delete"}
+    )
     input_artifacts: List["StepRunInputArtifactSchema"] = Relationship(
         back_populates="step_run", sa_relationship_kwargs={"cascade": "delete"}
     )
@@ -131,14 +139,14 @@ class StepRunSchema(NamedSchema, table=True):
             The step run schema.
         """
         step_config = request.step.config
-
         return cls(
             name=request.name,
             pipeline_run_id=request.pipeline_run_id,
             original_step_run_id=request.original_step_run_id,
-            project_id=request.project,
+            workspace_id=request.workspace,
             user_id=request.user,
             enable_cache=step_config.enable_cache,
+            enable_artifact_metadata=step_config.enable_artifact_metadata,
             code_hash=step_config.caching_parameters.get(
                 STEP_SOURCE_PARAMETER_NAME
             ),
@@ -147,7 +155,9 @@ class StepRunSchema(NamedSchema, table=True):
             end_time=request.end_time,
             entrypoint_name=step_config.name,
             parameters=json.dumps(
-                step_config.parameters, default=pydantic_encoder, sort_keys=True
+                step_config.parameters,
+                default=pydantic_encoder,
+                sort_keys=True,
             ),
             step_configuration=request.step.json(sort_keys=True),
             caching_parameters=json.dumps(
@@ -155,7 +165,8 @@ class StepRunSchema(NamedSchema, table=True):
                 default=pydantic_encoder,
                 sort_keys=True,
             ),
-            docstring=step_config.docstring,
+            docstring=request.docstring,
+            source_code=request.source_code,
             num_outputs=len(step_config.outputs),
             status=request.status,
         )
@@ -176,23 +187,32 @@ class StepRunSchema(NamedSchema, table=True):
         Returns:
             The created StepRunModel.
         """
+        metadata = {
+            metadata_schema.key: metadata_schema.to_model()
+            for metadata_schema in self.run_metadata
+        }
         return StepRunResponseModel(
             id=self.id,
             name=self.name,
             pipeline_run_id=self.pipeline_run_id,
             original_step_run_id=self.original_step_run_id,
-            project=self.project.to_model(),
+            workspace=self.workspace.to_model(),
             user=self.user.to_model() if self.user else None,
             parent_step_ids=parent_step_ids,
+            enable_cache=self.enable_cache,
+            enable_artifact_metadata=self.enable_artifact_metadata,
             cache_key=self.cache_key,
             start_time=self.start_time,
             end_time=self.end_time,
             step=Step.parse_raw(self.step_configuration),
             status=self.status,
+            docstring=self.docstring,
+            source_code=self.source_code,
             created=self.created,
             updated=self.updated,
             input_artifacts=input_artifacts,
             output_artifacts=output_artifacts,
+            metadata=metadata,
         )
 
     def update(self, step_update: StepRunUpdateModel) -> "StepRunSchema":
@@ -278,7 +298,9 @@ class StepRunInputArtifactSchema(SQLModel, table=True):
         nullable=False,
         primary_key=True,
     )
-    artifact: ArtifactSchema = Relationship(back_populates="input_to_step_runs")
+    artifact: ArtifactSchema = Relationship(
+        back_populates="input_to_step_runs"
+    )
     name: str
 
 

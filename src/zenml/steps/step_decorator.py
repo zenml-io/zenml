@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Step decorator function."""
 
+from types import FunctionType
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -30,9 +31,12 @@ from zenml.steps import BaseStep
 from zenml.steps.utils import (
     INSTANCE_CONFIGURATION,
     PARAM_CREATED_BY_FUNCTIONAL_API,
+    PARAM_ENABLE_ARTIFACT_METADATA,
     PARAM_ENABLE_CACHE,
     PARAM_EXPERIMENT_TRACKER,
     PARAM_EXTRA_OPTIONS,
+    PARAM_ON_FAILURE,
+    PARAM_ON_SUCCESS,
     PARAM_OUTPUT_ARTIFACTS,
     PARAM_OUTPUT_MATERIALIZERS,
     PARAM_SETTINGS,
@@ -48,6 +52,7 @@ if TYPE_CHECKING:
 
     ArtifactClassOrStr = Union[str, Type["BaseArtifact"]]
     MaterializerClassOrStr = Union[str, Type["BaseMaterializer"]]
+    HookSpecification = Union[str, FunctionType]
     OutputArtifactsSpecification = Union[
         "ArtifactClassOrStr", Mapping[str, "ArtifactClassOrStr"]
     ]
@@ -67,13 +72,16 @@ def step(_func: F) -> Type[BaseStep]:
 def step(
     *,
     name: Optional[str] = None,
-    enable_cache: bool = True,
+    enable_cache: Optional[bool] = None,
+    enable_artifact_metadata: Optional[bool] = None,
     experiment_tracker: Optional[str] = None,
     step_operator: Optional[str] = None,
     output_artifacts: Optional["OutputArtifactsSpecification"] = None,
     output_materializers: Optional["OutputMaterializersSpecification"] = None,
     settings: Optional[Dict[str, "SettingsOrDict"]] = None,
     extra: Optional[Dict[str, Any]] = None,
+    on_failure: Optional["HookSpecification"] = None,
+    on_success: Optional["HookSpecification"] = None,
 ) -> Callable[[F], Type[BaseStep]]:
     ...
 
@@ -83,12 +91,15 @@ def step(
     *,
     name: Optional[str] = None,
     enable_cache: Optional[bool] = None,
+    enable_artifact_metadata: Optional[bool] = None,
     experiment_tracker: Optional[str] = None,
     step_operator: Optional[str] = None,
     output_artifacts: Optional["OutputArtifactsSpecification"] = None,
     output_materializers: Optional["OutputMaterializersSpecification"] = None,
     settings: Optional[Dict[str, "SettingsOrDict"]] = None,
     extra: Optional[Dict[str, Any]] = None,
+    on_failure: Optional["HookSpecification"] = None,
+    on_success: Optional["HookSpecification"] = None,
 ) -> Union[Type[BaseStep], Callable[[F], Type[BaseStep]]]:
     """Outer decorator function for the creation of a ZenML step.
 
@@ -103,6 +114,8 @@ def step(
             value is passed, caching is enabled by default unless the step
             requires a `StepContext` (see
             `zenml.steps.step_context.StepContext` for more information).
+        enable_artifact_metadata: Specify whether metadata is enabled for this
+            step. If no value is passed, metadata is enabled by default.
         experiment_tracker: The experiment tracker to use for this step.
         step_operator: The step operator to use for this step.
         output_materializers: Output materializers for this step. If
@@ -115,9 +128,18 @@ def step(
             artifact class will be used for all outputs.
         settings: Settings for this step.
         extra: Extra configurations for this step.
+        on_failure: Callback function in event of failure of the step. Can be
+            a function with three possible parameters,
+            `StepContext`, `BaseParameters`, and `BaseException`,
+            or a source path to a function of the same specifications
+            (e.g. `module.my_function`).
+        on_success: Callback function in event of failure of the step. Can be
+            a function with two possible parameters, `StepContext` and
+            `BaseParameters, or a source path to a function of the same specifications
+            (e.g. `module.my_function`).
 
     Returns:
-        the inner decorator which creates the step class based on the
+        The inner decorator which creates the step class based on the
         ZenML BaseStep
     """
 
@@ -140,12 +162,15 @@ def step(
                     PARAM_STEP_NAME: name,
                     PARAM_CREATED_BY_FUNCTIONAL_API: True,
                     PARAM_ENABLE_CACHE: enable_cache,
+                    PARAM_ENABLE_ARTIFACT_METADATA: enable_artifact_metadata,
                     PARAM_EXPERIMENT_TRACKER: experiment_tracker,
                     PARAM_STEP_OPERATOR: step_operator,
                     PARAM_OUTPUT_ARTIFACTS: output_artifacts,
                     PARAM_OUTPUT_MATERIALIZERS: output_materializers,
                     PARAM_SETTINGS: settings,
                     PARAM_EXTRA_OPTIONS: extra,
+                    PARAM_ON_FAILURE: on_failure,
+                    PARAM_ON_SUCCESS: on_success,
                 },
                 "__module__": func.__module__,
                 "__doc__": func.__doc__,

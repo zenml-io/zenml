@@ -14,7 +14,8 @@
 """Implementation of the ZenML NumPy materializer."""
 
 import os
-from typing import TYPE_CHECKING, Any, Type, cast
+from collections import Counter
+from typing import TYPE_CHECKING, Any, Dict, Type, cast
 
 import numpy as np
 
@@ -22,6 +23,7 @@ from zenml.enums import ArtifactType
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
+from zenml.metadata.metadata_types import DType, MetadataType
 
 if TYPE_CHECKING:
     from numpy.typing import NDArray
@@ -115,3 +117,80 @@ class NumpyMaterializer(BaseMaterializer):
             # about either an untyped function call or an unused ignore
             # statement
             cast(Any, np.save)(f, arr)
+
+    def extract_numeric_metadata(
+        self, arr: "NDArray[Any]"
+    ) -> Dict[str, "MetadataType"]:
+        """Extracts numeric metadata from a numpy array.
+
+        Args:
+            arr: The numpy array to extract metadata from.
+
+        Returns:
+            A dictionary of metadata.
+        """
+        # These functions are untyped for numpy versions supporting python
+        # 3.7, but typed for numpy versions installed on python 3.8+.
+        # We need to cast them to Any here so that numpy doesn't complain
+        # about either an untyped function call or an unused ignore statement.
+        min_val = cast(Any, np.min)(arr).item()
+        max_val = cast(Any, np.max)(arr).item()
+
+        numpy_metadata: Dict[str, "MetadataType"] = {
+            "shape": tuple(arr.shape),
+            "dtype": DType(arr.dtype.type),
+            "mean": np.mean(arr).item(),
+            "std": np.std(arr).item(),
+            "min": min_val,
+            "max": max_val,
+        }
+        return numpy_metadata
+
+    def extract_text_metadata(
+        self, arr: "NDArray[Any]"
+    ) -> Dict[str, "MetadataType"]:
+        """Extracts text metadata from a numpy array.
+
+        Args:
+            arr: The numpy array to extract metadata from.
+
+        Returns:
+            A dictionary of metadata.
+        """
+        text = " ".join(arr)
+        words = text.split()
+        word_counts = Counter(words)
+        unique_words = len(word_counts)
+        total_words = len(words)
+        most_common_word, most_common_count = word_counts.most_common(1)[0]
+
+        text_metadata: Dict[str, "MetadataType"] = {
+            "shape": tuple(arr.shape),
+            "dtype": DType(arr.dtype.type),
+            "unique_words": unique_words,
+            "total_words": total_words,
+            "most_common_word": most_common_word,
+            "most_common_count": most_common_count,
+        }
+        return text_metadata
+
+    def extract_metadata(
+        self, arr: "NDArray[Any]"
+    ) -> Dict[str, "MetadataType"]:
+        """Extract metadata from the given numpy array.
+
+        Args:
+            arr: The numpy array to extract metadata from.
+
+        Returns:
+            The extracted metadata as a dictionary.
+        """
+        base_metadata = super().extract_metadata(arr)
+        if np.issubdtype(arr.dtype, np.number):
+            return {**base_metadata, **self.extract_numeric_metadata(arr)}
+        elif np.issubdtype(arr.dtype, np.unicode_) or np.issubdtype(
+            arr.dtype, np.object_
+        ):
+            return {**base_metadata, **self.extract_text_metadata(arr)}
+        else:
+            return {**base_metadata}

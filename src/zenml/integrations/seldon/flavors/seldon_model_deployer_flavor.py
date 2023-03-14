@@ -47,12 +47,20 @@ class SeldonModelDeployerConfig(BaseModelDeployerConfig):
             Seldon Core storage initializers to authenticate to the Artifact
             Store (i.e. the storage backend where models are stored - see
             https://docs.seldon.io/projects/seldon-core/en/latest/servers/overview.html#handling-credentials).
+        kubernetes_secret_name: the name of the Kubernetes secret containing
+            the credentials used by Seldon Core storage initializers to
+            authenticate to the Artifact Store (i.e. the storage backend where
+            models are stored) - This is used when the secret is not managed by
+            ZenML and is already present in the Kubernetes cluster.
     """
 
     kubernetes_context: Optional[str]  # TODO: Potential setting
     kubernetes_namespace: Optional[str]
     base_url: str  # TODO: unused?
     secret: Optional[str]
+    kubernetes_secret_name: Optional[
+        str
+    ]  # TODO: Add full documentation section on this
 
 
 class SeldonModelDeployerFlavor(BaseModelDeployerFlavor):
@@ -66,6 +74,33 @@ class SeldonModelDeployerFlavor(BaseModelDeployerFlavor):
             The name of the flavor.
         """
         return SELDON_MODEL_DEPLOYER_FLAVOR
+
+    @property
+    def docs_url(self) -> Optional[str]:
+        """A url to point at docs explaining this flavor.
+
+        Returns:
+            A flavor docs url.
+        """
+        return self.generate_default_docs_url()
+
+    @property
+    def sdk_docs_url(self) -> Optional[str]:
+        """A url to point at SDK docs explaining this flavor.
+
+        Returns:
+            A flavor SDK docs url.
+        """
+        return self.generate_default_sdk_docs_url()
+
+    @property
+    def logo_url(self) -> str:
+        """A url to represent the flavor in the dashboard.
+
+        Returns:
+            The flavor logo.
+        """
+        return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/model_deployer/seldon.png"
 
     @property
     def config_class(self) -> Type[SeldonModelDeployerConfig]:

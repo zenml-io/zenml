@@ -13,7 +13,6 @@
 [![Contributors][contributors-shield]][contributors-url]
 [![License][license-shield]][license-url]
 <!-- [![Build][build-shield]][build-url] -->
-<!-- [![Interrogate][interrogate-shield]][interrogate-url] -->
 <!-- [![CodeCov][codecov-shield]][codecov-url] -->
 
 <!-- MARKDOWN LINKS & IMAGES -->
@@ -38,15 +37,13 @@
 [slack-url]: https://zenml.io/slack-invite
 [build-shield]: https://img.shields.io/github/workflow/status/zenml-io/zenml/Build,%20Lint,%20Unit%20&%20Integration%20Test/develop?logo=github&style=for-the-badge
 [build-url]: https://github.com/zenml-io/zenml/actions/workflows/ci.yml
-[interrogate-shield]: https://img.shields.io/badge/Interrogate-100%25-brightgreen?style=for-the-badge&logo=interrogate
-[interrogate-url]: https://interrogate.readthedocs.io/en/latest/
 
 
 <!-- PROJECT LOGO -->
 <br />
 <div align="center">
   <a href="https://zenml.io">
-    <img src="docs/book/assets/zenml_logo.png" alt="Logo" width="400">
+    <img alt="ZenML Logo" src="https://user-images.githubusercontent.com/3348134/223112746-345126ff-a0e8-479f-8ac0-670d78f71712.png" alt="Logo" width="400">
   </a>
 
   <h3 align="center">Build portable, production-ready MLOps pipelines.</h3>
@@ -74,7 +71,7 @@
     ·
     <a href="#-meet-the-team">Meet the Team</a>
     <br />
-    🎉 Version 0.31.0 is out. Check out the release notes
+    🎉 Version 0.35.1 is out. Check out the release notes
     <a href="https://github.com/zenml-io/zenml/releases">here</a>.
     <br />
     <br />

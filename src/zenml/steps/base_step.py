@@ -16,6 +16,7 @@
 import inspect
 from abc import abstractmethod
 from collections import defaultdict
+from types import FunctionType
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -46,6 +47,7 @@ from zenml.config.step_configurations import (
 )
 from zenml.constants import STEP_SOURCE_PARAMETER_NAME
 from zenml.exceptions import MissingStepParameterError, StepInterfaceError
+from zenml.hooks.hook_validators import resolve_and_validate_hook
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.materializers.default_materializer_registry import (
@@ -56,9 +58,12 @@ from zenml.steps.step_context import StepContext
 from zenml.steps.utils import (
     INSTANCE_CONFIGURATION,
     PARAM_CREATED_BY_FUNCTIONAL_API,
+    PARAM_ENABLE_ARTIFACT_METADATA,
     PARAM_ENABLE_CACHE,
     PARAM_EXPERIMENT_TRACKER,
     PARAM_EXTRA_OPTIONS,
+    PARAM_ON_FAILURE,
+    PARAM_ON_SUCCESS,
     PARAM_OUTPUT_ARTIFACTS,
     PARAM_OUTPUT_MATERIALIZERS,
     PARAM_SETTINGS,
@@ -67,7 +72,12 @@ from zenml.steps.utils import (
     parse_return_type_annotations,
     resolve_type_annotation,
 )
-from zenml.utils import dict_utils, pydantic_utils, settings_utils, source_utils
+from zenml.utils import (
+    dict_utils,
+    pydantic_utils,
+    settings_utils,
+    source_utils,
+)
 
 logger = get_logger(__name__)
 if TYPE_CHECKING:
@@ -76,6 +86,7 @@ if TYPE_CHECKING:
     ParametersOrDict = Union["BaseParameters", Dict[str, Any]]
     ArtifactClassOrStr = Union[str, Type["BaseArtifact"]]
     MaterializerClassOrStr = Union[str, Type["BaseMaterializer"]]
+    HookSpecification = Union[str, FunctionType]
     OutputArtifactsSpecification = Union[
         "ArtifactClassOrStr", Mapping[str, "ArtifactClassOrStr"]
     ]
@@ -218,6 +229,8 @@ class BaseStep(metaclass=BaseStepMeta):
         pipeline_parameter_name: The name of the pipeline parameter for which
             this step was passed as an argument.
         enable_cache: A boolean indicating if caching is enabled for this step.
+        enable_artifact_metadata: A boolean indicating if artifact metadata
+            is enabled for this step.
     """
 
     INPUT_SIGNATURE: ClassVar[Dict[str, Type[Any]]] = None  # type: ignore[assignment] # noqa
@@ -253,7 +266,6 @@ class BaseStep(metaclass=BaseStepMeta):
             *args: Positional arguments passed to the step.
             **kwargs: Keyword arguments passed to the step.
         """
-        self.pipeline_parameter_name: Optional[str] = None
         self._has_been_called = False
         self._upstream_steps: Set[str] = set()
         self._inputs: Dict[str, InputSpec] = {}
@@ -277,18 +289,27 @@ class BaseStep(metaclass=BaseStepMeta):
                     "explicitly enabled.",
                     name,
                 )
-            else:
-                # Default to cache enabled if not explicitly set
-                enable_cache = True
 
         logger.debug(
             "Step '%s': Caching %s.",
             name,
-            "enabled" if enable_cache else "disabled",
+            "enabled" if enable_cache is not False else "disabled",
+        )
+
+        enable_artifact_metadata = kwargs.pop(
+            PARAM_ENABLE_ARTIFACT_METADATA, None
+        )
+
+        logger.debug(
+            "Step '%s': Artifact metadata %s.",
+            name,
+            "enabled" if enable_artifact_metadata is not False else "disabled",
         )
 
         self._configuration = PartialStepConfiguration(
-            name=name, enable_cache=enable_cache, docstring=self.__doc__
+            name=name,
+            enable_cache=enable_cache,
+            enable_artifact_metadata=enable_artifact_metadata,
         )
         self._apply_class_configuration(kwargs)
         self._verify_and_apply_init_params(*args, **kwargs)
@@ -316,6 +337,21 @@ class BaseStep(metaclass=BaseStepMeta):
         return cls.INSTANCE_CONFIGURATION.get(
             PARAM_CREATED_BY_FUNCTIONAL_API, False
         )
+
+    @classmethod
+    def load_from_source(cls, source: str) -> "BaseStep":
+        """Loads a step from source.
+
+        Args:
+            source: The path to the step source.
+
+        Returns:
+            The loaded step.
+        """
+        step_class: Type[BaseStep] = source_utils.load_and_validate_class(
+            source, expected_class=BaseStep
+        )
+        return step_class()
 
     @property
     def upstream_steps(self) -> Set[str]:
@@ -378,6 +414,38 @@ class BaseStep(metaclass=BaseStepMeta):
         return self._inputs
 
     @property
+    def source_object(self) -> Any:
+        """The source object of this step.
+
+        This is either a function wrapped by the `@step` decorator or a custom
+        step class.
+
+        Returns:
+            The source object of this step.
+        """
+        if self._created_by_functional_api():
+            return self.entrypoint
+        return self.__class__
+
+    @property
+    def source_code(self) -> str:
+        """The source code of this step.
+
+        Returns:
+            The source code of this step.
+        """
+        return inspect.getsource(self.source_object)
+
+    @property
+    def docstring(self) -> Optional[str]:
+        """The docstring of this step.
+
+        Returns:
+            The docstring of this step.
+        """
+        return self.__doc__
+
+    @property
     def caching_parameters(self) -> Dict[str, Any]:
         """Caching parameters for this step.
 
@@ -385,20 +453,14 @@ class BaseStep(metaclass=BaseStepMeta):
             A dictionary containing the caching parameters
         """
         parameters = {}
-
-        source_object = (
-            self.entrypoint
-            if self._created_by_functional_api()
-            else self.__class__
-        )
-        parameters[STEP_SOURCE_PARAMETER_NAME] = source_utils.get_hashed_source(
-            source_object
-        )
+        parameters[
+            STEP_SOURCE_PARAMETER_NAME
+        ] = source_utils.get_hashed_source(self.source_object)
 
         for name, output in self.configuration.outputs.items():
             if output.materializer_source:
                 key = f"{name}_materializer_source"
-                materializer_class = source_utils.load_source_path_class(
+                materializer_class = source_utils.load_source_path(
                     output.materializer_source
                 )
                 parameters[key] = source_utils.get_hashed_source(
@@ -419,6 +481,8 @@ class BaseStep(metaclass=BaseStepMeta):
         output_artifacts = options.pop(PARAM_OUTPUT_ARTIFACTS, None)
         extra = options.pop(PARAM_EXTRA_OPTIONS, None)
         experiment_tracker = options.pop(PARAM_EXPERIMENT_TRACKER, None)
+        on_failure = options.pop(PARAM_ON_FAILURE, None)
+        on_success = options.pop(PARAM_ON_SUCCESS, None)
 
         self.configure(
             experiment_tracker=experiment_tracker,
@@ -427,6 +491,8 @@ class BaseStep(metaclass=BaseStepMeta):
             output_materializers=output_materializers,
             settings=settings,
             extra=extra,
+            on_failure=on_failure,
+            on_success=on_success,
         )
 
     def _verify_and_apply_init_params(self, *args: Any, **kwargs: Any) -> None:
@@ -619,32 +685,6 @@ class BaseStep(metaclass=BaseStepMeta):
         else:
             return returns
 
-    def with_return_materializers(
-        self: T,
-        materializers: Union[
-            Type[BaseMaterializer], Dict[str, Type[BaseMaterializer]]
-        ],
-    ) -> T:
-        """DEPRECATED: Register materializers for step outputs.
-
-        If a single materializer is passed, it will be used for all step
-        outputs. Otherwise, the dictionary keys specify the output names
-        for which the materializers will be used.
-
-        Args:
-            materializers: The materializers for the outputs of this step.
-
-        Returns:
-            The step that this method was called on.
-        """
-        logger.warning(
-            "The `with_return_materializers(...)` method is deprecated. "
-            "Use `step.configure(output_materializers=...)` instead."
-        )
-
-        self.configure(output_materializers=materializers)
-        return self
-
     @property
     def name(self) -> str:
         """The name of the step.
@@ -655,7 +695,7 @@ class BaseStep(metaclass=BaseStepMeta):
         return self.configuration.name
 
     @property
-    def enable_cache(self) -> bool:
+    def enable_cache(self) -> Optional[bool]:
         """If caching is enabled for the step.
 
         Returns:
@@ -676,6 +716,7 @@ class BaseStep(metaclass=BaseStepMeta):
         self: T,
         name: Optional[str] = None,
         enable_cache: Optional[bool] = None,
+        enable_artifact_metadata: Optional[bool] = None,
         experiment_tracker: Optional[str] = None,
         step_operator: Optional[str] = None,
         parameters: Optional["ParametersOrDict"] = None,
@@ -685,6 +726,8 @@ class BaseStep(metaclass=BaseStepMeta):
         output_artifacts: Optional["OutputArtifactsSpecification"] = None,
         settings: Optional[Mapping[str, "SettingsOrDict"]] = None,
         extra: Optional[Dict[str, Any]] = None,
+        on_failure: Optional["HookSpecification"] = None,
+        on_success: Optional["HookSpecification"] = None,
         merge: bool = True,
     ) -> T:
         """Configures the step.
@@ -702,6 +745,8 @@ class BaseStep(metaclass=BaseStepMeta):
         Args:
             name: The name of the step.
             enable_cache: If caching should be enabled for this step.
+            enable_artifact_metadata: If artifact metadata should be enabled
+                for this step.
             experiment_tracker: The experiment tracker to use for this step.
             step_operator: The step operator to use for this step.
             parameters: Function parameters for this step
@@ -720,13 +765,17 @@ class BaseStep(metaclass=BaseStepMeta):
                 configurations. If `False` the given configurations will
                 overwrite all existing ones. See the general description of this
                 method for an example.
+            on_failure: Callback function in event of failure of the step. Can be
+                a function with three possible parameters, `StepContext`, `BaseParameters`,
+                and `BaseException`, or a source path to a function of the same specifications
+                (e.g. `module.my_function`)
+            on_success: Callback function in event of failure of the step. Can be
+                a function with two possible parameters, `StepContext` and `BaseParameters, or
+                a source path to a function of the same specifications
+                (e.g. `module.my_function`).
 
         Returns:
             The step instance that this method was called on.
-
-        Raises:
-            StepInterfaceError: If a materializer or artifact for a non-existent
-                output name are configured.
         """
 
         def _resolve_if_necessary(value: Union[str, Type[Any]]) -> str:
@@ -748,17 +797,18 @@ class BaseStep(metaclass=BaseStepMeta):
                 }
 
             for output_name, materializer in output_materializers.items():
-                if output_name not in allowed_output_names:
-                    raise StepInterfaceError(
-                        f"Got unexpected materializers for non-existent "
-                        f"output '{output_name}' in step '{self.name}'. "
-                        f"Only materializers for the outputs "
-                        f"{allowed_output_names} of this step can"
-                        f" be registered."
-                    )
-
                 source = _resolve_if_necessary(materializer)
                 outputs[output_name]["materializer_source"] = source
+
+        failure_hook_source = None
+        if on_failure:
+            # string of on_failure hook function to be used for this step
+            failure_hook_source = resolve_and_validate_hook(on_failure)
+
+        success_hook_source = None
+        if on_success:
+            # string of on_success hook function to be used for this step
+            success_hook_source = resolve_and_validate_hook(on_success)
 
         if output_artifacts:
             logger.warning(
@@ -773,12 +823,15 @@ class BaseStep(metaclass=BaseStepMeta):
             {
                 "name": name,
                 "enable_cache": enable_cache,
+                "enable_artifact_metadata": enable_artifact_metadata,
                 "experiment_tracker": experiment_tracker,
                 "step_operator": step_operator,
                 "parameters": parameters,
                 "settings": settings,
                 "outputs": outputs or None,
                 "extra": extra,
+                "failure_hook_source": failure_hook_source,
+                "success_hook_source": success_hook_source,
             }
         )
         config = StepConfigurationUpdate(**values)
@@ -817,18 +870,19 @@ class BaseStep(metaclass=BaseStepMeta):
         self._validate_function_parameters(parameters=config.parameters)
         self._validate_outputs(outputs=config.outputs)
 
-    def _validate_function_parameters(self, parameters: Dict[str, Any]) -> None:
+    def _validate_function_parameters(
+        self, parameters: Dict[str, Any]
+    ) -> None:
         """Validates step function parameters.
 
         Args:
             parameters: The parameters to validate.
 
         Raises:
-            StepInterfaceError: If the step requires no function parameters or
-                invalid function parameters were given.
+            StepInterfaceError: If the step requires no function parameters but
+                parameters were configured.
         """
         if not parameters:
-            # No parameters set (yet), defer validation to a later point
             return
 
         if not self.PARAMETERS_CLASS:
@@ -836,11 +890,6 @@ class BaseStep(metaclass=BaseStepMeta):
                 f"Function parameters configured for step {self.name} which "
                 "does not accept any function parameters."
             )
-
-        try:
-            self.PARAMETERS_CLASS(**parameters)
-        except ValidationError:
-            raise StepInterfaceError("Failed to validate function parameters.")
 
     def _validate_inputs(
         self, inputs: Mapping[str, ArtifactConfiguration]
@@ -882,10 +931,11 @@ class BaseStep(metaclass=BaseStepMeta):
         for output_name, output in outputs.items():
             if output_name not in allowed_output_names:
                 raise StepInterfaceError(
-                    f"Found explicit artifact type for unrecognized output "
-                    f"'{output_name}' in step '{self.name}'. Output "
-                    f"artifact types can only be specified for the outputs "
-                    f"of this step: {set(self.OUTPUT_SIGNATURE)}."
+                    f"Got unexpected materializers for non-existent "
+                    f"output '{output_name}' in step '{self.name}'. "
+                    f"Only materializers for the outputs "
+                    f"{allowed_output_names} of this step can"
+                    f" be registered."
                 )
 
             if output.materializer_source:
@@ -937,7 +987,7 @@ class BaseStep(metaclass=BaseStepMeta):
                         f"'{output_name}' of type `{output_class}` in step "
                         f"'{self.name}'. Please make sure to either "
                         f"explicitly set a materializer for step outputs "
-                        f"using `step.with_return_materializers(...)` or "
+                        f"using `step.configure(output_materializers=...)` or "
                         f"registering a default materializer for specific "
                         f"types by subclassing `BaseMaterializer` and setting "
                         f"its `ASSOCIATED_TYPES` class variable.",
@@ -990,6 +1040,7 @@ class BaseStep(metaclass=BaseStepMeta):
         Raises:
             MissingStepParameterError: If no value could be found for one or
                 more config parameters.
+            StepInterfaceError: If the parameter class validation failed.
         """
         if not self.PARAMETERS_CLASS:
             return {}
@@ -1001,6 +1052,7 @@ class BaseStep(metaclass=BaseStepMeta):
         for name, field in self.PARAMETERS_CLASS.__fields__.items():
             if name in self.configuration.parameters:
                 # a value for this parameter has been set already
+                values[name] = self.configuration.parameters[name]
                 continue
 
             if field.required:
@@ -1015,5 +1067,10 @@ class BaseStep(metaclass=BaseStepMeta):
             raise MissingStepParameterError(
                 self.name, missing_keys, self.PARAMETERS_CLASS
             )
+
+        try:
+            self.PARAMETERS_CLASS(**values)
+        except ValidationError:
+            raise StepInterfaceError("Failed to validate function parameters.")
 
         return values

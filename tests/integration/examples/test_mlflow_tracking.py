@@ -31,13 +31,12 @@ def test_example(request: pytest.FixtureRequest) -> None:
     with run_example(
         request=request,
         name="mlflow_tracking",
-        pipeline_name="mlflow_example_pipeline",
-        run_count=2,
+        pipelines={"mlflow_example_pipeline": (2, 4)},
     ) as (example, runs):
         pipeline = get_pipeline("mlflow_example_pipeline")
         assert pipeline
 
-        first_run, second_run = runs
+        first_run, second_run = runs["mlflow_example_pipeline"]
 
         # activate the stack set up and used by the example
         client = Client()

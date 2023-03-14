@@ -34,11 +34,11 @@ are provided by integrations:
 | [LocalDockerOrchestrator](./local-docker.md)     | `local_docker` | _built-in_   | Runs your pipelines locally using Docker.                               |
 | [KubernetesOrchestrator](./kubernetes.md)        | `kubernetes`   | `kubernetes` | Runs your pipelines in Kubernetes clusters.                             |
 | [KubeflowOrchestrator](./kubeflow.md)            | `kubeflow`     | `kubeflow`   | Runs your pipelines using Kubeflow.                                     |
-| [VertexOrchestrator](./gcloud-vertexai.md)       | `vertex`       | `gcp`        | Runs your pipelines in Vertex AI.                                       |
+| [VertexOrchestrator](./vertex.md)       | `vertex`       | `gcp`        | Runs your pipelines in Vertex AI.                                       |
 | [SagemakerOrchestrator](./sagemaker.md)       | `sagemaker`       | `aws`        | Runs your pipelines in Sagemaker.                                       |
 | [TektonOrchestrator](./tekton.md)                | `tekton`       | `tekton`     | Runs your pipelines using Tekton.                                       |
 | [AirflowOrchestrator](./airflow.md)              | `airflow`      | `airflow`    | Runs your pipelines using Airflow.                                      |
-| [GitHubActionsOrchestrator](./github-actions.md) | `github`       | `github`     | Runs your pipelines using GitHub Actions.                               |
+| [GitHubActionsOrchestrator](./github.md) | `github`       | `github`     | Runs your pipelines using GitHub Actions.                               |
 | [Custom Implementation](./custom.md)             | _custom_       |              | Extend the orchestrator abstraction and provide your own implementation |
 
 If you would like to see the available flavors of orchestrators, you can 
@@ -58,6 +58,19 @@ using the orchestrator is as simple as executing a python file which
 
 ```shell
 python file_that_runs_a_zenml_pipeline.py
+```
+
+### Inspecting Runs in the Orchestrator UI
+
+If your orchestrator comes with a separate user interface (for example: 
+Kubeflow, Airflow, Vertex), you can get the URL to the orchestrator UI of a 
+specific pipeline run using the following code snippet:
+
+```python
+from zenml.post_execution import get_run
+
+pipeline_run = get_run("<PIPELINE_RUN_NAME>")
+orchestrator_url = deployer_step.metadata["orchestrator_url"].value
 ```
 
 ### Specifying per-step resources

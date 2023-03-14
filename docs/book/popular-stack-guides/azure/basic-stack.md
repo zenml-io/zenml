@@ -220,7 +220,7 @@ wget --no-check-certificate https://dl.cacerts.digicert.com/DigiCertGlobalRootCA
 * [Set up](https://azure.microsoft.com/en-in/services/container-registry/#get-started)
   an Azure Container Registry (ACR).
 
-* Set the regsitry name in your shell.
+* Set the registry name in your shell.
 
   ```shell
   REGISTRY_NAME=<REGISTRY_NAME>  # should be <some-name>.azurecr.io

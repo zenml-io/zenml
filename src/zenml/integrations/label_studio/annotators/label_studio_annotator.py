@@ -240,21 +240,20 @@ class LabelStudioAnnotator(BaseAnnotator, AuthenticationMixin):
                 client.
 
         Raises:
-            NotImplementedError: If the deletion of a dataset is not supported.
+            ValueError: If the dataset name is not provided or if the dataset
+                does not exist.
         """
-        raise NotImplementedError("Awaiting Label Studio release.")
-        # TODO: Awaiting a new Label Studio version to be released with this method
-        # ls = self._get_client()
-        # dataset_name = kwargs.get("dataset_name")
-        # if not dataset_name:
-        #     raise ValueError("`dataset_name` keyword argument is required.")
+        ls = self._get_client()
+        dataset_name = kwargs.get("dataset_name")
+        if not dataset_name:
+            raise ValueError("`dataset_name` keyword argument is required.")
 
-        # dataset_id = self.get_id_from_name(dataset_name)
-        # if not dataset_id:
-        #     raise ValueError(
-        #         f"Dataset name '{dataset_name}' has no corresponding `dataset_id` in Label Studio."
-        #     )
-        # ls.delete_project(dataset_id)
+        dataset_id = self.get_id_from_name(dataset_name)
+        if not dataset_id:
+            raise ValueError(
+                f"Dataset name '{dataset_name}' has no corresponding `dataset_id` in Label Studio."
+            )
+        ls.delete_project(dataset_id)
 
     def get_dataset(self, **kwargs: Any) -> Any:
         """Gets the dataset with the given name.
@@ -460,7 +459,9 @@ class LabelStudioAnnotator(BaseAnnotator, AuthenticationMixin):
         # TODO: check we are already connected
         dataset_id = int(dataset.get_params()["id"])
         if params.storage_type == "azure":
-            storage_sources = self._get_azure_import_storage_sources(dataset_id)
+            storage_sources = self._get_azure_import_storage_sources(
+                dataset_id
+            )
         elif params.storage_type == "gcs":
             storage_sources = self._get_gcs_import_storage_sources(dataset_id)
         elif params.storage_type == "s3":
@@ -560,7 +561,10 @@ class LabelStudioAnnotator(BaseAnnotator, AuthenticationMixin):
                 **storage_connection_args,
             )
         elif params.storage_type == "s3":
-            if not params.aws_access_key_id or not params.aws_secret_access_key:
+            if (
+                not params.aws_access_key_id
+                or not params.aws_secret_access_key
+            ):
                 logger.warning(
                     "Authentication credentials for S3 aren't fully provided."
                     "Please update the storage synchronization settings in the "
@@ -660,6 +664,11 @@ class LabelStudioAnnotator(BaseAnnotator, AuthenticationMixin):
     def provision(self) -> None:
         """Spins up the annotation server backend."""
         fileio.makedirs(self.root_directory)
+        logger.warning(
+            "Label Studio provisioning using `zenml stack up` is ",
+            "deprecated. Please follow the new label_studio integration",
+            "documentation page to manually provision Label Studio locally.",
+        )
 
     def deprovision(self) -> None:
         """Spins down the annotation server backend."""

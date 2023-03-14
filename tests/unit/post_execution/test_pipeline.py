@@ -13,16 +13,17 @@
 #  permissions and limitations under the License.
 
 from contextlib import ExitStack as does_not_raise
+from unittest.mock import ANY
 
 import pytest
 
 from zenml.pipelines import pipeline
 from zenml.post_execution.pipeline import get_pipeline
+from zenml.steps import step
 
 
 def test_get_pipeline():
-    """Tests that getting post-execution pipelines forwards calls to the
-    metadata store of the (active) stack."""
+    """Tests that getting post-execution pipelines forwards calls to the metadata store of the (active) stack."""
     # register a stack with a mysql metadata store
 
     @pipeline
@@ -58,3 +59,58 @@ def test_get_pipeline_raises_exception():
     for input_arg in input_args:
         with pytest.raises(RuntimeError):
             get_pipeline(**input_arg)
+
+
+def test_getting_the_latest_runs(
+    clean_client, mocker, one_step_pipeline, empty_step
+):
+    """Tests that the latest 50 runs are fetched."""
+    pipeline_instance = one_step_pipeline(empty_step())
+    pipeline_instance.run()
+    mock_list_runs = mocker.patch("zenml.client.Client.list_runs")
+
+    post_execution_pipeline = get_pipeline(pipeline_instance)
+    _ = post_execution_pipeline.runs
+
+    mock_list_runs.assert_called_with(
+        workspace_id=ANY, pipeline_id=ANY, size=50, sort_by="desc:created"
+    )
+
+
+@step
+def custom_step() -> None:
+    pass
+
+
+def test_getting_pipeline_with_multiple_registered_versions(
+    clean_client, mocker, one_step_pipeline, empty_step
+):
+    """Tests that fetching a pipeline works if multiple versions of that
+    pipeline are registered."""
+    pipeline_instance_v1 = one_step_pipeline(empty_step())
+    pipeline_instance_v1.run()
+
+    pipeline_instance_v2 = one_step_pipeline(custom_step())
+    pipeline_instance_v2.run()
+
+    post_execution_pipeline_v1 = get_pipeline(pipeline_instance_v1)
+    post_execution_pipeline_v2 = get_pipeline(pipeline_instance_v2)
+    assert post_execution_pipeline_v1.model != post_execution_pipeline_v2.model
+
+    assert (
+        get_pipeline(one_step_pipeline.__name__).model
+        == post_execution_pipeline_v2.model
+    )
+    assert (
+        get_pipeline(one_step_pipeline).model
+        == post_execution_pipeline_v2.model
+    )
+
+    assert (
+        get_pipeline(one_step_pipeline.__name__, version="1").model
+        == post_execution_pipeline_v1.model
+    )
+    assert (
+        get_pipeline(one_step_pipeline, version="1").model
+        == post_execution_pipeline_v1.model
+    )

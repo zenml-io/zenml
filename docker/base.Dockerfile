@@ -14,15 +14,25 @@ ARG ZENML_VERSION
 RUN pip install zenml${ZENML_VERSION:+==$ZENML_VERSION}
 
 FROM base AS server
-RUN pip install zenml${ZENML_VERSION:+==$ZENML_VERSION}[server]
+
+RUN pip install zenml${ZENML_VERSION:+==$ZENML_VERSION}[server,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp]
 
 WORKDIR /zenml
-
-RUN mkdir -p .zenconfig/local_stores/default_zen_store
 
 ENV ZENML_CONFIG_PATH=/zenml/.zenconfig \
     ZENML_DEBUG=true \
     ZENML_ANALYTICS_OPT_IN=false
 
+ARG USERNAME=zenml
+ARG USER_UID=1000
+ARG USER_GID=$USER_UID
+
+# Create the user
+RUN groupadd --gid $USER_GID $USERNAME \
+    && useradd --uid $USER_UID --gid $USER_GID -m $USERNAME
+
+RUN mkdir -p /zenml/.zenconfig/local_stores/default_zen_store && chown -R $USER_UID:$USER_GID /zenml
+ENV PATH="$PATH:/home/$USERNAME/.local/bin"
+
 ENTRYPOINT ["uvicorn", "zenml.zen_server.zen_server_api:app",  "--log-level", "debug"]
-CMD ["--proxy-headers", "--port", "80", "--host",  "0.0.0.0"]
+CMD ["--proxy-headers", "--port", "8080", "--host",  "0.0.0.0"]

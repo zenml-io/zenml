@@ -11,10 +11,9 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-import pytest
 from click.testing import CliRunner
 
-from tests.integration.functional.cli.test_utils import (
+from tests.integration.functional.cli.utils import (
     create_sample_role,
     create_sample_user,
     sample_role_name,
@@ -134,11 +133,9 @@ def test_assign_default_role_to_new_user_succeeds() -> None:
         role_assign_command, [DEFAULT_ADMIN_ROLE, f"--user={user.id}"]
     )
     assert result.exit_code == 0
-    assert Client().get_role_assignment(
-        role_name_or_id=DEFAULT_ADMIN_ROLE,
-        user_or_team_name_or_id=str(user.id),
-        is_user=True,
-    )
+    assigned_roles = Client().get_user(user.id).roles
+    assert len(assigned_roles) == 1
+    assert assigned_roles[0].name == DEFAULT_ADMIN_ROLE
 
 
 def test_assign_role_to_user_twice_fails() -> None:
@@ -146,10 +143,9 @@ def test_assign_role_to_user_twice_fails() -> None:
     user = create_sample_user()
     role_assign_command = cli.commands["role"].commands["assign"]
     runner = CliRunner()
-    Client().create_role_assignment(
+    Client().create_user_role_assignment(
         role_name_or_id=DEFAULT_ADMIN_ROLE,
-        user_or_team_name_or_id=str(user.id),
-        is_user=True,
+        user_name_or_id=str(user.id),
     )
 
     result = runner.invoke(
@@ -167,20 +163,15 @@ def test_revoke_role_from_new_user_succeeds() -> None:
         role_assign_command, [DEFAULT_ADMIN_ROLE, f"--user={user.name}"]
     )
     assert result.exit_code == 0
-    assert Client().get_role_assignment(
-        role_name_or_id=DEFAULT_ADMIN_ROLE,
-        user_or_team_name_or_id=str(user.id),
-        is_user=True,
-    )
+    assigned_roles = Client().get_user(user.id).roles
+    assert len(assigned_roles) == 1
+    assert assigned_roles[0].name == DEFAULT_ADMIN_ROLE
+
     role_revoke_command = cli.commands["role"].commands["revoke"]
     runner = CliRunner()
     result = runner.invoke(
         role_revoke_command, [DEFAULT_ADMIN_ROLE, f"--user={user.name}"]
     )
     assert result.exit_code == 0
-    with pytest.raises(RuntimeError):
-        Client().get_role_assignment(
-            role_name_or_id=DEFAULT_ADMIN_ROLE,
-            user_or_team_name_or_id=str(user.id),
-            is_user=True,
-        )
+    assigned_roles = Client().get_user(user.id).roles
+    assert len(assigned_roles) == 0

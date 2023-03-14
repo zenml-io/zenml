@@ -12,8 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Implementation of the Kubernetes Spark Step Operator."""
-import os
-from typing import TYPE_CHECKING, Any, Optional, Tuple, cast
+from typing import TYPE_CHECKING, Any, List, Optional, Tuple, cast
 
 from pyspark.conf import SparkConf
 
@@ -25,25 +24,25 @@ from zenml.integrations.spark.flavors.spark_on_kubernetes_step_operator_flavor i
 from zenml.integrations.spark.step_operators.spark_step_operator import (
     SparkStepOperator,
 )
-from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.stack import Stack, StackValidator
 from zenml.utils.pipeline_docker_image_builder import (
     DOCKER_IMAGE_WORKDIR,
-    PipelineDockerImageBuilder,
 )
-from zenml.utils.source_utils import get_source_root_path
 
 if TYPE_CHECKING:
-    from zenml.config.pipeline_deployment import PipelineDeployment
-    from zenml.config.step_configurations import StepConfiguration
+    from zenml.config.build_configuration import BuildConfiguration
+    from zenml.config.step_run_info import StepRunInfo
+    from zenml.models.pipeline_deployment_models import (
+        PipelineDeploymentBaseModel,
+    )
 
 logger = get_logger(__name__)
 
 LOCAL_ENTRYPOINT = entrypoint.__file__
 ENTRYPOINT_NAME = "zenml_spark_entrypoint.py"
 
-SPARK_DOCKER_IMAGE_KEY = "spark_docker_image"
+SPARK_DOCKER_IMAGE_KEY = "spark_step_operator"
 
 
 class KubernetesSparkStepOperator(SparkStepOperator):
@@ -94,7 +93,10 @@ class KubernetesSparkStepOperator(SparkStepOperator):
             return True, ""
 
         return StackValidator(
-            required_components={StackComponentType.CONTAINER_REGISTRY},
+            required_components={
+                StackComponentType.CONTAINER_REGISTRY,
+                StackComponentType.IMAGE_BUILDER,
+            },
             custom_validation_function=_validate_remote_components,
         )
 
@@ -107,55 +109,35 @@ class KubernetesSparkStepOperator(SparkStepOperator):
         """
         return f"local://{DOCKER_IMAGE_WORKDIR}/{ENTRYPOINT_NAME}"
 
-    def prepare_pipeline_deployment(
-        self,
-        deployment: "PipelineDeployment",
-        stack: "Stack",
-    ) -> None:
-        """Build a Docker image and push it to the container registry.
+    def get_docker_builds(
+        self, deployment: "PipelineDeploymentBaseModel"
+    ) -> List["BuildConfiguration"]:
+        """Gets the Docker builds required for the component.
 
         Args:
-            deployment: The pipeline deployment configuration.
-            stack: The stack on which the pipeline will be deployed.
+            deployment: The pipeline deployment for which to get the builds.
 
-        Raises:
-            FileExistsError: If the entrypoint file already exists.
+        Returns:
+            The required Docker builds.
         """
-        steps_to_run = [
-            step
-            for step in deployment.steps.values()
-            if step.config.step_operator == self.name
-        ]
-        if not steps_to_run:
-            return
+        builds = []
+        extra_files = {ENTRYPOINT_NAME: LOCAL_ENTRYPOINT}
+        for step_name, step in deployment.step_configurations.items():
+            if step.config.step_operator == self.name:
+                build = BuildConfiguration(
+                    key=SPARK_DOCKER_IMAGE_KEY,
+                    settings=step.config.docker_settings,
+                    step_name=step_name,
+                    extra_files=extra_files,
+                )
+                builds.append(build)
 
-        entrypoint_path = os.path.join(get_source_root_path(), ENTRYPOINT_NAME)
-
-        try:
-            fileio.copy(LOCAL_ENTRYPOINT, entrypoint_path, overwrite=False)
-        except OSError:
-            raise FileExistsError(
-                f"The Kubernetes Spark step operator needs to copy the step "
-                f"entrypoint to {entrypoint_path}, however a file with this "
-                f"path already exists."
-            )
-
-        try:
-            # Build and push the image
-            docker_image_builder = PipelineDockerImageBuilder()
-            image_digest = docker_image_builder.build_and_push_docker_image(
-                deployment=deployment, stack=stack
-            )
-        finally:
-            fileio.remove(entrypoint_path)
-
-        for step in steps_to_run:
-            step.config.extra[SPARK_DOCKER_IMAGE_KEY] = image_digest
+        return builds
 
     def _backend_configuration(
         self,
         spark_config: SparkConf,
-        step_config: "StepConfiguration",
+        info: "StepRunInfo",
     ) -> None:
         """Configures Spark to run on Kubernetes.
 
@@ -165,11 +147,12 @@ class KubernetesSparkStepOperator(SparkStepOperator):
         Args:
             spark_config: a SparkConf object which collects all the
                 configuration parameters
-            step_config: Configuration of the step to run.
+            info: Information about the step run.
         """
-        docker_image = step_config.extra[SPARK_DOCKER_IMAGE_KEY]
+        image_name = info.get_image(key=SPARK_DOCKER_IMAGE_KEY)
+
         # Adjust the spark configuration
-        spark_config.set("spark.kubernetes.container.image", docker_image)
+        spark_config.set("spark.kubernetes.container.image", image_name)
         if self.config.namespace:
             spark_config.set(
                 "spark.kubernetes.namespace",

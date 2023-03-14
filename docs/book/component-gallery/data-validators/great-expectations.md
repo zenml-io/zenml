@@ -267,8 +267,7 @@ takes in a `pandas.DataFrame` dataset, and it returns a Great Expectations
 
 ```python
 class GreatExpectationsProfilerStep(BaseStep):
-    """Standard Great Expectations profiling step implementation.
-    """
+    """Standard Great Expectations profiling step implementation."""
 
     def entrypoint(
         self,
@@ -348,8 +347,7 @@ run only after the data profiling step generates an Expectation Suite):
 ```python
 
 class GreatExpectationsValidatorStep(BaseStep):
-    """Standard Great Expectations data validation step implementation.
-    """
+    """Standard Great Expectations data validation step implementation."""
 
     def entrypoint(
         self,
@@ -429,7 +427,7 @@ from zenml.post_execution import get_pipeline
 
 def visualize_results(pipeline_name: str, step_name: str) -> None:
     pipeline = get_pipeline(pipeline_name)
-    last_run = pipeline.runs[-1]
+    last_run = pipeline.runs[0]
     validation_step = last_run.get_step(step=step_name)
     GreatExpectationsVisualizer().visualize(validation_step)
 

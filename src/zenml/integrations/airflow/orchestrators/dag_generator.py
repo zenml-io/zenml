@@ -33,6 +33,7 @@ class TaskConfiguration(BaseModel):
     zenml_step_name: str
     upstream_steps: List[str]
 
+    docker_image: str
     command: List[str]
     arguments: List[str]
 
@@ -44,7 +45,6 @@ class DagConfiguration(BaseModel):
     """Airflow DAG configuration."""
 
     id: str
-    docker_image: str
     tasks: List[TaskConfiguration]
 
     local_stores_path: Optional[str] = None
@@ -148,7 +148,7 @@ def get_docker_operator_init_kwargs(
         ]
         extra_hosts = {"host.docker.internal": "host-gateway"}
     return {
-        "image": dag_config.docker_image,
+        "image": task_config.docker_image,
         "command": task_config.command + task_config.arguments,
         "mounts": mounts,
         "environment": environment,
@@ -173,7 +173,7 @@ def get_kubernetes_pod_operator_init_kwargs(
     return {
         "name": f"{dag_config.id}_{task_config.id}",
         "namespace": "default",
-        "image": dag_config.docker_image,
+        "image": task_config.docker_image,
         "cmds": task_config.command,
         "arguments": task_config.arguments,
         "env_vars": [
@@ -200,7 +200,7 @@ else:
         dag_id=dag_config.id,
         is_paused_upon_creation=False,
         tags=dag_config.tags,
-        schedule=dag_config.schedule,
+        schedule_interval=dag_config.schedule,
         start_date=dag_config.start_date,
         end_date=dag_config.end_date,
         catchup=dag_config.catchup,

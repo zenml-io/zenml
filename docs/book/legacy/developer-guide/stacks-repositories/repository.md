@@ -31,7 +31,7 @@ This will create a `.zen` directory, which contains a single
 `config.yaml` file that stores the local settings:
 
 ```yaml
-active_project_name: null
+active_workspace_name: null
 active_stack_name: default
 ```
 

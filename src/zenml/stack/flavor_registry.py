@@ -14,15 +14,18 @@
 """Implementation of the ZenML flavor registry."""
 
 from collections import defaultdict
-from datetime import datetime
-from typing import DefaultDict, Dict, List
-from uuid import UUID
+from typing import DefaultDict, Dict, List, Type
 
-from zenml.client import Client
 from zenml.enums import StackComponentType
 from zenml.integrations.registry import integration_registry
 from zenml.logger import get_logger
-from zenml.models import FlavorRequestModel, FlavorResponseModel
+from zenml.models import (
+    FlavorFilterModel,
+    FlavorResponseModel,
+    FlavorUpdateModel,
+)
+from zenml.stack import Flavor
+from zenml.zen_stores.base_zen_store import BaseZenStore
 
 logger = get_logger(__name__)
 
@@ -39,11 +42,22 @@ class FlavorRegistry:
             StackComponentType, Dict[str, FlavorResponseModel]
         ] = defaultdict(dict)
 
-        self.register_default_flavors()
-        self.register_integration_flavors()
+    def register_flavors(self, store: BaseZenStore) -> None:
+        """Register all flavors to the DB.
 
-    def register_default_flavors(self) -> None:
-        """Registers the default built-in flavors."""
+        Args:
+            store: The instance of a store to use for persistence
+        """
+        self.register_builtin_flavors(store=store)
+        self.register_integration_flavors(store=store)
+
+    @property
+    def builtin_flavors(self) -> List[Type[Flavor]]:
+        """A list of all default in-built flavors.
+
+        Returns:
+            A list of builtin flavors.
+        """
         from zenml.artifact_stores import LocalArtifactStoreFlavor
         from zenml.container_registries import (
             AzureContainerRegistryFlavor,
@@ -52,13 +66,14 @@ class FlavorRegistry:
             GCPContainerRegistryFlavor,
             GitHubContainerRegistryFlavor,
         )
+        from zenml.image_builders import LocalImageBuilderFlavor
         from zenml.orchestrators import (
             LocalDockerOrchestratorFlavor,
             LocalOrchestratorFlavor,
         )
         from zenml.secrets_managers import LocalSecretsManagerFlavor
 
-        default_flavors = (
+        flavors = [
             LocalArtifactStoreFlavor,
             LocalOrchestratorFlavor,
             LocalDockerOrchestratorFlavor,
@@ -68,102 +83,77 @@ class FlavorRegistry:
             GCPContainerRegistryFlavor,
             GitHubContainerRegistryFlavor,
             LocalSecretsManagerFlavor,
-        )
-        for flavor in default_flavors:
-            flavor_instance = flavor()  # type: ignore[abstract]
-            self._register_flavor(
-                flavor_instance.to_model(integration="built-in")
-            )
-
-    def register_integration_flavors(self) -> None:
-        """Registers the flavors implemented by integrations."""
-        for name, integration in integration_registry.integrations.items():
-            integrated_flavors = integration.flavors()
-            if integrated_flavors:
-                for flavor in integrated_flavors:
-                    self._register_flavor(flavor().to_model(integration=name))
-
-    def _register_flavor(
-        self,
-        flavor: FlavorRequestModel,
-    ) -> None:
-        """Registers a stack component flavor.
-
-        Args:
-            flavor: The flavor to register.
-
-        Raises:
-            KeyError: If the flavor is already registered.
-        """
-        flavors = self._flavors[flavor.type]
-
-        if flavor.name in flavors:
-            raise KeyError(
-                f"There is already a {flavor.type} with the flavor "
-                f"`{flavor.name}`. Please select another name for the flavor."
-            )
-
-        client = Client()
-
-        flavor_response_model = FlavorResponseModel(
-            name=flavor.name,
-            type=flavor.type,
-            config_schema=flavor.config_schema,
-            source=flavor.source,
-            integration=flavor.integration,
-            # This is a small trick to convert the request to response
-            id=UUID(int=0),
-            user=client.active_user,
-            project=client.active_project,
-            created=datetime.utcnow(),
-            updated=datetime.utcnow(),
-        )
-
-        flavors[flavor.name] = flavor_response_model
-        logger.debug(
-            f"Registered flavor for '{flavor.name}' and type '{flavor.type}'.",
-        )
-
-    @property
-    def flavors(self) -> List[FlavorResponseModel]:
-        """Returns all registered flavors.
-
-        Returns:
-            The list of all registered flavors.
-        """
-        flavors = list()
-        for flavors_by_type in self._flavors.values():
-            for flavor in flavors_by_type.values():
-                flavors.append(flavor)
+            LocalImageBuilderFlavor,
+        ]
         return flavors
 
-    def get_flavors_by_type(
-        self, component_type: StackComponentType
-    ) -> List[FlavorResponseModel]:
-        """Return the list of flavors with given type.
-
-        Args:
-            component_type: The type of the stack component.
+    @property
+    def integration_flavors(self) -> List[Type[Flavor]]:
+        """A list of all default integration flavors.
 
         Returns:
-            The list of flavors with the given type.
+            A list of integration flavors.
         """
-        return list(self._flavors[component_type].values())
+        integrated_flavors = []
+        for _, integration in integration_registry.integrations.items():
+            for flavor in integration.flavors():
+                integrated_flavors.append(flavor)
 
-    def get_flavor_by_name_and_type(
-        self, name: str, component_type: StackComponentType
-    ) -> FlavorResponseModel:
-        """Gets the flavor for a given name and type.
+        return integrated_flavors
+
+    def register_builtin_flavors(self, store: BaseZenStore) -> None:
+        """Registers the default built-in flavors.
 
         Args:
-            name: The name of the flavor.
-            component_type: The type of the stack component.
-
-        Returns:
-            The flavor with the given name and type.
+            store: The instance of the zen_store to use
         """
-        return self._flavors[component_type][name]
+        for flavor in self.builtin_flavors:
+            flavor_request_model = flavor().to_model(
+                integration="built-in",
+                scoped_by_workspace=False,
+                is_custom=False,
+            )
+            existing_flavor = store.list_flavors(
+                FlavorFilterModel(
+                    name=flavor_request_model.name,
+                    type=flavor_request_model.type,
+                )
+            )
+            if len(existing_flavor) == 0:
+                store.create_flavor(flavor_request_model)
+            else:
+                flavor_update_model = FlavorUpdateModel.parse_obj(
+                    flavor_request_model
+                )
+                store.update_flavor(existing_flavor[0].id, flavor_update_model)
 
+    @staticmethod
+    def register_integration_flavors(store: BaseZenStore) -> None:
+        """Registers the flavors implemented by integrations.
 
-# Create the instance of the registry
-flavor_registry = FlavorRegistry()
+        Args:
+            store: The instance of the zen_store to use
+        """
+        for name, integration in integration_registry.integrations.items():
+            integrated_flavors = integration.flavors()
+            for flavor in integrated_flavors:
+                flavor_request_model = flavor().to_model(
+                    integration=name,
+                    scoped_by_workspace=False,
+                    is_custom=False,
+                )
+                existing_flavor = store.list_flavors(
+                    FlavorFilterModel(
+                        name=flavor_request_model.name,
+                        type=flavor_request_model.type,
+                    )
+                )
+                if len(existing_flavor) == 0:
+                    store.create_flavor(flavor_request_model)
+                else:
+                    flavor_update_model = FlavorUpdateModel.parse_obj(
+                        flavor_request_model
+                    )
+                    store.update_flavor(
+                        existing_flavor[0].id, flavor_update_model
+                    )

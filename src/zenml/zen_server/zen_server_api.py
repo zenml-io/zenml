@@ -17,6 +17,7 @@ from asyncio.log import logger
 from typing import Any, List
 
 from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import ORJSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from genericpath import isfile
@@ -29,17 +30,23 @@ from zenml.zen_server.routers import (
     artifacts_endpoints,
     auth_endpoints,
     flavors_endpoints,
+    pipeline_builds_endpoints,
+    pipeline_deployments_endpoints,
     pipelines_endpoints,
-    projects_endpoints,
     role_assignments_endpoints,
     roles_endpoints,
+    run_metadata_endpoints,
     runs_endpoints,
+    schedule_endpoints,
+    secrets_endpoints,
     server_endpoints,
     stack_components_endpoints,
     stacks_endpoints,
     steps_endpoints,
+    team_role_assignments_endpoints,
     teams_endpoints,
     users_endpoints,
+    workspaces_endpoints,
 )
 from zenml.zen_server.utils import ROOT_URL_PATH, initialize_zen_store
 
@@ -62,6 +69,7 @@ app = FastAPI(
     title="ZenML",
     version=zenml.__version__,
     root_path=ROOT_URL_PATH,
+    default_response_class=ORJSONResponse,
 )
 
 app.add_middleware(
@@ -131,11 +139,15 @@ def dashboard(request: Request) -> Any:
 
 app.include_router(auth_endpoints.router)
 app.include_router(pipelines_endpoints.router)
-app.include_router(projects_endpoints.router)
+app.include_router(workspaces_endpoints.router)
 app.include_router(flavors_endpoints.router)
 app.include_router(roles_endpoints.router)
 app.include_router(role_assignments_endpoints.router)
+app.include_router(team_role_assignments_endpoints.router)
 app.include_router(runs_endpoints.router)
+app.include_router(run_metadata_endpoints.router)
+app.include_router(schedule_endpoints.router)
+app.include_router(secrets_endpoints.router)
 app.include_router(server_endpoints.router)
 app.include_router(stacks_endpoints.router)
 app.include_router(stack_components_endpoints.router)
@@ -146,6 +158,8 @@ app.include_router(teams_endpoints.router)
 app.include_router(users_endpoints.router)
 app.include_router(users_endpoints.current_user_router)
 app.include_router(users_endpoints.activation_router)
+app.include_router(pipeline_builds_endpoints.router)
+app.include_router(pipeline_deployments_endpoints.router)
 
 
 def get_root_static_files() -> List[str]:

@@ -17,7 +17,7 @@ The Airflow integration sub-module powers an alternative to the local
 orchestrator. You can enable it by registering the Airflow orchestrator with
 the CLI tool, then bootstrap using the ``zenml orchestrator up`` command.
 """
-from typing import List, Type
+from typing import List, Optional, Type
 
 from zenml.integrations.constants import AIRFLOW
 from zenml.integrations.integration import Integration
@@ -39,7 +39,9 @@ class AirflowIntegration(Integration):
         Returns:
             List of stack component flavors for this integration.
         """
-        from zenml.integrations.airflow.flavors import AirflowOrchestratorFlavor
+        from zenml.integrations.airflow.flavors import (
+            AirflowOrchestratorFlavor,
+        )
 
         return [AirflowOrchestratorFlavor]
 

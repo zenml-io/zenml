@@ -36,7 +36,7 @@ from zenml.integrations.dash.visualizers.pipeline_run_lineage_visualizer import 
 from zenml.post_execution import get_pipeline
 
 
-latest_run = get_pipeline(<PIPELINE_NAME>).runs[-1]
+latest_run = get_pipeline(<PIPELINE_NAME>).runs[0]
 PipelineRunLineageVisualizer().visualize(latest_run)
 ```
 
@@ -125,17 +125,17 @@ first_pipeline_instance = first_pipeline(
 
 # The pipeline is executed for the first time, so all steps are run.
 first_pipeline_instance.run()
-latest_run= first_pipeline_instance.get_runs()[-1]
+latest_run= first_pipeline_instance.get_runs()[0]
 PipelineRunLineageVisualizer().visualize(latest_run)
 
 # Step one will use cache, step two will rerun due to the decorator config
 first_pipeline_instance.run()
-latest_run = first_pipeline_instance.get_runs()[-1]
+latest_run = first_pipeline_instance.get_runs()[0]
 PipelineRunLineageVisualizer().visualize(latest_run)
 
 # The complete pipeline will be rerun
 first_pipeline_instance.run(enable_cache=False)
-latest_run = first_pipeline_instance.get_runs()[-1]
+latest_run = first_pipeline_instance.get_runs()[0]
 PipelineRunLineageVisualizer().visualize(latest_run)
 ```
 

@@ -126,10 +126,6 @@ to learn more about how ZenML builds these images and how you can customize
 them.
 {% endhint %}
 
-Once the orchestrator is part of the active stack, we need to run 
-`zenml stack up` before running any pipelines. This command forwards a port, so 
-you can view the Tekton UI in your browser.
-
 You can now run any ZenML pipeline using the Tekton orchestrator:
 ```shell
 python file_that_runs_a_zenml_pipeline.py
@@ -141,7 +137,7 @@ For additional configuration of the Tekton orchestrator, you can pass
 `TektonOrchestratorSettings` which allows you to configure (among others) the following attributes:
 
 * `pod_settings`: Node selectors, affinity and tolerations to apply to the Kubernetes Pods running
-your pipline. These can be either specified using the Kubernetes model objects or as dictionaries.
+your pipeline. These can be either specified using the Kubernetes model objects or as dictionaries.
 
 ```python
 from zenml.integrations.tekton.flavors.tekton_orchestrator_flavor import TektonOrchestratorSettings

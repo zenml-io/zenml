@@ -13,10 +13,11 @@
 #  permissions and limitations under the License.
 """Implementation of the ZenML AzureML Step Operator."""
 
+import contextlib
 import itertools
 import os
-from pathlib import PurePosixPath
-from typing import TYPE_CHECKING, List, Optional, Tuple, Type, cast
+from pathlib import PurePath, PurePosixPath
+from typing import TYPE_CHECKING, Iterator, List, Optional, Tuple, Type, cast
 
 from azureml.core import (
     ComputeTarget,
@@ -33,9 +34,8 @@ from azureml.core.conda_dependencies import CondaDependencies
 
 import zenml
 from zenml.client import Client
-from zenml.config.pipeline_deployment import PipelineDeployment
+from zenml.config.global_config import GlobalConfiguration
 from zenml.constants import (
-    DOCKER_IMAGE_DEPLOYMENT_CONFIG_FILE,
     ENV_ZENML_CONFIG_PATH,
 )
 from zenml.environment import Environment as ZenMLEnvironment
@@ -43,13 +43,14 @@ from zenml.integrations.azure.flavors.azureml_step_operator_flavor import (
     AzureMLStepOperatorConfig,
     AzureMLStepOperatorSettings,
 )
+from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.stack import Stack, StackValidator
 from zenml.step_operators import BaseStepOperator
 from zenml.utils.pipeline_docker_image_builder import (
     DOCKER_IMAGE_ZENML_CONFIG_DIR,
+    DOCKER_IMAGE_ZENML_CONFIG_PATH,
     PipelineDockerImageBuilder,
-    _include_global_config,
 )
 from zenml.utils.source_utils import get_source_root_path
 
@@ -60,7 +61,37 @@ if TYPE_CHECKING:
 
 logger = get_logger(__name__)
 
-ENV_ACTIVE_DEPLOYMENT = "ZENML_ACTIVE_DEPLOYMENT"
+
+@contextlib.contextmanager
+def _include_global_config(
+    build_context_root: str,
+    load_config_path: PurePath = PurePosixPath(DOCKER_IMAGE_ZENML_CONFIG_PATH),
+) -> Iterator[None]:
+    """Context manager to include the global configuration in a Docker build context.
+
+    Args:
+        build_context_root: The root of the build context.
+        load_config_path: The path of the global configuration inside the
+            image.
+
+    Yields:
+        None.
+    """
+    # Save a copy of the current global configuration with the
+    # store configuration and the active stack configuration into the build
+    # context, to have the store and active stack accessible from
+    # within the container.
+    config_path = os.path.join(
+        build_context_root, DOCKER_IMAGE_ZENML_CONFIG_DIR
+    )
+    try:
+        GlobalConfiguration().copy_configuration(
+            config_path,
+            load_config_path=load_config_path,
+        )
+        yield
+    finally:
+        fileio.rmtree(config_path)
 
 
 class AzureMLStepOperator(BaseStepOperator):
@@ -97,7 +128,9 @@ class AzureMLStepOperator(BaseStepOperator):
             store.
         """
 
-        def _validate_remote_artifact_store(stack: "Stack") -> Tuple[bool, str]:
+        def _validate_remote_artifact_store(
+            stack: "Stack",
+        ) -> Tuple[bool, str]:
             if stack.artifact_store.config.is_local:
                 return False, (
                     "The AzureML step operator runs code remotely and "
@@ -132,25 +165,6 @@ class AzureMLStepOperator(BaseStepOperator):
             )
         return None
 
-    def prepare_pipeline_deployment(
-        self, deployment: "PipelineDeployment", stack: "Stack"
-    ) -> None:
-        """Store the active deployment in an environment variable.
-
-        Args:
-            deployment: The pipeline deployment configuration.
-            stack: The stack on which the pipeline will be deployed.
-        """
-        steps_to_run = [
-            step
-            for step in deployment.steps.values()
-            if step.config.step_operator == self.name
-        ]
-        if not steps_to_run:
-            return
-
-        os.environ[ENV_ACTIVE_DEPLOYMENT] = deployment.yaml()
-
     def _prepare_environment(
         self,
         workspace: Workspace,
@@ -176,6 +190,7 @@ class AzureMLStepOperator(BaseStepOperator):
         requirements_files = docker_image_builder._gather_requirements_files(
             docker_settings=docker_settings,
             stack=Client().active_stack,
+            log=False,
         )
         requirements = list(
             itertools.chain.from_iterable(
@@ -245,9 +260,6 @@ class AzureMLStepOperator(BaseStepOperator):
         Args:
             info: Information about the step run.
             entrypoint_command: Command that executes the step.
-
-        Raises:
-            RuntimeError: If the deployment config can't be found.
         """
         if not info.config.resource_settings.empty:
             logger.warning(
@@ -271,7 +283,7 @@ class AzureMLStepOperator(BaseStepOperator):
             "copy_global_config",
             "apt_packages",
         ]
-        docker_settings = info.pipeline.docker_settings
+        docker_settings = info.config.docker_settings
         ignored_docker_fields = docker_settings.__fields_set__.intersection(
             unused_docker_fields
         )
@@ -294,18 +306,6 @@ class AzureMLStepOperator(BaseStepOperator):
         )
 
         source_directory = get_source_root_path()
-        deployment = os.environ.get(ENV_ACTIVE_DEPLOYMENT)
-        deployment_path = os.path.join(
-            source_directory, DOCKER_IMAGE_DEPLOYMENT_CONFIG_FILE
-        )
-
-        if deployment:
-            with open(deployment_path, "w") as f:
-                f.write(deployment)
-        elif not os.path.exists(deployment_path):
-            # We're running in a non-local environment which should already
-            # include the deployment at the source root
-            raise RuntimeError("Unable to find deployment configuration.")
 
         with _include_global_config(
             build_context_root=source_directory,
@@ -323,21 +323,17 @@ class AzureMLStepOperator(BaseStepOperator):
                 workspace=workspace, name=self.config.compute_target_name
             )
 
-            try:
-                run_config = ScriptRunConfig(
-                    source_directory=source_directory,
-                    environment=environment,
-                    compute_target=compute_target,
-                    command=entrypoint_command,
-                )
+            run_config = ScriptRunConfig(
+                source_directory=source_directory,
+                environment=environment,
+                compute_target=compute_target,
+                command=entrypoint_command,
+            )
 
-                experiment = Experiment(
-                    workspace=workspace, name=info.pipeline.name
-                )
-                run = experiment.submit(config=run_config)
-            finally:
-                if deployment:
-                    os.remove(deployment_path)
+            experiment = Experiment(
+                workspace=workspace, name=info.pipeline.name
+            )
+            run = experiment.submit(config=run_config)
 
         run.display_name = info.run_name
         run.wait_for_completion(show_output=True)

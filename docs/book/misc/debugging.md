@@ -34,17 +34,41 @@ complete picture before jumping into solutions.
 Let us know relevant information about your system.
 We recommend running the following in your terminal and attaching the output to your question.
 
-`python -c "import zenml.environment; print(zenml.environment.get_system_details())"`
+```shell
+zenml info
+```
+
+You can optionally include information about specific packages where you're
+having problems by using the `-p` option. For example, if you're having problems with the `tensorflow` package, you can run:
+
+```shell
+zenml info -p tensorflow
+```
 
 The output should look something like this:
 
 ```python
-ZenML version: 0.21.0
-Install path: /home/dnth/anaconda3/envs/zenmlexample/lib/python3.8/site-packages/zenml
-Python version: 3.8.13
-Platform information: {'os': 'linux', 'linux_distro': 'ubuntu', 'linux_distro_like': 'debian', 'linux_distro_version': '20.04'}
-Environment: native
-Integrations: ['airflow', 'graphviz']
+ZENML_LOCAL_VERSION: 0.33.0
+ZENML_SERVER_VERSION: 0.33.0
+ZENML_SERVER_DATABASE: mysql
+ZENML_CONFIG_DIR: /Users/my_username/Library/Application Support/zenml
+ZENML_LOCAL_STORE_DIR: /Users/my_username/Library/Application Support/zenml/local_stores
+ZENML_SERVER_URL: https://someserver.zenml.io
+ZENML_ACTIVE_REPOSITORY_ROOT: /Users/my_username/coding/zenml/repos/zenml
+PYTHON_VERSION: 3.9.13
+ENVIRONMENT: native
+SYSTEM_INFO: {'os': 'mac', 'mac_version': '13.2'}
+ACTIVE_WORKSPACE: default
+ACTIVE_STACK: default
+ACTIVE_USER: some_user
+TELEMETRY_STATUS: disabled
+ANALYTICS_CLIENT_ID: xxxxxxx-xxxxxxx-xxxxxxx
+ANALYTICS_USER_ID: xxxxxxx-xxxxxxx-xxxxxxx
+ANALYTICS_SERVER_ID: xxxxxxx-xxxxxxx-xxxxxxx
+INTEGRATIONS: ['airflow', 'aws', 'azure', 'dash', 'evidently', 'facets', 'feast', 'gcp', 'github',
+'graphviz', 'huggingface', 'kaniko', 'kserve', 'kubeflow', 'kubernetes', 'lightgbm', 'mlflow',
+'neptune', 'neural_prophet', 'pillow', 'plotly', 'pytorch', 'pytorch_lightning', 's3', 'scipy',
+'sklearn', 'slack', 'spark', 'tensorboard', 'tensorflow', 'vault', 'wandb', 'whylogs', 'xgboost']
 ```
 
 System information provides more context to your issue and also eliminates the need for anyone to ask when they're trying to help.  
@@ -180,7 +204,7 @@ For example:
 
 ```shell
 ╭─────────────────────────────── Traceback (most recent call last) ────────────────────────────────╮
-│ /home/dnth/Documents/zenfiles/nba-pipeline/run_pipeline.py:24 in <module>                        │
+│ /home/dnth/Documents/zenml-projects/nba-pipeline/run_pipeline.py:24 in <module>                        │
 │                                                                                                  │
 │    21 │   reference_data_splitter,                                                               │
 │    22 │   TrainingSplitConfig,                                                                   │
@@ -190,7 +214,7 @@ For example:
 │    26 from steps.importer import (                                                               │
 │    27 │   import_season_schedule,                                                                │
 │                                                                                                  │
-│ /home/dnth/Documents/zenfiles/nba-pipeline/steps/trainer.py:24 in <module>                       │
+│ /home/dnth/Documents/zenml-projects/nba-pipeline/steps/trainer.py:24 in <module>                       │
 │                                                                                                  │
 │   21 │   max_depth: int = 10000                                                                  │
 │   22 │   target_col: str = "FG3M"                                                                │
@@ -223,4 +247,5 @@ Read more about registering stacks [here](https://docs.zenml.io/starter-guide/st
 Our recommended, and tested approach is to install via `Rosetta`.
 
 But a community member recently discovered a way to install ZenML on Apple Silicon without Rosetta.
-Join the conversation [here](https://open.crowd.dev/zenml/for-what-its-worth-i-was-able-to-successfully-install?q=&p=1).
+Join the conversation
+[here](https://open.crowd.dev/zenml/for-what-its-worth-i-was-able-to-successfully-install?q=&p=1).

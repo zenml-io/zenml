@@ -78,11 +78,35 @@ from the `BaseOrchestratorConfig` class add your configuration parameters.
 from the `BaseOrchestratorFlavor` class. Make sure that you give a `name`
 to the flavor through its abstract property.
 
-Once you are done with the implementation, you can register it through the CLI 
-as:
+Once you are done with the implementation, you can register it through the CLI.
+Please ensure you **point to the flavor class via dot notation**: 
 
 ```shell
-zenml orchestrator flavor register <THE-SOURCE-PATH-OF-YOUR-ORCHESTRATOR-FLAVOR>
+zenml orchestrator flavor register <path.to.MyOrchestratorFlavor>
+```
+
+For example, if your flavor class `MyOrchestratorFlavor` is defined in `flavors/my_flavor.py`,
+you'd register it by doing:
+
+```shell
+zenml orchestrator flavor register flavors.my_flavor.MyOrchestratorFlavor
+```
+
+{% hint style="warning" %}
+ZenML resolves the flavor class by taking the path where you initialized zenml
+(via `zenml init`) as the starting point of resolution. Therefore, please ensure
+you follow [the best practice](../../guidelines/best-practices.md) of initializing
+zenml at the root of your repository.
+
+If ZenML does not find an initialized ZenML repository in any parent directory, it
+will default to the current working directory, but usually its better to not have to
+rely on this mechanism, and initialize zenml at the root.
+{% endhint %}
+
+Afterwards, you should see the new flavor in the list of available flavors:
+
+```shell
+zenml orchestrator flavor list
 ```
 
 {% hint style="warning" %}
@@ -126,17 +150,6 @@ for step in deployment.steps.values():
 The orchestrator basically iterates through each step and directly executes
 the step within the same Python process. Obviously all kind of additional
 configuration could be added around this.
-
-## Python Operator based Orchestration
-
-The `airflow` orchestrator has a slightly more complex implementation of the
-`prepare_or_run_pipeline()` method. Instead of immediately
-executing a step, a `PythonOperator` is created which contains a
-`_step_callable`. This `_step_callable` will ultimately execute the
-`self.run_step(...)` method of the orchestrator. The PythonOperators are
-assembled into an AirflowDag which is returned. Through some Airflow magic,
-this DAG is loaded by the connected instance of Airflow and orchestration of
-this DAG is performed either directly or on a set schedule.
 
 ## Container-based Orchestration
 
@@ -237,10 +250,6 @@ and get the complete docstrings, please check [the source code on GitHub](https:
 
 If you need to customize what happens when a step gets executed inside the 
 entrypoint, you can subclass from the `StepEntrypointConfiguration` class:
-
-If you want to provide a custom run name (this **has** to be the same for 
-all steps that are executed as part of the same pipeline run), you can 
-overwrite the `get_run_name(...)` method.
 
 If you need to pass additional arguments to the entrypoint, there are
 two methods that you need to implement:

@@ -88,7 +88,7 @@ from the artifact store that are unrelated to the current step. However, if that
 is not the case, and your step logic doesn't invalidate the caching behavior, it
 would be better to explicitly enable the cache for your step.
 
-### Use unique pipeline names across projects
+### Use unique pipeline names across projects/workspaces
 
 Pipeline names are their unique identifiers, so using the same name for
 different pipelines will create a mixed history of runs between the two
@@ -112,12 +112,12 @@ into a Docker image for execution. To speed up the process and reduce Docker
 image sizes, exclude all unnecessary files (like data, virtual environments, 
 git repos, etc.) within the `.dockerignore`.
 
-### Use `get_pipeline(pipeline=...)` instead of indexing (`[-1]`) to retrieve previous pipelines
+### Use `get_pipeline(pipeline=...)` instead of indexing (`[0]`) to retrieve previous pipelines
 
 When [inspecting pipeline runs](../starter-guide/pipelines/pipelines.md)
 it is tempting to access the pipeline views directly by their index, but
-the pipelines within your `Repository` are sorted by time of first run, so the 
-pipeline at `[-1]` might not be the one you are expecting.
+the pipelines are sorted in descending order of their creation time, so the 
+pipeline at `[0]` might not be the one you are expecting.
 
 ```python
 from zenml.post_execution import get_pipeline
@@ -152,8 +152,6 @@ imports that are defined relative to the project root resolve for the pipeline r
 ## Tips
 
 * Use `zenml GROUP explain` to explain what everything is
-* Run `zenml stack up` after switching stacks (but this is also enforced by
-  validations that check if the stack is up)
 
 For a practical example on all of the above, please check
 out [ZenML Projects](https://github.com/zenml-io/zenml-projects) which are practical

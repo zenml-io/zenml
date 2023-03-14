@@ -25,7 +25,7 @@ def inference_fashion_mnist(
     prediction_service_loader,
     predictor,
 ):
-    """Link all the steps and artifacts together"""
+    """Link all the steps and artifacts together."""
     inference_data = inference_loader()
     prediction_service = prediction_service_loader()
     predictor(inference_data=inference_data, service=prediction_service)

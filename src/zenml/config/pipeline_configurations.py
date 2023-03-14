@@ -12,7 +12,8 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Pipeline configuration classes."""
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
+from uuid import UUID
 
 from pydantic import validator
 
@@ -20,6 +21,8 @@ from zenml.config.constants import DOCKER_SETTINGS_KEY
 from zenml.config.schedule import Schedule
 from zenml.config.step_configurations import StepConfigurationUpdate, StepSpec
 from zenml.config.strict_base_model import StrictBaseModel
+from zenml.models.pipeline_build_models import PipelineBuildBaseModel
+from zenml.utils import pydantic_utils
 
 if TYPE_CHECKING:
     from zenml.config import DockerSettings
@@ -33,15 +36,17 @@ class PipelineConfigurationUpdate(StrictBaseModel):
     """Class for pipeline configuration updates."""
 
     enable_cache: Optional[bool] = None
+    enable_artifact_metadata: Optional[bool] = None
     settings: Dict[str, BaseSettings] = {}
     extra: Dict[str, Any] = {}
+    failure_hook_source: Optional[str] = None
+    success_hook_source: Optional[str] = None
 
 
 class PipelineConfiguration(PipelineConfigurationUpdate):
     """Pipeline configuration class."""
 
     name: str
-    enable_cache: bool
 
     @validator("name")
     def ensure_pipeline_name_allowed(cls, name: str) -> str:
@@ -78,12 +83,16 @@ class PipelineConfiguration(PipelineConfigurationUpdate):
         return DockerSettings.parse_obj(model_or_dict)
 
 
-class PipelineRunConfiguration(StrictBaseModel):
+class PipelineRunConfiguration(
+    StrictBaseModel, pydantic_utils.YAMLSerializationMixin
+):
     """Class for pipeline run configurations."""
 
     run_name: Optional[str] = None
     enable_cache: Optional[bool] = None
+    enable_artifact_metadata: Optional[bool] = None
     schedule: Optional[Schedule] = None
+    build: Union[PipelineBuildBaseModel, UUID, None] = None
     steps: Dict[str, StepConfigurationUpdate] = {}
     settings: Dict[str, BaseSettings] = {}
     extra: Dict[str, Any] = {}
@@ -92,7 +101,7 @@ class PipelineRunConfiguration(StrictBaseModel):
 class PipelineSpec(StrictBaseModel):
     """Specification of a pipeline."""
 
-    version: str = "0.1"
+    version: str = "0.2"
     steps: List[StepSpec]
 
     def __eq__(self, other: Any) -> bool:

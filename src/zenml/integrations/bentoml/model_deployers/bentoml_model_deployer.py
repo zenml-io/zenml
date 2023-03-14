@@ -43,7 +43,9 @@ class BentoMLModelDeployer(BaseModelDeployer):
     """BentoML model deployer stack component implementation."""
 
     NAME: ClassVar[str] = "BentoML"
-    FLAVOR: ClassVar[Type[BaseModelDeployerFlavor]] = BentoMLModelDeployerFlavor
+    FLAVOR: ClassVar[
+        Type[BaseModelDeployerFlavor]
+    ] = BentoMLModelDeployerFlavor
 
     _service_path: Optional[str] = None
 
@@ -130,7 +132,7 @@ class BentoMLModelDeployer(BaseModelDeployer):
             "BENTO_URI": service_instance.config.bento_uri,
             "SERVICE_PATH": service_instance.status.runtime_path,
             "DAEMON_PID": str(service_instance.status.pid),
-            "PREDICITON_APIS_URLS": predictions_apis_urls,
+            "PREDICTION_APIS_URLS": predictions_apis_urls,
         }
 
     def deploy_model(
@@ -325,8 +327,10 @@ class BentoMLModelDeployer(BaseModelDeployer):
                     existing_service_config = None
                     with open(service_config_path, "r") as f:
                         existing_service_config = f.read()
-                    existing_service = ServiceRegistry().load_service_from_json(
-                        existing_service_config
+                    existing_service = (
+                        ServiceRegistry().load_service_from_json(
+                            existing_service_config
+                        )
                     )
                     if not isinstance(
                         existing_service, BentoMLDeploymentService
@@ -338,7 +342,9 @@ class BentoMLModelDeployer(BaseModelDeployer):
                     existing_service.update_status()
                     if self._matches_search_criteria(existing_service, config):
                         if not running or existing_service.is_running:
-                            services.append(cast(BaseService, existing_service))
+                            services.append(
+                                cast(BaseService, existing_service)
+                            )
 
         return services
 
@@ -369,7 +375,8 @@ class BentoMLModelDeployer(BaseModelDeployer):
         if (
             (
                 not config.pipeline_name
-                or existing_service_config.pipeline_name == config.pipeline_name
+                or existing_service_config.pipeline_name
+                == config.pipeline_name
             )
             and (
                 not config.model_name

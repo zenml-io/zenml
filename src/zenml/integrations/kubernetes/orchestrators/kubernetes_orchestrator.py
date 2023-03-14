@@ -37,7 +37,6 @@ from kubernetes import client as k8s_client
 from kubernetes import config as k8s_config
 
 from zenml.config.base_settings import BaseSettings
-from zenml.constants import ORCHESTRATOR_DOCKER_IMAGE_KEY
 from zenml.enums import StackComponentType
 from zenml.environment import Environment
 from zenml.integrations.kubernetes.flavors.kubernetes_orchestrator_flavor import (
@@ -53,13 +52,14 @@ from zenml.integrations.kubernetes.orchestrators.manifest_utils import (
     build_pod_manifest,
 )
 from zenml.logger import get_logger
-from zenml.orchestrators import BaseOrchestrator
+from zenml.orchestrators import ContainerizedOrchestrator
 from zenml.orchestrators.utils import get_orchestrator_run_name
 from zenml.stack import StackValidator
-from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
 
 if TYPE_CHECKING:
-    from zenml.config.pipeline_deployment import PipelineDeployment
+    from zenml.models.pipeline_deployment_models import (
+        PipelineDeploymentResponseModel,
+    )
     from zenml.stack import Stack
 
 logger = get_logger(__name__)
@@ -67,7 +67,7 @@ logger = get_logger(__name__)
 ENV_ZENML_KUBERNETES_RUN_ID = "ZENML_KUBERNETES_RUN_ID"
 
 
-class KubernetesOrchestrator(BaseOrchestrator):
+class KubernetesOrchestrator(ContainerizedOrchestrator):
     """Orchestrator for running ZenML pipelines using native Kubernetes."""
 
     _k8s_core_api: k8s_client.CoreV1Api = None
@@ -86,8 +86,6 @@ class KubernetesOrchestrator(BaseOrchestrator):
 
     def _initialize_k8s_clients(self) -> None:
         """Initialize the Kubernetes clients."""
-        if self.config.skip_config_loading:
-            return
         kube_utils.load_kube_config(context=self.config.kubernetes_context)
         self._k8s_core_api = k8s_client.CoreV1Api()
         self._k8s_batch_api = k8s_client.BatchV1beta1Api()
@@ -156,87 +154,111 @@ class KubernetesOrchestrator(BaseOrchestrator):
             # this, but just in case
             assert container_registry is not None
 
-            if not self.config.skip_config_loading:
-                contexts, active_context = self.get_kubernetes_contexts()
-                if self.config.kubernetes_context not in contexts:
-                    return False, (
-                        f"Could not find a Kubernetes context named "
-                        f"'{self.config.kubernetes_context}' in the local Kubernetes "
-                        f"configuration. Please make sure that the Kubernetes "
-                        f"cluster is running and that the kubeconfig file is "
-                        f"configured correctly. To list all configured "
-                        f"contexts, run:\n\n"
-                        f"  `kubectl config get-contexts`\n"
-                    )
-                if self.config.kubernetes_context != active_context:
-                    logger.warning(
-                        f"The Kubernetes context '{self.config.kubernetes_context}' "
-                        f"configured for the Kubernetes orchestrator is not "
-                        f"the same as the active context in the local "
-                        f"Kubernetes configuration. If this is not deliberate,"
-                        f" you should update the orchestrator's "
-                        f"`kubernetes_context` field by running:\n\n"
-                        f"  `zenml orchestrator update {self.name} "
-                        f"--kubernetes_context={active_context}`\n"
-                        f"To list all configured contexts, run:\n\n"
-                        f"  `kubectl config get-contexts`\n"
-                        f"To set the active context to be the same as the one "
-                        f"configured in the Kubernetes orchestrator and "
-                        f"silence this warning, run:\n\n"
-                        f"  `kubectl config use-context "
-                        f"{self.config.kubernetes_context}`\n"
-                    )
+            contexts, active_context = self.get_kubernetes_contexts()
 
-            # Check that all stack components are non-local.
-            for stack_component in stack.components.values():
-                if stack_component.local_path is not None:
-                    return False, (
-                        f"The Kubernetes orchestrator currently only supports "
-                        f"remote stacks, but the '{stack_component.name}' "
-                        f"{stack_component.type.value} is a local component. "
-                        f"Please make sure to only use non-local stack "
-                        f"components with a Kubernetes orchestrator."
-                    )
-
-            # if the orchestrator is remote, the container registry must
-            # also be remote.
-            if container_registry.config.is_local:
+            if self.config.kubernetes_context not in contexts:
                 return False, (
-                    f"The Kubernetes orchestrator requires a remote container "
-                    f"registry, but the '{container_registry.name}' container "
-                    f"registry of your active stack points to a local URI "
-                    f"'{container_registry.config.uri}'. Please make sure "
-                    f"stacks with a Kubernetes orchestrator always contain "
-                    f"remote container registries."
+                    f"Could not find a Kubernetes context named "
+                    f"'{self.config.kubernetes_context}' in the local Kubernetes "
+                    f"configuration. Please make sure that the Kubernetes "
+                    f"cluster is running and that the kubeconfig file is "
+                    f"configured correctly. To list all configured "
+                    f"contexts, run:\n\n"
+                    f"  `kubectl config get-contexts`\n"
                 )
+            if self.config.kubernetes_context != active_context:
+                logger.warning(
+                    f"The Kubernetes context '{self.config.kubernetes_context}' "
+                    f"configured for the Kubernetes orchestrator is not "
+                    f"the same as the active context in the local "
+                    f"Kubernetes configuration. If this is not deliberate,"
+                    f" you should update the orchestrator's "
+                    f"`kubernetes_context` field by running:\n\n"
+                    f"  `zenml orchestrator update {self.name} "
+                    f"--kubernetes_context={active_context}`\n"
+                    f"To list all configured contexts, run:\n\n"
+                    f"  `kubectl config get-contexts`\n"
+                    f"To set the active context to be the same as the one "
+                    f"configured in the Kubernetes orchestrator and "
+                    f"silence this warning, run:\n\n"
+                    f"  `kubectl config use-context "
+                    f"{self.config.kubernetes_context}`\n"
+                )
+
+            silence_local_validations_msg = (
+                f"To silence this warning, set the "
+                f"`skip_local_validations` attribute to True in the "
+                f"orchestrator configuration by running:\n\n"
+                f"  'zenml orchestrator update {self.name} "
+                f"--skip_local_validations=True'\n"
+            )
+
+            if (
+                not self.config.skip_local_validations
+                and not self.config.is_local
+            ):
+
+                # if the orchestrator is not running in a local k3d cluster,
+                # we cannot have any other local components in our stack,
+                # because we cannot mount the local path into the container.
+                # This may result in problems when running the pipeline, because
+                # the local components will not be available inside the
+                # kubernetes containers.
+
+                # go through all stack components and identify those that
+                # advertise a local path where they persist information that
+                # they need to be available when running pipelines.
+                for stack_comp in stack.components.values():
+                    if stack_comp.local_path is None:
+                        continue
+                    return False, (
+                        f"The Kubernetes orchestrator is configured to run "
+                        f"pipelines in a remote Kubernetes cluster designated "
+                        f"by the '{self.config.kubernetes_context}' configuration "
+                        f"context, but the '{stack_comp.name}' "
+                        f"{stack_comp.type.value} is a local stack component "
+                        f"and will not be available in the Kubernetes pipeline "
+                        f"step.\nPlease ensure that you always use non-local "
+                        f"stack components with a remote Kubernetes orchestrator, "
+                        f"otherwise you may run into pipeline execution "
+                        f"problems. You should use a flavor of "
+                        f"{stack_comp.type.value} other than "
+                        f"'{stack_comp.flavor}'.\n"
+                        + silence_local_validations_msg
+                    )
+
+                # if the orchestrator is remote, the container registry must
+                # also be remote.
+                if container_registry.config.is_local:
+                    return False, (
+                        f"The Kubernetes orchestrator is configured to run "
+                        f"pipelines in a remote Kubernetes cluster designated "
+                        f"by the '{self.config.kubernetes_context}' configuration "
+                        f"context, but the '{container_registry.name}' "
+                        f"container registry URI "
+                        f"'{container_registry.config.uri}' "
+                        f"points to a local container registry. Please ensure "
+                        f"that you always use non-local stack components with "
+                        f"a remote Kubernetes orchestrator, otherwise you will "
+                        f"run into problems. You should use a flavor of "
+                        f"container registry other than "
+                        f"'{container_registry.flavor}'.\n"
+                        + silence_local_validations_msg
+                    )
 
             return True, ""
 
         return StackValidator(
-            required_components={StackComponentType.CONTAINER_REGISTRY},
+            required_components={
+                StackComponentType.CONTAINER_REGISTRY,
+                StackComponentType.IMAGE_BUILDER,
+            },
             custom_validation_function=_validate_local_requirements,
         )
 
-    def prepare_pipeline_deployment(
-        self,
-        deployment: "PipelineDeployment",
-        stack: "Stack",
-    ) -> None:
-        """Build a Docker image and push it to the container registry.
-
-        Args:
-            deployment: The pipeline deployment configuration.
-            stack: The stack on which the pipeline will be deployed.
-        """
-        docker_image_builder = PipelineDockerImageBuilder()
-        repo_digest = docker_image_builder.build_and_push_docker_image(
-            deployment=deployment, stack=stack
-        )
-        deployment.add_extra(ORCHESTRATOR_DOCKER_IMAGE_KEY, repo_digest)
-
     def prepare_or_run_pipeline(
         self,
-        deployment: "PipelineDeployment",
+        deployment: "PipelineDeploymentResponseModel",
         stack: "Stack",
     ) -> Any:
         """Runs the pipeline in Kubernetes.
@@ -259,7 +281,7 @@ class KubernetesOrchestrator(BaseOrchestrator):
                 "orchestrator."
             )
 
-        for step in deployment.steps.values():
+        for step in deployment.step_configurations.values():
             if self.requires_resources_in_orchestration_environment(step):
                 logger.warning(
                     "Specifying step resources is not yet supported for "
@@ -268,12 +290,23 @@ class KubernetesOrchestrator(BaseOrchestrator):
                     step.config.name,
                 )
 
-        pipeline_name = deployment.pipeline.name
+        pipeline_name = deployment.pipeline_configuration.name
         orchestrator_run_name = get_orchestrator_run_name(pipeline_name)
         pod_name = kube_utils.sanitize_pod_name(orchestrator_run_name)
 
-        # Get Docker image name (for all pods).
-        image_name = deployment.pipeline.extra[ORCHESTRATOR_DOCKER_IMAGE_KEY]
+        assert stack.container_registry
+
+        # Get Docker image for the orchestrator pod
+        try:
+            image = self.get_image(deployment=deployment)
+        except KeyError:
+            # If no generic pipeline image exists (which means all steps have
+            # custom builds) we use a random step image as all of them include
+            # dependencies for the active stack
+            pipeline_step_name = next(iter(deployment.step_configurations))
+            image = self.get_image(
+                deployment=deployment, step_name=pipeline_step_name
+            )
 
         # Build entrypoint command and args for the orchestrator pod.
         # This will internally also build the command/args for all step pods.
@@ -282,7 +315,7 @@ class KubernetesOrchestrator(BaseOrchestrator):
         )
         args = KubernetesOrchestratorEntrypointConfiguration.get_entrypoint_arguments(
             run_name=orchestrator_run_name,
-            image_name=image_name,
+            deployment_id=deployment.id,
             kubernetes_namespace=self.config.kubernetes_namespace,
         )
 
@@ -313,12 +346,14 @@ class KubernetesOrchestrator(BaseOrchestrator):
                 run_name=orchestrator_run_name,
                 pod_name=pod_name,
                 pipeline_name=pipeline_name,
-                image_name=image_name,
+                image_name=image,
                 command=command,
                 args=args,
                 service_account_name=service_account_name,
                 settings=settings,
+                mount_local_stores=self.config.is_local,
             )
+
             self._k8s_batch_api.create_namespaced_cron_job(
                 body=cron_job_manifest,
                 namespace=self.config.kubernetes_namespace,
@@ -334,12 +369,14 @@ class KubernetesOrchestrator(BaseOrchestrator):
             run_name=orchestrator_run_name,
             pod_name=pod_name,
             pipeline_name=pipeline_name,
-            image_name=image_name,
+            image_name=image,
             command=command,
             args=args,
             service_account_name=service_account_name,
             settings=settings,
+            mount_local_stores=self.config.is_local,
         )
+
         self._k8s_core_api.create_namespaced_pod(
             namespace=self.config.kubernetes_namespace,
             body=pod_manifest,

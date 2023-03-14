@@ -26,8 +26,7 @@ from zenml.steps import step
 
 @pytest.fixture
 def empty_model_file() -> Path:
-    """Fixture to get an empty model.txt file"""
-
+    """Fixture to get an empty model.txt file."""
     with tempfile.NamedTemporaryFile() as tmp:
         yield tmp.name
 
@@ -40,4 +39,6 @@ def test_lightgbm_booster_materializer(empty_model_file):
         return lgb.Booster(model_file=empty_model_file)
 
     with does_not_raise():
-        some_step().with_return_materializers(LightGBMBoosterMaterializer)()
+        some_step().configure(
+            output_materializers=LightGBMBoosterMaterializer
+        )()

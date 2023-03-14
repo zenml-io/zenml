@@ -160,6 +160,12 @@ class LocalDaemonServiceStatus(ServiceStatus):
             try:
                 p = psutil.Process(pid)
                 cmd_line = p.cmdline()
+
+                # Empty cmd_line implies no process
+                if not cmd_line:
+                    logger.debug(f"Process with PID {pid} not found!")
+                    return None
+
                 config_file = self.config_file
                 if config_file is None:
                     return pid
@@ -191,7 +197,7 @@ class LocalDaemonService(BaseService):
     `run` method. Upon `start`, the service will spawn a daemon process that
     ends up calling the `run` method.
 
-    Example:
+    For example,
 
     ```python
 
@@ -451,7 +457,9 @@ class LocalDaemonService(BaseService):
         Yields:
             A generator that can be accessed to get the service logs.
         """
-        if not self.status.log_file or not os.path.exists(self.status.log_file):
+        if not self.status.log_file or not os.path.exists(
+            self.status.log_file
+        ):
             return
 
         with open(self.status.log_file, "r") as f:

@@ -14,7 +14,7 @@
 """Authentication module for ZenML server."""
 
 import os
-from typing import Callable, Optional, Union
+from typing import Callable, List, Optional, Set, Union
 from uuid import UUID
 
 from fastapi import Depends, HTTPException, status
@@ -27,6 +27,7 @@ from fastapi.security import (
 from pydantic import BaseModel
 
 from zenml.constants import API, ENV_ZENML_AUTH_TYPE, LOGIN, VERSION_1
+from zenml.enums import PermissionType
 from zenml.exceptions import AuthorizationException
 from zenml.logger import get_logger
 from zenml.models import UserResponseModel
@@ -50,6 +51,24 @@ class AuthContext(BaseModel):
     """The authentication context."""
 
     user: UserResponseModel
+
+    @property
+    def permissions(self) -> Set[PermissionType]:
+        """Returns the permissions of the user.
+
+        Returns:
+            The permissions of the user.
+        """
+        if self.user.roles:
+            # Merge permissions from all roles
+            permissions: List[PermissionType] = []
+            for role in self.user.roles:
+                permissions.extend(role.permissions)
+
+            # Remove duplicates
+            return set(permissions)
+
+        return set()
 
 
 def authentication_scheme() -> AuthScheme:

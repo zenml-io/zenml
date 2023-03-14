@@ -67,7 +67,9 @@ class BaseFilesystem(ABC):
 
     @staticmethod
     @abstractmethod
-    def copyfile(src: PathType, dst: PathType, overwrite: bool = False) -> None:
+    def copyfile(
+        src: PathType, dst: PathType, overwrite: bool = False
+    ) -> None:
         """Copy a file from the source to the destination.
 
         Args:
@@ -195,6 +197,21 @@ class BaseFilesystem(ABC):
         Returns:
             The stat descriptor.
         """
+
+    @staticmethod
+    def size(path: PathType) -> int:
+        """Get the size of a file in bytes.
+
+        To be implemented by subclasses but not abstract for backwards
+        compatibility.
+
+        Args:
+            path: The path to the file.
+
+        Returns:
+            The size of the file in bytes.
+        """
+        return -1
 
     @staticmethod
     @abstractmethod

@@ -155,8 +155,6 @@ class KubeflowOrchestratorConfig(  # type: ignore[misc] # https://github.com/pyd
     """Configuration for the Kubeflow orchestrator.
 
     Attributes:
-        kubeflow_pipelines_ui_port: A local port to which the KFP UI will be
-            forwarded.
         kubeflow_hostname: The hostname to use to talk to the Kubeflow Pipelines
             API. If not set, the hostname will be derived from the Kubernetes
             API proxy.
@@ -164,34 +162,100 @@ class KubeflowOrchestratorConfig(  # type: ignore[misc] # https://github.com/pyd
             Pipelines is deployed. Defaults to `kubeflow`.
         kubernetes_context: Optional name of a kubernetes context to run
             pipelines in. If not set, will try to spin up a local K3d cluster.
+        local: If `True`, the orchestrator will assume it is connected to a
+            local kubernetes cluster and will perform additional validations and
+            operations to allow using the orchestrator in combination with other
+            local stack components that store data in the local filesystem
+            (i.e. it will mount the local stores directory into the pipeline
+            containers).
         skip_local_validations: If `True`, the local validations will be
             skipped.
-        skip_cluster_provisioning: If `True`, the k3d cluster provisioning will
-            be skipped.
-        skip_ui_daemon_provisioning: If `True`, provisioning the KFP UI daemon
-            will be skipped.
-        container_registry_name: The name of the container registry stack
-            component to use. If not specified, the container registry
-            in the active stack is used.
     """
 
-    kubeflow_pipelines_ui_port: int = DEFAULT_KFP_UI_PORT
     kubeflow_hostname: Optional[str] = None
     kubeflow_namespace: str = "kubeflow"
-    kubernetes_context: Optional[str] = None  # TODO: Potential setting
+    kubernetes_context: str  # TODO: Potential setting
+    local: bool = False
     skip_local_validations: bool = False
-    skip_cluster_provisioning: bool = False
-    skip_ui_daemon_provisioning: bool = False
 
-    # IMPORTANT: This is a temporary solution to allow the Kubeflow orchestrator
-    # to be provisioned as an individual component (i.e. same as running
-    # `zenml orchestrator kubeflow up`) rather than needing it to be part of the
-    # active stack (i.e. instead of running `zenml stack up`). This is required
-    # by the test framework because the way it works is that it first provisions
-    # the stack components individually, then each test gets a different stack
-    # with the components it requires.
-    # Do not use for anything else! This will be removed in the near future.
-    container_registry_name: Optional[str] = None
+    @root_validator(pre=True)
+    def _validate_deprecated_attrs(
+        cls, values: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Pydantic root_validator for deprecated attributes.
+
+        This root validator is used for backwards compatibility purposes. E.g.
+        it handles attributes that are no longer available or that have become
+        mandatory in the meantime.
+
+        Args:
+            values: Values passed to the object constructor
+
+        Returns:
+            Values passed to the object constructor
+
+        Raises:
+            ValueError: If the attributes or their values are not valid.
+        """
+        provisioning_attrs = [
+            "skip_cluster_provisioning",
+            "skip_ui_daemon_provisioning",
+            "kubeflow_pipelines_ui_port",
+        ]
+
+        provisioning_attrs_used = [
+            attr for attr in provisioning_attrs if attr in values
+        ]
+
+        msg_header = (
+            "The ability to automatically provision and manage a Kubeflow "
+            "instance with  `zenml stack up` on top of a local K3D cluster "
+            "is no longer available in the current version of ZenML "
+            "client. Please use the `k3d-modular` ZenML stack recipe to "
+            "achieve the same results (and more). Automatically exposing the "
+            "Kubeflow UI TCP port locally as part of the stack provisioning "
+            "has also been removed in favor of methods better suited for this "
+            "purpose, such as using an Ingress controller in the remote "
+            "cluster. \n"
+            "As a result, the `kubernetes_context` attribute is no longer "
+            "optional and the following Kubeflow orchestrator configuration "
+            "attributes have been deprecated: "
+            f"{provisioning_attrs}.\n"
+        )
+
+        if provisioning_attrs_used:
+            logger.warning(
+                msg_header
+                + "To get rid of this warning, you should remove the deprecated "
+                "attributes from your orchestrator configuration (e.g. by "
+                "using the `zenml orchestrator remove-attribute <attr-name>` "
+                "CLI command)."
+            )
+            # remove deprecated attributes from values dict
+            for attr in provisioning_attrs_used:
+                del values[attr]
+
+        context = values.get("kubernetes_context")
+        if not context:
+            raise ValueError(
+                msg_header
+                + "Please set the `kubernetes_context` attribute to the name "
+                "of the Kubernetes config context pointing to the cluster "
+                "where Kubeflow is installed (e.g. the K3D cluster provisioned "
+                "by the `k3d-modular` ZenML stack recipe) and also set the "
+                "`local` configuration flag."
+            )
+
+        # TODO: remove this in a future release. kept here for backwards
+        # compatibility with old stack configs
+        elif (
+            isinstance(context, str)
+            and context.startswith("k3d-zenml-kubeflow-")
+            and "local" not in values
+        ):
+            values["local"] = True
+
+        return values
 
     @property
     def is_remote(self) -> bool:
@@ -204,12 +268,7 @@ class KubeflowOrchestratorConfig(  # type: ignore[misc] # https://github.com/pyd
         Returns:
             True if this config is for a remote component, False otherwise.
         """
-        if (
-            self.kubernetes_context is not None
-            and not self.kubernetes_context.startswith("k3d-zenml-kubeflow-")
-        ):
-            return True
-        return False
+        return not self.local
 
     @property
     def is_local(self) -> bool:
@@ -221,12 +280,7 @@ class KubeflowOrchestratorConfig(  # type: ignore[misc] # https://github.com/pyd
         Returns:
             True if this config is for a local component, False otherwise.
         """
-        if (
-            self.kubernetes_context is None
-            or self.kubernetes_context.startswith("k3d-zenml-kubeflow-")
-        ):
-            return True
-        return False
+        return self.local
 
 
 class KubeflowOrchestratorFlavor(BaseOrchestratorFlavor):
@@ -240,6 +294,33 @@ class KubeflowOrchestratorFlavor(BaseOrchestratorFlavor):
             The name of the flavor.
         """
         return KUBEFLOW_ORCHESTRATOR_FLAVOR
+
+    @property
+    def docs_url(self) -> Optional[str]:
+        """A url to point at docs explaining this flavor.
+
+        Returns:
+            A flavor docs url.
+        """
+        return self.generate_default_docs_url()
+
+    @property
+    def sdk_docs_url(self) -> Optional[str]:
+        """A url to point at SDK docs explaining this flavor.
+
+        Returns:
+            A flavor SDK docs url.
+        """
+        return self.generate_default_sdk_docs_url()
+
+    @property
+    def logo_url(self) -> str:
+        """A url to represent the flavor in the dashboard.
+
+        Returns:
+            The flavor logo.
+        """
+        return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/orchestrator/kubeflow.png"
 
     @property
     def config_class(self) -> Type[KubeflowOrchestratorConfig]:

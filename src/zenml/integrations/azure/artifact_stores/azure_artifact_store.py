@@ -31,9 +31,9 @@ from zenml.artifact_stores import BaseArtifactStore
 from zenml.integrations.azure.flavors.azure_artifact_store_flavor import (
     AzureArtifactStoreConfig,
 )
+from zenml.io.fileio import convert_to_str
 from zenml.secret.schemas import AzureSecretSchema
 from zenml.stack.authentication_mixin import AuthenticationMixin
-from zenml.utils.io_utils import convert_to_str
 
 PathType = Union[bytes, str]
 
@@ -278,6 +278,17 @@ class AzureArtifactStore(BaseArtifactStore, AuthenticationMixin):
             Stat info.
         """
         return self.filesystem.stat(path=path)  # type: ignore[no-any-return]
+
+    def size(self, path: PathType) -> int:
+        """Get the size of a file in bytes.
+
+        Args:
+            path: The path to the file.
+
+        Returns:
+            The size of the file in bytes.
+        """
+        return self.filesystem.size(path=path)  # type: ignore[no-any-return]
 
     def walk(
         self,

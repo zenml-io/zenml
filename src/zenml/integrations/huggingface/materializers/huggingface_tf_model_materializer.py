@@ -16,12 +16,13 @@
 import importlib
 import os
 from tempfile import TemporaryDirectory
-from typing import Any, Type
+from typing import Dict, Type
 
 from transformers import AutoConfig, TFPreTrainedModel  # type: ignore [import]
 
 from zenml.enums import ArtifactType
 from zenml.materializers.base_materializer import BaseMaterializer
+from zenml.metadata.metadata_types import MetadataType
 from zenml.utils import io_utils
 
 DEFAULT_TF_MODEL_DIR = "hf_tf_model"
@@ -33,7 +34,7 @@ class HFTFModelMaterializer(BaseMaterializer):
     ASSOCIATED_TYPES = (TFPreTrainedModel,)
     ASSOCIATED_ARTIFACT_TYPE = ArtifactType.MODEL
 
-    def load(self, data_type: Type[Any]) -> TFPreTrainedModel:
+    def load(self, data_type: Type[TFPreTrainedModel]) -> TFPreTrainedModel:
         """Reads HFModel.
 
         Args:
@@ -44,18 +45,19 @@ class HFTFModelMaterializer(BaseMaterializer):
         """
         super().load(data_type)
 
-        config = AutoConfig.from_pretrained(
-            os.path.join(self.uri, DEFAULT_TF_MODEL_DIR)
+        temp_dir = TemporaryDirectory()
+        io_utils.copy_dir(
+            os.path.join(self.uri, DEFAULT_TF_MODEL_DIR), temp_dir.name
         )
+
+        config = AutoConfig.from_pretrained(temp_dir.name)
         architecture = "TF" + config.architectures[0]
         model_cls = getattr(
             importlib.import_module("transformers"), architecture
         )
-        return model_cls.from_pretrained(
-            os.path.join(self.uri, DEFAULT_TF_MODEL_DIR)
-        )
+        return model_cls.from_pretrained(temp_dir.name)
 
-    def save(self, model: Type[Any]) -> None:
+    def save(self, model: TFPreTrainedModel) -> None:
         """Writes a Model to the specified dir.
 
         Args:
@@ -68,3 +70,21 @@ class HFTFModelMaterializer(BaseMaterializer):
             temp_dir.name,
             os.path.join(self.uri, DEFAULT_TF_MODEL_DIR),
         )
+
+    def extract_metadata(
+        self, model: TFPreTrainedModel
+    ) -> Dict[str, "MetadataType"]:
+        """Extract metadata from the given `PreTrainedModel` object.
+
+        Args:
+            model: The `PreTrainedModel` object to extract metadata from.
+
+        Returns:
+            The extracted metadata as a dictionary.
+        """
+        super().extract_metadata(model)
+        return {
+            "num_layers": len(model.layers),
+            "num_params": model.num_parameters(only_trainable=False),
+            "num_trainable_params": model.num_parameters(only_trainable=True),
+        }

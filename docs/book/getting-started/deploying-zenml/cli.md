@@ -10,7 +10,7 @@ Before we begin, it will help to understand the [architecture](./deploying-zenml
 
 If you don't have an existing Kubernetes cluster, you have the following two options to set it up:
 - Creating it manually using the documentation for your cloud provider. For convenience, here are links for [AWS](https://docs.aws.amazon.com/eks/latest/userguide/create-cluster.html), [Azure](https://learn.microsoft.com/en-us/azure/aks/learn/quick-kubernetes-deploy-portal?tabs=azure-cli) and [GCP](https://cloud.google.com/kubernetes-engine/docs/how-to/creating-a-zonal-cluster#before_you_begin).
-- Using a [stack recipe](../../advanced-guide/practical/practical-mlops.md) that sets up a cluster along with other tools that you might need in your cloud stack like artifact stores, and secret managers. Take a look at all [available stack recipes](https://github.com/zenml-io/mlops-stacks#-list-of-recipes) to see if there's something that works for you.
+- Using a [stack recipe](../../advanced-guide/practical/stack-recipes.md) that sets up a cluster along with other tools that you might need in your cloud stack like artifact stores, and secret managers. Take a look at all [available stack recipes](https://github.com/zenml-io/mlops-stacks#-list-of-recipes) to see if there's something that works for you.
 
 > **Note**
 > Once you have created your cluster, make sure that you configure your [kubectl](https://kubernetes.io/docs/tasks/tools/#kubectl) client to talk to it. If you have used stack recipes, this step is already done for you!
@@ -262,3 +262,22 @@ To disconnect from the current ZenML server and revert to using the local defaul
 ```bash
 zenml disconnect
 ```
+
+## Upgrading your ZenML server
+
+To upgrade your ZenML server (that was deployed with the `zenml deploy` command) to a newer version, you can follow the steps below.
+
+- In the config file, set `zenmlserver_image_tag` to the version that you want your ZenML server to be running.
+- Run the deploy command again with this config file:
+    
+    ```bash
+    zenml deploy --config=/PATH/TO/FILE
+    ```
+    
+
+Any database schema updates are automatically handled by ZenML and unless mentioned otherwise, all of your data is migrated to the new version, intact.
+
+>**Warning**
+> If you wish to downgrade a server, make sure that the version of ZenML that
+> you’re moving to has the same database schema. This is because reverse
+> migration of the schema is not supported.

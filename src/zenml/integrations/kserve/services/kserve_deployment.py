@@ -34,12 +34,12 @@ from pydantic import Field, ValidationError
 from zenml import __version__
 from zenml.logger import get_logger
 from zenml.services import (
-    BaseService,
     ServiceConfig,
     ServiceState,
     ServiceStatus,
     ServiceType,
 )
+from zenml.services.service import BaseDeploymentService
 
 if TYPE_CHECKING:
 
@@ -56,7 +56,8 @@ class KServeDeploymentConfig(ServiceConfig):
     Attributes:
         model_uri: URI of the model (or models) to serve.
         model_name: the name of the model. Multiple versions of the same model
-            should use the same model name.
+            should use the same model name. Model name must use only lowercase
+            alphanumeric characters and dashes.
         secret_name: the name of the secret containing the model.
         predictor: the KServe predictor used to serve the model. The
         predictor type can be one of the following: `tensorflow`, `pytorch`,
@@ -173,7 +174,7 @@ class KServeDeploymentConfig(ServiceConfig):
         return service_config
 
 
-class KServeDeploymentService(BaseService):
+class KServeDeploymentService(BaseDeploymentService):
     """A ZenML service that represents a KServe inference service CRD.
 
     Attributes:
@@ -204,7 +205,8 @@ class KServeDeploymentService(BaseService):
         )
 
         return cast(
-            KServeModelDeployer, KServeModelDeployer.get_active_model_deployer()
+            KServeModelDeployer,
+            KServeModelDeployer.get_active_model_deployer(),
         )
 
     def _get_client(self) -> KServeClient:

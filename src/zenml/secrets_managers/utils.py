@@ -127,7 +127,9 @@ def secret_from_dict(
     secret_contents = secret_dict.copy()
 
     if decode:
-        secret_contents, zenml_schema_name = decode_secret_dict(secret_contents)
+        secret_contents, zenml_schema_name = decode_secret_dict(
+            secret_contents
+        )
     else:
         zenml_schema_name = secret_contents.pop(ZENML_SCHEMA_NAME)
 

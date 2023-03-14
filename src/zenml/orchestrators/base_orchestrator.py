@@ -23,8 +23,10 @@ from zenml.orchestrators.step_launcher import StepLauncher
 from zenml.stack import Flavor, Stack, StackComponent, StackComponentConfig
 
 if TYPE_CHECKING:
-    from zenml.config.pipeline_deployment import PipelineDeployment
     from zenml.config.step_configurations import Step
+    from zenml.models.pipeline_deployment_models import (
+        PipelineDeploymentResponseModel,
+    )
 
 logger = get_logger(__name__)
 
@@ -73,7 +75,7 @@ class BaseOrchestrator(StackComponent, ABC):
     the pipeline to some remote infrastructure.
     """
 
-    _active_deployment: Optional["PipelineDeployment"] = None
+    _active_deployment: Optional["PipelineDeploymentResponseModel"] = None
 
     @property
     def config(self) -> BaseOrchestratorConfig:
@@ -98,10 +100,10 @@ class BaseOrchestrator(StackComponent, ABC):
     @abstractmethod
     def prepare_or_run_pipeline(
         self,
-        deployment: "PipelineDeployment",
+        deployment: "PipelineDeploymentResponseModel",
         stack: "Stack",
     ) -> Any:
-        """This method needs to be implemented by the respective orchestrator.
+        """The method needs to be implemented by the respective orchestrator.
 
         Depending on the type of orchestrator you'll have to perform slightly
         different operations.
@@ -139,7 +141,11 @@ class BaseOrchestrator(StackComponent, ABC):
             `pipeline_instance.run()` call when someone is running a pipeline.
         """
 
-    def run(self, deployment: "PipelineDeployment", stack: "Stack") -> Any:
+    def run(
+        self,
+        deployment: "PipelineDeploymentResponseModel",
+        stack: "Stack",
+    ) -> Any:
         """Runs a pipeline on a stack.
 
         Args:
@@ -194,7 +200,9 @@ class BaseOrchestrator(StackComponent, ABC):
 
         return not step.config.resource_settings.empty
 
-    def _prepare_run(self, deployment: "PipelineDeployment") -> None:
+    def _prepare_run(
+        self, deployment: "PipelineDeploymentResponseModel"
+    ) -> None:
         """Prepares a run.
 
         Args:

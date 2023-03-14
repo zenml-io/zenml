@@ -16,9 +16,11 @@
 from typing import TYPE_CHECKING, Dict, NamedTuple, Optional, Type
 
 from zenml.client import Client
+from zenml.environment import Environment
 from zenml.exceptions import StepContextError
 
 if TYPE_CHECKING:
+    from zenml.config.step_run_info import StepRunInfo
     from zenml.materializers.base_materializer import BaseMaterializer
     from zenml.stack import Stack
 
@@ -144,6 +146,46 @@ class StepContext:
         """
         return self._stack
 
+    @property
+    def pipeline_name(self) -> Optional[str]:
+        """Returns the current pipeline name.
+
+        Returns:
+            The current pipeline name or None.
+        """
+        env = Environment().step_environment
+        return env.pipeline_name
+
+    @property
+    def run_name(self) -> Optional[str]:
+        """Returns the current run name.
+
+        Returns:
+            The current run name or None.
+        """
+        env = Environment().step_environment
+        return env.run_name
+
+    @property
+    def step_run_info(self) -> "StepRunInfo":
+        """Info about the currently running step.
+
+        Returns:
+            Info about the currently running step.
+        """
+        env = Environment().step_environment
+        return env.step_run_info
+
+    @property
+    def cache_enabled(self) -> bool:
+        """Returns whether cache is enabled for the step.
+
+        Returns:
+            True if cache is enabled for the step, otherwise False.
+        """
+        env = Environment().step_environment
+        return env.cache_enabled
+
     def get_output_materializer(
         self,
         output_name: Optional[str] = None,
@@ -171,7 +213,9 @@ class StepContext:
         materializer_class = custom_materializer_class or materializer_class
         return materializer_class(artifact_uri)
 
-    def get_output_artifact_uri(self, output_name: Optional[str] = None) -> str:
+    def get_output_artifact_uri(
+        self, output_name: Optional[str] = None
+    ) -> str:
         """Returns the artifact URI for a given step output.
 
         Args:

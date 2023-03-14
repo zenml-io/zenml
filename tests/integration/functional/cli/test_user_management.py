@@ -13,11 +13,11 @@
 #  permissions and limitations under the License.
 from click.testing import CliRunner
 
-from tests.integration.functional.cli.test_utils import (
+from tests.integration.functional.cli.utils import (
     create_sample_team,
     create_sample_user,
+    sample_name,
     sample_team_name,
-    sample_user_name,
     team_create_command,
     team_delete_command,
     team_describe_command,
@@ -28,7 +28,10 @@ from tests.integration.functional.cli.test_utils import (
     user_update_command,
 )
 from zenml.client import Client
-from zenml.zen_stores.base_zen_store import DEFAULT_ADMIN_ROLE, DEFAULT_USERNAME
+from zenml.zen_stores.base_zen_store import (
+    DEFAULT_ADMIN_ROLE,
+    DEFAULT_USERNAME,
+)
 
 # ----- #
 # USERS #
@@ -40,7 +43,7 @@ def test_create_user_with_password_succeeds() -> None:
     runner = CliRunner()
     result = runner.invoke(
         user_create_command,
-        [sample_user_name(), "--password=thesupercat"],
+        [sample_name(), "--password=thesupercat"],
     )
     assert result.exit_code == 0
 
@@ -62,7 +65,7 @@ def test_create_user_with_initial_role_succeeds() -> None:
     result = runner.invoke(
         user_create_command,
         [
-            sample_user_name(),
+            sample_name(),
             "--password=thesupercat",
             f"--role={DEFAULT_ADMIN_ROLE}",
         ],
@@ -76,7 +79,7 @@ def test_update_user_with_new_name_succeeds() -> None:
     runner = CliRunner()
     result = runner.invoke(
         user_update_command,
-        [u.name, f"--name={sample_user_name()}"],
+        [u.name, f"--name={sample_name()}"],
     )
     assert result.exit_code == 0
 
@@ -108,7 +111,7 @@ def test_update_default_user_name_fails() -> None:
     runner = CliRunner()
     result = runner.invoke(
         user_update_command,
-        [DEFAULT_USERNAME, f"--name={sample_user_name()}"],
+        [DEFAULT_USERNAME, f"--name={sample_name()}"],
     )
     assert result.exit_code == 1
 

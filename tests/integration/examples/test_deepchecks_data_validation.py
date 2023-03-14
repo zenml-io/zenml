@@ -22,8 +22,6 @@ def test_example(request: pytest.FixtureRequest) -> None:
     with run_example(
         request=request,
         name="deepchecks_data_validation",
-        pipeline_name="data_validation_pipeline",
-        step_count=6,
-        run_count=1,
+        pipelines={"data_validation_pipeline": (1, 6)},
     ):
         pass

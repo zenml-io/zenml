@@ -83,7 +83,10 @@ with the test framework CLI, e.g.:
 
 2. Provision the test environment. This will configure and start a local ZenML
 deployment and will register and provision the stack components that are
-configured for the environment. The test framework will also take care of
+configured for the environment. (Note that some environments require the 
+`docker-compose` pip package to be installed, so make sure to do that.
+
+The test framework will also take care of
 rebuilding the ZenML container images that are required for the server to run
 or for the pipelines to be executed. E.g.:
 
@@ -126,7 +129,6 @@ INFO:root:Registered data_validator stack component 'great_expectations'
 INFO:root:Registered data_validator stack component 'whylogs'
 INFO:root:Registered experiment_tracker stack component 'mlflow-local'
 INFO:root:Registered model_deployer stack component 'mlflow-local'
-INFO:root:Registered secrets_manager stack component 'local'
 Environment 'docker-server' is provisioned and running at http://127.0.0.1:9000.
 ```
 
@@ -152,6 +154,9 @@ occasionally fail due to interference between tests:
 ```bash
 pytest tests/integration --environment docker-server --no-provision --cleanup-docker -n 4
 ```
+
+Note that you need to `pip install pytest-xdist` to run the tests in parallel as
+Pytest requires this plugin for parallelized testing.
 
 4. Optionally, cleanup the test environment after tests are done:
 
@@ -179,9 +184,10 @@ any external dependencies or special deployment configurations like databases,
 ZenML servers or other services. When they do, these dependencies should be
 mocked and/or stubbed out.
 * integration tests are tests that exercise an entire API or abstraction layer
-(e.g. the ZenML CLI or the Secrets Manager abstraction) and test it against a
-real ZenML deployment or stack component deployment, like a local ZenML server
-running in a Docker container, or a Secrets Manager running in the cloud. Given
+(e.g. the ZenML CLI, Client, the ZenML store interface or the ZenML artifact
+store abstraction) and test it against a real ZenML deployment or stack
+component deployment, like a local ZenML server running in a Docker container,
+a remote ZenML server running in the cloud or a cloud artifact store. Given
 that the ZenML code is designed to be highly modular and extensible, it is often
 the case that the integration tests don't need to be written for a particular
 implementation of a given API or abstraction layer, but are reusable across
@@ -381,7 +387,6 @@ requirements:
         configuration:
           synchronous: true
           skip_ui_daemon_provisioning: true
-          container_registry_name: k3d-local
 
 environment:
   - name: local_kubeflow_with_mlflow

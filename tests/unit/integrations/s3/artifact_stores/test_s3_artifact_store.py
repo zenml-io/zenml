@@ -29,8 +29,7 @@ from zenml.integrations.s3.flavors.s3_artifact_store_flavor import (
 
 
 def test_s3_artifact_store_attributes():
-    """Tests that the basic attributes of the s3 artifact store are set
-    correctly."""
+    """Tests that the basic attributes of the s3 artifact store are set correctly."""
     artifact_store = S3ArtifactStore(
         name="",
         id=uuid4(),
@@ -38,7 +37,7 @@ def test_s3_artifact_store_attributes():
         flavor="s3",
         type=StackComponentType.ARTIFACT_STORE,
         user=uuid4(),
-        project=uuid4(),
+        workspace=uuid4(),
         created=datetime.now(),
         updated=datetime.now(),
     )
@@ -47,8 +46,7 @@ def test_s3_artifact_store_attributes():
 
 
 def test_must_be_s3_path():
-    """Checks that a s3 artifact store can only be initialized with a s3
-    path."""
+    """Checks that a s3 artifact store can only be initialized with a s3 path."""
     with pytest.raises(ArtifactStoreInterfaceError):
         S3ArtifactStore(
             name="",
@@ -57,7 +55,7 @@ def test_must_be_s3_path():
             flavor="s3",
             type=StackComponentType.ARTIFACT_STORE,
             user=uuid4(),
-            project=uuid4(),
+            workspace=uuid4(),
             created=datetime.now(),
             updated=datetime.now(),
         )
@@ -70,7 +68,7 @@ def test_must_be_s3_path():
             flavor="s3",
             type=StackComponentType.ARTIFACT_STORE,
             user=uuid4(),
-            project=uuid4(),
+            workspace=uuid4(),
             created=datetime.now(),
             updated=datetime.now(),
         )
@@ -82,7 +80,7 @@ def test_must_be_s3_path():
         flavor="s3",
         type=StackComponentType.ARTIFACT_STORE,
         user=uuid4(),
-        project=uuid4(),
+        workspace=uuid4(),
         created=datetime.now(),
         updated=datetime.now(),
     )

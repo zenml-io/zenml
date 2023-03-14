@@ -22,9 +22,7 @@ from zenml.steps import BaseParameters, step
 
 
 class InferenceImageLoaderStepParameters(BaseParameters):
-    """
-    Parameters for the PyTorch inference preprocessor step.
-    """
+    """Parameters for the PyTorch inference preprocessor step."""
 
     img_url: str
 

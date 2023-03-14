@@ -12,8 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Utility functions for the CLI."""
-
-import json
+import contextlib
 import os
 import subprocess
 import sys
@@ -22,9 +21,11 @@ from typing import (
     Any,
     Callable,
     Dict,
+    Iterator,
     List,
     NoReturn,
     Optional,
+    Sequence,
     Set,
     Tuple,
     Type,
@@ -33,7 +34,6 @@ from typing import (
 )
 
 import click
-from pydantic import BaseModel
 from rich import box, table
 from rich.markup import escape
 from rich.prompt import Confirm
@@ -41,14 +41,34 @@ from rich.style import Style
 
 from zenml.config.global_config import GlobalConfiguration
 from zenml.console import console, zenml_style_defaults
-from zenml.constants import IS_DEBUG_ENV
-from zenml.enums import StackComponentType, StoreType
+from zenml.constants import FILTERING_DATETIME_FORMAT, IS_DEBUG_ENV
+from zenml.enums import GenericFilterOps, StackComponentType, StoreType
 from zenml.logger import get_logger
+from zenml.model_registries.base_model_registry import (
+    ModelVersion,
+    RegisteredModel,
+)
+from zenml.models import BaseFilterModel
 from zenml.models.base_models import BaseResponseModel
+from zenml.models.filter_models import (
+    BoolFilter,
+    NumericFilter,
+    StrFilter,
+    UUIDFilter,
+)
+from zenml.models.page_model import Page
+from zenml.secret import BaseSecretSchema
+from zenml.services import BaseService, ServiceState
+from zenml.stack import StackComponent
+from zenml.stack.stack_component import StackComponentConfig
+from zenml.utils import secret_utils
+from zenml.zen_server.deploy import ServerDeployment
 
 logger = get_logger(__name__)
 
 if TYPE_CHECKING:
+    from uuid import UUID
+
     from rich.text import Text
 
     from zenml.client import Client
@@ -61,9 +81,7 @@ if TYPE_CHECKING:
         PipelineRunResponseModel,
         StackResponseModel,
     )
-    from zenml.secret import BaseSecretSchema
-    from zenml.services import BaseService, ServiceState
-    from zenml.zen_server.deploy import ServerDeployment
+    from zenml.stack import Stack
 
 MAX_ARGUMENT_VALUE_SIZE = 10240
 
@@ -141,7 +159,12 @@ def warning(
     console.print(text, style=style, **kwargs)
 
 
-def print_table(obj: List[Dict[str, Any]], **columns: table.Column) -> None:
+def print_table(
+    obj: List[Dict[str, Any]],
+    title: Optional[str] = None,
+    caption: Optional[str] = None,
+    **columns: table.Column,
+) -> None:
     """Prints the list of dicts in a table format.
 
     The input object should be a List of Dicts. Each item in that list represent
@@ -150,16 +173,22 @@ def print_table(obj: List[Dict[str, Any]], **columns: table.Column) -> None:
 
     Args:
         obj: A List containing dictionaries.
+        title: Title of the table.
+        caption: Caption of the table.
         columns: Optional column configurations to be used in the table.
     """
     column_keys = {key: None for dict_ in obj for key in dict_}
     column_names = [columns.get(key, key.upper()) for key in column_keys]
-    rich_table = table.Table(box=box.HEAVY_EDGE, show_lines=True)
+    rich_table = table.Table(
+        box=box.HEAVY_EDGE, show_lines=True, title=title, caption=caption
+    )
     for col_name in column_names:
         if isinstance(col_name, str):
             rich_table.add_column(str(col_name), overflow="fold")
         else:
-            rich_table.add_column(str(col_name.header).upper(), overflow="fold")
+            rich_table.add_column(
+                str(col_name.header).upper(), overflow="fold"
+            )
     for dict_ in obj:
         values = []
         for key in column_keys:
@@ -177,14 +206,14 @@ def print_table(obj: List[Dict[str, Any]], **columns: table.Column) -> None:
     console.print(rich_table)
 
 
-M = TypeVar("M", bound=BaseModel)
+T = TypeVar("T", bound=BaseResponseModel)
 
 
 def print_pydantic_models(
-    models: List[M],
+    models: Union[Page[T], List[T]],
     columns: Optional[List[str]] = None,
     exclude_columns: Optional[List[str]] = None,
-    is_active: Optional[Callable[[M], bool]] = None,
+    is_active: Optional[Callable[[T], bool]] = None,
 ) -> None:
     """Prints the list of Pydantic models in a table.
 
@@ -200,7 +229,7 @@ def print_pydantic_models(
     if exclude_columns is None:
         exclude_columns = list()
 
-    def __dictify(model: M) -> Dict[str, str]:
+    def __dictify(model: T) -> Dict[str, str]:
         """Helper function to map over the list to turn Models into dicts.
 
         Args:
@@ -254,7 +283,11 @@ def print_pydantic_models(
             else items
         )
 
-    print_table([__dictify(model) for model in models])
+    if isinstance(models, Page):
+        print_table([__dictify(model) for model in models.items])
+        print_page_info(models)
+    else:
+        print_table([__dictify(model) for model in models])
 
 
 def format_integration_list(
@@ -279,7 +312,9 @@ def format_integration_list(
             {
                 "INSTALLED": ":white_check_mark:" if is_installed else ":x:",
                 "INTEGRATION": name,
-                "REQUIRED_PACKAGES": ", ".join(integration_impl.REQUIREMENTS),
+                "REQUIRED_PACKAGES": ", ".join(
+                    integration_impl.get_requirements()
+                ),
             }
         )
     return list_of_dicts
@@ -321,14 +356,14 @@ def print_stack_configuration(
     )
 
 
-def print_flavor_list(flavors: List["FlavorResponseModel"]) -> None:
+def print_flavor_list(flavors: Page["FlavorResponseModel"]) -> None:
     """Prints the list of flavors.
 
     Args:
         flavors: List of flavors to print.
     """
     flavor_table = []
-    for f in flavors:
+    for f in flavors.items:
         flavor_table.append(
             {
                 "FLAVOR": f.name,
@@ -419,12 +454,12 @@ def print_active_config() -> None:
         declare(f"Connected to the ZenML server: '{gc.store.url}'")
     if client.uses_local_configuration:
         declare(
-            f"Running with active project: '{client.active_project.name}' "
+            f"Running with active workspace: '{client.active_workspace.name}' "
             "(repository)"
         )
     else:
         declare(
-            f"Running with active project: '{gc.get_active_project_name()}' "
+            f"Running with active workspace: '{gc.get_active_workspace_name()}' "
             "(global)"
         )
 
@@ -506,7 +541,7 @@ def parse_name_and_extra_arguments(
         ('foo', {})
         >>> parse_name_and_extra_arguments(['foo', '--bar=1'])
         ('foo', {'bar': '1'})
-        >>> parse_name_and_extra_arguments('--bar=1', 'foo', '--baz=2'])
+        >>> parse_name_and_extra_arguments(['--bar=1', 'foo', '--baz=2'])
         ('foo', {'bar': '1', 'baz': '2'})
         >>> parse_name_and_extra_arguments(['--bar=1'])
         Traceback (most recent call last):
@@ -618,31 +653,39 @@ def uninstall_package(package: str) -> None:
 
 
 def pretty_print_secret(
-    secret: "BaseSecretSchema", hide_secret: bool = True
+    secret: "Union[BaseSecretSchema, Dict[str, str]]",
+    hide_secret: bool = True,
+    print_name: bool = False,
 ) -> None:
-    """Given a secret set, print all key-value pairs associated with the secret.
+    """Given a secret with values, print all key-value pairs associated with the secret.
 
     Args:
         secret: Secret of type BaseSecretSchema
         hide_secret: boolean that configures if the secret values are shown
             on the CLI
+        print_name: boolean that configures if the secret name is shown on the
+            CLI
     """
+    title: Optional[str] = None
+    if isinstance(secret, BaseSecretSchema):
+        if print_name:
+            title = f"Secret: {secret.name}"
+        secret = secret.content
 
     def get_secret_value(value: Any) -> str:
         if value is None:
             return ""
-        if hide_secret:
-            return "***"
-        return str(value)
+        return "***" if hide_secret else str(value)
 
     stack_dicts = [
         {
             "SECRET_KEY": key,
             "SECRET_VALUE": get_secret_value(value),
         }
-        for key, value in secret.content.items()
+        for key, value in secret.items()
     ]
-    print_table(stack_dicts)
+
+    print_table(stack_dicts, title=title)
 
 
 def print_list_items(list_items: List[str], column_title: str) -> None:
@@ -712,6 +755,96 @@ def pretty_print_model_deployer(
     print_table(
         model_service_dicts, UUID=table.Column(header="UUID", min_width=36)
     )
+
+
+def pretty_print_registered_model_table(
+    registered_models: List["RegisteredModel"],
+) -> None:
+    """Given a list of registered_models, print all associated key-value pairs.
+
+    Args:
+        registered_models: list of registered models
+    """
+    registered_model_dicts = [
+        {
+            "NAME": registered_model.name,
+            "DESCRIPTION": registered_model.description,
+            "METADATA": registered_model.metadata,
+        }
+        for registered_model in registered_models
+    ]
+    print_table(
+        registered_model_dicts, UUID=table.Column(header="UUID", min_width=36)
+    )
+
+
+def pretty_print_model_version_table(
+    model_versions: List["ModelVersion"],
+) -> None:
+    """Given a list of model_versions, print all associated key-value pairs.
+
+    Args:
+        model_versions: list of model versions
+    """
+    model_version_dicts = [
+        {
+            "NAME": model_version.registered_model.name,
+            "MODEL_VERSION": model_version.version,
+            "VERSION_DESCRIPTION": model_version.description,
+            "METADATA": model_version.metadata.dict()
+            if model_version.metadata
+            else {},
+        }
+        for model_version in model_versions
+    ]
+    print_table(
+        model_version_dicts, UUID=table.Column(header="UUID", min_width=36)
+    )
+
+
+def pretty_print_model_version_details(
+    model_version: "ModelVersion",
+) -> None:
+    """Given a model_version, print all associated key-value pairs.
+
+    Args:
+        model_version: model version
+    """
+    title_ = f"Properties of model `{model_version.registered_model.name}` version `{model_version.version}`"
+
+    rich_table = table.Table(
+        box=box.HEAVY_EDGE,
+        title=title_,
+        show_lines=True,
+    )
+    rich_table.add_column("MODEL VERSION PROPERTY", overflow="fold")
+    rich_table.add_column("VALUE", overflow="fold")
+    model_version_info = {
+        "REGISTERED_MODEL_NAME": model_version.registered_model.name,
+        "VERSION": model_version.version,
+        "VERSION_DESCRIPTION": model_version.description,
+        "CREATED_AT": str(model_version.created_at)
+        if model_version.created_at
+        else "N/A",
+        "UPDATED_AT": str(model_version.last_updated_at)
+        if model_version.last_updated_at
+        else "N/A",
+        "METADATA": model_version.metadata.dict()
+        if model_version.metadata
+        else {},
+        "MODEL_SOURCE_URI": model_version.model_source_uri,
+        "STAGE": model_version.stage.value,
+    }
+
+    for item in model_version_info.items():
+        rich_table.add_row(*[str(elem) for elem in item])
+
+    # capitalize entries in first column
+    rich_table.columns[0]._cells = [
+        component.upper()  # type: ignore[union-attr]
+        for component in rich_table.columns[0]._cells
+    ]
+    console.print(rich_table)
 
 
 def print_served_model_configuration(
@@ -828,21 +961,19 @@ def print_server_deployment(server: "ServerDeployment") -> None:
     console.print(rich_table)
 
 
-def describe_pydantic_object(schema_json: str) -> None:
-    """Describes a Pydantic object based on the json of its schema.
+def describe_pydantic_object(schema_json: Dict[str, Any]) -> None:
+    """Describes a Pydantic object based on the dict-representation of its schema.
 
     Args:
         schema_json: str, represents the schema of a Pydantic object, which
             can be obtained through BaseModelClass.schema_json()
     """
     # Get the schema dict
-    schema = json.loads(schema_json)
-
     # Extract values with defaults
-    schema_title = schema["title"]
-    required = schema.get("required", [])
-    description = schema.get("description", "")
-    properties = schema.get("properties", {})
+    schema_title = schema_json["title"]
+    required = schema_json.get("required", [])
+    description = schema_json.get("description", "")
+    properties = schema_json.get("properties", {})
 
     # Pretty print the schema
     warning(f"Configuration class: {schema_title}\n", bold=True)
@@ -853,10 +984,12 @@ def describe_pydantic_object(schema_json: str) -> None:
     if properties:
         warning("Properties", bold=True)
         for prop, prop_schema in properties.items():
-            warning(
-                f"{prop}, {prop_schema['type']}"
-                f"{', REQUIRED' if prop in required else ''}"
-            )
+
+            if "$ref" not in prop_schema.keys():
+                warning(
+                    f"{prop}, {prop_schema['type']}"
+                    f"{', REQUIRED' if prop in required else ''}"
+                )
 
             if "description" in prop_schema:
                 declare(f"  {prop_schema['description']}", width=80)
@@ -875,7 +1008,7 @@ def get_shared_emoji(is_shared: bool) -> str:
 
 
 def print_stacks_table(
-    client: "Client", stacks: List["StackResponseModel"]
+    client: "Client", stacks: Sequence["StackResponseModel"]
 ) -> None:
     """Print a prettified list of all stacks supplied to this method.
 
@@ -912,7 +1045,7 @@ def print_stacks_table(
 def print_components_table(
     client: "Client",
     component_type: StackComponentType,
-    components: List["ComponentResponseModel"],
+    components: Sequence["ComponentResponseModel"],
 ) -> None:
     """Prints a table with configuration options for a list of stack components.
 
@@ -949,6 +1082,86 @@ def print_components_table(
         }
         configurations.append(component_config)
     print_table(configurations)
+
+
+def _get_stack_components(
+    stack: "Stack",
+) -> "List[StackComponent]":
+    """Get a dict of all components in a stack.
+
+    Args:
+        stack: A stack
+
+    Returns:
+        A list of all components in a stack.
+    """
+    return list(stack.components.values())
+
+
+def _scrub_secret(config: StackComponentConfig) -> Dict[str, Any]:
+    """Remove secret values from a configuration.
+
+    Args:
+        config: configuration for a stack component
+
+    Returns:
+        A configuration with secret values removed.
+    """
+    config_dict = {}
+    config_fields = dict(config.__class__.__fields__)
+    for key, value in config_fields.items():
+        if secret_utils.is_secret_field(value):
+            config_dict[key] = "********"
+        else:
+            config_dict[key] = getattr(config, key)
+    return config_dict
+
+
+def print_debug_stack() -> None:
+    """Print active stack and components for debugging purposes."""
+    from zenml.client import Client
+
+    client = Client()
+    stack = client.get_stack()
+    active_stack = client.active_stack
+    components = _get_stack_components(active_stack)
+
+    declare("\nCURRENT STACK\n", bold=True)
+    console.print(f"Name: {stack.name}")
+    console.print(f"ID: {str(stack.id)}")
+    console.print(f"Shared: {'Yes' if stack.is_shared else 'No'}")
+    if stack.user and stack.user.name and stack.user.id:  # mypy check
+        console.print(f"User: {stack.user.name} / {str(stack.user.id)}")
+    console.print(
+        f"Workspace: {stack.workspace.name} / {str(stack.workspace.id)}"
+    )
+
+    for component in components:
+        component_response = client.get_stack_component(
+            name_id_or_prefix=component.id, component_type=component.type
+        )
+        declare(
+            f"\n{component.type.value.upper()}: {component.name}\n", bold=True
+        )
+        console.print(f"Name: {component.name}")
+        console.print(f"ID: {str(component.id)}")
+        console.print(f"Type: {component.type.value}")
+        console.print(f"Flavor: {component.flavor}")
+        console.print(f"Configuration: {_scrub_secret(component.config)}")
+        console.print(
+            f"Shared: {'Yes' if component_response.is_shared else 'No'}"
+        )
+        if (
+            component_response.user
+            and component_response.user.name
+            and component_response.user.id
+        ):  # mypy check
+            console.print(
+                f"User: {component_response.user.name} / {str(component_response.user.id)}"
+            )
+        console.print(
+            f"Workspace: {component_response.workspace.name} / {str(component_response.workspace.id)}"
+        )
 
 
 def _component_display_name(
@@ -993,7 +1206,7 @@ def get_execution_status_emoji(status: "ExecutionStatus") -> str:
 
 
 def print_pipeline_runs_table(
-    pipeline_runs: List["PipelineRunResponseModel"],
+    pipeline_runs: Sequence["PipelineRunResponseModel"],
 ) -> None:
     """Print a prettified list of all pipeline runs supplied to this method.
 
@@ -1030,20 +1243,267 @@ def print_pipeline_runs_table(
     print_table(runs_dicts)
 
 
-def warn_unsupported_non_default_project() -> None:
-    """Warning for unsupported non-default project."""
+def warn_unsupported_non_default_workspace() -> None:
+    """Warning for unsupported non-default workspace."""
     from zenml.constants import (
-        ENV_ZENML_DISABLE_PROJECT_WARNINGS,
+        ENV_ZENML_DISABLE_WORKSPACE_WARNINGS,
         handle_bool_env_var,
     )
 
     disable_warnings = handle_bool_env_var(
-        ENV_ZENML_DISABLE_PROJECT_WARNINGS, False
+        ENV_ZENML_DISABLE_WORKSPACE_WARNINGS, False
     )
     if not disable_warnings:
         warning(
-            "Currently the concept of `project` is not supported "
+            "Currently the concept of `workspace` is not supported "
             "within the Dashboard. The Project functionality will be "
             "completed in the coming weeks. For the time being it "
-            "is recommended to stay within the `default` project."
+            "is recommended to stay within the `default` workspace."
         )
+
+
+def print_page_info(page: Page[T]) -> None:
+    """Print all page information showing the number of items and pages.
+
+    Args:
+        page: The page to print the information for.
+    """
+    declare(
+        f"Page `({page.index}/{page.total_pages})`, `{page.total}` items "
+        f"found for the applied filters."
+    )
+
+
+F = TypeVar("F", bound=Callable[..., None])
+
+
+def create_filter_help_text(
+    filter_model: Type[BaseFilterModel], field: str
+) -> str:
+    """Create the help text used in the click option help text.
+
+    Args:
+        filter_model: The filter model to use
+        field: The field within that filter model
+
+    Returns:
+        The help text.
+    """
+    if filter_model.is_datetime_field(field):
+        return (
+            f"[DATETIME] The following datetime format is supported: "
+            f"'{FILTERING_DATETIME_FORMAT}'. Make sure to keep it in "
+            f"quotation marks. "
+            f"Example: --{field}="
+            f"'{GenericFilterOps.GTE}:{FILTERING_DATETIME_FORMAT}' to "
+            f"filter for everything created on or after the given date."
+        )
+    elif filter_model.is_uuid_field(field):
+        return (
+            f"[UUID] Example: --{field}='{GenericFilterOps.STARTSWITH}:ab53ca' "
+            f"to filter for all UUIDs starting with that prefix."
+        )
+    elif filter_model.is_int_field(field):
+        return (
+            f"[INTEGER] Example: --{field}='{GenericFilterOps.GTE}:25' to "
+            f"filter for all entities where this field has a value greater than "
+            f"or equal to the value."
+        )
+    elif filter_model.is_bool_field(field):
+        return (
+            f"[BOOL] Example: --{field}='True' to "
+            f"filter for all instances where this field is true."
+        )
+    elif filter_model.is_str_field(field):
+        return (
+            f"[STRING] Example: --{field}='{GenericFilterOps.CONTAINS}:example' "
+            f"to filter everything that contains the query string somewhere in "
+            f"its {field}."
+        )
+    else:
+        return ""
+
+
+def create_data_type_help_text(
+    filter_model: Type[BaseFilterModel], field: str
+) -> str:
+    """Create a general help text for a fields datatype.
+
+    Args:
+        filter_model: The filter model to use
+        field: The field within that filter model
+
+    Returns:
+        The help text.
+    """
+    if filter_model.is_datetime_field(field):
+        return (
+            f"[DATETIME] supported filter operators: "
+            f"{[str(op) for op in NumericFilter.ALLOWED_OPS]}"
+        )
+    elif filter_model.is_uuid_field(field):
+        return (
+            f"[UUID] supported filter operators: "
+            f"{[str(op) for op in UUIDFilter.ALLOWED_OPS]}"
+        )
+    elif filter_model.is_int_field(field):
+        return (
+            f"[INTEGER] supported filter operators: "
+            f"{[str(op) for op in NumericFilter.ALLOWED_OPS]}"
+        )
+    elif filter_model.is_bool_field(field):
+        return (
+            f"[BOOL] supported filter operators: "
+            f"{[str(op) for op in BoolFilter.ALLOWED_OPS]}"
+        )
+    elif filter_model.is_str_field(field):
+        return (
+            f"[STRING] supported filter operators: "
+            f"{[str(op) for op in StrFilter.ALLOWED_OPS]}"
+        )
+    else:
+        return f"{field}"
+
+
+def list_options(filter_model: Type[BaseFilterModel]) -> Callable[[F], F]:
+    """Create a decorator to generate the correct list of filter parameters.
+
+    The Outer decorator (`list_options`) is responsible for creating the inner
+    decorator. This is necessary so that the type of `FilterModel` can be passed
+    in as a parameter.
+
+    Based on the filter model, the inner decorator extracts all the click
+    options that should be added to the decorated function (wrapper).
+
+    Args:
+        filter_model: The filter model based on which to decorate the function.
+
+    Returns:
+        The inner decorator.
+    """
+
+    def inner_decorator(func: F) -> F:
+
+        options = []
+        data_type_descriptors = set()
+        for k, v in filter_model.__fields__.items():
+            if k not in filter_model.CLI_EXCLUDE_FIELDS:
+                options.append(
+                    click.option(
+                        f"--{k}",
+                        type=str,
+                        default=v.default,
+                        required=False,
+                        help=create_filter_help_text(filter_model, k),
+                    )
+                )
+            if k not in filter_model.FILTER_EXCLUDE_FIELDS:
+                data_type_descriptors.add(
+                    create_data_type_help_text(filter_model, k)
+                )
+
+        def wrapper(function: F) -> F:
+            for option in reversed(options):
+                function = option(function)
+            return function
+
+        func.__doc__ = (
+            f"{func.__doc__} By default all filters are "
+            f"interpreted as a check for equality. However advanced "
+            f"filter operators can be used to tune the filtering by "
+            f"writing the operator and separating it from the "
+            f"query parameter with a colon `:`, e.g. "
+            f"--field='operator:query'."
+        )
+
+        if data_type_descriptors:
+            joined_data_type_descriptors = "\n\n".join(data_type_descriptors)
+
+            func.__doc__ = (
+                f"{func.__doc__} \n\n"
+                f"\b Each datatype supports a specific "
+                f"set of filter operations, here are the relevant "
+                f"ones for the parameters of this command: \n\n"
+                f"{joined_data_type_descriptors}"
+            )
+
+        return wrapper(func)
+
+    return inner_decorator
+
+
+@contextlib.contextmanager
+def temporary_active_stack(
+    stack_name_or_id: Union["UUID", str, None] = None
+) -> Iterator["Stack"]:
+    """Contextmanager to temporarily activate a stack.
+
+    Args:
+        stack_name_or_id: The name or ID of the stack to activate. If not given,
+            this contextmanager will not do anything.
+
+    Yields:
+        The active stack.
+    """
+    from zenml.client import Client
+
+    try:
+        if stack_name_or_id:
+            old_stack_id = Client().active_stack_model.id
+            Client().activate_stack(stack_name_or_id)
+        else:
+            old_stack_id = None
+        yield Client().active_stack
+    finally:
+        if old_stack_id:
+            Client().activate_stack(old_stack_id)
+
+
+def get_package_information(
+    package_names: Optional[List[str]] = None,
+) -> Dict[str, str]:
+    """Get a dictionary of installed packages.
+
+    Args:
+        package_names: Specific package names to get the information for.
+
+    Returns:
+        A dictionary of the name:version for the package names passed in or
+            all packages and their respective versions.
+    """
+    import pkg_resources
+
+    if package_names:
+        return {
+            pkg.key: pkg.version
+            for pkg in pkg_resources.working_set
+            if pkg.key in package_names
+        }
+
+    return {pkg.key: pkg.version for pkg in pkg_resources.working_set}
+
+
+def print_user_info(info: Dict[str, Any]) -> None:
+    """Print user information to the terminal.
+
+    Args:
+        info: The information to print.
+    """
+    for key, value in info.items():
+        if key in ["packages", "query_packages"] and not bool(value):
+            continue
+
+        declare(f"{key.upper()}: {value}")
+
+
+def warn_deprecated_secrets_manager() -> None:
+    """Warning for deprecating secrets managers."""
+    warning(
+        "Secrets managers are deprecated and will be removed in an upcoming "
+        "release in favor of centralized secrets management. Please consider "
+        "migrating all your secrets to the centralized secrets store by means "
+        "of the `zenml secrets-manager secret migrate` CLI command. "
+        "See the `zenml secret` CLI command and the "
+        "https://docs.zenml.io/advanced-guide/practical-mlops/secrets-management "
+        "documentation page for more information."
+    )

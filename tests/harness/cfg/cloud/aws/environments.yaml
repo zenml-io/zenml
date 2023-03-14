@@ -15,9 +15,11 @@ environments:
     deployment: aws-us-east-1-server
     requirements:
       - external-data-validators
+      - external-neptune-experiment-tracker
+      - external-wandb-experiment-tracker
+      - external-slack-alerter
       - mlflow-local-tracker
       - mlflow-local-deployer
-      - local-secrets-manager
     capabilities:
       synchronized: true
 
@@ -28,24 +30,13 @@ environments:
     deployment: aws-us-east-1-server
     requirements:
       - external-data-validators
+      - external-neptune-experiment-tracker
+      - external-wandb-experiment-tracker
+      - external-slack-alerter
       - mlflow-local-tracker
       - mlflow-local-deployer
-      - local-secrets-manager
     mandatory_requirements:
       - docker-local
-
-  - name: aws-kubeflow-orchestrator
-    description: >-
-      AWS ZenML server with local kubeflow orchestrator and all
-      local components.
-    deployment: aws-us-east-1-server
-    requirements:
-      - external-data-validators
-      - mlflow-local-tracker
-      - mlflow-local-deployer
-      - local-secrets-manager
-    mandatory_requirements:
-      - kubeflow-local
 
   - name: aws-airflow-orchestrator
     description: >-
@@ -54,9 +45,11 @@ environments:
     deployment: aws-us-east-1-server
     requirements:
       - external-data-validators
+      - external-neptune-experiment-tracker
+      - external-wandb-experiment-tracker
+      - external-slack-alerter
       - mlflow-local-tracker
       - mlflow-local-deployer
-      - local-secrets-manager
     mandatory_requirements:
       - airflow-local
 
@@ -68,7 +61,10 @@ environments:
     deployment: aws-us-east-1-server
     requirements:
       - external-data-validators
-      - aws-us-east-1-sagemaker
+      - external-neptune-experiment-tracker
+      - external-wandb-experiment-tracker
+      - external-slack-alerter
+      - aws-us-east-1-sagemaker-op
       - aws-us-east-1-mlflow
       - aws-us-east-1-seldon
       - aws-us-east-1-kserve
@@ -86,6 +82,9 @@ environments:
     deployment: aws-us-east-1-server
     requirements:
       - external-data-validators
+      - external-neptune-experiment-tracker
+      - external-wandb-experiment-tracker
+      - external-slack-alerter
       - aws-us-east-1-mlflow
       - aws-us-east-1-seldon
       - aws-us-east-1-kserve
@@ -103,7 +102,10 @@ environments:
     deployment: aws-us-east-1-server
     requirements:
       - external-data-validators
-      - aws-us-east-1-sagemaker
+      - external-neptune-experiment-tracker
+      - external-wandb-experiment-tracker
+      - external-slack-alerter
+      - aws-us-east-1-sagemaker-op
       - aws-us-east-1-mlflow
       - aws-us-east-1-seldon
       - aws-us-east-1-kserve
@@ -120,7 +122,10 @@ environments:
     deployment: aws-us-east-1-server
     requirements:
       - external-data-validators
-      - aws-us-east-1-sagemaker
+      - external-neptune-experiment-tracker
+      - external-wandb-experiment-tracker
+      - external-slack-alerter
+      - aws-us-east-1-sagemaker-op
       - aws-us-east-1-mlflow
       - aws-us-east-1-seldon
       - aws-us-east-1-kserve
@@ -137,7 +142,10 @@ environments:
     deployment: aws-us-east-1-server
     requirements:
       - external-data-validators
-      - aws-us-east-1-sagemaker
+      - external-neptune-experiment-tracker
+      - external-wandb-experiment-tracker
+      - external-slack-alerter
+      - aws-us-east-1-sagemaker-op
       - aws-us-east-1-mlflow
       - aws-us-east-1-seldon
       - aws-us-east-1-kserve
@@ -145,3 +153,23 @@ environments:
       - aws-us-east-1-cloud
       - aws-us-east-1-ecr
       - aws-us-east-1-tekton
+
+  - name: aws-cloud-sagemaker-orchestrator
+    description: >-
+      AWS ZenML server with AWS cloud components (S3 artifact store, ECR
+      container registry, MLflow, Seldon Core, KServe, Sagemaker step operator)
+      and Sagemaker orchestrator.
+    deployment: aws-us-east-1-server
+    requirements:
+      - external-data-validators
+      - external-neptune-experiment-tracker
+      - external-wandb-experiment-tracker
+      - external-slack-alerter
+      - aws-us-east-1-sagemaker-op
+      - aws-us-east-1-mlflow
+      - aws-us-east-1-seldon
+      - aws-us-east-1-kserve
+    mandatory_requirements:
+      - aws-us-east-1-cloud
+      - aws-us-east-1-ecr
+      - aws-us-east-1-sagemaker-orch

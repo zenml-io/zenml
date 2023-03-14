@@ -417,14 +417,13 @@ def kserve_custom_model_deployer_step(
             "No active stack is available. "
             "Please make sure that you have registered and set a stack."
         )
-    context.stack
 
-    docker_image = step_env.step_run_info.pipeline.extra[
-        KSERVE_DOCKER_IMAGE_KEY
-    ]
+    image_name = step_env.step_run_info.get_image(key=KSERVE_DOCKER_IMAGE_KEY)
 
     # copy the model files to a new specific directory for the deployment
-    served_model_uri = os.path.join(context.get_output_artifact_uri(), "kserve")
+    served_model_uri = os.path.join(
+        context.get_output_artifact_uri(), "kserve"
+    )
     fileio.makedirs(served_model_uri)
     io_utils.copy_dir(model.uri, served_model_uri)
 
@@ -443,7 +442,7 @@ def kserve_custom_model_deployer_step(
     # Prepare container config for custom model deployment
     service_config.container = {
         "name": service_config.model_name,
-        "image": docker_image,
+        "image": image_name,
         "command": entrypoint_command,
         "storage_uri": service_config.model_uri,
     }

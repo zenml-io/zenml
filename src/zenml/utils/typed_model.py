@@ -20,7 +20,7 @@ from pydantic import BaseModel, Field
 from pydantic.main import ModelMetaclass
 from typing_extensions import Literal
 
-from zenml.utils.source_utils import load_source_path_class
+from zenml.utils.source_utils import load_source_path
 
 
 class BaseTypedModelMeta(ModelMetaclass):
@@ -52,7 +52,7 @@ class BaseTypedModelMeta(ModelMetaclass):
                 "subclasses"
             )
         type_name = f"{dct['__module__']}.{dct['__qualname__']}"
-        type_ann = Literal[type_name]  # type: ignore [valid-type]
+        type_ann = Literal[type_name]  # type: ignore[valid-type]
         type = Field(type_name)
         dct.setdefault("__annotations__", dict())["type"] = type_ann
         dct["type"] = type
@@ -120,7 +120,7 @@ class BaseTypedModel(BaseModel, metaclass=BaseTypedModelMeta):
             raise RuntimeError(
                 "`type` information is missing from the serialized model dict."
             )
-        cls = load_source_path_class(model_type)
+        cls = load_source_path(model_type)
         if not issubclass(cls, BaseTypedModel):
             raise RuntimeError(
                 f"Class `{cls}` is not a ZenML BaseTypedModel subclass."

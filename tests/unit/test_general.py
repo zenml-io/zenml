@@ -21,9 +21,10 @@ from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.materializers.default_materializer_registry import (
     default_materializer_registry,
 )
+from zenml.metadata.metadata_types import MetadataTypeTuple
 
 
-def test_handle_int_env_var():
+def test_debug_mode_enabled_for_tests():
     """Checks that the ZENML_DEBUG is set in the tests."""
     assert os.environ[ENV_ZENML_DEBUG] == "true"
 
@@ -33,6 +34,7 @@ def _test_materializer(
     step_output_type: Optional[Type[Any]] = None,
     materializer_class: Optional[Type[BaseMaterializer]] = None,
     validation_function: Optional[Callable[[str], Any]] = None,
+    return_metadata: bool = False,
 ) -> Any:
     """Test whether the materialization of a given step output works.
 
@@ -40,6 +42,7 @@ def _test_materializer(
     the same materializer and ensure that:
     - `materializer.save()` did write something to disk
     - `materializer.load()` did load the original data type again
+    - `materializer.extract_metadata()` returned a dict
 
     Args:
         step_output: The output artifact we want to materialize.
@@ -63,11 +66,30 @@ def _test_materializer(
     with TemporaryDirectory() as artifact_uri:
         materializer = materializer_class(uri=artifact_uri)
         existing_files = os.listdir(artifact_uri)
+
+        # Assert that materializer saves something to disk
         materializer.save(step_output)
         new_files = os.listdir(artifact_uri)
         assert len(new_files) > len(existing_files)  # something was written
+
+        # Assert that metadata extraction returns a dict
+        metadata = materializer.extract_metadata(step_output)
+        assert isinstance(metadata, dict)
+        for key, value in metadata.items():
+            assert isinstance(key, str)
+            assert isinstance(value, MetadataTypeTuple)
+
+        # Assert that materializer loads the data with the correct type
         loaded_data = materializer.load(step_output_type)
         assert isinstance(loaded_data, step_output_type)  # correct type
+
+        # Run additional validation function if provided
         if validation_function:
             validation_function(artifact_uri)
+
+        # Return the loaded data and metadata if requested
+        if return_metadata:
+            return loaded_data, metadata
+
+        # Return the loaded data
         return loaded_data

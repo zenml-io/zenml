@@ -50,7 +50,7 @@ ZenML can now run [as a server](../getting-started/core-concepts.md#zenml-server
 that can be accessed via a REST API and also comes with a visual user interface
 (called the ZenML Dashboard). This server can be deployed in arbitrary
 environments (local, on-prem, via Docker, on AWS, GCP, Azure etc.) and supports
-user management, project scoping, and more.
+user management, workspace scoping, and more.
 
 The release introduces a series of commands to facilitate managing the lifecycle
 of the ZenML server and to access the pipeline and pipeline run information:
@@ -287,7 +287,7 @@ as a scoping mechanism for stacks, stack components and other ZenML objects.
 The information stored in legacy profiles is not automatically migrated. You can
 do so manually by using the `zenml profile list` and `zenml profile migrate` commands.
 Found profile with 1 stacks, 3 components and 0 flavors at: /home/stefan/.config/zenml/profiles/default
-Found profile with 3 stacks, 6 components and 0 flavors at: /home/stefan/.config/zenml/profiles/zenfiles
+Found profile with 3 stacks, 6 components and 0 flavors at: /home/stefan/.config/zenml/profiles/zenprojects
 Found profile with 3 stacks, 7 components and 0 flavors at: /home/stefan/.config/zenml/profiles/zenbytes
 
 $ zenml profile migrate /home/stefan/.config/zenml/profiles/default
@@ -356,13 +356,13 @@ Running with active project: 'default' (global)
 Example of migrating a profile into a new project:
 
 ```bash
-$ zenml profile migrate /home/stefan/.config/zenml/profiles/zenfiles --project zenfiles
+$ zenml profile migrate /home/stefan/.config/zenml/profiles/zenprojects --project zenprojects
 Unable to find ZenML repository in your current working directory (/home/stefan/aspyre/src/zenml) or any parent directories. If you want to use an existing repository which is in a different location, set the environment variable 'ZENML_REPOSITORY_PATH'. If you want to create a new repository, run zenml init.
 Running without an active repository root.
-Creating project zenfiles
-Creating default stack for user 'default' in project zenfiles...
-No component flavors to migrate from /home/stefan/.config/zenml/profiles/zenfiles/stacks.yaml...
-Migrating stack components from /home/stefan/.config/zenml/profiles/zenfiles/stacks.yaml...
+Creating project zenprojects
+Creating default stack for user 'default' in project zenprojects...
+No component flavors to migrate from /home/stefan/.config/zenml/profiles/zenprojects/stacks.yaml...
+Migrating stack components from /home/stefan/.config/zenml/profiles/zenprojects/stacks.yaml...
 Created artifact_store 'cloud_artifact_store' with flavor 's3'.
 Created container_registry 'cloud_registry' with flavor 'aws'.
 Created container_registry 'local_registry' with flavor 'default'.
@@ -370,22 +370,22 @@ Created model_deployer 'eks_seldon' with flavor 'seldon'.
 Created orchestrator 'cloud_orchestrator' with flavor 'kubeflow'.
 Created orchestrator 'kubeflow_orchestrator' with flavor 'kubeflow'.
 Created secrets_manager 'aws_secret_manager' with flavor 'aws'.
-Migrating stacks from /home/stefan/.config/zenml/profiles/zenfiles/stacks.yaml...
+Migrating stacks from /home/stefan/.config/zenml/profiles/zenprojects/stacks.yaml...
 Created stack 'cloud_kubeflow_stack'.
 Created stack 'local_kubeflow_stack'.
 
-$ zenml project set zenfiles
+$ zenml project set zenprojects
 Currently the concept of `project` is not supported within the Dashboard. The Project functionality will be completed in the coming weeks. For the time being it is recommended to stay within the `default` 
 project.
 Using the default local database.
 Running with active project: 'default' (global)
-Set active project 'zenfiles'.
+Set active project 'zenprojects'.
 
 $ zenml stack list
 Using the default local database.
-Running with active project: 'zenfiles' (global)
+Running with active project: 'zenprojects' (global)
 The current global active stack is not part of the active project. Resetting the active stack to default.
-You are running with a non-default project 'zenfiles'. Any stacks, components, pipelines and pipeline runs produced in this project will currently not be accessible through the dashboard. However, this will be possible in the near future.
+You are running with a non-default project 'zenprojects'. Any stacks, components, pipelines and pipeline runs produced in this project will currently not be accessible through the dashboard. However, this will be possible in the near future.
 ┏━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━┯━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━┓
 ┃ ACTIVE │ STACK NAME           │ STACK ID                             │ SHARED │ OWNER   │ ARTIFACT_STORE       │ ORCHESTRATOR          │ MODEL_DEPLOYER │ CONTAINER_REGISTRY │ SECRETS_MANAGER    ┃
 ┠────────┼──────────────────────┼──────────────────────────────────────┼────────┼─────────┼──────────────────────┼───────────────────────┼────────────────┼────────────────────┼────────────────────┨

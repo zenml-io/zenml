@@ -1,5 +1,5 @@
 # Copyright (c) 2011, Edward George, based on code contained within the
-# virtualenv project.
+# virtualenv workspace.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -34,7 +34,8 @@
 #  permissions and limitations under the License.
 """The below code is copied from the virtualenv-clone source repo with minor
 changes to make it work for the specific usecase of zenml. All credits go to
- https://github.com/edwardgeorge for the core implementation"""
+https://github.com/edwardgeorge for the core implementation.
+"""
 
 import itertools
 import os.path
@@ -155,7 +156,7 @@ def clone_virtualenv(src_dir: str, dst_dir: str) -> None:
 
 
 def old_path_in_sys_path(sys_path: List[str], src_dir: str) -> bool:
-    """Checks if sys path contains reference to the old venv
+    """Checks if sys path contains reference to the old venv.
 
     Args:
         sys_path: Contents of the sys path as list
@@ -175,7 +176,6 @@ def fix_symlink_if_necessary(src_dir: str, dst_dir: str) -> None:
         src_dir: Source directory of the original virtual environment
         dst_dir: Destination directory where it should be cloned to
     """
-
     logger.info(
         "Scanning for internal symlinks that point to the original virtual env."
     )
@@ -278,7 +278,7 @@ def fixup_script_(
         return
 
     def rewrite_shebang(python_version: Optional[str] = None):
-        """Overwrite shebang of a given file with new_shebang
+        """Overwrite shebang of a given file with new_shebang.
 
         Args:
             python_version: Python version
@@ -384,7 +384,7 @@ def fixup_link(
 
 
 def _replace_symlink(filename: str, newtarget: str) -> None:
-    """Replace any symlinks with absolute path target
+    """Replace any symlinks with absolute path target.
 
     Args:
         filename: Name of the file
@@ -401,7 +401,9 @@ def _replace_symlink(filename: str, newtarget: str) -> None:
         shutil.move(tmpfn, filename)
 
 
-def fixup_syspath_items(syspath: List[str], old_dir: str, new_dir: str) -> None:
+def fixup_syspath_items(
+    syspath: List[str], old_dir: str, new_dir: str
+) -> None:
     """Replace mentions of the old venv in sys path with the new venv.
 
     Args:

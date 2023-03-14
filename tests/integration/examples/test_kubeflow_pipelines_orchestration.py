@@ -26,9 +26,7 @@ def test_example(request: pytest.FixtureRequest) -> None:
     with run_example(
         request=request,
         name="kubeflow_pipelines_orchestration",
-        pipeline_name="mnist_pipeline",
-        step_count=4,
-        run_count=1,
+        pipelines={"mnist_pipeline": (1, 4)},
     ) as (example, _):
         # Cleanup the tensorboard daemon
         example.run_example_directly("--stop-tensorboard")

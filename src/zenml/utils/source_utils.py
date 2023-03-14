@@ -57,11 +57,28 @@ from zenml.enums import StackComponentType
 from zenml.environment import Environment
 from zenml.logger import get_logger
 
-logger = get_logger(__name__)
-
 if TYPE_CHECKING:
     from zenml.stack.flavor import Flavor
     from zenml.stack.stack_component import StackComponentConfig
+
+
+logger = get_logger(__name__)
+
+_CUSTOM_SOURCE_ROOT: Optional[str] = None
+
+
+def set_custom_source_root(source_root: Optional[str]) -> None:
+    """Sets a custom source root.
+
+    If set this has the highest priority and will always be used as the source
+    root.
+
+    Args:
+        source_root: The source root to use.
+    """
+    logger.debug("Setting custom source root: %s", source_root)
+    global _CUSTOM_SOURCE_ROOT
+    _CUSTOM_SOURCE_ROOT = source_root
 
 
 def is_inside_repository(file_path: str) -> bool:
@@ -242,6 +259,9 @@ def get_source_root_path() -> str:
     Raises:
         RuntimeError: if the main module was not started or determined.
     """
+    if _CUSTOM_SOURCE_ROOT:
+        return _CUSTOM_SOURCE_ROOT
+
     from zenml.client import Client
 
     repo_root = Client.find_repository()
@@ -376,7 +396,7 @@ def resolve_class(class_: Type[Any], replace_main_module: bool = True) -> str:
 
     try:
         file_path = inspect.getfile(class_)
-    except TypeError:
+    except (TypeError, OSError):
         # builtin file
         return initial_source
 
@@ -412,11 +432,26 @@ def get_main_module_source() -> str:
     return get_module_source_from_module(main_module)
 
 
+def import_by_path(path: str) -> Any:
+    """Imports a module attribute.
+
+    Args:
+        path: The source path of the attribute to import, e.g.
+            `some.module.attribute_name`.
+
+    Returns:
+        The imported attribute.
+    """
+    module_name, attribute_name = path.rsplit(".", 1)
+    module = importlib.import_module(module_name)
+    return getattr(module, attribute_name)
+
+
 def import_class_by_path(class_path: str) -> Type[Any]:
     """Imports a class based on a given path.
 
     Args:
-        class_path: str, class_source e.g. this.module.Class
+        class_path: Class source, e.g., `this.module.Class`
 
     Returns:
         the given class
@@ -447,24 +482,20 @@ def prepend_python_path(paths: List[str]) -> Iterator[None]:
             sys.path.remove(path)
 
 
-# TODO: can we cache this?
-def load_source_path_class(
-    source: str, import_path: Optional[str] = None
-) -> Type[Any]:
-    """Loads a Python class from the source.
+def load_source_path(source: str, import_path: Optional[str] = None) -> Any:
+    """Loads a python object from the source.
 
     Args:
-        source: class_source e.g. this.module.Class[@sha]
+        source: The source, e.g. this.module.Class
         import_path: optional path to add to python path
 
     Returns:
-        the given class
+        The object located at the source path.
     """
-    from zenml.client import Client
-
-    repo_root = Client.find_repository()
-    if not import_path and repo_root:
-        import_path = str(repo_root)
+    if not import_path:
+        source_root = get_source_root_path()
+        if source_root not in sys.path:
+            import_path = source_root
 
     source = remove_internal_version_pin(source)
 
@@ -473,8 +504,8 @@ def load_source_path_class(
             logger.debug(
                 f"Loading class {source} with import path {import_path}"
             )
-            return import_class_by_path(source)
-    return import_class_by_path(source)
+            return import_by_path(source)
+    return import_by_path(source)
 
 
 # Ideally both the expected_class and return type should be annotated with a
@@ -496,7 +527,7 @@ def load_and_validate_class(
     Returns:
         The resolved source class.
     """
-    class_ = load_source_path_class(source)
+    class_ = load_source_path(source)
 
     if isinstance(class_, type) and issubclass(class_, expected_class):
         return class_
@@ -518,7 +549,7 @@ def validate_source_class(source: str, expected_class: Type[Any]) -> bool:
         If the source resolves to the expected class.
     """
     try:
-        value = load_source_path_class(source)
+        value = load_source_path(source)
     except Exception:
         return False
 
@@ -574,16 +605,21 @@ def validate_flavor_source(
             StackComponent which has the right component type.
     """
     from zenml.stack.flavor import Flavor
-    from zenml.stack.stack_component import StackComponent, StackComponentConfig
+    from zenml.stack.stack_component import (
+        StackComponent,
+        StackComponentConfig,
+    )
 
     try:
-        flavor_class = load_source_path_class(source)
+        flavor_class = load_source_path(source)
     except (ValueError, AttributeError, ImportError) as e:
         raise ValueError(
             f"ZenML can not import the flavor class '{source}': {e}"
         )
 
-    if not issubclass(flavor_class, Flavor):
+    if not (
+        inspect.isclass(flavor_class) and issubclass(flavor_class, Flavor)
+    ):
         raise TypeError(
             f"The source '{source}' does not point to a subclass of the ZenML"
             f"Flavor."
@@ -624,7 +660,7 @@ def validate_flavor_source(
             f"needs to be a subclass of the ZenML StackComponentConfig."
         )
 
-    return flavor_class  # noqa
+    return flavor_class
 
 
 def validate_config_source(
@@ -646,16 +682,19 @@ def validate_config_source(
     from zenml.stack.stack_component import StackComponentConfig
 
     try:
-        config_class = load_source_path_class(source)
+        config_class = load_source_path(source)
     except (ValueError, AttributeError, ImportError) as e:
         raise ValueError(
             f"ZenML can not import the config class '{source}': {e}"
         )
 
-    if not issubclass(config_class, StackComponentConfig):
+    if not (
+        inspect.isclass(config_class)
+        and issubclass(config_class, StackComponentConfig)
+    ):
         raise TypeError(
             f"The source path '{source}' does not point to a subclass of "
             f"the ZenML config_class."
         )
 
-    return config_class  # noqa
+    return config_class

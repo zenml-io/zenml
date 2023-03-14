@@ -17,6 +17,7 @@ import logging
 import platform
 import shutil
 from enum import Enum
+from functools import partial
 from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 from uuid import UUID
 
@@ -25,12 +26,13 @@ from pydantic import Extra, Field
 
 from tests.harness.model.base import BaseTestConfigModel
 from tests.harness.model.secret import BaseTestSecretConfigModel
+from zenml.client import Client
 from zenml.enums import StackComponentType
+from zenml.utils.pagination_utils import depaginate
 
 if TYPE_CHECKING:
     from tests.harness.environment import TestEnvironment
     from tests.harness.harness import TestHarness
-    from zenml.client import Client
     from zenml.models.component_models import ComponentResponseModel
 
 
@@ -95,11 +97,14 @@ class StackRequirement(BaseTestConfigModel):
         Returns:
             The stack component or None if no component was found.
         """
-        components = client.list_stack_components(
-            user_name_or_id=client.active_user.id,
-            name=self.name or None,
-            component_type=self.type,
-            flavor_name=self.flavor,
+        components = depaginate(
+            partial(
+                client.list_stack_components,
+                user_id=client.active_user.id,
+                name=self.name or None,
+                type=self.type,
+                flavor=self.flavor,
+            )
         )
 
         mandatory_components: List[UUID] = []
@@ -223,13 +228,12 @@ class StackRequirement(BaseTestConfigModel):
             RuntimeError: If the configured component flavor is not found in
                 ZenML.
         """
-        from zenml.stack.flavor_registry import flavor_registry
-
         if self.flavor is None:
             return None
 
+        client = Client()
         try:
-            flavor = flavor_registry.get_flavor_by_name_and_type(
+            flavor = client.get_flavor_by_name_and_type(
                 component_type=self.type, name=self.flavor
             )
         except KeyError:

@@ -164,7 +164,9 @@ class DeepchecksDataIntegrityCheck(DeepchecksValidationCheck):
     """
 
     TABULAR_COLUMNS_INFO = resolve_class(tabular_checks.ColumnsInfo)
-    TABULAR_CONFLICTING_LABELS = resolve_class(tabular_checks.ConflictingLabels)
+    TABULAR_CONFLICTING_LABELS = resolve_class(
+        tabular_checks.ConflictingLabels
+    )
     TABULAR_DATA_DUPLICATES = resolve_class(tabular_checks.DataDuplicates)
     TABULAR_FEATURE_FEATURE_CORRELATION = resolve_class(
         FeatureFeatureCorrelation
@@ -172,7 +174,9 @@ class DeepchecksDataIntegrityCheck(DeepchecksValidationCheck):
     TABULAR_FEATURE_LABEL_CORRELATION = resolve_class(
         tabular_checks.FeatureLabelCorrelation
     )
-    TABULAR_IDENTIFIER_LEAKAGE = resolve_class(tabular_checks.IdentifierLeakage)
+    TABULAR_IDENTIFIER_LEAKAGE = resolve_class(
+        tabular_checks.IdentifierLeakage
+    )
     TABULAR_IS_SINGLE_VALUE = resolve_class(tabular_checks.IsSingleValue)
     TABULAR_MIXED_DATA_TYPES = resolve_class(tabular_checks.MixedDataTypes)
     TABULAR_MIXED_NULLS = resolve_class(tabular_checks.MixedNulls)
@@ -329,7 +333,9 @@ class DeepchecksModelDriftCheck(DeepchecksValidationCheck):
     TABULAR_MODEL_ERROR_ANALYSIS = resolve_class(
         tabular_checks.ModelErrorAnalysis
     )
-    TABULAR_PERFORMANCE_REPORT = resolve_class(tabular_checks.PerformanceReport)
+    TABULAR_PERFORMANCE_REPORT = resolve_class(
+        tabular_checks.PerformanceReport
+    )
     TABULAR_SIMPLE_MODEL_COMPARISON = resolve_class(
         tabular_checks.SimpleModelComparison
     )
