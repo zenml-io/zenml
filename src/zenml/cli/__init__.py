@@ -196,6 +196,50 @@ Uninstalling a specific integration is as simple as typing:
 zenml integration uninstall INTEGRATION_NAME
 ```
 
+Filtering CLI output when listing
+---------------------------------
+
+Certain CLI `list` commands allow you to filter their output. For example, all
+stack components allow you to pass custom parameters to the `list` command that
+will filter the output. To learn more about the available filters, a good quick
+reference is to use the `--help` command, as in the following example:
+
+```shell zenml orchestrator list --help ```
+
+You will see a list of all the available filters for the `list` command along
+with examples of how to use them.
+
+The `--sort_by` option allows you to sort the output by a specific field and
+takes an `asc` or `desc` argument to specify the order. For example, to sort the
+output of the `list` command by the `name` field in ascending order, you would
+type:
+
+```shell zenml orchestrator list --sort_by "asc:name" ```
+
+For fields marked as being of type `TEXT` or `UUID`, you can use the `contains`,
+`startswith` and `endswith` keywords along with their particular identifier. For
+example, for the orchestrator `list` command, you can use the following filter
+to find all orchestrators that contain the string `sagemaker` in their name:
+
+```shell zenml orchestrator list --name "contains:sagemaker" ```
+
+For fields marked as being of type `BOOL`, you can use the 'True' or 'False'
+values to filter the output. For example, to find all orchestrators that are
+currently shared, you would type:
+
+```shell zenml orchestrator list --is_shared="True" ```
+
+Finally, for fields marked as being of type `DATETIME`, you can pass in datetime
+values in the `%Y-%m-%d %H:%M:%S` format. These can be combined with the `gte`,
+`lte`, `gt` and `lt` keywords to specify the range of the filter. For example,
+if I wanted to find all orchestrators that were created after the 1st of January
+2021, I would type:
+
+```shell zenml orchestrator list --created "gt:2021-01-01 00:00:00" ```
+
+This  syntax can also be combined to create more complex filters using the `or`
+and `and` keywords.
+
 Customizing your Artifact Store
 -------------------------------
 
