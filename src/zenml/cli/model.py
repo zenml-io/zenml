@@ -638,19 +638,19 @@ def register_model_registry_subcommands() -> None:  # noqa: C901
         """
         # Parse metadata
         metadata = dict(metadata) if metadata else {}
-        registerted_metadata = ModelRegistryModelMetadata(**dict(metadata))
-        registerted_metadata.zenml_version = zenml_version
-        registerted_metadata.zenml_run_name = (
+        registered_metadata = ModelRegistryModelMetadata(**dict(metadata))
+        registered_metadata.zenml_version = zenml_version
+        registered_metadata.zenml_run_name = (
             zenml_run_name or zenml_pipeline_run_id
         )
-        registerted_metadata.zenml_pipeline_name = zenml_pipeline_name
-        registerted_metadata.zenml_step_name = zenml_step_name
+        registered_metadata.zenml_pipeline_name = zenml_pipeline_name
+        registered_metadata.zenml_step_name = zenml_step_name
         model_version = model_registry.register_model_version(
             name=name,
             version=version,
             model_source_uri=model_uri,
             description=description,
-            metadata=registerted_metadata,
+            metadata=registered_metadata,
         )
         cli_utils.declare(
             f"Model {name} version {version} registered successfully."
