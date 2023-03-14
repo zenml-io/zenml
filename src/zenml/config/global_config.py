@@ -702,35 +702,6 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
 
         return self._zen_store
 
-    @property
-    def env_var_dict(self) -> Dict[str, str]:
-        dict_ = {}
-
-        for key in self.__fields__.keys():
-            if key == "store":
-                continue
-
-            value = getattr(self, key)
-            if value is not None:
-                dict_[CONFIG_ENV_VAR_PREFIX + key.upper()] = str(value)
-
-        if self.store:
-            store_dict = self.store.dict(exclude_none=True)
-            secrets_store_dict = store_dict.pop("secrets_store", None) or {}
-
-            for key, value in store_dict.items():
-                if key == "password":
-                    continue
-
-                dict_[ENV_ZENML_STORE_PREFIX + key.upper()] = str(value)
-
-            for key, value in secrets_store_dict.items():
-                dict_[ENV_ZENML_SECRETS_STORE_PREFIX + key.upper()] = str(
-                    value
-                )
-
-        return dict_
-
     def set_active_workspace(
         self, workspace: "WorkspaceResponseModel"
     ) -> "WorkspaceResponseModel":

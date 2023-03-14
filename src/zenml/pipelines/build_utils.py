@@ -14,10 +14,8 @@
 """Pipeline build utilities."""
 import hashlib
 import platform
-from types import FunctionType
 from typing import (
     TYPE_CHECKING,
-    Any,
     Dict,
     List,
     Optional,
@@ -29,7 +27,6 @@ import zenml
 from zenml.client import Client
 from zenml.code_repositories import BaseCodeRepository
 from zenml.config.docker_settings import SourceFileMode
-from zenml.config.step_configurations import StepConfigurationUpdate
 from zenml.logger import get_logger
 from zenml.models import (
     PipelineBuildRequestModel,
@@ -51,55 +48,8 @@ from zenml.utils.pipeline_docker_image_builder import (
 if TYPE_CHECKING:
     from zenml.code_repositories import LocalRepository
     from zenml.config.build_configuration import BuildConfiguration
-    from zenml.config.source import Source
-
-    StepConfigurationUpdateOrDict = Union[
-        Dict[str, Any], StepConfigurationUpdate
-    ]
-    HookSpecification = Union[str, "Source", FunctionType]
 
 logger = get_logger(__name__)
-
-
-def verify_local_repository(
-    deployment: "PipelineDeploymentBaseModel",
-    local_repo: Optional["LocalRepository"],
-) -> Optional[BaseCodeRepository]:
-    if deployment.requires_code_download:
-        if not local_repo:
-            raise RuntimeError(
-                "The `DockerSettings` of the pipeline or one of its "
-                "steps specify that code should be included in the "
-                "Docker image (`source_files='download'`), but there is no "
-                "code repository active at your current source root "
-                f"`{source_utils_v2.get_source_root()}`."
-            )
-        elif local_repo.is_dirty:
-            raise RuntimeError(
-                "The `DockerSettings` of the pipeline or one of its "
-                "steps specify that code should be included in the "
-                "Docker image (`source_files='download'`), but the code "
-                "repository active at your current source root "
-                f"`{source_utils_v2.get_source_root()}` has uncommited "
-                "changes."
-            )
-        elif local_repo.has_local_changes:
-            raise RuntimeError(
-                "The `DockerSettings` of the pipeline or one of its "
-                "steps specify that code should be included in the "
-                "Docker image (`source_files='download'`), but the code "
-                "repository active at your current source root "
-                f"`{source_utils_v2.get_source_root()}` has unpushed "
-                "changes."
-            )
-
-    code_repository = None
-
-    if local_repo and not local_repo.has_local_changes:
-        model = Client().get_code_repository(local_repo.code_repository_id)
-        code_repository = BaseCodeRepository.from_model(model)
-
-    return code_repository
 
 
 def reuse_or_create_pipeline_build(
@@ -115,16 +65,16 @@ def reuse_or_create_pipeline_build(
     Args:
         deployment: The pipeline deployment for which to load or create the
             build.
-        pipeline_spec: Spec of the pipeline.
-        allow_code_download: If True, the build is allowed to download code
-            from the code repository.
+        pipeline_version_hash: The version hash of the pipeline for which
+            to reuse or create the build.
         allow_build_reuse: If True, the build is allowed to reuse an
             existing build.
         pipeline_id: Optional ID of the pipeline to reference in the build.
         build: Optional existing build. If given, the build will be loaded
             (or registered) in the database. If not given, a new build will
             be created.
-        code_repository: Optional code repository to use for the build.
+        code_repository: If provided, this code repository will be used to
+            download inside the build images.
 
     Returns:
         The build response.
@@ -181,6 +131,16 @@ def find_existing_build(
     deployment: "PipelineDeploymentBaseModel",
     code_repository: Optional["BaseCodeRepository"] = None,
 ) -> Optional["PipelineBuildResponseModel"]:
+    """Find an existing build for a deployment.
+
+    Args:
+        deployment: The deployment for which to find an existing build.
+        code_repository: The code repository that will be used to download
+            files in the images.
+
+    Returns:
+        The existing build to reuse if found.
+    """
     client = Client()
     stack = client.active_stack
 
@@ -222,10 +182,10 @@ def create_pipeline_build(
     """Builds images and registers the output in the server.
 
     Args:
-        deployment: The compiled pipeline deployment.
-        allow_code_download: If True, the build is allowed to download code
-            from the code repository.
+        deployment: The pipeline deployment.
         pipeline_id: The ID of the pipeline.
+        code_repository: If provided, this code repository will be used to
+            download inside the build images.
 
     Returns:
         The build output.
@@ -350,12 +310,26 @@ def compute_build_checksum(
     stack: "Stack",
     code_repository: Optional["BaseCodeRepository"] = None,
 ) -> str:
+    """Compute an overall checksum for a pipeline build.
+
+    Args:
+        items: Items of the build.
+        stack: The stack associated with the build. Will be used to gather
+            its requirements.
+        code_repository: The code repository that will be used to download
+            files inside the build. Will be used for its dependency
+            specification.
+
+    Returns:
+        The build checksum.
+    """
     hash_ = hashlib.md5()
 
     for item in items:
         key = PipelineBuildBaseModel.get_image_key(
             component_key=item.key, step=item.step_name
         )
+        # TODO: this shouldn't always pass the code repo, only if actually downloading
         settings_checksum = item.compute_settings_checksum(
             stack=stack, code_repository=code_repository
         )
@@ -366,16 +340,82 @@ def compute_build_checksum(
     return hash_.hexdigest()
 
 
+def verify_local_repository(
+    deployment: "PipelineDeploymentBaseModel",
+    local_repo: Optional["LocalRepository"],
+) -> Optional[BaseCodeRepository]:
+    """Verifies the local repository.
+
+    If the local repository exists and has no local changes, code download
+    inside the images is possible.
+
+    Args:
+        deployment: The pipeline deployment.
+        local_repo: The local repository active at the source root.
+
+    Raises:
+        RuntimeError: If the deployment requires code download but code download
+            is not possible.
+
+    Returns:
+        The code repository from which to download files for the runs of the
+        deployment, or None if code download is not possible.
+    """
+    if deployment.requires_code_download:
+        if not local_repo:
+            raise RuntimeError(
+                "The `DockerSettings` of the pipeline or one of its "
+                "steps specify that code should be included in the "
+                "Docker image (`source_files='download'`), but there is no "
+                "code repository active at your current source root "
+                f"`{source_utils_v2.get_source_root()}`."
+            )
+        elif local_repo.is_dirty:
+            raise RuntimeError(
+                "The `DockerSettings` of the pipeline or one of its "
+                "steps specify that code should be included in the "
+                "Docker image (`source_files='download'`), but the code "
+                "repository active at your current source root "
+                f"`{source_utils_v2.get_source_root()}` has uncommited "
+                "changes."
+            )
+        elif local_repo.has_local_changes:
+            raise RuntimeError(
+                "The `DockerSettings` of the pipeline or one of its "
+                "steps specify that code should be included in the "
+                "Docker image (`source_files='download'`), but the code "
+                "repository active at your current source root "
+                f"`{source_utils_v2.get_source_root()}` has unpushed "
+                "changes."
+            )
+
+    code_repository = None
+
+    if local_repo and not local_repo.has_local_changes:
+        model = Client().get_code_repository(local_repo.code_repository_id)
+        code_repository = BaseCodeRepository.from_model(model)
+
+    return code_repository
+
+
 def verify_custom_build(
     build: "PipelineBuildResponseModel",
     deployment: "PipelineDeploymentBaseModel",
     pipeline_version_hash: str,
     code_repository: Optional["BaseCodeRepository"] = None,
 ) -> None:
-    """Validates the build of a pipeline deployment.
+    """Verify a custom build for a pipeline deployment.
 
     Args:
-        deployment: The deployment for which to validate the build.
+        build: The build to verify.
+        deployment: The deployment for which to verify the build.
+        pipeline_version_hash: The version hash of the pipeline for which the
+            build will be used.
+        code_repository: Code repository that will be used to download files
+            for the deployment.
+
+    Raises:
+        RuntimeError: If the build can't be used for the deployment.
     """
     stack = Client().active_stack
     required_builds = stack.get_docker_builds(deployment=deployment)

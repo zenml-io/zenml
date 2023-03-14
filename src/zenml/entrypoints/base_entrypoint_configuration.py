@@ -190,6 +190,15 @@ class BaseEntrypointConfiguration(ABC):
     def download_code_if_necessary(
         self, deployment: "PipelineDeploymentResponseModel"
     ) -> None:
+        """Downloads user code if necessary.
+
+        Args:
+            deployment: The deployment for which to download the code.
+
+        Raises:
+            RuntimeError: If the current environment requires code download
+                but the deployment does not have an associated code reference.
+        """
         requires_code_download = handle_bool_env_var(
             ENV_ZENML_REQUIRES_CODE_DOWNLOAD
         )
@@ -197,32 +206,32 @@ class BaseEntrypointConfiguration(ABC):
         if not requires_code_download:
             return
 
-        repo_reference = deployment.code_reference
-        if not repo_reference:
+        code_reference = deployment.code_reference
+        if not code_reference:
             raise RuntimeError(
-                "Code download required but no code repository configured."
+                "Code download required but no code reference provided."
             )
 
         logger.info(
             "Downloading code from code repository `%s` (commit `%s`).",
-            repo_reference.code_repository.name,
-            repo_reference.commit,
+            code_reference.code_repository.name,
+            code_reference.commit,
         )
-        model = Client().get_code_repository(repo_reference.code_repository.id)
+        model = Client().get_code_repository(code_reference.code_repository.id)
         repo = BaseCodeRepository.from_model(model)
         code_repo_root = os.path.abspath("code")
         download_dir = os.path.join(
-            code_repo_root, repo_reference.subdirectory
+            code_repo_root, code_reference.subdirectory
         )
         os.makedirs(download_dir)
         repo.download_files(
-            commit=repo_reference.commit,
+            commit=code_reference.commit,
             directory=download_dir,
-            repo_sub_directory=repo_reference.subdirectory,
+            repo_sub_directory=code_reference.subdirectory,
         )
         source_utils.set_custom_source_root(download_dir)
         source_utils_v2.set_custom_code_repository(
-            root=code_repo_root, commit=repo_reference.commit, repo=repo
+            root=code_repo_root, commit=code_reference.commit, repo=repo
         )
         # Add downloaded file directory to python path
         sys.path.insert(0, download_dir)

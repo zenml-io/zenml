@@ -60,10 +60,10 @@ class PipelineDeploymentBaseModel(BaseModel):
 
     @property
     def requires_included_files(self) -> bool:
-        """Whether the pipeline requires included files.
+        """Whether the deployment requires included files.
 
         Returns:
-            Whether the pipeline requires included files.
+            Whether the deployment requires included files.
         """
         if (
             self.pipeline_configuration.docker_settings.source_files
@@ -78,6 +78,11 @@ class PipelineDeploymentBaseModel(BaseModel):
 
     @property
     def requires_code_download(self) -> bool:
+        """Whether the deployment requires downloading some code files.
+
+        Returns:
+            Whether the deployment requires downloading some code files.
+        """
         if (
             self.pipeline_configuration.docker_settings.source_files
             == SourceFileMode.DOWNLOAD

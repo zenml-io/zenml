@@ -218,7 +218,9 @@ class PipelineDockerImageBuilder:
                 docker_settings=docker_settings,
                 build_context=build_context,
                 stack=stack,
-                code_repository=code_repository,
+                # Only pass code repo to include its dependencies if we actually
+                # need to download code
+                code_repository=code_repository if download_files else None,
             )
 
             apt_packages = docker_settings.apt_packages

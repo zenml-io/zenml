@@ -53,6 +53,8 @@ class BuildConfiguration(BaseModel):
             stack: The stack for which to compute the checksum. This is needed
                 to gather the stack integration requirements in case the
                 Docker settings specify to install them.
+            code_repository: Optional code repository that will be used to
+                download files inside the image.
 
         Returns:
             The checksum.

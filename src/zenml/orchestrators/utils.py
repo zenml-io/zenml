@@ -18,10 +18,15 @@ from typing import TYPE_CHECKING, Dict, Optional
 from uuid import UUID
 
 from zenml.client import Client
-from zenml.config.global_config import GlobalConfiguration
+from zenml.config.global_config import (
+    CONFIG_ENV_VAR_PREFIX,
+    GlobalConfiguration,
+)
 from zenml.constants import (
     ENV_ZENML_ACTIVE_STACK_ID,
     ENV_ZENML_ACTIVE_WORKSPACE_ID,
+    ENV_ZENML_SECRETS_STORE_PREFIX,
+    ENV_ZENML_STORE_PREFIX,
 )
 from zenml.logger import get_logger
 from zenml.utils import uuid_utils
@@ -89,15 +94,46 @@ def is_setting_enabled(
 
 
 def get_config_environment_vars() -> Dict[str, str]:
-    environment = GlobalConfiguration().env_var_dict
+    """Gets environment variables to set for mirroring the active config.
+
+    Returns:
+        Environment variable dict.
+    """
+    global_config = GlobalConfiguration()
+    environment_vars = {}
+
+    for key in global_config.__fields__.keys():
+        if key == "store":
+            continue
+
+        value = getattr(global_config, key)
+        if value is not None:
+            environment_vars[CONFIG_ENV_VAR_PREFIX + key.upper()] = str(value)
+
+    if global_config.store:
+        store_dict = global_config.store.dict(exclude_none=True)
+        secrets_store_dict = store_dict.pop("secrets_store", None) or {}
+
+        for key, value in store_dict.items():
+            if key == "password":
+                # Don't include the password as we use the token to authenticate
+                # with the server
+                continue
+
+            environment_vars[ENV_ZENML_STORE_PREFIX + key.upper()] = str(value)
+
+        for key, value in secrets_store_dict.items():
+            environment_vars[
+                ENV_ZENML_SECRETS_STORE_PREFIX + key.upper()
+            ] = str(value)
 
     # Make sure to use the correct active stack/workspace which might come
     # from a .zen repository and not the global config
-    environment[ENV_ZENML_ACTIVE_STACK_ID] = str(
+    environment_vars[ENV_ZENML_ACTIVE_STACK_ID] = str(
         Client().active_stack_model.id
     )
-    environment[ENV_ZENML_ACTIVE_WORKSPACE_ID] = str(
+    environment_vars[ENV_ZENML_ACTIVE_WORKSPACE_ID] = str(
         Client().active_workspace.id
     )
 
-    return environment
+    return environment_vars
