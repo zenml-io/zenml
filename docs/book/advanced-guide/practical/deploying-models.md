@@ -83,7 +83,7 @@ def seldon_model_deployer_step(
         implementation="TENSORFLOW_SERVER",
         secret_name="seldon-secret",
         pipeline_name = step_env.pipeline_name,
-        rune_name = step_env.rune_name,
+        run_name = step_env.run_name,
         pipeline_step_name = step_env.step_name,
     )
 
