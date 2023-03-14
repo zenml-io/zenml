@@ -25,7 +25,7 @@ logger = get_logger(__name__)
 
 class SourceType(Enum):
     USER = "user"
-    BUILTIN = "builtin"  # TODO: maybe store python version?
+    BUILTIN = "builtin"
     INTERNAL = "internal"
     DISTRIBUTION_PACKAGE = "distribution_package"
     CODE_REPOSITORY = "code_repository"

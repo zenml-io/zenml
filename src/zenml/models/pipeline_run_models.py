@@ -36,6 +36,7 @@ from zenml.models.base_models import (
 )
 from zenml.models.constants import STR_FIELD_MAX_LENGTH
 from zenml.models.filter_models import WorkspaceScopedFilterModel
+from zenml.utils import deprecation_utils
 
 if TYPE_CHECKING:
     from sqlalchemy.sql.elements import BinaryExpression, BooleanClauseList
@@ -98,8 +99,11 @@ class PipelineRunBaseModel(BaseModel):
             "(OS, Python version, etc.)."
         ),
     )
-    # TODO: this is deprecated and will be removed in the future
     git_sha: Optional[str] = None
+
+    _deprecation_validator = deprecation_utils.deprecate_pydantic_attributes(
+        "git_sha"
+    )
 
 
 # -------- #

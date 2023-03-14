@@ -140,7 +140,7 @@ class PipelineRunSchema(NamedSchema, table=True):
     orchestrator_environment: Optional[str] = Field(
         sa_column=Column(TEXT, nullable=True)
     )
-    # TODO: this is deprecated and will be removed in the future
+    # This is deprecated, The warning is on the associated model class
     git_sha: Optional[str] = Field(nullable=True)
 
     run_metadata: List["RunMetadataSchema"] = Relationship(
