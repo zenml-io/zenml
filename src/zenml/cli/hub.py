@@ -469,36 +469,36 @@ def uninstall_plugin(plugin_name: str, version: Optional[str] = None) -> None:
         logger.info(f"Successfully uninstalled plugin '{display_name}'.")
 
 
-@hub.command("pull")
+@hub.command("clone")
 @click.argument("plugin_name", type=str, required=True)
 @click.option(
     "--version",
     "-v",
     type=str,
-    help="Version of the plugin to pull.",
+    help="Version of the plugin to clone.",
 )
 @click.option(
     "--output_dir",
     type=str,
-    help="Output directory to pull the plugin to.",
+    help="Output directory to clone the plugin to.",
 )
-def pull_plugin(
+def clone_plugin(
     plugin_name: str,
     version: Optional[str] = None,
     output_dir: Optional[str] = None,
 ) -> None:
-    """Pull a plugin from the hub.
+    """Clone a plugin from the hub.
 
     Args:
         plugin_name: Name of the plugin.
         version: Version of the plugin. If not specified, the latest version
             will be used.
-        output_dir: Output directory to pull the plugin to. If not specified,
-            the plugin will be pulled to a directory with the same name as the
+        output_dir: Output directory to clone the plugin to. If not specified,
+            the plugin will be cloned to a directory with the same name as the
             plugin in the current working directory.
     """
     with event_handler(
-        event=AnalyticsEvent.ZENML_HUB_PLUGIN_PULL,
+        event=AnalyticsEvent.ZENML_HUB_PLUGIN_CLONE,
         metadata={
             "hub_url": get_server_url(),
             "plugin_name": plugin_name,
@@ -521,7 +521,7 @@ def pull_plugin(
         # Clone the source repo
         if output_dir is None:
             output_dir = os.path.join(os.getcwd(), plugin_name)
-        logger.info(f"Pulling plugin '{display_name}' to {output_dir}...")
+        logger.info(f"Cloning plugin '{display_name}' to {output_dir}...")
         # If no subdir is set, we can clone directly into output_dir
         if not subdir:
             repo_path = plugin_dir = output_dir
@@ -537,7 +537,7 @@ def pull_plugin(
         try:
             _clone_repo(url=repo_url, to_path=repo_path, commit=commit)
             shutil.move(plugin_dir, output_dir)
-            logger.info(f"Successfully pulled plugin '{display_name}'.")
+            logger.info(f"Successfully Cloned plugin '{display_name}'.")
         except GitCommandError:
             error(
                 f"Could not find commit '{commit}' in repository '{repo_url}' "
@@ -1157,7 +1157,10 @@ def _ask_for_tags() -> List[str]:
     "--version",
     "-v",
     type=str,
-    help="Version of the plugin to pull.",
+    help=(
+        "Version of the plugin to get the logs for. If not provided, the "
+        "latest version will be used."
+    ),
 )
 def get_logs(plugin_name: str, version: Optional[str] = None) -> None:
     """Get the build logs of a plugin.
