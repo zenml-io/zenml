@@ -21,8 +21,8 @@ from queue import Empty, Queue
 from threading import Thread
 from typing import Any, Callable, List, Optional
 
-import backoff
-import monotonic
+import backoff  # type:ignore[import]
+import monotonic  # type:ignore[import]
 
 from zenml.analytics.request import AnalyticsAPIError, post
 
