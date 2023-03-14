@@ -16,14 +16,13 @@
 This module is based on the 'analytics-python' package created by Segment.
 The base functionalities are adapted to work with the ZenML analytics server.
 """
-import os
 from types import TracebackType
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, Union
 from uuid import UUID
 
 from zenml import __version__
 from zenml.analytics.client import Client
-from zenml.constants import ENV_ZENML_SERVER_FLAG
+from zenml.constants import ENV_ZENML_SERVER_FLAG, handle_bool_env_var
 from zenml.environment import Environment, get_environment
 from zenml.logger import get_logger
 
@@ -59,9 +58,9 @@ class AnalyticsContext:
         self.deployment_type: Optional["ServerDeploymentType"] = None
 
     @property
-    def in_server(self):
+    def in_server(self) -> bool:
         """Flag to check whether the code is running on the server side."""
-        return os.getenv(ENV_ZENML_SERVER_FLAG, False)
+        return handle_bool_env_var(ENV_ZENML_SERVER_FLAG)
 
     def __enter__(self) -> "AnalyticsContext":
         """Enter analytics context manager.
@@ -142,7 +141,7 @@ class AnalyticsContext:
             True if tracking information was sent, False otherwise.
         """
         success = False
-        if self.analytics_opt_in:
+        if self.analytics_opt_in and self.user_id is not None:
             success, _ = Client().identify(
                 user_id=self.user_id,
                 traits=traits,
@@ -165,7 +164,7 @@ class AnalyticsContext:
             True if tracking information was sent, False otherwise.
         """
         success = False
-        if self.analytics_opt_in:
+        if self.analytics_opt_in and self.user_id is not None:
             if traits is None:
                 traits = {}
 
@@ -204,10 +203,15 @@ class AnalyticsContext:
         if properties is None:
             properties = {}
 
-        if not self.analytics_opt_in and event.value not in {
-            AnalyticsEvent.OPT_OUT_ANALYTICS,
-            AnalyticsEvent.OPT_IN_ANALYTICS,
-        }:
+        if (
+            not self.analytics_opt_in
+            and event.value
+            not in {
+                AnalyticsEvent.OPT_OUT_ANALYTICS,
+                AnalyticsEvent.OPT_IN_ANALYTICS,
+            }
+            or self.user_id is None
+        ):
             return False
 
         # add basics

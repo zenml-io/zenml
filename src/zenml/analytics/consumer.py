@@ -19,7 +19,7 @@ The base functionalities are adapted to work with the ZenML analytics server.
 import logging
 from queue import Empty, Queue
 from threading import Thread
-from typing import Any, Callable, List
+from typing import Any, Callable, List, Optional
 
 import backoff
 import monotonic
@@ -40,9 +40,9 @@ class Consumer(Thread):
 
     def __init__(
         self,
-        queue: Queue,
+        queue: Queue,  # type: ignore[type-arg]
         upload_size: int = 100,
-        on_error: Callable = None,
+        on_error: Optional[Callable[..., Any]] = None,
         upload_interval: float = 0.5,
         retries: int = 10,
         timeout: int = 15,
@@ -152,7 +152,7 @@ class Consumer(Thread):
                 # retry on all other errors (e.g. network)
                 return False
 
-        @backoff.on_exception(
+        @backoff.on_exception(  # type: ignore[misc]
             backoff.expo,
             Exception,
             max_tries=self.retries + 1,

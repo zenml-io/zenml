@@ -41,7 +41,7 @@ logger = logging.getLogger(__name__)
 class AnalyticsEncoder(json.JSONEncoder):
     """Helper encoder class for JSON serialization."""
 
-    def default(self, obj):
+    def default(self, obj: Any) -> Any:
         """The default method to handle UUID and 'AnalyticsEvent' objects."""
         from zenml.utils.analytics_utils import AnalyticsEvent
 
@@ -81,7 +81,7 @@ class Client(object):
                 if the 'sync_mode' is set to False.
         """
 
-        on_error: Callable = None
+        on_error: Optional[Callable[..., Any]] = None
         debug: bool = False
         send: bool = True
         sync_mode: bool = False
@@ -97,7 +97,7 @@ class Client(object):
         debug: bool = DefaultConfig.debug,
         max_queue_size: int = DefaultConfig.max_queue_size,
         send: bool = DefaultConfig.send,
-        on_error: Callable = DefaultConfig.on_error,
+        on_error: Optional[Callable[..., Any]] = DefaultConfig.on_error,
         max_retries: int = DefaultConfig.max_retries,
         sync_mode: bool = DefaultConfig.sync_mode,
         timeout: int = DefaultConfig.timeout,
@@ -106,7 +106,7 @@ class Client(object):
         upload_interval: float = DefaultConfig.upload_interval,
     ) -> None:
         """Initialization of the client."""
-        self.queue = queue.Queue(max_queue_size)
+        self.queue = queue.Queue(max_queue_size)  # type: ignore[var-annotated]
         self.on_error = on_error
         self.debug = debug
         self.send = send
