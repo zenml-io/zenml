@@ -172,80 +172,6 @@ def _create_plugin(
     return PluginResponseModel.parse_obj(response)
 
 
-def _stream_plugin_build_logs(plugin_name: str, plugin_version: str) -> None:
-    """Helper function to stream the build logs of a plugin.
-
-    Args:
-        plugin_name: The name of the plugin.
-        plugin_version: The version of the plugin. If not specified, the latest
-            version will be used.
-    """
-    logs_url = (
-        f"{get_server_url}/plugins/{plugin_name}/versions/{plugin_version}"
-        "/logs"
-    )
-    found_logs = False
-    with requests.get(logs_url, stream=True) as response:
-        for line in response.iter_lines(chunk_size=None, decode_unicode=True):
-            found_logs = True
-            if line.startswith("Build failed"):
-                error(line)
-            else:
-                logger.info(line)
-
-    if not found_logs:
-        logger.info(f"No logs found for plugin {plugin_name}:{plugin_version}")
-
-
-def _is_plugin_installed(plugin_name: str) -> bool:
-    """Helper function to check if a plugin is installed.
-
-    Args:
-        plugin_name: The name of the plugin.
-
-    Returns:
-        Whether the plugin is installed.
-    """
-    spec = find_spec(f"zenml.hub.{plugin_name}")
-    return spec is not None
-
-
-def _format_plugins_table(
-    plugins: List[PluginResponseModel],
-) -> List[Dict[str, str]]:
-    """Helper function to format a list of plugins into a table.
-
-    Args:
-        plugins: The list of plugins.
-
-    Returns:
-        The formatted table.
-    """
-    plugins_table = []
-    for plugin in plugins:
-        if _is_plugin_installed(plugin.name):
-            installed_icon = ":white_check_mark:"
-        else:
-            installed_icon = ":x:"
-        plugins_table.append({"INSTALLED": installed_icon, **plugin.dict()})
-    return plugins_table
-
-
-def _plugin_display_name(plugin_name: str, version: Optional[str]) -> str:
-    """Helper function to get the display name of a plugin.
-
-    Args:
-        plugin_name: Name of the plugin.
-        version: Version of the plugin.
-
-    Returns:
-        Display name of the plugin.
-    """
-    if version:
-        return f"{plugin_name}:{version}"
-    return f"{plugin_name}:latest"
-
-
 @cli.group(cls=TagGroup, tag=CliCategories.HUB)
 def hub() -> None:
     """Interact with the ZenML Hub."""
@@ -291,6 +217,27 @@ def list_plugins(mine: bool, installed: bool) -> None:
             ]
         plugins_table = _format_plugins_table(plugins)
         print_table(plugins_table)
+
+
+def _format_plugins_table(
+    plugins: List[PluginResponseModel],
+) -> List[Dict[str, str]]:
+    """Helper function to format a list of plugins into a table.
+
+    Args:
+        plugins: The list of plugins.
+
+    Returns:
+        The formatted table.
+    """
+    plugins_table = []
+    for plugin in plugins:
+        if _is_plugin_installed(plugin.name):
+            installed_icon = ":white_check_mark:"
+        else:
+            installed_icon = ":x:"
+        plugins_table.append({"INSTALLED": installed_icon, **plugin.dict()})
+    return plugins_table
 
 
 @hub.command("install")
@@ -1190,3 +1137,59 @@ def get_logs(plugin_name: str, version: Optional[str] = None) -> None:
         _stream_plugin_build_logs(
             plugin_name=plugin_name, plugin_version=plugin.version
         )
+
+
+def _stream_plugin_build_logs(plugin_name: str, plugin_version: str) -> None:
+    """Helper function to stream the build logs of a plugin.
+
+    Args:
+        plugin_name: The name of the plugin.
+        plugin_version: The version of the plugin. If not specified, the latest
+            version will be used.
+    """
+    logs_url = (
+        f"{get_server_url}/plugins/{plugin_name}/versions/{plugin_version}"
+        "/logs"
+    )
+    found_logs = False
+    with requests.get(logs_url, stream=True) as response:
+        for line in response.iter_lines(chunk_size=None, decode_unicode=True):
+            found_logs = True
+            if line.startswith("Build failed"):
+                error(line)
+            else:
+                logger.info(line)
+
+    if not found_logs:
+        logger.info(f"No logs found for plugin {plugin_name}:{plugin_version}")
+
+
+# GENERAL HELPER FUNCTIONS
+
+
+def _is_plugin_installed(plugin_name: str) -> bool:
+    """Helper function to check if a plugin is installed.
+
+    Args:
+        plugin_name: The name of the plugin.
+
+    Returns:
+        Whether the plugin is installed.
+    """
+    spec = find_spec(f"zenml.hub.{plugin_name}")
+    return spec is not None
+
+
+def _plugin_display_name(plugin_name: str, version: Optional[str]) -> str:
+    """Helper function to get the display name of a plugin.
+
+    Args:
+        plugin_name: Name of the plugin.
+        version: Version of the plugin.
+
+    Returns:
+        Display name of the plugin.
+    """
+    if version:
+        return f"{plugin_name}:{version}"
+    return f"{plugin_name}:latest"
