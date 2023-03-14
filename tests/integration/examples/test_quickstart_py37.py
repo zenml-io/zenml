@@ -28,7 +28,7 @@ def test_example(request: pytest.FixtureRequest) -> None:
     ):
         from zenml.integrations.mlflow.services import MLFlowDeploymentService
 
-        training_run = get_pipeline("training_pipeline").runs[-1]
+        training_run = get_pipeline("training_pipeline").runs[0]
 
         service = training_run.get_step("model_deployer").output.read()
         assert isinstance(service, MLFlowDeploymentService)

@@ -238,6 +238,8 @@ def test_pipeline_decorator_configuration_gets_applied_during_initialization(
     config = {
         "extra": {"key": "value"},
         "settings": {"docker": {"target_repository": "custom_repo"}},
+        "on_failure": None,
+        "on_success": None,
     }
 
     @pipeline(**config)

@@ -18,7 +18,7 @@ from zenml.integrations.kserve.services import KServeDeploymentService
 from zenml.steps import BaseParameters, step
 
 
-class PredectionServiceLoaderStepParameters(BaseParameters):
+class PredictionServiceLoaderStepParameters(BaseParameters):
     """Prediction Service loader parameters.
 
     Attrs:
@@ -34,7 +34,7 @@ class PredectionServiceLoaderStepParameters(BaseParameters):
 
 @step(enable_cache=False)
 def kserve_prediction_service_loader(
-    params: PredectionServiceLoaderStepParameters,
+    params: PredictionServiceLoaderStepParameters,
 ) -> KServeDeploymentService:
     """Get the KServe prediction service started by the deployment pipeline."""
     model_deployer = KServeModelDeployer.get_active_model_deployer()

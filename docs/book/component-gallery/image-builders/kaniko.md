@@ -28,7 +28,7 @@ To use the Kaniko image builder, we need:
 * A [remote container registry](../container-registries/container-registries.md) 
 as part of your stack.
 * By default, the Kaniko image builder transfers the build context using the
-Kubernetes API. If you instead want to transer the build context by storing it in the artifact
+Kubernetes API. If you instead want to transfer the build context by storing it in the artifact
 store, you need to register it with the `store_context_in_artifact_store` attribute set to `True`.
 In this case, you also need a [remote artifact store](../artifact-stores/artifact-stores.md)
 as part of your stack.
