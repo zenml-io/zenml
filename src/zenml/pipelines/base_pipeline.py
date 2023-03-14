@@ -305,13 +305,13 @@ class BasePipeline(metaclass=BasePipelineMeta):
                 overwrite all existing ones. See the general description of this
                 method for an example.
             on_failure: Callback function in event of failure of the step. Can be
-                a function with three possible parameters, `StepContext`, `BaseParameters`,
-                and `BaseException`, or a source path to a function of the same specifications
-                (e.g. `module.my_function`)
+                a function with three possible parameters, `StepContext`,
+                `BaseParameters`, and `BaseException`, or a source path to a
+                function of the same specifications (e.g. `module.my_function`)
             on_success: Callback function in event of failure of the step. Can be
-                a function with two possible parameters, `StepContext` and `BaseParameters, or
-                a source path to a function of the same specifications
-                (e.g. `module.my_function`).
+                a function with two possible parameters, `StepContext` and
+                `BaseParameters, or a source path to a function of the same
+                specifications (e.g. `module.my_function`).
 
         Returns:
             The pipeline instance that this method was called on.
@@ -395,7 +395,8 @@ class BasePipeline(metaclass=BasePipelineMeta):
             settings: Settings for the pipeline.
             step_configurations: Configurations for steps of the pipeline.
             config_path: Path to a yaml configuration file. This file will
-                be parsed as a `zenml.config.pipeline_configurations.PipelineRunConfiguration`
+                be parsed as a
+                `zenml.config.pipeline_configurations.PipelineRunConfiguration`
                 object. Options provided in this file will be overwritten by
                 options provided in code using the other arguments of this
                 method.
@@ -461,7 +462,8 @@ class BasePipeline(metaclass=BasePipelineMeta):
             step_configurations: Configurations for steps of the pipeline.
             extra: Extra configurations for this pipeline run.
             config_path: Path to a yaml configuration file. This file will
-                be parsed as a `zenml.config.pipeline_configurations.PipelineRunConfiguration`
+                be parsed as a
+                `zenml.config.pipeline_configurations.PipelineRunConfiguration`
                 object. Options provided in this file will be overwritten by
                 options provided in code using the other arguments of this
                 method.
@@ -1276,23 +1278,6 @@ class BasePipeline(metaclass=BasePipelineMeta):
 
         if isinstance(build, UUID):
             build_model = Client().zen_store.get_build(build_id=build)
-
-            if build_model.pipeline:
-                build_hash = build_model.pipeline.version_hash
-                current_hash = self._compute_unique_identifier(
-                    pipeline_spec=pipeline_spec
-                )
-
-                if build_hash != current_hash:
-                    logger.warning(
-                        "The pipeline associated with the build you "
-                        "specified for this run has a different spec "
-                        "or step code. This might lead to unexpected "
-                        "behavior as this pipeline run will use the "
-                        "code that was included in the Docker images which "
-                        "might differ from the code in your client "
-                        "environment."
-                    )
         else:
             build_request = PipelineBuildRequestModel(
                 user=Client().active_user.id,
@@ -1303,13 +1288,12 @@ class BasePipeline(metaclass=BasePipelineMeta):
             )
             build_model = Client().zen_store.create_build(build=build_request)
 
-        if build_model.is_local:
-            logger.warning(
-                "You're using a local build to run your pipeline. This "
-                "might lead to errors if the images don't exist on "
-                "your local machine or the image tags have been "
-                "overwritten since the original build happened."
-            )
+        self._validate_custom_build(
+            build=build_model,
+            deployment=deployment,
+            pipeline_spec=pipeline_spec,
+            code_repository=code_repository,
+        )
 
         return build_model
 
@@ -1495,9 +1479,106 @@ class BasePipeline(metaclass=BasePipelineMeta):
             key = PipelineBuildBaseModel.get_image_key(
                 component_key=item.key, step=item.step_name
             )
-            settings_checksum = item.compute_settings_checksum(stack=stack)
+            settings_checksum = item.compute_settings_checksum(
+                stack=stack, code_repository=code_repository
+            )
 
             hash_.update(key.encode())
             hash_.update(settings_checksum.encode())
 
         return hash_.hexdigest()
+
+    def _validate_custom_build(
+        self,
+        build: "PipelineBuildResponseModel",
+        deployment: "PipelineDeploymentBaseModel",
+        pipeline_spec: "PipelineSpec",
+        code_repository: Optional["BaseCodeRepository"] = None,
+    ) -> None:
+        """Validates the build of a pipeline deployment.
+
+        Args:
+            deployment: The deployment for which to validate the build.
+
+        Raises:
+            RuntimeError: If some required images for the deployment are missing
+                in the build.
+        """
+        stack = Client().active_stack
+        required_builds = stack.get_docker_builds(deployment=deployment)
+
+        if build.stack and build.stack.id != stack.id:
+            logger.warning(
+                "The stack `%s` used for the build `%s` is not the same as the "
+                "stack `%s` that the pipeline will run on. This could lead "
+                "to issues if the stacks have different build requirements.",
+                build.stack.name,
+                build.id,
+                stack.name,
+            )
+
+        if build.pipeline:
+            current_hash = self._compute_unique_identifier(
+                pipeline_spec=pipeline_spec
+            )
+
+            if build.pipeline.version_hash != current_hash:
+                logger.warning(
+                    "The pipeline associated with the build you "
+                    "specified for this run has a different spec "
+                    "or step code. This might lead to unexpected "
+                    "behavior as this pipeline run will use the "
+                    "code that was included in the Docker images which "
+                    "might differ from the code in your client "
+                    "environment."
+                )
+
+        if build.checksum:
+            build_checksum = self._compute_build_checksum(
+                required_builds, stack=stack, code_repository=code_repository
+            )
+            if build_checksum != build.checksum:
+                logger.warning(
+                    "The Docker settings used for the build `%s` are "
+                    "not the same as currently specified for you pipeline. "
+                    "This means that the build you specified to run this "
+                    "pipeline might be outdated and most likely contains "
+                    "outdated requirements.",
+                    build.id,
+                )
+
+        else:
+            # No checksum given for the entire build, we manually check that
+            # all the images exist and the setting match
+            for build_config in required_builds:
+                try:
+                    image = build.get_image(
+                        component_key=build_config.key,
+                        step=build_config.step_name,
+                    )
+                except KeyError:
+                    raise RuntimeError(
+                        f"Missing image for key: {build_config.key}."
+                    )
+
+                if build_config.compute_settings_checksum(
+                    stack=stack, code_repository=code_repository
+                ) != build.get_settings_checksum(
+                    component_key=build_config.key, step=build_config.step_name
+                ):
+                    logger.warning(
+                        "The Docker settings used to build the image `%s` are "
+                        "not the same as currently specified for you pipeline. "
+                        "This means that the build you specified to run this "
+                        "pipeline might be outdated and most likely contains "
+                        "outdated code of your steps.",
+                        image,
+                    )
+
+        if build.is_local:
+            logger.warning(
+                "You manually specified a local build to run your pipeline. "
+                "This might lead to errors if the images don't exist on "
+                "your local machine or the image tags have been "
+                "overwritten since the original build happened."
+            )
