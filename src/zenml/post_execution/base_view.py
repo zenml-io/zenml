@@ -110,7 +110,7 @@ class BaseView(ABC):
         if __name in self._model.__fields__:
             return getattr(self._model, __name)
 
-        # Otherwise, fall back to the default behaviour
+        # Otherwise, fall back to the default behavior
         return super().__getattribute__(__name)
 
     def __repr__(self) -> str:

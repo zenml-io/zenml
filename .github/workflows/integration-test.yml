@@ -107,8 +107,8 @@ on:
 
 jobs:
 
-  integrationtest:
-    name: integrationtest
+  integration-tests:
+    name: integration-tests
     runs-on: ${{ inputs.os }}
     env:
       ZENML_DEBUG: 1
@@ -149,7 +149,7 @@ jobs:
           sudo systemctl restart docker
         if: runner.os=='Linux' && (contains(inputs.test_environment, 'docker') || contains(inputs.test_environment, 'kubeflow') || contains(inputs.test_environment, 'airflow') || contains(inputs.test_environment, 'kubernetes'))
 
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
@@ -219,46 +219,6 @@ jobs:
           curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | bash
         if: runner.os!='Windows' && contains(inputs.test_environment, 'kubeflow')
 
-      - name: Install Prerequisites - Stage 1
-        run: |
-          source $VENV
-          # install integrations: round 1
-          zenml integration export-requirements --output-file requirements.txt --ignore-integration feast --ignore-integration label_studio --ignore-integration bentoml --ignore-integration seldon --ignore-integration kserve
-          pip install -r requirements.txt
-          rm requirements.txt
-
-      # - name: Install Prerequisites - Stage 2
-      #   run: |
-      #     source $VENV
-      #     # install integrations: round 2, needed because:
-      #     #  - kserve requires a tritonclient version that is lower that the one needed by mlflow
-      #     #  - seldon requires a prometheus-client version that is lower that the one needed by bentoml
-      #     #  - kserve requires a ray version that is not available on python 3.10
-      #     zenml integration export-requirements --output-file requirements.txt seldon kserve
-      #     pip install -r requirements.txt
-      #     rm requirements.txt
-      #   if: inputs.python-version != '3.10'
-
-      - name: Install Prerequisites - Stage 3
-        run: |
-          source $VENV
-          # re-install zenml to be sure
-          pip install -e ".[server,dev]"
-          # install airflow requirements
-          pip install --upgrade "numpy>=1.21.0,<1.24.0"
-          pip install apache-airflow-providers-docker
-          # Version 4.2.1 raises: AttributeError: type object 'Draft7Validator' has no attribute 'FORMAT_CHECKER'
-          pip install altair==4.2.0
-          # Need this for the Evidently example
-          pip install nltk
-
-      - name: Check Python Env ahead of tests
-        run: |
-          source $VENV
-          zenml integration list
-          pip list
-          pip check || true
-
       - name: Login to Amazon ECR
         id: login-ecr
         run: |
@@ -292,7 +252,6 @@ jobs:
 
       - name: Test
         run: |
-          source $VENV
           bash scripts/test-coverage-xml.sh integration ${{ inputs.test_environment }}
 
       - name: Setup tmate session after tests
@@ -303,7 +262,6 @@ jobs:
 
       - name: Verify Python Env unaffected
         run: |
-          source $VENV
           zenml integration list
           pip list
           pip check || true

@@ -13,17 +13,13 @@
 #  permissions and limitations under the License.
 from typing import cast
 
-from zenml.integrations.seldon.model_deployers.seldon_model_deployer import (
-    SeldonModelDeployer,
-)
-from zenml.integrations.seldon.services.seldon_deployment import (
-    SeldonDeploymentService,
-)
+from zenml.integrations.kserve.model_deployers import KServeModelDeployer
+from zenml.integrations.kserve.services import KServeDeploymentService
 from zenml.steps import BaseParameters, step
 
 
-class PredectionServiceLoaderStepParameters(BaseParameters):
-    """Prediction Service loader configuration.
+class PredictionServiceLoaderStepParameters(BaseParameters):
+    """Prediction Service loader parameters.
 
     Attrs:
         pipeline_name: name of the pipeline that deployed the model.
@@ -37,11 +33,11 @@ class PredectionServiceLoaderStepParameters(BaseParameters):
 
 
 @step(enable_cache=False)
-def seldon_prediction_service_loader(
-    params: PredectionServiceLoaderStepParameters,
-) -> SeldonDeploymentService:
-    """Get the Seldon Core prediction service started by the deployment pipeline."""
-    model_deployer = SeldonModelDeployer.get_active_model_deployer()
+def kserve_prediction_service_loader(
+    params: PredictionServiceLoaderStepParameters,
+) -> KServeDeploymentService:
+    """Get the KServe prediction service started by the deployment pipeline."""
+    model_deployer = KServeModelDeployer.get_active_model_deployer()
 
     services = model_deployer.find_model_server(
         pipeline_name=params.pipeline_name,
@@ -50,7 +46,7 @@ def seldon_prediction_service_loader(
     )
     if not services:
         raise RuntimeError(
-            f"No Seldon Core prediction server deployed by the "
+            f"No KServe prediction server deployed by the "
             f"'{params.step_name}' step in the '{params.pipeline_name}' "
             f"pipeline for the '{params.model_name}' model is currently "
             f"running."
@@ -58,10 +54,10 @@ def seldon_prediction_service_loader(
 
     if not services[0].is_running:
         raise RuntimeError(
-            f"The Seldon Core prediction server last deployed by the "
+            f"The KServe prediction server last deployed by the "
             f"'{params.step_name}' step in the '{params.pipeline_name}' "
             f"pipeline for the '{params.model_name}' model is not currently "
             f"running."
         )
 
-    return cast(SeldonDeploymentService, services[0])
+    return cast(KServeDeploymentService, services[0])

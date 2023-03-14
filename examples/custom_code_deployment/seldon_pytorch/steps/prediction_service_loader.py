@@ -22,7 +22,7 @@ from zenml.integrations.seldon.services.seldon_deployment import (
 from zenml.steps import BaseParameters, step
 
 
-class PredectionServiceLoaderStepParameters(BaseParameters):
+class PredictionServiceLoaderStepParameters(BaseParameters):
     """Prediction Service loader parameters.
 
     Attrs:
@@ -38,7 +38,7 @@ class PredectionServiceLoaderStepParameters(BaseParameters):
 
 @step(enable_cache=False)
 def seldon_prediction_service_loader(
-    params: PredectionServiceLoaderStepParameters,
+    params: PredictionServiceLoaderStepParameters,
 ) -> SeldonDeploymentService:
     """Get the Seldon Core prediction service started by the deployment pipeline."""
     model_deployer = SeldonModelDeployer.get_active_model_deployer()

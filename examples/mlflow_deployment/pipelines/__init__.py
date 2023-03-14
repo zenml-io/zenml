@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from .continuous_deployment_pipeline.continous_deployment_pipeline import (
+from .continuous_deployment_pipeline.continuous_deployment_pipeline import (
     continuous_deployment_pipeline,
 )
 from .inference_pipeline.inference_pipeline import inference_pipeline
