@@ -81,6 +81,8 @@ class PipelineDockerImageBuilder:
             extra_files: Extra files to add to the build context. Keys are the
                 path inside the build context, values are either the file
                 content or a file path.
+            code_repository: The code repository from which files will be
+                downloaded.
 
         Returns:
             The Docker image repo digest or local name, depending on whether
@@ -322,6 +324,8 @@ class PipelineDockerImageBuilder:
                 requirements to install.
             build_context: Build context to add the requirements files to.
             stack: The stack on which the pipeline will run.
+            code_repository: The code repository from which files will be
+                downloaded.
 
         Returns:
             Name of the requirements files in the build context.
@@ -355,7 +359,9 @@ class PipelineDockerImageBuilder:
             docker_settings: Docker settings that specifies which
                 requirements to install.
             stack: The stack on which the pipeline will run.
-            log: If `True`, will log the requirements.
+            code_repository: The code repository from which files will be
+                downloaded.
+            log: If True, will log the requirements.
 
         Raises:
             RuntimeError: If the command to export the local python packages
@@ -475,6 +481,7 @@ class PipelineDockerImageBuilder:
         Args:
             parent_image: The image to use as parent for the Dockerfile.
             docker_settings: Docker settings for this image build.
+            download_files: Whether to download files in the build context.
             requirements_files: Paths of requirements files to install.
             apt_packages: APT packages to install.
             entrypoint: The default entrypoint command that gets executed when

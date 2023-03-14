@@ -219,6 +219,9 @@ class AirflowOrchestrator(ContainerizedOrchestrator):
         Args:
             deployment: The pipeline deployment to prepare or run.
             stack: The stack the pipeline will run on.
+            environment: Environment variables to set in the orchestration
+                environment.
+
         """
         pipeline_settings = cast(
             AirflowOrchestratorSettings, self.get_settings(deployment)

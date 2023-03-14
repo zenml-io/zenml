@@ -48,6 +48,8 @@ class PythonEnvironmentExportMethod(Enum):
 
 
 class SourceFileMode(Enum):
+    """Different methods to handle source files in Docker images."""
+
     INCLUDE = "include"
     DOWNLOAD_OR_INCLUDE = "download_or_include"
     DOWNLOAD = "download"

@@ -131,6 +131,7 @@ class Source(BaseModel):
 
     class Config:
         """Pydantic config class."""
+
         extra = Extra.allow
 
 

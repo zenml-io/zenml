@@ -143,6 +143,8 @@ class SagemakerStepOperator(BaseStepOperator):
         Args:
             info: Information about the step run.
             entrypoint_command: Command that executes the step.
+            environment: Environment variables to set in the step operator
+                environment.
         """
         if not info.config.resource_settings.empty:
             logger.warning(

@@ -344,6 +344,8 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
         Args:
             deployment: The pipeline deployment to prepare or run.
             stack: The stack the pipeline will run on.
+            environment: Environment variables to set in the orchestration
+                environment.
 
         Raises:
             ValueError: If the attribute `pipeline_root` is not set and it

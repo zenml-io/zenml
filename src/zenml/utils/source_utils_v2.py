@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-
+"""Utilities for loading/resolving objects."""
 import contextlib
 import importlib
 import inspect
@@ -55,6 +55,14 @@ _CODE_REPOSITORY_CACHE: Dict[str, "LocalRepository"] = {}
 
 
 def load(source: Union[Source, str]) -> Any:
+    """Load a source or import path.
+
+    Args:
+        source: The source to load.
+
+    Returns:
+        The loaded object.
+    """
     if isinstance(source, str):
         source = Source.from_import_path(source)
 
@@ -96,6 +104,17 @@ def load(source: Union[Source, str]) -> Any:
 
 
 def resolve(obj: Union[Type[Any], FunctionType, ModuleType]) -> Source:
+    """Resolve an object.
+
+    Args:
+        obj: The object to resolve.
+
+    Raises:
+        RuntimeError: If the object can't be resolved.
+
+    Returns:
+        The source of the resolved object.
+    """
     if id(obj) in _SOURCE_MAPPING:
         return _SOURCE_MAPPING[id(obj)]
 
@@ -160,12 +179,24 @@ def resolve(obj: Union[Type[Any], FunctionType, ModuleType]) -> Source:
 
 
 def get_source_root() -> str:
+    """Get the source root.
+
+    Returns:
+        The source root.
+    """
     return source_utils.get_source_root_path()
 
 
-def set_custom_code_repository(
+def set_custom_local_repository(
     root: str, commit: str, repo: "BaseCodeRepository"
 ) -> None:
+    """Manually defines a local repository for a path.
+
+    Args:
+        root: The repository root.
+        commit: The commit of the repository.
+        repo: The code repository associated with the local repository.
+    """
     from zenml.utils.downloaded_repository import _DownloadedRepository
 
     global _CODE_REPOSITORY_CACHE
@@ -179,6 +210,15 @@ def set_custom_code_repository(
 def find_active_code_repository(
     path: Optional[str] = None,
 ) -> Optional["LocalRepository"]:
+    """Find the active code repository for a given path.
+
+    Args:
+        path: Path at which to look for the code repository. If not given, the
+            source root will be used.
+
+    Returns:
+        The local repository active at that path or None.
+    """
     global _CODE_REPOSITORY_CACHE
     from zenml.client import Client
     from zenml.code_repositories import BaseCodeRepository
@@ -201,20 +241,55 @@ def find_active_code_repository(
 
 
 def is_internal_source(module_name: str) -> bool:
+    """Checks if a module is internal (=part of the zenml package).
+
+    Args:
+        module_name: Name of the module to check.
+
+    Returns:
+        True if the module is internal, False otherwise.
+    """
     return module_name.split(".", maxsplit=1)[0] == "zenml"
 
 
 def is_user_file(file_path: str) -> bool:
+    """Checks if a file is a user file.
+
+    Args:
+        file_path: The file path to check.
+
+    Returns:
+        True if the file is a user file, False otherwise.
+    """
     source_root = get_source_root()
     return Path(source_root) in Path(file_path).resolve().parents
 
 
 def is_standard_lib_file(file_path: str) -> bool:
+    """Checks if a file belongs to the Python standard library.
+
+    Args:
+        file_path: The file path to check.
+
+    Returns:
+        True if the file belongs to the Python standard library, False
+        otherwise.
+    """
     stdlib_root = get_python_lib(standard_lib=True)
     return Path(stdlib_root).resolve() in Path(file_path).resolve().parents
 
 
 def is_distribution_package_file(file_path: str, module_name: str) -> bool:
+    """Checks if a file/module belongs to a distribution package.
+
+    Args:
+        file_path: The file path to check.
+        module_name: The module name.
+
+    Returns:
+        True if the file/module belongs to a distribution package, False
+        otherwise.
+    """
     absolute_file_path = Path(file_path).resolve()
 
     for path in site.getsitepackages() + [site.getusersitepackages()]:
@@ -234,6 +309,14 @@ def is_distribution_package_file(file_path: str, module_name: str) -> bool:
 
 
 def get_source_type(module: ModuleType) -> SourceType:
+    """Get the type of a source.
+
+    Args:
+        module: The module for which to get the source type.
+
+    Returns:
+        The source type.
+    """
     try:
         file_path = inspect.getfile(module)
     except (TypeError, OSError):
@@ -278,6 +361,11 @@ def prepend_python_path(path: str) -> Iterator[None]:
 def _warn_about_potential_source_loading_issues(
     source: CodeRepositorySource,
 ) -> None:
+    """Warn about potential issues when loading the code repository source.
+
+    Args:
+        source: The code repository source.
+    """
     local_repo = find_active_code_repository()
 
     if not local_repo:
@@ -329,9 +417,18 @@ def _warn_about_potential_source_loading_issues(
         )
 
 
-def _resolve_module(
-    module: ModuleType, custom_source_root: Optional[str] = None
-) -> str:
+def _resolve_module(module: ModuleType) -> str:
+    """Resolve a module.
+
+    Args:
+        module: The module to resolve.
+
+    Raises:
+        RuntimeError: If the module resolving failed.
+
+    Returns:
+        The resolved module import path.
+    """
     if not hasattr(module, "__file__") or not module.__file__:
         if module.__name__ == "__main__":
             raise RuntimeError(
@@ -341,9 +438,7 @@ def _resolve_module(
         return module.__name__
 
     module_file = os.path.abspath(module.__file__)
-
-    source_root = custom_source_root or get_source_root()
-    source_root = os.path.abspath(source_root)
+    source_root = os.path.abspath(get_source_root())
 
     module_source_path = os.path.relpath(module_file, source_root)
 
@@ -373,6 +468,17 @@ def _resolve_module(
 def _load_module(
     module_name: str, import_root: Optional[str] = None
 ) -> ModuleType:
+    """Load a module.
+
+    Args:
+        module_name: The name of the module to load.
+        import_root: The import root to use for loading the module. If given,
+            will be prepended to the Python path before trying to import the
+            module.
+
+    Returns:
+        The imported module.
+    """
     if import_root:
         with prepend_python_path(import_root):
             return importlib.import_module(module_name)
@@ -381,6 +487,14 @@ def _load_module(
 
 
 def _get_package_for_module(module_name: str) -> Optional[str]:
+    """Get the package name for a module.
+
+    Args:
+        module_name: The module name.
+
+    Returns:
+        The package name or None if no package was found.
+    """
     top_level_module = module_name.split(".", maxsplit=1)[0]
     package_names = importlib_metadata.packages_distributions().get(
         top_level_module, []
@@ -394,6 +508,14 @@ def _get_package_for_module(module_name: str) -> Optional[str]:
 
 
 def _get_package_version(package_name: str) -> Optional[str]:
+    """Gets the version of a package.
+
+    Args:
+        package_name: The name of the package for which to get the version.
+
+    Returns:
+        The package version or None if fetching the version failed.
+    """
     try:
         version = importlib_metadata.version(distribution_name=package_name)  # type: ignore[no-untyped-call]
         return cast(str, version)

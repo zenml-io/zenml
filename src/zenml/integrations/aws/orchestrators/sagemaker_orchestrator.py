@@ -137,6 +137,9 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
         Args:
             deployment: The deployment to prepare or run.
             stack: The stack to run on.
+            environment: Environment variables to set in the orchestration
+                environment.
+
         """
         if deployment.schedule:
             logger.warning(

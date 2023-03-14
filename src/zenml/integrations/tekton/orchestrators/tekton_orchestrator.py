@@ -307,6 +307,8 @@ class TektonOrchestrator(ContainerizedOrchestrator):
         Args:
             deployment: The pipeline deployment to prepare or run.
             stack: The stack the pipeline will run on.
+            environment: Environment variables to set in the orchestration
+                environment.
 
         Raises:
             RuntimeError: If you try to run the pipelines in a notebook environment.

@@ -119,6 +119,7 @@ class SparkStepOperator(BaseStepOperator):
             spark_config: a SparkConf object which collects all the
                 configuration parameters
             info: Information about the step run.
+            environment: Environment variables to set.
         """
 
     def _io_configuration(self, spark_config: SparkConf) -> None:
@@ -276,6 +277,8 @@ class SparkStepOperator(BaseStepOperator):
         Args:
             info: Information about the step run.
             entrypoint_command: Command that executes the step.
+            environment: Environment variables to set in the step operator
+                environment.
         """
         settings = cast(SparkStepOperatorSettings, self.get_settings(info))
         # Start off with an empty configuration

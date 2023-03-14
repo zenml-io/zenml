@@ -149,6 +149,8 @@ class KubernetesSparkStepOperator(SparkStepOperator):
             spark_config: a SparkConf object which collects all the
                 configuration parameters
             info: Information about the step run.
+            environment: Environment variables to set in the executor
+                environment.
         """
         image_name = info.get_image(key=SPARK_DOCKER_IMAGE_KEY)
 

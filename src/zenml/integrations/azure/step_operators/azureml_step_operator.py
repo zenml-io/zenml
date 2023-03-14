@@ -145,6 +145,8 @@ class AzureMLStepOperator(BaseStepOperator):
             docker_settings: The Docker settings for this step.
             run_name: The name of the pipeline run that can be used
                 for naming environments and runs.
+            environment_variables: Environment variables to set in the
+                environment.
             environment_name: Optional name of an existing environment to use.
 
         Returns:
@@ -223,6 +225,8 @@ class AzureMLStepOperator(BaseStepOperator):
         Args:
             info: Information about the step run.
             entrypoint_command: Command that executes the step.
+            environment: Environment variables to set in the step operator
+                environment.
         """
         if not info.config.resource_settings.empty:
             logger.warning(

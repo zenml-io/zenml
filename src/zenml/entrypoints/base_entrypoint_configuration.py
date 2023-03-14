@@ -230,7 +230,7 @@ class BaseEntrypointConfiguration(ABC):
             repo_sub_directory=code_reference.subdirectory,
         )
         source_utils.set_custom_source_root(download_dir)
-        source_utils_v2.set_custom_code_repository(
+        source_utils_v2.set_custom_local_repository(
             root=code_repo_root, commit=code_reference.commit, repo=repo
         )
         # Add downloaded file directory to python path

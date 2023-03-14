@@ -137,7 +137,8 @@ class BaseOrchestrator(StackComponent, ABC):
         Args:
             deployment: The pipeline deployment to prepare or run.
             stack: The stack the pipeline will run on.
-            environment: The environment variables to use.
+            environment: Environment variables to set in the orchestration
+                environment. These don't need to be set if running locally.
 
         Returns:
             The optional return value from this method will be returned by the
