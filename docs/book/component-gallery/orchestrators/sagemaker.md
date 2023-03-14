@@ -49,8 +49,7 @@ zenml integration install aws s3
 
 * [Docker](https://www.docker.com) installed and running.
 * A [remote artifact store](../artifact-stores/artifact-stores.md) as part of 
-your stack (configured with an `authentication_secret` attribute) along with [a remote secrets manager](../secrets-managers/secrets-managers.md) to store that
-authentication secret.
+your stack (configured with an `authentication_secret` attribute).
 * A [remote container registry](../container-registries/container-registries.md) 
 as part of your stack.
 * An IAM role or user with [an `AmazonSageMakerFullAccess` managed policy](https://docs.aws.amazon.com/sagemaker/latest/dg/security-iam-awsmanpol.html) applied to it

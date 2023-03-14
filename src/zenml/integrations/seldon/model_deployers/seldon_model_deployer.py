@@ -356,14 +356,21 @@ class SeldonModelDeployer(BaseModelDeployer):
                 # Convert the credentials into the format expected by Seldon
                 # Core
                 if azure_credentials.connection_string is not None:
-                    # We need to extract the account name and key from the
-                    # connection string
-                    tokens = azure_credentials.connection_string.split(";")
-                    token_dict = dict(
-                        [token.split("=", maxsplit=1) for token in tokens]
-                    )
-                    account_name = token_dict["AccountName"]
-                    account_key = token_dict["AccountKey"]
+                    try:
+                        # We need to extract the account name and key from the
+                        # connection string
+                        tokens = azure_credentials.connection_string.split(";")
+                        token_dict = dict(
+                            [token.split("=", maxsplit=1) for token in tokens]
+                        )
+                        account_name = token_dict["AccountName"]
+                        account_key = token_dict["AccountKey"]
+                    except (KeyError, ValueError) as e:
+                        raise RuntimeError(
+                            "The Azure connection string configured for the "
+                            "artifact store expected format."
+                        ) from e
+
                     return SeldonAzureSecretSchema(
                         name="",
                         rclone_config_az_account=account_name,

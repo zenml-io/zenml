@@ -446,7 +446,7 @@ zenml model-deployer register seldon_eks --flavor=seldon \
   --base_url=http://$INGRESS_HOST \
 zenml artifact-store register gcp_artifact_store --flavor=fcp --path gs://my-bucket
 zenml container-registry register gcp_registry --flavor=gcp --uri=eu.gcr.io/container-registry
-zenml stack register local_gcp_seldon_stack -a gcp_artifact_store -o default -d seldon_eks -c gcp_registry -x local --set
+zenml stack register local_gcp_seldon_stack -a gcp_artifact_store -o default -d seldon_eks -c gcp_registry --set
 ```
 
 >**Note**:

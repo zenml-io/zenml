@@ -238,7 +238,7 @@ The exported Stack is only a configuration. It may have local dependencies
 that are not exported and thus will not be available when importing the Stack
 on another machine:
 
-* the secrets stored in the local Secrets Managers
+* ZenML secrets referenced in the Stack
 * any references to local files and local services not accessible from outside
 the machine where the Stack is exported, such as the local Artifact Store.
 * perhaps critically, the exported stack would not contain any pipelines or
