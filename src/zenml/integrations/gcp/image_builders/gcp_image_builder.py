@@ -191,6 +191,7 @@ class GCPImageBuilder(BaseImageBuilder, GoogleCredentialsMixin):
                 },
             ],
             images=[image_name],
+            timeout=f"{self.config.build_timeout}s",
         )
 
     def _run_cloud_build(self, build: cloudbuild_v1.Build) -> str:
@@ -215,7 +216,7 @@ class GCPImageBuilder(BaseImageBuilder, GoogleCredentialsMixin):
             log_url,
         )
 
-        result = operation.result()
+        result = operation.result(timeout=self.config.build_timeout)
 
         if result.status != cloudbuild_v1.Build.Status.SUCCESS:
             raise RuntimeError(
