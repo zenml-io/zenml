@@ -50,7 +50,7 @@ class Consumer(Thread):
         """Initialize and create a consumer thread.
 
         Args:
-            queue: the list of message in the queue.
+            queue: the list of messages in the queue.
             upload_size: int, the maximum size for messages a consumer can send
                 if the 'sync_mode' is set to False.
             on_error: function to call if an error occurs.

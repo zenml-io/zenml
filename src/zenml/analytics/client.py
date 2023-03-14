@@ -75,7 +75,7 @@ class Client(object):
             max_retries: int, the number of max tries before failing.
             thread: int, the number of additional threads to create for the
                 analytics if the 'sync_mode' is set to False.
-            upload_interval: int, the upload_interval in seconds if the
+            upload_interval: float, the upload_interval in seconds if the
                 'sync_mode' is set to False.
             upload_size: int, the maximum size for messages a consumer can send
                 if the 'sync_mode' is set to False.
