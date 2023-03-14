@@ -24,7 +24,7 @@ from typing import Any, Callable, List
 import backoff
 import monotonic
 
-from zenml.analytics.request import APIError, post
+from zenml.analytics.request import AnalyticsAPIError, post
 
 MAX_MSG_SIZE = 32 << 10
 
@@ -143,7 +143,7 @@ class Consumer(Thread):
         """Attempt to upload the batch and retry before raising an error."""
 
         def fatal_exception(exc: Any) -> bool:
-            if isinstance(exc, APIError):
+            if isinstance(exc, AnalyticsAPIError):
                 # retry on server errors and client errors
                 # with 429 status code (rate limited),
                 # don't retry on other client errors

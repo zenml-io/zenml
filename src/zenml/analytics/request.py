@@ -38,7 +38,7 @@ def post(batch: List[str], timeout: int = 15) -> requests.Response:
         the response
 
     Raises:
-        APIError, if the post request has failed.
+        AnalyticsAPIError, if the post request has failed.
     """
     headers = {
         "accept": "application/json",
@@ -58,14 +58,14 @@ def post(batch: List[str], timeout: int = 15) -> requests.Response:
     try:
         payload = response.json()
         logger.debug("received response: %s", payload)
-        raise APIError(
+        raise AnalyticsAPIError(
             response.status_code, payload.get("detail", (response.text,))
         )
     except ValueError:
-        raise APIError(response.status_code, response.text)
+        raise AnalyticsAPIError(response.status_code, response.text)
 
 
-class APIError(Exception):
+class AnalyticsAPIError(Exception):
     """Custom exception class for API-related errors."""
 
     def __init__(self, status: int, message: str) -> None:
