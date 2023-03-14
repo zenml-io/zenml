@@ -18,13 +18,12 @@ import subprocess
 import sys
 from importlib.util import find_spec
 from typing import Any, Dict, List, Optional, Tuple
-from uuid import UUID, uuid4
+from uuid import uuid4
 
 import click
 import requests
 from git import GitCommandError
 from git.repo import Repo
-from pydantic import BaseModel
 
 from zenml.cli.cli import TagGroup, cli
 from zenml.cli.utils import declare, error, print_table
@@ -32,41 +31,15 @@ from zenml.config.global_config import GlobalConfiguration
 from zenml.constants import ENV_ZENML_HUB_URL
 from zenml.enums import CliCategories
 from zenml.logger import get_logger
+from zenml.models.hub_plugin_models import (
+    PluginRequestModel,
+    PluginResponseModel,
+)
 from zenml.utils.analytics_utils import AnalyticsEvent, event_handler
 
 logger = get_logger(__name__)
 
 ZENML_HUB_INTERNAL_TAG_PREFIX = "zenml-"
-
-
-class PluginBaseModel(BaseModel):
-    """Base model for a plugin."""
-
-    name: str
-    description: Optional[str]
-    version: Optional[str]
-    release_notes: Optional[str]
-    repository_url: str
-    repository_subdirectory: Optional[str]
-    repository_branch: Optional[str]
-    repository_commit: Optional[str]
-    tags: List[str]
-
-
-class PluginRequestModel(PluginBaseModel):
-    """Request model for a plugin."""
-
-
-class PluginResponseModel(PluginBaseModel):
-    """Response model for a plugin."""
-
-    status: str
-    version: str
-    index_url: Optional[str]
-    package_name: Optional[str]
-    logo_url: Optional[str]
-    requirements: Optional[List[str]]
-    user: Optional[UUID]
 
 
 def get_server_url() -> str:
@@ -105,6 +78,9 @@ def _hub_request(
 
     Returns:
         The response JSON.
+
+    Raises:
+        RuntimeError: If the request failed.
     """
     session = requests.Session()
 
