@@ -659,13 +659,13 @@ def logout() -> None:
         logger.info("Successfully logged out from the ZenML Hub.")
 
 
-@hub.command("push")
+@hub.command("submit")
 @click.option(
     "--plugin_name",
     "-n",
     type=str,
     help=(
-        "Name of the plugin to push. If not provided, the name will be asked "
+        "Name of the plugin to submit. If not provided, the name will be asked "
         "for interactively."
     ),
 )
@@ -674,8 +674,8 @@ def logout() -> None:
     "-v",
     type=str,
     help=(
-        "Version of the plugin to push. Can only be set if the plugin already "
-        "exists. If not provided, the version will be auto-incremented."
+        "Version of the plugin to submit. Can only be set if the plugin "
+        "already exists. If not provided, the version will be auto-incremented."
     ),
 )
 @click.option(
@@ -727,7 +727,7 @@ def logout() -> None:
     is_flag=True,
     help="Run the command in interactive mode.",
 )
-def push_plugin(
+def submit_plugin(
     plugin_name: Optional[str],
     version: Optional[str],
     release_notes: Optional[str],
@@ -739,12 +739,12 @@ def push_plugin(
     tags: List[str],
     interactive: bool,
 ) -> None:
-    """Push a plugin to the hub.
+    """Submit a plugin to the ZenML Hub.
 
     Args:
-        plugin_name: Name of the plugin to push. Needs to be set unless
+        plugin_name: Name of the plugin to submit. Needs to be set unless
             interactive mode is enabled.
-        version: Version of the plugin to push. Can only be set if the plugin
+        version: Version of the plugin to submit. Can only be set if the plugin
             already exists. If not provided, the version will be
             auto-incremented.
         release_notes: Release notes for the plugin version.
@@ -761,7 +761,7 @@ def push_plugin(
             missing or invalid parameters.
     """
     with event_handler(
-        event=AnalyticsEvent.ZENML_HUB_PLUGIN_PUSH,
+        event=AnalyticsEvent.ZENML_HUB_PLUGIN_SUBMIT,
         metadata={
             "hub_url": get_server_url(),
             "plugin_name": plugin_name,
