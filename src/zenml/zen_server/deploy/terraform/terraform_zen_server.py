@@ -140,7 +140,7 @@ class TerraformServerDeploymentConfig(ServerDeploymentConfig):
     database_ssl_cert: str = ""
     database_ssl_key: str = ""
     database_ssl_verify_server_cert: bool = True
-    analytics_opt_in: bool = True
+    analytics_opt_in: str = "true"
 
     class Config:
         """Pydantic configuration."""

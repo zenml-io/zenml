@@ -42,8 +42,8 @@ variable "kubectl_config_path" {
 
 variable "analytics_opt_in" {
   description = "The flag to enable/disable analytics"
-  default     = true
-  type        = bool
+  default     = "true"
+  type        = string
 }
 
 # If you want a new RDS, choose a name and a password. If you already
