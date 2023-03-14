@@ -91,9 +91,8 @@ zenml init --template
 If you wish to delete all data relating to your workspace from the
 directory, use the ``zenml clean`` command. This will:
 
--  delete all pipelines and pipeline runs
+-  delete all pipelines, pipeline runs and associated metadata
 -  delete all artifacts
--  delete all metadata
 
 Loading and using pre-built examples
 ------------------------------------
