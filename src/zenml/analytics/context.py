@@ -76,36 +76,39 @@ class AnalyticsContext:
         gc = GlobalConfiguration()
         self.analytics_opt_in = gc.analytics_opt_in
 
-        if self.analytics_opt_in:
-            try:
-                # Fetch the `user_id`
-                if self.in_server:
-                    # If the code is running on the server side, use the auth context.
-                    auth_context = get_auth_context()
-                    if auth_context is not None:
-                        self.user_id = auth_context.user.id
-                else:
-                    # If the code is running on the client side, use the default user.
-                    default_user = gc.zen_store.get_user()
-                    self.user_id = default_user.id
+        if not self.analytics_opt_in:
+            return self
 
-                # Fetch the `client_id`
-                if self.in_server:
-                    # If the code is running on the server side, there is no client id.
-                    self.client_id = None
-                else:
-                    # If the code is running on the client side, attach the client id.
-                    self.client_id = gc.user_id
+        try:
+            # Fetch the `user_id`
+            if self.in_server:
+                # If the code is running on the server, use the auth context.
+                auth_context = get_auth_context()
+                if auth_context is not None:
+                    self.user_id = auth_context.user.id
+            else:
+                # If the code is running on the client, use the default user.
+                default_user = gc.zen_store.get_user()
+                self.user_id = default_user.id
 
-                # Fetch the store information including the `server_id`
-                store_info = gc.zen_store.get_store_info()
+            # Fetch the `client_id`
+            if self.in_server:
+                # If the code is running on the server, there is no client id.
+                self.client_id = None
+            else:
+                # If the code is running on the client, attach the client id.
+                self.client_id = gc.user_id
 
-                self.server_id = store_info.id
-                self.deployment_type = store_info.deployment_type
-                self.database_type = store_info.database_type
-            except Exception as e:
-                self.analytics_opt_in = False
-                logger.debug(f"Analytics initialization failed: {e}")
+            # Fetch the store information including the `server_id`
+            store_info = gc.zen_store.get_store_info()
+
+            self.server_id = store_info.id
+            self.deployment_type = store_info.deployment_type
+            self.database_type = store_info.database_type
+        except Exception as e:
+            self.analytics_opt_in = False
+            logger.debug(f"Analytics initialization failed: {e}")
+
         return self
 
     def __exit__(
