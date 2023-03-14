@@ -80,6 +80,11 @@ class PipelineBuildBaseModel(pydantic_utils.YAMLSerializationMixin):
 
     @property
     def requires_code_download(self) -> bool:
+        """Whether the build requires code download.
+
+        Returns:
+            Whether the build requires code download.
+        """
         return any(not item.contains_code for item in self.images.values())
 
     @staticmethod

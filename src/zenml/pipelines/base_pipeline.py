@@ -469,6 +469,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
                 method.
             unlisted: Whether the pipeline run should be unlisted (not assigned
                 to any pipeline).
+            prevent_build_reuse: Whether to prevent the reuse of a build.
         """
         if constants.SHOULD_PREVENT_PIPELINE_EXECUTION:
             # An environment variable was set to stop the execution of
@@ -1232,10 +1233,13 @@ class BasePipeline(metaclass=BasePipelineMeta):
             pipeline_spec: Spec of the pipeline.
             allow_code_download: If True, the build is allowed to download code
                 from the code repository.
+            allow_build_reuse: If True, the build is allowed to reuse an
+                existing build.
             pipeline_id: Optional ID of the pipeline to reference in the build.
             build: Optional existing build. If given, the build will be loaded
                 (or registered) in the database. If not given, a new build will
                 be created.
+            code_repository: Optional code repository to use for the build.
 
         Returns:
             The build response.

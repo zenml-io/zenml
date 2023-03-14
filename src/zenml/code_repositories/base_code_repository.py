@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Base class for code repositories."""
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, Dict, Optional, Set, Type
 from uuid import UUID
@@ -29,22 +30,41 @@ logger = get_logger(__name__)
 class BaseCodeRepositoryConfig(SecretReferenceMixin, ABC):
     """Base config for code repositories."""
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: Any) -> None:
+        """Initializes a code repository config.
+
+        Args:
+            **kwargs: Keyword arguments.
+        """
         super().__init__(**kwargs)
 
 
 class BaseCodeRepository(ABC):
+    """Base class for code repositories.
+
+    Code repositories are used to connect to a remote code repository and
+    store information about the repository, such as the URL, the owner,
+    the repository name, and the host. They also provide methods to
+    download files from the repository when a pipeline is run remotely.
+    """
+
     def __init__(
         self,
         id: UUID,
         config: Dict[str, Any],
     ) -> None:
+        """Initializes a code repository.
+
+        Args:
+            id: The ID of the code repository.
+            config: The config of the code repository.
+        """
         self._id = id
         self._config = config
         self.login()
 
     @property
-    def config(self) -> BaseCodeRepositoryConfig:
+    def config(self) -> "BaseCodeRepositoryConfig":
         """Config class for Code Repository.
 
         Returns:
@@ -56,7 +76,14 @@ class BaseCodeRepository(ABC):
     def from_model(
         cls, model: CodeRepositoryResponseModel
     ) -> "BaseCodeRepository":
+        """Loads a code repository from a model.
 
+        Args:
+            model: The CodeRepositoryResponseModel to load from.
+
+        Returns:
+            The loaded code repository object.
+        """
         class_: Type[
             BaseCodeRepository
         ] = source_utils_v2.load_and_validate_class(
@@ -66,6 +93,11 @@ class BaseCodeRepository(ABC):
 
     @property
     def id(self) -> UUID:
+        """ID of the code repository.
+
+        Returns:
+            The ID of the code repository.
+        """
         return self._id
 
     @property
@@ -81,16 +113,41 @@ class BaseCodeRepository(ABC):
 
     @abstractmethod
     def login(self) -> None:
-        # Validate credentials and login
+        """Logs into the code repository.
+
+        This method is called when the code repository is initialized.
+        It should be used to authenticate with the code repository.
+
+        Raises:
+            RuntimeError: If the login fails.
+        """
         pass
 
     @abstractmethod
     def download_files(
         self, commit: str, directory: str, repo_sub_directory: Optional[str]
     ) -> None:
-        # download files of commit to local directory
+        """Downloads files from the code repository to a local directory.
+
+        Args:
+            commit: The commit hash to download files from.
+            directory: The directory to download files to.
+            repo_sub_directory: The subdirectory in the repository to
+                download files from.
+
+        Raises:
+            RuntimeError: If the download fails.
+        """
         pass
 
     @abstractmethod
     def get_local_repo(self, path: str) -> Optional["LocalRepository"]:
+        """Gets a local repository from a path.
+
+        Args:
+            path: The path to the local repository.
+
+        Returns:
+            The local repository object.
+        """
         pass

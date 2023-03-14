@@ -97,6 +97,8 @@ class CodeRepositoryUpdateModel(CodeRepositoryRequestModel):
 
 
 class CodeReferenceBaseModel(BaseModel):
+    """Base model for code references."""
+
     commit: str = Field(description="The commit of the code reference.")
     subdirectory: str = Field(
         description="The subdirectory of the code reference."
@@ -106,6 +108,8 @@ class CodeReferenceBaseModel(BaseModel):
 class CodeReferenceRequestModel(
     CodeReferenceBaseModel, WorkspaceScopedRequestModel
 ):
+    """Code reference request model."""
+
     code_repository: UUID = Field(
         description="The repository of the code reference."
     )
@@ -114,6 +118,8 @@ class CodeReferenceRequestModel(
 class CodeReferenceResponseModel(
     CodeReferenceBaseModel, WorkspaceScopedResponseModel
 ):
+    """Code reference response model."""
+
     code_repository: CodeRepositoryResponseModel = Field(
         description="The repository of the code reference."
     )
