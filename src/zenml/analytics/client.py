@@ -29,7 +29,6 @@ from six import string_types
 
 from zenml.analytics.consumer import Consumer
 from zenml.analytics.request import post
-from zenml.analytics.utils import AnalyticsEncoder
 
 if TYPE_CHECKING:
     from zenml.utils.analytics_utils import AnalyticsEvent
@@ -37,6 +36,24 @@ if TYPE_CHECKING:
 ID_TYPES = (numbers.Number, string_types)
 
 logger = logging.getLogger(__name__)
+
+
+class AnalyticsEncoder(json.JSONEncoder):
+    """Helper encoder class for JSON serialization."""
+
+    def default(self, obj):
+        """The default method to handle UUID and 'AnalyticsEvent' objects."""
+        from zenml.utils.analytics_utils import AnalyticsEvent
+
+        # If the object is UUID, we simply return the value of UUID
+        if isinstance(obj, UUID):
+            return str(obj)
+
+        # If the object is an AnalyticsEvent, return its value
+        elif isinstance(obj, AnalyticsEvent):
+            return str(obj.value)
+
+        return json.JSONEncoder.default(self, obj)
 
 
 class Client(object):
