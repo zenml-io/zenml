@@ -41,6 +41,7 @@ class AnalyticsEvent(str, Enum):
     CREATE_PIPELINE = "Pipeline created"
     UPDATE_PIPELINE = "Pipeline updated"
     DELETE_PIPELINE = "Pipeline deleted"
+    BUILD_PIPELINE = "Pipeline built"
 
     # Repo
     INITIALIZE_REPO = "ZenML initialized"

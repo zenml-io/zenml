@@ -393,13 +393,15 @@ class BasePipeline(metaclass=BasePipelineMeta):
         Returns:
             The build output.
         """
-        deployment, pipeline_spec, _, _ = self._compile(
-            config_path=config_path,
-            steps=step_configurations,
-            settings=settings,
-        )
-        pipeline_id = self._register(pipeline_spec=pipeline_spec).id
-        return self._build(deployment=deployment, pipeline_id=pipeline_id)
+        with event_handler(event=AnalyticsEvent.BUILD_PIPELINE, v2=True):
+            deployment, pipeline_spec, _, _ = self._compile(
+                config_path=config_path,
+                steps=step_configurations,
+                settings=settings,
+            )
+            pipeline_id = self._register(pipeline_spec=pipeline_spec).id
+
+            return self._build(deployment=deployment, pipeline_id=pipeline_id)
 
     def run(
         self,
