@@ -47,7 +47,7 @@ def post(batch: List[str], timeout: int = 15) -> requests.Response:
     response = requests.post(
         url=ANALYTICS_SERVER_URL + "/batch",
         headers=headers,
-        data=batch,
+        data=f"[{','.join(batch)}]",
         timeout=timeout,
     )
 
