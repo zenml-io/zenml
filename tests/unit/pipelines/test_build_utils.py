@@ -11,11 +11,16 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+from contextlib import ExitStack as does_not_raise
+from datetime import datetime
 from unittest.mock import ANY
+from uuid import uuid4
 
 import pytest
 
+from zenml.config import DockerSettings
 from zenml.config.build_configuration import BuildConfiguration
+from zenml.models import PipelineBuildResponseModel
 from zenml.models.pipeline_deployment_models import PipelineDeploymentBaseModel
 from zenml.pipelines import DockerSettings, build_utils
 from zenml.stack import Stack
@@ -217,3 +222,55 @@ def test_building_with_different_keys_and_identical_settings(
     assert build.images["key2"].image == "image_name"
 
     mock_build_docker_image.assert_called_once()
+
+
+def test_custom_build_validation(
+    mocker,
+    sample_deployment_response_model,
+):
+    """Tests the build validation performed by the stack."""
+    mocker.patch.object(Stack, "get_docker_builds", return_value=[])
+
+    assert sample_deployment_response_model.build is None
+
+    mocker.patch.object(
+        Stack,
+        "get_docker_builds",
+        return_value=[
+            BuildConfiguration(key="key", settings=DockerSettings())
+        ],
+    )
+
+    incorrect_build = PipelineBuildResponseModel(
+        id=uuid4(),
+        created=datetime.now(),
+        updated=datetime.now(),
+        user=sample_deployment_response_model.user,
+        workspace=sample_deployment_response_model.workspace,
+        images={"wrong_key": {"image": "docker_image_name"}},
+        is_local=False,
+        contains_code=True,
+    )
+
+    with pytest.raises(RuntimeError):
+        # Image key missing
+        build_utils.verify_custom_build(
+            build=incorrect_build,
+            deployment=sample_deployment_response_model,
+            pipeline_version_hash="",
+        )
+
+    correct_build = PipelineBuildResponseModel.parse_obj(
+        {
+            **incorrect_build.dict(),
+            "images": {"key": {"image": "docker_image_name"}},
+        }
+    )
+
+    with does_not_raise():
+        # All keys present
+        build_utils.verify_custom_build(
+            build=correct_build,
+            deployment=sample_deployment_response_model,
+            pipeline_version_hash="",
+        )
