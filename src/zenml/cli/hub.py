@@ -32,6 +32,7 @@ from zenml.config.global_config import GlobalConfiguration
 from zenml.constants import ENV_ZENML_HUB_URL
 from zenml.enums import CliCategories
 from zenml.logger import get_logger
+from zenml.utils.analytics_utils import AnalyticsEvent, event_handler
 
 logger = get_logger(__name__)
 
@@ -294,20 +295,26 @@ def list_plugins(mine: bool, installed: bool) -> None:
         mine: Whether to list only plugins that you own.
         installed: Whether to list only plugins that are installed.
     """
-    if mine and not get_auth_token():
-        error(
-            "You must be logged in to list your own plugins via --mine. Please "
-            "run `zenml hub login` to login."
-        )
-    plugins = _list_plugins(mine=mine)
-    if not plugins:
-        declare("No plugins found.")
-    if installed:
-        plugins = [
-            plugin for plugin in plugins if _is_plugin_installed(plugin.name)
-        ]
-    plugins_table = _format_plugins_table(plugins)
-    print_table(plugins_table)
+    with event_handler(
+        event=AnalyticsEvent.ZENML_HUB_PLUGIN_LIST,
+        metadata={"hub_url": get_server_url()},
+    ):
+        if mine and not get_auth_token():
+            error(
+                "You must be logged in to list your own plugins via --mine. "
+                "Please run `zenml hub login` to login."
+            )
+        plugins = _list_plugins(mine=mine)
+        if not plugins:
+            declare("No plugins found.")
+        if installed:
+            plugins = [
+                plugin
+                for plugin in plugins
+                if _is_plugin_installed(plugin.name)
+            ]
+        plugins_table = _format_plugins_table(plugins)
+        print_table(plugins_table)
 
 
 @hub.command("install")
@@ -353,77 +360,89 @@ def install_plugin(
         no_deps: If set, dependencies of the plugin will not be installed.
         yes: If set, no confirmation will be asked for before installing.
     """
-    display_name = _plugin_display_name(plugin_name, version)
+    with event_handler(
+        event=AnalyticsEvent.ZENML_HUB_PLUGIN_INSTALL,
+        metadata={
+            "hub_url": get_server_url(),
+            "plugin_name": plugin_name,
+            "plugin_version": version,
+        },
+    ) as analytics_handler:
 
-    # Get plugin from hub
-    plugin = _get_plugin(plugin_name, version)
-    if not plugin:
-        error(f"Could not find plugin '{display_name}' on the hub.")
+        display_name = _plugin_display_name(plugin_name, version)
 
-    # Check if plugin can be installed
-    index_url = plugin.index_url
-    package_name = plugin.package_name
-    if not index_url or not package_name:
-        error(f"Plugin '{display_name}' is not available for installation.")
+        # Get plugin from hub
+        plugin = _get_plugin(plugin_name, version)
+        if not plugin:
+            error(f"Could not find plugin '{display_name}' on the hub.")
+        analytics_handler.metadata["plugin_version"] = plugin.version
 
-    # Check if plugin is already installed
-    if _is_plugin_installed(plugin_name) and not upgrade:
-        logger.info(f"Plugin '{plugin_name}' is already installed.")
-        return
-
-    # Install plugin requirements
-    install_requirements = False
-    if plugin.requirements and not no_deps:
-        requirements_str = " ".join(f"'{r}'" for r in plugin.requirements)
-        if not yes:
-            install_requirements = click.confirm(
-                f"Plugin '{display_name}' requires the following "
-                f"packages to be installed: {requirements_str}. Do you want to "
-                f"install them now?"
+        # Check if plugin can be installed
+        index_url = plugin.index_url
+        package_name = plugin.package_name
+        if not index_url or not package_name:
+            error(
+                f"Plugin '{display_name}' is not available for installation."
             )
-    if plugin.requirements and install_requirements:
+
+        # Check if plugin is already installed
+        if _is_plugin_installed(plugin_name) and not upgrade:
+            logger.info(f"Plugin '{plugin_name}' is already installed.")
+            return
+
+        # Install plugin requirements
+        install_requirements = False
+        if plugin.requirements and not no_deps:
+            requirements_str = " ".join(f"'{r}'" for r in plugin.requirements)
+            if not yes:
+                install_requirements = click.confirm(
+                    f"Plugin '{display_name}' requires the following "
+                    f"packages to be installed: {requirements_str}. "
+                    f"Do you want to install them now?"
+                )
+        if plugin.requirements and install_requirements:
+            logger.info(
+                f"Installing requirements for plugin '{display_name}': "
+                f"{requirements_str}..."
+            )
+            requirements_install_call = [
+                sys.executable,
+                "-m",
+                "pip",
+                "install",
+                *list(plugin.requirements),
+                "--upgrade",
+            ]
+            subprocess.check_call(requirements_install_call)
+            logger.info(
+                f"Successfully installed requirements for plugin "
+                f"'{display_name}'."
+            )
+        elif plugin.requirements:
+            logger.warning(
+                f"Requirements for plugin '{display_name}' were not installed. "
+                "This might lead to errors in the future if the requirements "
+                "are not installed manually."
+            )
+
+        # pip install the wheel
         logger.info(
-            f"Installing requirements for plugin '{display_name}': "
-            f"{requirements_str}..."
+            f"Installing plugin '{display_name}' from "
+            f"{index_url}{package_name}..."
         )
-        requirements_install_call = [
+        plugin_install_call = [
             sys.executable,
             "-m",
             "pip",
             "install",
-            *list(plugin.requirements),
-            "--upgrade",
+            "--index-url",
+            index_url,
+            package_name,
+            "--no-deps",  # we already installed the requirements above
+            "--upgrade",  # we already checked if the plugin is installed above
         ]
-        subprocess.check_call(requirements_install_call)
-        logger.info(
-            f"Successfully installed requirements for plugin "
-            f"'{display_name}'."
-        )
-    elif plugin.requirements:
-        logger.warning(
-            f"Requirements for plugin '{display_name}' were not installed. "
-            "This might lead to errors in the future if the requirements are "
-            "not installed manually."
-        )
-
-    # pip install the wheel
-    logger.info(
-        f"Installing plugin '{display_name}' from "
-        f"{index_url}{package_name}..."
-    )
-    plugin_install_call = [
-        sys.executable,
-        "-m",
-        "pip",
-        "install",
-        "--index-url",
-        index_url,
-        package_name,
-        "--no-deps",  # we already installed the requirements above
-        "--upgrade",  # we already checked if the plugin is installed above
-    ]
-    subprocess.check_call(plugin_install_call)
-    logger.info(f"Successfully installed plugin '{display_name}'.")
+        subprocess.check_call(plugin_install_call)
+        logger.info(f"Successfully installed plugin '{display_name}'.")
 
 
 @hub.command("uninstall")
@@ -442,26 +461,36 @@ def uninstall_plugin(plugin_name: str, version: Optional[str] = None) -> None:
         version: Version of the plugin. If not specified, the latest version
             will be used.
     """
-    display_name = _plugin_display_name(plugin_name, version)
+    with event_handler(
+        event=AnalyticsEvent.ZENML_HUB_PLUGIN_UNINSTALL,
+        metadata={
+            "hub_url": get_server_url(),
+            "plugin_name": plugin_name,
+            "plugin_version": version,
+        },
+    ) as analytics_handler:
 
-    # Get plugin from hub
-    plugin = _get_plugin(plugin_name, version)
-    if not plugin:
-        error(f"Could not find plugin '{display_name}' on the hub.")
+        display_name = _plugin_display_name(plugin_name, version)
 
-    # Check if plugin can be uninstalled
-    package_name = plugin.package_name
-    if not package_name:
-        error(
-            f"Plugin '{display_name}' is not available for " "uninstallation."
+        # Get plugin from hub
+        plugin = _get_plugin(plugin_name, version)
+        if not plugin:
+            error(f"Could not find plugin '{display_name}' on the hub.")
+        analytics_handler.metadata["plugin_version"] = plugin.version
+
+        # Check if plugin can be uninstalled
+        package_name = plugin.package_name
+        if not package_name:
+            error(
+                f"Plugin '{display_name}' is not available for uninstallation."
+            )
+
+        # pip uninstall the wheel
+        logger.info(f"Uninstalling plugin '{display_name}'...")
+        subprocess.check_call(
+            [sys.executable, "-m", "pip", "uninstall", package_name, "-y"]
         )
-
-    # pip uninstall the wheel
-    logger.info(f"Uninstalling plugin '{display_name}'...")
-    subprocess.check_call(
-        [sys.executable, "-m", "pip", "uninstall", package_name, "-y"]
-    )
-    logger.info(f"Successfully uninstalled plugin '{display_name}'.")
+        logger.info(f"Successfully uninstalled plugin '{display_name}'.")
 
 
 @hub.command("pull")
@@ -492,47 +521,57 @@ def pull_plugin(
             the plugin will be pulled to a directory with the same name as the
             plugin in the current working directory.
     """
-    display_name = _plugin_display_name(plugin_name, version)
+    with event_handler(
+        event=AnalyticsEvent.ZENML_HUB_PLUGIN_PULL,
+        metadata={
+            "hub_url": get_server_url(),
+            "plugin_name": plugin_name,
+            "plugin_version": version,
+        },
+    ) as analytics_handler:
 
-    # Get plugin from hub
-    plugin = _get_plugin(plugin_name, version)
-    if not plugin:
-        error(f"Could not find plugin '{display_name}' on the hub.")
+        display_name = _plugin_display_name(plugin_name, version)
 
-    repo_url = plugin.repository_url
-    subdir = plugin.repository_subdirectory
-    commit = plugin.repository_commit
+        # Get plugin from hub
+        plugin = _get_plugin(plugin_name, version)
+        if not plugin:
+            error(f"Could not find plugin '{display_name}' on the hub.")
+        analytics_handler.metadata["plugin_version"] = plugin.version
 
-    # Clone the source repo
-    if output_dir is None:
-        output_dir = os.path.join(os.getcwd(), plugin_name)
-    logger.info(f"Pulling plugin '{display_name}' to {output_dir}...")
-    # If no subdir is set, we can clone directly into output_dir
-    if not subdir:
-        repo_path = plugin_dir = output_dir
-    # Otherwise, we need to clone into a random dir and then move the subdir
-    else:
-        random_repo_name = f"_{uuid4()}"
-        repo_path = os.path.abspath(
-            os.path.join(os.getcwd(), random_repo_name)
-        )
-        plugin_dir = os.path.join(repo_path, subdir)
+        repo_url = plugin.repository_url
+        subdir = plugin.repository_subdirectory
+        commit = plugin.repository_commit
 
-    # Clone the repo and move it to `output_dir`
-    try:
-        _clone_repo(url=repo_url, to_path=repo_path, commit=commit)
-        shutil.move(plugin_dir, output_dir)
-        logger.info(f"Successfully pulled plugin '{display_name}'.")
-    except GitCommandError:
-        error(
-            f"Could not find commit '{commit}' in repository '{repo_url}' "
-            f"of plugin '{display_name}'. This might happen if the owner "
-            "of the plugin has force-pushed to the plugin repository. "
-            "Please report this plugin version in the ZenML Hub or via "
-            "Slack."
-        )
-    finally:
-        shutil.rmtree(repo_path)
+        # Clone the source repo
+        if output_dir is None:
+            output_dir = os.path.join(os.getcwd(), plugin_name)
+        logger.info(f"Pulling plugin '{display_name}' to {output_dir}...")
+        # If no subdir is set, we can clone directly into output_dir
+        if not subdir:
+            repo_path = plugin_dir = output_dir
+        # Otherwise, we need to clone into a random dir and then move the subdir
+        else:
+            random_repo_name = f"_{uuid4()}"
+            repo_path = os.path.abspath(
+                os.path.join(os.getcwd(), random_repo_name)
+            )
+            plugin_dir = os.path.join(repo_path, subdir)
+
+        # Clone the repo and move it to `output_dir`
+        try:
+            _clone_repo(url=repo_url, to_path=repo_path, commit=commit)
+            shutil.move(plugin_dir, output_dir)
+            logger.info(f"Successfully pulled plugin '{display_name}'.")
+        except GitCommandError:
+            error(
+                f"Could not find commit '{commit}' in repository '{repo_url}' "
+                f"of plugin '{display_name}'. This might happen if the owner "
+                "of the plugin has force-pushed to the plugin repository. "
+                "Please report this plugin version in the ZenML Hub or via "
+                "Slack."
+            )
+        finally:
+            shutil.rmtree(repo_path)
 
 
 def _clone_repo(
@@ -586,22 +625,28 @@ def _login_via_zenml_hub() -> str:
     Returns:
         The auth token of the logged in user.
     """
-    logger.info("Please enter your ZenML Hub credentials.")
-    username = click.prompt("Username", type=str)
-    password = click.prompt("Password", type=str, hide_input=True)
-    url = f"{get_server_url()}/user/auth/jwt/login"
-    response = _hub_request(
-        method="POST",
-        url=url,
-        data={"username": username, "password": password},
-        content_type="application/x-www-form-urlencoded",
-    )
-    if not isinstance(response, dict):
-        error(f"Unexpected response from the ZenML Hub: {response}")
-    if auth_token := response.get("access_token"):
-        logger.info("Successfully logged in to the ZenML Hub.")
-        return str(auth_token)
-    error(f"Could not login to the ZenML Hub: {response.get('detail')}")
+    with event_handler(
+        event=AnalyticsEvent.ZENML_HUB_LOGIN,
+        metadata={"hub_url": get_server_url()},
+    ) as analytics_handler:
+
+        logger.info("Please enter your ZenML Hub credentials.")
+        username = click.prompt("Username", type=str)
+        analytics_handler.metadata = {"hub_username": username}
+        password = click.prompt("Password", type=str, hide_input=True)
+        url = f"{get_server_url()}/user/auth/jwt/login"
+        response = _hub_request(
+            method="POST",
+            url=url,
+            data={"username": username, "password": password},
+            content_type="application/x-www-form-urlencoded",
+        )
+        if not isinstance(response, dict):
+            error(f"Unexpected response from the ZenML Hub: {response}")
+        if auth_token := response.get("access_token"):
+            logger.info("Successfully logged in to the ZenML Hub.")
+            return str(auth_token)
+        error(f"Could not login to the ZenML Hub: {response.get('detail')}")
 
 
 def _login_via_github() -> str:
@@ -610,21 +655,32 @@ def _login_via_github() -> str:
     Returns:
         The auth token of the logged in user.
     """
-    url = f"{get_server_url()}/user/auth/github/authorize"
-    response = _hub_request("GET", url=url)
-    if not isinstance(response, dict):
-        error(f"Unexpected response from the ZenML Hub: {response}")
-    auth_url = response.get("authorization_url")
-    logger.info(f"Please open the following URL in your browser: {auth_url}")
-    auth_token = click.prompt("Please enter your auth token", type=str)
-    return str(auth_token)
+    with event_handler(
+        event=AnalyticsEvent.ZENML_HUB_LOGIN_GH,
+        metadata={"hub_url": get_server_url()},
+    ):
+
+        url = f"{get_server_url()}/user/auth/github/authorize"
+        response = _hub_request("GET", url=url)
+        if not isinstance(response, dict):
+            error(f"Unexpected response from the ZenML Hub: {response}")
+        auth_url = response.get("authorization_url")
+        logger.info(
+            f"Please open the following URL in your browser: {auth_url}"
+        )
+        auth_token = click.prompt("Please enter your auth token", type=str)
+        return str(auth_token)
 
 
 @hub.command("logout")
 def logout() -> None:
     """Logout from the ZenML Hub."""
-    GlobalConfiguration().hub_auth_token = None
-    logger.info("Successfully logged out from the ZenML Hub.")
+    with event_handler(
+        event=AnalyticsEvent.ZENML_HUB_LOGOUT,
+        metadata={"hub_url": get_server_url()},
+    ):
+        GlobalConfiguration().hub_auth_token = None
+        logger.info("Successfully logged out from the ZenML Hub.")
 
 
 @hub.command("push")
@@ -728,99 +784,114 @@ def push_plugin(
         interactive: Whether to run the command in interactive mode, asking for
             missing or invalid parameters.
     """
-    # Validate that the user is logged in
-    if not get_auth_token():
-        error(
-            "You must be logged in to contribute a plugin to the Hub. Please "
-            "run `zenml hub login` to login."
+    with event_handler(
+        event=AnalyticsEvent.ZENML_HUB_PLUGIN_PUSH,
+        metadata={
+            "hub_url": get_server_url(),
+            "plugin_name": plugin_name,
+            "plugin_version": version,
+            "repository_url": repository_url,
+        },
+    ) as analytics_handler:
+
+        # Validate that the user is logged in
+        if not get_auth_token():
+            error(
+                "You must be logged in to contribute a plugin to the Hub. "
+                "Please run `zenml hub login` to login."
+            )
+
+        # Validate that the plugin name is provided and available
+        plugin_name, plugin_exists = _validate_plugin_name(
+            plugin_name=plugin_name, interactive=interactive
+        )
+        analytics_handler.metadata["plugin_name"] = plugin_name
+
+        # If the plugin exists, ask for version and release notes in
+        # interactive mode.
+        if plugin_exists and interactive:
+            if not version:
+                logger.info(
+                    "You are about to create a new version of plugin "
+                    f"'{plugin_name}'. By default, this will increment the "
+                    "minor version of the plugin. If you want to specify a "
+                    "different version, you can do so below. In that case, "
+                    "make sure that the version is of shape '<int>.<int>' and "
+                    "is higher than the current latest version of the plugin."
+                )
+                version = click.prompt("(Optional) plugin version", default="")
+                analytics_handler.metadata["plugin_version"] = version
+            if not release_notes:
+                logger.info(
+                    f"You are about to create a new version of plugin "
+                    f"'{plugin_name}'. You can optionally provide release "
+                    "notes for this version below."
+                )
+                release_notes = click.prompt(
+                    "(Optional) release notes", default=""
+                )
+
+        # Raise an error if the plugin does not exist and a version is provided.
+        elif not plugin_exists and version:
+            error(
+                "You cannot specify a version for a plugin that does not exist "
+                "yet. Please remove the '--version' flag and try again."
+            )
+
+        # Clone the repo and validate the commit / branch / subdir / structure
+        (
+            repository_url,
+            repository_commit,
+            repository_branch,
+            repository_subdir,
+        ) = _validate_repository(
+            url=repository_url,
+            commit=repository_commit,
+            branch=repository_branch,
+            subdir=repository_subdir,
+            interactive=interactive,
+        )
+        analytics_handler.metadata["repository_url"] = repository_url
+
+        # In interactive mode, ask for a description if none is provided
+        if interactive and not description:
+            logger.info(
+                "You can optionally provide a description for your plugin below. "
+                "If not set, the first line of your README.md will be used."
+            )
+            description = click.prompt(
+                "(Optional) plugin description", default=""
+            )
+
+        # Validate the tags
+        tags = _validate_tags(tags=tags, interactive=interactive)
+
+        # Make a create request to the hub
+        plugin_request = PluginRequestModel(
+            name=plugin_name,
+            description=description,
+            version=version,
+            release_notes=release_notes,
+            repository_url=repository_url,
+            repository_subdirectory=repository_subdir,
+            repository_branch=repository_branch,
+            repository_commit=repository_commit,
+            tags=tags,
+        )
+        plugin_response = _create_plugin(
+            plugin_request=plugin_request,
+            is_new_version=plugin_exists,
         )
 
-    # Validate that the plugin name is provided and available
-    plugin_name, plugin_exists = _validate_plugin_name(
-        plugin_name=plugin_name, interactive=interactive
-    )
-
-    # If the plugin exists, ask for version and release notes in interactive
-    # mode.
-    if plugin_exists and interactive:
-        if not version:
-            logger.info(
-                "You are about to create a new version of plugin "
-                f"'{plugin_name}'. By default, this will increment the minor "
-                "version of the plugin. If you want to specify a different "
-                "version, you can do so below. In that case, make sure that "
-                "the version is of shape '<int>.<int>' and is higher than the "
-                "current latest version of the plugin."
-            )
-            version = click.prompt("(Optional) plugin version", default="")
-        if not release_notes:
-            logger.info(
-                f"You are about to create a new version of plugin "
-                f"'{plugin_name}'. You can optionally provide release notes "
-                "for this version below."
-            )
-            release_notes = click.prompt(
-                "(Optional) release notes", default=""
-            )
-
-    # Raise an error if the plugin does not exist and a version is provided.
-    elif not plugin_exists and version:
-        error(
-            "You cannot specify a version for a plugin that does not exist "
-            "yet. Please remove the '--version' flag and try again."
-        )
-
-    # Clone the repo and validate the commit / branch / subdir / structure
-    (
-        repository_url,
-        repository_commit,
-        repository_branch,
-        repository_subdir,
-    ) = _validate_repository(
-        url=repository_url,
-        commit=repository_commit,
-        branch=repository_branch,
-        subdir=repository_subdir,
-        interactive=interactive,
-    )
-
-    # In interactive mode, ask for a description if none is provided
-    if interactive and not description:
+        # Stream the build logs
+        plugin_name = plugin_response.name
+        plugin_version = plugin_response.version
         logger.info(
-            "You can optionally provide a description for your plugin below. "
-            "If not set, the first line of your README.md will be used."
+            "Thanks for submitting your plugin to the ZenML Hub. The plugin is "
+            "now  being built into an installable package. This may take a few "
+            "minutes. To view the build logs, run "
+            f"`zenml hub logs {plugin_name} --version {plugin_version}`."
         )
-        description = click.prompt("(Optional) plugin description", default="")
-
-    # Validate the tags
-    tags = _validate_tags(tags=tags, interactive=interactive)
-
-    # Make a create request to the hub
-    plugin_request = PluginRequestModel(
-        name=plugin_name,
-        description=description,
-        version=version,
-        release_notes=release_notes,
-        repository_url=repository_url,
-        repository_subdirectory=repository_subdir,
-        repository_branch=repository_branch,
-        repository_commit=repository_commit,
-        tags=tags,
-    )
-    plugin_response = _create_plugin(
-        plugin_request=plugin_request,
-        is_new_version=plugin_exists,
-    )
-
-    # Stream the build logs
-    plugin_name = plugin_response.name
-    plugin_version = plugin_response.version
-    logger.info(
-        "Thanks for submitting your plugin to the ZenML Hub. The plugin is now "
-        "being built into an installable package. This may take a few minutes. "
-        "To view the build logs, run "
-        f"`zenml hub logs {plugin_name} --version {plugin_version}`."
-    )
 
 
 def _validate_plugin_name(
@@ -1120,14 +1191,23 @@ def get_logs(plugin_name: str, version: Optional[str] = None) -> None:
         version: Version of the plugin. If not provided, the latest version
             will be used.
     """
-    display_name = _plugin_display_name(plugin_name, version)
+    with event_handler(
+        event=AnalyticsEvent.ZENML_HUB_PLUGIN_LOGS,
+        metadata={
+            "hub_url": get_server_url(),
+            "plugin_name": plugin_name,
+            "plugin_version": version,
+        },
+    ) as analytics_handler:
+        display_name = _plugin_display_name(plugin_name, version)
 
-    # Get the plugin from the hub
-    plugin = _get_plugin(plugin_name=plugin_name, plugin_version=version)
-    if not plugin:
-        error(f"Could not find plugin '{display_name}' on the hub.")
+        # Get the plugin from the hub
+        plugin = _get_plugin(plugin_name=plugin_name, plugin_version=version)
+        if not plugin:
+            error(f"Could not find plugin '{display_name}' on the hub.")
+        analytics_handler.metadata["plugin_version"] = plugin.version
 
-    # Stream the logs
-    _stream_plugin_build_logs(
-        plugin_name=plugin_name, plugin_version=plugin.version
-    )
+        # Stream the logs
+        _stream_plugin_build_logs(
+            plugin_name=plugin_name, plugin_version=plugin.version
+        )

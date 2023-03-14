@@ -134,6 +134,17 @@ class AnalyticsEvent(str, Enum):
     ZENML_SERVER_DEPLOYED = "ZenML server deployed"
     ZENML_SERVER_DESTROYED = "ZenML server destroyed"
 
+    # ZenML Hub events
+    ZENML_HUB_PLUGIN_LIST = "ZenML Hub plugins listed"
+    ZENML_HUB_LOGIN = "ZenML Hub login"
+    ZENML_HUB_LOGIN_GH = "ZenML Hub login via GitHub"
+    ZENML_HUB_LOGOUT = "ZenML Hub logout"
+    ZENML_HUB_PLUGIN_INSTALL = "ZenML Hub plugin installed"
+    ZENML_HUB_PLUGIN_UNINSTALL = "ZenML Hub plugin uninstalled"
+    ZENML_HUB_PLUGIN_PULL = "ZenML Hub plugin pulled"
+    ZENML_HUB_PLUGIN_PUSH = "ZenML Hub plugin pushed"
+    ZENML_HUB_PLUGIN_LOGS = "ZenML Hub plugin logs viewed"
+
 
 class AnalyticsGroup(str, Enum):
     """Enum of event groups to track in segment."""
