@@ -23,7 +23,7 @@ from zenml.artifact_stores.local_artifact_store import (
     LocalArtifactStoreConfig,
 )
 from zenml.client import Client
-from zenml.config.pipeline_configurations import PipelineSpec
+from zenml.config.pipeline_spec import PipelineSpec
 from zenml.config.step_configurations import Step
 from zenml.container_registries.base_container_registry import (
     BaseContainerRegistry,

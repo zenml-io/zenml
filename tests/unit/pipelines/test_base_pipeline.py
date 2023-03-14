@@ -24,8 +24,8 @@ from zenml.config.build_configuration import BuildConfiguration
 from zenml.config.compiler import Compiler
 from zenml.config.pipeline_configurations import (
     PipelineRunConfiguration,
-    PipelineSpec,
 )
+from zenml.config.pipeline_spec import PipelineSpec
 from zenml.exceptions import (
     PipelineInterfaceError,
     StackValidationError,
