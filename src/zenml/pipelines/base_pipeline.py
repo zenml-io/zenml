@@ -14,7 +14,6 @@
 """Abstract base class for all ZenML pipelines."""
 import hashlib
 import inspect
-import platform
 from abc import abstractmethod
 from datetime import datetime
 from pathlib import Path
@@ -40,12 +39,9 @@ from uuid import UUID
 import yaml
 from packaging import version
 
-import zenml
 from zenml import constants
 from zenml.client import Client
-from zenml.code_repositories import BaseCodeRepository
 from zenml.config.compiler import Compiler
-from zenml.config.docker_settings import SourceFileMode
 from zenml.config.pipeline_configurations import (
     PipelineConfiguration,
     PipelineConfigurationUpdate,
@@ -60,7 +56,6 @@ from zenml.hooks.hook_validators import resolve_and_validate_hook
 from zenml.logger import get_logger
 from zenml.models import (
     CodeReferenceRequestModel,
-    PipelineBuildRequestModel,
     PipelineBuildResponseModel,
     PipelineDeploymentRequestModel,
     PipelineDeploymentResponseModel,
@@ -69,10 +64,10 @@ from zenml.models import (
     ScheduleRequestModel,
 )
 from zenml.models.pipeline_build_models import (
-    BuildItem,
     PipelineBuildBaseModel,
 )
 from zenml.models.pipeline_deployment_models import PipelineDeploymentBaseModel
+from zenml.pipelines import build_utils
 from zenml.stack import Stack
 from zenml.steps import BaseStep
 from zenml.steps.base_step import BaseStepMeta
@@ -85,14 +80,9 @@ from zenml.utils import (
     yaml_utils,
 )
 from zenml.utils.analytics_utils import AnalyticsEvent, event_handler
-from zenml.utils.pipeline_docker_image_builder import (
-    PipelineDockerImageBuilder,
-)
 
 if TYPE_CHECKING:
-    from zenml.code_repositories import LocalRepository
     from zenml.config.base_settings import SettingsOrDict
-    from zenml.config.build_configuration import BuildConfiguration
     from zenml.config.source import Source
     from zenml.post_execution import PipelineRunView
 
@@ -411,24 +401,14 @@ class BasePipeline(metaclass=BasePipelineMeta):
         )
         pipeline_id = self._register(pipeline_spec=pipeline_spec).id
 
-        local_code_repo = source_utils_v2.find_active_code_repository()
-        allow_code_download = self._verify_code_download_allowed(
-            deployment=deployment, local_code_repo=local_code_repo
-        )
-        code_repository = (
-            BaseCodeRepository.from_model(
-                Client().get_code_repository(
-                    local_code_repo.code_repository_id
-                )
-            )
-            if local_code_repo and allow_code_download
-            else None
+        local_repo = source_utils_v2.find_active_code_repository()
+        code_repository = build_utils.verify_local_repository(
+            deployment=deployment, local_repo=local_repo
         )
 
-        return self._build(
+        return build_utils.create_pipeline_build(
             deployment=deployment,
             pipeline_id=pipeline_id,
-            allow_code_download=allow_code_download,
             code_repository=code_repository,
         )
 
@@ -545,46 +525,37 @@ class BasePipeline(metaclass=BasePipelineMeta):
 
             stack = Client().active_stack
 
-            local_code_repo = source_utils_v2.find_active_code_repository()
-            allow_code_download = self._verify_code_download_allowed(
-                deployment=deployment, local_code_repo=local_code_repo
+            local_repo = source_utils_v2.find_active_code_repository()
+            code_repository = build_utils.verify_local_repository(
+                deployment=deployment, local_repo=local_repo
             )
-            code_repository = (
-                BaseCodeRepository.from_model(
-                    Client().get_code_repository(
-                        local_code_repo.code_repository_id
-                    )
-                )
-                if local_code_repo and allow_code_download
-                else None
+            version_hash = self._compute_unique_identifier(
+                pipeline_spec=pipeline_spec
             )
 
-            build_model = self._load_or_create_pipeline_build(
+            build_model = build_utils.reuse_or_create_pipeline_build(
                 deployment=deployment,
-                pipeline_spec=pipeline_spec,
-                allow_code_download=allow_code_download,
-                allow_build_reuse=not prevent_build_reuse,
+                pipeline_version_hash=version_hash,
                 pipeline_id=pipeline_id,
+                allow_build_reuse=not prevent_build_reuse,
                 build=build,
                 code_repository=code_repository,
             )
             build_id = build_model.id if build_model else None
 
             code_reference = None
-            if local_code_repo and not local_code_repo.is_dirty:
+            if local_repo and not local_repo.is_dirty:
                 source_root = source_utils_v2.get_source_root()
                 subdirectory = (
-                    Path(source_root)
-                    .resolve()
-                    .relative_to(local_code_repo.root)
+                    Path(source_root).resolve().relative_to(local_repo.root)
                 )
 
                 code_reference = CodeReferenceRequestModel(
                     user=Client().active_user.id,
                     workspace=Client().active_workspace.id,
-                    commit=local_code_repo.current_commit,
+                    commit=local_repo.current_commit,
                     subdirectory=subdirectory.as_posix(),
-                    code_repository=local_code_repo.code_repository_id,
+                    code_repository=local_repo.code_repository_id,
                 )
 
             deployment_request = PipelineDeploymentRequestModel(
@@ -1176,413 +1147,3 @@ class BasePipeline(metaclass=BasePipelineMeta):
             return pipelines.items[0]
 
         return None
-
-    @staticmethod
-    def _verify_code_download_allowed(
-        deployment: "PipelineDeploymentBaseModel",
-        local_code_repo: Optional["LocalRepository"],
-    ) -> bool:
-        if deployment.requires_code_download:
-            if not local_code_repo:
-                raise RuntimeError(
-                    "The `DockerSettings` of the pipeline or one of its "
-                    "steps specify that code should be included in the "
-                    "Docker image (`source_files='download'`), but there is no "
-                    "code repository active at your current source root "
-                    f"`{source_utils_v2.get_source_root()}`."
-                )
-            elif local_code_repo.is_dirty:
-                raise RuntimeError(
-                    "The `DockerSettings` of the pipeline or one of its "
-                    "steps specify that code should be included in the "
-                    "Docker image (`source_files='download'`), but the code "
-                    "repository active at your current source root "
-                    f"`{source_utils_v2.get_source_root()}` has uncommited "
-                    "changes."
-                )
-            elif local_code_repo.has_local_changes:
-                raise RuntimeError(
-                    "The `DockerSettings` of the pipeline or one of its "
-                    "steps specify that code should be included in the "
-                    "Docker image (`source_files='download'`), but the code "
-                    "repository active at your current source root "
-                    f"`{source_utils_v2.get_source_root()}` has unpushed "
-                    "changes."
-                )
-
-        allow_code_download = bool(
-            local_code_repo and not local_code_repo.has_local_changes
-        )
-        return allow_code_download
-
-    def _load_or_create_pipeline_build(
-        self,
-        deployment: "PipelineDeploymentBaseModel",
-        pipeline_spec: "PipelineSpec",
-        allow_code_download: bool,
-        allow_build_reuse: bool,
-        pipeline_id: Optional[UUID] = None,
-        build: Union["UUID", "PipelineBuildBaseModel", None] = None,
-        code_repository: Optional["BaseCodeRepository"] = None,
-    ) -> Optional["PipelineBuildResponseModel"]:
-        """Loads or creates a pipeline build.
-
-        Args:
-            deployment: The pipeline deployment for which to load or create the
-                build.
-            pipeline_spec: Spec of the pipeline.
-            allow_code_download: If True, the build is allowed to download code
-                from the code repository.
-            allow_build_reuse: If True, the build is allowed to reuse an
-                existing build.
-            pipeline_id: Optional ID of the pipeline to reference in the build.
-            build: Optional existing build. If given, the build will be loaded
-                (or registered) in the database. If not given, a new build will
-                be created.
-            code_repository: Optional code repository to use for the build.
-
-        Returns:
-            The build response.
-        """
-        if not build:
-            if (
-                allow_build_reuse
-                and allow_code_download
-                and not deployment.requires_included_files
-            ):
-                existing_build = self._find_existing_build(
-                    deployment=deployment, code_repository=code_repository
-                )
-
-                if existing_build:
-                    logger.info(
-                        "Reusing existing build `%s` for pipeline `%s` and "
-                        "stack `%s`.",
-                        existing_build.id,
-                        self.name,
-                        Client().active_stack.name,
-                    )
-                    return existing_build
-
-            return self._build(
-                deployment=deployment,
-                allow_code_download=allow_code_download,
-                pipeline_id=pipeline_id,
-                code_repository=code_repository,
-            )
-
-        logger.info(
-            "Using an old build for a pipeline run can lead to "
-            "unexpected behavior as the pipeline will run with the step "
-            "code that was included in the Docker images which might "
-            "differ from the code in your client environment."
-        )
-
-        build_model = None
-
-        if isinstance(build, UUID):
-            build_model = Client().zen_store.get_build(build_id=build)
-        else:
-            build_request = PipelineBuildRequestModel(
-                user=Client().active_user.id,
-                workspace=Client().active_workspace.id,
-                stack=Client().active_stack_model.id,
-                pipeline=pipeline_id,
-                **build.dict(),
-            )
-            build_model = Client().zen_store.create_build(build=build_request)
-
-        self._validate_custom_build(
-            build=build_model,
-            deployment=deployment,
-            pipeline_spec=pipeline_spec,
-            code_repository=code_repository,
-        )
-
-        return build_model
-
-    def _find_existing_build(
-        self,
-        deployment: "PipelineDeploymentBaseModel",
-        code_repository: Optional["BaseCodeRepository"] = None,
-    ) -> Optional["PipelineBuildResponseModel"]:
-        client = Client()
-        stack = client.active_stack
-
-        python_version = ".".join(platform.python_version_tuple()[:2])
-        required_builds = stack.get_docker_builds(deployment=deployment)
-        build_checksum = self._compute_build_checksum(
-            required_builds, stack=stack, code_repository=code_repository
-        )
-
-        matches = client.list_builds(
-            sort_by="desc:created",
-            size=1,
-            stack_id=stack.id,
-            # The build is local and it's not clear whether the images
-            # exist on the current machine or if they've been overwritten.
-            # TODO: Should we support this by storing the unique Docker ID for
-            # the image and checking if an image with that ID exists locally?
-            is_local=False,
-            # The build contains some code which might be different than the
-            # local code the user is expecting to run
-            contains_code=False,
-            zenml_version=zenml.__version__,
-            # Match all patch versions of the same Python major + minor
-            python_version=f"startswith:{python_version}",
-            checksum=build_checksum,
-        )
-
-        if not matches.items:
-            return None
-
-        return matches[0]
-
-    def _build(
-        self,
-        deployment: "PipelineDeploymentBaseModel",
-        allow_code_download: bool,
-        pipeline_id: Optional[UUID] = None,
-        code_repository: Optional["BaseCodeRepository"] = None,
-    ) -> Optional["PipelineBuildResponseModel"]:
-        """Builds images and registers the output in the server.
-
-        Args:
-            deployment: The compiled pipeline deployment.
-            allow_code_download: If True, the build is allowed to download code
-                from the code repository.
-            pipeline_id: The ID of the pipeline.
-
-        Returns:
-            The build output.
-
-        Raises:
-            RuntimeError: If multiple builds with the same key but different
-                settings were specified.
-        """
-        client = Client()
-        stack = client.active_stack
-        required_builds = stack.get_docker_builds(deployment=deployment)
-
-        if not required_builds:
-            logger.debug("No docker builds required.")
-            return None
-
-        logger.info(
-            "Building Docker image(s) for pipeline `%s`.",
-            deployment.pipeline_configuration.name,
-        )
-
-        docker_image_builder = PipelineDockerImageBuilder()
-        images: Dict[str, BuildItem] = {}
-        checksums: Dict[str, str] = {}
-
-        for build_config in required_builds:
-            combined_key = PipelineBuildBaseModel.get_image_key(
-                component_key=build_config.key, step=build_config.step_name
-            )
-            checksum = build_config.compute_settings_checksum(
-                stack=stack, code_repository=code_repository
-            )
-
-            if combined_key in images:
-                previous_checksum = images[combined_key].settings_checksum
-
-                if previous_checksum != checksum:
-                    raise RuntimeError(
-                        f"Trying to build image for key `{combined_key}` but "
-                        "an image for this key was already built with a "
-                        "different configuration. This happens if multiple "
-                        "stack components specified Docker builds for the same "
-                        "key in the `StackComponent.get_docker_builds(...)` "
-                        "method. If you're using custom components, make sure "
-                        "to provide unique keys when returning your build "
-                        "configurations to avoid this error."
-                    )
-                else:
-                    continue
-
-            if checksum in checksums:
-                item_key = checksums[checksum]
-                image_name_or_digest = images[item_key].image
-                contains_code = images[item_key].contains_code
-            else:
-                tag = deployment.pipeline_configuration.name
-                if build_config.step_name:
-                    tag += f"-{build_config.step_name}"
-                tag += f"-{build_config.key}"
-
-                include_files = (
-                    build_config.settings.source_files
-                    == SourceFileMode.INCLUDE
-                    or (
-                        build_config.settings.source_files
-                        == SourceFileMode.DOWNLOAD_OR_INCLUDE
-                        and not allow_code_download
-                    )
-                )
-                download_files = (
-                    build_config.settings.source_files
-                    == SourceFileMode.DOWNLOAD
-                    or (
-                        build_config.settings.source_files
-                        == SourceFileMode.DOWNLOAD_OR_INCLUDE
-                        and allow_code_download
-                    )
-                )
-                image_name_or_digest = docker_image_builder.build_docker_image(
-                    docker_settings=build_config.settings,
-                    tag=tag,
-                    stack=stack,
-                    include_files=include_files,
-                    download_files=download_files,
-                    entrypoint=build_config.entrypoint,
-                    extra_files=build_config.extra_files,
-                    code_repository=code_repository,
-                )
-                contains_code = include_files
-
-            images[combined_key] = BuildItem(
-                image=image_name_or_digest,
-                settings_checksum=checksum,
-                contains_code=contains_code,
-            )
-            checksums[checksum] = combined_key
-
-        logger.info("Finished building Docker image(s).")
-
-        is_local = stack.container_registry is None
-        contains_code = any(item.contains_code for item in images.values())
-        build_checksum = self._compute_build_checksum(
-            required_builds, stack=stack, code_repository=code_repository
-        )
-
-        build_request = PipelineBuildRequestModel(
-            user=client.active_user.id,
-            workspace=client.active_workspace.id,
-            stack=client.active_stack_model.id,
-            pipeline=pipeline_id,
-            is_local=is_local,
-            contains_code=contains_code,
-            images=images,
-            zenml_version=zenml.__version__,
-            python_version=platform.python_version(),
-            checksum=build_checksum,
-        )
-        return client.zen_store.create_build(build_request)
-
-    @staticmethod
-    def _compute_build_checksum(
-        items: List["BuildConfiguration"],
-        stack: "Stack",
-        code_repository: Optional["BaseCodeRepository"] = None,
-    ) -> str:
-        hash_ = hashlib.md5()
-
-        for item in items:
-            key = PipelineBuildBaseModel.get_image_key(
-                component_key=item.key, step=item.step_name
-            )
-            settings_checksum = item.compute_settings_checksum(
-                stack=stack, code_repository=code_repository
-            )
-
-            hash_.update(key.encode())
-            hash_.update(settings_checksum.encode())
-
-        return hash_.hexdigest()
-
-    def _validate_custom_build(
-        self,
-        build: "PipelineBuildResponseModel",
-        deployment: "PipelineDeploymentBaseModel",
-        pipeline_spec: "PipelineSpec",
-        code_repository: Optional["BaseCodeRepository"] = None,
-    ) -> None:
-        """Validates the build of a pipeline deployment.
-
-        Args:
-            deployment: The deployment for which to validate the build.
-
-        Raises:
-            RuntimeError: If some required images for the deployment are missing
-                in the build.
-        """
-        stack = Client().active_stack
-        required_builds = stack.get_docker_builds(deployment=deployment)
-
-        if build.stack and build.stack.id != stack.id:
-            logger.warning(
-                "The stack `%s` used for the build `%s` is not the same as the "
-                "stack `%s` that the pipeline will run on. This could lead "
-                "to issues if the stacks have different build requirements.",
-                build.stack.name,
-                build.id,
-                stack.name,
-            )
-
-        if build.pipeline:
-            current_hash = self._compute_unique_identifier(
-                pipeline_spec=pipeline_spec
-            )
-
-            if build.pipeline.version_hash != current_hash:
-                logger.warning(
-                    "The pipeline associated with the build you "
-                    "specified for this run has a different spec "
-                    "or step code. This might lead to unexpected "
-                    "behavior as this pipeline run will use the "
-                    "code that was included in the Docker images which "
-                    "might differ from the code in your client "
-                    "environment."
-                )
-
-        if build.checksum:
-            build_checksum = self._compute_build_checksum(
-                required_builds, stack=stack, code_repository=code_repository
-            )
-            if build_checksum != build.checksum:
-                logger.warning(
-                    "The Docker settings used for the build `%s` are "
-                    "not the same as currently specified for you pipeline. "
-                    "This means that the build you specified to run this "
-                    "pipeline might be outdated and most likely contains "
-                    "outdated requirements.",
-                    build.id,
-                )
-
-        else:
-            # No checksum given for the entire build, we manually check that
-            # all the images exist and the setting match
-            for build_config in required_builds:
-                try:
-                    image = build.get_image(
-                        component_key=build_config.key,
-                        step=build_config.step_name,
-                    )
-                except KeyError:
-                    raise RuntimeError(
-                        f"Missing image for key: {build_config.key}."
-                    )
-
-                if build_config.compute_settings_checksum(
-                    stack=stack, code_repository=code_repository
-                ) != build.get_settings_checksum(
-                    component_key=build_config.key, step=build_config.step_name
-                ):
-                    logger.warning(
-                        "The Docker settings used to build the image `%s` are "
-                        "not the same as currently specified for you pipeline. "
-                        "This means that the build you specified to run this "
-                        "pipeline might be outdated and most likely contains "
-                        "outdated code of your steps.",
-                        image,
-                    )
-
-        if build.is_local:
-            logger.warning(
-                "You manually specified a local build to run your pipeline. "
-                "This might lead to errors if the images don't exist on "
-                "your local machine or the image tags have been "
-                "overwritten since the original build happened."
-            )

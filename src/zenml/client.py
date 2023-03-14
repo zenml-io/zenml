@@ -39,6 +39,7 @@ from zenml.config.global_config import GlobalConfiguration
 from zenml.config.source import Source
 from zenml.constants import (
     ENV_ZENML_ACTIVE_STACK_ID,
+    ENV_ZENML_ACTIVE_WORKSPACE_ID,
     ENV_ZENML_ENABLE_REPO_INIT_WARNINGS,
     ENV_ZENML_REPOSITORY_PATH,
     PAGE_SIZE_DEFAULT,
@@ -1329,6 +1330,10 @@ class Client(metaclass=ClientMetaClass):
         Raises:
             RuntimeError: If the active workspace is not set.
         """
+        if ENV_ZENML_ACTIVE_WORKSPACE_ID in os.environ:
+            workspace_id = os.environ[ENV_ZENML_ACTIVE_WORKSPACE_ID]
+            return self.get_workspace(workspace_id)
+
         workspace: Optional["WorkspaceResponseModel"] = None
         if self._config:
             workspace = self._config.active_workspace

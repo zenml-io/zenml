@@ -81,9 +81,6 @@ class PipelineDockerImageBuilder:
             extra_files: Extra files to add to the build context. Keys are the
                 path inside the build context, values are either the file
                 content or a file path.
-            code_repository: The code repository to use for the build. If left
-                empty, the default code repository will be used.
-
 
         Returns:
             The Docker image repo digest or local name, depending on whether
