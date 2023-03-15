@@ -26,7 +26,6 @@ from uuid import UUID
 import zenml
 from zenml.client import Client
 from zenml.code_repositories import BaseCodeRepository
-from zenml.config.docker_settings import SourceFileMode
 from zenml.logger import get_logger
 from zenml.models import (
     PipelineBuildRequestModel,
@@ -210,7 +209,6 @@ def create_pipeline_build(
     docker_image_builder = PipelineDockerImageBuilder()
     images: Dict[str, BuildItem] = {}
     checksums: Dict[str, str] = {}
-    allow_code_download = code_repository is not None
 
     for build_config in required_builds:
         combined_key = PipelineBuildBaseModel.get_image_key(
@@ -247,22 +245,13 @@ def create_pipeline_build(
                 tag += f"-{build_config.step_name}"
             tag += f"-{build_config.key}"
 
-            include_files = (
-                build_config.settings.source_files == SourceFileMode.INCLUDE
-                or (
-                    build_config.settings.source_files
-                    == SourceFileMode.DOWNLOAD_OR_INCLUDE
-                    and not allow_code_download
-                )
+            include_files = build_config.should_include_files(
+                code_repository=code_repository,
             )
-            download_files = (
-                build_config.settings.source_files == SourceFileMode.DOWNLOAD
-                or (
-                    build_config.settings.source_files
-                    == SourceFileMode.DOWNLOAD_OR_INCLUDE
-                    and allow_code_download
-                )
+            download_files = build_config.should_download_files(
+                code_repository=code_repository,
             )
+
             image_name_or_digest = docker_image_builder.build_docker_image(
                 docker_settings=build_config.settings,
                 tag=tag,
@@ -329,9 +318,10 @@ def compute_build_checksum(
         key = PipelineBuildBaseModel.get_image_key(
             component_key=item.key, step=item.step_name
         )
-        # TODO: this shouldn't always pass the code repo, only if actually downloading
+
         settings_checksum = item.compute_settings_checksum(
-            stack=stack, code_repository=code_repository
+            stack=stack,
+            code_repository=code_repository,
         )
 
         hash_.update(key.encode())
