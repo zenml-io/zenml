@@ -140,9 +140,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         _config_path: Directory where the global config file is stored.
     """
 
-    user_id: uuid.UUID = Field(
-        default_factory=uuid.uuid4, allow_mutation=False
-    )
+    user_id: uuid.UUID = Field(default_factory=uuid.uuid4)
     user_email: Optional[str] = None
     user_email_opt_in: Optional[bool] = None
     analytics_opt_in: bool = True
@@ -277,10 +275,6 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         environment_variable_name = f"{CONFIG_ENV_VAR_PREFIX}{key.upper()}"
         try:
             environment_variable_value = os.environ[environment_variable_name]
-
-            if key == "user_id":
-                self.__fields__["user_id"].field_info.allow_mutation = True
-
             # set the environment variable value to leverage Pydantic's type
             # conversion and validation
             super().__setattr__(key, environment_variable_value)
@@ -288,9 +282,6 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
             # set back the old value as we don't want to permanently store
             # the environment variable value here
             super().__setattr__(key, value)
-
-            if key == "user_id":
-                self.__fields__["user_id"].field_info.allow_mutation = True
             return return_value
         except (ValidationError, KeyError, TypeError):
             return value
