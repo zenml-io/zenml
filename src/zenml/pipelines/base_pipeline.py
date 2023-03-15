@@ -567,9 +567,10 @@ class BasePipeline(metaclass=BasePipelineMeta):
                 cli_utils.warning(
                     f"Your orchestrator '{stack.orchestrator.name}' is "
                     f"running remotely. Note that the pipeline run will "
-                    f"only show up on the dashboard once the first step "
-                    f"has started executing on the remote infrastructure. "
-                    f"This could take up to twenty minutes.",
+                    f"only show up on the ZenML dashboard once the first "
+                    f"step has started executing on the remote "
+                    f"infrastructure. This could take up to twenty "
+                    f"minutes.",
                     italic=True,
                 )
 
