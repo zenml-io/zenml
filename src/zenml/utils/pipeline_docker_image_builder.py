@@ -514,10 +514,9 @@ class PipelineDockerImageBuilder:
         Raises:
             ValueError: If a required hub plugin has an invalid format.
         """
-        from zenml.cli.hub import HubClient, get_hub_url
+        from zenml.hub.client import HubClient
 
-        client = HubClient(get_hub_url())
-
+        client = HubClient()
         hub_packages: defaultdict[str, List[str]] = defaultdict(list)
         hub_requirements: List[str] = []
 
