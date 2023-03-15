@@ -168,6 +168,9 @@ def concrete_registered_model_version(mocker, concrete_registered_models):
     registered_model_version.model_source_uri = "test_uri"
     registered_model_version.model_format = "test_format"
     registered_model_version.metadata = ModelRegistryModelMetadata(test="test")
+    registered_model_version.stage = ModelVersionStage.NONE
+    registered_model_version.created_at = datetime.now()
+    registered_model_version.last_updated_at = datetime.now()
     return [registered_model_version]
 
 
@@ -316,8 +319,8 @@ def test_get_model_version(
     # Run the command
     result = runner.invoke(
         get_model_version,
-        ["test_model", "test_version"],
+        ["test_model", "--version", "test_version"],
         obj=concrete_model_registry,
     )
     # Check the result
-    assert result.exit_code == 2
+    assert result.exit_code == 0
