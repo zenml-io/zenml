@@ -31,14 +31,14 @@ def post(batch: List[str], timeout: int = 15) -> requests.Response:
     """Post a batch of messages to the ZenML analytics server.
 
     Args:
-        batch: list of str representing the messages.
-        timeout: the timeout criteria in seconds.
+        batch: The messages to send.
+        timeout: Timeout in seconds.
 
     Returns:
-        the response
+        The response.
 
     Raises:
-        AnalyticsAPIError, if the post request has failed.
+        AnalyticsAPIError: If the post request has failed.
     """
     headers = {
         "accept": "application/json",
@@ -72,8 +72,8 @@ class AnalyticsAPIError(Exception):
         """Initialization.
 
         Args:
-            status: int, the status code of the response.
-            message: str, the text of the response.
+            status: The status code of the response.
+            message: The text of the response.
         """
         self.message = message
         self.status = status
@@ -82,7 +82,7 @@ class AnalyticsAPIError(Exception):
         """Method to represent the instance as a string.
 
         Returns:
-            str, a representation of the message and the status code.
+            A representation of the message and the status code.
         """
         msg = "[ZenML Analytics] {1}: {0}"
         return msg.format(self.message, self.status)
