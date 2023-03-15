@@ -460,7 +460,6 @@ def verify_custom_build(
                 "outdated requirements.",
                 build.id,
             )
-
     else:
         # No checksum given for the entire build, we manually check that
         # all the images exist and the setting match

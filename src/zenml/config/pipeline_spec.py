@@ -53,4 +53,4 @@ class PipelineSpec(StrictBaseModel):
                 step_dict["source"]
             ).import_path
 
-        return json.dumps(dict_)
+        return json.dumps(dict_, sort_keys=False)
