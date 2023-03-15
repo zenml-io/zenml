@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2023. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -96,6 +96,11 @@ class CodeRepositoryRequestModel(
 @update_model
 class CodeRepositoryUpdateModel(CodeRepositoryRequestModel):
     """Code repository update model."""
+
+
+# --------------- #
+# CODE REFERENCES #
+# --------------- #
 
 
 class CodeReferenceBaseModel(BaseModel):

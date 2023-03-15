@@ -141,18 +141,24 @@ class DockerSettings(BaseSettings):
             Docker image.
         dockerignore: Path to a dockerignore file to use when building the
             Docker image.
-        copy_files: If `True`, user files will be copied into the Docker image.
-            If this is set to `False`, ZenML will not copy any of your files
-            into the Docker image and you're responsible that all the files
-            to run your pipeline exist in the right place.
-        copy_global_config: If `True`, the global configuration (contains
-            connection info for your ZenStore) will be copied into the Docker
-            image. If this is set to `False`, ZenML will not copy this
-            configuration and you're responsible for making sure ZenML can
-            access the ZenStore in the Docker image.
+        copy_files: DEPRECATED, use the `source_files` attribute instead.
+        copy_global_config: DEPRECATED/UNUSED.
         user: If not `None`, will set the user, make it owner of the `/app`
             directory which contains all the user code and run the container
             entrypoint as this user.
+        source_files: Defines how the user source files will be handled when
+            building the Docker image.
+            * INCLUDE: The files will be included in the Docker image.
+            * DOWNLOAD: The files will be downloaded when running the image. If
+              this is specified, the files must be inside a registered code
+              repository and the repository must have no local changes,
+              otherwise the build will fail.
+            * DOWNLOAD_OR_INCLUDE: The files will be downloaded if they're
+              inside a registered code repository and the repository has no
+              local changes, otherwise they will be included in the image.
+            * IGNORE: The files will not be included or downloaded in the image.
+              If you use this option, you're responsible that all the files
+              to run your steps exist in the right place.
     """
 
     parent_image: Optional[str] = None
@@ -187,6 +193,14 @@ class DockerSettings(BaseSettings):
 
     @root_validator(pre=True)
     def _migrate_copy_files(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        """Migrates the value from the old copy_files attribute.
+
+        Args:
+            values: The settings values.
+
+        Returns:
+            The migrated settings values.
+        """
         copy_files = values.get("copy_files", None)
 
         if copy_files is None:
