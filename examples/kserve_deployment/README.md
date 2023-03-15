@@ -392,7 +392,7 @@ Please remember to grant the created service account permissions
 to read and write to your GCS bucket (i.e. use the `Storage Object Admin` role).
 
 When you have the GCP service account key, you can configure a ZenML
-secret to store them securely. You will reference the secret when you configure
+secret to store it securely. You will reference the secret when you configure
 the GCS Artifact Store stack component in the next sections:
 
 ```bash
