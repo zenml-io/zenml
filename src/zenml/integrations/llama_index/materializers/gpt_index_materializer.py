@@ -15,19 +15,11 @@
 
 
 import os
+import tempfile
 from typing import Type
 
 from llama_index.indices.base import BaseGPTIndex
 from llama_index.indices.vector_store import GPTFaissIndex
-
-from zenml.enums import ArtifactType
-from zenml.materializers.base_materializer import BaseMaterializer
-
-import os
-import tempfile
-from typing import Any, Type
-
-import xgboost as xgb
 
 from zenml.enums import ArtifactType
 from zenml.io import fileio
