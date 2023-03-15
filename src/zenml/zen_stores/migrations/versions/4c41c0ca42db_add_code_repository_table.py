@@ -51,7 +51,6 @@ def upgrade() -> None:
         sa.Column(
             "workspace_id", sqlmodel.sql.sqltypes.GUID(), nullable=False
         ),
-        sa.Column("user_id", sqlmodel.sql.sqltypes.GUID(), nullable=True),
         sa.Column(
             "code_repository_id", sqlmodel.sql.sqltypes.GUID(), nullable=False
         ),
@@ -69,12 +68,6 @@ def upgrade() -> None:
             ["code_repository.id"],
             name="fk_code_reference_code_repository_id_code_repository",
             ondelete="CASCADE",
-        ),
-        sa.ForeignKeyConstraint(
-            ["user_id"],
-            ["user.id"],
-            name="fk_code_reference_user_id_user",
-            ondelete="SET NULL",
         ),
         sa.ForeignKeyConstraint(
             ["workspace_id"],

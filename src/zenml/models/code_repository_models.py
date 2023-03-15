@@ -20,6 +20,8 @@ from pydantic import BaseModel, Field
 
 from zenml.config.source import Source
 from zenml.models.base_models import (
+    BaseRequestModel,
+    BaseResponseModel,
     WorkspaceScopedRequestModel,
     WorkspaceScopedResponseModel,
     update_model,
@@ -105,9 +107,7 @@ class CodeReferenceBaseModel(BaseModel):
     )
 
 
-class CodeReferenceRequestModel(
-    CodeReferenceBaseModel, WorkspaceScopedRequestModel
-):
+class CodeReferenceRequestModel(CodeReferenceBaseModel, BaseRequestModel):
     """Code reference request model."""
 
     code_repository: UUID = Field(
@@ -115,9 +115,7 @@ class CodeReferenceRequestModel(
     )
 
 
-class CodeReferenceResponseModel(
-    CodeReferenceBaseModel, WorkspaceScopedResponseModel
-):
+class CodeReferenceResponseModel(CodeReferenceBaseModel, BaseResponseModel):
     """Code reference response model."""
 
     code_repository: CodeRepositoryResponseModel = Field(

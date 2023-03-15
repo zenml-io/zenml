@@ -551,8 +551,6 @@ class BasePipeline(metaclass=BasePipelineMeta):
                 )
 
                 code_reference = CodeReferenceRequestModel(
-                    user=Client().active_user.id,
-                    workspace=Client().active_workspace.id,
                     commit=local_repo.current_commit,
                     subdirectory=subdirectory.as_posix(),
                     code_repository=local_repo.code_repository_id,

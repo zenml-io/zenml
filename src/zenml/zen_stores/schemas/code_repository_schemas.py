@@ -140,17 +140,6 @@ class CodeReferenceSchema(BaseSchema, table=True):
     )
     workspace: "WorkspaceSchema" = Relationship()
 
-    user_id: Optional[UUID] = build_foreign_key_field(
-        source=__tablename__,
-        target=UserSchema.__tablename__,
-        source_column="user_id",
-        target_column="id",
-        ondelete="SET NULL",
-        nullable=True,
-    )
-
-    user: Optional["UserSchema"] = Relationship()
-
     code_repository_id: UUID = build_foreign_key_field(
         source=__tablename__,
         target=CodeRepositorySchema.__tablename__,
@@ -166,20 +155,19 @@ class CodeReferenceSchema(BaseSchema, table=True):
 
     @classmethod
     def from_request(
-        cls,
-        request: "CodeReferenceRequestModel",
+        cls, request: "CodeReferenceRequestModel", workspace_id: UUID
     ) -> "CodeReferenceSchema":
         """Convert a `CodeReferenceRequestModel` to a `CodeReferenceSchema`.
 
         Args:
             request: The request model to convert.
+            workspace_id: The workspace ID.
 
         Returns:
             The converted schema.
         """
         return cls(
-            workspace_id=request.workspace,
-            user_id=request.user,
+            workspace_id=workspace_id,
             commit=request.commit,
             subdirectory=request.subdirectory,
             code_repository_id=request.code_repository,
@@ -195,8 +183,6 @@ class CodeReferenceSchema(BaseSchema, table=True):
         """
         return CodeReferenceResponseModel(
             id=self.id,
-            workspace=self.workspace.to_model(),
-            user=self.user.to_model(True) if self.user else None,
             created=self.created,
             updated=self.updated,
             commit=self.commit,

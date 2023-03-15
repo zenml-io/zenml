@@ -2905,6 +2905,7 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             code_reference_id = self._create_or_reuse_code_reference(
                 session=session,
+                workspace_id=deployment.workspace,
                 code_reference=deployment.code_reference,
             )
 
@@ -4207,12 +4208,15 @@ class SqlZenStore(BaseZenStore):
     def _create_or_reuse_code_reference(
         self,
         session: Session,
+        workspace_id: UUID,
         code_reference: Optional["CodeReferenceRequestModel"],
     ) -> Optional[UUID]:
         """Creates or reuses a code reference.
 
         Args:
             session: The database session to use.
+            workspace_id: ID of the workspace in which the code reference
+                should be.
             code_reference: Request of the reference to create.
 
         Returns:
@@ -4223,6 +4227,7 @@ class SqlZenStore(BaseZenStore):
 
         existing_reference = session.exec(
             select(CodeReferenceSchema)
+            .where(CodeReferenceSchema.workspace_id == workspace_id)
             .where(
                 CodeReferenceSchema.code_repository_id
                 == code_reference.code_repository
@@ -4235,7 +4240,9 @@ class SqlZenStore(BaseZenStore):
         if existing_reference is not None:
             return existing_reference.id
 
-        new_reference = CodeReferenceSchema.from_request(code_reference)
+        new_reference = CodeReferenceSchema.from_request(
+            code_reference, workspace_id=workspace_id
+        )
 
         session.add(new_reference)
         return new_reference.id
