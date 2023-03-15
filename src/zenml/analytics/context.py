@@ -22,7 +22,7 @@ from uuid import UUID
 
 from zenml import __version__
 from zenml.analytics.client import Client
-from zenml.constants import ENV_ZENML_SERVER_FLAG, handle_bool_env_var
+from zenml.constants import ENV_ZENML_SERVER, handle_bool_env_var
 from zenml.environment import Environment, get_environment
 from zenml.logger import get_logger
 
@@ -59,14 +59,18 @@ class AnalyticsContext:
 
     @property
     def in_server(self) -> bool:
-        """Flag to check whether the code is running on the server side."""
-        return handle_bool_env_var(ENV_ZENML_SERVER_FLAG)
+        """Flag to check whether the code is running in a ZenML server.
+
+        Returns:
+            True if running in a server, False otherwise.
+        """
+        return handle_bool_env_var(ENV_ZENML_SERVER)
 
     def __enter__(self) -> "AnalyticsContext":
         """Enter analytics context manager.
 
         Returns:
-            self.
+            The analytics context.
         """
         # Fetch the analytics opt-in setting
         from zenml.config.global_config import GlobalConfiguration
@@ -124,7 +128,7 @@ class AnalyticsContext:
             exc_tb: Exception traceback.
 
         Returns:
-            True, we should never fail main thread.
+            True.
         """
         if exc_val is not None:
             logger.debug(f"Sending telemetry 2.0 data failed: {exc_val}")
@@ -193,12 +197,6 @@ class AnalyticsContext:
             True if tracking information was sent, False otherwise.
         """
         from zenml.utils.analytics_utils import AnalyticsEvent
-
-        if not isinstance(event, AnalyticsEvent):
-            raise ValueError(
-                "When tracking events, please provide one of the supported "
-                "event types."
-            )
 
         if properties is None:
             properties = {}

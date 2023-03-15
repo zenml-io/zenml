@@ -38,9 +38,9 @@ the analytics.
 
 In the first version, it uses [`Segment`](https://segment.com) as the data 
 aggregation library for all our analytics. The entire code is entirely visible 
-and can be seen at [`zenml_analytics.py`](../../../src/zenml/utils/analytics_utils.py). 
-The main function is the [`track`](../../../src/zenml/utils/analytics_utils.py#L167) 
-function that triggers a [Segment Analytics Track event](https://segment.com/docs/connections/spec/track/),
+and can be seen at [`analytics_utils.py`](https://github.com/zenml-io/zenml/blob/main/src/zenml/utils/analytics_utils.py). 
+The main function is the `track(...)`function that triggers a
+[Segment Analytics Track event](https://segment.com/docs/connections/spec/track/),
 which runs on a separate background thread from the main thread.
 
 In the second version, the creation of the events and their corresponding 
@@ -58,7 +58,7 @@ allows us to understand how **ZenML** is being used holistically.
 **ZenML** triggers an asynchronous
 [Segment Track Event](https://segment.com/docs/connections/spec/track/) on the
 following events, which is also viewable in the
-[`zenml_analytics.py`](https://github.com/zenml-io/zenml/blob/main/src/zenml/utils/analytics_utils.py) 
+[`analytics_utils.py`](https://github.com/zenml-io/zenml/blob/main/src/zenml/utils/analytics_utils.py) 
 file in the GitHub repository.
 
 ```python

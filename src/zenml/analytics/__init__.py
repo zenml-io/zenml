@@ -16,14 +16,3 @@
 This module is based on the 'analytics-python' package created by Segment.
 The base functionalities are adapted to work with the ZenML analytics server.
 """
-
-from zenml.analytics.client import Client
-
-"""Settings."""
-on_error = Client.DefaultConfig.on_error
-debug = Client.DefaultConfig.debug
-send = Client.DefaultConfig.send
-sync_mode = Client.DefaultConfig.sync_mode
-max_queue_size = Client.DefaultConfig.max_queue_size
-timeout = Client.DefaultConfig.timeout
-max_retries = Client.DefaultConfig.max_retries

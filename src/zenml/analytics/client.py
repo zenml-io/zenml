@@ -42,7 +42,14 @@ class AnalyticsEncoder(json.JSONEncoder):
     """Helper encoder class for JSON serialization."""
 
     def default(self, obj: Any) -> Any:
-        """The default method to handle UUID and 'AnalyticsEvent' objects."""
+        """The default method to handle UUID and 'AnalyticsEvent' objects.
+
+        Args:
+            obj: The object to encode.
+
+        Returns:
+            The encoded object.
+        """
         from zenml.utils.analytics_utils import AnalyticsEvent
 
         # If the object is UUID, we simply return the value of UUID
@@ -63,21 +70,21 @@ class Client(object):
         """The configuration class for the client.
 
         Attributes:
-            on_error: function to call if an error occurs.
-            debug: flag to set to switch to the debug mode.
-            send: flag to determine whether to send the message.
-            sync_mode: flag, if set to True, uses the main thread to send
+            on_error: Function to call if an error occurs.
+            debug: Flag to set to switch to the debug mode.
+            send: Flag to determine whether to send the message.
+            sync_mode: Flag, if set to True, uses the main thread to send
                 the messages, and if set to False, creates other threads
                 for the analytics.
-            max_queue_size: int, the maximum number of entries a single queue
+            max_queue_size: The maximum number of entries a single queue
                 can hold.
-            timeout: int, the timeout criteria in seconds.
-            max_retries: int, the number of max tries before failing.
-            thread: int, the number of additional threads to create for the
+            timeout: Timeout in seconds.
+            max_retries: The number of max tries before failing.
+            thread: The number of additional threads to create for the
                 analytics if the 'sync_mode' is set to False.
-            upload_interval: float, the upload_interval in seconds if the
+            upload_interval: The upload_interval in seconds if the
                 'sync_mode' is set to False.
-            upload_size: int, the maximum size for messages a consumer can send
+            upload_size: The maximum size for messages a consumer can send
                 if the 'sync_mode' is set to False.
         """
 
@@ -105,7 +112,26 @@ class Client(object):
         upload_size: int = DefaultConfig.upload_size,
         upload_interval: float = DefaultConfig.upload_interval,
     ) -> None:
-        """Initialization of the client."""
+        """Initialization of the client.
+
+        Args:
+            debug: Flag to set to switch to the debug mode.
+            max_queue_size: The maximum number of entries a single queue
+                can hold.
+            send: Flag to determine whether to send the message.
+            on_error: Function to call if an error occurs.
+            max_retries: The number of max tries before failing.
+            sync_mode: Flag, if set to True, uses the main thread to send
+                the messages, and if set to False, creates other threads
+                for the analytics.
+            timeout: Timeout in seconds.
+            thread: The number of additional threads to create for the
+                analytics if the 'sync_mode' is set to False.
+            upload_size: The maximum size for messages a consumer can send
+                if the 'sync_mode' is set to False.
+            upload_interval: The upload_interval in seconds if the
+                'sync_mode' is set to False.
+        """
         self.queue = queue.Queue(max_queue_size)  # type: ignore[var-annotated]
         self.on_error = on_error
         self.debug = debug
@@ -149,11 +175,11 @@ class Client(object):
         """Method to identify a user with given traits.
 
         Args:
-            user_id: the UUID of the user.
-            traits: the traits for the identification process.
+            user_id: The user ID.
+            traits: The traits for the identification process.
 
         Returns:
-            a tuple, (success flag, the original message).
+            Tuple (success flag, the original message).
         """
         msg = {
             "user_id": user_id,
@@ -171,12 +197,12 @@ class Client(object):
         """Method to track events.
 
         Args:
-            user_id: the UUID of the user.
-            event: the type of the event.
-            properties: the dict for additional properties regarding the event.
+            user_id: The user ID.
+            event: The type of the event.
+            properties: Dict of additional properties for the event.
 
         Returns:
-            a tuple, (success flag, the original message).
+            Tuple (success flag, the original message).
         """
         msg = {
             "user_id": user_id,
@@ -192,12 +218,12 @@ class Client(object):
         """Method to group users.
 
         Args:
-            user_id: the UUID of the user.
-            group_id: the UUID of the group.
-            traits: the dict of traits to assign to the group.
+            user_id: The user ID.
+            group_id: The group ID.
+            traits: Traits to assign to the group.
 
         Returns:
-            a tuple, (success flag, the original message).
+            Tuple (success flag, the original message).
         """
         msg = {
             "user_id": user_id,
@@ -211,10 +237,10 @@ class Client(object):
         """Method to queue messages to be sent.
 
         Args:
-            msg: str, the incoming message.
+            msg: The message to queue.
 
         Returns:
-            a tuple, (success flag, the original message).
+            Tuple (success flag, the original message).
         """
         # if send is False, return msg as if it was successfully queued
         if not self.send:

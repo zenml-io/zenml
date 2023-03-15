@@ -50,13 +50,13 @@ class Consumer(Thread):
         """Initialize and create a consumer thread.
 
         Args:
-            queue: the list of messages in the queue.
-            upload_size: int, the maximum size for messages a consumer can send
+            queue: The list of messages in the queue.
+            upload_size: The maximum size for messages a consumer can send
                 if the 'sync_mode' is set to False.
-            on_error: function to call if an error occurs.
-            upload_interval: float, the upload_interval in seconds
-            retries: int, the number of max tries before failing.
-            timeout: int, the timeout criteria in seconds.
+            on_error: Function to call if an error occurs.
+            upload_interval: The upload_interval in seconds
+            retries: The number of max tries before failing.
+            timeout: Timeout in seconds.
         """
         Thread.__init__(self)
         # Make consumer a daemon thread so that it doesn't block program exit
@@ -86,7 +86,11 @@ class Consumer(Thread):
         self.running = False
 
     def upload(self) -> bool:
-        """Upload the next batch of items, return whether successful."""
+        """Upload the next batch of items, return whether successful.
+
+        Returns:
+            If the upload succeeded.
+        """
         success = False
         batch = self.next()
         if len(batch) == 0:
@@ -107,7 +111,11 @@ class Consumer(Thread):
             return success
 
     def next(self) -> List[str]:
-        """Return the next batch of items to upload."""
+        """Return the next batch of items to upload.
+
+        Returns:
+            The next batch of items to upload.
+        """
         queue = self.queue
         items: List[str] = []
 
@@ -140,7 +148,11 @@ class Consumer(Thread):
         return items
 
     def request(self, batch: List[str]) -> None:
-        """Attempt to upload the batch and retry before raising an error."""
+        """Attempt to upload the batch and retry before raising an error.
+
+        Args:
+            batch: The batch to upload.
+        """
 
         def fatal_exception(exc: Any) -> bool:
             if isinstance(exc, AnalyticsAPIError):
