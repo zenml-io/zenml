@@ -481,7 +481,7 @@ Moreover, ZenML will manage the KServe deployments inside the same `kubeflow`
 namespace where the Kubeflow pipelines are running. You also have to update the 
 set of permissions granted by Kubeflow to the Kubernetes service account in the 
 context of which Kubeflow pipelines are running to allow the ZenML workloads to 
-create, update and delete KServe InferenceServices, KServes and ServiceAccounts. 
+create, update and delete KServe InferenceServices, Secrets and ServiceAccounts.
 You can do so with the following command.
 
 ```shell
@@ -495,7 +495,7 @@ metadata:
     app: zenml
 rules:
 - apiGroups: ["serving.kserve.io",""] # "" indicates the core API group
-  resources: ["inferenceservices","KServes","serviceaccounts"]
+  resources: ["inferenceservices","secrets","serviceaccounts"]
   verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
@@ -581,7 +581,7 @@ Step deployment_trigger has started.
 Using cached version of deployment_trigger.
 Step deployment_trigger has finished in 0.044s.
 Step kserve_model_deployer_step has started.
-INFO:kserve.api.creds_utils:Created KServe: `kserve-KServe-7k6p2` in namespace kubeflow
+INFO:kserve.api.creds_utils:Created Secret: `kserve-secret-7k6p2` in namespace kubeflow
 INFO:kserve.api.creds_utils:Patched Service account: kserve-service-credentials in namespace kubeflow
 Creating a new KServe deployment service: `KServeDeploymentService[a9e967a1-9b26-4d5c-855c-e5abba0b020b]` (type: model-serving, flavor: kserve)
 KServe deployment service started and reachable at:
@@ -710,7 +710,7 @@ Using cached version of deployment_trigger.
 Step deployment_trigger has finished in 0.032s.
 Step kserve_model_deployer_step has started.
 INFO:root:Successfully exported model mnist-pytorch to file `/tmp/zenml-pytorch-temp-j_bx9x1f`
-INFO:kserve.api.creds_utils:Created KServe: `kserve-KServe-gqktl` in namespace zenml-workloads
+INFO:kserve.api.creds_utils:Created Secret: `kserve-secret-gqktl` in namespace zenml-workloads
 INFO:kserve.api.creds_utils:Patched Service account: kserve-service-credentials in namespace zenml-workloads
 Creating a new KServe deployment service: `KServeDeploymentService[e7595ac9-7fcf-42c2-82ac-a9e40ee95090]` (type: model-serving, flavor: kserve)
 KServe deployment service started and reachable at:

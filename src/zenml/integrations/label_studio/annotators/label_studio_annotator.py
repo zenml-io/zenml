@@ -51,30 +51,6 @@ class LabelStudioAnnotator(BaseAnnotator, AuthenticationMixin):
         """
         return cast(LabelStudioAnnotatorConfig, self._config)
 
-    # @property
-    # def validator(self) -> Optional["StackValidator"]:
-    #     """Validates that the stack contains a cloud artifact store.
-
-    #     Returns:
-    #         StackValidator: Validator for the stack.
-    #     """
-
-    #     def _ensure_cloud_artifact_stores(stack: Stack) -> Tuple[bool, str]:
-    #         # For now this only works on cloud artifact stores.
-    #         return (
-    #             stack.artifact_store.flavor
-    #             in [
-    #                 AZURE_ARTIFACT_STORE_FLAVOR,
-    #                 GCP_ARTIFACT_STORE_FLAVOR,
-    #                 S3_ARTIFACT_STORE_FLAVOR,
-    #             ],
-    #             "Only cloud artifact stores are currently supported",
-    #         )
-
-    #     return StackValidator(
-    #         custom_validation_function=_ensure_cloud_artifact_stores,
-    #     )
-
     def get_url(self) -> str:
         """Gets the top-level URL of the annotation interface.
 

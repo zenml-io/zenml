@@ -150,7 +150,7 @@ zenml experiment-tracker register mlflow \
 ```
 
 {% hint style="info" %}
-Read more about [ZenML Secret](../../advanced-guide/practical/secrets-management.md)
+Read more about [ZenML Secrets](../../advanced-guide/practical/secrets-management.md)
 in the ZenML documentation.
 {% endhint %}
 {% endtab %}
