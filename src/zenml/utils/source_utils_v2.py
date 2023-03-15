@@ -41,7 +41,6 @@ from zenml.config.source import (
     SourceType,
 )
 from zenml.logger import get_logger
-from zenml.utils import source_utils
 from zenml.utils.pagination_utils import depaginate
 
 if TYPE_CHECKING:
@@ -52,6 +51,7 @@ logger = get_logger(__name__)
 
 _SOURCE_MAPPING: Dict[int, Source] = {}
 _CODE_REPOSITORY_CACHE: Dict[str, "LocalRepository"] = {}
+_CUSTOM_SOURCE_ROOT: Optional[str] = None
 
 
 def load(source: Union[Source, str]) -> Any:
@@ -182,10 +182,61 @@ def resolve(obj: Union[Type[Any], FunctionType, ModuleType]) -> Source:
 def get_source_root() -> str:
     """Get the source root.
 
+    The source root will be determined in the following order:
+    - The manually specified custom source root if it was set.
+    - The ZenML repository directory if one exists in the current working
+      directory or any parent directories.
+    - The parent directory of the main module file.
+
     Returns:
         The source root.
+
+    Raises:
+        RuntimeError: If the main module file can't be found.
     """
-    return source_utils.get_source_root_path()
+    if _CUSTOM_SOURCE_ROOT:
+        logger.debug("Using custom source root: %s", _CUSTOM_SOURCE_ROOT)
+        return _CUSTOM_SOURCE_ROOT
+
+    from zenml.client import Client
+
+    repo_root = Client.find_repository()
+    if repo_root:
+        logger.debug("Using repository root as source root: %s", repo_root)
+        return str(repo_root.resolve())
+
+    main_module = sys.modules.get("__main__")
+    if main_module is None:
+        raise RuntimeError(
+            "Unable to determine source root because the main module could not "
+            "be found."
+        )
+
+    if not hasattr(main_module, "__file__") or not main_module.__file__:
+        raise RuntimeError(
+            "Unable to determine source root because the main module does not "
+            "have an associated file. This could be because you're running in "
+            "an interactive Python environment."
+        )
+
+    path = Path(main_module.__file__).resolve().parent
+
+    logger.debug("Using main module parent directory as source root: %s", path)
+    return str(path)
+
+
+def set_custom_source_root(source_root: Optional[str]) -> None:
+    """Sets a custom source root.
+
+    If set this has the highest priority and will always be used as the source
+    root.
+
+    Args:
+        source_root: The source root to use.
+    """
+    logger.debug("Setting custom source root: %s", source_root)
+    global _CUSTOM_SOURCE_ROOT
+    _CUSTOM_SOURCE_ROOT = source_root
 
 
 def set_custom_local_repository(

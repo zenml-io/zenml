@@ -27,7 +27,7 @@ from zenml.constants import (
     handle_bool_env_var,
 )
 from zenml.logger import get_logger
-from zenml.utils import source_utils, source_utils_v2, uuid_utils
+from zenml.utils import source_utils_v2, uuid_utils
 
 if TYPE_CHECKING:
     from zenml.models import (
@@ -229,7 +229,7 @@ class BaseEntrypointConfiguration(ABC):
             directory=download_dir,
             repo_sub_directory=code_reference.subdirectory,
         )
-        source_utils.set_custom_source_root(download_dir)
+        source_utils_v2.set_custom_source_root(download_dir)
         source_utils_v2.set_custom_local_repository(
             root=code_repo_root, commit=code_reference.commit, repo=repo
         )

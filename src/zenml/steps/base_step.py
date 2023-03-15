@@ -77,7 +77,7 @@ from zenml.utils import (
     dict_utils,
     pydantic_utils,
     settings_utils,
-    source_utils,
+    source_code_utils,
     source_utils_v2,
 )
 
@@ -457,7 +457,7 @@ class BaseStep(metaclass=BaseStepMeta):
         parameters = {}
         parameters[
             STEP_SOURCE_PARAMETER_NAME
-        ] = source_utils.get_hashed_source(self.source_object)
+        ] = source_code_utils.get_hashed_source_code(self.source_object)
 
         for name, output in self.configuration.outputs.items():
             if output.materializer_source:
@@ -465,7 +465,7 @@ class BaseStep(metaclass=BaseStepMeta):
                 materializer_class = source_utils_v2.load(
                     output.materializer_source
                 )
-                parameters[key] = source_utils.get_hashed_source(
+                parameters[key] = source_code_utils.get_hashed_source_code(
                     materializer_class
                 )
 

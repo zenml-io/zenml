@@ -47,7 +47,7 @@ from zenml.utils.pipeline_docker_image_builder import (
     DOCKER_IMAGE_ZENML_CONFIG_DIR,
     PipelineDockerImageBuilder,
 )
-from zenml.utils.source_utils import get_source_root_path
+from zenml.utils.source_utils_v2 import get_source_root
 
 if TYPE_CHECKING:
     from zenml.config import DockerSettings
@@ -272,7 +272,7 @@ class AzureMLStepOperator(BaseStepOperator):
             auth=self._get_authentication(),
         )
 
-        source_directory = get_source_root_path()
+        source_directory = get_source_root()
 
         environment = self._prepare_environment(
             workspace=workspace,
