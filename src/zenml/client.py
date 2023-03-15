@@ -3838,9 +3838,9 @@ class Client(metaclass=ClientMetaClass):
 
         self.zen_store.delete_secret(secret_id=secret.id)
 
-    # -------------
-    # - PIPELINES -
-    # -------------
+    # .-------------------.
+    # | CODE REPOSITORIES |
+    # '-------------------'
 
     def create_code_repository(
         self, name: str, config: Dict[str, Any], source: Source
