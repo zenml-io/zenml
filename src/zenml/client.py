@@ -3847,6 +3847,8 @@ class Client(metaclass=ClientMetaClass):
 
         Args:
             name: Name of the code repository.
+            config: The configuration for the code repository.
+            source: The code repository implementation source.
 
         Returns:
             The created code repository.

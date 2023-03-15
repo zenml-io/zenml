@@ -139,9 +139,11 @@ class DistributionPackageSource(Source):
     """Source representing an object from a distribution package.
 
     Attributes:
+        package_name: Name of the package.
         version: The package version.
     """
 
+    package_name: str
     version: Optional[str] = None
     type: SourceType = SourceType.DISTRIBUTION_PACKAGE
 
@@ -162,17 +164,6 @@ class DistributionPackageSource(Source):
             raise ValueError("Invalid source type.")
 
         return value
-
-    @property
-    def package_name(self) -> Optional[str]:
-        """The package name.
-
-        Returns:
-            The package name if a package for the source module exists.
-        """
-        from zenml.utils import source_utils_v2
-
-        return source_utils_v2._get_package_for_module(module_name=self.module)
 
 
 class CodeRepositorySource(Source):

@@ -73,7 +73,7 @@ def load(source: Union[Source, str]) -> Any:
         import_root = get_source_root()
     elif source.type == SourceType.DISTRIBUTION_PACKAGE:
         source = DistributionPackageSource.parse_obj(source)
-        if source.version and source.package_name:
+        if source.version:
             current_package_version = _get_package_version(
                 package_name=source.package_name
             )
@@ -166,6 +166,7 @@ def resolve(obj: Union[Type[Any], FunctionType, ModuleType]) -> Source:
             return DistributionPackageSource(
                 module=module_name,
                 attribute=attribute_name,
+                package_name=package_name,
                 version=package_version,
                 type=source_type,
             )
@@ -230,7 +231,11 @@ def find_active_code_repository(
         return _CODE_REPOSITORY_CACHE[path]
 
     for model in depaginate(list_method=Client().list_code_repositories):
-        repo = BaseCodeRepository.from_model(model)
+        try:
+            repo = BaseCodeRepository.from_model(model)
+        except Exception:
+            logger.exception("Failed to instantiate code repository class.")
+            continue
 
         local_repo = repo.get_local_repo(path)
         if local_repo:
