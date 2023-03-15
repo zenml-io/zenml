@@ -246,10 +246,13 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
         Returns:
             A dictionary of metadata.
         """
+        run_metadata = {
+            "pipeline_execution_arn": os.environ[ENV_ZENML_SAGEMAKER_RUN_ID],
+        }
         try:
             region_name = self._get_region_name()
         except RuntimeError:
-            region_name = ""
+            return run_metadata
 
         aws_run_id = os.environ[ENV_ZENML_SAGEMAKER_RUN_ID].split("/")[-1]
         orchestrator_logs_url = (
@@ -258,8 +261,5 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
             f"/$252Faws$252Fsagemaker$252FProcessingJobs$3FlogStreamNameFilter"
             f"$3Dpipelines-{aws_run_id}-"
         )
-
-        return {
-            METADATA_ORCHESTRATOR_URL: Uri(orchestrator_logs_url),
-            "pipeline_execution_arn": os.environ[ENV_ZENML_SAGEMAKER_RUN_ID],
-        }
+        run_metadata[METADATA_ORCHESTRATOR_URL] = Uri(orchestrator_logs_url)
+        return run_metadata
