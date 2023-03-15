@@ -18,7 +18,8 @@ from typing import TYPE_CHECKING, List, Optional
 from uuid import UUID
 
 from pydantic import ValidationError
-from sqlmodel import Relationship
+from sqlalchemy import TEXT, Column
+from sqlmodel import Field, Relationship
 
 from zenml.config.source import Source
 from zenml.enums import ArtifactType
@@ -73,9 +74,8 @@ class ArtifactSchema(NamedSchema, table=True):
 
     type: ArtifactType
     uri: str
-    # TODO: make these text type for longer strings
-    materializer: str
-    data_type: str
+    materializer: str = Field(sa_column=Column(TEXT, nullable=False))
+    data_type: str = Field(sa_column=Column(TEXT, nullable=False))
 
     run_metadata: List["RunMetadataSchema"] = Relationship(
         back_populates="artifact",
