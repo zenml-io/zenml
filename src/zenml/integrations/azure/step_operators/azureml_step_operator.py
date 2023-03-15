@@ -209,8 +209,6 @@ class AzureMLStepOperator(BaseStepOperator):
             ENV_ZENML_CONFIG_PATH
         ] = f"./{DOCKER_IMAGE_ZENML_CONFIG_DIR}"
         environment_variables.update(docker_settings.environment)
-        # TODO: Do we need to handle the code download here somehow or do we
-        # just always include it in the azureml build?
         environment.environment_variables = environment_variables
         return environment
 
@@ -244,11 +242,14 @@ class AzureMLStepOperator(BaseStepOperator):
             "dockerfile",
             "build_context_root",
             "build_options",
-            "docker_target_repository",
+            "skip_build",
+            "target_repository",
             "dockerignore",
             "copy_files",
             "copy_global_config",
             "apt_packages",
+            "user",
+            "source_files",
         ]
         docker_settings = info.config.docker_settings
         ignored_docker_fields = docker_settings.__fields_set__.intersection(
