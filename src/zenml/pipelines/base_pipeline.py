@@ -39,6 +39,7 @@ import yaml
 from packaging import version
 
 from zenml import constants
+from zenml.cli import utils as cli_utils
 from zenml.client import Client
 from zenml.config.compiler import Compiler
 from zenml.config.pipeline_configurations import (
@@ -561,6 +562,16 @@ class BasePipeline(metaclass=BasePipelineMeta):
                 )
             finally:
                 constants.SHOULD_PREVENT_PIPELINE_EXECUTION = False
+
+            if stack.orchestrator.config.is_remote:
+                cli_utils.warning(
+                    f"Your orchestrator '{stack.orchestrator.name}' is "
+                    f"running remotely. Note that the pipeline run will "
+                    f"only show up on the dashboard once the first step "
+                    f"has started executing on the remote infrastructure. "
+                    f"This could take up to twenty minutes.",
+                    italic=True,
+                )
 
             # Log the dashboard URL
             dashboard_utils.print_run_url(
