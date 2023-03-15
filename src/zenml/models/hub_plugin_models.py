@@ -18,8 +18,19 @@ from uuid import UUID
 
 from pydantic import BaseModel
 
+from zenml.utils.enum_utils import StrEnum
+
 if TYPE_CHECKING:
     pass
+
+
+class PluginStatus(StrEnum):
+    """Enum that represents the status of a plugin."""
+
+    PENDING = "pending"  # Plugin is being built
+    FAILED = "failed"  # Plugin build failed
+    AVAILABLE = "available"  # Plugin is available for installation
+    YANKED = "yanked"  # Plugin was yanked and is no longer available
 
 
 class HubUserModel(BaseModel):
@@ -51,7 +62,7 @@ class HubPluginRequestModel(HubPluginBaseModel):
 class HubPluginResponseModel(HubPluginBaseModel):
     """Response model for a ZenML Hub plugin."""
 
-    status: str
+    status: PluginStatus
     version: str
     index_url: Optional[str]
     package_name: Optional[str]
