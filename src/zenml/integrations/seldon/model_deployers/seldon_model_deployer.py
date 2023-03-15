@@ -124,7 +124,7 @@ class SeldonModelDeployer(BaseModelDeployer):
     def kubernetes_secret_name(self) -> str:
         """Get the Kubernetes secret name associated with this model deployer.
 
-        If a pre-existing kubernetes secret is configured for this model
+        If a pre-existing Kubernetes secret is configured for this model
         deployer, that name is returned to be used by all Seldon Core
         deployments associated with this model deployer.
 

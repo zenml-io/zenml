@@ -48,8 +48,8 @@ To connect ZenML to your local Label Studio server, you also need an API key.
 This will give you access to the web annotation interface.
 
 First order of business is to sign up if you haven't done so already, using an
-email and a password. Then visit http://localhost:8093/ to log in, and then
-visit http://localhost:8093/user/account and get your Label Studio API key (from
+email and a password. Then visit [http://localhost:8093/](http://localhost:8093/) to log in, and then
+visit [http://localhost:8093/user/account](http://localhost:8093/user/account) and get your Label Studio API key (from
 the upper right hand corner). You will need it for later. Keep the
 Label Studio server running, because the ZenML Label Studio annotator will use
 it as the backend.

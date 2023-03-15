@@ -147,7 +147,7 @@ secret and reference it in the GCS Artifact Store configuration as follows:
 ```shell
 # Store the GCP credentials in a ZenML  
 zenml secret create gcp_secret \
-    --token=@path/to/service/account/key.json
+    --token=@path/to/service_account_key.json
 
 # Register the GCS artifact store and reference the ZenML secret
 zenml artifact-store register gcs_store -f gcp \

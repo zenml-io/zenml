@@ -231,7 +231,7 @@ Now register the model deployer:
 >  --kubernetes_context=<KUBERNETES-CONTEXT> \
 >  --kubernetes_namespace=<KUBERNETES-NAMESPACE> \
 >  --base_url=http://$INGRESS_HOST \
->  --secret=<zenml-secret-name> 
+>  --secret=<ZENML_SECRET_NAME> 
 > ```
 
 ```bash

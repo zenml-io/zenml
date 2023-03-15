@@ -552,7 +552,7 @@ class KServeModelDeployer(BaseModelDeployer):
 
             if not converted_secret:
 
-                # If a secret and service accoutn were previously configured, we
+                # If a secret and service account were previously configured, we
                 # need to delete them before we can proceed
                 if config.k8s_service_account:
                     self.delete_k8s_service_account(config.k8s_service_account)

@@ -284,7 +284,7 @@ grants access to the S3 bucket. To create an AWS access key and secret key,
 follow the instructions in [the official AWS documentation](https://aws.amazon.com/premiumsupport/knowledge-center/create-access-key/). Please remember to grant the created IAM user permissions
 to read and write to your S3 bucket (i.e. use the `AmazonS3FullAccess` policy).
 
-When you have the AWS access key and secret key, you can configure a ZenML
+When you have the AWS access key id and secret access key, you can configure a ZenML
 secret to store them securely. You will reference the secret when you configure
 the S3 Artifact Store stack component in the next sections:
 
@@ -392,7 +392,7 @@ export INGRESS_HOST=$(kubectl -n istio-system get service istio-ingressgateway \
   -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
 ```
 
-Configuring the stack can look as describe below:
+Configuring the stack can look as described below:
 
 ```shell
 zenml integration install s3 aws kubeflow seldon
