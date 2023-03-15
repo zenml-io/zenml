@@ -534,6 +534,23 @@ class Client(metaclass=ClientMetaClass):
             logger.warning(warning_message)
         return None
 
+    @staticmethod
+    def is_inside_repository(file_path: str) -> bool:
+        """Returns whether a file is inside the active ZenML repository.
+
+        Args:
+            file_path: A file path.
+
+        Returns:
+            True if the file is inside the active ZenML repository, False
+            otherwise.
+        """
+        repo_path = Client.find_repository()
+        if not repo_path:
+            return False
+
+        return repo_path in Path(file_path).resolve().parents
+
     @property
     def zen_store(self) -> "BaseZenStore":
         """Shortcut to return the global zen store.

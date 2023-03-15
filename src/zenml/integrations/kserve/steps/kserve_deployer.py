@@ -17,6 +17,7 @@ from typing import List, Optional, cast
 
 from pydantic import BaseModel, validator
 
+from zenml.client import Client
 from zenml.constants import MODEL_METADATA_YAML_FILE_NAME
 from zenml.environment import Environment
 from zenml.exceptions import DoesNotExistException
@@ -44,7 +45,7 @@ from zenml.steps import (
 from zenml.steps.step_context import StepContext
 from zenml.utils import io_utils
 from zenml.utils.materializer_utils import save_model_metadata
-from zenml.utils.source_utils import import_class_by_path, is_inside_repository
+from zenml.utils.source_utils import import_class_by_path
 
 logger = get_logger(__name__)
 
@@ -91,7 +92,7 @@ class TorchServeParameters(BaseModel):
         """
         if not v:
             raise ValueError("Model class file path is required.")
-        if not is_inside_repository(v):
+        if not Client.is_inside_repository(v):
             raise ValueError(
                 "Model class file path must be inside the repository."
             )
@@ -113,7 +114,7 @@ class TorchServeParameters(BaseModel):
         if v:
             if v in TORCH_HANDLERS:
                 return v
-            elif is_inside_repository(v):
+            elif Client.is_inside_repository(v):
                 return v
             else:
                 raise ValueError(
@@ -141,7 +142,7 @@ class TorchServeParameters(BaseModel):
         extra_files = []
         if v is not None:
             for file_path in v:
-                if is_inside_repository(file_path):
+                if Client.is_inside_repository(file_path):
                     extra_files.append(file_path)
                 else:
                     raise ValueError(
@@ -164,7 +165,7 @@ class TorchServeParameters(BaseModel):
             ValueError: if torch config file path is not valid.
         """
         if v:
-            if is_inside_repository(v):
+            if Client.is_inside_repository(v):
                 return v
             else:
                 raise ValueError(
