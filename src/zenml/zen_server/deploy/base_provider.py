@@ -14,7 +14,7 @@
 """Base ZenML server provider class."""
 
 from abc import ABC, abstractmethod
-from typing import ClassVar, Generator, List, Optional, Tuple, Type
+from typing import ClassVar, Dict, Generator, List, Optional, Tuple, Type
 
 from pydantic import ValidationError
 
@@ -258,6 +258,24 @@ class BaseServerProvider(ABC):
             )
 
         return service.get_logs(follow=follow, tail=tail)
+
+    def get_deployment_outputs(
+        self,
+        config: ServerDeploymentConfig,
+        output_name: Optional[str] = None,
+    ) -> Dict[str, str]:
+        """Get the outputs of a ZenML server deployment.
+
+        This method only returns an empty dict and can be overridden by
+        subclasses to return outputs.
+
+        Args:
+            config: The generic server deployment configuration.
+
+        Returns:
+            The outputs of the server deployment.
+        """
+        return {"server": f"{config.name}"}
 
     def _get_deployment_status(
         self, service: BaseService

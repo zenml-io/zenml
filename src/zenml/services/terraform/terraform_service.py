@@ -356,6 +356,25 @@ class TerraformService(BaseService):
             "This method is not available for Terraform services."
         )
 
+    def get_outputs(self, output: Optional[str] = None) -> Dict[str, Any]:
+        """Get outputs from the terraform state.
+
+        Returns:
+            A dictionary of outputs from the terraform state.
+        """
+        if output:
+            # if output is specified, then full_outputs is just a string
+            full_outputs = self.terraform_client.output(
+                output, full_value=True
+            )
+            return {output: full_outputs}
+        else:
+            # get value of the "value" key in the value of full_outputs
+            # and assign it to the key in the output dict
+            full_outputs = self.terraform_client.output(full_value=True)
+            outputs = {k: v["value"] for k, v in full_outputs.items()}
+            return outputs
+
     def check_installation(self) -> None:
         """Checks if necessary tools are installed on the host system.
 

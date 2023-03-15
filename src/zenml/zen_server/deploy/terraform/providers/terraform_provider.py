@@ -14,7 +14,7 @@
 """Zen Server terraform deployer implementation."""
 
 import os
-from typing import ClassVar, List, Optional, Tuple, Type, cast
+from typing import ClassVar, Dict, List, Optional, Tuple, Type, cast
 
 from zenml.config.global_config import GlobalConfiguration
 from zenml.logger import get_logger
@@ -330,3 +330,16 @@ class TerraformServerProvider(BaseServerProvider):
             connected=connected,
             ca_crt=ca_crt,
         )
+
+    def get_deployment_outputs(
+        self,
+        config: ServerDeploymentConfig,
+        output_name: Optional[str] = None,
+    ) -> Dict[str, str]:
+        outputs = super().get_deployment_outputs(config)
+
+        # add the terraform outputs
+        service = self._get_service(config.name)
+        outputs.update(service.get_outputs(output=output_name))
+
+        return outputs

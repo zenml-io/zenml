@@ -505,6 +505,32 @@ def deploy(
                 )
 
 
+# get outputs
+@cli.command(
+    "get-deploy-outputs",
+    help="Get the outputs of a ZenML server deployment.",
+)
+@click.argument(
+    "name",
+    required=True,
+    type=click.STRING,
+)
+@click.option(
+    "--output",
+    help="The name of the output to get.",
+    required=False,
+)
+def get_outputs(name: str, output: Optional[str] = None) -> Dict[str, str]:
+    """Get the outputs of the ZenML server deployment."""
+    from zenml.zen_server.deploy.deployer import ServerDeployer
+
+    deployer = ServerDeployer()
+    outputs = deployer.get_deployment_outputs(name, output)
+
+    cli_utils.declare("Outputs:")
+    cli_utils.declare(outputs)
+
+
 @cli.command(
     "destroy", help="Tear down and clean up the cloud ZenML deployment."
 )

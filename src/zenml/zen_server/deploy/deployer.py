@@ -418,3 +418,34 @@ class ServerDeployer(metaclass=SingletonMetaClass):
         return provider.get_server_logs(
             server.config, follow=follow, tail=tail
         )
+
+    def get_deployment_outputs(
+        self,
+        server_name: str,
+        output_name: Optional[str] = None,
+    ) -> Dict[str, str]:
+        """Get the outputs of a ZenML server deployment.
+
+        Args:
+            server_name: The server deployment name.
+
+        Returns:
+            The outputs of the server deployment.
+        """
+        # this will also raise ServerDeploymentNotFoundError if the server
+        # does not exist
+        server = self.get_server(server_name)
+
+        provider_name = server.config.provider.value
+        provider = self.get_provider(server.config.provider)
+
+        # if the provider does not implement this method, we return an empty
+        # dict
+        if not hasattr(provider, "get_deployment_outputs"):
+            return {}
+
+        logger.info(
+            f"Fetching outputs from the '{server_name}' {provider_name} ZenML "
+            f"server..."
+        )
+        return provider.get_deployment_outputs(server.config, output_name)
