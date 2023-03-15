@@ -214,10 +214,7 @@ class PipelineDockerImageBuilder:
                 dockerignore_file=docker_settings.dockerignore,
             )
 
-            (
-                requirements_file_names,
-                extra_index_requirements,
-            ) = self._add_requirements_files(
+            requirements_file_names = self._add_requirements_files(
                 docker_settings=docker_settings,
                 build_context=build_context,
                 stack=stack,
@@ -258,7 +255,6 @@ class PipelineDockerImageBuilder:
                 parent_image=parent_image,
                 docker_settings=docker_settings,
                 requirements_files=requirements_file_names,
-                extra_index_requirements=extra_index_requirements,
                 apt_packages=apt_packages,
                 entrypoint=entrypoint,
             )
@@ -326,7 +322,7 @@ class PipelineDockerImageBuilder:
         docker_settings: DockerSettings,
         build_context: "BuildContext",
         stack: "Stack",
-    ) -> Tuple[List[str], Dict[str, List[str]]]:
+    ) -> List[str]:
         """Adds requirements files to the build context.
 
         Args:
@@ -336,40 +332,29 @@ class PipelineDockerImageBuilder:
             stack: The stack on which the pipeline will run.
 
         Returns:
-            - Name of the requirements files in the build context.
-                The files will be in the following order:
-                - Packages installed in the local Python environment
-                - User-defined requirements
-                - Requirements defined by user-defined and/or stack integrations
-            - Extra index requirements, mapping index URLs to lists of packages
+            Name of the requirements files in the build context.
+            The files will be in the following order:
+            - Packages installed in the local Python environment
+            - User-defined requirements
+            - Requirements defined by user-defined and/or stack integrations
         """
         requirements_file_names: List[str] = []
-        extra_index_requirements: Dict[str, List[str]] = {}
-        hub_requirements: List[str] = []
-
-        if docker_settings.required_hub_plugins:
-            hub_packages, hub_requirements = cls._get_hub_requirements(
-                docker_settings.required_hub_plugins
-            )
-            extra_index_requirements.update(hub_packages)
 
         requirements_files = cls._gather_requirements_files(
             docker_settings=docker_settings,
             stack=stack,
-            hub_requirements=hub_requirements,
         )
 
         for filename, file_content in requirements_files:
             build_context.add_file(source=file_content, destination=filename)
             requirements_file_names.append(filename)
 
-        return requirements_file_names, extra_index_requirements
+        return requirements_file_names
 
     @staticmethod
     def _gather_requirements_files(
         docker_settings: DockerSettings,
         stack: "Stack",
-        hub_requirements: Optional[List[str]] = None,
         log: bool = True,
     ) -> List[Tuple[str, str]]:
         """Gathers and/or generates pip requirements files.
@@ -378,7 +363,6 @@ class PipelineDockerImageBuilder:
             docker_settings: Docker settings that specifies which
                 requirements to install.
             stack: The stack on which the pipeline will run.
-            hub_requirements: Dependencies of all required hub plugins.
             log: If `True`, will log the requirements.
 
         Raises:
@@ -481,19 +465,38 @@ class PipelineDockerImageBuilder:
                     ", ".join(f"`{r}`" for r in integration_requirements_list),
                 )
 
-        if hub_requirements:
-            hub_requirements_file = "\n".join(hub_requirements)
-            requirements_files.append(
-                (
-                    ".zenml_hub_requirements",
-                    hub_requirements_file,
-                )
+        # Generate requirements files for all ZenML Hub plugins
+        if docker_settings.required_hub_plugins:
+            (
+                hub_packages,
+                hub_requirements,
+            ) = PipelineDockerImageBuilder._get_hub_requirements(
+                docker_settings.required_hub_plugins
             )
-            if log:
-                logger.info(
-                    "- Including hub requirements: %s",
-                    ", ".join(f"`{r}`" for r in hub_requirements),
-                )
+
+            # Plugin packages themselves
+            for i, (index, packages) in enumerate(hub_packages.items()):
+                file_name = f".zenml_hub_packages_{i}"
+                file_lines = [f"-i {index}", *packages]
+                file_contents = "\n".join(file_lines)
+                requirements_files.append((file_name, file_contents))
+                if log:
+                    logger.info(
+                        "- Including hub packages from index `%s`: %s",
+                        index,
+                        ", ".join(f"`{r}`" for r in packages),
+                    )
+
+            # PyPI requirements of plugin packages
+            if hub_requirements:
+                file_name = ".zenml_hub_requirements"
+                file_contents = "\n".join(hub_requirements)
+                requirements_files.append((file_name, file_contents))
+                if log:
+                    logger.info(
+                        "- Including hub requirements: %s",
+                        ", ".join(f"`{r}`" for r in hub_requirements),
+                    )
 
         return requirements_files
 
@@ -501,18 +504,21 @@ class PipelineDockerImageBuilder:
     def _get_hub_requirements(
         required_hub_plugins: List[str],
     ) -> Tuple[Dict[str, List[str]], List[str]]:
-        """Gets the requirements for the hub plugins.
+        """Get package requirements for ZenML Hub plugins.
 
         Args:
-            required_hub_plugins: List of hub plugins.
+            required_hub_plugins: List of hub plugin names in the format
+                `plugin_name==version` or `plugin_name`.
 
         Returns:
-            - Extra index requirements (the hub plugins themselves), mapping
-                index URLs to lists of package names
-            - List of dependencies of all required hub plugins
+            - A dict of the hub plugin packages themselves (which need to be
+                installed from a custom index, mapping index URLs to lists of
+                package names.
+            - A list of all unique dependencies of the required hub plugins
+                (which can be installed from PyPI).
 
         Raises:
-            ValueError: If a required hub plugin has an invalid format.
+            ValueError: If a provided plugin name has an invalid format.
         """
         from zenml.hub.client import HubClient
 
@@ -555,7 +561,6 @@ class PipelineDockerImageBuilder:
         parent_image: str,
         docker_settings: DockerSettings,
         requirements_files: Sequence[str] = (),
-        extra_index_requirements: Dict[str, List[str]] = {},
         apt_packages: Sequence[str] = (),
         entrypoint: Optional[str] = None,
     ) -> str:
@@ -565,9 +570,6 @@ class PipelineDockerImageBuilder:
             parent_image: The image to use as parent for the Dockerfile.
             docker_settings: Docker settings for this image build.
             requirements_files: Paths of requirements files to install.
-            extra_index_requirements: Requirements that need to be installed
-                from extra indexes. The keys are the extra index URLs and the
-                values are the packages to install from that index.
             apt_packages: APT packages to install.
             entrypoint: The default entrypoint command that gets executed when
                 running a container of an image created by this Dockerfile.
@@ -590,10 +592,6 @@ class PipelineDockerImageBuilder:
             lines.append(
                 f"RUN pip install --default-timeout=60 --no-cache-dir -r {file}"
             )
-
-        for index, packages in extra_index_requirements.items():
-            package_str = " ".join(f"'{p}'" for p in packages)
-            lines.append(f"RUN pip install --index-url {index} {package_str}")
 
         lines.append(f"ENV {ENV_ZENML_ENABLE_REPO_INIT_WARNINGS}=False")
         if docker_settings.copy_global_config:
