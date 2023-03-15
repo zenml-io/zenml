@@ -12,3 +12,11 @@ output "ca_crt" {
   value = base64decode(data.kubernetes_secret.certificates.binary_data["ca.crt"])
   sensitive = true
 }
+
+output "database_username" {
+  value = module.metadata_store[0].db_instance_username
+}
+output "database_password" {
+  value = module.metadata_store[0].db_instance_password
+  sensitive = true
+}

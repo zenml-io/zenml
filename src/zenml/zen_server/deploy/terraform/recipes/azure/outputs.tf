@@ -12,3 +12,11 @@ output "ca_crt" {
   value = base64decode(data.kubernetes_secret.certificates.binary_data["ca.crt"])
   sensitive = true
 }
+
+output "database_username" {
+  value = var.database_username
+}
+output "database_password" {
+  value = azurerm_mysql_flexible_server.mysql[0].administrator_password
+  sensitive = true
+}
