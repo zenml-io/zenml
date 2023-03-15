@@ -30,8 +30,8 @@ from zenml.enums import CliCategories
 from zenml.hub.client import HubAPIError, HubClient
 from zenml.logger import get_logger
 from zenml.models.hub_plugin_models import (
-    PluginRequestModel,
-    PluginResponseModel,
+    HubPluginRequestModel,
+    HubPluginResponseModel,
 )
 from zenml.utils.analytics_utils import AnalyticsEvent, event_handler
 
@@ -89,7 +89,7 @@ def list_plugins(mine: bool, installed: bool) -> None:
 
 
 def _format_plugins_table(
-    plugins: List[PluginResponseModel],
+    plugins: List[HubPluginResponseModel],
 ) -> List[Dict[str, str]]:
     """Helper function to format a list of plugins into a table.
 
@@ -644,7 +644,7 @@ def submit_plugin(
         tags = _validate_tags(tags=tags, interactive=interactive)
 
         # Make a create request to the hub
-        plugin_request = PluginRequestModel(
+        plugin_request = HubPluginRequestModel(
             name=plugin_name,
             description=description,
             version=version,

@@ -22,7 +22,15 @@ if TYPE_CHECKING:
     pass
 
 
-class PluginBaseModel(BaseModel):
+class HubUserModel(BaseModel):
+    """Model for a ZenML Hub user."""
+
+    id: UUID
+    email: str
+    username: Optional[str]
+
+
+class HubPluginBaseModel(BaseModel):
     """Base model for a ZenML Hub plugin."""
 
     name: str
@@ -36,11 +44,11 @@ class PluginBaseModel(BaseModel):
     tags: List[str]
 
 
-class PluginRequestModel(PluginBaseModel):
+class HubPluginRequestModel(HubPluginBaseModel):
     """Request model for a ZenML Hub plugin."""
 
 
-class PluginResponseModel(PluginBaseModel):
+class HubPluginResponseModel(HubPluginBaseModel):
     """Response model for a ZenML Hub plugin."""
 
     status: str
@@ -49,4 +57,4 @@ class PluginResponseModel(PluginBaseModel):
     package_name: Optional[str]
     logo_url: Optional[str]
     requirements: Optional[List[str]]
-    user: Optional[UUID]
+    user: Optional[HubUserModel]

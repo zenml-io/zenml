@@ -21,8 +21,8 @@ from zenml.config.global_config import GlobalConfiguration
 from zenml.constants import ENV_ZENML_HUB_URL
 from zenml.logger import get_logger
 from zenml.models.hub_plugin_models import (
-    PluginRequestModel,
-    PluginResponseModel,
+    HubPluginRequestModel,
+    HubPluginResponseModel,
 )
 
 logger = get_logger(__name__)
@@ -57,7 +57,7 @@ class HubClient:
         """
         return os.getenv(ENV_ZENML_HUB_URL, default="https://hub.zenml.io/")
 
-    def list_plugins(self, **params: Any) -> List[PluginResponseModel]:
+    def list_plugins(self, **params: Any) -> List[HubPluginResponseModel]:
         """List all plugins in the hub.
 
         Args:
@@ -69,11 +69,13 @@ class HubClient:
         response = self._request("GET", "/plugins", params=params)
         if not isinstance(response, list):
             return []
-        return [PluginResponseModel.parse_obj(plugin) for plugin in response]
+        return [
+            HubPluginResponseModel.parse_obj(plugin) for plugin in response
+        ]
 
     def get_plugin(
         self, plugin_name: str, plugin_version: Optional[str] = None
-    ) -> Optional[PluginResponseModel]:
+    ) -> Optional[HubPluginResponseModel]:
         """Get a specific plugin from the hub.
 
         Args:
@@ -90,13 +92,13 @@ class HubClient:
 
         try:
             response = self._request("GET", route)
-            return PluginResponseModel.parse_obj(response)
+            return HubPluginResponseModel.parse_obj(response)
         except HubAPIError:
             return None
 
     def create_plugin(
-        self, plugin_request: PluginRequestModel, is_new_version: bool
-    ) -> PluginResponseModel:
+        self, plugin_request: HubPluginRequestModel, is_new_version: bool
+    ) -> HubPluginResponseModel:
         """Create a plugin in the hub.
 
         Args:
@@ -111,7 +113,7 @@ class HubClient:
             route += f"/{plugin_request.name}/versions"
 
         response = self._request("POST", route, data=plugin_request.json())
-        return PluginResponseModel.parse_obj(response)
+        return HubPluginResponseModel.parse_obj(response)
 
     def stream_plugin_build_logs(
         self, plugin_name: str, plugin_version: str
