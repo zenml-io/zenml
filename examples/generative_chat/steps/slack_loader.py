@@ -18,7 +18,7 @@ import os
 from typing import List, Optional
 
 from langchain.docstore.document import Document
-from slack_reader import SlackReader
+from llama_index.readers.slack import SlackReader
 
 from zenml.steps import BaseParameters, step
 
