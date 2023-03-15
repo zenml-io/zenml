@@ -2069,7 +2069,9 @@ class Client(metaclass=ClientMetaClass):
         from zenml.stack import Flavor
 
         flavor_class = Flavor.from_model(flavor_model)
-        configuration_obj = flavor_class.config_class(**configuration)
+        configuration_obj = flavor_class.config_class(
+            warn_about_plain_text_secrets=True, **configuration
+        )
 
         self._validate_stack_component_configuration(
             component_type, configuration=configuration_obj

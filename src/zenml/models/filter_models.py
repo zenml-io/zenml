@@ -573,6 +573,21 @@ class BaseFilterModel(BaseModel):
             or cls.__fields__[k].type_ is str
         )
 
+    @classmethod
+    def is_sort_by_field(cls, k: str) -> bool:
+        """Checks if it's a sort by field.
+
+        Args:
+            k: The key to check.
+
+        Returns:
+            True if the field is a sort by field, False otherwise.
+        """
+        return (
+            issubclass(str, get_args(cls.__fields__[k].type_))
+            or cls.__fields__[k].type_ == str
+        ) and k == "sort_by"
+
     @staticmethod
     def _define_datetime_filter(
         column: str, value: Any, operator: GenericFilterOps

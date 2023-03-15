@@ -7,7 +7,7 @@
 * [Installation](./getting-started/installation/installation.md)
 * [Quickstart](https://github.com/zenml-io/zenml/tree/main/examples/quickstart)
 * [Deploying ZenML](./getting-started/deploying-zenml/deploying-zenml.md)
-  * [One Click Deployment using CLI](./getting-started/deploying-zenml/cli.md)
+  * [Deployment using CLI](./getting-started/deploying-zenml/cli.md)
   * [Deploying with Docker](./getting-started/deploying-zenml/docker.md)
   * [Deploying with Helm](./getting-started/deploying-zenml/helm.md)
   * [Troubleshooting your server](./getting-started/deploying-zenml/troubleshooting.md)
