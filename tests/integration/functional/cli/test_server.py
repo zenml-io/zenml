@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+import os
 import platform
 import time
 from contextlib import ExitStack as does_not_raise
@@ -32,8 +33,11 @@ SERVER_START_STOP_TIMEOUT = 30
     platform.system() == "Windows",
     reason="ZenServer not supported as daemon on Windows.",
 )
-def test_server_cli_up_down(clean_client):
+def test_server_cli_up_down(clean_client, mocker):
     """Test spinning up and shutting down ZenServer."""
+    mocker.patch.dict(
+        os.environ, {"OBJC_DISABLE_INITIALIZE_FORK_SAFETY": "YES"}
+    )
     cli_runner = CliRunner()
 
     port = scan_for_available_port(start=8003, stop=9000)
