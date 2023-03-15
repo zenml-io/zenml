@@ -15,6 +15,8 @@
 
 from typing import TYPE_CHECKING, Optional, Type
 
+from pydantic import PositiveInt
+
 from zenml.image_builders import BaseImageBuilderConfig, BaseImageBuilderFlavor
 from zenml.integrations.gcp import GCP_IMAGE_BUILDER_FLAVOR
 from zenml.integrations.gcp.google_credentials_mixin import (
@@ -26,6 +28,7 @@ if TYPE_CHECKING:
 
 DEFAULT_CLOUD_BUILDER_IMAGE = "gcr.io/cloud-builders/docker"
 DEFAULT_CLOUD_BUILDER_NETWORK = "cloudbuild"
+DEFAULT_CLOUD_BUILD_TIMEOUT = 3600
 
 
 class GCPImageBuilderConfig(
@@ -41,10 +44,15 @@ class GCPImageBuilderConfig(
             this:
             https://cloud.google.com/build/docs/build-config-file-schema#network.
             Defaults to `cloudbuild`.
+        build_timeout: The timeout of the build in seconds. More information
+            about this parameter:
+            https://cloud.google.com/build/docs/build-config-file-schema#timeout_2
+            Defaults to `3600`.
     """
 
     cloud_builder_image: str = DEFAULT_CLOUD_BUILDER_IMAGE
     network: str = DEFAULT_CLOUD_BUILDER_NETWORK
+    build_timeout: PositiveInt = DEFAULT_CLOUD_BUILD_TIMEOUT
 
 
 class GCPImageBuilderFlavor(BaseImageBuilderFlavor):
