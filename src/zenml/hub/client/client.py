@@ -115,36 +115,37 @@ class HubClient:
         response = self._request("POST", route, data=plugin_request.json())
         return HubPluginResponseModel.parse_obj(response)
 
-    def stream_plugin_build_logs(
-        self, plugin_name: str, plugin_version: str
-    ) -> bool:
-        """Stream the build logs of a plugin.
+    # TODO: Potentially reenable this later if hub adds logs streaming endpoint
+    # def stream_plugin_build_logs(
+    #     self, plugin_name: str, plugin_version: str
+    # ) -> bool:
+    #     """Stream the build logs of a plugin.
 
-        Args:
-            plugin_name: The name of the plugin.
-            plugin_version: The version of the plugin. If not specified, the
-                latest version will be used.
+    #     Args:
+    #         plugin_name: The name of the plugin.
+    #         plugin_version: The version of the plugin. If not specified, the
+    #             latest version will be used.
 
-        Returns:
-            Whether any logs were found.
+    #     Returns:
+    #         Whether any logs were found.
 
-        Raises:
-            HubAPIError: If the build failed.
-        """
-        route = f"plugins/{plugin_name}/versions/{plugin_version}/logs"
-        logs_url = os.path.join(self.url, route)
+    #     Raises:
+    #         HubAPIError: If the build failed.
+    #     """
+    #     route = f"plugins/{plugin_name}/versions/{plugin_version}/logs"
+    #     logs_url = os.path.join(self.url, route)
 
-        found_logs = False
-        with requests.get(logs_url, stream=True) as response:
-            for line in response.iter_lines(
-                chunk_size=None, decode_unicode=True
-            ):
-                found_logs = True
-                if line.startswith("Build failed"):
-                    raise HubAPIError(line)
-                else:
-                    logger.info(line)
-        return found_logs
+    #     found_logs = False
+    #     with requests.get(logs_url, stream=True) as response:
+    #         for line in response.iter_lines(
+    #             chunk_size=None, decode_unicode=True
+    #         ):
+    #             found_logs = True
+    #             if line.startswith("Build failed"):
+    #                 raise HubAPIError(line)
+    #             else:
+    #                 logger.info(line)
+    #     return found_logs
 
     def login(self, username: str, password: str) -> None:
         """Login to the ZenML Hub.

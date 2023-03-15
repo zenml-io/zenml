@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Models representing ZenML Hub plugins."""
 
+from datetime import datetime
 from typing import TYPE_CHECKING, List, Optional
 from uuid import UUID
 
@@ -52,7 +53,8 @@ class HubPluginBaseModel(BaseModel):
     repository_subdirectory: Optional[str]
     repository_branch: Optional[str]
     repository_commit: Optional[str]
-    tags: List[str]
+    tags: Optional[List[str]]
+    logo_url: Optional[str]
 
 
 class HubPluginRequestModel(HubPluginBaseModel):
@@ -62,10 +64,13 @@ class HubPluginRequestModel(HubPluginBaseModel):
 class HubPluginResponseModel(HubPluginBaseModel):
     """Response model for a ZenML Hub plugin."""
 
+    id: UUID
     status: PluginStatus
     version: str
     index_url: Optional[str]
     package_name: Optional[str]
-    logo_url: Optional[str]
     requirements: Optional[List[str]]
+    build_logs: Optional[str]
     user: Optional[HubUserModel]
+    created: datetime
+    updated: datetime

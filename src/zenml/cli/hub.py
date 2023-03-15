@@ -32,6 +32,7 @@ from zenml.logger import get_logger
 from zenml.models.hub_plugin_models import (
     HubPluginRequestModel,
     HubPluginResponseModel,
+    PluginStatus,
 )
 from zenml.utils.analytics_utils import AnalyticsEvent, event_handler
 
@@ -991,12 +992,28 @@ def get_logs(plugin_name: str, version: Optional[str] = None) -> None:
             error(f"Could not find plugin '{display_name}' on the hub.")
         analytics_handler.metadata["plugin_version"] = plugin.version
 
-        # Stream the logs
-        found_logs = client.stream_plugin_build_logs(
-            plugin_name=plugin_name, plugin_version=plugin.version
-        )
-        if not found_logs:
-            logger.info(f"No logs found for plugin '{display_name}'.")
+        if plugin.status == PluginStatus.PENDING:
+            error(
+                f"Plugin '{display_name}' is still being built. Please try "
+                "again later."
+            )
+
+        if not plugin.build_logs:
+            logger.info(
+                f"Plugin '{display_name}' finished building, but no logs "
+                "were found."
+            )
+            return
+
+        for line in plugin.build_logs.splitlines():
+            if line.startswith("DEBUG"):
+                pass
+            if line.startswith("INFO"):
+                logger.info(line)
+            elif line.startswith("WARNING"):
+                logger.warning(line)
+            else:
+                logger.error(line)
 
 
 # GENERAL HELPER FUNCTIONS
