@@ -246,7 +246,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
         Returns:
             A dictionary of metadata.
         """
-        run_metadata = {
+        run_metadata: Dict[str, "MetadataType"] = {
             "pipeline_execution_arn": os.environ[ENV_ZENML_SAGEMAKER_RUN_ID],
         }
         try:
