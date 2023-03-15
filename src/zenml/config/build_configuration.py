@@ -66,7 +66,7 @@ class BuildConfiguration(BaseModel):
         )
 
         requirements_files = (
-            PipelineDockerImageBuilder._gather_requirements_files(
+            PipelineDockerImageBuilder.gather_requirements_files(
                 docker_settings=self.settings, stack=stack, log=False
             )
         )

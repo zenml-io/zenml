@@ -340,7 +340,7 @@ class PipelineDockerImageBuilder:
         """
         requirements_file_names: List[str] = []
 
-        requirements_files = cls._gather_requirements_files(
+        requirements_files = cls.gather_requirements_files(
             docker_settings=docker_settings,
             stack=stack,
         )
@@ -352,12 +352,17 @@ class PipelineDockerImageBuilder:
         return requirements_file_names
 
     @staticmethod
-    def _gather_requirements_files(
+    def gather_requirements_files(
         docker_settings: DockerSettings,
         stack: "Stack",
         log: bool = True,
     ) -> List[Tuple[str, str]]:
         """Gathers and/or generates pip requirements files.
+
+        This method is used during `DockerImageBuilder.build_docker_image` but
+        it is also called by other parts of the codebase, e.g. the
+        `AzureMLStepOperator`, which needs to upload the requirements files to
+        AzureML where the step image is then built.
 
         Args:
             docker_settings: Docker settings that specifies which
