@@ -22,7 +22,7 @@ class LlamaIndexIntegration(Integration):
 
     NAME = LLAMA_INDEX
     # requires langchain for the materializer
-    REQUIREMENTS = ["llama_index>=0.4.23", "langchain>=0.0.103"]
+    REQUIREMENTS = ["llama_index>=0.4.28"]
 
     @classmethod
     def activate(cls) -> None:
