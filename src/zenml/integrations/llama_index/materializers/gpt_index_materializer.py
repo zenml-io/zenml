@@ -30,6 +30,7 @@ DEFAULT_FAISS_FILENAME = "faiss_index.json"
 
 
 class LlamaIndexGPTIndexMaterializer(BaseMaterializer):
+    """Materializer for llama_index GPT indices."""
 
     ASSOCIATED_ARTIFACT_TYPE = ArtifactType.MODEL
     ASSOCIATED_TYPES = (BaseGPTIndex,)
@@ -45,7 +46,19 @@ class LlamaIndexGPTIndexMaterializer(BaseMaterializer):
         """
         super().load(data_type)
         filepath = os.path.join(self.uri, DEFAULT_FILENAME)
-        return data_type.load_from_disk(save_path=filepath)
+
+        # Create a temporary folder
+        temp_dir = tempfile.mkdtemp(prefix="zenml-temp-")
+        temp_file = os.path.join(str(temp_dir), DEFAULT_FILENAME)
+
+        # Copy from artifact store to temporary file
+        fileio.copy(filepath, temp_file)
+
+        index = data_type.load_from_disk(save_path=filepath)
+
+        # Cleanup and return
+        fileio.rmtree(temp_dir)
+        return index
 
     def save(self, index: BaseGPTIndex) -> None:
         """Save a llama-index GPT index to disk.
@@ -55,10 +68,21 @@ class LlamaIndexGPTIndexMaterializer(BaseMaterializer):
         """
         super().save(index)
         filepath = os.path.join(self.uri, DEFAULT_FILENAME)
-        index.save_to_disk(save_path=filepath)
+
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".json", delete=False
+        ) as f:
+            index.save_to_disk(save_path=f.name)
+            # Copy it into artifact store
+            fileio.copy(f.name, filepath)
+
+        # Close and remove the temporary file
+        f.close()
+        fileio.remove(f.name)
 
 
 class LlamaIndexGPTFaissIndexMaterializer(BaseMaterializer):
+    """Materializer for llama_index GPT faiss indices."""
 
     ASSOCIATED_ARTIFACT_TYPE = ArtifactType.MODEL
     ASSOCIATED_TYPES = (GPTFaissIndex,)
