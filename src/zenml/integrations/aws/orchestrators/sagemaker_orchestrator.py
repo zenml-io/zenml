@@ -252,6 +252,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
         try:
             region_name = self._get_region_name()
         except RuntimeError:
+            logger.warning("Unable to get region name from AWS Sagemaker.")
             return run_metadata
 
         aws_run_id = os.environ[ENV_ZENML_SAGEMAKER_RUN_ID].split("/")[-1]
