@@ -12,7 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """CLI functionality to interact with code repositories."""
-import os
 from typing import Any, List, Optional
 
 import click
@@ -21,6 +20,7 @@ from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
 from zenml.cli.utils import list_options
 from zenml.client import Client
+from zenml.code_repositories import BaseCodeRepository
 from zenml.config.source import Source
 from zenml.console import console
 from zenml.enums import CliCategories
@@ -84,28 +84,12 @@ def register_code_repository(
         args: Additional arguments to be passed to the code repository
     """
     cli_utils.print_active_config()
-    if type_ == "custom":
-        if not source_path:
-            cli_utils.error(
-                "Please provide a path to the custom source module."
-            )
-        if not os.path.exists(source_path):
-            cli_utils.error(
-                "Please provide a valid path to the custom source module."
-            )
 
-    # Parse the given args
-    # name is guaranteed to be set by parse_name_and_extra_arguments
-    name, parsed_args = cli_utils.parse_name_and_extra_arguments(  # type: ignore[assignment]
+    parsed_name, parsed_args = cli_utils.parse_name_and_extra_arguments(
         list(args) + [name], expand_args=True
     )
-
-    if "name" in parsed_args:
-        cli_utils.error(
-            "You can't use 'name' as the key for one of your secrets."
-        )
-    elif name == "name":
-        cli_utils.error("Secret names cannot be named 'name'.")
+    assert parsed_name
+    name = parsed_name
 
     if type_ == "github":
         try:
@@ -114,8 +98,9 @@ def register_code_repository(
             )
         except ImportError:
             cli_utils.error(
-                "Please install github integration to use this feature."
-                " By running `zenml integration install github`."
+                "You need to install the GitHub integration to use a GitHub "
+                "code repository. Please run `zenml integration install "
+                "github` and try again."
             )
         source = source_utils_v2.resolve(GitHubCodeRepository)
     elif type_ == "gitlab":
@@ -125,22 +110,37 @@ def register_code_repository(
             )
         except ImportError:
             cli_utils.error(
-                "Please install gitlab integration to use this feature."
-                " By running `zenml integration install gitlab`."
+                "You need to install the GitLab integration to use a GitLab "
+                "code repository. Please run `zenml integration install "
+                "gitlab` and try again."
             )
         source = source_utils_v2.resolve(GitLabCodeRepository)
-    elif type_ == "custom" and source_path:
+    elif type_ == "custom":
+        if not source_path:
+            cli_utils.error(
+                "When using a custom code repository type, you need to provide "
+                "a path to the implementation class using the --source option: "
+                "`zenml code-repository register --type=custom --source=<...>"
+            )
+        if not source_utils_v2.validate_source_class(
+            source_path, expected_class=BaseCodeRepository
+        ):
+            cli_utils.error(
+                f"Your source {source_path} does not point to a "
+                f"`{BaseCodeRepository.__name__}` subclass and can't be used "
+                "to register a code repository."
+            )
+
         source = Source.from_import_path(source_path)
 
-    with console.status(f"Connecting Code Repository '{name}'...\n"):
-        # Connect to the code repository
+    with console.status(f"Registering code repository '{name}'...\n"):
         Client().create_code_repository(
             name=name,
             config=parsed_args,
             source=source,
         )
 
-        cli_utils.declare(f"Successfully connected to `{name}`.")
+        cli_utils.declare(f"Successfully registered code repository `{name}`.")
 
 
 @code_repository.command("list", help="List all connected code repositories.")
