@@ -76,7 +76,7 @@ def list_plugins(mine: bool, installed: bool) -> None:
                 "You must be logged in to list your own plugins via --mine. "
                 "Please run `zenml hub login` to login."
             )
-        plugins = client.list_plugins(mine=mine)
+        plugins = client.list_plugins(mine=mine, status=PluginStatus.AVAILABLE)
         if not plugins:
             declare("No plugins found.")
         if installed:
