@@ -31,8 +31,6 @@ class SlackLoaderParameters(BaseParameters):
 
 @step(enable_cache=True)
 def slack_loader(params: SlackLoaderParameters) -> List[Document]:
-    # slack loader; returns langchain documents
-    # SlackReader = download_loader("SlackReader")
     loader = SlackReader(
         slack_token=os.environ["SLACK_BOT_TOKEN"],
         earliest_date=params.earliest_date,
