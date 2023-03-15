@@ -106,12 +106,12 @@ def _format_plugins_table(
             installed_icon = ":white_check_mark:"
         else:
             installed_icon = ":x:"
-        display_data = {
+        display_data: Dict[str, str] = {
             "INSTALLED": installed_icon,
             "NAME": plugin.name,
             "VERSION": plugin.version,
-            "AUTHOR": plugin.user.username,
-            "PACKAGE_NAME": plugin.package_name,
+            "AUTHOR": plugin.user.username or "" if plugin.user else "",
+            "PACKAGE_NAME": plugin.package_name or "",
             "REPOSITORY_URL": plugin.repository_url,
         }
         plugins_table.append(display_data)

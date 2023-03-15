@@ -19,7 +19,15 @@ import sys
 import tempfile
 from collections import defaultdict
 from pathlib import PurePosixPath
-from typing import TYPE_CHECKING, Dict, List, Optional, Sequence, Tuple
+from typing import (
+    TYPE_CHECKING,
+    DefaultDict,
+    Dict,
+    List,
+    Optional,
+    Sequence,
+    Tuple,
+)
 
 import zenml
 from zenml.config import DockerSettings
@@ -528,7 +536,7 @@ class PipelineDockerImageBuilder:
         from zenml.hub.client import HubClient
 
         client = HubClient()
-        hub_packages: defaultdict[str, List[str]] = defaultdict(list)
+        hub_packages: DefaultDict[str, List[str]] = defaultdict(list)
         hub_requirements: List[str] = []
 
         for required_plugin in required_hub_plugins:
