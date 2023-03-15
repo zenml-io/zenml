@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Initialization of the ZenML git code repository."""
+"""Initialization of the local git repository."""
 
 from zenml.code_repositories.git.local_git_repository import LocalGitRepository
 

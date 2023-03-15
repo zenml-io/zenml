@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Initialization of the ZenML code repository base abstraction."""
 
 from zenml.code_repositories.base_code_repository import (
     BaseCodeRepository,
