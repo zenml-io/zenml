@@ -18,7 +18,7 @@ from pydantic import root_validator, validator
 
 from zenml.config.base_settings import BaseSettings, SettingsOrDict
 from zenml.config.constants import DOCKER_SETTINGS_KEY, RESOURCE_SETTINGS_KEY
-from zenml.config.source import Source
+from zenml.config.source import Source, convert_source_validator
 from zenml.config.strict_base_model import StrictBaseModel
 from zenml.logger import get_logger
 
@@ -51,22 +51,7 @@ class PartialArtifactConfiguration(StrictBaseModel):
                 values.pop(deprecated_attribute)
         return values
 
-    @validator("materializer_source", pre=True)
-    def _convert_source(
-        cls, value: Union[Source, str, None]
-    ) -> Optional[Source]:
-        """Converts an old source string to a source object.
-
-        Args:
-            value: Source string or object.
-
-        Returns:
-            The converted source.
-        """
-        if isinstance(value, str):
-            value = Source.from_import_path(value)
-
-        return value
+    _convert_source = convert_source_validator("materializer_source")
 
 
 class ArtifactConfiguration(PartialArtifactConfiguration):
@@ -74,20 +59,7 @@ class ArtifactConfiguration(PartialArtifactConfiguration):
 
     materializer_source: Source
 
-    @validator("materializer_source", pre=True)
-    def _convert_source(cls, value: Union[Source, str]) -> Source:
-        """Converts an old source string to a source object.
-
-        Args:
-            value: Source string or object.
-
-        Returns:
-            The converted source.
-        """
-        if isinstance(value, str):
-            value = Source.from_import_path(value)
-
-        return value
+    _convert_source = convert_source_validator("materializer_source")
 
 
 class StepConfigurationUpdate(StrictBaseModel):
@@ -202,20 +174,7 @@ class StepSpec(StrictBaseModel):
     # The default value is to ensure compatibility with specs of version <0.2
     pipeline_parameter_name: str = ""
 
-    @validator("source", pre=True)
-    def _convert_source(cls, value: Union[Source, str]) -> Source:
-        """Converts an old source string to a source object.
-
-        Args:
-            value: Source string or object.
-
-        Returns:
-            The converted source.
-        """
-        if isinstance(value, str):
-            value = Source.from_import_path(value)
-
-        return value
+    _convert_source = convert_source_validator("source")
 
     def __eq__(self, other: Any) -> bool:
         """Returns whether the other object is referring to the same step.

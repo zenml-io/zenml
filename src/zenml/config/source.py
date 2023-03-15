@@ -13,12 +13,15 @@
 #  permissions and limitations under the License.
 """Source classes."""
 from enum import Enum
-from typing import Optional
+from typing import TYPE_CHECKING, Any, Optional, Type, Union
 from uuid import UUID
 
 from pydantic import BaseModel, Extra, validator
 
 from zenml.logger import get_logger
+
+if TYPE_CHECKING:
+    AnyClassMethod = classmethod[Any]
 
 logger = get_logger(__name__)
 
@@ -198,3 +201,35 @@ class CodeRepositorySource(Source):
             raise ValueError("Invalid source type.")
 
         return value
+
+
+def convert_source_validator(*attributes: str) -> "AnyClassMethod":
+    """Utility function to convert pydantic source fields.
+
+    Args:
+        *attributes: List of attributes to convert.
+
+    Returns:
+        Pydantic validator class method to be used on BaseModel subclasses
+        to convert source fields.
+    """
+
+    @validator(*attributes, pre=True, allow_reuse=True)
+    def _convert_source(
+        cls: Type[BaseModel], value: Union[Source, str, None]
+    ) -> Optional[Source]:
+        """Converts an old source string to a source object.
+
+        Args:
+            cls: The class on which the attributes are defined.
+            value: Source string or object.
+
+        Returns:
+            The converted source.
+        """
+        if isinstance(value, str):
+            value = Source.from_import_path(value)
+
+        return value
+
+    return _convert_source

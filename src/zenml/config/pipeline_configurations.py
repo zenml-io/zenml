@@ -19,7 +19,7 @@ from pydantic import validator
 
 from zenml.config.constants import DOCKER_SETTINGS_KEY
 from zenml.config.schedule import Schedule
-from zenml.config.source import Source
+from zenml.config.source import Source, convert_source_validator
 from zenml.config.step_configurations import StepConfigurationUpdate
 from zenml.config.strict_base_model import StrictBaseModel
 from zenml.models.pipeline_build_models import PipelineBuildBaseModel
@@ -43,22 +43,9 @@ class PipelineConfigurationUpdate(StrictBaseModel):
     failure_hook_source: Optional[Source] = None
     success_hook_source: Optional[Source] = None
 
-    @validator("failure_hook_source", "success_hook_source", pre=True)
-    def _convert_source(
-        cls, value: Union[Source, str, None]
-    ) -> Optional[Source]:
-        """Converts an old source string to a source object.
-
-        Args:
-            value: Source string or object.
-
-        Returns:
-            The converted source.
-        """
-        if isinstance(value, str):
-            value = Source.from_import_path(value)
-
-        return value
+    _convert_source = convert_source_validator(
+        "failure_hook_source", "success_hook_source"
+    )
 
 
 class PipelineConfiguration(PipelineConfigurationUpdate):

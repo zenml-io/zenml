@@ -16,9 +16,9 @@
 from typing import TYPE_CHECKING, ClassVar, Dict, List, Optional, Union
 from uuid import UUID
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field
 
-from zenml.config.source import Source
+from zenml.config.source import Source, convert_source_validator
 from zenml.enums import ArtifactType
 from zenml.models.base_models import (
     WorkspaceScopedRequestModel,
@@ -54,20 +54,7 @@ class ArtifactBaseModel(BaseModel):
         title="Data type of the artifact.",
     )
 
-    @validator("materializer", "data_type", pre=True)
-    def _convert_source(cls, value: Union[Source, str]) -> Source:
-        """Converts an old source string to a source object.
-
-        Args:
-            value: Source string or object.
-
-        Returns:
-            The converted source.
-        """
-        if isinstance(value, str):
-            value = Source.from_import_path(value)
-
-        return value
+    _convert_source = convert_source_validator("materializer", "data_type")
 
 
 # -------- #
