@@ -237,7 +237,7 @@ if I wanted to find all orchestrators that were created after the 1st of January
 
 ```shell zenml orchestrator list --created "gt:2021-01-01 00:00:00" ```
 
-This  syntax can also be combined to create more complex filters using the `or`
+This syntax can also be combined to create more complex filters using the `or`
 and `and` keywords.
 
 Customizing your Artifact Store
