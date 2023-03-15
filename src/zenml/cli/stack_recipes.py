@@ -252,7 +252,7 @@ class StackRecipeRepo:
             self.repo = Repo.clone_from(
                 STACK_RECIPES_GITHUB_REPO,
                 self.cloning_path,
-                branch="feature/add-stack-wise-registration",
+                branch="develop",
             )
         except KeyboardInterrupt:
             self.delete()
@@ -635,7 +635,7 @@ def pull(
     """
     cli_utils.warning(ALPHA_MESSAGE)
     git_stack_recipes_handler.pull(
-        branch="feature/add-stack-wise-registration", force=force
+        branch="develop", force=force
     )
 
     stack_recipes_dir = os.path.join(os.getcwd(), path)
@@ -1159,7 +1159,7 @@ def deploy(
         
             except RuntimeError as e:
                 cli_utils.error(
-                    f"Error running recipe {stack_recipe_name}: {str(e)} "
+                    f"Running recipe {stack_recipe_name} failed: {str(e)} "
                     "\nPlease look at the error message to figure out "
                     "why the command failed. If the error is due some wrong "
                     "configuration, please consider checking the locals.tf "
@@ -1170,7 +1170,7 @@ def deploy(
                 )
             except python_terraform.TerraformCommandError as e:
                 cli_utils.error(
-                    f"Error running recipe {stack_recipe_name}: {str(e.err)} "
+                    f"Running recipe {stack_recipe_name} failed."
                     "\nPlease look at the error message to figure out why the "
                     "command failed. If the error is due some wrong "
                     "configuration, please consider checking the locals.tf "
