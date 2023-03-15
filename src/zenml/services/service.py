@@ -68,7 +68,7 @@ class ServiceConfig(BaseTypedModel):
     @pipeline_run_id.setter
     def pipeline_run_id(self, value: str) -> None:
         """Setter for the pipeline_run_id attribute.
-        
+
         Args:
             value: value of the pipeline_run_id attribute.
         """
