@@ -13,23 +13,26 @@
 #  permissions and limitations under the License.
 from contextlib import ExitStack as does_not_raise
 
-from langchain.docstore.document import Document
+from langchain.docstore.document import Document as LCDocument
+from llama_index.readers.schema.base import Document
 
 from tests.unit.test_general import _test_materializer
-from zenml.integrations.langchain.materializers.document_materializer import (
-    LangchainDocumentMaterializer,
+from zenml.integrations.llama_index.materializers.document_materializer import (
+    LlamaIndexDocumentMaterializer,
 )
 
 
-def test_langchain_document_materializer(clean_client):
-    """Tests whether the steps work for the Langchain Document materializer."""
+def test_llama_index_document_materializer(clean_client):
+    """Tests whether the steps work for the Llama Index Document materializer."""
     page_content = (
-        "Axl, Aria and Blupus had a wonderful summer holiday together."
+        "Axl, Aria and Blupus were very cold during the winter months."
     )
     with does_not_raise():
         langchain_document = _test_materializer(
-            step_output=Document(page_content=page_content),
-            materializer_class=LangchainDocumentMaterializer,
+            step_output=Document(text=page_content),
+            materializer_class=LlamaIndexDocumentMaterializer,
         )
 
-    assert langchain_document.page_content == page_content
+    assert langchain_document.get_type() == "Document"
+    assert langchain_document.text == page_content
+    assert isinstance(langchain_document.to_langchain_format(), LCDocument)

@@ -18,12 +18,11 @@ from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pytest
+from langchain.docstore.document import Document
 from llama_index.embeddings.openai import OpenAIEmbedding
 from llama_index.indices.vector_store.vector_indices import (
     GPTFaissIndex,
 )
-from llama_index.readers.schema.base import Document
-from langchain.docstore.document import Document
 from llama_index.readers.schema.base import Document
 
 from tests.mock_utils.mock_decorator import patch_common
