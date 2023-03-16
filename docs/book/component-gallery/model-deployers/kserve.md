@@ -184,7 +184,7 @@ zenml secret create s3-kserve-secret \
 --aws_access_key_id="<AWS-ACCESS-KEY-ID>" \ # AWS Access Key ID.
 --aws_secret_access_key="<AWS-SECRET-ACCESS-KEY>" \ # AWS Secret Access Key.
 --s3_region="<AWS_REGION>" \ # region to connect to.
---s3_endpoint="<AWS_ENDPOINT>" \ # S3 API endpoint.
+--s3_endpoint="<S3_ENDPOINT>" \ # S3 API endpoint.
 --s3_use_https="1" \ # set to 0 to disable https.
 --s3_verify_ssl="1" \ # set to 0 to disable SSL certificate verification.
 ```
