@@ -397,7 +397,7 @@ the GCS Artifact Store stack component in the next sections:
 
 ```bash
 zenml secret create gcp_secret \
-    --token=@path/to/service/account/key.json
+    --token=@path/to/service_account_key.json
 ```
 
 This is how you would register a ZenML GCS Artifact Store with explicit
