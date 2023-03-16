@@ -41,6 +41,8 @@ class BuildItem(BaseModel):
     Attributes:
         image: The image name or digest.
         settings_checksum: Checksum of the settings used for the build.
+        contains_code: Whether the image contains user files.
+        requires_code_download: Whether the image needs to download files.
     """
 
     image: str = Field(title="The image name or digest.")
@@ -48,7 +50,10 @@ class BuildItem(BaseModel):
         title="The checksum of the build settings."
     )
     contains_code: bool = Field(
-        default=True, title="Whether the image contains user code."
+        default=True, title="Whether the image contains user files."
+    )
+    requires_code_download: bool = Field(
+        default=False, title="Whether the image needs to download files."
     )
 
 
@@ -85,7 +90,9 @@ class PipelineBuildBaseModel(pydantic_utils.YAMLSerializationMixin):
         Returns:
             Whether the build requires code download.
         """
-        return any(not item.contains_code for item in self.images.values())
+        return any(
+            item.requires_code_download for item in self.images.values()
+        )
 
     @staticmethod
     def get_image_key(component_key: str, step: Optional[str] = None) -> str:

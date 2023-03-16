@@ -11,22 +11,80 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+import sys
 from contextlib import ExitStack as does_not_raise
 from datetime import datetime
+from typing import Optional
 from unittest.mock import ANY
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 import pytest
 
+import zenml
+from zenml.code_repositories import BaseCodeRepository, LocalRepository
 from zenml.config import DockerSettings
 from zenml.config.build_configuration import BuildConfiguration
-from zenml.models import PipelineBuildResponseModel
+from zenml.config.source import Source
+from zenml.models import (
+    CodeRepositoryResponseModel,
+    Page,
+    PipelineBuildResponseModel,
+)
 from zenml.models.pipeline_deployment_models import PipelineDeploymentBaseModel
 from zenml.pipelines import build_utils
 from zenml.stack import Stack
 from zenml.utils.pipeline_docker_image_builder import (
     PipelineDockerImageBuilder,
 )
+
+
+class StubCodeRepository(BaseCodeRepository):
+    def __init__(self, id: UUID = uuid4(), config=None) -> None:
+        config = config or {}
+        super().__init__(id, config)
+
+    def login(self) -> None:
+        pass
+
+    def download_files(
+        self, commit: str, directory: str, repo_sub_directory: Optional[str]
+    ) -> None:
+        pass
+
+    def get_local_repo(self, path: str) -> Optional["LocalRepository"]:
+        return None
+
+
+class StubLocalRepository(LocalRepository):
+    def __init__(
+        self,
+        code_repository_id: UUID = uuid4(),
+        root: str = ".",
+        is_dirty: bool = False,
+        has_local_changes: bool = False,
+        commit: str = "",
+    ) -> None:
+        super().__init__(code_repository_id=code_repository_id)
+        self._root = root
+        self._is_dirty = is_dirty
+        self._has_local_changes = has_local_changes
+        self._commit = commit
+
+    @property
+    def root(self) -> str:
+        return self._root
+
+    @property
+    def is_dirty(self) -> bool:
+        return self._is_dirty
+
+    @property
+    def has_local_changes(self) -> bool:
+        return self._has_local_changes
+
+    @property
+    def current_commit(self) -> str:
+        return self._commit
 
 
 def test_build_is_skipped_when_not_required(mocker):
@@ -224,15 +282,11 @@ def test_building_with_different_keys_and_identical_settings(
     mock_build_docker_image.assert_called_once()
 
 
-def test_custom_build_validation(
+def test_custom_build_verification(
     mocker,
     sample_deployment_response_model,
 ):
-    """Tests the build validation performed by the stack."""
-    mocker.patch.object(Stack, "get_docker_builds", return_value=[])
-
-    assert sample_deployment_response_model.build is None
-
+    """Tests the verification of a custom build."""
     mocker.patch.object(
         Stack,
         "get_docker_builds",
@@ -241,7 +295,7 @@ def test_custom_build_validation(
         ],
     )
 
-    incorrect_build = PipelineBuildResponseModel(
+    missing_image_build = PipelineBuildResponseModel(
         id=uuid4(),
         created=datetime.now(),
         updated=datetime.now(),
@@ -255,14 +309,13 @@ def test_custom_build_validation(
     with pytest.raises(RuntimeError):
         # Image key missing
         build_utils.verify_custom_build(
-            build=incorrect_build,
+            build=missing_image_build,
             deployment=sample_deployment_response_model,
-            pipeline_version_hash="",
         )
 
     correct_build = PipelineBuildResponseModel.parse_obj(
         {
-            **incorrect_build.dict(),
+            **missing_image_build.dict(),
             "images": {"key": {"image": "docker_image_name"}},
         }
     )
@@ -272,5 +325,181 @@ def test_custom_build_validation(
         build_utils.verify_custom_build(
             build=correct_build,
             deployment=sample_deployment_response_model,
-            pipeline_version_hash="",
         )
+
+    build_that_requires_download = PipelineBuildResponseModel.parse_obj(
+        {
+            **missing_image_build.dict(),
+            "images": {
+                "key": {
+                    "image": "docker_image_name",
+                    "requires_code_download": True,
+                }
+            },
+        }
+    )
+
+    mocker.patch.object(
+        PipelineDeploymentBaseModel,
+        "requires_code_download",
+        new_callable=mocker.PropertyMock,
+        return_value=True,
+    )
+
+    with pytest.raises(RuntimeError):
+        # Missing code repo for download
+        build_utils.verify_custom_build(
+            build=build_that_requires_download,
+            deployment=sample_deployment_response_model,
+        )
+
+    code_repo = StubCodeRepository()
+    with does_not_raise():
+        build_utils.verify_custom_build(
+            build=build_that_requires_download,
+            deployment=sample_deployment_response_model,
+            code_repository=code_repo,
+        )
+
+
+def test_build_checksum_computation(clean_client, mocker):
+    mocker.patch.object(
+        BuildConfiguration,
+        "compute_settings_checksum",
+        return_value="settings_checksum",
+    )
+
+    build_config = BuildConfiguration(key="key", settings=DockerSettings())
+    checksum = build_utils.compute_build_checksum(
+        items=[build_config], stack=clean_client.active_stack
+    )
+
+    # different key
+    new_build_config = BuildConfiguration(
+        key="different_key", settings=DockerSettings()
+    )
+    new_checksum = build_utils.compute_build_checksum(
+        items=[new_build_config], stack=clean_client.active_stack
+    )
+    assert checksum != new_checksum
+
+    # different settings checksum
+    mocker.patch.object(
+        BuildConfiguration,
+        "compute_settings_checksum",
+        return_value="different_settings_checksum",
+    )
+    new_checksum = build_utils.compute_build_checksum(
+        items=[build_config], stack=clean_client.active_stack
+    )
+    assert checksum != new_checksum
+
+
+def test_local_repo_verification(mocker, sample_deployment_response_model):
+    """Test the local repo verification."""
+    mocker.patch.object(
+        PipelineDeploymentBaseModel,
+        "requires_code_download",
+        new_callable=mocker.PropertyMock,
+        return_value=False,
+    )
+
+    dirty_local_repo = StubLocalRepository(is_dirty=True)
+    repo_with_local_changes = StubLocalRepository(has_local_changes=True)
+
+    assert not build_utils.verify_local_repository(
+        deployment=sample_deployment_response_model, local_repo=None
+    )
+    assert not build_utils.verify_local_repository(
+        deployment=sample_deployment_response_model,
+        local_repo=repo_with_local_changes,
+    )
+
+    mocker.patch.object(
+        PipelineDeploymentBaseModel,
+        "requires_code_download",
+        new_callable=mocker.PropertyMock,
+        return_value=True,
+    )
+
+    with pytest.raises(RuntimeError):
+        # No local repo
+        build_utils.verify_local_repository(
+            deployment=sample_deployment_response_model, local_repo=None
+        )
+
+    with pytest.raises(RuntimeError):
+        build_utils.verify_local_repository(
+            deployment=sample_deployment_response_model,
+            local_repo=dirty_local_repo,
+        )
+
+    with pytest.raises(RuntimeError):
+        build_utils.verify_local_repository(
+            deployment=sample_deployment_response_model,
+            local_repo=repo_with_local_changes,
+        )
+
+    repo_response = CodeRepositoryResponseModel(
+        id=uuid4(),
+        created=datetime.now(),
+        updated=datetime.now(),
+        user=sample_deployment_response_model.user,
+        workspace=sample_deployment_response_model.workspace,
+        name="name",
+        config={"key": "value"},
+        source=Source(
+            module=StubCodeRepository.__module__,
+            attribute=StubCodeRepository.__name__,
+            type="unknown",
+        ),
+    )
+
+    mocker.patch(
+        "zenml.client.Client.get_code_repository", return_value=repo_response
+    )
+    clean_local_repo = StubLocalRepository(
+        is_dirty=False, has_local_changes=False
+    )
+    code_repo = build_utils.verify_local_repository(
+        deployment=sample_deployment_response_model,
+        local_repo=clean_local_repo,
+    )
+    assert isinstance(code_repo, StubCodeRepository)
+
+
+def test_finding_existing_build(
+    clean_client, mocker, sample_deployment_response_model
+):
+    """Tests finding an existing build."""
+    mock_list_builds = mocker.patch(
+        "zenml.client.Client.list_builds",
+        return_value=Page(
+            index=1,
+            max_size=1,
+            total_pages=1,
+            total=0,
+            items=[],
+        ),
+    )
+    mocker.patch(
+        "zenml.pipelines.build_utils.compute_build_checksum",
+        return_value="checksum",
+    )
+
+    build = build_utils.find_existing_build(
+        deployment=sample_deployment_response_model,
+        code_repository=StubCodeRepository(),
+    )
+    mock_list_builds.assert_called_once_with(
+        sort_by="desc:created",
+        size=1,
+        stack_id=clean_client.active_stack.id,
+        is_local=False,
+        contains_code=False,
+        zenml_version=zenml.__version__,
+        python_version=f"startswith:{sys.version_info.major}.{sys.version_info.minor}",
+        checksum="checksum",
+    )
+
+    assert not build

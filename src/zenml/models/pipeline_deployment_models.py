@@ -65,12 +65,6 @@ class PipelineDeploymentBaseModel(BaseModel):
         Returns:
             Whether the deployment requires included files.
         """
-        if (
-            self.pipeline_configuration.docker_settings.source_files
-            == SourceFileMode.INCLUDE
-        ):
-            return True
-
         return any(
             step.config.docker_settings.source_files == SourceFileMode.INCLUDE
             for step in self.step_configurations.values()
@@ -83,12 +77,6 @@ class PipelineDeploymentBaseModel(BaseModel):
         Returns:
             Whether the deployment requires downloading some code files.
         """
-        if (
-            self.pipeline_configuration.docker_settings.source_files
-            == SourceFileMode.DOWNLOAD
-        ):
-            return True
-
         return any(
             step.config.docker_settings.source_files == SourceFileMode.DOWNLOAD
             for step in self.step_configurations.values()

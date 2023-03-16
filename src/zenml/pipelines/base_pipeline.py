@@ -529,13 +529,9 @@ class BasePipeline(metaclass=BasePipelineMeta):
             code_repository = build_utils.verify_local_repository(
                 deployment=deployment, local_repo=local_repo
             )
-            version_hash = self._compute_unique_identifier(
-                pipeline_spec=pipeline_spec
-            )
 
             build_model = build_utils.reuse_or_create_pipeline_build(
                 deployment=deployment,
-                pipeline_version_hash=version_hash,
                 pipeline_id=pipeline_id,
                 allow_build_reuse=not prevent_build_reuse,
                 build=build,

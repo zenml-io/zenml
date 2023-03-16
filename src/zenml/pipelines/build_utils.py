@@ -53,7 +53,6 @@ logger = get_logger(__name__)
 
 def reuse_or_create_pipeline_build(
     deployment: "PipelineDeploymentBaseModel",
-    pipeline_version_hash: str,
     allow_build_reuse: bool,
     pipeline_id: Optional[UUID] = None,
     build: Union["UUID", "PipelineBuildBaseModel", None] = None,
@@ -64,12 +63,10 @@ def reuse_or_create_pipeline_build(
     Args:
         deployment: The pipeline deployment for which to load or create the
             build.
-        pipeline_version_hash: The version hash of the pipeline for which
-            to reuse or create the build.
         allow_build_reuse: If True, the build is allowed to reuse an
             existing build.
         pipeline_id: Optional ID of the pipeline to reference in the build.
-        build: Optional existing build. If given, the build will be loaded
+        build: Optional existing build. If given, the build will be fetched
             (or registered) in the database. If not given, a new build will
             be created.
         code_repository: If provided, this code repository will be used to
@@ -119,7 +116,6 @@ def reuse_or_create_pipeline_build(
     verify_custom_build(
         build=build_model,
         deployment=deployment,
-        pipeline_version_hash=pipeline_version_hash,
         code_repository=code_repository,
     )
 
@@ -128,7 +124,7 @@ def reuse_or_create_pipeline_build(
 
 def find_existing_build(
     deployment: "PipelineDeploymentBaseModel",
-    code_repository: Optional["BaseCodeRepository"] = None,
+    code_repository: "BaseCodeRepository",
 ) -> Optional["PipelineBuildResponseModel"]:
     """Find an existing build for a deployment.
 
@@ -268,6 +264,7 @@ def create_pipeline_build(
             image=image_name_or_digest,
             settings_checksum=checksum,
             contains_code=contains_code,
+            requires_code_download=download_files,
         )
         checksums[checksum] = combined_key
 
@@ -391,7 +388,6 @@ def verify_local_repository(
 def verify_custom_build(
     build: "PipelineBuildResponseModel",
     deployment: "PipelineDeploymentBaseModel",
-    pipeline_version_hash: str,
     code_repository: Optional["BaseCodeRepository"] = None,
 ) -> None:
     """Verify a custom build for a pipeline deployment.
@@ -399,8 +395,6 @@ def verify_custom_build(
     Args:
         build: The build to verify.
         deployment: The deployment for which to verify the build.
-        pipeline_version_hash: The version hash of the pipeline for which the
-            build will be used.
         code_repository: Code repository that will be used to download files
             for the deployment.
 
@@ -419,18 +413,6 @@ def verify_custom_build(
             build.id,
             stack.name,
         )
-
-    if build.pipeline:
-        if build.pipeline.version_hash != pipeline_version_hash:
-            logger.warning(
-                "The pipeline associated with the build you "
-                "specified for this run has a different spec "
-                "or step code. This might lead to unexpected "
-                "behavior as this pipeline run will use the "
-                "code that was included in the Docker images which "
-                "might differ from the code in your client "
-                "environment."
-            )
 
     if build.contains_code:
         logger.warning(
