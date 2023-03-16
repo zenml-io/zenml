@@ -22,6 +22,7 @@ class TestModelRegistryModelMetadata:
     def test_custom_attributes(self):
         metadata = ModelRegistryModelMetadata(
             zenml_version="1.0",
+            zenml_workspace="test_workspace",
             custom_attr_1="foo",
             custom_attr_2="bar",
         )
@@ -30,9 +31,70 @@ class TestModelRegistryModelMetadata:
 
     def test_dict(self):
         metadata = ModelRegistryModelMetadata(
-            zenml_version="1.0",
+            zenml_version=1.55,
             custom_attr_1="foo",
+            zenml_workspace="test_workspace",
             custom_attr_2=None,
         )
-        expected = {"zenml_version": "1.0", "custom_attr_1": "foo"}
+        expected = {
+            "zenml_version": "1.55",
+            "custom_attr_1": "foo",
+            "zenml_workspace": "test_workspace",
+        }
+        assert isinstance(metadata.dict()["zenml_version"], str)
         assert metadata.dict() == expected
+
+    def test_exclude_unset_none(self):
+        metadata = ModelRegistryModelMetadata(
+            zenml_version=1.55,
+            custom_attr_1="foo",
+            zenml_workspace="test_workspace",
+            custom_attr_2=None,
+            zenml_pipeline_name=None,
+        )
+
+        # Test exclude_unset and exclude_none both False
+        expected = {
+            "zenml_version": "1.55",
+            "zenml_pipeline_run_id": None,
+            "zenml_pipeline_name": None,
+            "zenml_pipeline_uuid": None,
+            "zenml_pipeline_run_uuid": None,
+            "zenml_step_name": None,
+            "zenml_workspace": "test_workspace",
+            "custom_attr_1": "foo",
+            "custom_attr_2": None,
+        }
+        assert (
+            metadata.dict(exclude_unset=False, exclude_none=False) == expected
+        )
+
+        # Test exclude_unset and exclude_none both True
+        expected = {
+            "zenml_version": "1.55",
+            "zenml_workspace": "test_workspace",
+            "custom_attr_1": "foo",
+        }
+        assert metadata.dict(exclude_unset=True, exclude_none=True) == expected
+
+        # Test exclude_unset False and exclude_none True
+        expected = {
+            "zenml_version": "1.55",
+            "zenml_workspace": "test_workspace",
+            "custom_attr_1": "foo",
+        }
+        assert (
+            metadata.dict(exclude_unset=False, exclude_none=True) == expected
+        )
+
+        # Test exclude_unset True and exclude_none False
+        expected = {
+            "zenml_version": "1.55",
+            "zenml_pipeline_name": None,
+            "zenml_workspace": "test_workspace",
+            "custom_attr_1": "foo",
+            "custom_attr_2": None,
+        }
+        assert (
+            metadata.dict(exclude_unset=True, exclude_none=False) == expected
+        )

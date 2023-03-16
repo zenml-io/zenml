@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2023. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -132,7 +132,6 @@ class ConcreteModelRegistry(BaseModelRegistry):
         pass
 
     def get_model_version(self, name: str, version: str) -> ModelVersion:
-        breakpoint()
         pass
 
     def load_model_version(
@@ -152,11 +151,11 @@ class ConcreteModelRegistry(BaseModelRegistry):
 
 @pytest.fixture
 def concrete_registered_models(mocker):
-    registered_models = mocker.MagicMock(spec=RegisteredModel)
-    registered_models.name = "test_model"
-    registered_models.description = "test_model_description"
-    registered_models.metadata = {"test": "test"}
-    return [registered_models]
+    registered_model = mocker.MagicMock(spec=RegisteredModel)
+    registered_model.name = "test_model"
+    registered_model.description = "test_model_description"
+    registered_model.metadata = {"test": "test"}
+    return [registered_model]
 
 
 @pytest.fixture
@@ -212,6 +211,7 @@ def test_list_models(
 
     # Check the result
     assert result.exit_code == 0
+    assert "test_model" in result.output
 
 
 def test_update_model(
@@ -240,6 +240,7 @@ def test_update_model(
 
     # Check the result
     assert result.exit_code == 0
+    assert "updated successfully." in result.output
 
 
 def test_get_model(
@@ -253,7 +254,8 @@ def test_get_model(
         cli.commands["model-registry"].commands["models"].commands["get"]
     )
 
-    # Patch the find_model_server method
+    # Patch the find_model_server method\
+    model_name = "test_model"
     mocker.patch.object(
         ConcreteModelRegistry,
         "get_model",
@@ -261,11 +263,28 @@ def test_get_model(
     )
     # Run the command
     result = runner.invoke(
-        list_registered_model, ["test_model"], obj=concrete_model_registry
+        list_registered_model, [model_name], obj=concrete_model_registry
     )
 
     # Check the result
     assert result.exit_code == 0
+    assert model_name in result.output
+
+    # Patch the find_model_server method
+    model_name = "test_model_not_exist"
+    mocker.patch.object(
+        ConcreteModelRegistry,
+        "get_model",
+        side_effect=KeyError("Model with name `{model_name}` does not exist."),
+    )
+
+    # Run the command
+    result = runner.invoke(
+        list_registered_model, [model_name], obj=concrete_model_registry
+    )
+    # Check the result
+    assert result.exit_code == 1
+    assert "Error:" in result.output
 
 
 def test_list_model_versions(
@@ -294,6 +313,8 @@ def test_list_model_versions(
 
     # Check the result
     assert result.exit_code == 0
+    assert "test_version" in result.output
+    assert "test_version_description" in result.output
 
 
 def test_get_model_version(
@@ -310,6 +331,8 @@ def test_get_model_version(
     )
 
     # Patch the find_model_server method
+    model_name = "test_model"
+    model_version = "test_version"
     mocker.patch.object(
         ConcreteModelRegistry,
         "get_model_version",
@@ -319,8 +342,28 @@ def test_get_model_version(
     # Run the command
     result = runner.invoke(
         get_model_version,
-        ["test_model", "--version", "test_version"],
+        [model_name, "--version", model_version],
         obj=concrete_model_registry,
     )
     # Check the result
     assert result.exit_code == 0
+    assert model_version in result.output
+
+    mocker.patch.object(
+        ConcreteModelRegistry,
+        "get_model_version",
+        side_effect=KeyError(
+            f"Model with name {model_name} and version {model_version} does not exist."
+        ),
+    )
+
+    # Run the command
+    result = runner.invoke(
+        get_model_version,
+        [model_name, "--version", model_version],
+        obj=concrete_model_registry,
+    )
+
+    # Check the result
+    assert result.exit_code == 1
+    assert "Error:" in result.output
