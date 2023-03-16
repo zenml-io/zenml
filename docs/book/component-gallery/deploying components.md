@@ -30,6 +30,12 @@ zenml artifact-store deploy s3_artifact_store --flavor=s3
     - `kubernetes`
     - `kubeflow`
     - `tekton`
+    - `sagemaker`
+    Step Operators:
+    - `sagemaker`
+    Secrets Managers:
+    - `aws`
+    - `gcp`
 
 ## Customizing the deployment of stack components
 

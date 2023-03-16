@@ -1093,8 +1093,8 @@ def generate_stack_component_deploy_command(
         "--cloud",
         "-c",
         "cloud",
+        type=click.Choice(["aws", "gcp", "k3d"]),
         help="The cloud provider to use to deploy the stack component.",
-        type=str,
     )
     @click.argument("args", nargs=-1, type=click.UNPROCESSED)
     @click.pass_context
@@ -1113,6 +1113,45 @@ def generate_stack_component_deploy_command(
             share: Share the stack with other users.
             args: Additional arguments to pass to the component.
         """
+        # make sure that flavor is set
+        if flavor is None:
+            raise cli_utils.error(
+                "Flavor must be specified while deploying a stack component."
+            )
+        
+        # generate a python dict with the above structure
+        # and then use it to check if the flavor is valid
+        # for the given component type
+        allowed_flavors = {
+            "experiment_tracker": ["mlflow"],
+            "model_deployer": ["seldon", "kserve"],
+            "artifact_store": ["s3", "gcp", "minio"],
+            "container_registry": ["gcp", "aws"],
+            "orchestrator": ["kubernetes", "kubeflow", "tekton", "sagemaker"],
+            "step_operator": ["sagemaker"],
+            "secrets_manager": ["aws", "gcp"],
+        }
+
+        # if the flavor is not allowed for the given component type
+        # raise an error
+        if flavor not in allowed_flavors[component_type.value]:
+            raise cli_utils.error(
+                f"Flavor '{flavor}' is not supported for "
+                f"{_component_display_name(component_type, True)}."
+            )
+
+        # for cases like artifact store, secrets manager and container registry
+        # the flavor is the same as the cloud
+        if flavor in ["s3", "sagemaker", "aws"]:
+            cloud = "aws"
+        elif flavor in ["vertex", "gcp"]:
+            cloud = "gcp"
+        elif cloud is None:
+            raise cli_utils.error(
+                f"Cloud must be specified while deploying {flavor} "
+                f"{_component_display_name(component_type, True)}."
+            )
+
         client = Client()
 
         # Parse the given args
@@ -1120,23 +1159,6 @@ def generate_stack_component_deploy_command(
         name, parsed_args = cli_utils.parse_name_and_extra_arguments(  # type: ignore[assignment]
             list(args) + [name], expand_args=True
         )
-
-        # make sure that flavor is set
-        if flavor is None:
-            raise cli_utils.error(
-                "Flavor must be specified while deploying a stack component."
-            )
-
-        # for cases like artifact store, secrets manager and container registry
-        # the flavor is the same as the cloud
-        if cloud is None:
-            cloud = flavor
-
-        if cloud in ["s3", "sagemaker"]:
-            cloud = "aws"
-
-        if cloud in ["vertex"]:
-            cloud = "gcp"
 
         client.deploy_stack_component(
             ctx=ctx,
