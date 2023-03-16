@@ -484,7 +484,6 @@ class LabelStudioAnnotator(BaseAnnotator, AuthenticationMixin):
 
         Args:
             params: The dataset sync parameters.
-            annotator: The active Label Studio annotator.
             artifact_store: The active artifact store.
 
         Raises:

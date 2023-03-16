@@ -183,7 +183,7 @@ Example of configuring a Seldon Core secret for AWS S3:
 ```shell
 zenml secret create s3-seldon-secret \
 --rclone_config_s3_type="s3" \ # set to 's3' for S3 storage.
---rclone_config_s3_provider="aws" \ # the S3 provider (e.g. aws, ceph, minio).
+--rclone_config_s3_provider="aws" \ # the S3 provider (e.g. aws, Ceph, Minio).
 --rclone_config_s3_env_auth=False \ # set to true to use implicit AWS authentication from EC2/ECS meta data
 # (i.e. with IAM roles configuration). Only applies if access_key_id and secret_access_key are blank.
 --rclone_config_s3_access_key_id="<AWS-ACCESS-KEY-ID>" \ # AWS Access Key ID.
