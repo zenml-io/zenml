@@ -425,31 +425,65 @@ def _clone_repo(
 
 
 @hub.command("login")
-def login() -> None:
+@click.option(
+    "--github",
+    "-g",
+    is_flag=True,
+    help="Login via GitHub.",
+)
+@click.option(
+    "--email",
+    "-e",
+    type=str,
+    help="Login via ZenML Hub account using this email address.",
+)
+@click.option(
+    "--password",
+    "-p",
+    type=str,
+    help="Password of the ZenML Hub account.",
+)
+def login(
+    github: bool = False,
+    email: Optional[str] = None,
+    password: Optional[str] = None,
+) -> None:
     """Login to the ZenML Hub."""
-    logger.info(
-        "You can either login via your ZenML Hub account or via GitHub."
-    )
-    confirmation = click.confirm("Login via ZenML Hub account?")
-    if confirmation:
-        _login_via_zenml_hub()
-    else:
+    if github:
         _login_via_github()
+    elif email:
+        if not password:
+            password = click.prompt("Password", type=str, hide_input=True)
+        _login_via_zenml_hub(email, password)
+    else:
+        logger.info(
+            "You can either login via your ZenML Hub account or via GitHub."
+        )
+        confirmation = click.confirm("Login via ZenML Hub account?")
+        if confirmation:
+            _login_via_zenml_hub()
+        else:
+            _login_via_github()
 
 
-def _login_via_zenml_hub() -> None:
-    """Login via ZenML Hub username and password."""
+def _login_via_zenml_hub(
+    email: Optional[str] = None, password: Optional[str] = None
+) -> None:
+    """Login via ZenML Hub email and password."""
     with event_handler(
         event=AnalyticsEvent.ZENML_HUB_LOGIN,
     ) as analytics_handler:
         client = HubClient()
         analytics_handler.metadata["hub_url"] = client.url
-        logger.info("Please enter your ZenML Hub credentials.")
-        username = click.prompt("Username", type=str)
-        analytics_handler.metadata = {"hub_username": username}
-        password = click.prompt("Password", type=str, hide_input=True)
+        if not email or not password:
+            logger.info("Please enter your ZenML Hub credentials.")
+        while not email:
+            email = click.prompt("Email", type=str)
+        analytics_handler.metadata = {"hub_email": email}
+        while not password:
+            password = click.prompt("Password", type=str, hide_input=True)
         try:
-            client.login(username, password)
+            client.login(email, password)
             me = client.get_me()
             if me:
                 logger.info(
