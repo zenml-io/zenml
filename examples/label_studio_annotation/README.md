@@ -161,6 +161,17 @@ S3_BUCKET_NAME=<YOUR_DESIRED_S3_BUCKET_NAME>
 aws s3api create-bucket --bucket=$S3_BUCKET_NAME --region=$REGION --create-bucket-configuration=LocationConstraint=$REGION
 ```
 
+Label Studio also needs you to set up cross-origin resource sharing (CORS)
+access to your bucket, using a policy that allows `GET` access from the same
+host name as your Label Studio deployment. You can use the CORS file we have
+pre-populated for you inside the examples repo as follows:
+
+```shell
+cd cloud_config/aws
+aws s3api put-bucket-cors --bucket $S3_BUCKET_NAME --cors-configuration file://cors.json
+cd ../..
+```
+
 Now you can get to the fun part of setting up Label Studio and working with
 ZenML:
 
