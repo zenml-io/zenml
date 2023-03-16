@@ -170,10 +170,15 @@ def install_plugin(
     ) as analytics_handler:
         client = HubClient()
         analytics_handler.metadata["hub_url"] = client.url
-        display_name = _plugin_display_name(plugin_name, version)
+        plugin_name, author = _parse_plugin_name(plugin_name)
+        analytics_handler.metadata["plugin_name"] = plugin_name
+        analytics_handler.metadata["plugin_author"] = author
+        display_name = _plugin_display_name(plugin_name, version, author)
 
         # Get plugin from hub
-        plugin = client.get_plugin(plugin_name, version)
+        plugin = client.get_plugin(
+            plugin_name=plugin_name, plugin_version=version, author=author
+        )
         if not plugin:
             error(f"Could not find plugin '{display_name}' on the hub.")
         analytics_handler.metadata["plugin_version"] = plugin.version
@@ -254,7 +259,10 @@ def install_plugin(
     type=str,
     help="Version of the plugin to uninstall.",
 )
-def uninstall_plugin(plugin_name: str, version: Optional[str] = None) -> None:
+def uninstall_plugin(
+    plugin_name: str,
+    version: Optional[str] = None,
+) -> None:
     """Uninstall a plugin from the hub.
 
     Args:
@@ -271,10 +279,15 @@ def uninstall_plugin(plugin_name: str, version: Optional[str] = None) -> None:
     ) as analytics_handler:
         client = HubClient()
         analytics_handler.metadata["hub_url"] = client.url
-        display_name = _plugin_display_name(plugin_name, version)
+        plugin_name, author = _parse_plugin_name(plugin_name)
+        analytics_handler.metadata["plugin_name"] = plugin_name
+        analytics_handler.metadata["plugin_author"] = author
+        display_name = _plugin_display_name(plugin_name, version, author)
 
         # Get plugin from hub
-        plugin = client.get_plugin(plugin_name, version)
+        plugin = client.get_plugin(
+            plugin_name=plugin_name, plugin_version=version, author=author
+        )
         if not plugin:
             error(f"Could not find plugin '{display_name}' on the hub.")
         analytics_handler.metadata["plugin_version"] = plugin.version
@@ -331,10 +344,15 @@ def clone_plugin(
     ) as analytics_handler:
         client = HubClient()
         analytics_handler.metadata["hub_url"] = client.url
-        display_name = _plugin_display_name(plugin_name, version)
+        plugin_name, author = _parse_plugin_name(plugin_name)
+        analytics_handler.metadata["plugin_name"] = plugin_name
+        analytics_handler.metadata["plugin_author"] = author
+        display_name = _plugin_display_name(plugin_name, version, author)
 
         # Get plugin from hub
-        plugin = client.get_plugin(plugin_name, version)
+        plugin = client.get_plugin(
+            plugin_name=plugin_name, plugin_version=version, author=author
+        )
         if not plugin:
             error(f"Could not find plugin '{display_name}' on the hub.")
         analytics_handler.metadata["plugin_version"] = plugin.version
@@ -433,9 +451,12 @@ def _login_via_zenml_hub() -> None:
         try:
             client.login(username, password)
             me = client.get_me()
-            logger.info(
-                f"Successfully logged in as: {me.username} ({me.email})!"
-            )
+            if me:
+                logger.info(
+                    f"Successfully logged in as: {me.username} ({me.email})!"
+                )
+                return
+            error("Could not retrieve user information from the ZenML Hub.")
         except HubAPIError as e:
             error(f"Could not login to the ZenML Hub: {e}")
 
@@ -589,10 +610,23 @@ def submit_plugin(
                 "You must be logged in to contribute a plugin to the Hub. "
                 "Please run `zenml hub login` to login."
             )
+        me = client.get_me()
+        if not me:
+            error("Could not retrieve user information from the ZenML Hub.")
+        if not me.username:
+            error(
+                "Your ZenML Hub account does not have a username yet. Please "
+                "set a username in your account settings and try again."
+            )
+        username = me.username
+        analytics_handler.metadata["plugin_author"] = username
 
-        # Validate that the plugin name is provided and available
+        # Validate the plugin name and check if it exists
         plugin_name, plugin_exists = _validate_plugin_name(
-            client=client, plugin_name=plugin_name, interactive=interactive
+            client=client,
+            plugin_name=plugin_name,
+            username=username,
+            interactive=interactive,
         )
         analytics_handler.metadata["plugin_name"] = plugin_name
 
@@ -619,13 +653,6 @@ def submit_plugin(
                 release_notes = click.prompt(
                     "(Optional) release notes", default=""
                 )
-
-        # Raise an error if the plugin does not exist and a version is provided.
-        elif not plugin_exists and version:
-            error(
-                "You cannot specify a version for a plugin that does not exist "
-                "yet. Please remove the '--version' flag and try again."
-            )
 
         # Clone the repo and validate the commit / branch / subdir / structure
         (
@@ -669,7 +696,6 @@ def submit_plugin(
         )
         plugin_response = client.create_plugin(
             plugin_request=plugin_request,
-            is_new_version=plugin_exists,
         )
 
         # Stream the build logs
@@ -684,47 +710,33 @@ def submit_plugin(
 
 
 def _validate_plugin_name(
-    client: HubClient, plugin_name: Optional[str], interactive: bool
+    client: HubClient,
+    plugin_name: Optional[str],
+    username: str,
+    interactive: bool,
 ) -> Tuple[str, bool]:
     """Validate that the plugin name is provided and available.
 
     Args:
         client: The Hub client used to check if the plugin name is available.
         plugin_name: The plugin name to validate.
+        username: The username of the current user.
         interactive: Whether to run in interactive mode.
 
     Returns:
         The validated plugin name, and whether the plugin already exists.
     """
     # Make sure the plugin name is provided.
-    if not plugin_name:
+    while not plugin_name:
         if not interactive:
             error("Plugin name not provided.")
         logger.info("Please enter a name for the plugin.")
         plugin_name = click.prompt("Plugin name")
 
-    # Make sure the plugin name is valid.
-    while True:
-        if plugin_name:
-            existing_plugin = client.get_plugin(plugin_name)
-
-            # If the plugin name is available, we're good.
-            if not existing_plugin:
-                return plugin_name, False
-
-            # if the plugin already exists, make sure it's the user's plugin.
-            my_plugins = client.list_plugins(mine=True)
-            for plugin in my_plugins:
-                if plugin.name == plugin_name:
-                    return plugin_name, True
-
-        if not interactive:
-            error("Plugin name not provided or not available.")
-        logger.info(
-            f"A plugin with name '{plugin_name}' already exists in the "
-            "hub. Please choose a different name."
-        )
-        plugin_name = click.prompt("Plugin name")
+    existing_plugin = client.get_plugin(
+        plugin_name=plugin_name, author=username
+    )
+    return plugin_name, bool(existing_plugin)
 
 
 def _validate_repository(
@@ -976,7 +988,10 @@ def _ask_for_tags() -> List[str]:
         "latest version will be used."
     ),
 )
-def get_logs(plugin_name: str, version: Optional[str] = None) -> None:
+def get_logs(
+    plugin_name: str,
+    version: Optional[str] = None,
+) -> None:
     """Get the build logs of a plugin.
 
     Args:
@@ -993,11 +1008,14 @@ def get_logs(plugin_name: str, version: Optional[str] = None) -> None:
     ) as analytics_handler:
         client = HubClient()
         analytics_handler.metadata["hub_url"] = client.url
-        display_name = _plugin_display_name(plugin_name, version)
+        plugin_name, author = _parse_plugin_name(plugin_name)
+        analytics_handler.metadata["plugin_name"] = plugin_name
+        analytics_handler.metadata["plugin_author"] = author
+        display_name = _plugin_display_name(plugin_name, version, author)
 
         # Get the plugin from the hub
         plugin = client.get_plugin(
-            plugin_name=plugin_name, plugin_version=version
+            plugin_name=plugin_name, plugin_version=version, author=author
         )
         if not plugin:
             error(f"Could not find plugin '{display_name}' on the hub.")
@@ -1043,16 +1061,42 @@ def _is_plugin_installed(plugin_name: str) -> bool:
     return spec is not None
 
 
-def _plugin_display_name(plugin_name: str, version: Optional[str]) -> str:
+def _parse_plugin_name(plugin_name: str) -> Tuple[str, Optional[str]]:
+    """Helper function to parse a plugin name.
+
+    Args:
+        plugin_name: The user-provided plugin name.
+
+    Returns:
+        The plugin name and the username of the plugin author.
+
+    Raises:
+        ValueError: If the plugin name is invalid.
+    """
+    parts = plugin_name.split("/")
+    if len(parts) == 1:
+        return plugin_name, None
+    if len(parts) == 2:
+        return parts[1], parts[0]
+    raise ValueError(
+        f"Invalid plugin name '{plugin_name}'. Plugin names must be of the "
+        "form 'plugin_name' or 'author/plugin_name'."
+    )
+
+
+def _plugin_display_name(
+    plugin_name: str, version: Optional[str], author: Optional[str]
+) -> str:
     """Helper function to get the display name of a plugin.
 
     Args:
         plugin_name: Name of the plugin.
         version: Version of the plugin.
+        author: Username of the plugin author.
 
     Returns:
         Display name of the plugin.
     """
-    if version:
-        return f"{plugin_name}:{version}"
-    return f"{plugin_name}:latest"
+    author_prefix = f"{author}/" if author else ""
+    version_suffix = f":{version}" if version else ":latest"
+    return f"{author_prefix}{plugin_name}{version_suffix}"

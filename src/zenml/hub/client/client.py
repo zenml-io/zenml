@@ -76,7 +76,10 @@ class HubClient:
         ]
 
     def get_plugin(
-        self, plugin_name: str, plugin_version: Optional[str] = None
+        self,
+        plugin_name: str,
+        plugin_version: Optional[str] = None,
+        author: Optional[str] = None,
     ) -> Optional[HubPluginResponseModel]:
         """Get a specific plugin from the hub.
 
@@ -84,6 +87,7 @@ class HubClient:
             plugin_name: The name of the plugin.
             plugin_version: The version of the plugin. If not specified, the
                 latest version will be returned.
+            author: Username of the author of the plugin.
 
         Returns:
             The plugin response model or None if the plugin does not exist.
@@ -91,7 +95,8 @@ class HubClient:
         route = f"/plugins/{plugin_name}"
         if plugin_version:
             route += f"?version={plugin_version}"
-
+        if author:
+            route += f"?author={author}"
         try:
             response = self._request("GET", route)
             return HubPluginResponseModel.parse_obj(response)
@@ -99,21 +104,17 @@ class HubClient:
             return None
 
     def create_plugin(
-        self, plugin_request: HubPluginRequestModel, is_new_version: bool
+        self, plugin_request: HubPluginRequestModel
     ) -> HubPluginResponseModel:
         """Create a plugin in the hub.
 
         Args:
             plugin_request: The plugin request model.
-            is_new_version: Whether this is a new version of an existing plugin.
 
         Returns:
             The plugin response model.
         """
         route = "/plugins"
-        if is_new_version:
-            route += f"/{plugin_request.name}/versions"
-
         response = self._request("POST", route, data=plugin_request.json())
         return HubPluginResponseModel.parse_obj(response)
 
