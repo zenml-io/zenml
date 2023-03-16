@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Client for the ZenML Hub."""
 import os
+from json import JSONDecodeError
 from typing import Any, Dict, List, Optional
 
 import requests
@@ -244,8 +245,10 @@ class HubClient:
         )
 
         # Parse and return the response
-        response_json = response.json()
         if 200 <= response.status_code < 300:
-            return response_json
-        error_msg = response_json.get("detail", response.text)
+            return response.json()
+        try:
+            error_msg = response.json().get("detail", response.text)
+        except JSONDecodeError:
+            error_msg = response.text
         raise HubAPIError(f"Request to ZenML Hub failed: {error_msg}")
