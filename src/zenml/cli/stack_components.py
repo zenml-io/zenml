@@ -237,13 +237,7 @@ def generate_stack_component_register_command(
             list(args) + [name], expand_args=True
         )
 
-        parsed_metadata = None
-        # split metadata by "=" and create a dict
-        if metadata:
-            parsed_metadata = {}
-            for m in metadata:
-                key, value = m.split("=")
-                parsed_metadata[key] = value
+        parsed_metadata = cli_utils.get_parsed_metadata(metadata)
 
         # click<8.0.0 gives flags a default of None
         if share is None:
@@ -321,13 +315,7 @@ def generate_stack_component_update_command(
             name_mandatory=False,
         )
 
-        parsed_metadata = None
-        # split metadata by "=" and create a dict
-        if metadata:
-            parsed_metadata = {}
-            for m in metadata:
-                key, value = m.split("=")
-                parsed_metadata[key] = value
+        parsed_metadata = cli_utils.get_parsed_metadata(metadata)
 
         with console.status(f"Updating {display_name}...\n"):
             try:

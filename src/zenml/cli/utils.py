@@ -1551,3 +1551,23 @@ def warn_deprecated_secrets_manager() -> None:
         "https://docs.zenml.io/advanced-guide/practical-mlops/secrets-management "
         "documentation page for more information."
     )
+
+
+def get_parsed_metadata(metadata: Optional[str]) -> Dict[str, str]:
+    """Parse metadata into a dictionary.
+
+    Args:
+        metadata: The metadata to parse.
+
+    Returns:
+        A dictionary of the metadata.
+    """
+    if not metadata:
+        return {}
+
+    metadata_dict = {}
+    for m in metadata:
+        key, value = m.split("=")
+        metadata_dict[key] = value
+
+    return metadata_dict
