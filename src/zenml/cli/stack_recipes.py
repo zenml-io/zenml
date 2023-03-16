@@ -1026,7 +1026,6 @@ def deploy(
                                 "point to a valid configuration file."
                             )
 
-                    enabled_services = []
                     enabled_services = [
                         f"{name}_{value}"
                         for name, value in stack_component_options.items()
@@ -1247,6 +1246,12 @@ def zen_server_exists() -> bool:
     help="The flavor of secrets manager to destroy. "
     "If not specified, no secrets manager will be destroyed.",
 )
+@click.option(
+    "--step-operator",
+    "-s",
+    help="The flavor of step operator to destroy. "
+    "If not specified, no step operator will be destroyed.",
+)
 @pass_git_stack_recipes_handler
 def destroy(
     git_stack_recipes_handler: GitStackRecipesHandler,
@@ -1258,6 +1263,7 @@ def destroy(
     model_deployer: Optional[str],
     experiment_tracker: Optional[str],
     secrets_manager: Optional[str],
+    step_operator: Optional[str],
 ) -> None:
     """Destroy all resources from the stack_recipe at the specified relative path.
 
@@ -1284,6 +1290,7 @@ def destroy(
         secrets_manager: The flavor of the secrets manager to destroy. In the case
             of the secrets manager, it doesn't matter what you specify here, as
             there's only one flavor per cloud provider and that will be destroyed.
+        step_operator: The flavor of the step operator to destroy.
     Raises:
         ModuleNotFoundError: If the recipe is found at the given path.
     """
@@ -1342,24 +1349,45 @@ def destroy(
                         f"{stack_recipe_name}"
                     )
 
+                # build a dict of all stack componnet options that have non-null values
+                stack_component_options = {
+                    "artifact_store": artifact_store,
+                    "orchestrator": orchestrator,
+                    "container_registry": container_registry,
+                    "model_deployer": model_deployer,
+                    "experiment_tracker": experiment_tracker,
+                    "secrets_manager": secrets_manager,
+                    "step_operator": step_operator,
+                }
+
+                # filter out null values
+                stack_component_options = {
+                    k: v for k, v in stack_component_options.items() if v is not None
+                }
+
                 # add all values that are not None to the disabled services list
                 disabled_services = [
-                    service
-                    for service in [
-                        orchestrator,
-                        experiment_tracker,
-                        model_deployer,
+                    f"{name}_{value}"
+                    for name, value in stack_component_options.items()
+                    if name
+                    not in [
+                        "artifact_store",
+                        "container_registry",
+                        "secrets_manager",
                     ]
-                    if service is not None
                 ]
                 # if artifact store, container registry or secrets manager
                 # are not none, add them as strings to the list of disabled services
-                if artifact_store:
-                    disabled_services.append("artifact_store")
-                if container_registry:
-                    disabled_services.append("container_registry")
-                if secrets_manager:
-                    disabled_services.append("secrets_manager")
+                disabled_services = disabled_services + [
+                    f"{name}"
+                    for name, _ in stack_component_options.items()
+                    if name
+                    in [
+                        "artifact_store",
+                        "container_registry",
+                        "secrets_manager",
+                    ]
+                ]
 
                 stack_recipe_service.config.disabled_services = (
                     disabled_services

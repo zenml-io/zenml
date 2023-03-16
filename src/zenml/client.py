@@ -2410,7 +2410,7 @@ class Client(metaclass=ClientMetaClass):
         )
 
         logger.info(
-            "Deregestering stack component %s...",
+            "Deregistering stack component %s...",
             component.name,
         )
 
