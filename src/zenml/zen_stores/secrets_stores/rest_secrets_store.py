@@ -148,7 +148,7 @@ class RestSecretsStore(BaseSecretsStore):
     # Secrets
     # ------
 
-    @track(AnalyticsEvent.CREATED_SECRET, v2=True)
+    @track(AnalyticsEvent.CREATED_SECRET)
     def create_secret(self, secret: SecretRequestModel) -> SecretResponseModel:
         """Creates a new secret.
 
