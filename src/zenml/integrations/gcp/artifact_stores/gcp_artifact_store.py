@@ -53,6 +53,17 @@ class GCPArtifactStore(BaseArtifactStore, AuthenticationMixin):
         """
         return cast(GCPArtifactStoreConfig, self._config)
 
+    def get_credentials(self) -> Optional[Dict[str, Any]]:
+        """Returns the credentials for the GCP Artifact Store if configured.
+
+        Returns:
+            The credentials.
+        """
+        secret = self.get_authentication_secret(
+            expected_schema_type=GCPSecretSchema
+        )
+        return secret.get_credential_dict() if secret else None
+
     @property
     def filesystem(self) -> gcsfs.GCSFileSystem:
         """The gcsfs filesystem to access this artifact store.
@@ -61,10 +72,7 @@ class GCPArtifactStore(BaseArtifactStore, AuthenticationMixin):
             The gcsfs filesystem to access this artifact store.
         """
         if not self._filesystem:
-            secret = self.get_authentication_secret(
-                expected_schema_type=GCPSecretSchema
-            )
-            token = secret.get_credential_dict() if secret else None
+            token = self.get_credentials()
             self._filesystem = gcsfs.GCSFileSystem(token=token)
 
         return self._filesystem

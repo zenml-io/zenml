@@ -20,13 +20,11 @@ from typing import Any, Type, cast
 from whylogs.core import DatasetProfileView  # type: ignore
 
 from zenml.enums import ArtifactType
-from zenml.integrations.whylogs.constants import (
-    WHYLABS_DATASET_ID_ENV,
-    WHYLABS_LOGGING_ENABLED_ENV,
-)
-from zenml.integrations.whylogs.data_validators import WhylogsDataValidator
 from zenml.io import fileio
+from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
+
+logger = get_logger(__name__)
 
 PROFILE_FILENAME = "profile.pb"
 
@@ -81,15 +79,54 @@ class WhylogsMaterializer(BaseMaterializer):
         fileio.copy(temp_file, filepath)
         fileio.rmtree(temp_dir)
 
-        # Use the data validator to upload the profile view to Whylabs,
-        # if configured to do so. This logic is only enabled if the pipeline
-        # step was decorated with the `enable_whylabs` decorator
-        whylabs_enabled = os.environ.get(WHYLABS_LOGGING_ENABLED_ENV)
-        if not whylabs_enabled:
-            return
-        dataset_id = os.environ.get(WHYLABS_DATASET_ID_ENV)
-        data_validator = cast(
+        try:
+            self._upload_to_whylabs(profile_view)
+        except Exception as e:
+            logger.error(
+                "Failed to upload whylogs profile view to Whylabs: %s", e
+            )
+
+    def _upload_to_whylabs(self, profile_view: DatasetProfileView) -> None:
+        """Uploads a whylogs dataset profile view to Whylabs.
+
+        Args:
+            profile_view: A whylogs dataset profile view object.
+        """
+        from zenml.environment import Environment
+        from zenml.integrations.whylogs.data_validators import (
             WhylogsDataValidator,
-            WhylogsDataValidator.get_active_data_validator(),
         )
-        data_validator.upload_profile_view(profile_view, dataset_id=dataset_id)
+        from zenml.integrations.whylogs.flavors.whylogs_data_validator_flavor import (
+            WhylogsDataValidatorSettings,
+        )
+        from zenml.steps import STEP_ENVIRONMENT_NAME, StepEnvironment
+
+        try:
+            data_validator = WhylogsDataValidator.get_active_data_validator()
+        except TypeError:
+            # no whylogs data validator is active
+            return
+
+        if not isinstance(data_validator, WhylogsDataValidator):
+            # the active data validator is not a whylogs data validator
+            return
+
+        try:
+            step_env = cast(
+                StepEnvironment, Environment()[STEP_ENVIRONMENT_NAME]
+            )
+        except KeyError:
+            # we are not in a step environment
+            return
+
+        run_info = step_env.step_run_info
+        settings = cast(
+            WhylogsDataValidatorSettings, data_validator.get_settings(run_info)
+        )
+
+        if not settings.enable_whylabs:
+            # whylabs is not enabled in the data validator
+            return
+        data_validator.upload_profile_view(
+            profile_view, dataset_id=settings.dataset_id
+        )
