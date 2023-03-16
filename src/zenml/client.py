@@ -12,7 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Client implementation."""
-import base64
 import json
 import os
 from abc import ABCMeta
@@ -2026,7 +2025,7 @@ class Client(metaclass=ClientMetaClass):
             updated=updated,
         )
         component_filter_model.set_scope_workspace(self.active_workspace.id)
-        breakpoint()
+
         return self.zen_store.list_stack_components(
             component_filter_model=component_filter_model
         )
@@ -2037,7 +2036,7 @@ class Client(metaclass=ClientMetaClass):
         flavor: str,
         component_type: StackComponentType,
         configuration: Dict[str, str],
-        metadata: Optional[Dict[str, str]] = None,
+        metadata: Optional[Dict[str, Any]] = None,
         is_shared: bool = False,
     ) -> "ComponentResponseModel":
         """Registers a stack component.
@@ -2091,7 +2090,7 @@ class Client(metaclass=ClientMetaClass):
         component_type: StackComponentType,
         name: Optional[str] = None,
         configuration: Optional[Dict[str, Any]] = None,
-        metadata: Optional[Dict[str, str]] = None,
+        metadata: Optional[Dict[str, Any]] = None,
         is_shared: Optional[bool] = None,
     ) -> "ComponentResponseModel":
         """Updates a stack component.

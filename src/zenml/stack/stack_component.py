@@ -292,7 +292,7 @@ class StackComponent:
         workspace: UUID,
         created: datetime,
         updated: datetime,
-        metadata: Optional[Dict[str, str]],
+        metadata: Optional[Dict[str, Any]],
         *args: Any,
         **kwargs: Any,
     ):

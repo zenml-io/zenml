@@ -398,7 +398,7 @@ def print_stack_component_configuration(
 
     if len(component.configuration) == 0:
         declare("No configuration options are set for this component.")
-    
+
     else:
         title_ = (
             f"'{component.name}' {component.type.value.upper()} "
@@ -1553,7 +1553,7 @@ def warn_deprecated_secrets_manager() -> None:
     )
 
 
-def get_parsed_metadata(metadata: Optional[str]) -> Dict[str, str]:
+def get_parsed_metadata(metadata: Optional[List[str]]) -> Dict[str, str]:
     """Parse metadata into a dictionary.
 
     Args:
