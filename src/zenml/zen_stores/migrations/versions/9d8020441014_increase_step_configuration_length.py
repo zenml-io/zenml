@@ -1,5 +1,4 @@
-"""Increase step_configuration length"
- [9d8020441014].
+"""Increase step_configuration length [9d8020441014].
 
 Revision ID: 9d8020441014
 Revises: 0.35.1
