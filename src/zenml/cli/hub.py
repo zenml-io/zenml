@@ -432,7 +432,10 @@ def _login_via_zenml_hub() -> None:
         password = click.prompt("Password", type=str, hide_input=True)
         try:
             client.login(username, password)
-            logger.info("Successfully logged in to the ZenML Hub.")
+            me = client.get_me()
+            logger.info(
+                f"Successfully logged in as: {me.username} ({me.email})!"
+            )
         except HubAPIError as e:
             error(f"Could not login to the ZenML Hub: {e}")
 

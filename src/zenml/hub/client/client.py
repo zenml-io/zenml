@@ -24,6 +24,7 @@ from zenml.logger import get_logger
 from zenml.models.hub_plugin_models import (
     HubPluginRequestModel,
     HubPluginResponseModel,
+    HubUserResponseModel,
 )
 
 logger = get_logger(__name__)
@@ -197,6 +198,18 @@ class HubClient:
             if auth_url:
                 return str(auth_url)
         raise HubAPIError(f"Unexpected response: {str(response)}")
+
+    def get_me(self) -> Optional[HubUserResponseModel]:
+        """Get the current user.
+
+        Returns:
+            The user response model or None if the user does not exist.
+        """
+        try:
+            response = self._request("GET", "/user/users/me")
+            return HubUserResponseModel.parse_obj(response)
+        except HubAPIError:
+            return None
 
     def _request(
         self,

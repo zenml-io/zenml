@@ -34,7 +34,7 @@ class PluginStatus(StrEnum):
     YANKED = "yanked"  # Plugin was yanked and is no longer available
 
 
-class HubUserModel(BaseModel):
+class HubUserResponseModel(BaseModel):
     """Model for a ZenML Hub user."""
 
     id: UUID
@@ -71,6 +71,6 @@ class HubPluginResponseModel(HubPluginBaseModel):
     package_name: Optional[str]
     requirements: Optional[List[str]]
     build_logs: Optional[str]
-    user: Optional[HubUserModel]
+    user: Optional[HubUserResponseModel]
     created: datetime
     updated: datetime
