@@ -16,8 +16,6 @@ import os
 from typing import TYPE_CHECKING, Dict, Type
 
 from langchain.docstore.document import Document as LCDocument
-
-# from llama_index import Document
 from llama_index.readers.schema.base import Document
 
 from zenml.enums import ArtifactType
