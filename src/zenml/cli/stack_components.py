@@ -416,7 +416,9 @@ def generate_stack_component_remove_attribute_command(
     )
     @click.argument("args", nargs=-1, type=click.UNPROCESSED)
     def remove_attribute_stack_component_command(
-        name_id_or_prefix: str, args: List[str], metadata: Optional[List[str]] = None
+        name_id_or_prefix: str,
+        args: List[str],
+        metadata: Optional[List[str]] = None,
     ) -> None:
         """Removes one or more attributes from a stack component.
 
