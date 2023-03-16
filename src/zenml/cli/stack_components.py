@@ -1132,8 +1132,11 @@ def generate_stack_component_deploy_command(
         if cloud is None:
             cloud = flavor
 
-        if cloud == "s3":
+        if cloud in ["s3", "sagemaker"]:
             cloud = "aws"
+
+        if cloud in ["vertex"]:
+            cloud = "gcp"
 
         client.deploy_stack_component(
             ctx=ctx,
@@ -1185,7 +1188,6 @@ def generate_stack_component_destroy_command(
             )
         except (KeyError, IllegalOperationError) as err:
             cli_utils.error(str(err))
-        cli_utils.declare(f"Destroyed {display_name}: {name_id_or_prefix}")
 
     return destroy_stack_component_command
 

@@ -252,7 +252,7 @@ class StackRecipeRepo:
             self.repo = Repo.clone_from(
                 STACK_RECIPES_GITHUB_REPO,
                 self.cloning_path,
-                branch="develop",
+                branch="feature/add-sagemaker",
             )
         except KeyboardInterrupt:
             self.delete()
@@ -634,9 +634,7 @@ def pull(
         path: The path at which you want to install the stack_recipe(s).
     """
     cli_utils.warning(ALPHA_MESSAGE)
-    git_stack_recipes_handler.pull(
-        branch="develop", force=force
-    )
+    git_stack_recipes_handler.pull(branch="feature/add-sagemaker", force=force)
 
     stack_recipes_dir = os.path.join(os.getcwd(), path)
     io_utils.create_dir_if_not_exists(stack_recipes_dir)
@@ -750,7 +748,6 @@ def pull(
 )
 @click.option(
     "--skip-check",
-    "-s",
     is_flag=True,
     help="Skip the checking of locals.tf file before executing the recipe.",
 )
@@ -803,6 +800,12 @@ def pull(
     "If not specified, no secrets manager will be deployed.",
 )
 @click.option(
+    "--step-operator",
+    "-s",
+    help="The flavor of step operator to use. "
+    "If not specified, no step operator will be deployed.",
+)
+@click.option(
     "--config",
     help="Use a YAML or JSON configuration or configuration file to pass"
     "variables to the stack recipe.",
@@ -821,6 +824,7 @@ def deploy(
     model_deployer: Optional[str],
     experiment_tracker: Optional[str],
     secrets_manager: Optional[str],
+    step_operator: Optional[str],
     path: str,
     force: bool,
     import_stack_flag: bool,
@@ -855,18 +859,19 @@ def deploy(
             deployment.
         skip_pull: Skip the pull of the stack recipe before deploying. This
             should be used if you have a local copy of your recipe already.
-        artifact_store: The flavor of artifact store to use. In the case of
+        artifact_store: The flavor of artifact store to deploy. In the case of
             the artifact store, it doesn't matter what you specify here, as
             there's only one flavor per cloud provider and that will be deployed.
         orchestrator: The flavor of orchestrator to use.
-        container_registry: The flavor of container registry to use. In the case of
+        container_registry: The flavor of container registry to deploy. In the case of
             the container registry, it doesn't matter what you specify here, as
             there's only one flavor per cloud provider and that will be deployed.
-        model_deployer: The flavor of model deployer to use.
-        experiment_tracker: The flavor of experiment tracker to use.
-        secrets_manager: The flavor of secrets manager to use. In the case of
+        model_deployer: The flavor of model deployer to deploy.
+        experiment_tracker: The flavor of experiment tracker to deploy.
+        secrets_manager: The flavor of secrets manager to deploy. In the case of
             the secrets manager, it doesn't matter what you specify here, as
             there's only one flavor per cloud provider and that will be deployed.
+        step_operator: The flavor of step operator to deploy.
         config: Use a YAML or JSON configuration or configuration file to pass
             variables to the stack recipe.
 
@@ -887,6 +892,7 @@ def deploy(
             "model_deployer": model_deployer,
             "experiment_tracker": experiment_tracker,
             "secrets_manager": secrets_manager,
+            "step_operator": step_operator,
         }
 
         # filter out null values
@@ -1020,24 +1026,27 @@ def deploy(
                                 "point to a valid configuration file."
                             )
 
-                    # add all values that are not None to the enabled services list
+                    enabled_services = []
                     enabled_services = [
-                        service
-                        for service in [
-                            orchestrator,
-                            experiment_tracker,
-                            model_deployer,
+                        f"{name}_{value}"
+                        for name, value in stack_component_options.items()
+                        if name
+                        not in [
+                            "artifact_store",
+                            "container_registry",
+                            "secrets_manager",
                         ]
-                        if service is not None
                     ]
-                    # if artifact store, container registry or secrets manager
-                    # are not none, add them as strings to the list of enabled services
-                    if artifact_store:
-                        enabled_services.append("artifact_store")
-                    if container_registry:
-                        enabled_services.append("container_registry")
-                    if secrets_manager:
-                        enabled_services.append("secrets_manager")
+                    enabled_services = enabled_services + [
+                        f"{name}"
+                        for name, _ in stack_component_options.items()
+                        if name
+                        in [
+                            "artifact_store",
+                            "container_registry",
+                            "secrets_manager",
+                        ]
+                    ]
 
                     stack_recipe_service.config.enabled_services = (
                         enabled_services
@@ -1156,7 +1165,7 @@ def deploy(
                 else:
                     logger.info("Deployment cancelled.")
                     return 1
-        
+
             except RuntimeError as e:
                 cli_utils.error(
                     f"Running recipe {stack_recipe_name} failed: {str(e)} "
