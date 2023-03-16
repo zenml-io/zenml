@@ -222,7 +222,6 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
             fastai,
             gluon,
             lightgbm,
-            pyspark,
             pytorch,
             sklearn,
             spark,
