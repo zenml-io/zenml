@@ -431,7 +431,7 @@ def print_stack_component_configuration(
 
         console.print(rich_table)
 
-    if len(component.metadata) == 0:
+    if not component.metadata:
         declare("No metadata is set for this component.")
         return
 

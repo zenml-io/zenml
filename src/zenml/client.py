@@ -1988,7 +1988,6 @@ class Client(metaclass=ClientMetaClass):
         type: Optional[str] = None,
         workspace_id: Optional[Union[str, UUID]] = None,
         user_id: Optional[Union[str, UUID]] = None,
-        metadata: Optional[List[str]] = None,
     ) -> Page[ComponentResponseModel]:
         """Lists all registered stack components.
 
@@ -2011,14 +2010,6 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             A page of stack components.
         """
-        parsed_metadata = None
-        # split metadata by "=" and create a dict
-        if metadata:
-            parsed_metadata = {}
-            for m in metadata:
-                key, value = m.split("=")
-                parsed_metadata[key] = value
-
         component_filter_model = ComponentFilterModel(
             page=page,
             size=size,
@@ -2033,9 +2024,6 @@ class Client(metaclass=ClientMetaClass):
             id=id,
             created=created,
             updated=updated,
-            metadata_values=base64.b64encode(
-                json.dumps(parsed_metadata).encode("utf-8")
-            ) if metadata else None,
         )
         component_filter_model.set_scope_workspace(self.active_workspace.id)
         breakpoint()
