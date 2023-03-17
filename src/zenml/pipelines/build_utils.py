@@ -141,6 +141,10 @@ def find_existing_build(
 
     python_version_prefix = ".".join(platform.python_version_tuple()[:2])
     required_builds = stack.get_docker_builds(deployment=deployment)
+
+    if not required_builds:
+        return None
+
     build_checksum = compute_build_checksum(
         required_builds, stack=stack, code_repository=code_repository
     )

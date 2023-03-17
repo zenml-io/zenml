@@ -27,11 +27,12 @@ from typing import (
     Mapping,
     Optional,
     Set,
+    Type,
     TypeVar,
     Union,
     cast,
 )
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from pydantic import SecretStr
 
@@ -131,7 +132,7 @@ from zenml.models.schedule_model import (
     ScheduleFilterModel,
     ScheduleResponseModel,
 )
-from zenml.utils import io_utils
+from zenml.utils import io_utils, source_utils_v2
 from zenml.utils.analytics_utils import AnalyticsEvent, event_handler, track
 from zenml.utils.filesync_model import FileSyncModel
 from zenml.utils.pagination_utils import depaginate
@@ -3871,15 +3872,35 @@ class Client(metaclass=ClientMetaClass):
 
         Returns:
             The created code repository.
+
+        Raises:
+            RuntimeError: If the provided config is invalid.
         """
-        repo = CodeRepositoryRequestModel(
+        from zenml.code_repositories import BaseCodeRepository
+
+        code_repo_class: Type[
+            BaseCodeRepository
+        ] = source_utils_v2.load_and_validate_class(
+            source=source, expected_class=BaseCodeRepository
+        )
+        try:
+            # Validate the repo config
+            code_repo_class(id=uuid4(), config=config)
+        except Exception as e:
+            raise RuntimeError(
+                "Failed to validate code repository config."
+            ) from e
+
+        repo_request = CodeRepositoryRequestModel(
             user=self.active_user.id,
             workspace=self.active_workspace.id,
             name=name,
             config=config,
             source=source,
         )
-        return self.zen_store.create_code_repository(code_repository=repo)
+        return self.zen_store.create_code_repository(
+            code_repository=repo_request
+        )
 
     def list_code_repositories(
         self,
