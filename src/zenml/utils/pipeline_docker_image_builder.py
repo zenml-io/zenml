@@ -521,7 +521,7 @@ class PipelineDockerImageBuilder:
 
         Args:
             required_hub_plugins: List of hub plugin names in the format
-                `plugin_name==version` or `plugin_name`.
+                `(<author_username>/)<plugin_name>(==<version>)`.
 
         Returns:
             - A dict of the hub plugin packages themselves (which need to be
@@ -539,22 +539,31 @@ class PipelineDockerImageBuilder:
         hub_packages: DefaultDict[str, List[str]] = defaultdict(list)
         hub_requirements: List[str] = []
 
-        for required_plugin in required_hub_plugins:
-            parts = required_plugin.split("==")
-            if len(parts) == 2:
-                plugin_name = parts[0]
-                plugin_version = parts[1]
-            elif len(parts) == 1:
-                plugin_name = parts[0]
-                plugin_version = "latest"
-            else:
-                raise ValueError(
-                    f"Invalid required hub plugin `{required_plugin}`. "
-                    "Supported formats: `<plugin_name>==<version>` or "
-                    "`plugin_name`."
-                )
+        invalid_format_err_msg = (
+            "Invalid required hub plugin `{}`. Expected format: "
+            "`(<author_username>/)<plugin_name>(==<version>)`."
+        )
 
-            plugin = client.get_plugin(plugin_name, plugin_version)
+        for plugin_str in required_hub_plugins:
+            parts = plugin_str.split("==")
+            if len(parts) > 2:
+                raise ValueError(invalid_format_err_msg.format(plugin_str))
+            name, version = parts[0], "latest" if len(parts) == 1 else parts[1]
+
+            parts = name.split("/")
+            if len(parts) > 2:
+                raise ValueError(invalid_format_err_msg.format(plugin_str))
+            name, author = parts[-1], None if len(parts) == 1 else parts[0]
+
+            if not name:
+                raise ValueError(invalid_format_err_msg.format(plugin_str))
+
+            plugin = client.get_plugin(
+                plugin_name=name,
+                plugin_version=version,
+                author=author,
+            )
+
             if plugin and plugin.index_url and plugin.package_name:
                 hub_packages[plugin.index_url].append(plugin.package_name)
                 if plugin.requirements:
@@ -563,8 +572,8 @@ class PipelineDockerImageBuilder:
                 logger.warning(
                     "Hub plugin `%s:%s` does not exist or cannot be installed."
                     "Skipping installation of this plugin.",
-                    plugin_name,
-                    plugin_version,
+                    name,
+                    version,
                 )
 
         return dict(hub_packages), sorted(set(hub_requirements))

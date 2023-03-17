@@ -121,11 +121,11 @@ class DockerSettings(BaseSettings):
         required_integrations: List of ZenML integrations that should be
             installed. All requirements for the specified integrations will
             be installed inside the Docker image.
-        required_hub_plugins: List of ZenML Hub plugins that should be
-            installed. Can either be an exact version specifier
-            '<plugin_name>==<version>', or only a plugin name in which case the
-            latest version is taken. All requirements for the specified plugins
-            will be installed inside the Docker image.
+        required_hub_plugins: List of ZenML Hub plugins to install.
+            Expected format: '(<author_username>/)<plugin_name>==<version>'.
+            If no version is specified, the latest version is taken. The
+            packages of required plugins and all their dependencies will be
+            installed inside the Docker image.
         install_stack_requirements: If `True`, ZenML will automatically detect
             if components of your active stack are part of a ZenML integration
             and install the corresponding requirements and apt packages.
