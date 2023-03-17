@@ -19,7 +19,7 @@ zenml:
   debug: true
 
   # Flag to enable/disable the tracking process of the analytics
-  analyticsOptIn: "true"
+  analyticsOptIn: true
 
   # ZenML server deployment type. This field is used for telemetry purposes.
   # Example values are "local", "kubernetes", "aws", "gcp", "azure".
