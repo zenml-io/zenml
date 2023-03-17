@@ -52,7 +52,7 @@ class S3ArtifactStore(BaseArtifactStore, AuthenticationMixin):
         """
         return cast(S3ArtifactStoreConfig, self._config)
 
-    def _get_credentials(
+    def get_credentials(
         self,
     ) -> Tuple[Optional[str], Optional[str], Optional[str]]:
         """Gets authentication credentials.
@@ -85,7 +85,7 @@ class S3ArtifactStore(BaseArtifactStore, AuthenticationMixin):
             The s3 filesystem.
         """
         if not self._filesystem:
-            key, secret, token = self._get_credentials()
+            key, secret, token = self.get_credentials()
 
             self._filesystem = s3fs.S3FileSystem(
                 key=key,

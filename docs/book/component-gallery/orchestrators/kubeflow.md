@@ -364,7 +364,7 @@ versions, so there might be further bugs with older Kubeflow versions. In this c
 The above example encoded the username and password in plain-text as settings. You can also set them as secrets.
 
 ```shell
-zenml secrets-manager secret register kubeflow_secret \
+zenml secret create kubeflow_secret \
     --username=admin \
     --password=abc123
 ```
@@ -380,7 +380,7 @@ kubeflow_settings = KubeflowOrchestratorSettings(
 )
 ```
 
-See full documentation of using secrets within ZenML [here](../../advanced-guide/practical/secrets-management.md).
+See full documentation of using ZenML secrets [here](../../advanced-guide/practical/secrets-management.md).
 
 A concrete example of using the Kubeflow orchestrator can be found
 [here](https://github.com/zenml-io/zenml/tree/main/examples/kubeflow_pipelines_orchestration).
