@@ -1091,8 +1091,11 @@ def _is_plugin_installed(plugin: HubPluginResponseModel) -> bool:
         Whether the plugin is installed.
     """
     module_name = _get_plugin_module(plugin)
-    spec = find_spec(module_name)
-    return spec is not None
+    try:
+        spec = find_spec(module_name)
+        return spec is not None
+    except ModuleNotFoundError:
+        return False
 
 
 def _get_plugin_module(plugin: HubPluginResponseModel) -> str:
