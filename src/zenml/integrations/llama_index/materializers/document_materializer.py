@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Implementation of the llama-index document materializer."""
 import os
-from typing import TYPE_CHECKING, Dict, Type
+from typing import TYPE_CHECKING, Any, Dict, Type
 
 from langchain.docstore.document import Document as LCDocument
 from llama_index.readers.schema.base import Document
@@ -36,7 +36,12 @@ class LlamaIndexDocumentMaterializer(BaseMaterializer):
     ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATA
     ASSOCIATED_TYPES = (Document,)
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: Any) -> None:
+        """Initializes the llama-index document materializer.
+
+        Args:
+            **kwargs: Keyword arguments.
+        """
         super().__init__(**kwargs)
         self._langchain_materializer = LangchainDocumentMaterializer(**kwargs)
 
@@ -66,7 +71,7 @@ class LlamaIndexDocumentMaterializer(BaseMaterializer):
         self._langchain_materializer.save(lc_doc)
 
     def extract_metadata(self, data: Document) -> Dict[str, "MetadataType"]:
-        """Extract metadata from the given
+        """Extract metadata from the given Llama Index document.
 
         Args:
             data: The BaseModel object to extract metadata from.
@@ -74,4 +79,6 @@ class LlamaIndexDocumentMaterializer(BaseMaterializer):
         Returns:
             The extracted metadata as a dictionary.
         """
-        return self._pydantic_materializer.extract_metadata(data)
+        return self._langchain_materializer.extract_metadata(
+            data.to_langchain_format()
+        )

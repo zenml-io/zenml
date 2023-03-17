@@ -16,7 +16,7 @@
 
 import os
 import pickle
-from typing import Type
+from typing import Type, cast
 
 from langchain.embeddings import OpenAIEmbeddings
 
@@ -28,6 +28,7 @@ DEFAULT_FILENAME = "embedding.pkl"
 
 
 class LangchainOpenaiEmbeddingMaterializer(BaseMaterializer):
+    """Handle langchain openai embedding objects."""
 
     ASSOCIATED_ARTIFACT_TYPE = ArtifactType.MODEL
     ASSOCIATED_TYPES = (OpenAIEmbeddings,)
@@ -45,13 +46,13 @@ class LangchainOpenaiEmbeddingMaterializer(BaseMaterializer):
         filepath = os.path.join(self.uri, DEFAULT_FILENAME)
         with fileio.open(filepath, "rb") as fid:
             embedding = pickle.load(fid)
-        return embedding
+        return cast(OpenAIEmbeddings, embedding)
 
     def save(self, embedding: OpenAIEmbeddings) -> None:
-        """Save an openai embedding as a pickle file.
+        """Save an OpenAI embedding as a pickle file.
 
         Args:
-            vector_store: The vector store to save.
+            embedding: The embedding to save.
         """
         super().save(embedding)
         filepath = os.path.join(self.uri, DEFAULT_FILENAME)

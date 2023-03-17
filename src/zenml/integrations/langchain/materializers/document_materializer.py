@@ -33,7 +33,12 @@ class LangchainDocumentMaterializer(BaseMaterializer):
     ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATA
     ASSOCIATED_TYPES = (Document,)
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: Any) -> None:
+        """Initializes the Langchain Document materializer.
+
+        Args:
+            **kwargs: Keyword arguments.
+        """
         super().__init__(**kwargs)
         self._pydantic_materializer = PydanticMaterializer(**kwargs)
 

@@ -16,7 +16,7 @@
 
 import os
 import pickle
-from typing import Type
+from typing import Type, cast
 
 from langchain.vectorstores import VectorStore
 
@@ -28,6 +28,7 @@ DEFAULT_FILENAME = "vectorstore.pkl"
 
 
 class LangchainVectorStoreMaterializer(BaseMaterializer):
+    """Handle langchain vector store objects."""
 
     ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATA
     ASSOCIATED_TYPES = (VectorStore,)
@@ -45,7 +46,7 @@ class LangchainVectorStoreMaterializer(BaseMaterializer):
         filepath = os.path.join(self.uri, DEFAULT_FILENAME)
         with fileio.open(filepath, "rb") as fid:
             vector_store = pickle.load(fid)
-        return vector_store
+        return cast(VectorStore, vector_store)
 
     def save(self, vector_store: VectorStore) -> None:
         """Save a langchain vector store as a pickle file.
