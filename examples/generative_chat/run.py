@@ -13,19 +13,13 @@
 #  permissions and limitations under the License.
 import logging
 
-from pipelines.indices_builder import (
-    build_indices_for_zenml_versions,
+from pipelines.index_builder import (
+    build_vector_store_docs_slack_index,
 )
 
 
 def main():
-    print("Fetching zenml versions...")
-    # versions = get_zenml_versions()  # all release versions
-    versions = ["0.10.0", "0.35.1"]
-
-    print(f"Found {len(versions)} versions.")
-    print("Building indices for zenml versions...")
-    build_indices_for_zenml_versions(versions)
+    build_vector_store_docs_slack_index(version="0.35.1")
 
 
 if __name__ == "__main__":
