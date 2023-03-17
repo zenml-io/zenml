@@ -7,6 +7,7 @@ Create Date: 2023-03-16 16:07:09.596900
 """
 import sqlalchemy as sa
 from alembic import op
+from sqlalchemy.dialects.mysql import MEDIUMTEXT
 
 # revision identifiers, used by Alembic.
 revision = "9d8020441014"
@@ -22,7 +23,7 @@ def upgrade() -> None:
         batch_op.alter_column(
             "step_configurations",
             existing_type=sa.TEXT(),
-            type_=sa.String(length=16777215),
+            type_=sa.String(length=16777215).with_variant(MEDIUMTEXT, "mysql"),
             existing_nullable=False,
         )
 
