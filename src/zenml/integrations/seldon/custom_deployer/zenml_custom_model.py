@@ -20,7 +20,7 @@ import click
 import numpy as np
 
 from zenml.logger import get_logger
-from zenml.utils.source_utils import import_class_by_path
+from zenml.utils import source_utils_v2
 
 logger = get_logger(__name__)
 
@@ -57,7 +57,7 @@ class ZenMLCustomModel:
         """
         self.name = model_name
         self.model_uri = model_uri
-        self.predict_func = import_class_by_path(predict_func)
+        self.predict_func = source_utils_v2.load(predict_func)
         self.model = None
         self.ready = False
 

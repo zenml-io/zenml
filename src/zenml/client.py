@@ -2281,7 +2281,7 @@ class Client(metaclass=ClientMetaClass):
         Raises:
             ValueError: in case the config_schema of the flavor is too large.
         """
-        from zenml.utils.source_utils import validate_flavor_source
+        from zenml.stack.flavor import validate_flavor_source
 
         flavor = validate_flavor_source(
             source=source, component_type=component_type

@@ -24,8 +24,8 @@ from deepchecks.core.checks import BaseCheck
 from deepchecks.tabular.checks.data_integrity import FeatureFeatureCorrelation
 
 from zenml.logger import get_logger
+from zenml.utils import source_utils_v2
 from zenml.utils.enum_utils import StrEnum
-from zenml.utils.source_utils import import_class_by_path, resolve_class
 
 logger = get_logger(__name__)
 
@@ -118,18 +118,15 @@ class DeepchecksValidationCheck(StrEnum):
         cls.validate_check_name(check_name)
 
         try:
-            check_class = import_class_by_path(check_name)
+            check_class: Type[
+                BaseCheck
+            ] = source_utils_v2.load_and_validate_class(
+                check_name, expected_class=BaseCheck
+            )
         except AttributeError:
             raise ValueError(
                 f"Could not map the `{check_name}` check identifier to a valid "
                 f"Deepchecks check class."
-            )
-
-        if not issubclass(check_class, BaseCheck):
-            raise ValueError(
-                f"The `{check_name}` check identifier is mapped to an invalid "
-                f"data type. Expected a {str(BaseCheck)} subclass, but instead "
-                f"got: {str(check_class)}."
             )
 
         if check_name not in cls.values():
@@ -163,36 +160,47 @@ class DeepchecksDataIntegrityCheck(DeepchecksValidationCheck):
     `deepchecks.vision.SingleDatasetCheck` and require a single dataset as input.
     """
 
-    TABULAR_COLUMNS_INFO = resolve_class(tabular_checks.ColumnsInfo)
-    TABULAR_CONFLICTING_LABELS = resolve_class(
+    TABULAR_COLUMNS_INFO = source_utils_v2.resolve(tabular_checks.ColumnsInfo)
+    TABULAR_CONFLICTING_LABELS = source_utils_v2.resolve(
         tabular_checks.ConflictingLabels
     )
-    TABULAR_DATA_DUPLICATES = resolve_class(tabular_checks.DataDuplicates)
-    TABULAR_FEATURE_FEATURE_CORRELATION = resolve_class(
+
+    TABULAR_DATA_DUPLICATES = source_utils_v2.resolve(
+        tabular_checks.DataDuplicates
+    )
+    TABULAR_FEATURE_FEATURE_CORRELATION = source_utils_v2.resolve(
         FeatureFeatureCorrelation
     )
-    TABULAR_FEATURE_LABEL_CORRELATION = resolve_class(
+    TABULAR_FEATURE_LABEL_CORRELATION = source_utils_v2.resolve(
         tabular_checks.FeatureLabelCorrelation
     )
-    TABULAR_IDENTIFIER_LEAKAGE = resolve_class(
+    TABULAR_IDENTIFIER_LEAKAGE = source_utils_v2.resolve(
         tabular_checks.IdentifierLeakage
     )
-    TABULAR_IS_SINGLE_VALUE = resolve_class(tabular_checks.IsSingleValue)
-    TABULAR_MIXED_DATA_TYPES = resolve_class(tabular_checks.MixedDataTypes)
-    TABULAR_MIXED_NULLS = resolve_class(tabular_checks.MixedNulls)
-    TABULAR_OUTLIER_SAMPLE_DETECTION = resolve_class(
+    TABULAR_IS_SINGLE_VALUE = source_utils_v2.resolve(
+        tabular_checks.IsSingleValue
+    )
+    TABULAR_MIXED_DATA_TYPES = source_utils_v2.resolve(
+        tabular_checks.MixedDataTypes
+    )
+    TABULAR_MIXED_NULLS = source_utils_v2.resolve(tabular_checks.MixedNulls)
+    TABULAR_OUTLIER_SAMPLE_DETECTION = source_utils_v2.resolve(
         tabular_checks.OutlierSampleDetection
     )
-    TABULAR_SPECIAL_CHARS = resolve_class(tabular_checks.SpecialCharacters)
-    TABULAR_STRING_LENGTH_OUT_OF_BOUNDS = resolve_class(
+    TABULAR_SPECIAL_CHARS = source_utils_v2.resolve(
+        tabular_checks.SpecialCharacters
+    )
+    TABULAR_STRING_LENGTH_OUT_OF_BOUNDS = source_utils_v2.resolve(
         tabular_checks.StringLengthOutOfBounds
     )
-    TABULAR_STRING_MISMATCH = resolve_class(tabular_checks.StringMismatch)
+    TABULAR_STRING_MISMATCH = source_utils_v2.resolve(
+        tabular_checks.StringMismatch
+    )
 
-    VISION_IMAGE_PROPERTY_OUTLIERS = resolve_class(
+    VISION_IMAGE_PROPERTY_OUTLIERS = source_utils_v2.resolve(
         vision_checks.ImagePropertyOutliers
     )
-    VISION_LABEL_PROPERTY_OUTLIERS = resolve_class(
+    VISION_LABEL_PROPERTY_OUTLIERS = source_utils_v2.resolve(
         vision_checks.LabelPropertyOutliers
     )
 
@@ -210,57 +218,63 @@ class DeepchecksDataDriftCheck(DeepchecksValidationCheck):
     `deepchecks.vision.TrainTestCheck` and require two datasets as input.
     """
 
-    TABULAR_CATEGORY_MISMATCH_TRAIN_TEST = resolve_class(
+    TABULAR_CATEGORY_MISMATCH_TRAIN_TEST = source_utils_v2.resolve(
         tabular_checks.CategoryMismatchTrainTest
     )
-    TABULAR_DATASET_SIZE_COMPARISON = resolve_class(
+    TABULAR_DATASET_SIZE_COMPARISON = source_utils_v2.resolve(
         tabular_checks.DatasetsSizeComparison
     )
-    TABULAR_DATE_TRAIN_TEST_LEAKAGE_DUPLICATES = resolve_class(
+    TABULAR_DATE_TRAIN_TEST_LEAKAGE_DUPLICATES = source_utils_v2.resolve(
         tabular_checks.DateTrainTestLeakageDuplicates
     )
-    TABULAR_DATE_TRAIN_TEST_LEAKAGE_OVERLAP = resolve_class(
+    TABULAR_DATE_TRAIN_TEST_LEAKAGE_OVERLAP = source_utils_v2.resolve(
         tabular_checks.DateTrainTestLeakageOverlap
     )
-    TABULAR_DOMINANT_FREQUENCY_CHANGE = resolve_class(
+    TABULAR_DOMINANT_FREQUENCY_CHANGE = source_utils_v2.resolve(
         tabular_checks.DominantFrequencyChange
     )
-    TABULAR_FEATURE_LABEL_CORRELATION_CHANGE = resolve_class(
+    TABULAR_FEATURE_LABEL_CORRELATION_CHANGE = source_utils_v2.resolve(
         tabular_checks.FeatureLabelCorrelationChange
     )
-    TABULAR_INDEX_LEAKAGE = resolve_class(tabular_checks.IndexTrainTestLeakage)
-    TABULAR_NEW_LABEL_TRAIN_TEST = resolve_class(
+    TABULAR_INDEX_LEAKAGE = source_utils_v2.resolve(
+        tabular_checks.IndexTrainTestLeakage
+    )
+    TABULAR_NEW_LABEL_TRAIN_TEST = source_utils_v2.resolve(
         tabular_checks.NewLabelTrainTest
     )
-    TABULAR_STRING_MISMATCH_COMPARISON = resolve_class(
+    TABULAR_STRING_MISMATCH_COMPARISON = source_utils_v2.resolve(
         tabular_checks.StringMismatchComparison
     )
-    TABULAR_TRAIN_TEST_FEATURE_DRIFT = resolve_class(
+    TABULAR_TRAIN_TEST_FEATURE_DRIFT = source_utils_v2.resolve(
         tabular_checks.TrainTestFeatureDrift
     )
-    TABULAR_TRAIN_TEST_LABEL_DRIFT = resolve_class(
+    TABULAR_TRAIN_TEST_LABEL_DRIFT = source_utils_v2.resolve(
         tabular_checks.TrainTestLabelDrift
     )
-    TABULAR_TRAIN_TEST_SAMPLES_MIX = resolve_class(
+    TABULAR_TRAIN_TEST_SAMPLES_MIX = source_utils_v2.resolve(
         tabular_checks.TrainTestSamplesMix
     )
-    TABULAR_WHOLE_DATASET_DRIFT = resolve_class(
+    TABULAR_WHOLE_DATASET_DRIFT = source_utils_v2.resolve(
         tabular_checks.WholeDatasetDrift
     )
 
-    VISION_FEATURE_LABEL_CORRELATION_CHANGE = resolve_class(
+    VISION_FEATURE_LABEL_CORRELATION_CHANGE = source_utils_v2.resolve(
         vision_checks.FeatureLabelCorrelationChange
     )
-    VISION_HEATMAP_COMPARISON = resolve_class(vision_checks.HeatmapComparison)
-    VISION_IMAGE_DATASET_DRIFT = resolve_class(vision_checks.ImageDatasetDrift)
-    VISION_IMAGE_PROPERTY_DRIFT = resolve_class(
+    VISION_HEATMAP_COMPARISON = source_utils_v2.resolve(
+        vision_checks.HeatmapComparison
+    )
+    VISION_IMAGE_DATASET_DRIFT = source_utils_v2.resolve(
+        vision_checks.ImageDatasetDrift
+    )
+    VISION_IMAGE_PROPERTY_DRIFT = source_utils_v2.resolve(
         vision_checks.ImagePropertyDrift
     )
-    VISION_NEW_LABELS = resolve_class(vision_checks.NewLabels)
-    VISION_SIMILAR_IMAGE_LEAKAGE = resolve_class(
+    VISION_NEW_LABELS = source_utils_v2.resolve(vision_checks.NewLabels)
+    VISION_SIMILAR_IMAGE_LEAKAGE = source_utils_v2.resolve(
         vision_checks.SimilarImageLeakage
     )
-    VISION_TRAIN_TEST_LABEL_DRIFT = resolve_class(
+    VISION_TRAIN_TEST_LABEL_DRIFT = source_utils_v2.resolve(
         vision_checks.TrainTestLabelDrift
     )
 
@@ -279,38 +293,42 @@ class DeepchecksModelValidationCheck(DeepchecksValidationCheck):
     model as input.
     """
 
-    TABULAR_CALIBRATION_SCORE = resolve_class(tabular_checks.CalibrationScore)
-    TABULAR_CONFUSION_MATRIX_REPORT = resolve_class(
+    TABULAR_CALIBRATION_SCORE = source_utils_v2.resolve(
+        tabular_checks.CalibrationScore
+    )
+    TABULAR_CONFUSION_MATRIX_REPORT = source_utils_v2.resolve(
         tabular_checks.ConfusionMatrixReport
     )
-    TABULAR_MODEL_INFERENCE_TIME = resolve_class(
+    TABULAR_MODEL_INFERENCE_TIME = source_utils_v2.resolve(
         tabular_checks.ModelInferenceTime
     )
-    TABULAR_REGRESSION_ERROR_DISTRIBUTION = resolve_class(
+    TABULAR_REGRESSION_ERROR_DISTRIBUTION = source_utils_v2.resolve(
         tabular_checks.RegressionErrorDistribution
     )
-    TABULAR_REGRESSION_SYSTEMATIC_ERROR = resolve_class(
+    TABULAR_REGRESSION_SYSTEMATIC_ERROR = source_utils_v2.resolve(
         tabular_checks.RegressionSystematicError
     )
-    TABULAR_ROC_REPORT = resolve_class(tabular_checks.RocReport)
-    TABULAR_SEGMENT_PERFORMANCE = resolve_class(
+    TABULAR_ROC_REPORT = source_utils_v2.resolve(tabular_checks.RocReport)
+    TABULAR_SEGMENT_PERFORMANCE = source_utils_v2.resolve(
         tabular_checks.SegmentPerformance
     )
 
-    VISION_CONFUSION_MATRIX_REPORT = resolve_class(
+    VISION_CONFUSION_MATRIX_REPORT = source_utils_v2.resolve(
         vision_checks.ConfusionMatrixReport
     )
-    VISION_IMAGE_SEGMENT_PERFORMANCE = resolve_class(
+    VISION_IMAGE_SEGMENT_PERFORMANCE = source_utils_v2.resolve(
         vision_checks.ImageSegmentPerformance
     )
-    VISION_MEAN_AVERAGE_PRECISION_REPORT = resolve_class(
+    VISION_MEAN_AVERAGE_PRECISION_REPORT = source_utils_v2.resolve(
         vision_checks.MeanAveragePrecisionReport
     )
-    VISION_MEAN_AVERAGE_RECALL_REPORT = resolve_class(
+    VISION_MEAN_AVERAGE_RECALL_REPORT = source_utils_v2.resolve(
         vision_checks.MeanAverageRecallReport
     )
-    VISION_ROBUSTNESS_REPORT = resolve_class(vision_checks.RobustnessReport)
-    VISION_SINGLE_DATASET_SCALAR_PERFORMANCE = resolve_class(
+    VISION_ROBUSTNESS_REPORT = source_utils_v2.resolve(
+        vision_checks.RobustnessReport
+    )
+    VISION_SINGLE_DATASET_SCALAR_PERFORMANCE = source_utils_v2.resolve(
         vision_checks.SingleDatasetScalarPerformance
     )
 
@@ -329,28 +347,34 @@ class DeepchecksModelDriftCheck(DeepchecksValidationCheck):
     model as input.
     """
 
-    TABULAR_BOOSTING_OVERFIT = resolve_class(tabular_checks.BoostingOverfit)
-    TABULAR_MODEL_ERROR_ANALYSIS = resolve_class(
+    TABULAR_BOOSTING_OVERFIT = source_utils_v2.resolve(
+        tabular_checks.BoostingOverfit
+    )
+    TABULAR_MODEL_ERROR_ANALYSIS = source_utils_v2.resolve(
         tabular_checks.ModelErrorAnalysis
     )
-    TABULAR_PERFORMANCE_REPORT = resolve_class(
+    TABULAR_PERFORMANCE_REPORT = source_utils_v2.resolve(
         tabular_checks.PerformanceReport
     )
-    TABULAR_SIMPLE_MODEL_COMPARISON = resolve_class(
+    TABULAR_SIMPLE_MODEL_COMPARISON = source_utils_v2.resolve(
         tabular_checks.SimpleModelComparison
     )
-    TABULAR_TRAIN_TEST_PREDICTION_DRIFT = resolve_class(
+    TABULAR_TRAIN_TEST_PREDICTION_DRIFT = source_utils_v2.resolve(
         tabular_checks.TrainTestPredictionDrift
     )
-    TABULAR_UNUSED_FEATURES = resolve_class(tabular_checks.UnusedFeatures)
+    TABULAR_UNUSED_FEATURES = source_utils_v2.resolve(
+        tabular_checks.UnusedFeatures
+    )
 
-    VISION_CLASS_PERFORMANCE = resolve_class(vision_checks.ClassPerformance)
-    VISION_MODEL_ERROR_ANALYSIS = resolve_class(
+    VISION_CLASS_PERFORMANCE = source_utils_v2.resolve(
+        vision_checks.ClassPerformance
+    )
+    VISION_MODEL_ERROR_ANALYSIS = source_utils_v2.resolve(
         vision_checks.ModelErrorAnalysis
     )
-    VISION_SIMPLE_MODEL_COMPARISON = resolve_class(
+    VISION_SIMPLE_MODEL_COMPARISON = source_utils_v2.resolve(
         vision_checks.SimpleModelComparison
     )
-    VISION_TRAIN_TEST_PREDICTION_DRIFT = resolve_class(
+    VISION_TRAIN_TEST_PREDICTION_DRIFT = source_utils_v2.resolve(
         vision_checks.TrainTestPredictionDrift
     )
