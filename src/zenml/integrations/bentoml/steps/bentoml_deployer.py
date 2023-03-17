@@ -112,8 +112,7 @@ def bentoml_model_deployer_step(
         # Add working dir in the bentoml load
         service = bentoml.load(
             bento_identifier=bento_tag,
-            working_dir=params.working_dir
-            or source_utils.get_source_root(),
+            working_dir=params.working_dir or source_utils.get_source_root(),
         )
         apis = service.apis
         apis_paths = list(apis.keys())

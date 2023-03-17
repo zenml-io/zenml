@@ -43,11 +43,11 @@ from zenml.integrations.azure.flavors.azureml_step_operator_flavor import (
 from zenml.logger import get_logger
 from zenml.stack import Stack, StackValidator
 from zenml.step_operators import BaseStepOperator
+from zenml.utils import source_utils
 from zenml.utils.pipeline_docker_image_builder import (
     DOCKER_IMAGE_ZENML_CONFIG_DIR,
     PipelineDockerImageBuilder,
 )
-from zenml.utils import source_utils
 
 if TYPE_CHECKING:
     from zenml.config import DockerSettings

@@ -201,7 +201,7 @@ class StepSpec(StrictBaseModel):
             if self.pipeline_parameter_name != other.pipeline_parameter_name:
                 return False
 
-            return self.source == other.source
+            return self.source.import_path == other.source.import_path
 
         return NotImplemented
 

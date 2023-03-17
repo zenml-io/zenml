@@ -486,6 +486,22 @@ def test_finding_existing_build(
         "zenml.pipelines.build_utils.compute_build_checksum",
         return_value="checksum",
     )
+    mocker.patch.object(Stack, "get_docker_builds", return_value=[])
+
+    build_utils.find_existing_build(
+        deployment=sample_deployment_response_model,
+        code_repository=StubCodeRepository(),
+    )
+    # No required builds -> no need to look for build to reuse
+    mock_list_builds.assert_not_called()
+
+    mocker.patch.object(
+        Stack,
+        "get_docker_builds",
+        return_value=[
+            BuildConfiguration(key="key", settings=DockerSettings())
+        ],
+    )
 
     build = build_utils.find_existing_build(
         deployment=sample_deployment_response_model,

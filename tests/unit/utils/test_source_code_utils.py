@@ -18,9 +18,9 @@ from zenml.utils import source_code_utils
 
 def test_get_source():
     """Tests if source of objects is gotten properly."""
-    assert source_code_utils.get_source(pytest.Cache)
+    assert source_code_utils.get_source_code(pytest.Cache)
 
 
 def test_get_hashed_source():
     """Tests if hash of objects is computed properly."""
-    assert source_code_utils.get_hashed_source(pytest.Cache)
+    assert source_code_utils.get_hashed_source_code(pytest.Cache)
