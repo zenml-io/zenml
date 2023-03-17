@@ -91,9 +91,8 @@ zenml init --template
 If you wish to delete all data relating to your workspace from the
 directory, use the ``zenml clean`` command. This will:
 
--  delete all pipelines and pipeline runs
+-  delete all pipelines, pipeline runs and associated metadata
 -  delete all artifacts
--  delete all metadata
 
 Loading and using pre-built examples
 ------------------------------------
@@ -196,6 +195,50 @@ Uninstalling a specific integration is as simple as typing:
 ```bash
 zenml integration uninstall INTEGRATION_NAME
 ```
+
+Filtering CLI output when listing
+---------------------------------
+
+Certain CLI `list` commands allow you to filter their output. For example, all
+stack components allow you to pass custom parameters to the `list` command that
+will filter the output. To learn more about the available filters, a good quick
+reference is to use the `--help` command, as in the following example:
+
+```shell zenml orchestrator list --help ```
+
+You will see a list of all the available filters for the `list` command along
+with examples of how to use them.
+
+The `--sort_by` option allows you to sort the output by a specific field and
+takes an `asc` or `desc` argument to specify the order. For example, to sort the
+output of the `list` command by the `name` field in ascending order, you would
+type:
+
+```shell zenml orchestrator list --sort_by "asc:name" ```
+
+For fields marked as being of type `TEXT` or `UUID`, you can use the `contains`,
+`startswith` and `endswith` keywords along with their particular identifier. For
+example, for the orchestrator `list` command, you can use the following filter
+to find all orchestrators that contain the string `sagemaker` in their name:
+
+```shell zenml orchestrator list --name "contains:sagemaker" ```
+
+For fields marked as being of type `BOOL`, you can use the 'True' or 'False'
+values to filter the output. For example, to find all orchestrators that are
+currently shared, you would type:
+
+```shell zenml orchestrator list --is_shared="True" ```
+
+Finally, for fields marked as being of type `DATETIME`, you can pass in datetime
+values in the `%Y-%m-%d %H:%M:%S` format. These can be combined with the `gte`,
+`lte`, `gt` and `lt` keywords to specify the range of the filter. For example,
+if I wanted to find all orchestrators that were created after the 1st of January
+2021, I would type:
+
+```shell zenml orchestrator list --created "gt:2021-01-01 00:00:00" ```
+
+This syntax can also be combined to create more complex filters using the `or`
+and `and` keywords.
 
 Customizing your Artifact Store
 -------------------------------
@@ -375,42 +418,26 @@ command:
 zenml step-operator delete STEP_OPERATOR_NAME
 ```
 
-Setting up a Secrets Manager
-----------------------------
+Secrets Management
+------------------
 
 ZenML offers a way to securely store secrets associated with your other
-stack components and infrastructure. To set up a local file-based
-secrets manager, use the following CLI command:
+stack components and infrastructure. A ZenML Secret is a collection or grouping
+of key-value pairs stored by the ZenML secrets store.
+ZenML Secrets are identified by a unique name which allows you to fetch or
+reference them in your pipelines and stacks.
 
-```bash
-zenml secrets-manager register SECRETS_MANAGER_NAME --flavor=local
-```
+Depending on how you set up and deployed ZenML, the secrets store keeps secrets
+in the local database or uses the ZenML server your client is connected to:
 
-This can then be used as part of your Stack (see below).
-
-Using Secrets
--------------
-
-A ZenML Secret is a collection or grouping of key-value pairs securely stored by
-the centralized ZenML secrets store or by the ZenML secrets manager in your
-active stack. ZenML Secrets are identified by a unique name which allows you to
-fetch or reference them in your pipelines and stacks.
-
-Centralized Secrets Management
-------------------------------
-
-When you use centralized secrets management, ZenML secrets are stored in the
-ZenML secrets store. Depending on how you set up and deployed ZenML, the secrets
-store is using a local database, a remote database or remote service as a
-backend:
-
-* if you are using the default ZenML client settings, the secrets store
+* if you are using the default ZenML client settings, or if you connect your
+ZenML client to a local ZenML server started with `zenml up`, the secrets store
 is using the same local SQLite database as the rest of ZenML
-* if you connect your ZenML client to a local or remote ZenML server, the
-secrets store is using the same database as the ZenML server
-* if your ZenML server is deployed in a managed cloud, the server may use one
-of the supported cloud services as a backend for the secrets store
-
+* if you connect your ZenML client to a remote ZenML server, the
+secrets are no longer managed on your local machine, but through the remote
+server instead. Secrets are stored in whatever secrets store back-end the
+remote server is configured to use. This can be a SQL database, one of the
+managed cloud secrets management services, or even a custom back-end.
 
 To create a secret, use the `create` command and pass the key-value pairs
 as command-line arguments:
@@ -419,7 +446,7 @@ as command-line arguments:
 zenml secret create SECRET_NAME --key1=value1 --key2=value2 --key3=value3 ...
 ```
 
-Note that the keys and values will be preserved in your `bash_history` file, so
+Note that when using the previous command the keys and values will be preserved in your `bash_history` file, so
 you may prefer to use the interactive `create` command instead:
 
 ```shell
@@ -455,7 +482,7 @@ To update a secret, use the `update` command:
 zenml secret update SECRET_NAME --key1=value1 --key2=value2 --key3=value3 ...
 ```
 
-Note that the keys and values will be preserved in your `bash_history` file, so
+Note that when using the previous command the keys and values will be preserved in your `bash_history` file, so
 you may prefer to use the interactive `update` command instead:
 
 ```shell
@@ -468,21 +495,34 @@ Finally, to delete a secret, use the `delete` command:
 zenml secret delete SECRET_NAME
 ```
 
-Centralized secrets can be scoped to a workspace or a user. By default, secrets
+Secrets can be scoped to a workspace or a user. By default, secrets
 are scoped to the current workspace. To scope a secret to a user, use the
 `--scope user` argument in the `register` command.
 
-Secrets Management through Secrets Managers
--------------------------------------------
+Secrets Management with Secrets Managers
+----------------------------------------
+
+NOTE: this is a legacy feature that is being deprecated in favor of the
+centralized ZenML secrets store. Going forward, we recommend using centralized
+ZenML secrets instead of secrets manager stack components to configure and store
+secrets.
+
+Secrets can also be managed through the secrets manager stack component in your
+active stack. To set up a local file-based secrets manager, use the following
+CLI command:
+
+```bash
+zenml secrets-manager register SECRETS_MANAGER_NAME --flavor=local
+```
+
+This can then be used as part of your Stack (see below).
 
 When you use a secrets manager, ZenML secrets are managed through the secrets
 manager stack component in your active stack. This means that you can only
 use the CLI commands described here if the active stack contains a secrets
-manager.
-
-NOTE: We are slowly deprecating Secrets Managers in favor of the centralized
-ZenML secrets store. Going forward, we recommend using centralized ZenML secrets
-instead of secrets manager stack components to configure and store secrets.
+manager. This is just one of the limitations of using secrets managers, as
+opposed to the centralized ZenML secrets store, and one of the reasons why we
+have deprecated them.
 
 Secret groupings come in different types, and certain types have predefined keys
 that should be used. For example, an AWS secret has predefined keys of
@@ -961,7 +1001,6 @@ stack, use the `--stack` option.
 zenml pipeline run <PIPELINE_ID_OR_NAME> --stack=<STACK_ID_OR_NAME>
 ```
 
-
 Managing the local ZenML Dashboard
 ----------------------------------
 
@@ -1374,6 +1413,7 @@ from zenml.cli.config import *  # noqa
 from zenml.cli.example import *  # noqa
 from zenml.cli.feature import *  # noqa
 from zenml.cli.integration import *  # noqa
+from zenml.cli.served_model import *  # noqa
 from zenml.cli.model import *  # noqa
 from zenml.cli.pipeline import *  # noqa
 from zenml.cli.workspace import *  # noqa

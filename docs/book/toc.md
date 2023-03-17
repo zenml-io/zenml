@@ -7,7 +7,7 @@
 * [Installation](./getting-started/installation/installation.md)
 * [Quickstart](https://github.com/zenml-io/zenml/tree/main/examples/quickstart)
 * [Deploying ZenML](./getting-started/deploying-zenml/deploying-zenml.md)
-  * [One Click Deployment using CLI](./getting-started/deploying-zenml/cli.md)
+  * [Deployment using CLI](./getting-started/deploying-zenml/cli.md)
   * [Deploying with Docker](./getting-started/deploying-zenml/docker.md)
   * [Deploying with Helm](./getting-started/deploying-zenml/helm.md)
   * [Troubleshooting your server](./getting-started/deploying-zenml/troubleshooting.md)
@@ -39,6 +39,7 @@
   * [Scheduling Pipeline Runs](./advanced-guide/pipelines/scheduling-runs.md)
   * [Accessing Metadata within Steps](./advanced-guide/pipelines/step-metadata.md)
   * [Controlling the Step Execution Order](./advanced-guide/pipelines/step-order.md)
+  * [Failure and Success Hooks](./advanced-guide/pipelines/hooks.md)
 * [Extending Stacks](./advanced-guide/stacks/stacks.md)
   * [Writing Custom Flavors](./advanced-guide/stacks/custom-flavors.md)
   * [Managing Stack Component States](./advanced-guide/stacks/stack-state-management.md)
@@ -88,7 +89,6 @@
   * [Azure Secrets Manager](./component-gallery/secrets-managers/azure.md)
   * [GitHub Secrets Manager](./component-gallery/secrets-managers/github.md)
   * [HashiCorp Vault Secrets Manager](./component-gallery/secrets-managers/vault.md)
-  * [Develop a Custom Secrets Manager](./component-gallery/secrets-managers/custom.md)
 * [Data Validators](component-gallery/data-validators/data-validators.md)
   * [Great Expectations](component-gallery/data-validators/great-expectations.md)
   * [Deepchecks](component-gallery/data-validators/deepchecks.md)
@@ -126,7 +126,10 @@
   * [Kaniko Image Builder](./component-gallery/image-builders/kaniko.md)
   * [Google Cloud Image Builder](./component-gallery/image-builders/gcp.md)
   * [Develop a Custom Image Builder](./component-gallery/image-builders/custom.md)
-
+* [Model Registries](./component-gallery/model-registries/model-registries.md)
+  * [MLflow Model Registry](./component-gallery/model-registries/mlflow.md)
+  * [Develop a Custom Model Registry](./component-gallery/model-registries/custom.md)
+  
 ## Guidelines
 
 * [Best Practices](guidelines/best-practices.md)
@@ -138,6 +141,7 @@
 
 * [Contribution Guide](misc/contributing.md)
 * [Debugging Guide](misc/debugging.md)
+* [Handling Dependencies](misc/handling-dependencies.md)
 * [External Integration Guide](misc/integrating.md)
 * [Usage Analytics](misc/usage-analytics.md)
 

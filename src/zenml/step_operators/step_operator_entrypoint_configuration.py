@@ -19,6 +19,7 @@ from uuid import UUID
 from zenml.client import Client
 from zenml.config.step_run_info import StepRunInfo
 from zenml.entrypoints.step_entrypoint_configuration import (
+    STEP_NAME_OPTION,
     StepEntrypointConfiguration,
 )
 from zenml.orchestrators import input_utils, output_utils
@@ -84,6 +85,7 @@ class StepOperatorEntrypointConfiguration(StepEntrypointConfiguration):
             config=step.config,
             pipeline=deployment.pipeline_configuration,
             run_name=pipeline_run.name,
+            pipeline_step_name=self.entrypoint_args[STEP_NAME_OPTION],
             run_id=pipeline_run.id,
             step_run_id=step_run_id,
         )

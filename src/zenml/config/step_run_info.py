@@ -26,6 +26,7 @@ class StepRunInfo(StrictBaseModel):
     step_run_id: UUID
     run_id: UUID
     run_name: str
+    pipeline_step_name: str
 
     config: StepConfiguration
     pipeline: PipelineConfiguration

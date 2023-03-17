@@ -40,10 +40,10 @@ def visualize_statistics(
             profiles are required.
     """
     pipe = get_pipeline(pipeline="data_profiling_pipeline")
-    whylogs_step = pipe.runs[-1].get_step(step=step_name)
+    whylogs_step = pipe.runs[0].get_step(step=step_name)
     whylogs_reference_step = None
     if reference_step_name:
-        whylogs_reference_step = pipe.runs[-1].get_step(
+        whylogs_reference_step = pipe.runs[0].get_step(
             name=reference_step_name
         )
 

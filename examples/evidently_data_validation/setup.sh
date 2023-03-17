@@ -16,10 +16,10 @@ setup_stack () {
 
 pre_run () {
   zenml integration install evidently sklearn
-  pip install nltk
+  pip install pyarrow
 }
 
 pre_run_forced () {
   zenml integration install evidently sklearn -y
-  pip install nltk
+  pip install pyarrow
 }

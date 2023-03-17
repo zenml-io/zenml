@@ -19,7 +19,7 @@ jobs:
       PYTHONIOENCODING: "utf-8"
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           fetch-depth: 0 # fetch all commits/branches including gh-pages
 
@@ -28,11 +28,6 @@ jobs:
         run: |
           BRANCH='${{github.ref_name}}'
           echo ::set-output name=VERSION::${BRANCH#release/}
-
-      - name: Set up Python
-        uses: actions/setup-python@v2
-        with:
-          python-version: '3.8'
 
       - uses: actions/setup-node@v2
         with:
@@ -43,15 +38,17 @@ jobs:
       - name: Setup environment
         uses: ./.github/actions/setup_environment
         with:
-          cache_version: ${{ secrets.GH_ACTIONS_CACHE_KEY }}
+          cache_version: ${{ secrets.GH_ACTIONS_CACHE_KEY }}-api-docs
           python-version: '3.8'
           os: ubuntu-latest
+          # We need to install integrations in a different way to avoid conflicts
+          install_integrations: 'no'
 
       # IMPORTANT: there's a strategy to installing integrations here in a way
       # that avoids conflicts while at the same time making it possible for all
       # ZenML Python modules to be imported, especially the integration modules:
       # 1. install zenml with all extras
-      # 2. install more restrictive integrations first: feast, seldon and
+      # 2. install more restrictive integrations first: feast and
       # label_studio are currently the ones known to be very restrictive in
       # terms of what versions of dependencies they require
       # 3. Install bentoml because of its attrs version
@@ -62,14 +59,13 @@ jobs:
       # deprecated in 3.1.0 but mkdocstring depends on this method
       - name: Install Dependencies
         run: |
-          source $VENV
           zenml integration install -y feast
-          zenml integration install -y label_studio seldon
+          zenml integration install -y label_studio
           zenml integration install -y bentoml
           zenml integration install -y airflow
           zenml integration install -y kserve
-          zenml integration install -y --ignore-integration feast --ignore-integration label_studio --ignore-integration seldon --ignore-integration kserve --ignore-integration airflow --ignore-integration bentoml
-          pip install -e ".[server,dev]"
+          zenml integration install -y --ignore-integration feast --ignore-integration label_studio --ignore-integration kserve --ignore-integration airflow --ignore-integration bentoml
+          pip install -e ".[server,dev,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp]"
           pip install jinja2==3.0.3 protobuf==3.20.0 numpy~=1.21.5
 
       - name: Setup git user
@@ -81,7 +77,6 @@ jobs:
         # the migration versions are not necessary parts of the api docs
       - name: Initialize DB and delete unnecessary alembic files
         run: |
-          source $VENV
           zenml status # to initialize the db
           rm -rf src/zenml/zen_stores/migrations/env.py
           rm -rf src/zenml/zen_stores/migrations/versions
@@ -89,5 +84,4 @@ jobs:
 
       - name: Runs docs generation
         run: |
-          source $VENV
           bash scripts/generate-docs.sh -s src/zenml/ --push --latest -v ${{ steps.get_version.outputs.VERSION }}

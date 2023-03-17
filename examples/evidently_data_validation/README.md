@@ -166,7 +166,7 @@ pip install "zenml[server]"
 
 # install ZenML integrations and example dependencies
 zenml integration install evidently sklearn -y
-pip install nltk
+pip install pyarrow
 
 # pull example
 zenml example pull evidently_data_validation

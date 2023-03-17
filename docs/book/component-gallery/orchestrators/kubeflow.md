@@ -232,7 +232,7 @@ For additional configuration of the Kubeflow orchestrator, you can pass
 * `client_args`: Arguments to pass when initializing the KFP client.
 * `user_namespace`: The user namespace to use when creating experiments and runs.
 * `pod_settings`: Node selectors, affinity and tolerations to apply to the Kubernetes Pods running
-your pipline. These can be either specified using the Kubernetes model objects or as dictionaries.
+your pipeline. These can be either specified using the Kubernetes model objects or as dictionaries.
 
 ```python
 from zenml.integrations.kubeflow.flavors.kubeflow_orchestrator_flavor import KubeflowOrchestratorSettings
@@ -364,7 +364,7 @@ versions, so there might be further bugs with older Kubeflow versions. In this c
 The above example encoded the username and password in plain-text as settings. You can also set them as secrets.
 
 ```shell
-zenml secrets-manager secret register kubeflow_secret \
+zenml secret create kubeflow_secret \
     --username=admin \
     --password=abc123
 ```
@@ -380,7 +380,7 @@ kubeflow_settings = KubeflowOrchestratorSettings(
 )
 ```
 
-See full documentation of using secrets within ZenML [here](../../advanced-guide/practical/secrets-management.md).
+See full documentation of using ZenML secrets [here](../../advanced-guide/practical/secrets-management.md).
 
 A concrete example of using the Kubeflow orchestrator can be found
 [here](https://github.com/zenml-io/zenml/tree/main/examples/kubeflow_pipelines_orchestration).

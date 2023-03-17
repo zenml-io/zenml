@@ -49,6 +49,15 @@ class GCPImageBuilder(BaseImageBuilder, GoogleCredentialsMixin):
         return cast(GCPImageBuilderConfig, self._config)
 
     @property
+    def is_building_locally(self) -> bool:
+        """Whether the image builder builds the images on the client machine.
+
+        Returns:
+            True if the image builder builds locally, False otherwise.
+        """
+        return False
+
+    @property
     def validator(self) -> Optional["StackValidator"]:
         """Validates the stack for the GCP Image Builder.
 
@@ -182,6 +191,7 @@ class GCPImageBuilder(BaseImageBuilder, GoogleCredentialsMixin):
                 },
             ],
             images=[image_name],
+            timeout=f"{self.config.build_timeout}s",
         )
 
     def _run_cloud_build(self, build: cloudbuild_v1.Build) -> str:
@@ -206,7 +216,7 @@ class GCPImageBuilder(BaseImageBuilder, GoogleCredentialsMixin):
             log_url,
         )
 
-        result = operation.result()
+        result = operation.result(timeout=self.config.build_timeout)
 
         if result.status != cloudbuild_v1.Build.Status.SUCCESS:
             raise RuntimeError(

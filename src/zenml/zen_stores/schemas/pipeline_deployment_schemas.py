@@ -18,7 +18,8 @@ from typing import TYPE_CHECKING, List, Optional
 from uuid import UUID
 
 from pydantic.json import pydantic_encoder
-from sqlalchemy import TEXT, Column
+from sqlalchemy import TEXT, Column, String
+from sqlalchemy.dialects.mysql import MEDIUMTEXT
 from sqlmodel import Field, Relationship
 
 from zenml.config.pipeline_configurations import PipelineConfiguration
@@ -26,6 +27,7 @@ from zenml.models import (
     PipelineDeploymentRequestModel,
     PipelineDeploymentResponseModel,
 )
+from zenml.models.constants import MEDIUMTEXT_MAX_LENGTH
 from zenml.zen_stores.schemas.base_schemas import BaseSchema
 from zenml.zen_stores.schemas.pipeline_build_schemas import PipelineBuildSchema
 from zenml.zen_stores.schemas.pipeline_schemas import PipelineSchema
@@ -112,7 +114,14 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
 
     run_name_template: str
     pipeline_configuration: str = Field(sa_column=Column(TEXT, nullable=False))
-    step_configurations: str = Field(sa_column=Column(TEXT, nullable=False))
+    step_configurations: str = Field(
+        sa_column=Column(
+            String(length=MEDIUMTEXT_MAX_LENGTH).with_variant(
+                MEDIUMTEXT, "mysql"
+            ),
+            nullable=False,
+        )
+    )
     client_environment: str = Field(sa_column=Column(TEXT, nullable=False))
 
     @classmethod
