@@ -49,7 +49,6 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 
-_SOURCE_MAPPING: Dict[int, Source] = {}
 _CODE_REPOSITORY_CACHE: Dict[str, "LocalRepository"] = {}
 _CUSTOM_SOURCE_ROOT: Optional[str] = None
 
@@ -99,7 +98,6 @@ def load(source: Union[Source, str]) -> Any:
     else:
         obj = module
 
-    _SOURCE_MAPPING[id(obj)] = source
     return obj
 
 
@@ -115,9 +113,6 @@ def resolve(obj: Union[Type[Any], FunctionType, ModuleType]) -> Source:
     Returns:
         The source of the resolved object.
     """
-    if id(obj) in _SOURCE_MAPPING:
-        return _SOURCE_MAPPING[id(obj)]
-
     if isinstance(obj, ModuleType):
         module = obj
         attribute_name = None
@@ -285,7 +280,9 @@ def find_active_code_repository(
         try:
             repo = BaseCodeRepository.from_model(model)
         except Exception:
-            logger.exception("Failed to instantiate code repository class.")
+            logger.debug(
+                "Failed to instantiate code repository class.", exc_info=True
+            )
             continue
 
         local_repo = repo.get_local_repo(path)
@@ -296,7 +293,7 @@ def find_active_code_repository(
     return None
 
 
-def is_internal_source(module_name: str) -> bool:
+def is_internal_module(module_name: str) -> bool:
     """Checks if a module is internal (=part of the zenml package).
 
     Args:
@@ -379,7 +376,7 @@ def get_source_type(module: ModuleType) -> SourceType:
         # builtin file
         return SourceType.BUILTIN
 
-    if is_internal_source(module_name=module.__name__):
+    if is_internal_module(module_name=module.__name__):
         return SourceType.INTERNAL
 
     if is_standard_lib_file(file_path=file_path):
@@ -586,14 +583,14 @@ def _get_package_version(package_name: str) -> Optional[str]:
 def load_and_validate_class(
     source: Union[str, Source], expected_class: Type[Any]
 ) -> Type[Any]:
-    """Loads a source class and validates its type.
+    """Loads a source class and validates its class.
 
     Args:
         source: The source.
         expected_class: The class that the source should resolve to.
 
     Raises:
-        TypeError: If the source does not resolve to the expected type.
+        TypeError: If the source does not resolve to the expected class.
 
     Returns:
         The resolved source class.
@@ -612,14 +609,14 @@ def load_and_validate_class(
 def validate_source_class(
     source: Union[Source, str], expected_class: Type[Any]
 ) -> bool:
-    """Validates that a source resolves to a certain type.
+    """Validates that a source resolves to a certain class.
 
     Args:
         source: The source to validate.
         expected_class: The class that the source should resolve to.
 
     Returns:
-        If the source resolves to the expected class.
+       True if the source resolves to the expected class, False otherwise.
     """
     try:
         obj = load(source)
