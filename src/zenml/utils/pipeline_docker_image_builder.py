@@ -29,7 +29,7 @@ from zenml.constants import (
 from zenml.enums import OperatingSystemType
 from zenml.integrations.registry import integration_registry
 from zenml.logger import get_logger
-from zenml.utils import docker_utils, io_utils, source_utils_v2
+from zenml.utils import docker_utils, io_utils, source_utils
 
 if TYPE_CHECKING:
     from zenml.code_repositories import BaseCodeRepository
@@ -209,7 +209,7 @@ class PipelineDockerImageBuilder:
             logger.info("Building Docker image `%s`.", target_image_name)
             # Leave the build context empty if we don't want to include any files
             build_context_root = (
-                source_utils_v2.get_source_root() if include_files else None
+                source_utils.get_source_root() if include_files else None
             )
             build_context = build_context_class(
                 root=build_context_root,

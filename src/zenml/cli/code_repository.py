@@ -26,7 +26,7 @@ from zenml.console import console
 from zenml.enums import CliCategories
 from zenml.logger import get_logger
 from zenml.models import CodeRepositoryFilterModel
-from zenml.utils import source_utils_v2
+from zenml.utils import source_utils
 
 logger = get_logger(__name__)
 
@@ -102,7 +102,7 @@ def register_code_repository(
                 "code repository. Please run `zenml integration install "
                 "github` and try again."
             )
-        source = source_utils_v2.resolve(GitHubCodeRepository)
+        source = source_utils.resolve(GitHubCodeRepository)
     elif type_ == "gitlab":
         try:
             from zenml.integrations.gitlab.code_repositories import (
@@ -114,7 +114,7 @@ def register_code_repository(
                 "code repository. Please run `zenml integration install "
                 "gitlab` and try again."
             )
-        source = source_utils_v2.resolve(GitLabCodeRepository)
+        source = source_utils.resolve(GitLabCodeRepository)
     elif type_ == "custom":
         if not source_path:
             cli_utils.error(
@@ -122,7 +122,7 @@ def register_code_repository(
                 "a path to the implementation class using the --source option: "
                 "`zenml code-repository register --type=custom --source=<...>"
             )
-        if not source_utils_v2.validate_source_class(
+        if not source_utils.validate_source_class(
             source_path, expected_class=BaseCodeRepository
         ):
             cli_utils.error(

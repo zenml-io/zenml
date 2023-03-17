@@ -18,7 +18,7 @@ import click
 import kserve
 
 from zenml.logger import get_logger
-from zenml.utils import source_utils_v2
+from zenml.utils import source_utils
 
 logger = get_logger(__name__)
 
@@ -54,7 +54,7 @@ class ZenMLCustomModel(kserve.Model):  # type: ignore[misc]
         super().__init__(model_name)
         self.name = model_name
         self.model_uri = model_uri
-        self.predict_func = source_utils_v2.load(predict_func)
+        self.predict_func = source_utils.load(predict_func)
         self.model = None
         self.ready = False
 

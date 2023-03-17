@@ -25,7 +25,7 @@ from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.stack import StackComponent
-from zenml.utils import source_utils_v2
+from zenml.utils import source_utils
 from zenml.utils.yaml_utils import read_yaml, write_yaml
 
 if TYPE_CHECKING:
@@ -156,7 +156,7 @@ def _load_artifact(
     """
     # Resolve the materializer class
     try:
-        materializer_class = source_utils_v2.load(materializer)
+        materializer_class = source_utils.load(materializer)
     except (ModuleNotFoundError, AttributeError) as e:
         logger.error(
             f"ZenML cannot locate and import the materializer module "
@@ -166,7 +166,7 @@ def _load_artifact(
 
     # Resolve the artifact class
     try:
-        artifact_class = source_utils_v2.load(data_type)
+        artifact_class = source_utils.load(data_type)
     except (ModuleNotFoundError, AttributeError) as e:
         logger.error(
             f"ZenML cannot locate and import the data type of this "

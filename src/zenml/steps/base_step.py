@@ -78,7 +78,7 @@ from zenml.utils import (
     pydantic_utils,
     settings_utils,
     source_code_utils,
-    source_utils_v2,
+    source_utils,
 )
 
 logger = get_logger(__name__)
@@ -350,7 +350,7 @@ class BaseStep(metaclass=BaseStepMeta):
         Returns:
             The loaded step.
         """
-        step_class: Type[BaseStep] = source_utils_v2.load_and_validate_class(
+        step_class: Type[BaseStep] = source_utils.load_and_validate_class(
             source, expected_class=BaseStep
         )
         return step_class()
@@ -462,7 +462,7 @@ class BaseStep(metaclass=BaseStepMeta):
         for name, output in self.configuration.outputs.items():
             if output.materializer_source:
                 key = f"{name}_materializer_source"
-                materializer_class = source_utils_v2.load(
+                materializer_class = source_utils.load(
                     output.materializer_source
                 )
                 parameters[key] = source_code_utils.get_hashed_source_code(
@@ -788,7 +788,7 @@ class BaseStep(metaclass=BaseStepMeta):
             elif isinstance(value, Source):
                 return value
             else:
-                return source_utils_v2.resolve(value)
+                return source_utils.resolve(value)
 
         outputs: Dict[str, Dict[str, Source]] = defaultdict(dict)
         allowed_output_names = set(self.OUTPUT_SIGNATURE)
@@ -944,7 +944,7 @@ class BaseStep(metaclass=BaseStepMeta):
                 )
 
             if output.materializer_source:
-                if not source_utils_v2.validate_source_class(
+                if not source_utils.validate_source_class(
                     output.materializer_source, expected_class=BaseMaterializer
                 ):
                     raise StepInterfaceError(
@@ -1000,7 +1000,7 @@ class BaseStep(metaclass=BaseStepMeta):
                     )
                 outputs[output_name][
                     "materializer_source"
-                ] = source_utils_v2.resolve(materializer_class)
+                ] = source_utils.resolve(materializer_class)
 
         function_parameters = self._finalize_function_parameters()
         values = dict_utils.remove_none_values(

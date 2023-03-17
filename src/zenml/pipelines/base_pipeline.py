@@ -76,7 +76,7 @@ from zenml.utils import (
     dict_utils,
     pydantic_utils,
     settings_utils,
-    source_utils_v2,
+    source_utils,
     yaml_utils,
 )
 from zenml.utils.analytics_utils import AnalyticsEvent, event_handler
@@ -401,7 +401,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
         )
         pipeline_id = self._register(pipeline_spec=pipeline_spec).id
 
-        local_repo = source_utils_v2.find_active_code_repository()
+        local_repo = source_utils.find_active_code_repository()
         code_repository = build_utils.verify_local_repository(
             deployment=deployment, local_repo=local_repo
         )
@@ -525,7 +525,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
 
             stack = Client().active_stack
 
-            local_repo = source_utils_v2.find_active_code_repository()
+            local_repo = source_utils.find_active_code_repository()
             code_repository = build_utils.verify_local_repository(
                 deployment=deployment, local_repo=local_repo
             )
@@ -541,7 +541,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
 
             code_reference = None
             if local_repo and not local_repo.is_dirty:
-                source_root = source_utils_v2.get_source_root()
+                source_root = source_utils.get_source_root()
                 subdirectory = (
                     Path(source_root).resolve().relative_to(local_repo.root)
                 )

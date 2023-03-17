@@ -132,7 +132,7 @@ from zenml.models.schedule_model import (
     ScheduleFilterModel,
     ScheduleResponseModel,
 )
-from zenml.utils import io_utils, source_utils_v2
+from zenml.utils import io_utils, source_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, event_handler, track
 from zenml.utils.filesync_model import FileSyncModel
 from zenml.utils.pagination_utils import depaginate
@@ -3880,7 +3880,7 @@ class Client(metaclass=ClientMetaClass):
 
         code_repo_class: Type[
             BaseCodeRepository
-        ] = source_utils_v2.load_and_validate_class(
+        ] = source_utils.load_and_validate_class(
             source=source, expected_class=BaseCodeRepository
         )
         try:

@@ -19,7 +19,7 @@ from typing import Any, Dict, Optional, Type, cast
 from zenml.enums import StackComponentType
 from zenml.models import FlavorRequestModel, FlavorResponseModel
 from zenml.stack.stack_component import StackComponent, StackComponentConfig
-from zenml.utils import source_utils_v2
+from zenml.utils import source_utils
 
 
 class Flavor:
@@ -110,7 +110,7 @@ class Flavor:
         Returns:
             The loaded flavor.
         """
-        flavor = source_utils_v2.load(flavor_model.source)()
+        flavor = source_utils.load(flavor_model.source)()
         return cast(Flavor, flavor)
 
     def to_model(
@@ -139,7 +139,7 @@ class Flavor:
             workspace=client.active_workspace.id if is_custom else None,
             name=self.name,
             type=self.type,
-            source=source_utils_v2.resolve(self.__class__).import_path,
+            source=source_utils.resolve(self.__class__).import_path,
             config_schema=self.config_schema,
             integration=integration,
             logo_url=self.logo_url,
@@ -224,10 +224,10 @@ def validate_flavor_source(
         StackComponent,
         StackComponentConfig,
     )
-    from zenml.utils import source_utils_v2
+    from zenml.utils import source_utils
 
     try:
-        flavor_class = source_utils_v2.load(source)
+        flavor_class = source_utils.load(source)
     except (ValueError, AttributeError, ImportError) as e:
         raise ValueError(
             f"ZenML can not import the flavor class '{source}': {e}"

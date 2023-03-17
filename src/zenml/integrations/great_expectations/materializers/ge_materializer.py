@@ -35,7 +35,7 @@ from great_expectations.types import (  # type: ignore[import]
 
 from zenml.enums import ArtifactType
 from zenml.materializers.base_materializer import BaseMaterializer
-from zenml.utils import source_utils_v2, yaml_utils
+from zenml.utils import source_utils, yaml_utils
 
 if TYPE_CHECKING:
     from zenml.metadata.metadata_types import MetadataType
@@ -101,7 +101,7 @@ class GreatExpectationsMaterializer(BaseMaterializer):
         super().load(data_type)
         filepath = os.path.join(self.uri, ARTIFACT_FILENAME)
         artifact_dict = yaml_utils.read_json(filepath)
-        data_type = source_utils_v2.load(artifact_dict.pop("data_type"))
+        data_type = source_utils.load(artifact_dict.pop("data_type"))
 
         if data_type is CheckpointResult:
             self.preprocess_checkpoint_result_dict(artifact_dict)

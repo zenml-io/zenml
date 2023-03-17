@@ -32,7 +32,7 @@ from zenml.models import (
 from zenml.models.pipeline_build_models import PipelineBuildBaseModel
 from zenml.models.schedule_model import ScheduleFilterModel
 from zenml.pipelines import BasePipeline
-from zenml.utils import source_utils_v2, uuid_utils
+from zenml.utils import source_utils, uuid_utils
 
 logger = get_logger(__name__)
 
@@ -74,9 +74,9 @@ def register_pipeline(source: str) -> None:
         )
 
     try:
-        pipeline_instance = source_utils_v2.load(source)
+        pipeline_instance = source_utils.load(source)
     except ModuleNotFoundError as e:
-        source_root = source_utils_v2.get_source_root()
+        source_root = source_utils.get_source_root()
         cli_utils.error(
             f"Unable to import module `{e.name}`. Make sure the source path is "
             f"relative to your source root `{source_root}`."

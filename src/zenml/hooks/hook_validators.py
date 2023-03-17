@@ -18,7 +18,7 @@ from types import FunctionType
 from typing import TYPE_CHECKING, Union
 
 from zenml.config.source import Source
-from zenml.utils import source_utils_v2
+from zenml.utils import source_utils
 
 if TYPE_CHECKING:
 
@@ -38,7 +38,7 @@ def resolve_and_validate_hook(hook: "HookSpecification") -> Source:
         ValueError: If `hook_func` is not a valid callable.
     """
     if isinstance(hook, (str, Source)):
-        func = source_utils_v2.load(hook)
+        func = source_utils.load(hook)
     else:
         func = hook
 
@@ -89,4 +89,4 @@ def resolve_and_validate_hook(hook: "HookSpecification") -> Source:
                     )
                 seen_annotations.add(annotation)
 
-    return source_utils_v2.resolve(func)
+    return source_utils.resolve(func)

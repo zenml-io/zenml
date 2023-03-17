@@ -52,7 +52,7 @@ from zenml.steps.utils import (
     parse_return_type_annotations,
     resolve_type_annotation,
 )
-from zenml.utils import source_utils_v2
+from zenml.utils import source_utils
 
 if TYPE_CHECKING:
     from zenml.config.source import Source
@@ -216,7 +216,7 @@ class StepRunner:
         for name, output in self.configuration.outputs.items():
             materializer_class: Type[
                 BaseMaterializer
-            ] = source_utils_v2.load_and_validate_class(
+            ] = source_utils.load_and_validate_class(
                 output.materializer_source, expected_class=BaseMaterializer
             )
             materializers[name] = materializer_class
@@ -367,7 +367,7 @@ class StepRunner:
 
         materializer_class: Type[
             BaseMaterializer
-        ] = source_utils_v2.load_and_validate_class(
+        ] = source_utils.load_and_validate_class(
             artifact.materializer, expected_class=BaseMaterializer
         )
         materializer = materializer_class(artifact.uri)
@@ -503,7 +503,7 @@ class StepRunner:
                 type=materializer_class.ASSOCIATED_ARTIFACT_TYPE,
                 uri=uri,
                 materializer=materializer_source,
-                data_type=source_utils_v2.resolve(type(return_value)),
+                data_type=source_utils.resolve(type(return_value)),
                 user=active_user_id,
                 workspace=active_workspace_id,
                 artifact_store_id=artifact_store_id,
@@ -527,7 +527,7 @@ class StepRunner:
             output_materializers: The output materializers of the step.
         """
         try:
-            hook = source_utils_v2.load(hook_source)
+            hook = source_utils.load(hook_source)
             hook_spec = inspect.getfullargspec(inspect.unwrap(hook))
             function_params = self._parse_hook_inputs(
                 args=hook_spec.args,

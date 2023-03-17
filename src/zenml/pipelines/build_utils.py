@@ -38,7 +38,7 @@ from zenml.models.pipeline_build_models import (
 from zenml.models.pipeline_deployment_models import PipelineDeploymentBaseModel
 from zenml.stack import Stack
 from zenml.utils import (
-    source_utils_v2,
+    source_utils,
 )
 from zenml.utils.pipeline_docker_image_builder import (
     PipelineDockerImageBuilder,
@@ -359,7 +359,7 @@ def verify_local_repository(
                 "steps specify that code should be included in the "
                 "Docker image (`source_files='download'`), but there is no "
                 "code repository active at your current source root "
-                f"`{source_utils_v2.get_source_root()}`."
+                f"`{source_utils.get_source_root()}`."
             )
         elif local_repo.is_dirty:
             raise RuntimeError(
@@ -367,7 +367,7 @@ def verify_local_repository(
                 "steps specify that code should be included in the "
                 "Docker image (`source_files='download'`), but the code "
                 "repository active at your current source root "
-                f"`{source_utils_v2.get_source_root()}` has uncommited "
+                f"`{source_utils.get_source_root()}` has uncommited "
                 "changes."
             )
         elif local_repo.has_local_changes:
@@ -376,7 +376,7 @@ def verify_local_repository(
                 "steps specify that code should be included in the "
                 "Docker image (`source_files='download'`), but the code "
                 "repository active at your current source root "
-                f"`{source_utils_v2.get_source_root()}` has unpushed "
+                f"`{source_utils.get_source_root()}` has unpushed "
                 "changes."
             )
 

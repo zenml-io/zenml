@@ -41,7 +41,7 @@ from zenml.models.secret_models import (
 )
 from zenml.models.user_models import UserResponseModel
 from zenml.models.workspace_models import WorkspaceResponseModel
-from zenml.utils import source_utils_v2
+from zenml.utils import source_utils
 from zenml.utils.analytics_utils import (
     AnalyticsEvent,
     AnalyticsTrackerMixin,
@@ -143,7 +143,7 @@ class BaseSecretsStore(
 
         # Import the class dynamically
         try:
-            store_class = source_utils_v2.load_and_validate_class(
+            store_class = source_utils.load_and_validate_class(
                 store_config.class_path, expected_class=BaseSecretsStore
             )
         except (ImportError, AttributeError) as e:

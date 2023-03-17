@@ -19,7 +19,7 @@ from uuid import UUID
 from zenml.config.secret_reference_mixin import SecretReferenceMixin
 from zenml.logger import get_logger
 from zenml.models.code_repository_models import CodeRepositoryResponseModel
-from zenml.utils import source_utils_v2
+from zenml.utils import source_utils
 
 if TYPE_CHECKING:
     from zenml.code_repositories import LocalRepository
@@ -86,7 +86,7 @@ class BaseCodeRepository(ABC):
         """
         class_: Type[
             BaseCodeRepository
-        ] = source_utils_v2.load_and_validate_class(
+        ] = source_utils.load_and_validate_class(
             source=model.source, expected_class=BaseCodeRepository
         )
         return class_(id=model.id, config=model.config)
