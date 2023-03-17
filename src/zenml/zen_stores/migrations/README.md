@@ -67,6 +67,17 @@ example, if you set a column to have a maximum length of 100, you could add a
 test that checks that passing in a string longer than 100 characters will
 result in an error (or whatever is supposed to happen in that case).
 
+It is important to test the migration / changes on both a SQLite and a MySQL
+database. The reason for this is that SQLite and MySQL have different
+implementations of the SQL standard, and some things that work in one might not
+work in the other. If you only test locally with a SQLite database, the
+migration might well fail in the MySQL-backed version that our server usually
+uses. The easiest way to do this (and that one of our CI jobs also executes) is
+to use [the `./zen-test` CLI
+feature](https://github.com/zenml-io/zenml/tree/main/tests) to run the tests.
+Good candidates that use MySQL databases are `docker-server-docker-orchestrator`
+or `docker-server`.
+
 ## 🍒 Optional Extras:
 
 - Do something that involves the database being used (`zenml stack list`) and
