@@ -216,6 +216,36 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
             "mlflow_experiment_id": mlflow.active_run().info.experiment_id,
         }
 
+    def disable_autologging(self) -> None:
+        """Disables MLflow autologging."""
+        from mlflow import (
+            fastai,
+            gluon,
+            lightgbm,
+            pytorch,
+            sklearn,
+            spark,
+            statsmodels,
+            tensorflow,
+            xgboost,
+        )
+
+        # There is no way to disable auto-logging for all frameworks at once.
+        # If auto-logging is explicitly enabled for a framework by calling its
+        # autolog() method, it cannot be disabled by calling
+        # `mlflow.autolog(disable=True)`. Therefore, we need to disable
+        # auto-logging for all frameworks explicitly.
+
+        tensorflow.autolog(disable=True)
+        gluon.autolog(disable=True)
+        xgboost.autolog(disable=True)
+        lightgbm.autolog(disable=True)
+        statsmodels.autolog(disable=True)
+        spark.autolog(disable=True)
+        sklearn.autolog(disable=True)
+        fastai.autolog(disable=True)
+        pytorch.autolog(disable=True)
+
     def cleanup_step_run(
         self,
         info: "StepRunInfo",
@@ -228,6 +258,7 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
             step_failed: Whether the step failed or not.
         """
         status = "FAILED" if step_failed else "FINISHED"
+        self.disable_autologging()
         mlflow_utils.stop_zenml_mlflow_runs(status)
         mlflow.set_tracking_uri("")
 

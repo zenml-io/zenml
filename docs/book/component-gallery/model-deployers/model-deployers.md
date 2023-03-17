@@ -137,7 +137,6 @@ zenml model-deployer register seldon --flavor=seldon \
           model_name="my-model",
           replicas=1,
           implementation="TENSORFLOW_SERVER",
-          secret_name="seldon-secret",
           pipeline_name = step_env.pipeline_name,
           run_name = step_env.run_name,
           pipeline_step_name = step_env.step_name,

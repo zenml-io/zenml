@@ -99,11 +99,6 @@ class SeldonDeployerStepParameters(BaseParameters):
 
     Attributes:
         service_config: Seldon Core deployment service configuration.
-        secrets: a list of ZenML secrets containing additional configuration
-            parameters for the Seldon Core deployment (e.g. credentials to
-            access the Artifact Store where the models are stored). If supplied,
-            the information fetched from these secrets is passed to the Seldon
-            Core deployment server as a list of environment variables.
         custom_deploy_parameters: custom deployment parameters
         registry_model_name: name of the model in the model registry
         registry_model_version: version of the model in the model registry
