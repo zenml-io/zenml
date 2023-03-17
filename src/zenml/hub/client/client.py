@@ -93,10 +93,13 @@ class HubClient:
             The plugin response model or None if the plugin does not exist.
         """
         route = f"/plugins/{plugin_name}"
+        options = []
         if plugin_version:
-            route += f"?version={plugin_version}"
+            options.append(f"version={plugin_version}")
         if author:
-            route += f"?author={author}"
+            options.append(f"author={author}")
+        if options:
+            route += "?" + "&".join(options)
         try:
             response = self._request("GET", route)
             return HubPluginResponseModel.parse_obj(response)
