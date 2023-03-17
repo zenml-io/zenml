@@ -24,6 +24,14 @@ from zenml.steps import BaseParameters, step
 
 
 class SlackLoaderParameters(BaseParameters):
+    """Params for Slack loader.
+
+    Attributes:
+        channel_ids: List of channel IDs to load.
+        earliest_date: Earliest date to load.
+        latest_date: Latest date to load.
+    """
+
     channel_ids: List[str] = []
     earliest_date: Optional[datetime.datetime] = None
     latest_date: Optional[datetime.datetime] = None
@@ -31,6 +39,14 @@ class SlackLoaderParameters(BaseParameters):
 
 @step(enable_cache=True)
 def slack_loader(params: SlackLoaderParameters) -> List[Document]:
+    """Langchain loader for Slack.
+
+    Args:
+        params: Parameters for the step.
+
+    Returns:
+        List of langchain documents.
+    """
     loader = SlackReader(
         slack_token=os.environ["SLACK_BOT_TOKEN"],
         earliest_date=params.earliest_date,

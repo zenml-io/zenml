@@ -29,6 +29,15 @@ from zenml.steps import step
 def index_generator(
     documents: List[Document], slack_documents: List[Document]
 ) -> VectorStore:
+    """Generates a FAISS index from a list of documents.
+
+    Args:
+        documents: List of langchain documents.
+        slack_documents: List of langchain documents.
+
+    Returns:
+        FAISS index.
+    """
     embeddings = OpenAIEmbeddings()
 
     # chunk the documents into smaller chunks
