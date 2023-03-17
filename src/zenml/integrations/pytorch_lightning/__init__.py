@@ -21,7 +21,7 @@ class PytorchLightningIntegration(Integration):
     """Definition of PyTorch Lightning integration for ZenML."""
 
     NAME = PYTORCH_L
-    REQUIREMENTS = ["pytorch_lightning"]
+    REQUIREMENTS = ["pytorch_lightning<2.0.0"]
 
     @classmethod
     def activate(cls) -> None:

@@ -134,7 +134,7 @@ def main(
 
     model_name = "mnist"
     deployment_pipeline_name = "continuous_deployment_pipeline"
-    deployer_step_name = "seldon_model_deployer_step"
+    deployer_step_name = "model_deployer"
 
     model_deployer = SeldonModelDeployer.get_active_model_deployer()
 
