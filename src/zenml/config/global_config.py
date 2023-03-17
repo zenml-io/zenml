@@ -393,6 +393,8 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         from zenml.zen_stores.base_zen_store import BaseZenStore
 
         if self.store == config and self._zen_store:
+            # TODO: Do we actually need to create/initialize the store here
+            # or can we just return instead?
             BaseZenStore.create_store(
                 config, skip_default_registrations, **kwargs
             )
