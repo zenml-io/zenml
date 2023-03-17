@@ -18,6 +18,7 @@ from langchain.docstore.document import Document
 from langchain.embeddings import OpenAIEmbeddings
 from langchain.text_splitter import (
     CharacterTextSplitter,
+    RecursiveCharacterTextSplitter,
 )
 from langchain.vectorstores import FAISS, VectorStore
 
@@ -29,7 +30,19 @@ def index_generator(
     documents: List[Document], slack_documents: List[Document]
 ) -> VectorStore:
     embeddings = OpenAIEmbeddings()
-    text_splitter = CharacterTextSplitter(chunk_size=1000, chunk_overlap=0)
-    texts = text_splitter.split_documents(slack_documents)
-    documents.extend(texts)  # merges the two document lists
+
+    # chunk the documents into smaller chunks
+    docs_text_splitter = CharacterTextSplitter(
+        chunk_size=1000, chunk_overlap=0
+    )
+    split_documents = docs_text_splitter.split_documents(documents)
+
+    # chunk the slack documents into smaller chunks
+    slack_text_splitter = RecursiveCharacterTextSplitter(
+        chunk_size=1000,
+        chunk_overlap=200,
+    )
+    slack_texts = slack_text_splitter.split_documents(slack_documents)
+
+    split_documents.extend(slack_texts)  # merges the two document lists
     return FAISS.from_documents(documents, embeddings)

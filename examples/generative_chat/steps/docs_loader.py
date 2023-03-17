@@ -17,9 +17,6 @@ from typing import List
 
 from langchain.docstore.document import Document
 from langchain.document_loaders import GitbookLoader
-from langchain.text_splitter import (
-    RecursiveCharacterTextSplitter,
-)
 
 from zenml.steps import BaseParameters, step
 
@@ -37,9 +34,4 @@ def docs_loader(params: DocsLoaderParameters) -> List[Document]:
         base_url=params.docs_base_url,
         load_all_paths=True,
     )
-    all_pages_data = loader.load()
-    text_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=1000,
-        chunk_overlap=200,
-    )
-    return text_splitter.split_documents(all_pages_data)
+    return loader.load()
