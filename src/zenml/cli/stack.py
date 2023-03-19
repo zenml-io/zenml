@@ -39,6 +39,8 @@ from zenml.models import StackFilterModel
 from zenml.utils.analytics_utils import AnalyticsEvent, track
 from zenml.utils.yaml_utils import read_yaml, write_yaml
 
+from collections import defaultdict
+
 
 # Stacks
 @cli.group(
@@ -753,18 +755,73 @@ def delete_stack(stack_name_or_id: str, yes: bool = False, recursive: bool = Fal
         "Are you sure you want to proceed?"
     )
 
+    if recursive:
+        recursive_confirmation = yes or cli_utils.confirmation(
+            f"If there are stacks component present in other stack these stack component will be ignored for deletion \n"
+            "Are ok with that ?"
+        )
+
     if not confirmation:
         cli_utils.declare("Stack deletion canceled.")
         return
+
     
-
-
     with console.status(f"Deleting stack '{stack_name_or_id}'...\n"):
         client = Client()
 
-        if recursive:
-            # client.delete_stack()
-            pass
+        if recursive and recursive_confirmation:
+
+            stack = client.get_stack(stack_name_or_id)
+            stack_components_free_for_deletion = []
+            stack_components_not_free_for_deletion = []
+
+            # Get all stack components associated with this stack
+            stack_components = stack.components
+
+            for stack_component in stack_components.items():
+
+                # Get stack associated with the stack component
+                stacks = client.list_stacks(component_id=stack_component[1][0].id, size=2, page=1)
+
+                # Check if the stack component is part of another stack
+                if len(stacks) == 1:
+                    if stack.id == stacks[0].id:
+                        stack_components_free_for_deletion.append(stack_component)
+                elif len(stacks) > 1:
+                    stack_components_not_free_for_deletion.append(stack_component)
+                else:
+                    stack_components_free_for_deletion.append(stack_component)
+
+            for stack_component in stack_components_not_free_for_deletion:
+                    
+                cli_utils.declare(
+                    f"Stack Component `{stack_component[1][0].name}` of type "
+                    f"`{stack_component[1][0].type} cannot be "
+                    f"deleted as it is part of "
+                    f"other stacks. "
+                    f"Before deleting this stack "
+                    f"component, make sure to remove it "
+                    f"from all stacks."
+                    )
+            
+            cli_utils.declare("Remaining stack components for deletion: \n")
+            for stack_component in stack_components_free_for_deletion:
+                cli_utils.declare(
+                    f"Stack Component `{stack_component[1][0].name}` of type "
+                    f"`{stack_component[1][0].type}"
+                    )
+            
+            try:
+                client.delete_stack(stack_name_or_id)
+            except (KeyError, ValueError, IllegalOperationError) as err:
+                cli_utils.error(str(err))
+
+            for stack_component in stack_components_free_for_deletion:
+                client.deregister_stack_component(stack_component[1][0].name, stack_component[1][0].type)
+            
+            cli_utils.declare(f"Deleted stack '{stack_name_or_id}'.")
+            return
+
         try:
             client.delete_stack(stack_name_or_id)
         except (KeyError, ValueError, IllegalOperationError) as err:
