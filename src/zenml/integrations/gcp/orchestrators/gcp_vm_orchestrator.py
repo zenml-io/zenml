@@ -122,7 +122,9 @@ class GCPVMOrchestrator(BaseVMOrchestrator, GoogleCredentialsMixin):
             logger.error(
                 f"Operation ID: {operation.name}", file=sys.stderr, flush=True
             )
-            raise operation.exception() or RuntimeError(operation.error_message)
+            raise operation.exception() or RuntimeError(
+                operation.error_message
+            )
 
         if operation.warnings:
             logger.warning(
@@ -353,13 +355,12 @@ class GCPVMOrchestrator(BaseVMOrchestrator, GoogleCredentialsMixin):
         instance.name = instance_name
         instance.disks = [disk]
         if re.match(
-            r"^zones/[a-z\d\-]+/machineTypes/[a-z\d\-]+$", settings.machine_type
+            r"^zones/[a-z\d\-]+/machineTypes/[a-z\d\-]+$",
+            settings.machine_type,
         ):
             instance.machine_type = settings.machine_type
         else:
-            instance.machine_type = (
-                f"zones/{self.config.zone}/machineTypes/{settings.machine_type}"
-            )
+            instance.machine_type = f"zones/{self.config.zone}/machineTypes/{settings.machine_type}"
 
         if settings.accelerator_types:
             # First, check passed in settings and resolve counts.

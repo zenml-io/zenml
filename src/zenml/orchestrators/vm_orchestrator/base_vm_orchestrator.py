@@ -43,7 +43,9 @@ from zenml.environment import Environment
 from zenml.logger import get_logger
 from zenml.orchestrators import BaseOrchestrator
 from zenml.stack import Stack, StackComponentConfig, StackValidator
-from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
+from zenml.utils.pipeline_docker_image_builder import (
+    PipelineDockerImageBuilder,
+)
 
 if TYPE_CHECKING:
     from zenml.config.pipeline_deployment import PipelineDeployment

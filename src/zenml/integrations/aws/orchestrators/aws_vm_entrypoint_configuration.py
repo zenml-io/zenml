@@ -340,7 +340,9 @@ class AWSVMEntrypointConfiguration(StepEntrypointConfiguration):
             # this entrypoint. Tfx will try to load the executor class from that
             # source, so we need to recreate the executor class in the same module.
             original_step_module = (
-                "__main__" if step_module == main_module_source else step_module
+                "__main__"
+                if step_module == main_module_source
+                else step_module
             )
 
             # Make sure the `__module__` attribute of our step instance points to

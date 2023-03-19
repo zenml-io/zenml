@@ -111,7 +111,7 @@ def delete_instance(instance_id: str) -> None:
         instance_id: ID of the EC2 instance.
     """
     logger.info(f"Deleting {instance_id}...")
-    operation = instance_client.delete(
+    instance_client.delete(
         project=project_id, zone=zone, instance=machine_name
     )
     logger.info(f"Instance {machine_name} deleted.")
