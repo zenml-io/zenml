@@ -104,18 +104,18 @@ def get_image_from_family() -> str:
     return ami_id
 
 
-def delete_instance(instance_id: str) -> None:
-    """Send an instance deletion request to the EC2 API and wait for it to complete.
+# def delete_instance(instance_id: str) -> None:
+#     """Send an instance deletion request to the EC2 API and wait for it to complete.
 
-    Args:
-        instance_id: ID of the EC2 instance.
-    """
-    logger.info(f"Deleting {instance_id}...")
-    instance_client.delete(
-        project=project_id, zone=zone, instance=machine_name
-    )
-    logger.info(f"Instance {machine_name} deleted.")
-    return
+#     Args:
+#         instance_id: ID of the EC2 instance.
+#     """
+#     logger.info(f"Deleting {instance_id}...")
+#     instance_client.delete(
+#         project=project_id, zone=zone, instance=machine_name
+#     )
+#     logger.info(f"Instance {machine_name} deleted.")
+#     return
 
 
 def get_instance(
