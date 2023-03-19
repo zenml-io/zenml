@@ -10,10 +10,10 @@ metrics).
 
 ## When would you want to use it?
 
-[Neptune](https://neptune.ai/product/experiment-tracking) is a
-popular platform that you would normally use in the iterative ML experimentation
-phase to track and visualize experiment results. Neptune can also
-track and visualize the results produced by your
+[Neptune](https://neptune.ai/product/experiment-tracking) is a popular tool that
+you would normally use in the iterative ML experimentation phase to track and
+visualize experiment results or as a model registry for your production-ready
+models. Neptune can also track and visualize the results produced by your
 automated pipeline runs, as you make the transition towards a more production
 oriented workflow.
 
@@ -76,21 +76,20 @@ zenml stack register custom_stack -e neptune_experiment_tracker ... --set
 ```
 {% endtab %}
 
-{% tab title="Secrets Manager (Recommended)" %}
+{% tab title="ZenML Secret (Recommended)" %}
 
-This method requires you to include a [Secrets Manager](../secrets-managers/secrets-managers.md)
-in your stack and configure a ZenML secret to store the Neptune tracking service
-credentials securely.
+This method requires you to [configure a ZenML secret](../../advanced-guide/practical/secrets-management.md)
+to store the Neptune tracking service credentials securely.
 
-You can register the secret using the `zenml secret register` command:
+You can create the secret using the `zenml secret create` command:
 
 ```shell 
-zenml secrets-manager secret register neptune_secret \
+zenml secret create neptune_secret \
     --project=<PROJECT>
     --api_token=<API_TOKEN>
 ```
 
-Once the secret is registered, you can use it to configure the neptune Experiment
+Once the secret is created, you can use it to configure the neptune Experiment
 Tracker:
 
 ```shell
@@ -103,16 +102,14 @@ zenml experiment-tracker register neptune_secret \
 ```
 
 {% hint style="info" %}
-Read more about [Secrets Manager](../secrets-managers/secrets-managers.md) and
-[Secrets](../secrets-managers/secrets.md) in the ZenML documentation.
-For more practical examples of how to use the Secrets Manager, check out the
-[Secrets management practical guide](../../advanced-guide/practical/secrets-management.md).
+Read more about [ZenML Secrets](../../advanced-guide/practical/secrets-management.md)
+in the ZenML documentation.
 {% endhint %}
 {% endtab %}
 {% endtabs %}
 
 For more, up-to-date information on the Neptune Experiment Tracker
-implementation and its configuration, you can have a look at [the API docs](https://apidocs.zenml.io/latest/integration_code_docs/integrations-wandb/#zenml.integrations.neptune.experiment_trackers.neptune_experiment_tracker).
+implementation and its configuration, you can have a look at [the API docs](https://apidocs.zenml.io/latest/integration_code_docs/integrations-neptune/#zenml.integrations.neptune.experiment_trackers.neptune_experiment_tracker).
 
 ## How do you use it?
 

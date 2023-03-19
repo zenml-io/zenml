@@ -142,8 +142,8 @@ that are displayed in a dedicated way in the dashboard.
 See [src.zenml.metadata.metadata_types.MetadataType](https://github.com/zenml-io/zenml/blob/main/src/zenml/metadata/metadata_types.py)
 for more details.
 
-By default, this method will extract an artifact's storage size and runtime 
-data type, but you can overwrite it to track anything you wish. E.g., the 
+By default, this method will only extract the storage size of an artifact, but
+you can overwrite it to track anything you wish. E.g., the 
 `zenml.materializers.NumpyMaterializer` overwrites this method to track the 
 `shape`, `dtype`, and some statistical properties of each `np.ndarray` that it saves.
 
@@ -266,7 +266,7 @@ error:
 `
 zenml.exceptions.StepInterfaceError: Unable to find materializer for output 'output' of 
 type <class '__main__.MyObj'> in step 'step1'. Please make sure to either explicitly set a materializer for step 
-outputs using step.with_return_materializers(...) or registering a default materializer for specific types by 
+outputs using step.configure(output_materializers=...) or registering a default materializer for specific types by 
 subclassing BaseMaterializer and setting its ASSOCIATED_TYPES class variable. 
 For more information, visit https://docs.zenml.io/advanced-guide/pipelines/materializers
 `

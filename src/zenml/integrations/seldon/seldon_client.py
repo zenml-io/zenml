@@ -24,7 +24,6 @@ from kubernetes import config as k8s_config
 from pydantic import BaseModel, Field, ValidationError
 
 from zenml.logger import get_logger
-from zenml.secret.base_secret import BaseSecretSchema
 from zenml.utils.enum_utils import StrEnum
 
 logger = get_logger(__name__)
@@ -33,6 +32,40 @@ api = k8s_client.ApiClient()
 
 SELDON_DEPLOYMENT_KIND = "SeldonDeployment"
 SELDON_DEPLOYMENT_API_VERSION = "machinelearning.seldon.io/v1"
+
+
+class SeldonDeploymentPredictorParameter(BaseModel):
+    """Parameter for Seldon Deployment predictor.
+
+    Attributes:
+        name: parameter name
+        type: parameter, can be INT, FLOAT, DOUBLE, STRING, BOOL
+        value: parameter value
+    """
+
+    name: str = ""
+    type: str = ""
+    value: str = ""
+
+    class Config:
+        """Pydantic configuration class."""
+
+        # validate attribute assignments
+        validate_assignment = True
+        # Ignore extra attributes from the CRD that are not reflected here
+        extra = "ignore"
+
+
+class SeldonResourceRequirements(BaseModel):
+    """Resource requirements for a Seldon deployed model.
+
+    Attributes:
+        limits: an upper limit of resources to be used by the model
+        requests: resources requested by the model
+    """
+
+    limits: Dict[str, str] = Field(default_factory=dict)
+    requests: Dict[str, str] = Field(default_factory=dict)
 
 
 class SeldonDeploymentMetadata(BaseModel):
@@ -93,6 +126,7 @@ class SeldonDeploymentPredictiveUnit(BaseModel):
     ] = SeldonDeploymentPredictiveUnitType.MODEL
     implementation: Optional[str]
     modelUri: Optional[str]
+    parameters: Optional[List[SeldonDeploymentPredictorParameter]]
     serviceAccountName: Optional[str]
     envSecretRefName: Optional[str]
     children: List["SeldonDeploymentPredictiveUnit"] = Field(
@@ -140,6 +174,9 @@ class SeldonDeploymentPredictor(BaseModel):
     replicas: int = 1
     graph: Optional[SeldonDeploymentPredictiveUnit] = Field(
         default_factory=SeldonDeploymentPredictiveUnit
+    )
+    engineResources: Optional[SeldonResourceRequirements] = Field(
+        default_factory=SeldonResourceRequirements
     )
     componentSpecs: Optional[List[SeldonDeploymentComponentSpecs]]
 
@@ -282,6 +319,8 @@ class SeldonDeployment(BaseModel):
         model_uri: Optional[str] = None,
         model_name: Optional[str] = None,
         implementation: Optional[str] = None,
+        parameters: Optional[List[SeldonDeploymentPredictorParameter]] = None,
+        engineResources: Optional[SeldonResourceRequirements] = None,
         secret_name: Optional[str] = None,
         labels: Optional[Dict[str, str]] = None,
         annotations: Optional[Dict[str, str]] = None,
@@ -296,6 +335,8 @@ class SeldonDeployment(BaseModel):
             model_uri: The URI of the model.
             model_name: The name of the model.
             implementation: The implementation of the model.
+            parameters: The predictor graph parameters.
+            engineResources: The resources to be allocated to the model.
             secret_name: The name of the Kubernetes secret containing
                 environment variable values (e.g. with credentials for the
                 artifact store) to use with the deployment service.
@@ -324,7 +365,9 @@ class SeldonDeployment(BaseModel):
                     graph=SeldonDeploymentPredictiveUnit(
                         name="classifier",
                         type=SeldonDeploymentPredictiveUnitType.MODEL,
+                        parameters=parameters,
                     ),
+                    engineResources=engineResources,
                     componentSpecs=[
                         SeldonDeploymentComponentSpecs(
                             spec=spec
@@ -343,7 +386,9 @@ class SeldonDeployment(BaseModel):
                         modelUri=model_uri or "",
                         implementation=implementation or "",
                         envSecretRefName=secret_name,
+                        parameters=parameters,
                     ),
+                    engineResources=engineResources,
                 )
             ]
 
@@ -972,15 +1017,13 @@ class SeldonClient:
     def create_or_update_secret(
         self,
         name: str,
-        secret: BaseSecretSchema,
+        secret_values: Dict[str, Any],
     ) -> None:
         """Create or update a Kubernetes Secret resource.
 
-        Uses the information contained in a ZenML secret.
-
         Args:
             name: the name of the Secret resource to create.
-            secret: a ZenML secret with key-values that should be
+            secret_values: secret key-values that should be
                 stored in the Secret resource.
 
         Raises:
@@ -995,7 +1038,7 @@ class SeldonClient:
                 k.upper(): base64.b64encode(str(v).encode("utf-8")).decode(
                     "ascii"
                 )
-                for k, v in secret.content.items()
+                for k, v in secret_values.items()
                 if v is not None
             }
 
@@ -1084,9 +1127,10 @@ def create_seldon_core_custom_spec(
     Args:
         model_uri: The URI of the model to load.
         custom_docker_image: The docker image to use.
-        secret_name: The name of the secret to use.
+        secret_name: The name of the Kubernetes secret to use.
         command: The command to run in the container.
-        container_registry_secret_name: The name of the secret to use for docker image pull.
+        container_registry_secret_name: The name of the secret to use for docker
+            image pull.
 
     Returns:
         A pod spec for the seldon core container.
@@ -1105,17 +1149,15 @@ def create_seldon_core_custom_spec(
                 name="classifier-provision-location", mount_path="/mnt/models"
             )
         ],
-        env_from=[
+    )
+    if secret_name:
+        init_container.env_from = [
             k8s_client.V1EnvFromSource(
                 secret_ref=k8s_client.V1SecretEnvSource(
                     name=secret_name, optional=False
                 )
             )
-        ],
-    )
-    image_pull_secret = k8s_client.V1LocalObjectReference(
-        name=container_registry_secret_name
-    )
+        ]
     container = k8s_client.V1Container(
         name="classifier",
         image=custom_docker_image,
@@ -1134,7 +1176,10 @@ def create_seldon_core_custom_spec(
         ],
     )
 
-    if image_pull_secret:
+    if container_registry_secret_name:
+        image_pull_secret = k8s_client.V1LocalObjectReference(
+            name=container_registry_secret_name
+        )
         spec = k8s_client.V1PodSpec(
             volumes=[
                 volume,

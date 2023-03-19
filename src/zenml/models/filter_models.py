@@ -561,6 +561,21 @@ class BaseFilterModel(BaseModel):
             or cls.__fields__[k].type_ == str
         )
 
+    @classmethod
+    def is_sort_by_field(cls, k: str) -> bool:
+        """Checks if it's a sort by field.
+
+        Args:
+            k: The key to check.
+
+        Returns:
+            True if the field is a sort by field, False otherwise.
+        """
+        return (
+            issubclass(str, get_args(cls.__fields__[k].type_))
+            or cls.__fields__[k].type_ == str
+        ) and k == "sort_by"
+
     @staticmethod
     def _define_datetime_filter(
         column: str, value: Any, operator: GenericFilterOps
@@ -729,7 +744,8 @@ class WorkspaceScopedFilterModel(BaseFilterModel):
         """Generate the filter for the query.
 
         Many resources are scoped by workspace, in which case only the resources
-        belonging to the active workspace should be returned.
+        belonging to the active workspace should be returned. An empty workspace
+        field allows access from all scopes.
 
         Args:
             table: The Table that is being queried from.
@@ -738,11 +754,13 @@ class WorkspaceScopedFilterModel(BaseFilterModel):
             The filter expression for the query.
         """
         from sqlalchemy import and_
+        from sqlmodel import or_
 
         base_filter = super().generate_filter(table)
         if self.scope_workspace:
-            workspace_filter = (
-                getattr(table, "workspace_id") == self.scope_workspace
+            workspace_filter = or_(
+                getattr(table, "workspace_id") == self.scope_workspace,
+                getattr(table, "workspace_id").is_(None),
             )
             return and_(base_filter, workspace_filter)
         return base_filter

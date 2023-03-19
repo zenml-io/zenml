@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""MLFlow experiment tracker flavor."""
+"""MLflow experiment tracker flavor."""
 
 from typing import TYPE_CHECKING, Any, Dict, Optional, Type
 
@@ -193,6 +193,33 @@ class MLFlowExperimentTrackerFlavor(BaseExperimentTrackerFlavor):
             The name of the flavor.
         """
         return MLFLOW_MODEL_EXPERIMENT_TRACKER_FLAVOR
+
+    @property
+    def docs_url(self) -> Optional[str]:
+        """A url to point at docs explaining this flavor.
+
+        Returns:
+            A flavor docs url.
+        """
+        return self.generate_default_docs_url()
+
+    @property
+    def sdk_docs_url(self) -> Optional[str]:
+        """A url to point at SDK docs explaining this flavor.
+
+        Returns:
+            A flavor SDK docs url.
+        """
+        return self.generate_default_sdk_docs_url()
+
+    @property
+    def logo_url(self) -> str:
+        """A url to represent the flavor in the dashboard.
+
+        Returns:
+            The flavor logo.
+        """
+        return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/experiment_tracker/mlflow.png"
 
     @property
     def config_class(self) -> Type[MLFlowExperimentTrackerConfig]:

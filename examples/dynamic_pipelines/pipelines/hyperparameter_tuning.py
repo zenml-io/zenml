@@ -31,8 +31,8 @@ def param_id(parameters: BaseParameters) -> str:
 
 
 class HyperParameterTuning(DynamicPipeline):
-    """Generates the steps of the hyperparameter tuning pipeline dynamically based on the input, and connects
-    the steps."""
+    """Generates the steps of the hyperparameter tuning pipeline dynamically
+    based on the input, and connects the steps."""
 
     def __init__(
         self,
@@ -48,15 +48,16 @@ class HyperParameterTuning(DynamicPipeline):
 
         Args:
             load_data_step: the type of step that loads the data.
-            train_and_predict_step: the type of step that preforms training over the
-                train data and returns the predictions over the test data, based on model
-                parameters provided as steps parameters.
-            train_and_predict_best_model_step: the type of step that preforms training over the
-                train data and returns the predictions over the test data, based on model
-                parameters provided as input to the step.
+            train_and_predict_step: the type of step that preforms training over
+                the train data and returns the predictions over the test data,
+                based on model parameters provided as steps parameters.
+            train_and_predict_best_model_step: the type of step that preforms
+                training over the train data and returns the predictions over
+                the test data, based on model parameters provided as input to
+                the step.
             evaluate_step: the type of step that evaluates a model.
-            hyperparameters_conf_list: a list of `BaseParameters`, which will be given as input
-                to the model's constructor.
+            hyperparameters_conf_list: a list of `BaseParameters`, which will
+                be given as input to the model's constructor.
         """
         self.load_data_step = load_data_step()
         self.split_test = split_data_step().configure(name="split_train_test")
@@ -105,8 +106,8 @@ class HyperParameterTuning(DynamicPipeline):
         )
 
     def connect(self, **kwargs: BaseStep) -> None:
-        """
-        The method connects the input and outputs of the hyperparameter tuning pipeline.
+        """The method connects the input and outputs of the hyperparameter
+        tuning pipeline.
 
         Args:
             **kwargs: the step instances of the pipeline.

@@ -20,7 +20,7 @@ from zenml.steps import step
 
 
 class ReduceType(Enum):
-    """Simple Enum that indicates which reduction to perform. Either MAX or MIN."""
+    """Simple Enum that indicates which reduction to perform."""
 
     MIN = True
     MAX = False
@@ -40,13 +40,15 @@ def compare_score(params: CompareScoreParams) -> dict:
     if params.reduce == ReduceType.MIN:
         output = min(outputs, key=lambda x: x.score)
         print(
-            f"minimal value at {output.model_parameters}. score = {output.score*100:.2f}%"
+            f"minimal value at {output.model_parameters}. score = "
+            f"{output.score*100:.2f}%"
         )
         return output.model_parameters
 
     if params.reduce == ReduceType.MAX:
         output = max(outputs, key=lambda x: x.score)
         print(
-            f"maximal value at {output.model_parameters}. score = {output.score*100:.2f}%"
+            f"maximal value at {output.model_parameters}. score = "
+            f"{output.score*100:.2f}%"
         )
         return output.model_parameters

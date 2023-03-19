@@ -1,0 +1,5 @@
+{
+  "scripts/check-spelling.sh": {
+    "default": "githubnext__emoji-block__file-block"
+  }
+}

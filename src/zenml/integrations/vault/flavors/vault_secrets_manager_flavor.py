@@ -95,6 +95,33 @@ class VaultSecretsManagerFlavor(BaseSecretsManagerFlavor):
         return VAULT_SECRETS_MANAGER_FLAVOR
 
     @property
+    def docs_url(self) -> Optional[str]:
+        """A url to point at docs explaining this flavor.
+
+        Returns:
+            A flavor docs url.
+        """
+        return self.generate_default_docs_url()
+
+    @property
+    def sdk_docs_url(self) -> Optional[str]:
+        """A url to point at SDK docs explaining this flavor.
+
+        Returns:
+            A flavor SDK docs url.
+        """
+        return self.generate_default_sdk_docs_url()
+
+    @property
+    def logo_url(self) -> str:
+        """A url to represent the flavor in the dashboard.
+
+        Returns:
+            The flavor logo.
+        """
+        return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/secrets_managers/vault.png"
+
+    @property
     def config_class(self) -> Type[VaultSecretsManagerConfig]:
         """Returns `VaultSecretsManagerConfig` config class.
 

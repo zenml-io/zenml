@@ -168,6 +168,8 @@ With the configuration defined, we can move on to the logic behind the
 implementation:
 
 ```python
+PathType = Union[bytes, str]
+
 from zenml.artifact_stores import BaseArtifactStore
 
 
@@ -198,15 +200,18 @@ from zenml.artifact_stores import BaseArtifactStoreFlavor
 class MyArtifactStoreFlavor(BaseArtifactStoreFlavor):
     """Custom artifact store implementation."""
     
+    @property
     def name(self) -> str:
         """The name of the flavor."""
         return 'my_artifact_store'
     
+    @property
     def implementation_class(self) -> Type["BaseArtifactStore"]:
         """Implementation class for this flavor."""
         from ... import MyArtifactStore
         return MyArtifactStore
 
+    @property
     def config_class(self) -> Type[StackComponentConfig]:
         """Configuration class for this flavor."""
         from ... import MyArtifactStoreConfig
@@ -215,11 +220,30 @@ class MyArtifactStoreFlavor(BaseArtifactStoreFlavor):
 
 ## Managing a Custom Stack Component Flavor
 
-Once your implementation is complete, you can register it through the CLI:
+Once your implementation is complete, you can register it through the CLI.
+Please ensure you **point to the flavor class via dot notation**:
 
 ```shell
 zenml artifact-store flavor register <path.to.MyArtifactStoreFlavor>
 ```
+
+For example, if your flavor class `MyArtifactStoreFlavor` is defined in `flavors/my_flavor.py`,
+you'd register it by doing:
+
+```shell
+zenml artifact-store flavor register flavors.my_flavor.MyArtifactStoreFlavor
+```
+
+{% hint style="warning" %}
+ZenML resolves the flavor class by taking the path where you initialized ZenML
+(via `zenml init`) as the starting point of resolution. Therefore, please ensure
+you follow [the best practice](../../guidelines/best-practices.md) of initializing
+ZenML at the root of your repository.
+
+If ZenML does not find an initialized ZenML repository in any parent directory, it
+will default to the current working directory, but usually its better to not have to
+rely on this mechanism, and initialize ZenML at the root.
+{% endhint %}
 
 Afterwards, you should see the new custom artifact store flavor in the list of
 available artifact store flavors:

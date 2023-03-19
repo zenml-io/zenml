@@ -13,7 +13,9 @@
 #  permissions and limitations under the License.
 """Google Cloud image builder flavor."""
 
-from typing import TYPE_CHECKING, Type
+from typing import TYPE_CHECKING, Optional, Type
+
+from pydantic import PositiveInt
 
 from zenml.image_builders import BaseImageBuilderConfig, BaseImageBuilderFlavor
 from zenml.integrations.gcp import GCP_IMAGE_BUILDER_FLAVOR
@@ -25,6 +27,8 @@ if TYPE_CHECKING:
     from zenml.integrations.gcp.image_builders import GCPImageBuilder
 
 DEFAULT_CLOUD_BUILDER_IMAGE = "gcr.io/cloud-builders/docker"
+DEFAULT_CLOUD_BUILDER_NETWORK = "cloudbuild"
+DEFAULT_CLOUD_BUILD_TIMEOUT = 3600
 
 
 class GCPImageBuilderConfig(
@@ -35,9 +39,20 @@ class GCPImageBuilderConfig(
     Attributes:
         cloud_builder_image: The name of the Docker image to use for the build
             steps. Defaults to `gcr.io/cloud-builders/docker`.
+        network: The network name to which the build container will be
+            attached while building the Docker image. More information about
+            this:
+            https://cloud.google.com/build/docs/build-config-file-schema#network.
+            Defaults to `cloudbuild`.
+        build_timeout: The timeout of the build in seconds. More information
+            about this parameter:
+            https://cloud.google.com/build/docs/build-config-file-schema#timeout_2
+            Defaults to `3600`.
     """
 
     cloud_builder_image: str = DEFAULT_CLOUD_BUILDER_IMAGE
+    network: str = DEFAULT_CLOUD_BUILDER_NETWORK
+    build_timeout: PositiveInt = DEFAULT_CLOUD_BUILD_TIMEOUT
 
 
 class GCPImageBuilderFlavor(BaseImageBuilderFlavor):
@@ -51,6 +66,33 @@ class GCPImageBuilderFlavor(BaseImageBuilderFlavor):
             The name of the flavor.
         """
         return GCP_IMAGE_BUILDER_FLAVOR
+
+    @property
+    def docs_url(self) -> Optional[str]:
+        """A url to point at docs explaining this flavor.
+
+        Returns:
+            A flavor docs url.
+        """
+        return self.generate_default_docs_url()
+
+    @property
+    def sdk_docs_url(self) -> Optional[str]:
+        """A url to point at SDK docs explaining this flavor.
+
+        Returns:
+            A flavor SDK docs url.
+        """
+        return self.generate_default_sdk_docs_url()
+
+    @property
+    def logo_url(self) -> str:
+        """A url to represent the flavor in the dashboard.
+
+        Returns:
+            The flavor logo.
+        """
+        return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/image_builder/gcp.png"
 
     @property
     def config_class(self) -> Type[BaseImageBuilderConfig]:

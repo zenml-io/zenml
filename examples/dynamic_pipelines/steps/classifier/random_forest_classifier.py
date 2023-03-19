@@ -33,7 +33,8 @@ def train_and_predict_rf_classifier(
     y_train: np.ndarray,
     X_val: np.ndarray,
 ) -> np.ndarray:
-    """Trains a random forest classifier over the training data and predicts over the validation data"""
+    """Trains a random forest classifier over the training data and predicts
+    over the validation data"""
     return _train_and_predict_rf_classifier(
         dict(params), X_train, y_train, X_val
     )
@@ -46,8 +47,8 @@ def train_and_predict_best_rf_classifier(
     y_train: np.ndarray,
     X_test: np.ndarray,
 ) -> np.ndarray:
-    """Trains a random forest classifier over the training data with the model parameters given in the input
-    and predicts over the test data"""
+    """Trains a random forest classifier over the training data with the model
+    parameters given in the input and predicts over the test data"""
     return _train_and_predict_rf_classifier(
         best_model_parameters, X_train, y_train, X_test
     )

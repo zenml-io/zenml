@@ -33,6 +33,7 @@ def calc_accuracy(
         else f" with parameters: {param.model_parameters}"
     )
     print(
-        f"{param.evaluation_type}{parameters_print} scored {score*100:.2f}% accuracy"
+        f"{param.evaluation_type}{parameters_print} scored {score*100:.2f}% "
+        "accuracy"
     )
     return score, "accuracy", param.model_parameters

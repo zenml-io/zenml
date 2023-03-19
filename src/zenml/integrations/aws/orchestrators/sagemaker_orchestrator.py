@@ -23,7 +23,9 @@ from sagemaker.workflow.pipeline import Pipeline
 from sagemaker.workflow.steps import ProcessingStep
 
 from zenml.config.base_settings import BaseSettings
-from zenml.constants import ORCHESTRATOR_DOCKER_IMAGE_KEY
+from zenml.constants import (
+    METADATA_ORCHESTRATOR_URL,
+)
 from zenml.entrypoints import StepEntrypointConfiguration
 from zenml.enums import StackComponentType
 from zenml.integrations.aws.flavors.sagemaker_orchestrator_flavor import (
@@ -31,18 +33,16 @@ from zenml.integrations.aws.flavors.sagemaker_orchestrator_flavor import (
     SagemakerOrchestratorSettings,
 )
 from zenml.logger import get_logger
-from zenml.metadata.metadata_types import MetadataType
-from zenml.orchestrators.base_orchestrator import BaseOrchestrator
+from zenml.metadata.metadata_types import MetadataType, Uri
+from zenml.orchestrators import ContainerizedOrchestrator
 from zenml.orchestrators.utils import get_orchestrator_run_name
 from zenml.stack import StackValidator
-from zenml.utils.pipeline_docker_image_builder import (
-    PipelineDockerImageBuilder,
-)
 
 if TYPE_CHECKING:
-    from zenml.config.pipeline_deployment import PipelineDeployment
+    from zenml.models.pipeline_deployment_models import (
+        PipelineDeploymentResponseModel,
+    )
     from zenml.stack import Stack
-
 
 ENV_ZENML_SAGEMAKER_RUN_ID = "ZENML_SAGEMAKER_RUN_ID"
 MAX_POLLING_ATTEMPTS = 100
@@ -51,7 +51,7 @@ POLLING_DELAY = 30
 logger = get_logger(__name__)
 
 
-class SagemakerOrchestrator(BaseOrchestrator):
+class SagemakerOrchestrator(ContainerizedOrchestrator):
     """Orchestrator responsible for running pipelines on Sagemaker."""
 
     @property
@@ -120,21 +120,6 @@ class SagemakerOrchestrator(BaseOrchestrator):
                 f"{ENV_ZENML_SAGEMAKER_RUN_ID}."
             )
 
-    def prepare_pipeline_deployment(
-        self, deployment: "PipelineDeployment", stack: "Stack"
-    ) -> None:
-        """Build a Docker image and push it to the container registry.
-
-        Args:
-            deployment: The pipeline deployment configuration.
-            stack: The stack on which the pipeline will be deployed.
-        """
-        docker_image_builder = PipelineDockerImageBuilder()
-        repo_digest = docker_image_builder.build_docker_image(
-            deployment=deployment, stack=stack
-        )
-        deployment.add_extra(ORCHESTRATOR_DOCKER_IMAGE_KEY, repo_digest)
-
     @property
     def settings_class(self) -> Optional[Type["BaseSettings"]]:
         """Settings class for the Sagemaker orchestrator.
@@ -145,7 +130,9 @@ class SagemakerOrchestrator(BaseOrchestrator):
         return SagemakerOrchestratorSettings
 
     def prepare_or_run_pipeline(
-        self, deployment: "PipelineDeployment", stack: "Stack"
+        self,
+        deployment: "PipelineDeploymentResponseModel",
+        stack: "Stack",
     ) -> None:
         """Prepares or runs a pipeline on Sagemaker.
 
@@ -161,17 +148,17 @@ class SagemakerOrchestrator(BaseOrchestrator):
             )
 
         orchestrator_run_name = get_orchestrator_run_name(
-            pipeline_name=deployment.pipeline.name
+            pipeline_name=deployment.pipeline_configuration.name
         ).replace("_", "-")
 
         session = sagemaker.Session(default_bucket=self.config.bucket)
-        image_name = deployment.pipeline.extra[ORCHESTRATOR_DOCKER_IMAGE_KEY]
 
         sagemaker_steps = []
-        for step_name, step in deployment.steps.items():
+        for step_name, step in deployment.step_configurations.items():
+            image = self.get_image(deployment=deployment, step_name=step_name)
             command = StepEntrypointConfiguration.get_entrypoint_command()
             arguments = StepEntrypointConfiguration.get_entrypoint_arguments(
-                step_name=step_name
+                step_name=step_name, deployment_id=deployment.id
             )
             entrypoint = command + arguments
 
@@ -190,7 +177,7 @@ class SagemakerOrchestrator(BaseOrchestrator):
 
             processor = sagemaker.processing.Processor(
                 role=processor_role,
-                image_uri=image_name,
+                image_uri=image,
                 instance_count=1,
                 sagemaker_session=session,
                 instance_type=step_settings.instance_type,
@@ -231,6 +218,23 @@ class SagemakerOrchestrator(BaseOrchestrator):
             )
             logger.info("Pipeline completed successfully.")
 
+    def _get_region_name(self) -> str:
+        """Returns the AWS region name.
+
+        Returns:
+            The region name.
+
+        Raises:
+            RuntimeError: If the region name cannot be retrieved.
+        """
+        try:
+            return cast(str, sagemaker.Session().boto_region_name)
+        except Exception as e:
+            raise RuntimeError(
+                "Unable to get region name. Please ensure that you have "
+                "configured your AWS credentials correctly."
+            ) from e
+
     def get_pipeline_run_metadata(
         self, run_id: UUID
     ) -> Dict[str, "MetadataType"]:
@@ -242,11 +246,21 @@ class SagemakerOrchestrator(BaseOrchestrator):
         Returns:
             A dictionary of metadata.
         """
-        # TODO: Add this once we can get the region
-        # run_url = (
-        #     f"https://{region}.console.aws.amazon.com/sagemaker/"
-        #     f"home?region={region}"
-        # )
-        return {
-            "pipeline_execution_arn": os.environ[ENV_ZENML_SAGEMAKER_RUN_ID]
+        run_metadata: Dict[str, "MetadataType"] = {
+            "pipeline_execution_arn": os.environ[ENV_ZENML_SAGEMAKER_RUN_ID],
         }
+        try:
+            region_name = self._get_region_name()
+        except RuntimeError:
+            logger.warning("Unable to get region name from AWS Sagemaker.")
+            return run_metadata
+
+        aws_run_id = os.environ[ENV_ZENML_SAGEMAKER_RUN_ID].split("/")[-1]
+        orchestrator_logs_url = (
+            f"https://{region_name}.console.aws.amazon.com/"
+            f"cloudwatch/home?region={region_name}#logsV2:log-groups/log-group"
+            f"/$252Faws$252Fsagemaker$252FProcessingJobs$3FlogStreamNameFilter"
+            f"$3Dpipelines-{aws_run_id}-"
+        )
+        run_metadata[METADATA_ORCHESTRATOR_URL] = Uri(orchestrator_logs_url)
+        return run_metadata

@@ -36,7 +36,7 @@ if __name__ == "__main__":
     )
     pipeline_instance.run()
 
-    last_run = pipeline_instance.get_runs()[-1]
+    last_run = pipeline_instance.get_runs()[0]
     data_val_step = last_run.get_step(step="data_validator")
     model_val_step = last_run.get_step(step="model_validator")
     data_drift_step = last_run.get_step(step="data_drift_detector")
