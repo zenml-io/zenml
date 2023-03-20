@@ -282,3 +282,14 @@ tests:
             flavor: neptune
       - capabilities:
           synchronized: true
+
+  - module: tests.integration.examples.test_seldon_deployment_validation
+    requirements:
+      - integrations:
+          - sklearn
+          - tensorflow
+        stacks:
+          - type: model_deployer
+            flavor: seldon
+      - capabilities:
+          synchronized: true
