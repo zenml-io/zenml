@@ -50,7 +50,7 @@ Seldon Core is installed and default to using that.
 * Fix GitHub pip download cache key by @stefannica in https://github.com/zenml-io/zenml/pull/1405
 * Add orchestrator logs link for Sagemaker by @strickvl in https://github.com/zenml-io/zenml/pull/1375
 * Phase out secrets managers from other stack components. by @stefannica in https://github.com/zenml-io/zenml/pull/1401
-* Add MLflow UI messge to quickstart example and fix autolog spillage by @stefannica in https://github.com/zenml-io/zenml/pull/1421
+* Add MLflow UI message to quickstart example and fix autolog spillage by @stefannica in https://github.com/zenml-io/zenml/pull/1421
 * Add tests for the model registry by @safoinme in https://github.com/zenml-io/zenml/pull/1415
 * Remove Aspell installation by @strickvl in https://github.com/zenml-io/zenml/pull/1419
 * Increase `step_configurations` column size to 2^24 by @strickvl in https://github.com/zenml-io/zenml/pull/1422
