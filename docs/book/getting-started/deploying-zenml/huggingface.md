@@ -33,7 +33,10 @@ auto-shutdown policies and thus will stay up as long as you leave it up. In
 order to make use of a persistent CPU, you'll likely want to create and set up a
 MySQL database to connect to (see below).
 
-To personalize your Space's appearance, such as the title, emojis, and colors, navigate to "Files and Versions" and modify the metadata in your README.md file.
+To personalize your Space's appearance, such as the title, emojis, and colors,
+navigate to "Files and Versions" and modify the metadata in your README.md file.
+Full information on Spaces configuration parameters can be found on the
+HuggingFace [documentation reference guide](https://huggingface.co/docs/hub/spaces-config-reference).
 
 After creating your Space, you'll notice a 'Building' status along with logs
 displayed on the screen. When this switches to 'Running', your Space is ready for use. If the
@@ -42,7 +45,67 @@ ZenML login UI isn't visible, try refreshing the page.
 Use our default login to access the dashboard (username: 'default', password:
 (leave it empty)).
 
+## Connecting to your ZenML Server from your Local Machine
+
+Once you have your ZenML server up and running, you can connect to it from your
+local machine. To do this, you'll need to get your Space's URL.
+
+{% hint style="warning" %}
+Your Space's URL will only be available and usable for connecting from your
+local machine if the visibility of the space is set to 'Public'.
+{% endhint %}
+
+In the upper-right hand corner of your space you'll see a button with three dots
+which, when you click on it, will offer you a menu option to "Embed this Space".
+(See [the HuggingFace
+documentation](https://huggingface.co/docs/hub/spaces-embed) for more details on
+this feature.) Copy the "Direct URL" shown in the box that you can now see on
+the screen. This should look something like this:
+`https://<YOUR_USERNAME>-<SPACE_NAME>.hf.space`.
+
+You can now use this URL to connect to your ZenML server from your local machine
+with the following CLI command (after installing ZenML, and using your custom
+URL instead of the placeholder):
+
+```shell
+zenml connect --url '<YOUR_HF_SPACES_DIRECT_URL>' --no-verify-ssl --username='default'
+```
+
+You can also use the Direct URL in your browser to use the ZenML dashboard as a
+fullscreen application (i.e. without the HuggingFace Spaces wrapper around it).
+
 ## Extra Configuration Options
+
+By default the ZenML application will be configured to use a SQLite
+non-persistent database. If you want to use a persistent database, you can
+configure this by amending the `Dockerfile` in your Space's root directory. For
+full details on the various parameters you can change, see [our reference
+documentation](./docker.md#zenml-server-configuration-options) on configuring
+ZenML when deployed with Docker.
+
+{% hint style="info" %}
+If you are using the space just for testing and experimentation, you don't need
+to make any changes to the configuration. Everything will work out of the box.
+{% endhint %}
+
+You can also use an external secrets backend together with your HuggingFace
+Spaces as described in [our
+documentation](./docker.md#zenml-server-configuration-options). You should be
+sure to use HuggingFace's inbuilt 'Repository secrets' functionality to
+configure any secrets you need to use in your`Dockerfile` configuration. [See the
+documentation](https://huggingface.co/docs/hub/spaces-sdks-docker#secret-management)
+for more details how to set this up.
+
+{% hint style="warning" %}
+If you wish to use a cloud secrets backend together with ZenML for secrets
+management, **you must update your password** on your ZenML Server on the
+Dashboard. This is because the default user created by the
+HuggingFace Spaces deployment process has no password assigned to it and as the
+Space is publicly accessible (since the Space is public) *potentially anyone
+could access your secrets without this extra step*. To change your password
+navigate to the Settings page by clicking the button in the upper right hand
+corner of the Dashboard and then click 'Update Password'.
+{% endhint %}
 
 ## Troubleshooting
 
