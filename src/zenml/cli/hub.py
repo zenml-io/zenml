@@ -738,7 +738,7 @@ def submit_plugin(
             "Thanks for submitting your plugin to the ZenML Hub. The plugin is "
             "now  being built into an installable package. This may take a few "
             "minutes. To view the build logs, run "
-            f"`zenml hub logs {plugin_name} --version {plugin_version}`."
+            f"`zenml hub logs {username}/{plugin_name} --version {plugin_version}`."
         )
 
 
