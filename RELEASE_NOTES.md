@@ -1,5 +1,64 @@
 <!-- markdown-link-check-disable -->
 
+# 0.36.0
+
+Our latest release adds hooks to ZenML pipelines to handle custom logic that
+occurs on pipeline failure or success. This is a powerful feature that allows
+you to easily receive custom alerts, for example, when a pipeline fails or
+succeeds. (Check out our video showcasing the feature
+[here](https://www.youtube.com/watch?v=KUW2G3EsqF8).)
+
+The release is also packed with bug fixes and documentation updates. Some
+smaller improvements include an increase of the `step_configurations` column
+size in the database to accommodate really large configurations and the ability
+to click through to orchestrator logs for the Sagemaker orchestrator directly
+from the ZenML dashboard.
+
+## Breaking Changes
+
+Secrets are now handled internally by ZenML. This changes some behaviors that
+you may have become used to with the (now-deprecated) Secrets Manager stack
+component. The default behavior for the KServe and Seldon Core Model Deployer if
+explicit credentials are not configured through the secret stack component
+attribute has changed. Now, the model deployer will attempt to reuse credentials
+configured for the Artifact Store in the same stack and may, in some cases, fail
+if it cannot use them. In most cases, if credentials are not configured for the
+active Artifact Store, the model deployer will assume some form of implicit
+in-cloud authentication is configured for the Kubernetes cluster where KServe /
+Seldon Core is installed and default to using that.
+
+## What's Changed
+
+* Add CLI utils tests by @strickvl in https://github.com/zenml-io/zenml/pull/1383
+* Don't use docker client when building images remotely by @schustmi in https://github.com/zenml-io/zenml/pull/1394
+* Fix zenml-quickstart-model typo by @safoinme in https://github.com/zenml-io/zenml/pull/1397
+* Ignore starting quotes from Artifact store path by @safoinme in https://github.com/zenml-io/zenml/pull/1388
+* CI speed improvements by @stefannica in https://github.com/zenml-io/zenml/pull/1384
+* Fix stack recipe link by @strickvl in https://github.com/zenml-io/zenml/pull/1393
+* Switch FastAPI response class to orjson so `NaN` values don't break the server by @fa9r in https://github.com/zenml-io/zenml/pull/1395
+* Numpy materializer metadata for arrays with strings by @safoinme in https://github.com/zenml-io/zenml/pull/1392
+* Fix last remaining runs index by @stefannica in https://github.com/zenml-io/zenml/pull/1399
+* Add failure (and success hooks) by @htahir1 in https://github.com/zenml-io/zenml/pull/1361
+* Replace `pyspelling` with `typos` by @strickvl in https://github.com/zenml-io/zenml/pull/1400
+* Fix the download nltk param for report step by @wjayesh in https://github.com/zenml-io/zenml/pull/1409
+* Add `build_timeout` attribute to `GCPImageBuilderConfig` by @gabrielmbmb in https://github.com/zenml-io/zenml/pull/1408
+* Bump `ruff` to v0.255 by @strickvl in https://github.com/zenml-io/zenml/pull/1403
+* Update title of deployment docs page by @strickvl in https://github.com/zenml-io/zenml/pull/1412
+* Changed to debug log by @htahir1 in https://github.com/zenml-io/zenml/pull/1406
+* Fix incorrect `--sort_by` help text by @strickvl in https://github.com/zenml-io/zenml/pull/1413
+* Document CLI filtering query language by @strickvl in https://github.com/zenml-io/zenml/pull/1414
+* Fix GitHub pip download cache key by @stefannica in https://github.com/zenml-io/zenml/pull/1405
+* Add orchestrator logs link for Sagemaker by @strickvl in https://github.com/zenml-io/zenml/pull/1375
+* Phase out secrets managers from other stack components. by @stefannica in https://github.com/zenml-io/zenml/pull/1401
+* Add MLflow UI messge to quickstart example and fix autolog spillage by @stefannica in https://github.com/zenml-io/zenml/pull/1421
+* Add tests for the model registry by @safoinme in https://github.com/zenml-io/zenml/pull/1415
+* Remove Aspell installation by @strickvl in https://github.com/zenml-io/zenml/pull/1419
+* Increase `step_configurations` column size to 2^24 by @strickvl in https://github.com/zenml-io/zenml/pull/1422
+* Add help text for `enable_service` option in recipe sub-command by @safoinme in https://github.com/zenml-io/zenml/pull/1424
+
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.35.1...test
+
 # 0.35.1
 
 **Note:** *This release replaces the previous 0.35.0 release that was yanked from
