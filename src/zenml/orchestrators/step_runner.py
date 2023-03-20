@@ -167,19 +167,24 @@ class StepRunner:
                             output_materializers=output_materializers,
                         )
 
-        # Store and publish the output artifacts of the step function.
-        output_annotations = parse_return_type_annotations(spec.annotations)
-        output_data = self._validate_outputs(return_values, output_annotations)
-        artifact_metadata_enabled = is_setting_enabled(
-            is_enabled_on_step=step_run_info.config.enable_artifact_metadata,
-            is_enabled_on_pipeline=step_run_info.pipeline.enable_artifact_metadata,
-        )
-        output_artifacts, artifact_metadata = self._store_output_artifacts(
-            output_data=output_data,
-            output_artifact_uris=output_artifact_uris,
-            output_materializers=output_materializers,
-            artifact_metadata_enabled=artifact_metadata_enabled,
-        )
+            # Store and publish the output artifacts of the step function.
+            output_annotations = parse_return_type_annotations(
+                spec.annotations
+            )
+            output_data = self._validate_outputs(
+                return_values, output_annotations
+            )
+            artifact_metadata_enabled = is_setting_enabled(
+                is_enabled_on_step=step_run_info.config.enable_artifact_metadata,
+                is_enabled_on_pipeline=step_run_info.pipeline.enable_artifact_metadata,
+            )
+            output_artifacts, artifact_metadata = self._store_output_artifacts(
+                output_data=output_data,
+                output_artifact_uris=output_artifact_uris,
+                output_materializers=output_materializers,
+                artifact_metadata_enabled=artifact_metadata_enabled,
+            )
+
         output_artifact_ids = publish_output_artifacts(
             output_artifacts=output_artifacts,
         )

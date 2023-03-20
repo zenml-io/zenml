@@ -58,7 +58,12 @@ class KServeDeploymentConfig(ServiceConfig):
         model_name: the name of the model. Multiple versions of the same model
             should use the same model name. Model name must use only lowercase
             alphanumeric characters and dashes.
-        secret_name: the name of the secret containing the model.
+        secret_name: the name of the ZenML secret containing credentials
+            required to authenticate to the artifact store.
+        k8s_secret: the name of the Kubernetes secret to use for the prediction
+            service.
+        k8s_service_account: the name of the Kubernetes service account to use
+            for the prediction service.
         predictor: the KServe predictor used to serve the model. The
         predictor type can be one of the following: `tensorflow`, `pytorch`,
         `sklearn`, `xgboost`, `custom`.
@@ -70,6 +75,8 @@ class KServeDeploymentConfig(ServiceConfig):
     model_uri: str = ""
     model_name: str
     secret_name: Optional[str]
+    k8s_secret: Optional[str]
+    k8s_service_account: Optional[str]
     predictor: str
     replicas: int = 1
     container: Optional[Dict[str, Any]]
@@ -353,14 +360,16 @@ class KServeDeploymentService(BaseDeploymentService):
                             )
                         ],
                     )
-                ]
+                ],
+                "service_account_name": self.config.k8s_service_account,
             }
         else:
             predictor_kwargs = {
                 self.config.predictor: V1beta1PredictorExtensionSpec(
                     storage_uri=self.config.model_uri,
                     resources=self.config.resources,
-                )
+                ),
+                "service_account_name": self.config.k8s_service_account,
             }
 
         isvc = V1beta1InferenceService(
