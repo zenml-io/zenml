@@ -1320,6 +1320,11 @@ def create_filter_help_text(
     Returns:
         The help text.
     """
+    if filter_model.is_sort_by_field(field):
+        return (
+            "[STRING] Example: --sort_by='desc:name' to sort by name in "
+            "descending order. "
+        )
     if filter_model.is_datetime_field(field):
         return (
             f"[DATETIME] The following datetime format is supported: "

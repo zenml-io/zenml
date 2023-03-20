@@ -22,7 +22,7 @@ class DashIntegration(Integration):
 
     NAME = DASH
     REQUIREMENTS = [
-        "dash>=2.0.0",
+        "dash>=2.0.0,!=2.9.0",
         "dash-cytoscape>=0.3.0",
         "dash-bootstrap-components>=1.0.1",
         "jupyter-dash>=0.4.2",

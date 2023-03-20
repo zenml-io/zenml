@@ -217,8 +217,6 @@ In order to use the `KubernetesSparkStepOperator`, you need:
 your stack.
 * A [remote container registry](../container-registries/container-registries.md)
 as part of your stack.
-* A [remote secrets manager](../secrets-managers/secrets-managers.md) as part
-of your stack.
 * A Kubernetes cluster [deployed](#how-to-deploy-it).
 
 We can then register the step operator and use it in our active stack:

@@ -92,7 +92,7 @@ def main(
 
     model_name = "mnist-tensorflow"
     deployment_pipeline_name = "tensorflow_training_deployment_pipeline"
-    deployer_step_name = "kserve_model_deployer_step"
+    deployer_step_name = "model_deployer"
 
     model_deployer = KServeModelDeployer.get_active_model_deployer()
 
