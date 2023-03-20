@@ -29,6 +29,15 @@ resource "helm_release" "zen-server" {
     value = "aws"
   }
   
+  set {
+    name  = "zenml.secretsStore.type"
+    value = "aws"
+  }
+  set {
+    name  = "zenml.secretsStore.aws.region_name"
+    value = var.region
+  }
+
   # set up the right path for ZenML
   set {
     name  = "zenml.rootUrlPath"
