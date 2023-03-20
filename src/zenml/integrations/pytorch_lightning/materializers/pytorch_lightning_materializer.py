@@ -14,11 +14,13 @@
 """Implementation of the PyTorch Lightning Materializer."""
 
 import os
-from typing import Any, Type
+from typing import Any, Type, cast
 
-from pytorch_lightning.trainer import Trainer
+import torch
+from torch.nn import Module
 
 from zenml.enums import ArtifactType
+from zenml.io import fileio
 from zenml.materializers.base_materializer import BaseMaterializer
 
 CHECKPOINT_NAME = "final_checkpoint.ckpt"
@@ -27,10 +29,10 @@ CHECKPOINT_NAME = "final_checkpoint.ckpt"
 class PyTorchLightningMaterializer(BaseMaterializer):
     """Materializer to read/write PyTorch models."""
 
-    ASSOCIATED_TYPES = (Trainer,)
+    ASSOCIATED_TYPES = (Module,)
     ASSOCIATED_ARTIFACT_TYPE = ArtifactType.MODEL
 
-    def load(self, data_type: Type[Any]) -> Trainer:
+    def load(self, data_type: Type[Any]) -> Module:
         """Reads and returns a PyTorch Lightning trainer.
 
         Args:
@@ -40,15 +42,16 @@ class PyTorchLightningMaterializer(BaseMaterializer):
             A PyTorch Lightning trainer object.
         """
         super().load(data_type)
-        return Trainer(
-            resume_from_checkpoint=os.path.join(self.uri, CHECKPOINT_NAME)
-        )
+        super().load(data_type)
+        with fileio.open(os.path.join(self.uri, CHECKPOINT_NAME), "rb") as f:
+            return cast(Module, torch.load(f))
 
-    def save(self, trainer: Trainer) -> None:
+    def save(self, model: Module) -> None:
         """Writes a PyTorch Lightning trainer.
 
         Args:
-            trainer: A PyTorch Lightning trainer object.
+            model: The PyTorch Lightning trainer to save.
         """
-        super().save(trainer)
-        trainer.save_checkpoint(os.path.join(self.uri, CHECKPOINT_NAME))
+        super().save(model)
+        with fileio.open(os.path.join(self.uri, CHECKPOINT_NAME), "wb") as f:
+            torch.save(model, f)
