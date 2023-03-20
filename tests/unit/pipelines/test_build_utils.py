@@ -39,9 +39,12 @@ from zenml.utils.pipeline_docker_image_builder import (
 
 
 class StubCodeRepository(BaseCodeRepository):
-    def __init__(self, id: UUID = uuid4(), config=None) -> None:
+    def __init__(
+        self, id: UUID = uuid4(), config=None, local_repo=None
+    ) -> None:
         config = config or {}
         super().__init__(id, config)
+        self._local_repo = local_repo
 
     def login(self) -> None:
         pass
@@ -52,7 +55,7 @@ class StubCodeRepository(BaseCodeRepository):
         pass
 
     def get_local_repo(self, path: str) -> Optional["LocalRepository"]:
-        return None
+        return self._local_repo
 
 
 class StubLocalRepository(LocalRepository):

@@ -33,6 +33,7 @@ from zenml.enums import ArtifactType, ExecutionStatus
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.models import (
     ArtifactResponseModel,
+    CodeRepositoryResponseModel,
     PipelineBuildResponseModel,
     PipelineDeploymentResponseModel,
     PipelineResponseModel,
@@ -575,4 +576,21 @@ def sample_build_response_model(
         images={},
         is_local=False,
         contains_code=True,
+    )
+
+
+@pytest.fixture
+def sample_code_repo_response_model(
+    sample_user_model: UserResponseModel,
+    sample_workspace_model: WorkspaceResponseModel,
+) -> CodeRepositoryResponseModel:
+    return CodeRepositoryResponseModel(
+        id=uuid4(),
+        created=datetime.now(),
+        updated=datetime.now(),
+        user=sample_user_model,
+        workspace=sample_workspace_model,
+        name="name",
+        config={},
+        source={"module": "zenml", "type": "internal"},
     )
