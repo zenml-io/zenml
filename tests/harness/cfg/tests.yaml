@@ -283,7 +283,7 @@ tests:
       - capabilities:
           synchronized: true
 
-  - module: tests.integration.examples.test_seldon_deployment_validation
+  - module: tests.integration.examples.test_seldon_deployment
     requirements:
       - integrations:
           - sklearn
