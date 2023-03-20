@@ -18,6 +18,30 @@ if you want to use ZenML in production.
 
 ## Deploying ZenML to HuggingFace Spaces
 
+You can deploy ZenML on HuggingFace Spaces with just a few clicks:
+
+BUTTON GOES HERE
+
+To set up your ZenML app, you need to specify three main components: the Owner
+(either your personal account or an organization), a Space name, and the
+Visibility (a bit lower down the page). Note that the space visibility needs to
+be set to 'Public' if you wish to connect to the ZenML server from your local machine.
+
+You have the option here to select a higher tier machine to use for your server.
+The advantage of selecting a paid CPU instance is that it is not subject to
+auto-shutdown policies and thus will stay up as long as you leave it up. In
+order to make use of a persistent CPU, you'll likely want to create and set up a
+MySQL database to connect to (see below).
+
+To personalize your Space's appearance, such as the title, emojis, and colors, navigate to "Files and Versions" and modify the metadata in your README.md file.
+
+After creating your Space, you'll notice a 'Building' status along with logs
+displayed on the screen. When this switches to 'Running', your Space is ready for use. If the
+ZenML login UI isn't visible, try refreshing the page.
+
+Use our default login to access the dashboard (username: 'default', password:
+(leave it empty)).
+
 ## Extra Configuration Options
 
 ## Troubleshooting
