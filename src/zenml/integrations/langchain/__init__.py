@@ -21,7 +21,7 @@ class LangchainIntegration(Integration):
     """Definition of langchain integration for ZenML."""
 
     NAME = LANGCHAIN
-    REQUIREMENTS = ["langchain>=0.0.115"]
+    REQUIREMENTS = ["langchain>=0.0.116"]
 
     @classmethod
     def activate(cls) -> None:
