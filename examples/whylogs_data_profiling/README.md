@@ -136,10 +136,10 @@ def visualize_statistics(
             profiles are required.
     """
     pipe = get_pipeline(pipeline="data_profiling_pipeline")
-    whylogs_step = pipe.runs[-1].get_step(step=step_name)
+    whylogs_step = pipe.runs[0].get_step(step=step_name)
     whylogs_reference_step = None
     if reference_step_name:
-        whylogs_reference_step = pipe.runs[-1].get_step(
+        whylogs_reference_step = pipe.runs[0].get_step(
             name=reference_step_name
         )
 
@@ -206,16 +206,15 @@ zenml stack register whylogs_stack -o default -a default -dv whylogs --set
 
 Adding Whylabs logging capabilities to that (in addition to the use of the base
 whylogs data validation) is just a bit more complicated, as you
-also require a Secrets Manager in your stack:
+also need to configure a secret for the whylogs Data Validator component.:
 
 ```shell
-zenml data-validator register whylogs -f whylogs --authentication_secret=whylabs_secret
-zenml secrets-manager register local -f local
-zenml stack register whylogs_stack -o default -a default -x local -dv whylogs --set
-
-zenml secrets-manager secret register whylabs_secret -s whylogs \
+zenml secret create whylabs_secret \
     --whylabs_default_org_id=<your-whylogs-organization-id> \
     --whylabs_api_key=<your-whylogs-api-key>
+
+zenml data-validator register whylogs -f whylogs --authentication_secret=whylabs_secret --enable_whylabs=True
+zenml stack register whylogs_stack -o default -a default -dv whylogs --set
 ```
 
 ### ▶️ Run the Code

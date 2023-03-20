@@ -16,6 +16,7 @@ import hashlib
 import inspect
 from abc import abstractmethod
 from datetime import datetime
+from types import FunctionType
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -50,6 +51,7 @@ from zenml.config.schedule import Schedule
 from zenml.config.step_configurations import StepConfigurationUpdate
 from zenml.enums import StackComponentType
 from zenml.exceptions import PipelineInterfaceError
+from zenml.hooks.hook_validators import resolve_and_validate_hook
 from zenml.logger import get_logger
 from zenml.models import (
     PipelineBuildRequestModel,
@@ -87,6 +89,7 @@ if TYPE_CHECKING:
     StepConfigurationUpdateOrDict = Union[
         Dict[str, Any], StepConfigurationUpdate
     ]
+    HookSpecification = Union[str, FunctionType]
 
 logger = get_logger(__name__)
 PIPELINE_INNER_FUNC_NAME = "connect"
@@ -95,6 +98,8 @@ PARAM_ENABLE_ARTIFACT_METADATA = "enable_artifact_metadata"
 INSTANCE_CONFIGURATION = "INSTANCE_CONFIGURATION"
 PARAM_SETTINGS = "settings"
 PARAM_EXTRA_OPTIONS = "extra"
+PARAM_ON_FAILURE = "on_failure"
+PARAM_ON_SUCCESS = "on_success"
 
 
 class BasePipelineMeta(type):
@@ -263,6 +268,8 @@ class BasePipeline(metaclass=BasePipelineMeta):
         settings: Optional[Mapping[str, "SettingsOrDict"]] = None,
         extra: Optional[Dict[str, Any]] = None,
         merge: bool = True,
+        on_failure: Optional["HookSpecification"] = None,
+        on_success: Optional["HookSpecification"] = None,
     ) -> T:
         """Configures the pipeline.
 
@@ -287,16 +294,36 @@ class BasePipeline(metaclass=BasePipelineMeta):
                 configurations. If `False` the given configurations will
                 overwrite all existing ones. See the general description of this
                 method for an example.
+            on_failure: Callback function in event of failure of the step. Can be
+                a function with three possible parameters, `StepContext`, `BaseParameters`,
+                and `BaseException`, or a source path to a function of the same specifications
+                (e.g. `module.my_function`)
+            on_success: Callback function in event of failure of the step. Can be
+                a function with two possible parameters, `StepContext` and `BaseParameters, or
+                a source path to a function of the same specifications
+                (e.g. `module.my_function`).
 
         Returns:
             The pipeline instance that this method was called on.
         """
+        failure_hook_source = None
+        if on_failure:
+            # string of on_failure hook function to be used for this pipeline
+            failure_hook_source = resolve_and_validate_hook(on_failure)
+
+        success_hook_source = None
+        if on_success:
+            # string of on_success hook function to be used for this pipeline
+            success_hook_source = resolve_and_validate_hook(on_success)
+
         values = dict_utils.remove_none_values(
             {
                 "enable_cache": enable_cache,
                 "enable_artifact_metadata": enable_artifact_metadata,
                 "settings": settings,
                 "extra": extra,
+                "failure_hook_source": failure_hook_source,
+                "success_hook_source": success_hook_source,
             }
         )
         config = PipelineConfigurationUpdate(**values)
@@ -628,7 +655,14 @@ class BasePipeline(metaclass=BasePipelineMeta):
         """
         settings = options.pop(PARAM_SETTINGS, None)
         extra = options.pop(PARAM_EXTRA_OPTIONS, None)
-        self.configure(settings=settings, extra=extra)
+        on_failure = options.pop(PARAM_ON_FAILURE, None)
+        on_success = options.pop(PARAM_ON_SUCCESS, None)
+        self.configure(
+            settings=settings,
+            extra=extra,
+            on_failure=on_failure,
+            on_success=on_success,
+        )
 
     def _apply_configuration(
         self,
@@ -1056,6 +1090,25 @@ class BasePipeline(metaclass=BasePipelineMeta):
             return int(all_pipelines.items[0].version)
         else:
             return None
+
+    def _get_registered_model(self) -> Optional[PipelineResponseModel]:
+        """Gets the registered pipeline model for this instance.
+
+        Returns:
+            The registered pipeline model or None if no model is registered yet.
+        """
+        pipeline_spec = Compiler().compile_spec(self)
+        version_hash = self._compute_unique_identifier(
+            pipeline_spec=pipeline_spec
+        )
+
+        pipelines = Client().list_pipelines(
+            name=self.name, version_hash=version_hash
+        )
+        if len(pipelines) == 1:
+            return pipelines.items[0]
+
+        return None
 
     def _load_or_create_pipeline_build(
         self,

@@ -29,8 +29,8 @@ from kserve_tensorflow.steps.inference_image_loader import (
     InferenceImageLoaderStepParameters,
     inference_image_loader,
 )
-from kserve_tensorflow.steps.predection_service_loader import (
-    PredectionServiceLoaderStepParameters,
+from kserve_tensorflow.steps.prediction_service_loader import (
+    PredictionServiceLoaderStepParameters,
     kserve_prediction_service_loader,
 )
 from kserve_tensorflow.steps.predictor import kserve_predictor
@@ -121,7 +121,7 @@ def main(
     predict = config == PREDICT or config == DEPLOY_AND_PREDICT
 
     deployment_pipeline_name = "tensorflow_custom_code_pipeline"
-    step_name = "kserve_custom_model_deployer_step"
+    step_name = "deployer"
     model_name = "kserve-tensorflow-custom-model"
 
     model_deployer = KServeModelDeployer.get_active_model_deployer()
@@ -149,7 +149,7 @@ def main(
                 ),
             ),
             prediction_service_loader=kserve_prediction_service_loader(
-                PredectionServiceLoaderStepParameters(
+                PredictionServiceLoaderStepParameters(
                     pipeline_name=deployment_pipeline_name,
                     step_name=step_name,
                     model_name=model_name,

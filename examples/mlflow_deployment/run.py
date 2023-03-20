@@ -52,7 +52,7 @@ DEPLOY_AND_PREDICT = "deploy_and_predict"
     "--config",
     "-c",
     type=click.Choice([DEPLOY, PREDICT, DEPLOY_AND_PREDICT]),
-    default="deploy_and_predict",
+    default=DEPLOY_AND_PREDICT,
     help="Optionally you can choose to only run the deployment "
     "pipeline to train and deploy a model (`deploy`), or to "
     "only run a prediction against the deployed model "
@@ -102,7 +102,7 @@ def main(config: str, epochs: int, lr: float, min_accuracy: float):
             prediction_service_loader=prediction_service_loader(
                 MLFlowDeploymentLoaderStepParameters(
                     pipeline_name="continuous_deployment_pipeline",
-                    pipeline_step_name="mlflow_model_deployer_step",
+                    pipeline_step_name="model_deployer",
                     running=False,
                 )
             ),
@@ -113,7 +113,7 @@ def main(config: str, epochs: int, lr: float, min_accuracy: float):
 
     print(
         "You can run:\n "
-        f"[italic green]    mlflow ui --backend-store-uri {get_tracking_uri()}"
+        f"[italic green]    mlflow ui --backend-store-uri '{get_tracking_uri()}"
         "[/italic green]\n ...to inspect your experiment runs within the MLflow"
         " UI.\nYou can find your runs tracked within the "
         "`mlflow_example_pipeline` experiment. There you'll also be able to "
@@ -123,7 +123,7 @@ def main(config: str, epochs: int, lr: float, min_accuracy: float):
     # fetch existing services with same pipeline name, step name and model name
     existing_services = mlflow_model_deployer_component.find_model_server(
         pipeline_name="continuous_deployment_pipeline",
-        pipeline_step_name="mlflow_model_deployer_step",
+        pipeline_step_name="model_deployer",
         model_name="model",
     )
 

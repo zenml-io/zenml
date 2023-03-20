@@ -24,8 +24,9 @@ from zenml.cli import utils as cli_utils
 from zenml.cli.annotator import register_annotator_subcommands
 from zenml.cli.cli import TagGroup, cli
 from zenml.cli.feature import register_feature_store_subcommands
-from zenml.cli.model import register_model_deployer_subcommands
+from zenml.cli.model import register_model_registry_subcommands
 from zenml.cli.secret import register_secrets_manager_subcommands
+from zenml.cli.served_model import register_model_deployer_subcommands
 from zenml.cli.utils import (
     _component_display_name,
     list_options,
@@ -497,7 +498,7 @@ def generate_stack_component_delete_command(
             f"Deleting {display_name} '{name_id_or_prefix}'...\n"
         ):
             try:
-                client.deregister_stack_component(
+                client.delete_stack_component(
                     name_id_or_prefix=name_id_or_prefix,
                     component_type=component_type,
                 )
@@ -1204,3 +1205,4 @@ register_annotator_subcommands()
 register_secrets_manager_subcommands()
 register_feature_store_subcommands()
 register_model_deployer_subcommands()
+register_model_registry_subcommands()

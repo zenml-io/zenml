@@ -23,6 +23,9 @@ from sagemaker.workflow.pipeline import Pipeline
 from sagemaker.workflow.steps import ProcessingStep
 
 from zenml.config.base_settings import BaseSettings
+from zenml.constants import (
+    METADATA_ORCHESTRATOR_URL,
+)
 from zenml.entrypoints import StepEntrypointConfiguration
 from zenml.enums import StackComponentType
 from zenml.integrations.aws.flavors.sagemaker_orchestrator_flavor import (
@@ -30,7 +33,7 @@ from zenml.integrations.aws.flavors.sagemaker_orchestrator_flavor import (
     SagemakerOrchestratorSettings,
 )
 from zenml.logger import get_logger
-from zenml.metadata.metadata_types import MetadataType
+from zenml.metadata.metadata_types import MetadataType, Uri
 from zenml.orchestrators import ContainerizedOrchestrator
 from zenml.orchestrators.utils import get_orchestrator_run_name
 from zenml.stack import StackValidator
@@ -215,6 +218,23 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
             )
             logger.info("Pipeline completed successfully.")
 
+    def _get_region_name(self) -> str:
+        """Returns the AWS region name.
+
+        Returns:
+            The region name.
+
+        Raises:
+            RuntimeError: If the region name cannot be retrieved.
+        """
+        try:
+            return cast(str, sagemaker.Session().boto_region_name)
+        except Exception as e:
+            raise RuntimeError(
+                "Unable to get region name. Please ensure that you have "
+                "configured your AWS credentials correctly."
+            ) from e
+
     def get_pipeline_run_metadata(
         self, run_id: UUID
     ) -> Dict[str, "MetadataType"]:
@@ -226,11 +246,21 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
         Returns:
             A dictionary of metadata.
         """
-        # TODO: Add this once we can get the region
-        # run_url = (
-        #     f"https://{region}.console.aws.amazon.com/sagemaker/"
-        #     f"home?region={region}"
-        # )
-        return {
-            "pipeline_execution_arn": os.environ[ENV_ZENML_SAGEMAKER_RUN_ID]
+        run_metadata: Dict[str, "MetadataType"] = {
+            "pipeline_execution_arn": os.environ[ENV_ZENML_SAGEMAKER_RUN_ID],
         }
+        try:
+            region_name = self._get_region_name()
+        except RuntimeError:
+            logger.warning("Unable to get region name from AWS Sagemaker.")
+            return run_metadata
+
+        aws_run_id = os.environ[ENV_ZENML_SAGEMAKER_RUN_ID].split("/")[-1]
+        orchestrator_logs_url = (
+            f"https://{region_name}.console.aws.amazon.com/"
+            f"cloudwatch/home?region={region_name}#logsV2:log-groups/log-group"
+            f"/$252Faws$252Fsagemaker$252FProcessingJobs$3FlogStreamNameFilter"
+            f"$3Dpipelines-{aws_run_id}-"
+        )
+        run_metadata[METADATA_ORCHESTRATOR_URL] = Uri(orchestrator_logs_url)
+        return run_metadata

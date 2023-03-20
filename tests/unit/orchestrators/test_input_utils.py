@@ -33,7 +33,7 @@ def test_input_resolution(mocker, sample_artifact_model, create_step_run):
     mocker.patch(
         "zenml.zen_stores.sql_zen_store.SqlZenStore.list_run_steps",
         return_value=Page(
-            page=1, size=50, total_pages=1, total=1, items=[step_run]
+            index=1, max_size=50, total_pages=1, total=1, items=[step_run]
         ),
     )
     step = Step.parse_obj(
@@ -63,7 +63,9 @@ def test_input_resolution_with_missing_step_run(mocker):
     """Tests that input resolution fails if the upstream step run is missing."""
     mocker.patch(
         "zenml.zen_stores.sql_zen_store.SqlZenStore.list_run_steps",
-        return_value=Page(page=1, size=50, total_pages=1, total=0, items=[]),
+        return_value=Page(
+            index=1, max_size=50, total_pages=1, total=0, items=[]
+        ),
     )
     step = Step.parse_obj(
         {
@@ -95,7 +97,7 @@ def test_input_resolution_with_missing_artifact(mocker, create_step_run):
     mocker.patch(
         "zenml.zen_stores.sql_zen_store.SqlZenStore.list_run_steps",
         return_value=Page(
-            page=1, size=50, total_pages=1, total=1, items=[step_run]
+            index=1, max_size=50, total_pages=1, total=1, items=[step_run]
         ),
     )
     step = Step.parse_obj(

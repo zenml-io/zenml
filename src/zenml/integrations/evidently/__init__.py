@@ -36,7 +36,7 @@ class EvidentlyIntegration(Integration):
     """[Evidently](https://github.com/evidentlyai/evidently) integration for ZenML."""
 
     NAME = EVIDENTLY
-    REQUIREMENTS = ["evidently==0.1.54dev0"]
+    REQUIREMENTS = ["evidently==0.2.2"]
 
     @staticmethod
     def activate() -> None:

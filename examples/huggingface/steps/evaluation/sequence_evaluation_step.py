@@ -40,11 +40,10 @@ def sequence_evaluator(
 
     # Convert into tf dataset format
     validation_set = tokenized_datasets["test"].to_tf_dataset(
-        columns=["attention_mask", "input_ids"],
+        columns=["attention_mask", "input_ids", "labels"],
         shuffle=False,
         batch_size=params.batch_size,
         collate_fn=DataCollatorWithPadding(tokenizer, return_tensors="tf"),
-        label_cols="label",
     )
 
     # Calculate loss

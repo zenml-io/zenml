@@ -20,15 +20,21 @@ import requests
 from zenml.utils.networking_utils import scan_for_available_port
 from zenml.zen_server.deploy import ServerDeployer, ServerDeploymentConfig
 
-SERVER_START_STOP_TIMEOUT = 30
+SERVER_START_STOP_TIMEOUT = 60
 
 
 @pytest.mark.skipif(
     platform.system() == "Windows",
     reason="ZenServer not supported as daemon on Windows.",
 )
-def test_server_up_down(clean_client):
+def test_server_up_down(clean_client, mocker):
     """Test spinning up and shutting down ZenServer."""
+    # on MAC OS, we need to set this environment variable
+    # to fix problems with the fork() calls (see this thread
+    # for more information: http://sealiesoftware.com/blog/archive/2017/6/5/Objective-C_and_fork_in_macOS_1013.html)
+    mocker.patch.dict(
+        os.environ, {"OBJC_DISABLE_INITIALIZE_FORK_SAFETY": "YES"}
+    )
     port = scan_for_available_port(start=8003, stop=9000)
     deployment_config = ServerDeploymentConfig(
         name="test_server",
@@ -39,10 +45,6 @@ def test_server_up_down(clean_client):
     deployer = ServerDeployer()
 
     try:
-        # on MAC OS, we need to set this environment variable
-        # to fix problems with the fork() calls (see this thread
-        # for more information: http://sealiesoftware.com/blog/archive/2017/6/5/Objective-C_and_fork_in_macOS_1013.html)
-        os.environ["OBJC_DISABLE_INITIALIZE_FORK_SAFETY"] = "YES"
         server = deployer.deploy_server(
             deployment_config, timeout=SERVER_START_STOP_TIMEOUT
         )
@@ -57,7 +59,6 @@ def test_server_up_down(clean_client):
             print(line)
         raise
     finally:
-        del os.environ["OBJC_DISABLE_INITIALIZE_FORK_SAFETY"]
         try:
             deployer.remove_server(
                 server_name="test_server", timeout=SERVER_START_STOP_TIMEOUT

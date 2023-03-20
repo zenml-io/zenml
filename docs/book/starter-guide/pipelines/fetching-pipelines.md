@@ -25,7 +25,7 @@ Let us investigate how to traverse this hierarchy level by level:
 ## Pipelines
 
 ZenML keeps a collection of all created pipelines with at least one
-run sorted by the time of their first run from oldest to newest.
+run sorted by the time of their first run from from newest to oldest.
 
 You can either access this collection via the `get_pipelines()` method or query
 a specific pipeline by name using `get_pipeline(pipeline=...)`:
@@ -36,8 +36,9 @@ from zenml.post_execution import get_pipelines, get_pipeline
 # get all pipelines from all stacks
 pipelines = get_pipelines()
 
-# now you can get pipelines by index
-pipeline_with_latest_initial_run_time = pipelines[-1]
+# now you can get pipelines by index; pipelines are sorted in descending order
+# of their first run time (most recent first)
+pipeline_with_latest_initial_run_time = pipelines[0]
 
 # or get one pipeline by name
 pipeline_x = get_pipeline(pipeline="example_pipeline")
@@ -77,7 +78,7 @@ the `runs` attribute of a pipeline.
 runs = pipeline_x.runs 
 
 # get the last run by index, runs are ordered by execution time in ascending order
-last_run = runs[-1]
+last_run = runs[0]
 
 # or get a specific run by name
 run = pipeline_x.get_run(run_name="my_run_name")
@@ -107,7 +108,7 @@ runs = example_pipeline.get_runs()
 runs = pipe.get_runs()
 
 # get the last run by index, runs are ordered by execution time in ascending order
-last_run = runs[-1]
+last_run = runs[0]
 
 # or get a specific run by name
 run = example_pipeline.get_run(run_name=...)
@@ -121,7 +122,7 @@ Finally, you can also access a run directly with the `get_run(run_name=...)`:
 from zenml.post_execution import get_run, get_unlisted_runs
 
 run = get_run(run_name="my_run_name")
-run = get_unlisted_runs()[-1]  # Get last unlisted run
+run = get_unlisted_runs()[0]  # Get last unlisted run
 ```
 
 <details>
@@ -225,10 +226,10 @@ pipe = example_pipeline(step_1=first_step(), step_2=second_step())
 pipe.run()
 
 # Get the first step
-pipe.get_runs()[-1].get_step(step="step_1")
+pipe.get_runs()[0].get_step(step="step_1")
 
 # This won't work:
-# pipe.get_runs()[-1].get_step(step="first_step")
+# pipe.get_runs()[0].get_step(step="first_step")
 ```
 
 {% hint style="info" %}
@@ -303,7 +304,7 @@ of our example pipeline from the previous sections:
 from zenml.post_execution import get_pipeline
 
 pipeline = get_pipeline(pipeline="first_pipeline")
-last_run = pipeline.runs[-1]
+last_run = pipeline.runs[0]
 last_step = last_run.steps[-1]
 model = last_step.output.read()
 ```
@@ -320,7 +321,7 @@ pipe = example_pipeline(step_1=first_step(), step_2=second_step())
 pipe.run()
 
 # Get the first step
-step_1 = pipe.get_runs()[-1].get_step(step="step_1")
+step_1 = pipe.get_runs()[0].get_step(step="step_1")
 output = step_1.output.read()
 ```
 
@@ -330,7 +331,7 @@ While most of this document has been focusing on the so called
 post-execution workflow (i.e. fetching objects after a pipeline has
 completed), it can also be used within the context of a running pipeline.
 
-This is often desirable in cases where a pipeline is running continously
+This is often desirable in cases where a pipeline is running continuously
 over time and decisions have to be made according to older runs.
 
 E.g. Here, we fetch from within a step the last pipeline run for the same pipeline:

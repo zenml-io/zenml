@@ -238,6 +238,8 @@ def test_pipeline_decorator_configuration_gets_applied_during_initialization(
     config = {
         "extra": {"key": "value"},
         "settings": {"docker": {"target_repository": "custom_repo"}},
+        "on_failure": None,
+        "on_success": None,
     }
 
     @pipeline(**config)
@@ -486,8 +488,8 @@ def test_latest_version_fetching(
     mock_list_pipelines = mocker.patch(
         "zenml.client.Client.list_pipelines",
         return_value=Page(
-            page=1,
-            size=1,
+            index=1,
+            max_size=1,
             total_pages=1,
             total=0,
             items=[],
@@ -504,8 +506,8 @@ def test_latest_version_fetching(
     mock_list_pipelines = mocker.patch(
         "zenml.client.Client.list_pipelines",
         return_value=Page(
-            page=1,
-            size=1,
+            index=1,
+            max_size=1,
             total_pages=1,
             total=1,
             items=[unversioned_pipeline_model],
@@ -518,8 +520,8 @@ def test_latest_version_fetching(
     mock_list_pipelines = mocker.patch(
         "zenml.client.Client.list_pipelines",
         return_value=Page(
-            page=1,
-            size=1,
+            index=1,
+            max_size=1,
             total_pages=1,
             total=1,
             items=[pipeline_model],
@@ -534,8 +536,8 @@ def test_registering_new_pipeline_version(mocker, empty_pipeline):
     mocker.patch(
         "zenml.client.Client.list_pipelines",
         return_value=Page(
-            page=1,
-            size=1,
+            index=1,
+            max_size=1,
             total_pages=1,
             total=0,
             items=[],
@@ -565,8 +567,8 @@ def test_reusing_pipeline_version(
     mocker.patch(
         "zenml.client.Client.list_pipelines",
         return_value=Page(
-            page=1,
-            size=1,
+            index=1,
+            max_size=1,
             total_pages=1,
             total=1,
             items=[pipeline_model],

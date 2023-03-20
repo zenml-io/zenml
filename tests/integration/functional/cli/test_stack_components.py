@@ -237,7 +237,7 @@ def test_remove_attribute_component_succeeds(
             not in orchestrator_response.configuration
         )
         try:
-            clean_workspace.deregister_stack_component(
+            clean_workspace.delete_stack_component(
                 name_id_or_prefix=created_orchestrator.id,
                 component_type=StackComponentType.ORCHESTRATOR,
             )
@@ -313,7 +313,7 @@ def test_remove_attribute_component_required_attribute_fails(
         )
         assert remove_attribute.exit_code != 0
         try:
-            clean_workspace.deregister_stack_component(
+            clean_workspace.delete_stack_component(
                 name_id_or_prefix=created_orchestrator.id,
                 component_type=StackComponentType.ORCHESTRATOR,
             )

@@ -113,6 +113,25 @@ def docs(
 
             Console().print(text, style=style)
 
+    for flavor in track(flavors, description="Analyzing sdk_docs..."):
+        url = flavor().sdk_docs_url
+
+        r = requests.head(url)
+        if r.status_code == 404:
+            style = "bold red"
+            text = f"{flavor().__module__}, sdk_docs_url points at {url} " \
+                   f"which does not seem to exist."
+
+            Console().print(text, style=style)
+        elif not ignore_passing:
+
+            style = "green"
+
+            text = f"The url for {flavor().__module__} points to a valid " \
+                   f"location: {url}"
+
+            Console().print(text, style=style)
+
 
 @verify.command(
     "logos",
