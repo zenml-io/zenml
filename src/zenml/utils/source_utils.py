@@ -24,6 +24,7 @@ from types import FunctionType, ModuleType
 from typing import (
     TYPE_CHECKING,
     Any,
+    Callable,
     Dict,
     Iterator,
     Optional,
@@ -572,12 +573,13 @@ def _get_package_version(package_name: str) -> Optional[str]:
     """
     if sys.version_info < (3, 10):
         from importlib_metadata import PackageNotFoundError, version
+
+        version = cast(Callable[..., str], version)
     else:
         from importlib.metadata import PackageNotFoundError, version
 
     try:
-        package_version = version(distribution_name=package_name)  # type: ignore[no-untyped-call]
-        return cast(str, package_version)
+        return version(distribution_name=package_name)
     except (ValueError, PackageNotFoundError):
         return None
 
