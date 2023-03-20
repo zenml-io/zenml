@@ -27,6 +27,15 @@ resource "helm_release" "zen-server" {
     name  = "zenml.deploymentType"
     value = "gcp"
   }
+
+  set {
+    name  = "zenml.secretsStore.type"
+    value = "gcp"
+  }
+  set {
+    name  = "zenml.secretsStore.gcp.project_idd"
+    value = var.project_id
+  }
   
   # set up the right path for ZenML
   set {
