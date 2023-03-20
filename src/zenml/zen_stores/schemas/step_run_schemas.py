@@ -301,7 +301,7 @@ class StepRunInputArtifactSchema(SQLModel, table=True):
     artifact: ArtifactSchema = Relationship(
         back_populates="input_to_step_runs"
     )
-    name: str
+    name: str = Field(sa_column=Column(nullable=False, primary_key=True))
 
 
 class StepRunOutputArtifactSchema(SQLModel, table=True):
