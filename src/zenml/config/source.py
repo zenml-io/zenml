@@ -82,7 +82,7 @@ class Source(BaseModel):
                 "to a Python module and an optional attribute of that module."
             )
 
-        # Remove internal version pins for backwards compatability
+        # Remove internal version pins for backwards compatibility
         if "@" in import_path:
             import_path = import_path.split("@", 1)[0]
 

@@ -367,7 +367,7 @@ def verify_local_repository(
                 "steps specify that code should be included in the "
                 "Docker image (`source_files='download'`), but the code "
                 "repository active at your current source root "
-                f"`{source_utils.get_source_root()}` has uncommited "
+                f"`{source_utils.get_source_root()}` has uncommitted "
                 "changes."
             )
         elif local_repo.has_local_changes:
