@@ -257,12 +257,12 @@ class StepRunner:
             arg_type = annotations.get(arg, None)
             arg_type = resolve_type_annotation(arg_type)
 
-            # Parse the parameters
             if issubclass(arg_type, BaseParameters):
+                # TODO: handle extra=forbid here in base parameter subclass,
+                # which will currently clash if other "direct" parameters are
+                # passed to a step
                 step_params = arg_type.parse_obj(self.configuration.parameters)
                 function_params[arg] = step_params
-
-            # Parse the step context
             elif issubclass(arg_type, StepContext):
                 step_name = self.configuration.name
                 context = arg_type(
@@ -271,12 +271,15 @@ class StepRunner:
                     output_artifact_uris=output_artifact_uris,
                 )
                 function_params[arg] = context
-
-            # Parse the input artifacts
-            else:
-                # At this point, it has to be an artifact, so we resolve
+            elif arg in input_artifacts:
                 function_params[arg] = self._load_input_artifact(
                     input_artifacts[arg], arg_type
+                )
+            elif arg in self.configuration.parameters:
+                function_params[arg] = self.configuration.parameters[arg]
+            else:
+                raise RuntimeError(
+                    f"Unable to find value for step function argument `{arg}`."
                 )
 
         return function_params

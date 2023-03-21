@@ -22,7 +22,6 @@ from typing import (
     Any,
     ClassVar,
     Dict,
-    List,
     Mapping,
     NamedTuple,
     Optional,
@@ -174,7 +173,9 @@ class BaseStepMeta(type):
                     f"and outputs."
                 )
 
-            if issubclass(arg_type, BaseParameters):
+            if inspect.isclass(arg_type) and issubclass(
+                arg_type, BaseParameters
+            ):
                 # Raise an error if we already found a config in the signature
                 if cls.PARAMETERS_CLASS is not None:
                     raise StepInterfaceError(
@@ -187,7 +188,9 @@ class BaseStepMeta(type):
                 cls.PARAMETERS_FUNCTION_PARAMETER_NAME = arg
                 cls.PARAMETERS_CLASS = arg_type
 
-            elif issubclass(arg_type, StepContext):
+            elif inspect.isclass(arg_type) and issubclass(
+                arg_type, StepContext
+            ):
                 if cls.CONTEXT_PARAMETER_NAME is not None:
                     raise StepInterfaceError(
                         f"Found multiple context arguments "
@@ -630,9 +633,89 @@ class BaseStep(metaclass=BaseStepMeta):
 
         return combined_artifacts
 
-    def __call__(
-        self, *artifacts: _OutputArtifact, **kw_artifacts: _OutputArtifact
-    ) -> Union[_OutputArtifact, List[_OutputArtifact]]:
+    def _parse_call_args(
+        self, *args: Any, **kwargs: Any
+    ) -> Tuple[Dict[str, _OutputArtifact], Dict[str, Any]]:
+        from pydantic.typing import get_args
+
+        signature = inspect.signature(inspect.unwrap(self.entrypoint))
+
+        # Maybe signature.bind instead, but how do we handle the StepContext?
+        input_keys = list(self.INPUT_SIGNATURE.keys())
+        if len(args) > len(input_keys):
+            raise StepInterfaceError(
+                f"Too many input artifacts for step '{self.name}'. "
+                f"This step expects {len(input_keys)} artifact(s) "
+                f"but got {len(args) + len(kwargs)}."
+            )
+
+        artifacts = {}
+        parameters = {}
+
+        for i, arg in enumerate(args):
+            key = input_keys[i]
+            if isinstance(arg, BaseStep._OutputArtifact):
+                artifacts[key] = arg
+            else:
+                expected_type = signature.parameters[key].annotation
+                if expected_type is Optional:
+                    expected_type = get_args(expected_type)
+
+                # TODO: check if json serializable here?
+                if not isinstance(arg, expected_type):
+                    raise StepInterfaceError(
+                        f"Wrong argument type (`{type(arg)}`) for argument "
+                        f"'{key}' of step '{self.name}'. The argument should "
+                        f"either be an output of a previous steps or of type "
+                        f"`{expected_type}`."
+                    )
+
+                parameters[key] = arg
+
+        for key, arg in kwargs.items():
+            if key in artifacts or key in parameters:
+                # an input for this key was already set by
+                # the positional args
+                raise StepInterfaceError(
+                    f"Unexpected keyword argument '{key}' for step "
+                    f"'{self.name}'. An input for this key was "
+                    f"already passed as a positional argument."
+                )
+
+            if isinstance(arg, BaseStep._OutputArtifact):
+                artifacts[key] = arg
+            else:
+                expected_type = signature.parameters[key].annotation
+                if expected_type is Optional:
+                    expected_type = get_args(expected_type)
+
+                # TODO: check if json serializable here?
+                if not isinstance(arg, expected_type):
+                    raise StepInterfaceError(
+                        f"Wrong argument type (`{type(arg)}`) for argument "
+                        f"'{key}' of step '{self.name}'. The argument should "
+                        f"either be an output of a previous steps or of type "
+                        f"`{expected_type}`."
+                    )
+
+                parameters[key] = arg
+
+        for key, param in signature.parameters.items():
+            if inspect.isclass(param.annotation) and issubclass(
+                param.annotation, (StepContext, BaseParameters)
+            ):
+                continue
+
+            if key not in artifacts and key not in parameters:
+                if param.default is param.empty:
+                    raise StepInterfaceError(f"Missing value for {key}.")
+
+                # TODO: check if json serializable here?
+                parameters[key] = param.default
+
+        return artifacts, parameters
+
+    def __call__(self, *args: Any, **kwargs: Any) -> Any:
         """Finalizes the step input and output configuration.
 
         Args:
@@ -647,6 +730,13 @@ class BaseStep(metaclass=BaseStepMeta):
         Raises:
             StepInterfaceError: If the step has already been called.
         """
+        INSIDE_PIPELINE_DEFINITION = True
+
+        if not INSIDE_PIPELINE_DEFINITION:
+            # The step is being called outside of the context of a pipeline,
+            # we simply call the entrypoint
+            return self.entrypoint(*args, **kwargs)
+
         if self._has_been_called:
             raise StepInterfaceError(
                 f"Step {self.name} has already been called. A ZenML step "
@@ -654,10 +744,15 @@ class BaseStep(metaclass=BaseStepMeta):
             )
         self._has_been_called = True
 
-        # Prepare the input artifacts and spec
-        input_artifacts = self._validate_input_artifacts(
-            *artifacts, **kw_artifacts
-        )
+        input_artifacts, parameters = self._parse_call_args(*args, **kwargs)
+        self.configure(parameters=parameters)
+
+        for artifact_key in input_artifacts.keys():
+            if artifact_key in self.configuration.parameters:
+                logger.warning(
+                    "Got duplicate value for step input %s, using value provided as artifact.",
+                    artifact_key,
+                )
 
         for name, input_ in input_artifacts.items():
             self._upstream_steps.add(input_.step_name)
@@ -885,11 +980,23 @@ class BaseStep(metaclass=BaseStepMeta):
         if not parameters:
             return
 
-        if not self.PARAMETERS_CLASS:
-            raise StepInterfaceError(
-                f"Function parameters configured for step {self.name} which "
-                "does not accept any function parameters."
-            )
+        from pydantic.typing import get_args
+
+        signature = inspect.signature(inspect.unwrap(self.entrypoint))
+
+        for key, value in parameters.items():
+            if key in signature.parameters:
+                expected_type = signature.parameters[key].annotation
+                if expected_type is Optional:
+                    expected_type = get_args(expected_type)
+
+                if not isinstance(value, expected_type):
+                    breakpoint()
+                    raise StepInterfaceError("Invalid type.")
+            elif not self.PARAMETERS_CLASS:
+                raise StepInterfaceError(
+                    "Can't set parameter without param class."
+                )
 
     def _validate_inputs(
         self, inputs: Mapping[str, ArtifactConfiguration]
