@@ -14,5 +14,6 @@
 """Initialization of the OpenAI hooks module."""
 
 from zenml.integrations.openai.hooks.open_ai_failure_hook import (
-    openai_alerter_failure_hook,
+    openai_chatgpt_alerter_failure_hook,
+    openai_gpt4_alerter_failure_hook,
 )
