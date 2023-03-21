@@ -65,7 +65,11 @@ class GitHubCodeRepository(BaseCodeRepository):
 
     @property
     def github_repo(self) -> Repository:
-        """The GitHub repository object from the GitHub API."""
+        """The GitHub repository object from the GitHub API.
+
+        Returns:
+            The GitHub repository.
+        """
         return self._github_session.get_repo(
             f"{self.config.owner}/{self.config.repository}"
         )
@@ -94,6 +98,9 @@ class GitHubCodeRepository(BaseCodeRepository):
             commit: The commit to download.
             directory: The directory to download to.
             repo_sub_directory: The sub directory to download from.
+
+        Raises:
+            RuntimeError: If the repository sub directory is invalid.
         """
         contents = self.github_repo.get_contents(
             repo_sub_directory or "", ref=commit

@@ -281,7 +281,3 @@ class ZenKeyError(KeyError):
             the error message
         """
         return self.message
-
-
-class CodeRepoDownloadError(ZenMLBaseException):
-    """Raised when downloading code repo fails."""
