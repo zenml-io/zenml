@@ -33,13 +33,13 @@ class PyTorchLightningMaterializer(BaseMaterializer):
     ASSOCIATED_ARTIFACT_TYPE = ArtifactType.MODEL
 
     def load(self, data_type: Type[Any]) -> Module:
-        """Reads and returns a PyTorch Lightning trainer.
+        """Reads and returns a PyTorch Lightning model.
 
         Args:
-            data_type: The type of the trainer to load.
+            data_type: The type of the model to load.
 
         Returns:
-            A PyTorch Lightning trainer object.
+            A PyTorch Lightning model object.
         """
         super().load(data_type)
         super().load(data_type)
@@ -47,10 +47,10 @@ class PyTorchLightningMaterializer(BaseMaterializer):
             return cast(Module, torch.load(f))
 
     def save(self, model: Module) -> None:
-        """Writes a PyTorch Lightning trainer.
+        """Writes a PyTorch Lightning model.
 
         Args:
-            model: The PyTorch Lightning trainer to save.
+            model: The PyTorch Lightning model to save.
         """
         super().save(model)
         with fileio.open(os.path.join(self.uri, CHECKPOINT_NAME), "wb") as f:
