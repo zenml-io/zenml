@@ -15,11 +15,9 @@
 
 
 from zenml.logger import get_logger
+from zenml.steps import BaseParameters, StepContext
 
 logger = get_logger(__name__)
-
-
-from zenml.steps import BaseParameters, StepContext
 
 
 def alerter_failure_hook(
@@ -34,7 +32,6 @@ def alerter_failure_hook(
         params: Parameters used in the step.
         exception: Original exception that lead to step failing.
     """
-
     if context.stack and context.stack.alerter:
         message = "*Failure Hook Notification! Step failed!*" + "\n\n"
         message += f"Pipeline name: `{context.pipeline_name}`" + "\n"
