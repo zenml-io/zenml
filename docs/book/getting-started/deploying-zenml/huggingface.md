@@ -21,7 +21,7 @@ deployment](../../../book/assets/huggingface/hf_spaces_chart.png)
 In this diagram you can see what the default deployment of ZenML on HuggingFace
 looks like.
 
-## Deploying ZenML to HuggingFace Spaces
+## Deploying ZenML on HuggingFace Spaces
 
 You can deploy ZenML on HuggingFace Spaces with just a few clicks:
 
