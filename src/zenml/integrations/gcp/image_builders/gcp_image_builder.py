@@ -49,6 +49,15 @@ class GCPImageBuilder(BaseImageBuilder, GoogleCredentialsMixin):
         return cast(GCPImageBuilderConfig, self._config)
 
     @property
+    def is_building_locally(self) -> bool:
+        """Whether the image builder builds the images on the client machine.
+
+        Returns:
+            True if the image builder builds locally, False otherwise.
+        """
+        return False
+
+    @property
     def validator(self) -> Optional["StackValidator"]:
         """Validates the stack for the GCP Image Builder.
 
@@ -125,7 +134,8 @@ class GCPImageBuilder(BaseImageBuilder, GoogleCredentialsMixin):
             image_name=image_name, cloud_build_context=cloud_build_context
         )
         image_digest = self._run_cloud_build(build=build)
-        image_name_with_digest = f"{image_name}@{image_digest}"
+        image_name_without_tag, _ = image_name.rsplit(":", 1)
+        image_name_with_digest = f"{image_name_without_tag}@{image_digest}"
         return image_name_with_digest
 
     def _configure_cloud_build(
@@ -150,9 +160,12 @@ class GCPImageBuilder(BaseImageBuilder, GoogleCredentialsMixin):
         )
 
         cloud_builder_image = self.config.cloud_builder_image
+        cloud_builder_network_option = f"--network={self.config.network}"
         logger.info(
-            "Using Cloud Builder image `%s` to run the steps in the build",
+            "Using Cloud Builder image `%s` to run the steps in the build. "
+            "Container will be attached to network using option `%s`.",
             cloud_builder_image,
+            cloud_builder_network_option,
         )
 
         return cloudbuild_v1.Build(
@@ -164,7 +177,13 @@ class GCPImageBuilder(BaseImageBuilder, GoogleCredentialsMixin):
             steps=[
                 {
                     "name": cloud_builder_image,
-                    "args": ["build", "-t", image_name, "."],
+                    "args": [
+                        "build",
+                        cloud_builder_network_option,
+                        "-t",
+                        image_name,
+                        ".",
+                    ],
                 },
                 {
                     "name": cloud_builder_image,
@@ -172,6 +191,7 @@ class GCPImageBuilder(BaseImageBuilder, GoogleCredentialsMixin):
                 },
             ],
             images=[image_name],
+            timeout=f"{self.config.build_timeout}s",
         )
 
     def _run_cloud_build(self, build: cloudbuild_v1.Build) -> str:
@@ -196,7 +216,7 @@ class GCPImageBuilder(BaseImageBuilder, GoogleCredentialsMixin):
             log_url,
         )
 
-        result = operation.result()
+        result = operation.result(timeout=self.config.build_timeout)
 
         if result.status != cloudbuild_v1.Build.Status.SUCCESS:
             raise RuntimeError(

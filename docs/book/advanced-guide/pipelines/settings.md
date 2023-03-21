@@ -279,7 +279,7 @@ from zenml.post_execution import get_pipeline
 p = get_pipeline('my_pipeline')
 
 # print out the extra
-print(p.runs[-1].pipeline_configuration['extra'])
+print(p.runs[0].pipeline_configuration['extra'])
 # {'tag': 'production'}
 ```
 

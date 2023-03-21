@@ -219,10 +219,15 @@ for a run, pass `run_name` as a parameter to the `run()` function:
 first_pipeline_instance.run(run_name="custom_pipeline_run_name")
 ```
 
-{% hint style="warning" %}
-Pipeline run names must be unique, so make sure to compute it dynamically if you
-plan to run your pipeline multiple times.
-{% endhint %}
+Pipeline run names must be unique, so if you plan to run your pipelines multiple times or
+run them on a schedule, make sure to either compute the run name dynamically or include
+one of the following placeholders that will be replaced by ZenML:
+- `{{date}}` will resolve to the current date, e.g. `2023_02_19`
+- `{{time}}` will resolve to the current time, e.g. `11_07_09_326492`
+
+```python
+first_pipeline_instance.run(run_name="custom_pipeline_run_name_{{date}}_{{time}}")
+```
 
 ### Unlisted runs
 

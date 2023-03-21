@@ -36,6 +36,7 @@ with a description of that components role in the MLOps process:
 | [Annotator](./annotators/annotators.md)                              | Labeling and annotating data                                      |
 | [Data Validator](./data-validators/data-validators.md)               | Data and model validation                                         |
 | [Image Builder](./image-builders/image-builders.md)                  | Builds container images.                                          |
+| [Model Registry](./model-registries/model-registries.md)             | Manage and interact with ML Models                                |
 
 Each pipeline run that you execute with ZenML will require a **stack** and 
 each **stack** will be required to include at least an orchestrator and an 

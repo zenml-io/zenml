@@ -124,7 +124,7 @@ for storing artifacts, the Minio server is deployed as a Kubernetes pod.
 docker **Container Registry**.
 * The **Kubeflow Orchestrator** is responsible for running your ZenML pipeline
 in Kubeflow Pipelines.
-* The **MLFlow Expirement Tracker** is used to track the experiments and
+* The **MLFlow Experiment Tracker** is used to track the experiments and
 metrics of your pipeline runs. The MLFlow server is deployed as a Kubernetes
 pod.
 
@@ -150,7 +150,7 @@ zenml stack recipe pull k3d-modular
 3. Deploy the stack using the ZenML CLI:
 
 ```shell
-zenml stack recipe deploy k3d-modular --no-server
+zenml stack recipe deploy k3d-modular -i kubeflow -i minio --no-server
 ```
 
 > **Note**

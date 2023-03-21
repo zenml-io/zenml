@@ -47,6 +47,9 @@ class AnalyticsEvent(str, Enum):
     UPDATE_REPOSITORY = "Repository updated"
     DELETE_REPOSITORY = "Repository deleted"
 
+    # Template
+    GENERATE_TEMPLATE = "Template generated"
+
     # Zen store
     INITIALIZED_STORE = "Store initialized"
 
@@ -110,6 +113,11 @@ class AnalyticsEvent(str, Enum):
     CREATED_FLAVOR = "Flavor created"
     UPDATED_FLAVOR = "Flavor updated"
     DELETED_FLAVOR = "Flavor deleted"
+
+    # Secret
+    CREATED_SECRET = "Secret created"
+    UPDATED_SECRET = "Secret updated"
+    DELETED_SECRET = "Secret deleted"
 
     # Test event
     EVENT_TEST = "Test event"
@@ -351,6 +359,9 @@ class AnalyticsContext:
                         "server_id": str(server_info.id),
                         "server_deployment": str(server_info.deployment_type),
                         "database_type": str(server_info.database_type),
+                        "secrets_store_type": str(
+                            server_info.secrets_store_type
+                        ),
                     }
                 )
 

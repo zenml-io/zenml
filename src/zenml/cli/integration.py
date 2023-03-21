@@ -43,7 +43,7 @@ logger = get_logger(__name__)
     tag=CliCategories.INTEGRATIONS,
 )
 def integration() -> None:
-    """Interact with the requirements of external integrations."""
+    """Interact with external integrations."""
 
 
 @integration.command(name="list", help="List the available integrations.")
@@ -175,20 +175,10 @@ def export_requirements(
     help="Force the installation of the required packages. This will skip the "
     "confirmation step and reinstall existing packages as well",
 )
-@click.option(
-    "--force",
-    "-f",
-    "old_force",
-    is_flag=True,
-    help="DEPRECATED: Force the installation of the required packages. "
-    "This will skip the confirmation step and reinstall existing packages "
-    "as well. Use `-y/--yes` instead.",
-)
 def install(
     integrations: Tuple[str],
     ignore_integration: Tuple[str],
     force: bool = False,
-    old_force: bool = False,
 ) -> None:
     """Installs the required packages for a given integration.
 
@@ -200,16 +190,9 @@ def install(
             for.
         ignore_integration: List of integrations to ignore explicitly.
         force: Force the installation of the required packages.
-        old_force: DEPRECATED: Force the installation of the required packages.
     """
     from zenml.integrations.registry import integration_registry
 
-    if old_force:
-        force = old_force
-        warning(
-            "The `--force` flag will soon be deprecated. Use `--yes` or "
-            "`-y` instead."
-        )
     if not integrations:
         # no integrations specified, use all registered integrations
         integrations = set(integration_registry.integrations.keys())
@@ -253,6 +236,10 @@ def install(
     ):
         with console.status("Installing integrations..."):
             install_packages(requirements)
+            if "label_studio" in integrations:
+                warning(
+                    "There is a known issue with Label Studio installations via zenml. You might find that the Label Studio installation breaks the ZenML CLI. In this case, please run `pip install 'pydantic<1.11,>=1.9.0'` to fix the issue or message us on Slack if you need help with this. We are working on a more definitive fix."
+                )
 
         for integration_name in integrations_to_install:
             track_event(
@@ -273,17 +260,7 @@ def install(
     help="Force the uninstallation of the required packages. This will skip "
     "the confirmation step",
 )
-@click.option(
-    "--force",
-    "-f",
-    "old_force",
-    is_flag=True,
-    help="DEPRECATED: Force the uninstallation of the required packages. "
-    "This will skip the confirmation step. Use `-y/--yes` instead.",
-)
-def uninstall(
-    integrations: Tuple[str], force: bool = False, old_force: bool = False
-) -> None:
+def uninstall(integrations: Tuple[str], force: bool = False) -> None:
     """Installs the required packages for a given integration.
 
     If no integration is specified all required packages for all integrations
@@ -293,17 +270,9 @@ def uninstall(
         integrations: The name of the integration to install the requirements
             for.
         force: Force the uninstallation of the required packages.
-        old_force: DEPRECATED: Force the uninstallation of the required
-            packages.
     """
     from zenml.integrations.registry import integration_registry
 
-    if old_force:
-        force = old_force
-        warning(
-            "The `--force` flag will soon be deprecated. Use `--yes` "
-            "or `-y` instead."
-        )
     if not integrations:
         # no integrations specified, use all registered integrations
         integrations = tuple(integration_registry.integrations.keys())

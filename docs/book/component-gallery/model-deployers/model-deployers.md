@@ -137,7 +137,6 @@ zenml model-deployer register seldon --flavor=seldon \
           model_name="my-model",
           replicas=1,
           implementation="TENSORFLOW_SERVER",
-          secret_name="seldon-secret",
           pipeline_name = step_env.pipeline_name,
           pipeline_run_id = step_env.pipeline_run_id,
           pipeline_step_name = step_env.step_name,
@@ -270,6 +269,17 @@ $ zenml model-deployer models get-url 8cbe671b-9fce-4394-a051-68e001f92765
 1b-9fce-4394-a051-68e001f92765/api/v0.1/predictions
 
 $ zenml model-deployer models delete 8cbe671b-9fce-4394-a051-68e001f92765
+```
+
+In Python, you can alternatively discover the prediction URL of a deployed model
+by inspecting the metadata of the step that deployed the model:
+
+```python
+from zenml.post_execution import get_run
+
+pipeline_run = get_run("<PIPELINE_RUN_NAME>")
+deployer_step = pipeline_run.get_step("<NAME_OF_MODEL_DEPLOYER_STEP>")
+deployed_model_url = deployer_step.metadata["deployed_model_url"].value
 ```
 
 Services can be passed through steps like any other object, and used to interact

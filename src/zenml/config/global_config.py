@@ -22,14 +22,16 @@ from typing import TYPE_CHECKING, Any, Dict, Optional, cast
 from uuid import UUID
 
 from packaging import version
-from pydantic import BaseModel, Field, ValidationError, validator
+from pydantic import BaseModel, Field, SecretStr, ValidationError, validator
 from pydantic.main import ModelMetaclass
 
 from zenml import __version__
+from zenml.config.secrets_store_config import SecretsStoreConfiguration
 from zenml.config.store_config import StoreConfiguration
 from zenml.constants import (
     DEFAULT_STORE_DIRECTORY_NAME,
     ENV_ZENML_LOCAL_STORES_PATH,
+    ENV_ZENML_SECRETS_STORE_PREFIX,
     ENV_ZENML_STORE_PREFIX,
     LOCAL_STORES_DIRECTORY_NAME,
 )
@@ -213,6 +215,8 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
                 reset to an empty value.
         """
         cls._global_config = config
+        if config:
+            config._write_config()
 
     @validator("version")
     def _validate_version(cls, v: Optional[str]) -> Optional[str]:
@@ -550,29 +554,52 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         """
         from zenml.zen_stores.base_zen_store import BaseZenStore
 
-        env_config: Dict[str, str] = {}
+        env_store_config: Dict[str, str] = {}
+        env_secrets_store_config: Dict[str, str] = {}
         for k, v in os.environ.items():
             if v == "":
                 continue
             if k.startswith(ENV_ZENML_STORE_PREFIX):
-                env_config[k[len(ENV_ZENML_STORE_PREFIX) :].lower()] = v
-        if len(env_config):
-            if "type" not in env_config and "url" in env_config:
-                env_config["type"] = BaseZenStore.get_store_type(
-                    env_config["url"]
+                env_store_config[k[len(ENV_ZENML_STORE_PREFIX) :].lower()] = v
+            elif k.startswith(ENV_ZENML_SECRETS_STORE_PREFIX):
+                env_secrets_store_config[
+                    k[len(ENV_ZENML_SECRETS_STORE_PREFIX) :].lower()
+                ] = v
+        if len(env_store_config):
+            if "type" not in env_store_config and "url" in env_store_config:
+                env_store_config["type"] = BaseZenStore.get_store_type(
+                    env_store_config["url"]
                 )
 
             logger.debug(
                 "Using environment variables to configure the default store"
             )
-            return StoreConfiguration(**env_config)
 
-        return BaseZenStore.get_default_store_config(
-            path=os.path.join(
-                self.local_stores_path,
-                DEFAULT_STORE_DIRECTORY_NAME,
+            config = StoreConfiguration(
+                **env_store_config,
             )
-        )
+        else:
+            config = BaseZenStore.get_default_store_config(
+                path=os.path.join(
+                    self.local_stores_path,
+                    DEFAULT_STORE_DIRECTORY_NAME,
+                )
+            )
+
+        if len(env_secrets_store_config):
+
+            if "type" not in env_secrets_store_config:
+                env_secrets_store_config["type"] = config.type.value
+
+            logger.debug(
+                "Using environment variables to configure the secrets store"
+            )
+
+            config.secrets_store = SecretsStoreConfiguration(
+                **env_secrets_store_config
+            )
+
+        return config
 
     def set_default_store(self) -> None:
         """Creates and sets the default store configuration.
@@ -790,3 +817,9 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         # all attributes with leading underscore are private and therefore
         # are mutable and not included in serialization
         underscore_attrs_are_private = True
+
+        # This is needed to allow correct handling of SecretStr values during
+        # serialization.
+        json_encoders = {
+            SecretStr: lambda v: v.get_secret_value() if v else None
+        }

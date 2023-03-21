@@ -32,7 +32,7 @@ class GreatExpectationsIntegration(Integration):
 
     NAME = GREAT_EXPECTATIONS
     REQUIREMENTS = [
-        "great-expectations~=0.15.11",
+        "great-expectations>=0.15.0,<=0.15.47",
     ]
 
     @staticmethod

@@ -70,7 +70,8 @@ Here is where you can find the required parameters:
 - `<SLACK_CHANNEL_ID>`: Open your desired Slack channel in a browser, and copy
 out the last part of the URL starting with `C....`.
 - `<SLACK_TOKEN>`: This is the Slack token of your bot. You can find it in the
-Slack app settings under `OAuth & Permissions`.
+Slack app settings under `OAuth & Permissions`. **IMPORTANT**: Please make sure
+that the token is the `Bot User OAuth Token` not the `User OAuth Token`.
 
 After you have registered the `slack_alerter`, you can add it to your stack
 like this:

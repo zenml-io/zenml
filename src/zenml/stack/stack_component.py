@@ -19,7 +19,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, Extra
 
-from zenml.config.pipeline_deployment import PipelineDeployment
+from zenml.config.build_configuration import BuildConfiguration
 from zenml.config.step_configurations import Step
 from zenml.config.step_run_info import StepRunInfo
 from zenml.enums import StackComponentType
@@ -30,8 +30,11 @@ from zenml.utils import secret_utils, settings_utils
 if TYPE_CHECKING:
     from zenml.config.base_settings import BaseSettings
     from zenml.metadata.metadata_types import MetadataType
+    from zenml.models.pipeline_deployment_models import (
+        PipelineDeploymentBaseModel,
+        PipelineDeploymentResponseModel,
+    )
     from zenml.stack import Stack, StackValidator
-
 
 logger = get_logger(__name__)
 
@@ -39,7 +42,9 @@ logger = get_logger(__name__)
 class StackComponentConfig(BaseModel, ABC):
     """Base class for all ZenML stack component configs."""
 
-    def __init__(self, **kwargs: Any) -> None:
+    def __init__(
+        self, warn_about_plain_text_secrets: bool = False, **kwargs: Any
+    ) -> None:
         """Ensures that secret references don't clash with pydantic validation.
 
         StackComponents allow the specification of all their string attributes
@@ -52,6 +57,7 @@ class StackComponentConfig(BaseModel, ABC):
         custom pydantic validation are set as secret references.
 
         Args:
+            warn_about_plain_text_secrets: If true, then warns about using plain-text secrets.
             **kwargs: Arguments to initialize this stack component.
 
         Raises:
@@ -71,7 +77,10 @@ class StackComponentConfig(BaseModel, ABC):
                 continue
 
             if not secret_utils.is_secret_reference(value):
-                if secret_utils.is_secret_field(field):
+                if (
+                    secret_utils.is_secret_field(field)
+                    and warn_about_plain_text_secrets
+                ):
                     logger.warning(
                         "You specified a plain-text value for the sensitive "
                         f"attribute `{key}` for a `{self.__class__.__name__}` "
@@ -170,10 +179,33 @@ class StackComponentConfig(BaseModel, ABC):
         Returns:
             The (potentially resolved) attribute value.
         """
+        from zenml.client import Client
+
         value = super().__getattribute__(key)
 
         if not secret_utils.is_secret_reference(value):
             return value
+
+        secret_ref = secret_utils.parse_secret_reference(value)
+
+        # Try to resolve the secret using the secret store first
+        try:
+            store_secret = Client().get_secret_by_name_and_scope(
+                name=secret_ref.name,
+            )
+        except (KeyError, NotImplementedError):
+            pass
+        else:
+            if secret_ref.key in store_secret.values:
+                return store_secret.secret_values[secret_ref.key]
+            else:
+                raise KeyError(
+                    f"Failed to resolve secret reference for attribute {key} "
+                    f"of stack component `{self}`. "
+                    f"The secret {secret_ref.name} does not contain a value "
+                    f"for key {secret_ref.key}. Available keys: "
+                    f"{set(store_secret.values)}."
+                )
 
         # A stack component can be part of many stacks, and currently a
         # secrets manager is associated with a stack. This means we're
@@ -191,8 +223,6 @@ class StackComponentConfig(BaseModel, ABC):
                 "your active stack: `zenml stack set <STACK_NAME>`."
             )
 
-        from zenml.client import Client
-
         secrets_manager = Client().active_stack.secrets_manager
         if not secrets_manager:
             raise RuntimeError(
@@ -201,7 +231,6 @@ class StackComponentConfig(BaseModel, ABC):
                 "have a secrets manager."
             )
 
-        secret_ref = secret_utils.parse_secret_reference(value)
         try:
             secret = secrets_manager.get_secret(secret_ref.name)
         except KeyError:
@@ -378,7 +407,8 @@ class StackComponent:
         return None
 
     def get_settings(
-        self, container: Union["Step", "StepRunInfo", "PipelineDeployment"]
+        self,
+        container: Union["Step", "StepRunInfo", "PipelineDeploymentBaseModel"],
     ) -> "BaseSettings":
         """Gets settings for this stack component.
 
@@ -410,7 +440,7 @@ class StackComponent:
         all_settings = (
             container.config.settings
             if isinstance(container, (Step, StepRunInfo))
-            else container.pipeline.settings
+            else container.pipeline_configuration.settings
         )
 
         if key in all_settings:
@@ -487,9 +517,22 @@ class StackComponent:
         """
         return None
 
+    def get_docker_builds(
+        self, deployment: "PipelineDeploymentBaseModel"
+    ) -> List["BuildConfiguration"]:
+        """Gets the Docker builds required for the component.
+
+        Args:
+            deployment: The pipeline deployment for which to get the builds.
+
+        Returns:
+            The required Docker builds.
+        """
+        return []
+
     def prepare_pipeline_deployment(
         self,
-        deployment: "PipelineDeployment",
+        deployment: "PipelineDeploymentResponseModel",
         stack: "Stack",
     ) -> None:
         """Prepares deploying the pipeline.
