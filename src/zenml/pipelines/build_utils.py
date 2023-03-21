@@ -440,7 +440,7 @@ def verify_custom_build(
         if build_checksum != build.checksum:
             logger.warning(
                 "The Docker settings used for the build `%s` are "
-                "not the same as currently specified for you pipeline. "
+                "not the same as currently specified for your pipeline. "
                 "This means that the build you specified to run this "
                 "pipeline might be outdated and most likely contains "
                 "outdated requirements.",
@@ -468,7 +468,7 @@ def verify_custom_build(
             ):
                 logger.warning(
                     "The Docker settings used to build the image `%s` are "
-                    "not the same as currently specified for you pipeline. "
+                    "not the same as currently specified for your pipeline. "
                     "This means that the build you specified to run this "
                     "pipeline might be outdated and most likely contains "
                     "outdated code or requirements.",

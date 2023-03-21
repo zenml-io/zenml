@@ -72,7 +72,7 @@ def register_code_repository(
     """Register a code repository.
 
     Register a code repository with ZenML. This will allow you ZenML to pull
-    code from a remote repository and use it in when running pipelines remotely.
+    code from a remote repository and use it when running pipelines remotely.
     The configuration of the code repository can be different depending on the
     type of code repository. For more information, please refer to the
     documentation.

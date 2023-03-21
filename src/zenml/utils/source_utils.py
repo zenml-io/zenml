@@ -353,7 +353,7 @@ def is_distribution_package_file(file_path: str, module_name: str) -> bool:
 
     # TODO: Both of the previous checks don't detect editable installs because
     # the site packages dir only contains a reference to the source files,
-    # not the actual files and importlib_metadata doesn't detect it as a valid
+    # not the actual files, and importlib_metadata doesn't detect it as a valid
     # distribution package. That means currently editable installs get a
     # source type UNKNOWN which might or might not lead to issues.
 
@@ -501,7 +501,7 @@ def _resolve_module(module: ModuleType) -> str:
             f"({source_root})."
         )
 
-    # Remove the file extension and replace the os specific path separators
+    # Remove the file extension and replace the os-specific path separators
     # with `.` to get the module source
     module_source_path, file_extension = os.path.splitext(module_source_path)
     if file_extension != ".py":
