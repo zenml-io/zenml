@@ -24,7 +24,7 @@ from pydantic import BaseModel
 
 from tests.integration.functional.utils import sample_name
 from zenml.client import Client
-from zenml.config.pipeline_configurations import PipelineSpec
+from zenml.config.pipeline_spec import PipelineSpec
 from zenml.enums import SecretScope, StackComponentType
 from zenml.exceptions import (
     EntityExistsError,

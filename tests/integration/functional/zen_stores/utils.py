@@ -18,7 +18,7 @@ from pydantic import BaseModel
 from tests.integration.functional.utils import sample_name
 from zenml.client import Client
 from zenml.config.global_config import GlobalConfiguration
-from zenml.config.pipeline_configurations import PipelineSpec
+from zenml.config.pipeline_spec import PipelineSpec
 from zenml.config.store_config import StoreConfiguration
 from zenml.enums import (
     ArtifactType,
