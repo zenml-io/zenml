@@ -46,7 +46,8 @@ def openai_alerter_failure_hook(
         original_stdout = sys.stdout
         sys.stdout = output_captured
         console = Console()
-        console.print_exception(show_locals=True)
+        # show_locals set to False to limit tokens sent to OpenAI
+        console.print_exception(show_locals=False)
 
         sys.stdout = original_stdout
         rich_traceback = output_captured.getvalue()
