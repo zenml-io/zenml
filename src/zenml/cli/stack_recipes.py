@@ -768,6 +768,10 @@ def pull(
     "-i",
     "enabled_services",
     multiple=True,
+    help="Install the specified service(s) in the stack recipe. This is useful if you "
+    "want to install a service that is not enabled by default in the recipe. "
+    "You can specify multiple services by passing the flag multiple times. "
+    "Example: `zenml stack recipe deploy my_stack_recipe --install kubeflow --install mlflow`",
 )
 @pass_git_stack_recipes_handler
 @click.pass_context

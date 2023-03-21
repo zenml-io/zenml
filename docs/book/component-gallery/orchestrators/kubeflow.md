@@ -145,7 +145,7 @@ To deploy the stack, run the following commands:
 # Pull the `k3d-modular` recipe to your local system
 zenml stack recipe pull k3d-modular
 # Deploy the stack using the ZenML CLI:
-zenml stack recipe deploy k3d-modular
+zenml stack recipe deploy k3d-modular -i kubeflow -i minio --no-server
 # run the following command to import the resources as a ZenML stack, manually
 zenml stack import <STACK_NAME> -f <PATH_TO_THE_CREATED_STACK_CONFIG_YAML>
 # set the imported stack as the active stack
