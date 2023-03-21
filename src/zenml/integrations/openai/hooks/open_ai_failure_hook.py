@@ -15,45 +15,34 @@
 
 import io
 import sys
-from typing import TYPE_CHECKING
 
 import openai
 from rich.console import Console
 
 from zenml.logger import get_logger
+from zenml.steps import BaseParameters, StepContext
 
 logger = get_logger(__name__)
 
-if TYPE_CHECKING:
-    from zenml.steps import BaseParameters, StepContext
 
-
-def openai_alerter_failure_hook(
-    context: "StepContext", params: "BaseParameters", exception: BaseException
+def openai_alerter_failure_hook_helper(
+    context: StepContext,
+    params: BaseParameters,
+    exception: BaseException,
+    model_name: str,
 ) -> None:
-    """Failure hook that executes after step fails, with OpenAI GPT support.
-
-    This hook uses OpenAI's LLM to generate suggestions on how to fix a step
-    that fails.
-
-    Args:
-        context: Context of the step.
-        params: Parameters used in the step.
-        exception: Original exception that lead to step failing.
-    """
     if context.stack and context.stack.alerter:
         output_captured = io.StringIO()
         original_stdout = sys.stdout
         sys.stdout = output_captured
         console = Console()
-        # show_locals set to False to limit tokens sent to OpenAI
         console.print_exception(show_locals=False)
 
         sys.stdout = original_stdout
         rich_traceback = output_captured.getvalue()
 
         response = openai.ChatCompletion.create(  # type: ignore[no-untyped-call]
-            model="gpt-3.5-turbo",
+            model=model_name,
             messages=[
                 {
                     "role": "user",
@@ -81,3 +70,21 @@ def openai_alerter_failure_hook(
         logger.warning(
             "Specified standard failure hook but no alerter configured in the stack. Skipping.."
         )
+
+
+def openai_chatgpt_alerter_failure_hook(
+    context: StepContext,
+    params: BaseParameters,
+    exception: BaseException,
+) -> None:
+    openai_alerter_failure_hook_helper(
+        context, params, exception, "gpt-3.5-turbo"
+    )
+
+
+def openai_gpt4_alerter_failure_hook(
+    context: StepContext,
+    params: BaseParameters,
+    exception: BaseException,
+) -> None:
+    openai_alerter_failure_hook_helper(context, params, exception, "gpt-4")
