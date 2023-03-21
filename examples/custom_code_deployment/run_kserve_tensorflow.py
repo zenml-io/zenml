@@ -121,7 +121,7 @@ def main(
     predict = config == PREDICT or config == DEPLOY_AND_PREDICT
 
     deployment_pipeline_name = "tensorflow_custom_code_pipeline"
-    step_name = "kserve_custom_model_deployer_step"
+    step_name = "deployer"
     model_name = "kserve-tensorflow-custom-model"
 
     model_deployer = KServeModelDeployer.get_active_model_deployer()
