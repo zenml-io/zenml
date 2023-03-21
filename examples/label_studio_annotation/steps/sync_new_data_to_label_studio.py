@@ -19,7 +19,7 @@ from zenml.integrations.label_studio.steps import (
     sync_new_data_to_label_studio,
 )
 
-IMAGE_REGEX_FILTER = ".*(jpe?g|png)"
+IMAGE_REGEX_FILTER = ".*(jpe?g|png|JPE?G|PNG)"
 
 
 _, label_config_type = generate_image_classification_label_config(
@@ -27,33 +27,11 @@ _, label_config_type = generate_image_classification_label_config(
 )
 
 
-# AZURE
-zenml_azure_artifact_store_sync_params = LabelStudioDatasetSyncParameters(
-    storage_type="azure",
+zenml_sync_params = LabelStudioDatasetSyncParameters(
     label_config_type=label_config_type,
     regex_filter=IMAGE_REGEX_FILTER,
-)
-azure_data_sync = sync_new_data_to_label_studio(
-    params=zenml_azure_artifact_store_sync_params,
 )
 
-# GCLOUD
-zenml_gcs_artifact_store_sync_params = LabelStudioDatasetSyncParameters(
-    storage_type="gcs",
-    label_config_type=label_config_type,
-    regex_filter=IMAGE_REGEX_FILTER,
-)
-gcs_data_sync = sync_new_data_to_label_studio(
-    params=zenml_gcs_artifact_store_sync_params,
-)
-
-# AWS
-zenml_s3_artifact_store_sync_params = LabelStudioDatasetSyncParameters(
-    storage_type="s3",
-    label_config_type=label_config_type,
-    regex_filter=IMAGE_REGEX_FILTER,
-    s3_region_name="eu-west-1",  # change this to your closest region
-)
-s3_data_sync = sync_new_data_to_label_studio(
-    params=zenml_s3_artifact_store_sync_params,
+data_sync = sync_new_data_to_label_studio(
+    params=zenml_sync_params,
 )
