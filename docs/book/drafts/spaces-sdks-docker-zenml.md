@@ -12,6 +12,11 @@ of ZenML with just a few clicks. Within a few minutes, you'll have this default
 ZenML dashboard deployed and ready for you to connect to from your local
 machine.
 
+In the sections that follow, you'll learn to deploy your own instance of ZenML and use
+it to view and manage your machine learning pipelines right from the Hub. ZenML
+on Huggingface Spaces is a **self-contained application completely hosted on the
+Hub using Docker**. The diagram below illustrates the complete process.
+
 ![ZenML on HuggingFace Spaces -- default deployment](hf_spaces_chart.png)
 
 Visit [the ZenML documentation](https://docs.zenml.io/) to learn more about its
@@ -24,8 +29,6 @@ many of your favorite tools out of the box, [including
 Huggingface](https://zenml.io/integrations/huggingface) of course! If there's
 something else you want to use, we're built to be extensible and you can easily
 make it work with whatever your custom tool or workflow is.
-
-In the next sections, you'll learn to deploy your own Argilla app and use it for data labelling workflows right from the Hub. This Argilla app is a **self-contained application completely hosted on the Hub using Docker**. The diagram below illustrates the complete process.
 
 ## ⚡️ Deploy ZenML on Spaces
 
