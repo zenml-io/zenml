@@ -42,7 +42,6 @@ class PyTorchLightningMaterializer(BaseMaterializer):
             A PyTorch Lightning model object.
         """
         super().load(data_type)
-        super().load(data_type)
         with fileio.open(os.path.join(self.uri, CHECKPOINT_NAME), "rb") as f:
             return cast(Module, torch.load(f))
 
