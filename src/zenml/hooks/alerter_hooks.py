@@ -13,19 +13,17 @@
 #  permissions and limitations under the License.
 """Functionality for standard hooks."""
 
-from typing import TYPE_CHECKING
 
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
 
 
-if TYPE_CHECKING:
-    from zenml.steps import BaseParameters, StepContext
+from zenml.steps import BaseParameters, StepContext
 
 
 def alerter_failure_hook(
-    context: "StepContext", params: "BaseParameters", exception: BaseException
+    context: StepContext, params: BaseParameters, exception: BaseException
 ) -> None:
     """Standard failure hook that executes after step fails.
 
@@ -36,6 +34,7 @@ def alerter_failure_hook(
         params: Parameters used in the step.
         exception: Original exception that lead to step failing.
     """
+
     if context.stack and context.stack.alerter:
         message = "*Failure Hook Notification! Step failed!*" + "\n\n"
         message += f"Pipeline name: `{context.pipeline_name}`" + "\n"
@@ -54,9 +53,7 @@ def alerter_failure_hook(
         )
 
 
-def alerter_success_hook(
-    context: "StepContext", params: "BaseParameters"
-) -> None:
+def alerter_success_hook(context: StepContext, params: BaseParameters) -> None:
     """Standard success hook that executes after step finishes successfully.
 
     This hook uses any `BaseAlerter` that is configured within the active stack to post a message.
