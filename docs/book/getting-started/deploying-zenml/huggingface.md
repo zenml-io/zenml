@@ -15,6 +15,11 @@ not as available to you as a dedicated machine. See our [other deployment option
 if you want to use ZenML in production.
 {% endhint %}
 
+![ZenML on HuggingFace Spaces -- default
+deployment](../../../book/assets/huggingface/hf_spaces_chart.png)
+
+In this diagram you can see what the default deployment of ZenML on HuggingFace
+looks like.
 
 ## Deploying ZenML to HuggingFace Spaces
 
