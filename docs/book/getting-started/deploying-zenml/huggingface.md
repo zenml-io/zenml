@@ -109,6 +109,19 @@ corner of the Dashboard and then click 'Update Password'.
 
 ## Troubleshooting
 
+If you are having trouble with your ZenML server on HuggingFace Spaces, you can
+view the logs by clicking on the "Open Logs" button at the top of the space.
+This will give you more context of what's happening with your server.
+
+If you have any other issues, please feel free to reach out to us on our
+[Slack channel](https://zenml.io/slack-invite/) for more support.
+
 ## Upgrading your ZenML Server on HF Spaces
 
-
+The default space will use the latest version of ZenML automatically. If you
+want to update your version, you can simply select the 'Factory reboot' option
+within the 'Settings' tab of the space. Note that this will wipe any data
+contained within the space and so if you are not using a MySQL persistent
+database (as described above) you will lose any data contained within your ZenML
+deployment on the space. You can also configure the space to use an earlier
+version by updating the `Dockerfile`'s `FROM` import statement at the very top.
