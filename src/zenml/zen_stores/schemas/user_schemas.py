@@ -83,6 +83,7 @@ class UserSchema(NamedSchema, table=True):
     deployments: List["PipelineDeploymentSchema"] = Relationship(
         back_populates="user",
     )
+    hub_token: Optional[str]
 
     @classmethod
     def from_request(cls, model: UserRequestModel) -> "UserSchema":
@@ -145,6 +146,7 @@ class UserSchema(NamedSchema, table=True):
                 active=self.active,
                 email_opted_in=self.email_opted_in,
                 email=self.email if include_private else None,
+                hub_token=self.hub_token if include_private else None,
                 full_name=self.full_name,
                 created=self.created,
                 updated=self.updated,
@@ -156,6 +158,7 @@ class UserSchema(NamedSchema, table=True):
                 active=self.active,
                 email_opted_in=self.email_opted_in,
                 email=self.email if include_private else None,
+                hub_token=self.hub_token if include_private else None,
                 teams=[t.to_model(_block_recursion=True) for t in self.teams],
                 full_name=self.full_name,
                 created=self.created,

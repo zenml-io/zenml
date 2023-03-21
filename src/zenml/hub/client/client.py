@@ -18,7 +18,7 @@ from typing import Any, Dict, List, Optional
 
 import requests
 
-from zenml.config.global_config import GlobalConfiguration
+from zenml.client import Client
 from zenml.constants import ENV_ZENML_HUB_URL
 from zenml.logger import get_logger
 from zenml.models.hub_plugin_models import (
@@ -48,7 +48,7 @@ class HubClient:
             url: The URL of the ZenML Hub.
         """
         self.url = url or self.get_default_url()
-        self.auth_token = GlobalConfiguration().hub_auth_token
+        self.auth_token = Client().active_user.hub_token
 
     @staticmethod
     def get_default_url() -> str:
@@ -183,7 +183,11 @@ class HubClient:
         Args:
             auth_token: The auth token to set.
         """
-        GlobalConfiguration().hub_auth_token = auth_token
+        client = Client()
+        client.update_user(
+            name_id_or_prefix=client.active_user.id,
+            updated_hub_token=auth_token,
+        )
         self.auth_token = auth_token
 
     def get_github_login_url(self) -> str:
