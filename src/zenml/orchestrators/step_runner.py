@@ -315,6 +315,11 @@ class StepRunner:
             arg_type = annotations.get(arg, None)
             arg_type = resolve_type_annotation(arg_type)
 
+            if isinstance(arg_type, str):
+                arg_type = globals().get(
+                    arg_type, locals().get(arg_type, None)
+                )
+
             # Parse the parameters
             if issubclass(arg_type, BaseParameters):
                 step_params = arg_type.parse_obj(self.configuration.parameters)
