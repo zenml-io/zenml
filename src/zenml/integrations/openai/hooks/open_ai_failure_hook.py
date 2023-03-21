@@ -31,6 +31,14 @@ def openai_alerter_failure_hook_helper(
     exception: BaseException,
     model_name: str,
 ) -> None:
+    """Standard failure hook that sends a message to an Alerter.
+
+    Args:
+        context: The context of the step.
+        params: The parameters of the step.
+        exception: The exception that was raised.
+        model_name: The OpenAI model to use for the chatbot.
+    """
     if context.stack and context.stack.alerter:
         output_captured = io.StringIO()
         original_stdout = sys.stdout
@@ -77,6 +85,13 @@ def openai_chatgpt_alerter_failure_hook(
     params: BaseParameters,
     exception: BaseException,
 ) -> None:
+    """Alerter hook that uses the OpenAI ChatGPT model.
+
+    Args:
+        context: The context of the step.
+        params: The parameters of the step.
+        exception: The exception that was raised.
+    """
     openai_alerter_failure_hook_helper(
         context, params, exception, "gpt-3.5-turbo"
     )
@@ -87,4 +102,11 @@ def openai_gpt4_alerter_failure_hook(
     params: BaseParameters,
     exception: BaseException,
 ) -> None:
+    """Alerter hook that uses the OpenAI GPT-4 model.
+
+    Args:
+        context: The context of the step.
+        params: The parameters of the step.
+        exception: The exception that was raised.
+    """
     openai_alerter_failure_hook_helper(context, params, exception, "gpt-4")
