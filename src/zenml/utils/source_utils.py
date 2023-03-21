@@ -624,7 +624,7 @@ def validate_source_class(
         expected_class: The class that the source should resolve to.
 
     Returns:
-       True if the source resolves to the expected class, False otherwise.
+        True if the source resolves to the expected class, False otherwise.
     """
     try:
         obj = load(source)
