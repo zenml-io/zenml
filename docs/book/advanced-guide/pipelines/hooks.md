@@ -116,3 +116,40 @@ from zenml.hooks import alerter_success_hook, alerter_failure_hook
 def my_step(...):
     ...
 ```
+
+## Using the OpenAI ChatGPT Failure Hook
+
+The OpenAI ChatGPT failure hook is a hook that uses the OpenAI integration to
+generate a possible fix for whatever exception caused the step to fail. It is
+quite easy to use. (You will need [a valid OpenAI API key](https://help.openai.com/en/articles/4936850-where-do-i-find-my-secret-api-key) that has correctly set
+up billing for this.)
+
+{% hint style="warning" %}
+Note that using this integration will incur charges on your OpenAI account.
+{% endhint %}
+
+First ensure that you have the OpenAI integration installed
+and have your OpenAI API key set as an environment variable:
+
+```shell
+zenml integration install openai
+export OPENAI_API_KEY='<YOUR_KEY>'
+```
+
+Then, you can use the hook in your pipeline:
+
+```python
+from zenml.integration.openai.hooks import openai_alerter_failure_hook
+
+@step(on_failure=openai_alerter_failure_hook)
+def my_step(...):
+    ...
+```
+
+If you had set up a Slack alerter as your alerter, for example, then you would
+see a message like this:
+
+![OpenAI ChatGPT Failure Hook](../../../book/assets/openai/failure_alerter.png)
+
+You can use the suggestions as input that can help you fix whatever is going
+wrong in your code.
