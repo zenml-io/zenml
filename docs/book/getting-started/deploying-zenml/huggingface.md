@@ -25,7 +25,10 @@ BUTTON GOES HERE
 To set up your ZenML app, you need to specify three main components: the Owner
 (either your personal account or an organization), a Space name, and the
 Visibility (a bit lower down the page). Note that the space visibility needs to
-be set to 'Public' if you wish to connect to the ZenML server from your local machine.
+be set to 'Public' if you wish to connect to the ZenML server from your local
+machine.
+
+PHOTO GOES HERE
 
 You have the option here to select a higher tier machine to use for your server.
 The advantage of selecting a paid CPU instance is that it is not subject to
