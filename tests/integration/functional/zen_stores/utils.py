@@ -519,8 +519,8 @@ pipeline_run_crud_test_config = CrudTestConfig(
 artifact_crud_test_config = CrudTestConfig(
     create_model=ArtifactRequestModel(
         name=sample_name("sample_artifact"),
-        data_type="",
-        materializer="",
+        data_type="module.class",
+        materializer="module.class",
         type=ArtifactType.DATA,
         uri="",
         user=uuid.uuid4(),
@@ -545,6 +545,7 @@ build_crud_test_config = CrudTestConfig(
         workspace=uuid.uuid4(),
         images={},
         is_local=False,
+        contains_code=True,
     ),
     filter_model=PipelineBuildFilterModel,
     entity_name="build",
@@ -565,6 +566,8 @@ code_repository_crud_test_config = CrudTestConfig(
         user=uuid.uuid4(),
         workspace=uuid.uuid4(),
         name=sample_name("sample_code_repository"),
+        config={},
+        source={"module": "module", "type": "user"},
     ),
     update_model=CodeRepositoryUpdateModel(
         name=sample_name("updated_sample_code_repository")
