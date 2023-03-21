@@ -1,7 +1,7 @@
 """Add hub token to user model [b4eccf34dfa3].
 
 Revision ID: b4eccf34dfa3
-Revises: 0.35.1
+Revises: 0.36.0
 Create Date: 2023-03-21 11:48:09.499402
 
 """
@@ -11,7 +11,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "b4eccf34dfa3"
-down_revision = "0.35.1"
+down_revision = "0.36.0"
 branch_labels = None
 depends_on = None
 
