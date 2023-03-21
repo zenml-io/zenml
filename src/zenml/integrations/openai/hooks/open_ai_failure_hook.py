@@ -51,7 +51,7 @@ def openai_alerter_failure_hook(
         sys.stdout = original_stdout
         rich_traceback = output_captured.getvalue()
 
-        response = openai.ChatCompletion.create(
+        response = openai.ChatCompletion.create(  # type: ignore[no-untyped-call]
             model="gpt-3.5-turbo",
             messages=[
                 {
@@ -61,7 +61,21 @@ def openai_alerter_failure_hook(
             ],
         )
         suggestion = response["choices"][0]["message"]["content"]
-        context.stack.alerter.post(suggestion)
+        message = "*Failure Hook Notification! Step failed!*" + "\n\n"
+        message += f"Pipeline name: `{context.pipeline_name}`" + "\n"
+        message += f"Run name: `{context.run_name}`" + "\n"
+        message += f"Step name: `{context.step_name}`" + "\n"
+        message += f"Parameters: `{params}`" + "\n"
+        message += f"Exception: `({type(exception)}) {exception}`" + "\n\n"
+        message += (
+            f"Step Cache Enabled: `{'True' if context.cache_enabled else 'False'}`"
+            + "\n\n"
+        )
+        message += (
+            f"*OpenAI ChatGPT's suggestion on how to fix it:*\n `{suggestion}`"
+            + "\n"
+        )
+        context.stack.alerter.post(message)
     else:
         logger.warning(
             "Specified standard failure hook but no alerter configured in the stack. Skipping.."
