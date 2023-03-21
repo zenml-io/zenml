@@ -123,6 +123,9 @@ class LocalGitRepository(LocalRepository):
     def is_dirty(self) -> bool:
         """Whether the git repo is dirty.
 
+        A repository counts as dirty if it has any untracked or uncommitted
+        changes.
+
         Returns:
             True if the git repo is dirty, False otherwise.
         """
@@ -131,6 +134,9 @@ class LocalGitRepository(LocalRepository):
     @property
     def has_local_changes(self) -> bool:
         """Whether the git repo has local changes.
+
+        A repository has local changes if it is dirty or there are some commits
+        which have not been pushed yet.
 
         Returns:
             True if the git repo has local changes, False otherwise.

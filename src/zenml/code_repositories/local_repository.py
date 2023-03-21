@@ -21,16 +21,16 @@ logger = get_logger(__name__)
 
 
 class LocalRepository(ABC):
-    """Base class for local code repositories.
+    """Base class for local repositories.
 
-    This class is used to represent a local code repository. It is used
+    This class is used to represent a local repository. It is used
     to track the current state of the repository and to provide
     information about the repository, such as the root path, the current
     commit, and whether the repository is dirty.
     """
 
     def __init__(self, code_repository_id: UUID) -> None:
-        """Initializes a local code repository.
+        """Initializes a local repository.
 
         Args:
             code_repository_id: The ID of the code repository.
@@ -49,39 +49,45 @@ class LocalRepository(ABC):
     @property
     @abstractmethod
     def root(self) -> str:
-        """Returns the root path of the code repository.
+        """Returns the root path of the local repository.
 
         Returns:
-            The root path of the code repository.
+            The root path of the local repository.
         """
         pass
 
     @property
     @abstractmethod
     def is_dirty(self) -> bool:
-        """Returns whether the code repository is dirty.
+        """Returns whether the local repository is dirty.
+
+        A repository counts as dirty if it has any untracked or uncommitted
+        changes.
 
         Returns:
-            Whether the code repository is dirty.
+            Whether the local repository is dirty.
         """
         pass
 
     @property
     @abstractmethod
     def has_local_changes(self) -> bool:
-        """Returns whether the code repository has local changes.
+        """Returns whether the local repository has local changes.
+
+        A repository has local changes if it is dirty or there are some commits
+        which have not been pushed yet.
 
         Returns:
-            Whether the code repository has local changes.
+            Whether the local repository has local changes.
         """
         pass
 
     @property
     @abstractmethod
     def current_commit(self) -> str:
-        """Returns the current commit of the code repository.
+        """Returns the current commit of the local repository.
 
         Returns:
-            The current commit of the code repository.
+            The current commit of the local repository.
         """
         pass
