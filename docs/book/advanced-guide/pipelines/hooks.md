@@ -139,7 +139,7 @@ export OPENAI_API_KEY='<YOUR_KEY>'
 Then, you can use the hook in your pipeline:
 
 ```python
-from zenml.integration.openai.hooks import openai_alerter_failure_hook
+from zenml.integration.openai.hooks import openai_chatgpt_alerter_failure_hook
 
 @step(on_failure=openai_alerter_failure_hook)
 def my_step(...):
@@ -152,4 +152,5 @@ see a message like this:
 ![OpenAI ChatGPT Failure Hook](../../../book/assets/openai/failure_alerter.png)
 
 You can use the suggestions as input that can help you fix whatever is going
-wrong in your code.
+wrong in your code. If you have GPT-4 enabled for your account, you can use the
+`openai_gpt4_alerter_failure_hook` hook instead (imported from the same module).
