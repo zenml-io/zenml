@@ -16,7 +16,7 @@ depends_on = None
 
 def upgrade() -> None:
     """Upgrade database schema and/or data, creating a new revision.
-    
+
     Raises:
         NotImplementedError: If the database engine is not SQLite or MySQL.
     """
@@ -74,7 +74,7 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     """Downgrade database schema and/or data back to the previous revision.
-    
+
     Raises:
         NotImplementedError: If the database engine is not SQLite or MySQL.
     """
