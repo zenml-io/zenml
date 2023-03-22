@@ -40,9 +40,13 @@ def openai_alerter_failure_hook_helper(
         exception: The exception that was raised.
         model_name: The OpenAI model to use for the chatbot.
     """
-    c = Client()
-    openai_secret = c.get_secret("openai")
-    openai_api_key = openai_secret.secret_values.get("api_key")
+    # get the api_key from the secret store
+    try:
+        c = Client()
+        openai_secret = c.get_secret("openai", allow_partial_name_match=False)
+        openai_api_key = openai_secret.secret_values.get("api_key")
+    except (KeyError, NotImplementedError):
+        openai_api_key = None
 
     if context.stack and context.stack.alerter and openai_api_key:
         output_captured = io.StringIO()
@@ -81,11 +85,11 @@ def openai_alerter_failure_hook_helper(
         context.stack.alerter.post(message)
     elif not openai_api_key:
         logger.warning(
-            "Specified OpenAI failure hook but no OpenAI API key found. Skipping.."
+            "Specified OpenAI failure hook but no OpenAI API key found. Skipping..."
         )
     else:
         logger.warning(
-            "Specified OpenAI failure hook but no alerter configured in the stack. Skipping.."
+            "Specified OpenAI failure hook but no alerter configured in the stack. Skipping..."
         )
 
 
