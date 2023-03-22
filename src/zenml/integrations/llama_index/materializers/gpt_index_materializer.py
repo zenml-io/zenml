@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Implementation of the llama-index GPT index materializer."""
 
+from __future__ import annotations
 
 import os
 import sys
