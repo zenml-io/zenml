@@ -2004,7 +2004,6 @@ class Client(metaclass=ClientMetaClass):
             user_id: The id of the user to filter by.
             name: The name of the component to filter by.
             is_shared: The shared status of the component to filter by.
-            metadata: The metadata of the component to filter by.
 
         Returns:
             A page of stack components.
