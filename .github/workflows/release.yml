@@ -17,7 +17,7 @@ jobs:
     secrets: inherit
 
   publish-python-package:
-    needs: lint-code
+    needs: lint-unit-test
     uses: ./.github/workflows/publish_to_pypi.yml
     secrets: inherit
 
