@@ -16,7 +16,7 @@
 
 import os
 import tempfile
-from typing import Type
+from typing import Any, Generic, Type, TypeVar, cast
 
 from llama_index.indices.base import BaseGPTIndex
 from llama_index.indices.vector_store import GPTFaissIndex
@@ -28,14 +28,16 @@ from zenml.materializers.base_materializer import BaseMaterializer
 DEFAULT_FILENAME = "index.json"
 DEFAULT_FAISS_FILENAME = "faiss_index.json"
 
+T = TypeVar("T", bound=BaseGPTIndex[Any])
 
-class LlamaIndexGPTIndexMaterializer(BaseMaterializer):
+
+class LlamaIndexGPTIndexMaterializer(Generic[T], BaseMaterializer):
     """Materializer for llama_index GPT indices."""
 
     ASSOCIATED_ARTIFACT_TYPE = ArtifactType.MODEL
-    ASSOCIATED_TYPES = (BaseGPTIndex,)
+    ASSOCIATED_TYPES = (BaseGPTIndex[Any],)
 
-    def load(self, data_type: Type[BaseGPTIndex]) -> BaseGPTIndex:
+    def load(self, data_type: Type[T]) -> T:
         """Loads a llama-index GPT index from disk.
 
         Args:
@@ -55,12 +57,13 @@ class LlamaIndexGPTIndexMaterializer(BaseMaterializer):
         fileio.copy(filepath, temp_file)
 
         index = data_type.load_from_disk(save_path=filepath)
+        assert isinstance(index, data_type)
 
         # Cleanup and return
         fileio.rmtree(temp_dir)
         return index
 
-    def save(self, index: BaseGPTIndex) -> None:
+    def save(self, index: T) -> None:
         """Save a llama-index GPT index to disk.
 
         Args:
@@ -113,7 +116,7 @@ class LlamaIndexGPTFaissIndexMaterializer(BaseMaterializer):
 
         # Cleanup and return
         fileio.rmtree(temp_dir)
-        return index
+        return cast(GPTFaissIndex, index)
 
     def save(self, index: GPTFaissIndex) -> None:
         """Save a llama-index GPT faiss index to disk.
