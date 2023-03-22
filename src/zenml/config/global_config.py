@@ -394,12 +394,15 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
 
         if self.store == config and self._zen_store:
             # TODO: Do we actually need to create/initialize the store here
-            # or can we just return instead?
+            #   or can we just return instead? We think this is just getting
+            #   called for default registrations.
             BaseZenStore.create_store(
                 config, skip_default_registrations, **kwargs
             )
             return
 
+        # TODO: Revisit the flow regarding the registration of the default
+        #  entities once the analytics v1 is removed.
         store = BaseZenStore.create_store(config, True, **kwargs)
 
         logger.debug(f"Configuring the global store to {store.config}")
