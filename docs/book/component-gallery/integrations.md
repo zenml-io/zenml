@@ -56,8 +56,9 @@ pip install kubeflow==<PREFERRED_VERSION> mlflow==<PREFERRED_VERSION> seldon==<P
 ```
 
 {% hint style="info" %}
-The `-y` flag confirms all `pip install` commands without asking you for
-confirmation for every package first. 
+* The `-y` flag confirms all `pip install` commands without asking you for
+confirmation for every package first.
+* The `-u` flag updates all integrations to the latest possible version.
 
 You can run `zenml integration --help` to see a full list of CLI commands that
 ZenML provides for interacting with integrations.

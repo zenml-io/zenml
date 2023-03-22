@@ -175,10 +175,18 @@ def export_requirements(
     help="Force the installation of the required packages. This will skip the "
     "confirmation step and reinstall existing packages as well",
 )
+@click.option(
+    "--upgrade",
+    "-u",
+    "upgrade",
+    is_flag=True,
+    help="Upgrade the packages if they are already installed.",
+)
 def install(
     integrations: Tuple[str],
     ignore_integration: Tuple[str],
     force: bool = False,
+    upgrade: bool = False,
 ) -> None:
     """Installs the required packages for a given integration.
 
@@ -190,6 +198,7 @@ def install(
             for.
         ignore_integration: List of integrations to ignore explicitly.
         force: Force the installation of the required packages.
+        upgrade: Upgrade the packages if they are already installed.
     """
     from zenml.integrations.registry import integration_registry
 
@@ -209,8 +218,10 @@ def install(
     integrations_to_install = []
     for integration_name in integrations:
         try:
-            if force or not integration_registry.is_installed(
-                integration_name
+            if (
+                force
+                or upgrade
+                or not integration_registry.is_installed(integration_name)
             ):
                 requirements += (
                     integration_registry.select_integration_requirements(
@@ -226,16 +237,18 @@ def install(
         except KeyError:
             warning(f"Unable to find integration '{integration_name}'.")
 
+    message = "upgrade" if upgrade else "install"
     if requirements and (
         force
         or confirmation(
-            "Are you sure you want to install the following "
+            f"Are you sure you want to {message} the following "
             "packages to the current environment?\n"
             f"{requirements}"
         )
     ):
-        with console.status("Installing integrations..."):
-            install_packages(requirements)
+        message = "Upgrading" if upgrade else "Installing"
+        with console.status(f"{message} integrations..."):
+            install_packages(requirements, upgrade=upgrade)
             if "label_studio" in integrations:
                 warning(
                     "There is a known issue with Label Studio installations via zenml. You might find that the Label Studio installation breaks the ZenML CLI. In this case, please run `pip install 'pydantic<1.11,>=1.9.0'` to fix the issue or message us on Slack if you need help with this. We are working on a more definitive fix."
