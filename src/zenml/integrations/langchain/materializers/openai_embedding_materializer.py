@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Implementation of the langchain openai embedding materializer."""
+"""Implementation of the Langchain OpenAI embedding materializer."""
 
 
 import os
@@ -59,7 +59,7 @@ class LangchainOpenaiEmbeddingMaterializer(BaseMaterializer):
         current_python_version = get_python_version()
         if source_python_version != current_python_version:
             raise ValidationError(
-                f"Your file was saved with {source_python_version} "
+                f"Your `OpenAIEmbedding` was materialized with {source_python_version} "
                 f"but you are currently using {current_python_version}. "
                 f"Unable to load this pickled file."
             )

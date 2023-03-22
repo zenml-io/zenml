@@ -21,10 +21,17 @@ from typing import Type, cast
 from langchain.vectorstores import VectorStore
 
 from zenml.enums import ArtifactType
+from zenml.exceptions import ValidationError
 from zenml.io import fileio
 from zenml.materializers.base_materializer import BaseMaterializer
+from zenml.utils.io_utils import (
+    read_file_contents_as_string,
+    write_file_contents_as_string,
+)
+from zenml.utils.materializer_utils import get_python_version
 
-DEFAULT_FILENAME = "vectorstore.pkl"
+DEFAULT_PICKLE_FILENAME = "embedding.pkl"
+DEFAULT_PYTHON_VERSION_FILENAME = "python_version.txt"
 
 
 class LangchainVectorStoreMaterializer(BaseMaterializer):
@@ -43,8 +50,22 @@ class LangchainVectorStoreMaterializer(BaseMaterializer):
             The vector store.
         """
         super().load(data_type)
-        filepath = os.path.join(self.uri, DEFAULT_FILENAME)
-        with fileio.open(filepath, "rb") as fid:
+        python_version_filepath = os.path.join(
+            self.uri, DEFAULT_PYTHON_VERSION_FILENAME
+        )
+        source_python_version = read_file_contents_as_string(
+            python_version_filepath
+        )
+        current_python_version = get_python_version()
+        if source_python_version != current_python_version:
+            raise ValidationError(
+                f"Your `VectorStore` was materialized with {source_python_version} "
+                f"but you are currently using {current_python_version}. "
+                f"Unable to load this pickled file."
+            )
+
+        pickle_filepath = os.path.join(self.uri, DEFAULT_PICKLE_FILENAME)
+        with fileio.open(pickle_filepath, "rb") as fid:
             vector_store = pickle.load(fid)
         return cast(VectorStore, vector_store)
 
@@ -55,6 +76,16 @@ class LangchainVectorStoreMaterializer(BaseMaterializer):
             vector_store: The vector store to save.
         """
         super().save(vector_store)
-        filepath = os.path.join(self.uri, DEFAULT_FILENAME)
-        with fileio.open(filepath, "wb") as fid:
+
+        pickle_filepath = os.path.join(self.uri, DEFAULT_PICKLE_FILENAME)
+        with fileio.open(pickle_filepath, "wb") as fid:
             pickle.dump(vector_store, fid)
+
+        # save python version for validation on loading
+        python_version_filepath = os.path.join(
+            self.uri, DEFAULT_PYTHON_VERSION_FILENAME
+        )
+        current_python_version = get_python_version()
+        write_file_contents_as_string(
+            python_version_filepath, current_python_version
+        )
