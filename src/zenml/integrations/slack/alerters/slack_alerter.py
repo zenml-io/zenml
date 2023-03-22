@@ -202,7 +202,6 @@ class SlackAlerter(BaseAlerter):
         Args:
             message: Message to be posted.
             params: Optional parameters.
-            payload: Payload for blocks
 
         Returns:
             True if operation succeeded, else False
