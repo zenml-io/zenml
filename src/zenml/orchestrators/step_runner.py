@@ -531,7 +531,7 @@ class StepRunner:
             output_materializers: The output materializers of the step.
         """
         try:
-            hook = source_utils.import_class_by_path(hook_source)
+            hook = source_utils.load_source_path(hook_source)
             hook_spec = inspect.getfullargspec(inspect.unwrap(hook))
 
             function_params = self._parse_hook_inputs(
