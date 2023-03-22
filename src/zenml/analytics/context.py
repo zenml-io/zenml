@@ -21,7 +21,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, Union
 from uuid import UUID
 
 from zenml import __version__
-from zenml.analytics.client import Client
+from zenml import analytics
 from zenml.constants import ENV_ZENML_SERVER, handle_bool_env_var
 from zenml.environment import Environment, get_environment
 from zenml.logger import get_logger
@@ -146,7 +146,7 @@ class AnalyticsContext:
         """
         success = False
         if self.analytics_opt_in and self.user_id is not None:
-            success, _ = Client().identify(
+            success, _ = analytics.identify(
                 user_id=self.user_id,
                 traits=traits,
             )
@@ -174,7 +174,7 @@ class AnalyticsContext:
 
             traits.update({"group_id": group_id})
 
-            success, _ = Client().group(
+            success, _ = analytics.group(
                 user_id=self.user_id,
                 group_id=group_id,
                 traits=traits,
@@ -231,7 +231,7 @@ class AnalyticsContext:
             if isinstance(v, UUID):
                 properties[k] = str(v)
 
-        success, _ = Client().track(
+        success, _ = analytics.track(
             user_id=self.user_id,
             event=event,
             properties=properties,
