@@ -400,7 +400,7 @@ class Client(metaclass=ClientMetaClass):
                 "configuration."
             )
 
-        return ClientConfiguration(_config_file=config_path)
+        return ClientConfiguration(config_file=config_path)
 
     @staticmethod
     def initialize(
