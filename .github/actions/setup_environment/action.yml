@@ -73,15 +73,15 @@ runs:
       if: steps.cache-virtualenv.outputs.cache-hit != 'true' && inputs.install_integrations == 'yes'
       shell: bash
       run: |
-        zenml integration export-requirements --output-file integration-requirements.txt --ignore-integration feast --ignore-integration label_studio --ignore-integration bentoml --ignore-integration seldon --ignore-integration kserve --ignore-integration langchain
+        zenml integration export-requirements --output-file integration-requirements.txt --ignore-integration feast --ignore-integration label_studio --ignore-integration bentoml --ignore-integration seldon --ignore-integration kserve --ignore-integration langchain --ignore-integration llama_index
         pip install -r integration-requirements.txt
         rm integration-requirements.txt
 
-    - name: Install langchain integration
+    - name: Install langchain and llama_index integrations
       if: steps.cache-virtualenv.outputs.cache-hit != 'true' && inputs.install_integrations == 'yes' && inputs.python-version != '3.7'
       shell: bash
       run: |
-        zenml integration install -y langchain
+        zenml integration install -y langchain llama_index
 
       # Refresh the ZenML installation if using a cached virtualenv or after
       # installing integrations
