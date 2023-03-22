@@ -11,30 +11,26 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""The 'analytics' module of ZenML.
+"""The analytics module of ZenML.
 
 This module is based on the 'analytics-python' package created by Segment.
 The base functionalities are adapted to work with the ZenML analytics server.
 """
 import logging
-from queue import Queue
+from queue import Empty, Queue
 from threading import Thread
-from typing import Callable
+from typing import Any, Callable, List, Optional
 
-import backoff
-import monotonic
+import backoff  # type:ignore[import]
+import monotonic  # type:ignore[import]
 
-from zenml.analytics.request import APIError, post
-
-try:
-    from queue import Empty
-except ImportError:
-    from Queue import Empty
+from zenml.analytics.request import AnalyticsAPIError, post
+from zenml.logger import init_logging
 
 MAX_MSG_SIZE = 32 << 10
 
 # Our servers only accept batches less than 500KB. Here limit is set slightly
-# lower to leave space for extra data that will be added later, eg. "sentAt".
+# lower to leave space for extra data that will be added later, e. g. "sentAt".
 BATCH_SIZE_LIMIT = 475000
 
 logger = logging.getLogger(__name__)
@@ -45,9 +41,9 @@ class Consumer(Thread):
 
     def __init__(
         self,
-        queue: Queue,
+        queue: Queue,  # type: ignore[type-arg]
         upload_size: int = 100,
-        on_error: Callable = None,
+        on_error: Optional[Callable[..., Any]] = None,
         upload_interval: float = 0.5,
         retries: int = 10,
         timeout: int = 15,
@@ -55,15 +51,19 @@ class Consumer(Thread):
         """Initialize and create a consumer thread.
 
         Args:
-            queue: the list of message in the queue.
-            upload_size: int, the maximum size for messages a consumer can send
+            queue: The list of messages in the queue.
+            upload_size: The maximum size for messages a consumer can send
                 if the 'sync_mode' is set to False.
-            on_error: function to call if an error occurs.
-            upload_interval: float, the upload_interval in seconds
-            retries: int, the number of max tries before failing.
-            timeout: int, the timeout criteria in seconds.
+            on_error: Function to call if an error occurs.
+            upload_interval: The upload_interval in seconds
+            retries: The number of max tries before failing.
+            timeout: Timeout in seconds.
         """
         Thread.__init__(self)
+
+        # Initialization of the logging, that silences the backoff logger
+        init_logging()
+
         # Make consumer a daemon thread so that it doesn't block program exit
         self.daemon = True
         self.upload_size = upload_size
@@ -78,7 +78,7 @@ class Consumer(Thread):
         self.retries = retries
         self.timeout = timeout
 
-    def run(self):
+    def run(self) -> None:
         """Runs the consumer."""
         logger.debug("Consumer is running...")
         while self.running:
@@ -86,12 +86,16 @@ class Consumer(Thread):
 
         logger.debug("Consumer exited.")
 
-    def pause(self):
+    def pause(self) -> None:
         """Pause the consumer."""
         self.running = False
 
-    def upload(self):
-        """Upload the next batch of items, return whether successful."""
+    def upload(self) -> bool:
+        """Upload the next batch of items, return whether successful.
+
+        Returns:
+            If the upload succeeded.
+        """
         success = False
         batch = self.next()
         if len(batch) == 0:
@@ -101,7 +105,7 @@ class Consumer(Thread):
             self.request(batch)
             success = True
         except Exception as e:
-            logger.error("error uploading: %s", e)
+            logger.debug("error uploading: %s", e)
             success = False
             if self.on_error:
                 self.on_error(e, batch)
@@ -111,10 +115,14 @@ class Consumer(Thread):
                 self.queue.task_done()
             return success
 
-    def next(self):
-        """Return the next batch of items to upload."""
+    def next(self) -> List[str]:
+        """Return the next batch of items to upload.
+
+        Returns:
+            The next batch of items to upload.
+        """
         queue = self.queue
-        items = []
+        items: List[str] = []
 
         start_time = monotonic.monotonic()
         total_size = 0
@@ -130,7 +138,7 @@ class Consumer(Thread):
                 item_size = len(item.encode())
 
                 if item_size > MAX_MSG_SIZE:
-                    logger.error(
+                    logger.debug(
                         "Item exceeds 32kb limit, dropping. (%s)", str(item)
                     )
                     continue
@@ -144,11 +152,15 @@ class Consumer(Thread):
 
         return items
 
-    def request(self, batch):
-        """Attempt to upload the batch and retry before raising an error."""
+    def request(self, batch: List[str]) -> None:
+        """Attempt to upload the batch and retry before raising an error.
 
-        def fatal_exception(exc):
-            if isinstance(exc, APIError):
+        Args:
+            batch: The batch to upload.
+        """
+
+        def fatal_exception(exc: Any) -> bool:
+            if isinstance(exc, AnalyticsAPIError):
                 # retry on server errors and client errors
                 # with 429 status code (rate limited),
                 # don't retry on other client errors
@@ -157,13 +169,13 @@ class Consumer(Thread):
                 # retry on all other errors (e.g. network)
                 return False
 
-        @backoff.on_exception(
+        @backoff.on_exception(  # type: ignore[misc]
             backoff.expo,
             Exception,
             max_tries=self.retries + 1,
             giveup=fatal_exception,
         )
-        def send_request():
+        def send_request() -> None:
             """Function to send a batch of messages."""
             post(timeout=self.timeout, batch=batch)
 

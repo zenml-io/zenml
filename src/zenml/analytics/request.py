@@ -31,14 +31,14 @@ def post(batch: List[str], timeout: int = 15) -> requests.Response:
     """Post a batch of messages to the ZenML analytics server.
 
     Args:
-        batch: list of str representing the messages.
-        timeout: the timeout criteria in seconds.
+        batch: The messages to send.
+        timeout: Timeout in seconds.
 
     Returns:
-        the response
+        The response.
 
     Raises:
-        APIError, if the post request has failed.
+        AnalyticsAPIError: If the post request has failed.
     """
     headers = {
         "accept": "application/json",
@@ -47,7 +47,7 @@ def post(batch: List[str], timeout: int = 15) -> requests.Response:
     response = requests.post(
         url=ANALYTICS_SERVER_URL + "/batch",
         headers=headers,
-        data=batch,
+        data=f"[{','.join(batch)}]",
         timeout=timeout,
     )
 
@@ -55,25 +55,18 @@ def post(batch: List[str], timeout: int = 15) -> requests.Response:
         logger.debug("data uploaded successfully")
         return response
 
-    try:
-        payload = response.json()
-        logger.debug("received response: %s", payload)
-        raise APIError(
-            response.status_code, payload.get("detail", (response.text,))
-        )
-    except ValueError:
-        raise APIError(response.status_code, response.text)
+    raise AnalyticsAPIError(response.status_code, response.text)
 
 
-class APIError(Exception):
+class AnalyticsAPIError(Exception):
     """Custom exception class for API-related errors."""
 
-    def __init__(self, status, message) -> None:
+    def __init__(self, status: int, message: str) -> None:
         """Initialization.
 
         Args:
-            status: int, the status code of the response.
-            message: str, the text of the response.
+            status: The status code of the response.
+            message: The text of the response.
         """
         self.message = message
         self.status = status
@@ -82,7 +75,7 @@ class APIError(Exception):
         """Method to represent the instance as a string.
 
         Returns:
-            str, a representation of the message and the status code.
+            A representation of the message and the status code.
         """
         msg = "[ZenML Analytics] {1}: {0}"
         return msg.format(self.message, self.status)

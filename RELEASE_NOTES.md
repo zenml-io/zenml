@@ -1,5 +1,39 @@
 <!-- markdown-link-check-disable -->
 
+# 0.36.1
+
+This minor release contains some small fixes and improvements.
+
+- We fixed a bug with the way hooks were being parsed, which was causing
+  pipelines to fail.
+- We brought various parts of the documentation up to date with features that
+  had previously been added, notably the new image building functionality.
+- We added a failure hook that connects to OpenAI's ChatGPT API to allow you to
+  receive a message when a pipeline fails that includes suggestions on how to
+  fix the failing step.
+- We added a new integration with `langchain` and `llama_hub` to allow you to
+  build on top of those libraries as part of a more robust MLOps workflow.
+- We made the first some bigger changes to our analytics system to make it more
+  robust and secure. This release begins that migration. Users should expect no
+  changes in behavior and all telemetry-related preferences will be preserved.
+
+## What's Changed
+* Fix hook parser by @strickvl in https://github.com/zenml-io/zenml/pull/1428
+* Fix some pipeline bugs by @schustmi in https://github.com/zenml-io/zenml/pull/1426
+* Add image builders to Examples by @safoinme in https://github.com/zenml-io/zenml/pull/1434
+* ZenML Failure Hook for OpenAI ChatGPT fixes by @strickvl in https://github.com/zenml-io/zenml/pull/1430
+* Integrations with `langchain` and `llama_hub` by @fa9r in https://github.com/zenml-io/zenml/pull/1404
+* Add basic tests for the server and recipes CLI by @wjayesh in https://github.com/zenml-io/zenml/pull/1306
+* Add to our alembic migration guide by @strickvl in https://github.com/zenml-io/zenml/pull/1423
+* Analytics 2.0 by @bcdurak in https://github.com/zenml-io/zenml/pull/1411
+* Improve Slack Alerter by adding message blocks by @soubenz in https://github.com/zenml-io/zenml/pull/1402
+* Add HF deployment type by @strickvl in https://github.com/zenml-io/zenml/pull/1438
+
+## New Contributors
+* @soubenz made their first contribution in https://github.com/zenml-io/zenml/pull/1402
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.36.0...0.36.1
+
 # 0.36.0
 
 Our latest release adds hooks to ZenML pipelines to handle custom logic that

@@ -163,6 +163,11 @@ variable "ingress_tls_secret_name" {
   type        = string
 }
 
+variable "zenmlserver_image_repo" {
+  description = "The repository to use for the zenmlserver docker image."
+  default     = "zenmldocker/zenml-server"
+  type        = string
+}
 variable "zenmlserver_image_tag" {
   description = "The tag to use for the zenmlserver docker image."
   default     = "latest"

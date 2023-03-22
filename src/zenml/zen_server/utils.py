@@ -23,7 +23,7 @@ from pydantic import BaseModel, ValidationError
 
 from zenml.config.global_config import GlobalConfiguration
 from zenml.constants import (
-    ENV_ZENML_SERVER_FLAG,
+    ENV_ZENML_SERVER,
     ENV_ZENML_SERVER_ROOT_URL_PATH,
 )
 from zenml.enums import StoreType
@@ -77,7 +77,7 @@ def initialize_zen_store() -> None:
     _zen_store.track_analytics = False
 
     # Use an environment variable to flag the instance as a server
-    os.environ[ENV_ZENML_SERVER_FLAG] = "true"
+    os.environ[ENV_ZENML_SERVER] = "true"
 
     if _zen_store.type == StoreType.REST:
         raise ValueError(

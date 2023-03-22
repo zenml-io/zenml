@@ -11,18 +11,13 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""The 'analytics' module of ZenML.
+"""The analytics module of ZenML.
 
 This module is based on the 'analytics-python' package created by Segment.
 The base functionalities are adapted to work with the ZenML analytics server.
 """
-import os
-from types import TracebackType
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, Union
-from uuid import UUID
-
 from zenml import __version__, analytics
-from zenml.constants import ENV_ZENML_SERVER_FLAG
+from zenml.constants import ENV_ZENML_SERVER, handle_bool_env_var
 from zenml.environment import Environment, get_environment
 from zenml.logger import get_logger
 
@@ -58,15 +53,19 @@ class AnalyticsContext:
         self.deployment_type: Optional["ServerDeploymentType"] = None
 
     @property
-    def in_server(self):
-        """Flag to check whether the code is running on the server side."""
-        return os.getenv(ENV_ZENML_SERVER_FLAG, False)
+    def in_server(self) -> bool:
+        """Flag to check whether the code is running in a ZenML server.
+
+        Returns:
+            True if running in a server, False otherwise.
+        """
+        return handle_bool_env_var(ENV_ZENML_SERVER)
 
     def __enter__(self) -> "AnalyticsContext":
         """Enter analytics context manager.
 
         Returns:
-            self.
+            The analytics context.
         """
         # Fetch the analytics opt-in setting
         from zenml.config.global_config import GlobalConfiguration
@@ -75,36 +74,39 @@ class AnalyticsContext:
         gc = GlobalConfiguration()
         self.analytics_opt_in = gc.analytics_opt_in
 
-        if self.analytics_opt_in:
-            try:
-                # Fetch the `user_id`
-                if self.in_server:
-                    # If the code is running on the server side, use the auth context.
-                    auth_context = get_auth_context()
-                    if auth_context is not None:
-                        self.user_id = auth_context.user.id
-                else:
-                    # If the code is running on the client side, use the default user.
-                    default_user = gc.zen_store.get_user()
-                    self.user_id = default_user.id
+        if not self.analytics_opt_in:
+            return self
 
-                # Fetch the `client_id`
-                if self.in_server:
-                    # If the code is running on the server side, there is no client id.
-                    self.client_id = None
-                else:
-                    # If the code is running on the client side, attach the client id.
-                    self.client_id = gc.user_id
+        try:
+            # Fetch the `user_id`
+            if self.in_server:
+                # If the code is running on the server, use the auth context.
+                auth_context = get_auth_context()
+                if auth_context is not None:
+                    self.user_id = auth_context.user.id
+            else:
+                # If the code is running on the client, use the default user.
+                default_user = gc.zen_store.get_user()
+                self.user_id = default_user.id
 
-                # Fetch the store information including the `server_id`
-                store_info = gc.zen_store.get_store_info()
+            # Fetch the `client_id`
+            if self.in_server:
+                # If the code is running on the server, there is no client id.
+                self.client_id = None
+            else:
+                # If the code is running on the client, attach the client id.
+                self.client_id = gc.user_id
 
-                self.server_id = store_info.id
-                self.deployment_type = store_info.deployment_type
-                self.database_type = store_info.database_type
-            except Exception as e:
-                self.analytics_opt_in = False
-                logger.debug(f"Analytics initialization failed: {e}")
+            # Fetch the store information including the `server_id`
+            store_info = gc.zen_store.get_store_info()
+
+            self.server_id = store_info.id
+            self.deployment_type = store_info.deployment_type
+            self.database_type = store_info.database_type
+        except Exception as e:
+            self.analytics_opt_in = False
+            logger.debug(f"Analytics initialization failed: {e}")
+
         return self
 
     def __exit__(
@@ -121,9 +123,12 @@ class AnalyticsContext:
             exc_tb: Exception traceback.
 
         Returns:
-            True if exception was handled, False otherwise.
+            True.
         """
-        pass
+        if exc_val is not None:
+            logger.debug(f"Sending telemetry 2.0 data failed: {exc_val}")
+
+        return True
 
     def identify(self, traits: Optional[Dict[str, Any]] = None) -> bool:
         """Identify the user through segment.
@@ -135,8 +140,8 @@ class AnalyticsContext:
             True if tracking information was sent, False otherwise.
         """
         success = False
-        if self.analytics_opt_in:
-            success, _ = analytics.Client().identify(
+        if self.analytics_opt_in and self.user_id is not None:
+            success, _ = analytics.identify(
                 user_id=self.user_id,
                 traits=traits,
             )
@@ -158,13 +163,13 @@ class AnalyticsContext:
             True if tracking information was sent, False otherwise.
         """
         success = False
-        if self.analytics_opt_in:
+        if self.analytics_opt_in and self.user_id is not None:
             if traits is None:
                 traits = {}
 
             traits.update({"group_id": group_id})
 
-            success, _ = analytics.Client().group(
+            success, _ = analytics.group(
                 user_id=self.user_id,
                 group_id=group_id,
                 traits=traits,
@@ -188,19 +193,18 @@ class AnalyticsContext:
         """
         from zenml.utils.analytics_utils import AnalyticsEvent
 
-        if not isinstance(event, AnalyticsEvent):
-            raise ValueError(
-                "When tracking events, please provide one of the supported "
-                "event types."
-            )
-
         if properties is None:
             properties = {}
 
-        if not self.analytics_opt_in and event.value not in {
-            AnalyticsEvent.OPT_OUT_ANALYTICS,
-            AnalyticsEvent.OPT_IN_ANALYTICS,
-        }:
+        if (
+            not self.analytics_opt_in
+            and event.value
+            not in {
+                AnalyticsEvent.OPT_OUT_ANALYTICS,
+                AnalyticsEvent.OPT_IN_ANALYTICS,
+            }
+            or self.user_id is None
+        ):
             return False
 
         # add basics
@@ -222,15 +226,15 @@ class AnalyticsContext:
             if isinstance(v, UUID):
                 properties[k] = str(v)
 
-        success, _ = analytics.Client().track(
+        success, _ = analytics.track(
             user_id=self.user_id,
             event=event,
             properties=properties,
         )
 
         logger.debug(
-            f"Analytics sent: User: {self.user_id}, Event: {event}, Metadata: "
-            f"{properties}"
+            f"Sending analytics: User: {self.user_id}, Event: {event}, "
+            f"Metadata: {properties}"
         )
 
         return success

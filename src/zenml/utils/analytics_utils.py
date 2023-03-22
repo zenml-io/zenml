@@ -41,6 +41,7 @@ class AnalyticsEvent(str, Enum):
     CREATE_PIPELINE = "Pipeline created"
     UPDATE_PIPELINE = "Pipeline updated"
     DELETE_PIPELINE = "Pipeline deleted"
+    BUILD_PIPELINE = "Pipeline built"
 
     # Repo
     INITIALIZE_REPO = "ZenML initialized"
@@ -214,12 +215,11 @@ class AnalyticsContext:
             exc_tb: Exception traceback.
 
         Returns:
-            True if exception was handled, False otherwise.
+            True, we should never fail main thread.
         """
         if exc_val is not None:
             logger.debug(f"Sending telemetry data failed: {exc_val}")
 
-        # We should never fail main thread
         return True
 
     def identify(self, traits: Optional[Dict[str, Any]] = None) -> bool:
@@ -403,11 +403,13 @@ def identify_user(
 
     if v1:
         with AnalyticsContext() as analytics:
-            success = success and analytics.identify(traits=user_metadata)
+            success_v1 = analytics.identify(traits=user_metadata)
+            success = success and success_v1
 
     if v2:
         with AnalyticsContextV2() as analytics:
-            success = success and analytics.identify(traits=user_metadata)
+            success_v2 = analytics.identify(traits=user_metadata)
+            success = success and success_v2
 
     return success
 
@@ -435,21 +437,23 @@ def identify_group(
 
     if v1:
         with AnalyticsContext() as analytics:
-            success = success and analytics.group(
+            success_v1 = analytics.group(
                 group=group, group_id=str(group_id), traits=group_metadata
             )
+            success = success and success_v1
 
     if v2:
         with AnalyticsContextV2() as analytics:
-            success = success and analytics.group(
+            success_v2 = analytics.group(
                 group_id=group_id, traits=group_metadata
             )
+            success = success and success_v2
 
     return success
 
 
 def track_event(
-    event: Union[str, AnalyticsEvent],
+    event: AnalyticsEvent,
     metadata: Optional[Dict[str, Any]] = None,
     v1: Optional[bool] = True,
     v2: Optional[bool] = False,
@@ -474,15 +478,13 @@ def track_event(
 
     if v1:
         with AnalyticsContext() as analytics:
-            success = success and analytics.track(
-                event=event, properties=metadata
-            )
+            success_v1 = analytics.track(event=event, properties=metadata)
+            success = success and success_v1
 
     if v2:
         with AnalyticsContextV2() as analytics:
-            success = success and analytics.track(
-                event=event, properties=metadata
-            )
+            success_v2 = analytics.track(event=event, properties=metadata)
+            success = success and success_v2
 
     return success
 
@@ -543,7 +545,7 @@ class AnalyticsTrackerMixin(ABC):
     @abstractmethod
     def track_event(
         self,
-        event: Union[str, AnalyticsEvent],
+        event: AnalyticsEvent,
         metadata: Optional[Dict[str, Any]],
     ) -> None:
         """Track an event.
@@ -657,14 +659,14 @@ class event_handler(object):
         Args:
             event: The type of the analytics event
             metadata: The metadata of the event.
-        v1: Flag to determine whether analytics v1 is included.
-        v2: Flag to determine whether analytics v2 is included.
+            v1: Flag to determine whether analytics v1 is included.
+            v2: Flag to determine whether analytics v2 is included.
         """
         self.event: AnalyticsEvent = event
         self.metadata: Dict[str, Any] = metadata or {}
         self.tracker: Optional[AnalyticsTrackerMixin] = None
-        self.v1: bool = v1
-        self.v2: bool = v2
+        self.v1: Optional[bool] = v1
+        self.v2: Optional[bool] = v2
 
     def __enter__(self) -> "event_handler":
         """Enter function of the event handler.
