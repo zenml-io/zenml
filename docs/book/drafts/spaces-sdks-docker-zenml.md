@@ -139,12 +139,12 @@ version by updating the `Dockerfile`'s `FROM` import statement at the very top.
 
 ## Next Steps
 
-As a next step, check out our [ZenBytes Tutorial
-series](https://github.com/zenml-io/zenbytes) which is a series of short
-practical MLOps lessons through ZenML and its various integrations. It is
-intended for people looking to learn about MLOps generally, and also for ML
-practitioners who want to get started with ZenML. All the tutorials can be run
-using Colab or with local Jupyter Notebooks.
+As a next step, check out our [Starter Guide to MLOps with
+ZenML](https://docs.zenml.io/starter-guide/pipelines) which is a series of short
+practical pages on how to get going quickly. Alternatively, check out [our
+`quickstart`
+example](https://github.com/zenml-io/zenml/tree/main/examples/quickstart) which
+is a full end-to-end example of many of the features of ZenML.
 
 ## 🤗 Feedback and support
 
