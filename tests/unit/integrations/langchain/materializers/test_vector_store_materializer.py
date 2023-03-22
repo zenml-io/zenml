@@ -30,12 +30,12 @@ def test_langchain_vector_store_materializer(clean_client):
     """Test the Langchain Vector Store materializer."""
     from langchain.docstore.document import Document
     from langchain.embeddings.fake import FakeEmbeddings
-    from langchain.vectorstores import VectorStore
+    from langchain.vectorstores.faiss import FAISS
 
     page_content = "Axl, Aria and Blupus went to the sea for a picnic."
-    fake_embeddings = FakeEmbeddings()
+    fake_embeddings = FakeEmbeddings(size=1)
     with does_not_raise():
-        vector_store = VectorStore.from_documents(
+        vector_store = FAISS.from_documents(
             documents=[Document(page_content=page_content)],
             embedding=fake_embeddings,
         )
