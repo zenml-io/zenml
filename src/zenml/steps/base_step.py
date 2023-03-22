@@ -635,8 +635,7 @@ class BaseStep(metaclass=BaseStepMeta):
     def _parse_call_args(
         self, *args: Any, **kwargs: Any
     ) -> Tuple[Dict[str, _OutputArtifact], Dict[str, Any]]:
-
-        signature = inspect.signature(inspect.unwrap(self.entrypoint))
+        signature = inspect.signature(self.entrypoint, follow_wrapped=True)
 
         def _is_required_param(annotation: Any) -> bool:
             if inspect.isclass(annotation) and issubclass(
@@ -941,7 +940,7 @@ class BaseStep(metaclass=BaseStepMeta):
         if not parameters:
             return
 
-        signature = inspect.signature(inspect.unwrap(self.entrypoint))
+        signature = inspect.signature(self.entrypoint, follow_wrapped=True)
 
         for key, value in parameters.items():
             if key in signature.parameters:
