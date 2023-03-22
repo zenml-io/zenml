@@ -37,6 +37,7 @@ default_client: Optional[Client] = None
 
 
 def set_default_client() -> None:
+    """Sets up a default client with the default configuration."""
     global default_client
     if default_client is None:
         default_client = Client(
@@ -55,7 +56,16 @@ def track(
     event: "AnalyticsEvent",
     properties: Optional[Dict[Any, Any]],
 ) -> Tuple[bool, str]:
-    """Send a track call with the default client."""
+    """Send a track call with the default client.
+
+    Args:
+        user_id: The user ID.
+        event: The type of the event.
+        properties: Dict of additional properties for the event.
+
+    Returns:
+        Tuple (success flag, the original message).
+    """
     set_default_client()
     assert default_client is not None
     return default_client.track(
@@ -66,7 +76,15 @@ def track(
 def identify(
     user_id: UUID, traits: Optional[Dict[Any, Any]]
 ) -> Tuple[bool, str]:
-    """Send an identify call with the default client."""
+    """Send an identify call with the default client.
+
+    Args:
+        user_id: The user ID.
+        traits: The traits for the identification process.
+
+    Returns:
+        Tuple (success flag, the original message).
+    """
     set_default_client()
     assert default_client is not None
     return default_client.identify(
@@ -78,7 +96,17 @@ def identify(
 def group(
     user_id: UUID, group_id: UUID, traits: Optional[Dict[Any, Any]]
 ) -> Tuple[bool, str]:
-    """Send a group call with the default client."""
+    """Send a group call with the default client.
+
+    Args:
+        user_id: The user ID.
+        group_id: The group ID.
+        traits: Traits to assign to the group.
+
+    Returns:
+        Tuple (success flag, the original message).
+    """
+
     set_default_client()
     assert default_client is not None
     return default_client.group(
