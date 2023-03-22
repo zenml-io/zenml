@@ -87,7 +87,7 @@ with the following CLI command (after installing ZenML, and using your custom
 URL instead of the placeholder):
 
 ```shell
-zenml connect --url '<YOUR_HF_SPACES_DIRECT_URL>' --no-verify-ssl --username='default'
+zenml connect --url '<YOUR_HF_SPACES_DIRECT_URL>' --username='default' --password=''
 ```
 
 You can also use the Direct URL in your browser to use the ZenML dashboard as a
