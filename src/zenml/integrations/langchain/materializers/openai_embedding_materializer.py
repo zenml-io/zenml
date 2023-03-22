@@ -18,8 +18,6 @@ import os
 import pickle
 from typing import Type, cast
 
-from langchain.embeddings import OpenAIEmbeddings
-
 from zenml.enums import ArtifactType
 from zenml.exceptions import ValidationError
 from zenml.io import fileio
@@ -37,6 +35,8 @@ DEFAULT_PYTHON_VERSION_FILENAME = "python_version.txt"
 class LangchainOpenaiEmbeddingMaterializer(BaseMaterializer):
     """Handle langchain openai embedding objects."""
 
+    from langchain.embeddings import OpenAIEmbeddings
+
     ASSOCIATED_ARTIFACT_TYPE = ArtifactType.MODEL
     ASSOCIATED_TYPES = (OpenAIEmbeddings,)
 
@@ -53,6 +53,8 @@ class LangchainOpenaiEmbeddingMaterializer(BaseMaterializer):
             ValidationError: If the Python version used to materialize the
                 embedding is different from the current Python version.
         """
+        from langchain.embeddings import OpenAIEmbeddings
+
         super().load(data_type)
         python_version_filepath = os.path.join(
             self.uri, DEFAULT_PYTHON_VERSION_FILENAME

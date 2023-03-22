@@ -15,8 +15,6 @@
 
 from typing import TYPE_CHECKING, Any, Dict, Type
 
-from langchain.docstore.document import Document
-
 from zenml.enums import ArtifactType
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.materializers.pydantic_materializer import PydanticMaterializer
@@ -29,6 +27,8 @@ DEFAULT_FILENAME = "data.json"
 
 class LangchainDocumentMaterializer(BaseMaterializer):
     """Handle Langchain Document objects."""
+
+    from langchain.docstore.document import Document
 
     ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATA
     ASSOCIATED_TYPES = (Document,)

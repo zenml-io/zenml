@@ -15,9 +15,6 @@
 import os
 from typing import TYPE_CHECKING, Any, Dict, Type
 
-from langchain.docstore.document import Document as LCDocument
-from llama_index.readers.schema.base import Document
-
 from zenml.enums import ArtifactType
 from zenml.integrations.langchain.materializers.document_materializer import (
     LangchainDocumentMaterializer,
@@ -32,6 +29,8 @@ if TYPE_CHECKING:
 
 class LlamaIndexDocumentMaterializer(BaseMaterializer):
     """Handle serialization and deserialization of llama-index documents."""
+
+    from llama_index.readers.schema.base import Document
 
     ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATA
     ASSOCIATED_TYPES = (Document,)
@@ -54,6 +53,9 @@ class LlamaIndexDocumentMaterializer(BaseMaterializer):
         Returns:
             The data read.
         """
+        from langchain.docstore.document import Document as LCDocument
+        from llama_index.readers.schema.base import Document
+
         contents = super().load(data_type)
         data_path = os.path.join(self.uri, DEFAULT_FILENAME)
         contents = yaml_utils.read_json(data_path)

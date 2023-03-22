@@ -18,8 +18,6 @@ import os
 import pickle
 from typing import Type, cast
 
-from langchain.vectorstores import VectorStore
-
 from zenml.enums import ArtifactType
 from zenml.exceptions import ValidationError
 from zenml.io import fileio
@@ -37,6 +35,8 @@ DEFAULT_PYTHON_VERSION_FILENAME = "python_version.txt"
 class LangchainVectorStoreMaterializer(BaseMaterializer):
     """Handle langchain vector store objects."""
 
+    from langchain.vectorstores import VectorStore
+
     ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATA
     ASSOCIATED_TYPES = (VectorStore,)
 
@@ -53,6 +53,8 @@ class LangchainVectorStoreMaterializer(BaseMaterializer):
             ValidationError: If the Python version used to materialize the
                 VectorStore is different from the current Python version.
         """
+        from langchain.vectorstores import VectorStore
+
         super().load(data_type)
         python_version_filepath = os.path.join(
             self.uri, DEFAULT_PYTHON_VERSION_FILENAME
