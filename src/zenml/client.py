@@ -1638,7 +1638,7 @@ class Client(metaclass=ClientMetaClass):
         update_model = StackUpdateModel(
             workspace=self.active_workspace.id,
             user=self.active_user.id,
-        ) # type: ignore
+        )  # type: ignore
 
         if name:
             shared_status = is_shared or stack.is_shared
