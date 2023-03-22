@@ -551,87 +551,6 @@ class BaseStep(metaclass=BaseStepMeta):
 
             self.configure(parameters=config)
 
-    def _validate_input_artifacts(
-        self, *artifacts: _OutputArtifact, **kw_artifacts: _OutputArtifact
-    ) -> Dict[str, _OutputArtifact]:
-        """Verifies and prepares the input artifacts for running this step.
-
-        Args:
-            *artifacts: Positional input artifacts passed to
-                the __call__ method.
-            **kw_artifacts: Keyword input artifacts passed to
-                the __call__ method.
-
-        Returns:
-            Dictionary containing both the positional and keyword input
-            artifacts.
-
-        Raises:
-            StepInterfaceError: If there are too many or too few artifacts.
-        """
-        input_artifact_keys = list(self.INPUT_SIGNATURE.keys())
-        if len(artifacts) > len(input_artifact_keys):
-            raise StepInterfaceError(
-                f"Too many input artifacts for step '{self.name}'. "
-                f"This step expects {len(input_artifact_keys)} artifact(s) "
-                f"but got {len(artifacts) + len(kw_artifacts)}."
-            )
-
-        combined_artifacts = {}
-
-        for i, artifact in enumerate(artifacts):
-            if not isinstance(artifact, BaseStep._OutputArtifact):
-                raise StepInterfaceError(
-                    f"Wrong argument type (`{type(artifact)}`) for positional "
-                    f"argument {i} of step '{self.name}'. Only outputs "
-                    f"from previous steps can be used as arguments when "
-                    f"connecting steps."
-                )
-
-            key = input_artifact_keys[i]
-            combined_artifacts[key] = artifact
-
-        for key, artifact in kw_artifacts.items():
-            if key in combined_artifacts:
-                # an artifact for this key was already set by
-                # the positional input artifacts
-                raise StepInterfaceError(
-                    f"Unexpected keyword argument '{key}' for step "
-                    f"'{self.name}'. An artifact for this key was "
-                    f"already passed as a positional argument."
-                )
-
-            if not isinstance(artifact, BaseStep._OutputArtifact):
-                raise StepInterfaceError(
-                    f"Wrong argument type (`{type(artifact)}`) for argument "
-                    f"'{key}' of step '{self.name}'. Only outputs from "
-                    f"previous steps can be used as arguments when "
-                    f"connecting steps."
-                )
-
-            combined_artifacts[key] = artifact
-
-        # check if there are any missing or unexpected artifacts
-        expected_artifacts = set(self.INPUT_SIGNATURE.keys())
-        actual_artifacts = set(combined_artifacts.keys())
-        missing_artifacts = expected_artifacts - actual_artifacts
-        unexpected_artifacts = actual_artifacts - expected_artifacts
-
-        if missing_artifacts:
-            raise StepInterfaceError(
-                f"Missing input artifact(s) for step "
-                f"'{self.name}': {missing_artifacts}."
-            )
-
-        if unexpected_artifacts:
-            raise StepInterfaceError(
-                f"Unexpected input artifact(s) for step "
-                f"'{self.name}': {unexpected_artifacts}. This step "
-                f"only requires the following artifacts: {expected_artifacts}."
-            )
-
-        return combined_artifacts
-
     def _parse_call_args(
         self, *args: Any, **kwargs: Any
     ) -> Tuple[Dict[str, _OutputArtifact], Dict[str, Any]]:
@@ -666,6 +585,12 @@ class BaseStep(metaclass=BaseStepMeta):
         for key, value in bound_args.arguments.items():
             if isinstance(value, BaseStep._OutputArtifact):
                 artifacts[key] = value
+                if key in self.configuration.parameters:
+                    logger.warning(
+                        "Got duplicate value for step input %s, using value "
+                        "provided as artifact.",
+                        key,
+                    )
             else:
                 self._validate_parameter_value(
                     parameter=signature.parameters[key], value=value
@@ -705,13 +630,6 @@ class BaseStep(metaclass=BaseStepMeta):
 
         input_artifacts, parameters = self._parse_call_args(*args, **kwargs)
         self.configure(parameters=parameters)
-
-        for artifact_key in input_artifacts.keys():
-            if artifact_key in self.configuration.parameters:
-                logger.warning(
-                    "Got duplicate value for step input %s, using value provided as artifact.",
-                    artifact_key,
-                )
 
         for name, input_ in input_artifacts.items():
             self._upstream_steps.add(input_.step_name)
@@ -1145,7 +1063,6 @@ class BaseStep(metaclass=BaseStepMeta):
         if expected_type is Optional:
             expected_type = get_args(expected_type)
 
-        # TODO: check if json serializable here?
         if not isinstance(value, expected_type):
             raise StepInterfaceError(
                 f"Wrong argument type (`{type(value)}`) for argument "
@@ -1153,3 +1070,22 @@ class BaseStep(metaclass=BaseStepMeta):
                 f"either be an output of a previous steps or of type "
                 f"`{expected_type}`."
             )
+
+        if not is_json_serializable(value):
+            raise StepInterfaceError(
+                f"Argument type (`{type(value)}`) for argument "
+                f"'{parameter.name}' of step '{self.name}' is not JSON "
+                "serializable."
+            )
+
+
+def is_json_serializable(obj: Any) -> bool:
+    import json
+
+    from pydantic.json import pydantic_encoder
+
+    try:
+        json.dumps(obj, default=pydantic_encoder)
+        return True
+    except TypeError:
+        return False
