@@ -14,12 +14,12 @@
 """Functionality for OpenAI standard hooks."""
 
 import io
-import os
 import sys
 
 import openai
 from rich.console import Console
 
+from zenml.client import Client
 from zenml.logger import get_logger
 from zenml.steps import BaseParameters, StepContext
 
@@ -40,7 +40,9 @@ def openai_alerter_failure_hook_helper(
         exception: The exception that was raised.
         model_name: The OpenAI model to use for the chatbot.
     """
-    openai_api_key = os.environ.get("OPENAI_API_KEY")
+    c = Client()
+    openai_secret = c.get_secret("openai")
+    openai_api_key = openai_secret.secret_values.get("api_key")
 
     if context.stack and context.stack.alerter and openai_api_key:
         output_captured = io.StringIO()

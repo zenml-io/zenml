@@ -129,11 +129,11 @@ Note that using this integration will incur charges on your OpenAI account.
 {% endhint %}
 
 First ensure that you have the OpenAI integration installed
-and have your OpenAI API key set as an environment variable:
+and have stored your API key within a ZenML secret:
 
 ```shell
 zenml integration install openai
-export OPENAI_API_KEY='<YOUR_KEY>'
+zenml secret create openai --api_key=<YOUR_API_KEY>
 ```
 
 Then, you can use the hook in your pipeline:
