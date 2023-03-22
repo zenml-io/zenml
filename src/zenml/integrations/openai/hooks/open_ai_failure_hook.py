@@ -73,7 +73,7 @@ def openai_alerter_failure_hook_helper(
             + "\n\n"
         )
         message += (
-            f"*OpenAI ChatGPT's suggestion on how to fix it:*\n `{suggestion}`"
+            f"*OpenAI ChatGPT's suggestion (model = `{model_name}`) on how to fix it:*\n `{suggestion}`"
             + "\n"
         )
         context.stack.alerter.post(message)
