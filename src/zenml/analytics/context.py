@@ -16,6 +16,10 @@
 This module is based on the 'analytics-python' package created by Segment.
 The base functionalities are adapted to work with the ZenML analytics server.
 """
+from types import TracebackType
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, Union
+from uuid import UUID
+
 from zenml import __version__, analytics
 from zenml.constants import ENV_ZENML_SERVER, handle_bool_env_var
 from zenml.environment import Environment, get_environment

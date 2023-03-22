@@ -37,6 +37,8 @@ default_client: Optional[Client] = None
 
 
 def set_default_client() -> None:
+    """Sets up a default client with the default configuration."""
+    global default_client
     if default_client is None:
         default_client = Client(
             debug=debug,
