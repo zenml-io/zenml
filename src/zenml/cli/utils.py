@@ -1419,28 +1419,15 @@ def list_options(filter_model: Type[BaseFilterModel]) -> Callable[[F], F]:
         data_type_descriptors = set()
         for k, v in filter_model.__fields__.items():
             if k not in filter_model.CLI_EXCLUDE_FIELDS:
-                # if k is metadata, add option with multiple values
-                if k == "metadata_values":
-                    options.append(
-                        click.option(
-                            "--metadata",
-                            "-m",
-                            type=str,
-                            multiple=True,
-                            required=False,
-                            help=create_filter_help_text(filter_model, k),
-                        )
+                options.append(
+                    click.option(
+                        f"--{k}",
+                        type=str,
+                        default=v.default,
+                        required=False,
+                        help=create_filter_help_text(filter_model, k),
                     )
-                else:
-                    options.append(
-                        click.option(
-                            f"--{k}",
-                            type=str,
-                            default=v.default,
-                            required=False,
-                            help=create_filter_help_text(filter_model, k),
-                        )
-                    )
+                )
             if k not in filter_model.FILTER_EXCLUDE_FIELDS:
                 data_type_descriptors.add(
                     create_data_type_help_text(filter_model, k)
