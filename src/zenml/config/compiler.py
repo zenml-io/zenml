@@ -100,6 +100,7 @@ class Compiler:
                 pipeline_success_hook_source=pipeline.configuration.success_hook_source,
             )
             for name, step in self._get_sorted_steps(steps=pipeline.steps)
+            if step._has_been_called
         }
 
         self._ensure_required_stack_components_exist(

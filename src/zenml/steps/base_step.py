@@ -48,7 +48,6 @@ from zenml.config.step_configurations import (
 )
 from zenml.constants import STEP_SOURCE_PARAMETER_NAME
 from zenml.exceptions import MissingStepParameterError, StepInterfaceError
-from zenml.hooks.hook_validators import resolve_and_validate_hook
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.materializers.default_materializer_registry import (
@@ -779,6 +778,7 @@ class BaseStep(metaclass=BaseStepMeta):
         Returns:
             The step instance that this method was called on.
         """
+        from zenml.hooks.hook_validators import resolve_and_validate_hook
 
         def _resolve_if_necessary(
             value: Union[str, Source, Type[Any]]

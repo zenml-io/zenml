@@ -209,6 +209,48 @@ def test_calling_a_pipeline_twice_raises_no_exception(
         pipeline_instance.run(unlisted=True)
 
 
+@step
+def step_with_output() -> int:
+    return 1
+
+
+@step
+def step_with_three_inputs(a: int, b: int, c: int) -> None:
+    pass
+
+
+def test_step_can_receive_the_same_input_artifact_multiple_times():
+    """Tests that a step can receive the same input artifact multiple times."""
+
+    @pipeline
+    def test_pipeline(step_1, step_2):
+        output = step_1()
+        step_2(a=output, b=output, c=output)
+
+    pipeline_instance = test_pipeline(
+        step_1=step_with_output(), step_2=step_with_three_inputs()
+    )
+
+    with does_not_raise():
+        pipeline_instance.run(unlisted=True)
+
+
+def test_pipeline_does_not_need_to_call_all_steps(empty_step):
+    """Tests that a pipeline does not have to call all it's steps."""
+
+    @pipeline
+    def test_pipeline(step_1, step_2):
+        step_1()
+        # don't call step_2
+
+    pipeline_instance = test_pipeline(
+        step_1=empty_step(), step_2=empty_step(name="other_name")
+    )
+
+    with does_not_raise():
+        pipeline_instance.run(unlisted=True)
+
+
 @step(step_operator="azureml")
 def step_that_requires_step_operator() -> None:
     pass

@@ -3491,6 +3491,7 @@ class SqlZenStore(BaseZenStore):
             select(StepRunInputArtifactSchema)
             .where(StepRunInputArtifactSchema.step_id == run_step_id)
             .where(StepRunInputArtifactSchema.artifact_id == artifact_id)
+            .where(StepRunInputArtifactSchema.name == name)
         ).first()
         if assignment is not None:
             return
