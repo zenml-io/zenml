@@ -141,7 +141,7 @@ Then, you can use the hook in your pipeline:
 ```python
 from zenml.integration.openai.hooks import openai_chatgpt_alerter_failure_hook
 
-@step(on_failure=openai_alerter_failure_hook)
+@step(on_failure=openai_chatgpt_alerter_failure_hook)
 def my_step(...):
     ...
 ```
