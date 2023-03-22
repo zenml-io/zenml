@@ -144,14 +144,14 @@ class SlackAlerter(BaseAlerter):
     def _create_blocks(
         self, message: str, params: Optional[BaseAlerterStepParameters]
     ) -> List[Dict]:  # type: ignore
-        """Define which messages will lead to disapproval during ask().
+        """Helper function to create slack blocks.
 
         Args:
             message: message
             params: Optional parameters.
 
         Returns:
-            Set of messages that lead to disapproval in alerter.ask().
+            List of slack blocks.
         """
         if (
             isinstance(params, SlackAlerterParameters)
