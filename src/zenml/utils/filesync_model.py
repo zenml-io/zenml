@@ -38,7 +38,7 @@ class FileSyncModel(BaseModel):
     """
 
     _config_file: str
-    _config_file_timestamp: Optional[float]
+    _config_file_timestamp: Optional[float] = None
 
     def __init__(self, config_file: str, **kwargs: Any) -> None:
         """Create a FileSyncModel instance synchronized with a configuration file on disk.

@@ -59,38 +59,43 @@ class ScheduleResponseModel(ScheduleBaseModel, WorkspaceScopedResponseModel):
 class ScheduleFilterModel(ShareableWorkspaceScopedFilterModel):
     """Model to enable advanced filtering of all Users."""
 
-    workspace_id: Union[UUID, str] = Field(
+    workspace_id: Optional[Union[UUID, str]] = Field(
         default=None, description="Workspace scope of the schedule."
     )
-    user_id: Union[UUID, str] = Field(
-        None, description="User that created the schedule"
+    user_id: Optional[Union[UUID, str]] = Field(
+        default=None, description="User that created the schedule"
     )
-    pipeline_id: Union[UUID, str] = Field(
-        None, description="Pipeline that the schedule is attached to."
+    pipeline_id: Optional[Union[UUID, str]] = Field(
+        default=None, description="Pipeline that the schedule is attached to."
     )
-    orchestrator_id: Union[UUID, str] = Field(
-        None, description="Orchestrator that the schedule is attached to."
+    orchestrator_id: Optional[Union[UUID, str]] = Field(
+        default=None,
+        description="Orchestrator that the schedule is attached to.",
     )
-    active: bool = Field(
+    active: Optional[bool] = Field(
         default=None,
         description="If the schedule is active",
     )
-    cron_expression: str = Field(
+    cron_expression: Optional[str] = Field(
         default=None,
         description="The cron expression, describing the schedule",
     )
-    start_time: Union[datetime, str] = Field(None, description="Start time")
-    end_time: Union[datetime, str] = Field(None, description="End time")
-    interval_second: Optional[float] = Field(
+    start_time: Optional[Union[datetime, str]] = Field(
+        default=None, description="Start time"
+    )
+    end_time: Optional[Union[datetime, str]] = Field(
+        default=None, description="End time"
+    )
+    interval_second: Optional[Optional[float]] = Field(
         default=None,
         description="The repetition interval in seconds",
     )
-    catchup: bool = Field(
+    catchup: Optional[bool] = Field(
         default=None,
         description="Whether or not the schedule is set to catchup past missed "
         "events",
     )
-    name: str = Field(
+    name: Optional[str] = Field(
         default=None,
         description="Name of the schedule",
     )

@@ -88,23 +88,23 @@ class PipelineDeploymentResponseModel(
 class PipelineDeploymentFilterModel(WorkspaceScopedFilterModel):
     """Model to enable advanced filtering of all pipeline deployments."""
 
-    workspace_id: Union[UUID, str, None] = Field(
-        description="Workspace for this deployment."
+    workspace_id: Optional[Union[UUID, str]] = Field(
+        default=None, description="Workspace for this deployment."
     )
-    user_id: Union[UUID, str, None] = Field(
-        description="User that created this deployment."
+    user_id: Optional[Union[UUID, str]] = Field(
+        default=None, description="User that created this deployment."
     )
-    pipeline_id: Union[UUID, str, None] = Field(
-        description="Pipeline associated with the deployment."
+    pipeline_id: Optional[Union[UUID, str]] = Field(
+        default=None, description="Pipeline associated with the deployment."
     )
-    stack_id: Union[UUID, str, None] = Field(
-        description="Stack associated with the deployment."
+    stack_id: Optional[Union[UUID, str]] = Field(
+        default=None, description="Stack associated with the deployment."
     )
-    build_id: Union[UUID, str, None] = Field(
-        description="Build associated with the deployment."
+    build_id: Optional[Union[UUID, str]] = Field(
+        default=None, description="Build associated with the deployment."
     )
-    schedule_id: Union[UUID, str, None] = Field(
-        description="Schedule associated with the deployment."
+    schedule_id: Optional[Union[UUID, str]] = Field(
+        default=None, description="Schedule associated with the deployment."
     )
 
 

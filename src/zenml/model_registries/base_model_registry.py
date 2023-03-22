@@ -47,7 +47,7 @@ class RegisteredModel(BaseModel):
     """
 
     name: str
-    description: Optional[str]
+    description: Optional[str] = None
     metadata: Optional[Dict[str, str]] = None
 
 
