@@ -635,82 +635,37 @@ class BaseStep(metaclass=BaseStepMeta):
     def _parse_call_args(
         self, *args: Any, **kwargs: Any
     ) -> Tuple[Dict[str, _OutputArtifact], Dict[str, Any]]:
-        from pydantic.typing import get_args
 
         signature = inspect.signature(inspect.unwrap(self.entrypoint))
 
-        # Maybe signature.bind instead, but how do we handle the StepContext?
-        input_keys = list(self.INPUT_SIGNATURE.keys())
-        if len(args) > len(input_keys):
-            raise StepInterfaceError(
-                f"Too many input artifacts for step '{self.name}'. "
-                f"This step expects {len(input_keys)} artifact(s) "
-                f"but got {len(args) + len(kwargs)}."
-            )
+        def _is_required_param(annotation: Any) -> bool:
+            if inspect.isclass(annotation) and issubclass(
+                annotation, (StepContext, BaseParameters)
+            ):
+                return False
+            return True
+
+        relevant_params = [
+            param
+            for param in signature.parameters.values()
+            if _is_required_param(param.annotation)
+        ]
+        # Signature without base params and step context
+        signature = signature.replace(parameters=relevant_params)
+        bound_args = signature.bind(*args, **kwargs)
+        bound_args.apply_defaults()
 
         artifacts = {}
         parameters = {}
 
-        for i, arg in enumerate(args):
-            key = input_keys[i]
-            if isinstance(arg, BaseStep._OutputArtifact):
-                artifacts[key] = arg
+        for key, value in bound_args.arguments.items():
+            if isinstance(value, BaseStep._OutputArtifact):
+                artifacts[key] = value
             else:
-                expected_type = signature.parameters[key].annotation
-                if expected_type is Optional:
-                    expected_type = get_args(expected_type)
-
-                # TODO: check if json serializable here?
-                if not isinstance(arg, expected_type):
-                    raise StepInterfaceError(
-                        f"Wrong argument type (`{type(arg)}`) for argument "
-                        f"'{key}' of step '{self.name}'. The argument should "
-                        f"either be an output of a previous steps or of type "
-                        f"`{expected_type}`."
-                    )
-
-                parameters[key] = arg
-
-        for key, arg in kwargs.items():
-            if key in artifacts or key in parameters:
-                # an input for this key was already set by
-                # the positional args
-                raise StepInterfaceError(
-                    f"Unexpected keyword argument '{key}' for step "
-                    f"'{self.name}'. An input for this key was "
-                    f"already passed as a positional argument."
+                self._validate_parameter_value(
+                    parameter=signature.parameters[key], value=value
                 )
-
-            if isinstance(arg, BaseStep._OutputArtifact):
-                artifacts[key] = arg
-            else:
-                expected_type = signature.parameters[key].annotation
-                if expected_type is Optional:
-                    expected_type = get_args(expected_type)
-
-                # TODO: check if json serializable here?
-                if not isinstance(arg, expected_type):
-                    raise StepInterfaceError(
-                        f"Wrong argument type (`{type(arg)}`) for argument "
-                        f"'{key}' of step '{self.name}'. The argument should "
-                        f"either be an output of a previous steps or of type "
-                        f"`{expected_type}`."
-                    )
-
-                parameters[key] = arg
-
-        for key, param in signature.parameters.items():
-            if inspect.isclass(param.annotation) and issubclass(
-                param.annotation, (StepContext, BaseParameters)
-            ):
-                continue
-
-            if key not in artifacts and key not in parameters:
-                if param.default is param.empty:
-                    raise StepInterfaceError(f"Missing value for {key}.")
-
-                # TODO: check if json serializable here?
-                parameters[key] = param.default
+                parameters[key] = value
 
         return artifacts, parameters
 
@@ -980,19 +935,13 @@ class BaseStep(metaclass=BaseStepMeta):
         if not parameters:
             return
 
-        from pydantic.typing import get_args
-
         signature = inspect.signature(inspect.unwrap(self.entrypoint))
 
         for key, value in parameters.items():
             if key in signature.parameters:
-                expected_type = signature.parameters[key].annotation
-                if expected_type is Optional:
-                    expected_type = get_args(expected_type)
-
-                if not isinstance(value, expected_type):
-                    breakpoint()
-                    raise StepInterfaceError("Invalid type.")
+                self._validate_parameter_value(
+                    parameter=signature.parameters[key], value=value
+                )
             elif not self.PARAMETERS_CLASS:
                 raise StepInterfaceError(
                     "Can't set parameter without param class."
@@ -1181,3 +1130,21 @@ class BaseStep(metaclass=BaseStepMeta):
             raise StepInterfaceError("Failed to validate function parameters.")
 
         return values
+
+    def _validate_parameter_value(
+        self, parameter: inspect.Parameter, value: Any
+    ) -> None:
+        from pydantic.typing import get_args
+
+        expected_type = parameter.annotation
+        if expected_type is Optional:
+            expected_type = get_args(expected_type)
+
+        # TODO: check if json serializable here?
+        if not isinstance(value, expected_type):
+            raise StepInterfaceError(
+                f"Wrong argument type (`{type(value)}`) for argument "
+                f"'{parameter.name}' of step '{self.name}'. The argument should "
+                f"either be an output of a previous steps or of type "
+                f"`{expected_type}`."
+            )

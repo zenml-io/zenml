@@ -261,7 +261,13 @@ class StepRunner:
                 # TODO: handle extra=forbid here in base parameter subclass,
                 # which will currently clash if other "direct" parameters are
                 # passed to a step
-                step_params = arg_type.parse_obj(self.configuration.parameters)
+                keys_to_remove = set(args) - set(input_artifacts)
+                base_params = {
+                    k: v
+                    for k, v in self.configuration.parameters.items()
+                    if k not in keys_to_remove
+                }
+                step_params = arg_type.parse_obj(base_params)
                 function_params[arg] = step_params
             elif issubclass(arg_type, StepContext):
                 step_name = self.configuration.name
