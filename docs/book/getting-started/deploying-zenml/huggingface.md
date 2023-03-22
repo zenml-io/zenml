@@ -25,7 +25,9 @@ looks like.
 
 You can deploy ZenML on HuggingFace Spaces with just a few clicks:
 
-BUTTON GOES HERE
+<a  href="https://huggingface.co/new-space?template=zenml/zenml-template-space">
+    <img src="https://huggingface.co/datasets/huggingface/badges/raw/main/deploy-to-spaces-lg.svg" />
+</a>
 
 To set up your ZenML app, you need to specify three main components: the Owner
 (either your personal account or an organization), a Space name, and the
@@ -33,7 +35,7 @@ Visibility (a bit lower down the page). Note that the space visibility needs to
 be set to 'Public' if you wish to connect to the ZenML server from your local
 machine.
 
-PHOTO GOES HERE
+<!-- PHOTO GOES HERE -->
 
 You have the option here to select a higher tier machine to use for your server.
 The advantage of selecting a paid CPU instance is that it is not subject to
