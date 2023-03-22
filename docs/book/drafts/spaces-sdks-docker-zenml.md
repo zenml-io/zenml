@@ -117,8 +117,17 @@ for more details how to set this up.
 
 {% hint style="warning" %}
 If you wish to use a cloud secrets backend together with ZenML for secrets
-management, **you must update your password** on your ZenML Server on the
-Dashboard. This is because the default user created by the
+management, **you must take the following minimal security precautions** on your ZenML Server on the
+Dashboard:
+
+- change your password on the `default` account that you get when you start. You
+  can do this from the Dashboard or via the CLI.
+- create a new user account with a password and assign it the `admin` role. This
+  can also be done from the Dashboard (by 'inviting' a new user) or via the CLI.
+- reconnect to the server using the new user account and password as described
+  above, and use this new user account as your working account.
+
+This is because the default user created by the
 HuggingFace Spaces deployment process has no password assigned to it and as the
 Space is publicly accessible (since the Space is public) *potentially anyone
 could access your secrets without this extra step*. To change your password
