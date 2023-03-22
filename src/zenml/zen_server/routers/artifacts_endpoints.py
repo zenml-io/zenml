@@ -13,11 +13,14 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for steps (and artifacts) of pipeline runs."""
 
+import base64
+from typing import Union
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Security
+from pydantic import BaseModel
 
-from zenml.constants import API, ARTIFACTS, VERSION_1
+from zenml.constants import API, ARTIFACTS, VERSION_1, VISUALIZE
 from zenml.enums import PermissionType
 from zenml.models import (
     ArtifactFilterModel,
@@ -25,6 +28,7 @@ from zenml.models import (
     ArtifactResponseModel,
 )
 from zenml.models.page_model import Page
+from zenml.utils.enum_utils import StrEnum
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.utils import (
     error_response,
@@ -123,3 +127,54 @@ def delete_artifact(
         artifact_id: The ID of the artifact to delete.
     """
     zen_store().delete_artifact(artifact_id)
+
+
+class VisualizationType(StrEnum):
+
+    HTML = "html"
+    MARKDOWN = "markdown"
+    IMAGE = "image"
+
+
+class VisualizationResponse(BaseModel):
+
+    type: VisualizationType
+    value: Union[str, bytes]
+
+
+@router.get(
+    "/{artifact_id}" + VISUALIZE,
+    response_model=VisualizationResponse,
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@handle_exceptions
+def get_artifact_visualization(
+    artifact_id: UUID,
+    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+) -> VisualizationResponse:
+    """Get the visualization of an artifact.
+
+    Args:
+        artifact_id: ID of the artifact for which to get the visualization.
+
+    Returns:
+        The visualization of the artifact.
+    """
+    artifact = zen_store().get_artifact(artifact_id)
+
+    if artifact.name == "image":
+        visualization_type = VisualizationType.IMAGE
+        with open("src/zenml/mock_img.png", "rb") as image_file:
+            visualization = base64.b64encode(image_file.read())
+
+    elif artifact.name == "markdown":
+        visualization_type = VisualizationType.MARKDOWN
+        with open("src/zenml/mock_markdown.md", "r") as md_file:
+            visualization = md_file.read()
+
+    elif artifact.name == "html":
+        visualization_type = VisualizationType.HTML
+        with open("src/zenml/mock_html.html", "r") as html_file:
+            visualization = html_file.read()
+
+    return VisualizationResponse(type=visualization_type, value=visualization)
