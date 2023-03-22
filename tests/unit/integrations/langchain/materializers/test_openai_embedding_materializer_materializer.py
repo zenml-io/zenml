@@ -17,9 +17,6 @@ from contextlib import ExitStack as does_not_raise
 import pytest
 
 from tests.unit.test_general import _test_materializer
-from zenml.integrations.langchain.materializers.openai_embedding_materializer import (
-    LangchainOpenaiEmbeddingMaterializer,
-)
 
 
 @pytest.mark.skipif(
@@ -29,6 +26,10 @@ from zenml.integrations.langchain.materializers.openai_embedding_materializer im
 def test_langchain_openai_embedding_materializer(clean_client):
     """Tests the Langchain OpenAI Embeddings materializer."""
     from langchain.embeddings import OpenAIEmbeddings
+
+    from zenml.integrations.langchain.materializers.openai_embedding_materializer import (
+        LangchainOpenaiEmbeddingMaterializer,
+    )
 
     fake_key = "aria_and_blupus"
     fake_chunk_size = 1234

@@ -11,19 +11,28 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+import sys
 from contextlib import ExitStack as does_not_raise
 
-from langchain.docstore.document import Document as LCDocument
-from llama_index.readers.schema.base import Document
+import pytest
 
 from tests.unit.test_general import _test_materializer
-from zenml.integrations.llama_index.materializers.document_materializer import (
-    LlamaIndexDocumentMaterializer,
+
+
+@pytest.mark.skipif(
+    sys.version_info.major == 3 and sys.version_info.minor == 7,
+    reason="Langchain (used by llama_index) is only supported on Python>3.7",
 )
-
-
 def test_llama_index_document_materializer(clean_client):
-    """Tests whether the steps work for the Llama Index Document materializer."""
+    """Tests whether the steps work for the Llama Index Document
+    materializer."""
+    from langchain.docstore.document import Document as LCDocument
+    from llama_index.readers.schema.base import Document
+
+    from zenml.integrations.llama_index.materializers.document_materializer import (
+        LlamaIndexDocumentMaterializer,
+    )
+
     page_content = (
         "Axl, Aria and Blupus were very cold during the winter months."
     )

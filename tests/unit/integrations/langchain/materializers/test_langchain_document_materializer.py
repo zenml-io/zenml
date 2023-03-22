@@ -17,9 +17,6 @@ from contextlib import ExitStack as does_not_raise
 import pytest
 
 from tests.unit.test_general import _test_materializer
-from zenml.integrations.langchain.materializers.document_materializer import (
-    LangchainDocumentMaterializer,
-)
 
 
 @pytest.mark.skipif(
@@ -28,6 +25,10 @@ from zenml.integrations.langchain.materializers.document_materializer import (
 )
 def test_langchain_document_materializer(clean_client):
     """Tests whether the steps work for the Langchain Document materializer."""
+    from zenml.integrations.langchain.materializers.document_materializer import (
+        LangchainDocumentMaterializer,
+    )
+
     page_content = (
         "Axl, Aria and Blupus had a wonderful summer holiday together."
     )
