@@ -441,7 +441,7 @@ def generate_stack_component_remove_attribute_command(
                     name_id_or_prefix=name_id_or_prefix,
                     component_type=component_type,
                     configuration={k: None for k in args},
-                    metadata={k: None for k in metadata},
+                    metadata={k: None for k in metadata} if metadata else None,
                 )
             except (KeyError, IllegalOperationError) as err:
                 cli_utils.error(str(err))

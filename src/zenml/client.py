@@ -2176,7 +2176,7 @@ class Client(metaclass=ClientMetaClass):
             update_model.configuration = existing_configuration
 
         if metadata is not None:
-            existing_metadata = component.metadata
+            existing_metadata = component.metadata or {}
             existing_metadata.update(metadata)
 
             existing_metadata = {
