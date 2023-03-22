@@ -35,7 +35,7 @@ DEFAULT_DISAPPROVE_MSG_OPTIONS = ["decline", "disapprove", "no", "reject"]
 
 
 class SlackAlerterPayload(BaseModel):
-    """Slack alerter parameters."""
+    """Slack alerter payload implementation."""
 
     pipeline_name: Optional[str] = None
     step_name: Optional[str] = None
