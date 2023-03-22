@@ -439,14 +439,14 @@ def identify_group(
             success_v1 = analytics.group(
                 group=group, group_id=str(group_id), traits=group_metadata
             )
-            success= success and success_v1
+            success = success and success_v1
 
     if v2:
         with AnalyticsContextV2() as analytics:
             success_v2 = analytics.group(
                 group_id=group_id, traits=group_metadata
             )
-            success= success and success_v2
+            success = success and success_v2
 
     return success
 
@@ -477,16 +477,12 @@ def track_event(
 
     if v1:
         with AnalyticsContext() as analytics:
-            success_v1 = analytics.track(
-                event=event, properties=metadata
-            )
+            success_v1 = analytics.track(event=event, properties=metadata)
             success = success and success_v1
 
     if v2:
         with AnalyticsContextV2() as analytics:
-            success_v2 = analytics.track(
-                event=event, properties=metadata
-            )
+            success_v2 = analytics.track(event=event, properties=metadata)
             success = success and success_v2
 
     return success
