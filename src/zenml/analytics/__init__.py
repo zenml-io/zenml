@@ -16,7 +16,14 @@
 This module is based on the 'analytics-python' package created by Segment.
 The base functionalities are adapted to work with the ZenML analytics server.
 """
+from typing import Any
+from typing import TYPE_CHECKING, Dict, Optional, Tuple
+from uuid import UUID
+
 from zenml.analytics.client import Client
+
+if TYPE_CHECKING:
+    from zenml.utils.analytics_utils import AnalyticsEvent
 
 on_error = Client.DefaultConfig.on_error
 debug = Client.DefaultConfig.debug
@@ -26,26 +33,12 @@ max_queue_size = Client.DefaultConfig.max_queue_size
 timeout = Client.DefaultConfig.timeout
 max_retries = Client.DefaultConfig.max_retries
 
-
-def track(*args, **kwargs):
-    """Send a track call."""
-    _proxy("track", *args, **kwargs)
+default_client: Optional[Client] = None
 
 
-def identify(*args, **kwargs):
-    """Send a identify call."""
-    _proxy("identify", *args, **kwargs)
-
-
-def group(*args, **kwargs):
-    """Send a group call."""
-    _proxy("group", *args, **kwargs)
-
-
-def _proxy(method, *args, **kwargs):
-    """Create an analytics client if one doesn't exist and send to it."""
+def set_default_client() -> None:
     global default_client
-    if not default_client:
+    if default_client is None:
         default_client = Client(
             debug=debug,
             max_queue_size=max_queue_size,
@@ -56,5 +49,38 @@ def _proxy(method, *args, **kwargs):
             timeout=timeout,
         )
 
-    fn = getattr(default_client, method)
-    fn(*args, **kwargs)
+
+def track(
+    user_id: UUID,
+    event: "AnalyticsEvent",
+    properties: Optional[Dict[Any, Any]],
+) -> Tuple[bool, str]:
+    """Send a track call with the default client."""
+    set_default_client()
+    assert default_client is not None
+    return default_client.track(
+        user_id=user_id, event=event, properties=properties
+    )
+
+
+def identify(
+    user_id: UUID, traits: Optional[Dict[Any, Any]]
+) -> Tuple[bool, str]:
+    """Send an identify call with the default client."""
+    set_default_client()
+    assert default_client is not None
+    return default_client.identify(
+        user_id=user_id,
+        traits=traits,
+    )
+
+
+def group(
+    user_id: UUID, group_id: UUID, traits: Optional[Dict[Any, Any]]
+) -> Tuple[bool, str]:
+    """Send a group call with the default client."""
+    set_default_client()
+    assert default_client is not None
+    return default_client.group(
+        user_id=user_id, group_id=group_id, traits=traits
+    )

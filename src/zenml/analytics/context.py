@@ -20,8 +20,7 @@ from types import TracebackType
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, Union
 from uuid import UUID
 
-from zenml import __version__
-from zenml import analytics
+from zenml import __version__, analytics
 from zenml.constants import ENV_ZENML_SERVER, handle_bool_env_var
 from zenml.environment import Environment, get_environment
 from zenml.logger import get_logger
