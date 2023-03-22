@@ -254,7 +254,7 @@ class Client(object):
             self.queue.put(msg, block=False)
             return True, msg
         except queue.Full:
-            logger.warning("ZenML analytics-python queue is full")
+            logger.debug("ZenML analytics-python queue is full")
             return False, msg
 
     def flush(self) -> None:

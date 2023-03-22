@@ -100,7 +100,7 @@ class Consumer(Thread):
             self.request(batch)
             success = True
         except Exception as e:
-            logger.error("error uploading: %s", e)
+            logger.debug("error uploading: %s", e)
             success = False
             if self.on_error:
                 self.on_error(e, batch)
@@ -133,7 +133,7 @@ class Consumer(Thread):
                 item_size = len(item.encode())
 
                 if item_size > MAX_MSG_SIZE:
-                    logger.error(
+                    logger.debug(
                         "Item exceeds 32kb limit, dropping. (%s)", str(item)
                     )
                     continue
