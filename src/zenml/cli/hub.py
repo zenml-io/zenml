@@ -447,7 +447,14 @@ def login(
     email: Optional[str] = None,
     password: Optional[str] = None,
 ) -> None:
-    """Login to the ZenML Hub."""
+    """Login to the ZenML Hub.
+
+    Args:
+        github: Login via GitHub.
+        email: Login via ZenML Hub account using this email address.
+        password: Password of the ZenML Hub account. Only used if `email` is
+            specified.
+    """
     if github:
         _login_via_github()
     elif email:
@@ -468,7 +475,13 @@ def login(
 def _login_via_zenml_hub(
     email: Optional[str] = None, password: Optional[str] = None
 ) -> None:
-    """Login via ZenML Hub email and password."""
+    """Login via ZenML Hub email and password.
+
+    Args:
+        email: Login via ZenML Hub account using this email address.
+        password: Password of the ZenML Hub account. Only used if `email` is
+            specified.
+    """
     with event_handler(
         event=AnalyticsEvent.ZENML_HUB_LOGIN,
     ) as analytics_handler:
@@ -1099,7 +1112,14 @@ def _is_plugin_installed(plugin: HubPluginResponseModel) -> bool:
 
 
 def _get_plugin_module(plugin: HubPluginResponseModel) -> str:
-    """Helper function to get the module name of a plugin."""
+    """Helper function to get the module name of a plugin.
+
+    Args:
+        plugin: The plugin.
+
+    Returns:
+        The module name of the plugin.
+    """
     module_name = "zenml.hub"
     username = _get_plugin_author_username(plugin)
     if username:
