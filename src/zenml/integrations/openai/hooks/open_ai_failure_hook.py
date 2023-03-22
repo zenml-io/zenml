@@ -14,6 +14,7 @@
 """Functionality for OpenAI standard hooks."""
 
 import io
+import os
 import sys
 
 import openai
@@ -39,7 +40,9 @@ def openai_alerter_failure_hook_helper(
         exception: The exception that was raised.
         model_name: The OpenAI model to use for the chatbot.
     """
-    if context.stack and context.stack.alerter:
+    openai_api_key = os.environ.get("OPENAI_API_KEY")
+
+    if context.stack and context.stack.alerter and openai_api_key:
         output_captured = io.StringIO()
         original_stdout = sys.stdout
         sys.stdout = output_captured
@@ -74,9 +77,13 @@ def openai_alerter_failure_hook_helper(
             + "\n"
         )
         context.stack.alerter.post(message)
+    elif not openai_api_key:
+        logger.warning(
+            "Specified OpenAI failure hook but no OpenAI API key found. Skipping.."
+        )
     else:
         logger.warning(
-            "Specified standard failure hook but no alerter configured in the stack. Skipping.."
+            "Specified OpenAI failure hook but no alerter configured in the stack. Skipping.."
         )
 
 
