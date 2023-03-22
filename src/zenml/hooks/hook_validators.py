@@ -67,10 +67,6 @@ def resolve_and_validate_hook(hook_func: "HookSpecification") -> str:
                     BaseException,
                     BaseParameters,
                     StepContext,
-                    # Have to do string version for TYPE_CHECKING
-                    "BaseException",
-                    "BaseParameters",
-                    "StepContext",
                 ):
                     raise ValueError(
                         "Hook parameters must be of type `BaseException`, `BaseParameters`, "

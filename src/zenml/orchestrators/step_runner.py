@@ -536,6 +536,7 @@ class StepRunner:
         try:
             hook = source_utils.load_source_path(hook_source)
             hook_spec = inspect.getfullargspec(inspect.unwrap(hook))
+
             function_params = self._parse_hook_inputs(
                 args=hook_spec.args,
                 annotations=hook_spec.annotations,
