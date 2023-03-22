@@ -270,7 +270,7 @@ in Kubeflow Pipelines. We need to configure it with the right kubernetes
 * context so ZenML can run pipelines in your GCP cluster.
 * Kubectl can [access](https://cloud.google.com/kubernetes-engine/docs/how-to/cluster-access-for-kubectl) 
 your GCP Kubernetes cluster.
-* An ***Image Builder** component that is responsible for building docker images
+* An ***Image Builder** component that is responsible for building Docker images
 for your pipeline steps. We need to configure it with the right container
 registry so ZenML can push the images to your GCP container registry.
 

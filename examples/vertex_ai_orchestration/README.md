@@ -60,7 +60,7 @@ stack with all of these components.
   **container registry**.
 * The **Vertex orchestrator** is responsible for running your ZenML pipeline
   in Vertex AI.
-* An **Image Builder** which will be used to build the docker image that will
+* An **Image Builder** which will be used to build the Docker image that will
   be used to run the training step.
 
 When running the upcoming commands, make sure to

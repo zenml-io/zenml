@@ -131,7 +131,7 @@ zenml artifact-store register s3_store
 #### Setup Image Builder
 
 In order to build the Docker images for the Kubernetes pods, we will use the
-`docker` image builder.
+`local` image builder.
 
 ```bash
 zenml image-builder register local_builder 
