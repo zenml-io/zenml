@@ -35,7 +35,7 @@ class LlamaIndexGPTIndexMaterializer(Generic[T], BaseMaterializer):
     """Materializer for llama_index GPT indices."""
 
     ASSOCIATED_ARTIFACT_TYPE = ArtifactType.MODEL
-    ASSOCIATED_TYPES = (BaseGPTIndex[Any],)
+    ASSOCIATED_TYPES = (BaseGPTIndex,)
 
     def load(self, data_type: Type[T]) -> T:
         """Loads a llama-index GPT index from disk.
