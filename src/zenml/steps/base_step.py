@@ -652,7 +652,13 @@ class BaseStep(metaclass=BaseStepMeta):
         ]
         # Signature without base params and step context
         signature = signature.replace(parameters=relevant_params)
-        bound_args = signature.bind(*args, **kwargs)
+        try:
+            bound_args = signature.bind(*args, **kwargs)
+        except TypeError as e:
+            raise StepInterfaceError(
+                f"Wrong arguments when calling step '{self.name}': {e}"
+            ) from e
+
         bound_args.apply_defaults()
 
         artifacts = {}
