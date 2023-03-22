@@ -34,6 +34,9 @@ def openai_alerter_failure_hook_helper(
 ) -> None:
     """Standard failure hook that sends a message to an Alerter.
 
+    Your OpenAI API key must be stored in the secret store under the name
+    "openai" and with the key "api_key".
+
     Args:
         context: The context of the step.
         params: The parameters of the step.
