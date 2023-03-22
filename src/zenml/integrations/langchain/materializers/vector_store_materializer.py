@@ -48,6 +48,10 @@ class LangchainVectorStoreMaterializer(BaseMaterializer):
 
         Returns:
             The vector store.
+
+        Raises:
+            ValidationError: If the Python version used to materialize the
+                VectorStore is different from the current Python version.
         """
         super().load(data_type)
         python_version_filepath = os.path.join(
