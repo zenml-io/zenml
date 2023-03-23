@@ -59,18 +59,10 @@ from zenml.enums import ExecutionStatus
 latest_zenml_version = "0.35.1"
 
 # Retrieve the pipeline for generating ZenML docs index
-pipeline = get_pipeline("zenml_docs_index_generation")
+pipeline = get_pipeline("docs_to_index_pipeline")
 
-# Access the runs of the pipeline
-pipeline_runs = pipeline.runs
-
-# Find the run with the latest ZenML version in its name
-relevant_run = None
-for run in pipeline_runs:
-    run_version = run.name.split("_")[-1]
-    if run_version == latest_zenml_version:
-        relevant_run = run
-        break
+# Access the last pipeline run
+pipeline_run = pipeline.runs[-1]
 
 # Retrieve the last step of the relevant run
 last_step_of_relevant_run = relevant_run.steps[-1]
@@ -130,6 +122,14 @@ Now we're ready. Execute:
 
 ```shell
 python run.py
+```
+
+This will run it with default arguments which are to query the ZenML docs and
+Slack channel. For your own use case you'll want to change the arguments passed
+in via a CLI and yuo can see the arguments available to you by running:
+
+```shell
+python run.py --help
 ```
 
 ### 🧽 Clean up
