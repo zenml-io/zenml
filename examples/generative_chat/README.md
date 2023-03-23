@@ -122,7 +122,7 @@ python run.py
 
 This will run it with default arguments which are to query the ZenML docs and
 Slack channel. For your own use case you'll want to change the arguments passed
-in via a CLI and yuo can see the arguments available to you by running:
+in via a CLI and you can see the arguments available to you by running:
 
 ```shell
 python run.py --help
