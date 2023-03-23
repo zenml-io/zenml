@@ -17,6 +17,7 @@ The ZenML integrations module contains sub-modules for each integration that we
 support. This includes orchestrators like Apache Airflow, visualization tools
 like the ``facets`` library, as well as deep learning libraries like PyTorch.
 """
+import sys
 
 from zenml.integrations.airflow import AirflowIntegration  # noqa
 from zenml.integrations.aws import AWSIntegration  # noqa
@@ -39,9 +40,7 @@ from zenml.integrations.kserve import KServeIntegration  # noqa
 from zenml.integrations.kubeflow import KubeflowIntegration  # noqa
 from zenml.integrations.kubernetes import KubernetesIntegration  # noqa
 from zenml.integrations.label_studio import LabelStudioIntegration  # noqa
-from zenml.integrations.langchain import LangchainIntegration  # noqa
 from zenml.integrations.lightgbm import LightGBMIntegration  # noqa
-from zenml.integrations.llama_index import LlamaIndexIntegration  # noqa
 from zenml.integrations.mlflow import MlflowIntegration  # noqa
 from zenml.integrations.neptune import NeptuneIntegration  # noqa
 from zenml.integrations.neural_prophet import NeuralProphetIntegration  # noqa
@@ -64,3 +63,7 @@ from zenml.integrations.vault import VaultSecretsManagerIntegration  # noqa
 from zenml.integrations.wandb import WandbIntegration  # noqa
 from zenml.integrations.whylogs import WhylogsIntegration  # noqa
 from zenml.integrations.xgboost import XgboostIntegration  # noqa
+
+if sys.version_info >= (3, 7):
+    from zenml.integrations.llama_index import LlamaIndexIntegration  # noqa
+    from zenml.integrations.langchain import LangchainIntegration  # noqa
