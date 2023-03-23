@@ -237,8 +237,8 @@ class AnalyticsContext:
         )
 
         logger.debug(
-            f"Analytics sent: User: {self.user_id}, Event: {event}, Metadata: "
-            f"{properties}"
+            f"Sending analytics: User: {self.user_id}, Event: {event}, "
+            f"Metadata: {properties}"
         )
 
         return success
