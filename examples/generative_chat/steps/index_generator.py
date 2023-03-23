@@ -23,11 +23,30 @@ from langchain.text_splitter import (
 from langchain.vectorstores import FAISS, VectorStore
 
 from zenml.steps import step
+from zenml.steps.base_parameters import BaseParameters
+
+
+class IndexGeneratorParameters(BaseParameters):
+    """Params for index generator.
+
+    Attributes:
+        document_chunk_size: Size of the document chunks.
+        document_chunk_overlap: Overlap of the document chunks.
+        slack_chunk_size: Size of the slack chunks.
+        slack_chunk_overlap: Overlap of the slack chunks.
+    """
+
+    document_chunk_size: int = 1000
+    document_chunk_overlap: int = 0
+    slack_chunk_size: int = 1000
+    slack_chunk_overlap: int = 200
 
 
 @step(enable_cache=True)
 def index_generator(
-    documents: List[Document], slack_documents: List[Document]
+    documents: List[Document],
+    slack_documents: List[Document],
+    params: IndexGeneratorParameters,
 ) -> VectorStore:
     """Generates a FAISS index from a list of documents.
 
@@ -42,14 +61,15 @@ def index_generator(
 
     # chunk the documents into smaller chunks
     docs_text_splitter = CharacterTextSplitter(
-        chunk_size=1000, chunk_overlap=0
+        chunk_size=params.document_chunk_size,
+        chunk_overlap=params.document_chunk_overlap,
     )
     split_documents = docs_text_splitter.split_documents(documents)
 
     # chunk the slack documents into smaller chunks
     slack_text_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=1000,
-        chunk_overlap=200,
+        chunk_size=params.slack_chunk_size,
+        chunk_overlap=params.slack_chunk_overlap,
     )
     slack_texts = slack_text_splitter.split_documents(slack_documents)
 
