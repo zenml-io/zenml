@@ -13,6 +13,10 @@
 #  permissions and limitations under the License.
 """Functionality for standard hooks."""
 
+import io
+import sys
+
+from rich.console import Console
 
 from zenml.logger import get_logger
 from zenml.steps import BaseParameters, StepContext
@@ -33,12 +37,23 @@ def alerter_failure_hook(
         exception: Original exception that lead to step failing.
     """
     if context.stack and context.stack.alerter:
+        output_captured = io.StringIO()
+        original_stdout = sys.stdout
+        sys.stdout = output_captured
+        console = Console()
+        console.print_exception(show_locals=False)
+
+        sys.stdout = original_stdout
+        rich_traceback = output_captured.getvalue()
+
         message = "*Failure Hook Notification! Step failed!*" + "\n\n"
         message += f"Pipeline name: `{context.pipeline_name}`" + "\n"
         message += f"Run name: `{context.run_name}`" + "\n"
         message += f"Step name: `{context.step_name}`" + "\n"
         message += f"Parameters: `{params}`" + "\n"
-        message += f"Exception: `({type(exception)}) {exception}`" + "\n\n"
+        message += (
+            f"Exception: `({type(exception)}) {rich_traceback}`" + "\n\n"
+        )
         message += (
             f"Step Cache Enabled: `{'True' if context.cache_enabled else 'False'}`"
             + "\n"
