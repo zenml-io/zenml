@@ -246,8 +246,9 @@ class StepRunner:
         Returns:
             The parsed inputs for the step entrypoint function.
         """
+        from pydantic import BaseModel, Extra
+
         from zenml.steps import BaseParameters
-        from pydantic import Extra, BaseModel
 
         function_params: Dict[str, Any] = {}
 
@@ -259,8 +260,6 @@ class StepRunner:
             arg_type = resolve_type_annotation(arg_type)
 
             if issubclass(arg_type, BaseParameters):
-                
-
                 if arg_type.Config.extra == Extra.forbid:
                     config_values = {
                         key: value
@@ -288,7 +287,7 @@ class StepRunner:
                 value = self.configuration.parameters[arg]
                 if issubclass(arg_type, BaseModel):
                     value = arg_type.parse_obj(value)
-                
+
                 function_params[arg] = value
             else:
                 raise RuntimeError(
@@ -305,17 +304,17 @@ class StepRunner:
         output_artifact_uris: Dict[str, str],
         output_materializers: Dict[str, Type[BaseMaterializer]],
     ) -> Dict[str, Any]:
-        """Parses the inputs for a step entrypoint function.
+        """Parses the inputs for a hook function.
 
         Args:
-            args: The arguments of the step entrypoint function.
-            annotations: The annotations of the step entrypoint function.
+            args: The arguments of the hook function.
+            annotations: The annotations of the hook function.
             step_exception: The exception of the original step.
             output_artifact_uris: The URIs of the output artifacts of the step.
             output_materializers: The output materializers of the step.
 
         Returns:
-            The parsed inputs for the step entrypoint function.
+            The parsed inputs for the hook function.
 
         Raises:
             TypeError: If hook function is passed a wrong parameter type.

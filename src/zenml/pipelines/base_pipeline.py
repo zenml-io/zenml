@@ -267,9 +267,9 @@ class BasePipeline(metaclass=BasePipelineMeta):
         enable_artifact_metadata: Optional[bool] = None,
         settings: Optional[Mapping[str, "SettingsOrDict"]] = None,
         extra: Optional[Dict[str, Any]] = None,
-        merge: bool = True,
         on_failure: Optional["HookSpecification"] = None,
         on_success: Optional["HookSpecification"] = None,
+        merge: bool = True,
     ) -> T:
         """Configures the pipeline.
 
@@ -289,11 +289,6 @@ class BasePipeline(metaclass=BasePipelineMeta):
                 this pipeline.
             settings: settings for this pipeline.
             extra: Extra configurations for this pipeline.
-            merge: If `True`, will merge the given dictionary configurations
-                like `extra` and `settings` with existing
-                configurations. If `False` the given configurations will
-                overwrite all existing ones. See the general description of this
-                method for an example.
             on_failure: Callback function in event of failure of the step. Can be
                 a function with three possible parameters, `StepContext`, `BaseParameters`,
                 and `BaseException`, or a source path to a function of the same specifications
@@ -302,6 +297,11 @@ class BasePipeline(metaclass=BasePipelineMeta):
                 a function with two possible parameters, `StepContext` and `BaseParameters, or
                 a source path to a function of the same specifications
                 (e.g. `module.my_function`).
+            merge: If `True`, will merge the given dictionary configurations
+                like `extra` and `settings` with existing
+                configurations. If `False` the given configurations will
+                overwrite all existing ones. See the general description of this
+                method for an example.
 
         Returns:
             The pipeline instance that this method was called on.

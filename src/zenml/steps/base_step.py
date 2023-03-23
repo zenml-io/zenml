@@ -732,11 +732,6 @@ class BaseStep(metaclass=BaseStepMeta):
                 artifact class will be used for all outputs.
             settings: settings for this step.
             extra: Extra configurations for this step.
-            merge: If `True`, will merge the given dictionary configurations
-                like `parameters` and `settings` with existing
-                configurations. If `False` the given configurations will
-                overwrite all existing ones. See the general description of this
-                method for an example.
             on_failure: Callback function in event of failure of the step. Can be
                 a function with three possible parameters, `StepContext`, `BaseParameters`,
                 and `BaseException`, or a source path to a function of the same specifications
@@ -745,6 +740,11 @@ class BaseStep(metaclass=BaseStepMeta):
                 a function with two possible parameters, `StepContext` and `BaseParameters, or
                 a source path to a function of the same specifications
                 (e.g. `module.my_function`).
+            merge: If `True`, will merge the given dictionary configurations
+                like `parameters` and `settings` with existing
+                configurations. If `False` the given configurations will
+                overwrite all existing ones. See the general description of this
+                method for an example.
 
         Returns:
             The step instance that this method was called on.
