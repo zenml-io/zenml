@@ -44,30 +44,6 @@ def get_channel_id_from_name(name: str) -> str:
 SLACK_CHANNEL_IDS = [get_channel_id_from_name("general")]
 
 
-def get_zenml_versions():
-    # Clone zenml repo to random dir in CWD
-    random_repo_name = f"_{uuid4()}"
-    repo_dir = os.path.join(os.getcwd(), random_repo_name)
-    repo = git.Repo.clone_from(
-        url="https://github.com/zenml-io/zenml",
-        to_path=random_repo_name,
-    )
-
-    # Get all release versions
-    versions = []
-    for refs in repo.remote().refs:
-        branch_name = refs.name
-        if not branch_name.startswith("origin/release"):
-            continue
-        version = branch_name.split("/")[-1]
-        versions.append(version)
-
-    # Cleanup
-    shutil.rmtree(repo_dir)
-
-    return versions
-
-
 def page_exists(url: str) -> bool:
     import requests
 
