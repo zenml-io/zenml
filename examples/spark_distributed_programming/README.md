@@ -265,6 +265,16 @@ zenml container-registry register spark_container_registry \
     --uri=$ECR_URI
 ```
 
+We also need to register an **image builder** which will be used to build the
+Docker image for the Spark driver and executor pods. For this example, we
+will use the `local` image builder.
+
+```bash
+# Register the image builder
+zenml image-builder register local_builder \
+  --flavor=local
+```
+
 Finally, let’s finalize the stack.
 
 ```bash
@@ -274,6 +284,7 @@ zenml stack register spark_stack \
     -s spark_step_operator \
     -a spark_artifact_store \
     -c spark_container_registry \
+    -i local_builder \
     --set
 ```
 
