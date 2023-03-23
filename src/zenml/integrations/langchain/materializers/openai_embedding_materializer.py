@@ -19,10 +19,13 @@ import pickle
 import sys
 from typing import TYPE_CHECKING, Any, Type, cast
 
+import pkg_resources
+
 from zenml.enums import ArtifactType
 from zenml.environment import Environment
 from zenml.exceptions import ValidationError
 from zenml.io import fileio
+from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.utils.io_utils import (
     read_file_contents_as_string,
@@ -36,6 +39,10 @@ else:
 
 DEFAULT_PICKLE_FILENAME = "embedding.pkl"
 DEFAULT_PYTHON_VERSION_FILENAME = "python_version.txt"
+DEFAULT_LANGCHAIN_VERSION_FILENAME = "langchain_version.txt"
+LANGCHAIN_PACKAGE_NAME = "langchain"
+
+logger = get_logger(__name__)
 
 
 class LangchainOpenaiEmbeddingMaterializer(BaseMaterializer):
@@ -58,6 +65,31 @@ class LangchainOpenaiEmbeddingMaterializer(BaseMaterializer):
                 embedding is different from the current Python version.
         """
         super().load(data_type)
+
+        # validate langchain package version
+        langchain_version_filepath = os.path.join(
+            self.uri, DEFAULT_LANGCHAIN_VERSION_FILENAME
+        )
+        source_langchain_version = read_file_contents_as_string(
+            langchain_version_filepath
+        )
+        try:
+            package_version = pkg_resources.get_distribution(
+                LANGCHAIN_PACKAGE_NAME
+            ).version
+        except pkg_resources.DistributionNotFound:
+            logger.warn(
+                f"'{LANGCHAIN_PACKAGE_NAME}' package is not installed."
+            )
+            package_version = "not installed"
+        if source_langchain_version != package_version:
+            logger.warn(
+                f"Your `OpenAIEmbedding` was materialized with {source_langchain_version} "
+                f"but you are currently using {package_version}. "
+                f"Unable to load this pickled file."
+            )
+
+        # validate python version
         python_version_filepath = os.path.join(
             self.uri, DEFAULT_PYTHON_VERSION_FILENAME
         )
@@ -96,4 +128,20 @@ class LangchainOpenaiEmbeddingMaterializer(BaseMaterializer):
         current_python_version = Environment().python_version()
         write_file_contents_as_string(
             python_version_filepath, current_python_version
+        )
+
+        try:
+            package_version = pkg_resources.get_distribution(
+                LANGCHAIN_PACKAGE_NAME
+            ).version
+        except pkg_resources.DistributionNotFound:
+            logger.warn(
+                f"'{LANGCHAIN_PACKAGE_NAME}' package is not installed."
+            )
+            package_version = "not installed"
+        langchain_version_filepath = os.path.join(
+            self.uri, DEFAULT_LANGCHAIN_VERSION_FILENAME
+        )
+        write_file_contents_as_string(
+            langchain_version_filepath, package_version
         )
