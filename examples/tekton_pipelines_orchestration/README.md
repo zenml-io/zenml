@@ -120,6 +120,7 @@ GCP **container registry**.
 * The **Tekton orchestrator** is responsible for running your ZenML pipeline 
 in Tekton Pipelines. We need to configure it with the right kubernetes context 
 so ZenML can run pipelines in your GCP cluster. 
+* An **Image Builder** that builds Docker images for your pipeline steps.
 
 When running the upcoming commands, make sure to replace 
 `<PATH_TO_YOUR_CONTAINER_REGISTRY>` and `<PATH_TO_YOUR_GCP_BUCKET>` with the 
@@ -138,10 +139,13 @@ zenml artifact-store register gcp_artifact_store --flavor=gcp --path=<PATH_TO_YO
 
 zenml orchestrator register gcp_tekton_orchestrator --flavor=tekton --kubernetes_context=<NAME_OF_GCP_KUBERNETES_CONTEXT>
 
+zenml image-builder register local_builder --flavor=local
+
 zenml stack register gcp_tekton_stack \
     -a gcp_artifact_store \
     -o gcp_tekton_orchestrator \
     -c gcr_registry \
+    -i local_builder \
     --set
 ```
 
