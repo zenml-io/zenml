@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+from contextlib import ExitStack as does_not_raise
 from uuid import UUID
 
 import pytest
@@ -52,5 +53,37 @@ def test_artifact_base_model_fails_with_long_uri():
             uri=long_uri,
             materializer="abc",
             data_type="abc",
+            is_cached=False,
+        )
+
+
+def test_artifact_base_model_works_with_long_materializer():
+    """Test that the artifact base model works with long materializer strings."""
+    with does_not_raise():
+        long_materializer = "a" * (STR_FIELD_MAX_LENGTH + 1)
+        ArtifactBaseModel(
+            name="abc",
+            parent_step_id=UUID(UUID_BASE_STRING),
+            producer_step_id=UUID(UUID_BASE_STRING),
+            type=ArtifactType.DATA,
+            uri="abc",
+            materializer=long_materializer,
+            data_type="abc",
+            is_cached=False,
+        )
+
+
+def test_artifact_base_model_works_with_long_data_type():
+    """Test that the artifact base model works with long data type strings."""
+    with does_not_raise():
+        long_data_type = "a" * (STR_FIELD_MAX_LENGTH + 1)
+        ArtifactBaseModel(
+            name="abc",
+            parent_step_id=UUID(UUID_BASE_STRING),
+            producer_step_id=UUID(UUID_BASE_STRING),
+            type=ArtifactType.DATA,
+            uri="abc",
+            materializer="abc",
+            data_type=long_data_type,
             is_cached=False,
         )

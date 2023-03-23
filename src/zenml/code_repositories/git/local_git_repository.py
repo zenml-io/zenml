@@ -149,7 +149,7 @@ class LocalGitRepository(LocalRepository):
 
         self.remote.fetch()
 
-        local_commit = self.git_repo.head.commit
+        local_commit_object = self.git_repo.head.commit
         try:
             active_branch = self.git_repo.active_branch
         except TypeError:
@@ -158,12 +158,12 @@ class LocalGitRepository(LocalRepository):
             )
 
         try:
-            remote_commit = self.remote.refs[active_branch.name].commit
+            remote_commit_object = self.remote.refs[active_branch.name].commit
         except IndexError:
             # Branch doesn't exist on remote
             return True
 
-        return cast("Commit", remote_commit) != local_commit
+        return cast("Commit", remote_commit_object) != local_commit_object
 
     @property
     def current_commit(self) -> str:

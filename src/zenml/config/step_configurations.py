@@ -12,9 +12,9 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Pipeline configuration classes."""
-from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional
 
-from pydantic import root_validator, validator
+from pydantic import root_validator
 
 from zenml.config.base_settings import BaseSettings, SettingsOrDict
 from zenml.config.constants import DOCKER_SETTINGS_KEY, RESOURCE_SETTINGS_KEY
@@ -78,22 +78,9 @@ class StepConfigurationUpdate(StrictBaseModel):
 
     outputs: Mapping[str, PartialArtifactConfiguration] = {}
 
-    @validator("failure_hook_source", "success_hook_source", pre=True)
-    def _convert_source(
-        cls, value: Union[Source, str, None]
-    ) -> Optional[Source]:
-        """Converts an old source string to a source object.
-
-        Args:
-            value: Source string or object.
-
-        Returns:
-            The converted source.
-        """
-        if isinstance(value, str):
-            value = Source.from_import_path(value)
-
-        return value
+    _convert_source = convert_source_validator(
+        "failure_hook_source", "success_hook_source"
+    )
 
 
 class PartialStepConfiguration(StepConfigurationUpdate):

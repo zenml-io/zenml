@@ -40,6 +40,16 @@ class SourceType(Enum):
 class Source(BaseModel):
     """Source specification.
 
+    A source specifies a module name as well as an optional attribute of that
+    module. These values can be used to import the module and get the value
+    of the attribute inside the module.
+
+    Example:
+        The source `Source(module="zenml.config.source", attribute="Source")`
+        references the class that this docstring is describing. This class is
+        defined in the `zenml.config.source` module and the name of the
+        attribute is the class name `Source`.
+
     Attributes:
         module: The module name.
         attribute: Optional name of the attribute inside the module.
@@ -50,25 +60,15 @@ class Source(BaseModel):
     attribute: Optional[str] = None
     type: SourceType
 
-    # TODO: Adding this code messes with FastAPI as they do some kind of
-    # validation the prevents subclasses for response model fields
-    # def __new__(cls, **kwargs: Any) -> "Source":
-    #     type_ = kwargs.get("type")
-    #     type_ = SourceType(type_) if type_ else None
-
-    #     if type_ == SourceType.CODE_REPOSITORY:
-    #         return object.__new__(CodeRepositorySource)
-    #     elif type_ == SourceType.DISTRIBUTION_PACKAGE:
-    #         return object.__new__(DistributionPackageSource)
-
-    #     return super().__new__(cls)
-
     @classmethod
-    def from_import_path(cls, import_path: str) -> "Source":
+    def from_import_path(
+        cls, import_path: str, is_module_path: bool = False
+    ) -> "Source":
         """Creates a source from an import path.
 
         Args:
             import_path: The import path.
+            is_module_path: If the import path points to a module or not.
 
         Raises:
             ValueError: If the import path is empty.
@@ -86,11 +86,11 @@ class Source(BaseModel):
         if "@" in import_path:
             import_path = import_path.split("@", 1)[0]
 
-        if "." in import_path:
-            module, attribute = import_path.rsplit(".", maxsplit=1)
-        else:
+        if is_module_path or "." not in import_path:
             module = import_path
             attribute = None
+        else:
+            module, attribute = import_path.rsplit(".", maxsplit=1)
 
         return Source(
             module=module, attribute=attribute, type=SourceType.UNKNOWN
@@ -115,13 +115,10 @@ class Source(BaseModel):
         Returns:
             True if the source is internal, False otherwise
         """
-        if self.type not in {
-            SourceType.UNKNOWN,
-            SourceType.DISTRIBUTION_PACKAGE,
-        }:
+        if self.type not in {SourceType.UNKNOWN, SourceType.INTERNAL}:
             return False
 
-        return self.import_path.split(".", maxsplit=1)[0] == "zenml"
+        return self.module.split(".", maxsplit=1)[0] == "zenml"
 
     @property
     def is_module_source(self) -> bool:
@@ -204,7 +201,13 @@ class CodeRepositorySource(Source):
 
 
 def convert_source_validator(*attributes: str) -> "AnyClassMethod":
-    """Utility function to convert pydantic source fields.
+    """Function to convert pydantic fields containing legacy class paths.
+
+    In older versions, sources (sometimes also called class paths) like
+    `zenml.materializers.BuiltInMaterializer` were stored as strings in our
+    configuration classes. These strings got replaced by a separate class, and
+    this function returns a validator to convert those old strings to the new
+    classes.
 
     Args:
         *attributes: List of attributes to convert.

@@ -18,6 +18,12 @@ from zenml.code_repositories import LocalRepository
 
 
 class _DownloadedRepository(LocalRepository):
+    """Class that represents the downloaded files of a code repository.
+
+    See `source_utils.set_custom_local_repository(...)` for a more in-depth
+    explanation.
+    """
+
     def __init__(
         self,
         code_repository_id: UUID,

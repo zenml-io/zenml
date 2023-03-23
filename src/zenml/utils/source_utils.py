@@ -238,6 +238,33 @@ def set_custom_local_repository(
 ) -> None:
     """Manually defines a local repository for a path.
 
+    To explain what this function does we need to take a dive into source
+    resolving and what happens inside the Docker image entrypoint:
+    * When trying to resolve an object to a source, we first determine whether
+    the file is a user file or not.
+    * If the file is a user file, we check if that user file is inside a clean
+    code repository using the `source_utils.find_active_code_repository(...)`
+    function. If that is the case, the object will be resolved to a
+    `CodeRepositorySource` which includes additional information about the
+    current commit and the ID of the code repository.
+    * The `source_utils.find_active_code_repository(...)` uses the
+    code repository implementation classes to check whether the code repository
+    "exists" at that local path. For git repositories, this check might look as
+    follows: The code repository first checks if there is a git repository at
+    that path or in any parent directory. If there is, the remote URLs of this
+    git repository will be checked to see if one matches the URL defined for
+    the code repository.
+    * When running a step inside a Docker image, ZenML potentially downloads
+    file from a code repository. This usually does not download the entire
+    repository (and in the case of git might not download a .git directory which
+    defines a local git repository) but only specific files. If we now try to
+    resolve any object while running in this container, it will not get resolved
+    to a `CodeRepositorySource` as
+    `source_utils.find_active_code_repository(...)` won't find an active
+    repository. As we downloaded these files, we however know that they belong
+    to a certain code repository at a specific commit, and that's what we can
+    define using this function.
+
     Args:
         root: The repository root.
         commit: The commit of the repository.
