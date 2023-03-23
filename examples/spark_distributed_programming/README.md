@@ -109,8 +109,8 @@ to create an Amazon EKS cluster role.
 to create an Amazon EC2 node role. 
 - Go to the [IAM website](https://console.aws.amazon.com/iam), and
   select `Roles` to edit both roles.
-- Attach the `SecretsManagerReadWrite`, `AmazonRDSFullAccess`,
-  and `AmazonS3FullAccess` policies both roles.
+- Attach the `AmazonRDSFullAccess` and `AmazonS3FullAccess` policies to both
+roles.
 - Go to the [EKS website](https://console.aws.amazon.com/eks).
 - Make sure the correct region is selected on the top right.
 - Click on `Add cluster` and select `Create`.
@@ -240,20 +240,15 @@ zenml step-operator register spark_step_operator \
 	--service_account=$KUBERNETES_SERVICE_ACCOUNT
 ```
 
-Following that, we will register the **secrets manager**, as we will utilize 
-it to register some secrets required by some other components:
-
-```bash
-# Register the secrets manager on AWS
-zenml secrets-manager register spark_secrets_manager \
-    --flavor=aws \
-    --region_name=$REGION
-```
-
 Next, let us register our **artifact store** on S3. For this example, we 
-will also use a secret while registering our artifact store.
+will also use a ZenML secret to store the credentials for the S3 bucket.
 
 ```bash
+# Register the authentication secret for s3
+zenml secret create s3_authentication \
+    --aws_access_key_id=<ACCESS_KEY_ID> \
+    --aws_secret_access_key=<SECRET_ACCESS_KEY>
+
 # Register the artifact store using the secret
 zenml artifact-store register spark_artifact_store \
     --flavor=s3 \
@@ -270,6 +265,16 @@ zenml container-registry register spark_container_registry \
     --uri=$ECR_URI
 ```
 
+We also need to register an **image builder** which will be used to build the
+Docker image for the Spark driver and executor pods. For this example, we
+will use the `local` image builder.
+
+```bash
+# Register the image builder
+zenml image-builder register local_builder \
+  --flavor=local
+```
+
 Finally, let’s finalize the stack.
 
 ```bash
@@ -277,22 +282,12 @@ Finally, let’s finalize the stack.
 zenml stack register spark_stack \
     -o default \
     -s spark_step_operator \
-    -x spark_secrets_manager \
     -a spark_artifact_store \
     -c spark_container_registry \
+    -i local_builder \
     --set
 ```
 
-and register the required secrets:
-
-```bash
-# Register the authentication secret for s3
-zenml secrets-manager secret register s3_authentication \
-    --schema=aws \
-    --aws_access_key_id=<ACCESS_KEY_ID> \
-    --aws_secret_access_key=<SECRET_ACCESS_KEY> \
-    --aws_session_token=<SESSION_TOKEN>
-```
 ### Running the pipeline
 
 Now that our stack is ready, you can go ahead and run your pipeline: 

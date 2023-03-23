@@ -68,15 +68,13 @@ def training_pipeline(
     training_data_loader,
     trainer,
     evaluator,
-    deployment_trigger,
-    model_deployer,
+    model_register,
 ):
     """Train, evaluate, and deploy a model."""
     X_train, X_test, y_train, y_test = training_data_loader()
     model = trainer(X_train=X_train, y_train=y_train)
     test_acc = evaluator(X_test=X_test, y_test=y_test, model=model)
-    deployment_decision = deployment_trigger(test_acc)
-    model_deployer(deployment_decision, model)
+    model_register(model)
 ```
 
 #### Stacks & Stack Components
@@ -89,9 +87,9 @@ depending on their type, these components serve different purposes.
 If you look at some examples of different flavors of stack components, you 
 will see examples such as:
 
-- [Airflow**Orchestrator**]() which orchestrates your ML workflows on Airflow
-- [MLflow**ExperimentTracker**]() which can track your experiments with MLFlow
-- [Evidently**DataValidator**]() which can help you validate your data
+- [Airflow**Orchestrator**](https://docs.zenml.io/component-gallery/orchestrators/airflow) which orchestrates your ML workflows on Airflow
+- [MLflow**ExperimentTracker**](https://docs.zenml.io/component-gallery/experiment-trackers/mlflow) which can track your experiments with MLFlow
+- [Evidently**DataValidator**](https://docs.zenml.io/component-gallery/data-validators/evidently) which can help you validate your data
 
 Any such combination of tools and infrastructure can be registered as a 
 separate stack in ZenML. Since ZenML code is tooling-independent, you can 
@@ -112,6 +110,11 @@ You can use Google Colab to see ZenML in action, no signup / installation requir
 <a href="https://colab.research.google.com/github/zenml-io/zenml/blob/main/examples/quickstart/notebooks/quickstart.ipynb" target="_parent"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
 
 ## :computer: Run Locally
+
+Note: Please note that the current version of the MLflow quickstart requires
+Python version 3.8 or higher. If you are using a lower version, we recommend
+that you use the python3.7 version of the quickstart instead. Please note that
+the MLflow model registry is not supported in the python3.7 version or lower.
 
 ### :page_facing_up: Prerequisites 
 To run locally, install ZenML and pull this quickstart:
@@ -150,12 +153,15 @@ zenml up
 zenml data-validator register evidently_data_validator --flavor=evidently
 zenml experiment-tracker register mlflow_tracker --flavor=mlflow
 zenml model-deployer register mlflow_deployer --flavor=mlflow
+zenml model-registry register mlflow_registry --flavor=mlflow
+
 
 # Register a new stack with the new stack components
 zenml stack register quickstart_stack -a default\
                                       -o default\
                                       -d mlflow_deployer\
                                       -e mlflow_tracker\
+                                      -r mlflow_registry\
                                       -dv evidently_data_validator\
                                       --set
 

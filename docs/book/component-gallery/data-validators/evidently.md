@@ -790,7 +790,7 @@ from zenml.post_execution import get_pipeline
 
 def visualize_results(pipeline_name: str, step_name: str) -> None:
     pipeline = get_pipeline(pipeline=pipeline_name)
-    evidently_outputs = pipeline.runs[-1].get_step(step=step_name)
+    evidently_outputs = pipeline.runs[0].get_step(step=step_name)
     EvidentlyVisualizer().visualize(evidently_outputs)
 
 if __name__ == "__main__":

@@ -52,6 +52,15 @@ class KanikoImageBuilder(BaseImageBuilder):
         return cast(KanikoImageBuilderConfig, self._config)
 
     @property
+    def is_building_locally(self) -> bool:
+        """Whether the image builder builds the images on the client machine.
+
+        Returns:
+            True if the image builder builds locally, False otherwise.
+        """
+        return False
+
+    @property
     def validator(self) -> Optional[StackValidator]:
         """Validates that the stack contains a container registry.
 

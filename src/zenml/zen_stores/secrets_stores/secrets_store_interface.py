@@ -94,12 +94,19 @@ class SecretsStoreInterface(ABC):
     ) -> Page[SecretResponseModel]:
         """List all secrets matching the given filter criteria.
 
+        Note that returned secrets do not include any secret values. To fetch
+        the secret values, use `get_secret`.
+
         Args:
             secret_filter_model: All filter parameters including pagination
                 params.
 
         Returns:
-            A list of all secrets matching the filter criteria.
+            A list of all secrets matching the filter criteria, with pagination
+            information and sorted according to the filter criteria. The
+            returned secrets do not include any secret values, only metadata. To
+            fetch the secret values, use `get_secret` individually with each
+            secret.
         """
 
     @abstractmethod

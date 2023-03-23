@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""MLFlow model deployer flavor."""
+"""MLflow model deployer flavor."""
 
 from typing import TYPE_CHECKING, Optional, Type
 
@@ -49,7 +49,7 @@ class MLFlowModelDeployerConfig(BaseModelDeployerConfig):
 
 
 class MLFlowModelDeployerFlavor(BaseModelDeployerFlavor):
-    """Model deployer flavor for MLFlow models."""
+    """Model deployer flavor for MLflow models."""
 
     @property
     def name(self) -> str:
@@ -68,6 +68,15 @@ class MLFlowModelDeployerFlavor(BaseModelDeployerFlavor):
             A flavor docs url.
         """
         return self.generate_default_docs_url()
+
+    @property
+    def sdk_docs_url(self) -> Optional[str]:
+        """A url to point at SDK docs explaining this flavor.
+
+        Returns:
+            A flavor SDK docs url.
+        """
+        return self.generate_default_sdk_docs_url()
 
     @property
     def logo_url(self) -> str:

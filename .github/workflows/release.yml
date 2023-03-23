@@ -8,12 +8,16 @@ on:
       - '*'
 
 jobs:
-  lint-code:
-    uses: ./.github/workflows/lint.yml
+
+  lint-unit-test:
+    uses: ./.github/workflows/lint-unit-test.yml
+    with:
+      os: "ubuntu-latest"
+      python-version: "3.8"
     secrets: inherit
 
   publish-python-package:
-    needs: lint-code
+    needs: lint-unit-test
     uses: ./.github/workflows/publish_to_pypi.yml
     secrets: inherit
 

@@ -28,11 +28,11 @@ def spark_pipeline(
     importer,
     analyzer,
     splitter,
-    processer,
+    processor,
     trainer,
 ):
     dataset = importer()
     analyzer(dataset)
     train, test, evaluation = splitter(dataset)
-    train_xf, _, _ = processer(train)
+    train_xf, _, _ = processor(train)
     _ = trainer(train_xf)

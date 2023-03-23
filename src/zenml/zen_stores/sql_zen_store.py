@@ -46,6 +46,7 @@ from sqlmodel import Session, create_engine, or_, select
 from sqlmodel.sql.expression import Select, SelectOfScalar
 
 from zenml.config.global_config import GlobalConfiguration
+from zenml.config.secrets_store_config import SecretsStoreConfiguration
 from zenml.config.store_config import StoreConfiguration
 from zenml.constants import (
     ENV_ZENML_DISABLE_DATABASE_MIGRATION,
@@ -150,6 +151,7 @@ from zenml.zen_stores.base_zen_store import (
     DEFAULT_STACK_NAME,
     BaseZenStore,
 )
+from zenml.zen_stores.enums import StoreEvent
 from zenml.zen_stores.migrations.alembic import (
     ZENML_ALEMBIC_START_REVISION,
     Alembic,
@@ -257,7 +259,7 @@ class SqlZenStoreConfiguration(StoreConfiguration):
 
     type: StoreType = StoreType.SQL
 
-    secrets_store: Optional[SqlSecretsStoreConfiguration] = None
+    secrets_store: Optional[SecretsStoreConfiguration] = None
 
     driver: Optional[SQLDatabaseDriver] = None
     database: Optional[str] = None
@@ -272,8 +274,8 @@ class SqlZenStoreConfiguration(StoreConfiguration):
 
     @validator("secrets_store")
     def validate_secrets_store(
-        cls, secrets_store: Optional[SqlSecretsStoreConfiguration]
-    ) -> SqlSecretsStoreConfiguration:
+        cls, secrets_store: Optional[SecretsStoreConfiguration]
+    ) -> SecretsStoreConfiguration:
         """Ensures that the secrets store is initialized with a default SQL secrets store.
 
         Args:
@@ -1594,6 +1596,7 @@ class SqlZenStore(BaseZenStore):
                     user_id=flavor.user,
                     logo_url=flavor.logo_url,
                     docs_url=flavor.docs_url,
+                    sdk_docs_url=flavor.sdk_docs_url,
                     is_custom=flavor.is_custom,
                 )
                 session.add(new_flavor)
@@ -1623,6 +1626,7 @@ class SqlZenStore(BaseZenStore):
 
             if not existing_flavor:
                 raise KeyError(f"Flavor with ID {flavor_id} not found.")
+
             existing_flavor.update(flavor_update=flavor_update)
             session.add(existing_flavor)
             session.commit()
@@ -1870,6 +1874,9 @@ class SqlZenStore(BaseZenStore):
                 raise IllegalOperationError(
                     "The default user account cannot be deleted."
                 )
+
+            self._trigger_event(StoreEvent.USER_DELETED, user_id=user.id)
+
             session.delete(user)
             session.commit()
 
@@ -2616,6 +2623,10 @@ class SqlZenStore(BaseZenStore):
                 raise IllegalOperationError(
                     "The default workspace cannot be deleted."
                 )
+
+            self._trigger_event(
+                StoreEvent.WORKSPACE_DELETED, workspace_id=workspace.id
+            )
 
             session.delete(workspace)
             session.commit()
@@ -3466,6 +3477,7 @@ class SqlZenStore(BaseZenStore):
             select(StepRunInputArtifactSchema)
             .where(StepRunInputArtifactSchema.step_id == run_step_id)
             .where(StepRunInputArtifactSchema.artifact_id == artifact_id)
+            .where(StepRunInputArtifactSchema.name == name)
         ).first()
         if assignment is not None:
             return

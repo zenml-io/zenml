@@ -64,6 +64,15 @@ class BaseImageBuilder(StackComponent, ABC):
 
         return BuildContext
 
+    @property
+    @abstractmethod
+    def is_building_locally(self) -> bool:
+        """Whether the image builder builds the images on the client machine.
+
+        Returns:
+            True if the image builder builds locally, False otherwise.
+        """
+
     @abstractmethod
     def build(
         self,

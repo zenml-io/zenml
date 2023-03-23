@@ -12,20 +12,26 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+from zenml.config import DockerSettings
+from zenml.integrations.constants import SKLEARN
 from zenml.pipelines import pipeline
 
+docker_settings = DockerSettings(
+    required_integrations=[SKLEARN],
+)
 
-@pipeline
+
+@pipeline(settings={"docker": docker_settings})
 def inference_pipeline(
     inference_data_loader,
-    prediction_service_loader,
+    mlflow_model_deployer,
     predictor,
     training_data_loader,
     drift_detector,
 ):
     """Inference pipeline with skew and drift detection."""
     inference_data = inference_data_loader()
-    model_deployment_service = prediction_service_loader()
+    model_deployment_service = mlflow_model_deployer()
     predictor(model_deployment_service, inference_data)
     training_data, _, _, _ = training_data_loader()
     drift_detector(training_data, inference_data)

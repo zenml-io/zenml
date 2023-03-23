@@ -43,7 +43,7 @@ logger = get_logger(__name__)
     tag=CliCategories.INTEGRATIONS,
 )
 def integration() -> None:
-    """Interact with the requirements of external integrations."""
+    """Interact with external integrations."""
 
 
 @integration.command(name="list", help="List the available integrations.")

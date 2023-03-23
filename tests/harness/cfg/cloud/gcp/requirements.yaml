@@ -2,18 +2,10 @@ requirements:
 
   - name: gcp-us-east4-cloud
     description: >-
-      GCP environment in the us-east4 region with access to a GCS bucket
-      and a GCP Secrets Manager.
-    capabilities:
-      secrets-scoping: true
+      GCP environment in the us-east4 region with access to a GCS bucket.
     stacks:
       - name: gcp-ci-store
         type: artifact_store
-        flavor: gcp
-        external: true
-
-      - name: gcp-us-east4
-        type: secrets_manager
         flavor: gcp
         external: true
 
