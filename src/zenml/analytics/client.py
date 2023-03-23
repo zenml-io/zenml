@@ -24,7 +24,7 @@ import numbers
 import queue
 from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Tuple
 from uuid import UUID
-
+from zenml.constants import  IS_DEBUG_ENV
 from six import string_types
 
 from zenml.analytics.consumer import Consumer
@@ -185,6 +185,7 @@ class Client(object):
             "user_id": user_id,
             "traits": traits or {},
             "type": "identify",
+            "debug": IS_DEBUG_ENV,
         }
         return self._enqueue(json.dumps(msg, cls=AnalyticsEncoder))
 
@@ -209,6 +210,7 @@ class Client(object):
             "event": event,
             "properties": properties or {},
             "type": "track",
+            "debug": IS_DEBUG_ENV,
         }
         return self._enqueue(json.dumps(msg, cls=AnalyticsEncoder))
 
@@ -230,6 +232,7 @@ class Client(object):
             "group_id": group_id,
             "traits": traits or {},
             "type": "group",
+            "debug": IS_DEBUG_ENV,
         }
         return self._enqueue(json.dumps(msg, cls=AnalyticsEncoder))
 
