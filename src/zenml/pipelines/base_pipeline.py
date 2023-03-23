@@ -21,6 +21,7 @@ from typing import (
     TYPE_CHECKING,
     Any,
     Callable,
+    ClassVar,
     Dict,
     List,
     Mapping,
@@ -90,10 +91,11 @@ if TYPE_CHECKING:
     HookSpecification = Union[str, FunctionType]
 
 logger = get_logger(__name__)
+
 PIPELINE_INNER_FUNC_NAME = "connect"
+INSTANCE_CONFIGURATION = "INSTANCE_CONFIGURATION"
 PARAM_ENABLE_CACHE = "enable_cache"
 PARAM_ENABLE_ARTIFACT_METADATA = "enable_artifact_metadata"
-INSTANCE_CONFIGURATION = "INSTANCE_CONFIGURATION"
 PARAM_SETTINGS = "settings"
 PARAM_EXTRA_OPTIONS = "extra"
 PARAM_ON_FAILURE = "on_failure"
@@ -114,9 +116,9 @@ class BasePipeline(ABC):
             is enabled for this pipeline.
     """
 
-    INSTANCE_CONFIGURATION: Dict[str, Any] = {}
+    INSTANCE_CONFIGURATION: ClassVar[Dict[str, Any]] = {}
 
-    def __init__(self, *args: BaseStep, **kwargs: Any) -> None:
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         """Initialize the BasePipeline.
 
         Args:
@@ -651,7 +653,7 @@ class BasePipeline(ABC):
         """
         settings_utils.validate_setting_keys(list(config.settings))
 
-    def _verify_steps(self, *args: BaseStep, **kwargs: Any) -> None:
+    def _verify_steps(self, *args: Any, **kwargs: Any) -> None:
         """Verifies the initialization args and kwargs of this pipeline.
 
         This method makes sure that no missing/unexpected arguments or
@@ -675,7 +677,6 @@ class BasePipeline(ABC):
                 f"Wrong arguments when initializing pipeline '{self.name}': {e}"
             ) from e
 
-        steps = {}
         step_ids: Dict[int, str] = {}
 
         for key, potential_step in bound_args.arguments.items():
@@ -715,9 +716,7 @@ class BasePipeline(ABC):
                 )
 
             step_ids[id(potential_step)] = key
-            steps[key] = potential_step
-
-        self.__steps = steps
+            self.__steps[key] = potential_step
 
     def _get_pipeline_analytics_metadata(
         self,
