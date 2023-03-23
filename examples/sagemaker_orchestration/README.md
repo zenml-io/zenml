@@ -50,6 +50,8 @@ stack with all of these components.
   **container registry**.
 * The **Sagemaker orchestrator** is responsible for running your ZenML pipeline
   in Sagemaker.
+* An **Image Builder** is responsible for building the Docker images that are
+  used to run your pipeline steps.
 
 When running the upcoming commands, make sure to
 replace all the <PLACEHOLDERS> with the correct values from how you set things
@@ -84,8 +86,11 @@ zenml artifact-store register aws_artifact_store --flavor=s3 --path=<PATH_TO_YOU
 # register the orchestrator
 zenml orchestrator register sagemaker_orchestrator --flavor=sagemaker --execution_role=<AWS_ROLE_ARN_CREATED_EARLIER>
 
+# register the image builder
+zenml image-builder register local_builder --flavor=local
+
 # Now we're ready to assemble our stack
-zenml stack register sagemaker_stack -a aws_artifact_store -o sagemaker_orchestrator -c aws_registry --set
+zenml stack register sagemaker_stack -a aws_artifact_store -o sagemaker_orchestrator -c aws_registry -i local_builder --set
 ```
 
 ### ▶️ Run the pipeline
