@@ -14,11 +14,8 @@
 
 import datetime
 import os
-import shutil
 from typing import Optional, Tuple
-from uuid import uuid4
 
-import git
 import requests
 from slack_sdk import WebClient
 
