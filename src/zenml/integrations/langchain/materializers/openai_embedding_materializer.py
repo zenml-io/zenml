@@ -57,10 +57,6 @@ class LangchainOpenaiEmbeddingMaterializer(BaseMaterializer):
 
         Returns:
             The vector store.
-
-        Raises:
-            ValidationError: If the Python version used to materialize the
-                embedding is different from the current Python version.
         """
         super().load(data_type)
 
