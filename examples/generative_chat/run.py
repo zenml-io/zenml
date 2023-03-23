@@ -11,15 +11,78 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+import argparse
 import logging
 
 from pipelines.index_builder import (
-    build_vector_store_docs_slack_index,
+    docs_to_index_pipeline,
+)
+from steps.docs_loader import DocsLoaderParameters, docs_loader
+from steps.index_generator import IndexGeneratorParameters, index_generator
+from steps.slack_loader import SlackLoaderParameters, slack_loader
+from steps.utils import get_channel_id_from_name, get_release_date, page_exists
+
+zenml_version = "0.36.0"
+base_url = "https://docs.zenml.io"
+docs_url = f"https://docs.zenml.io/v/{zenml_version}/"
+channel_names = ["general"]
+channel_ids = [
+    get_channel_id_from_name(channel_name) for channel_name in channel_names
+]
+
+if not page_exists(docs_url):
+    print(f"Couldn't find docs page for zenml version '{zenml_version}'.")
+
+release_date, next_release_date = get_release_date("zenml", zenml_version)
+
+parser = argparse.ArgumentParser(
+    description="Build ZenML documentation index."
+)
+parser.add_argument(
+    "--docs_version",
+    type=str,
+    default=zenml_version,
+    help="Docs version number",
+)
+parser.add_argument(
+    "--base_url",
+    type=str,
+    default=base_url,
+    help="Base URL for documentation site",
+)
+parser.add_argument(
+    "--docs_url",
+    type=str,
+    default=docs_url,
+    help="URL for documentation site",
+)
+args = parser.parse_args()
+
+zenml_version = args.zenml_version
+base_url = args.base_url
+docs_url = args.docs_url
+
+docs_to_index_pipeline = docs_to_index_pipeline(
+    document_loader=docs_loader(
+        params=DocsLoaderParameters(docs_uri=docs_url, base_url=base_url)
+    ),
+    index_generator=index_generator(params=IndexGeneratorParameters()),
+    slack_loader=slack_loader(
+        params=SlackLoaderParameters(
+            channel_ids=channel_ids,
+            earliest_date=release_date,
+            latest_date=next_release_date,
+        )
+    ),
 )
 
 
 def main():
-    build_vector_store_docs_slack_index(version="0.35.1")
+    try:
+        docs_to_index_pipeline.run()
+    except Exception as e:
+        print(f"Failed to build index for zenml version '{zenml_version}'.")
+        print(e)
 
 
 if __name__ == "__main__":
