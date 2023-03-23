@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import random
 from typing import List
 
 from langchain.docstore.document import Document
@@ -21,9 +22,13 @@ from langchain.text_splitter import (
     RecursiveCharacterTextSplitter,
 )
 from langchain.vectorstores import FAISS, VectorStore
+from openai.error import InvalidRequestError
 
+from zenml.logger import get_logger
 from zenml.steps import step
 from zenml.steps.base_parameters import BaseParameters
+
+logger = get_logger(__name__)
 
 
 class IndexGeneratorParameters(BaseParameters):
@@ -74,4 +79,13 @@ def index_generator(
     slack_texts = slack_text_splitter.split_documents(slack_documents)
 
     split_documents.extend(slack_texts)  # merges the two document lists
-    return FAISS.from_documents(documents, embeddings)
+
+    try:
+        return FAISS.from_documents(documents, embeddings)
+    except InvalidRequestError:
+        random.shuffle(documents)
+        shorter_documents = documents[: len(documents) // 2]
+        logger.warning(
+            "Too many tokens passed to OpenAI. Trying with smaller set of documents"
+        )
+        return FAISS.from_documents(shorter_documents, embeddings)

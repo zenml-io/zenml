@@ -53,10 +53,6 @@ example:
 
 ```python
 from zenml.post_execution import get_pipeline
-from zenml.enums import ExecutionStatus
-
-# Define the latest ZenML version for which the index needs to be accessed
-latest_zenml_version = "0.35.1"
 
 # Retrieve the pipeline for generating ZenML docs index
 pipeline = get_pipeline("docs_to_index_pipeline")
@@ -65,10 +61,10 @@ pipeline = get_pipeline("docs_to_index_pipeline")
 pipeline_run = pipeline.runs[-1]
 
 # Retrieve the last step of the relevant run
-last_step_of_relevant_run = relevant_run.steps[-1]
+last_step_of_relevant_run = pipeline_run.steps[-1]
 
 # Read the vector index from the last step's output
-vector_index = last_step_of_relevant_run.output.read()
+vector_index = last_step_of_relevant_run.outputs.read()
 ```
 
 # 🖥 Run it locally

@@ -22,18 +22,18 @@ from steps.index_generator import IndexGeneratorParameters, index_generator
 from steps.slack_loader import SlackLoaderParameters, slack_loader
 from steps.utils import get_channel_id_from_name, get_release_date, page_exists
 
-zenml_version = "0.36.0"
+docs_version = "0.35.0"
 base_url = "https://docs.zenml.io"
-docs_url = f"https://docs.zenml.io/v/{zenml_version}/"
+docs_url = f"https://docs.zenml.io/v/{docs_version}/"
 channel_names = ["general"]
 channel_ids = [
     get_channel_id_from_name(channel_name) for channel_name in channel_names
 ]
 
 if not page_exists(docs_url):
-    print(f"Couldn't find docs page for zenml version '{zenml_version}'.")
+    print(f"Couldn't find docs page for zenml version '{docs_version}'.")
 
-release_date, next_release_date = get_release_date("zenml", zenml_version)
+release_date, next_release_date = get_release_date("zenml", docs_version)
 
 parser = argparse.ArgumentParser(
     description="Build ZenML documentation index."
@@ -41,7 +41,7 @@ parser = argparse.ArgumentParser(
 parser.add_argument(
     "--docs_version",
     type=str,
-    default=zenml_version,
+    default=docs_version,
     help="Docs version number",
 )
 parser.add_argument(
@@ -58,7 +58,7 @@ parser.add_argument(
 )
 args = parser.parse_args()
 
-zenml_version = args.zenml_version
+docs_version = args.docs_version
 base_url = args.base_url
 docs_url = args.docs_url
 
@@ -81,7 +81,7 @@ def main():
     try:
         docs_to_index_pipeline.run()
     except Exception as e:
-        print(f"Failed to build index for zenml version '{zenml_version}'.")
+        print(f"Failed to build index for docs version '{docs_version}'.")
         print(e)
 
 
