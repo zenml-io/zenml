@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 from contextlib import ExitStack as does_not_raise
 from types import TracebackType
-from typing import Dict, Optional, Type, Tuple, Any
+from typing import Any, Dict, Optional, Tuple, Type
 from unittest.mock import patch
 from uuid import UUID
 
