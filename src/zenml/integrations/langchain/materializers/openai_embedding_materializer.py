@@ -13,8 +13,6 @@
 #  permissions and limitations under the License.
 """Implementation of the Langchain OpenAI embedding materializer."""
 
-from __future__ import annotations
-
 import os
 import pickle
 import sys
@@ -30,14 +28,13 @@ from zenml.utils.io_utils import (
 )
 from zenml.utils.materializer_utils import get_python_version
 
+if TYPE_CHECKING and sys.version_info < (3, 8):
+    OpenAIEmbeddings = Any
+else:
+    from langchain.embeddings import OpenAIEmbeddings
+
 DEFAULT_PICKLE_FILENAME = "embedding.pkl"
 DEFAULT_PYTHON_VERSION_FILENAME = "python_version.txt"
-
-if TYPE_CHECKING:
-    if sys.version_info >= (3, 8):
-        from langchain.embeddings import OpenAIEmbeddings
-    else:
-        OpenAIEmbeddings = Any
 
 
 class LangchainOpenaiEmbeddingMaterializer(BaseMaterializer):

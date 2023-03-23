@@ -13,12 +13,10 @@
 #  permissions and limitations under the License.
 """Implementation of the llama-index GPT index materializer."""
 
-from __future__ import annotations
-
 import os
 import sys
 import tempfile
-from typing import Any, Generic, Type, TypeVar, cast
+from typing import TYPE_CHECKING, Any, Generic, Type, TypeVar, cast
 
 from zenml.enums import ArtifactType
 from zenml.io import fileio
@@ -27,12 +25,15 @@ from zenml.materializers.base_materializer import BaseMaterializer
 DEFAULT_FILENAME = "index.json"
 DEFAULT_FAISS_FILENAME = "faiss_index.json"
 
-if sys.version_info >= (3, 8):
-    from llama_index.indices.base import BaseGPTIndex
-
-    T = TypeVar("T", bound=BaseGPTIndex[Any])
+if TYPE_CHECKING and sys.version_info < (3, 8):
+    BaseGPTIndex = Any
+    GPTFaissIndex = Any
 else:
-    T = TypeVar("T")
+    from llama_index.indices.base import BaseGPTIndex
+    from llama_index.indices.vector_store import GPTFaissIndex
+
+
+T = TypeVar("T", bound=BaseGPTIndex)
 
 
 class LlamaIndexGPTIndexMaterializer(Generic[T], BaseMaterializer):
@@ -91,8 +92,6 @@ class LlamaIndexGPTIndexMaterializer(Generic[T], BaseMaterializer):
 class LlamaIndexGPTFaissIndexMaterializer(BaseMaterializer):
     """Materializer for llama_index GPT faiss indices."""
 
-    from llama_index.indices.vector_store import GPTFaissIndex
-
     ASSOCIATED_ARTIFACT_TYPE = ArtifactType.MODEL
     ASSOCIATED_TYPES = (GPTFaissIndex,)
 
@@ -105,8 +104,6 @@ class LlamaIndexGPTFaissIndexMaterializer(BaseMaterializer):
         Returns:
             The index.
         """
-        from llama_index.indices.vector_store import GPTFaissIndex
-
         super().load(data_type)
         filepath = os.path.join(self.uri, DEFAULT_FILENAME)
         faiss_filepath = os.path.join(self.uri, DEFAULT_FAISS_FILENAME)

@@ -11,14 +11,15 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Initialization of the sklearn materializer."""
-
+"""Initialization of the langchain materializer."""
 from zenml.integrations.langchain.materializers.vector_store_materializer import (
     LangchainVectorStoreMaterializer,
 )
-from zenml.integrations.langchain.materializers.openai_embedding_materializer import (
-    LangchainOpenaiEmbeddingMaterializer,
-)
+
 from zenml.integrations.langchain.materializers.document_materializer import (
     LangchainDocumentMaterializer,
+)
+
+from zenml.integrations.langchain.materializers.openai_embedding_materializer import (
+    LangchainOpenaiEmbeddingMaterializer,
 )
