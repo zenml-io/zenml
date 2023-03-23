@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Implementation of the Langchain OpenAI embedding materializer."""
+from __future__ import annotations
 
 import os
 import pickle
@@ -63,7 +64,7 @@ class LangchainOpenaiEmbeddingMaterializer(BaseMaterializer):
         source_python_version = read_file_contents_as_string(
             python_version_filepath
         )
-        current_python_version = Environment().python_version
+        current_python_version = Environment().python_version()
         if source_python_version != current_python_version:
             raise ValidationError(
                 f"Your `OpenAIEmbedding` was materialized with {source_python_version} "
@@ -92,7 +93,7 @@ class LangchainOpenaiEmbeddingMaterializer(BaseMaterializer):
         python_version_filepath = os.path.join(
             self.uri, DEFAULT_PYTHON_VERSION_FILENAME
         )
-        current_python_version = Environment().python_version
+        current_python_version = Environment().python_version()
         write_file_contents_as_string(
             python_version_filepath, current_python_version
         )

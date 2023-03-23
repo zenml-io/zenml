@@ -63,7 +63,7 @@ class LangchainVectorStoreMaterializer(BaseMaterializer):
         source_python_version = read_file_contents_as_string(
             python_version_filepath
         )
-        current_python_version = Environment().python_version
+        current_python_version = Environment().python_version()
         if source_python_version != current_python_version:
             raise ValidationError(
                 f"Your `VectorStore` was materialized with {source_python_version} "
@@ -92,7 +92,7 @@ class LangchainVectorStoreMaterializer(BaseMaterializer):
         python_version_filepath = os.path.join(
             self.uri, DEFAULT_PYTHON_VERSION_FILENAME
         )
-        current_python_version = Environment().python_version
+        current_python_version = Environment().python_version()
         write_file_contents_as_string(
             python_version_filepath, current_python_version
         )

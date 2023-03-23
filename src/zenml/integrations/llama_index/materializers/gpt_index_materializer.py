@@ -13,6 +13,8 @@
 #  permissions and limitations under the License.
 """Implementation of the llama-index GPT index materializer."""
 
+from __future__ import annotations
+
 import os
 import sys
 import tempfile
@@ -33,7 +35,7 @@ else:
     from llama_index.indices.vector_store import GPTFaissIndex
 
 
-T = TypeVar("T", bound=BaseGPTIndex)
+T = TypeVar("T", bound=BaseGPTIndex[Any])
 
 
 class LlamaIndexGPTIndexMaterializer(Generic[T], BaseMaterializer):
