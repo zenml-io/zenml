@@ -122,7 +122,7 @@ SEGMENT_KEY_DEV = "mDBYI0m7GcCj59EZ4f9d016L1T3rh8J5"
 SEGMENT_KEY_PROD = "sezE77zEoxHPFDXuyFfILx6fBnJFZ4p7"
 
 # ZenML Analytics Server - URL
-ANALYTICS_SERVER_URL = "https://zenml-analytics-server-76jzsesopq-lm.a.run.app"
+ANALYTICS_SERVER_URL = "https://zenml-analytics-76jzsesopq-ew.a.run.app/"
 
 # Container utils
 SHOULD_PREVENT_PIPELINE_EXECUTION = handle_bool_env_var(

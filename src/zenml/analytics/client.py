@@ -24,11 +24,12 @@ import numbers
 import queue
 from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Tuple
 from uuid import UUID
-from zenml.constants import  IS_DEBUG_ENV
+
 from six import string_types
 
 from zenml.analytics.consumer import Consumer
 from zenml.analytics.request import post
+from zenml.constants import IS_DEBUG_ENV
 
 if TYPE_CHECKING:
     from zenml.utils.analytics_utils import AnalyticsEvent
