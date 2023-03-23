@@ -16,7 +16,7 @@
 from steps.docs_loader import DocsLoaderParameters, docs_loader
 from steps.index_generator import IndexGeneratorParameters, index_generator
 from steps.slack_loader import SlackLoaderParameters, slack_loader
-from steps.utils import SLACK_CHANNEL_IDS, get_release_date, page_exists
+from steps.utils import get_channel_id_from_name, get_release_date, page_exists
 
 from zenml.pipelines import pipeline
 
@@ -31,6 +31,10 @@ def docs_to_index_pipeline(document_loader, slack_loader, index_generator):
 zenml_version = "0.36.0"
 base_url = "https://docs.zenml.io"
 docs_url = f"https://docs.zenml.io/v/{zenml_version}/"
+channel_names = ["general"]
+channel_ids = [
+    get_channel_id_from_name(channel_name) for channel_name in channel_names
+]
 
 if not page_exists(docs_url):
     print(f"Couldn't find docs page for zenml version '{zenml_version}'.")
@@ -44,7 +48,7 @@ docs_to_index_pipeline = docs_to_index_pipeline(
     index_generator=index_generator(params=IndexGeneratorParameters()),
     slack_loader=slack_loader(
         params=SlackLoaderParameters(
-            channel_ids=SLACK_CHANNEL_IDS,
+            channel_ids=[get_channel_id_from_name("general")],
             earliest_date=release_date,
             latest_date=next_release_date,
         )
