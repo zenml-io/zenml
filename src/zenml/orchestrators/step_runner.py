@@ -247,6 +247,7 @@ class StepRunner:
             The parsed inputs for the step entrypoint function.
         """
         from zenml.steps import BaseParameters
+        from pydantic import Extra, BaseModel
 
         function_params: Dict[str, Any] = {}
 
@@ -258,16 +259,18 @@ class StepRunner:
             arg_type = resolve_type_annotation(arg_type)
 
             if issubclass(arg_type, BaseParameters):
-                # TODO: handle extra=forbid here in base parameter subclass,
-                # which will currently clash if other "direct" parameters are
-                # passed to a step
-                keys_to_remove = set(args) - set(input_artifacts)
-                base_params = {
-                    k: v
-                    for k, v in self.configuration.parameters.items()
-                    if k not in keys_to_remove
-                }
-                step_params = arg_type.parse_obj(base_params)
+                
+
+                if arg_type.Config.extra == Extra.forbid:
+                    config_values = {
+                        key: value
+                        for key, value in self.configuration.parameters.items()
+                        if key in arg_type.__fields__
+                    }
+                else:
+                    config_values = self.configuration.parameters
+
+                step_params = arg_type.parse_obj(config_values)
                 function_params[arg] = step_params
             elif issubclass(arg_type, StepContext):
                 step_name = self.configuration.name
@@ -282,7 +285,11 @@ class StepRunner:
                     input_artifacts[arg], arg_type
                 )
             elif arg in self.configuration.parameters:
-                function_params[arg] = self.configuration.parameters[arg]
+                value = self.configuration.parameters[arg]
+                if issubclass(arg_type, BaseModel):
+                    value = arg_type.parse_obj(value)
+                
+                function_params[arg] = value
             else:
                 raise RuntimeError(
                     f"Unable to find value for step function argument `{arg}`."
