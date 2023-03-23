@@ -96,10 +96,8 @@ if TYPE_CHECKING:
 class BaseStepMeta(type):
     """Metaclass for `BaseStep`.
 
-    Checks whether everything passed in:
-    * Has a matching materializer,
-    * Is a subclass of the Config class,
-    * Is typed correctly.
+    Makes sure that the entrypoint function has valid parameters and type
+    annotations.
     """
 
     def __new__(
@@ -241,7 +239,7 @@ class BaseStep(metaclass=BaseStepMeta):
     PARAMETERS_CLASS: ClassVar[Optional[Type["BaseParameters"]]] = None
     CONTEXT_PARAMETER_NAME: ClassVar[Optional[str]] = None
 
-    INSTANCE_CONFIGURATION: Dict[str, Any] = {}
+    INSTANCE_CONFIGURATION: ClassVar[Dict[str, Any]] = {}
 
     class _OutputArtifact(NamedTuple):
         """Internal step output artifact.

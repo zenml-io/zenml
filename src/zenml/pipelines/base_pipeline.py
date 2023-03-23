@@ -14,7 +14,7 @@
 """Abstract base class for all ZenML pipelines."""
 import hashlib
 import inspect
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from datetime import datetime
 from types import FunctionType
 from typing import (
@@ -105,7 +105,15 @@ PARAM_ON_SUCCESS = "on_success"
 T = TypeVar("T", bound="BasePipeline")
 
 
-class BasePipeline(ABC):
+class BasePipelineMeta(type):
+    def __new__(
+        mcs, name: str, bases: Tuple[Type[Any], ...], dct: Dict[str, Any]
+    ) -> "BasePipelineMeta":
+        dct.setdefault(INSTANCE_CONFIGURATION, {})
+        return super().__new__(mcs, name, bases, dct)
+
+
+class BasePipeline(metaclass=BasePipelineMeta):
     """Abstract base class for all ZenML pipelines.
 
     Attributes:
@@ -1185,3 +1193,22 @@ class BasePipeline(ABC):
             images=images,
         )
         return client.zen_store.create_build(build_request)
+
+    def _get_unique_name_for_step(
+        self, step: "BaseStep", custom_name: Optional[str] = None
+    ) -> str:
+        if custom_name:
+            if custom_name in self.steps:
+                raise RuntimeError("Duplicate step name")
+
+            return custom_name
+
+        name = step.name
+
+        for index in range(2, 100):
+            if name not in self.steps:
+                return name
+
+            name = f"{step.name}_{index}"
+        else:
+            raise RuntimeError("Unable to find step name")
