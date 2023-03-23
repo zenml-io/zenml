@@ -21,12 +21,12 @@ from github.Repository import Repository
 
 from zenml.code_repositories import (
     BaseCodeRepository,
-    LocalRepository,
+    LocalRepositoryContext,
 )
 from zenml.code_repositories.base_code_repository import (
     BaseCodeRepositoryConfig,
 )
-from zenml.code_repositories.git import LocalGitRepository
+from zenml.code_repositories.git import LocalGitRepositoryContext
 from zenml.logger import get_logger
 from zenml.utils.secret_utils import SecretField
 
@@ -125,16 +125,16 @@ class GitHubCodeRepository(BaseCodeRepository):
                 except (GithubException, IOError) as e:
                     logger.error("Error processing %s: %s", content.path, e)
 
-    def get_local_repo(self, path: str) -> Optional[LocalRepository]:
-        """Gets the local repository.
+    def get_local_context(self, path: str) -> Optional[LocalRepositoryContext]:
+        """Gets the local repository context.
 
         Args:
             path: The path to the local repository.
 
         Returns:
-            The local repository.
+            The local repository context.
         """
-        return LocalGitRepository.at(
+        return LocalGitRepositoryContext.at(
             path=path,
             code_repository_id=self.id,
             remote_url_validation_callback=self.check_remote_url,

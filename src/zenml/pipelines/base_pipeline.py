@@ -402,8 +402,8 @@ class BasePipeline(metaclass=BasePipelineMeta):
         pipeline_id = self._register(pipeline_spec=pipeline_spec).id
 
         local_repo = source_utils.find_active_code_repository()
-        code_repository = build_utils.verify_local_repository(
-            deployment=deployment, local_repo=local_repo
+        code_repository = build_utils.verify_local_repository_context(
+            deployment=deployment, local_repo_context=local_repo
         )
 
         return build_utils.create_pipeline_build(
@@ -525,9 +525,9 @@ class BasePipeline(metaclass=BasePipelineMeta):
 
             stack = Client().active_stack
 
-            local_repo = source_utils.find_active_code_repository()
-            code_repository = build_utils.verify_local_repository(
-                deployment=deployment, local_repo=local_repo
+            local_repo_context = source_utils.find_active_code_repository()
+            code_repository = build_utils.verify_local_repository_context(
+                deployment=deployment, local_repo_context=local_repo_context
             )
 
             build_model = build_utils.reuse_or_create_pipeline_build(
@@ -540,16 +540,18 @@ class BasePipeline(metaclass=BasePipelineMeta):
             build_id = build_model.id if build_model else None
 
             code_reference = None
-            if local_repo and not local_repo.is_dirty:
+            if local_repo_context and not local_repo_context.is_dirty:
                 source_root = source_utils.get_source_root()
                 subdirectory = (
-                    Path(source_root).resolve().relative_to(local_repo.root)
+                    Path(source_root)
+                    .resolve()
+                    .relative_to(local_repo_context.root)
                 )
 
                 code_reference = CodeReferenceRequestModel(
-                    commit=local_repo.current_commit,
+                    commit=local_repo_context.current_commit,
                     subdirectory=subdirectory.as_posix(),
-                    code_repository=local_repo.code_repository_id,
+                    code_repository=local_repo_context.code_repository_id,
                 )
 
             deployment_request = PipelineDeploymentRequestModel(

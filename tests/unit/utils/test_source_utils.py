@@ -22,7 +22,7 @@ import pytest
 
 from tests.unit.pipelines.test_build_utils import (
     StubCodeRepository,
-    StubLocalRepository,
+    StubLocalRepositoryContext,
 )
 from zenml.config.source import CodeRepositorySource, Source, SourceType
 from zenml.models import Page
@@ -152,31 +152,31 @@ def test_basic_source_resolving(mocker):
     )
 
     # Code repo sources
-    clean_local_repo = StubLocalRepository(
+    clean_local_context = StubLocalRepositoryContext(
         root=CURRENT_MODULE_PARENT_DIR, commit="commit"
     )
     mocker.patch.object(
         source_utils,
         "find_active_code_repository",
-        return_value=clean_local_repo,
+        return_value=clean_local_context,
     )
 
     assert source_utils.resolve(empty_function) == CodeRepositorySource(
         module=expected_module_name,
         attribute=empty_function.__name__,
         type=SourceType.CODE_REPOSITORY,
-        repository_id=clean_local_repo.code_repository_id,
-        commit=clean_local_repo.current_commit,
+        repository_id=clean_local_context.code_repository_id,
+        commit=clean_local_context.current_commit,
         subdirectory=".",
     )
 
-    dirty_local_repo = StubLocalRepository(
+    dirty_local_context = StubLocalRepositoryContext(
         root=CURRENT_MODULE_PARENT_DIR, commit="commit", has_local_changes=True
     )
     mocker.patch.object(
         source_utils,
         "find_active_code_repository",
-        return_value=dirty_local_repo,
+        return_value=dirty_local_context,
     )
 
     assert source_utils.resolve(empty_function) == Source(
@@ -359,7 +359,7 @@ def test_finding_active_code_repo(mocker, sample_code_repo_response_model):
     source_utils._CODE_REPOSITORY_CACHE = {}
     assert not source_utils.find_active_code_repository()
 
-    repo_without_local = StubCodeRepository(local_repo=None)
+    repo_without_local = StubCodeRepository(local_context=None)
     mocker.patch(
         "zenml.code_repositories.BaseCodeRepository.from_model",
         return_value=repo_without_local,
@@ -368,14 +368,14 @@ def test_finding_active_code_repo(mocker, sample_code_repo_response_model):
     source_utils._CODE_REPOSITORY_CACHE = {}
     assert not source_utils.find_active_code_repository()
 
-    local_repo = StubLocalRepository()
-    repo_with_local = StubCodeRepository(local_repo=local_repo)
+    local_context = StubLocalRepositoryContext()
+    repo_with_local = StubCodeRepository(local_context=local_context)
     mocker.patch(
         "zenml.code_repositories.BaseCodeRepository.from_model",
         return_value=repo_with_local,
     )
     source_utils._CODE_REPOSITORY_CACHE = {}
-    assert source_utils.find_active_code_repository() is local_repo
+    assert source_utils.find_active_code_repository() is local_context
 
     # Cleanup
     source_utils._CODE_REPOSITORY_CACHE = {}

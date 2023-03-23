@@ -14,10 +14,10 @@
 """Downloaded code repository."""
 from uuid import UUID
 
-from zenml.code_repositories import LocalRepository
+from zenml.code_repositories import LocalRepositoryContext
 
 
-class _DownloadedRepository(LocalRepository):
+class _DownloadedRepositoryContext(LocalRepositoryContext):
     """Class that represents the downloaded files of a code repository.
 
     See `source_utils.set_custom_local_repository(...)` for a more in-depth

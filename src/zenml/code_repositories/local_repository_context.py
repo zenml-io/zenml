@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Base class for local code repositories."""
+"""Base class for local code repository contexts."""
 from abc import ABC, abstractmethod
 from uuid import UUID
 
@@ -20,8 +20,8 @@ from zenml.logger import get_logger
 logger = get_logger(__name__)
 
 
-class LocalRepository(ABC):
-    """Base class for local repositories.
+class LocalRepositoryContext(ABC):
+    """Base class for local repository contexts.
 
     This class is used to represent a local repository. It is used
     to track the current state of the repository and to provide
@@ -30,7 +30,7 @@ class LocalRepository(ABC):
     """
 
     def __init__(self, code_repository_id: UUID) -> None:
-        """Initializes a local repository.
+        """Initializes a local repository context.
 
         Args:
             code_repository_id: The ID of the code repository.

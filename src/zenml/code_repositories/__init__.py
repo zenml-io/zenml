@@ -16,6 +16,8 @@
 from zenml.code_repositories.base_code_repository import (
     BaseCodeRepository,
 )
-from zenml.code_repositories.local_repository import LocalRepository
+from zenml.code_repositories.local_repository_context import (
+    LocalRepositoryContext,
+)
 
-__all__ = ["BaseCodeRepository", "LocalRepository"]
+__all__ = ["BaseCodeRepository", "LocalRepositoryContext"]

@@ -22,21 +22,13 @@ from zenml.models.code_repository_models import CodeRepositoryResponseModel
 from zenml.utils import source_utils
 
 if TYPE_CHECKING:
-    from zenml.code_repositories import LocalRepository
+    from zenml.code_repositories import LocalRepositoryContext
 
 logger = get_logger(__name__)
 
 
 class BaseCodeRepositoryConfig(SecretReferenceMixin, ABC):
     """Base config for code repositories."""
-
-    def __init__(self, **kwargs: Any) -> None:
-        """Initializes a code repository config.
-
-        Args:
-            **kwargs: Keyword arguments.
-        """
-        super().__init__(**kwargs)
 
 
 class BaseCodeRepository(ABC):
@@ -141,13 +133,15 @@ class BaseCodeRepository(ABC):
         pass
 
     @abstractmethod
-    def get_local_repo(self, path: str) -> Optional["LocalRepository"]:
-        """Gets a local repository from a path.
+    def get_local_context(
+        self, path: str
+    ) -> Optional["LocalRepositoryContext"]:
+        """Gets a local repository context from a path.
 
         Args:
             path: The path to the local repository.
 
         Returns:
-            The local repository object.
+            The local repository context object.
         """
         pass

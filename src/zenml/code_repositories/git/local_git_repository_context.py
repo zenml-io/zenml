@@ -11,12 +11,12 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Implementation of the ZenML local code repository."""
+"""Implementation of the Local git repository context."""
 from typing import TYPE_CHECKING, Callable, Optional, cast
 from uuid import UUID
 
 from zenml.code_repositories import (
-    LocalRepository,
+    LocalRepositoryContext,
 )
 from zenml.logger import get_logger
 
@@ -28,13 +28,13 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 
-class LocalGitRepository(LocalRepository):
-    """Local git repository."""
+class LocalGitRepositoryContext(LocalRepositoryContext):
+    """Local git repository context."""
 
     def __init__(
         self, code_repository_id: UUID, git_repo: "Repo", remote_name: str
     ):
-        """Initializes a local git repository.
+        """Initializes a local git repository context.
 
         Args:
             code_repository_id: The ID of the code repository.
@@ -51,7 +51,7 @@ class LocalGitRepository(LocalRepository):
         path: str,
         code_repository_id: UUID,
         remote_url_validation_callback: Callable[[str], bool],
-    ) -> Optional["LocalGitRepository"]:
+    ) -> Optional["LocalGitRepositoryContext"]:
         """Returns a local git repository at the given path.
 
         Args:
@@ -85,7 +85,7 @@ class LocalGitRepository(LocalRepository):
         if not remote_name:
             return None
 
-        return LocalGitRepository(
+        return LocalGitRepositoryContext(
             code_repository_id=code_repository_id,
             git_repo=git_repo,
             remote_name=remote_name,

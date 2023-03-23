@@ -45,7 +45,7 @@ from zenml.utils.pipeline_docker_image_builder import (
 )
 
 if TYPE_CHECKING:
-    from zenml.code_repositories import LocalRepository
+    from zenml.code_repositories import LocalRepositoryContext
     from zenml.config.build_configuration import BuildConfiguration
 
 logger = get_logger(__name__)
@@ -331,9 +331,9 @@ def compute_build_checksum(
     return hash_.hexdigest()
 
 
-def verify_local_repository(
+def verify_local_repository_context(
     deployment: "PipelineDeploymentBaseModel",
-    local_repo: Optional["LocalRepository"],
+    local_repo_context: Optional["LocalRepositoryContext"],
 ) -> Optional[BaseCodeRepository]:
     """Verifies the local repository.
 
@@ -342,7 +342,7 @@ def verify_local_repository(
 
     Args:
         deployment: The pipeline deployment.
-        local_repo: The local repository active at the source root.
+        local_repo_context: The local repository active at the source root.
 
     Raises:
         RuntimeError: If the deployment requires code download but code download
@@ -353,7 +353,7 @@ def verify_local_repository(
         deployment, or None if code download is not possible.
     """
     if deployment.requires_code_download:
-        if not local_repo:
+        if not local_repo_context:
             raise RuntimeError(
                 "The `DockerSettings` of the pipeline or one of its "
                 "steps specify that code should be included in the "
@@ -361,7 +361,7 @@ def verify_local_repository(
                 "code repository active at your current source root "
                 f"`{source_utils.get_source_root()}`."
             )
-        elif local_repo.is_dirty:
+        elif local_repo_context.is_dirty:
             raise RuntimeError(
                 "The `DockerSettings` of the pipeline or one of its "
                 "steps specify that code should be included in the "
@@ -370,7 +370,7 @@ def verify_local_repository(
                 f"`{source_utils.get_source_root()}` has uncommitted "
                 "changes."
             )
-        elif local_repo.has_local_changes:
+        elif local_repo_context.has_local_changes:
             raise RuntimeError(
                 "The `DockerSettings` of the pipeline or one of its "
                 "steps specify that code should be included in the "
@@ -382,8 +382,10 @@ def verify_local_repository(
 
     code_repository = None
 
-    if local_repo and not local_repo.has_local_changes:
-        model = Client().get_code_repository(local_repo.code_repository_id)
+    if local_repo_context and not local_repo_context.has_local_changes:
+        model = Client().get_code_repository(
+            local_repo_context.code_repository_id
+        )
         code_repository = BaseCodeRepository.from_model(model)
 
     return code_repository

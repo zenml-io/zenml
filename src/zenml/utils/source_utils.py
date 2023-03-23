@@ -43,12 +43,15 @@ from zenml.logger import get_logger
 from zenml.utils.pagination_utils import depaginate
 
 if TYPE_CHECKING:
-    from zenml.code_repositories import BaseCodeRepository, LocalRepository
+    from zenml.code_repositories import (
+        BaseCodeRepository,
+        LocalRepositoryContext,
+    )
 
 logger = get_logger(__name__)
 
 
-_CODE_REPOSITORY_CACHE: Dict[str, "LocalRepository"] = {}
+_CODE_REPOSITORY_CACHE: Dict[str, "LocalRepositoryContext"] = {}
 _CUSTOM_SOURCE_ROOT: Optional[str] = None
 
 
@@ -136,17 +139,17 @@ def resolve(obj: Union[Type[Any], FunctionType, ModuleType]) -> Source:
     source_type = get_source_type(module=module)
 
     if source_type == SourceType.USER:
-        local_repo = find_active_code_repository()
+        local_repo_context = find_active_code_repository()
 
-        if local_repo and not local_repo.has_local_changes:
+        if local_repo_context and not local_repo_context.has_local_changes:
             module_name = _resolve_module(module)
 
             source_root = get_source_root()
-            subdir = PurePath(source_root).relative_to(local_repo.root)
+            subdir = PurePath(source_root).relative_to(local_repo_context.root)
 
             return CodeRepositorySource(
-                repository_id=local_repo.code_repository_id,
-                commit=local_repo.current_commit,
+                repository_id=local_repo_context.code_repository_id,
+                commit=local_repo_context.current_commit,
                 subdirectory=subdir.as_posix(),
                 module=module_name,
                 attribute=attribute_name,
@@ -270,19 +273,21 @@ def set_custom_local_repository(
         commit: The commit of the repository.
         repo: The code repository associated with the local repository.
     """
-    from zenml.utils.downloaded_repository import _DownloadedRepository
+    from zenml.utils.downloaded_repository_context import (
+        _DownloadedRepositoryContext,
+    )
 
     global _CODE_REPOSITORY_CACHE
 
     path = os.path.abspath(get_source_root())
-    _CODE_REPOSITORY_CACHE[path] = _DownloadedRepository(
+    _CODE_REPOSITORY_CACHE[path] = _DownloadedRepositoryContext(
         code_repository_id=repo.id, root=root, commit=commit
     )
 
 
 def find_active_code_repository(
     path: Optional[str] = None,
-) -> Optional["LocalRepository"]:
+) -> Optional["LocalRepositoryContext"]:
     """Find the active code repository for a given path.
 
     Args:
@@ -290,7 +295,7 @@ def find_active_code_repository(
             source root will be used.
 
     Returns:
-        The local repository active at that path or None.
+        The local repository context active at that path or None.
     """
     global _CODE_REPOSITORY_CACHE
     from zenml.client import Client
@@ -311,10 +316,10 @@ def find_active_code_repository(
             )
             continue
 
-        local_repo = repo.get_local_repo(path)
-        if local_repo:
-            _CODE_REPOSITORY_CACHE[path] = local_repo
-            return local_repo
+        local_context = repo.get_local_context(path)
+        if local_context:
+            _CODE_REPOSITORY_CACHE[path] = local_context
+            return local_context
 
     return None
 

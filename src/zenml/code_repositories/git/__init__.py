@@ -11,10 +11,12 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Initialization of the local git repository."""
+"""Initialization of the local git repository context."""
 
-from zenml.code_repositories.git.local_git_repository import LocalGitRepository
+from zenml.code_repositories.git.local_git_repository_context import (
+    LocalGitRepositoryContext,
+)
 
 __all__ = [
-    "LocalGitRepository",
+    "LocalGitRepositoryContext",
 ]

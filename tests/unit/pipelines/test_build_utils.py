@@ -21,7 +21,7 @@ from uuid import UUID, uuid4
 import pytest
 
 import zenml
-from zenml.code_repositories import BaseCodeRepository, LocalRepository
+from zenml.code_repositories import BaseCodeRepository, LocalRepositoryContext
 from zenml.config import DockerSettings
 from zenml.config.build_configuration import BuildConfiguration
 from zenml.config.source import Source
@@ -40,11 +40,11 @@ from zenml.utils.pipeline_docker_image_builder import (
 
 class StubCodeRepository(BaseCodeRepository):
     def __init__(
-        self, id: UUID = uuid4(), config=None, local_repo=None
+        self, id: UUID = uuid4(), config=None, local_context=None
     ) -> None:
         config = config or {}
         super().__init__(id, config)
-        self._local_repo = local_repo
+        self._local_context = local_context
 
     def login(self) -> None:
         pass
@@ -54,11 +54,13 @@ class StubCodeRepository(BaseCodeRepository):
     ) -> None:
         pass
 
-    def get_local_repo(self, path: str) -> Optional["LocalRepository"]:
-        return self._local_repo
+    def get_local_context(
+        self, path: str
+    ) -> Optional["LocalRepositoryContext"]:
+        return self._local_context
 
 
-class StubLocalRepository(LocalRepository):
+class StubLocalRepositoryContext(LocalRepositoryContext):
     def __init__(
         self,
         code_repository_id: UUID = uuid4(),
@@ -407,15 +409,17 @@ def test_local_repo_verification(mocker, sample_deployment_response_model):
         return_value=False,
     )
 
-    dirty_local_repo = StubLocalRepository(is_dirty=True)
-    repo_with_local_changes = StubLocalRepository(has_local_changes=True)
-
-    assert not build_utils.verify_local_repository(
-        deployment=sample_deployment_response_model, local_repo=None
+    dirty_local_context = StubLocalRepositoryContext(is_dirty=True)
+    context_with_local_changes = StubLocalRepositoryContext(
+        has_local_changes=True
     )
-    assert not build_utils.verify_local_repository(
+
+    assert not build_utils.verify_local_repository_context(
+        deployment=sample_deployment_response_model, local_repo_context=None
+    )
+    assert not build_utils.verify_local_repository_context(
         deployment=sample_deployment_response_model,
-        local_repo=repo_with_local_changes,
+        local_repo_context=context_with_local_changes,
     )
 
     mocker.patch.object(
@@ -427,20 +431,21 @@ def test_local_repo_verification(mocker, sample_deployment_response_model):
 
     with pytest.raises(RuntimeError):
         # No local repo
-        build_utils.verify_local_repository(
-            deployment=sample_deployment_response_model, local_repo=None
+        build_utils.verify_local_repository_context(
+            deployment=sample_deployment_response_model,
+            local_repo_context=None,
         )
 
     with pytest.raises(RuntimeError):
-        build_utils.verify_local_repository(
+        build_utils.verify_local_repository_context(
             deployment=sample_deployment_response_model,
-            local_repo=dirty_local_repo,
+            local_repo_context=dirty_local_context,
         )
 
     with pytest.raises(RuntimeError):
-        build_utils.verify_local_repository(
+        build_utils.verify_local_repository_context(
             deployment=sample_deployment_response_model,
-            local_repo=repo_with_local_changes,
+            local_repo_context=context_with_local_changes,
         )
 
     repo_response = CodeRepositoryResponseModel(
@@ -461,12 +466,12 @@ def test_local_repo_verification(mocker, sample_deployment_response_model):
     mocker.patch(
         "zenml.client.Client.get_code_repository", return_value=repo_response
     )
-    clean_local_repo = StubLocalRepository(
+    clean_local_context = StubLocalRepositoryContext(
         is_dirty=False, has_local_changes=False
     )
-    code_repo = build_utils.verify_local_repository(
+    code_repo = build_utils.verify_local_repository_context(
         deployment=sample_deployment_response_model,
-        local_repo=clean_local_repo,
+        local_repo_context=clean_local_context,
     )
     assert isinstance(code_repo, StubCodeRepository)
 
