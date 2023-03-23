@@ -14,14 +14,13 @@
 """Abstract base class for all ZenML pipelines."""
 import hashlib
 import inspect
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 from datetime import datetime
 from types import FunctionType
 from typing import (
     TYPE_CHECKING,
     Any,
     Callable,
-    ClassVar,
     Dict,
     List,
     Mapping,
@@ -31,7 +30,6 @@ from typing import (
     Type,
     TypeVar,
     Union,
-    cast,
 )
 from uuid import UUID
 
@@ -102,47 +100,10 @@ PARAM_ON_FAILURE = "on_failure"
 PARAM_ON_SUCCESS = "on_success"
 
 
-class BasePipelineMeta(type):
-    """Pipeline Metaclass responsible for validating the pipeline definition."""
-
-    def __new__(
-        mcs, name: str, bases: Tuple[Type[Any], ...], dct: Dict[str, Any]
-    ) -> "BasePipelineMeta":
-        """Saves argument names for later verification purposes.
-
-        Args:
-            name: The name of the class.
-            bases: The base classes of the class.
-            dct: The dictionary of the class.
-
-        Returns:
-            The class.
-        """
-        dct.setdefault(INSTANCE_CONFIGURATION, {})
-        cls = cast(
-            Type["BasePipeline"], super().__new__(mcs, name, bases, dct)
-        )
-
-        cls.STEP_SPEC = {}
-
-        connect_spec = inspect.getfullargspec(
-            inspect.unwrap(getattr(cls, PIPELINE_INNER_FUNC_NAME))
-        )
-        connect_args = connect_spec.args
-
-        if connect_args and connect_args[0] == "self":
-            connect_args.pop(0)
-
-        for arg in connect_args:
-            arg_type = connect_spec.annotations.get(arg, None)
-            cls.STEP_SPEC.update({arg: arg_type})
-        return cls
-
-
 T = TypeVar("T", bound="BasePipeline")
 
 
-class BasePipeline(metaclass=BasePipelineMeta):
+class BasePipeline(ABC):
     """Abstract base class for all ZenML pipelines.
 
     Attributes:
@@ -152,8 +113,6 @@ class BasePipeline(metaclass=BasePipelineMeta):
         enable_artifact_metadata: A boolean indicating if artifact metadata
             is enabled for this pipeline.
     """
-
-    STEP_SPEC: ClassVar[Dict[str, Any]] = None  # type: ignore[assignment]
 
     INSTANCE_CONFIGURATION: Dict[str, Any] = {}
 
@@ -417,7 +376,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
         config_path: Optional[str] = None,
         unlisted: bool = False,
     ) -> None:
-        """Runs the pipeline on the active stack of the current repository.
+        """Runs the pipeline on the active stack.
 
         Args:
             run_name: Name of the pipeline run.
@@ -440,8 +399,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
         if constants.SHOULD_PREVENT_PIPELINE_EXECUTION:
             # An environment variable was set to stop the execution of
             # pipelines. This is done to prevent execution of module-level
-            # pipeline.run() calls inside docker containers which should only
-            # run a single step.
+            # pipeline.run() calls when importing modules needed to run a step.
             logger.info(
                 "Preventing execution of pipeline '%s'. If this is not "
                 "intended behavior, make sure to unset the environment "
@@ -693,7 +651,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
         """
         settings_utils.validate_setting_keys(list(config.settings))
 
-    def _verify_steps(self, *steps: BaseStep, **kw_steps: Any) -> None:
+    def _verify_steps(self, *args: BaseStep, **kwargs: Any) -> None:
         """Verifies the initialization args and kwargs of this pipeline.
 
         This method makes sure that no missing/unexpected arguments or
@@ -708,31 +666,22 @@ class BasePipeline(metaclass=BasePipelineMeta):
             PipelineInterfaceError: If there are too many/few arguments or
                 arguments with a wrong name/type.
         """
-        input_step_keys = list(self.STEP_SPEC.keys())
-        if len(steps) > len(input_step_keys):
-            raise PipelineInterfaceError(
-                f"Too many input steps for pipeline '{self.name}'. "
-                f"This pipeline expects {len(input_step_keys)} step(s) "
-                f"but got {len(steps) + len(kw_steps)}."
-            )
+        signature = inspect.signature(self.connect, follow_wrapped=True)
 
-        combined_steps = {}
+        try:
+            bound_args = signature.bind(*args, **kwargs)
+        except TypeError as e:
+            raise PipelineInterfaceError(
+                f"Wrong arguments when initializing pipeline '{self.name}': {e}"
+            ) from e
+
+        steps = {}
         step_ids: Dict[int, str] = {}
 
-        def _verify_step(key: str, step: BaseStep) -> None:
-            """Verifies a single step of the pipeline.
+        for key, potential_step in bound_args.arguments.items():
+            step_class = type(potential_step)
 
-            Args:
-                key: The key of the step.
-                step: The step to verify.
-
-            Raises:
-                PipelineInterfaceError: If the step is not of the correct type
-                    or is of the same class as another step.
-            """
-            step_class = type(step)
-
-            if isinstance(step, BaseStepMeta):
+            if isinstance(potential_step, BaseStepMeta):
                 raise PipelineInterfaceError(
                     f"Wrong argument type (`{step_class}`) for argument "
                     f"'{key}' of pipeline '{self.name}'. "
@@ -744,7 +693,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
                     f"for which the correct syntax is `pipeline(step=step())`."
                 )
 
-            if not isinstance(step, BaseStep):
+            if not isinstance(potential_step, BaseStep):
                 raise PipelineInterfaceError(
                     f"Wrong argument type (`{step_class}`) for argument "
                     f"'{key}' of pipeline '{self.name}'. Only "
@@ -753,8 +702,8 @@ class BasePipeline(metaclass=BasePipelineMeta):
                     f"a pipeline."
                 )
 
-            if id(step) in step_ids:
-                previous_key = step_ids[id(step)]
+            if id(potential_step) in step_ids:
+                previous_key = step_ids[id(potential_step)]
                 raise PipelineInterfaceError(
                     f"Found the same step object for arguments "
                     f"'{previous_key}' and '{key}' in pipeline '{self.name}'. "
@@ -765,46 +714,10 @@ class BasePipeline(metaclass=BasePipelineMeta):
                     "`second_instance = step_class(name='s2')`."
                 )
 
-            step_ids[id(step)] = key
-            combined_steps[key] = step
+            step_ids[id(potential_step)] = key
+            steps[key] = potential_step
 
-        # verify args
-        for i, step in enumerate(steps):
-            key = input_step_keys[i]
-            _verify_step(key, step)
-
-        # verify kwargs
-        for key, step in kw_steps.items():
-            if key in combined_steps:
-                # a step for this key was already set by
-                # the positional input steps
-                raise PipelineInterfaceError(
-                    f"Unexpected keyword argument '{key}' for pipeline "
-                    f"'{self.name}'. A step for this key was "
-                    f"already passed as a positional argument."
-                )
-            _verify_step(key, step)
-
-        # check if there are any missing or unexpected steps
-        expected_steps = set(self.STEP_SPEC.keys())
-        actual_steps = set(combined_steps.keys())
-        missing_steps = expected_steps - actual_steps
-        unexpected_steps = actual_steps - expected_steps
-
-        if missing_steps:
-            raise PipelineInterfaceError(
-                f"Missing input step(s) for pipeline "
-                f"'{self.name}': {missing_steps}."
-            )
-
-        if unexpected_steps:
-            raise PipelineInterfaceError(
-                f"Unexpected input step(s) for pipeline "
-                f"'{self.name}': {unexpected_steps}. This pipeline "
-                f"only requires the following steps: {expected_steps}."
-            )
-
-        self.__steps = combined_steps
+        self.__steps = steps
 
     def _get_pipeline_analytics_metadata(
         self,
