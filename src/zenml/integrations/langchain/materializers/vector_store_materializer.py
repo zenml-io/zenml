@@ -20,6 +20,7 @@ import pickle
 from typing import Type, cast
 
 from zenml.enums import ArtifactType
+from zenml.environment import Environment
 from zenml.exceptions import ValidationError
 from zenml.io import fileio
 from zenml.materializers.base_materializer import BaseMaterializer
@@ -27,7 +28,6 @@ from zenml.utils.io_utils import (
     read_file_contents_as_string,
     write_file_contents_as_string,
 )
-from zenml.utils.materializer_utils import get_python_version
 
 DEFAULT_PICKLE_FILENAME = "embedding.pkl"
 DEFAULT_PYTHON_VERSION_FILENAME = "python_version.txt"
@@ -63,7 +63,7 @@ class LangchainVectorStoreMaterializer(BaseMaterializer):
         source_python_version = read_file_contents_as_string(
             python_version_filepath
         )
-        current_python_version = get_python_version()
+        current_python_version = Environment().python_version
         if source_python_version != current_python_version:
             raise ValidationError(
                 f"Your `VectorStore` was materialized with {source_python_version} "
@@ -92,7 +92,7 @@ class LangchainVectorStoreMaterializer(BaseMaterializer):
         python_version_filepath = os.path.join(
             self.uri, DEFAULT_PYTHON_VERSION_FILENAME
         )
-        current_python_version = get_python_version()
+        current_python_version = Environment().python_version
         write_file_contents_as_string(
             python_version_filepath, current_python_version
         )

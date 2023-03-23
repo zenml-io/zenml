@@ -19,6 +19,7 @@ import sys
 from typing import TYPE_CHECKING, Any, Type, cast
 
 from zenml.enums import ArtifactType
+from zenml.environment import Environment
 from zenml.exceptions import ValidationError
 from zenml.io import fileio
 from zenml.materializers.base_materializer import BaseMaterializer
@@ -26,7 +27,6 @@ from zenml.utils.io_utils import (
     read_file_contents_as_string,
     write_file_contents_as_string,
 )
-from zenml.utils.materializer_utils import get_python_version
 
 if TYPE_CHECKING and sys.version_info < (3, 8):
     OpenAIEmbeddings = Any
@@ -63,7 +63,7 @@ class LangchainOpenaiEmbeddingMaterializer(BaseMaterializer):
         source_python_version = read_file_contents_as_string(
             python_version_filepath
         )
-        current_python_version = get_python_version()
+        current_python_version = Environment().python_version
         if source_python_version != current_python_version:
             raise ValidationError(
                 f"Your `OpenAIEmbedding` was materialized with {source_python_version} "
@@ -92,7 +92,7 @@ class LangchainOpenaiEmbeddingMaterializer(BaseMaterializer):
         python_version_filepath = os.path.join(
             self.uri, DEFAULT_PYTHON_VERSION_FILENAME
         )
-        current_python_version = get_python_version()
+        current_python_version = Environment().python_version
         write_file_contents_as_string(
             python_version_filepath, current_python_version
         )

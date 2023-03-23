@@ -13,8 +13,6 @@
 #  permissions and limitations under the License.
 """Initialization of the langchain integration."""
 
-import sys
-from typing import List, Optional
 from zenml.integrations.constants import LANGCHAIN
 from zenml.integrations.integration import Integration
 
@@ -27,26 +25,12 @@ class LangchainIntegration(Integration):
     """Definition of langchain integration for ZenML."""
 
     NAME = LANGCHAIN
-    REQUIREMENTS = []
+    REQUIREMENTS = ["langchain>=0.0.116"]
 
     @classmethod
     def activate(cls) -> None:
         """Activates the integration."""
-        if sys.version_info < (3, 8):
-            logger.warning(
-                "Langchain integration requires Python 3.8 or higher. Skipping activation."
-            )
-        else:
-            from zenml.integrations.langchain import materializers  # noqa
-
-    @classmethod
-    def get_requirements(cls, target_os: Optional[str] = None) -> List[str]:
-        """Defines platform specific requirements for the integration.
-
-        Returns:
-            A list of requirements.
-        """
-        return [] if sys.version_info < (3, 8) else ["langchain>=0.0.116"]
+        from zenml.integrations.langchain import materializers  # noqa
 
 
 LangchainIntegration.check_installation()

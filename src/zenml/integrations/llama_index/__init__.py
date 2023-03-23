@@ -12,9 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Initialization of the Llama Index integration."""
-import sys
-from typing import List, Optional
-from zenml.integrations.constants import LANGCHAIN
 from zenml.integrations.integration import Integration
 
 from zenml.logger import get_logger
@@ -28,26 +25,12 @@ class LlamaIndexIntegration(Integration):
     """Definition of Llama Index integration for ZenML."""
 
     NAME = LLAMA_INDEX
-    REQUIREMENTS = []
+    REQUIREMENTS = ["llama_index>=0.4.28"]
 
     @classmethod
     def activate(cls) -> None:
         """Activates the integration."""
-        if sys.version_info < (3, 8):
-            logger.warning(
-                "LlamaIndex integration requires Python 3.8 or higher. Skipping activation."
-            )
-        else:
-            from zenml.integrations.llama_index import materializers  # noqa
-
-    @classmethod
-    def get_requirements(cls, target_os: Optional[str] = None) -> List[str]:
-        """Defines platform specific requirements for the integration.
-
-        Returns:
-            A list of requirements.
-        """
-        return [] if sys.version_info < (3, 8) else ["llama_index>=0.4.28"]
+        from zenml.integrations.llama_index import materializers  # noqa
 
 
 LlamaIndexIntegration.check_installation()

@@ -14,7 +14,6 @@
 """Util functions for models and materializers."""
 
 import os
-import sys
 import tempfile
 from typing import TYPE_CHECKING, Any
 
@@ -186,15 +185,3 @@ def _load_artifact(
     logger.debug("Artifact loaded successfully.")
 
     return artifact
-
-
-def get_python_version() -> str:
-    """Return the current Python version.
-
-    Returns:
-        The current Python version.
-    """
-    version_info = sys.version_info
-    return (
-        f"python{version_info.major}.{version_info.minor}.{version_info.micro}"
-    )
