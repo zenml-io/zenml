@@ -58,7 +58,6 @@ class LangchainVectorStoreMaterializer(BaseMaterializer):
         Returns:
             The vector store.
         """
-
         super().load(data_type)
 
         # validate langchain package version

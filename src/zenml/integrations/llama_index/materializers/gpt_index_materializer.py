@@ -30,12 +30,12 @@ DEFAULT_FAISS_FILENAME = "faiss_index.json"
 if TYPE_CHECKING and sys.version_info < (3, 8):
     BaseGPTIndex = Any
     GPTFaissIndex = Any
+    T = TypeVar("T", bound=Any)
 else:
     from llama_index.indices.base import BaseGPTIndex
     from llama_index.indices.vector_store import GPTFaissIndex
 
-
-T = TypeVar("T", bound=BaseGPTIndex[Any])
+    T = TypeVar("T", bound=BaseGPTIndex[Any])
 
 
 class LlamaIndexGPTIndexMaterializer(Generic[T], BaseMaterializer):
