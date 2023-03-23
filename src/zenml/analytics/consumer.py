@@ -25,6 +25,7 @@ import backoff  # type:ignore[import]
 import monotonic  # type:ignore[import]
 
 from zenml.analytics.request import AnalyticsAPIError, post
+from zenml.logger import init_logging
 
 MAX_MSG_SIZE = 32 << 10
 
@@ -59,6 +60,10 @@ class Consumer(Thread):
             timeout: Timeout in seconds.
         """
         Thread.__init__(self)
+
+        # Initialization of the logging, that silences the backoff logger
+        init_logging()
+
         # Make consumer a daemon thread so that it doesn't block program exit
         self.daemon = True
         self.upload_size = upload_size
