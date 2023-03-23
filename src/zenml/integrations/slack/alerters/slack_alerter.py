@@ -54,6 +54,7 @@ class SlackAlerterParameters(BaseAlerterStepParameters):
     # Set of messages that lead to disapproval in alerter.ask()
     disapprove_msg_options: Optional[List[str]] = None
     payload: Optional[SlackAlerterPayload]
+    include_format_blocks: Optional[bool] = True
 
 
 class SlackAlerter(BaseAlerter):
@@ -244,7 +245,10 @@ class SlackAlerter(BaseAlerter):
                 payload: payload of the received Slack event.
             """
             web_client = payload["web_client"]
-            web_client.chat_postMessage(channel=slack_channel_id, text=message)
+            blocks = self._create_blocks(message, params)
+            web_client.chat_postMessage(
+                channel=slack_channel_id, text=message, blocks=blocks
+            )
 
         @RTMClient.run_on(event="message")  # type: ignore
         def handle(**payload: Any) -> None:
