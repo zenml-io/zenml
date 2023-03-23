@@ -25,7 +25,7 @@ from git import GitCommandError
 from git.repo import Repo
 
 from zenml.cli.cli import TagGroup, cli
-from zenml.cli.utils import declare, error, print_table
+from zenml.cli.utils import declare, error, print_table, warning
 from zenml.enums import CliCategories
 from zenml.hub.client import HubAPIError, HubClient
 from zenml.logger import get_logger
@@ -39,6 +39,7 @@ from zenml.utils.analytics_utils import AnalyticsEvent, event_handler
 logger = get_logger(__name__)
 
 ZENML_HUB_INTERNAL_TAG_PREFIX = "zenml-"
+VERIFIED_TAG = "zenml-badge-verified"
 
 
 @cli.group(cls=TagGroup, tag=CliCategories.HUB)
@@ -194,6 +195,14 @@ def install_plugin(
         if _is_plugin_installed(plugin) and not upgrade:
             logger.info(f"Plugin '{plugin_name}' is already installed.")
             return
+
+        # Show a warning if the plugin is not official or verified
+        if not plugin.tags or VERIFIED_TAG not in plugin.tags:
+            warning(
+                f"Plugin '{display_name}' was not verified by ZenML and may "
+                "contain arbitrary code. Please check the source code before "
+                "installing to make sure it does what you expect."
+            )
 
         # Install plugin requirements
         install_requirements = False
@@ -389,7 +398,7 @@ def clone_plugin(
                 "Slack."
             )
         finally:
-            shutil.rmtree(repo_path)
+            shutil.rmtree(repo_path, ignore_errors=True)
 
 
 def _clone_repo(
