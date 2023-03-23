@@ -53,7 +53,7 @@ class SlackAlerterParameters(BaseAlerterStepParameters):
 
     # Set of messages that lead to disapproval in alerter.ask()
     disapprove_msg_options: Optional[List[str]] = None
-    payload: Optional[SlackAlerterPayload]
+    payload: Optional[SlackAlerterPayload] = None
     include_format_blocks: Optional[bool] = True
 
 
