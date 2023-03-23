@@ -17,7 +17,7 @@ import shutil
 import subprocess
 import sys
 from importlib.util import find_spec
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 from uuid import uuid4
 
 import click
@@ -49,6 +49,12 @@ def hub() -> None:
 
 @hub.command("list")
 @click.option(
+    "--all",
+    "-a",
+    is_flag=True,
+    help="List all plugins, including those that are not available.",
+)
+@click.option(
     "--mine",
     "-m",
     is_flag=True,
@@ -60,10 +66,11 @@ def hub() -> None:
     is_flag=True,
     help="List only plugins that are installed.",
 )
-def list_plugins(mine: bool, installed: bool) -> None:
+def list_plugins(all: bool, mine: bool, installed: bool) -> None:
     """List all plugins available on the hub.
 
     Args:
+        all: Whether to list all plugins, including ones that are not available.
         mine: Whether to list only plugins that you own.
         installed: Whether to list only plugins that are installed.
     """
@@ -77,7 +84,10 @@ def list_plugins(mine: bool, installed: bool) -> None:
                 "You must be logged in to list your own plugins via --mine. "
                 "Please run `zenml hub login` to login."
             )
-        plugins = client.list_plugins(mine=mine, status=PluginStatus.AVAILABLE)
+        list_params: Dict[str, Any] = {"mine": mine}
+        if not all:
+            list_params["status"] = PluginStatus.AVAILABLE
+        plugins = client.list_plugins(**list_params)
         if not plugins:
             declare("No plugins found.")
         if installed:
