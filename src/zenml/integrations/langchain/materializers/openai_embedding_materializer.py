@@ -23,7 +23,6 @@ import pkg_resources
 
 from zenml.enums import ArtifactType
 from zenml.environment import Environment
-from zenml.exceptions import ValidationError
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
@@ -86,7 +85,7 @@ class LangchainOpenaiEmbeddingMaterializer(BaseMaterializer):
             logger.warn(
                 f"Your `OpenAIEmbedding` was materialized with {source_langchain_version} "
                 f"but you are currently using {package_version}. "
-                f"Unable to load this pickled file."
+                f"This might cause unexpected behavior. Attempting to load."
             )
 
         # validate python version
@@ -98,10 +97,10 @@ class LangchainOpenaiEmbeddingMaterializer(BaseMaterializer):
         )
         current_python_version = Environment().python_version()
         if source_python_version != current_python_version:
-            raise ValidationError(
+            logger.warn(
                 f"Your `OpenAIEmbedding` was materialized with {source_python_version} "
                 f"but you are currently using {current_python_version}. "
-                f"Unable to load this pickled file."
+                f"This might cause unexpected behavior. Attempting to load."
             )
 
         pickle_filepath = os.path.join(self.uri, DEFAULT_PICKLE_FILENAME)
@@ -130,6 +129,7 @@ class LangchainOpenaiEmbeddingMaterializer(BaseMaterializer):
             python_version_filepath, current_python_version
         )
 
+        # save langchain package version foa
         try:
             package_version = pkg_resources.get_distribution(
                 LANGCHAIN_PACKAGE_NAME
