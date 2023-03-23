@@ -309,6 +309,7 @@ This stack consists of the following components:
 * an AWS S3 artifact store
 * the local orchestrator
 * a Seldon Core model deployer
+* an image builder
 
 In addition to the stack components, Seldon Core must be installed in a
 Kubernetes cluster that is locally accessible through a Kubernetes configuration
@@ -342,7 +343,8 @@ zenml model-deployer register seldon_eks --flavor=seldon \
   --kubernetes_context=zenml-eks --kubernetes_namespace=zenml-workloads \
   --base_url=http://$INGRESS_HOST
 zenml artifact-store register aws --flavor=s3 --path s3://mybucket
-zenml stack register local_with_aws_storage -a aws -o default -d seldon_eks --set
+zenml image-builder register local_builder --flavor=local
+zenml stack register local_with_aws_storage -a aws -o default -d seldon_eks -i local_builder --set
 ```
 
 >**Note**:
@@ -403,7 +405,8 @@ zenml model-deployer register seldon_aws --flavor=seldon \
   --base_url=http://$INGRESS_HOST
 zenml container-registry register aws --flavor=default --uri=715803424590.dkr.ecr.us-east-1.amazonaws.com
 zenml orchestrator register aws --flavor=kubeflow --kubernetes_context=zenml-eks --synchronous=True
-zenml stack register aws -a aws -o aws -c aws -d seldon_aws --set
+zenml image-builder register local_builder --flavor=local
+zenml stack register aws -a aws -o aws -c aws -d seldon_aws -i local_builder --set
 ```
 
 >**Note**:
