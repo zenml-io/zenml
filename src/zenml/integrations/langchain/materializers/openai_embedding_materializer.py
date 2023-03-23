@@ -12,7 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Implementation of the Langchain OpenAI embedding materializer."""
-from __future__ import annotations
 
 import os
 import pickle
@@ -51,7 +50,7 @@ class LangchainOpenaiEmbeddingMaterializer(BaseMaterializer):
     ASSOCIATED_TYPES = (OpenAIEmbeddings,)
 
     def load(self, data_type: Type[OpenAIEmbeddings]) -> OpenAIEmbeddings:
-        """Reads a openai embedding from a pickle file.
+        """Reads an OpenAI embedding from a pickle file.
 
         Args:
             data_type: The type of the vector store.
