@@ -168,7 +168,6 @@ class Consumer(Thread):
             backoff.expo,
             Exception,
             max_tries=self.retries + 1,
-            raise_on_giveup=False,
             giveup=fatal_exception,
         )
         def send_request() -> None:

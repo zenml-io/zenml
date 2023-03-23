@@ -55,14 +55,7 @@ def post(batch: List[str], timeout: int = 15) -> requests.Response:
         logger.debug("data uploaded successfully")
         return response
 
-    try:
-        payload = response.json()
-        logger.debug("received response: %s", payload)
-        raise AnalyticsAPIError(
-            response.status_code, payload.get("detail", (response.text,))
-        )
-    except ValueError:
-        raise AnalyticsAPIError(response.status_code, response.text)
+    raise AnalyticsAPIError(response.status_code, response.text)
 
 
 class AnalyticsAPIError(Exception):
