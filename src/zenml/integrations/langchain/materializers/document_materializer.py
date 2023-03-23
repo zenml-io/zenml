@@ -14,6 +14,7 @@
 """Implementation of ZenML's Langchain Document materializer."""
 from __future__ import annotations
 
+import sys
 from typing import TYPE_CHECKING, Any, Dict, Type
 
 from zenml.enums import ArtifactType
@@ -25,11 +26,14 @@ if TYPE_CHECKING:
 
 DEFAULT_FILENAME = "data.json"
 
+if TYPE_CHECKING and sys.version_info < (3, 8):
+    Document = Any
+else:
+    from langchain.docstore.document import Document
+
 
 class LangchainDocumentMaterializer(BaseMaterializer):
     """Handle Langchain Document objects."""
-
-    from langchain.docstore.document import Document
 
     ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATA
     ASSOCIATED_TYPES = (Document,)
