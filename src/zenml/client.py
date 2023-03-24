@@ -1034,7 +1034,7 @@ class Client(metaclass=ClientMetaClass):
             name_id_or_prefix=name_id_or_prefix, allow_name_prefix_match=False
         )
 
-        role_update = RoleUpdateModel(name=new_name or role.name) # type: ignore[call-arg]
+        role_update = RoleUpdateModel(name=new_name or role.name)  # type: ignore[call-arg]
 
         if remove_permission is not None and add_permission is not None:
             union_add_rm = set(remove_permission) & set(add_permission)
@@ -1638,7 +1638,7 @@ class Client(metaclass=ClientMetaClass):
         update_model = StackUpdateModel(
             workspace=self.active_workspace.id,
             user=self.active_user.id,
-        ) # type: ignore[call-arg]
+        )  # type: ignore[call-arg]
 
         if name:
             shared_status = is_shared or stack.is_shared

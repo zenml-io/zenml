@@ -89,9 +89,6 @@ class UserRoleAssignmentRequestModel(
         default=None,
         title="The workspace that the role is limited to.",
     )
-    user: Optional[UUID] = Field(
-        default=None,
-        title="The user that the role is assigned to."
-    )
+    user: UUID = Field(title="The user that the role is assigned to.")
 
     role: UUID = Field(title="The role.")
