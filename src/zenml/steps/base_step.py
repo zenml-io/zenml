@@ -655,6 +655,10 @@ class BaseStep(metaclass=BaseStepMeta):
             # The step is being called outside of the context of a pipeline,
             # we simply call the entrypoint
             return self.entrypoint(*args, **kwargs)
+        
+        # TODO: separate finalizing the configuration from the
+        # step __call__ so non-templated pipelines materializer source etc
+        # can be configued using runtime config
 
         # TODO: Correctly handle duplicate calls in pipeline templates, maybe
         # we need to copy the step instance somehow?

@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 import inspect
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 from types import FunctionType
 from typing import (
     TYPE_CHECKING,
@@ -39,7 +39,7 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 PIPELINE_INNER_FUNC_NAME = "connect"
-CLASS_CONFIGURATION = "CLASS_CONFIGURATION"
+CLASS_CONFIGURATION = "_CLASS_CONFIGURATION"
 PARAM_PIPELINE_NAME = "name"
 PARAM_ENABLE_CACHE = "enable_cache"
 PARAM_ENABLE_ARTIFACT_METADATA = "enable_artifact_metadata"
@@ -49,12 +49,11 @@ PARAM_ON_FAILURE = "on_failure"
 PARAM_ON_SUCCESS = "on_success"
 
 
-class PipelineTemplate(Pipeline):
-
-    CLASS_CONFIGURATION: ClassVar[Optional[Dict[str, Any]]] = None
+class PipelineTemplate(Pipeline, ABC):
+    _CLASS_CONFIGURATION: ClassVar[Optional[Dict[str, Any]]] = None
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
-        config = self.CLASS_CONFIGURATION or {}
+        config = self._CLASS_CONFIGURATION or {}
 
         super().__init__(
             name=config.pop(PARAM_PIPELINE_NAME, None)
