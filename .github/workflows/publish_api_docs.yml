@@ -48,7 +48,7 @@ jobs:
       # that avoids conflicts while at the same time making it possible for all
       # ZenML Python modules to be imported, especially the integration modules:
       # 1. install zenml with all extras
-      # 2. install more restrictive integrations first: feast, seldon and
+      # 2. install more restrictive integrations first: feast and
       # label_studio are currently the ones known to be very restrictive in
       # terms of what versions of dependencies they require
       # 3. Install bentoml because of its attrs version
@@ -60,11 +60,11 @@ jobs:
       - name: Install Dependencies
         run: |
           zenml integration install -y feast
-          zenml integration install -y label_studio seldon
+          zenml integration install -y label_studio
           zenml integration install -y bentoml
           zenml integration install -y airflow
           zenml integration install -y kserve
-          zenml integration install -y --ignore-integration feast --ignore-integration label_studio --ignore-integration seldon --ignore-integration kserve --ignore-integration airflow --ignore-integration bentoml
+          zenml integration install -y --ignore-integration feast --ignore-integration label_studio --ignore-integration kserve --ignore-integration airflow --ignore-integration bentoml
           pip install -e ".[server,dev,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp]"
           pip install jinja2==3.0.3 protobuf==3.20.0 numpy~=1.21.5
 
