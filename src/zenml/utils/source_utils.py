@@ -258,7 +258,7 @@ def set_custom_local_repository(
     git repository will be checked to see if one matches the URL defined for
     the code repository.
     * When running a step inside a Docker image, ZenML potentially downloads
-    file from a code repository. This usually does not download the entire
+    files from a code repository. This usually does not download the entire
     repository (and in the case of git might not download a .git directory which
     defines a local git repository) but only specific files. If we now try to
     resolve any object while running in this container, it will not get resolved
