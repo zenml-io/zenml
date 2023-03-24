@@ -488,20 +488,32 @@ def list_stack_recipes(
     default="zenml_stack_recipes",
     help="Relative path at which you want to clean the stack_recipe(s)",
 )
+@click.option(
+    "--yes",
+    "-y",
+    is_flag=True,
+    help="Whether to skip the confirmation prompt.",
+)
 @pass_git_stack_recipes_handler
 def clean(
-    git_stack_recipes_handler: GitStackRecipesHandler, path: str
+    git_stack_recipes_handler: GitStackRecipesHandler,
+    path: str,
+    yes: bool,
 ) -> None:
     """Deletes the stack recipes directory from your working directory.
 
     Args:
         git_stack_recipes_handler: The GitStackRecipesHandler instance.
         path: The path at which you want to clean the stack_recipe(s).
+        yes: Whether to skip the confirmation prompt.
     """
     stack_recipes_directory = os.path.join(os.getcwd(), path)
-    if fileio.isdir(stack_recipes_directory) and cli_utils.confirmation(
-        "Do you wish to delete the stack recipes directory? \n"
-        f"{stack_recipes_directory}"
+    if fileio.isdir(stack_recipes_directory) and (
+        yes
+        or cli_utils.confirmation(
+            "Do you wish to delete the stack recipes directory? \n"
+            f"{stack_recipes_directory}"
+        )
     ):
         git_stack_recipes_handler.clean_current_stack_recipes()
         cli_utils.declare(
