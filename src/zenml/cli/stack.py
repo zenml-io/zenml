@@ -770,17 +770,41 @@ def describe_stack(stack_name_or_id: Optional[str] = None) -> None:
 @stack.command("delete", help="Delete a stack given its name.")
 @click.argument("stack_name_or_id", type=str)
 @click.option("--yes", "-y", is_flag=True, required=False)
-def delete_stack(stack_name_or_id: str, yes: bool = False) -> None:
+@click.option(
+    "--recursive",
+    "-r",
+    is_flag=True,
+    help="Recursively delete all stack components",
+)
+def delete_stack(
+    stack_name_or_id: str, yes: bool = False, recursive: bool = False
+) -> None:
     """Delete a stack.
 
     Args:
         stack_name_or_id: Name or id of the stack to delete.
         yes: Stack will be deleted without prompting for
             confirmation.
+        recursive: The stack will be deleted along with the corresponding stack associated with it.
     """
-    confirmation = yes or cli_utils.confirmation(
-        f"This will delete stack '{stack_name_or_id}'. \n"
-        "Are you sure you want to proceed?"
+    recursive_confirmation = False
+    if recursive:
+        recursive_confirmation = yes or cli_utils.confirmation(
+            "If there are stack components present in another stack, those stack components will be ignored for removal \n"
+            "Do you want to continue ?"
+        )
+
+        if not recursive_confirmation:
+            cli_utils.declare("Stack deletion canceled.")
+            return
+
+    confirmation = (
+        recursive_confirmation
+        or yes
+        or cli_utils.confirmation(
+            f"This will delete stack '{stack_name_or_id}'. \n"
+            "Are you sure you want to proceed?"
+        )
     )
 
     if not confirmation:
@@ -789,6 +813,62 @@ def delete_stack(stack_name_or_id: str, yes: bool = False) -> None:
 
     with console.status(f"Deleting stack '{stack_name_or_id}'...\n"):
         client = Client()
+
+        if recursive and recursive_confirmation:
+
+            stack = client.get_stack(stack_name_or_id)
+            stack_components_free_for_deletion = []
+            stack_components_not_free_for_deletion = []
+
+            # Get all stack components associated with this stack
+            stack_components = stack.components
+
+            for stack_component in stack_components.items():
+
+                # Get stack associated with the stack component
+                stacks = client.list_stacks(
+                    component_id=stack_component[1][0].id, size=2, page=1
+                )
+
+                # Check if the stack component is part of another stack
+                if len(stacks) == 1:
+                    if stack.id == stacks[0].id:
+                        stack_components_free_for_deletion.append(
+                            stack_component
+                        )
+                elif len(stacks) > 1:
+                    stack_components_not_free_for_deletion.append(
+                        stack_component
+                    )
+
+            for stack_component in stack_components_not_free_for_deletion:
+                cli_utils.declare(
+                    f"Stack Component `{stack_component[1][0].name}` of type "
+                    f"`{stack_component[1][0].type} cannot be "
+                    f"deleted as it is part of "
+                    f"other stacks. "
+                )
+
+            cli_utils.declare("Remaining stack components to delete: \n")
+            for stack_component in stack_components_free_for_deletion:
+                cli_utils.declare(
+                    f"Stack Component `{stack_component[1][0].name}` of type "
+                    f"`{stack_component[1][0].type}"
+                )
+
+            try:
+                client.delete_stack(stack_name_or_id)
+            except (KeyError, ValueError, IllegalOperationError) as err:
+                cli_utils.error(str(err))
+
+            for stack_component in stack_components_free_for_deletion:
+                client.delete_stack_component(
+                    stack_component[1][0].name, stack_component[1][0].type
+                )
+
+            cli_utils.declare(f"Deleted stack '{stack_name_or_id}'.")
+            return
+
         try:
             client.delete_stack(stack_name_or_id)
         except (KeyError, ValueError, IllegalOperationError) as err:
