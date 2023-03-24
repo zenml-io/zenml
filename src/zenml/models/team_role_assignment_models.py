@@ -86,8 +86,12 @@ class TeamRoleAssignmentRequestModel(
     """Request model for role assignments using UUIDs for all entities."""
 
     workspace: Optional[UUID] = Field(
+        default=None,
         title="The workspace that the role is limited to."
     )
-    team: UUID = Field(title="The user that the role is assigned to.")
+    team: Optional[UUID] = Field(
+        default=None,
+        title="The user that the role is assigned to.",
+    )
 
     role: UUID = Field(title="The role.")

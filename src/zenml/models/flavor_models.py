@@ -122,7 +122,7 @@ class FlavorFilterModel(WorkspaceScopedFilterModel):
         default=None, description="Workspace of the stack"
     )
     user_id: Optional[Union[UUID, str]] = Field(
-        None, description="User of the stack"
+        default=None, description="User of the stack"
     )
 
 
