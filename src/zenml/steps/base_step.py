@@ -288,13 +288,10 @@ class BaseStep(metaclass=BaseStepMeta):
         Attributes:
             name: Name of the output.
             step_name: Name of the step that produced this output.
-            materializer_source: The source of the materializer used to
-                write the output.
         """
 
         name: str
         step_name: str
-        materializer_source: str
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         """Initializes a step.
@@ -670,18 +667,14 @@ class BaseStep(metaclass=BaseStepMeta):
                 output_name=input_.name,
             )
 
-        # config = self._finalize_configuration(input_artifacts=input_artifacts)
-
         # TODO: add option for custom name here
         step_id = Pipeline.ACTIVE_PIPELINE.add_step(self)
 
         returns = []
         for key in self.OUTPUT_SIGNATURE:
-            # materializer_source = config.outputs[key].materializer_source
             output_artifact = BaseStep._OutputArtifact(
                 name=key,
                 step_name=step_id,
-                materializer_source="",
             )
             returns.append(output_artifact)
 

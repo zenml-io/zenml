@@ -1081,9 +1081,7 @@ class Pipeline:
                 "Add_step can only be called on an active pipeline."
             )
 
-        base_name = (
-            custom_name or getattr(step, "_template_name", None) or step.name
-        )
+        base_name = custom_name or step.name
 
         if base_name in self.steps and not allow_suffix:
             raise RuntimeError("Duplicate step name")

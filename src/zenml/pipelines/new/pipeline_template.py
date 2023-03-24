@@ -68,13 +68,10 @@ class PipelineTemplate(Pipeline, ABC):
             on_success=config.pop(PARAM_ON_SUCCESS, None),
         )
 
-        # TODO: Maybe we can set an attribute on the step here with its
-        # template name to be used in `add_step()` to avoid issues with copied
-        # steps
-        connect_inputs = self._verify_steps(*args, **kwargs)
+        steps = self._verify_steps(*args, **kwargs)
 
         with self:
-            self.connect(**connect_inputs)
+            self.connect(**steps)
 
     @abstractmethod
     def connect(self, *args: BaseStep, **kwargs: BaseStep) -> None:
@@ -132,7 +129,20 @@ class PipelineTemplate(Pipeline, ABC):
                 )
 
             step_ids[id(potential_step)] = key
-            setattr(potential_step, "_template_name", key)
             steps[key] = potential_step
+            setattr(potential_step, "_template_name", key)
 
         return steps
+
+    def add_step(
+        self,
+        step: "BaseStep",
+        custom_name: Optional[str] = None,
+        allow_suffix: bool = True,
+    ) -> str:
+        assert not custom_name
+        return super().add_step(
+            step=step,
+            custom_name=getattr(step, "_template_name", None),
+            allow_suffix=True,
+        )
