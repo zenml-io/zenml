@@ -1081,7 +1081,9 @@ class Pipeline:
                 "Add_step can only be called on an active pipeline."
             )
 
-        base_name = custom_name or step.name
+        base_name = (
+            custom_name or getattr(step, "_template_name", None) or step.name
+        )
 
         if base_name in self.steps and not allow_suffix:
             raise RuntimeError("Duplicate step name")
@@ -1097,9 +1099,6 @@ class Pipeline:
 
         self._steps[name] = step
         return name
-
-    def prepare_compilation(self) -> None:
-        pass
 
     def __enter__(self: T) -> T:
         if Pipeline.ACTIVE_PIPELINE:

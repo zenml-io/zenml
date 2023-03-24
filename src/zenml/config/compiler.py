@@ -24,7 +24,6 @@ from zenml.config.pipeline_configurations import (
 from zenml.config.settings_resolver import SettingsResolver
 from zenml.config.step_configurations import (
     Step,
-    StepConfiguration,
     StepSpec,
 )
 from zenml.environment import get_run_environment_dict
@@ -65,18 +64,12 @@ class Compiler:
         # Copy the pipeline before we apply any run-level configurations so
         # we don't mess with the pipeline object/step objects in any way
         pipeline = copy.deepcopy(pipeline)
-        # TODO: the non-template pipeline already called the steps (which means)
-        # the materializers etc are fixed and can't be changed using the run
-        # config
         self._apply_run_configuration(
             pipeline=pipeline, config=run_configuration
         )
         self._apply_stack_default_settings(pipeline=pipeline, stack=stack)
-        # self._verify_distinct_step_names(pipeline=pipeline)
         if run_configuration.run_name:
             self._verify_run_name(run_configuration.run_name)
-
-        pipeline.prepare_compilation()
 
         pipeline_settings = self._filter_and_validate_settings(
             settings=pipeline.configuration.settings,
@@ -93,6 +86,7 @@ class Compiler:
 
         steps = {
             name: self._compile_step(
+                pipeline=pipeline,
                 pipeline_parameter_name=name,
                 step=step,
                 pipeline_settings=settings_to_passdown,
@@ -145,9 +139,6 @@ class Compiler:
         # Copy the pipeline before we connect the steps so we don't mess with
         # the pipeline object/step objects in any way
         pipeline = copy.deepcopy(pipeline)
-        # self._verify_distinct_step_names(pipeline=pipeline)
-        # pipeline.connect(**pipeline.steps)
-        pipeline.prepare_compilation()
 
         steps = [
             self._get_step_spec(
@@ -251,32 +242,6 @@ class Compiler:
         )
         return default_settings
 
-    # def _verify_distinct_step_names(self, pipeline: "Pipeline") -> None:
-    #     """Verifies that all steps inside the pipeline have separate names.
-
-    #     Args:
-    #         pipeline: The pipeline to verify.
-
-    #     Raises:
-    #         PipelineInterfaceError: If multiple steps share the same name.
-    #     """
-    #     step_names: Dict[str, str] = {}
-
-    #     for step_argument_name, step in pipeline.steps.items():
-    #         previous_argument_name = step_names.get(step.name, None)
-    #         if previous_argument_name:
-    #             raise PipelineInterfaceError(
-    #                 f"Found multiple step objects with the same name "
-    #                 f"`{step.name}` for arguments '{previous_argument_name}' "
-    #                 f"and '{step_argument_name}' in pipeline "
-    #                 f"'{pipeline.name}'. All steps of a ZenML pipeline need "
-    #                 "to have distinct names. To solve this issue, assign a new "
-    #                 "name to one of the steps by calling "
-    #                 "`my_step_instance.configure(name='some_distinct_name')`"
-    #             )
-
-    #         step_names[step.name] = step_argument_name
-
     @staticmethod
     def _verify_run_name(run_name: str) -> None:
         """Verifies that the run name contains only valid placeholders.
@@ -363,6 +328,7 @@ class Compiler:
 
     def _compile_step(
         self,
+        pipeline: "Pipeline",
         pipeline_parameter_name: str,
         step: "BaseStep",
         pipeline_settings: Dict[str, "BaseSettings"],
@@ -413,9 +379,28 @@ class Compiler:
             merge=True,
         )
 
-        complete_step_configuration = StepConfiguration(
-            **step.configuration.dict()
+        input_artifacts = {}
+        for key, value in step.inputs.items():
+            from zenml.steps import BaseStep
+
+            upstream_step = pipeline.steps[value.step_name]
+            materializer_source = upstream_step.configuration.outputs[
+                value.output_name
+            ].materializer_source
+            assert materializer_source
+            input_artifacts[key] = BaseStep._OutputArtifact(
+                name=value.output_name,
+                step_name=value.step_name,
+                materializer_source=materializer_source,
+            )
+
+        complete_step_configuration = step._finalize_configuration(
+            input_artifacts=input_artifacts
         )
+
+        # complete_step_configuration = StepConfiguration(
+        #     **step.configuration.dict()
+        # )
 
         return Step(spec=step_spec, config=complete_step_configuration)
 

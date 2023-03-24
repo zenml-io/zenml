@@ -655,10 +655,6 @@ class BaseStep(metaclass=BaseStepMeta):
             # The step is being called outside of the context of a pipeline,
             # we simply call the entrypoint
             return self.entrypoint(*args, **kwargs)
-        
-        # TODO: separate finalizing the configuration from the
-        # step __call__ so non-templated pipelines materializer source etc
-        # can be configued using runtime config
 
         # TODO: Correctly handle duplicate calls in pipeline templates, maybe
         # we need to copy the step instance somehow?
@@ -674,18 +670,18 @@ class BaseStep(metaclass=BaseStepMeta):
                 output_name=input_.name,
             )
 
-        config = self._finalize_configuration(input_artifacts=input_artifacts)
+        # config = self._finalize_configuration(input_artifacts=input_artifacts)
 
         # TODO: add option for custom name here
         step_id = Pipeline.ACTIVE_PIPELINE.add_step(self)
 
         returns = []
         for key in self.OUTPUT_SIGNATURE:
-            materializer_source = config.outputs[key].materializer_source
+            # materializer_source = config.outputs[key].materializer_source
             output_artifact = BaseStep._OutputArtifact(
                 name=key,
                 step_name=step_id,
-                materializer_source=materializer_source,
+                materializer_source="",
             )
             returns.append(output_artifact)
 

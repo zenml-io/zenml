@@ -68,15 +68,13 @@ class PipelineTemplate(Pipeline, ABC):
             on_success=config.pop(PARAM_ON_SUCCESS, None),
         )
 
-        # TODO: Maybe can use functools.partial to directly apply them instead?
         # TODO: Maybe we can set an attribute on the step here with its
         # template name to be used in `add_step()` to avoid issues with copied
         # steps
-        self._connect_inputs = self._verify_steps(*args, **kwargs)
+        connect_inputs = self._verify_steps(*args, **kwargs)
 
-    def prepare_compilation(self) -> None:
         with self:
-            self.connect(**self._connect_inputs)
+            self.connect(**connect_inputs)
 
     @abstractmethod
     def connect(self, *args: BaseStep, **kwargs: BaseStep) -> None:
@@ -95,7 +93,7 @@ class PipelineTemplate(Pipeline, ABC):
             ) from e
 
         step_ids: Dict[int, str] = {}
-        connect_inputs = {}
+        steps = {}
 
         for key, potential_step in bound_args.arguments.items():
             step_class = type(potential_step)
@@ -134,26 +132,7 @@ class PipelineTemplate(Pipeline, ABC):
                 )
 
             step_ids[id(potential_step)] = key
-            connect_inputs[key] = potential_step
+            setattr(potential_step, "_template_name", key)
+            steps[key] = potential_step
 
-        return connect_inputs
-
-    def add_step(
-        self,
-        step: "BaseStep",
-        custom_name: Optional[str] = None,
-        allow_suffix: bool = True,
-    ) -> str:
-        if custom_name:
-            raise RuntimeError(
-                "Custom step name not allowed for pipeline templates"
-            )
-
-        for key, value in self._connect_inputs.items():
-            if value is step:
-                name = key
-                break
-        else:
-            raise RuntimeError("Step not found")
-
-        return super().add_step(step=step, custom_name=name, allow_suffix=True)
+        return steps
