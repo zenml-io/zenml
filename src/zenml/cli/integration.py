@@ -243,8 +243,9 @@ def install(
 
         for integration_name in integrations_to_install:
             track_event(
-                AnalyticsEvent.INSTALL_INTEGRATION,
-                {"integration_name": integration_name},
+                event=AnalyticsEvent.INSTALL_INTEGRATION,
+                metadata={"integration_name": integration_name},
+                v2=True,
             )
 
 

@@ -938,8 +938,7 @@ class SqlZenStore(BaseZenStore):
     # ------
     # Stacks
     # ------
-
-    @track(AnalyticsEvent.REGISTERED_STACK)
+    @track(AnalyticsEvent.REGISTERED_STACK, v2=True)
     def create_stack(self, stack: StackRequestModel) -> StackResponseModel:
         """Register a new stack.
 
@@ -1038,7 +1037,7 @@ class SqlZenStore(BaseZenStore):
                 filter_model=stack_filter_model,
             )
 
-    @track(AnalyticsEvent.UPDATED_STACK)
+    @track(AnalyticsEvent.UPDATED_STACK, v2=True)
     def update_stack(
         self, stack_id: UUID, stack_update: StackUpdateModel
     ) -> StackResponseModel:
@@ -1221,8 +1220,7 @@ class SqlZenStore(BaseZenStore):
     # ----------------
     # Stack components
     # ----------------
-
-    @track(AnalyticsEvent.REGISTERED_STACK_COMPONENT)
+    @track(AnalyticsEvent.REGISTERED_STACK_COMPONENT, v2=True)
     def create_stack_component(
         self,
         component: ComponentRequestModel,
@@ -1543,6 +1541,7 @@ class SqlZenStore(BaseZenStore):
     # Stack component flavors
     # -----------------------
 
+    @track(AnalyticsEvent.CREATED_FLAVOR, v1=False, v2=True)
     def create_flavor(self, flavor: FlavorRequestModel) -> FlavorResponseModel:
         """Creates a new stack component flavor.
 
@@ -2481,7 +2480,7 @@ class SqlZenStore(BaseZenStore):
     # Workspaces
     # --------
 
-    @track(AnalyticsEvent.CREATED_WORKSPACE)
+    @track(AnalyticsEvent.CREATED_WORKSPACE, v2=True)
     def create_workspace(
         self, workspace: WorkspaceRequestModel
     ) -> WorkspaceResponseModel:
@@ -2634,8 +2633,7 @@ class SqlZenStore(BaseZenStore):
     # ---------
     # Pipelines
     # ---------
-
-    @track(AnalyticsEvent.CREATE_PIPELINE)
+    @track(AnalyticsEvent.CREATE_PIPELINE, v2=True)
     def create_pipeline(
         self,
         pipeline: PipelineRequestModel,
