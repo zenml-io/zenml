@@ -134,7 +134,9 @@ def init(
         }
 
         with event_handler(
-            event=AnalyticsEvent.GENERATE_TEMPLATE, metadata=metadata
+            event=AnalyticsEvent.GENERATE_TEMPLATE,
+            metadata=metadata,
+            v2=True,
         ):
             console.print(zenml_cli_privacy_message, width=80)
 
@@ -328,8 +330,9 @@ def go() -> None:
         gave_email = _prompt_email(AnalyticsEventSource.ZENML_GO)
         metadata = {"gave_email": gave_email}
 
-    with event_handler(event=AnalyticsEvent.RUN_ZENML_GO, metadata=metadata):
-
+    with event_handler(
+        event=AnalyticsEvent.RUN_ZENML_GO, metadata=metadata, v2=True
+    ):
         console.print(zenml_cli_privacy_message, width=80)
 
         zenml_tutorial_path = os.path.join(os.getcwd(), "zenml_tutorial")

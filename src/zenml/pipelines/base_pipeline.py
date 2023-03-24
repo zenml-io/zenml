@@ -393,13 +393,15 @@ class BasePipeline(metaclass=BasePipelineMeta):
         Returns:
             The build output.
         """
-        deployment, pipeline_spec, _, _ = self._compile(
-            config_path=config_path,
-            steps=step_configurations,
-            settings=settings,
-        )
-        pipeline_id = self._register(pipeline_spec=pipeline_spec).id
-        return self._build(deployment=deployment, pipeline_id=pipeline_id)
+        with event_handler(event=AnalyticsEvent.BUILD_PIPELINE, v2=True):
+            deployment, pipeline_spec, _, _ = self._compile(
+                config_path=config_path,
+                steps=step_configurations,
+                settings=settings,
+            )
+            pipeline_id = self._register(pipeline_spec=pipeline_spec).id
+
+            return self._build(deployment=deployment, pipeline_id=pipeline_id)
 
     def run(
         self,
@@ -451,7 +453,9 @@ class BasePipeline(metaclass=BasePipelineMeta):
             )
             return
 
-        with event_handler(AnalyticsEvent.RUN_PIPELINE) as analytics_handler:
+        with event_handler(
+            event=AnalyticsEvent.RUN_PIPELINE, v2=True
+        ) as analytics_handler:
             deployment, pipeline_spec, schedule, build = self._compile(
                 config_path=config_path,
                 run_name=run_name,
@@ -465,7 +469,8 @@ class BasePipeline(metaclass=BasePipelineMeta):
             )
 
             skip_pipeline_registration = constants.handle_bool_env_var(
-                constants.ENV_ZENML_SKIP_PIPELINE_REGISTRATION, default=False
+                constants.ENV_ZENML_SKIP_PIPELINE_REGISTRATION,
+                default=False,
             )
 
             register_pipeline = not (skip_pipeline_registration or unlisted)
@@ -564,7 +569,8 @@ class BasePipeline(metaclass=BasePipelineMeta):
 
             # Log the dashboard URL
             dashboard_utils.print_run_url(
-                run_name=deployment.run_name_template, pipeline_id=pipeline_id
+                run_name=deployment.run_name_template,
+                pipeline_id=pipeline_id,
             )
 
     @classmethod
