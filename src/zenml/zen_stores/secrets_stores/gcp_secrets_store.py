@@ -252,7 +252,7 @@ class GCPSecretsStore(BaseSecretsStore):
             filter_terms
         )
 
-    @track(AnalyticsEvent.CREATED_SECRET)
+    @track(AnalyticsEvent.CREATED_SECRET, v2=True)
     def create_secret(self, secret: SecretRequestModel) -> SecretResponseModel:
         """Create a new secret.
 
