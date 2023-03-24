@@ -334,7 +334,6 @@ def upgrade(
         integrations: The name of the integration to install the requirements
             for.
         force: Force the installation of the required packages.
-        upgrade: Upgrade the packages if they are already installed.
     """
     from zenml.integrations.registry import integration_registry
 
