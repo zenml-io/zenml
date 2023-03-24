@@ -28,12 +28,12 @@ from zenml.config.step_configurations import (
     StepSpec,
 )
 from zenml.environment import get_run_environment_dict
-from zenml.exceptions import PipelineInterfaceError, StackValidationError
+from zenml.exceptions import StackValidationError
 from zenml.models.pipeline_deployment_models import PipelineDeploymentBaseModel
 from zenml.utils import pydantic_utils, settings_utils, source_utils
 
 if TYPE_CHECKING:
-    from zenml.pipelines import BasePipeline
+    from zenml.pipelines.new import Pipeline
     from zenml.stack import Stack, StackComponent
     from zenml.steps import BaseStep
 
@@ -47,7 +47,7 @@ class Compiler:
 
     def compile(
         self,
-        pipeline: "BasePipeline",
+        pipeline: "Pipeline",
         stack: "Stack",
         run_configuration: PipelineRunConfiguration,
     ) -> Tuple[PipelineDeploymentBaseModel, PipelineSpec]:
@@ -65,15 +65,18 @@ class Compiler:
         # Copy the pipeline before we apply any run-level configurations so
         # we don't mess with the pipeline object/step objects in any way
         pipeline = copy.deepcopy(pipeline)
+        # TODO: the non-template pipeline already called the steps (which means)
+        # the materializers etc are fixed and can't be changed using the run
+        # config
         self._apply_run_configuration(
             pipeline=pipeline, config=run_configuration
         )
         self._apply_stack_default_settings(pipeline=pipeline, stack=stack)
-        self._verify_distinct_step_names(pipeline=pipeline)
+        # self._verify_distinct_step_names(pipeline=pipeline)
         if run_configuration.run_name:
             self._verify_run_name(run_configuration.run_name)
 
-        pipeline.connect(**pipeline.steps)
+        pipeline.prepare_compilation()
 
         pipeline_settings = self._filter_and_validate_settings(
             settings=pipeline.configuration.settings,
@@ -124,7 +127,7 @@ class Compiler:
 
         return deployment, pipeline_spec
 
-    def compile_spec(self, pipeline: "BasePipeline") -> PipelineSpec:
+    def compile_spec(self, pipeline: "Pipeline") -> PipelineSpec:
         """Compiles a ZenML pipeline to a pipeline spec.
 
         This method can be used when a pipeline spec is needed but the full
@@ -142,8 +145,9 @@ class Compiler:
         # Copy the pipeline before we connect the steps so we don't mess with
         # the pipeline object/step objects in any way
         pipeline = copy.deepcopy(pipeline)
-        self._verify_distinct_step_names(pipeline=pipeline)
-        pipeline.connect(**pipeline.steps)
+        # self._verify_distinct_step_names(pipeline=pipeline)
+        # pipeline.connect(**pipeline.steps)
+        pipeline.prepare_compilation()
 
         steps = [
             self._get_step_spec(
@@ -159,7 +163,7 @@ class Compiler:
         return pipeline_spec
 
     def _apply_run_configuration(
-        self, pipeline: "BasePipeline", config: PipelineRunConfiguration
+        self, pipeline: "Pipeline", config: PipelineRunConfiguration
     ) -> None:
         """Applies run configurations to the pipeline and its steps.
 
@@ -196,7 +200,7 @@ class Compiler:
                 )
 
     def _apply_stack_default_settings(
-        self, pipeline: "BasePipeline", stack: "Stack"
+        self, pipeline: "Pipeline", stack: "Stack"
     ) -> None:
         """Applies stack default settings to a pipeline.
 
@@ -247,31 +251,31 @@ class Compiler:
         )
         return default_settings
 
-    def _verify_distinct_step_names(self, pipeline: "BasePipeline") -> None:
-        """Verifies that all steps inside the pipeline have separate names.
+    # def _verify_distinct_step_names(self, pipeline: "Pipeline") -> None:
+    #     """Verifies that all steps inside the pipeline have separate names.
 
-        Args:
-            pipeline: The pipeline to verify.
+    #     Args:
+    #         pipeline: The pipeline to verify.
 
-        Raises:
-            PipelineInterfaceError: If multiple steps share the same name.
-        """
-        step_names: Dict[str, str] = {}
+    #     Raises:
+    #         PipelineInterfaceError: If multiple steps share the same name.
+    #     """
+    #     step_names: Dict[str, str] = {}
 
-        for step_argument_name, step in pipeline.steps.items():
-            previous_argument_name = step_names.get(step.name, None)
-            if previous_argument_name:
-                raise PipelineInterfaceError(
-                    f"Found multiple step objects with the same name "
-                    f"`{step.name}` for arguments '{previous_argument_name}' "
-                    f"and '{step_argument_name}' in pipeline "
-                    f"'{pipeline.name}'. All steps of a ZenML pipeline need "
-                    "to have distinct names. To solve this issue, assign a new "
-                    "name to one of the steps by calling "
-                    "`my_step_instance.configure(name='some_distinct_name')`"
-                )
+    #     for step_argument_name, step in pipeline.steps.items():
+    #         previous_argument_name = step_names.get(step.name, None)
+    #         if previous_argument_name:
+    #             raise PipelineInterfaceError(
+    #                 f"Found multiple step objects with the same name "
+    #                 f"`{step.name}` for arguments '{previous_argument_name}' "
+    #                 f"and '{step_argument_name}' in pipeline "
+    #                 f"'{pipeline.name}'. All steps of a ZenML pipeline need "
+    #                 "to have distinct names. To solve this issue, assign a new "
+    #                 "name to one of the steps by calling "
+    #                 "`my_step_instance.configure(name='some_distinct_name')`"
+    #             )
 
-            step_names[step.name] = step_argument_name
+    #         step_names[step.name] = step_argument_name
 
     @staticmethod
     def _verify_run_name(run_name: str) -> None:
@@ -447,29 +451,19 @@ class Compiler:
 
         # Sort step names using topological sort
         dag: Dict[str, List[str]] = {
-            step.name: list(step.upstream_steps) for step in steps.values()
+            name: list(step.upstream_steps) for name, step in steps.items()
         }
         reversed_dag: Dict[str, List[str]] = reverse_dag(dag)
         layers = topsorted_layers(
-            nodes=[step.name for step in steps.values()],
+            nodes=list(dag),
             get_node_id_fn=lambda node: node,
             get_parent_nodes=lambda node: dag[node],
             get_child_nodes=lambda node: reversed_dag[node],
         )
         sorted_step_names = [step for layer in layers for step in layer]
-
-        # Construct pipeline name to step mapping
-        step_name_to_name_in_pipeline: Dict[str, str] = {
-            step.name: name_in_pipeline
-            for name_in_pipeline, step in steps.items()
-        }
-        sorted_names_in_pipeline: List[str] = [
-            step_name_to_name_in_pipeline[step_name]
-            for step_name in sorted_step_names
-        ]
         sorted_steps: List[Tuple[str, "BaseStep"]] = [
             (name_in_pipeline, steps[name_in_pipeline])
-            for name_in_pipeline in sorted_names_in_pipeline
+            for name_in_pipeline in sorted_step_names
         ]
         return sorted_steps
 

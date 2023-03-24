@@ -149,9 +149,7 @@ class StepLauncher:
             )
 
         self._stack = Stack.from_model(deployment.stack)
-        self._step_name = _get_step_name_in_pipeline(
-            step=step, deployment=deployment
-        )
+        self._step_name = step.spec.pipeline_parameter_name
 
     def launch(self) -> None:
         """Launches the step."""

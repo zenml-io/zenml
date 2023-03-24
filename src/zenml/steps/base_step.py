@@ -77,7 +77,6 @@ from zenml.utils import (
     source_utils,
 )
 
-logger = get_logger(__name__)
 if TYPE_CHECKING:
     from zenml.config.base_settings import SettingsOrDict
 
@@ -91,6 +90,22 @@ if TYPE_CHECKING:
     OutputMaterializersSpecification = Union[
         "MaterializerClassOrStr", Mapping[str, "MaterializerClassOrStr"]
     ]
+
+logger = get_logger(__name__)
+
+
+INIT_KWARG_KEYS = {
+    PARAM_ENABLE_CACHE,
+    PARAM_ENABLE_ARTIFACT_METADATA,
+    PARAM_EXPERIMENT_TRACKER,
+    PARAM_STEP_OPERATOR,
+    PARAM_OUTPUT_ARTIFACTS,
+    PARAM_OUTPUT_MATERIALIZERS,
+    PARAM_EXTRA_OPTIONS,
+    PARAM_SETTINGS,
+    PARAM_ON_SUCCESS,
+    PARAM_ON_FAILURE,
+}
 
 
 class BaseStepMeta(type):
@@ -217,6 +232,28 @@ class BaseStepMeta(type):
 
         return cls
 
+    def __call__(self, *args: Any, **kwargs: Any) -> Any:
+        from zenml.pipelines.new import Pipeline
+
+        if not Pipeline.ACTIVE_PIPELINE:
+            return super().__call__(*args, **kwargs)
+
+        init_kwargs = {}
+        call_kwargs = {}
+
+        # TODO: validate the entrypoint does not define reserved params like
+        # "settings" or "extra"
+        entrypoint_params = set(inspect.signature(self.entrypoint).parameters)
+
+        for key, value in kwargs.items():
+            if key in entrypoint_params:
+                call_kwargs[key] = value
+            else:
+                init_kwargs[key] = value
+
+        step_instance = super().__call__(**init_kwargs)
+        return step_instance(*args, **call_kwargs)
+
 
 T = TypeVar("T", bound="BaseStep")
 
@@ -273,7 +310,7 @@ class BaseStep(metaclass=BaseStepMeta):
         kwargs = {**self.INSTANCE_CONFIGURATION, **kwargs}
         name = kwargs.pop(PARAM_STEP_NAME, None) or self.__class__.__name__
 
-        # This value is only used in `BaseStep.__created_by_functional_api()`
+        # This value is only used in `BaseStep._created_by_functional_api()`
         kwargs.pop(PARAM_CREATED_BY_FUNCTIONAL_API, None)
 
         requires_context = bool(self.CONTEXT_PARAMETER_NAME)
@@ -612,18 +649,15 @@ class BaseStep(metaclass=BaseStepMeta):
         Raises:
             StepInterfaceError: If the step has already been called.
         """
-        INSIDE_PIPELINE_DEFINITION = True
+        from zenml.pipelines.new.pipeline import Pipeline
 
-        if not INSIDE_PIPELINE_DEFINITION:
+        if not Pipeline.ACTIVE_PIPELINE:
             # The step is being called outside of the context of a pipeline,
             # we simply call the entrypoint
             return self.entrypoint(*args, **kwargs)
 
-        if self._has_been_called:
-            raise StepInterfaceError(
-                f"Step {self.name} has already been called. A ZenML step "
-                f"instance can only be called once per pipeline run."
-            )
+        # TODO: Correctly handle duplicate calls in pipeline templates, maybe
+        # we need to copy the step instance somehow?
         self._has_been_called = True
 
         input_artifacts, parameters = self._parse_call_args(*args, **kwargs)
@@ -638,18 +672,19 @@ class BaseStep(metaclass=BaseStepMeta):
 
         config = self._finalize_configuration(input_artifacts=input_artifacts)
 
-        # Resolve the returns in the right order.
+        # TODO: add option for custom name here
+        step_id = Pipeline.ACTIVE_PIPELINE.add_step(self)
+
         returns = []
         for key in self.OUTPUT_SIGNATURE:
             materializer_source = config.outputs[key].materializer_source
             output_artifact = BaseStep._OutputArtifact(
                 name=key,
-                step_name=self.name,
+                step_name=step_id,
                 materializer_source=materializer_source,
             )
             returns.append(output_artifact)
 
-        # If its one return we just return the one channel not as a list
         if len(returns) == 1:
             return returns[0]
         else:
@@ -792,7 +827,7 @@ class BaseStep(metaclass=BaseStepMeta):
 
         values = dict_utils.remove_none_values(
             {
-                "name": name,
+                # "name": name,
                 "enable_cache": enable_cache,
                 "enable_artifact_metadata": enable_artifact_metadata,
                 "experiment_tracker": experiment_tracker,

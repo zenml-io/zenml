@@ -43,7 +43,7 @@ def resolve_step_inputs(
         current step.
     """
     current_run_steps = {
-        run_step.step.config.name: run_step
+        run_step.name: run_step
         for run_step in Client()
         .zen_store.list_run_steps(StepRunFilterModel(pipeline_run_id=run_id))
         .items
