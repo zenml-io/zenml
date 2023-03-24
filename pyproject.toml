@@ -241,9 +241,6 @@ show_error_codes = true
 # remove once the issue is solved in airflow
 exclude = "airflow/"
 
-[tool.pydantic-mypy]
-init_forbid_extra = false
-
 [[tool.mypy.overrides]]
 module = [
     "airflow.*",

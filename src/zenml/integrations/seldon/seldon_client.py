@@ -170,7 +170,7 @@ class SeldonDeploymentPredictor(BaseModel):
 
     name: str
     replicas: int = 1
-    graph: Optional[SeldonDeploymentPredictiveUnit] = None
+    graph: SeldonDeploymentPredictiveUnit
     engineResources: Optional[SeldonResourceRequirements] = Field(
         default_factory=SeldonResourceRequirements
     )

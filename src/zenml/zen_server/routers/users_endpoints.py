@@ -245,7 +245,7 @@ def deactivate_user(
     user = zen_store().get_user(user_name_or_id)
 
     user_update = UserUpdateModel(
-        name=user_name_or_id,
+        name=user.name,
         active=False,
     )
     token = user_update.generate_activation_token()
@@ -318,7 +318,7 @@ def email_opt_in_response(
 
     if str(auth_context.user.id) == str(user_name_or_id):
         user_update = UserUpdateModel(
-            name=user_name_or_id,
+            name=user.name,
             email=user_response.email,
             email_opted_in=user_response.email_opted_in,
         )
