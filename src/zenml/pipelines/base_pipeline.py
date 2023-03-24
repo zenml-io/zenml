@@ -94,6 +94,7 @@ logger = get_logger(__name__)
 
 PIPELINE_INNER_FUNC_NAME = "connect"
 INSTANCE_CONFIGURATION = "INSTANCE_CONFIGURATION"
+PARAM_PIPELINE_NAME = "name"
 PARAM_ENABLE_CACHE = "enable_cache"
 PARAM_ENABLE_ARTIFACT_METADATA = "enable_artifact_metadata"
 PARAM_SETTINGS = "settings"
@@ -133,10 +134,11 @@ class BasePipeline(metaclass=BasePipelineMeta):
             *args: The steps to be executed by this pipeline.
             **kwargs: The configuration for this pipeline.
         """
-        kwargs.update(self.INSTANCE_CONFIGURATION)
+        kwargs = {**self.INSTANCE_CONFIGURATION, **kwargs}
+        name = kwargs.pop(PARAM_PIPELINE_NAME, None) or self.__class__.__name__
 
         self._configuration = PipelineConfiguration(
-            name=self.__class__.__name__,
+            name=name,
             enable_cache=kwargs.pop(PARAM_ENABLE_CACHE, None),
             enable_artifact_metadata=kwargs.pop(
                 PARAM_ENABLE_ARTIFACT_METADATA, None

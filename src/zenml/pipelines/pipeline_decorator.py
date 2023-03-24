@@ -33,6 +33,7 @@ from zenml.pipelines.base_pipeline import (
     PARAM_EXTRA_OPTIONS,
     PARAM_ON_FAILURE,
     PARAM_ON_SUCCESS,
+    PARAM_PIPELINE_NAME,
     PARAM_SETTINGS,
     PIPELINE_INNER_FUNC_NAME,
     BasePipeline,
@@ -113,11 +114,12 @@ def pipeline(
             the class of a newly generated ZenML Pipeline
         """
         return type(  # noqa
-            name if name else func.__name__,
+            func.__name__,
             (BasePipeline,),
             {
-                PIPELINE_INNER_FUNC_NAME: staticmethod(func),  # type: ignore[arg-type] # noqa
+                PIPELINE_INNER_FUNC_NAME: staticmethod(func),  # type: ignore[arg-type]
                 INSTANCE_CONFIGURATION: {
+                    PARAM_PIPELINE_NAME: name,
                     PARAM_ENABLE_CACHE: enable_cache,
                     PARAM_ENABLE_ARTIFACT_METADATA: enable_artifact_metadata,
                     PARAM_SETTINGS: settings,
