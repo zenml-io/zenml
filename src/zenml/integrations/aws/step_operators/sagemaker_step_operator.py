@@ -159,20 +159,21 @@ class SagemakerStepOperator(BaseStepOperator):
 
         settings = cast(SagemakerStepOperatorSettings, self.get_settings(info))
 
-        # Get and default fill SageMaker estimator arguments 
+        # Get and default fill SageMaker estimator arguments for full ZenML support
         estimator_args = settings.estimator_args
-        session = estimator_args.sagemaker_session or sagemaker.Session(default_bucket=self.config.bucket)
-        instance_type = estimator_args.instance_type or "ml.m5.large"
-        instance_count = estimator_args.instance_count or 1
+        session = sagemaker.Session(default_bucket=self.config.bucket)
+
+        if "instance_type" not in estimator_args:
+            estimator_args["instance_type"] = "ml.m5.large"
+
+        estimator_args["environment"] = environment
+        estimator_args["instance_count"] = 1
+        estimator_args["sagemaker_session"] = session
 
         # Create Estimator
         estimator = sagemaker.estimator.Estimator(
             image_name,
             self.config.role,
-            environment=environment,
-            instance_count=instance_count,
-            instance_type=instance_type,
-            sagemaker_session=session,
             **estimator_args
         )
 
