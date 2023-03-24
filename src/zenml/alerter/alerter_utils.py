@@ -46,3 +46,24 @@ def get_active_alerter(context: StepContext) -> BaseAlerter:
             "  'zenml stack register stack-name -al slack_alerter ...'\n"
         )
     return context.stack.alerter
+
+
+def get_active_stack_name(context: StepContext) -> str:
+    """Get name of the active stack.
+
+    Args:
+        context: StepContext of the ZenML repository.
+
+    Returns:
+        name of the active stack.
+
+    Raises:
+        DoesNotExistException: If no active stack is available.
+    """
+    if not context.stack:
+        raise DoesNotExistException(
+            "No active stack is available. "
+            "Please make sure that you have registered and set a stack."
+        )
+
+    return context.stack.name
