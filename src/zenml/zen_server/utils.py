@@ -22,7 +22,10 @@ from fastapi import HTTPException
 from pydantic import BaseModel, ValidationError
 
 from zenml.config.global_config import GlobalConfiguration
-from zenml.constants import ENV_ZENML_SERVER_ROOT_URL_PATH
+from zenml.constants import (
+    ENV_ZENML_SERVER,
+    ENV_ZENML_SERVER_ROOT_URL_PATH,
+)
 from zenml.enums import StoreType
 from zenml.exceptions import (
     EntityExistsError,
@@ -72,6 +75,9 @@ def initialize_zen_store() -> None:
     # We override track_analytics=False because we do not
     # want to track anything server side.
     _zen_store.track_analytics = False
+
+    # Use an environment variable to flag the instance as a server
+    os.environ[ENV_ZENML_SERVER] = "true"
 
     if _zen_store.type == StoreType.REST:
         raise ValueError(
@@ -177,6 +183,18 @@ def handle_exceptions(func: F) -> F:
 
     @wraps(func)
     def decorated(*args: Any, **kwargs: Any) -> Any:
+        from zenml.zen_server.auth import AuthContext, set_auth_context
+
+        for arg in args:
+            if isinstance(arg, AuthContext):
+                set_auth_context(arg)
+                break
+        else:
+            for _, arg in kwargs.items():
+                if isinstance(arg, AuthContext):
+                    set_auth_context(arg)
+                    break
+
         try:
             return func(*args, **kwargs)
         except NotAuthorizedError as error:
