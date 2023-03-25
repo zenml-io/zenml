@@ -75,7 +75,6 @@ zenml integration upgrade mlflow pytorch -y
 ```
 
 {% hint style="info" %}
-
 * The `-y` flag confirms all `pip install --upgrade` commands without asking you
 for confirmation.
 * If no integrations are specified, all installed integrations will be upgraded.
