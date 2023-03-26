@@ -82,10 +82,10 @@ class ServiceConfig(BaseTypedModel):
     @root_validator(pre=True)
     def set_run_name(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         """Sets the run_name attribute to the value of pipeline_run_id.
-        
+
         Args:
             values: dictionary of attribute values.
-            
+
         Returns:
             The dictionary of attribute values.
         """
