@@ -857,7 +857,9 @@ def test_configure_step_with_invalid_materializer_key_or_source():
 
     with pytest.raises(StepInterfaceError):
         step_instance.configure(
-            output_materializers={"output": "not_a_materializer_source"}
+            output_materializers={
+                "output": "non_existent_module.materializer_class"
+            }
         )
 
     with does_not_raise():

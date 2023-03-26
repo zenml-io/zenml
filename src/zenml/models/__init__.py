@@ -120,6 +120,14 @@ from zenml.models.user_role_assignment_models import (
     UserRoleAssignmentRequestModel,
     UserRoleAssignmentResponseModel,
 )
+from zenml.models.code_repository_models import (
+    CodeRepositoryFilterModel,
+    CodeRepositoryRequestModel,
+    CodeRepositoryResponseModel,
+    CodeRepositoryUpdateModel,
+    CodeReferenceRequestModel,
+    CodeReferenceResponseModel,
+)
 
 ComponentResponseModel.update_forward_refs(
     UserResponseModel=UserResponseModel,
@@ -181,6 +189,11 @@ PipelineDeploymentResponseModel.update_forward_refs(
     StackResponseModel=StackResponseModel,
     PipelineBuildResponseModel=PipelineBuildResponseModel,
     ScheduleResponseModel=ScheduleResponseModel,
+    CodeReferenceResponseModel=CodeReferenceResponseModel,
+)
+
+PipelineDeploymentRequestModel.update_forward_refs(
+    CodeReferenceRequestModel=CodeReferenceRequestModel
 )
 
 PipelineRunResponseModel.update_forward_refs(
@@ -210,6 +223,14 @@ SecretResponseModel.update_forward_refs(
     UserResponseModel=UserResponseModel,
     WorkspaceResponseModel=WorkspaceResponseModel,
 )
+CodeRepositoryResponseModel.update_forward_refs(
+    UserResponseModel=UserResponseModel,
+    WorkspaceResponseModel=WorkspaceResponseModel,
+)
+CodeReferenceResponseModel.update_forward_refs(
+    UserResponseModel=UserResponseModel,
+    WorkspaceResponseModel=WorkspaceResponseModel,
+)
 
 __all__ = [
     "ArtifactRequestModel",
@@ -220,6 +241,12 @@ __all__ = [
     "PipelineBuildFilterModel",
     "PipelineBuildRequestModel",
     "PipelineBuildResponseModel",
+    "CodeRepositoryFilterModel",
+    "CodeRepositoryRequestModel",
+    "CodeRepositoryResponseModel",
+    "CodeRepositoryUpdateModel",
+    "CodeReferenceRequestModel",
+    "CodeReferenceResponseModel",
     "ComponentRequestModel",
     "ComponentResponseModel",
     "ComponentUpdateModel",

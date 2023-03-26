@@ -23,7 +23,9 @@ def test_output_artifact_preparation(create_step_run, local_stack):
     """Tests that the output artifact generation computes the correct artifact
     uris and creates the directories."""
     step_run = create_step_run(
-        outputs={"output_name": {"materializer_source": ""}}
+        outputs={
+            "output_name": {"materializer_source": "module.materializer_class"}
+        }
     )
 
     output_artifact_uris = output_utils.prepare_output_artifact_uris(
