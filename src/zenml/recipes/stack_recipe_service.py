@@ -16,10 +16,10 @@
 import os
 import shutil
 import subprocess
-from typing import Any, ClassVar, Dict, List, Optional, cast
 from pathlib import Path
+from typing import Any, ClassVar, Dict, List, Optional, cast
+
 import yaml
-import json
 
 import zenml
 from zenml.cli.stack_recipes import logger
@@ -252,6 +252,7 @@ class StackRecipeService(TerraformService):
         return cast(str, yaml.dump(config))
 
     def provision(self) -> None:
+        """Provision the service."""
         super().provision()
         self.config.enabled_services = []
         self._update_service_config()

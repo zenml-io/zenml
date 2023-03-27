@@ -1188,7 +1188,7 @@ def deploy(
                     "case, please run zenml stack recipe deploy "
                     f"{stack_recipe_name} again."
                 )
-            except python_terraform.TerraformCommandError as e:
+            except python_terraform.TerraformCommandError:
                 cli_utils.error(
                     f"Running recipe {stack_recipe_name} failed."
                     "\nPlease look at the error message to figure out why the "
@@ -1303,6 +1303,7 @@ def destroy(
             of the secrets manager, it doesn't matter what you specify here, as
             there's only one flavor per cloud provider and that will be destroyed.
         step_operator: The flavor of the step operator to destroy.
+
     Raises:
         ModuleNotFoundError: If the recipe is found at the given path.
     """
@@ -1374,7 +1375,9 @@ def destroy(
 
                 # filter out null values
                 stack_component_options = {
-                    k: v for k, v in stack_component_options.items() if v is not None
+                    k: v
+                    for k, v in stack_component_options.items()
+                    if v is not None
                 }
 
                 # add all values that are not None to the disabled services list
@@ -1489,8 +1492,10 @@ def get_outputs(
         path: The path of the stack recipe you want to get the outputs from.
         output: The name of the output you want to get the value of. If none is given,
             all outputs are returned.
+
     Returns:
         A dictionary with the outputs of the stack recipe.
+
     Raises:
         ModuleNotFoundError: If the recipe is found at the given path.
     """

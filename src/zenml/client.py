@@ -2260,11 +2260,13 @@ class Client(metaclass=ClientMetaClass):
         """Deploys a stack component.
 
         Args:
+            ctx: The click context.
             name: The name of the deployed stack component.
             flavor: The flavor of the deployed stack component.
             cloud: The cloud of the deployed stack component.
             component_type: The type of the stack component to deploy.
             configuration: The configuration of the deployed stack component.
+            metadata: The metadata of the deployed stack component.
 
         Returns:
             The deployed stack component.
@@ -2383,6 +2385,7 @@ class Client(metaclass=ClientMetaClass):
         """Destroys a stack component.
 
         Args:
+            ctx: The click context.
             name: The name of the deployed stack component.
             name_id_or_prefix: The model of the component to destroy.
             component_type: The type of the stack component to destroy.
