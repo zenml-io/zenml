@@ -404,6 +404,7 @@ def test_pipeline_run_with_custom_build_id(clean_workspace):
         user=Client().active_user.id,
         workspace=Client().active_workspace.id,
         is_local=True,
+        contains_code=True,
         images={},
     )
     build = Client().zen_store.create_build(request)
@@ -427,7 +428,9 @@ def test_pipeline_run_with_custom_build_file(clean_workspace, tmp_path):
 
     build_path = tmp_path / "build.yaml"
     build = PipelineBuildBaseModel(
-        is_local=True, images={"my_key": {"image": "image_name"}}
+        is_local=True,
+        contains_code=True,
+        images={"my_key": {"image": "image_name"}},
     )
     build_path.write_text(build.yaml())
 
@@ -453,6 +456,7 @@ def test_pipeline_build_list(clean_workspace):
         workspace=clean_workspace.active_workspace.id,
         images={},
         is_local=False,
+        contains_code=True,
     )
     clean_workspace.zen_store.create_build(request)
 
@@ -466,6 +470,7 @@ def test_pipeline_build_delete(clean_workspace):
         workspace=clean_workspace.active_workspace.id,
         images={},
         is_local=False,
+        contains_code=True,
     )
     build_id = clean_workspace.zen_store.create_build(request).id
 

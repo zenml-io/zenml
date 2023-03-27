@@ -34,7 +34,7 @@ from evidently.utils.generators import BaseGenerator  # type: ignore[import]
 from pydantic import BaseModel, Field
 
 from zenml.logger import get_logger
-from zenml.utils.source_utils import import_class_by_path
+from zenml.utils import source_utils
 
 logger = get_logger(__name__)
 
@@ -91,7 +91,7 @@ class EvidentlyTestConfig(BaseModel):
         # First, try to interpret the test name as a full class path.
         if "." in test_name:
             try:
-                test_class = import_class_by_path(test_name)
+                test_class = source_utils.load(test_name)
             except (ImportError, AttributeError) as e:
                 raise ValueError(
                     f"Could not import Evidently Test or TestPreset "

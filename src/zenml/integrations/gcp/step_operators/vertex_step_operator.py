@@ -19,7 +19,7 @@ google_cloud_ai_platform/training_clients.py
 """
 
 import time
-from typing import TYPE_CHECKING, Any, List, Optional, Tuple, Type, cast
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, cast
 
 from google.cloud import aiplatform
 
@@ -176,12 +176,15 @@ class VertexStepOperator(BaseStepOperator, GoogleCredentialsMixin):
         self,
         info: "StepRunInfo",
         entrypoint_command: List[str],
+        environment: Dict[str, str],
     ) -> None:
         """Launches a step on VertexAI.
 
         Args:
             info: Information about the step run.
             entrypoint_command: Command that executes the step.
+            environment: Environment variables to set in the step operator
+                environment.
 
         Raises:
             RuntimeError: If the run fails.
@@ -238,6 +241,10 @@ class VertexStepOperator(BaseStepOperator, GoogleCredentialsMixin):
                             "image_uri": image_name,
                             "command": entrypoint_command,
                             "args": [],
+                            "env": [
+                                {"name": key, "value": value}
+                                for key, value in environment.items()
+                            ],
                         },
                     }
                 ]

@@ -11,20 +11,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""GitHub integration flavors."""
+"""Initialization of the ZenML GitHub code repository."""
 
-from zenml.integrations.github.flavors.github_actions_orchestrator_flavor import (
-    GitHubActionsOrchestratorConfig,
-    GitHubActionsOrchestratorFlavor,
-)
-from zenml.integrations.github.flavors.github_secrets_manager_flavor import (
-    GitHubSecretsManagerConfig,
-    GitHubSecretsManagerFlavor,
+from zenml.integrations.github.code_repositories.github_code_repository import (
+    GitHubCodeRepository,
 )
 
-__all__ = [
-    "GitHubActionsOrchestratorFlavor",
-    "GitHubActionsOrchestratorConfig",
-    "GitHubSecretsManagerFlavor",
-    "GitHubSecretsManagerConfig",
-]
+__all__ = ["GitHubCodeRepository"]
