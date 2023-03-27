@@ -67,6 +67,11 @@ what other types of components it can be combined with. This option requires
 [authentication related parameters](#authentication-methods) to be configured
 for the MLflow Experiment Tracker.
 
+{% hint style="warning" %}
+Due to a found [Vulnerability](https://github.com/advisories/GHSA-xg73-94fp-g449) in older versions of MLflow, we recommend using
+MLflow version 2.2.1 or higher for this scenario.
+{% endhint %}
+
 * [Databricks scenario](https://www.databricks.com/product/managed-mlflow):
 This scenario assumes that you have a Databricks workspace, and you want to
 use the managed MLflow Tracking server it provides. This option requires

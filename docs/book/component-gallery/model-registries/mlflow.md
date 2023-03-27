@@ -56,6 +56,11 @@ configured in your stack, the MLFlow Model Registry will also use the same
 configuration.
 {% endhint %}
 
+{% hint style="warning" %}
+Due to a found [Vulnerability](https://github.com/advisories/GHSA-xg73-94fp-g449) in older versions of MLflow, we recommend using
+MLflow version 2.2.1 or higher.
+{% endhint %}
+
 ## How do you use it?
 
 There are different ways to use the MLflow Model Registry. You can use it in
