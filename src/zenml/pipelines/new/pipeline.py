@@ -861,7 +861,6 @@ class Pipeline:
         hash_ = hashlib.md5()
         hash_.update(pipeline_spec.json(sort_keys=False).encode())
 
-        # TODO: self.steps is empty here
         for step_spec in pipeline_spec.steps:
             step_source = self.steps[
                 step_spec.pipeline_parameter_name

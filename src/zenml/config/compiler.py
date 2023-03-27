@@ -398,10 +398,6 @@ class Compiler:
             input_artifacts=input_artifacts
         )
 
-        # complete_step_configuration = StepConfiguration(
-        #     **step.configuration.dict()
-        # )
-
         return Step(spec=step_spec, config=complete_step_configuration)
 
     @staticmethod

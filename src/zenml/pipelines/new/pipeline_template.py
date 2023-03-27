@@ -58,14 +58,7 @@ class PipelineTemplate(Pipeline, ABC):
         super().__init__(
             name=config.pop(PARAM_PIPELINE_NAME, None)
             or self.__class__.__name__,
-            enable_cache=config.pop(PARAM_ENABLE_CACHE, None),
-            enable_artifact_metadata=config.pop(
-                PARAM_ENABLE_ARTIFACT_METADATA, None
-            ),
-            settings=config.pop(PARAM_SETTINGS, None),
-            extra=config.pop(PARAM_EXTRA_OPTIONS, None),
-            on_failure=config.pop(PARAM_ON_FAILURE, None),
-            on_success=config.pop(PARAM_ON_SUCCESS, None),
+            **config,
         )
 
         steps = self._verify_steps(*args, **kwargs)
