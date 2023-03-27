@@ -12,7 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 from contextlib import ExitStack as does_not_raise
-from datetime import datetime
 from uuid import uuid4
 
 import pytest
@@ -23,7 +22,6 @@ from zenml.config.compiler import Compiler
 from zenml.config.pipeline_configurations import PipelineRunConfiguration
 from zenml.enums import StackComponentType
 from zenml.exceptions import ProvisioningError, StackValidationError
-from zenml.models import PipelineBuildResponseModel
 from zenml.stack import Stack
 
 
@@ -638,64 +636,3 @@ def test_docker_builds_collection(
     assert first_orchestrator_build in stack_builds
     assert second_orchestrator_build in stack_builds
     assert artifact_store_build in stack_builds
-
-
-def test_build_validation(
-    mocker,
-    local_orchestrator,
-    local_artifact_store,
-    sample_deployment_response_model,
-):
-    """Tests the build validation performed by the stack."""
-    stack = Stack(
-        id=uuid4(),
-        name="",
-        orchestrator=local_orchestrator,
-        artifact_store=local_artifact_store,
-    )
-
-    mocker.patch.object(stack, "get_docker_builds", return_value=[])
-
-    assert sample_deployment_response_model.build is None
-
-    with does_not_raise():
-        # No build, no required builds
-        stack._validate_build(deployment=sample_deployment_response_model)
-
-    mocker.patch.object(
-        stack,
-        "get_docker_builds",
-        return_value=[
-            BuildConfiguration(key="key", settings=DockerSettings())
-        ],
-    )
-
-    with pytest.raises(RuntimeError):
-        # No build, one required build
-        stack._validate_build(deployment=sample_deployment_response_model)
-
-    incorrect_build = PipelineBuildResponseModel(
-        id=uuid4(),
-        created=datetime.now(),
-        updated=datetime.now(),
-        user=sample_deployment_response_model.user,
-        workspace=sample_deployment_response_model.workspace,
-        images={"wrong_key": {"image": "docker_image_name"}},
-        is_local=False,
-    )
-    sample_deployment_response_model.build = incorrect_build
-
-    with pytest.raises(RuntimeError):
-        # Image key missing
-        stack._validate_build(deployment=sample_deployment_response_model)
-
-    correct_build = PipelineBuildResponseModel.parse_obj(
-        {
-            **incorrect_build.dict(),
-            "images": {"key": {"image": "docker_image_name"}},
-        }
-    )
-    sample_deployment_response_model.build = correct_build
-    with does_not_raise():
-        # All keys present
-        stack._validate_build(deployment=sample_deployment_response_model)

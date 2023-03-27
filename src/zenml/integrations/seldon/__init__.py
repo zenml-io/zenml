@@ -32,7 +32,6 @@ class SeldonIntegration(Integration):
     NAME = SELDON
     REQUIREMENTS = [
         "kubernetes==18.20.0",
-        "seldon-core==1.15.0",
     ]
 
     @classmethod

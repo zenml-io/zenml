@@ -34,7 +34,7 @@ from evidently.utils.generators import BaseGenerator  # type: ignore[import]
 from pydantic import BaseModel, Field
 
 from zenml.logger import get_logger
-from zenml.utils.source_utils import import_class_by_path
+from zenml.utils import source_utils
 
 logger = get_logger(__name__)
 
@@ -94,7 +94,7 @@ class EvidentlyMetricConfig(BaseModel):
         # First, try to interpret the metric name as a full class path.
         if "." in metric_name:
             try:
-                metric_class = import_class_by_path(metric_name)
+                metric_class = source_utils.load(metric_name)
             except (ImportError, AttributeError) as e:
                 raise ValueError(
                     f"Could not import Evidently Metric or MetricPreset "

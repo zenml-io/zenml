@@ -5,7 +5,7 @@ description: What are the usage statistics ZenML collects
 # Usage Analytics
 
 In order to help us better understand how the community uses **ZenML**, the pip
-package reports _anonymized_ usage statistics. You can always opt-out by using
+package reports _anonymized_ usage statistics. You can always opt out by using
 the CLI command:
 
 ```bash
@@ -33,24 +33,33 @@ whole.
 
 ## How ZenML collects these statistics <a href="implementation" id="implementation"></a>
 
-**ZenML** uses [`Segment`](https://segment.com) as the data aggregation library
-for all our analytics. The entire code is entirely visible and can be seen at
-[`zenml_analytics.py`](../../../src/zenml/utils/analytics_utils.py). The main
-function is the [`track`](../../../src/zenml/utils/analytics_utils.py#L167) function
-that triggers a
+Currently, **ZenML** utilizes two different, yet similar, strategies to track 
+the analytics.
+
+In the first version, it uses [`Segment`](https://segment.com) as the data 
+aggregation library for all our analytics. The entire code is entirely visible 
+and can be seen at [`analytics_utils.py`](https://github.com/zenml-io/zenml/blob/main/src/zenml/utils/analytics_utils.py). 
+The main function is the `track(...)`function that triggers a
 [Segment Analytics Track event](https://segment.com/docs/connections/spec/track/),
 which runs on a separate background thread from the main thread.
 
-None of the data sent can identify you individually but allows us to understand
-how **ZenML** is being used holistically.
+In the second version, the creation of the events and their corresponding 
+metadata follows a similar process. However, before getting tracked by 
+[`Segment`](https://segment.com), the events first go through a central 
+ZenML analytics server. This added layer allows us to put various 
+countermeasures to incidents such as getting spammed events and enables us to 
+have a more optimized tracking process.
+
+In both versions, none of the data sent can identify you individually but 
+allows us to understand how **ZenML** is being used holistically.
 
 ## What does ZenML collect? <a href="what" id="what"></a>
 
 **ZenML** triggers an asynchronous
 [Segment Track Event](https://segment.com/docs/connections/spec/track/) on the
 following events, which is also viewable in the
-[`zenml_analytics.py`](https://github.com/zenml-io/zenml/blob/main/src/zenml/utils/analytics_utils.py) file in the
-GitHub repository.
+[`analytics_utils.py`](https://github.com/zenml-io/zenml/blob/main/src/zenml/utils/analytics_utils.py) 
+file in the GitHub repository.
 
 ```python
 # Pipelines
@@ -121,23 +130,14 @@ PULL_STACK_RECIPE = "Stack recipes pulled"
 RUN_STACK_RECIPE = "Stack recipe created"
 DESTROY_STACK_RECIPE = "Stack recipe destroyed"
 ```
-Each Segment Track event collects the following metadata:
-
-- A unique UUID that is anonymous.
-- The **ZenML** version.
-- Operating system information, e.g. Ubuntu Linux 16.04
-
-In addition, if you have opted-in to email communication (e.g. via `zenml go` or 
-the email collection screen on the dashboard), then the `email` is sent as a metadata 
-field.
 
 ## If I share my email, will you spam me?
 
-No, we won't. Our sole purpose of contacting you will be to ask for feedback (e.g. in the 
-shape of a user interview). These interviews help the core team understand usage better, 
-and prioritize feature requests.
+No, we won't. Our sole purpose of contacting you will be to ask for feedback 
+(e.g. in the shape of a user interview). These interviews help the core team 
+understand usage better, and prioritize feature requests.
 
-If you have any concerns about data privacy and usage of personal information, please 
-[contact us](mailto:support@zenml.io) and we will try to alleviate any concerns as soon 
-as possible.
+If you have any concerns about data privacy and usage of personal information, 
+please [contact us](mailto:support@zenml.io), and we will try to alleviate any 
+concerns as soon as possible.
 

@@ -14,7 +14,7 @@
 """Implementation of the Spark Step Operator."""
 
 import subprocess
-from typing import TYPE_CHECKING, List, Optional, Type, cast
+from typing import TYPE_CHECKING, Dict, List, Optional, Type, cast
 
 from pyspark.conf import SparkConf
 
@@ -111,6 +111,7 @@ class SparkStepOperator(BaseStepOperator):
         self,
         spark_config: SparkConf,
         info: "StepRunInfo",
+        environment: Dict[str, str],
     ) -> None:
         """Configures Spark to handle backends like YARN, Mesos or Kubernetes.
 
@@ -118,6 +119,7 @@ class SparkStepOperator(BaseStepOperator):
             spark_config: a SparkConf object which collects all the
                 configuration parameters
             info: Information about the step run.
+            environment: Environment variables to set.
         """
 
     def _io_configuration(self, spark_config: SparkConf) -> None:
@@ -268,12 +270,15 @@ class SparkStepOperator(BaseStepOperator):
         self,
         info: "StepRunInfo",
         entrypoint_command: List[str],
+        environment: Dict[str, str],
     ) -> None:
         """Launches a step on Spark.
 
         Args:
             info: Information about the step run.
             entrypoint_command: Command that executes the step.
+            environment: Environment variables to set in the step operator
+                environment.
         """
         settings = cast(SparkStepOperatorSettings, self.get_settings(info))
         # Start off with an empty configuration
@@ -286,7 +291,9 @@ class SparkStepOperator(BaseStepOperator):
         )
 
         # Add the backend configuration such as namespace, docker images names.
-        self._backend_configuration(spark_config=conf, info=info)
+        self._backend_configuration(
+            spark_config=conf, info=info, environment=environment
+        )
 
         # Add the IO configuration for the inputs and the outputs
         self._io_configuration(

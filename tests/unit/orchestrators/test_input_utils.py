@@ -39,7 +39,7 @@ def test_input_resolution(mocker, sample_artifact_model, create_step_run):
     step = Step.parse_obj(
         {
             "spec": {
-                "source": "",
+                "source": "module.step_class",
                 "upstream_steps": ["upstream_step"],
                 "inputs": {
                     "input_name": {
@@ -70,7 +70,7 @@ def test_input_resolution_with_missing_step_run(mocker):
     step = Step.parse_obj(
         {
             "spec": {
-                "source": "",
+                "source": "module.step_class",
                 "upstream_steps": [],
                 "inputs": {
                     "input_name": {
@@ -103,7 +103,7 @@ def test_input_resolution_with_missing_artifact(mocker, create_step_run):
     step = Step.parse_obj(
         {
             "spec": {
-                "source": "",
+                "source": "module.step_class",
                 "upstream_steps": [],
                 "inputs": {
                     "input_name": {

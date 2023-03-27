@@ -60,6 +60,8 @@ stack with all of these components.
   **container registry**.
 * The **Vertex orchestrator** is responsible for running your ZenML pipeline
   in Vertex AI.
+* An **Image Builder** which will be used to build the Docker image that will
+  be used to run the training step.
 
 When running the upcoming commands, make sure to
 replace all the <PLACEHOLDERS> with the correct values from your GCP project.
@@ -94,8 +96,11 @@ zenml artifact-store register gcp_artifact_store --flavor=gcp --path=<PATH_TO_YO
 #  manager access, it will be in the format: xxx@xxx.iam.gserviceaccount.com
 zenml orchestrator register vertex_orch --flavor=vertex --project=<PROJECT_ID> --location=<GCP_LOCATION>
 
+# Register the local image builder
+zenml image-builder register local_builder --flavor=local
+
 # Now we're ready to assemble our stack
-zenml stack register gcp_vertex_stack -a gcp_artifact_store -o vertex_orch -c gcp_registry --set
+zenml stack register gcp_vertex_stack -a gcp_artifact_store -o vertex_orch -c gcp_registry -i local_builder --set
 ```
 
 Your stack should look something like this when you're done:

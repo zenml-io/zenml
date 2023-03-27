@@ -22,8 +22,7 @@ from evidently.utils import NumpyEncoder  # type: ignore
 from zenml.enums import ArtifactType
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
-from zenml.utils import yaml_utils
-from zenml.utils.source_utils import import_class_by_path, resolve_class
+from zenml.utils import source_utils, yaml_utils
 
 logger = get_logger(__name__)
 
@@ -60,7 +59,7 @@ class EvidentlyProfileMaterializer(BaseMaterializer):
         section_types = contents.pop("section_types", [])
         sections = []
         for section_type in section_types:
-            section_cls = import_class_by_path(section_type)
+            section_cls = source_utils.load(section_type)
             section = section_cls()
             section._result = contents[section.part_id()]
             sections.append(section)
@@ -79,7 +78,8 @@ class EvidentlyProfileMaterializer(BaseMaterializer):
         # include the list of profile sections in the serialized dictionary,
         # so we'll be able to re-create them during de-serialization
         contents["section_types"] = [
-            resolve_class(stage.__class__) for stage in data.stages
+            source_utils.resolve(stage.__class__).import_path
+            for stage in data.stages
         ]
 
         filepath = os.path.join(self.uri, DEFAULT_FILENAME)
