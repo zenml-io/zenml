@@ -1664,10 +1664,10 @@ class Client(metaclass=ClientMetaClass):
         )
 
         # Create the update model
-        update_model = StackUpdateModel(
+        update_model = StackUpdateModel(  # type: ignore[call-arg]
             workspace=self.active_workspace.id,
             user=self.active_user.id,
-        )  # type: ignore[call-arg]
+        )
 
         if name:
             shared_status = is_shared or stack.is_shared
@@ -2133,10 +2133,10 @@ class Client(metaclass=ClientMetaClass):
             allow_name_prefix_match=False,
         )
 
-        update_model = ComponentUpdateModel(
+        update_model = ComponentUpdateModel(  # type: ignore[call-arg]
             workspace=self.active_workspace.id,
             user=self.active_user.id,
-        )  # type: ignore[call-arg]
+        )
 
         if name is not None:
             shared_status = is_shared or component.is_shared
@@ -3976,7 +3976,7 @@ class Client(metaclass=ClientMetaClass):
         repo = self.get_code_repository(
             name_id_or_prefix=name_id_or_prefix, allow_name_prefix_match=False
         )
-        update = CodeRepositoryUpdateModel(name=name)
+        update = CodeRepositoryUpdateModel(name=repo.name)  # type: ignore[call-arg]
         return self.zen_store.update_code_repository(
             code_repository_id=repo.id, update=update
         )
