@@ -212,12 +212,16 @@ class AirflowOrchestrator(ContainerizedOrchestrator):
         self,
         deployment: "PipelineDeploymentResponseModel",
         stack: "Stack",
+        environment: Dict[str, str],
     ) -> Any:
         """Creates and writes an Airflow DAG zip file.
 
         Args:
             deployment: The pipeline deployment to prepare or run.
             stack: The stack the pipeline will run on.
+            environment: Environment variables to set in the orchestration
+                environment.
+
         """
         pipeline_settings = cast(
             AirflowOrchestratorSettings, self.get_settings(deployment)
@@ -245,6 +249,7 @@ class AirflowOrchestrator(ContainerizedOrchestrator):
                 docker_image=image,
                 command=command,
                 arguments=arguments,
+                environment=environment,
                 operator_source=settings.operator,
                 operator_args=settings.operator_args,
             )

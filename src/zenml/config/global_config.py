@@ -140,9 +140,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         _config_path: Directory where the global config file is stored.
     """
 
-    user_id: uuid.UUID = Field(
-        default_factory=uuid.uuid4, allow_mutation=False
-    )
+    user_id: uuid.UUID = Field(default_factory=uuid.uuid4)
     user_email: Optional[str] = None
     user_email_opt_in: Optional[bool] = None
     analytics_opt_in: bool = True
@@ -624,7 +622,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         ) as analytics_handler:
             default_store_cfg = self.get_default_store()
             self._configure_store(default_store_cfg)
-            logger.info("Using the default store for the global config.")
+            logger.debug("Using the default store for the global config.")
             analytics_handler.metadata = {
                 "store_type": default_store_cfg.type.value
             }

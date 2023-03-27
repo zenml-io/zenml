@@ -24,7 +24,8 @@ from pydantic import BaseModel
 
 from tests.integration.functional.utils import sample_name
 from zenml.client import Client
-from zenml.config.pipeline_configurations import PipelineSpec
+from zenml.config.pipeline_spec import PipelineSpec
+from zenml.config.source import Source
 from zenml.enums import SecretScope, StackComponentType
 from zenml.exceptions import (
     EntityExistsError,
@@ -849,6 +850,7 @@ def test_listing_builds(clean_client):
         workspace=clean_client.active_workspace.id,
         images={},
         is_local=False,
+        contains_code=True,
     )
     response = clean_client.zen_store.create_build(request)
 
@@ -871,6 +873,7 @@ def test_getting_builds(clean_client):
         workspace=clean_client.active_workspace.id,
         images={},
         is_local=False,
+        contains_code=True,
     )
     response = clean_client.zen_store.create_build(request)
 
@@ -890,6 +893,7 @@ def test_deleting_builds(clean_client):
         workspace=clean_client.active_workspace.id,
         images={},
         is_local=False,
+        contains_code=True,
     )
     response = clean_client.zen_store.create_build(request)
 
@@ -1028,6 +1032,21 @@ crud_test_configs = [
         create_args={
             "source": "tests.unit.test_flavor.AriaOrchestratorFlavor",
             "component_type": StackComponentType.ORCHESTRATOR,
+        },
+    ),
+    ClientCrudTestConfig(
+        entity_name="code_repository",
+        create_args={
+            "name": sample_name("code_repository_name"),
+            "config": {},
+            "source": Source(
+                module="tests.unit.pipelines.test_build_utils",
+                attribute="StubCodeRepository",
+                type="unknown",
+            ),
+        },
+        update_args={
+            "name": sample_name("updated_code_repository_name"),
         },
     ),
 ]

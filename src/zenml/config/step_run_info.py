@@ -52,6 +52,6 @@ class StepRunInfo(StrictBaseModel):
                 "the build was manually deleted."
             )
 
-        # TODO: use property once available
-        pipeline_step_name = Client().get_run_step(self.step_run_id).name
-        return run.build.get_image(component_key=key, step=pipeline_step_name)
+        return run.build.get_image(
+            component_key=key, step=self.pipeline_step_name
+        )
