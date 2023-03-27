@@ -163,8 +163,7 @@ class SagemakerStepOperator(BaseStepOperator):
         estimator_args = settings.estimator_args
         session = sagemaker.Session(default_bucket=self.config.bucket)
 
-        if "instance_type" not in estimator_args:
-            estimator_args["instance_type"] = "ml.m5.large"
+        estimator_args.setdefault("instance_type", settings.instance_type or "ml.m5.large")
 
         estimator_args["environment"] = environment
         estimator_args["instance_count"] = 1

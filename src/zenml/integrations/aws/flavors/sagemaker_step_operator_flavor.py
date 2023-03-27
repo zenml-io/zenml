@@ -21,6 +21,7 @@ from zenml.step_operators.base_step_operator import (
     BaseStepOperatorConfig,
     BaseStepOperatorFlavor,
 )
+from zenml.utils import deprecation_utils
 
 if TYPE_CHECKING:
     from zenml.integrations.aws.step_operators import SagemakerStepOperator
@@ -50,9 +51,12 @@ class SagemakerStepOperatorSettings(BaseSettings):
             for a list of available instance types.
 
     """
+    instance_type: Optional[str] = None
     experiment_name: Optional[str] = None
     input_data_s3_uri: Optional[Union[str, Dict[str, str]]] = None
     estimator_args: Dict[str, Any] = {}
+
+    _deprecation_validator = deprecation_utils.deprecate_pydantic_attributes("instance_type")
 
 
 class SagemakerStepOperatorConfig(  # type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173
