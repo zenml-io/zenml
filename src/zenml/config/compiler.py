@@ -14,7 +14,7 @@
 """Class for compiling ZenML pipelines into a serializable format."""
 import copy
 import string
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional, Tuple
 
 from zenml.config.base_settings import BaseSettings, ConfigurationLevel
 from zenml.config.pipeline_configurations import (
@@ -36,6 +36,7 @@ if TYPE_CHECKING:
     from zenml.pipelines.new import Pipeline
     from zenml.stack import Stack, StackComponent
     from zenml.steps import BaseStep
+    from zenml.steps.base_step import StepInvocation
 
 from zenml.logger import get_logger
 
@@ -87,21 +88,18 @@ class Compiler:
 
         steps = {
             name: self._compile_step(
-                pipeline=pipeline,
                 pipeline_parameter_name=name,
-                step=step,
+                invocation=step,
                 pipeline_settings=settings_to_passdown,
                 pipeline_extra=pipeline.configuration.extra,
                 stack=stack,
                 pipeline_failure_hook_source=pipeline.configuration.failure_hook_source,
                 pipeline_success_hook_source=pipeline.configuration.success_hook_source,
             )
-            for name, step in self._get_sorted_steps(steps=pipeline.steps)
+            for name, step in self._get_sorted_steps(pipeline=pipeline)
         }
 
-        self._ensure_required_stack_components_exist(
-            stack=stack, steps=list(steps.values())
-        )
+        self._ensure_required_stack_components_exist(stack=stack, steps=steps)
 
         run_name = run_configuration.run_name or self._get_default_run_name(
             pipeline_name=pipeline.name
@@ -146,7 +144,7 @@ class Compiler:
                 step=step,
             )
             for pipeline_parameter_name, step in self._get_sorted_steps(
-                steps=pipeline.steps
+                pipeline=pipeline
             )
         ]
         pipeline_spec = PipelineSpec(steps=steps)
@@ -176,17 +174,17 @@ class Compiler:
         for step_name, step_config in config.steps.items():
             if step_name not in pipeline.steps:
                 raise KeyError(f"No step with name {step_name}.")
-            pipeline.steps[step_name]._apply_configuration(step_config)
+            pipeline.steps[step_name].step._apply_configuration(step_config)
 
         # Override `enable_cache` of all steps if set at run level
         if config.enable_cache is not None:
-            for step_ in pipeline.steps.values():
-                step_.configure(enable_cache=config.enable_cache)
+            for invocation in pipeline.steps.values():
+                invocation.step.configure(enable_cache=config.enable_cache)
 
         # Override `enable_artifact_metadata` of all steps if set at run level
         if config.enable_artifact_metadata is not None:
-            for step_ in pipeline.steps.values():
-                step_.configure(
+            for invocation in pipeline.steps.values():
+                invocation.step.configure(
                     enable_artifact_metadata=config.enable_artifact_metadata
                 )
 
@@ -262,6 +260,18 @@ class Compiler:
                 f"{valid_placeholder_names} are allowed in run names."
             )
 
+    def _verify_upstream_steps(
+        self, step: "StepInvocation", pipeline: "Pipeline"
+    ) -> None:
+        available_steps = set(pipeline.steps)
+        missing_steps = step.upstream_steps - available_steps
+
+        if missing_steps:
+            raise RuntimeError(
+                f"Invalid upstream steps: {missing_steps}. Available steps in "
+                f"this pipeline: {available_steps}."
+            )
+
     def _filter_and_validate_settings(
         self,
         settings: Dict[str, "BaseSettings"],
@@ -308,7 +318,7 @@ class Compiler:
     def _get_step_spec(
         self,
         pipeline_parameter_name: str,
-        step: "BaseStep",
+        step: "StepInvocation",
     ) -> StepSpec:
         """Gets the spec for a step.
 
@@ -320,7 +330,7 @@ class Compiler:
             The step spec.
         """
         return StepSpec(
-            source=source_utils.resolve(step.__class__),
+            source=source_utils.resolve(step.step.__class__),
             upstream_steps=sorted(step.upstream_steps),
             inputs=step.inputs,
             pipeline_parameter_name=pipeline_parameter_name,
@@ -328,9 +338,8 @@ class Compiler:
 
     def _compile_step(
         self,
-        pipeline: "Pipeline",
         pipeline_parameter_name: str,
-        step: "BaseStep",
+        invocation: "StepInvocation",
         pipeline_settings: Dict[str, "BaseSettings"],
         pipeline_extra: Dict[str, Any],
         stack: "Stack",
@@ -352,8 +361,13 @@ class Compiler:
         Returns:
             The compiled step.
         """
+        # Copy the invocation (including its referenced step) before we apply
+        # the step configuration which is exclusive to this invocation.
+        invocation = copy.deepcopy(invocation)
+
+        step = invocation.step
         step_spec = self._get_step_spec(
-            pipeline_parameter_name=pipeline_parameter_name, step=step
+            pipeline_parameter_name=pipeline_parameter_name, step=invocation
         )
         step_settings = self._filter_and_validate_settings(
             settings=step.configuration.settings,
@@ -379,26 +393,7 @@ class Compiler:
             merge=True,
         )
 
-        input_artifacts = {}
-        for key, value in step.inputs.items():
-            from zenml.steps import BaseStep
-
-            upstream_step = pipeline.steps[value.step_name]
-            materializer_source = upstream_step.configuration.outputs[
-                value.output_name
-            ].materializer_source
-            assert materializer_source
-            input_artifacts[key] = BaseStep._OutputArtifact(
-                name=value.output_name,
-                step_name=value.step_name,
-                pipeline=pipeline,
-                materializer_source=materializer_source,
-            )
-
-        complete_step_configuration = step._finalize_configuration(
-            input_artifacts=input_artifacts
-        )
-
+        complete_step_configuration = invocation.finalize()
         return Step(spec=step_spec, config=complete_step_configuration)
 
     @staticmethod
@@ -413,10 +408,10 @@ class Compiler:
         """
         return f"{pipeline_name}-{{date}}-{{time}}"
 
-    @staticmethod
     def _get_sorted_steps(
-        steps: Dict[str, "BaseStep"]
-    ) -> List[Tuple[str, "BaseStep"]]:
+        self,
+        pipeline: "Pipeline",
+    ) -> List[Tuple[str, "StepInvocation"]]:
         """Sorts the steps of a pipeline using topological sort.
 
         The resulting list of steps will be in an order that can be executed
@@ -432,9 +427,11 @@ class Compiler:
         from zenml.orchestrators.topsort import topsorted_layers
 
         # Sort step names using topological sort
-        dag: Dict[str, List[str]] = {
-            name: list(step.upstream_steps) for name, step in steps.items()
-        }
+        dag: Dict[str, List[str]] = {}
+        for name, step in pipeline.steps.items():
+            self._verify_upstream_steps(step=step, pipeline=pipeline)
+            dag[name] = list(step.upstream_steps)
+
         reversed_dag: Dict[str, List[str]] = reverse_dag(dag)
         layers = topsorted_layers(
             nodes=list(dag),
@@ -444,14 +441,14 @@ class Compiler:
         )
         sorted_step_names = [step for layer in layers for step in layer]
         sorted_steps: List[Tuple[str, "BaseStep"]] = [
-            (name_in_pipeline, steps[name_in_pipeline])
+            (name_in_pipeline, pipeline.steps[name_in_pipeline])
             for name_in_pipeline in sorted_step_names
         ]
         return sorted_steps
 
     @staticmethod
     def _ensure_required_stack_components_exist(
-        stack: "Stack", steps: Sequence["Step"]
+        stack: "Stack", steps: Mapping[str, "Step"]
     ) -> None:
         """Ensures that the stack components required for each step exist.
 
@@ -471,11 +468,11 @@ class Compiler:
             else set()
         )
 
-        for step in steps:
+        for name, step in steps.items():
             step_operator = step.config.step_operator
             if step_operator and step_operator not in available_step_operators:
                 raise StackValidationError(
-                    f"Step '{step.config.name}' requires step operator "
+                    f"Step '{name}' requires step operator "
                     f"'{step_operator}' which is not configured in "
                     f"the stack '{stack.name}'. Available step operators: "
                     f"{available_step_operators}."
@@ -487,7 +484,7 @@ class Compiler:
                 and experiment_tracker not in available_experiment_trackers
             ):
                 raise StackValidationError(
-                    f"Step '{step.config.name}' requires experiment tracker "
+                    f"Step '{name}' requires experiment tracker "
                     f"'{experiment_tracker}' which is not "
                     f"configured in the stack '{stack.name}'. Available "
                     f"experiment trackers: {available_experiment_trackers}."

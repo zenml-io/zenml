@@ -407,7 +407,7 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
                 # class directly is deprecated when using the Kubeflow SDK v2.
                 container_op = kfp.components.load_component_from_text(
                     f"""
-                    name: {step.config.name}
+                    name: {step_name}
                     implementation:
                         container:
                             image: {image}
@@ -446,7 +446,7 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
                 )
                 container_op.set_caching_options(enable_caching=False)
 
-                step_name_to_container_op[step.config.name] = container_op
+                step_name_to_container_op[step_name] = container_op
 
         # Save the generated pipeline to a file.
         fileio.makedirs(self.pipeline_directory)

@@ -28,7 +28,7 @@ from zenml.exceptions import PipelineInterfaceError
 from zenml.logger import get_logger
 from zenml.pipelines.new.pipeline import Pipeline
 from zenml.steps import BaseStep
-from zenml.steps.base_step import BaseStepMeta
+from zenml.steps.base_step import StepInvocation
 
 if TYPE_CHECKING:
     StepConfigurationUpdateOrDict = Union[
@@ -72,12 +72,12 @@ class PipelineTemplate(Pipeline, ABC):
 
     def add_step(
         self,
-        step: "BaseStep",
+        step: "StepInvocation",
         custom_name: Optional[str] = None,
         allow_suffix: bool = True,
     ) -> str:
         if not custom_name:
-            custom_name = getattr(step, "_template_name", None)
+            custom_name = getattr(step.step, "_template_name", None)
             allow_suffix = True
 
         return super().add_step(
@@ -104,7 +104,9 @@ class PipelineTemplate(Pipeline, ABC):
         for key, potential_step in bound_args.arguments.items():
             step_class = type(potential_step)
 
-            if isinstance(potential_step, BaseStepMeta):
+            if inspect.isclass(potential_step) and issubclass(
+                potential_step, BaseStep
+            ):
                 raise PipelineInterfaceError(
                     f"Wrong argument type (`{step_class}`) for argument "
                     f"'{key}' of pipeline '{self.name}'. "

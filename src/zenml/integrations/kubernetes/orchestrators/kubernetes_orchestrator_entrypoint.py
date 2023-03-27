@@ -69,15 +69,10 @@ def main() -> None:
 
     deployment_config = Client().get_deployment(args.deployment_id)
 
-    pipeline_dag = {}
-    step_name_to_pipeline_step_name = {}
-    for (
-        name_in_pipeline,
-        step,
-    ) in deployment_config.step_configurations.items():
-        step_name_to_pipeline_step_name[step.config.name] = name_in_pipeline
-        pipeline_dag[step.config.name] = step.spec.upstream_steps
-
+    pipeline_dag = {
+        step_name: step.spec.upstream_steps
+        for step_name, step in deployment_config.step_configurations.items()
+    }
     step_command = StepEntrypointConfiguration.get_entrypoint_command()
 
     active_stack = Client().active_stack
@@ -93,17 +88,14 @@ def main() -> None:
         pod_name = f"{orchestrator_run_id}-{step_name}"
         pod_name = kube_utils.sanitize_pod_name(pod_name)
 
-        pipeline_step_name = step_name_to_pipeline_step_name[step_name]
         image = KubernetesOrchestrator.get_image(
-            deployment=deployment_config, step_name=pipeline_step_name
+            deployment=deployment_config, step_name=step_name
         )
         step_args = StepEntrypointConfiguration.get_entrypoint_arguments(
-            step_name=pipeline_step_name, deployment_id=deployment_config.id
+            step_name=step_name, deployment_id=deployment_config.id
         )
 
-        step_config = deployment_config.step_configurations[
-            pipeline_step_name
-        ].config
+        step_config = deployment_config.step_configurations[step_name].config
         settings = KubernetesOrchestratorSettings.parse_obj(
             step_config.settings.get("orchestrator.kubernetes", {})
         )

@@ -198,7 +198,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
             )
 
             sagemaker_step = ProcessingStep(
-                name=step.config.name,
+                name=step_name,
                 processor=processor,
                 depends_on=step.spec.upstream_steps,
             )

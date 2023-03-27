@@ -477,7 +477,7 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
                 # out more about how these arguments are parsed and used
                 # in the base entrypoint `run()` method.
                 container_op = dsl.ContainerOp(
-                    name=step.config.name,
+                    name=step_name,
                     image=image,
                     command=command,
                     arguments=arguments,
@@ -514,7 +514,7 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
                     container_op.after(upstream_container_op)
 
                 # Update dictionary of container ops with the current one
-                step_name_to_container_op[step.config.name] = container_op
+                step_name_to_container_op[step_name] = container_op
 
         orchestrator_run_name = get_orchestrator_run_name(
             pipeline_name=deployment.pipeline_configuration.name

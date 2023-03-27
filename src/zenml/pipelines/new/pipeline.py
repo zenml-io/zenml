@@ -66,6 +66,7 @@ from zenml.models.pipeline_deployment_models import PipelineDeploymentBaseModel
 from zenml.pipelines import build_utils
 from zenml.stack import Stack
 from zenml.steps import BaseStep
+from zenml.steps.base_step import StepInvocation
 from zenml.utils import (
     dashboard_utils,
     dict_utils,
@@ -145,7 +146,7 @@ class Pipeline:
         return self._configuration
 
     @property
-    def steps(self) -> Dict[str, BaseStep]:
+    def steps(self) -> Dict[str, StepInvocation]:
         """Returns a dictionary of pipeline steps.
 
         Returns:
@@ -584,7 +585,8 @@ class Pipeline:
                 step_settings[key] = fields
 
         steps = {}
-        for step_name, step in self.steps.items():
+        for step_name, invocation in self.steps.items():
+            step = invocation.step
             parameters = (
                 pydantic_utils.TemplateGenerator(step.PARAMETERS_CLASS).run()
                 if step.PARAMETERS_CLASS
@@ -901,9 +903,8 @@ class Pipeline:
         hash_.update(pipeline_spec.json_with_string_sources.encode())
 
         for step_spec in pipeline_spec.steps:
-            step_source = self.steps[
-                step_spec.pipeline_parameter_name
-            ].source_code
+            invocation = self.steps[step_spec.pipeline_parameter_name]
+            step_source = invocation.step.source_code
             hash_.update(step_source.encode())
 
         return hash_.hexdigest()
@@ -946,7 +947,7 @@ class Pipeline:
 
     def add_step(
         self,
-        step: "BaseStep",
+        step: "StepInvocation",
         custom_name: Optional[str] = None,
         allow_suffix: bool = True,
     ) -> str:
@@ -955,7 +956,7 @@ class Pipeline:
                 "Add_step can only be called on an active pipeline."
             )
 
-        base_name = custom_name or step.name
+        base_name = custom_name or step.step.name
 
         if base_name in self.steps and not allow_suffix:
             raise RuntimeError("Duplicate step name")

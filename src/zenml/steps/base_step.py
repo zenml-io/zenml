@@ -294,7 +294,6 @@ class BaseStep(metaclass=BaseStepMeta):
             *args: Positional arguments passed to the step.
             **kwargs: Keyword arguments passed to the step.
         """
-        self._has_been_called = False
         self._upstream_steps: Set[str] = set()
         self._inputs: Dict[str, InputSpec] = {}
 
@@ -419,27 +418,6 @@ class BaseStep(metaclass=BaseStepMeta):
                 started.
         """
         self._upstream_steps.add(step.name)
-
-    @property
-    def inputs(self) -> Dict[str, InputSpec]:
-        """Step input specifications.
-
-        This depends on the upstream steps in a pipeline and can therefore
-        only be accessed once the step has been called in a pipeline.
-
-        Raises:
-            RuntimeError: If this property is accessed before the step was
-                called in a pipeline.
-
-        Returns:
-            The step input specifications.
-        """
-        if not self._has_been_called:
-            raise RuntimeError(
-                "Step inputs can only be accessed once a step has been called "
-                "inside a pipeline."
-            )
-        return self._inputs
 
     @property
     def source_object(self) -> Any:
@@ -646,35 +624,24 @@ class BaseStep(metaclass=BaseStepMeta):
             # we simply call the entrypoint
             return self.entrypoint(*args, **kwargs)
 
-        # TODO: Correctly handle duplicate calls in pipeline templates, maybe
-        # we need to copy the step instance somehow?
-        self._has_been_called = True
-
         input_artifacts, parameters = self._parse_call_args(*args, **kwargs)
 
-        # TODO: In templated pipelines, this should only be applied to the
-        # "called" step, not all calls of the step
-        self.configure(parameters=parameters)
+        upstream_steps = {
+            artifact.step_name for artifact in input_artifacts.values()
+        }
+        if isinstance(after, str):
+            upstream_steps.add(after)
+        elif isinstance(after, Sequence):
+            upstream_steps.union(after)
 
-        if after:
-            if isinstance(after, str):
-                after = (after,)
+        invocation = StepInvocation(
+            step=self,
+            input_artifacts=input_artifacts,
+            parameters=parameters,
+            upstream_steps=upstream_steps,
+        )
 
-            for step_id in after:
-                # TODO: Should we delay this check until compilation?
-                if step_id not in Pipeline.ACTIVE_PIPELINE.steps:
-                    raise ValueError(f"Step {step_id} doesn't exist.")
-
-                self._upstream_steps.add(step_id)
-
-        for name, input_ in input_artifacts.items():
-            self._upstream_steps.add(input_.step_name)
-            self._inputs[name] = InputSpec(
-                step_name=input_.step_name,
-                output_name=input_.name,
-            )
-
-        step_id = Pipeline.ACTIVE_PIPELINE.add_step(self, custom_name=id)
+        step_id = Pipeline.ACTIVE_PIPELINE.add_step(invocation, custom_name=id)
 
         outputs = []
         for key in self.OUTPUT_SIGNATURE:
@@ -1023,7 +990,8 @@ class BaseStep(metaclass=BaseStepMeta):
         inputs = {}
         for input_name, artifact in input_artifacts.items():
             inputs[input_name] = ArtifactConfiguration(
-                materializer_source=artifact.materializer_source,
+                materializer_source=artifact.materializer_source
+                or "module.class",  # TODO: remove or correct
             )
         self._validate_inputs(inputs)
 
@@ -1123,3 +1091,36 @@ def is_json_serializable(obj: Any) -> bool:
         return True
     except TypeError:
         return False
+
+
+class StepInvocation:
+    def __init__(
+        self,
+        step: "BaseStep",
+        input_artifacts: Dict[str, BaseStep._OutputArtifact],
+        parameters: Dict[str, Any],
+        upstream_steps: Sequence[str],
+    ) -> None:
+        self.step = step
+        self.input_artifacts = input_artifacts
+        self.parameters = parameters
+        self._upstream_steps = upstream_steps
+
+    def finalize(self) -> StepConfiguration:
+        self.step.configure(parameters=self.parameters)
+        return self.step._finalize_configuration(
+            input_artifacts=self.input_artifacts
+        )
+
+    @property
+    def upstream_steps(self) -> Set[str]:
+        return self.step.upstream_steps.union(self._upstream_steps)
+
+    @property
+    def inputs(self) -> Dict[str, InputSpec]:
+        return {
+            key: InputSpec(
+                step_name=artifact.step_name, output_name=artifact.name
+            )
+            for key, artifact in self.input_artifacts.items()
+        }

@@ -411,7 +411,7 @@ class StepRunner:
             StepInterfaceError: If the step function return values do not
                 match the output annotations.
         """
-        step_name = self.configuration.name
+        step_name = self._step.spec.pipeline_parameter_name
 
         # if there are no outputs, the return value must be `None`.
         if len(output_annotations) == 0:
@@ -515,8 +515,8 @@ class StepRunner:
                 except Exception as e:
                     logger.warning(
                         f"Failed to extract metadata for output artifact "
-                        f"'{output_name}' of step '{self.configuration.name}': "
-                        f"{e}"
+                        f"'{output_name}' of step "
+                        f"'{self._step.spec.pipeline_parameter_name}': {e}"
                     )
             output_artifact = ArtifactRequestModel(
                 name=output_name,
