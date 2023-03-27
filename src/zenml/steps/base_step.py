@@ -294,6 +294,7 @@ class BaseStep(metaclass=BaseStepMeta):
 
         name: str
         step_name: str
+        materializer_source: Optional[str] = None
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         """Initializes a step.
@@ -633,7 +634,9 @@ class BaseStep(metaclass=BaseStepMeta):
 
         return artifacts, parameters
 
-    def __call__(self, *args: Any, **kwargs: Any) -> Any:
+    def __call__(
+        self, *args: Any, id: Optional[str] = None, **kwargs: Any
+    ) -> Any:
         """Finalizes the step input and output configuration.
 
         Args:
@@ -669,8 +672,7 @@ class BaseStep(metaclass=BaseStepMeta):
                 output_name=input_.name,
             )
 
-        # TODO: add option for custom name here
-        step_id = Pipeline.ACTIVE_PIPELINE.add_step(self)
+        step_id = Pipeline.ACTIVE_PIPELINE.add_step(self, custom_name=id)
 
         returns = []
         for key in self.OUTPUT_SIGNATURE:

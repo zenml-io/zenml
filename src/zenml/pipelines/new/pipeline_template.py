@@ -70,6 +70,22 @@ class PipelineTemplate(Pipeline, ABC):
     def connect(self, *args: BaseStep, **kwargs: BaseStep) -> None:
         raise NotImplementedError
 
+    def add_step(
+        self,
+        step: "BaseStep",
+        custom_name: Optional[str] = None,
+        allow_suffix: bool = True,
+    ) -> str:
+        if not custom_name:
+            custom_name = getattr(step, "_template_name", None)
+            allow_suffix = True
+
+        return super().add_step(
+            step=step,
+            custom_name=custom_name,
+            allow_suffix=allow_suffix,
+        )
+
     def _verify_steps(
         self, *args: Any, **kwargs: Any
     ) -> Dict[str, "BaseStep"]:
@@ -126,16 +142,3 @@ class PipelineTemplate(Pipeline, ABC):
             setattr(potential_step, "_template_name", key)
 
         return steps
-
-    def add_step(
-        self,
-        step: "BaseStep",
-        custom_name: Optional[str] = None,
-        allow_suffix: bool = True,
-    ) -> str:
-        assert not custom_name
-        return super().add_step(
-            step=step,
-            custom_name=getattr(step, "_template_name", None),
-            allow_suffix=True,
-        )

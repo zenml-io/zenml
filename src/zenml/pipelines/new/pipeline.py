@@ -43,7 +43,6 @@ from zenml.config.pipeline_configurations import (
     PipelineConfiguration,
     PipelineConfigurationUpdate,
     PipelineRunConfiguration,
-    PipelineSpec,
 )
 from zenml.config.pipeline_spec import PipelineSpec
 from zenml.config.schedule import Schedule
@@ -229,14 +228,14 @@ class Pipeline:
                 this pipeline.
             settings: settings for this pipeline.
             extra: Extra configurations for this pipeline.
-            on_failure: Callback function in event of failure of the step. Can be
-                a function with three possible parameters, `StepContext`,
+            on_failure: Callback function in event of failure of the step. Can
+                be a function with three possible parameters, `StepContext`,
                 `BaseParameters`, and `BaseException`, or a source path to a
-                function of the same specifications (e.g. `module.my_function`)
-            on_success: Callback function in event of failure of the step. Can be
-                a function with two possible parameters, `StepContext` and `BaseParameters, or
-                a source path to a function of the same specifications
-                (e.g. `module.my_function`).
+                function of the same specifications (e.g. `module.my_function`).
+            on_success: Callback function in event of failure of the step. Can
+                be a function with two possible parameters, `StepContext` and
+                `BaseParameters, or a source path to a function of the same
+                specifications (e.g. `module.my_function`).
             merge: If `True`, will merge the given dictionary configurations
                 like `extra` and `settings` with existing
                 configurations. If `False` the given configurations will
