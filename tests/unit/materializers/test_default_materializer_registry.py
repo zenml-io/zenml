@@ -84,9 +84,12 @@ def test_materializer_with_parameter_with_more_than_one_conflicting_baseclass():
 
     # The step uses the materializer registered for the earliest class in the
     # python MRO
-    assert step_instance.configuration.outputs[
-        "output"
-    ].materializer_source.endswith("MyFirstMaterializer")
+    assert (
+        step_instance.configuration.outputs[
+            "output"
+        ].materializer_source.attribute
+        == "MyFirstMaterializer"
+    )
 
 
 def test_materializer_with_conflicting_parameter_and_explicit_materializer():

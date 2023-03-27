@@ -65,7 +65,10 @@ class WhylogsVisualizer(BaseVisualizer):
             whylogs_artifact_datatype = f"{DatasetProfileView.__module__}.{DatasetProfileView.__name__}"
             for _, artifact_view in step_view.outputs.items():
                 # filter out anything but whylogs dataset profile artifacts
-                if artifact_view.data_type == whylogs_artifact_datatype:
+                if (
+                    artifact_view.data_type.import_path
+                    == whylogs_artifact_datatype
+                ):
                     profile = artifact_view.read()
                     return cast(DatasetProfileView, profile)
             return None

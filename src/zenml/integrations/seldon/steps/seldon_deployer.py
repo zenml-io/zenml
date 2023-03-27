@@ -48,9 +48,8 @@ from zenml.steps import (
     step,
 )
 from zenml.steps.step_context import StepContext
-from zenml.utils import io_utils
+from zenml.utils import io_utils, source_utils
 from zenml.utils.materializer_utils import save_model_metadata
-from zenml.utils.source_utils import import_class_by_path
 
 logger = get_logger(__name__)
 
@@ -86,7 +85,7 @@ class CustomDeployParameters(BaseModel):
             TypeError: if predict function path is not a callable function
         """
         try:
-            predict_function = import_class_by_path(predict_func_path)
+            predict_function = source_utils.load(predict_func_path)
         except AttributeError:
             raise ValueError("Predict function can't be found.")
         if not callable(predict_function):

@@ -17,8 +17,11 @@
 from typing import TYPE_CHECKING, List, Optional
 from uuid import UUID
 
-from sqlmodel import Relationship
+from pydantic import ValidationError
+from sqlalchemy import TEXT, Column
+from sqlmodel import Field, Relationship
 
+from zenml.config.source import Source
 from zenml.enums import ArtifactType
 from zenml.models import ArtifactRequestModel, ArtifactResponseModel
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
@@ -71,8 +74,8 @@ class ArtifactSchema(NamedSchema, table=True):
 
     type: ArtifactType
     uri: str
-    materializer: str
-    data_type: str
+    materializer: str = Field(sa_column=Column(TEXT, nullable=False))
+    data_type: str = Field(sa_column=Column(TEXT, nullable=False))
 
     run_metadata: List["RunMetadataSchema"] = Relationship(
         back_populates="artifact",
@@ -106,8 +109,8 @@ class ArtifactSchema(NamedSchema, table=True):
             user_id=artifact_request.user,
             type=artifact_request.type,
             uri=artifact_request.uri,
-            materializer=artifact_request.materializer,
-            data_type=artifact_request.data_type,
+            materializer=artifact_request.materializer.json(),
+            data_type=artifact_request.data_type.json(),
         )
 
     def to_model(
@@ -126,6 +129,19 @@ class ArtifactSchema(NamedSchema, table=True):
             metadata_schema.key: metadata_schema.to_model()
             for metadata_schema in self.run_metadata
         }
+
+        try:
+            materializer = Source.parse_raw(self.materializer)
+        except ValidationError:
+            # This is an old source which was simply an importable source path
+            materializer = Source.from_import_path(self.materializer)
+
+        try:
+            data_type = Source.parse_raw(self.data_type)
+        except ValidationError:
+            # This is an old source which was simply an importable source path
+            data_type = Source.from_import_path(self.data_type)
+
         return ArtifactResponseModel(
             id=self.id,
             name=self.name,
@@ -134,8 +150,8 @@ class ArtifactSchema(NamedSchema, table=True):
             workspace=self.workspace.to_model(),
             type=self.type,
             uri=self.uri,
-            materializer=self.materializer,
-            data_type=self.data_type,
+            materializer=materializer,
+            data_type=data_type,
             created=self.created,
             updated=self.updated,
             producer_step_run_id=producer_step_run_id,

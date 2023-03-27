@@ -87,7 +87,7 @@ class LineageGraph(BaseModel):
                         status=step.status,
                         is_cached=step.status == ExecutionStatus.CACHED,
                         artifact_type=artifact.type,
-                        artifact_data_type=artifact.data_type,
+                        artifact_data_type=artifact.data_type.import_path,
                         parent_step_id=str(step.id),
                         producer_step_id=str(artifact.producer_step_run_id),
                         uri=artifact.uri,
