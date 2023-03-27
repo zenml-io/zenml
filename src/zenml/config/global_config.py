@@ -140,9 +140,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         _config_path: Directory where the global config file is stored.
     """
 
-    user_id: uuid.UUID = Field(
-        default_factory=uuid.uuid4, allow_mutation=False
-    )
+    user_id: uuid.UUID = Field(default_factory=uuid.uuid4)
     user_email: Optional[str] = None
     user_email_opt_in: Optional[bool] = None
     analytics_opt_in: bool = True
@@ -392,31 +390,43 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         """
         from zenml.zen_stores.base_zen_store import BaseZenStore
 
-        store = BaseZenStore.create_store(
-            config, skip_default_registrations, **kwargs
-        )
-        if self.store != store.config or not self._zen_store:
-            logger.debug(f"Configuring the global store to {store.config}")
-            self.store = store.config
+        if self.store == config and self._zen_store:
+            # TODO: Do we actually need to create/initialize the store here
+            #   or can we just return instead? We think this is just getting
+            #   called for default registrations.
+            BaseZenStore.create_store(
+                config, skip_default_registrations, **kwargs
+            )
+            return
 
-            # We want to check if the active user has opted in or out for using
-            # an email address for marketing purposes and if so, record it in
-            # the analytics.
-            active_user = store.get_user(include_private=True)
-            if active_user.email_opted_in is not None:
-                self.record_email_opt_in_out(
-                    opted_in=active_user.email_opted_in,
-                    email=active_user.email,
-                    source=AnalyticsEventSource.ZENML_SERVER,
-                )
-            self._zen_store = store
+        # TODO: Revisit the flow regarding the registration of the default
+        #  entities once the analytics v1 is removed.
+        store = BaseZenStore.create_store(config, True, **kwargs)
 
-            # Sanitize the global configuration to reflect the new store
-            self._sanitize_config()
-            self._write_config()
+        logger.debug(f"Configuring the global store to {store.config}")
+        self.store = store.config
+        self._zen_store = store
 
-            local_stores_path = Path(self.local_stores_path)
-            local_stores_path.mkdir(parents=True, exist_ok=True)
+        if not skip_default_registrations:
+            store._initialize_database()
+
+        # We want to check if the active user has opted in or out for using
+        # an email address for marketing purposes and if so, record it in
+        # the analytics.
+        active_user = store.get_user(include_private=True)
+        if active_user.email_opted_in is not None:
+            self.record_email_opt_in_out(
+                opted_in=active_user.email_opted_in,
+                email=active_user.email,
+                source=AnalyticsEventSource.ZENML_SERVER,
+            )
+
+        # Sanitize the global configuration to reflect the new store
+        self._sanitize_config()
+        self._write_config()
+
+        local_stores_path = Path(self.local_stores_path)
+        local_stores_path.mkdir(parents=True, exist_ok=True)
 
     def _sanitize_config(self) -> None:
         """Sanitize and save the global configuration.
@@ -612,7 +622,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         ) as analytics_handler:
             default_store_cfg = self.get_default_store()
             self._configure_store(default_store_cfg)
-            logger.info("Using the default store for the global config.")
+            logger.debug("Using the default store for the global config.")
             analytics_handler.metadata = {
                 "store_type": default_store_cfg.type.value
             }
@@ -666,7 +676,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
 
                     identify_group(
                         AnalyticsGroup.ZENML_SERVER_GROUP,
-                        group_id=str(server_info.id),
+                        group_id=server_info.id,
                         group_metadata={
                             "version": server_info.version,
                             "deployment_type": str(
@@ -674,6 +684,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
                             ),
                             "database_type": str(server_info.database_type),
                         },
+                        v2=True,
                     )
 
     @property
@@ -782,10 +793,8 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         # been changed, we also want to update the information.
         if opted_in and email and self.user_email != email:
             identify_user(
-                {
-                    "email": email,
-                    "source": source,
-                }
+                user_metadata={"email": email, "source": source},
+                v2=True,
             )
             self.user_email = email
 
@@ -801,6 +810,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
             track_event(
                 AnalyticsEvent.OPT_IN_OUT_EMAIL,
                 {"opted_in": opted_in, "source": source},
+                v2=True,
             )
 
             self.user_email_opt_in = opted_in

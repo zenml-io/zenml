@@ -396,7 +396,7 @@ class AWSSecretsStore(BaseSecretsStore):
                 f"after {self.config.secret_list_refresh_timeout} seconds. "
             )
 
-    @track(AnalyticsEvent.CREATED_SECRET)
+    @track(AnalyticsEvent.CREATED_SECRET, v2=True)
     def create_secret(self, secret: SecretRequestModel) -> SecretResponseModel:
         """Creates a new secret.
 

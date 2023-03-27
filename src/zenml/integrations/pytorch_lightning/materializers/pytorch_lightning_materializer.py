@@ -14,11 +14,13 @@
 """Implementation of the PyTorch Lightning Materializer."""
 
 import os
-from typing import Any, Type
+from typing import Any, Type, cast
 
-from pytorch_lightning.trainer import Trainer
+import torch
+from torch.nn import Module
 
 from zenml.enums import ArtifactType
+from zenml.io import fileio
 from zenml.materializers.base_materializer import BaseMaterializer
 
 CHECKPOINT_NAME = "final_checkpoint.ckpt"
@@ -27,28 +29,28 @@ CHECKPOINT_NAME = "final_checkpoint.ckpt"
 class PyTorchLightningMaterializer(BaseMaterializer):
     """Materializer to read/write PyTorch models."""
 
-    ASSOCIATED_TYPES = (Trainer,)
+    ASSOCIATED_TYPES = (Module,)
     ASSOCIATED_ARTIFACT_TYPE = ArtifactType.MODEL
 
-    def load(self, data_type: Type[Any]) -> Trainer:
-        """Reads and returns a PyTorch Lightning trainer.
+    def load(self, data_type: Type[Any]) -> Module:
+        """Reads and returns a PyTorch Lightning model.
 
         Args:
-            data_type: The type of the trainer to load.
+            data_type: The type of the model to load.
 
         Returns:
-            A PyTorch Lightning trainer object.
+            A PyTorch Lightning model object.
         """
         super().load(data_type)
-        return Trainer(
-            resume_from_checkpoint=os.path.join(self.uri, CHECKPOINT_NAME)
-        )
+        with fileio.open(os.path.join(self.uri, CHECKPOINT_NAME), "rb") as f:
+            return cast(Module, torch.load(f))
 
-    def save(self, trainer: Trainer) -> None:
-        """Writes a PyTorch Lightning trainer.
+    def save(self, model: Module) -> None:
+        """Writes a PyTorch Lightning model.
 
         Args:
-            trainer: A PyTorch Lightning trainer object.
+            model: The PyTorch Lightning model to save.
         """
-        super().save(trainer)
-        trainer.save_checkpoint(os.path.join(self.uri, CHECKPOINT_NAME))
+        super().save(model)
+        with fileio.open(os.path.join(self.uri, CHECKPOINT_NAME), "wb") as f:
+            torch.save(model, f)

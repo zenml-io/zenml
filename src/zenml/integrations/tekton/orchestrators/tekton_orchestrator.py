@@ -297,6 +297,7 @@ class TektonOrchestrator(ContainerizedOrchestrator):
         self,
         deployment: "PipelineDeploymentResponseModel",
         stack: "Stack",
+        environment: Dict[str, str],
     ) -> Any:
         """Runs the pipeline on Tekton.
 
@@ -306,6 +307,8 @@ class TektonOrchestrator(ContainerizedOrchestrator):
         Args:
             deployment: The pipeline deployment to prepare or run.
             stack: The stack the pipeline will run on.
+            environment: Environment variables to set in the orchestration
+                environment.
 
         Raises:
             RuntimeError: If you try to run the pipelines in a notebook environment.
@@ -377,6 +380,14 @@ class TektonOrchestrator(ContainerizedOrchestrator):
                         value="$(context.pipelineRun.name)",
                     )
                 )
+
+                for key, value in environment.items():
+                    container_op.container.add_env_variable(
+                        k8s_client.V1EnvVar(
+                            name=key,
+                            value=value,
+                        )
+                    )
 
                 if self.requires_resources_in_orchestration_environment(step):
                     self._configure_container_resources(

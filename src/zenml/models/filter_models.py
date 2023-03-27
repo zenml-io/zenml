@@ -519,7 +519,10 @@ class BaseFilterModel(BaseModel):
         Returns:
             True if the field is a datetime field, False otherwise.
         """
-        return issubclass(datetime, get_args(cls.__fields__[k].type_))
+        return (
+            issubclass(datetime, get_args(cls.__fields__[k].type_))
+            or cls.__fields__[k].type_ is datetime
+        )
 
     @classmethod
     def is_uuid_field(cls, k: str) -> bool:
@@ -531,7 +534,10 @@ class BaseFilterModel(BaseModel):
         Returns:
             True if the field is a uuid field, False otherwise.
         """
-        return issubclass(UUID, get_args(cls.__fields__[k].type_))
+        return (
+            issubclass(UUID, get_args(cls.__fields__[k].type_))
+            or cls.__fields__[k].type_ is UUID
+        )
 
     @classmethod
     def is_int_field(cls, k: str) -> bool:
@@ -543,7 +549,10 @@ class BaseFilterModel(BaseModel):
         Returns:
             True if the field is a int field, False otherwise.
         """
-        return issubclass(int, get_args(cls.__fields__[k].type_))
+        return (
+            issubclass(int, get_args(cls.__fields__[k].type_))
+            or cls.__fields__[k].type_ is int
+        )
 
     @classmethod
     def is_bool_field(cls, k: str) -> bool:
@@ -555,7 +564,10 @@ class BaseFilterModel(BaseModel):
         Returns:
             True if the field is a bool field, False otherwise.
         """
-        return issubclass(bool, get_args(cls.__fields__[k].type_))
+        return (
+            issubclass(bool, get_args(cls.__fields__[k].type_))
+            or cls.__fields__[k].type_ is bool
+        )
 
     @classmethod
     def is_str_field(cls, k: str) -> bool:
@@ -569,7 +581,7 @@ class BaseFilterModel(BaseModel):
         """
         return (
             issubclass(str, get_args(cls.__fields__[k].type_))
-            or cls.__fields__[k].type_ == str
+            or cls.__fields__[k].type_ is str
         )
 
     @classmethod

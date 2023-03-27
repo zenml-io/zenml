@@ -32,6 +32,7 @@ class ServerDeploymentType(StrEnum):
     AZURE = "azure"
     ALPHA = "alpha"
     OTHER = "other"
+    HF_SPACES = "hf_spaces"
 
 
 class ServerDatabaseType(StrEnum):

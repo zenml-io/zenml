@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+from contextlib import ExitStack as does_not_raise
 from uuid import UUID
 
 import pytest
@@ -56,9 +57,9 @@ def test_artifact_base_model_fails_with_long_uri():
         )
 
 
-def test_artifact_base_model_fails_with_long_materializer():
-    """Test that the artifact base model fails with long materializer strings."""
-    with pytest.raises(ValidationError):
+def test_artifact_base_model_works_with_long_materializer():
+    """Test that the artifact base model works with long materializer strings."""
+    with does_not_raise():
         long_materializer = "a" * (STR_FIELD_MAX_LENGTH + 1)
         ArtifactBaseModel(
             name="abc",
@@ -72,9 +73,9 @@ def test_artifact_base_model_fails_with_long_materializer():
         )
 
 
-def test_artifact_base_model_fails_with_long_data_type():
-    """Test that the artifact base model fails with long data type strings."""
-    with pytest.raises(ValidationError):
+def test_artifact_base_model_works_with_long_data_type():
+    """Test that the artifact base model works with long data type strings."""
+    with does_not_raise():
         long_data_type = "a" * (STR_FIELD_MAX_LENGTH + 1)
         ArtifactBaseModel(
             name="abc",

@@ -18,6 +18,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field
 
+from zenml.config.source import Source, convert_source_validator
 from zenml.enums import ArtifactType
 from zenml.models.base_models import (
     WorkspaceScopedRequestModel,
@@ -46,14 +47,14 @@ class ArtifactBaseModel(BaseModel):
     uri: str = Field(
         title="URI of the artifact.", max_length=STR_FIELD_MAX_LENGTH
     )
-    materializer: str = Field(
+    materializer: Source = Field(
         title="Materializer class to use for this artifact.",
-        max_length=STR_FIELD_MAX_LENGTH,
     )
-    data_type: str = Field(
+    data_type: Source = Field(
         title="Data type of the artifact.",
-        max_length=STR_FIELD_MAX_LENGTH,
     )
+
+    _convert_source = convert_source_validator("materializer", "data_type")
 
 
 # -------- #

@@ -421,6 +421,7 @@ class StepLauncher:
                 step_run_id=str(step_run_info.step_run_id),
             )
         )
+        environment = orchestrator_utils.get_config_environment_vars()
         logger.info(
             "Using step operator `%s` to run step `%s`.",
             step_operator.name,
@@ -429,6 +430,7 @@ class StepLauncher:
         step_operator.launch(
             info=step_run_info,
             entrypoint_command=entrypoint_command,
+            environment=environment,
         )
 
     def _run_step_without_step_operator(

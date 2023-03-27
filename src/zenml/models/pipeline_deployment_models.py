@@ -18,6 +18,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field
 
+from zenml.config.docker_settings import SourceFileMode
 from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.step_configurations import Step
 from zenml.models.base_models import (
@@ -28,6 +29,8 @@ from zenml.models.filter_models import WorkspaceScopedFilterModel
 
 if TYPE_CHECKING:
     from zenml.models import (
+        CodeReferenceRequestModel,
+        CodeReferenceResponseModel,
         PipelineBuildResponseModel,
         PipelineResponseModel,
         ScheduleResponseModel,
@@ -55,6 +58,30 @@ class PipelineDeploymentBaseModel(BaseModel):
         default={}, title="The client environment for this deployment."
     )
 
+    @property
+    def requires_included_files(self) -> bool:
+        """Whether the deployment requires included files.
+
+        Returns:
+            Whether the deployment requires included files.
+        """
+        return any(
+            step.config.docker_settings.source_files == SourceFileMode.INCLUDE
+            for step in self.step_configurations.values()
+        )
+
+    @property
+    def requires_code_download(self) -> bool:
+        """Whether the deployment requires downloading some code files.
+
+        Returns:
+            Whether the deployment requires downloading some code files.
+        """
+        return any(
+            step.config.docker_settings.source_files == SourceFileMode.DOWNLOAD
+            for step in self.step_configurations.values()
+        )
+
 
 # -------- #
 # RESPONSE #
@@ -77,6 +104,9 @@ class PipelineDeploymentResponseModel(
     )
     schedule: Optional["ScheduleResponseModel"] = Field(
         title="The schedule associated with the deployment."
+    )
+    code_reference: Optional["CodeReferenceResponseModel"] = Field(
+        title="The code reference associated with the deployment."
     )
 
 
@@ -127,4 +157,7 @@ class PipelineDeploymentRequestModel(
     )
     schedule: Optional[UUID] = Field(
         title="The schedule associated with the deployment."
+    )
+    code_reference: Optional["CodeReferenceRequestModel"] = Field(
+        title="The code reference associated with the deployment."
     )

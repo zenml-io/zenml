@@ -55,7 +55,11 @@ def _get_step(
     settings = {"docker": docker_settings} if docker_settings else {}
     return Step.parse_obj(
         {
-            "spec": {"source": "", "upstream_steps": [], "inputs": {}},
+            "spec": {
+                "source": "module.step_class",
+                "upstream_steps": [],
+                "inputs": {},
+            },
             "config": {"name": "step_1", "settings": settings},
         }
     )
