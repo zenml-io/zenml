@@ -21,6 +21,7 @@ from zenml.config.constants import DOCKER_SETTINGS_KEY, RESOURCE_SETTINGS_KEY
 from zenml.config.source import Source, convert_source_validator
 from zenml.config.strict_base_model import StrictBaseModel
 from zenml.logger import get_logger
+from zenml.utils import deprecation_utils
 
 if TYPE_CHECKING:
     from zenml.config import DockerSettings, ResourceSettings
@@ -65,7 +66,7 @@ class ArtifactConfiguration(PartialArtifactConfiguration):
 class StepConfigurationUpdate(StrictBaseModel):
     """Class for step configuration updates."""
 
-    # name: Optional[str] = None
+    name: Optional[str] = None
     enable_cache: Optional[bool] = None
     enable_artifact_metadata: Optional[bool] = None
     step_operator: Optional[str] = None
@@ -80,6 +81,9 @@ class StepConfigurationUpdate(StrictBaseModel):
 
     _convert_source = convert_source_validator(
         "failure_hook_source", "success_hook_source"
+    )
+    _deprecation_validator = deprecation_utils.deprecate_pydantic_attributes(
+        "name"
     )
 
 

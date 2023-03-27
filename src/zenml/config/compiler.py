@@ -22,10 +22,7 @@ from zenml.config.pipeline_configurations import (
 )
 from zenml.config.pipeline_spec import PipelineSpec
 from zenml.config.settings_resolver import SettingsResolver
-from zenml.config.step_configurations import (
-    Step,
-    StepSpec,
-)
+from zenml.config.step_configurations import InputSpec, Step, StepSpec
 from zenml.environment import get_run_environment_dict
 from zenml.exceptions import StackValidationError
 from zenml.models.pipeline_deployment_models import PipelineDeploymentBaseModel
@@ -329,10 +326,16 @@ class Compiler:
         Returns:
             The step spec.
         """
+        inputs = {
+            key: InputSpec(
+                step_name=artifact.step_name, output_name=artifact.name
+            )
+            for key, artifact in step.input_artifacts.items()
+        }
         return StepSpec(
             source=source_utils.resolve(step.step.__class__),
             upstream_steps=sorted(step.upstream_steps),
-            inputs=step.inputs,
+            inputs=inputs,
             pipeline_parameter_name=pipeline_parameter_name,
         )
 

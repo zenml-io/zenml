@@ -285,7 +285,6 @@ class BaseStep(metaclass=BaseStepMeta):
         name: str
         step_name: str
         pipeline: "Pipeline"
-        materializer_source: Optional[str] = None
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         """Initializes a step.
@@ -577,6 +576,8 @@ class BaseStep(metaclass=BaseStepMeta):
         # Signature without base params and step context
         signature = signature.replace(parameters=relevant_params)
         try:
+            # TODO: Can we make this partial to allow delayed configuration of
+            # the params? This might be necessary for Pipeline.from_model(...)
             bound_args = signature.bind(*args, **kwargs)
         except TypeError as e:
             raise StepInterfaceError(
@@ -713,7 +714,7 @@ class BaseStep(metaclass=BaseStepMeta):
             step.configuration.extra # {"key2": 2}
 
         Args:
-            name: The name of the step.
+            name: DEPRECATED: The name of the step.
             enable_cache: If caching should be enabled for this step.
             enable_artifact_metadata: If artifact metadata should be enabled
                 for this step.
@@ -748,6 +749,9 @@ class BaseStep(metaclass=BaseStepMeta):
             The step instance that this method was called on.
         """
         from zenml.hooks.hook_validators import resolve_and_validate_hook
+
+        if name:
+            logger.warning("Configuring the name of a step is deprecated.")
 
         def _resolve_if_necessary(
             value: Union[str, Source, Type[Any]]
@@ -795,7 +799,6 @@ class BaseStep(metaclass=BaseStepMeta):
 
         values = dict_utils.remove_none_values(
             {
-                # "name": name,
                 "enable_cache": enable_cache,
                 "enable_artifact_metadata": enable_artifact_metadata,
                 "experiment_tracker": experiment_tracker,
@@ -990,8 +993,7 @@ class BaseStep(metaclass=BaseStepMeta):
         inputs = {}
         for input_name, artifact in input_artifacts.items():
             inputs[input_name] = ArtifactConfiguration(
-                materializer_source=artifact.materializer_source
-                or "module.class",  # TODO: remove or correct
+                materializer_source="module.class",  # TODO: remove or correct
             )
         self._validate_inputs(inputs)
 
@@ -1115,12 +1117,3 @@ class StepInvocation:
     @property
     def upstream_steps(self) -> Set[str]:
         return self.step.upstream_steps.union(self._upstream_steps)
-
-    @property
-    def inputs(self) -> Dict[str, InputSpec]:
-        return {
-            key: InputSpec(
-                step_name=artifact.step_name, output_name=artifact.name
-            )
-            for key, artifact in self.input_artifacts.items()
-        }
