@@ -104,7 +104,7 @@ class BaseModelRegistry(StackComponent, ABC):
         tags: Optional[Dict[str, str]] = None,
         metadata: Optional[Dict[str, str]] = None,
         zenml_version: Optional[str] = None,
-        zenml_pipeline_run_id: Optional[str] = None,
+        zenml_run_name: Optional[str] = None,
         zenml_pipeline_name: Optional[str] = None,
         zenml_step_name: Optional[str] = None,
         **kwargs: Any,

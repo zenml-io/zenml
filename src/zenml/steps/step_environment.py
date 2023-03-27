@@ -41,7 +41,7 @@ class StepEnvironment(BaseEnvironmentComponent):
     @step
     def my_step(...)
         env = Environment().step_environment
-        do_something_with(env.pipeline_name, env.pipeline_run_id, env.step_name)
+        do_something_with(env.pipeline_name, env.run_name, env.step_name)
     ```
     """
 

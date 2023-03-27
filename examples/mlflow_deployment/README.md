@@ -267,7 +267,7 @@ $ zenml model-deployer models describe 87980237-843f-414f-bf06-931f4da69e56
 ┠────────────────────────┼────────────────────────────────────────────────────┨
 ┃ PIPELINE_NAME          │ continuous_deployment_pipeline                     ┃
 ┠────────────────────────┼────────────────────────────────────────────────────┨
-┃ PIPELINE_RUN_ID        │ continuous_deployment_pipeline-12_Apr_22-22_05_32… ┃
+┃ RUN_NAME               │ continuous_deployment_pipeline-12_Apr_22-22_05_32… ┃
 ┠────────────────────────┼────────────────────────────────────────────────────┨
 ┃ PIPELINE_STEP_NAME     │ mlflow_model_deployer_step                         ┃
 ┠────────────────────────┼────────────────────────────────────────────────────┨
