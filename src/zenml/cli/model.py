@@ -590,6 +590,12 @@ def register_model_registry_subcommands() -> None:  # noqa: C901
         help="ZenML version of the model to register.",
     )
     @click.option(
+        "--zenml-run-name",
+        type=str,
+        default=None,
+        help="ZenML run name of the model to register.",
+    )
+    @click.option(
         "--zenml-pipeline-run-id",
         type=str,
         default=None,
