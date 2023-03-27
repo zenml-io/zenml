@@ -32,8 +32,8 @@ from zenml.models.pipeline_deployment_models import PipelineDeploymentBaseModel
 from zenml.utils import pydantic_utils, settings_utils, source_utils
 
 if TYPE_CHECKING:
-    from zenml.pipelines.new import Pipeline
     from zenml.config.source import Source
+    from zenml.pipelines.new import Pipeline
     from zenml.stack import Stack, StackComponent
     from zenml.steps import BaseStep
 

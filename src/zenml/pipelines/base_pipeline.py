@@ -265,7 +265,6 @@ class BasePipeline(metaclass=BasePipelineMeta):
                 `BaseParameters`, and `BaseException`, or a source path to a
                 function of the same specifications (e.g. `module.my_function`)
             on_success: Callback function in event of failure of the step. Can be
-<<<<<<< HEAD
                 a function with two possible parameters, `StepContext` and `BaseParameters, or
                 a source path to a function of the same specifications
                 (e.g. `module.my_function`).
@@ -274,11 +273,6 @@ class BasePipeline(metaclass=BasePipelineMeta):
                 configurations. If `False` the given configurations will
                 overwrite all existing ones. See the general description of this
                 method for an example.
-=======
-                a function with two possible parameters, `StepContext` and
-                `BaseParameters, or a source path to a function of the same
-                specifications (e.g. `module.my_function`).
->>>>>>> develop
 
         Returns:
             The pipeline instance that this method was called on.
