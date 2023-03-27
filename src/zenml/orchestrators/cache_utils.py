@@ -88,7 +88,7 @@ def generate_cache_key(
     # Output artifacts and materializers
     for name, output in step.config.outputs.items():
         hash_.update(name.encode())
-        hash_.update(output.materializer_source.json(sort_keys=True).encode())
+        hash_.update(output.materializer_source.import_path.encode())
 
     # Custom caching parameters
     for key, value in sorted(step.config.caching_parameters.items()):

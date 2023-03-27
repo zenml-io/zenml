@@ -25,6 +25,7 @@ from typing import (
     Mapping,
     NamedTuple,
     Optional,
+    Sequence,
     Set,
     Tuple,
     Type,
@@ -81,6 +82,7 @@ from zenml.utils import (
 
 if TYPE_CHECKING:
     from zenml.config.base_settings import SettingsOrDict
+    from zenml.pipelines.new import Pipeline
 
     ParametersOrDict = Union["BaseParameters", Dict[str, Any]]
     ArtifactClassOrStr = Union[str, Type["BaseArtifact"]]
@@ -94,20 +96,6 @@ if TYPE_CHECKING:
     ]
 
 logger = get_logger(__name__)
-
-
-INIT_KWARG_KEYS = {
-    PARAM_ENABLE_CACHE,
-    PARAM_ENABLE_ARTIFACT_METADATA,
-    PARAM_EXPERIMENT_TRACKER,
-    PARAM_STEP_OPERATOR,
-    PARAM_OUTPUT_ARTIFACTS,
-    PARAM_OUTPUT_MATERIALIZERS,
-    PARAM_EXTRA_OPTIONS,
-    PARAM_SETTINGS,
-    PARAM_ON_SUCCESS,
-    PARAM_ON_FAILURE,
-}
 
 
 class BaseStepMeta(type):
@@ -246,6 +234,8 @@ class BaseStepMeta(type):
         # TODO: validate the entrypoint does not define reserved params like
         # "settings" or "extra"
         entrypoint_params = set(inspect.signature(self.entrypoint).parameters)
+        entrypoint_params.add("after")
+        entrypoint_params.add("id")
 
         for key, value in kwargs.items():
             if key in entrypoint_params:
@@ -294,6 +284,7 @@ class BaseStep(metaclass=BaseStepMeta):
 
         name: str
         step_name: str
+        pipeline: "Pipeline"
         materializer_source: Optional[str] = None
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
@@ -589,6 +580,8 @@ class BaseStep(metaclass=BaseStepMeta):
     def _parse_call_args(
         self, *args: Any, **kwargs: Any
     ) -> Tuple[Dict[str, _OutputArtifact], Dict[str, Any]]:
+        from zenml.pipelines.new import Pipeline
+
         signature = inspect.signature(self.entrypoint, follow_wrapped=True)
 
         def _is_required_param(annotation: Any) -> bool:
@@ -619,6 +612,11 @@ class BaseStep(metaclass=BaseStepMeta):
 
         for key, value in bound_args.arguments.items():
             if isinstance(value, BaseStep._OutputArtifact):
+                if value.pipeline is not Pipeline.ACTIVE_PIPELINE:
+                    raise RuntimeError(
+                        "Got input artifact from a different pipeline."
+                    )
+
                 artifacts[key] = value
                 if key in self.configuration.parameters:
                     logger.warning(
@@ -635,22 +633,12 @@ class BaseStep(metaclass=BaseStepMeta):
         return artifacts, parameters
 
     def __call__(
-        self, *args: Any, id: Optional[str] = None, **kwargs: Any
+        self,
+        *args: Any,
+        id: Optional[str] = None,
+        after: Union[str, Sequence[str], None] = None,
+        **kwargs: Any,
     ) -> Any:
-        """Finalizes the step input and output configuration.
-
-        Args:
-            *artifacts: Positional input artifacts passed to
-                the __call__ method.
-            **kw_artifacts: Keyword input artifacts passed to
-                the __call__ method.
-
-        Returns:
-            A single output artifact or a list of output artifacts.
-
-        Raises:
-            StepInterfaceError: If the step has already been called.
-        """
         from zenml.pipelines.new.pipeline import Pipeline
 
         if not Pipeline.ACTIVE_PIPELINE:
@@ -663,7 +651,21 @@ class BaseStep(metaclass=BaseStepMeta):
         self._has_been_called = True
 
         input_artifacts, parameters = self._parse_call_args(*args, **kwargs)
+
+        # TODO: In templated pipelines, this should only be applied to the
+        # "called" step, not all calls of the step
         self.configure(parameters=parameters)
+
+        if after:
+            if isinstance(after, str):
+                after = (after,)
+
+            for step_id in after:
+                # TODO: Should we delay this check until compilation?
+                if step_id not in Pipeline.ACTIVE_PIPELINE.steps:
+                    raise ValueError(f"Step {step_id} doesn't exist.")
+
+                self._upstream_steps.add(step_id)
 
         for name, input_ in input_artifacts.items():
             self._upstream_steps.add(input_.step_name)
@@ -674,18 +676,17 @@ class BaseStep(metaclass=BaseStepMeta):
 
         step_id = Pipeline.ACTIVE_PIPELINE.add_step(self, custom_name=id)
 
-        returns = []
+        outputs = []
         for key in self.OUTPUT_SIGNATURE:
-            output_artifact = BaseStep._OutputArtifact(
-                name=key,
-                step_name=step_id,
+            output = BaseStep._OutputArtifact(
+                name=key, step_name=step_id, pipeline=Pipeline.ACTIVE_PIPELINE
             )
-            returns.append(output_artifact)
+            outputs.append(output)
 
-        if len(returns) == 1:
-            return returns[0]
+        if len(outputs) == 1:
+            return outputs[0]
         else:
-            return returns
+            return outputs
 
     @property
     def name(self) -> str:
