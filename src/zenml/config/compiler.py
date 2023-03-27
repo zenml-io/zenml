@@ -19,8 +19,8 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence, Tuple
 from zenml.config.base_settings import BaseSettings, ConfigurationLevel
 from zenml.config.pipeline_configurations import (
     PipelineRunConfiguration,
-    PipelineSpec,
 )
+from zenml.config.pipeline_spec import PipelineSpec
 from zenml.config.settings_resolver import SettingsResolver
 from zenml.config.step_configurations import (
     Step,
@@ -33,6 +33,7 @@ from zenml.utils import pydantic_utils, settings_utils, source_utils
 
 if TYPE_CHECKING:
     from zenml.pipelines.new import Pipeline
+    from zenml.config.source import Source
     from zenml.stack import Stack, StackComponent
     from zenml.steps import BaseStep
 
@@ -320,7 +321,7 @@ class Compiler:
             The step spec.
         """
         return StepSpec(
-            source=source_utils.resolve_class(step.__class__),
+            source=source_utils.resolve(step.__class__),
             upstream_steps=sorted(step.upstream_steps),
             inputs=step.inputs,
             pipeline_parameter_name=pipeline_parameter_name,
@@ -334,8 +335,8 @@ class Compiler:
         pipeline_settings: Dict[str, "BaseSettings"],
         pipeline_extra: Dict[str, Any],
         stack: "Stack",
-        pipeline_failure_hook_source: Optional[str] = None,
-        pipeline_success_hook_source: Optional[str] = None,
+        pipeline_failure_hook_source: Optional["Source"] = None,
+        pipeline_success_hook_source: Optional["Source"] = None,
     ) -> Step:
         """Compiles a ZenML step.
 

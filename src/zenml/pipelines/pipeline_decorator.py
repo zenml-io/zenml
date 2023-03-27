@@ -41,8 +41,9 @@ from zenml.pipelines.base_pipeline import (
 
 if TYPE_CHECKING:
     from zenml.config.base_settings import SettingsOrDict
+    from zenml.config.source import Source
 
-    HookSpecification = Union[str, FunctionType]
+    HookSpecification = Union[str, "Source", FunctionType]
 
 F = TypeVar("F", bound=Callable[..., None])
 

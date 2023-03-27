@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2023. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -11,10 +11,18 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Initialization of the GitHub Secrets Manager."""
+"""Initialization of the GitLab ZenML integration."""
+from typing import List, Type
 
-from zenml.integrations.github.secrets_managers.github_secrets_manager import (
-    GitHubSecretsManager,
-)
+from zenml.integrations.constants import GITLAB
+from zenml.integrations.integration import Integration
 
-__all__ = ["GitHubSecretsManager"]
+
+class GitLabIntegration(Integration):
+    """Definition of GitLab integration for ZenML."""
+
+    NAME = GITLAB
+    REQUIREMENTS: List[str] = ["python-gitlab"]
+
+
+GitLabIntegration.check_installation()
