@@ -41,11 +41,19 @@ class BuildItem(BaseModel):
     Attributes:
         image: The image name or digest.
         settings_checksum: Checksum of the settings used for the build.
+        contains_code: Whether the image contains user files.
+        requires_code_download: Whether the image needs to download files.
     """
 
     image: str = Field(title="The image name or digest.")
     settings_checksum: Optional[str] = Field(
         title="The checksum of the build settings."
+    )
+    contains_code: bool = Field(
+        default=True, title="Whether the image contains user files."
+    )
+    requires_code_download: bool = Field(
+        default=False, title="Whether the image needs to download files."
     )
 
 
@@ -64,6 +72,27 @@ class PipelineBuildBaseModel(pydantic_utils.YAMLSerializationMixin):
     is_local: bool = Field(
         title="Whether the build images are stored in a container registry or locally.",
     )
+    contains_code: bool = Field(
+        title="Whether any image of the build contains user code.",
+    )
+    zenml_version: Optional[str] = Field(
+        title="The version of ZenML used for this build."
+    )
+    python_version: Optional[str] = Field(
+        title="The Python version used for this build."
+    )
+    checksum: Optional[str] = Field(title="The build checksum.")
+
+    @property
+    def requires_code_download(self) -> bool:
+        """Whether the build requires code download.
+
+        Returns:
+            Whether the build requires code download.
+        """
+        return any(
+            item.requires_code_download for item in self.images.values()
+        )
 
     @staticmethod
     def get_image_key(component_key: str, step: Optional[str] = None) -> str:
@@ -186,6 +215,19 @@ class PipelineBuildFilterModel(WorkspaceScopedFilterModel):
     stack_id: Union[UUID, str, None] = Field(
         description="Stack used for the Pipeline Run"
     )
+    is_local: Optional[bool] = Field(
+        description="Whether the build images are stored in a container registry or locally.",
+    )
+    contains_code: Optional[bool] = Field(
+        description="Whether any image of the build contains user code.",
+    )
+    zenml_version: Optional[str] = Field(
+        description="The version of ZenML used for this build."
+    )
+    python_version: Optional[str] = Field(
+        description="The Python version used for this build."
+    )
+    checksum: Optional[str] = Field(description="The build checksum.")
 
 
 # ------- #

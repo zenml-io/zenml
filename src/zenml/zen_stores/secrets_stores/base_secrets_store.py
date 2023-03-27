@@ -41,15 +41,13 @@ from zenml.models.secret_models import (
 )
 from zenml.models.user_models import UserResponseModel
 from zenml.models.workspace_models import WorkspaceResponseModel
+from zenml.utils import source_utils
 from zenml.utils.analytics_utils import (
     AnalyticsEvent,
     AnalyticsTrackerMixin,
     track_event,
 )
 from zenml.utils.pagination_utils import depaginate
-from zenml.utils.source_utils import (
-    load_and_validate_class,
-)
 from zenml.zen_stores.enums import StoreEvent
 from zenml.zen_stores.secrets_stores.secrets_store_interface import (
     SecretsStoreInterface,
@@ -145,7 +143,7 @@ class BaseSecretsStore(
 
         # Import the class dynamically
         try:
-            store_class = load_and_validate_class(
+            store_class = source_utils.load_and_validate_class(
                 store_config.class_path, expected_class=BaseSecretsStore
             )
         except (ImportError, AttributeError) as e:
