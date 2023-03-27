@@ -356,7 +356,7 @@ class KServeModelDeployer(BaseModelDeployer):
         running: bool = False,
         service_uuid: Optional[UUID] = None,
         pipeline_name: Optional[str] = None,
-        pipeline_run_id: Optional[str] = None,
+        run_name: Optional[str] = None,
         pipeline_step_name: Optional[str] = None,
         model_name: Optional[str] = None,
         model_uri: Optional[str] = None,
@@ -370,7 +370,7 @@ class KServeModelDeployer(BaseModelDeployer):
                 to deploy the model.
             pipeline_name: name of the pipeline that the deployed model was part
                 of.
-            pipeline_run_id: ID of the pipeline run which the deployed model was
+            run_name: name of the pipeline run which the deployed model was
                 part of.
             pipeline_step_name: the name of the pipeline model deployment step
                 that deployed the model.
@@ -384,7 +384,8 @@ class KServeModelDeployer(BaseModelDeployer):
         """
         config = KServeDeploymentConfig(
             pipeline_name=pipeline_name or "",
-            pipeline_run_id=pipeline_run_id or "",
+            run_name=run_name or "",
+            pipeline_run_id=run_name or "",
             pipeline_step_name=pipeline_step_name or "",
             model_uri=model_uri or "",
             model_name=model_name or "",

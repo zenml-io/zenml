@@ -162,6 +162,7 @@ def mlflow_model_deployer_step(
         registry_model_name=params.registry_model_name or "",
         registry_model_version=params.registry_model_version or "",
         pipeline_name=pipeline_name,
+        run_name=run_name,
         pipeline_run_id=run_name,
         pipeline_step_name=step_name,
         timeout=params.timeout,
@@ -327,7 +328,7 @@ def mlflow_model_registry_deployer_step(
         workers=params.workers,
         mlserver=params.mlserver,
         pipeline_name=metadata.zenml_pipeline_name or "",
-        pipeline_run_id=metadata.zenml_pipeline_run_id or "",
+        run_name=metadata.zenml_run_name or "",
         pipeline_step_name=metadata.zenml_step_name or "",
         timeout=params.timeout,
     )

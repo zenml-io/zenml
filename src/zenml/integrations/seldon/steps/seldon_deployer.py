@@ -149,7 +149,7 @@ def seldon_model_deployer_step(
 
     # update the step configuration with the real pipeline runtime information
     params.service_config.pipeline_name = pipeline_name
-    params.service_config.pipeline_run_id = run_name
+    params.service_config.run_name = run_name
     params.service_config.pipeline_step_name = step_name
 
     def prepare_service_config(model_uri: str) -> SeldonDeploymentConfig:
@@ -300,7 +300,7 @@ def seldon_custom_model_deployer_step(
 
     # update the step configuration with the real pipeline runtime information
     params.service_config.pipeline_name = pipeline_name
-    params.service_config.pipeline_run_id = run_name
+    params.service_config.run_name = run_name
     params.service_config.pipeline_step_name = step_name
     params.service_config.is_custom_deployment = True
 
