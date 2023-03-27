@@ -745,7 +745,7 @@ def test_delete_stack_default_stack_fails(clean_workspace) -> None:
     assert clean_workspace.get_stack("default")
 
 
-def test_delete_stack_recusively_with_flag_succeeds(clean_workspace) -> None:
+def test_delete_stack_recursively_with_flag_succeeds(clean_workspace) -> None:
     """Test recursively delete stack delete with flag succeeds."""
     registered_stack = clean_workspace.active_stack_model
 
