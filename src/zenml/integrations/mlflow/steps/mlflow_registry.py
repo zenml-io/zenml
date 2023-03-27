@@ -109,7 +109,7 @@ def mlflow_register_model_step(
     # get pipeline name, step name and run id
     step_env = cast(StepEnvironment, Environment()[STEP_ENVIRONMENT_NAME])
     pipeline_name = step_env.pipeline_name
-    pipeline_run_id = step_env.run_name
+    run_name = step_env.run_name
     pipeline_run_uuid = str(step_env.step_run_info.run_id)
     zenml_workspace = str(model_registry.workspace)
 
@@ -117,13 +117,13 @@ def mlflow_register_model_step(
     # pipeline name and run name
     mlflow_run_id = params.run_id or experiment_tracker.get_run_id(
         experiment_name=params.experiment_name or pipeline_name,
-        run_name=params.run_name or pipeline_run_id,
+        run_name=params.run_name or run_name,
     )
     # If no value was set at all, raise an error
     if not mlflow_run_id:
         raise RuntimeError(
             f"Could not find MLflow run for experiment {pipeline_name} "
-            f"and run {pipeline_run_id}."
+            f"and run {run_name}."
         )
 
     # Get MLflow client
@@ -157,8 +157,8 @@ def mlflow_register_model_step(
         params.metadata.zenml_version = __version__
     if params.metadata.zenml_pipeline_name is None:
         params.metadata.zenml_pipeline_name = pipeline_name
-    if params.metadata.zenml_pipeline_run_id is None:
-        params.metadata.zenml_pipeline_run_id = pipeline_run_id
+    if params.metadata.zenml_run_name is None:
+        params.metadata.zenml_run_name = run_name
     if params.metadata.zenml_pipeline_run_uuid is None:
         params.metadata.zenml_pipeline_run_uuid = pipeline_run_uuid
     if params.metadata.zenml_workspace is None:

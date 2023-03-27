@@ -888,7 +888,7 @@ def print_served_model_configuration(
         "STATUS": get_service_state_emoji(model_service.status.state),
         "STATUS_MESSAGE": model_service.status.last_error,
         "PIPELINE_NAME": model_service.config.pipeline_name,
-        "PIPELINE_RUN_ID": model_service.config.pipeline_run_id,
+        "RUN_NAME": model_service.config.run_name,
         "PIPELINE_STEP_NAME": model_service.config.pipeline_step_name,
     }
 
