@@ -34,7 +34,7 @@ from typing import (
     cast,
 )
 
-from pydantic import ValidationError
+from pydantic import BaseModel, Extra, ValidationError
 
 from zenml.artifacts.base_artifact import BaseArtifact
 from zenml.config.source import Source
@@ -557,23 +557,8 @@ class BaseStep(metaclass=BaseStepMeta):
     def _parse_call_args(
         self, *args: Any, **kwargs: Any
     ) -> Tuple[Dict[str, _OutputArtifact], Dict[str, Any]]:
+        signature = get_step_entrypoint_signature(step=self)
 
-        signature = inspect.signature(self.entrypoint, follow_wrapped=True)
-
-        def _is_required_param(annotation: Any) -> bool:
-            if inspect.isclass(annotation) and issubclass(
-                annotation, (StepContext, BaseParameters)
-            ):
-                return False
-            return True
-
-        relevant_params = [
-            param
-            for param in signature.parameters.values()
-            if _is_required_param(param.annotation)
-        ]
-        # Signature without base params and step context
-        signature = signature.replace(parameters=relevant_params)
         try:
             bound_args = signature.bind_partial(*args, **kwargs)
         except TypeError as e:
@@ -856,8 +841,7 @@ class BaseStep(metaclass=BaseStepMeta):
         if not parameters:
             return
 
-        signature = inspect.signature(self.entrypoint, follow_wrapped=True)
-
+        signature = get_step_entrypoint_signature(step=self)
         for key, value in parameters.items():
             if key in signature.parameters:
                 self._validate_parameter_value(
@@ -974,17 +958,14 @@ class BaseStep(metaclass=BaseStepMeta):
                     "materializer_source"
                 ] = source_utils.resolve(materializer_class)
 
-        function_parameters = self._finalize_function_parameters()
-        values = dict_utils.remove_none_values(
-            {
-                "outputs": outputs or None,
-                "parameters": function_parameters,
-            }
-        )
+        parameters = self._finalize_parameters()
+        self.configure(parameters=parameters, merge=False)
+
+        values = dict_utils.remove_none_values({"outputs": outputs or None})
         config = StepConfigurationUpdate(**values)
         self._apply_configuration(config)
 
-        signature = inspect.signature(self.entrypoint, follow_wrapped=True)
+        signature = get_step_entrypoint_signature(step=self)
         for key in signature.parameters.keys():
             if key in input_artifacts or key in self.configuration.parameters:
                 continue
@@ -1009,7 +990,24 @@ class BaseStep(metaclass=BaseStepMeta):
         )
         return complete_configuration
 
-    def _finalize_function_parameters(self) -> Dict[str, Any]:
+    def _finalize_parameters(self) -> Dict[str, Any]:
+        signature = get_step_entrypoint_signature(step=self)
+        params = {
+            key: value
+            for key, value in self.configuration.parameters.items()
+            if key in signature.parameters
+        }
+
+        if self.PARAMETERS_CLASS and self.PARAMETERS_FUNCTION_PARAMETER_NAME:
+            legacy_params = self._finalize_legacy_parameters()
+            params[self.PARAMETERS_FUNCTION_PARAMETER_NAME] = legacy_params
+
+        # TODO: Should we treat pydantic classes special here and verify
+        # that they can be instantiated?
+
+        return params
+
+    def _finalize_legacy_parameters(self) -> Dict[str, Any]:
         """Verifies and prepares the config parameters for running this step.
 
         When the step requires config parameters, this method:
@@ -1028,17 +1026,27 @@ class BaseStep(metaclass=BaseStepMeta):
         if not self.PARAMETERS_CLASS:
             return {}
 
-        # we need to store a value for all config keys inside the
-        # metadata store to make sure caching works as expected
-        missing_keys = []
+        # parameters for the `BaseParameters` class specified in the "new" way
+        # by specifying a dict of parameters for the
+        # key `self.PARAMETERS_FUNCTION_PARAMETER_NAME`
+        params_defined_in_new_way = (
+            self.configuration.parameters.get(
+                self.PARAMETERS_FUNCTION_PARAMETER_NAME
+            )
+            or {}
+        )
+
         values = {}
+        missing_keys = []
         for name, field in self.PARAMETERS_CLASS.__fields__.items():
             if name in self.configuration.parameters:
                 # a value for this parameter has been set already
                 values[name] = self.configuration.parameters[name]
-                continue
-
-            if field.required:
+            elif name in params_defined_in_new_way:
+                # a value for this parameter has been set in the "new" way
+                # already
+                values[name] = params_defined_in_new_way[name]
+            elif field.required:
                 # this field has no default value set and therefore needs
                 # to be passed via an initialized config object
                 missing_keys.append(name)
@@ -1051,6 +1059,11 @@ class BaseStep(metaclass=BaseStepMeta):
                 self.name, missing_keys, self.PARAMETERS_CLASS
             )
 
+        if self.PARAMETERS_CLASS.Config.extra == Extra.allow:
+            # Add all parameters for the config class for backwards
+            # compatibility if the config class allows extra attributes
+            values.update(self.configuration.parameters)
+
         try:
             self.PARAMETERS_CLASS(**values)
         except ValidationError:
@@ -1061,11 +1074,11 @@ class BaseStep(metaclass=BaseStepMeta):
     def _validate_parameter_value(
         self, parameter: inspect.Parameter, value: Any
     ) -> None:
-        from pydantic.typing import get_args
-
         expected_type = parameter.annotation
-        if expected_type is Optional:
-            expected_type = get_args(expected_type)
+
+        if issubclass(expected_type, BaseModel):
+            # TODO: handle custom pydantic __root__ type here
+            expected_type = (expected_type, dict)
 
         if not isinstance(value, expected_type):
             raise StepInterfaceError(
@@ -1093,6 +1106,29 @@ def is_json_serializable(obj: Any) -> bool:
         return True
     except TypeError:
         return False
+
+
+def get_step_entrypoint_signature(
+    step: "BaseStep", include_step_context: bool = False
+) -> inspect.Signature:
+    signature = inspect.signature(step.entrypoint, follow_wrapped=True)
+
+    if include_step_context:
+        return signature
+
+    def _is_step_context_param(annotation: Any) -> bool:
+        return inspect.isclass(annotation) and issubclass(
+            annotation, StepContext
+        )
+
+    params_without_step_context = [
+        param
+        for param in signature.parameters.values()
+        if not _is_step_context_param(param.annotation)
+    ]
+
+    signature = signature.replace(parameters=params_without_step_context)
+    return signature
 
 
 class StepInvocation:

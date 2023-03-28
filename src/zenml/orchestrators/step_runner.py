@@ -247,9 +247,7 @@ class StepRunner:
         Returns:
             The parsed inputs for the step entrypoint function.
         """
-        from pydantic import BaseModel, Extra
-
-        from zenml.steps import BaseParameters
+        from pydantic import BaseModel
 
         function_params: Dict[str, Any] = {}
 
@@ -260,19 +258,7 @@ class StepRunner:
             arg_type = annotations.get(arg, None)
             arg_type = resolve_type_annotation(arg_type)
 
-            if issubclass(arg_type, BaseParameters):
-                if arg_type.Config.extra == Extra.forbid:
-                    config_values = {
-                        key: value
-                        for key, value in self.configuration.parameters.items()
-                        if key in arg_type.__fields__
-                    }
-                else:
-                    config_values = self.configuration.parameters
-
-                step_params = arg_type.parse_obj(config_values)
-                function_params[arg] = step_params
-            elif issubclass(arg_type, StepContext):
+            if issubclass(arg_type, StepContext):
                 step_name = self.configuration.name
                 context = arg_type(
                     step_name=step_name,
