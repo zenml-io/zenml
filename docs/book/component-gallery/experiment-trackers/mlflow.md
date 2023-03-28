@@ -68,8 +68,8 @@ what other types of components it can be combined with. This option requires
 for the MLflow Experiment Tracker.
 
 {% hint style="warning" %}
-Due to a found [Vulnerability](https://github.com/advisories/GHSA-xg73-94fp-g449) in older versions of MLflow, we recommend using
-MLflow version 2.2.1 or higher for this scenario.
+Due to a [critical severity vulnerability](https://github.com/advisories/GHSA-xg73-94fp-g449) found in older versions of MLflow, we recommend using
+MLflow version 2.2.1 or higher.
 {% endhint %}
 
 * [Databricks scenario](https://www.databricks.com/product/managed-mlflow):
