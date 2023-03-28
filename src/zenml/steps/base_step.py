@@ -56,7 +56,7 @@ from zenml.materializers.default_materializer_registry import (
 from zenml.steps.base_parameters import BaseParameters
 from zenml.steps.step_context import StepContext
 from zenml.steps.utils import (
-    INSTANCE_CONFIGURATION,
+    CLASS_CONFIGURATION,
     PARAM_CREATED_BY_FUNCTIONAL_API,
     PARAM_ENABLE_ARTIFACT_METADATA,
     PARAM_ENABLE_CACHE,
@@ -123,7 +123,7 @@ class BaseStepMeta(type):
         """
         from zenml.steps.base_parameters import BaseParameters
 
-        dct.setdefault(INSTANCE_CONFIGURATION, {})
+        dct.setdefault(CLASS_CONFIGURATION, {})
         cls = cast(Type["BaseStep"], super().__new__(mcs, name, bases, dct))
 
         cls.INPUT_SIGNATURE = {}
@@ -268,7 +268,7 @@ class BaseStep(metaclass=BaseStepMeta):
     PARAMETERS_CLASS: ClassVar[Optional[Type["BaseParameters"]]] = None
     CONTEXT_PARAMETER_NAME: ClassVar[Optional[str]] = None
 
-    INSTANCE_CONFIGURATION: ClassVar[Dict[str, Any]] = {}
+    _CLASS_CONFIGURATION: ClassVar[Dict[str, Any]] = {}
 
     class _OutputArtifact(NamedTuple):
         """Internal step output artifact.
@@ -296,7 +296,7 @@ class BaseStep(metaclass=BaseStepMeta):
         self._upstream_steps: Set[str] = set()
         self._inputs: Dict[str, InputSpec] = {}
 
-        kwargs = {**self.INSTANCE_CONFIGURATION, **kwargs}
+        kwargs = {**self._CLASS_CONFIGURATION, **kwargs}
         name = kwargs.pop(PARAM_STEP_NAME, None) or self.__class__.__name__
 
         # This value is only used in `BaseStep._created_by_functional_api()`
@@ -360,7 +360,7 @@ class BaseStep(metaclass=BaseStepMeta):
             `True` if the class was created by the functional API,
             `False` otherwise.
         """
-        return cls.INSTANCE_CONFIGURATION.get(
+        return cls._CLASS_CONFIGURATION.get(
             PARAM_CREATED_BY_FUNCTIONAL_API, False
         )
 
@@ -557,7 +557,6 @@ class BaseStep(metaclass=BaseStepMeta):
     def _parse_call_args(
         self, *args: Any, **kwargs: Any
     ) -> Tuple[Dict[str, _OutputArtifact], Dict[str, Any]]:
-        from zenml.pipelines.new import Pipeline
 
         signature = inspect.signature(self.entrypoint, follow_wrapped=True)
 
@@ -589,11 +588,6 @@ class BaseStep(metaclass=BaseStepMeta):
 
         for key, value in bound_args.arguments.items():
             if isinstance(value, BaseStep._OutputArtifact):
-                if value.pipeline is not Pipeline.ACTIVE_PIPELINE:
-                    raise RuntimeError(
-                        "Got input artifact from a different pipeline."
-                    )
-
                 artifacts[key] = value
                 if key in self.configuration.parameters:
                     logger.warning(
@@ -633,19 +627,21 @@ class BaseStep(metaclass=BaseStepMeta):
         elif isinstance(after, Sequence):
             upstream_steps.union(after)
 
-        invocation = StepInvocation(
+        invocation_id = Pipeline.ACTIVE_PIPELINE.add_step(
             step=self,
             input_artifacts=input_artifacts,
             parameters=parameters,
             upstream_steps=upstream_steps,
+            custom_id=id,
+            allow_suffix=not id,
         )
-
-        step_id = Pipeline.ACTIVE_PIPELINE.add_step(invocation, custom_name=id)
 
         outputs = []
         for key in self.OUTPUT_SIGNATURE:
             output = BaseStep._OutputArtifact(
-                name=key, step_name=step_id, pipeline=Pipeline.ACTIVE_PIPELINE
+                name=key,
+                step_name=invocation_id,
+                pipeline=Pipeline.ACTIVE_PIPELINE,
             )
             outputs.append(output)
 
@@ -1102,11 +1098,13 @@ def is_json_serializable(obj: Any) -> bool:
 class StepInvocation:
     def __init__(
         self,
+        id: str,
         step: "BaseStep",
         input_artifacts: Dict[str, BaseStep._OutputArtifact],
         parameters: Dict[str, Any],
         upstream_steps: Sequence[str],
     ) -> None:
+        self.id = id
         self.step = step
         self.input_artifacts = input_artifacts
         self.parameters = parameters

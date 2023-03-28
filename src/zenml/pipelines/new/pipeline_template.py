@@ -28,7 +28,6 @@ from zenml.exceptions import PipelineInterfaceError
 from zenml.logger import get_logger
 from zenml.pipelines.new.pipeline import Pipeline
 from zenml.steps import BaseStep
-from zenml.steps.base_step import StepInvocation
 
 if TYPE_CHECKING:
     StepConfigurationUpdateOrDict = Union[
@@ -70,20 +69,18 @@ class PipelineTemplate(Pipeline, ABC):
     def connect(self, *args: BaseStep, **kwargs: BaseStep) -> None:
         raise NotImplementedError
 
-    def add_step(
+    def _compute_invocation_id(
         self,
-        step: "StepInvocation",
-        custom_name: Optional[str] = None,
+        step: "BaseStep",
+        custom_id: Optional[str] = None,
         allow_suffix: bool = True,
     ) -> str:
-        if not custom_name:
-            custom_name = getattr(step.step, "_template_name", None)
+        if not custom_id:
+            custom_id = getattr(step, "_template_name", None)
             allow_suffix = True
 
-        return super().add_step(
-            step=step,
-            custom_name=custom_name,
-            allow_suffix=allow_suffix,
+        return super()._compute_invocation_id(
+            step=step, custom_id=custom_id, allow_suffix=allow_suffix
         )
 
     def _verify_steps(
@@ -98,7 +95,6 @@ class PipelineTemplate(Pipeline, ABC):
                 f"Wrong arguments when initializing pipeline '{self.name}': {e}"
             ) from e
 
-        step_ids: Dict[int, str] = {}
         steps = {}
 
         for key, potential_step in bound_args.arguments.items():
@@ -127,19 +123,6 @@ class PipelineTemplate(Pipeline, ABC):
                     f"a pipeline."
                 )
 
-            if id(potential_step) in step_ids:
-                previous_key = step_ids[id(potential_step)]
-                raise PipelineInterfaceError(
-                    f"Found the same step object for arguments "
-                    f"'{previous_key}' and '{key}' in pipeline '{self.name}'. "
-                    "Step object cannot be reused inside a ZenML pipeline. "
-                    "A possible solution is to create two instances of the "
-                    "same step class and assigning them different names: "
-                    "`first_instance = step_class(name='s1')` and "
-                    "`second_instance = step_class(name='s2')`."
-                )
-
-            step_ids[id(potential_step)] = key
             steps[key] = potential_step
             setattr(potential_step, "_template_name", key)
 

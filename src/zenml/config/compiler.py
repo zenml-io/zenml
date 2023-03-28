@@ -85,7 +85,6 @@ class Compiler:
 
         steps = {
             name: self._compile_step(
-                pipeline_parameter_name=name,
                 invocation=step,
                 pipeline_settings=settings_to_passdown,
                 pipeline_extra=pipeline.configuration.extra,
@@ -137,12 +136,9 @@ class Compiler:
 
         steps = [
             self._get_step_spec(
-                pipeline_parameter_name=pipeline_parameter_name,
                 step=step,
             )
-            for pipeline_parameter_name, step in self._get_sorted_steps(
-                pipeline=pipeline
-            )
+            for _, step in self._get_sorted_steps(pipeline=pipeline)
         ]
         pipeline_spec = PipelineSpec(steps=steps)
         logger.debug("Compiled pipeline spec: %s", pipeline_spec)
@@ -314,13 +310,11 @@ class Compiler:
 
     def _get_step_spec(
         self,
-        pipeline_parameter_name: str,
         step: "StepInvocation",
     ) -> StepSpec:
         """Gets the spec for a step.
 
         Args:
-            pipeline_parameter_name: Name of the step in the pipeline.
             step: The step for which to get the spec.
 
         Returns:
@@ -336,12 +330,11 @@ class Compiler:
             source=source_utils.resolve(step.step.__class__),
             upstream_steps=sorted(step.upstream_steps),
             inputs=inputs,
-            pipeline_parameter_name=pipeline_parameter_name,
+            pipeline_parameter_name=step.id,
         )
 
     def _compile_step(
         self,
-        pipeline_parameter_name: str,
         invocation: "StepInvocation",
         pipeline_settings: Dict[str, "BaseSettings"],
         pipeline_extra: Dict[str, Any],
@@ -352,7 +345,6 @@ class Compiler:
         """Compiles a ZenML step.
 
         Args:
-            pipeline_parameter_name: Name of the step in the pipeline.
             step: The step to compile.
             pipeline_settings: settings configured on the
                 pipeline of the step.
@@ -369,9 +361,7 @@ class Compiler:
         invocation = copy.deepcopy(invocation)
 
         step = invocation.step
-        step_spec = self._get_step_spec(
-            pipeline_parameter_name=pipeline_parameter_name, step=invocation
-        )
+        step_spec = self._get_step_spec(step=invocation)
         step_settings = self._filter_and_validate_settings(
             settings=step.configuration.settings,
             configuration_level=ConfigurationLevel.STEP,

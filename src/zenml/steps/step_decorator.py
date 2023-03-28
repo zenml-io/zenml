@@ -29,7 +29,7 @@ from typing import (
 
 from zenml.steps import BaseStep
 from zenml.steps.utils import (
-    INSTANCE_CONFIGURATION,
+    CLASS_CONFIGURATION,
     PARAM_CREATED_BY_FUNCTIONAL_API,
     PARAM_ENABLE_ARTIFACT_METADATA,
     PARAM_ENABLE_CACHE,
@@ -159,7 +159,7 @@ def step(
             (BaseStep,),
             {
                 STEP_INNER_FUNC_NAME: staticmethod(func),
-                INSTANCE_CONFIGURATION: {
+                CLASS_CONFIGURATION: {
                     PARAM_STEP_NAME: name,
                     PARAM_CREATED_BY_FUNCTIONAL_API: True,
                     PARAM_ENABLE_CACHE: enable_cache,
