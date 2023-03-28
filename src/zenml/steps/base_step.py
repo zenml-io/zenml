@@ -39,7 +39,6 @@ from pydantic import BaseModel, Extra, ValidationError
 from zenml.artifacts.base_artifact import BaseArtifact
 from zenml.config.source import Source
 from zenml.config.step_configurations import (
-    ArtifactConfiguration,
     InputSpec,
     PartialArtifactConfiguration,
     PartialStepConfiguration,
@@ -852,29 +851,6 @@ class BaseStep(metaclass=BaseStepMeta):
                     "Can't set parameter without param class."
                 )
 
-    def _validate_inputs(
-        self, inputs: Mapping[str, ArtifactConfiguration]
-    ) -> None:
-        """Validates the step input configuration.
-
-        Args:
-            inputs: The configured step inputs.
-
-        Raises:
-            StepInterfaceError: If an input for a non-existent name is
-                configured.
-        """
-        allowed_input_names = set(self.INPUT_SIGNATURE)
-        for input_name in inputs.keys():
-            if input_name not in allowed_input_names:
-                raise StepInterfaceError(
-                    f"Got unexpected artifact for non-existent "
-                    f"input '{input_name}' in step '{self.name}'. "
-                    f"Only artifacts for the inputs "
-                    f"{allowed_input_names} of this step can"
-                    f" be registered."
-                )
-
     def _validate_outputs(
         self, outputs: Mapping[str, PartialArtifactConfiguration]
     ) -> None:
@@ -971,16 +947,8 @@ class BaseStep(metaclass=BaseStepMeta):
                 continue
             raise StepInterfaceError(f"Missing entrypoint input {key}.")
 
-        inputs = {}
-        for input_name, artifact in input_artifacts.items():
-            inputs[input_name] = ArtifactConfiguration(
-                materializer_source="module.class",  # TODO: remove or correct
-            )
-        self._validate_inputs(inputs)
-
         self._configuration = self._configuration.copy(
             update={
-                "inputs": inputs,
                 "caching_parameters": self.caching_parameters,
             }
         )

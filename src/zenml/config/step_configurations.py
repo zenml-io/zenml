@@ -92,11 +92,10 @@ class PartialStepConfiguration(StepConfigurationUpdate):
 
     name: str
     caching_parameters: Mapping[str, Any] = {}
-    inputs: Mapping[str, PartialArtifactConfiguration] = {}
     outputs: Mapping[str, PartialArtifactConfiguration] = {}
 
     # Override the deprecation validator as we do not want to deprecate the
-    # name attribute on this class.
+    # `name`` attribute on this class.
     _deprecation_validator = deprecation_utils.deprecate_pydantic_attributes()
 
     @root_validator(pre=True)
@@ -111,7 +110,7 @@ class PartialStepConfiguration(StepConfigurationUpdate):
         Returns:
             The values dict without deprecated attributes.
         """
-        deprecated_attributes = ["docstring"]
+        deprecated_attributes = ["docstring", "inputs"]
         for deprecated_attribute in deprecated_attributes:
             if deprecated_attribute in values:
                 values.pop(deprecated_attribute)
@@ -121,7 +120,6 @@ class PartialStepConfiguration(StepConfigurationUpdate):
 class StepConfiguration(PartialStepConfiguration):
     """Step configuration class."""
 
-    inputs: Mapping[str, ArtifactConfiguration] = {}
     outputs: Mapping[str, ArtifactConfiguration] = {}
 
     @property
