@@ -95,6 +95,10 @@ class PartialStepConfiguration(StepConfigurationUpdate):
     inputs: Mapping[str, PartialArtifactConfiguration] = {}
     outputs: Mapping[str, PartialArtifactConfiguration] = {}
 
+    # Override the deprecation validator as we do not want to deprecate the
+    # name attribute on this class.
+    _deprecation_validator = deprecation_utils.deprecate_pydantic_attributes()
+
     @root_validator(pre=True)
     def _remove_deprecated_attributes(
         cls, values: Dict[str, Any]

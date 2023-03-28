@@ -576,9 +576,7 @@ class BaseStep(metaclass=BaseStepMeta):
         # Signature without base params and step context
         signature = signature.replace(parameters=relevant_params)
         try:
-            # TODO: Can we make this partial to allow delayed configuration of
-            # the params? This might be necessary for Pipeline.from_model(...)
-            bound_args = signature.bind(*args, **kwargs)
+            bound_args = signature.bind_partial(*args, **kwargs)
         except TypeError as e:
             raise StepInterfaceError(
                 f"Wrong arguments when calling step '{self.name}': {e}"
@@ -989,6 +987,12 @@ class BaseStep(metaclass=BaseStepMeta):
         )
         config = StepConfigurationUpdate(**values)
         self._apply_configuration(config)
+
+        signature = inspect.signature(self.entrypoint, follow_wrapped=True)
+        for key in signature.parameters.keys():
+            if key in input_artifacts or key in self.configuration.parameters:
+                continue
+            raise StepInterfaceError(f"Missing entrypoint input {key}.")
 
         inputs = {}
         for input_name, artifact in input_artifacts.items():
