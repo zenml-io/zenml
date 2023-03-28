@@ -39,7 +39,6 @@ from pydantic import BaseModel, Extra, ValidationError
 from zenml.artifacts.base_artifact import BaseArtifact
 from zenml.config.source import Source
 from zenml.config.step_configurations import (
-    InputSpec,
     PartialArtifactConfiguration,
     PartialStepConfiguration,
     StepConfiguration,
@@ -55,19 +54,6 @@ from zenml.materializers.default_materializer_registry import (
 from zenml.steps.base_parameters import BaseParameters
 from zenml.steps.step_context import StepContext
 from zenml.steps.utils import (
-    CLASS_CONFIGURATION,
-    PARAM_CREATED_BY_FUNCTIONAL_API,
-    PARAM_ENABLE_ARTIFACT_METADATA,
-    PARAM_ENABLE_CACHE,
-    PARAM_EXPERIMENT_TRACKER,
-    PARAM_EXTRA_OPTIONS,
-    PARAM_ON_FAILURE,
-    PARAM_ON_SUCCESS,
-    PARAM_OUTPUT_ARTIFACTS,
-    PARAM_OUTPUT_MATERIALIZERS,
-    PARAM_SETTINGS,
-    PARAM_STEP_NAME,
-    PARAM_STEP_OPERATOR,
     parse_return_type_annotations,
     resolve_type_annotation,
 )
@@ -122,7 +108,6 @@ class BaseStepMeta(type):
         """
         from zenml.steps.base_parameters import BaseParameters
 
-        dct.setdefault(CLASS_CONFIGURATION, {})
         cls = cast(Type["BaseStep"], super().__new__(mcs, name, bases, dct))
 
         cls.INPUT_SIGNATURE = {}
@@ -136,8 +121,8 @@ class BaseStepMeta(type):
             inspect.unwrap(cls.entrypoint)
         )
 
-        if bases:
-            # We're not creating the abstract `BaseStep` class
+        if name not in {"BaseStep", "_DecoratedStep"}:
+            # We're not creating one of the abstract base classes
             # but a concrete implementation. Make sure the step function
             # signature does not contain variable *args or **kwargs
             variable_arguments = None
@@ -267,8 +252,6 @@ class BaseStep(metaclass=BaseStepMeta):
     PARAMETERS_CLASS: ClassVar[Optional[Type["BaseParameters"]]] = None
     CONTEXT_PARAMETER_NAME: ClassVar[Optional[str]] = None
 
-    _CLASS_CONFIGURATION: ClassVar[Dict[str, Any]] = {}
-
     class _OutputArtifact(NamedTuple):
         """Internal step output artifact.
 
@@ -285,7 +268,25 @@ class BaseStep(metaclass=BaseStepMeta):
         step_name: str
         pipeline: "Pipeline"
 
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
+    def __init__(
+        self,
+        *args: Any,
+        name: Optional[str] = None,
+        enable_cache: Optional[bool] = None,
+        enable_artifact_metadata: Optional[bool] = None,
+        experiment_tracker: Optional[str] = None,
+        step_operator: Optional[str] = None,
+        parameters: Optional["ParametersOrDict"] = None,
+        output_materializers: Optional[
+            "OutputMaterializersSpecification"
+        ] = None,
+        output_artifacts: Optional["OutputArtifactsSpecification"] = None,
+        settings: Optional[Mapping[str, "SettingsOrDict"]] = None,
+        extra: Optional[Dict[str, Any]] = None,
+        on_failure: Optional["HookSpecification"] = None,
+        on_success: Optional["HookSpecification"] = None,
+        **kwargs: Any,
+    ) -> None:
         """Initializes a step.
 
         Args:
@@ -293,16 +294,9 @@ class BaseStep(metaclass=BaseStepMeta):
             **kwargs: Keyword arguments passed to the step.
         """
         self._upstream_steps: Set[str] = set()
-        self._inputs: Dict[str, InputSpec] = {}
-
-        kwargs = {**self._CLASS_CONFIGURATION, **kwargs}
-        name = kwargs.pop(PARAM_STEP_NAME, None) or self.__class__.__name__
-
-        # This value is only used in `BaseStep._created_by_functional_api()`
-        kwargs.pop(PARAM_CREATED_BY_FUNCTIONAL_API, None)
+        name = name or self.__class__.__name__
 
         requires_context = bool(self.CONTEXT_PARAMETER_NAME)
-        enable_cache = kwargs.pop(PARAM_ENABLE_CACHE, None)
         if enable_cache is None:
             if requires_context:
                 # Using the StepContext inside a step provides access to
@@ -320,11 +314,6 @@ class BaseStep(metaclass=BaseStepMeta):
             name,
             "enabled" if enable_cache is not False else "disabled",
         )
-
-        enable_artifact_metadata = kwargs.pop(
-            PARAM_ENABLE_ARTIFACT_METADATA, None
-        )
-
         logger.debug(
             "Step '%s': Artifact metadata %s.",
             name,
@@ -336,7 +325,17 @@ class BaseStep(metaclass=BaseStepMeta):
             enable_cache=enable_cache,
             enable_artifact_metadata=enable_artifact_metadata,
         )
-        self._apply_class_configuration(kwargs)
+        self.configure(
+            experiment_tracker=experiment_tracker,
+            step_operator=step_operator,
+            output_artifacts=output_artifacts,
+            output_materializers=output_materializers,
+            parameters=parameters,
+            settings=settings,
+            extra=extra,
+            on_failure=on_failure,
+            on_success=on_success,
+        )
         self._verify_and_apply_init_params(*args, **kwargs)
 
     @abstractmethod
@@ -350,18 +349,6 @@ class BaseStep(metaclass=BaseStepMeta):
         Returns:
             The output of the step.
         """
-
-    @classmethod
-    def _created_by_functional_api(cls) -> bool:
-        """Returns if the step class was created by the functional API.
-
-        Returns:
-            `True` if the class was created by the functional API,
-            `False` otherwise.
-        """
-        return cls._CLASS_CONFIGURATION.get(
-            PARAM_CREATED_BY_FUNCTIONAL_API, False
-        )
 
     @classmethod
     def load_from_source(cls, source: Union[Source, str]) -> "BaseStep":
@@ -421,14 +408,9 @@ class BaseStep(metaclass=BaseStepMeta):
     def source_object(self) -> Any:
         """The source object of this step.
 
-        This is either a function wrapped by the `@step` decorator or a custom
-        step class.
-
         Returns:
             The source object of this step.
         """
-        if self._created_by_functional_api():
-            return self.entrypoint
         return self.__class__
 
     @property
@@ -472,32 +454,6 @@ class BaseStep(metaclass=BaseStepMeta):
                 )
 
         return parameters
-
-    def _apply_class_configuration(self, options: Dict[str, Any]) -> None:
-        """Applies the configurations specified on the step class.
-
-        Args:
-            options: Class configurations.
-        """
-        step_operator = options.pop(PARAM_STEP_OPERATOR, None)
-        settings = options.pop(PARAM_SETTINGS, None) or {}
-        output_materializers = options.pop(PARAM_OUTPUT_MATERIALIZERS, None)
-        output_artifacts = options.pop(PARAM_OUTPUT_ARTIFACTS, None)
-        extra = options.pop(PARAM_EXTRA_OPTIONS, None)
-        experiment_tracker = options.pop(PARAM_EXPERIMENT_TRACKER, None)
-        on_failure = options.pop(PARAM_ON_FAILURE, None)
-        on_success = options.pop(PARAM_ON_SUCCESS, None)
-
-        self.configure(
-            experiment_tracker=experiment_tracker,
-            step_operator=step_operator,
-            output_artifacts=output_artifacts,
-            output_materializers=output_materializers,
-            settings=settings,
-            extra=extra,
-            on_failure=on_failure,
-            on_success=on_success,
-        )
 
     def _verify_and_apply_init_params(self, *args: Any, **kwargs: Any) -> None:
         """Verifies the initialization args and kwargs of this step.
@@ -1112,14 +1068,14 @@ class StepInvocation:
         self.step = step
         self.input_artifacts = input_artifacts
         self.parameters = parameters
-        self._upstream_steps = upstream_steps
+        self.invocation_upstream_steps = upstream_steps
+
+    @property
+    def upstream_steps(self) -> Set[str]:
+        return self.step.upstream_steps.union(self.invocation_upstream_steps)
 
     def finalize(self) -> StepConfiguration:
         self.step.configure(parameters=self.parameters)
         return self.step._finalize_configuration(
             input_artifacts=self.input_artifacts
         )
-
-    @property
-    def upstream_steps(self) -> Set[str]:
-        return self.step.upstream_steps.union(self._upstream_steps)

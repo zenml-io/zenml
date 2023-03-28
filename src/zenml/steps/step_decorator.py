@@ -18,6 +18,7 @@ from typing import (
     TYPE_CHECKING,
     Any,
     Callable,
+    ClassVar,
     Dict,
     Mapping,
     Optional,
@@ -28,22 +29,6 @@ from typing import (
 )
 
 from zenml.steps import BaseStep
-from zenml.steps.utils import (
-    CLASS_CONFIGURATION,
-    PARAM_CREATED_BY_FUNCTIONAL_API,
-    PARAM_ENABLE_ARTIFACT_METADATA,
-    PARAM_ENABLE_CACHE,
-    PARAM_EXPERIMENT_TRACKER,
-    PARAM_EXTRA_OPTIONS,
-    PARAM_ON_FAILURE,
-    PARAM_ON_SUCCESS,
-    PARAM_OUTPUT_ARTIFACTS,
-    PARAM_OUTPUT_MATERIALIZERS,
-    PARAM_SETTINGS,
-    PARAM_STEP_NAME,
-    PARAM_STEP_OPERATOR,
-    STEP_INNER_FUNC_NAME,
-)
 
 if TYPE_CHECKING:
     from zenml.artifacts.base_artifact import BaseArtifact
@@ -61,7 +46,40 @@ if TYPE_CHECKING:
         "MaterializerClassOrSource", Mapping[str, "MaterializerClassOrSource"]
     ]
 
+
+STEP_INNER_FUNC_NAME = "entrypoint"
+PARAM_STEP_NAME = "name"
+PARAM_ENABLE_CACHE = "enable_cache"
+PARAM_ENABLE_ARTIFACT_METADATA = "enable_artifact_metadata"
+PARAM_STEP_OPERATOR = "step_operator"
+PARAM_EXPERIMENT_TRACKER = "experiment_tracker"
+CLASS_CONFIGURATION = "_CLASS_CONFIGURATION"
+PARAM_OUTPUT_ARTIFACTS = "output_artifacts"
+PARAM_OUTPUT_MATERIALIZERS = "output_materializers"
+PARAM_SETTINGS = "settings"
+PARAM_EXTRA_OPTIONS = "extra"
+PARAM_ON_FAILURE = "on_failure"
+PARAM_ON_SUCCESS = "on_success"
+
+
 F = TypeVar("F", bound=Callable[..., Any])
+
+
+class _DecoratedStep(BaseStep):
+    _CLASS_CONFIGURATION: ClassVar[Optional[Dict[str, Any]]] = None
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        kwargs = {**(self._CLASS_CONFIGURATION or {}), **kwargs}
+        super().__init__(*args, **kwargs)
+
+    @property
+    def source_object(self) -> Any:
+        """The source object of this step.
+
+        Returns:
+            The source object of this step.
+        """
+        return self.entrypoint
 
 
 @overload
@@ -156,12 +174,11 @@ def step(
         """
         return type(  # noqa
             func.__name__,
-            (BaseStep,),
+            (_DecoratedStep,),
             {
                 STEP_INNER_FUNC_NAME: staticmethod(func),
                 CLASS_CONFIGURATION: {
                     PARAM_STEP_NAME: name,
-                    PARAM_CREATED_BY_FUNCTIONAL_API: True,
                     PARAM_ENABLE_CACHE: enable_cache,
                     PARAM_ENABLE_ARTIFACT_METADATA: enable_artifact_metadata,
                     PARAM_EXPERIMENT_TRACKER: experiment_tracker,

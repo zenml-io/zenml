@@ -23,21 +23,7 @@ from zenml.steps.step_output import Output
 
 logger = get_logger(__name__)
 
-STEP_INNER_FUNC_NAME = "entrypoint"
 SINGLE_RETURN_OUT_NAME = "output"
-PARAM_STEP_NAME = "name"
-PARAM_ENABLE_CACHE = "enable_cache"
-PARAM_ENABLE_ARTIFACT_METADATA = "enable_artifact_metadata"
-PARAM_CREATED_BY_FUNCTIONAL_API = "created_by_functional_api"
-PARAM_STEP_OPERATOR = "step_operator"
-PARAM_EXPERIMENT_TRACKER = "experiment_tracker"
-CLASS_CONFIGURATION = "_CLASS_CONFIGURATION"
-PARAM_OUTPUT_ARTIFACTS = "output_artifacts"
-PARAM_OUTPUT_MATERIALIZERS = "output_materializers"
-PARAM_SETTINGS = "settings"
-PARAM_EXTRA_OPTIONS = "extra"
-PARAM_ON_FAILURE = "on_failure"
-PARAM_ON_SUCCESS = "on_success"
 
 
 def resolve_type_annotation(obj: Any) -> Any:
@@ -72,7 +58,6 @@ def parse_return_type_annotations(
     """Parse the returns of a step function into a dict of resolved types.
 
     Called within `BaseStepMeta.__new__()` to define `cls.OUTPUT_SIGNATURE`.
-    Called within `Do()` to resolve type annotations.
 
     Args:
         step_annotations: Type annotations of the step function.
