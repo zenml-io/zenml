@@ -56,8 +56,7 @@ pip install kubeflow==<PREFERRED_VERSION> mlflow==<PREFERRED_VERSION> seldon==<P
 ```
 
 {% hint style="info" %}
-The `-y` flag confirms all `pip install` commands without asking you for
-confirmation for every package first. 
+* The `-y` flag confirms all `pip install` commands without asking you for
 
 You can run `zenml integration --help` to see a full list of CLI commands that
 ZenML provides for interacting with integrations.
@@ -66,6 +65,20 @@ ZenML provides for interacting with integrations.
 Note, that you can also install your dependencies directly, but please note that 
 there is no guarantee that ZenML internals with work with any arbitrary version 
 of any external library.
+
+## Upgrade ZenML Integrations
+
+You can upgrade all integrations to their latest possible version using:
+
+```bash
+zenml integration upgrade mlflow pytorch -y
+```
+
+{% hint style="info" %}
+* The `-y` flag confirms all `pip install --upgrade` commands without asking you
+for confirmation.
+* If no integrations are specified, all installed integrations will be upgraded.
+{% endhint %}
 
 ## Help us with integrations!
 
