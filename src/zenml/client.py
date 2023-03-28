@@ -2293,17 +2293,23 @@ class Client(metaclass=ClientMetaClass):
                 STACK_COMPONENT_RECIPE_DIR,
             )
         )
-        # Create the new component model
-        result = ctx.invoke(
-            deploy,
-            path=path,
-            stack_recipe_name=f"{cloud}-modular",
-            config=configuration,
-            no_server=True,
-            **component,
-        )
 
-        if result == 1:
+        try:
+            # Create the new component model
+            ctx.invoke(
+                deploy,
+                path=path,
+                stack_recipe_name=f"{cloud}-modular",
+                config=configuration,
+                no_server=True,
+                **component,
+            )
+        except ModuleNotFoundError:
+            logger.error(
+                "It looks like you are trying to deploy a stack component "
+                "that might not exist. Please raise an issue on our GitHub "
+                "page if you see this."
+            )
             return
 
         # get the outputs from the deployed recipe
@@ -2344,18 +2350,17 @@ class Client(metaclass=ClientMetaClass):
             component_type == StackComponentType.EXPERIMENT_TRACKER
             and flavor == "mlflow"
         ):
-            # TODO check if key in outputs
             mlflow_bucket = outputs.get("mlflow-bucket")
             if mlflow_bucket:
                 logger.info(
-                    f"The bucket used for MLflow is: %s {mlflow_bucket}"
+                    "The bucket used for MLflow is: %s "
                     "You can use this bucket as an artifact store to "
-                    "avoid having to create a new one."
+                    "avoid having to create a new one.",
+                    mlflow_bucket,
                 )
 
         # if the cloud is k3d, then check the container registry
-        # outputs. If they are set and TODO a container registry by the name doesn't
-        # exist, then create one.
+        # outputs. If they are set, then create one.
         if cloud == "k3d":
             container_registry_outputs = {
                 k: v
@@ -2381,6 +2386,7 @@ class Client(metaclass=ClientMetaClass):
         ctx: click.Context,
         name_id_or_prefix: Union[str, UUID],
         component_type: StackComponentType,
+        yes: bool = False,
     ) -> None:
         """Destroys a stack component.
 
@@ -2389,6 +2395,7 @@ class Client(metaclass=ClientMetaClass):
             name: The name of the deployed stack component.
             name_id_or_prefix: The model of the component to destroy.
             component_type: The type of the stack component to destroy.
+            yes: Whether to skip checks.
         """
         try:
             component = self.get_stack_component(
@@ -2435,13 +2442,20 @@ class Client(metaclass=ClientMetaClass):
         # set the stack component and flavor
         component_flavor = {component_type.value: component.flavor}
 
-        # Invoke the destroy command
-        ctx.invoke(
-            destroy,
-            path=path,
-            stack_recipe_name=f"{component.metadata['cloud']}-modular",
-            **component_flavor,
-        )
+        try:
+            # Invoke the destroy command
+            ctx.invoke(
+                destroy,
+                path=path,
+                stack_recipe_name=f"{component.metadata['cloud']}-modular",
+                **component_flavor,
+            )
+        except ModuleNotFoundError:
+            logger.error(
+                "It looks like you have not deployed this stack component "
+                "before and therefore cannot destroy it."
+            )
+            return
 
         logger.info(
             "Deregistering stack component %s...",

@@ -1105,7 +1105,8 @@ def generate_stack_component_deploy_command(
         cloud: str,
         args: List[str],
     ) -> None:
-        """Deploy a stack component.
+        """Deploy a stack component. This function also registers the newly-
+        deployed component.
 
         Args:
             name: Name of the component to register.
@@ -1113,12 +1114,6 @@ def generate_stack_component_deploy_command(
             share: Share the stack with other users.
             args: Additional arguments to pass to the component.
         """
-        # make sure that flavor is set
-        if flavor is None:
-            raise cli_utils.error(
-                "Flavor must be specified while deploying a stack component."
-            )
-        
         # generate a python dict with the above structure
         # and then use it to check if the flavor is valid
         # for the given component type
@@ -1137,7 +1132,9 @@ def generate_stack_component_deploy_command(
         if flavor not in allowed_flavors[component_type.value]:
             raise cli_utils.error(
                 f"Flavor '{flavor}' is not supported for "
-                f"{_component_display_name(component_type, True)}."
+                f"{_component_display_name(component_type, True)}. "
+                "Allowed flavors are: "
+                f"{', '.join(allowed_flavors[component_type.value])}."
             )
 
         # for cases like artifact store, secrets manager and container registry
@@ -1150,6 +1147,7 @@ def generate_stack_component_deploy_command(
             raise cli_utils.error(
                 f"Cloud must be specified while deploying {flavor} "
                 f"{_component_display_name(component_type, True)}."
+                " Allowed clouds are: aws, gcp, k3d."
             )
 
         client = Client()
@@ -1196,7 +1194,7 @@ def generate_stack_component_destroy_command(
         ctx: click.Context,
         name_id_or_prefix: str,
     ) -> None:
-        """Deploy a stack component.
+        """Destroy a stack component.
 
         Args:
             ctx: Click context.

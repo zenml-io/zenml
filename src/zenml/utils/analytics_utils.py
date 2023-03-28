@@ -126,7 +126,7 @@ class AnalyticsEvent(str, Enum):
 
     # Stack recipes
     PULL_STACK_RECIPE = "Stack recipes pulled"
-    RUN_STACK_RECIPE = "Stack recipe created"
+    RUN_STACK_RECIPE = "Stack recipe ran"
     DESTROY_STACK_RECIPE = "Stack recipe destroyed"
     GET_STACK_RECIPE_OUTPUTS = "Stack recipe outputs fetched"
 

@@ -18,7 +18,7 @@ import shutil
 import subprocess
 import sys
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 import click
 from rich.text import Text
@@ -846,7 +846,7 @@ def deploy(
     skip_pull: bool,
     stack_name: Optional[str],
     config: Optional[str],
-) -> int:
+) -> None:
     """Run the stack_recipe at the specified relative path.
 
     `zenml stack_recipe pull <STACK_RECIPE_NAME>` has to be called with the
@@ -886,9 +886,6 @@ def deploy(
         step_operator: The flavor of step operator to deploy.
         config: Use a YAML or JSON configuration or configuration file to pass
             variables to the stack recipe.
-
-    Returns:
-        The exit code of the command. 1 if deployment successful, 0 otherwise.
     """
     with event_handler(
         event=AnalyticsEvent.RUN_STACK_RECIPE,
@@ -972,11 +969,10 @@ def deploy(
                     f"{metadata['Prerequisites']}"
                     "\n\n Are all of these conditions met?"
                 ):
-                    cli_utils.warning(
+                    cli_utils.error(
                         "Prerequisites are not installed. Please make sure "
                         "they are met and run deploy again."
                     )
-                    return 1
 
                 if not skip_check:
                     logger.info(
@@ -1174,8 +1170,7 @@ def deploy(
                             "value in the command-line."
                         )
                 else:
-                    logger.info("Deployment cancelled.")
-                    return 1
+                    cli_utils.error("Deployment was cancelled.")
 
             except RuntimeError as e:
                 cli_utils.error(
@@ -1362,7 +1357,7 @@ def destroy(
                         f"{stack_recipe_name}"
                     )
 
-                # build a dict of all stack componnet options that have non-null values
+                # build a dict of all stack component options that have non-null values
                 stack_component_options = {
                     "artifact_store": artifact_store,
                     "orchestrator": orchestrator,
@@ -1474,16 +1469,22 @@ def destroy(
     help="Name of the output you want to get the value of. If none is given,"
     "all outputs are returned.",
 )
+@click.option(
+    "--format",
+    "-f",
+    type=click.Choice(["json", "yaml"], case_sensitive=False),
+)
 @pass_git_stack_recipes_handler
 def get_outputs(
     git_stack_recipes_handler: GitStackRecipesHandler,
     stack_recipe_name: str,
     path: str,
     output: Optional[str],
-) -> Dict[str, str]:
+    format: Optional[str],
+) -> Union[Dict[str, Any], str]:
     """Get the outputs of the stack recipe at the specified relative path.
 
-    `zenml stack_recipe deploy stack_recipe_name` has to be called with the
+    `zenml stack_recipe deploy stack_recipe_name` has to be called from the
     same relative path before the get_outputs command.
 
     Args:
@@ -1492,13 +1493,17 @@ def get_outputs(
         path: The path of the stack recipe you want to get the outputs from.
         output: The name of the output you want to get the value of. If none is given,
             all outputs are returned.
+        format: The format of the output. If none is given, the output is printed
+            to the console.
 
     Returns:
-        A dictionary with the outputs of the stack recipe.
+        One or more outputs of the stack recipe in the specified format.
 
     Raises:
         ModuleNotFoundError: If the recipe is found at the given path.
     """
+    import json, yaml
+
     with event_handler(
         event=AnalyticsEvent.GET_STACK_RECIPE_OUTPUTS,
         metadata={"stack_recipe_name": stack_recipe_name},
@@ -1558,6 +1563,12 @@ def get_outputs(
                     cli_utils.declare("Outputs: ")
                     # delete all items that have empty values
                     outputs = {k: v for k, v in outputs.items() if v != ""}
+
+                    if format == "json":
+                        outputs = json.dumps(outputs, indent=4)
+                    elif format == "yaml":
+                        outputs = yaml.dump(outputs, indent=4)
+
                     cli_utils.declare(outputs)
                     return outputs
             except python_terraform.TerraformCommandError as e:
