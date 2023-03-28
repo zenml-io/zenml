@@ -69,7 +69,8 @@ class _DecoratedStep(BaseStep):
     _CLASS_CONFIGURATION: ClassVar[Optional[Dict[str, Any]]] = None
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
-        kwargs = {**(self._CLASS_CONFIGURATION or {}), **kwargs}
+        class_config = self._CLASS_CONFIGURATION or {}
+        kwargs = {**class_config, **kwargs}
         super().__init__(*args, **kwargs)
 
     @property
