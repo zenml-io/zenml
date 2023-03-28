@@ -17,6 +17,7 @@ from typing import TYPE_CHECKING, Any, Optional, Type, cast
 
 from zenml.logger import get_logger
 from zenml.models.artifact_models import ArtifactResponseModel
+from zenml.models.base_models import BaseResponseModel
 from zenml.post_execution.base_view import BaseView
 
 if TYPE_CHECKING:
@@ -33,7 +34,7 @@ class ArtifactView(BaseView):
     execution.
     """
 
-    MODEL_CLASS = ArtifactResponseModel
+    MODEL_CLASS: Type[BaseResponseModel] = ArtifactResponseModel
     REPR_KEYS = ["id", "name", "uri"]
 
     @property

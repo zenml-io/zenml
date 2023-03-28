@@ -37,7 +37,7 @@ class LineageGraph(BaseModel):
 
     nodes: List[Union[StepNode, ArtifactNode]] = []
     edges: List[Edge] = []
-    root_step_id: Optional[str]
+    root_step_id: Optional[str] = None
     run_metadata: List[Tuple[str, str, str]] = []
 
     def generate_step_nodes_and_edges(self, step: StepView) -> None:
@@ -87,7 +87,7 @@ class LineageGraph(BaseModel):
                         status=step.status,
                         is_cached=step.status == ExecutionStatus.CACHED,
                         artifact_type=artifact.type,
-                        artifact_data_type=artifact.data_type,
+                        artifact_data_type=artifact.data_type.import_path,
                         parent_step_id=str(step.id),
                         producer_step_id=str(artifact.producer_step_run_id),
                         uri=artifact.uri,

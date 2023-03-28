@@ -25,6 +25,7 @@ from zenml.zen_stores.schemas.team_schemas import TeamAssignmentSchema
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas import (
         ArtifactSchema,
+        CodeRepositorySchema,
         FlavorSchema,
         PipelineBuildSchema,
         PipelineDeploymentSchema,
@@ -51,7 +52,7 @@ class UserSchema(NamedSchema, table=True):
     active: bool
     password: Optional[str] = Field(nullable=True)
     activation_token: Optional[str] = Field(nullable=True)
-
+    hub_token: Optional[str] = Field(nullable=True)
     email_opted_in: Optional[bool] = Field(nullable=True)
 
     teams: List["TeamSchema"] = Relationship(
@@ -83,7 +84,9 @@ class UserSchema(NamedSchema, table=True):
     deployments: List["PipelineDeploymentSchema"] = Relationship(
         back_populates="user",
     )
-    hub_token: Optional[str]
+    code_repositories: List["CodeRepositorySchema"] = Relationship(
+        back_populates="user",
+    )
 
     @classmethod
     def from_request(cls, model: UserRequestModel) -> "UserSchema":

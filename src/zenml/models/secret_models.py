@@ -253,5 +253,5 @@ class SecretUpdateModel(SecretRequestModel):
     """Secret update model."""
 
     scope: Optional[SecretScope] = Field(  # type: ignore[assignment]
-        None, title="The scope of the secret."
+        default=None, title="The scope of the secret."
     )

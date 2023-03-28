@@ -15,12 +15,13 @@
 
 from collections import OrderedDict
 from functools import partial
-from typing import Any, Dict, List, Optional, cast
+from typing import Any, Dict, List, Optional, Type, cast
 
 from zenml.client import Client
 from zenml.enums import ExecutionStatus
 from zenml.logger import get_apidocs_link, get_logger
 from zenml.models import PipelineRunResponseModel
+from zenml.models.base_models import BaseResponseModel
 from zenml.post_execution.base_view import BaseView
 from zenml.post_execution.step import StepView
 from zenml.utils.pagination_utils import depaginate
@@ -83,7 +84,7 @@ class PipelineRunView(BaseView):
     pipeline execution.
     """
 
-    MODEL_CLASS = PipelineRunResponseModel
+    MODEL_CLASS: Type[BaseResponseModel] = PipelineRunResponseModel
     REPR_KEYS = ["id", "name"]
 
     def __init__(self, model: PipelineRunResponseModel):

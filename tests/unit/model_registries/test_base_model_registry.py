@@ -56,7 +56,7 @@ class TestModelRegistryModelMetadata:
         # Test exclude_unset and exclude_none both False
         expected = {
             "zenml_version": "1.55",
-            "zenml_pipeline_run_id": None,
+            "zenml_run_name": None,
             "zenml_pipeline_name": None,
             "zenml_pipeline_uuid": None,
             "zenml_pipeline_run_uuid": None,

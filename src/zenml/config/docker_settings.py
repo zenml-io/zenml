@@ -20,6 +20,7 @@ from pydantic import Extra, root_validator
 
 from zenml.config.base_settings import BaseSettings
 from zenml.logger import get_logger
+from zenml.utils import deprecation_utils
 
 logger = get_logger(__name__)
 
@@ -44,6 +45,15 @@ class PythonEnvironmentExportMethod(Enum):
             PythonEnvironmentExportMethod.PIP_FREEZE: "pip freeze",
             PythonEnvironmentExportMethod.POETRY_EXPORT: "poetry export --format=requirements.txt",
         }[self]
+
+
+class SourceFileMode(Enum):
+    """Different methods to handle source files in Docker images."""
+
+    INCLUDE = "include"
+    DOWNLOAD_OR_INCLUDE = "download_or_include"
+    DOWNLOAD = "download"
+    IGNORE = "ignore"
 
 
 class DockerSettings(BaseSettings):
@@ -137,18 +147,24 @@ class DockerSettings(BaseSettings):
             Docker image.
         dockerignore: Path to a dockerignore file to use when building the
             Docker image.
-        copy_files: If `True`, user files will be copied into the Docker image.
-            If this is set to `False`, ZenML will not copy any of your files
-            into the Docker image and you're responsible that all the files
-            to run your pipeline exist in the right place.
-        copy_global_config: If `True`, the global configuration (contains
-            connection info for your ZenStore) will be copied into the Docker
-            image. If this is set to `False`, ZenML will not copy this
-            configuration and you're responsible for making sure ZenML can
-            access the ZenStore in the Docker image.
+        copy_files: DEPRECATED, use the `source_files` attribute instead.
+        copy_global_config: DEPRECATED/UNUSED.
         user: If not `None`, will set the user, make it owner of the `/app`
             directory which contains all the user code and run the container
             entrypoint as this user.
+        source_files: Defines how the user source files will be handled when
+            building the Docker image.
+            * INCLUDE: The files will be included in the Docker image.
+            * DOWNLOAD: The files will be downloaded when running the image. If
+              this is specified, the files must be inside a registered code
+              repository and the repository must have no local changes,
+              otherwise the build will fail.
+            * DOWNLOAD_OR_INCLUDE: The files will be downloaded if they're
+              inside a registered code repository and the repository has no
+              local changes, otherwise they will be included in the image.
+            * IGNORE: The files will not be included or downloaded in the image.
+              If you use this option, you're responsible that all the files
+              to run your steps exist in the right place.
     """
 
     parent_image: Optional[str] = None
@@ -170,6 +186,40 @@ class DockerSettings(BaseSettings):
     copy_files: bool = True
     copy_global_config: bool = True
     user: Optional[str] = None
+
+    source_files: SourceFileMode = SourceFileMode.DOWNLOAD_OR_INCLUDE
+
+    _deprecation_validator = deprecation_utils.deprecate_pydantic_attributes(
+        "copy_files", "copy_global_config"
+    )
+
+    @root_validator(pre=True)
+    def _migrate_copy_files(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        """Migrates the value from the old copy_files attribute.
+
+        Args:
+            values: The settings values.
+
+        Returns:
+            The migrated settings values.
+        """
+        copy_files = values.get("copy_files", None)
+
+        if copy_files is None:
+            return values
+
+        if values.get("source_files", None):
+            # Ignore the copy files value in favor of the new source files
+            logger.warning(
+                "Both `copy_files` and `source_files` specified for the "
+                "DockerSettings, ignoring the `copy_files` value."
+            )
+        elif copy_files is True:
+            values["source_files"] = SourceFileMode.INCLUDE
+        elif copy_files is False:
+            values["source_files"] = SourceFileMode.IGNORE
+
+        return values
 
     @root_validator
     def _validate_skip_build(cls, values: Dict[str, Any]) -> Dict[str, Any]:

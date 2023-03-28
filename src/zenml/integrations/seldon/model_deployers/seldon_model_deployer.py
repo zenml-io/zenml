@@ -509,7 +509,9 @@ class SeldonModelDeployer(BaseModelDeployer):
                 to start, or if an operational failure is encountered before
                 it reaches a ready state.
         """
-        with event_handler(AnalyticsEvent.MODEL_DEPLOYED) as analytics_handler:
+        with event_handler(
+            event=AnalyticsEvent.MODEL_DEPLOYED, v2=True
+        ) as analytics_handler:
             config = cast(SeldonDeploymentConfig, config)
             service = None
 
@@ -581,7 +583,7 @@ class SeldonModelDeployer(BaseModelDeployer):
         running: bool = False,
         service_uuid: Optional[UUID] = None,
         pipeline_name: Optional[str] = None,
-        pipeline_run_id: Optional[str] = None,
+        run_name: Optional[str] = None,
         pipeline_step_name: Optional[str] = None,
         model_name: Optional[str] = None,
         model_uri: Optional[str] = None,
@@ -599,7 +601,7 @@ class SeldonModelDeployer(BaseModelDeployer):
                 originally used to create the Seldon Core deployment resource.
             pipeline_name: name of the pipeline that the deployed model was part
                 of.
-            pipeline_run_id: ID of the pipeline run which the deployed model was
+            run_name: Name of the pipeline run which the deployed model was
                 part of.
             pipeline_step_name: the name of the pipeline model deployment step
                 that deployed the model.
@@ -615,7 +617,8 @@ class SeldonModelDeployer(BaseModelDeployer):
         # Use a Seldon deployment service configuration to compute the labels
         config = SeldonDeploymentConfig(
             pipeline_name=pipeline_name or "",
-            pipeline_run_id=pipeline_run_id or "",
+            run_name=run_name or "",
+            pipeline_run_id=run_name or "",
             pipeline_step_name=pipeline_step_name or "",
             model_name=model_name or "",
             model_uri=model_uri or "",
