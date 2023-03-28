@@ -167,25 +167,28 @@ class Pipeline:
         Raises:
             ValueError: If the spec version of the given model is <0.2
         """
-        if version.parse(model.spec.version) < version.parse("0.2"):
+        model_version = version.parse(model.spec.version)
+        if model_version < version.parse("0.2"):
             raise ValueError(
                 "Loading a pipeline is only possible for pipeline specs with "
                 "version 0.2 or higher."
             )
+        elif model_version == version.parse("0.2"):
+            steps = cls._load_and_verify_steps(pipeline_spec=model.spec)
+            connect_method = cls._generate_connect_method(model=model)
 
-        steps = cls._load_and_verify_steps(pipeline_spec=model.spec)
-        connect_method = cls._generate_connect_method(model=model)
+            pipeline_class: Type[T] = type(
+                model.name,
+                (cls,),
+                {
+                    "connect": staticmethod(connect_method),
+                    "__doc__": model.docstring,
+                },
+            )
 
-        pipeline_class: Type[T] = type(
-            model.name,
-            (cls,),
-            {
-                "connect": staticmethod(connect_method),
-                "__doc__": model.docstring,
-            },
-        )
-
-        pipeline_instance = pipeline_class(**steps)
+            pipeline_instance = pipeline_class(**steps)
+        else:
+            pipeline_instance = load_pipeline_v0_3(model=model)
 
         version_hash = pipeline_instance._compute_unique_identifier(
             pipeline_spec=model.spec
@@ -982,3 +985,49 @@ class Pipeline:
 
     def __exit__(self, type, value, traceback):
         Pipeline.ACTIVE_PIPELINE = None
+
+
+def load_pipeline_v0_3(model: "PipelineResponseModel") -> "Pipeline":
+    outputs = {}
+
+    with Pipeline(name=model.name) as p:
+        for step_spec in model.spec.steps:
+            for upstream_step in step_spec.upstream_steps:
+                if upstream_step not in outputs:
+                    raise RuntimeError(
+                        f"Unable to find upstream step `{upstream_step}`. "
+                        "This is probably because the step was renamed in code."
+                    )
+
+            step_inputs = {}
+            for input_name, input_spec in step_spec.inputs.items():
+                if input_spec.output_name not in outputs[input_spec.step_name]:
+                    raise RuntimeError(
+                        f"Missing output `{input_spec.output_name}` for step "
+                        f"`{input_spec.step_name}`. This is probably because "
+                        "the output of the step was renamed."
+                    )
+                step_inputs[input_name] = outputs[input_spec.step_name][
+                    input_spec.output_name
+                ]
+
+            step_class: Type[BaseStep] = source_utils.load_and_validate_class(
+                step_spec.source, expected_class=BaseStep
+            )
+            step_outputs = step_class(
+                **step_inputs,
+                id=step_spec.pipeline_parameter_name,
+                after=step_spec.upstream_steps,
+            )
+            output_keys = list(step_class.OUTPUT_SIGNATURE.keys())
+
+            if isinstance(step_outputs, BaseStep._OutputArtifact):
+                step_outputs = [step_outputs]
+
+            outputs[step_spec.pipeline_parameter_name] = {
+                key: step_outputs[i] for i, key in enumerate(output_keys)
+            }
+
+    breakpoint()
+    p.__doc__ = model.docstring
+    return p

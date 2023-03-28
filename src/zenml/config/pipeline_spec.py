@@ -23,7 +23,7 @@ from zenml.config.strict_base_model import StrictBaseModel
 class PipelineSpec(StrictBaseModel):
     """Specification of a pipeline."""
 
-    version: str = "0.2"
+    version: str = "0.3"
     steps: List[StepSpec]
 
     def __eq__(self, other: Any) -> bool:
