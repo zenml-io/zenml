@@ -616,13 +616,26 @@ def parse_unknown_component_attributes(args: List[str]) -> List[str]:
     return p_args
 
 
-def install_packages(packages: List[str]) -> None:
+def install_packages(
+    packages: List[str],
+    upgrade: bool = False,
+) -> None:
     """Installs pypi packages into the current environment with pip.
 
     Args:
         packages: List of packages to install.
+        upgrade: Whether to upgrade the packages if they are already installed.
     """
-    command = [sys.executable, "-m", "pip", "install"] + packages
+    if upgrade:
+        command = [
+            sys.executable,
+            "-m",
+            "pip",
+            "install",
+            "--upgrade",
+        ] + packages
+    else:
+        command = [sys.executable, "-m", "pip", "install"] + packages
 
     if not IS_DEBUG_ENV:
         command += [
