@@ -2035,7 +2035,7 @@ class Client(metaclass=ClientMetaClass):
         flavor: str,
         component_type: StackComponentType,
         configuration: Dict[str, str],
-        metadata: Optional[Dict[str, Any]] = None,
+        labels: Optional[Dict[str, Any]] = None,
         is_shared: bool = False,
     ) -> "ComponentResponseModel":
         """Registers a stack component.
@@ -2045,7 +2045,7 @@ class Client(metaclass=ClientMetaClass):
             flavor: The flavor of the stack component.
             component_type: The type of the stack component.
             configuration: The configuration of the stack component.
-            metadata: The metadata of the stack component.
+            labels: The labels of the stack component.
             is_shared: Whether the stack component is shared or not.
 
         Returns:
@@ -2075,7 +2075,7 @@ class Client(metaclass=ClientMetaClass):
             is_shared=is_shared,
             user=self.active_user.id,
             workspace=self.active_workspace.id,
-            metadata=metadata,
+            labels=labels,
         )
 
         # Register the new model
@@ -2089,7 +2089,7 @@ class Client(metaclass=ClientMetaClass):
         component_type: StackComponentType,
         name: Optional[str] = None,
         configuration: Optional[Dict[str, Any]] = None,
-        metadata: Optional[Dict[str, Any]] = None,
+        labels: Optional[Dict[str, Any]] = None,
         is_shared: Optional[bool] = None,
     ) -> "ComponentResponseModel":
         """Updates a stack component.
@@ -2100,7 +2100,7 @@ class Client(metaclass=ClientMetaClass):
             component_type: The type of the stack component to update.
             name: The new name of the stack component.
             configuration: The new configuration of the stack component.
-            metadata: The new metadata of the stack component.
+            labels: The new labels of the stack component.
             is_shared: The new shared status of the stack component.
 
         Returns:
@@ -2174,14 +2174,14 @@ class Client(metaclass=ClientMetaClass):
             )
             update_model.configuration = existing_configuration
 
-        if metadata is not None:
-            existing_metadata = component.metadata or {}
-            existing_metadata.update(metadata)
+        if labels is not None:
+            existing_metadata = component.labels or {}
+            existing_metadata.update(labels)
 
             existing_metadata = {
                 k: v for k, v in existing_metadata.items() if v is not None
             }
-            update_model.metadata = existing_metadata
+            update_model.labels = existing_metadata
 
         # Send the updated component to the ZenStore
         return self.zen_store.update_stack_component(

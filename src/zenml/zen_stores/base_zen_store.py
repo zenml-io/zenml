@@ -562,7 +562,6 @@ class BaseZenStore(
                 type=StackComponentType.ORCHESTRATOR,
                 flavor="local",
                 configuration={},
-                metadata={"cloud": "local"},
             ),
         )
 
@@ -575,7 +574,6 @@ class BaseZenStore(
                 type=StackComponentType.ARTIFACT_STORE,
                 flavor="local",
                 configuration={},
-                metadata={"cloud": "local"},
             ),
         )
 

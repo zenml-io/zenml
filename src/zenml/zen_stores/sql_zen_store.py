@@ -1263,8 +1263,8 @@ class SqlZenStore(BaseZenStore):
                 configuration=base64.b64encode(
                     json.dumps(component.configuration).encode("utf-8")
                 ),
-                metadata_values=base64.b64encode(
-                    json.dumps(component.metadata).encode("utf-8")
+                labels=base64.b64encode(
+                    json.dumps(component.labels).encode("utf-8")
                 ),
             )
 

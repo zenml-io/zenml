@@ -379,10 +379,10 @@ to register a new artifact store, do so with the ``register`` command:
 zenml artifact-store register ARTIFACT_STORE_NAME --flavor=ARTIFACT_STORE_FLAVOR [--OPTIONS]
 ```
 
-You can also add any metadata to your stack component using the `--metadata` or `-m` flag:
+You can also add any labels to your stack component using the `--label` or `-l` flag:
 
 ```bash
-zenml artifact-store register ARTIFACT_STORE_NAME --flavor=ARTIFACT_STORE_FLAVOR -m key1=value1 -m key2=value2
+zenml artifact-store register ARTIFACT_STORE_NAME --flavor=ARTIFACT_STORE_FLAVOR -l key1=value1 -l key2=value2
 ```
 
 If you wish to list the artifact stores that have already been
@@ -416,7 +416,7 @@ command:
 zenml orchestrator register ORCHESTRATOR_NAME --flavor=ORCHESTRATOR_FLAVOR [--ORCHESTRATOR_OPTIONS]
 ```
 
-You can also add any metadata to your stack component using the `--metadata` or `-m` flag:
+You can also add any label to your stack component using the `--label` or `-m` flag:
 
 ```bash
 zenml orchestrator register ORCHESTRATOR_NAME --flavor=ORCHESTRATOR_FLAVOR -m key1=value1 -m key2=value2
@@ -448,7 +448,7 @@ registry, do so with the `register` command:
 zenml container-registry register REGISTRY_NAME --flavor=REGISTRY_FLAVOR [--REGISTRY_OPTIONS]
 ```
 
-You can also add any metadata to your stack component using the `--metadata` or `-m` flag:
+You can also add any label to your stack component using the `--label` or `-m` flag:
 
 ```bash
 zenml container-registry register REGISTRY_NAME --flavor=REGISTRY_FLAVOR -m key1=value1 -m key2=value2
@@ -494,7 +494,7 @@ zenml experiment-tracker register EXPERIMENT_TRACKER_NAME \
     --flavor=EXPERIMENT_TRACKER_FLAVOR [--EXPERIMENT_TRACKER_OPTIONS]
 ```
 
-You can also add any metadata to your stack component using the `--metadata` or `-m` flag:
+You can also add any label to your stack component using the `--label` or `-m` flag:
 
 ```bash
 zenml experiment-tracker register EXPERIMENT_TRACKER_NAME \
@@ -542,7 +542,7 @@ operator. If you wish to register a new step operator, do so with the
 zenml step-operator register STEP_OPERATOR_NAME --flavor STEP_OPERATOR_FLAVOR [--STEP_OPERATOR_OPTIONS]
 ```
 
-You can also add any metadata to your stack component using the `--metadata` or `-m` flag:
+You can also add any label to your stack component using the `--label` or `-m` flag:
 
 ```bash
 zenml step-operator register STEP_OPERATOR_NAME --flavor STEP_OPERATOR_FLAVOR -m key1=value1 -m key2=value2
