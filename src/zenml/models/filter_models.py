@@ -266,22 +266,33 @@ class BaseFilterModel(BaseModel):
     # List of fields that are not even mentioned as options in the CLI.
     CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = []
 
-    sort_by: str = Field("created", description="Which column to sort by.")
+    sort_by: str = Field(
+        default="created", description="Which column to sort by."
+    )
     logical_operator: LogicalOperators = Field(
-        LogicalOperators.AND,
+        default=LogicalOperators.AND,
         description="Which logical operator to use between all filters "
         "['and', 'or']",
     )
     page: int = Field(
-        PAGINATION_STARTING_PAGE, ge=1, description="Page number"
+        default=PAGINATION_STARTING_PAGE, ge=1, description="Page number"
     )
     size: int = Field(
-        PAGE_SIZE_DEFAULT, ge=1, le=PAGE_SIZE_MAXIMUM, description="Page size"
+        default=PAGE_SIZE_DEFAULT,
+        ge=1,
+        le=PAGE_SIZE_MAXIMUM,
+        description="Page size",
     )
 
-    id: Union[UUID, str] = Field(None, description="Id for this resource")
-    created: Union[datetime, str] = Field(None, description="Created")
-    updated: Union[datetime, str] = Field(None, description="Updated")
+    id: Optional[Union[UUID, str]] = Field(
+        default=None, description="Id for this resource"
+    )
+    created: Optional[Union[datetime, str]] = Field(
+        default=None, description="Created"
+    )
+    updated: Optional[Union[datetime, str]] = Field(
+        default=None, description="Updated"
+    )
 
     @validator("sort_by", pre=True)
     def validate_sort_by(cls, v: str) -> str:
@@ -738,7 +749,7 @@ class WorkspaceScopedFilterModel(BaseFilterModel):
         "scope_workspace",
     ]
     scope_workspace: Optional[UUID] = Field(
-        None,
+        default=None,
         description="The workspace to scope this query to.",
     )
 
@@ -790,7 +801,7 @@ class ShareableWorkspaceScopedFilterModel(WorkspaceScopedFilterModel):
         "scope_user",
     ]
     scope_user: Optional[UUID] = Field(
-        None,
+        default=None,
         description="The user to scope this query to.",
     )
 

@@ -18,6 +18,7 @@ from typing import TYPE_CHECKING, Any, List, Optional, Type, Union, cast
 from zenml.client import Client
 from zenml.logger import get_apidocs_link, get_logger
 from zenml.models import PipelineResponseModel, PipelineRunFilterModel
+from zenml.models.base_models import BaseResponseModel
 from zenml.post_execution.base_view import BaseView
 from zenml.post_execution.pipeline_run import PipelineRunView
 from zenml.utils.analytics_utils import AnalyticsEvent, track
@@ -136,7 +137,7 @@ def get_pipeline(
 class PipelineView(BaseView):
     """Post-execution pipeline class."""
 
-    MODEL_CLASS = PipelineResponseModel
+    MODEL_CLASS: Type[BaseResponseModel] = PipelineResponseModel
     REPR_KEYS = ["id", "name"]
 
     @property

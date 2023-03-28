@@ -150,8 +150,8 @@ class ClientConfiguration(FileSyncModel):
     """Pydantic object used for serializing client configuration options."""
 
     _active_workspace: Optional["WorkspaceResponseModel"] = None
-    active_workspace_id: Optional[UUID]
-    active_stack_id: Optional[UUID]
+    active_workspace_id: Optional[UUID] = None
+    active_stack_id: Optional[UUID] = None
 
     @property
     def active_workspace(self) -> WorkspaceResponseModel:
@@ -407,7 +407,7 @@ class Client(metaclass=ClientMetaClass):
                 "configuration."
             )
 
-        return ClientConfiguration(config_path)
+        return ClientConfiguration(config_file=config_path)
 
     @staticmethod
     def initialize(
@@ -774,9 +774,7 @@ class Client(metaclass=ClientMetaClass):
         user = self.get_user(
             name_id_or_prefix=name_id_or_prefix, allow_name_prefix_match=False
         )
-        user_update = UserUpdateModel()
-        if updated_name:
-            user_update.name = updated_name
+        user_update = UserUpdateModel(name=updated_name or user.name)
         if updated_full_name:
             user_update.full_name = updated_full_name
         if updated_email is not None:
@@ -911,11 +909,7 @@ class Client(metaclass=ClientMetaClass):
         """
         team = self.get_team(name_id_or_prefix, allow_name_prefix_match=False)
 
-        team_update = TeamUpdateModel()
-
-        if new_name:
-            team_update.name = new_name
-
+        team_update = TeamUpdateModel(name=new_name or team.name)
         if remove_users is not None and add_users is not None:
             union_add_rm = set(remove_users) & set(add_users)
             if union_add_rm:
@@ -1064,7 +1058,7 @@ class Client(metaclass=ClientMetaClass):
             name_id_or_prefix=name_id_or_prefix, allow_name_prefix_match=False
         )
 
-        role_update = RoleUpdateModel()
+        role_update = RoleUpdateModel(name=new_name or role.name)  # type: ignore[call-arg]
 
         if remove_permission is not None and add_permission is not None:
             union_add_rm = set(remove_permission) & set(add_permission)
@@ -1100,9 +1094,6 @@ class Client(metaclass=ClientMetaClass):
 
             if role_permissions is not None:
                 role_update.permissions = set(role_permissions)
-
-        if new_name:
-            role_update.name = new_name
 
         return Client().zen_store.update_role(
             role_id=role.id, role_update=role_update
@@ -1476,9 +1467,9 @@ class Client(metaclass=ClientMetaClass):
         workspace = self.get_workspace(
             name_id_or_prefix=name_id_or_prefix, allow_name_prefix_match=False
         )
-        workspace_update = WorkspaceUpdateModel()
-        if new_name:
-            workspace_update.name = new_name
+        workspace_update = WorkspaceUpdateModel(
+            name=new_name or workspace.name
+        )
         if new_description:
             workspace_update.description = new_description
         return self.zen_store.update_workspace(
@@ -1673,7 +1664,7 @@ class Client(metaclass=ClientMetaClass):
         )
 
         # Create the update model
-        update_model = StackUpdateModel(
+        update_model = StackUpdateModel(  # type: ignore[call-arg]
             workspace=self.active_workspace.id,
             user=self.active_user.id,
         )
@@ -1879,6 +1870,7 @@ class Client(metaclass=ClientMetaClass):
         """
         local_components: List[str] = []
         remote_components: List[str] = []
+        assert stack.components is not None
         for component_type, component_ids in stack.components.items():
             for component_id in component_ids:
                 try:
@@ -2141,7 +2133,7 @@ class Client(metaclass=ClientMetaClass):
             allow_name_prefix_match=False,
         )
 
-        update_model = ComponentUpdateModel(
+        update_model = ComponentUpdateModel(  # type: ignore[call-arg]
             workspace=self.active_workspace.id,
             user=self.active_user.id,
         )
@@ -3803,10 +3795,8 @@ class Client(metaclass=ClientMetaClass):
             allow_partial_id_match=True,
         )
 
-        secret_update = SecretUpdateModel()
+        secret_update = SecretUpdateModel(name=new_name or secret.name)  # type: ignore[call-arg]
 
-        if new_name:
-            secret_update.name = new_name
         if new_scope:
             secret_update.scope = new_scope
         values: Dict[str, Optional[SecretStr]] = {}
@@ -3986,7 +3976,7 @@ class Client(metaclass=ClientMetaClass):
         repo = self.get_code_repository(
             name_id_or_prefix=name_id_or_prefix, allow_name_prefix_match=False
         )
-        update = CodeRepositoryUpdateModel(name=name)
+        update = CodeRepositoryUpdateModel(name=repo.name)  # type: ignore[call-arg]
         return self.zen_store.update_code_repository(
             code_repository_id=repo.id, update=update
         )

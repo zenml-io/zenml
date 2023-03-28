@@ -176,11 +176,9 @@ class SeldonDeploymentService(BaseDeploymentService):
         description="Seldon Core prediction service",
     )
 
-    config: SeldonDeploymentConfig = Field(
-        default_factory=SeldonDeploymentConfig
-    )
+    config: SeldonDeploymentConfig
     status: SeldonDeploymentServiceStatus = Field(
-        default_factory=SeldonDeploymentServiceStatus
+        default_factory=lambda: SeldonDeploymentServiceStatus()
     )
 
     def _get_client(self) -> SeldonClient:
