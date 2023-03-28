@@ -43,7 +43,7 @@ logger = get_logger(__name__)
     tag=CliCategories.INTEGRATIONS,
 )
 def integration() -> None:
-    """Interact with the requirements of external integrations."""
+    """Interact with external integrations."""
 
 
 @integration.command(name="list", help="List the available integrations.")
@@ -243,8 +243,9 @@ def install(
 
         for integration_name in integrations_to_install:
             track_event(
-                AnalyticsEvent.INSTALL_INTEGRATION,
-                {"integration_name": integration_name},
+                event=AnalyticsEvent.INSTALL_INTEGRATION,
+                metadata={"integration_name": integration_name},
+                v2=True,
             )
 
 
@@ -307,3 +308,76 @@ def uninstall(integrations: Tuple[str], force: bool = False) -> None:
             description="Uninstalling integrations...",
         ):
             uninstall_package(requirements[n])
+
+
+@integration.command(
+    help="Upgrade the required packages for the integration of choice."
+)
+@click.argument("integrations", nargs=-1, required=False)
+@click.option(
+    "--yes",
+    "-y",
+    "force",
+    is_flag=True,
+    help="Force the upgrade of the required packages. This will skip the "
+    "confirmation step and re-upgrade existing packages as well",
+)
+def upgrade(
+    integrations: Tuple[str],
+    force: bool = False,
+) -> None:
+    """Upgrade the required packages for a given integration.
+
+    If no integration is specified all required packages for all integrations
+    are installed using pip.
+
+    Args:
+        integrations: The name of the integration to install the requirements
+            for.
+        force: Force the installation of the required packages.
+    """
+    from zenml.integrations.registry import integration_registry
+
+    if not integrations:
+        # no integrations specified, use all registered integrations
+        integrations = set(integration_registry.integrations.keys())
+
+    requirements = []
+    integrations_to_install = []
+    for integration_name in integrations:
+        try:
+            if integration_registry.is_installed(integration_name):
+                requirements += (
+                    integration_registry.select_integration_requirements(
+                        integration_name
+                    )
+                )
+                integrations_to_install.append(integration_name)
+            else:
+                declare(
+                    f"None of the required packages for integration "
+                    f"'{integration_name}' are installed."
+                )
+        except KeyError:
+            warning(f"Unable to find integration '{integration_name}'.")
+
+    if requirements and (
+        force
+        or confirmation(
+            f"Are you sure you want to upgrade the following "
+            "packages to the current environment?\n"
+            f"{requirements}"
+        )
+    ):
+        with console.status("Upgrading integrations..."):
+            install_packages(requirements, upgrade=True)
+            if "label_studio" in integrations:
+                warning(
+                    "There is a known issue with Label Studio installations via zenml. You might find that the Label Studio installation breaks the ZenML CLI. In this case, please run `pip install 'pydantic<1.11,>=1.9.0'` to fix the issue or message us on Slack if you need help with this. We are working on a more definitive fix."
+                )
+
+        for integration_name in integrations_to_install:
+            track_event(
+                AnalyticsEvent.INSTALL_INTEGRATION,
+                {"integration_name": integration_name},
+            )

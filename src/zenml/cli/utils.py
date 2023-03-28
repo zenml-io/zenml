@@ -647,13 +647,26 @@ def parse_unknown_component_attributes(args: List[str]) -> List[str]:
     return p_args
 
 
-def install_packages(packages: List[str]) -> None:
+def install_packages(
+    packages: List[str],
+    upgrade: bool = False,
+) -> None:
     """Installs pypi packages into the current environment with pip.
 
     Args:
         packages: List of packages to install.
+        upgrade: Whether to upgrade the packages if they are already installed.
     """
-    command = [sys.executable, "-m", "pip", "install"] + packages
+    if upgrade:
+        command = [
+            sys.executable,
+            "-m",
+            "pip",
+            "install",
+            "--upgrade",
+        ] + packages
+    else:
+        command = [sys.executable, "-m", "pip", "install"] + packages
 
     if not IS_DEBUG_ENV:
         command += [
@@ -906,7 +919,7 @@ def print_served_model_configuration(
         "STATUS": get_service_state_emoji(model_service.status.state),
         "STATUS_MESSAGE": model_service.status.last_error,
         "PIPELINE_NAME": model_service.config.pipeline_name,
-        "PIPELINE_RUN_ID": model_service.config.pipeline_run_id,
+        "RUN_NAME": model_service.config.run_name,
         "PIPELINE_STEP_NAME": model_service.config.pipeline_step_name,
     }
 
@@ -1320,6 +1333,11 @@ def create_filter_help_text(
     Returns:
         The help text.
     """
+    if filter_model.is_sort_by_field(field):
+        return (
+            "[STRING] Example: --sort_by='desc:name' to sort by name in "
+            "descending order. "
+        )
     if filter_model.is_datetime_field(field):
         return (
             f"[DATETIME] The following datetime format is supported: "

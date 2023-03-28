@@ -18,7 +18,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field
 
-from zenml.config.pipeline_configurations import PipelineSpec
+from zenml.config.pipeline_spec import PipelineSpec
 from zenml.enums import ExecutionStatus
 from zenml.models.base_models import (
     WorkspaceScopedRequestModel,
@@ -65,10 +65,10 @@ class PipelineResponseModel(PipelineBaseModel, WorkspaceScopedResponseModel):
     """Pipeline response model user, workspace, runs, and status hydrated."""
 
     runs: Optional[List["PipelineRunResponseModel"]] = Field(
-        title="A list of the last x Pipeline Runs."
+        default=None, title="A list of the last x Pipeline Runs."
     )
     status: Optional[List[ExecutionStatus]] = Field(
-        title="The status of the last x Pipeline Runs."
+        default=None, title="The status of the last x Pipeline Runs."
     )
 
 
@@ -80,26 +80,28 @@ class PipelineResponseModel(PipelineBaseModel, WorkspaceScopedResponseModel):
 class PipelineFilterModel(WorkspaceScopedFilterModel):
     """Model to enable advanced filtering of all Workspaces."""
 
-    name: str = Field(
+    name: Optional[str] = Field(
         default=None,
         description="Name of the Pipeline",
     )
-    version: str = Field(
+    version: Optional[str] = Field(
         default=None,
         description="Version of the Pipeline",
     )
-    version_hash: str = Field(
+    version_hash: Optional[str] = Field(
         default=None,
         description="Version hash of the Pipeline",
     )
-    docstring: str = Field(
+    docstring: Optional[str] = Field(
         default=None,
         description="Docstring of the Pipeline",
     )
-    workspace_id: Union[UUID, str] = Field(
+    workspace_id: Optional[Union[UUID, str]] = Field(
         default=None, description="Workspace of the Pipeline"
     )
-    user_id: Union[UUID, str] = Field(None, description="User of the Pipeline")
+    user_id: Optional[Union[UUID, str]] = Field(
+        default=None, description="User of the Pipeline"
+    )
 
 
 # ------- #

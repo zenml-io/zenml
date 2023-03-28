@@ -179,7 +179,7 @@ class BaseModelDeployer(StackComponent, ABC):
         running: bool = False,
         service_uuid: Optional[UUID] = None,
         pipeline_name: Optional[str] = None,
-        pipeline_run_id: Optional[str] = None,
+        run_name: Optional[str] = None,
         pipeline_step_name: Optional[str] = None,
         model_name: Optional[str] = None,
         model_uri: Optional[str] = None,
@@ -193,7 +193,7 @@ class BaseModelDeployer(StackComponent, ABC):
                 to deploy the model.
             pipeline_name: name of the pipeline that the deployed model was part
                 of.
-            pipeline_run_id: ID of the pipeline run which the deployed model was
+            run_name: Name of the pipeline run which the deployed model was
                 part of.
             pipeline_step_name: the name of the pipeline model deployment step
                 that deployed the model.
@@ -303,7 +303,7 @@ class BaseModelDeployer(StackComponent, ABC):
             A dictionary of metadata.
         """
         existing_services = self.find_model_server(
-            pipeline_run_id=info.run_name,
+            run_name=info.run_name,
         )
         if existing_services:
             existing_service = existing_services[0]

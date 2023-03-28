@@ -15,7 +15,16 @@
 """Class to run steps."""
 
 import inspect
-from typing import TYPE_CHECKING, Any, Callable, Dict, List, Tuple, Type
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Dict,
+    List,
+    Optional,
+    Tuple,
+    Type,
+)
 
 from zenml.artifacts.base_artifact import BaseArtifact
 from zenml.client import Client
@@ -46,6 +55,7 @@ from zenml.steps.utils import (
 from zenml.utils import source_utils
 
 if TYPE_CHECKING:
+    from zenml.config.source import Source
     from zenml.config.step_configurations import Step
     from zenml.metadata.metadata_types import MetadataType
     from zenml.stack import Stack
@@ -88,6 +98,9 @@ class StepRunner:
             input_artifacts: The input artifacts of the step.
             output_artifact_uris: The URIs of the output artifacts of the step.
             step_run_info: The step run info.
+
+        Raises:
+            BaseException: A general exception if the step fails.
         """
         step_entrypoint = self._load_step_entrypoint()
         output_materializers = self._load_output_materializers()
@@ -118,8 +131,17 @@ class StepRunner:
             step_failed = False
             try:
                 return_values = step_entrypoint(**function_params)
-            except:  # noqa: E722
+            except BaseException as step_exception:  # noqa: E722
                 step_failed = True
+                failure_hook_source = self.configuration.failure_hook_source
+                if failure_hook_source:
+                    logger.info("Detected failure hook. Running...")
+                    self.load_and_run_hook(
+                        failure_hook_source,
+                        step_exception=step_exception,
+                        output_artifact_uris=output_artifact_uris,
+                        output_materializers=output_materializers,
+                    )
                 raise
             finally:
                 step_run_metadata = self._stack.get_step_run_metadata(
@@ -132,20 +154,37 @@ class StepRunner:
                 self._stack.cleanup_step_run(
                     info=step_run_info, step_failed=step_failed
                 )
+                if not step_failed:
+                    success_hook_source = (
+                        self.configuration.success_hook_source
+                    )
+                    if success_hook_source:
+                        logger.info("Detected success hook. Running...")
+                        self.load_and_run_hook(
+                            success_hook_source,
+                            step_exception=None,
+                            output_artifact_uris=output_artifact_uris,
+                            output_materializers=output_materializers,
+                        )
 
-        # Store and publish the output artifacts of the step function.
-        output_annotations = parse_return_type_annotations(spec.annotations)
-        output_data = self._validate_outputs(return_values, output_annotations)
-        artifact_metadata_enabled = is_setting_enabled(
-            is_enabled_on_step=step_run_info.config.enable_artifact_metadata,
-            is_enabled_on_pipeline=step_run_info.pipeline.enable_artifact_metadata,
-        )
-        output_artifacts, artifact_metadata = self._store_output_artifacts(
-            output_data=output_data,
-            output_artifact_uris=output_artifact_uris,
-            output_materializers=output_materializers,
-            artifact_metadata_enabled=artifact_metadata_enabled,
-        )
+            # Store and publish the output artifacts of the step function.
+            output_annotations = parse_return_type_annotations(
+                spec.annotations
+            )
+            output_data = self._validate_outputs(
+                return_values, output_annotations
+            )
+            artifact_metadata_enabled = is_setting_enabled(
+                is_enabled_on_step=step_run_info.config.enable_artifact_metadata,
+                is_enabled_on_pipeline=step_run_info.pipeline.enable_artifact_metadata,
+            )
+            output_artifacts, artifact_metadata = self._store_output_artifacts(
+                output_data=output_data,
+                output_artifact_uris=output_artifact_uris,
+                output_materializers=output_materializers,
+                artifact_metadata_enabled=artifact_metadata_enabled,
+            )
+
         output_artifact_ids = publish_output_artifacts(
             output_artifacts=output_artifacts,
         )
@@ -239,6 +278,67 @@ class StepRunner:
                 # At this point, it has to be an artifact, so we resolve
                 function_params[arg] = self._load_input_artifact(
                     input_artifacts[arg], arg_type
+                )
+
+        return function_params
+
+    def _parse_hook_inputs(
+        self,
+        args: List[str],
+        annotations: Dict[str, Any],
+        step_exception: Optional[BaseException],
+        output_artifact_uris: Dict[str, str],
+        output_materializers: Dict[str, Type[BaseMaterializer]],
+    ) -> Dict[str, Any]:
+        """Parses the inputs for a step entrypoint function.
+
+        Args:
+            args: The arguments of the step entrypoint function.
+            annotations: The annotations of the step entrypoint function.
+            step_exception: The exception of the original step.
+            output_artifact_uris: The URIs of the output artifacts of the step.
+            output_materializers: The output materializers of the step.
+
+        Returns:
+            The parsed inputs for the step entrypoint function.
+
+        Raises:
+            TypeError: If hook function is passed a wrong parameter type.
+        """
+        from zenml.steps import BaseParameters
+
+        function_params: Dict[str, Any] = {}
+
+        if args and args[0] == "self":
+            args.pop(0)
+
+        for arg in args:
+            arg_type = annotations.get(arg, None)
+            arg_type = resolve_type_annotation(arg_type)
+
+            # Parse the parameters
+            if issubclass(arg_type, BaseParameters):
+                step_params = arg_type.parse_obj(self.configuration.parameters)
+                function_params[arg] = step_params
+
+            # Parse the step context
+            elif issubclass(arg_type, StepContext):
+                step_name = self.configuration.name
+                context = arg_type(
+                    step_name=step_name,
+                    output_materializers=output_materializers,
+                    output_artifact_uris=output_artifact_uris,
+                )
+                function_params[arg] = context
+
+            elif issubclass(arg_type, BaseException):
+                function_params[arg] = step_exception
+
+            else:
+                # It should not be of any other type
+                raise TypeError(
+                    "Hook functions can only take parameters of type `StepContext`,"
+                    f"`BaseParameters`, or `BaseException`, not {arg_type}"
                 )
 
         return function_params
@@ -408,10 +508,43 @@ class StepRunner:
                 type=materializer_class.ASSOCIATED_ARTIFACT_TYPE,
                 uri=uri,
                 materializer=materializer_source,
-                data_type=source_utils.resolve_class(type(return_value)),
+                data_type=source_utils.resolve(type(return_value)),
                 user=active_user_id,
                 workspace=active_workspace_id,
                 artifact_store_id=artifact_store_id,
             )
             output_artifacts[output_name] = output_artifact
         return output_artifacts, output_artifact_metadata
+
+    def load_and_run_hook(
+        self,
+        hook_source: "Source",
+        step_exception: Optional[BaseException],
+        output_artifact_uris: Dict[str, str],
+        output_materializers: Dict[str, Type[BaseMaterializer]],
+    ) -> None:
+        """Loads hook source and runs the hook.
+
+        Args:
+            hook_source: The source of the hook function.
+            step_exception: The exception of the original step.
+            output_artifact_uris: The URIs of the output artifacts of the step.
+            output_materializers: The output materializers of the step.
+        """
+        try:
+            hook = source_utils.load(hook_source)
+            hook_spec = inspect.getfullargspec(inspect.unwrap(hook))
+
+            function_params = self._parse_hook_inputs(
+                args=hook_spec.args,
+                annotations=hook_spec.annotations,
+                step_exception=step_exception,
+                output_artifact_uris=output_artifact_uris,
+                output_materializers=output_materializers,
+            )
+            logger.debug(f"Running hook {hook} with params: {function_params}")
+            hook(**function_params)
+        except Exception as e:
+            logger.error(
+                f"Failed to load hook source with exception: '{hook_source}': {e}"
+            )

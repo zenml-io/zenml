@@ -312,6 +312,7 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
         self,
         deployment: "PipelineDeploymentResponseModel",
         stack: "Stack",
+        environment: Dict[str, str],
     ) -> Any:
         """Creates a KFP JSON pipeline.
 
@@ -343,6 +344,8 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
         Args:
             deployment: The pipeline deployment to prepare or run.
             stack: The stack the pipeline will run on.
+            environment: Environment variables to set in the orchestration
+                environment.
 
         Raises:
             ValueError: If the attribute `pipeline_root` is not set and it
@@ -415,6 +418,9 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
                     name=ENV_ZENML_VERTEX_RUN_ID,
                     value=dslv2.PIPELINE_JOB_NAME_PLACEHOLDER,
                 )
+
+                for key, value in environment.items():
+                    container_op.set_env_variable(name=key, value=value)
 
                 # Set upstream tasks as a dependency of the current step
                 for upstream_step_name in step.spec.upstream_steps:

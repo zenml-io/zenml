@@ -18,10 +18,11 @@ from zenml.config.base_settings import BaseSettings
 from zenml.config.compiler import Compiler
 from zenml.config.pipeline_configurations import (
     PipelineRunConfiguration,
-    PipelineSpec,
 )
+from zenml.config.pipeline_spec import PipelineSpec
 from zenml.config.step_configurations import StepConfigurationUpdate
 from zenml.exceptions import PipelineInterfaceError, StackValidationError
+from zenml.hooks.hook_validators import resolve_and_validate_hook
 from zenml.pipelines import pipeline
 from zenml.steps import step
 
@@ -301,6 +302,116 @@ def test_extra_merging(one_step_pipeline, empty_step, local_stack):
         "s1": 0,
         "s2": 1,
     }
+
+
+def pipeline_hook() -> None:
+    """Simple hook"""
+    pass
+
+
+def step_hook() -> None:
+    """Simple hook"""
+    pass
+
+
+def test_success_hook_merging(
+    unconnected_two_step_pipeline, empty_step, local_stack
+):
+    """Tests the merging of hooks defined on steps, pipelines and the
+    run configuration."""
+    step_instance_1 = empty_step()
+    step_instance_2 = empty_step()
+    pipeline_instance = unconnected_two_step_pipeline(
+        step_1=step_instance_1,
+        step_2=step_instance_2,
+    )
+
+    pipeline_instance.configure(on_success=pipeline_hook)
+    step_instance_1.configure(on_success=step_hook, name="step_1")
+    step_instance_2.configure(name="step_2")
+
+    run_config = PipelineRunConfiguration(
+        steps={
+            "step_1": StepConfigurationUpdate(
+                success_hook_source=resolve_and_validate_hook(step_hook)
+            )
+        },
+    )
+
+    deployment, _ = Compiler().compile(
+        pipeline=pipeline_instance,
+        stack=local_stack,
+        run_configuration=run_config,
+    )
+
+    compiled_pipeline_success_hook = (
+        deployment.pipeline_configuration.success_hook_source
+    )
+    assert compiled_pipeline_success_hook == resolve_and_validate_hook(
+        pipeline_hook
+    )
+
+    compiled_step_1_success_hook = deployment.step_configurations[
+        "step_1"
+    ].config.success_hook_source
+    assert compiled_step_1_success_hook == resolve_and_validate_hook(step_hook)
+
+    compiled_step_2_success_hook = deployment.step_configurations[
+        "step_2"
+    ].config.success_hook_source
+    assert compiled_step_2_success_hook == resolve_and_validate_hook(
+        pipeline_hook
+    )
+
+
+def test_failure_hook_merging(
+    unconnected_two_step_pipeline, empty_step, local_stack
+):
+    """Tests the merging of failure hooks defined on steps, pipelines and the
+    run configuration."""
+    step_instance_1 = empty_step()
+    step_instance_2 = empty_step()
+    pipeline_instance = unconnected_two_step_pipeline(
+        step_1=step_instance_1,
+        step_2=step_instance_2,
+    )
+
+    pipeline_instance.configure(on_failure=pipeline_hook)
+    step_instance_1.configure(on_failure=step_hook, name="step_1")
+    step_instance_2.configure(name="step_2")
+
+    run_config = PipelineRunConfiguration(
+        steps={
+            "step_1": StepConfigurationUpdate(
+                failure_hook_source=resolve_and_validate_hook(step_hook)
+            )
+        },
+    )
+
+    deployment, _ = Compiler().compile(
+        pipeline=pipeline_instance,
+        stack=local_stack,
+        run_configuration=run_config,
+    )
+
+    compiled_pipeline_failure_hook = (
+        deployment.pipeline_configuration.failure_hook_source
+    )
+    assert compiled_pipeline_failure_hook == resolve_and_validate_hook(
+        pipeline_hook
+    )
+
+    compiled_step_1_failure_hook = deployment.step_configurations[
+        "step_1"
+    ].config.failure_hook_source
+    assert compiled_step_1_failure_hook == resolve_and_validate_hook(step_hook)
+
+    compiled_step_2_failure_hook = deployment.step_configurations[
+        "step_2"
+    ].config.failure_hook_source
+    assert compiled_step_2_failure_hook == resolve_and_validate_hook(
+        pipeline_hook
+    )
 
 
 def test_stack_component_settings_for_missing_component_are_ignored(

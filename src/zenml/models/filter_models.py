@@ -266,22 +266,33 @@ class BaseFilterModel(BaseModel):
     # List of fields that are not even mentioned as options in the CLI.
     CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = []
 
-    sort_by: str = Field("created", description="Which column to sort by.")
+    sort_by: str = Field(
+        default="created", description="Which column to sort by."
+    )
     logical_operator: LogicalOperators = Field(
-        LogicalOperators.AND,
+        default=LogicalOperators.AND,
         description="Which logical operator to use between all filters "
         "['and', 'or']",
     )
     page: int = Field(
-        PAGINATION_STARTING_PAGE, ge=1, description="Page number"
+        default=PAGINATION_STARTING_PAGE, ge=1, description="Page number"
     )
     size: int = Field(
-        PAGE_SIZE_DEFAULT, ge=1, le=PAGE_SIZE_MAXIMUM, description="Page size"
+        default=PAGE_SIZE_DEFAULT,
+        ge=1,
+        le=PAGE_SIZE_MAXIMUM,
+        description="Page size",
     )
 
-    id: Union[UUID, str] = Field(None, description="Id for this resource")
-    created: Union[datetime, str] = Field(None, description="Created")
-    updated: Union[datetime, str] = Field(None, description="Updated")
+    id: Optional[Union[UUID, str]] = Field(
+        default=None, description="Id for this resource"
+    )
+    created: Optional[Union[datetime, str]] = Field(
+        default=None, description="Created"
+    )
+    updated: Optional[Union[datetime, str]] = Field(
+        default=None, description="Updated"
+    )
 
     @validator("sort_by", pre=True)
     def validate_sort_by(cls, v: str) -> str:
@@ -508,7 +519,10 @@ class BaseFilterModel(BaseModel):
         Returns:
             True if the field is a datetime field, False otherwise.
         """
-        return issubclass(datetime, get_args(cls.__fields__[k].type_))
+        return (
+            issubclass(datetime, get_args(cls.__fields__[k].type_))
+            or cls.__fields__[k].type_ is datetime
+        )
 
     @classmethod
     def is_uuid_field(cls, k: str) -> bool:
@@ -520,7 +534,10 @@ class BaseFilterModel(BaseModel):
         Returns:
             True if the field is a uuid field, False otherwise.
         """
-        return issubclass(UUID, get_args(cls.__fields__[k].type_))
+        return (
+            issubclass(UUID, get_args(cls.__fields__[k].type_))
+            or cls.__fields__[k].type_ is UUID
+        )
 
     @classmethod
     def is_int_field(cls, k: str) -> bool:
@@ -532,7 +549,10 @@ class BaseFilterModel(BaseModel):
         Returns:
             True if the field is a int field, False otherwise.
         """
-        return issubclass(int, get_args(cls.__fields__[k].type_))
+        return (
+            issubclass(int, get_args(cls.__fields__[k].type_))
+            or cls.__fields__[k].type_ is int
+        )
 
     @classmethod
     def is_bool_field(cls, k: str) -> bool:
@@ -544,7 +564,10 @@ class BaseFilterModel(BaseModel):
         Returns:
             True if the field is a bool field, False otherwise.
         """
-        return issubclass(bool, get_args(cls.__fields__[k].type_))
+        return (
+            issubclass(bool, get_args(cls.__fields__[k].type_))
+            or cls.__fields__[k].type_ is bool
+        )
 
     @classmethod
     def is_str_field(cls, k: str) -> bool:
@@ -558,8 +581,23 @@ class BaseFilterModel(BaseModel):
         """
         return (
             issubclass(str, get_args(cls.__fields__[k].type_))
-            or cls.__fields__[k].type_ == str
+            or cls.__fields__[k].type_ is str
         )
+
+    @classmethod
+    def is_sort_by_field(cls, k: str) -> bool:
+        """Checks if it's a sort by field.
+
+        Args:
+            k: The key to check.
+
+        Returns:
+            True if the field is a sort by field, False otherwise.
+        """
+        return (
+            issubclass(str, get_args(cls.__fields__[k].type_))
+            or cls.__fields__[k].type_ == str
+        ) and k == "sort_by"
 
     @staticmethod
     def _define_datetime_filter(
@@ -711,7 +749,7 @@ class WorkspaceScopedFilterModel(BaseFilterModel):
         "scope_workspace",
     ]
     scope_workspace: Optional[UUID] = Field(
-        None,
+        default=None,
         description="The workspace to scope this query to.",
     )
 
@@ -763,7 +801,7 @@ class ShareableWorkspaceScopedFilterModel(WorkspaceScopedFilterModel):
         "scope_user",
     ]
     scope_user: Optional[UUID] = Field(
-        None,
+        default=None,
         description="The user to scope this query to.",
     )
 

@@ -89,7 +89,7 @@ More features that are planned 👇:
 
 ## Creating your own recipe 🧑‍🍳
 
-The number of recipes available right now is finite and there can be combinations of stack components that are not yet covered by any of the exisiting recipes. If you wish, you can contribute a recipe for any combination that you'd like to see. 
+The number of recipes available right now is finite and there can be combinations of stack components that are not yet covered by any of the existing recipes. If you wish, you can contribute a recipe for any combination that you'd like to see. 
 
 The [`CONTRIBUTING.md`](https://github.com/zenml-io/mlops-stacks/blob/main/CONTRIBUTING.md) file on the repository lists the principles that each recipe follows and gives details about the steps you should take when designing your own recipe. Feel free to also reach out to the ZenML community on [Slack](https://zenml.slack.com/ssb/redirect) 👋 if you need help with any part of the process!  
 

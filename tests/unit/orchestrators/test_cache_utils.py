@@ -19,6 +19,7 @@ from uuid import uuid4
 import pytest
 
 from zenml.config.compiler import Compiler
+from zenml.config.source import Source
 from zenml.config.step_configurations import Step
 from zenml.enums import ExecutionStatus, SorterOps
 from zenml.models.page_model import Page
@@ -38,6 +39,8 @@ def _compile_step(step: BaseStep) -> Step:
         pipeline_settings={},
         pipeline_extra={},
         stack=None,
+        pipeline_failure_hook_source=None,
+        pipeline_success_hook_source=None,
     )
 
 
@@ -101,7 +104,9 @@ def test_generate_cache_key_considers_step_source(generate_cache_key_kwargs):
     """Check that the cache key changes if the step source changes."""
     key_1 = cache_utils.generate_cache_key(**generate_cache_key_kwargs)
     generate_cache_key_kwargs["step"].spec.__config__.allow_mutation = True
-    generate_cache_key_kwargs["step"].spec.source = "Some.new.source"
+    generate_cache_key_kwargs["step"].spec.source = Source.from_import_path(
+        "some.new.source"
+    )
     key_2 = cache_utils.generate_cache_key(**generate_cache_key_kwargs)
     assert key_1 != key_2
 

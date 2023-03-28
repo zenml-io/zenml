@@ -88,10 +88,6 @@ jobs:
       #     rm requirements.txt
       #   if: ${{ inputs.python-version != '3.10' }}
 
-      - name: Install Aspell
-        run: sudo apt-get install aspell aspell-en
-        if: ${{ inputs.os == 'ubuntu-latest' && inputs.python-version == '3.8' }}
-
       - name: Setup tmate session before tests
         if: ${{ inputs.enable_tmate == 'before-tests' }}
         uses: mxschmitt/action-tmate@v3
@@ -100,8 +96,11 @@ jobs:
         run: |
           bash scripts/lint.sh
 
-      - name: Spell check
-        run: bash scripts/check-spelling.sh
+      - name: Spelling checker
+        uses: crate-ci/typos@master
+        with:
+          files: "."
+          config: ./.typos.toml
         # Only run the spell check on ubuntu-latest and python 3.8
         if: ${{ inputs.os == 'ubuntu-latest' && inputs.python-version == '3.8' }}
 

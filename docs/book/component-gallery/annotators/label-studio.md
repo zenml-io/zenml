@@ -63,13 +63,10 @@ example](https://github.com/zenml-io/zenml/tree/develop/examples/label_studio_an
 offers a detailed guide for each cloud provider on how to set it up.
 
 Before registering a `label_studio` flavor stack component as part of your
-stack, you'll need to have registered a cloud artifact store and a secrets
-manager to handle authentication with Label Studio as well as any secrets
-required for the Artifact Store. (See the docs on how to register and [setup a
-cloud artifact store](../artifact-stores/artifact-stores.md) as well as [a
-secrets manager](../secrets-managers/secrets-managers.md).)
+stack, you'll need to have registered a cloud artifact store.
+(See the docs on how to register and [setup a cloud artifact store](../artifact-stores/artifact-stores.md).)
 
-Be sure to register an secret schema for whichever artifact store you choose,
+Be sure to register a secret for whichever artifact store you choose,
 and then you should make sure to pass the name of that secret into the artifact
 store as the `--authentication_secret` as [described in this
 guide](../artifact-stores/s3.md#advanced-configuration), for example in
@@ -83,22 +80,22 @@ your deployed instance if that's what you are using.)
 ```shell
 # choose a username and password for your label-studio account
 label-studio reset_password --username <USERNAME> --password <PASSWORD>
-# start a temporary / one-off label-studio instance to get your API key
-label-studio start -p 8094
+# start a local label-studio instance
+label-studio start -p 8093
 ```
 
-Then visit [http://localhost:8094/](http://localhost:8094/) to log in, and then
-visit [http://localhost:8094/user/account](http://localhost:8094/user/account)
+Then visit [http://localhost:8093/](http://localhost:8093/) to log in, and then
+visit [http://localhost:8093/user/account](http://localhost:8093/user/account)
 and get your Label Studio API key (from the upper right hand corner). You will
-need it for the next step. `Ctrl-c` out of the Label Studio server that is
-running on the terminal.
+need it for the next step. Keep the Label Studio server running, because the
+ZenML Label Studio annotator will use it as the backend.
 
-At this point you should register the API key with your secrets manager under a
+At this point you should register the API key under a
 custom secret name, making sure to replace the two parts in `<>` with whatever
 you choose:
 
 ```shell
-zenml secrets-manager secret register <LABEL_STUDIO_SECRET_NAME> --api_key="<your_label_studio_api_key>"
+zenml secret create <LABEL_STUDIO_SECRET_NAME> --api_key="<your_label_studio_api_key>"
 ```
 
 Then register your annotator with ZenML:
@@ -119,7 +116,7 @@ For example:
 
 ```shell
 zenml stack copy annotation
-zenml stack update annotation -x <YOUR_SECRETS_MANAGER> -a <YOUR_CLOUD_ARTIFACT_STORE>
+zenml stack update annotation -a <YOUR_CLOUD_ARTIFACT_STORE>
 # this must be done separately so that the other required stack components are first registered
 zenml stack update annotation -an <YOUR_LABEL_STUDIO_ANNOTATOR>
 zenml stack set annotation
@@ -133,8 +130,8 @@ workflow!
 
 ## How do you use it?
 
-ZenML assumes that users have registered a cloud artifact store, a secrets
-manager and an annotator as described above. ZenML currently only supports this
+ZenML assumes that users have registered a cloud artifact store and an annotator
+as described above. ZenML currently only supports this
 setup, but we will add in the fully local stack option in the future.
 
 ZenML supports access to your data and annotations via the `zenml annotator ...`
@@ -174,7 +171,7 @@ include:
   registering a dataset with Label studio using the `get_or_create_dataset` step
 - `LabelStudioDatasetSyncConfig` - a step config object to be used when
   registering a dataset with Label studio using the
-  `sync_new_data_to_label_studio` step. Note that this requires a secret schema
+  `sync_new_data_to_label_studio` step. Note that this requires a ZenML secret
   to have been pre-registered with your artifact store as being the one that
   holds authentication secrets specific to your particular cloud provider.
   (Label Studio provides some documentation on what permissions these secrets

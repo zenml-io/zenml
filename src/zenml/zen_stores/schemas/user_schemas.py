@@ -25,6 +25,7 @@ from zenml.zen_stores.schemas.team_schemas import TeamAssignmentSchema
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas import (
         ArtifactSchema,
+        CodeRepositorySchema,
         FlavorSchema,
         PipelineBuildSchema,
         PipelineDeploymentSchema,
@@ -81,6 +82,9 @@ class UserSchema(NamedSchema, table=True):
         sa_relationship_kwargs={"cascade": "delete"},
     )
     deployments: List["PipelineDeploymentSchema"] = Relationship(
+        back_populates="user",
+    )
+    code_repositories: List["CodeRepositorySchema"] = Relationship(
         back_populates="user",
     )
 

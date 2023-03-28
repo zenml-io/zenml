@@ -27,17 +27,20 @@ from typing import (
     Mapping,
     Optional,
     Set,
+    Type,
     TypeVar,
     Union,
     cast,
 )
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from pydantic import SecretStr
 
 from zenml.config.global_config import GlobalConfiguration
+from zenml.config.source import Source
 from zenml.constants import (
     ENV_ZENML_ACTIVE_STACK_ID,
+    ENV_ZENML_ACTIVE_WORKSPACE_ID,
     ENV_ZENML_ENABLE_REPO_INIT_WARNINGS,
     ENV_ZENML_REPOSITORY_PATH,
     PAGE_SIZE_DEFAULT,
@@ -63,6 +66,10 @@ from zenml.exceptions import (
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.models import (
+    CodeRepositoryFilterModel,
+    CodeRepositoryRequestModel,
+    CodeRepositoryResponseModel,
+    CodeRepositoryUpdateModel,
     ComponentFilterModel,
     ComponentRequestModel,
     ComponentResponseModel,
@@ -125,7 +132,7 @@ from zenml.models.schedule_model import (
     ScheduleFilterModel,
     ScheduleResponseModel,
 )
-from zenml.utils import io_utils
+from zenml.utils import io_utils, source_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, event_handler, track
 from zenml.utils.filesync_model import FileSyncModel
 from zenml.utils.pagination_utils import depaginate
@@ -143,8 +150,8 @@ class ClientConfiguration(FileSyncModel):
     """Pydantic object used for serializing client configuration options."""
 
     _active_workspace: Optional["WorkspaceResponseModel"] = None
-    active_workspace_id: Optional[UUID]
-    active_stack_id: Optional[UUID]
+    active_workspace_id: Optional[UUID] = None
+    active_stack_id: Optional[UUID] = None
 
     @property
     def active_workspace(self) -> WorkspaceResponseModel:
@@ -400,7 +407,7 @@ class Client(metaclass=ClientMetaClass):
                 "configuration."
             )
 
-        return ClientConfiguration(config_path)
+        return ClientConfiguration(config_file=config_path)
 
     @staticmethod
     def initialize(
@@ -527,6 +534,23 @@ class Client(metaclass=ClientMetaClass):
         if enable_warnings:
             logger.warning(warning_message)
         return None
+
+    @staticmethod
+    def is_inside_repository(file_path: str) -> bool:
+        """Returns whether a file is inside the active ZenML repository.
+
+        Args:
+            file_path: A file path.
+
+        Returns:
+            True if the file is inside the active ZenML repository, False
+            otherwise.
+        """
+        repo_path = Client.find_repository()
+        if not repo_path:
+            return False
+
+        return repo_path in Path(file_path).resolve().parents
 
     @property
     def zen_store(self) -> "BaseZenStore":
@@ -750,9 +774,7 @@ class Client(metaclass=ClientMetaClass):
         user = self.get_user(
             name_id_or_prefix=name_id_or_prefix, allow_name_prefix_match=False
         )
-        user_update = UserUpdateModel()
-        if updated_name:
-            user_update.name = updated_name
+        user_update = UserUpdateModel(name=updated_name or user.name)
         if updated_full_name:
             user_update.full_name = updated_full_name
         if updated_email is not None:
@@ -887,11 +909,7 @@ class Client(metaclass=ClientMetaClass):
         """
         team = self.get_team(name_id_or_prefix, allow_name_prefix_match=False)
 
-        team_update = TeamUpdateModel()
-
-        if new_name:
-            team_update.name = new_name
-
+        team_update = TeamUpdateModel(name=new_name or team.name)
         if remove_users is not None and add_users is not None:
             union_add_rm = set(remove_users) & set(add_users)
             if union_add_rm:
@@ -1040,7 +1058,7 @@ class Client(metaclass=ClientMetaClass):
             name_id_or_prefix=name_id_or_prefix, allow_name_prefix_match=False
         )
 
-        role_update = RoleUpdateModel()
+        role_update = RoleUpdateModel(name=new_name or role.name)  # type: ignore[call-arg]
 
         if remove_permission is not None and add_permission is not None:
             union_add_rm = set(remove_permission) & set(add_permission)
@@ -1076,9 +1094,6 @@ class Client(metaclass=ClientMetaClass):
 
             if role_permissions is not None:
                 role_update.permissions = set(role_permissions)
-
-        if new_name:
-            role_update.name = new_name
 
         return Client().zen_store.update_role(
             role_id=role.id, role_update=role_update
@@ -1324,6 +1339,10 @@ class Client(metaclass=ClientMetaClass):
         Raises:
             RuntimeError: If the active workspace is not set.
         """
+        if ENV_ZENML_ACTIVE_WORKSPACE_ID in os.environ:
+            workspace_id = os.environ[ENV_ZENML_ACTIVE_WORKSPACE_ID]
+            return self.get_workspace(workspace_id)
+
         workspace: Optional["WorkspaceResponseModel"] = None
         if self._config:
             workspace = self._config.active_workspace
@@ -1448,9 +1467,9 @@ class Client(metaclass=ClientMetaClass):
         workspace = self.get_workspace(
             name_id_or_prefix=name_id_or_prefix, allow_name_prefix_match=False
         )
-        workspace_update = WorkspaceUpdateModel()
-        if new_name:
-            workspace_update.name = new_name
+        workspace_update = WorkspaceUpdateModel(
+            name=new_name or workspace.name
+        )
         if new_description:
             workspace_update.description = new_description
         return self.zen_store.update_workspace(
@@ -1498,7 +1517,8 @@ class Client(metaclass=ClientMetaClass):
         stack: Optional["StackResponseModel"] = None
 
         if ENV_ZENML_ACTIVE_STACK_ID in os.environ:
-            return self.get_stack(ENV_ZENML_ACTIVE_STACK_ID)
+            stack_id = os.environ[ENV_ZENML_ACTIVE_STACK_ID]
+            return self.get_stack(stack_id)
 
         if self._config:
             stack = self.get_stack(self._config.active_stack_id)
@@ -1644,7 +1664,7 @@ class Client(metaclass=ClientMetaClass):
         )
 
         # Create the update model
-        update_model = StackUpdateModel(
+        update_model = StackUpdateModel(  # type: ignore[call-arg]
             workspace=self.active_workspace.id,
             user=self.active_user.id,
         )
@@ -1850,6 +1870,7 @@ class Client(metaclass=ClientMetaClass):
         """
         local_components: List[str] = []
         remote_components: List[str] = []
+        assert stack.components is not None
         for component_type, component_ids in stack.components.items():
             for component_id in component_ids:
                 try:
@@ -2061,7 +2082,9 @@ class Client(metaclass=ClientMetaClass):
         from zenml.stack import Flavor
 
         flavor_class = Flavor.from_model(flavor_model)
-        configuration_obj = flavor_class.config_class(**configuration)
+        configuration_obj = flavor_class.config_class(
+            warn_about_plain_text_secrets=True, **configuration
+        )
 
         self._validate_stack_component_configuration(
             component_type, configuration=configuration_obj
@@ -2116,7 +2139,7 @@ class Client(metaclass=ClientMetaClass):
             allow_name_prefix_match=False,
         )
 
-        update_model = ComponentUpdateModel(
+        update_model = ComponentUpdateModel(  # type: ignore[call-arg]
             workspace=self.active_workspace.id,
             user=self.active_user.id,
         )
@@ -2265,7 +2288,7 @@ class Client(metaclass=ClientMetaClass):
         Raises:
             ValueError: in case the config_schema of the flavor is too large.
         """
-        from zenml.utils.source_utils import validate_flavor_source
+        from zenml.stack.flavor import validate_flavor_source
 
         flavor = validate_flavor_source(
             source=source, component_type=component_type
@@ -2599,6 +2622,11 @@ class Client(metaclass=ClientMetaClass):
         user_id: Optional[Union[str, UUID]] = None,
         pipeline_id: Optional[Union[str, UUID]] = None,
         stack_id: Optional[Union[str, UUID]] = None,
+        is_local: Optional[bool] = None,
+        contains_code: Optional[bool] = None,
+        zenml_version: Optional[str] = None,
+        python_version: Optional[str] = None,
+        checksum: Optional[str] = None,
     ) -> Page[PipelineBuildResponseModel]:
         """List all builds.
 
@@ -2614,6 +2642,11 @@ class Client(metaclass=ClientMetaClass):
             user_id: The  id of the user to filter by.
             pipeline_id: The id of the pipeline to filter by.
             stack_id: The id of the stack to filter by.
+            is_local: Use to filter local builds.
+            contains_code: Use to filter builds that contain code.
+            zenml_version: The version of ZenML to filter by.
+            python_version: The Python version to filter by.
+            checksum: The build checksum to filter by.
 
         Returns:
             A page with builds fitting the filter description
@@ -2630,6 +2663,11 @@ class Client(metaclass=ClientMetaClass):
             user_id=user_id,
             pipeline_id=pipeline_id,
             stack_id=stack_id,
+            is_local=is_local,
+            contains_code=contains_code,
+            zenml_version=zenml_version,
+            python_version=python_version,
+            checksum=checksum,
         )
         build_filter_model.set_scope_workspace(self.active_workspace.id)
         return self.zen_store.list_builds(
@@ -3772,10 +3810,8 @@ class Client(metaclass=ClientMetaClass):
             allow_partial_id_match=True,
         )
 
-        secret_update = SecretUpdateModel()
+        secret_update = SecretUpdateModel(name=new_name or secret.name)  # type: ignore[call-arg]
 
-        if new_name:
-            secret_update.name = new_name
         if new_scope:
             secret_update.scope = new_scope
         values: Dict[str, Optional[SecretStr]] = {}
@@ -3824,6 +3860,155 @@ class Client(metaclass=ClientMetaClass):
         )
 
         self.zen_store.delete_secret(secret_id=secret.id)
+
+    # .-------------------.
+    # | CODE REPOSITORIES |
+    # '-------------------'
+
+    def create_code_repository(
+        self, name: str, config: Dict[str, Any], source: Source
+    ) -> CodeRepositoryResponseModel:
+        """Create a new code repository.
+
+        Args:
+            name: Name of the code repository.
+            config: The configuration for the code repository.
+            source: The code repository implementation source.
+
+        Returns:
+            The created code repository.
+
+        Raises:
+            RuntimeError: If the provided config is invalid.
+        """
+        from zenml.code_repositories import BaseCodeRepository
+
+        code_repo_class: Type[
+            BaseCodeRepository
+        ] = source_utils.load_and_validate_class(
+            source=source, expected_class=BaseCodeRepository
+        )
+        try:
+            # Validate the repo config
+            code_repo_class(id=uuid4(), config=config)
+        except Exception as e:
+            raise RuntimeError(
+                "Failed to validate code repository config."
+            ) from e
+
+        repo_request = CodeRepositoryRequestModel(
+            user=self.active_user.id,
+            workspace=self.active_workspace.id,
+            name=name,
+            config=config,
+            source=source,
+        )
+        return self.zen_store.create_code_repository(
+            code_repository=repo_request
+        )
+
+    def list_code_repositories(
+        self,
+        sort_by: str = "created",
+        page: int = PAGINATION_STARTING_PAGE,
+        size: int = PAGE_SIZE_DEFAULT,
+        logical_operator: LogicalOperators = LogicalOperators.AND,
+        id: Optional[Union[UUID, str]] = None,
+        created: Optional[Union[datetime, str]] = None,
+        updated: Optional[Union[datetime, str]] = None,
+        name: Optional[str] = None,
+        workspace_id: Optional[Union[str, UUID]] = None,
+        user_id: Optional[Union[str, UUID]] = None,
+    ) -> Page[CodeRepositoryResponseModel]:
+        """List all code repositories.
+
+        Args:
+            sort_by: The column to sort by.
+            page: The page of items.
+            size: The maximum size of all pages.
+            logical_operator: Which logical operator to use [and, or].
+            id: Use the id of the code repository to filter by.
+            created: Use to filter by time of creation.
+            updated: Use the last updated date for filtering.
+            name: The name of the code repository to filter by.
+            workspace_id: The id of the workspace to filter by.
+            user_id: The id of the user to filter by.
+
+        Returns:
+            A page of code repositories matching the filter description.
+        """
+        filter_model = CodeRepositoryFilterModel(
+            sort_by=sort_by,
+            page=page,
+            size=size,
+            logical_operator=logical_operator,
+            id=id,
+            created=created,
+            updated=updated,
+            name=name,
+            workspace_id=workspace_id,
+            user_id=user_id,
+        )
+        filter_model.set_scope_workspace(self.active_workspace.id)
+        return self.zen_store.list_code_repositories(filter_model=filter_model)
+
+    def get_code_repository(
+        self,
+        name_id_or_prefix: Union[str, UUID],
+        allow_name_prefix_match: bool = True,
+    ) -> CodeRepositoryResponseModel:
+        """Get a code repository by name, id or prefix.
+
+        Args:
+            name_id_or_prefix: The name, ID or ID prefix of the code repository.
+            allow_name_prefix_match: If True, allow matching by name prefix.
+
+        Returns:
+            The code repository.
+        """
+        return self._get_entity_by_id_or_name_or_prefix(
+            get_method=self.zen_store.get_code_repository,
+            list_method=self.list_code_repositories,
+            name_id_or_prefix=name_id_or_prefix,
+            allow_name_prefix_match=allow_name_prefix_match,
+        )
+
+    def update_code_repository(
+        self,
+        name_id_or_prefix: Union[UUID, str],
+        name: Optional[str] = None,
+    ) -> CodeRepositoryResponseModel:
+        """Update a code repository.
+
+        Args:
+            name_id_or_prefix: Name, ID or prefix of the code repository to
+                update.
+            name: New name of the code repository.
+
+        Returns:
+            The updated code repository.
+        """
+        repo = self.get_code_repository(
+            name_id_or_prefix=name_id_or_prefix, allow_name_prefix_match=False
+        )
+        update = CodeRepositoryUpdateModel(name=repo.name)  # type: ignore[call-arg]
+        return self.zen_store.update_code_repository(
+            code_repository_id=repo.id, update=update
+        )
+
+    def delete_code_repository(
+        self,
+        name_id_or_prefix: Union[str, UUID],
+    ) -> None:
+        """Delete a code repository.
+
+        Args:
+            name_id_or_prefix: The name, ID or prefix of the code repository.
+        """
+        repo = self.get_code_repository(
+            name_id_or_prefix=name_id_or_prefix, allow_name_prefix_match=False
+        )
+        self.zen_store.delete_code_repository(code_repository_id=repo.id)
 
     # ---- utility prefix matching get functions -----
 

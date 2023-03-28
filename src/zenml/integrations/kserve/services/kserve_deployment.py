@@ -58,7 +58,12 @@ class KServeDeploymentConfig(ServiceConfig):
         model_name: the name of the model. Multiple versions of the same model
             should use the same model name. Model name must use only lowercase
             alphanumeric characters and dashes.
-        secret_name: the name of the secret containing the model.
+        secret_name: the name of the ZenML secret containing credentials
+            required to authenticate to the artifact store.
+        k8s_secret: the name of the Kubernetes secret to use for the prediction
+            service.
+        k8s_service_account: the name of the Kubernetes service account to use
+            for the prediction service.
         predictor: the KServe predictor used to serve the model. The
         predictor type can be one of the following: `tensorflow`, `pytorch`,
         `sklearn`, `xgboost`, `custom`.
@@ -69,11 +74,13 @@ class KServeDeploymentConfig(ServiceConfig):
 
     model_uri: str = ""
     model_name: str
-    secret_name: Optional[str]
+    secret_name: Optional[str] = None
+    k8s_secret: Optional[str] = None
+    k8s_service_account: Optional[str] = None
     predictor: str
     replicas: int = 1
-    container: Optional[Dict[str, Any]]
-    resources: Optional[Dict[str, Any]]
+    container: Optional[Dict[str, Any]] = None
+    resources: Optional[Dict[str, Any]] = None
 
     @staticmethod
     def sanitize_labels(labels: Dict[str, str]) -> None:
@@ -105,8 +112,10 @@ class KServeDeploymentConfig(ServiceConfig):
         labels = {"app": "zenml"}
         if self.pipeline_name:
             labels["zenml.pipeline_name"] = self.pipeline_name
+        if self.run_name:
+            labels["zenml.run_name"] = self.run_name
         if self.pipeline_run_id:
-            labels["zenml.pipeline_run_id"] = self.pipeline_run_id
+            labels["zenml.pipeline_run_id"] = self.run_name
         if self.pipeline_step_name:
             labels["zenml.pipeline_step_name"] = self.pipeline_step_name
         if self.model_name:
@@ -189,10 +198,8 @@ class KServeDeploymentService(BaseDeploymentService):
         description="KServe inference service",
     )
 
-    config: KServeDeploymentConfig = Field(
-        default_factory=KServeDeploymentConfig
-    )
-    status: ServiceStatus = Field(default_factory=ServiceStatus)
+    config: KServeDeploymentConfig
+    status: ServiceStatus = Field(default_factory=lambda: ServiceStatus())
 
     def _get_model_deployer(self) -> "KServeModelDeployer":
         """Get the active KServe model deployer.
@@ -353,14 +360,16 @@ class KServeDeploymentService(BaseDeploymentService):
                             )
                         ],
                     )
-                ]
+                ],
+                "service_account_name": self.config.k8s_service_account,
             }
         else:
             predictor_kwargs = {
                 self.config.predictor: V1beta1PredictorExtensionSpec(
                     storage_uri=self.config.model_uri,
                     resources=self.config.resources,
-                )
+                ),
+                "service_account_name": self.config.k8s_service_account,
             }
 
         isvc = V1beta1InferenceService(

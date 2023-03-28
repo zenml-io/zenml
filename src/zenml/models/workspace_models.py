@@ -14,6 +14,8 @@
 """Models representing workspaces."""
 
 
+from typing import Optional
+
 from pydantic import BaseModel, Field
 
 from zenml.models.base_models import (
@@ -59,7 +61,7 @@ class WorkspaceResponseModel(WorkspaceBaseModel, BaseResponseModel):
 class WorkspaceFilterModel(BaseFilterModel):
     """Model to enable advanced filtering of all Workspaces."""
 
-    name: str = Field(
+    name: Optional[str] = Field(
         default=None,
         description="Name of the workspace",
     )

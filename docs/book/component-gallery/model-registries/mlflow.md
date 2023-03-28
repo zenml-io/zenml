@@ -56,11 +56,16 @@ configured in your stack, the MLFlow Model Registry will also use the same
 configuration.
 {% endhint %}
 
+{% hint style="warning" %}
+Due to a [critical severity vulnerability](https://github.com/advisories/GHSA-xg73-94fp-g449) found in older versions of MLflow, we recommend using
+MLflow version 2.2.1 or higher.
+{% endhint %}
+
 ## How do you use it?
 
 There are different ways to use the MLflow Model Registry. You can use it in
 your ZenML pipelines with the built-in step, or you can use the ZenML CLI to
-register your model manually or call the Model Registry API withing a custom
+register your model manually or call the Model Registry API within a custom
 step in your pipeline. The following sections show you how to use the MLflow
 Model Registry in your ZenML pipelines and with the ZenML CLI:
 

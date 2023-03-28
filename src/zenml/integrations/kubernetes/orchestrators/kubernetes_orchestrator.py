@@ -31,7 +31,7 @@
 """Kubernetes-native orchestrator."""
 
 import os
-from typing import TYPE_CHECKING, Any, List, Optional, Tuple, Type, cast
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, cast
 
 from kubernetes import client as k8s_client
 from kubernetes import config as k8s_config
@@ -260,12 +260,15 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         self,
         deployment: "PipelineDeploymentResponseModel",
         stack: "Stack",
+        environment: Dict[str, str],
     ) -> Any:
         """Runs the pipeline in Kubernetes.
 
         Args:
             deployment: The pipeline deployment to prepare or run.
             stack: The stack the pipeline will run on.
+            environment: Environment variables to set in the orchestration
+                environment.
 
         Raises:
             RuntimeError: If trying to run from a Jupyter notebook.
@@ -351,6 +354,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                 args=args,
                 service_account_name=service_account_name,
                 settings=settings,
+                env=environment,
                 mount_local_stores=self.config.is_local,
             )
 
@@ -374,6 +378,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             args=args,
             service_account_name=service_account_name,
             settings=settings,
+            env=environment,
             mount_local_stores=self.config.is_local,
         )
 

@@ -14,13 +14,13 @@
 """Class for compiling ZenML pipelines into a serializable format."""
 import copy
 import string
-from typing import TYPE_CHECKING, Any, Dict, List, Sequence, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence, Tuple
 
 from zenml.config.base_settings import BaseSettings, ConfigurationLevel
 from zenml.config.pipeline_configurations import (
     PipelineRunConfiguration,
-    PipelineSpec,
 )
+from zenml.config.pipeline_spec import PipelineSpec
 from zenml.config.settings_resolver import SettingsResolver
 from zenml.config.step_configurations import (
     Step,
@@ -33,6 +33,7 @@ from zenml.models.pipeline_deployment_models import PipelineDeploymentBaseModel
 from zenml.utils import pydantic_utils, settings_utils, source_utils
 
 if TYPE_CHECKING:
+    from zenml.config.source import Source
     from zenml.pipelines import BasePipeline
     from zenml.stack import Stack, StackComponent
     from zenml.steps import BaseStep
@@ -95,8 +96,11 @@ class Compiler:
                 pipeline_settings=settings_to_passdown,
                 pipeline_extra=pipeline.configuration.extra,
                 stack=stack,
+                pipeline_failure_hook_source=pipeline.configuration.failure_hook_source,
+                pipeline_success_hook_source=pipeline.configuration.success_hook_source,
             )
             for name, step in self._get_sorted_steps(steps=pipeline.steps)
+            if step._has_been_called
         }
 
         self._ensure_required_stack_components_exist(
@@ -348,7 +352,7 @@ class Compiler:
             The step spec.
         """
         return StepSpec(
-            source=source_utils.resolve_class(step.__class__),
+            source=source_utils.resolve(step.__class__),
             upstream_steps=sorted(step.upstream_steps),
             inputs=step.inputs,
             pipeline_parameter_name=pipeline_parameter_name,
@@ -361,6 +365,8 @@ class Compiler:
         pipeline_settings: Dict[str, "BaseSettings"],
         pipeline_extra: Dict[str, Any],
         stack: "Stack",
+        pipeline_failure_hook_source: Optional["Source"] = None,
+        pipeline_success_hook_source: Optional["Source"] = None,
     ) -> Step:
         """Compiles a ZenML step.
 
@@ -371,6 +377,8 @@ class Compiler:
                 pipeline of the step.
             pipeline_extra: Extra values configured on the pipeline of the step.
             stack: The stack on which the pipeline will be run.
+            pipeline_failure_hook_source: Source for the failure hook.
+            pipeline_success_hook_source: Source for the success hook.
 
         Returns:
             The compiled step.
@@ -384,11 +392,23 @@ class Compiler:
             stack=stack,
         )
         step_extra = step.configuration.extra
+        step_on_failure_hook_source = step.configuration.failure_hook_source
+        step_on_success_hook_source = step.configuration.success_hook_source
 
         step.configure(
-            settings=pipeline_settings, extra=pipeline_extra, merge=False
+            settings=pipeline_settings,
+            extra=pipeline_extra,
+            on_failure=pipeline_failure_hook_source,
+            on_success=pipeline_success_hook_source,
+            merge=False,
         )
-        step.configure(settings=step_settings, extra=step_extra, merge=True)
+        step.configure(
+            settings=step_settings,
+            extra=step_extra,
+            on_failure=step_on_failure_hook_source,
+            on_success=step_on_success_hook_source,
+            merge=True,
+        )
 
         complete_step_configuration = StepConfiguration(
             **step.configuration.dict()

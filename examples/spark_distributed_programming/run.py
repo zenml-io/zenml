@@ -37,7 +37,7 @@ if __name__ == "__main__":
                 eval_ratio=0.1,
             ),
         ),
-        processer=transformer_step(),
+        processor=transformer_step(),
         trainer=trainer_step(),
     )
     pipeline.run()

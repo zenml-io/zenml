@@ -37,6 +37,8 @@ class TaskConfiguration(BaseModel):
     command: List[str]
     arguments: List[str]
 
+    environment: Dict[str, str] = {}
+
     operator_source: str
     operator_args: Dict[str, Any] = {}
 
@@ -133,7 +135,8 @@ def get_docker_operator_init_kwargs(
     """
     mounts = []
     extra_hosts = {}
-    environment = {ENV_ZENML_AIRFLOW_RUN_ID: "{{run_id}}"}
+    environment = task_config.environment
+    environment[ENV_ZENML_AIRFLOW_RUN_ID] = "{{run_id}}"
 
     if dag_config.local_stores_path:
         from docker.types import Mount
@@ -170,6 +173,9 @@ def get_kubernetes_pod_operator_init_kwargs(
     """
     from kubernetes.client.models import V1EnvVar
 
+    environment = task_config.environment
+    environment[ENV_ZENML_AIRFLOW_RUN_ID] = "{{run_id}}"
+
     return {
         "name": f"{dag_config.id}_{task_config.id}",
         "namespace": "default",
@@ -177,7 +183,8 @@ def get_kubernetes_pod_operator_init_kwargs(
         "cmds": task_config.command,
         "arguments": task_config.arguments,
         "env_vars": [
-            V1EnvVar(name=ENV_ZENML_AIRFLOW_RUN_ID, value="{{run_id}}")
+            V1EnvVar(name=key, value=value)
+            for key, value in environment.items()
         ],
     }
 

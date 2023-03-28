@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Implementation of the Seldon Model Deployer."""
 
+import json
 import re
 from datetime import datetime
 from typing import TYPE_CHECKING, ClassVar, Dict, List, Optional, Type, cast
@@ -29,6 +30,11 @@ from zenml.integrations.seldon.flavors.seldon_model_deployer_flavor import (
     SeldonModelDeployerConfig,
     SeldonModelDeployerFlavor,
 )
+from zenml.integrations.seldon.secret_schemas.secret_schemas import (
+    SeldonAzureSecretSchema,
+    SeldonGSSecretSchema,
+    SeldonS3SecretSchema,
+)
 from zenml.integrations.seldon.seldon_client import SeldonClient
 from zenml.integrations.seldon.services.seldon_deployment import (
     SeldonDeploymentConfig,
@@ -36,7 +42,7 @@ from zenml.integrations.seldon.services.seldon_deployment import (
 )
 from zenml.logger import get_logger
 from zenml.model_deployers import BaseModelDeployer, BaseModelDeployerFlavor
-from zenml.secrets_managers import BaseSecretsManager
+from zenml.secret.base_secret import BaseSecretSchema
 from zenml.services.service import BaseService, ServiceConfig
 from zenml.stack import StackValidator
 from zenml.utils.analytics_utils import AnalyticsEvent, event_handler
@@ -77,7 +83,6 @@ class SeldonModelDeployer(BaseModelDeployer):
         """
         return StackValidator(
             required_components={
-                StackComponentType.CONTAINER_REGISTRY,
                 StackComponentType.IMAGE_BUILDER,
             }
         )
@@ -116,27 +121,33 @@ class SeldonModelDeployer(BaseModelDeployer):
         return self._client
 
     @property
-    def kubernetes_secret_name(self) -> Optional[str]:
+    def kubernetes_secret_name(self) -> str:
         """Get the Kubernetes secret name associated with this model deployer.
 
-        If a secret is configured for this model deployer, a corresponding
-        Kubernetes secret is created in the remote cluster to be used
-        by Seldon Core storage initializers to authenticate to the Artifact
-        Store. This method returns the unique name that is used for this secret.
+        If a pre-existing Kubernetes secret is configured for this model
+        deployer, that name is returned to be used by all Seldon Core
+        deployments associated with this model deployer.
+
+        Otherwise, a Kubernetes secret name is generated based on the ID of
+        the active artifact store. The reason for this is that the same model
+        deployer may be used to deploy models in combination with different
+        artifact stores at the same time, and each artifact store may require
+        different credentials to be accessed.
 
         Returns:
-            The Seldon Core Kubernetes secret name, or None if no secret is
-            configured.
+            The name of a Kubernetes secret to be used with Seldon Core
+            deployments.
         """
-        if self.config.kubernetes_secret_name and not self.config.secret:
+        if self.config.kubernetes_secret_name:
             return self.config.kubernetes_secret_name
-        elif not self.config.secret:
-            return None
+
+        artifact_store = Client().active_stack.artifact_store
+
         return (
             re.sub(
                 r"[^0-9a-zA-Z-]+",
                 "-",
-                f"zenml-seldon-core-{self.config.secret}",
+                f"zenml-seldon-core-{artifact_store.id}",
             )
             .strip("-")
             .lower()
@@ -166,7 +177,7 @@ class SeldonModelDeployer(BaseModelDeployer):
         return builds
 
     def _create_or_update_kubernetes_secret(self) -> Optional[str]:
-        """Create or update a Kubernetes secret.
+        """Create or update the Kubernetes secret used to access the artifact store.
 
         Uses the information stored in the ZenML secret configured for the model deployer.
 
@@ -177,60 +188,266 @@ class SeldonModelDeployer(BaseModelDeployer):
         Raises:
             RuntimeError: if the secret cannot be created or updated.
         """
-        # if a ZenML secret was configured in the model deployer,
-        # create a Kubernetes secret as a means to pass this information
-        # to the Seldon Core deployment
-        if self.config.kubernetes_secret_name and not self.config.secret:
+        # if a Kubernetes secret was explicitly configured in the model
+        # deployer, use that instead of creating a new one
+        if self.config.kubernetes_secret_name:
+
+            logger.warning(
+                "Your Seldon Core model deployer is configured to use a "
+                "pre-existing Kubernetes secret that holds credentials needed "
+                "to access the artifact store. The authentication method is "
+                "deprecated and will be removed in a future release. Please "
+                "remove this attribute by running `zenml model-deployer "
+                f"remove-attribute {self.name} --kubernetes_secret_name` and "
+                "configure credentials for the artifact store stack component "
+                "instead. The Seldon Core model deployer will use those "
+                "credentials to authenticate to the artifact store "
+                "automatically."
+            )
+
             return self.config.kubernetes_secret_name
-        elif self.config.secret:
 
-            secret_manager = Client().active_stack.secrets_manager
+        # if a ZenML secret reference was configured in the model deployer,
+        # create a Kubernetes secret from that
+        if self.config.secret:
 
-            if not secret_manager or not isinstance(
-                secret_manager, BaseSecretsManager
-            ):
-                raise RuntimeError(
-                    f"The active stack doesn't have a secret manager component. "
-                    f"The ZenML secret specified in the Seldon Core Model "
-                    f"Deployer configuration cannot be fetched: {self.config.secret}."
-                )
+            logger.warning(
+                "Your Seldon Core model deployer is configured to use a "
+                "ZenML secret that holds credentials needed to access the "
+                "artifact store. The recommended authentication method is to "
+                "configure credentials for the artifact store stack component "
+                "instead. The Seldon Core model deployer will use those "
+                "credentials to authenticate to the artifact store "
+                "automatically."
+            )
 
             try:
-                zenml_secret = secret_manager.get_secret(self.config.secret)
-            except KeyError:
+                zenml_secret = Client().get_secret_by_name_and_scope(
+                    name=self.config.secret,
+                )
+            except KeyError as e:
                 raise RuntimeError(
                     f"The ZenML secret '{self.config.secret}' specified in the "
                     f"Seldon Core Model Deployer configuration was not found "
-                    f"in the active stack's secret manager."
+                    f"in the secrets store: {e}."
                 )
 
-            # should never happen, just making mypy happy
-            assert self.kubernetes_secret_name is not None
             self.seldon_client.create_or_update_secret(
-                self.kubernetes_secret_name, zenml_secret
+                self.kubernetes_secret_name, zenml_secret.secret_values
+            )
+
+        else:
+
+            # if no ZenML secret was configured, try to convert the credentials
+            # configured for the artifact store, if any are included, into
+            # the format expected by Seldon Core
+            converted_secret = self._convert_artifact_store_secret()
+
+            self.seldon_client.create_or_update_secret(
+                self.kubernetes_secret_name, converted_secret.content
             )
 
         return self.kubernetes_secret_name
 
-    def _delete_kubernetes_secret(self) -> None:
-        """Delete the Kubernetes secret associated with this model deployer.
+    def _convert_artifact_store_secret(self) -> BaseSecretSchema:
+        """Convert the credentials configured for the artifact store into a ZenML secret.
 
-        Do this if no Seldon Core deployments are using it.
+        Returns:
+            The ZenML secret.
+
+        Raises:
+            RuntimeError: if the credentials cannot be converted.
         """
-        if (
-            self.kubernetes_secret_name
-            and self.kubernetes_secret_name
-            != self.config.kubernetes_secret_name
-        ):
+        artifact_store = Client().active_stack.artifact_store
 
-            # fetch all the Seldon Core deployments that currently
-            # configured to use this secret
-            services = self.find_model_server()
-            for service in services:
-                config = cast(SeldonDeploymentConfig, service.config)
-                if config.secret_name == self.kubernetes_secret_name:
-                    return
-            self.seldon_client.delete_secret(self.kubernetes_secret_name)
+        zenml_secret: BaseSecretSchema
+
+        if artifact_store.flavor == "s3":
+            from zenml.integrations.s3.artifact_stores import S3ArtifactStore
+
+            assert isinstance(artifact_store, S3ArtifactStore)
+
+            (
+                aws_access_key_id,
+                aws_secret_access_key,
+                aws_session_token,
+            ) = artifact_store.get_credentials()
+
+            if aws_access_key_id and aws_secret_access_key:
+                # Convert the credentials into the format expected by Seldon
+                # Core
+                zenml_secret = SeldonS3SecretSchema(
+                    name="",
+                    rclone_config_s3_access_key_id=aws_access_key_id,
+                    rclone_config_s3_secret_access_key=aws_secret_access_key,
+                    rclone_config_s3_session_token=aws_session_token,
+                )
+                if (
+                    artifact_store.config.client_kwargs
+                    and "endpoint_url" in artifact_store.config.client_kwargs
+                ):
+                    zenml_secret.rclone_config_s3_endpoint = (
+                        artifact_store.config.client_kwargs["endpoint_url"]
+                    )
+                    # Assume minio is the provider if endpoint is set
+                    zenml_secret.rclone_config_s3_provider = "Minio"
+
+                return zenml_secret
+
+            logger.warning(
+                "No credentials are configured for the active S3 artifact "
+                "store. The Seldon Core model deployer will assume an "
+                "implicit form of authentication is available in the "
+                "target Kubernetes cluster, but the served model may not "
+                "be able to access the model artifacts."
+            )
+
+            # Assume implicit in-cluster IAM authentication
+            return SeldonS3SecretSchema(
+                name="", rclone_config_s3_env_auth=True
+            )
+
+        elif artifact_store.flavor == "gcp":
+            from zenml.integrations.gcp.artifact_stores import GCPArtifactStore
+
+            assert isinstance(artifact_store, GCPArtifactStore)
+
+            gcp_credentials = artifact_store.get_credentials()
+
+            if gcp_credentials:
+
+                # Convert the credentials into the format expected by Seldon
+                # Core
+                if gcp_credentials.get("type") == "service_account":
+                    return SeldonGSSecretSchema(
+                        name="",
+                        rclone_config_gs_service_account_credentials=json.dumps(
+                            gcp_credentials
+                        ),
+                    )
+
+                # Assume token-based authentication
+                return SeldonGSSecretSchema(
+                    name="",
+                    rclone_config_gs_token=json.dumps(gcp_credentials),
+                )
+
+            logger.warning(
+                "No credentials are configured for the active GCS artifact "
+                "store. The Seldon Core model deployer will assume an "
+                "implicit form of authentication is available in the "
+                "target Kubernetes cluster, but the served model may not "
+                "be able to access the model artifacts."
+            )
+            return SeldonGSSecretSchema(
+                name="", rclone_config_gs_anonymous=False
+            )
+
+        elif artifact_store.flavor == "azure":
+            from zenml.integrations.azure.artifact_stores import (
+                AzureArtifactStore,
+            )
+
+            assert isinstance(artifact_store, AzureArtifactStore)
+
+            azure_credentials = artifact_store.get_credentials()
+
+            if azure_credentials:
+                # Convert the credentials into the format expected by Seldon
+                # Core
+                if azure_credentials.connection_string is not None:
+                    try:
+                        # We need to extract the account name and key from the
+                        # connection string
+                        tokens = azure_credentials.connection_string.split(";")
+                        token_dict = dict(
+                            [token.split("=", maxsplit=1) for token in tokens]
+                        )
+                        account_name = token_dict["AccountName"]
+                        account_key = token_dict["AccountKey"]
+                    except (KeyError, ValueError) as e:
+                        raise RuntimeError(
+                            "The Azure connection string configured for the "
+                            "artifact store expected format."
+                        ) from e
+
+                    return SeldonAzureSecretSchema(
+                        name="",
+                        rclone_config_az_account=account_name,
+                        rclone_config_az_key=account_key,
+                    )
+
+                if azure_credentials.sas_token is not None:
+                    return SeldonAzureSecretSchema(
+                        name="",
+                        rclone_config_az_sas_url=azure_credentials.sas_token,
+                    )
+
+                if (
+                    azure_credentials.account_name is not None
+                    and azure_credentials.account_key is not None
+                ):
+                    return SeldonAzureSecretSchema(
+                        name="",
+                        rclone_config_az_account=azure_credentials.account_name,
+                        rclone_config_az_key=azure_credentials.account_key,
+                    )
+
+                if (
+                    azure_credentials.client_id is not None
+                    and azure_credentials.client_secret is not None
+                    and azure_credentials.tenant_id is not None
+                    and azure_credentials.account_name is not None
+                ):
+                    return SeldonAzureSecretSchema(
+                        name="",
+                        rclone_config_az_client_id=azure_credentials.client_id,
+                        rclone_config_az_client_secret=azure_credentials.client_secret,
+                        rclone_config_az_tenant=azure_credentials.tenant_id,
+                    )
+
+            logger.warning(
+                "No credentials are configured for the active Azure "
+                "artifact store. The Seldon Core model deployer will "
+                "assume an implicit form of authentication is available "
+                "in the target Kubernetes cluster, but the served model "
+                "may not be able to access the model artifacts."
+            )
+            return SeldonAzureSecretSchema(
+                name="", rclone_config_az_env_auth=True
+            )
+
+        raise RuntimeError(
+            "The Seldon Core model deployer doesn't know how to configure "
+            f"credentials automatically for the `{artifact_store.flavor}` "
+            "active artifact store flavor. "
+            "Please use one of the supported artifact stores (S3, GCP or "
+            "Azure) or specify a ZenML secret in the model deployer "
+            "configuration that holds the credentials required to access "
+            "the model artifacts."
+        )
+
+    def _delete_kubernetes_secret(self, secret_name: str) -> None:
+        """Delete a Kubernetes secret associated with this model deployer.
+
+        Do this if no Seldon Core deployments are using it. The only exception
+        is if the secret name is the one pre-configured in the model deployer
+        configuration.
+
+        Args:
+            secret_name: The name of the Kubernetes secret to delete.
+        """
+        if secret_name == self.config.kubernetes_secret_name:
+            return
+
+        # fetch all the Seldon Core deployments that currently
+        # configured to use this secret
+        services = self.find_model_server()
+        for service in services:
+            config = cast(SeldonDeploymentConfig, service.config)
+            if config.secret_name == secret_name:
+                return
+        self.seldon_client.delete_secret(secret_name)
 
     def deploy_model(
         self,
@@ -292,17 +509,11 @@ class SeldonModelDeployer(BaseModelDeployer):
                 to start, or if an operational failure is encountered before
                 it reaches a ready state.
         """
-        with event_handler(AnalyticsEvent.MODEL_DEPLOYED) as analytics_handler:
+        with event_handler(
+            event=AnalyticsEvent.MODEL_DEPLOYED, v2=True
+        ) as analytics_handler:
             config = cast(SeldonDeploymentConfig, config)
             service = None
-
-            # if a custom Kubernetes secret is not explicitly specified in the
-            # SeldonDeploymentConfig, try to create one from the ZenML secret
-            # configured for the model deployer
-            config.secret_name = (
-                config.secret_name
-                or self._create_or_update_kubernetes_secret()
-            )
 
             # if replace is True, find equivalent Seldon Core deployments
             if replace is True:
@@ -326,6 +537,14 @@ class SeldonModelDeployer(BaseModelDeployer):
                             # ignore errors encountered while stopping old
                             # services
                             pass
+
+            # if a custom Kubernetes secret is not explicitly specified in the
+            # SeldonDeploymentConfig, try to create one from the ZenML secret
+            # configured for the model deployer
+            config.secret_name = (
+                config.secret_name
+                or self._create_or_update_kubernetes_secret()
+            )
 
             if service:
                 # update an equivalent service in place
@@ -364,7 +583,7 @@ class SeldonModelDeployer(BaseModelDeployer):
         running: bool = False,
         service_uuid: Optional[UUID] = None,
         pipeline_name: Optional[str] = None,
-        pipeline_run_id: Optional[str] = None,
+        run_name: Optional[str] = None,
         pipeline_step_name: Optional[str] = None,
         model_name: Optional[str] = None,
         model_uri: Optional[str] = None,
@@ -382,7 +601,7 @@ class SeldonModelDeployer(BaseModelDeployer):
                 originally used to create the Seldon Core deployment resource.
             pipeline_name: name of the pipeline that the deployed model was part
                 of.
-            pipeline_run_id: ID of the pipeline run which the deployed model was
+            run_name: Name of the pipeline run which the deployed model was
                 part of.
             pipeline_step_name: the name of the pipeline model deployment step
                 that deployed the model.
@@ -398,7 +617,8 @@ class SeldonModelDeployer(BaseModelDeployer):
         # Use a Seldon deployment service configuration to compute the labels
         config = SeldonDeploymentConfig(
             pipeline_name=pipeline_name or "",
-            pipeline_run_id=pipeline_run_id or "",
+            run_name=run_name or "",
+            pipeline_run_id=run_name or "",
             pipeline_step_name=pipeline_step_name or "",
             model_name=model_name or "",
             model_uri=model_uri or "",
@@ -499,9 +719,15 @@ class SeldonModelDeployer(BaseModelDeployer):
         services = self.find_model_server(service_uuid=uuid)
         if len(services) == 0:
             return
-        services[0].stop(timeout=timeout, force=force)
 
-        # if this is the last Seldon Core model server, delete the Kubernetes
-        # secret used to store the authentication information for the Seldon
-        # Core model server storage initializer
-        self._delete_kubernetes_secret()
+        service = services[0]
+
+        assert isinstance(service, SeldonDeploymentService)
+        service.stop(timeout=timeout, force=force)
+
+        if service.config.secret_name:
+
+            # delete the Kubernetes secret used to store the authentication
+            # information for the Seldon Core model server storage initializer
+            # if no other Seldon Core model servers are using it
+            self._delete_kubernetes_secret(service.config.secret_name)

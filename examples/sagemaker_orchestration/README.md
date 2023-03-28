@@ -13,7 +13,6 @@ within AWS to create all the required resources and permissions. In total, you w
 
 - [ECR container registry](https://docs.zenml.io/component-gallery/container-registries/amazon-ecr)
 - [S3 artifact store](https://docs.zenml.io/component-gallery/artifact-stores/amazon-s3)
-- [AWS Secrets Manager](https://docs.zenml.io/component-gallery/secrets-managers/aws).
 
 On top of having these resources and setting them up for ZenML, you will also
 need to do some permission tuning.
@@ -37,12 +36,6 @@ When creating the role, make sure to add Sagemaker-specific permissions:
 
 ![Add permissions](assets/sagemaker1.png)
 
-Once you've created the role, you will need to add permissions to allow access
-to your secrets in the AWS Secrets Manager. You can do this by attaching a
-`SecretsManagerReadWrite` policy to the role:
-
-![Add secrets manager permissions](assets/sagemaker2.png)
-
 ## 🥞 Create a Sagemaker stack
 
 Before registering the stack, you need to deploy a remote ZenML server 
@@ -57,8 +50,8 @@ stack with all of these components.
   **container registry**.
 * The **Sagemaker orchestrator** is responsible for running your ZenML pipeline
   in Sagemaker.
-* The **secrets manager** contains the secrets to allow access to the artifact
-  store.
+* An **Image Builder** is responsible for building the Docker images that are
+  used to run your pipeline steps.
 
 When running the upcoming commands, make sure to
 replace all the <PLACEHOLDERS> with the correct values from how you set things
@@ -78,11 +71,14 @@ cd zenml_examples/sagemaker_orchestration
 # Create a zenml repository
 zenml init
 
+# You'll need to register a secret to use for your artifact-store authentication
+zenml secret create s3_secret --aws_access_key_id=<YOUR_ACCESS_KEY_ID> --aws_secret_access_key=<YOUR_SECRET_ACCESS_KEY>
+
+# or this if you are using a session token
+# zenml secret create s3_secret --aws_access_key_id=<YOUR_ACCESS_KEY_ID> --aws_secret_access_key=<YOUR_SECRET_ACCESS_KEY> --aws_session_token=<YOUR_AWS_SESSION_TOKEN>
+
 # The CONTAINER_REGISTRY_URI will have a format like this: xxx.dkr.ecr.REGION.amazonaws.com
 zenml container-registry register aws_registry --flavor=aws --uri=<CONTAINER_REGISTRY_URI>
-
-# For the secrets manager, all we'll need is your AWS region name
-zenml secrets-manager register aws_secrets_manager --flavor=aws --region_name=<YOUR_AWS_REGION>
 
 # The PATH_TO_YOUR_S3_BUCKET is the path to your S3 bucket: s3://xxx
 zenml artifact-store register aws_artifact_store --flavor=s3 --path=<PATH_TO_YOUR_S3_BUCKET> --authentication_secret=s3_secret
@@ -90,14 +86,11 @@ zenml artifact-store register aws_artifact_store --flavor=s3 --path=<PATH_TO_YOU
 # register the orchestrator
 zenml orchestrator register sagemaker_orchestrator --flavor=sagemaker --execution_role=<AWS_ROLE_ARN_CREATED_EARLIER>
 
+# register the image builder
+zenml image-builder register local_builder --flavor=local
+
 # Now we're ready to assemble our stack
-zenml stack register sagemaker_stack -a aws_artifact_store -o sagemaker_orchestrator -c aws_registry -x aws_secrets_manager --set
-
-# You'll need to register a secret to use for your artifact-store authentication
-zenml secrets-manager secret register s3_secret --aws_access_key_id=<YOUR_ACCESS_KEY_ID> --aws_secret_access_key=<YOUR_SECRET_ACCESS_KEY> --schema=aws
-
-# or this if you are using a session token
-# zenml secrets-manager secret register s3_secret --aws_access_key_id=<YOUR_ACCESS_KEY_ID> --aws_secret_access_key=<YOUR_SECRET_ACCESS_KEY> --aws_session_token=<YOUR_AWS_SESSION_TOKEN> --schema=aws
+zenml stack register sagemaker_stack -a aws_artifact_store -o sagemaker_orchestrator -c aws_registry -i local_builder --set
 ```
 
 ### ▶️ Run the pipeline
@@ -150,7 +143,7 @@ rm -rf zenml_examples
 ```
 
 Additionally, you might have to clean up your cloud resources to avoid running 
-costs for storage of artifacts, containers or secrets.
+costs for storage of artifacts or containers.
 
 # 📜 Learn more
 

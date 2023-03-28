@@ -16,6 +16,7 @@
 import inspect
 from abc import abstractmethod
 from collections import defaultdict
+from types import FunctionType
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -36,6 +37,7 @@ from typing import (
 from pydantic import ValidationError
 
 from zenml.artifacts.base_artifact import BaseArtifact
+from zenml.config.source import Source
 from zenml.config.step_configurations import (
     ArtifactConfiguration,
     InputSpec,
@@ -60,6 +62,8 @@ from zenml.steps.utils import (
     PARAM_ENABLE_CACHE,
     PARAM_EXPERIMENT_TRACKER,
     PARAM_EXTRA_OPTIONS,
+    PARAM_ON_FAILURE,
+    PARAM_ON_SUCCESS,
     PARAM_OUTPUT_ARTIFACTS,
     PARAM_OUTPUT_MATERIALIZERS,
     PARAM_SETTINGS,
@@ -72,6 +76,7 @@ from zenml.utils import (
     dict_utils,
     pydantic_utils,
     settings_utils,
+    source_code_utils,
     source_utils,
 )
 
@@ -81,12 +86,13 @@ if TYPE_CHECKING:
 
     ParametersOrDict = Union["BaseParameters", Dict[str, Any]]
     ArtifactClassOrStr = Union[str, Type["BaseArtifact"]]
-    MaterializerClassOrStr = Union[str, Type["BaseMaterializer"]]
+    MaterializerClassOrSource = Union[str, Source, Type["BaseMaterializer"]]
+    HookSpecification = Union[str, Source, FunctionType]
     OutputArtifactsSpecification = Union[
         "ArtifactClassOrStr", Mapping[str, "ArtifactClassOrStr"]
     ]
     OutputMaterializersSpecification = Union[
-        "MaterializerClassOrStr", Mapping[str, "MaterializerClassOrStr"]
+        "MaterializerClassOrSource", Mapping[str, "MaterializerClassOrSource"]
     ]
 
 
@@ -252,7 +258,7 @@ class BaseStep(metaclass=BaseStepMeta):
 
         name: str
         step_name: str
-        materializer_source: str
+        materializer_source: Source
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         """Initializes a step.
@@ -334,7 +340,7 @@ class BaseStep(metaclass=BaseStepMeta):
         )
 
     @classmethod
-    def load_from_source(cls, source: str) -> "BaseStep":
+    def load_from_source(cls, source: Union[Source, str]) -> "BaseStep":
         """Loads a step from source.
 
         Args:
@@ -450,15 +456,15 @@ class BaseStep(metaclass=BaseStepMeta):
         parameters = {}
         parameters[
             STEP_SOURCE_PARAMETER_NAME
-        ] = source_utils.get_hashed_source(self.source_object)
+        ] = source_code_utils.get_hashed_source_code(self.source_object)
 
         for name, output in self.configuration.outputs.items():
             if output.materializer_source:
                 key = f"{name}_materializer_source"
-                materializer_class = source_utils.load_source_path(
+                materializer_class = source_utils.load(
                     output.materializer_source
                 )
-                parameters[key] = source_utils.get_hashed_source(
+                parameters[key] = source_code_utils.get_hashed_source_code(
                     materializer_class
                 )
 
@@ -476,6 +482,8 @@ class BaseStep(metaclass=BaseStepMeta):
         output_artifacts = options.pop(PARAM_OUTPUT_ARTIFACTS, None)
         extra = options.pop(PARAM_EXTRA_OPTIONS, None)
         experiment_tracker = options.pop(PARAM_EXPERIMENT_TRACKER, None)
+        on_failure = options.pop(PARAM_ON_FAILURE, None)
+        on_success = options.pop(PARAM_ON_SUCCESS, None)
 
         self.configure(
             experiment_tracker=experiment_tracker,
@@ -484,6 +492,8 @@ class BaseStep(metaclass=BaseStepMeta):
             output_materializers=output_materializers,
             settings=settings,
             extra=extra,
+            on_failure=on_failure,
+            on_success=on_success,
         )
 
     def _verify_and_apply_init_params(self, *args: Any, **kwargs: Any) -> None:
@@ -717,6 +727,8 @@ class BaseStep(metaclass=BaseStepMeta):
         output_artifacts: Optional["OutputArtifactsSpecification"] = None,
         settings: Optional[Mapping[str, "SettingsOrDict"]] = None,
         extra: Optional[Dict[str, Any]] = None,
+        on_failure: Optional["HookSpecification"] = None,
+        on_success: Optional["HookSpecification"] = None,
         merge: bool = True,
     ) -> T:
         """Configures the step.
@@ -754,19 +766,31 @@ class BaseStep(metaclass=BaseStepMeta):
                 configurations. If `False` the given configurations will
                 overwrite all existing ones. See the general description of this
                 method for an example.
+            on_failure: Callback function in event of failure of the step. Can be
+                a function with three possible parameters, `StepContext`, `BaseParameters`,
+                and `BaseException`, or a source path to a function of the same specifications
+                (e.g. `module.my_function`)
+            on_success: Callback function in event of failure of the step. Can be
+                a function with two possible parameters, `StepContext` and `BaseParameters, or
+                a source path to a function of the same specifications
+                (e.g. `module.my_function`).
 
         Returns:
             The step instance that this method was called on.
         """
+        from zenml.hooks.hook_validators import resolve_and_validate_hook
 
-        def _resolve_if_necessary(value: Union[str, Type[Any]]) -> str:
-            return (
-                value
-                if isinstance(value, str)
-                else source_utils.resolve_class(value)
-            )
+        def _resolve_if_necessary(
+            value: Union[str, Source, Type[Any]]
+        ) -> Source:
+            if isinstance(value, str):
+                return Source.from_import_path(value)
+            elif isinstance(value, Source):
+                return value
+            else:
+                return source_utils.resolve(value)
 
-        outputs: Dict[str, Dict[str, str]] = defaultdict(dict)
+        outputs: Dict[str, Dict[str, Source]] = defaultdict(dict)
         allowed_output_names = set(self.OUTPUT_SIGNATURE)
 
         if output_materializers:
@@ -780,6 +804,16 @@ class BaseStep(metaclass=BaseStepMeta):
             for output_name, materializer in output_materializers.items():
                 source = _resolve_if_necessary(materializer)
                 outputs[output_name]["materializer_source"] = source
+
+        failure_hook_source = None
+        if on_failure:
+            # string of on_failure hook function to be used for this step
+            failure_hook_source = resolve_and_validate_hook(on_failure)
+
+        success_hook_source = None
+        if on_success:
+            # string of on_success hook function to be used for this step
+            success_hook_source = resolve_and_validate_hook(on_success)
 
         if output_artifacts:
             logger.warning(
@@ -801,6 +835,8 @@ class BaseStep(metaclass=BaseStepMeta):
                 "settings": settings,
                 "outputs": outputs or None,
                 "extra": extra,
+                "failure_hook_source": failure_hook_source,
+                "success_hook_source": success_hook_source,
             }
         )
         config = StepConfigurationUpdate(**values)
@@ -938,7 +974,7 @@ class BaseStep(metaclass=BaseStepMeta):
                 materializer assigned to it and there is no default
                 materializer registered for the output type.
         """
-        outputs: Dict[str, Dict[str, str]] = defaultdict(dict)
+        outputs: Dict[str, Dict[str, Source]] = defaultdict(dict)
 
         for output_name, output_class in self.OUTPUT_SIGNATURE.items():
             output = self._configuration.outputs.get(
@@ -964,7 +1000,7 @@ class BaseStep(metaclass=BaseStepMeta):
                     )
                 outputs[output_name][
                     "materializer_source"
-                ] = source_utils.resolve_class(materializer_class)
+                ] = source_utils.resolve(materializer_class)
 
         function_parameters = self._finalize_function_parameters()
         values = dict_utils.remove_none_values(

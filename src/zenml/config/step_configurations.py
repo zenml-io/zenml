@@ -18,9 +18,9 @@ from pydantic import root_validator
 
 from zenml.config.base_settings import BaseSettings, SettingsOrDict
 from zenml.config.constants import DOCKER_SETTINGS_KEY, RESOURCE_SETTINGS_KEY
+from zenml.config.source import Source, convert_source_validator
 from zenml.config.strict_base_model import StrictBaseModel
 from zenml.logger import get_logger
-from zenml.utils import source_utils
 
 if TYPE_CHECKING:
     from zenml.config import DockerSettings, ResourceSettings
@@ -31,7 +31,7 @@ logger = get_logger(__name__)
 class PartialArtifactConfiguration(StrictBaseModel):
     """Class representing a partial input/output artifact configuration."""
 
-    materializer_source: Optional[str] = None
+    materializer_source: Optional[Source] = None
 
     @root_validator(pre=True)
     def _remove_deprecated_attributes(
@@ -51,11 +51,15 @@ class PartialArtifactConfiguration(StrictBaseModel):
                 values.pop(deprecated_attribute)
         return values
 
+    _convert_source = convert_source_validator("materializer_source")
+
 
 class ArtifactConfiguration(PartialArtifactConfiguration):
     """Class representing a complete input/output artifact configuration."""
 
-    materializer_source: str
+    materializer_source: Source
+
+    _convert_source = convert_source_validator("materializer_source")
 
 
 class StepConfigurationUpdate(StrictBaseModel):
@@ -69,8 +73,14 @@ class StepConfigurationUpdate(StrictBaseModel):
     parameters: Dict[str, Any] = {}
     settings: Dict[str, BaseSettings] = {}
     extra: Dict[str, Any] = {}
+    failure_hook_source: Optional[Source] = None
+    success_hook_source: Optional[Source] = None
 
     outputs: Mapping[str, PartialArtifactConfiguration] = {}
+
+    _convert_source = convert_source_validator(
+        "failure_hook_source", "success_hook_source"
+    )
 
 
 class PartialStepConfiguration(StepConfigurationUpdate):
@@ -145,31 +155,13 @@ class InputSpec(StrictBaseModel):
 class StepSpec(StrictBaseModel):
     """Specification of a pipeline."""
 
-    source: str
+    source: Source
     upstream_steps: List[str]
     inputs: Dict[str, InputSpec] = {}
     # The default value is to ensure compatibility with specs of version <0.2
     pipeline_parameter_name: str = ""
 
-    @property
-    def module_name(self) -> str:
-        """The step module name.
-
-        Returns:
-            The step module name.
-        """
-        module_name, _ = self.source.rsplit(".", maxsplit=1)
-        return module_name
-
-    @property
-    def class_name(self) -> str:
-        """The step class name.
-
-        Returns:
-            The step class name.
-        """
-        _, class_name = self.source.rsplit(".", maxsplit=1)
-        return class_name
+    _convert_source = convert_source_validator("source")
 
     def __eq__(self, other: Any) -> bool:
         """Returns whether the other object is referring to the same step.
@@ -196,23 +188,7 @@ class StepSpec(StrictBaseModel):
             if self.pipeline_parameter_name != other.pipeline_parameter_name:
                 return False
 
-            # Remove internal version pin from older sources for backwards
-            # compatibility
-            source = source_utils.remove_internal_version_pin(self.source)
-            other_source = source_utils.remove_internal_version_pin(
-                other.source
-            )
-
-            if source == other_source:
-                return True
-
-            if source.endswith(other_source):
-                return True
-
-            if other_source.endswith(source):
-                return True
-
-            return False
+            return self.source.import_path == other.source.import_path
 
         return NotImplemented
 

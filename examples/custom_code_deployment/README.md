@@ -68,9 +68,17 @@ locally active context.
 2. Seldon Core or KServe needs to be preinstalled and running in the target 
 Kubernetes cluster (read below for a brief explanation of how to do that).
 
-3. Models deployed with Seldon Core need to be stored in some form of
-persistent shared storage that is accessible from the Kubernetes cluster where
-Seldon Core or KServe is installed (e.g. AWS S3, GCS, Azure Blob Storage, etc.).
+3. models deployed with Seldon Core and KServe are stored in the ZenML Artifact
+Store that is used to train the models (e.g. Minio, AWS S3, GCS, Azure Blob
+Storage, etc.). The model deployer needs to access the artifact
+store to fetch the model artifacts, which means that it may need access to
+credentials for the Artifact Store, unless KServe or Seldon Core is deployed in the
+same cloud as the Artifact Store and is able to access it directly without
+requiring explicit credentials, through some in-cloud provider specific
+implicit authentication mechanism. For this reason, you may need to configure
+your Artifact Store stack component with explicit credentials. See the
+section [Local and remote authentication](#local-and-remote-authentication)
+for more details.
 
 4. A container registry that is accessible from the Kubernetes cluster where
 Seldon Core or KServe is installed (e.g. AWS ECR, GCR, Azure Container Registry,
@@ -110,6 +118,77 @@ zenml up
 
 We will split this into 2 main sections, one for KServe and one for Seldon Core.
 
+## Local and remote authentication
+
+The ZenML Stacks featured in this example are based on managed GCP services like
+GCS storage, GKE Kubernetes and GCR container registry. In order to access these
+services from your host, you need to have a GCP account and have the proper
+credentials set up on your machine. The easiest way to do this is to install the
+GCP CLI and set up CGP client credentials locally as documented in
+[the official GCP documentation](https://cloud.google.com/sdk/docs/authorizing).
+
+In addition to local access, some stack components running remotely also need
+to access GCP services. For example:
+
+* the ZenML orchestrator (e.g. Kubeflow) needs to be able to access the GCS
+bucket to store and retrieve pipeline run artifacts.
+* the ZenML KServe or Seldon Core model deployer needs to be able to access the GCS bucket
+configured for the ZenML Artifact Store, because this is where models will be
+stored and loaded from.
+
+If the ZenML orchestrator and KServe or Seldon Core are already running in the GCP cloud (e.g.
+in an GKE cluster), there are ways of configuring GCP workloads to have implicit
+access to other GCP resources like GCS without requiring explicit credentials.
+However, if either the ZenML Orchestrator, KServe or Seldon Core is running in a
+different cloud, or on-prem, or if the GCP implicit in-cloud workload
+authentication is not enabled, then explicit GCP credentials are required.
+
+Concretely, this means that the GCS Artifact Store ZenML stack component needs to
+be configured with explicit GCP credentials (i.e. a GCP service account key)
+that can also be used by other ZenML stack components like the ZenML
+orchestrator, KServe model deployer or Seldon Core model deployer to access the
+bucket.
+
+In the sections that follow, this is explained in more detail for the two
+different examples of ZenML stacks featured in this document.
+
+##### GCP Authentication with Implicit Workload Identity access
+
+If the GKE cluster where KServe is running already has
+[Workload Identity](https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity)
+configured to grant the GKE nodes implicit access to the GCS bucket,
+you don't need to configure any explicit GCP credentials for the GCS Artifact
+Store. The ZenML orchestrator and KServe or Seldon Core model deployer will
+automatically default to using the environment authentication.
+
+##### GCP Authentication with Explicit Credentials
+
+If Workload Identity access is not configured for your GKE cluster, or you don't
+know how to configure it, you will need an explicit GCP service account key that
+grants access to the GCS bucket. To create a GCP service account and generate
+an access key, follow the instructions in [the official GCP documentation](https://cloud.google.com/iam/docs/service-accounts-create).
+Please remember to grant the created service account permissions
+to read and write to your GCS bucket (i.e. use the `Storage Object Admin` role).
+
+When you have the GCP service account key, you can configure a ZenML
+secret to store them securely. You will reference the secret when you configure
+the GCS Artifact Store stack component in the next sections:
+
+```bash
+zenml secret create gcp_secret \
+    --token=@path/to/service/account/key.json
+```
+
+This is how you would register a ZenML GCS Artifact Store with explicit
+credentials referencing the secret you just created:
+
+```bash
+zenml artifact-store register gcs_store -f gcp \
+    --path='gs://your-bucket' \
+    --authentication_secret=gcp_secret
+```
+
+
 ## 📦 KServe Custom Code Deployment
 
 To run the KServe pipelines, you need to install the integration:
@@ -137,9 +216,9 @@ This stack consists of the following components:
 * a GCP artifact store
 * the local orchestrator
 * a KServe model deployer
-* a local secret manager used to store the credentials needed by KServe to
-access the GCP artifact store
 * a GCP container registry used to store the custom Docker images used by the
+KServe model deployer
+* an image builder component that builds the custom Docker images used by the
 KServe model deployer
 
 To have access to the GCP artifact store from your local workstation, the
@@ -182,53 +261,18 @@ zenml model-deployer register kserve_gke --flavor=kserve \
   --kubernetes_context=gke_zenml-core_us-east1-b_zenml-test-cluster \ 
   --kubernetes_namespace=zenml-workloads \
   --base_url=$INGRESS_URL \
-  --secret=kserve_secret
 zenml artifact-store register gcp_artifact_store --flavor=fcp --path gs://my-bucket
-zenml secrets-manager register local --flavor=local
 zenml container-registry register gcp_registry --flavor=gcp --uri=eu.gcr.io/container-registry
-zenml stack register local_gcp_kserve_stack -a gcp_artifact_store -o default -d kserve_gke -c gcp_registry -x local --set
+zenml image-builder register local_builder --flavor=local
+zenml stack register local_gcp_kserve_stack -a gcp_artifact_store -o default -d kserve_gke -c gcp_registry -i local_builder --set
 ```
 
-The next sections cover how to set up the GCP Artifact Store credentials 
-for the KServe model deployer. Please look up the variables relevant to your 
-use case in the [official KServe Storage Credentials](https://kserve.github.io/website/0.8/sdk_docs/docs/KServeClient/#parameters)
-and set them accordingly for your ZenML secrets schemas already built for each 
-storage_type. You can find the relevant variables in the 
-[Kserve integration secret schemas docs](https://apidocs.zenml.io/latest/integration_code_docs/integrations-kserve/#zenml.integrations.kserve.secret_schemas.secret_schemas).
-
-#### GCP Authentication with kserve_gs secret schema
-
-> **Note**
-> If you're coming to this section after deploying the [`gke-kubeflow-kserve` recipe](https://github.com/zenml-io/mlops-stacks/tree/main/gcp-kubeflow-kserve), you already have a service account created for you. The service account key is available as a file named `kserve_sa_key.json` in the root directory of your recipe. You can jump straight to the `zenml secrets-manager secret register` command below to register your secret!
-
-Before setting ZenML secrets, we need to create a service account key. 
-This service account will be used to access the GCP Artifact
-Store. for more information, see the [Create and manage service account keys](https://cloud.google.com/iam/docs/creating-managing-service-account-keys#iam-service-account-keys-create-gcloud).
-Once we have the service account key, we can create a ZenML secret with the 
-following command:
-
-```bash
-zenml secrets-manager secret register -s kserve_gs kserve_secret \
-    --credentials="@~/sa-deployment-temp.json" \
-
-┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━┓
-┃             SECRET_KEY             │ SECRET_VALUE ┃
-┠────────────────────────────────────┼──────────────┨
-┃            storage_type            │ ***          ┃
-┃             credentials            │ ***          ┃
-┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━┛
-``` 
-
-```bash
-zenml secrets-manager secret get kserve_secret
-┏━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃    SECRET_KEY    │ SECRET_VALUE              ┃
-┠──────────────────┼───────────────────────────┨
-┃   storage_type   │ GCS                       ┃
-┠──────────────────┼───────────────────────────┨
-┃   credentials    │ ~/sa-deployment-temp.json ┃
-┗━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
-```
+>**Note**:
+> As already covered in the [Local and remote authentication](#local-and-remote-authentication) section, you will need to configure the Artifact Store with explicit credentials if workload identity access is not configured for your GKE cluster:
+> ```shell
+> zenml artifact-store register gcp_artifact_store --flavor=gcp --path gs://my-bucket \
+>   --authentication_secret=gcp_secret
+> ```
 
 ### 🔦 Run The pipelines
 
@@ -364,8 +408,6 @@ This stack consists of the following components:
 * a GCP artifact store
 * the local orchestrator
 * a Seldon Core model deployer
-* a local secrets manager used to store the credentials needed by Seldon Core to
-access the GCP artifact store
 * a GCP container registry used to store the custom Docker images used by the
 Seldon Core model deployer
 
@@ -405,64 +447,18 @@ Configuring the stack can be done like this:
 zenml model-deployer register seldon_eks --flavor=seldon \
   --kubernetes_context=zenml-eks --kubernetes_namespace=zenml-workloads \
   --base_url=http://$INGRESS_HOST \
-  --secret=s3-store
 zenml artifact-store register gcp_artifact_store --flavor=fcp --path gs://my-bucket
-zenml secrets-manager register local --flavor=local
 zenml container-registry register gcp_registry --flavor=gcp --uri=eu.gcr.io/container-registry
-zenml stack register local_gcp_seldon_stack -a gcp_artifact_store -o default -d seldon_eks -c gcp_registry -x local --set
+zenml image-builder register local_builder --flavor=local
+zenml stack register local_gcp_seldon_stack -a gcp_artifact_store -o default -d seldon_eks -c gcp_registry -i local_builder --set
 ```
 
-The next sections cover how to set GCP Artifact Store credentials for the Seldon 
-Core model deployer. Please look up the variables relevant to your use case in 
-the [official Seldon Core Storage Credentials](https://kserve.github.io/website/0.8/sdk_docs/docs/KServeClient/#parameters)
-and set them accordingly for your ZenML secrets schemas already built for each 
-storage_type. You can find the relevant variables in the 
-[Seldon Integration secret schema](https://apidocs.zenml.io/latest/integration_code_docs/integrations-seldon/#zenml.integrations.seldon.secret_schemas.secret_schemas).
-
-#### GCP Authentication with seldon_s3 secret schema
-
-Before setting ZenML secrets, we need to create a service account key. 
-This service account will be used to access the GCP Artifact
-Store. for more information, see the [Create and manage service account keys](https://cloud.google.com/iam/docs/creating-managing-service-account-keys#iam-service-account-keys-create-gcloud).
-Once we have the service account key, we can create a ZenML secret with the 
-following command:
-
-```bash
-$ zenml secrets-manager secret register -s seldon_s3 s3-store \
-    --rclone_config_s3_env_auth=False \
-    --rclone_config_s3_access_key_id='ASAK2NSJVO4HDQC7Z25F' \ --rclone_config_s3_secret_access_key='AhkFSfhjj23fSDFfjklsdfj34hkls32SDfscsaf+' \
-    --rclone_config_s3_session_token=@./aws_session_token.txt \
-    --rclone_config_s3_region=us-east-1
-Expanding argument value rclone_config_s3_session_token to contents of file ./aws_session_token.txt.
-The following secret will be registered.
-┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━┓
-┃             SECRET_KEY             │ SECRET_VALUE ┃
-┠────────────────────────────────────┼──────────────┨
-┃       rclone_config_s3_type        │ ***          ┃
-┃     rclone_config_s3_provider      │ ***          ┃
-┃     rclone_config_s3_env_auth      │ ***          ┃
-┃   rclone_config_s3_access_key_id   │ ***          ┃
-┃ rclone_config_s3_secret_access_key │ ***          ┃
-┃   rclone_config_s3_session_token   │ ***          ┃
-┃      rclone_config_s3_region       │ ***          ┃
-┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━┛
-INFO:botocore.credentials:Found credentials in shared credentials file: ~/.aws/credentials
-
-$ zenml secrets-manager secret get s3-store
-INFO:botocore.credentials:Found credentials in shared credentials file: ~/.aws/credentials
-┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃             SECRET_KEY             │ SECRET_VALUE                           ┃
-┠────────────────────────────────────┼────────────────────────────────────────┨
-┃       rclone_config_s3_type        │ s3                                     ┃
-┃     rclone_config_s3_provider      │ aws                                    ┃
-┃     rclone_config_s3_env_auth      │ False                                  ┃
-┃   rclone_config_s3_access_key_id   │ ASAK2NSJVO4HDQC7Z25F                   ┃
-┃ rclone_config_s3_secret_access_key │ AhkFSfhjj23fSDFfjklsdfj34hkls32SDfscs… ┃
-┃   rclone_config_s3_session_token   │ FwoGZXIvYXdzEG4aDHogqi7YRrJyVJUVfSKpA… ┃
-┃                                    │                                        ┃
-┃      rclone_config_s3_region       │ us-east-1                              ┃
-┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
-```
+>**Note**:
+> As already covered in the [Local and remote authentication](#local-and-remote-authentication) section, you will need to configure the Artifact Store with explicit credentials if workload identity access is not configured for your GKE cluster:
+> ```shell
+> zenml artifact-store register gcp_artifact_store --flavor=gcp --path gs://my-bucket \
+>   --authentication_secret=gcp_secret
+> ```
 
 ### 🔦 Run The pipelines
 
@@ -606,7 +602,7 @@ $ zenml model-deployer models describe
 ┠────────────────────────┼─────────────────────────────────────────────────────────────────────────────────────────────────────────┨
 ┃ PIPELINE_NAME          │ tensorflow_custom_code_pipeline                                                                         ┃
 ┠────────────────────────┼─────────────────────────────────────────────────────────────────────────────────────────────────────────┨
-┃ PIPELINE_RUN_ID        │ tensorflow_custom_code_pipeline-22_Aug_22-08_31_09_994315                                               ┃
+┃ RUN_NAME               │ tensorflow_custom_code_pipeline-22_Aug_22-08_31_09_994315                                               ┃
 ┠────────────────────────┼─────────────────────────────────────────────────────────────────────────────────────────────────────────┨
 ┃ PIPELINE_STEP_NAME     │ seldon_custom_model_deployer_step                                                                       ┃
 ┠────────────────────────┼─────────────────────────────────────────────────────────────────────────────────────────────────────────┨
