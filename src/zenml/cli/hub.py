@@ -127,9 +127,10 @@ def _format_plugins_table(
         else:
             status_icon = ":x:"
 
-        username = _get_plugin_author_username(plugin)
         display_name = plugin_display_name(
-            plugin_name=plugin.name, version=plugin.version, author=username
+            plugin_name=plugin.name,
+            version=plugin.version,
+            author=plugin.author,
         )
         display_data: Dict[str, str] = {
             "PLUGIN": display_name,
@@ -211,9 +212,7 @@ def install_plugin(
             return
 
         # Show a warning if the plugin is not official or verified
-        _is_zenml_plugin = (
-            plugin.user and plugin.user.username == ZENML_HUB_ADMIN_USERNAME
-        )
+        _is_zenml_plugin = plugin.author == ZENML_HUB_ADMIN_USERNAME
         _is_verified = plugin.tags and ZENML_HUB_VERIFIED_TAG in plugin.tags
         if not _is_zenml_plugin and not _is_verified:
             warning(
@@ -223,39 +222,39 @@ def install_plugin(
             )
 
         # Install plugin requirements
-        install_requirements = False
-        if plugin.requirements and not no_deps:
+        if plugin.requirements:
             requirements_str = " ".join(f"'{r}'" for r in plugin.requirements)
-            if not yes:
+            install_requirements = False
+            if not no_deps and not yes:
                 install_requirements = click.confirm(
                     f"Plugin '{display_name}' requires the following "
                     f"packages to be installed: {requirements_str}. "
                     f"Do you want to install them now?"
                 )
-        if plugin.requirements and install_requirements:
-            declare(
-                f"Installing requirements for plugin '{display_name}': "
-                f"{requirements_str}..."
-            )
-            requirements_install_call = [
-                sys.executable,
-                "-m",
-                "pip",
-                "install",
-                *list(plugin.requirements),
-                "--upgrade",
-            ]
-            subprocess.check_call(requirements_install_call)
-            declare(
-                f"Successfully installed requirements for plugin "
-                f"'{display_name}'."
-            )
-        elif plugin.requirements:
-            warning(
-                f"Requirements for plugin '{display_name}' were not installed. "
-                "This might lead to errors in the future if the requirements "
-                "are not installed manually."
-            )
+            if yes or install_requirements:
+                declare(
+                    f"Installing requirements for plugin '{display_name}': "
+                    f"{requirements_str}..."
+                )
+                requirements_install_call = [
+                    sys.executable,
+                    "-m",
+                    "pip",
+                    "install",
+                    *list(plugin.requirements),
+                    "--upgrade",
+                ]
+                subprocess.check_call(requirements_install_call)
+                declare(
+                    f"Successfully installed requirements for plugin "
+                    f"'{display_name}'."
+                )
+            else:
+                warning(
+                    f"Requirements for plugin '{display_name}' were not "
+                    "installed. This might lead to errors in the future if the "
+                    "requirements are not installed manually."
+                )
 
         # pip install the wheel
         declare(
@@ -923,9 +922,10 @@ def _validate_repository_structure(plugin_root: str) -> None:
     """Validate the repository structure of a submitted ZenML Hub plugin.
 
     We expect the following structure:
+    - src/__init__.py
     - README.md
     - requirements.txt
-    - src/
+    - (Optional) logo.png
 
     Args:
         plugin_root: Root directory of the plugin.
@@ -933,6 +933,14 @@ def _validate_repository_structure(plugin_root: str) -> None:
     Raises:
         ValueError: If the repo does not have the correct structure.
     """
+    # src/__init__.py exists.
+    src_path = os.path.join(plugin_root, "src")
+    if not os.path.exists(src_path):
+        raise ValueError("src/ not found")
+    init_path = os.path.join(src_path, "__init__.py")
+    if not os.path.exists(init_path):
+        raise ValueError("src/__init__.py not found")
+
     # README.md exists.
     readme_path = os.path.join(plugin_root, "README.md")
     if not os.path.exists(readme_path):
@@ -942,11 +950,6 @@ def _validate_repository_structure(plugin_root: str) -> None:
     requirements_path = os.path.join(plugin_root, "requirements.txt")
     if not os.path.exists(requirements_path):
         raise ValueError("requirements.txt not found")
-
-    # src/ exists.
-    src_path = os.path.join(plugin_root, "src")
-    if not os.path.exists(src_path):
-        raise ValueError("src/ not found")
 
 
 def _validate_tags(tags: List[str], interactive: bool) -> List[str]:
@@ -1082,24 +1085,7 @@ def _get_plugin_module(plugin: HubPluginResponseModel) -> str:
         The module name of the plugin.
     """
     module_name = "zenml.hub"
-    username = _get_plugin_author_username(plugin)
-    if username:
-        module_name += f".{username}"
+    if plugin.author != ZENML_HUB_ADMIN_USERNAME:
+        module_name += f".{plugin.author}"
     module_name += f".{plugin.name}"
     return module_name
-
-
-def _get_plugin_author_username(plugin: HubPluginResponseModel) -> str:
-    """Helper function to get the username of the author of a plugin.
-
-    Args:
-        plugin: The plugin.
-
-    Returns:
-        The username of the plugin author or "" if no username was found.
-    """
-    if plugin.user:
-        username = plugin.user.username
-        if username and username != ZENML_HUB_ADMIN_USERNAME:
-            return username
-    return ""

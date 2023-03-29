@@ -69,11 +69,11 @@ class HubPluginResponseModel(HubPluginBaseModel):
 
     id: UUID
     status: PluginStatus
+    author: str
     version: str
     index_url: Optional[str]
     package_name: Optional[str]
     requirements: Optional[List[str]]
     build_logs: Optional[str]
-    user: Optional[HubUserResponseModel]
     created: datetime
     updated: datetime
