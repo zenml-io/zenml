@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Constants for the ZenML hub."""
 
+ZENML_HUB_DEFAULT_URL = "https://hubapi.zenml.io/"
 ZENML_HUB_ADMIN_USERNAME = "ZenML"
 ZENML_HUB_CLIENT_VERIFY = False  # TODO: set to True once the hub has certs
 ZENML_HUB_CLIENT_TIMEOUT = 10

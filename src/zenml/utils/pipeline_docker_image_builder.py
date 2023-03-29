@@ -25,6 +25,7 @@ from typing import (
     Optional,
     Sequence,
     Tuple,
+    Union,
 )
 
 import zenml
@@ -485,34 +486,36 @@ class PipelineDockerImageBuilder:
         # Generate requirements files for all ZenML Hub plugins
         if docker_settings.required_hub_plugins:
             (
-                hub_packages,
-                hub_requirements,
+                hub_internal_requirements,
+                hub_pypi_requirements,
             ) = PipelineDockerImageBuilder._get_hub_requirements(
                 docker_settings.required_hub_plugins
             )
 
             # Plugin packages themselves
-            for i, (index, packages) in enumerate(hub_packages.items()):
-                file_name = f".zenml_hub_packages_{i}"
+            for i, (index, packages) in enumerate(
+                hub_internal_requirements.items()
+            ):
+                file_name = f".zenml_hub_internal_requirements_{i}"
                 file_lines = [f"-i {index}", *packages]
                 file_contents = "\n".join(file_lines)
                 requirements_files.append((file_name, file_contents))
                 if log:
                     logger.info(
-                        "- Including hub packages from index `%s`: %s",
+                        "- Including internal hub packages from index `%s`: %s",
                         index,
                         ", ".join(f"`{r}`" for r in packages),
                     )
 
             # PyPI requirements of plugin packages
-            if hub_requirements:
-                file_name = ".zenml_hub_requirements"
-                file_contents = "\n".join(hub_requirements)
+            if hub_pypi_requirements:
+                file_name = ".zenml_hub_pypi_requirements"
+                file_contents = "\n".join(hub_pypi_requirements)
                 requirements_files.append((file_name, file_contents))
                 if log:
                     logger.info(
-                        "- Including hub requirements: %s",
-                        ", ".join(f"`{r}`" for r in hub_requirements),
+                        "- Including hub requirements from PyPI: %s",
+                        ", ".join(f"`{r}`" for r in hub_pypi_requirements),
                     )
 
         return requirements_files
@@ -544,8 +547,11 @@ class PipelineDockerImageBuilder:
         )
 
         client = HubClient()
-        hub_packages: DefaultDict[str, List[str]] = defaultdict(list)
-        hub_requirements: List[str] = []
+
+        _DICT_TYPE = Union[Dict[str, List[str]], DefaultDict[str, List[str]]]
+        hub_internal_requirements: _DICT_TYPE = defaultdict(list)
+
+        hub_pypi_requirements: List[str] = []
 
         for plugin_str in required_hub_plugins:
             author, name, version = parse_plugin_name(
@@ -559,9 +565,11 @@ class PipelineDockerImageBuilder:
             )
 
             if plugin and plugin.index_url and plugin.package_name:
-                hub_packages[plugin.index_url].append(plugin.package_name)
+                hub_internal_requirements[plugin.index_url].append(
+                    plugin.package_name
+                )
                 if plugin.requirements:
-                    hub_requirements.extend(plugin.requirements)
+                    hub_pypi_requirements.extend(plugin.requirements)
             else:
                 display_name = plugin_display_name(name, version, author)
                 logger.warning(
@@ -570,7 +578,9 @@ class PipelineDockerImageBuilder:
                     display_name,
                 )
 
-        return dict(hub_packages), sorted(set(hub_requirements))
+        hub_pypi_requirements = sorted(set(hub_pypi_requirements))
+        hub_internal_requirements = dict(hub_internal_requirements)
+        return hub_internal_requirements, hub_pypi_requirements
 
     @staticmethod
     def _generate_zenml_pipeline_dockerfile(

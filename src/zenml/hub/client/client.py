@@ -24,6 +24,7 @@ from zenml.hub.internal.constants import (
     ZENML_HUB_ADMIN_USERNAME,
     ZENML_HUB_CLIENT_TIMEOUT,
     ZENML_HUB_CLIENT_VERIFY,
+    ZENML_HUB_DEFAULT_URL,
 )
 from zenml.logger import get_logger
 from zenml.models.hub_plugin_models import (
@@ -58,7 +59,7 @@ class HubClient:
         Returns:
             The default URL of the ZenML Hub.
         """
-        return os.getenv(ENV_ZENML_HUB_URL, default="https://hubapi.zenml.io/")
+        return os.getenv(ENV_ZENML_HUB_URL, default=ZENML_HUB_DEFAULT_URL)
 
     def list_plugins(self, **params: Any) -> List[HubPluginResponseModel]:
         """List all plugins in the hub.

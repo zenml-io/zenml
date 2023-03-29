@@ -14,24 +14,27 @@
 """Models representing ZenML Hub plugins."""
 
 from datetime import datetime
-from typing import TYPE_CHECKING, List, Optional
+from typing import List, Optional
 from uuid import UUID
 
 from pydantic import BaseModel
 
 from zenml.utils.enum_utils import StrEnum
 
-if TYPE_CHECKING:
-    pass
-
 
 class PluginStatus(StrEnum):
-    """Enum that represents the status of a plugin."""
+    """Enum that represents the status of a plugin.
 
-    PENDING = "pending"  # Plugin is being built
-    FAILED = "failed"  # Plugin build failed
-    AVAILABLE = "available"  # Plugin is available for installation
-    YANKED = "yanked"  # Plugin was yanked and is no longer available
+    - PENDING: Plugin is being built
+    - FAILED: Plugin build failed
+    - AVAILABLE: Plugin is available for installation
+    - YANKED: Plugin was yanked and is no longer available
+    """
+
+    PENDING = "pending"
+    FAILED = "failed"
+    AVAILABLE = "available"
+    YANKED = "yanked"
 
 
 class HubUserResponseModel(BaseModel):
