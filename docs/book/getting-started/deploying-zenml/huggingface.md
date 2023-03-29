@@ -24,7 +24,7 @@ looks like.
 
 You can deploy ZenML on HuggingFace Spaces with just a few clicks:
 
-<a  href="https://huggingface.co/new-space?template=zenml/zenml-template-space">
+<a  href="https://huggingface.co/new-space?template=zenml/zenml">
     <img src="https://huggingface.co/datasets/huggingface/badges/raw/main/deploy-to-spaces-lg.svg" />
 </a>
 
