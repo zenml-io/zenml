@@ -207,7 +207,7 @@ def install_plugin(
 
         # Check if plugin is already installed
         if _is_plugin_installed(plugin) and not upgrade:
-            logger.info(f"Plugin '{plugin_name}' is already installed.")
+            declare(f"Plugin '{plugin_name}' is already installed.")
             return
 
         # Show a warning if the plugin is not official or verified
@@ -233,7 +233,7 @@ def install_plugin(
                     f"Do you want to install them now?"
                 )
         if plugin.requirements and install_requirements:
-            logger.info(
+            declare(
                 f"Installing requirements for plugin '{display_name}': "
                 f"{requirements_str}..."
             )
@@ -246,19 +246,19 @@ def install_plugin(
                 "--upgrade",
             ]
             subprocess.check_call(requirements_install_call)
-            logger.info(
+            declare(
                 f"Successfully installed requirements for plugin "
                 f"'{display_name}'."
             )
         elif plugin.requirements:
-            logger.warning(
+            warning(
                 f"Requirements for plugin '{display_name}' were not installed. "
                 "This might lead to errors in the future if the requirements "
                 "are not installed manually."
             )
 
         # pip install the wheel
-        logger.info(
+        declare(
             f"Installing plugin '{display_name}' from "
             f"{index_url}{package_name}..."
         )
@@ -274,7 +274,7 @@ def install_plugin(
             "--upgrade",  # we already checked if the plugin is installed above
         ]
         subprocess.check_call(plugin_install_call)
-        logger.info(f"Successfully installed plugin '{display_name}'.")
+        declare(f"Successfully installed plugin '{display_name}'.")
 
 
 @hub.command("uninstall")
@@ -313,11 +313,11 @@ def uninstall_plugin(plugin_name: str) -> None:
             )
 
         # pip uninstall the wheel
-        logger.info(f"Uninstalling plugin '{display_name}'...")
+        declare(f"Uninstalling plugin '{display_name}'...")
         subprocess.check_call(
             [sys.executable, "-m", "pip", "uninstall", package_name, "-y"]
         )
-        logger.info(f"Successfully uninstalled plugin '{display_name}'.")
+        declare(f"Successfully uninstalled plugin '{display_name}'.")
 
 
 @hub.command("clone")
@@ -366,7 +366,7 @@ def clone_plugin(
         # Clone the source repo
         if output_dir is None:
             output_dir = os.path.join(os.getcwd(), plugin_name)
-        logger.info(f"Cloning plugin '{display_name}' to {output_dir}...")
+        declare(f"Cloning plugin '{display_name}' to {output_dir}...")
         # If no subdir is set, we can clone directly into output_dir
         if not subdir:
             repo_path = plugin_dir = output_dir
@@ -382,7 +382,7 @@ def clone_plugin(
         try:
             _clone_repo(url=repo_url, to_path=repo_path, commit=commit)
             shutil.move(plugin_dir, output_dir)
-            logger.info(f"Successfully Cloned plugin '{display_name}'.")
+            declare(f"Successfully Cloned plugin '{display_name}'.")
         except GitCommandError:
             error(
                 f"Could not find commit '{commit}' in repository '{repo_url}' "
@@ -465,7 +465,7 @@ def login(
             password = click.prompt("Password", type=str, hide_input=True)
         _login_via_zenml_hub(email, password)
     else:
-        logger.info(
+        declare(
             "You can either login via your ZenML Hub account or via GitHub."
         )
         confirmation = click.confirm("Login via ZenML Hub account?")
@@ -491,7 +491,7 @@ def _login_via_zenml_hub(
         client = HubClient()
         analytics_handler.metadata["hub_url"] = client.url
         if not email or not password:
-            logger.info("Please enter your ZenML Hub credentials.")
+            declare("Please enter your ZenML Hub credentials.")
         while not email:
             email = click.prompt("Email", type=str)
         analytics_handler.metadata = {"hub_email": email}
@@ -501,7 +501,7 @@ def _login_via_zenml_hub(
             client.login(email, password)
             me = client.get_me()
             if me:
-                logger.info(
+                declare(
                     f"Successfully logged in as: {me.username} ({me.email})!"
                 )
                 return
@@ -521,12 +521,10 @@ def _login_via_github() -> None:
             login_url = client.get_github_login_url()
         except HubAPIError as e:
             error(f"Could not retrieve GitHub login URL: {e}")
-        logger.info(
-            f"Please open the following URL in your browser: {login_url}"
-        )
+        declare(f"Please open the following URL in your browser: {login_url}")
         auth_token = click.prompt("Please enter your auth token", type=str)
         client.set_auth_token(auth_token)
-        logger.info("Successfully logged in to the ZenML Hub.")
+        declare("Successfully logged in to the ZenML Hub.")
 
 
 @hub.command("logout")
@@ -538,7 +536,7 @@ def logout() -> None:
         client = HubClient()
         analytics_handler.metadata["hub_url"] = client.url
         client.set_auth_token(None)
-        logger.info("Successfully logged out from the ZenML Hub.")
+        declare("Successfully logged out from the ZenML Hub.")
 
 
 @hub.command("submit")
@@ -676,7 +674,7 @@ def submit_plugin(
         # interactive mode.
         if plugin_exists and interactive:
             if not version:
-                logger.info(
+                declare(
                     "You are about to create a new version of plugin "
                     f"'{plugin_name}'. By default, this will increment the "
                     "minor version of the plugin. If you want to specify a "
@@ -686,7 +684,7 @@ def submit_plugin(
                 )
                 version = click.prompt("(Optional) plugin version", default="")
             if not release_notes:
-                logger.info(
+                declare(
                     f"You are about to create a new version of plugin "
                     f"'{plugin_name}'. You can optionally provide release "
                     "notes for this version below."
@@ -711,7 +709,7 @@ def submit_plugin(
 
         # In interactive mode, ask for a description if none is provided
         if interactive and not description:
-            logger.info(
+            declare(
                 "You can optionally provide a description for your plugin below. "
                 "If not set, the first line of your README.md will be used."
             )
@@ -744,7 +742,7 @@ def submit_plugin(
         # Stream the build logs
         plugin_name = plugin_response.name
         plugin_version = plugin_response.version
-        logger.info(
+        declare(
             "Thanks for submitting your plugin to the ZenML Hub. The plugin is "
             "now  being built into an installable package. This may take a few "
             "minutes. To view the build logs, run "
@@ -773,7 +771,7 @@ def _validate_plugin_name(
     while not plugin_name:
         if not interactive:
             error("Plugin name not provided.")
-        logger.info("Please enter a name for the plugin.")
+        declare("Please enter a name for the plugin.")
         plugin_name = click.prompt("Plugin name")
 
     existing_plugin = client.get_plugin(
@@ -806,7 +804,7 @@ def _validate_repository(
         if not url:
             if not interactive:
                 error("Repository URL not provided.")
-            logger.info(
+            declare(
                 "Please enter the URL to the public Git repository containing "
                 "the plugin source code."
             )
@@ -826,11 +824,11 @@ def _validate_repository(
                     "commit?"
                 )
                 if confirmation:
-                    logger.info("Please enter the SHA of the commit.")
+                    declare("Please enter the SHA of the commit.")
                     commit = click.prompt("Repository commit")
                     branch = None
                 else:
-                    logger.info("Please enter the name of a branch.")
+                    declare("Please enter the name of a branch.")
                     branch = click.prompt("Repository branch")
                     commit = None
 
@@ -867,7 +865,7 @@ def _validate_repository(
             msg = f"Could not clone repository from URL {repo_display_name}. "
             if not interactive:
                 error(msg + suggestion)
-            logger.info(msg + suggestion)
+            declare(msg + suggestion)
             url, branch, commit = None, None, None
 
         finally:
@@ -895,7 +893,7 @@ def _validate_repository_subdir(
                 "Is the plugin source code in the root of the repository?"
             )
             if not confirmation:
-                logger.info(
+                declare(
                     "Please enter the subdirectory of the repository "
                     "containing the plugin source code."
                 )
@@ -907,11 +905,11 @@ def _validate_repository_subdir(
             if not os.path.exists(subdir_path):
                 if not interactive:
                     error("Repository subdirectory does not exist.")
-                logger.info(
+                declare(
                     f"Subdirectory '{repository_subdir}' does not exist in the "
                     f"repository."
                 )
-                logger.info("Please enter a valid subdirectory.")
+                declare("Please enter a valid subdirectory.")
                 repository_subdir = click.prompt(
                     "Repository subdirectory", default=""
                 )
@@ -932,8 +930,8 @@ def _validate_repository_subdir(
             )
             if not interactive:
                 error(str(e))
-            logger.info(msg)
-            logger.info("Please enter a valid subdirectory.")
+            declare(msg)
+            declare("Please enter a valid subdirectory.")
             repository_subdir = click.prompt("Repository subdirectory")
 
 
@@ -987,7 +985,7 @@ def _validate_tags(tags: List[str], interactive: bool) -> List[str]:
     # If tags were provided, print a warning if any of them is invalid.
     for tag in tags:
         if tag.startswith(ZENML_HUB_INTERNAL_TAG_PREFIX):
-            logger.warning(
+            warning(
                 f"Tag '{tag}' will be ignored because it starts with "
                 f"disallowed prefix '{ZENML_HUB_INTERNAL_TAG_PREFIX}'."
             )
@@ -1009,7 +1007,7 @@ def _ask_for_tags() -> List[str]:
         if not tag:
             return tags
         if tag.startswith(ZENML_HUB_INTERNAL_TAG_PREFIX):
-            logger.warning(
+            warning(
                 "User-defined tags may not start with "
                 f"'{ZENML_HUB_INTERNAL_TAG_PREFIX}'."
             )
@@ -1053,7 +1051,7 @@ def get_logs(plugin_name: str) -> None:
             )
 
         if not plugin.build_logs:
-            logger.info(
+            declare(
                 f"Plugin '{display_name}' finished building, but no logs "
                 "were found."
             )
@@ -1063,11 +1061,11 @@ def get_logs(plugin_name: str) -> None:
             if line.startswith("DEBUG"):
                 pass
             if line.startswith("INFO"):
-                logger.info(line)
+                declare(line)
             elif line.startswith("WARNING"):
-                logger.warning(line)
+                warning(line)
             else:
-                logger.error(line)
+                error(line)
 
 
 # GENERAL HELPER FUNCTIONS
