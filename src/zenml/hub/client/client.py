@@ -20,6 +20,11 @@ import requests
 
 from zenml.client import Client
 from zenml.constants import ENV_ZENML_HUB_URL
+from zenml.hub.internal.constants import (
+    ZENML_HUB_ADMIN_USERNAME,
+    ZENML_HUB_CLIENT_TIMEOUT,
+    ZENML_HUB_CLIENT_VERIFY,
+)
 from zenml.logger import get_logger
 from zenml.models.hub_plugin_models import (
     HubPluginRequestModel,
@@ -28,12 +33,6 @@ from zenml.models.hub_plugin_models import (
 )
 
 logger = get_logger(__name__)
-
-ZENML_HUB_ADMIN_USERNAME = "ZenML"
-ZENML_HUB_CLIENT_VERIFY = False  # TODO: Set to True once Hub has a certificate
-ZENML_HUB_CLIENT_TIMEOUT = 10
-ZENML_HUB_INTERNAL_TAG_PREFIX = "zenml-"
-VERIFIED_TAG = "zenml-badge-verified"
 
 
 class HubAPIError(Exception):

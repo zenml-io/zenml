@@ -28,11 +28,12 @@ from zenml.cli.cli import TagGroup, cli
 from zenml.cli.utils import declare, error, print_table, warning
 from zenml.enums import CliCategories
 from zenml.hub.client import HubAPIError, HubClient
-from zenml.hub.client.client import (
-    VERIFIED_TAG,
+from zenml.hub.internal.constants import (
     ZENML_HUB_ADMIN_USERNAME,
     ZENML_HUB_INTERNAL_TAG_PREFIX,
+    ZENML_HUB_VERIFIED_TAG,
 )
+from zenml.hub.internal.utils import parse_plugin_name, plugin_display_name
 from zenml.logger import get_logger
 from zenml.models.hub_plugin_models import (
     HubPluginRequestModel,
@@ -125,7 +126,7 @@ def _format_plugins_table(
             status_icon = ":x:"
 
         username = _get_plugin_author_username(plugin)
-        display_name = _plugin_display_name(
+        display_name = plugin_display_name(
             plugin_name=plugin.name, version=plugin.version, author=username
         )
         display_data: Dict[str, str] = {
@@ -142,12 +143,6 @@ def _format_plugins_table(
 
 @hub.command("install")
 @click.argument("plugin_name", type=str, required=True)
-@click.option(
-    "--version",
-    "-v",
-    type=str,
-    help="Version of the plugin to install.",
-)
 @click.option(
     "--upgrade",
     "-u",
@@ -168,7 +163,6 @@ def _format_plugins_table(
 )
 def install_plugin(
     plugin_name: str,
-    version: Optional[str] = None,
     upgrade: bool = False,
     no_deps: bool = False,
     yes: bool = False,
@@ -177,29 +171,25 @@ def install_plugin(
 
     Args:
         plugin_name: Name of the plugin.
-        version: Version of the plugin. If not specified, the latest version
-            will be used.
         upgrade: Whether to upgrade the plugin if it is already installed.
         no_deps: If set, dependencies of the plugin will not be installed.
         yes: If set, no confirmation will be asked for before installing.
     """
     with event_handler(
         event=AnalyticsEvent.ZENML_HUB_PLUGIN_INSTALL,
-        metadata={
-            "plugin_name": plugin_name,
-            "plugin_version": version,
-        },
     ) as analytics_handler:
         client = HubClient()
         analytics_handler.metadata["hub_url"] = client.url
-        plugin_name, author = _parse_plugin_name(plugin_name)
+        author, plugin_name, plugin_version = parse_plugin_name(plugin_name)
         analytics_handler.metadata["plugin_name"] = plugin_name
         analytics_handler.metadata["plugin_author"] = author
-        display_name = _plugin_display_name(plugin_name, version, author)
+        display_name = plugin_display_name(plugin_name, plugin_version, author)
 
         # Get plugin from hub
         plugin = client.get_plugin(
-            plugin_name=plugin_name, plugin_version=version, author=author
+            plugin_name=plugin_name,
+            plugin_version=plugin_version,
+            author=author,
         )
         if not plugin:
             error(f"Could not find plugin '{display_name}' on the hub.")
@@ -222,7 +212,7 @@ def install_plugin(
         _is_zenml_plugin = (
             plugin.user and plugin.user.username == ZENML_HUB_ADMIN_USERNAME
         )
-        _is_verified = plugin.tags and VERIFIED_TAG in plugin.tags
+        _is_verified = plugin.tags and ZENML_HUB_VERIFIED_TAG in plugin.tags
         if not _is_zenml_plugin and not _is_verified:
             warning(
                 f"Plugin '{display_name}' was not verified by ZenML and may "
@@ -287,40 +277,27 @@ def install_plugin(
 
 @hub.command("uninstall")
 @click.argument("plugin_name", type=str, required=True)
-@click.option(
-    "--version",
-    "-v",
-    type=str,
-    help="Version of the plugin to uninstall.",
-)
-def uninstall_plugin(
-    plugin_name: str,
-    version: Optional[str] = None,
-) -> None:
+def uninstall_plugin(plugin_name: str) -> None:
     """Uninstall a plugin from the hub.
 
     Args:
         plugin_name: Name of the plugin.
-        version: Version of the plugin. If not specified, the latest version
-            will be used.
     """
     with event_handler(
         event=AnalyticsEvent.ZENML_HUB_PLUGIN_UNINSTALL,
-        metadata={
-            "plugin_name": plugin_name,
-            "plugin_version": version,
-        },
     ) as analytics_handler:
         client = HubClient()
         analytics_handler.metadata["hub_url"] = client.url
-        plugin_name, author = _parse_plugin_name(plugin_name)
+        author, plugin_name, plugin_version = parse_plugin_name(plugin_name)
         analytics_handler.metadata["plugin_name"] = plugin_name
         analytics_handler.metadata["plugin_author"] = author
-        display_name = _plugin_display_name(plugin_name, version, author)
+        display_name = plugin_display_name(plugin_name, plugin_version, author)
 
         # Get plugin from hub
         plugin = client.get_plugin(
-            plugin_name=plugin_name, plugin_version=version, author=author
+            plugin_name=plugin_name,
+            plugin_version=plugin_version,
+            author=author,
         )
         if not plugin:
             error(f"Could not find plugin '{display_name}' on the hub.")
@@ -344,48 +321,37 @@ def uninstall_plugin(
 @hub.command("clone")
 @click.argument("plugin_name", type=str, required=True)
 @click.option(
-    "--version",
-    "-v",
-    type=str,
-    help="Version of the plugin to clone.",
-)
-@click.option(
     "--output_dir",
     type=str,
     help="Output directory to clone the plugin to.",
 )
 def clone_plugin(
     plugin_name: str,
-    version: Optional[str] = None,
     output_dir: Optional[str] = None,
 ) -> None:
     """Clone a plugin from the hub.
 
     Args:
         plugin_name: Name of the plugin.
-        version: Version of the plugin. If not specified, the latest version
-            will be used.
         output_dir: Output directory to clone the plugin to. If not specified,
             the plugin will be cloned to a directory with the same name as the
             plugin in the current working directory.
     """
     with event_handler(
         event=AnalyticsEvent.ZENML_HUB_PLUGIN_CLONE,
-        metadata={
-            "plugin_name": plugin_name,
-            "plugin_version": version,
-        },
     ) as analytics_handler:
         client = HubClient()
         analytics_handler.metadata["hub_url"] = client.url
-        plugin_name, author = _parse_plugin_name(plugin_name)
+        author, plugin_name, plugin_version = parse_plugin_name(plugin_name)
         analytics_handler.metadata["plugin_name"] = plugin_name
         analytics_handler.metadata["plugin_author"] = author
-        display_name = _plugin_display_name(plugin_name, version, author)
+        display_name = plugin_display_name(plugin_name, plugin_version, author)
 
         # Get plugin from hub
         plugin = client.get_plugin(
-            plugin_name=plugin_name, plugin_version=version, author=author
+            plugin_name=plugin_name,
+            plugin_version=plugin_version,
+            author=author,
         )
         if not plugin:
             error(f"Could not find plugin '{display_name}' on the hub.")
@@ -786,7 +752,7 @@ def submit_plugin(
             "Thanks for submitting your plugin to the ZenML Hub. The plugin is "
             "now  being built into an installable package. This may take a few "
             "minutes. To view the build logs, run "
-            f"`zenml hub logs {username}/{plugin_name} --version {plugin_version}`."
+            f"`zenml hub logs {username}/{plugin_name}:{plugin_version}`."
         )
 
 
@@ -1060,43 +1026,28 @@ def _ask_for_tags() -> List[str]:
 
 @hub.command("logs")
 @click.argument("plugin_name", type=str, required=True)
-@click.option(
-    "--version",
-    "-v",
-    type=str,
-    help=(
-        "Version of the plugin to get the logs for. If not provided, the "
-        "latest version will be used."
-    ),
-)
-def get_logs(
-    plugin_name: str,
-    version: Optional[str] = None,
-) -> None:
+def get_logs(plugin_name: str) -> None:
     """Get the build logs of a plugin.
 
     Args:
         plugin_name: Name of the plugin.
-        version: Version of the plugin. If not provided, the latest version
-            will be used.
     """
     with event_handler(
-        event=AnalyticsEvent.ZENML_HUB_PLUGIN_LOGS,
-        metadata={
-            "plugin_name": plugin_name,
-            "plugin_version": version,
-        },
+        event=AnalyticsEvent.ZENML_HUB_PLUGIN_LOGS
     ) as analytics_handler:
         client = HubClient()
         analytics_handler.metadata["hub_url"] = client.url
-        plugin_name, author = _parse_plugin_name(plugin_name)
+        author, plugin_name, plugin_version = parse_plugin_name(plugin_name)
         analytics_handler.metadata["plugin_name"] = plugin_name
         analytics_handler.metadata["plugin_author"] = author
-        display_name = _plugin_display_name(plugin_name, version, author)
+        analytics_handler.metadata["plugin_version"] = plugin_version
+        display_name = plugin_display_name(plugin_name, plugin_version, author)
 
         # Get the plugin from the hub
         plugin = client.get_plugin(
-            plugin_name=plugin_name, plugin_version=version, author=author
+            plugin_name=plugin_name,
+            plugin_version=plugin_version,
+            author=author,
         )
         if not plugin:
             error(f"Could not find plugin '{display_name}' on the hub.")
@@ -1176,46 +1127,3 @@ def _get_plugin_author_username(plugin: HubPluginResponseModel) -> str:
         if plugin.user.username:
             return plugin.user.username
     return ""
-
-
-def _parse_plugin_name(plugin_name: str) -> Tuple[str, Optional[str]]:
-    """Helper function to parse a plugin name.
-
-    Args:
-        plugin_name: The user-provided plugin name.
-
-    Returns:
-        The plugin name and the username of the plugin author.
-
-    Raises:
-        ValueError: If the plugin name is invalid.
-    """
-    parts = plugin_name.split("/")
-    if len(parts) == 1:
-        return plugin_name, None
-    if len(parts) == 2:
-        return parts[1], parts[0]
-    raise ValueError(
-        f"Invalid plugin name '{plugin_name}'. Plugin names must be of the "
-        "form 'plugin_name' or 'author/plugin_name'."
-    )
-
-
-def _plugin_display_name(
-    plugin_name: str, version: Optional[str], author: Optional[str]
-) -> str:
-    """Helper function to get the display name of a plugin.
-
-    Args:
-        plugin_name: Name of the plugin.
-        version: Version of the plugin.
-        author: Username of the plugin author.
-
-    Returns:
-        Display name of the plugin.
-    """
-    author_prefix = ""
-    if author and author != ZENML_HUB_ADMIN_USERNAME:
-        author_prefix = f"{author}/"
-    version_suffix = f":{version}" if version else ":latest"
-    return f"{author_prefix}{plugin_name}{version_suffix}"

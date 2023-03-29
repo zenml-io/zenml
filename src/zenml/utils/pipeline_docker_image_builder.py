@@ -538,29 +538,19 @@ class PipelineDockerImageBuilder:
             ValueError: If a provided plugin name has an invalid format.
         """
         from zenml.hub.client import HubClient
+        from zenml.hub.internal.utils import (
+            parse_plugin_name,
+            plugin_display_name,
+        )
 
         client = HubClient()
         hub_packages: DefaultDict[str, List[str]] = defaultdict(list)
         hub_requirements: List[str] = []
 
-        invalid_format_err_msg = (
-            "Invalid required hub plugin `{}`. Expected format: "
-            "`(<author_username>/)<plugin_name>(==<version>)`."
-        )
-
         for plugin_str in required_hub_plugins:
-            parts = plugin_str.split("==")
-            if len(parts) > 2:
-                raise ValueError(invalid_format_err_msg.format(plugin_str))
-            name, version = parts[0], "latest" if len(parts) == 1 else parts[1]
-
-            parts = name.split("/")
-            if len(parts) > 2:
-                raise ValueError(invalid_format_err_msg.format(plugin_str))
-            name, author = parts[-1], None if len(parts) == 1 else parts[0]
-
-            if not name:
-                raise ValueError(invalid_format_err_msg.format(plugin_str))
+            author, name, version = parse_plugin_name(
+                plugin_str, version_separator="=="
+            )
 
             plugin = client.get_plugin(
                 plugin_name=name,
@@ -573,11 +563,11 @@ class PipelineDockerImageBuilder:
                 if plugin.requirements:
                     hub_requirements.extend(plugin.requirements)
             else:
+                display_name = plugin_display_name(name, version, author)
                 logger.warning(
-                    "Hub plugin `%s:%s` does not exist or cannot be installed."
+                    "Hub plugin `%s` does not exist or cannot be installed."
                     "Skipping installation of this plugin.",
-                    name,
-                    version,
+                    display_name,
                 )
 
         return dict(hub_packages), sorted(set(hub_requirements))
