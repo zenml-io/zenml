@@ -280,7 +280,7 @@ def install_plugin(
 @hub.command("uninstall")
 @click.argument("plugin_name", type=str, required=True)
 def uninstall_plugin(plugin_name: str) -> None:
-    """Uninstall a plugin from the hub.
+    """Uninstall a hub plugin.
 
     Args:
         plugin_name: Name of the plugin.
@@ -644,11 +644,6 @@ def submit_plugin(
     """
     with event_handler(
         event=AnalyticsEvent.ZENML_HUB_PLUGIN_SUBMIT,
-        metadata={
-            "plugin_name": plugin_name,
-            "plugin_version": version,
-            "repository_url": repository_url,
-        },
     ) as analytics_handler:
         client = HubClient()
         analytics_handler.metadata["hub_url"] = client.url
@@ -668,7 +663,6 @@ def submit_plugin(
                 "set a username in your account settings and try again."
             )
         username = me.username
-        analytics_handler.metadata["plugin_author"] = username
 
         # Validate the plugin name and check if it exists
         plugin_name, plugin_exists = _validate_plugin_name(
@@ -677,7 +671,6 @@ def submit_plugin(
             username=username,
             interactive=interactive,
         )
-        analytics_handler.metadata["plugin_name"] = plugin_name
 
         # If the plugin exists, ask for version and release notes in
         # interactive mode.
@@ -692,7 +685,6 @@ def submit_plugin(
                     "is higher than the current latest version of the plugin."
                 )
                 version = click.prompt("(Optional) plugin version", default="")
-                analytics_handler.metadata["plugin_version"] = version
             if not release_notes:
                 logger.info(
                     f"You are about to create a new version of plugin "
@@ -716,7 +708,6 @@ def submit_plugin(
             subdir=repository_subdir,
             interactive=interactive,
         )
-        analytics_handler.metadata["repository_url"] = repository_url
 
         # In interactive mode, ask for a description if none is provided
         if interactive and not description:
@@ -807,10 +798,7 @@ def _validate_repository(
         subdir: The subdirectory in which the plugin is located.
         interactive: Whether to run in interactive mode.
 
-    Returns:
-        - The validated URL to the repository,
-        - The cloned repository,
-        - The path to the cloned repository.
+    Returns: The validated URL, commit, branch, and subdirectory.
     """
     while True:
 
