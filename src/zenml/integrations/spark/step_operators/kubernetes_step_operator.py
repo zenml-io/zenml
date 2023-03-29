@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Implementation of the Kubernetes Spark Step Operator."""
-from typing import TYPE_CHECKING, Any, List, Optional, Tuple, cast
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, cast
 
 from pyspark.conf import SparkConf
 
@@ -138,6 +138,7 @@ class KubernetesSparkStepOperator(SparkStepOperator):
         self,
         spark_config: SparkConf,
         info: "StepRunInfo",
+        environment: Dict[str, str],
     ) -> None:
         """Configures Spark to run on Kubernetes.
 
@@ -148,6 +149,8 @@ class KubernetesSparkStepOperator(SparkStepOperator):
             spark_config: a SparkConf object which collects all the
                 configuration parameters
             info: Information about the step run.
+            environment: Environment variables to set in the executor
+                environment.
         """
         image_name = info.get_image(key=SPARK_DOCKER_IMAGE_KEY)
 
@@ -163,3 +166,6 @@ class KubernetesSparkStepOperator(SparkStepOperator):
                 "spark.kubernetes.authenticate.driver.serviceAccountName",
                 self.config.service_account,
             )
+
+        for key, value in environment.items():
+            spark_config.set(f"spark.executorEnv.{key}", value)

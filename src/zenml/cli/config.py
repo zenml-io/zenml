@@ -38,7 +38,7 @@ def is_analytics_opted_in() -> None:
 @analytics.command(
     "opt-in", context_settings=dict(ignore_unknown_options=True)
 )
-@track(AnalyticsEvent.OPT_IN_ANALYTICS)
+@track(AnalyticsEvent.OPT_IN_ANALYTICS, v2=True)
 def opt_in() -> None:
     """Opt-in to analytics."""
     gc = GlobalConfiguration()
@@ -49,7 +49,7 @@ def opt_in() -> None:
 @analytics.command(
     "opt-out", context_settings=dict(ignore_unknown_options=True)
 )
-@track(AnalyticsEvent.OPT_OUT_ANALYTICS)
+@track(AnalyticsEvent.OPT_OUT_ANALYTICS, v2=True)
 def opt_out() -> None:
     """Opt-out of analytics."""
     gc = GlobalConfiguration()

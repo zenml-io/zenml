@@ -40,6 +40,12 @@ variable "kubectl_config_path" {
   type        = string
 }
 
+variable "analytics_opt_in" {
+  description = "The flag to enable/disable analytics"
+  default     = true
+  type        = bool
+}
+
 # If you want a new RDS, choose a name and a password. If you already
 # have an instance, provide the name and the password here too.
 variable "database_username" {
@@ -159,6 +165,11 @@ variable "ingress_tls_secret_name" {
   type        = string
 }
 
+variable "zenmlserver_image_repo" {
+  description = "The repository to use for the zenmlserver docker image."
+  default     = "zenmldocker/zenml-server"
+  type        = string
+}
 variable "zenmlserver_image_tag" {
   description = "The tag to use for the zenmlserver docker image."
   default     = "latest"
