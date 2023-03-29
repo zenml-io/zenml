@@ -57,7 +57,7 @@ class HubClient:
         Returns:
             The default URL of the ZenML Hub.
         """
-        return os.getenv(ENV_ZENML_HUB_URL, default="https://hub.zenml.io/")
+        return os.getenv(ENV_ZENML_HUB_URL, default="https://hubapi.zenml.io/")
 
     def list_plugins(self, **params: Any) -> List[HubPluginResponseModel]:
         """List all plugins in the hub.
@@ -163,7 +163,7 @@ class HubClient:
         Raises:
             HubAPIError: If the login failed.
         """
-        route = "/user/auth/jwt/login"
+        route = "/auth/jwt/login"
         response = self._request(
             method="POST",
             route=route,
@@ -199,7 +199,7 @@ class HubClient:
         Raises:
             HubAPIError: If the request failed.
         """
-        route = "/user/auth/github/authorize"
+        route = "/auth/github/authorize"
         response = self._request("GET", route)
         if isinstance(response, dict):
             auth_url = response.get("authorization_url")
@@ -214,7 +214,7 @@ class HubClient:
             The user response model or None if the user does not exist.
         """
         try:
-            response = self._request("GET", "/user/users/me")
+            response = self._request("GET", "/users/me")
             return HubUserResponseModel.parse_obj(response)
         except HubAPIError:
             return None
