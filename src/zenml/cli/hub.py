@@ -176,6 +176,7 @@ def install_plugin(
     """
     with event_handler(
         event=AnalyticsEvent.ZENML_HUB_PLUGIN_INSTALL,
+        v2=True,
     ) as analytics_handler:
         client = HubClient()
         analytics_handler.metadata["hub_url"] = client.url
@@ -282,6 +283,7 @@ def uninstall_plugin(plugin_name: str) -> None:
     """
     with event_handler(
         event=AnalyticsEvent.ZENML_HUB_PLUGIN_UNINSTALL,
+        v2=True,
     ) as analytics_handler:
         client = HubClient()
         analytics_handler.metadata["hub_url"] = client.url
@@ -337,6 +339,7 @@ def clone_plugin(
     """
     with event_handler(
         event=AnalyticsEvent.ZENML_HUB_PLUGIN_CLONE,
+        v2=True,
     ) as analytics_handler:
         client = HubClient()
         analytics_handler.metadata["hub_url"] = client.url
@@ -610,6 +613,7 @@ def submit_plugin(
     """
     with event_handler(
         event=AnalyticsEvent.ZENML_HUB_PLUGIN_SUBMIT,
+        v2=True,
     ) as analytics_handler:
         client = HubClient()
         analytics_handler.metadata["hub_url"] = client.url
