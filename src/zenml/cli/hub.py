@@ -783,7 +783,8 @@ def _validate_repository(
         subdir: The subdirectory in which the plugin is located.
         interactive: Whether to run in interactive mode.
 
-    Returns: The validated URL, commit, branch, and subdirectory.
+    Returns:
+        The validated URL, commit, branch, and subdirectory.
     """
     while True:
 

@@ -536,9 +536,6 @@ class PipelineDockerImageBuilder:
                 package names.
             - A list of all unique dependencies of the required hub plugins
                 (which can be installed from PyPI).
-
-        Raises:
-            ValueError: If a provided plugin name has an invalid format.
         """
         from zenml._hub.client import HubClient
         from zenml._hub.utils import parse_plugin_name, plugin_display_name
