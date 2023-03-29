@@ -16,9 +16,9 @@ import os
 import shutil
 import subprocess
 import sys
+import tempfile
 from importlib.util import find_spec
 from typing import Any, Dict, List, Optional, Tuple
-from uuid import uuid4
 
 import click
 from git import GitCommandError
@@ -324,6 +324,7 @@ def uninstall_plugin(plugin_name: str) -> None:
 @click.argument("plugin_name", type=str, required=True)
 @click.option(
     "--output_dir",
+    "-o",
     type=str,
     help="Output directory to clone the plugin to.",
 )
@@ -359,40 +360,27 @@ def clone_plugin(
             error(f"Could not find plugin '{display_name}' on the hub.")
         analytics_handler.metadata["plugin_version"] = plugin.version
 
+        # Clone the source repo to a temp dir, then move the plugin subdir out
         repo_url = plugin.repository_url
         subdir = plugin.repository_subdirectory
         commit = plugin.repository_commit
-
-        # Clone the source repo
         if output_dir is None:
             output_dir = os.path.join(os.getcwd(), plugin_name)
         declare(f"Cloning plugin '{display_name}' to {output_dir}...")
-        # If no subdir is set, we can clone directly into output_dir
-        if not subdir:
-            repo_path = plugin_dir = output_dir
-        # Otherwise, we need to clone into a random dir and then move the subdir
-        else:
-            random_repo_name = f"_{uuid4()}"
-            repo_path = os.path.abspath(
-                os.path.join(os.getcwd(), random_repo_name)
-            )
-            plugin_dir = os.path.join(repo_path, subdir)
-
-        # Clone the repo and move it to `output_dir`
-        try:
-            _clone_repo(url=repo_url, to_path=repo_path, commit=commit)
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            try:
+                _clone_repo(url=repo_url, to_path=tmp_dir, commit=commit)
+            except GitCommandError:
+                error(
+                    f"Could not find commit '{commit}' in repository '{repo_url}' "
+                    f"of plugin '{display_name}'. This might happen if the owner "
+                    "of the plugin has force-pushed to the plugin repository. "
+                    "Please report this plugin version in the ZenML Hub or via "
+                    "Slack."
+                )
+            plugin_dir = os.path.join(tmp_dir, subdir or "")
             shutil.move(plugin_dir, output_dir)
-            declare(f"Successfully Cloned plugin '{display_name}'.")
-        except GitCommandError:
-            error(
-                f"Could not find commit '{commit}' in repository '{repo_url}' "
-                f"of plugin '{display_name}'. This might happen if the owner "
-                "of the plugin has force-pushed to the plugin repository. "
-                "Please report this plugin version in the ZenML Hub or via "
-                "Slack."
-            )
-        finally:
-            shutil.rmtree(repo_path, ignore_errors=True)
+        declare(f"Successfully Cloned plugin '{display_name}'.")
 
 
 def _clone_repo(
@@ -834,22 +822,22 @@ def _validate_repository(
 
         try:
             # Check if the URL/branch/commit are valid.
-            repo_path = f"_{uuid4()}"
-            _clone_repo(
-                url=url,
-                commit=commit,
-                branch=branch,
-                to_path=repo_path,
-            )
+            with tempfile.TemporaryDirectory() as tmp_dir:
+                _clone_repo(
+                    url=url,
+                    commit=commit,
+                    branch=branch,
+                    to_path=tmp_dir,
+                )
 
-            # Check if the subdir exists and has the correct structure.
-            subdir = _validate_repository_subdir(
-                repository_subdir=subdir,
-                repo_path=repo_path,
-                interactive=interactive,
-            )
+                # Check if the subdir exists and has the correct structure.
+                subdir = _validate_repository_subdir(
+                    repository_subdir=subdir,
+                    repo_path=tmp_dir,
+                    interactive=interactive,
+                )
 
-            return url, commit, branch, subdir
+                return url, commit, branch, subdir
 
         except GitCommandError:
             repo_display_name = f"'{url}'"
@@ -867,10 +855,6 @@ def _validate_repository(
                 error(msg + suggestion)
             declare(msg + suggestion)
             url, branch, commit = None, None, None
-
-        finally:
-            if os.path.exists(repo_path):
-                shutil.rmtree(repo_path)
 
 
 def _validate_repository_subdir(
