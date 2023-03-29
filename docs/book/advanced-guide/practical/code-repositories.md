@@ -69,7 +69,72 @@ ZenML comes with builtin implementations of the code repository abstraction for 
 
 ### GitHub
 
+ZenML provides built-in support for using GitHub as a code repository for your
+ZenML pipelines. You can register a GitHub code repository by providing the URL
+of the GitHub instance, the owner of the repository, the name of the repository,
+and a GitHub Personal Access Token (PAT) with access to the repository.
+
+```shell
+zenml code-repository register <NAME> --type=github \
+--url=<GITHUB_URL> --owner=<OWNER> --repository=<REPOSITORY> \
+--token=<GITHUB_TOKEN>
+```
+
+where <NAME> is the name of the code repository you are registering, <OWNER> is
+the owner of the repository, <REPOSITORY> is the name of the repository, 
+<GITHUB_TOKEN> is your GitHub Personal Access Token and <GITHUB_URL> is the URL
+of the GitHub instance which defaults to `https://github.com.` You will need to
+set a URL if you are using GitHub Enterprise.
+
+After registering the GitHub code repository, ZenML will automatically detect
+if your source files are being tracked by GitHub and store the commit hash for
+each pipeline run.
+
+<details>
+
+<summary>How To get a token for GitHub</summary>
+
+1. Go to your GitHub account settings and click on "Developer settings".
+2. Select "Personal access tokens" and click on "Generate new token".
+3. Give your token a name and select the scopes that you need (e.g. repo, admin:repo_hook, user).
+4. Click on "Generate token" and copy the token to a safe place.
+
+</details>
+
 ### GitLab
+
+ZenML also provides built-in support for using GitLab as a code repository for
+your ZenML pipelines. You can register a GitLab code repository by providing the
+URL of the GitLab project, the group of the project, the name of the project,
+and a GitLab Personal Access Token (PAT) with access to the project.
+
+To register a GitLab code repository, run the following CLI command:
+
+```shell
+zenml code-repository register <NAME> --type=gitlab \
+--url=<GITLAB_URL> --group=<GROUP> --project=<PROJECT> \
+--token=<GITLAB_TOKEN>
+```
+
+where <NAME> is the name of the code repository you are registering, <GROUP> is
+the group of the project, <PROJECT> is the name of the project, <GITLAB_TOKEN>
+is your GitLab Personal Access Token and <GITLAB_URL> is the URL of the GitLab
+instance which defaults to `https://gitlab.com.` You will need to set a URL if
+you have a self-hosted GitLab instance.
+
+After registering the GitLab code repository, ZenML will automatically detect
+if your source files are being tracked by GitLab and store the commit hash for
+each pipeline run.
+
+<details>
+
+<summary>How To get a token for GitLab</summary>
+
+1. Go to your GitLab account settings and click on "Access Tokens".
+2. Select the scopes that you need (e.g. read_repository, write_repository).
+3. Click on "Create personal access token" and copy the token to a safe place.
+
+</details>
 
 ### Developing a custom code repository
 
