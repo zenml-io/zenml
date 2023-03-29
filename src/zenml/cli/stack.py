@@ -816,57 +816,7 @@ def delete_stack(
 
         if recursive and recursive_confirmation:
 
-            stack = client.get_stack(stack_name_or_id)
-            stack_components_free_for_deletion = []
-            stack_components_not_free_for_deletion = []
-
-            # Get all stack components associated with this stack
-            stack_components = stack.components
-
-            for stack_component in stack_components.items():
-
-                # Get stack associated with the stack component
-                stacks = client.list_stacks(
-                    component_id=stack_component[1][0].id, size=2, page=1
-                )
-
-                # Check if the stack component is part of another stack
-                if len(stacks) == 1:
-                    if stack.id == stacks[0].id:
-                        stack_components_free_for_deletion.append(
-                            stack_component
-                        )
-                elif len(stacks) > 1:
-                    stack_components_not_free_for_deletion.append(
-                        stack_component
-                    )
-
-            for stack_component in stack_components_not_free_for_deletion:
-                cli_utils.declare(
-                    f"Stack Component `{stack_component[1][0].name}` of type "
-                    f"`{stack_component[1][0].type} cannot be "
-                    f"deleted as it is part of "
-                    f"other stacks. "
-                )
-
-            cli_utils.declare("Remaining stack components to delete: \n")
-            for stack_component in stack_components_free_for_deletion:
-                cli_utils.declare(
-                    f"Stack Component `{stack_component[1][0].name}` of type "
-                    f"`{stack_component[1][0].type}"
-                )
-
-            try:
-                client.delete_stack(stack_name_or_id)
-            except (KeyError, ValueError, IllegalOperationError) as err:
-                cli_utils.error(str(err))
-
-            for stack_component in stack_components_free_for_deletion:
-                client.delete_stack_component(
-                    stack_component[1][0].name, stack_component[1][0].type
-                )
-
-            cli_utils.declare(f"Deleted stack '{stack_name_or_id}'.")
+            client.delete_stack(stack_name_or_id, recursive=True)
             return
 
         try:
