@@ -69,7 +69,9 @@ def hub() -> None:
     is_flag=True,
     help="List only plugins that are installed.",
 )
-def list_plugins(all: bool, mine: bool, installed: bool) -> None:
+def list_plugins(
+    all: bool = False, mine: bool = False, installed: bool = False
+) -> None:
     """List all plugins available on the hub.
 
     Args:
@@ -608,16 +610,16 @@ def logout() -> None:
     help="Run the command in interactive mode.",
 )
 def submit_plugin(
-    plugin_name: Optional[str],
-    version: Optional[str],
-    release_notes: Optional[str],
-    description: Optional[str],
-    repository_url: Optional[str],
-    repository_subdir: Optional[str],
-    repository_branch: Optional[str],
-    repository_commit: Optional[str],
-    tags: List[str],
-    interactive: bool,
+    plugin_name: Optional[str] = None,
+    version: Optional[str] = None,
+    release_notes: Optional[str] = None,
+    description: Optional[str] = None,
+    repository_url: Optional[str] = None,
+    repository_subdir: Optional[str] = None,
+    repository_branch: Optional[str] = None,
+    repository_commit: Optional[str] = None,
+    tags: Optional[List[str]] = None,
+    interactive: bool = False,
 ) -> None:
     """Submit a plugin to the ZenML Hub.
 
@@ -727,7 +729,10 @@ def submit_plugin(
             )
 
         # Validate the tags
-        tags = _validate_tags(tags=tags, interactive=interactive)
+        if tags:
+            tags = _validate_tags(tags=tags, interactive=interactive)
+        else:
+            tags = []
 
         # Make a create request to the hub
         plugin_request = HubPluginRequestModel(
