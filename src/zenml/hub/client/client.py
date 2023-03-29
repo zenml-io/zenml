@@ -29,9 +29,11 @@ from zenml.models.hub_plugin_models import (
 
 logger = get_logger(__name__)
 
-
+ZENML_HUB_ADMIN_USERNAME = "ZenML"
 ZENML_HUB_CLIENT_VERIFY = False  # TODO: Set to True once Hub has a certificate
 ZENML_HUB_CLIENT_TIMEOUT = 10
+ZENML_HUB_INTERNAL_TAG_PREFIX = "zenml-"
+VERIFIED_TAG = "zenml-badge-verified"
 
 
 class HubAPIError(Exception):
@@ -92,19 +94,24 @@ class HubClient:
         Returns:
             The plugin response model or None if the plugin does not exist.
         """
-        route = f"/plugins/{plugin_name}"
-        options = []
+        route = "/plugins"
+        if not author:
+            author = ZENML_HUB_ADMIN_USERNAME
+        options = [
+            f"name={plugin_name}",
+            f"username={author}",
+        ]
         if plugin_version:
             options.append(f"version={plugin_version}")
-        if author:
-            options.append(f"author={author}")
         if options:
             route += "?" + "&".join(options)
         try:
             response = self._request("GET", route)
-            return HubPluginResponseModel.parse_obj(response)
         except HubAPIError:
             return None
+        if not isinstance(response, list) or len(response) == 0:
+            return None
+        return HubPluginResponseModel.parse_obj(response[0])
 
     def create_plugin(
         self, plugin_request: HubPluginRequestModel

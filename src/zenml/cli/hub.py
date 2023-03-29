@@ -28,6 +28,11 @@ from zenml.cli.cli import TagGroup, cli
 from zenml.cli.utils import declare, error, print_table, warning
 from zenml.enums import CliCategories
 from zenml.hub.client import HubAPIError, HubClient
+from zenml.hub.client.client import (
+    VERIFIED_TAG,
+    ZENML_HUB_ADMIN_USERNAME,
+    ZENML_HUB_INTERNAL_TAG_PREFIX,
+)
 from zenml.logger import get_logger
 from zenml.models.hub_plugin_models import (
     HubPluginRequestModel,
@@ -37,9 +42,6 @@ from zenml.models.hub_plugin_models import (
 from zenml.utils.analytics_utils import AnalyticsEvent, event_handler
 
 logger = get_logger(__name__)
-
-ZENML_HUB_INTERNAL_TAG_PREFIX = "zenml-"
-VERIFIED_TAG = "zenml-badge-verified"
 
 
 @cli.group(cls=TagGroup, tag=CliCategories.HUB)
@@ -115,11 +117,21 @@ def _format_plugins_table(
             installed_icon = ":white_check_mark:"
         else:
             installed_icon = ":x:"
+        if plugin.status == PluginStatus.AVAILABLE:
+            status_icon = ":white_check_mark:"
+        elif plugin.status == PluginStatus.PENDING:
+            status_icon = ":hourglass:"
+        else:
+            status_icon = ":x:"
+
         username = _get_plugin_author_username(plugin)
+        display_name = _plugin_display_name(
+            plugin_name=plugin.name, version=plugin.version, author=username
+        )
         display_data: Dict[str, str] = {
+            "PLUGIN": display_name,
+            "STATUS": status_icon,
             "INSTALLED": installed_icon,
-            "NAME": f"{username}/{plugin.name}",
-            "VERSION": plugin.version,
             "MODULE": _get_plugin_module(plugin),
             "PACKAGE NAME": plugin.package_name or "",
             "REPOSITORY URL": plugin.repository_url,
@@ -207,7 +219,11 @@ def install_plugin(
             return
 
         # Show a warning if the plugin is not official or verified
-        if not plugin.tags or VERIFIED_TAG not in plugin.tags:
+        _is_zenml_plugin = (
+            plugin.user and plugin.user.username == ZENML_HUB_ADMIN_USERNAME
+        )
+        _is_verified = plugin.tags and VERIFIED_TAG in plugin.tags
+        if not _is_zenml_plugin and not _is_verified:
             warning(
                 f"Plugin '{display_name}' was not verified by ZenML and may "
                 "contain arbitrary code. Please check the source code before "
@@ -1198,6 +1214,8 @@ def _plugin_display_name(
     Returns:
         Display name of the plugin.
     """
-    author_prefix = f"{author}/" if author else ""
+    author_prefix = ""
+    if author and author != ZENML_HUB_ADMIN_USERNAME:
+        author_prefix = f"{author}/"
     version_suffix = f":{version}" if version else ":latest"
     return f"{author_prefix}{plugin_name}{version_suffix}"
