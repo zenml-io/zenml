@@ -73,7 +73,6 @@ class AnalyticsContext:
         """
         # Fetch the analytics opt-in setting
         from zenml.config.global_config import GlobalConfiguration
-        from zenml.zen_server.auth import get_auth_context
 
         gc = GlobalConfiguration()
         self.analytics_opt_in = gc.analytics_opt_in
@@ -84,6 +83,8 @@ class AnalyticsContext:
         try:
             # Fetch the `user_id`
             if self.in_server:
+                from zenml.zen_server.auth import get_auth_context
+
                 # If the code is running on the server, use the auth context.
                 auth_context = get_auth_context()
                 if auth_context is not None:
