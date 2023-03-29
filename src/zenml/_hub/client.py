@@ -18,14 +18,14 @@ from typing import Any, Dict, List, Optional
 
 import requests
 
-from zenml.client import Client
-from zenml.constants import ENV_ZENML_HUB_URL
-from zenml.hub.internal.constants import (
+from zenml._hub.constants import (
     ZENML_HUB_ADMIN_USERNAME,
     ZENML_HUB_CLIENT_TIMEOUT,
     ZENML_HUB_CLIENT_VERIFY,
     ZENML_HUB_DEFAULT_URL,
 )
+from zenml.client import Client
+from zenml.constants import ENV_ZENML_HUB_URL
 from zenml.logger import get_logger
 from zenml.models.hub_plugin_models import (
     HubPluginRequestModel,

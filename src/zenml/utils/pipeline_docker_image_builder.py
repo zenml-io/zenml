@@ -540,11 +540,8 @@ class PipelineDockerImageBuilder:
         Raises:
             ValueError: If a provided plugin name has an invalid format.
         """
-        from zenml.hub.client import HubClient
-        from zenml.hub.internal.utils import (
-            parse_plugin_name,
-            plugin_display_name,
-        )
+        from zenml._hub.client import HubClient
+        from zenml._hub.utils import parse_plugin_name, plugin_display_name
 
         client = HubClient()
 

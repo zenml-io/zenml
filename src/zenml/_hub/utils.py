@@ -16,7 +16,7 @@
 
 from typing import Optional, Tuple
 
-from zenml.hub.internal.constants import ZENML_HUB_ADMIN_USERNAME
+from zenml._hub.constants import ZENML_HUB_ADMIN_USERNAME
 
 
 def parse_plugin_name(

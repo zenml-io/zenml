@@ -24,16 +24,16 @@ import click
 from git import GitCommandError
 from git.repo import Repo
 
-from zenml.cli.cli import TagGroup, cli
-from zenml.cli.utils import declare, error, print_table, warning
-from zenml.enums import CliCategories
-from zenml.hub.client import HubAPIError, HubClient
-from zenml.hub.internal.constants import (
+from zenml._hub.client import HubAPIError, HubClient
+from zenml._hub.constants import (
     ZENML_HUB_ADMIN_USERNAME,
     ZENML_HUB_INTERNAL_TAG_PREFIX,
     ZENML_HUB_VERIFIED_TAG,
 )
-from zenml.hub.internal.utils import parse_plugin_name, plugin_display_name
+from zenml._hub.utils import parse_plugin_name, plugin_display_name
+from zenml.cli.cli import TagGroup, cli
+from zenml.cli.utils import declare, error, print_table, warning
+from zenml.enums import CliCategories
 from zenml.logger import get_logger
 from zenml.models.hub_plugin_models import (
     HubPluginRequestModel,
