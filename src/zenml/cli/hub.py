@@ -79,28 +79,24 @@ def list_plugins(
         mine: Whether to list only plugins that you own.
         installed: Whether to list only plugins that are installed.
     """
-    with event_handler(
-        event=AnalyticsEvent.ZENML_HUB_PLUGIN_LIST,
-    ) as analytics_handler:
-        client = HubClient()
-        analytics_handler.metadata["hub_url"] = client.url
-        if mine and not client.auth_token:
-            error(
-                "You must be logged in to list your own plugins via --mine. "
-                "Please run `zenml hub login` to login."
-            )
-        list_params: Dict[str, Any] = {"mine": mine}
-        if not all:
-            list_params["status"] = PluginStatus.AVAILABLE
-        plugins = client.list_plugins(**list_params)
-        if not plugins:
-            declare("No plugins found.")
-        if installed:
-            plugins = [
-                plugin for plugin in plugins if _is_plugin_installed(plugin)
-            ]
-        plugins_table = _format_plugins_table(plugins)
-        print_table(plugins_table)
+    client = HubClient()
+    if mine and not client.auth_token:
+        error(
+            "You must be logged in to list your own plugins via --mine. "
+            "Please run `zenml hub login` to login."
+        )
+    list_params: Dict[str, Any] = {"mine": mine}
+    if not all:
+        list_params["status"] = PluginStatus.AVAILABLE
+    plugins = client.list_plugins(**list_params)
+    if not plugins:
+        declare("No plugins found.")
+    if installed:
+        plugins = [
+            plugin for plugin in plugins if _is_plugin_installed(plugin)
+        ]
+    plugins_table = _format_plugins_table(plugins)
+    print_table(plugins_table)
 
 
 def _format_plugins_table(
@@ -472,58 +468,43 @@ def _login_via_zenml_hub(
         password: Password of the ZenML Hub account. Only used if `email` is
             specified.
     """
-    with event_handler(
-        event=AnalyticsEvent.ZENML_HUB_LOGIN,
-    ) as analytics_handler:
-        client = HubClient()
-        analytics_handler.metadata["hub_url"] = client.url
-        if not email or not password:
-            declare("Please enter your ZenML Hub credentials.")
-        while not email:
-            email = click.prompt("Email", type=str)
-        analytics_handler.metadata = {"hub_email": email}
-        while not password:
-            password = click.prompt("Password", type=str, hide_input=True)
-        try:
-            client.login(email, password)
-            me = client.get_me()
-            if me:
-                declare(
-                    f"Successfully logged in as: {me.username} ({me.email})!"
-                )
-                return
-            error("Could not retrieve user information from the ZenML Hub.")
-        except HubAPIError as e:
-            error(f"Could not login to the ZenML Hub: {e}")
+    client = HubClient()
+    if not email or not password:
+        declare("Please enter your ZenML Hub credentials.")
+    while not email:
+        email = click.prompt("Email", type=str)
+    while not password:
+        password = click.prompt("Password", type=str, hide_input=True)
+    try:
+        client.login(email, password)
+        me = client.get_me()
+        if me:
+            declare(f"Successfully logged in as: {me.username} ({me.email})!")
+            return
+        error("Could not retrieve user information from the ZenML Hub.")
+    except HubAPIError as e:
+        error(f"Could not login to the ZenML Hub: {e}")
 
 
 def _login_via_github() -> None:
     """Login via GitHub."""
-    with event_handler(
-        event=AnalyticsEvent.ZENML_HUB_LOGIN_GH,
-    ) as analytics_handler:
-        client = HubClient()
-        analytics_handler.metadata["hub_url"] = client.url
-        try:
-            login_url = client.get_github_login_url()
-        except HubAPIError as e:
-            error(f"Could not retrieve GitHub login URL: {e}")
-        declare(f"Please open the following URL in your browser: {login_url}")
-        auth_token = click.prompt("Please enter your auth token", type=str)
-        client.set_auth_token(auth_token)
-        declare("Successfully logged in to the ZenML Hub.")
+    client = HubClient()
+    try:
+        login_url = client.get_github_login_url()
+    except HubAPIError as e:
+        error(f"Could not retrieve GitHub login URL: {e}")
+    declare(f"Please open the following URL in your browser: {login_url}")
+    auth_token = click.prompt("Please enter your auth token", type=str)
+    client.set_auth_token(auth_token)
+    declare("Successfully logged in to the ZenML Hub.")
 
 
 @hub.command("logout")
 def logout() -> None:
     """Logout from the ZenML Hub."""
-    with event_handler(
-        event=AnalyticsEvent.ZENML_HUB_LOGOUT,
-    ) as analytics_handler:
-        client = HubClient()
-        analytics_handler.metadata["hub_url"] = client.url
-        client.set_auth_token(None)
-        declare("Successfully logged out from the ZenML Hub.")
+    client = HubClient()
+    client.set_auth_token(None)
+    declare("Successfully logged out from the ZenML Hub.")
 
 
 @hub.command("submit")
@@ -1011,49 +992,41 @@ def get_logs(plugin_name: str) -> None:
     Args:
         plugin_name: Name of the plugin.
     """
-    with event_handler(
-        event=AnalyticsEvent.ZENML_HUB_PLUGIN_LOGS
-    ) as analytics_handler:
-        client = HubClient()
-        analytics_handler.metadata["hub_url"] = client.url
-        author, plugin_name, plugin_version = parse_plugin_name(plugin_name)
-        analytics_handler.metadata["plugin_name"] = plugin_name
-        analytics_handler.metadata["plugin_author"] = author
-        analytics_handler.metadata["plugin_version"] = plugin_version
-        display_name = plugin_display_name(plugin_name, plugin_version, author)
+    client = HubClient()
+    author, plugin_name, plugin_version = parse_plugin_name(plugin_name)
+    display_name = plugin_display_name(plugin_name, plugin_version, author)
 
-        # Get the plugin from the hub
-        plugin = client.get_plugin(
-            plugin_name=plugin_name,
-            plugin_version=plugin_version,
-            author=author,
+    # Get the plugin from the hub
+    plugin = client.get_plugin(
+        plugin_name=plugin_name,
+        plugin_version=plugin_version,
+        author=author,
+    )
+    if not plugin:
+        error(f"Could not find plugin '{display_name}' on the hub.")
+
+    if plugin.status == PluginStatus.PENDING:
+        error(
+            f"Plugin '{display_name}' is still being built. Please try "
+            "again later."
         )
-        if not plugin:
-            error(f"Could not find plugin '{display_name}' on the hub.")
-        analytics_handler.metadata["plugin_version"] = plugin.version
 
-        if plugin.status == PluginStatus.PENDING:
-            error(
-                f"Plugin '{display_name}' is still being built. Please try "
-                "again later."
-            )
+    if not plugin.build_logs:
+        declare(
+            f"Plugin '{display_name}' finished building, but no logs "
+            "were found."
+        )
+        return
 
-        if not plugin.build_logs:
-            declare(
-                f"Plugin '{display_name}' finished building, but no logs "
-                "were found."
-            )
-            return
-
-        for line in plugin.build_logs.splitlines():
-            if line.startswith("DEBUG"):
-                pass
-            if line.startswith("INFO"):
-                declare(line)
-            elif line.startswith("WARNING"):
-                warning(line)
-            else:
-                error(line)
+    for line in plugin.build_logs.splitlines():
+        if line.startswith("DEBUG"):
+            pass
+        if line.startswith("INFO"):
+            declare(line)
+        elif line.startswith("WARNING"):
+            warning(line)
+        else:
+            error(line)
 
 
 # GENERAL HELPER FUNCTIONS
