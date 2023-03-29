@@ -1115,6 +1115,7 @@ def _get_plugin_author_username(plugin: HubPluginResponseModel) -> str:
         The username of the plugin author or "" if no username was found.
     """
     if plugin.user:
-        if plugin.user.username:
-            return plugin.user.username
+        username = plugin.user.username
+        if username and username != ZENML_HUB_ADMIN_USERNAME:
+            return username
     return ""
