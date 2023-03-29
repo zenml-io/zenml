@@ -18,8 +18,7 @@ component of your stack. This Dockerfile consists of the following steps:
 * Starts from a parent image which needs to have ZenML installed. By default, this will use the [official ZenML image](https://hub.docker.com/r/zenmldocker/zenml/) for the Python and ZenML version that you're using in the active Python environment. If you want to use a different image as the base for the following steps, check out [this guide](#using-a-custom-parent-image).
 * **Installs additional pip dependencies**. ZenML will automatically detect which integrations are used in your stack and install the required dependencies.
 If your pipeline needs any additional requirements, check out our [guide on including custom dependencies](#how-to-install-additional-pip-dependencies).
-* **Copies your global configuration**. This is needed so that ZenML can connect to your [deployed ZenML instance](../../getting-started/deploying-zenml/deploying-zenml.md) to fetch the active stack and other required information.
-* **Copies your source files**. These files need to be included in the Docker image so ZenML can execute your step code. Check out [this section](#which-files-get-included) for more information on which files get included by default and how to exclude files.
+* **Optionally copies your source files**. Your source files need to be available inside the Docker container so ZenML can execute your step code. Check out [this section](#handling-source-files) for more information on how you can customize how ZenML handles your source files in Docker images.
 * **Sets user-defined environment variables.**
 
 ## Separate Docker images for different steps in your pipeline
@@ -56,7 +55,7 @@ For the configuration examples described below, you'll need to import the `Docke
 from zenml.config import DockerSettings
 ```
 
-### Which files get included
+### Handling source files
 
 ZenML will try to determine the root directory of your source files in the following order:
 * If you've created a 
@@ -65,7 +64,24 @@ for your project, the repository directory will be used.
 * Otherwise, the parent directory of the python file you're executing will be the source root.
 For example, running `python /path/to/file.py`, the source root would be `/path/to`.
 
-By default, ZenML will copy all contents of this root directory into the Docker image.
+How these files are handeled can be specified using the `source_files` attribute on the
+`DockerSettings`:
+* The default behavior `download_or_include`: The files will be downloaded if they're inside
+a registered [code repository](../practical/code-repositories.md) and the repository has no
+local changes, otherwise they will be included in the image.
+* If you want your files to be included in the image in any case, set the `source_files`
+attribute to `include`.
+* If you want your files to be downloaded in any case, set the `source_files` attribute to
+`download`. If this is specified, the files must be inside a registered code repository and
+the repository must have no local changes, otherwise the Docker build will fail.
+* If you want to prevent ZenML from copying or downloading any of your source files, you can do so by
+setting the `source_files` attribute on the Docker settings to `ignore`. This is an advanced feature
+and will most likely cause unintended and unanticipated behavior when running your pipelines. If you
+use this, make sure to copy all the necessary files to the correct paths yourself.
+
+#### Which files get included
+
+When including files in the image, ZenML will copy all contents of this root directory into the Docker image.
 If you want to exclude files to keep the image smaller, you can do so using a [.dockerignore
 file](https://docs.docker.com/engine/reference/builder/#dockerignore-file) in either of the 
 following two ways:
@@ -79,43 +95,6 @@ following two ways:
     def my_pipeline(...):
         ...
     ```
-
-#### Don't include any user files
-
-If you want to prevent ZenML from copying any of your source files, you can do so by
-setting the `copy_files` attribute on the Docker settings to `False`:
-```python
-docker_settings = DockerSettings(copy_files=False)
-
-@pipeline(settings={"docker": docker_settings})
-def my_pipeline(...):
-    ...
-```
-
-{% hint style="warning" %}
-This is an advanced feature and will most likely cause unintended and unanticipated behavior
-when running your pipelines. If you use this, make sure to copy all the necessary files
-to the correct paths yourself.
-{% endhint %}
-
-#### Don't include the global configuration
-
-If you want to prevent ZenML from copying your global configuration,
-you can do so by setting the `copy_global_config` attribute on the Docker
-settings to `False`:
-```python
-docker_settings = DockerSettings(copy_global_config=False)
-
-@pipeline(settings={"docker": docker_settings})
-def my_pipeline(...):
-    ...
-```
-
-{% hint style="warning" %}
-This is an advanced feature and will most likely cause unintended and unanticipated
-behavior when running your pipelines. If you use this, make sure to copy the global configuration
-to the correct path yourself.
-{% endhint %}
 
 ### How to install additional pip dependencies or apt packages
 
@@ -251,8 +230,8 @@ def my_pipeline(...):
 
 {% hint style="warning" %}
 This is an advanced feature and will most likely cause unintended and unanticipated behavior
-when running your pipelines. If you use this, make sure your code files and global configuration
-are correctly included in the image you specified.
+when running your pipelines. If you use this, make sure your code files are correctly
+included in the image you specified.
 {% endhint %}
 
 ### Specifying a Dockerfile to dynamically build a parent image

@@ -49,6 +49,7 @@
   * [Stack Recipes](./advanced-guide/practical/stack-recipes.md)
   * [Switching Orchestration](./advanced-guide/practical/switching-orchestration.md)
   * [Secrets Management](./advanced-guide/practical/secrets-management.md)
+  * [Code Repositories](./advanced-guide/practical/code-repositories.md)
   * [Tracking Experiments](./advanced-guide/practical/tracking-experiments.md)
   * [Validating Data](./advanced-guide/practical/validating-data.md)
   * [Deploying Models and Batch Inference](./advanced-guide/practical/deploying-models.md)

@@ -130,6 +130,10 @@ encounter further down the road while using ZenML.
 - **Service** - A service is a longer-lived entity that extends the capabilities of
   ZenML beyond the run of a pipeline. For example, a service could be a
   prediction service that loads models for inference in a production setting.
+- **Code repositories** - Code repositories enable ZenML to keep track of the code
+version that you use for your pipeline runs. Additionally, running a pipeline
+which is tracked in a registered code repository can speed up the Docker image building
+for containerized stack components.
 - **Integrations** - ZenML ships with many [integrations](https://zenml.io/integrations) into many MLOps tools for various use-cases, usually in the form of pre-made *stack components* or *steps* .
 
 There's a lot more detail to digest when it comes to ZenML, but with the above

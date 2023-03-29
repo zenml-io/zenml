@@ -191,7 +191,7 @@ settings:
   docker:
     build_context_root: .
     # build_options: Mapping[str, Any]
-    # copy_files: bool
+    # source_files: str
     # copy_global_config: bool
     # dockerfile: Optional[str]
     # dockerignore: Optional[str]
