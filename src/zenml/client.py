@@ -1788,7 +1788,6 @@ class Client(metaclass=ClientMetaClass):
 
             # Get all stack components associated with this stack
             for component_type, component_model in stack.components.items():
-
                 # Get stack associated with the stack component
 
                 stacks = self.list_stacks(
