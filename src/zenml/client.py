@@ -1787,7 +1787,6 @@ class Client(metaclass=ClientMetaClass):
             stack_components_free_for_deletion = []
 
             # Get all stack components associated with this stack
-
             for component_type, component_model in stack.components.items():
 
                 # Get stack associated with the stack component
