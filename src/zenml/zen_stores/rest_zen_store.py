@@ -1965,8 +1965,8 @@ class RestZenStore(BaseZenStore):
             ValueError: if the response is not in the right format.
             RuntimeError: if an error response is received from the server
                 and a more specific exception cannot be determined.
-            Exception: if an error response is received from the server and
-                a more specific exception can be determined.
+            exc: the exception converted from an error response, if one
+                is returned from the server.
         """
         if 200 <= response.status_code < 300:
             try:
