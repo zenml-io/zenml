@@ -64,7 +64,7 @@ for your project, the repository directory will be used.
 * Otherwise, the parent directory of the python file you're executing will be the source root.
 For example, running `python /path/to/file.py`, the source root would be `/path/to`.
 
-How these files are handeled can be specified using the `source_files` attribute on the
+How these files are handled can be specified using the `source_files` attribute on the
 `DockerSettings`:
 * The default behavior `download_or_include`: The files will be downloaded if they're inside
 a registered [code repository](../practical/code-repositories.md) and the repository has no
