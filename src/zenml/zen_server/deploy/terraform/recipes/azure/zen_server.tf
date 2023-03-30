@@ -28,6 +28,15 @@ resource "helm_release" "zen-server" {
     value = "azure"
   }
   
+  set {
+    name  = "zenml.secretsStore.type"
+    value = "azure"
+  }
+  set {
+    name  = "zenml.secretsStore.azure.key_vault_name"
+    value = azurerm_key_vault.secret_manager.name
+  }
+
   # set up the right path for ZenML
   set {
     name  = "zenml.rootUrlPath"

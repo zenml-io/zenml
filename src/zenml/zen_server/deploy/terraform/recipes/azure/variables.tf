@@ -1,3 +1,9 @@
+resource "random_string" "unique" {
+  length  = 5
+  special = false
+  upper   = false
+}
+
 variable "username" {
   description = "Username for the default ZenML server account"
   default     = "default"
@@ -56,6 +62,11 @@ variable "database_password" {
   description = "The password for the CloudSQL store"
   default     = ""
   type        = string
+}
+
+variable "key_vault_name" {
+  description = "The name of the Key Vault to use as secret store"
+  default     = "zenml-key-vault"
 }
 
 # if you enable the deploy_db option, the recipe will
