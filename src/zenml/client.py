@@ -1783,7 +1783,6 @@ class Client(metaclass=ClientMetaClass):
             )
 
         if recursive:
-
             stack_components_free_for_deletion = []
 
             # Get all stack components associated with this stack
