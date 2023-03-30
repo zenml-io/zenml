@@ -837,6 +837,7 @@ def test_deleting_a_stack_succeeds():
                 with pytest.raises(KeyError):
                     store.get_stack(stack.id)
 
+
 def test_deleting_a_stack_recursively_succeeds():
     """Tests deleting stack recursively."""
     client = Client()
@@ -861,6 +862,7 @@ def test_deleting_a_stack_recursively_succeeds():
                 with pytest.raises(KeyError):
                     store.get_stack_component(artifact_store.id)
 
+
 def test_deleting_a_stack_recursively_with_some_stack_components_present_in_another_stack_succeeds():
     """Tests deleting stack recursively."""
     client = Client()
@@ -878,12 +880,14 @@ def test_deleting_a_stack_recursively_with_some_stack_components_present_in_anot
             }
             with StackContext(components=components) as stack:
                 with ComponentContext(
-                        c_type=StackComponentType.SECRETS_MANAGER, flavor="local", config={}
-                    ) as secret:
+                    c_type=StackComponentType.SECRETS_MANAGER,
+                    flavor="local",
+                    config={},
+                ) as secret:
                     components = {
                         StackComponentType.ORCHESTRATOR: [orchestrator.id],
                         StackComponentType.ARTIFACT_STORE: [artifact_store.id],
-                        StackComponentType.SECRETS_MANAGER: [secret.id]
+                        StackComponentType.SECRETS_MANAGER: [secret.id],
                     }
                     with StackContext(components=components) as stack:
                         client.delete_stack(stack.id, recursive=True)

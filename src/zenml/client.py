@@ -470,7 +470,7 @@ class Client(metaclass=ClientMetaClass):
             path: Optional path to look for the repository. If no path is
                 given, this function tries to find the repository using the
                 environment variable `ZENML_REPOSITORY_PATH` (if set) and
-                recursively searching in the parendelet directories of the current
+                recursively searching in the parent directories of the current
                 working directory.
             enable_warnings: If `True`, warnings are printed if the repository
                 root cannot be found.
@@ -1748,13 +1748,15 @@ class Client(metaclass=ClientMetaClass):
             stack_update=update_model,
         )
 
-    def delete_stack(self, name_id_or_prefix: Union[str, UUID], recursive: bool = False) -> None:
+    def delete_stack(
+        self, name_id_or_prefix: Union[str, UUID], recursive: bool = False
+    ) -> None:
         """Deregisters a stack.
 
         Args:
             name_id_or_prefix: The name, id or prefix id of the stack
                 to deregister.
-            recursive: The stack will be deleted along with the corresponding stack associated with it.
+            recursive: If `True`, all components of the stack which are not associated with any other stack will also be deleted.
 
         Raises:
             ValueError: If the stack is the currently active stack for this
@@ -1782,43 +1784,41 @@ class Client(metaclass=ClientMetaClass):
 
         if recursive:
 
-    
             stack_components_free_for_deletion = []
-            stack_components_not_free_for_deletion = []
 
             # Get all stack components associated with this stack
-            stack_components = stack.components
 
-            for stack_component in stack_components.items():
+            for component_type, component_model in stack.components.items():
 
                 # Get stack associated with the stack component
 
                 stacks = self.list_stacks(
-                    component_id=stack_component[1][0].id, size=2, page=1
+                    component_id=component_model[0].id, size=2, page=1
                 )
 
                 # Check if the stack component is part of another stack
                 if len(stacks) == 1:
                     if stack.id == stacks[0].id:
                         stack_components_free_for_deletion.append(
-                            stack_component
+                            (component_type, component_model)
                         )
-                elif len(stacks) > 1:
-                    stack_components_not_free_for_deletion.append(
-                        stack_component
-                    )
 
             self.delete_stack(stack.id)
 
-            for stack_component in stack_components_free_for_deletion:
+            for (
+                stack_component_type,
+                stack_component_model,
+            ) in stack_components_free_for_deletion:
                 self.delete_stack_component(
-                    stack_component[1][0].name, stack_component[1][0].type
+                    stack_component_model[0].name, stack_component_type
                 )
-                logger.info("Deregistered stack component with name '%s'.", stack_component[1][0].name)
+                logger.info(
+                    "Deregistered stack component with name '%s'.",
+                    stack_component_model[0].name,
+                )
 
             logger.info("Deregistered stack with name '%s'.", stack.name)
             return
-
 
         self.zen_store.delete_stack(stack_id=stack.id)
         logger.info("Deregistered stack with name '%s'.", stack.name)

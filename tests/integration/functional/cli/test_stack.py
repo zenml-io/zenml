@@ -785,13 +785,11 @@ def test_delete_stack_recursively_with_flag_succeeds(clean_workspace) -> None:
             StackComponentType.SECRETS_MANAGER, new_secrets_manager_model.name
         )
     assert clean_workspace.get_stack_component(
-            StackComponentType.ARTIFACT_STORE, artifact_store_name
-        )
+        StackComponentType.ARTIFACT_STORE, artifact_store_name
+    )
     assert clean_workspace.get_stack_component(
-            StackComponentType.ORCHESTRATOR, orchestrator_name
-        )
-
-
+        StackComponentType.ORCHESTRATOR, orchestrator_name
+    )
 
 
 def test_stack_export(clean_workspace) -> None:
