@@ -21,8 +21,6 @@ from importlib.util import find_spec
 from typing import Any, Dict, List, Optional, Tuple
 
 import click
-from git import GitCommandError
-from git.repo import Repo
 
 from zenml._hub.client import HubAPIError, HubClient
 from zenml._hub.constants import (
@@ -368,13 +366,13 @@ def clone_plugin(
         with tempfile.TemporaryDirectory() as tmp_dir:
             try:
                 _clone_repo(url=repo_url, to_path=tmp_dir, commit=commit)
-            except GitCommandError:
+            except RuntimeError:
                 error(
-                    f"Could not find commit '{commit}' in repository '{repo_url}' "
-                    f"of plugin '{display_name}'. This might happen if the owner "
-                    "of the plugin has force-pushed to the plugin repository. "
-                    "Please report this plugin version in the ZenML Hub or via "
-                    "Slack."
+                    f"Could not find commit '{commit}' in repository "
+                    f"'{repo_url}' of plugin '{display_name}'. This might "
+                    "happen if the owner of the plugin has force-pushed to the "
+                    "plugin repository or taken it down. Please report this "
+                    "plugin version in the ZenML Hub or via Slack."
                 )
             plugin_dir = os.path.join(tmp_dir, subdir or "")
             shutil.move(plugin_dir, output_dir)
@@ -395,21 +393,30 @@ def _clone_repo(
         branch: Branch to clone. Defaults to "main".
         commit: Commit to checkout. If specified, the branch argument is
             ignored.
+
+    Raises:
+        RuntimeError: If the repository could not be cloned.
     """
+    from git import GitCommandError
+    from git.repo import Repo
+
     os.makedirs(os.path.basename(to_path), exist_ok=True)
-    if commit:
-        repo = Repo.clone_from(
-            url=url,
-            to_path=to_path,
-            no_checkout=True,
-        )
-        repo.git.checkout(commit)
-    else:
-        repo = Repo.clone_from(
-            url=url,
-            to_path=to_path,
-            branch=branch or "main",
-        )
+    try:
+        if commit:
+            repo = Repo.clone_from(
+                url=url,
+                to_path=to_path,
+                no_checkout=True,
+            )
+            repo.git.checkout(commit)
+        else:
+            repo = Repo.clone_from(
+                url=url,
+                to_path=to_path,
+                branch=branch or "main",
+            )
+    except GitCommandError as e:
+        raise RuntimeError from e
 
 
 @hub.command("login")
@@ -824,7 +831,7 @@ def _validate_repository(
 
                 return url, commit, branch, subdir
 
-        except GitCommandError:
+        except RuntimeError:
             repo_display_name = f"'{url}'"
             suggestion = "Please enter a valid repository URL"
             if commit:
