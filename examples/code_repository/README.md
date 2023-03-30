@@ -1,4 +1,4 @@
-# Using a a code repository
+# Using a code repository
 
 Code repositories enable ZenML to keep track of the code version that you use for your
 pipeline runs. Additionally, running a pipeline which is tracked in a registered code
