@@ -745,6 +745,53 @@ def test_delete_stack_default_stack_fails(clean_workspace) -> None:
     assert clean_workspace.get_stack("default")
 
 
+def test_delete_stack_recursively_with_flag_succeeds(clean_workspace) -> None:
+    """Test recursively delete stack delete with flag succeeds."""
+    registered_stack = clean_workspace.active_stack_model
+
+    artifact_store_name = registered_stack.components[
+        StackComponentType.ARTIFACT_STORE
+    ][0].name
+
+    orchestrator_name = registered_stack.components[
+        StackComponentType.ORCHESTRATOR
+    ][0].name
+
+    new_secrets_manager = _create_local_secrets_manager(clean_workspace)
+
+    new_secrets_manager_model = clean_workspace.create_stack_component(
+        name=new_secrets_manager.name,
+        flavor=new_secrets_manager.flavor,
+        component_type=new_secrets_manager.type,
+        configuration=new_secrets_manager.config.dict(),
+    )
+    new_stack = clean_workspace.create_stack(
+        name="arias_new_stack",
+        components={
+            StackComponentType.ARTIFACT_STORE: artifact_store_name,
+            StackComponentType.ORCHESTRATOR: orchestrator_name,
+            StackComponentType.SECRETS_MANAGER: new_secrets_manager_model.name,
+        },
+    )
+
+    runner = CliRunner()
+    delete_command = cli.commands["stack"].commands["delete"]
+    result = runner.invoke(delete_command, [new_stack.name, "-y", "-r"])
+    assert result.exit_code == 0
+    with pytest.raises(KeyError):
+        clean_workspace.get_stack(new_stack.id)
+    with pytest.raises(KeyError):
+        clean_workspace.get_stack_component(
+            StackComponentType.SECRETS_MANAGER, new_secrets_manager_model.name
+        )
+    assert clean_workspace.get_stack_component(
+        StackComponentType.ARTIFACT_STORE, artifact_store_name
+    )
+    assert clean_workspace.get_stack_component(
+        StackComponentType.ORCHESTRATOR, orchestrator_name
+    )
+
+
 def test_stack_export(clean_workspace) -> None:
     """Test exporting default stack succeeds."""
     runner = CliRunner()
