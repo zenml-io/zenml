@@ -20,7 +20,7 @@ is complete, clone the repository to your local machine.
 the repositories in your account. To do so, please follow [this guide](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token) 
 and make sure to assign your token the **repo** scope.
 
-If you also want to test the Docker build speedup that is provided by using a
+If you also want to test the increased speed of Docker builds that is unlocked by using a
 code repository, you'll additionally need:
 * A remote ZenML deployment. See [here](https://docs.zenml.io/getting-started/deploying-zenml#deploying-zenml-in-the-cloud-remote-deployment-of-the-http-server-and-database) 
 for more information on how to deploy ZenML.
@@ -63,7 +63,7 @@ print(run.commit)
 ## 🏎️ Testing the Docker build speedup
 
 To see the Docker build speedup in action, we will start by modifying some of our pipeline
-code. If you're using a fork of the example repository, you can for example change your
+code. If you're using a fork of the example repository, you can, for example, change your
 data loader step to have a different test set size:
 ```python
 X_train, X_test, y_train, y_test = train_test_split(
@@ -78,14 +78,14 @@ git push
 ```
 
 Without a registered code repository, re-running the pipeline now would mean that ZenML
-needs to build new Docker images that include your updated code. As we're running a pipeline
+would have to build new Docker images that include your updated code. As we're running a pipeline
 which is tracked inside a code repository, ZenML can instead download the updated code
 when running the Docker container and can therefore reuse the previously built Docker images.
 
 If we now re-run the pipeline by calling `python run.py`, we will see that no new
 Docker images are being built and the old ones are being reused instead. This will not only
 work on your local machine, but also if you're running the same pipeline from a different machine
-or one of your colleagues tries to run the pipeline!
+or if one of your colleagues tries to run the pipeline!
 
 # 📜 Learn more
 

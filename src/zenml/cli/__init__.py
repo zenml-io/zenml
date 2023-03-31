@@ -853,7 +853,7 @@ Administering your Code Repositories
 
 Code repositories enable ZenML to keep track of the code version that you use
 for your pipeline runs. Additionally, running a pipeline which is tracked in
-a registered code repository can speed up the Docker image building for
+a registered code repository can decrease the time it takes Docker to build images for
 containerized stack components.
 
 To register a code repository, use the following CLI

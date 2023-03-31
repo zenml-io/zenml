@@ -43,7 +43,7 @@ of the registered code repositories
 If a [local code repository checkout](#detecting-local-code-repository-checkouts) is detected
 when running a pipeline, ZenML will store a reference the current commit for the pipeline run
 so you'll be able to know exactly which code was used. Note that this reference is only tracked
-if your local checkout is clean (which means it does not contain any untracked or uncommitted files).
+if your local checkout is clean (i.e. it does not contain any untracked or uncommitted files).
 This is to ensure that your pipeline is actually running with the exact code stored at the specific
 code repository commit.
 
@@ -51,7 +51,7 @@ code repository commit.
 
 When using containerized components in your stack, ZenML needs to build Docker images to
 remotely execute your code. If you're not using a code repository, this code will be included
-in the Docker images that ZenML builds. This however means that new Docker images will be built and
+in the Docker images that ZenML builds. This, however, means that new Docker images will be built and
 pushed whenever you make changes to any of your source files. When running a pipeline that is
 part of a [local code repository checkout](#detecting-local-code-repository-checkouts), ZenML
 can instead build the Docker images without including any of your source files, and download
@@ -60,11 +60,11 @@ process and also allows you to re-use images that one of your colleagues might h
 the same stack.
 
 Some additional points:
-- The file download is only possible if the local checkout is clean (which means it does
+- The file download is only possible if the local checkout is clean (i.e. it does
 not contain any untracked or uncommitted files) and the latest commit has been pushed to
 the remote repository. This is necessary as otherwise the file download inside the Docker
 container will fail.
-- If you want to disable or enforce the download of files, check out
+- If you want to disable or enforce the downloading of files, check out
 [this docs page](../pipelines/containerization.md#handling-source-files) for the available options.
 
 ## Available code repository implementation
@@ -102,7 +102,7 @@ each pipeline run.
 
 1. Go to your GitHub account settings and click on "Developer settings".
 2. Select "Personal access tokens" and click on "Generate new token".
-3. Give your token a name and select the scopes that you need (e.g. repo, admin:repo_hook, user).
+3. Give your token a name and select the scopes that you need (e.g. `repo`, `admin:repo_hook`, `user`).
 4. Click on "Generate token" and copy the token to a safe place.
 
 </details>
@@ -137,7 +137,7 @@ each pipeline run.
 <summary>How To get a token for GitLab</summary>
 
 1. Go to your GitLab account settings and click on "Access Tokens".
-2. Select the scopes that you need (e.g. read_repository, write_repository).
+2. Select the scopes that you need (e.g. `read_repository`, `write_repository`).
 3. Click on "Create personal access token" and copy the token to a safe place.
 
 </details>
