@@ -81,7 +81,7 @@ class SeldonDeploymentMetadata(BaseModel):
     name: str
     labels: Dict[str, str] = Field(default_factory=dict)
     annotations: Dict[str, str] = Field(default_factory=dict)
-    creationTimestamp: Optional[str]
+    creationTimestamp: Optional[str] = None
 
     class Config:
         """Pydantic configuration class."""
@@ -124,14 +124,12 @@ class SeldonDeploymentPredictiveUnit(BaseModel):
     type: Optional[
         SeldonDeploymentPredictiveUnitType
     ] = SeldonDeploymentPredictiveUnitType.MODEL
-    implementation: Optional[str]
-    modelUri: Optional[str]
-    parameters: Optional[List[SeldonDeploymentPredictorParameter]]
-    serviceAccountName: Optional[str]
-    envSecretRefName: Optional[str]
-    children: List["SeldonDeploymentPredictiveUnit"] = Field(
-        default_factory=list
-    )
+    implementation: Optional[str] = None
+    modelUri: Optional[str] = None
+    parameters: Optional[List[SeldonDeploymentPredictorParameter]] = None
+    serviceAccountName: Optional[str] = None
+    envSecretRefName: Optional[str] = None
+    children: Optional[List["SeldonDeploymentPredictiveUnit"]] = None
 
     class Config:
         """Pydantic configuration class."""
@@ -172,13 +170,11 @@ class SeldonDeploymentPredictor(BaseModel):
 
     name: str
     replicas: int = 1
-    graph: Optional[SeldonDeploymentPredictiveUnit] = Field(
-        default_factory=SeldonDeploymentPredictiveUnit
-    )
+    graph: SeldonDeploymentPredictiveUnit
     engineResources: Optional[SeldonResourceRequirements] = Field(
         default_factory=SeldonResourceRequirements
     )
-    componentSpecs: Optional[List[SeldonDeploymentComponentSpecs]]
+    componentSpecs: Optional[List[SeldonDeploymentComponentSpecs]] = None
 
     class Config:
         """Pydantic configuration class."""
@@ -298,11 +294,9 @@ class SeldonDeployment(BaseModel):
 
     kind: str = Field(SELDON_DEPLOYMENT_KIND, const=True)
     apiVersion: str = Field(SELDON_DEPLOYMENT_API_VERSION, const=True)
-    metadata: SeldonDeploymentMetadata = Field(
-        default_factory=SeldonDeploymentMetadata
-    )
-    spec: SeldonDeploymentSpec = Field(default_factory=SeldonDeploymentSpec)
-    status: Optional[SeldonDeploymentStatus]
+    metadata: SeldonDeploymentMetadata
+    spec: SeldonDeploymentSpec
+    status: Optional[SeldonDeploymentStatus] = None
 
     def __str__(self) -> str:
         """Returns a string representation of the Seldon Deployment.
