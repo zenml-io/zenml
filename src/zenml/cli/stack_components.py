@@ -200,7 +200,7 @@ def generate_stack_component_register_command(
         "-l",
         "labels",
         help="Labels to be associated with the component, in the form "
-        "key1=value1 , key2=value2.",
+        "-l key1=value1 -l key2=value2.",
         multiple=True,
     )
     @click.option(
@@ -285,7 +285,7 @@ def generate_stack_component_update_command(
         "-l",
         "labels",
         help="Labels to be associated with the component, in the form "
-        "key1=value1 , key2=value2.",
+        "-l key1=value1 -l key2=value2.",
         multiple=True,
     )
     @click.argument("args", nargs=-1, type=click.UNPROCESSED)

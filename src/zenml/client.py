@@ -2198,13 +2198,13 @@ class Client(metaclass=ClientMetaClass):
             update_model.configuration = existing_configuration
 
         if labels is not None:
-            existing_metadata = component.labels or {}
-            existing_metadata.update(labels)
+            existing_labels = component.labels or {}
+            existing_labels.update(labels)
 
-            existing_metadata = {
-                k: v for k, v in existing_metadata.items() if v is not None
+            existing_labels = {
+                k: v for k, v in existing_labels.items() if v is not None
             }
-            update_model.labels = existing_metadata
+            update_model.labels = existing_labels
 
         # Send the updated component to the ZenStore
         return self.zen_store.update_stack_component(
