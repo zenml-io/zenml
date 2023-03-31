@@ -1,8 +1,12 @@
 # Using a code repository
 
-Code repositories enable ZenML to keep track of the code version that you use for your
-pipeline runs. Additionally, running a pipeline which is tracked in a registered code
-repository can speed up the Docker image building for containerized stack components.
+Source code versioning is an essential part of software development that allows multiple
+developers to work on the same code base and provides traceability of all the changes made
+to code files.
+Using a code repository in ZenML enables unlocks the tracking of the code version that you
+use for your pipeline runs. Additionally, running a pipeline which is tracked in a registered code
+repository eliminates the need of rebuilding Docker images for containerized stack components each
+time you change one of your source code files.
 
 ## 📄 Prerequisites
 
@@ -20,25 +24,11 @@ is complete, clone the repository to your local machine.
 the repositories in your account. To do so, please follow [this guide](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token) 
 and make sure to assign your token the **repo** scope.
 
-If you also want to test the increased speed of Docker builds that is unlocked by using a
-code repository, you'll additionally need:
-* A remote ZenML deployment. See [here](https://docs.zenml.io/getting-started/deploying-zenml#deploying-zenml-in-the-cloud-remote-deployment-of-the-http-server-and-database) 
-for more information on how to deploy ZenML.
-* A remote stack with a containerized component like the
-[`SagemakerOrchestrator`](https://docs.zenml.io/component-gallery/orchestrators/sagemaker)
-or the [`VertexStepOperator`](https://docs.zenml.io/component-gallery/step-operators/vertex).
-
 ```bash
 pip install zenml
 zenml integration install github sklearn
 zenml code-repository register <NAME> --type=github --owner=<GITHUB_USERNAME> \
     --repository=<REPOSITORY_NAME> --token=<PERSONAL_ACCESS_TOKEN>
-
-# If you're testing the Docker build speedup, you need to connect to your remote
-# ZenML deployment as well as register and activate your remote stack:
-zenml connect --url=<ZENML_SERVER_URL>
-zenml stack register <STACK_NAME> ...
-zenml stack set <STACK_NAME>
 ```
 
 ## ▶️ Run the pipeline
@@ -62,9 +52,28 @@ print(run.commit)
 
 ## 🏎️ Testing the Docker build speedup
 
-To see the Docker build speedup in action, we will start by modifying some of our pipeline
-code. If you're using a fork of the example repository, you can, for example, change your
-data loader step to have a different test set size:
+If you also want to test the increased speed of Docker builds that is unlocked by using a
+code repository, you'll additionally need:
+* A remote ZenML deployment. See [here](https://docs.zenml.io/getting-started/deploying-zenml#deploying-zenml-in-the-cloud-remote-deployment-of-the-http-server-and-database) 
+for more information on how to deploy ZenML.
+* A remote stack with a containerized component like the
+[`SagemakerOrchestrator`](https://docs.zenml.io/component-gallery/orchestrators/sagemaker)
+or the [`VertexStepOperator`](https://docs.zenml.io/component-gallery/step-operators/vertex).
+
+
+```bash
+zenml connect --url=<ZENML_SERVER_URL>
+zenml stack register <STACK_NAME> ...
+zenml stack set <STACK_NAME>
+```
+
+To see the Docker build speedup in action, we will first run the pipeline on the remote stack:
+```bash
+python run.py
+```
+
+Next, we'll modify some of our pipeline code. If you're using a fork of the example repository,
+you can, for example, change your data loader step to have a different test set size:
 ```python
 X_train, X_test, y_train, y_test = train_test_split(
     data, digits.target, test_size=0.1, shuffle=False  # test_size was 0.2 before
