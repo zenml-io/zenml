@@ -59,7 +59,7 @@ from zenml.config import DockerSettings
 
 ZenML will try to determine the root directory of your source files in the following order:
 * If you've created a 
-[ZenML repository](../../starter-guide/stacks/stacks.md)
+[ZenML repository](../stacks/stacks.md)
 for your project, the repository directory will be used.
 * Otherwise, the parent directory of the python file you're executing will be the source root.
 For example, running `python /path/to/file.py`, the source root would be `/path/to`.
@@ -67,7 +67,7 @@ For example, running `python /path/to/file.py`, the source root would be `/path/
 How these files are handled can be specified using the `source_files` attribute on the
 `DockerSettings`:
 * The default behavior `download_or_include`: The files will be downloaded if they're inside
-a registered [code repository](../practical/code-repositories.md) and the repository has no
+a registered [code repository](./code-repositories.md) and the repository has no
 local changes, otherwise they will be included in the image.
 * If you want your files to be included in the image in any case, set the `source_files`
 attribute to `include`.

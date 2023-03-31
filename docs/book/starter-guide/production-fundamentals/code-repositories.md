@@ -65,7 +65,7 @@ not contain any untracked or uncommitted files) and the latest commit has been p
 the remote repository. This is necessary as otherwise the file download inside the Docker
 container will fail.
 - If you want to disable or enforce the downloading of files, check out
-[this docs page](../pipelines/containerization.md#handling-source-files) for the available options.
+[this docs page](./containerization.md#handling-source-files) for the available options.
 
 ## Available code repository implementation
 

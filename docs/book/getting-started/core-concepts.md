@@ -98,7 +98,7 @@ In order to run *stack components* that are running on infrastructure on the clo
 A **ZenML Server** keeps track of all the bits of metadata around a pipeline run. It allows you to fetch specific steps from your pipeline run and their output artifacts in a post-execution workflow. With a ZenML server, you are able to access all of your previous experiments with the associated details.
 This is extremely helpful in troubleshooting.
 
-The **ZenML Server** also acts as a [centralized secrets store](../advanced-guide/practical/secrets-management.md) that safely and securely stores sensitive data such as credentials used to access the services that are part of your stack. It can be configured to use a variety of different backends for this purpose, such as the AWS Secrets Manager, GCP Secret Manager, Azure Key Vault and Hashicorp Vault.
+The **ZenML Server** also acts as a [centralized secrets store](../starter-guide/production-fundamentals/secrets-management.md) that safely and securely stores sensitive data such as credentials used to access the services that are part of your stack. It can be configured to use a variety of different backends for this purpose, such as the AWS Secrets Manager, GCP Secret Manager, Azure Key Vault and Hashicorp Vault.
 
 ![ZenML Architectural Diagram](../assets/core_concepts/04_architecture.png)
 
@@ -117,7 +117,7 @@ encounter further down the road while using ZenML.
 - **Secrets** - Secrets are sensitive data that you don't want to store in your
   code or configure alongside your stacks and pipelines. For example, you might
   want to store the AWS credentials required to access an S3 artifact store in a
-  secret. ZenML includes a [centralized secrets store](../advanced-guide/practical/secrets-management.md)
+  secret. ZenML includes a [centralized secrets store](../starter-guide/production-fundamentals/secrets-management.md)
   that you can use to store and access your secrets securely.
 - **Materializers** - ZenML stores the data inputs and outputs to your steps in the
   Artifact Store as we saw above. In order to store the data, it needs to
@@ -130,9 +130,9 @@ encounter further down the road while using ZenML.
 - **Service** - A service is a longer-lived entity that extends the capabilities of
   ZenML beyond the run of a pipeline. For example, a service could be a
   prediction service that loads models for inference in a production setting.
-- **Code repositories** - Code repositories enable ZenML to keep track of the code
-version that you use for your pipeline runs. Additionally, running a pipeline
-which is tracked in a registered code repository can speed up the Docker image building
+- **Code repositories** - [Code repositories](../starter-guide/production-fundamentals/code-repositories.md)
+enable ZenML to keep track of the code version that you use for your pipeline runs. Additionally,
+running a pipeline which is tracked in a registered code repository can speed up the Docker image building
 for containerized stack components.
 - **Integrations** - ZenML ships with many [integrations](https://zenml.io/integrations) into many MLOps tools for various use-cases, usually in the form of pre-made *stack components* or *steps* .
 

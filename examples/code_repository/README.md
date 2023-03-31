@@ -99,4 +99,4 @@ or if one of your colleagues tries to run the pipeline!
 # 📜 Learn more
 
 If you want to learn more about code repositories, check out our
-[docs](https://docs.zenml.io/advanced-guide/practical-mlops/code-repositories).
+[docs](https://docs.zenml.io/starter-guide/production-fundamentals/code-repositories).

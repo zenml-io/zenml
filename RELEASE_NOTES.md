@@ -341,7 +341,7 @@ This release comes with major upgrades to the python library as well as the dash
 - You can now store you secrets in a centralized way instead of having them
 tied to a secrets manager stack component. The secrets manager component is deprecated but will still
 work while we continue migrating all secrets manager flavors to be available as a backend to store centralized
-secrets. Check out [the docs](https://docs.zenml.io/advanced-guide/practical-mlops/secrets-management)
+secrets. Check out [the docs](https://docs.zenml.io/starter-guide/production-fundamentals/secrets-management)
 for more information.
 - Pipelines are now versioned: ZenML detects changes to your steps and structure of your pipelines and
 automatically creates new pipeline versions for you.
