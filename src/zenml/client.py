@@ -1747,7 +1747,8 @@ class Client(metaclass=ClientMetaClass):
         Args:
             name_id_or_prefix: The name, id or prefix id of the stack
                 to deregister.
-            recursive: If `True`, all components of the stack which are not associated with any other stack will also be deleted.
+            recursive: If `True`, all components of the stack which are not
+                associated with any other stack will also be deleted.
 
         Raises:
             ValueError: If the stack is the currently active stack for this
@@ -1799,10 +1800,6 @@ class Client(metaclass=ClientMetaClass):
             ) in stack_components_free_for_deletion:
                 self.delete_stack_component(
                     stack_component_model[0].name, stack_component_type
-                )
-                logger.info(
-                    "Deregistered stack component with name '%s'.",
-                    stack_component_model[0].name,
                 )
 
             logger.info("Deregistered stack with name '%s'.", stack.name)
