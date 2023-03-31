@@ -8,6 +8,9 @@ use for your pipeline runs. Additionally, running a pipeline which is tracked in
 repository eliminates the need of rebuilding Docker images for containerized stack components each
 time you change one of your source code files.
 
+Check out [this diagram](https://docs.zenml.io/getting-started/architecture-diagrams#the-code-repository)
+for a visual representation how the code repository fits into the general ZenML architecture.
+
 ## 📄 Prerequisites
 
 In order to run your ZenML pipelines with a code repository, we need to set up a 

@@ -12,6 +12,9 @@ Code repositories enable ZenML to keep track of the code version that you use fo
 pipeline runs. Additionally, running a pipeline which is tracked in a registered code
 repository can speed up the Docker image building for containerized stack components.
 
+Check out [this diagram](../../getting-started/architecture-diagrams.md#the-code-repository)
+for a visual representation how the code repository fits into the general ZenML architecture.
+
 {% hint style="info" %}
 Check out our
 [code repository example](https://github.com/zenml-io/zenml/tree/main/examples/code_repository)
