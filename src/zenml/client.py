@@ -758,6 +758,7 @@ class Client(metaclass=ClientMetaClass):
         updated_full_name: Optional[str] = None,
         updated_email: Optional[str] = None,
         updated_email_opt_in: Optional[bool] = None,
+        updated_hub_token: Optional[str] = None,
     ) -> UserResponseModel:
         """Update a user.
 
@@ -767,6 +768,7 @@ class Client(metaclass=ClientMetaClass):
             updated_full_name: The new full name of the user.
             updated_email: The new email of the user.
             updated_email_opt_in: The new email opt-in status of the user.
+            updated_hub_token: Update the hub token
 
         Returns:
             The updated user.
@@ -784,6 +786,8 @@ class Client(metaclass=ClientMetaClass):
             )
         if updated_email_opt_in is not None:
             user_update.email_opted_in = updated_email_opt_in
+        if updated_hub_token is not None:
+            user_update.hub_token = updated_hub_token
 
         return self.zen_store.update_user(
             user_id=user.id, user_update=user_update

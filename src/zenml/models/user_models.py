@@ -179,6 +179,12 @@ class UserBaseModel(BaseModel):
         "`false` if skipped.",
     )
 
+    hub_token: Optional[str] = Field(
+        default=None,
+        title="JWT Token for the connected Hub account.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
+
     active: bool = Field(default=False, title="Active account.")
 
     @classmethod
