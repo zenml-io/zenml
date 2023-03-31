@@ -12,7 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Client implementation."""
-import base64
 import json
 import os
 from abc import ABCMeta
@@ -34,8 +33,8 @@ from typing import (
     cast,
 )
 from uuid import UUID, uuid4
-import click
 
+import click
 from pydantic import SecretStr
 
 from zenml.config.global_config import GlobalConfiguration

@@ -398,7 +398,7 @@ def print_stack_component_configuration(
 
     if len(component.configuration) == 0:
         declare("No configuration options are set for this component.")
-    
+
     else:
         title_ = (
             f"'{component.name}' {component.type.value.upper()} "

@@ -1182,7 +1182,7 @@ def generate_stack_component_destroy_command(
     Returns:
         A function that can be used as a `click` command.
     """
-    display_name = _component_display_name(component_type)
+    _component_display_name(component_type)
 
     @click.argument(
         "name_id_or_prefix",

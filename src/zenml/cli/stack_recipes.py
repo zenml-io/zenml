@@ -252,7 +252,7 @@ class StackRecipeRepo:
             self.repo = Repo.clone_from(
                 STACK_RECIPES_GITHUB_REPO,
                 self.cloning_path,
-                branch="feature/add-sagemaker",
+                branch="main",
             )
         except KeyboardInterrupt:
             self.delete()
@@ -646,7 +646,7 @@ def pull(
         path: The path at which you want to install the stack_recipe(s).
     """
     cli_utils.warning(ALPHA_MESSAGE)
-    git_stack_recipes_handler.pull(branch="feature/add-sagemaker", force=force)
+    git_stack_recipes_handler.pull(branch="main", force=force)
 
     stack_recipes_dir = os.path.join(os.getcwd(), path)
     io_utils.create_dir_if_not_exists(stack_recipes_dir)
@@ -1502,7 +1502,9 @@ def get_outputs(
     Raises:
         ModuleNotFoundError: If the recipe is found at the given path.
     """
-    import json, yaml
+    import json
+
+    import yaml
 
     with event_handler(
         event=AnalyticsEvent.GET_STACK_RECIPE_OUTPUTS,
