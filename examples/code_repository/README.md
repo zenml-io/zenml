@@ -5,7 +5,7 @@ developers to work on the same code base and provides traceability of all the ch
 to code files.
 Using a code repository in ZenML enables unlocks the tracking of the code version that you
 use for your pipeline runs. Additionally, running a pipeline which is tracked in a registered code
-repository eliminates the need of rebuilding Docker images for containerized stack components each
+repository eliminates the need to rebuild Docker images for containerized stack components each
 time you change one of your source code files.
 
 Check out [this diagram](https://docs.zenml.io/getting-started/architecture-diagrams#the-code-repository)
