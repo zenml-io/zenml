@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Amazon SageMaker step operator flavor."""
 
-from typing import Any, Dict, Optional, Type, TYPE_CHECKING, Union 
+from typing import TYPE_CHECKING, Any, Dict, Optional, Type, Union
 
 from zenml.config.base_settings import BaseSettings
 from zenml.integrations.aws import AWS_SAGEMAKER_STEP_OPERATOR_FLAVOR
@@ -51,12 +51,15 @@ class SagemakerStepOperatorSettings(BaseSettings):
             for a list of available instance types.
 
     """
+
     instance_type: Optional[str] = None
     experiment_name: Optional[str] = None
     input_data_s3_uri: Optional[Union[str, Dict[str, str]]] = None
     estimator_args: Dict[str, Any] = {}
 
-    _deprecation_validator = deprecation_utils.deprecate_pydantic_attributes("instance_type")
+    _deprecation_validator = deprecation_utils.deprecate_pydantic_attributes(
+        "instance_type"
+    )
 
 
 class SagemakerStepOperatorConfig(  # type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173

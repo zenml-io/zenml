@@ -163,7 +163,9 @@ class SagemakerStepOperator(BaseStepOperator):
         estimator_args = settings.estimator_args
         session = sagemaker.Session(default_bucket=self.config.bucket)
 
-        estimator_args.setdefault("instance_type", settings.instance_type or "ml.m5.large")
+        estimator_args.setdefault(
+            "instance_type", settings.instance_type or "ml.m5.large"
+        )
 
         estimator_args["environment"] = environment
         estimator_args["instance_count"] = 1
@@ -171,9 +173,7 @@ class SagemakerStepOperator(BaseStepOperator):
 
         # Create Estimator
         estimator = sagemaker.estimator.Estimator(
-            image_name,
-            self.config.role,
-            **estimator_args
+            image_name, self.config.role, **estimator_args
         )
 
         # Sagemaker doesn't allow any underscores in job/experiment/trial names
@@ -183,11 +183,15 @@ class SagemakerStepOperator(BaseStepOperator):
         inputs = None
 
         if isinstance(settings.input_data_s3_uri, str):
-            inputs = sagemaker.inputs.TrainingInput(s3_data=settings.input_data_s3_uri)
+            inputs = sagemaker.inputs.TrainingInput(
+                s3_data=settings.input_data_s3_uri
+            )
         elif isinstance(settings.input_data_s3_uri, dict):
             inputs = {}
             for channel, s3_uri in settings.input_data_s3_uri.items():
-                inputs[channel] = sagemaker.inputs.TrainingInput(s3_data=s3_uri)
+                inputs[channel] = sagemaker.inputs.TrainingInput(
+                    s3_data=s3_uri
+                )
 
         experiment_config = {}
         if settings.experiment_name:
