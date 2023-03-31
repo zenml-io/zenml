@@ -157,7 +157,7 @@ are located. This is useful if you want to connect Seldon Core to a persistent
 storage service that is not supported as a ZenML Artifact Store, or if you don't
 want to configure or use the same credentials configured for your Artifact
 Store. The `secret` attribute must be set to the name of
-[a ZenML secret](../../advanced-guide/practical/secrets-management.md)
+[a ZenML secret](../../starter-guide/production-fundamentals/secrets-management.md)
 containing credentials configured in the format supported by Seldon Core.
 
 {% hint style="info" %}

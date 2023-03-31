@@ -11,7 +11,7 @@ in a secure manner.
 
 {% hint style="warning" %}
 We are deprecating secrets managers in favor of the
-[centralized ZenML secrets store](../../advanced-guide/practical/secrets-management.md#centralized-secrets-store).
+[centralized ZenML secrets store](../../starter-guide/production-fundamentals/secrets-management.md#centralized-secrets-store).
 Going forward, we recommend using the secrets store instead of secrets managers
 to configure and store secrets.
 
@@ -219,7 +219,7 @@ be raised
 Secret references work with any secrets manager and allow you to securely
 specify sensitive configurations for your [stack components](../../starter-guide/stacks/registering-stacks.md).
 
-Check out the corresponding [documentation page](../../advanced-guide/practical/secrets-management.md)
+Check out the corresponding [documentation page](../../starter-guide/production-fundamentals/secrets-management.md)
 for more information.
 
 ## Secret Scopes

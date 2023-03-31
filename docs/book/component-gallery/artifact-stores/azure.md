@@ -71,7 +71,7 @@ possible without employing some form of authentication. ZenML currently provides
 two options for managing Azure authentication: one for which you don't need to
 manage credentials explicitly, the other one that requires you to generate
 Azure credentials and store them in a
-[ZenML Secret](../../advanced-guide/practical/secrets-management.md). Each
+[ZenML Secret](../../starter-guide/production-fundamentals/secrets-management.md). Each
 method has advantages and disadvantages, and you should choose the one that
 best suits your use-case. If you're looking for a quick way to get started
 locally, we recommend using the *Implicit Authentication* method. However, if
@@ -147,7 +147,7 @@ one of the other authentication methods.
 {% tab title="Azure Credentials" %}
 
 When you register the Azure Artifact Store, you can create a
-[ZenML Secret](../../advanced-guide/practical/secrets-management.md)
+[ZenML Secret](../../starter-guide/production-fundamentals/secrets-management.md)
 to store a variety of Azure credentials and then reference it in the Artifact
 Store configuration:
 

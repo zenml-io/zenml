@@ -848,6 +848,43 @@ following command:
 zenml stack register-secrets [<STACK_NAME>]
 ```
 
+Administering your Code Repositories
+------------------------------------
+
+Code repositories enable ZenML to keep track of the code version that you use
+for your pipeline runs. Additionally, running a pipeline which is tracked in
+a registered code repository can decrease the time it takes Docker to build images for
+containerized stack components.
+
+To register a code repository, use the following CLI
+command:
+```shell
+zenml code-repository register <NAME> --type=<CODE_REPOSITORY_TYPE] \
+   [--CODE_REPOSITORY_OPTIONS]
+```
+
+ZenML currently supports code repositories of type `github` and `gitlab`, but
+you can also use your custom code repository implementation by passing the
+type `custom` and a source of your repository class.
+
+```shell
+zenml code-repository register <NAME> --type=custom \
+   --source=<CODE_REPOSITORY_SOURCE> [--CODE_REPOSITORY_OPTIONS]
+```
+
+The `CODE_REPOSITORY_OPTIONS` depend on the configuration necessary for the
+type of code repository that you're using.
+
+If you want to list your registered code repositories, run:
+```shell
+zenml code-repository list
+```
+
+You can delete one of your registered code repositories like this:
+```shell
+zenml code-repository delete <REPOSITORY_NAME_OR_ID>
+```
+
 Administering your Pipelines
 ----------------------------
 
