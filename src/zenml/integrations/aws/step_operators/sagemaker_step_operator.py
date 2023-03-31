@@ -174,17 +174,18 @@ class SagemakerStepOperator(BaseStepOperator):
         )
 
         # Sagemaker doesn't allow any underscores in job/experiment/trial names
-        sanitized_run_name = info.run_name.replace("_", "-")
+        job_name = f"{info.run_name}-{info.pipeline_step_name}"
+        job_name = job_name.replace("_", "-")
 
         experiment_config = {}
         if settings.experiment_name:
             experiment_config = {
                 "ExperimentName": settings.experiment_name,
-                "TrialName": sanitized_run_name,
+                "TrialName": job_name,
             }
 
         estimator.fit(
             wait=True,
             experiment_config=experiment_config,
-            job_name=sanitized_run_name,
+            job_name=job_name,
         )
