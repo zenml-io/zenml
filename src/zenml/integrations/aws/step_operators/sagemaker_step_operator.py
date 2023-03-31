@@ -162,20 +162,40 @@ class SagemakerStepOperator(BaseStepOperator):
 
         settings = cast(SagemakerStepOperatorSettings, self.get_settings(info))
 
+        # Get and default fill SageMaker estimator arguments for full ZenML support
+        estimator_args = settings.estimator_args
         session = sagemaker.Session(default_bucket=self.config.bucket)
-        instance_type = settings.instance_type or "ml.m5.large"
+
+        estimator_args.setdefault(
+            "instance_type", settings.instance_type or "ml.m5.large"
+        )
+
+        estimator_args["environment"] = environment
+        estimator_args["instance_count"] = 1
+        estimator_args["sagemaker_session"] = session
+
+        # Create Estimator
         estimator = sagemaker.estimator.Estimator(
-            image_name,
-            self.config.role,
-            environment=environment,
-            instance_count=1,
-            instance_type=instance_type,
-            sagemaker_session=session,
+            image_name, self.config.role, **estimator_args
         )
 
         # Sagemaker doesn't allow any underscores in job/experiment/trial names
         job_name = f"{info.run_name}-{info.pipeline_step_name}"
         job_name = job_name.replace("_", "-")
+
+        # Construct training input object, if necessary
+        inputs = None
+
+        if isinstance(settings.input_data_s3_uri, str):
+            inputs = sagemaker.inputs.TrainingInput(
+                s3_data=settings.input_data_s3_uri
+            )
+        elif isinstance(settings.input_data_s3_uri, dict):
+            inputs = {}
+            for channel, s3_uri in settings.input_data_s3_uri.items():
+                inputs[channel] = sagemaker.inputs.TrainingInput(
+                    s3_data=s3_uri
+                )
 
         experiment_config = {}
         if settings.experiment_name:
@@ -186,6 +206,7 @@ class SagemakerStepOperator(BaseStepOperator):
 
         estimator.fit(
             wait=True,
+            inputs=inputs,
             experiment_config=experiment_config,
             job_name=job_name,
         )
