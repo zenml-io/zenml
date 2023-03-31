@@ -25,7 +25,6 @@ from typing import (
     Optional,
     Sequence,
     Tuple,
-    Union,
 )
 
 import zenml
@@ -368,8 +367,8 @@ class PipelineDockerImageBuilder:
     ) -> List[Tuple[str, str]]:
         """Gathers and/or generates pip requirements files.
 
-        This method is used during `DockerImageBuilder.build_docker_image` but
-        it is also called by other parts of the codebase, e.g. the
+        This method is called in `PipelineDockerImageBuilder.build_docker_image`
+        but it is also called by other parts of the codebase, e.g. the
         `AzureMLStepOperator`, which needs to upload the requirements files to
         AzureML where the step image is then built.
 
@@ -542,10 +541,8 @@ class PipelineDockerImageBuilder:
 
         client = HubClient()
 
-        _DICT_TYPE = Union[Dict[str, List[str]], DefaultDict[str, List[str]]]
-        hub_internal_requirements: _DICT_TYPE = defaultdict(list)
-
-        hub_pypi_requirements: List[str] = []
+        internal_requirements: DefaultDict[str, List[str]] = defaultdict(list)
+        pypi_requirements: List[str] = []
 
         for plugin_str in required_hub_plugins:
             author, name, version = parse_plugin_name(
@@ -559,11 +556,11 @@ class PipelineDockerImageBuilder:
             )
 
             if plugin and plugin.index_url and plugin.package_name:
-                hub_internal_requirements[plugin.index_url].append(
+                internal_requirements[plugin.index_url].append(
                     plugin.package_name
                 )
                 if plugin.requirements:
-                    hub_pypi_requirements.extend(plugin.requirements)
+                    pypi_requirements.extend(plugin.requirements)
             else:
                 display_name = plugin_display_name(name, version, author)
                 logger.warning(
@@ -572,9 +569,8 @@ class PipelineDockerImageBuilder:
                     display_name,
                 )
 
-        hub_pypi_requirements = sorted(set(hub_pypi_requirements))
-        hub_internal_requirements = dict(hub_internal_requirements)
-        return hub_internal_requirements, hub_pypi_requirements
+        pypi_requirements = sorted(set(pypi_requirements))
+        return dict(internal_requirements), pypi_requirements
 
     @staticmethod
     def _generate_zenml_pipeline_dockerfile(
