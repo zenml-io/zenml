@@ -1105,13 +1105,16 @@ def generate_stack_component_deploy_command(
         cloud: str,
         args: List[str],
     ) -> None:
-        """Deploy a stack component. This function also registers the newly-
-        deployed component.
+        """Deploy a stack component.
+
+        This function also registers the newly-deployed component.
 
         Args:
+            ctx: Click context.
             name: Name of the component to register.
             flavor: Flavor of the component to register.
             share: Share the stack with other users.
+            cloud: Cloud provider to use to deploy the stack component.
             args: Additional arguments to pass to the component.
         """
         # generate a python dict with the above structure
