@@ -128,9 +128,7 @@ class StackComponentSchema(ShareableSchema, table=True):
             configuration=json.loads(
                 base64.b64decode(self.configuration).decode()
             ),
-            labels=json.loads(
-                base64.b64decode(self.labels).decode()
-            )
+            labels=json.loads(base64.b64decode(self.labels).decode())
             if self.labels
             else None,
             created=self.created,
