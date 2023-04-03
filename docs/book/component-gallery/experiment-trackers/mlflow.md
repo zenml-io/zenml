@@ -77,8 +77,17 @@ for the MLflow Experiment Tracker.
 
 ### Deploying with MLOps Stack Recipes
 
-The MLflow Experiment Tracker can be deployed using our MLOps Stack Recipe for a
-modular experiment tracker using the CLI. 
+The MLflow Experiment Tracker can be deployed using our MLOps Stack Recipe
+directly from the CLI and without the need to go through a separate workflow
+involving stack recipes:
+
+```shell
+# optionally assigning an existing bucket to the MLflow Experiment Tracker
+zenml experiment-tracker deploy mlflow_tracker --flavor=mlflow --mlflow_bucket=gs://my_bucket
+```
+
+You can pass other configuration specific to the stack components as key-value
+arguments. If you don't provide a name, a random one is generated for you.
 
 ### Authentication Methods
 
