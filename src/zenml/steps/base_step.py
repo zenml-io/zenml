@@ -864,20 +864,57 @@ class BaseStep(metaclass=BaseStepMeta):
         """
         outputs: Dict[str, Dict[str, Source]] = defaultdict(dict)
 
-        for output_name, output_class in self.OUTPUT_SIGNATURE.items():
+        for output_name, output_annotation in self.OUTPUT_SIGNATURE.items():
             output = self._configuration.outputs.get(
                 output_name, PartialArtifactConfiguration()
             )
 
+            from pydantic.typing import (
+                get_origin,
+                is_none_type,
+                is_union,
+            )
+
+            from zenml.steps.utils import get_args
+
             if not output.materializer_source:
-                if default_materializer_registry.is_registered(output_class):
+                if output_annotation is Any:
+                    raise StepInterfaceError(
+                        "An explicit materializer needs to be specified for "
+                        "step outputs with `Any` as type annotation.",
+                        url="https://docs.zenml.io/advanced-guide/pipelines/materializers",
+                    )
+                if is_union(
+                    get_origin(output_annotation) or output_annotation
+                ):
+                    potential_types = [
+                        type_
+                        for type_ in get_args(output_annotation)
+                        if not is_none_type(type_)
+                    ]
+                    if len(potential_types) == 1:
+                        # Optional[], we just need a materializer for the one
+                        # type
+                        output_annotation = potential_types[0]
+                    else:
+                        # TODO: We should check if a materializer for each
+                        # item in the Union
+                        raise StepInterfaceError(
+                            "An explicit materializer needs to be specified for "
+                            "step outputs with `Union` as type annotation.",
+                            url="https://docs.zenml.io/advanced-guide/pipelines/materializers",
+                        )
+
+                if default_materializer_registry.is_registered(
+                    output_annotation
+                ):
                     materializer_class = default_materializer_registry[
-                        output_class
+                        output_annotation
                     ]
                 else:
                     raise StepInterfaceError(
                         f"Unable to find materializer for output "
-                        f"'{output_name}' of type `{output_class}` in step "
+                        f"'{output_name}' of type `{output_annotation}` in step "
                         f"'{self.name}'. Please make sure to either "
                         f"explicitly set a materializer for step outputs "
                         f"using `step.configure(output_materializers=...)` or "
@@ -998,19 +1035,31 @@ class BaseStep(metaclass=BaseStepMeta):
     def _validate_parameter_value(
         self, parameter: inspect.Parameter, value: Any
     ) -> None:
-        expected_type = parameter.annotation
+        from pydantic.typing import get_origin, is_union
 
-        if issubclass(expected_type, BaseModel):
-            # TODO: handle custom pydantic __root__ type here
-            expected_type = (expected_type, dict)
+        from zenml.steps.utils import get_args
 
-        if not isinstance(value, expected_type):
-            raise StepInterfaceError(
-                f"Wrong argument type (`{type(value)}`) for argument "
-                f"'{parameter.name}' of step '{self.name}'. The argument should "
-                f"either be an output of a previous steps or of type "
-                f"`{expected_type}`."
-            )
+        expected_type = (
+            get_origin(parameter.annotation) or parameter.annotation
+        )
+
+        if expected_type is Any:
+            # Any type is allowed
+            pass
+        else:
+            if is_union(expected_type):
+                expected_type = get_args(parameter.annotation)
+            elif issubclass(expected_type, BaseModel):
+                # TODO: handle custom pydantic __root__ type here
+                expected_type = (expected_type, dict)
+
+            if not isinstance(value, expected_type):
+                raise StepInterfaceError(
+                    f"Wrong argument type (`{type(value)}`) for argument "
+                    f"'{parameter.name}' of step '{self.name}'. The argument should "
+                    f"either be an output of a previous steps or of type "
+                    f"`{expected_type}`."
+                )
 
         if not is_json_serializable(value):
             raise StepInterfaceError(

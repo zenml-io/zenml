@@ -14,9 +14,7 @@
 
 """Utility functions and classes to run ZenML steps."""
 
-import sys
-import typing
-from typing import Any, Dict
+from typing import Any, Dict, Tuple
 
 from zenml.logger import get_logger
 from zenml.steps.step_output import Output
@@ -40,16 +38,23 @@ def resolve_type_annotation(obj: Any) -> Any:
     Returns:
         The non-generic class for generic aliases of the typing module.
     """
-    from typing import _GenericAlias  # type: ignore[attr-defined]
+    from pydantic.typing import get_origin, is_union
 
-    if sys.version_info >= (3, 8):
-        return typing.get_origin(obj) or obj
-    else:
-        # python 3.7
-        if isinstance(obj, _GenericAlias):
-            return obj.__origin__
-        else:
-            return obj
+    origin = get_origin(obj) or obj
+
+    if is_union(origin):
+        return obj
+
+    return origin
+
+
+def get_args(obj: Any) -> Tuple[Any]:
+    import pydantic.typing as pydantic_typing
+
+    return tuple(
+        pydantic_typing.get_origin(v) or v
+        for v in pydantic_typing.get_args(obj)
+    )
 
 
 def parse_return_type_annotations(

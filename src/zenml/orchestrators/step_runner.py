@@ -258,7 +258,7 @@ class StepRunner:
             arg_type = annotations.get(arg, None)
             arg_type = resolve_type_annotation(arg_type)
 
-            if issubclass(arg_type, StepContext):
+            if inspect.isclass(arg_type) and issubclass(arg_type, StepContext):
                 step_name = self.configuration.name
                 context = arg_type(
                     step_name=step_name,
@@ -272,7 +272,9 @@ class StepRunner:
                 )
             elif arg in self.configuration.parameters:
                 value = self.configuration.parameters[arg]
-                if issubclass(arg_type, BaseModel):
+                if inspect.isclass(arg_type) and issubclass(
+                    arg_type, BaseModel
+                ):
                     value = arg_type.parse_obj(value)
 
                 function_params[arg] = value
@@ -360,8 +362,12 @@ class StepRunner:
         if data_type == UnmaterializedArtifact:
             return UnmaterializedArtifact.parse_obj(artifact)
 
+        if artifact.uri == "":
+            # TODO: Correctly implement `None` artifacts
+            return None
+
         # Skip materialization for `BaseArtifact` and its subtypes.
-        if issubclass(data_type, BaseArtifact):
+        if inspect.isclass(data_type) and issubclass(data_type, BaseArtifact):
             logger.warning(
                 "Skipping materialization by specifying a subclass of "
                 "`zenml.artifacts.BaseArtifact` as input data type is "
@@ -370,6 +376,13 @@ class StepRunner:
                 "`zenml.materializers.UnmaterializedArtifact` instead."
             )
             return artifact
+
+        from pydantic.typing import get_origin, is_union
+
+        if data_type is Any or is_union(get_origin(data_type)):
+            # Entrypoint function does not define a specific type for the input,
+            # we use the datatype of the stored artifact
+            data_type = source_utils.load(artifact.data_type)
 
         materializer_class: Type[
             BaseMaterializer
@@ -435,19 +448,26 @@ class StepRunner:
                 f"(return values: {return_values})."
             )
 
-        # Validate the output types.
+        from pydantic.typing import get_origin, is_union
+
+        from zenml.steps.utils import get_args
+
         validated_outputs: Dict[str, Any] = {}
-        for return_value, (output_name, output_type) in zip(
+        for return_value, (output_name, output_annotation) in zip(
             return_values, output_annotations.items()
         ):
-            # The actual output type must be the same as the expected output
-            # type.
-            if not isinstance(return_value, output_type):
-                raise StepInterfaceError(
-                    f"Wrong type for output '{output_name}' of step "
-                    f"'{step_name}' (expected type: {output_type}, "
-                    f"actual type: {type(return_value)})."
-                )
+            if output_annotation is Any:
+                pass
+            else:
+                if is_union(get_origin(output_annotation)):
+                    output_annotation = get_args(output_annotation)
+
+                if not isinstance(return_value, output_annotation):
+                    raise StepInterfaceError(
+                        f"Wrong type for output '{output_name}' of step "
+                        f"'{step_name}' (expected type: {output_annotation}, "
+                        f"actual type: {type(return_value)})."
+                    )
             validated_outputs[output_name] = return_value
         return validated_outputs
 
@@ -485,35 +505,53 @@ class StepRunner:
         output_artifacts: Dict[str, ArtifactRequestModel] = {}
         output_artifact_metadata: Dict[str, Dict[str, "MetadataType"]] = {}
         for output_name, return_value in output_data.items():
-            materializer_class = output_materializers[output_name]
-            materializer_source = self.configuration.outputs[
-                output_name
-            ].materializer_source
-            uri = output_artifact_uris[output_name]
-            materializer = materializer_class(uri)
-            materializer.save(return_value)
-            if artifact_metadata_enabled:
-                try:
-                    artifact_metadata = materializer.extract_metadata(
-                        return_value
-                    )
-                    output_artifact_metadata[output_name] = artifact_metadata
-                except Exception as e:
-                    logger.warning(
-                        f"Failed to extract metadata for output artifact "
-                        f"'{output_name}' of step "
-                        f"'{self._step.spec.pipeline_parameter_name}': {e}"
-                    )
-            output_artifact = ArtifactRequestModel(
-                name=output_name,
-                type=materializer_class.ASSOCIATED_ARTIFACT_TYPE,
-                uri=uri,
-                materializer=materializer_source,
-                data_type=source_utils.resolve(type(return_value)),
-                user=active_user_id,
-                workspace=active_workspace_id,
-                artifact_store_id=artifact_store_id,
-            )
+            if return_value is None:
+                from zenml.config.source import Source
+                from zenml.materializers.base_materializer import ArtifactType
+
+                output_artifact = ArtifactRequestModel(
+                    name=output_name,
+                    type=ArtifactType.BASE,
+                    uri="",
+                    materializer=Source.from_import_path("none"),
+                    data_type=Source.from_import_path("none"),
+                    user=active_user_id,
+                    workspace=active_workspace_id,
+                    artifact_store_id=artifact_store_id,
+                )
+            else:
+                materializer_class = output_materializers[output_name]
+                materializer_source = self.configuration.outputs[
+                    output_name
+                ].materializer_source
+                uri = output_artifact_uris[output_name]
+                materializer = materializer_class(uri)
+                materializer.save(return_value)
+                if artifact_metadata_enabled:
+                    try:
+                        artifact_metadata = materializer.extract_metadata(
+                            return_value
+                        )
+                        output_artifact_metadata[
+                            output_name
+                        ] = artifact_metadata
+                    except Exception as e:
+                        logger.warning(
+                            f"Failed to extract metadata for output artifact "
+                            f"'{output_name}' of step "
+                            f"'{self._step.spec.pipeline_parameter_name}': {e}"
+                        )
+
+                output_artifact = ArtifactRequestModel(
+                    name=output_name,
+                    type=materializer_class.ASSOCIATED_ARTIFACT_TYPE,
+                    uri=uri,
+                    materializer=materializer_source,
+                    data_type=source_utils.resolve(type(return_value)),
+                    user=active_user_id,
+                    workspace=active_workspace_id,
+                    artifact_store_id=artifact_store_id,
+                )
             output_artifacts[output_name] = output_artifact
         return output_artifacts, output_artifact_metadata
 
