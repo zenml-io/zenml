@@ -89,6 +89,22 @@ ZenML has only been tested with Tekton Pipelines >=0.38.3 and may not work with
 previous versions.
 {% endhint %}
 
+### Deploying with MLOps Stack Recipes
+
+A Tekton orchestrator can be deployed using our MLOps Stack Recipe
+directly from the CLI and without the need to go through a separate workflow
+involving stack recipes:
+
+```shell
+zenml orchestrator deploy tekton_orchestrator --flavor=tekton ...
+```
+
+You can pass other configuration specific to the stack components as key-value
+arguments. If you don't provide a name, a random one is generated for you. For
+more information about how to work use the CLI for this, please refer to [the
+dedicated documentation
+section](../../advanced-guide/practical/stack-recipes.md#deploying-stack-components-directly).
+
 ## How to use it
 
 To use the Tekton orchestrator, we need:

@@ -33,6 +33,22 @@ When using the Google Artifact Registry, you need to:
 {% endtab %}
 {% endtabs %}
 
+### Deploying with MLOps Stack Recipes
+
+A GCP Container Registry can be deployed using our MLOps Stack Recipe
+directly from the CLI and without the need to go through a separate workflow
+involving stack recipes:
+
+```shell
+zenml container-registry deploy gcp_container_registry --flavor=gcp ...
+```
+
+You can pass other configuration specific to the stack components as key-value
+arguments. If you don't provide a name, a random one is generated for you. For
+more information about how to work use the CLI for this, please refer to [the
+dedicated documentation
+section](../../advanced-guide/practical/stack-recipes.md#deploying-stack-components-directly).
+
 ## How to find the registry URI
 
 {% tabs %}
