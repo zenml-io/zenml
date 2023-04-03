@@ -81,7 +81,105 @@ In addition to the underlying `terraform` functionality, these commands also off
 - ability to list all the available recipes conveniently before you choose to deploy any one of them.
 - checks to ensure that you have all the binaries/tools installed for running a recipe.
 - extensive logs and error messages that guide you in case any of the recipes fails or misbehaves.
-- option to automatically import a ZenML stack out of the components created after deploying a stack recipe.
+- option to automatically import a ZenML stack out of the components created
+  after deploying a stack recipe.
+
+To learn more about what you can do with the ZenML CLI, please refer to the [CLI
+docs](https://apidocs.zenml.io/latest/cli/).
+
+### Deploying stack components directly
+
+To deploy stack components directly without needing to pull stack recipes (as
+described above), you can use the `zenml <STACK_COMPONENT> deploy` command. For
+example, to deploy an S3 artifact store, you can run:
+
+```shell
+zenml artifact-store deploy s3_artifact_store --flavor=s3
+```
+
+The command takes in a name to use for the stack component, along with the
+flavor and the cloud provider. In case of components like artifact stores and
+container registries, the cloud is the same as the flavor and can be omitted
+from the command. (Currently, only GCP, AWS and k3d are supported as providers.)
+
+Available flavors that can currently be deployed in this way include:
+
+| Component Type | Flavor |
+| -------------- | ------ |
+| Experiment Tracker | mlflow |
+| Model Deployer | seldon |
+|   | kserve |
+| Artifact Store | s3 |
+|   | gcs |
+|   | minio |
+| Container Registry | gcr |
+|   | ecr |
+|   | k3d-registry |
+| Orchestrator | kubernetes |
+|   | kubeflow |
+|   | tekton |
+|   | sagemaker |
+| Step Operator | sagemaker |
+| Secrets Manager | aws |
+|   | gcp |
+
+### Customizing the deployment of stack components
+
+You can pass configuration specific to the stack components as key-value
+arguments. If you don't provide a name, a random one is generated for you. For
+example, to assign an existing bucket to the MLflow experiment tracker, you can
+run:
+
+```shell
+zenml experiment-tracker deploy mlflow_tracker --flavor=mlflow --mlflow_bucket=gs://my_bucket
+```
+
+For an artifact store, you can pass `bucket_name` as an argument to the command.
+
+```bash
+zenml artifact-store deploy s3_artifact_store --flavor=s3 --bucket_name=my_bucket
+```
+
+For container registries you can pass the repository name using `repo_name`:
+
+```bash
+zenml container-registry deploy aws_registry --flavor=aws --repo_name=my_repo
+```
+
+This is only useful for the AWS case since AWS requires a repository to be
+created before pushing images to it and the deploy command ensures that a
+repository with the name you provide is created. In case of GCP and other
+providers, you can choose the repository name at the same time as you are
+pushing the image via code. This is achieved through setting the `target_repo`
+attribute of the [the `DockerSettings` object](../pipelines/settings.md).
+
+You can also pass a region to deploy your resources to in the case of AWS and
+GCP recipes. For example, to deploy an S3 artifact store in the `us-west-2`
+region, you can run:
+
+```bash
+zenml artifact-store deploy s3_artifact_store --flavor=s3 --region=us-west-2
+```
+
+The default region is `eu-west-1` for AWS and `us-central1` for GCP.
+
+In the case of GCP components, it is *required* that you pass a project ID to
+the command for the first time you're creating any GCP resource. The command
+will remember the project ID for subsequent calls. For example, to deploy a GCS
+artifact store, you can run:
+
+```bash
+zenml artifact-store deploy gcs_artifact_store --flavor=gcs --project_id=my_project
+```
+
+### Destroying deployed stack components
+
+You can destroy a stack component using the `destroy` subcommand. For example,
+to destroy an S3 artifact store you had previously created, you could run:
+
+```shell
+zenml artifact-store destroy s3_artifact_store
+```
 
 ## Creating your own recipe 🧑‍🍳
 
