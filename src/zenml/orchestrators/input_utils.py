@@ -68,6 +68,9 @@ def resolve_step_inputs(
 
         input_artifacts[name] = artifact
 
+    for name, artifact_id in step.config.external_input_artifacts.items():
+        input_artifacts[name] = Client().get_artifact(artifact_id=artifact_id)
+
     parent_step_ids = [
         current_run_steps[upstream_step].id
         for upstream_step in step.spec.upstream_steps

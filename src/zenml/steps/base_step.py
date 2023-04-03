@@ -33,6 +33,7 @@ from typing import (
     Union,
     cast,
 )
+from uuid import UUID
 
 from pydantic import BaseModel, Extra, ValidationError
 
@@ -524,6 +525,7 @@ class BaseStep(metaclass=BaseStepMeta):
         bound_args.apply_defaults()
 
         artifacts = {}
+        external_artifacts = {}
         parameters = {}
 
         for key, value in bound_args.arguments.items():
@@ -535,13 +537,24 @@ class BaseStep(metaclass=BaseStepMeta):
                         "provided as artifact.",
                         key,
                     )
+            elif isinstance(value, ExternalArtifact):
+                external_artifacts[key] = value
+                if not value._id:
+                    # If the external artifact references a fixed artifact by
+                    # ID, caching behaves as expected.
+                    logger.warning(
+                        "Using an external artifact as step input currently "
+                        "invalidates caching for the step and all downstream "
+                        "steps. Future releases will introduce hashing of "
+                        "artifacts which will improve this behavior."
+                    )
             else:
                 self._validate_parameter_value(
                     parameter=signature.parameters[key], value=value
                 )
                 parameters[key] = value
 
-        return artifacts, parameters
+        return artifacts, external_artifacts, parameters
 
     def __call__(
         self,
@@ -557,8 +570,11 @@ class BaseStep(metaclass=BaseStepMeta):
             # we simply call the entrypoint
             return self.entrypoint(*args, **kwargs)
 
-        input_artifacts, parameters = self._parse_call_args(*args, **kwargs)
-
+        (
+            input_artifacts,
+            external_artifacts,
+            parameters,
+        ) = self._parse_call_args(*args, **kwargs)
         upstream_steps = {
             artifact.step_name for artifact in input_artifacts.values()
         }
@@ -570,6 +586,7 @@ class BaseStep(metaclass=BaseStepMeta):
         invocation_id = Pipeline.ACTIVE_PIPELINE.add_step(
             step=self,
             input_artifacts=input_artifacts,
+            external_artifacts=external_artifacts,
             parameters=parameters,
             upstream_steps=upstream_steps,
             custom_id=id,
@@ -841,8 +858,25 @@ class BaseStep(metaclass=BaseStepMeta):
                         "does not resolve to a  `BaseMaterializer` subclass."
                     )
 
+    def _validate_inputs(
+        self,
+        input_artifacts: Dict[str, _OutputArtifact],
+        external_artifacts: Dict[str, UUID],
+    ) -> None:
+        signature = get_step_entrypoint_signature(step=self)
+        for key in signature.parameters.keys():
+            if (
+                key in input_artifacts
+                or key in self.configuration.parameters
+                or key in external_artifacts
+            ):
+                continue
+            raise StepInterfaceError(f"Missing entrypoint input {key}.")
+
     def _finalize_configuration(
-        self, input_artifacts: Dict[str, _OutputArtifact]
+        self,
+        input_artifacts: Dict[str, _OutputArtifact],
+        external_artifacts: Dict[str, UUID],
     ) -> StepConfiguration:
         """Finalizes the configuration after the step was called.
 
@@ -929,20 +963,19 @@ class BaseStep(metaclass=BaseStepMeta):
 
         parameters = self._finalize_parameters()
         self.configure(parameters=parameters, merge=False)
+        self._validate_inputs(
+            input_artifacts=input_artifacts,
+            external_artifacts=external_artifacts,
+        )
 
         values = dict_utils.remove_none_values({"outputs": outputs or None})
         config = StepConfigurationUpdate(**values)
         self._apply_configuration(config)
 
-        signature = get_step_entrypoint_signature(step=self)
-        for key in signature.parameters.keys():
-            if key in input_artifacts or key in self.configuration.parameters:
-                continue
-            raise StepInterfaceError(f"Missing entrypoint input {key}.")
-
         self._configuration = self._configuration.copy(
             update={
                 "caching_parameters": self.caching_parameters,
+                "external_input_artifacts": external_artifacts,
             }
         )
 
@@ -1110,12 +1143,14 @@ class StepInvocation:
         id: str,
         step: "BaseStep",
         input_artifacts: Dict[str, BaseStep._OutputArtifact],
+        external_artifacts: Dict[str, "ExternalArtifact"],
         parameters: Dict[str, Any],
         upstream_steps: Sequence[str],
     ) -> None:
         self.id = id
         self.step = step
         self.input_artifacts = input_artifacts
+        self.external_artifacts = external_artifacts
         self.parameters = parameters
         self.invocation_upstream_steps = upstream_steps
 
@@ -1125,6 +1160,114 @@ class StepInvocation:
 
     def finalize(self) -> StepConfiguration:
         self.step.configure(parameters=self.parameters)
+
+        external_artifact_ids = {}
+        for key, artifact in self.external_artifacts.items():
+            external_artifact_ids[key] = artifact.do_something()
+
         return self.step._finalize_configuration(
-            input_artifacts=self.input_artifacts
+            input_artifacts=self.input_artifacts,
+            external_artifacts=external_artifact_ids,
         )
+
+
+import os
+
+
+# StepArtifactSpec
+# ExternalArtifactSpec
+class StepArtifact:
+    ...
+
+
+class ExternalArtifact:
+    def __init__(
+        self,
+        value: Any = None,
+        id: Optional[UUID] = None,
+        materializer: Optional["MaterializerClassOrSource"] = None,
+    ) -> None:
+        if value is not None and id is not None:
+            raise ValueError("Only value or ID allowed")
+        if value is None and id is None:
+            raise ValueError("Either value or ID required")
+
+        self._value = value
+        self._id = id
+        self._materializer = materializer
+
+    def do_something(self) -> UUID:
+        from uuid import uuid4
+
+        from zenml.client import Client
+        from zenml.io import fileio
+        from zenml.models import ArtifactRequestModel
+
+        artifact_store_id = Client().active_stack.artifact_store.id
+
+        if self._id:
+            response = Client().get_artifact(artifact_id=self._id)
+            if response.artifact_store_id != artifact_store_id:
+                raise RuntimeError("Artifact store mismatch")
+        else:
+            logger.info("Uploading external artifact.")
+            client = Client()
+            active_user_id = client.active_user.id
+            active_workspace_id = client.active_workspace.id
+            artifact_name = f"external_{uuid4()}"
+            materializer_class = self._get_materializer()
+
+            uri = os.path.join(
+                Client().active_stack.artifact_store.path,
+                "external_artifacts",
+                artifact_name,
+            )
+            if fileio.exists(uri):
+                raise RuntimeError("Artifact URI already exists")
+            fileio.makedirs(uri)
+
+            materializer = materializer_class(uri)
+            materializer.save(self._value)
+
+            artifact = ArtifactRequestModel(
+                name=artifact_name,
+                type=materializer_class.ASSOCIATED_ARTIFACT_TYPE,
+                uri=uri,
+                materializer=source_utils.resolve(materializer_class),
+                data_type=source_utils.resolve(type(self._value)),
+                user=active_user_id,
+                workspace=active_workspace_id,
+                artifact_store_id=artifact_store_id,
+            )
+            response = Client().zen_store.create_artifact(artifact=artifact)
+            # To avoid duplicate uploads, switch to just referencing the
+            # uploaded artifact
+            self._value = None
+            self._id = response.id
+
+        return self._id
+
+    def _get_materializer(self) -> Type["BaseMaterializer"]:
+        assert self._value is not None
+
+        if inspect.isclass(self._materializer):
+            return self._materializer
+        elif self._materializer:
+            return source_utils.load_and_validate_class(
+                self._materializer, expected_class=BaseMaterializer
+            )
+        else:
+            value_type = type(self._value)
+            if default_materializer_registry.is_registered(value_type):
+                return default_materializer_registry[value_type]
+            else:
+                raise StepInterfaceError(
+                    f"Unable to find materializer for type `{value_type}`. Please "
+                    "make sure to either explicitly set a materializer for your "
+                    "external artifact using "
+                    "`ExternalArtifact(value=..., materializer=...)` or "
+                    f"register a default materializer for specific "
+                    f"types by subclassing `BaseMaterializer` and setting "
+                    f"its `ASSOCIATED_TYPES` class variable.",
+                    url="https://docs.zenml.io/advanced-guide/pipelines/materializers",
+                )

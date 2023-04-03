@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Pipeline configuration classes."""
 from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional
+from uuid import UUID
 
 from pydantic import root_validator
 
@@ -92,6 +93,7 @@ class PartialStepConfiguration(StepConfigurationUpdate):
 
     name: str
     caching_parameters: Mapping[str, Any] = {}
+    external_input_artifacts: Mapping[str, UUID] = {}
     outputs: Mapping[str, PartialArtifactConfiguration] = {}
 
     # Override the deprecation validator as we do not want to deprecate the

@@ -62,7 +62,7 @@ from zenml.models.pipeline_deployment_models import PipelineDeploymentBaseModel
 from zenml.pipelines import build_utils
 from zenml.stack import Stack
 from zenml.steps import BaseStep
-from zenml.steps.base_step import StepInvocation
+from zenml.steps.base_step import ExternalArtifact, StepInvocation
 from zenml.utils import (
     dashboard_utils,
     dict_utils,
@@ -800,6 +800,7 @@ class Pipeline:
         self,
         step: "BaseStep",
         input_artifacts: Dict[str, BaseStep._OutputArtifact],
+        external_artifacts: Dict[str, ExternalArtifact],
         parameters: Dict[str, Any],
         upstream_steps: Sequence[str],
         custom_id: Optional[str] = None,
@@ -823,6 +824,7 @@ class Pipeline:
             id=invocation_id,
             step=step,
             input_artifacts=input_artifacts,
+            external_artifacts=external_artifacts,
             parameters=parameters,
             upstream_steps=upstream_steps,
         )
