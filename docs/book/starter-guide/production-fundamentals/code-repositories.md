@@ -103,14 +103,14 @@ each pipeline run.
 
 <summary>How To get a token for GitHub</summary>
 
-1. Go to your GitHub account settings and click on "Developer settings". Or click [here](https://github.com/settings/tokens?type=beta)
+1. Go to your GitHub account settings and click on ["Developer settings"](https://github.com/settings/tokens?type=beta).
 2. Select "Personal access tokens" and click on "Generate new token".
-![Generate Fine-Grained Token](../../assets/code_repo/github-generate-fine-grained-token.png)
-3. Give your token a name and description.
+![Generate a fine-grained token](../../assets/code_repo/github-generate-fine-grained-token.png)
+3. Give your token a name and a description.
 ![Give Name and Description](../../assets/code_repo/github-fine-grained-token-name.png)
-4. We recommend select specific repository and then give `contents`read only access.
-![Set Permessions](../../assets/code_repo/github-fine-grained-permessions.png)
-![Overview over the permessions](../../assets/code_repo/github-fine-grained-permessions-2.png)
+4. We recommend selecting the specific repository and then giving `contents` read-only access.
+![Set Permissions](../../assets/code_repo/github-fine-grained-permissions.png)
+![Overview over the permissions](../../assets/code_repo/github-fine-grained-permissions-2.png)
 4. Click on "Generate token" and copy the token to a safe place.
 ![Copy Token](../../assets/code_repo/copy-github-fine-grained-token.png)
 
@@ -145,11 +145,11 @@ each pipeline run.
 
 <summary>How To get a token for GitLab</summary>
 
-1. Go to your GitLab account settings and click on "Access Tokens". Or click [here](https://gitlab.com/-/profile/personal_access_tokens).
-2. Give a Name to the token and select the scopes that you need (e.g. `read_repository`, `read_user`, `read_api` )
-![GitLab Token generate](../../assets/code_repo/gitlab-generate-access-token.png)
+1. Go to your GitLab account settings and click on ["Access Tokens"](https://gitlab.com/-/profile/personal_access_tokens).
+2. Name the token and select the scopes that you need (e.g. `read_repository`, `read_user`, `read_api` )
+![Generate the Gitlab token](../../assets/code_repo/gitlab-generate-access-token.png)
 3. Click on "Create personal access token" and copy the token to a safe place.
-![GitLab Token Copy](../../assets/code_repo/gitlab-copy-access-token.png)
+![Copy the GitLab Token](../../assets/code_repo/gitlab-copy-access-token.png)
 
 </details>
 
