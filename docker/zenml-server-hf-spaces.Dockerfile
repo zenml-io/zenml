@@ -1,7 +1,7 @@
 FROM zenmldocker/zenml-server:latest
 
 ENV ZENML_ANALYTICS_OPT_IN=true
-ENV ENV_ZENML_SERVER_DEPLOYMENT_TYPE="hf_spaces"
+ENV ZENML_SERVER_DEPLOYMENT_TYPE="hf_spaces"
 
 ################################################################################
 #
