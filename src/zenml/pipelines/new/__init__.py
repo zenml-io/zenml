@@ -16,6 +16,7 @@ from zenml.config.schedule import Schedule
 from zenml.pipelines.new.pipeline import Pipeline
 from zenml.pipelines.new.pipeline_template_decorator import pipeline_template
 from zenml.pipelines.new.pipeline_template import PipelineTemplate
+from zenml.pipelines.new.pipeline_decorator import pipeline
 
 __all__ = [
     "Pipeline",
@@ -23,4 +24,5 @@ __all__ = [
     "PipelineTemplate",
     "DockerSettings",
     "Schedule",
+    "pipeline",
 ]

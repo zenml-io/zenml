@@ -100,6 +100,7 @@ class Pipeline:
         extra: Optional[Dict[str, Any]] = None,
         on_failure: Optional["HookSpecification"] = None,
         on_success: Optional["HookSpecification"] = None,
+        entrypoint=None,
     ) -> None:
         self._steps: Dict[str, BaseStep] = {}
         self._configuration = PipelineConfiguration(
@@ -113,6 +114,7 @@ class Pipeline:
             on_failure=on_failure,
             on_success=on_success,
         )
+        self.entrypoint = entrypoint
 
     @property
     def name(self) -> str:
@@ -862,3 +864,14 @@ class Pipeline:
 
     def __exit__(self, type, value, traceback):
         Pipeline.ACTIVE_PIPELINE = None
+
+    def __call__(self, *args: Any, **kwds: Any) -> Any:
+        if Pipeline.ACTIVE_PIPELINE:
+            # Calling a pipeline inside a pipeline, we return the potential
+            # outputs of the entrypoint function
+            return self.entrypoint(*args, **kwds)
+
+        with self:
+            self.entrypoint(*args, **kwds)
+
+        return self
