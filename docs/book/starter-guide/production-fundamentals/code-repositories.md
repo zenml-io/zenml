@@ -109,8 +109,8 @@ each pipeline run.
 3. Give your token a name and a description.
 ![Give Name and Description](../../assets/code_repo/github-fine-grained-token-name.png)
 4. We recommend selecting the specific repository and then giving `contents` read-only access.
-![Set Permissions](../../assets/code_repo/github-fine-grained-permissions.png)
-![Overview over the permissions](../../assets/code_repo/github-fine-grained-permissions-2.png)
+![Set Permissions](../../assets/code_repo/github-token-set-permissions.png)
+![Overview over the permissions](../../assets/code_repo/github-token-permissions-overview.png)
 4. Click on "Generate token" and copy the token to a safe place.
 ![Copy Token](../../assets/code_repo/copy-github-fine-grained-token.png)
 
