@@ -185,7 +185,7 @@ class TerraformService(BaseService):
 
         Args:
             vars: The variables to write to the file.
-        """ 
+        """
         import json
 
         path = self.terraform_client.working_dir
