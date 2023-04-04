@@ -1553,7 +1553,7 @@ def warn_deprecated_secrets_manager() -> None:
         "migrating all your secrets to the centralized secrets store by means "
         "of the `zenml secrets-manager secret migrate` CLI command. "
         "See the `zenml secret` CLI command and the "
-        "https://docs.zenml.io/advanced-guide/practical-mlops/secrets-management "
+        "https://docs.zenml.io/starter-guide/production-fundamentals/secrets-management "
         "documentation page for more information."
     )
 

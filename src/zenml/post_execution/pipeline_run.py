@@ -161,6 +161,23 @@ class PipelineRunView(BaseView):
         )
 
     @property
+    def commit(self) -> Optional[str]:
+        """Returns the code repository commit of the pipeline run.
+
+        Returns:
+            The code repository commit of the pipeline run.
+        """
+        deployment = self.model.deployment
+
+        if not deployment:
+            return None
+
+        if not deployment.code_reference:
+            return None
+
+        return deployment.code_reference.commit
+
+    @property
     def status(self) -> ExecutionStatus:
         """Returns the current status of the pipeline run.
 

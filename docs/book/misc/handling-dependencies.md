@@ -85,5 +85,5 @@ running `zenml integration list` and looking at the `REQUIRED_PACKAGES` column.
 You can then amend and tweak those requirements as you see fit. Note that if you
 are using a remote orchestrator, you would then have to place the updated
 versions for the dependencies in a `DockerSettings` object (described in detail
-[here](https://docs.zenml.io/advanced-guide/pipelines/containerization#how-to-install-additional-pip-dependencies-or-apt-packages))
+[here](https://docs.zenml.io/starter-guide/production-fundamentals/containerization#how-to-install-additional-pip-dependencies-or-apt-packages))
 which will then make sure everything is working as you need.

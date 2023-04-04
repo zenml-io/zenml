@@ -73,6 +73,10 @@ services:
       - {mysql_port}:3306
     environment:
       - MYSQL_ROOT_PASSWORD={MYSQL_DEFAULT_PASSWORD}
+    # Enable the primary key requirement for MySQL to catch errors related to
+    # missing primary keys.
+    command:
+      - --sql_require_primary_key=on
   zenml:
     image: {ZENML_SERVER_IMAGE_NAME}
     ports:

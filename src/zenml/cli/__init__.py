@@ -879,6 +879,43 @@ following command:
 zenml stack register-secrets [<STACK_NAME>]
 ```
 
+Administering your Code Repositories
+------------------------------------
+
+Code repositories enable ZenML to keep track of the code version that you use
+for your pipeline runs. Additionally, running a pipeline which is tracked in
+a registered code repository can decrease the time it takes Docker to build images for
+containerized stack components.
+
+To register a code repository, use the following CLI
+command:
+```shell
+zenml code-repository register <NAME> --type=<CODE_REPOSITORY_TYPE] \
+   [--CODE_REPOSITORY_OPTIONS]
+```
+
+ZenML currently supports code repositories of type `github` and `gitlab`, but
+you can also use your custom code repository implementation by passing the
+type `custom` and a source of your repository class.
+
+```shell
+zenml code-repository register <NAME> --type=custom \
+   --source=<CODE_REPOSITORY_SOURCE> [--CODE_REPOSITORY_OPTIONS]
+```
+
+The `CODE_REPOSITORY_OPTIONS` depend on the configuration necessary for the
+type of code repository that you're using.
+
+If you want to list your registered code repositories, run:
+```shell
+zenml code-repository list
+```
+
+You can delete one of your registered code repositories like this:
+```shell
+zenml code-repository delete <REPOSITORY_NAME_OR_ID>
+```
+
 Administering your Pipelines
 ----------------------------
 
@@ -1435,6 +1472,66 @@ zenml stack recipe clean
 ```
 
 This deletes all the recipes from the default path where they were downloaded.
+
+Interacting with the ZenML Hub
+------------------------------
+
+The ZenML Hub is a central location for discovering and sharing third-party 
+ZenML code, such as custom integrations, components, steps, pipelines, 
+materializers, and more. 
+You can browse the ZenML Hub at [https://hub.zenml.io](https://hub.zenml.io).
+
+The ZenML CLI provides various commands to interact with the ZenML Hub:
+
+- Listing all plugins available on the Hub:
+```bash
+zenml hub list
+```
+
+- Installing a Hub plugin:
+```bash
+zenml hub install
+```
+Installed plugins can be imported via `from zenml.hub.<plugin_name> import ...`. 
+
+
+- Uninstalling a Hub plugin:
+```bash
+zenml hub uninstall
+```
+
+- Cloning the source code of a Hub plugin (without installing it):
+```bash
+zenml hub clone
+```
+This is useful, e.g., for extending an existing plugin or for getting the 
+examples of a plugin.
+
+Submitting/contributing a plugin to the Hub (requires login, see below):
+```bash
+zenml hub submit
+```
+If you are unsure about which arguments you need to set, you can run the
+command in interactive mode:
+```bash
+zenml hub submit --interactive
+```
+This will ask for and validate inputs one at a time.
+
+- Logging in to the Hub:
+```bash
+zenml hub login
+```
+
+- Logging out of the Hub:
+```bash
+zenml hub logout
+```
+
+- Viewing the build logs of a plugin you submitted to the Hub:
+```bash
+zenml hub logs
+```
 """
 
 from zenml.cli.annotator import *  # noqa
@@ -1444,6 +1541,7 @@ from zenml.cli.code_repository import *  # noqa
 from zenml.cli.config import *  # noqa
 from zenml.cli.example import *  # noqa
 from zenml.cli.feature import *  # noqa
+from zenml.cli.hub import *  # noqa
 from zenml.cli.integration import *  # noqa
 from zenml.cli.served_model import *  # noqa
 from zenml.cli.model import *  # noqa

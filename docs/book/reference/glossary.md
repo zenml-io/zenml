@@ -227,3 +227,11 @@ to resources like GPUs or distributed processing frameworks like Spark.
 
 A visualizer contains logic to create visualizations within the ZenML ecosystem.
 
+## Source root
+
+The source root refers to the root directory of your source files when running a pipeline.
+ZenML will try to determine the source root in the following order:
+* If you've created a [ZenML repository](../starter-guide/stacks/stacks.md) for your project,
+the repository directory will be used.
+* Otherwise, the parent directory of the Python file you're executing will be the source root.
+For example, running `python /path/to/file.py`, the source root would be `/path/to`.
