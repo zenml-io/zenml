@@ -104,31 +104,37 @@ each pipeline run.
   <ol style="list-style-type: decimal; padding-left: 1.5em;">
     <li>
         <div>
-            <p>Go to your GitHub account settings and click on <a href="https://github.com/settings/tokens?type=beta">Developer settings</a>.</p>
+            Go to your GitHub account settings and click on <a href="https://github.com/settings/tokens?type=beta">Developer settings</a>.
         </div>
     </li>
     <li>
         <div>
-            <p>Select "Personal access tokens" and click on "Generate new token".</p>
+            Select "Personal access tokens" and click on "Generate new token".
         </div>
     </li>
     <li>
         <div>
-            <p>Give your token a name and a description.</p>
-            <img style="text-align: center;" src="../../assets/code_repo/github-fine-grained-token-name.png" style="max-width: 100%;">
+            Give your token a name and a description.
+        </div>
+        <div style="text-align: center;>
+            <img " src="../../assets/code_repo/github-fine-grained-token-name.png" style="max-width: 100%;">
         </div>
     </li>
     <li>
         <div>
-            <p>We recommend selecting the specific repository and then giving <code>contents</code> read-only access.</p>
-            <img style="text-align: center;" src="../../assets/code_repo/github-token-set-permissions.png" style="max-width: 100%;">
-            <img style="text-align: center;" src="../../assets/code_repo/github-token-permissions-overview.png" style="max-width: 100%;">
+            We recommend selecting the specific repository and then giving <code>contents</code> read-only access.
+        </div>
+        <div style="text-align: center;">
+            <img  src="../../assets/code_repo/github-token-set-permissions.png" style="max-width: 100%;">
+            <img src="../../assets/code_repo/github-token-permissions-overview.png" style="max-width: 100%;">
         </div>
     </li>
     <li>
         <div>
-            <p>Click on "Generate token" and copy the token to a safe place.</p>
-            <img style="text-align: center;" src="../../assets/code_repo/copy-github-fine-grained-token.png" style="max-width: 100%;">
+            Click on "Generate token" and copy the token to a safe place.
+        </div>
+        <div style="text-align: center;">
+            <img  src="../../assets/code_repo/copy-github-fine-grained-token.png" style="max-width: 100%;">
         </div>
     </li>
   </ol>
