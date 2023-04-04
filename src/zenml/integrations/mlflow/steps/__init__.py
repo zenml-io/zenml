@@ -18,16 +18,3 @@ from zenml.integrations.mlflow.steps.mlflow_deployer import (
     mlflow_deployer_step,
     mlflow_model_deployer_step,
 )
-
-from zenml.integrations.mlflow.steps.mlflow_registry import (
-    MLFlowRegistryParameters,
-    mlflow_registry_step,
-)
-
-__all__ = [
-    "mlflow_deployer_step",
-    "mlflow_model_deployer_step",
-    "mlflow_registry_step",
-    "MLFlowDeployerParameters",
-    "MLFlowRegistryParameters",
-]
