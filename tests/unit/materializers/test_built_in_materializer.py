@@ -190,11 +190,6 @@ def test_container_materializer_for_custom_types(mocker):
 
         # Container materializer should find materializer for both elements in
         # the default materializer registry.
-        mocker.patch.object(
-            default_materializer_registry,
-            "materializer_types",
-            {CustomType: CustomTypeMaterializer},
-        )
         materializer.save(example)
 
         # When loading, the default materializer registry should no longer be

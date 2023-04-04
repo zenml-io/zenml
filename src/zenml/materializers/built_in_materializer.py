@@ -306,7 +306,7 @@ class BuiltInContainerMaterializer(BaseMaterializer):
                     element = materializer.load(type_)
                     outputs.append(element)
 
-            # New format for zenml >= 0.37.1
+            # New format for zenml > 0.37.0
             elif isinstance(metadata, list):
                 for entry in metadata:
                     path_ = entry["path"]
