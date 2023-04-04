@@ -62,7 +62,7 @@ def main() -> None:
     args = parse_args()
 
     # Get Kubernetes Core API for running kubectl commands later.
-    kube_utils.load_kube_config()
+    kube_utils.load_kube_config(incluster=True)
     core_api = k8s_client.CoreV1Api()
 
     orchestrator_run_id = socket.gethostname()
