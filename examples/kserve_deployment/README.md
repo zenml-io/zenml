@@ -340,6 +340,13 @@ components are described in this document, but similar stacks may be set up
 using different backends and used to run the example as long as the basic Stack
 prerequisites are met.
 
+#### Deploying Individual Stack Components using the CLI
+
+The KServe model deployer and the GCP artifact store can be deployed using the ZenML CLI as well, using the `zenml
+<STACK_COMPONENT> deploy` command. For more information on this `deploy`
+subcommand, please refer to the
+[documentation](https://docs.zenml.io/advanced-guide/practical-mlops/stack-recipes#deploying-stack-components-directly).
+
 #### Local and remote authentication
 
 The ZenML Stacks featured in this example are based on managed GCP services like
@@ -840,7 +847,16 @@ and `zenml model-server delete <uuid>` CLI commands.:
 zenml model-deployer models delete 62aac6aa-88fd-4eb7-a753-b46f1658775c
 ```
 
-Then delete the remaining ZenML references.
+To destroy any resources deployed using the ZenML `deploy` subcommand, use the
+`destroy` subcommand to delete each individual stack component, as in the
+following example:
+
+```shell
+# replace with the name of the component you want to destroy
+zenml artifact-store destroy s3_artifact_store
+```
+
+Then delete the remaining ZenML references:
 
 ```shell
 rm -rf zenml_examples

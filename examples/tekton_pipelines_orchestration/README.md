@@ -108,6 +108,11 @@ to access the GCP container registry.
 * Kubectl can [access](https://cloud.google.com/kubernetes-engine/docs/how-to/cluster-access-for-kubectl) your GCP 
 Kubernetes cluster.
 
+Note that you can deploy the GCP container
+registry, the artifact store and the Tekton orchestrator using the ZenML CLI as
+well, using the `zenml <STACK_COMPONENT> deploy` command. For more information
+on this `deploy` subcommand, please refer to the
+[documentation](https://docs.zenml.io/advanced-guide/practical-mlops/stack-recipes#deploying-stack-components-directly).
 
 ### 🥞 Create a Tekton Pipelines Stack
 
@@ -200,6 +205,15 @@ Once you're done experimenting, you can delete the example files by calling:
 
 ```bash
 rm -rf zenml_examples
+```
+
+To destroy any resources deployed using the ZenML `deploy` subcommand, use the
+`destroy` subcommand to delete each individual stack component, as in the
+following example:
+
+```shell
+# replace with the name of the component you want to destroy
+zenml artifact-store destroy gcp_artifact_store
 ```
 
 # 📜 Learn more
