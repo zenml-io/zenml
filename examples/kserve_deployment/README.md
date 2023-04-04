@@ -342,8 +342,7 @@ prerequisites are met.
 
 #### Deploying Individual Stack Components using the CLI
 
-The KServe model deployer and the GCP artifact store (i.e. as individual stack
-components) can be deployed using the ZenML CLI as well, using the `zenml
+The KServe model deployer and the GCP artifact store can be deployed using the ZenML CLI as well, using the `zenml
 <STACK_COMPONENT> deploy` command. For more information on this `deploy`
 subcommand, please refer to the
 [documentation](https://docs.zenml.io/advanced-guide/practical-mlops/stack-recipes#deploying-stack-components-directly).

@@ -108,7 +108,7 @@ to access the GCP container registry.
 * Kubectl can [access](https://cloud.google.com/kubernetes-engine/docs/how-to/cluster-access-for-kubectl) your GCP 
 Kubernetes cluster.
 
-Note that you can deploy (i.e. as individual stack components) the GCP container
+Note that you can deploy the GCP container
 registry, the artifact store and the Tekton orchestrator using the ZenML CLI as
 well, using the `zenml <STACK_COMPONENT> deploy` command. For more information
 on this `deploy` subcommand, please refer to the

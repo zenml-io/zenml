@@ -221,8 +221,7 @@ KUBERNETES_SERVICE_ACCOUNT=spark-service-account
 Now that we have all the necessary resources, we can connect to the server and
 then set up the stack and stack components.
 
-Note that the AWS S3 artifact store and the ECR container registry (i.e. as
-individual stack components) can be deployed using the ZenML CLI as well, using
+Note that the AWS S3 artifact store and the ECR container registry can be deployed using the ZenML CLI as well, using
 the `zenml <STACK_COMPONENT> deploy` command. For more information on this
 `deploy` subcommand, please refer to the
 [documentation](https://docs.zenml.io/advanced-guide/practical-mlops/stack-recipes#deploying-stack-components-directly).
