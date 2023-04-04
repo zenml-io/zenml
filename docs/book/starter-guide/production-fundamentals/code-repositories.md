@@ -116,8 +116,8 @@ each pipeline run.
         <div>
             Give your token a name and a description.
         </div>
-        <div style="text-align: center;>
-            <img " src="../../assets/code_repo/github-fine-grained-token-name.png" style="max-width: 100%;">
+        <div style="text-align: center;">
+            <img src="../../assets/code_repo/github-fine-grained-token-name.png" style="max-width: 100%;">
         </div>
     </li>
     <li>
@@ -126,6 +126,8 @@ each pipeline run.
         </div>
         <div style="text-align: center;">
             <img  src="../../assets/code_repo/github-token-set-permissions.png" style="max-width: 100%;">
+        </div>
+        <div style="text-align: center;">
             <img src="../../assets/code_repo/github-token-permissions-overview.png" style="max-width: 100%;">
         </div>
     </li>
