@@ -27,7 +27,7 @@ from zenml.constants import (
     handle_bool_env_var,
 )
 from zenml.logger import get_logger
-from zenml.utils import source_utils, uuid_utils
+from zenml.utils import code_repository_utils, source_utils, uuid_utils
 
 if TYPE_CHECKING:
     from zenml.models import (
@@ -230,7 +230,7 @@ class BaseEntrypointConfiguration(ABC):
             repo_sub_directory=code_reference.subdirectory,
         )
         source_utils.set_custom_source_root(download_dir)
-        source_utils.set_custom_local_repository(
+        code_repository_utils.set_custom_local_repository(
             root=code_repo_root, commit=code_reference.commit, repo=repo
         )
         # Add downloaded file directory to python path

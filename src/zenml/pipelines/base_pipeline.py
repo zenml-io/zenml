@@ -72,6 +72,7 @@ from zenml.stack import Stack
 from zenml.steps import BaseStep
 from zenml.steps.base_step import BaseStepMeta
 from zenml.utils import (
+    code_repository_utils,
     dashboard_utils,
     dict_utils,
     pydantic_utils,
@@ -529,7 +530,9 @@ class BasePipeline(metaclass=BasePipelineMeta):
 
             stack = Client().active_stack
 
-            local_repo_context = source_utils.find_active_code_repository()
+            local_repo_context = (
+                code_repository_utils.find_active_code_repository()
+            )
             code_repository = build_utils.verify_local_repository_context(
                 deployment=deployment, local_repo_context=local_repo_context
             )
