@@ -192,7 +192,7 @@ Note that you can deploy your GCS Store using the ZenML CLI as well, using the
 `zenml artifact-store deploy` command. This is how you would do it:
 
 ```shell
-zenml artifact-store deploy gcs_store --flavor=gcs --project_id=my_project ...
+zenml artifact-store deploy gcs_store --flavor=gcp --project_id=my_project ...
 ```
 
 For more information on this `deploy` subcommand, please refer to the 
