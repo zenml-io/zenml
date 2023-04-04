@@ -131,16 +131,6 @@ For an artifact store, you can pass `bucket_name` as an argument to the command.
 zenml artifact-store deploy s3_artifact_store --flavor=s3 --bucket_name=my_bucket
 ```
 
-You can also pass a region to deploy your resources to in the case of AWS and
-GCP recipes. For example, to deploy an S3 artifact store in the `us-west-2`
-region, you can run:
-
-```bash
-zenml artifact-store deploy s3_artifact_store --flavor=s3 --region=us-west-2
-```
-
-The default region is `eu-west-1` for AWS and `europe-west1` for GCP.
-
 #### Container Registries
 
 For container registries you can pass the repository name using `repo_name`:
@@ -156,7 +146,7 @@ providers, you can choose the repository name at the same time as you are
 pushing the image via code. This is achieved through setting the `target_repo`
 attribute of the [the `DockerSettings` object](../pipelines/settings.md).
 
-{% hint style="info" %} 
+{% hint style="info" %}
 In the case of GCP components, it is *required* that you pass a project ID to
 the command for the first time you're creating any GCP resource. The command
 will remember the project ID for subsequent calls. For example, to deploy a GCS
@@ -165,6 +155,26 @@ artifact store, you can run:
 ```bash
 zenml artifact-store deploy gcs_artifact_store --flavor=gcs --project_id=my_project
 ```
+{% endhint %}
+
+### Other configuration
+
+You can also pass a region to deploy your resources to in the case of AWS and
+GCP recipes. For example, to deploy an S3 artifact store in the `us-west-2`
+region, you can run:
+
+```bash
+zenml artifact-store deploy s3_artifact_store --flavor=s3 --region=us-west-2
+```
+
+The default region is `eu-west-1` for AWS and `europe-west1` for GCP.
+
+{% hint style="warning" %}
+Changing regions is not recommended as it can lead to unexpected results for
+components that share infrastructure like Kubernetes clusters. If you
+must do so, please destroy all the stack components from the
+older region by running the `destroy` command and then redeploy using the `deploy`
+command.
 {% endhint %}
 
 ### Destroying deployed stack components
