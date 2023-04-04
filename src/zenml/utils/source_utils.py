@@ -22,7 +22,6 @@ from distutils.sysconfig import get_python_lib
 from pathlib import Path, PurePath
 from types import FunctionType, ModuleType
 from typing import (
-    TYPE_CHECKING,
     Any,
     Callable,
     Iterator,
@@ -39,9 +38,6 @@ from zenml.config.source import (
     SourceType,
 )
 from zenml.logger import get_logger
-
-if TYPE_CHECKING:
-    pass
 
 logger = get_logger(__name__)
 
