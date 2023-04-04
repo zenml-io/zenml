@@ -403,7 +403,7 @@ class BaseStep(metaclass=BaseStepMeta):
             step: A step which should finish executing before this step is
                 started.
         """
-        self._upstream_steps.add(step.name)
+        self._upstream_steps.add(step)
 
     @property
     def source_object(self) -> Any:
@@ -1137,6 +1137,14 @@ def get_step_entrypoint_signature(
     return signature
 
 
+# step_1()
+# step_1()
+# step_2()
+
+# step_1.after(step_2)
+# step_2.after(step_1)
+
+
 class StepInvocation:
     def __init__(
         self,
@@ -1146,6 +1154,7 @@ class StepInvocation:
         external_artifacts: Dict[str, "ExternalArtifact"],
         parameters: Dict[str, Any],
         upstream_steps: Sequence[str],
+        pipeline: "Pipeline",
     ) -> None:
         self.id = id
         self.step = step
@@ -1153,12 +1162,54 @@ class StepInvocation:
         self.external_artifacts = external_artifacts
         self.parameters = parameters
         self.invocation_upstream_steps = upstream_steps
+        self.pipeline = pipeline
 
     @property
     def upstream_steps(self) -> Set[str]:
-        return self.step.upstream_steps.union(self.invocation_upstream_steps)
+        return self.invocation_upstream_steps.union(
+            self._get_and_validate_step_upstream_steps()
+        )
+
+    def _get_and_validate_step_upstream_steps(self) -> Set[str]:
+        if self.step.upstream_steps:
+            # If the step has upstream steps, it can only be part of a single
+            # invocation, otherwise it's not clear which invocation should come
+            # after the upstream steps
+            invocations = {
+                invocation
+                for invocation in self.pipeline.steps.values()
+                if invocation.step is self.step
+            }
+
+            if len(invocations) > 1:
+                raise RuntimeError(
+                    "Setting upstream steps for a step using the `.after(...) "
+                    "method is not allowed in combination with calling the "
+                    "step multiple times."
+                )
+
+        upstream_steps = set()
+
+        for step in self.step.upstream_steps:
+            upstream_steps_invocations = {
+                invocation.id
+                for invocation in self.pipeline.steps.values()
+                if invocation.step is step
+            }
+
+            if len(upstream_steps_invocations) == 1:
+                upstream_steps.add(upstream_steps_invocations.pop())
+            elif len(upstream_steps_invocations) > 1:
+                raise RuntimeError(
+                    "Setting upstream steps for a step using the `.after(...) "
+                    "method is not allowed in combination with calling the "
+                    "step multiple times."
+                )
+
+        return upstream_steps
 
     def finalize(self) -> StepConfiguration:
+        self._get_and_validate_step_upstream_steps()
         self.step.configure(parameters=self.parameters)
 
         external_artifact_ids = {}

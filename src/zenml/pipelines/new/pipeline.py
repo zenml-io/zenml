@@ -829,6 +829,7 @@ class Pipeline:
             external_artifacts=external_artifacts,
             parameters=parameters,
             upstream_steps=upstream_steps,
+            pipeline=self,
         )
         self._steps[invocation_id] = invocation
         return invocation_id
