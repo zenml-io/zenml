@@ -38,6 +38,10 @@ def test_server_cli_up_down(clean_client, mocker):
     mocker.patch.dict(
         os.environ, {"OBJC_DISABLE_INITIALIZE_FORK_SAFETY": "YES"}
     )
+    mocker.patch(
+        "zenml.zen_server.deploy.local.local_zen_server.LOCAL_ZENML_SERVER_DEFAULT_TIMEOUT",
+        return_vaue=60,
+    )
     cli_runner = CliRunner()
 
     port = scan_for_available_port(start=8003, stop=9000)
@@ -65,8 +69,16 @@ def test_server_cli_up_down(clean_client, mocker):
     platform.system() == "Windows",
     reason="ZenServer not supported as daemon on Windows.",
 )
-def test_server_cli_up_and_connect(clean_client):
+def test_server_cli_up_and_connect(clean_client, mocker):
     """Test spinning up and connecting to ZenServer."""
+    mocker.patch.dict(
+        os.environ, {"OBJC_DISABLE_INITIALIZE_FORK_SAFETY": "YES"}
+    )
+    mocker.patch(
+        "zenml.zen_server.deploy.local.local_zen_server.LOCAL_ZENML_SERVER_DEFAULT_TIMEOUT",
+        return_vaue=60,
+    )
+
     cli_runner = CliRunner()
 
     port = scan_for_available_port(start=8003, stop=9000)
@@ -74,7 +86,7 @@ def test_server_cli_up_and_connect(clean_client):
     cli_runner.invoke(up_command, ["--port", port, "--connect"])
 
     # sleep for a bit to let the server start
-    time.sleep(60)
+    time.sleep(5)
 
     deployer = ServerDeployer()
     server = deployer.get_server(LOCAL_ZENML_SERVER_NAME)
