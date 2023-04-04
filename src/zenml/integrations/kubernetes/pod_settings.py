@@ -36,12 +36,14 @@ class KubernetesPodSettings(BaseSettings):
         affinity: Affinity to apply to the pod.
         tolerations: Tolerations to apply to the pod.
         resources: Resource requests and limits for the pod.
+        annotations: Annotations to apply to the pod metadata.
     """
 
     node_selectors: Dict[str, str] = {}
     affinity: Dict[str, Any] = {}
     tolerations: List[Dict[str, Any]] = []
     resources: Dict[str, Dict[str, str]] = {}
+    annotations: Dict[str, str] = {}
 
     @validator("affinity", pre=True)
     def _convert_affinity(
