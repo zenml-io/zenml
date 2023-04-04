@@ -39,9 +39,7 @@ will help you set up the infrastructure with one click.
 
 ### Infrastructure Deployment
 
-A Sagemaker orchestrator can be deployed using our MLOps Stack Recipe
-directly from the CLI and without the need to go through a separate workflow
-involving stack recipes:
+A Sagemaker orchestrator can be deployed directly from the ZenML CLI:
 
 ```shell
 zenml orchestrator deploy sagemaker_orchestrator --flavor=sagemaker ...

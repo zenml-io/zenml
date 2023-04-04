@@ -66,9 +66,7 @@ to match your deployment scenario.
 
 ### Infrastructure Deployment
 
-A GCS Artifact Store can be deployed using our MLOps Stack Recipe
-directly from the CLI and without the need to go through a separate workflow
-involving stack recipes:
+A GCS Artifact Store can be deployed directly from the ZenML CLI:
 
 ```shell
 zenml artifact-store deploy gcs_artifact_store --flavor=gcp ...

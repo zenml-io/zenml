@@ -102,9 +102,7 @@ be found in the [Open Source MLOps Stack Recipes](https://github.com/zenml-io/ml
 
 ### Infrastructure Deployment
 
-The KServe Model Deployer can be deployed using our MLOps Stack Recipe
-directly from the CLI and without the need to go through a separate workflow
-involving stack recipes:
+The KServe Model Deployer can be deployed directly from the ZenML CLI:
 
 ```shell
 zenml model-deployer deploy kserve_deployer --flavor=kserve ...

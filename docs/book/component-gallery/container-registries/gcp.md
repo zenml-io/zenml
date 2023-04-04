@@ -35,9 +35,7 @@ When using the Google Artifact Registry, you need to:
 
 ### Infrastructure Deployment
 
-A GCP Container Registry can be deployed using our MLOps Stack Recipe
-directly from the CLI and without the need to go through a separate workflow
-involving stack recipes:
+A GCP Container Registry can be deployed directly from the ZenML CLI:
 
 ```shell
 zenml container-registry deploy gcp_container_registry --flavor=gcp ...

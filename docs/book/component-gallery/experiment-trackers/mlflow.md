@@ -82,9 +82,7 @@ for the MLflow Experiment Tracker.
 
 ### Infrastructure Deployment
 
-The MLflow Experiment Tracker can be deployed using our MLOps Stack Recipe
-directly from the CLI and without the need to go through a separate workflow
-involving stack recipes:
+The MLflow Experiment Tracker can be deployed directly from the ZenML CLI:
 
 ```shell
 # optionally assigning an existing bucket to the MLflow Experiment Tracker

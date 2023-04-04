@@ -32,9 +32,7 @@ pre-requisite to use this orchestrator would be to deploy and connect to a
 
 ### Infrastructure Deployment
 
-A Kubernetes orchestrator can be deployed using our MLOps Stack Recipe
-directly from the CLI and without the need to go through a separate workflow
-involving stack recipes:
+A Kubernetes orchestrator can be deployed directly from the ZenML CLI:
 
 ```shell
 zenml orchestrator deploy k8s_orchestrator --flavor=kubernetes ...

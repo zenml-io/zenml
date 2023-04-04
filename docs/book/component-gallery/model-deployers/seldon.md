@@ -104,9 +104,7 @@ these recipes can be found in the [Open Source MLOps Stack Recipes](https://gith
 
 ### Infrastructure Deployment
 
-The Seldon Model Deployer can be deployed using our MLOps Stack Recipe
-directly from the CLI and without the need to go through a separate workflow
-involving stack recipes:
+The Seldon Model Deployer can be deployed directly from the ZenML CLI:
 
 ```shell
 zenml model-deployer deploy seldon_deployer --flavor=seldon ...

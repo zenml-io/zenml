@@ -91,9 +91,7 @@ previous versions.
 
 ### Infrastructure Deployment
 
-A Tekton orchestrator can be deployed using our MLOps Stack Recipe
-directly from the CLI and without the need to go through a separate workflow
-involving stack recipes:
+A Tekton orchestrator can be deployed directly from the ZenML CLI:
 
 ```shell
 zenml orchestrator deploy tekton_orchestrator --flavor=tekton ...

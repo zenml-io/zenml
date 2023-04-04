@@ -24,9 +24,7 @@ for a guide on how to set up this role.
 
 ### Infrastructure Deployment
 
-A Sagemaker step operator can be deployed using our MLOps Stack Recipe
-directly from the CLI and without the need to go through a separate workflow
-involving stack recipes:
+A Sagemaker step operator can be deployed directly from the ZenML CLI:
 
 ```shell
 zenml orchestrator deploy sagemaker_step_operator --flavor=sagemaker ...

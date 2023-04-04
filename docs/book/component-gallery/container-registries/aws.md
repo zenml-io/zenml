@@ -47,9 +47,7 @@ URI.
 
 ### Infrastructure Deployment
 
-An AWS ECR Container Registry can be deployed using our MLOps Stack Recipe
-directly from the CLI and without the need to go through a separate workflow
-involving stack recipes:
+An AWS ECR Container Registry can be deployed directly from the ZenML CLI:
 
 ```shell
 zenml container-registry deploy ecr_container_registry --flavor=aws ...
