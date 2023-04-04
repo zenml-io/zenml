@@ -114,7 +114,7 @@ service is called exactly `ml-pipeline`. This is a requirement for ZenML to
 connect to your Kubeflow Pipelines deployment.
 {% endhint %}
 
-### Deploying with MLOps Stack Recipes
+### Infrastructure Deployment
 
 A Kubeflow orchestrator can be deployed using our MLOps Stack Recipe
 directly from the CLI and without the need to go through a separate workflow

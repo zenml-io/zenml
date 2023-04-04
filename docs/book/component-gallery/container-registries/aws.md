@@ -45,7 +45,7 @@ Make sure to choose a nearby region for faster access.
 `<ACCOUNT_ID>.dkr.ecr.<REGION>.amazonaws.com` to get your container registry 
 URI.
 
-### Deploying with MLOps Stack Recipes
+### Infrastructure Deployment
 
 An AWS ECR Container Registry can be deployed using our MLOps Stack Recipe
 directly from the CLI and without the need to go through a separate workflow

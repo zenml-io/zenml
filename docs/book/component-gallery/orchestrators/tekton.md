@@ -89,7 +89,7 @@ ZenML has only been tested with Tekton Pipelines >=0.38.3 and may not work with
 previous versions.
 {% endhint %}
 
-### Deploying with MLOps Stack Recipes
+### Infrastructure Deployment
 
 A Tekton orchestrator can be deployed using our MLOps Stack Recipe
 directly from the CLI and without the need to go through a separate workflow

@@ -64,7 +64,7 @@ Depending on your use-case, however, you may also need to provide additional
 configuration parameters pertaining to [authentication](#authentication-methods)
 to match your deployment scenario.
 
-### Deploying with MLOps Stack Recipes
+### Infrastructure Deployment
 
 A GCS Artifact Store can be deployed using our MLOps Stack Recipe
 directly from the CLI and without the need to go through a separate workflow

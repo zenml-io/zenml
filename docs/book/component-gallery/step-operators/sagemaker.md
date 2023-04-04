@@ -22,7 +22,7 @@ to assume. This role should at least have the `AmazonS3FullAccess` and
 `AmazonSageMakerFullAccess` policies applied. Check [here](https://docs.aws.amazon.com/sagemaker/latest/dg/sagemaker-roles.html#sagemaker-roles-create-execution-role) 
 for a guide on how to set up this role.
 
-### Deploying with MLOps Stack Recipes
+### Infrastructure Deployment
 
 A Sagemaker step operator can be deployed using our MLOps Stack Recipe
 directly from the CLI and without the need to go through a separate workflow

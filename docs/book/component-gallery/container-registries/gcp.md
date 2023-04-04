@@ -33,7 +33,7 @@ When using the Google Artifact Registry, you need to:
 {% endtab %}
 {% endtabs %}
 
-### Deploying with MLOps Stack Recipes
+### Infrastructure Deployment
 
 A GCP Container Registry can be deployed using our MLOps Stack Recipe
 directly from the CLI and without the need to go through a separate workflow

@@ -102,7 +102,7 @@ quickly provision popular combinations of MLOps tools. More information about
 these recipes can be found in the [Open Source MLOps Stack Recipes](https://github.com/zenml-io/mlops-stacks).
 {% endhint %}
 
-### Deploying with MLOps Stack Recipes
+### Infrastructure Deployment
 
 The Seldon Model Deployer can be deployed using our MLOps Stack Recipe
 directly from the CLI and without the need to go through a separate workflow

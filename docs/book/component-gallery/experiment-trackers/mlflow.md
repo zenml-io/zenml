@@ -80,7 +80,7 @@ use the managed MLflow Tracking server it provides. This option requires
 [authentication related parameters](#authentication-methods) to be configured
 for the MLflow Experiment Tracker.
 
-### Deploying with MLOps Stack Recipes
+### Infrastructure Deployment
 
 The MLflow Experiment Tracker can be deployed using our MLOps Stack Recipe
 directly from the CLI and without the need to go through a separate workflow
