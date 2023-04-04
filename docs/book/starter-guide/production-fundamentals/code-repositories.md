@@ -100,21 +100,20 @@ if your source files are being tracked by GitHub and store the commit hash for
 each pipeline run.
 
 <details>
-
-<summary>How To get a token for GitHub</summary>
-
-1. Go to your GitHub account settings and click on ["Developer settings"](https://github.com/settings/tokens?type=beta).
-2. Select "Personal access tokens" and click on "Generate new token".
-![Generate a fine-grained token](../../assets/code_repo/github-generate-fine-grained-token.png)
-3. Give your token a name and a description.
-![Give Name and Description](../../assets/code_repo/github-fine-grained-token-name.png)
-4. We recommend selecting the specific repository and then giving `contents` read-only access.
-![Set Permissions](../../assets/code_repo/github-token-set-permissions.png)
-![Overview over the permissions](../../assets/code_repo/github-token-permissions-overview.png)
-4. Click on "Generate token" and copy the token to a safe place.
-![Copy Token](../../assets/code_repo/copy-github-fine-grained-token.png)
-
+  <summary>How To get a token for GitHub</summary>
+  <ol>
+    <li>Go to your GitHub account settings and click on <a href="https://github.com/settings/tokens?type=beta">Developer settings</a>.</li>
+    <li>Select "Personal access tokens" and click on "Generate new token".</li>
+    <li>Give your token a name and a description.</li>
+    <img src="../../assets/code_repo/github-fine-grained-token-name.png" style="width: 100%;">
+    <li>We recommend selecting the specific repository and then giving <code>contents</code> read-only access.</li>
+    <img src="../../assets/code_repo/github-token-set-permissions.png" style="width: 100%;">
+    <img src="../../assets/code_repo/github-token-permissions-overview.png" style="width: 100%;">
+    <li>Click on "Generate token" and copy the token to a safe place.</li>
+    <img src="../../assets/code_repo/copy-github-fine-grained-token.png" style="width: 100%;">
+  </ol>
 </details>
+
 
 ### GitLab
 
