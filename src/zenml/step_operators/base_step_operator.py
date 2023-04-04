@@ -49,7 +49,7 @@ class BaseStepOperatorConfig(StackComponentConfig):
                     "The 'base_image' field has been deprecated. To use a "
                     "custom base container image with your "
                     "step operators, please use the DockerSettings in your "
-                    "pipeline (see https://docs.zenml.io/advanced-guide/pipelines/containerization)."
+                    "pipeline (see https://docs.zenml.io/starter-guide/production-fundamentals/containerization)."
                 )
 
         return values

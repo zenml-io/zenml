@@ -15,6 +15,7 @@
 from datetime import datetime
 from uuid import uuid4
 
+from zenml.config import ResourceSettings
 from zenml.enums import StackComponentType
 from zenml.integrations.airflow.flavors.airflow_orchestrator_flavor import (
     AirflowOrchestratorConfig,
@@ -39,3 +40,40 @@ def test_airflow_orchestrator_attributes():
     assert orchestrator.type == StackComponentType.ORCHESTRATOR
     assert orchestrator.flavor == "airflow"
     assert orchestrator.config.local is True
+
+
+def test_resource_appliciation():
+    """Tests applying resources to an airflow task works as expected."""
+    orchestrator = AirflowOrchestrator(
+        name="",
+        id=uuid4(),
+        config=AirflowOrchestratorConfig(),
+        flavor="airflow",
+        type=StackComponentType.ORCHESTRATOR,
+        user=uuid4(),
+        workspace=uuid4(),
+        created=datetime.now(),
+        updated=datetime.now(),
+    )
+
+    operator_args = {}
+
+    resource_settings = ResourceSettings(
+        cpu_count=2, gpu_count=3, memory="10GB"
+    )
+
+    orchestrator._apply_resource_settings(
+        resource_settings, operator_args=operator_args
+    )
+    limits = operator_args["container_resources"]["limits"]
+    assert limits["cpu"] == "2.0"
+    assert limits["memory"] == "10G"
+    assert len(limits) == 2  # GPU not in there
+
+    operator_args = {"container_resources": "dummy_resources"}
+    orchestrator._apply_resource_settings(
+        resource_settings, operator_args=operator_args
+    )
+    # Resource settings get ignored when user specified custom container
+    # resources
+    assert operator_args == {"container_resources": "dummy_resources"}

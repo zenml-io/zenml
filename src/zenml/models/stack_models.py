@@ -14,7 +14,7 @@
 """Models representing stacks."""
 
 import json
-from typing import Any, ClassVar, Dict, List, Union
+from typing import Any, ClassVar, Dict, List, Optional, Union
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -129,19 +129,23 @@ class StackFilterModel(ShareableWorkspaceScopedFilterModel):
         "component_id",  # This is a relationship, not a field
     ]
 
-    is_shared: Union[bool, str] = Field(
+    is_shared: Optional[Union[bool, str]] = Field(
         default=None, description="If the stack is shared or private"
     )
-    name: str = Field(
+    name: Optional[str] = Field(
         default=None,
         description="Name of the stack",
     )
-    description: str = Field(None, description="Description of the stack")
-    workspace_id: Union[UUID, str] = Field(
+    description: Optional[str] = Field(
+        default=None, description="Description of the stack"
+    )
+    workspace_id: Optional[Union[UUID, str]] = Field(
         default=None, description="Workspace of the stack"
     )
-    user_id: Union[UUID, str] = Field(None, description="User of the stack")
-    component_id: Union[UUID, str] = Field(
+    user_id: Optional[Union[UUID, str]] = Field(
+        default=None, description="User of the stack"
+    )
+    component_id: Optional[Union[UUID, str]] = Field(
         default=None, description="Component in the stack"
     )
 
@@ -154,9 +158,10 @@ class StackFilterModel(ShareableWorkspaceScopedFilterModel):
 class StackRequestModel(StackBaseModel, ShareableRequestModel):
     """Stack model with components, user and workspace as UUIDs."""
 
-    components: Dict[StackComponentType, List[UUID]] = Field(
+    components: Optional[Dict[StackComponentType, List[UUID]]] = Field(
+        default=None,
         title="A mapping of stack component types to the actual"
-        "instances of components of this type."
+        "instances of components of this type.",
     )
 
     @property
@@ -166,6 +171,8 @@ class StackRequestModel(StackBaseModel, ShareableRequestModel):
         Returns:
             True if the stack is valid, False otherwise.
         """
+        if not self.components:
+            return False
         return (
             StackComponentType.ARTIFACT_STORE in self.components
             and StackComponentType.ORCHESTRATOR in self.components

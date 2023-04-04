@@ -153,7 +153,7 @@ class AzureMLStepOperator(BaseStepOperator):
             The AzureML Environment object.
         """
         docker_image_builder = PipelineDockerImageBuilder()
-        requirements_files = docker_image_builder._gather_requirements_files(
+        requirements_files = docker_image_builder.gather_requirements_files(
             docker_settings=docker_settings,
             stack=Client().active_stack,
             log=False,

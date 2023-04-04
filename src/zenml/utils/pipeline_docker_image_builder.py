@@ -16,7 +16,16 @@ import itertools
 import os
 import subprocess
 import sys
-from typing import TYPE_CHECKING, Dict, List, Optional, Sequence, Tuple
+from collections import defaultdict
+from typing import (
+    TYPE_CHECKING,
+    DefaultDict,
+    Dict,
+    List,
+    Optional,
+    Sequence,
+    Tuple,
+)
 
 import zenml
 from zenml.config import DockerSettings
@@ -124,6 +133,7 @@ class PipelineDockerImageBuilder:
             [
                 docker_settings.requirements,
                 docker_settings.required_integrations,
+                docker_settings.required_hub_plugins,
                 docker_settings.replicate_local_python_environment,
                 docker_settings.install_stack_requirements,
                 docker_settings.apt_packages,
@@ -334,12 +344,14 @@ class PipelineDockerImageBuilder:
             - User-defined requirements
             - Requirements defined by user-defined and/or stack integrations
         """
-        requirements_file_names = []
-        requirements_files = cls._gather_requirements_files(
+        requirements_file_names: List[str] = []
+
+        requirements_files = cls.gather_requirements_files(
             docker_settings=docker_settings,
             stack=stack,
             code_repository=code_repository,
         )
+
         for filename, file_content in requirements_files:
             build_context.add_file(source=file_content, destination=filename)
             requirements_file_names.append(filename)
@@ -347,13 +359,18 @@ class PipelineDockerImageBuilder:
         return requirements_file_names
 
     @staticmethod
-    def _gather_requirements_files(
+    def gather_requirements_files(
         docker_settings: DockerSettings,
         stack: "Stack",
         code_repository: Optional["BaseCodeRepository"] = None,
         log: bool = True,
     ) -> List[Tuple[str, str]]:
         """Gathers and/or generates pip requirements files.
+
+        This method is called in `PipelineDockerImageBuilder.build_docker_image`
+        but it is also called by other parts of the codebase, e.g. the
+        `AzureMLStepOperator`, which needs to upload the requirements files to
+        AzureML where the step image is then built.
 
         Args:
             docker_settings: Docker settings that specifies which
@@ -465,7 +482,95 @@ class PipelineDockerImageBuilder:
                     ", ".join(f"`{r}`" for r in integration_requirements_list),
                 )
 
+        # Generate requirements files for all ZenML Hub plugins
+        if docker_settings.required_hub_plugins:
+            (
+                hub_internal_requirements,
+                hub_pypi_requirements,
+            ) = PipelineDockerImageBuilder._get_hub_requirements(
+                docker_settings.required_hub_plugins
+            )
+
+            # Plugin packages themselves
+            for i, (index, packages) in enumerate(
+                hub_internal_requirements.items()
+            ):
+                file_name = f".zenml_hub_internal_requirements_{i}"
+                file_lines = [f"-i {index}", *packages]
+                file_contents = "\n".join(file_lines)
+                requirements_files.append((file_name, file_contents))
+                if log:
+                    logger.info(
+                        "- Including internal hub packages from index `%s`: %s",
+                        index,
+                        ", ".join(f"`{r}`" for r in packages),
+                    )
+
+            # PyPI requirements of plugin packages
+            if hub_pypi_requirements:
+                file_name = ".zenml_hub_pypi_requirements"
+                file_contents = "\n".join(hub_pypi_requirements)
+                requirements_files.append((file_name, file_contents))
+                if log:
+                    logger.info(
+                        "- Including hub requirements from PyPI: %s",
+                        ", ".join(f"`{r}`" for r in hub_pypi_requirements),
+                    )
+
         return requirements_files
+
+    @staticmethod
+    def _get_hub_requirements(
+        required_hub_plugins: List[str],
+    ) -> Tuple[Dict[str, List[str]], List[str]]:
+        """Get package requirements for ZenML Hub plugins.
+
+        Args:
+            required_hub_plugins: List of hub plugin names in the format
+                `(<author_username>/)<plugin_name>(==<version>)`.
+
+        Returns:
+            - A dict of the hub plugin packages themselves (which need to be
+                installed from a custom index, mapping index URLs to lists of
+                package names.
+            - A list of all unique dependencies of the required hub plugins
+                (which can be installed from PyPI).
+        """
+        from zenml._hub.client import HubClient
+        from zenml._hub.utils import parse_plugin_name, plugin_display_name
+
+        client = HubClient()
+
+        internal_requirements: DefaultDict[str, List[str]] = defaultdict(list)
+        pypi_requirements: List[str] = []
+
+        for plugin_str in required_hub_plugins:
+            author, name, version = parse_plugin_name(
+                plugin_str, version_separator="=="
+            )
+
+            plugin = client.get_plugin(
+                plugin_name=name,
+                plugin_version=version,
+                author=author,
+            )
+
+            if plugin and plugin.index_url and plugin.package_name:
+                internal_requirements[plugin.index_url].append(
+                    plugin.package_name
+                )
+                if plugin.requirements:
+                    pypi_requirements.extend(plugin.requirements)
+            else:
+                display_name = plugin_display_name(name, version, author)
+                logger.warning(
+                    "Hub plugin `%s` does not exist or cannot be installed."
+                    "Skipping installation of this plugin.",
+                    display_name,
+                )
+
+        pypi_requirements = sorted(set(pypi_requirements))
+        return dict(internal_requirements), pypi_requirements
 
     @staticmethod
     def _generate_zenml_pipeline_dockerfile(

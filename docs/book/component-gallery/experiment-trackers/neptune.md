@@ -78,7 +78,7 @@ zenml stack register custom_stack -e neptune_experiment_tracker ... --set
 
 {% tab title="ZenML Secret (Recommended)" %}
 
-This method requires you to [configure a ZenML secret](../../advanced-guide/practical/secrets-management.md)
+This method requires you to [configure a ZenML secret](../../starter-guide/production-fundamentals/secrets-management.md)
 to store the Neptune tracking service credentials securely.
 
 You can create the secret using the `zenml secret create` command:
@@ -102,7 +102,7 @@ zenml experiment-tracker register neptune_secret \
 ```
 
 {% hint style="info" %}
-Read more about [ZenML Secrets](../../advanced-guide/practical/secrets-management.md)
+Read more about [ZenML Secrets](../../starter-guide/production-fundamentals/secrets-management.md)
 in the ZenML documentation.
 {% endhint %}
 {% endtab %}

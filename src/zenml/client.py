@@ -151,8 +151,8 @@ class ClientConfiguration(FileSyncModel):
     """Pydantic object used for serializing client configuration options."""
 
     _active_workspace: Optional["WorkspaceResponseModel"] = None
-    active_workspace_id: Optional[UUID]
-    active_stack_id: Optional[UUID]
+    active_workspace_id: Optional[UUID] = None
+    active_stack_id: Optional[UUID] = None
 
     @property
     def active_workspace(self) -> WorkspaceResponseModel:
@@ -408,7 +408,7 @@ class Client(metaclass=ClientMetaClass):
                 "configuration."
             )
 
-        return ClientConfiguration(config_path)
+        return ClientConfiguration(config_file=config_path)
 
     @staticmethod
     def initialize(
@@ -759,6 +759,7 @@ class Client(metaclass=ClientMetaClass):
         updated_full_name: Optional[str] = None,
         updated_email: Optional[str] = None,
         updated_email_opt_in: Optional[bool] = None,
+        updated_hub_token: Optional[str] = None,
     ) -> UserResponseModel:
         """Update a user.
 
@@ -768,6 +769,7 @@ class Client(metaclass=ClientMetaClass):
             updated_full_name: The new full name of the user.
             updated_email: The new email of the user.
             updated_email_opt_in: The new email opt-in status of the user.
+            updated_hub_token: Update the hub token
 
         Returns:
             The updated user.
@@ -775,9 +777,7 @@ class Client(metaclass=ClientMetaClass):
         user = self.get_user(
             name_id_or_prefix=name_id_or_prefix, allow_name_prefix_match=False
         )
-        user_update = UserUpdateModel()
-        if updated_name:
-            user_update.name = updated_name
+        user_update = UserUpdateModel(name=updated_name or user.name)
         if updated_full_name:
             user_update.full_name = updated_full_name
         if updated_email is not None:
@@ -787,6 +787,8 @@ class Client(metaclass=ClientMetaClass):
             )
         if updated_email_opt_in is not None:
             user_update.email_opted_in = updated_email_opt_in
+        if updated_hub_token is not None:
+            user_update.hub_token = updated_hub_token
 
         return self.zen_store.update_user(
             user_id=user.id, user_update=user_update
@@ -912,11 +914,7 @@ class Client(metaclass=ClientMetaClass):
         """
         team = self.get_team(name_id_or_prefix, allow_name_prefix_match=False)
 
-        team_update = TeamUpdateModel()
-
-        if new_name:
-            team_update.name = new_name
-
+        team_update = TeamUpdateModel(name=new_name or team.name)
         if remove_users is not None and add_users is not None:
             union_add_rm = set(remove_users) & set(add_users)
             if union_add_rm:
@@ -1065,7 +1063,7 @@ class Client(metaclass=ClientMetaClass):
             name_id_or_prefix=name_id_or_prefix, allow_name_prefix_match=False
         )
 
-        role_update = RoleUpdateModel()
+        role_update = RoleUpdateModel(name=new_name or role.name)  # type: ignore[call-arg]
 
         if remove_permission is not None and add_permission is not None:
             union_add_rm = set(remove_permission) & set(add_permission)
@@ -1101,9 +1099,6 @@ class Client(metaclass=ClientMetaClass):
 
             if role_permissions is not None:
                 role_update.permissions = set(role_permissions)
-
-        if new_name:
-            role_update.name = new_name
 
         return Client().zen_store.update_role(
             role_id=role.id, role_update=role_update
@@ -1477,9 +1472,9 @@ class Client(metaclass=ClientMetaClass):
         workspace = self.get_workspace(
             name_id_or_prefix=name_id_or_prefix, allow_name_prefix_match=False
         )
-        workspace_update = WorkspaceUpdateModel()
-        if new_name:
-            workspace_update.name = new_name
+        workspace_update = WorkspaceUpdateModel(
+            name=new_name or workspace.name
+        )
         if new_description:
             workspace_update.description = new_description
         return self.zen_store.update_workspace(
@@ -1674,7 +1669,7 @@ class Client(metaclass=ClientMetaClass):
         )
 
         # Create the update model
-        update_model = StackUpdateModel(
+        update_model = StackUpdateModel(  # type: ignore[call-arg]
             workspace=self.active_workspace.id,
             user=self.active_user.id,
         )
@@ -1749,12 +1744,16 @@ class Client(metaclass=ClientMetaClass):
             stack_update=update_model,
         )
 
-    def delete_stack(self, name_id_or_prefix: Union[str, UUID]) -> None:
+    def delete_stack(
+        self, name_id_or_prefix: Union[str, UUID], recursive: bool = False
+    ) -> None:
         """Deregisters a stack.
 
         Args:
             name_id_or_prefix: The name, id or prefix id of the stack
                 to deregister.
+            recursive: If `True`, all components of the stack which are not
+                associated with any other stack will also be deleted.
 
         Raises:
             ValueError: If the stack is the currently active stack for this
@@ -1779,6 +1778,37 @@ class Client(metaclass=ClientMetaClass):
                 f"sure to designate a new active stack before deleting this "
                 f"one."
             )
+
+        if recursive:
+            stack_components_free_for_deletion = []
+
+            # Get all stack components associated with this stack
+            for component_type, component_model in stack.components.items():
+                # Get stack associated with the stack component
+
+                stacks = self.list_stacks(
+                    component_id=component_model[0].id, size=2, page=1
+                )
+
+                # Check if the stack component is part of another stack
+                if len(stacks) == 1:
+                    if stack.id == stacks[0].id:
+                        stack_components_free_for_deletion.append(
+                            (component_type, component_model)
+                        )
+
+            self.delete_stack(stack.id)
+
+            for (
+                stack_component_type,
+                stack_component_model,
+            ) in stack_components_free_for_deletion:
+                self.delete_stack_component(
+                    stack_component_model[0].name, stack_component_type
+                )
+
+            logger.info("Deregistered stack with name '%s'.", stack.name)
+            return
 
         self.zen_store.delete_stack(stack_id=stack.id)
         logger.info("Deregistered stack with name '%s'.", stack.name)
@@ -1880,6 +1910,7 @@ class Client(metaclass=ClientMetaClass):
         """
         local_components: List[str] = []
         remote_components: List[str] = []
+        assert stack.components is not None
         for component_type, component_ids in stack.components.items():
             for component_id in component_ids:
                 try:
@@ -2149,7 +2180,7 @@ class Client(metaclass=ClientMetaClass):
             allow_name_prefix_match=False,
         )
 
-        update_model = ComponentUpdateModel(
+        update_model = ComponentUpdateModel(  # type: ignore[call-arg]
             workspace=self.active_workspace.id,
             user=self.active_user.id,
         )
@@ -4041,10 +4072,8 @@ class Client(metaclass=ClientMetaClass):
             allow_partial_id_match=True,
         )
 
-        secret_update = SecretUpdateModel()
+        secret_update = SecretUpdateModel(name=new_name or secret.name)  # type: ignore[call-arg]
 
-        if new_name:
-            secret_update.name = new_name
         if new_scope:
             secret_update.scope = new_scope
         values: Dict[str, Optional[SecretStr]] = {}
@@ -4224,7 +4253,7 @@ class Client(metaclass=ClientMetaClass):
         repo = self.get_code_repository(
             name_id_or_prefix=name_id_or_prefix, allow_name_prefix_match=False
         )
-        update = CodeRepositoryUpdateModel(name=name)
+        update = CodeRepositoryUpdateModel(name=repo.name)  # type: ignore[call-arg]
         return self.zen_store.update_code_repository(
             code_repository_id=repo.id, update=update
         )

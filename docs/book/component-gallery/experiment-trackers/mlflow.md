@@ -67,6 +67,11 @@ what other types of components it can be combined with. This option requires
 [authentication related parameters](#authentication-methods) to be configured
 for the MLflow Experiment Tracker.
 
+{% hint style="warning" %}
+Due to a [critical severity vulnerability](https://github.com/advisories/GHSA-xg73-94fp-g449) found in older versions of MLflow, we recommend using
+MLflow version 2.2.1 or higher.
+{% endhint %}
+
 * [Databricks scenario](https://www.databricks.com/product/managed-mlflow):
 This scenario assumes that you have a Databricks workspace, and you want to
 use the managed MLflow Tracking server it provides. This option requires
@@ -124,7 +129,7 @@ zenml stack register custom_stack -e mlflow_experiment_tracker ... --set
 
 {% tab title="ZenML Secret (Recommended)" %}
 
-This method requires you to [configure a ZenML secret](../../advanced-guide/practical/secrets-management.md)
+This method requires you to [configure a ZenML secret](../../starter-guide/production-fundamentals/secrets-management.md)
 to store the MLflow tracking service credentials securely.
 
 You can create the secret using the `zenml secret create` command:
@@ -150,7 +155,7 @@ zenml experiment-tracker register mlflow \
 ```
 
 {% hint style="info" %}
-Read more about [ZenML Secrets](../../advanced-guide/practical/secrets-management.md)
+Read more about [ZenML Secrets](../../starter-guide/production-fundamentals/secrets-management.md)
 in the ZenML documentation.
 {% endhint %}
 {% endtab %}
