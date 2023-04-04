@@ -410,6 +410,9 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
 
         Args:
             settings: The orchestrator settings.
+
+        Returns:
+            The service account name.
         """
         if settings.service_account_name:
             return settings.service_account_name
