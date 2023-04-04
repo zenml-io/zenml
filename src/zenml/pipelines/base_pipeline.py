@@ -403,7 +403,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
             )
             pipeline_id = self._register(pipeline_spec=pipeline_spec).id
 
-            local_repo = source_utils.find_active_code_repository()
+            local_repo = code_repository_utils.find_active_code_repository()
             code_repository = build_utils.verify_local_repository_context(
                 deployment=deployment, local_repo_context=local_repo
             )
