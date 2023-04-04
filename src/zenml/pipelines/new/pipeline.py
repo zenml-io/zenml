@@ -872,6 +872,37 @@ class Pipeline:
             return self.entrypoint(*args, **kwds)
 
         with self:
-            self.entrypoint(*args, **kwds)
+            entrypoint_outputs = self.entrypoint(*args, **kwds)
+
+        if entrypoint_outputs is None:
+            entrypoint_outputs = ()
+        elif isinstance(
+            entrypoint_outputs, BaseStep._OutputArtifact
+        ) or not isinstance(entrypoint_outputs, Tuple):
+            entrypoint_outputs = (entrypoint_outputs,)
+
+        from zenml.config.pipeline_configurations import PipelineOutput
+
+        outputs = {}
+        for i, output in enumerate(entrypoint_outputs):
+            key = f"output_{i}"
+            if isinstance(output, BaseStep._OutputArtifact):
+                outputs[key] = PipelineOutput(
+                    step_name=output.step_name, output_name=output.name
+                )
+            else:
+                from zenml.steps.base_step import is_json_serializable
+
+                if not is_json_serializable(output):
+                    raise RuntimeError(
+                        f"Pipeline output of type (`{type(output)}`) is not "
+                        "a step output or JSON serializable."
+                    )
+
+                outputs[key] = PipelineOutput(value=output)
+
+        self._configuration = self._configuration.copy(
+            update={"outputs": outputs}
+        )
 
         return self

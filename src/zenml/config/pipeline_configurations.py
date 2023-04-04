@@ -48,10 +48,17 @@ class PipelineConfigurationUpdate(StrictBaseModel):
     )
 
 
+class PipelineOutput(StrictBaseModel):
+    step_name: Optional[str] = None
+    output_name: Optional[str] = None
+    value: Any = None
+
+
 class PipelineConfiguration(PipelineConfigurationUpdate):
     """Pipeline configuration class."""
 
     name: str
+    outputs: Dict[str, PipelineOutput] = {}
 
     @validator("name")
     def ensure_pipeline_name_allowed(cls, name: str) -> str:
