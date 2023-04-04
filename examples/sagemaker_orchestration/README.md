@@ -95,7 +95,7 @@ zenml stack register sagemaker_stack -a aws_artifact_store -o sagemaker_orchestr
 
 Note that if you want an easy way to deploy the required cloud resources for
 this example via the ZenML CLI, you can do so using the `zenml <STACK_COMPONENT>
-deploy` sub-command. For example, to deploy the S3 artifact store, you can
+deploy` command. For example, to deploy the S3 artifact store, you can
 run:
 
 ```shell
