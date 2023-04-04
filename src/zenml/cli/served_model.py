@@ -88,7 +88,7 @@ def register_model_deployer_subcommands() -> None:  # noqa: C901
         "pipeline step.",
     )
     @click.option(
-        "--pipeline-run",
+        "--run-name",
         "-r",
         type=click.STRING,
         default=None,
@@ -112,7 +112,7 @@ def register_model_deployer_subcommands() -> None:  # noqa: C901
         model_deployer: "BaseModelDeployer",
         pipeline: Optional[str],
         step: Optional[str],
-        pipeline_run: Optional[str],
+        run_name: Optional[str],
         model: Optional[str],
         running: bool,
     ) -> None:
@@ -124,7 +124,7 @@ def register_model_deployer_subcommands() -> None:  # noqa: C901
                 indicated pipeline.
             step: Show only served models that were deployed by the indicated
                 pipeline step.
-            pipeline_run: Show only served models that were deployed by the
+            run_name: Show only served models that were deployed by the
                 indicated pipeline run.
             model: Show only served model versions for the given model name.
             running: Show only model servers that are currently running.
@@ -132,7 +132,7 @@ def register_model_deployer_subcommands() -> None:  # noqa: C901
         services = model_deployer.find_model_server(
             running=running,
             pipeline_name=pipeline,
-            pipeline_run_id=pipeline_run,
+            run_name=run_name,
             pipeline_step_name=step,
             model_name=model,
         )

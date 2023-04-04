@@ -10,6 +10,7 @@
   * [Deployment using CLI](./getting-started/deploying-zenml/cli.md)
   * [Deploying with Docker](./getting-started/deploying-zenml/docker.md)
   * [Deploying with Helm](./getting-started/deploying-zenml/helm.md)
+  * [Deploying with HuggingFace Spaces](./getting-started/deploying-zenml/huggingface.md)
   * [Troubleshooting your server](./getting-started/deploying-zenml/troubleshooting.md)
 * [Architecture Diagrams](getting-started/architecture-diagrams.md)
 * [Examples](./getting-started/examples.md)
@@ -27,12 +28,15 @@
   * [Connecting to a Deployed ZenML](./starter-guide/collaborate/zenml-deployment.md)
   * [Inviting Users](./starter-guide/collaborate/users.md)
   * [User Roles & Permissions](./starter-guide/collaborate/roles-and-permissions.md)
+* [Production Fundamentals](./starter-guide/production-fundamentals/production-fundamentals.md)
+  * [Secrets Management](./starter-guide/production-fundamentals/secrets-management.md)
+  * [Containerization (Docker)](./starter-guide/production-fundamentals/containerization.md)
+  * [Code Repositories](./starter-guide/production-fundamentals/code-repositories.md)
 
 ## Advanced Guide
 
 * [In-depth Configuration](./advanced-guide/pipelines/pipelines.md)
   * [Runtime Settings](./advanced-guide/pipelines/settings.md)
-  * [Containerization (Docker)](./advanced-guide/pipelines/containerization.md)
   * [Passing Custom Data Types through Steps (Materializers)](./advanced-guide/pipelines/materializers.md)
   * [Specifying Step Resources](./advanced-guide/pipelines/step-resources.md)
   * [Enabling GPU-backed hardware](./advanced-guide/pipelines/gpu-hardware.md)
@@ -48,7 +52,6 @@
 * [Practical MLOps](./advanced-guide/practical/practical-mlops.md)
   * [Stack Recipes](./advanced-guide/practical/stack-recipes.md)
   * [Switching Orchestration](./advanced-guide/practical/switching-orchestration.md)
-  * [Secrets Management](./advanced-guide/practical/secrets-management.md)
   * [Tracking Experiments](./advanced-guide/practical/tracking-experiments.md)
   * [Validating Data](./advanced-guide/practical/validating-data.md)
   * [Deploying Models and Batch Inference](./advanced-guide/practical/deploying-models.md)

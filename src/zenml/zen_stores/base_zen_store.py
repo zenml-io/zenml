@@ -645,9 +645,9 @@ class BaseZenStore(
             RoleRequestModel(
                 name=DEFAULT_ADMIN_ROLE,
                 permissions={
-                    PermissionType.READ.value,
-                    PermissionType.WRITE.value,
-                    PermissionType.ME.value,
+                    PermissionType.READ,
+                    PermissionType.WRITE,
+                    PermissionType.ME,
                 },
             )
         )
@@ -673,8 +673,8 @@ class BaseZenStore(
             RoleRequestModel(
                 name=DEFAULT_GUEST_ROLE,
                 permissions={
-                    PermissionType.READ.value,
-                    PermissionType.ME.value,
+                    PermissionType.READ,
+                    PermissionType.ME,
                 },
             )
         )

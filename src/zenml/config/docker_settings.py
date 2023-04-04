@@ -79,6 +79,7 @@ class DockerSettings(BaseSettings):
     - The packages specified via the `requirements` attribute
     - The packages specified via the `required_integrations` and potentially
       stack requirements
+    - The packages specified via the `required_hub_plugins` attribute
 
     Attributes:
         parent_image: Full name of the Docker image that should be
@@ -130,6 +131,11 @@ class DockerSettings(BaseSettings):
         required_integrations: List of ZenML integrations that should be
             installed. All requirements for the specified integrations will
             be installed inside the Docker image.
+        required_hub_plugins: List of ZenML Hub plugins to install.
+            Expected format: '(<author_username>/)<plugin_name>==<version>'.
+            If no version is specified, the latest version is taken. The
+            packages of required plugins and all their dependencies will be
+            installed inside the Docker image.
         install_stack_requirements: If `True`, ZenML will automatically detect
             if components of your active stack are part of a ZenML integration
             and install the corresponding requirements and apt packages.
@@ -165,20 +171,16 @@ class DockerSettings(BaseSettings):
     dockerfile: Optional[str] = None
     build_context_root: Optional[str] = None
     build_options: Dict[str, Any] = {}
-
     skip_build: bool = False
-
     target_repository: str = "zenml"
-
     replicate_local_python_environment: Optional[
         Union[List[str], PythonEnvironmentExportMethod]
     ] = None
     requirements: Union[None, str, List[str]] = None
     required_integrations: List[str] = []
+    required_hub_plugins: List[str] = []
     install_stack_requirements: bool = True
-
     apt_packages: List[str] = []
-
     environment: Dict[str, Any] = {}
     dockerignore: Optional[str] = None
     copy_files: bool = True

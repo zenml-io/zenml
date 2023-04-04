@@ -173,7 +173,7 @@ are located. This is useful if you want to connect Seldon Core to a persistent
 storage service that is not supported as a ZenML Artifact Store, or if you don't
 want to configure or use the same credentials configured for your Artifact
 Store. The `secret` attribute must be set to the name of
-[a ZenML secret](../../advanced-guide/practical/secrets-management.md)
+[a ZenML secret](../../starter-guide/production-fundamentals/secrets-management.md)
 containing credentials configured in the format supported by Seldon Core.
 
 {% hint style="info" %}
@@ -316,7 +316,7 @@ def seldon_model_deployer_step(
       implementation="TENSORFLOW_SERVER",
       secret_name="seldon-secret",
       pipeline_name = step_env.pipeline_name,
-      pipeline_run_id = step_env.pipeline_run_id,
+      run_name = step_env.run_name,
       pipeline_step_name = step_env.step_name,
   )
 

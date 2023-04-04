@@ -60,7 +60,7 @@ def test_requirements_file_generation(mocker, local_stack, tmp_path: Path):
         required_integrations=[],
         replicate_local_python_environment="pip_freeze",
     )
-    files = PipelineDockerImageBuilder._gather_requirements_files(
+    files = PipelineDockerImageBuilder.gather_requirements_files(
         settings, stack=local_stack
     )
     assert len(files) == 1
@@ -73,7 +73,7 @@ def test_requirements_file_generation(mocker, local_stack, tmp_path: Path):
         required_integrations=[],
         replicate_local_python_environment=None,
     )
-    files = PipelineDockerImageBuilder._gather_requirements_files(
+    files = PipelineDockerImageBuilder.gather_requirements_files(
         settings, stack=local_stack
     )
     assert len(files) == 1
@@ -86,7 +86,7 @@ def test_requirements_file_generation(mocker, local_stack, tmp_path: Path):
         required_integrations=[],
         replicate_local_python_environment=None,
     )
-    files = PipelineDockerImageBuilder._gather_requirements_files(
+    files = PipelineDockerImageBuilder.gather_requirements_files(
         settings, stack=local_stack
     )
     assert len(files) == 1
@@ -101,7 +101,7 @@ def test_requirements_file_generation(mocker, local_stack, tmp_path: Path):
         required_integrations=[SKLEARN],
         replicate_local_python_environment="pip_freeze",
     )
-    files = PipelineDockerImageBuilder._gather_requirements_files(
+    files = PipelineDockerImageBuilder.gather_requirements_files(
         settings, stack=local_stack
     )
     assert len(files) == 3

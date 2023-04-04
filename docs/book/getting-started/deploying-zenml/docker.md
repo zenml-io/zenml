@@ -270,7 +270,7 @@ the secrets store backend.
 
 These configuration options are only relevant if you're using a custom secrets
 store backend implementation. For this to work, you must have
-[a custom implementation of the secrets store API](../../advanced-guide/practical/secrets-management.md#build-your-own-custom-secrets-manager)
+[a custom implementation of the secrets store API](../../starter-guide/production-fundamentals/secrets-management.md#build-your-own-custom-secrets-manager)
 in the form of a class derived from
 `zenml.zen_stores.secrets_stores.base_secrets_store.BaseSecretsStore`. This
 class must be importable from within the ZenML server container, which means

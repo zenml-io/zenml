@@ -76,7 +76,7 @@ class BuildConfiguration(BaseModel):
             code_repository=code_repository
         )
         requirements_files = (
-            PipelineDockerImageBuilder._gather_requirements_files(
+            PipelineDockerImageBuilder.gather_requirements_files(
                 docker_settings=self.settings,
                 stack=stack,
                 code_repository=code_repository if pass_code_repo else None,

@@ -22,7 +22,7 @@ from typing import Any, ClassVar, Dict, List, Optional, cast
 import yaml
 
 import zenml
-from zenml.cli.stack_recipes import logger
+from zenml.logger import get_logger
 from zenml.services import ServiceType
 from zenml.services.terraform.terraform_service import (
     SERVICE_CONFIG_FILE_NAME,
@@ -30,6 +30,8 @@ from zenml.services.terraform.terraform_service import (
     TerraformServiceConfig,
 )
 from zenml.utils import io_utils, yaml_utils
+
+logger = get_logger(__name__)
 
 STACK_FILE_NAME_OUTPUT = "stack-yaml-path"
 DATABASE_HOST_OUTPUT = "metadata-db-host"
