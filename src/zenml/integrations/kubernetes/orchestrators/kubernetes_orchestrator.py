@@ -327,13 +327,16 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         )
 
         # Authorize pod to run Kubernetes commands inside the cluster.
-        service_account_name = "zenml-service-account"
-        kube_utils.create_edit_service_account(
-            core_api=self._k8s_core_api,
-            rbac_api=self._k8s_rbac_api,
-            service_account_name=service_account_name,
-            namespace=self.config.kubernetes_namespace,
-        )
+        if settings.service_account_name:
+            service_account_name = settings.service_account_name
+        else:
+            service_account_name = "zenml-service-account"
+            kube_utils.create_edit_service_account(
+                core_api=self._k8s_core_api,
+                rbac_api=self._k8s_rbac_api,
+                service_account_name=service_account_name,
+                namespace=self.config.kubernetes_namespace,
+            )
 
         # Schedule as CRON job if CRON schedule is given.
         if deployment.schedule:
