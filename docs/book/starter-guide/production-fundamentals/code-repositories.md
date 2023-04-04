@@ -170,15 +170,30 @@ if your source files are being tracked by GitLab and store the commit hash for
 each pipeline run.
 
 <details>
-
-<summary>How To get a token for GitLab</summary>
-
-1. Go to your GitLab account settings and click on ["Access Tokens"](https://gitlab.com/-/profile/personal_access_tokens).
-2. Name the token and select the scopes that you need (e.g. `read_repository`, `read_user`, `read_api` )
-![Generate the Gitlab token](../../assets/code_repo/gitlab-generate-access-token.png)
-3. Click on "Create personal access token" and copy the token to a safe place.
-![Copy the GitLab Token](../../assets/code_repo/gitlab-copy-access-token.png)
-
+  <summary>How To get a token for GitLab</summary>
+  <ol style="list-style-type: decimal; padding-left: 1.5em;">
+    <li>
+        <div>
+            Go to your GitLab account settings and click on <a href="https://gitlab.com/-/profile/personal_access_tokens">Access Tokens</a>.
+        </div>
+    </li>
+    <li>
+        <div>
+            Name the token and select the scopes that you need (e.g. <code>read_repository</code>, <code>read_user</code>, <code>read_api</code>)
+        </div>
+        <div style="text-align: center;">
+            <img src="../../assets/code_repo/gitlab-generate-access-token.png" style="max-width: 100%;">
+        </div>
+    </li>
+    <li>
+        <div>
+            Click on "Create personal access token" and copy the token to a safe place.
+        </div>
+        <div style="text-align: center;">
+            <img  src="../../assets/code_repo/gitlab-copy-access-token.png" style="max-width: 100%;">
+        </div>
+    </li>
+  </ol>
 </details>
 
 ### Developing a custom code repository
