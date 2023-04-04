@@ -23,7 +23,7 @@ from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.materializers.default_materializer_registry import (
     default_materializer_registry,
 )
-from zenml.utils import yaml_utils
+from zenml.utils import source_utils, yaml_utils
 
 if TYPE_CHECKING:
     from zenml.metadata.metadata_types import MetadataType
@@ -294,20 +294,40 @@ class BuiltInContainerMaterializer(BaseMaterializer):
         else:
             metadata = yaml_utils.read_json(self.metadata_path)
             outputs = []
-            for path_, type_str in zip(metadata["paths"], metadata["types"]):
-                type_ = find_type_by_str(type_str)
-                materializer_class = default_materializer_registry[type_]
-                materializer = materializer_class(uri=path_)
-                element = materializer.load(type_)
-                outputs.append(element)
+
+            # Backwards compatibility for zenml <= 0.37.0
+            if isinstance(metadata, dict):
+                for path_, type_str in zip(
+                    metadata["paths"], metadata["types"]
+                ):
+                    type_ = find_type_by_str(type_str)
+                    materializer_class = default_materializer_registry[type_]
+                    materializer = materializer_class(uri=path_)
+                    element = materializer.load(type_)
+                    outputs.append(element)
+
+            # New format for zenml >= 0.37.1
+            elif isinstance(metadata, list):
+                for entry in metadata:
+                    path_ = entry["path"]
+                    type_ = source_utils.load(entry["type"])
+                    materializer_class = source_utils.load(
+                        entry["materializer"]
+                    )
+                    materializer = materializer_class(uri=path_)
+                    element = materializer.load(type_)
+                    outputs.append(element)
+
+            else:
+                raise RuntimeError(f"Unknown metadata format: {metadata}.")
 
         # Cast the data to the correct type.
         if issubclass(data_type, dict) and not isinstance(outputs, dict):
             keys, values = outputs
             return dict(zip(keys, values))
-        if issubclass(data_type, tuple):
+        if issubclass(data_type, tuple) and not isinstance(outputs, tuple):
             return tuple(outputs)
-        if issubclass(data_type, set):
+        if issubclass(data_type, set) and not isinstance(outputs, set):
             return set(outputs)
         return outputs
 
@@ -347,19 +367,25 @@ class BuiltInContainerMaterializer(BaseMaterializer):
 
         # non-serializable list: Materialize each element into a subfolder.
         # Get path, type, and corresponding materializer for each element.
-        paths, types, materializers = [], [], []
-        for i, element in enumerate(data):
-            element_path = os.path.join(self.uri, str(i))
-            fileio.mkdir(element_path)
-            type_ = find_materializer_registry_type(type(element))
-            paths.append(element_path)
-            types.append(str(type_))
-            materializer_class = default_materializer_registry[type_]
-            materializer = materializer_class(uri=element_path)
-            materializers.append(materializer)
+        metadata, materializers = [], []
         try:
+            for i, element in enumerate(data):
+                element_path = os.path.join(self.uri, str(i))
+                fileio.mkdir(element_path)
+                type_ = type(element)
+                materializer_class = default_materializer_registry[type_]
+                materializer = materializer_class(uri=element_path)
+                materializers.append(materializer)
+                metadata.append(
+                    {
+                        "path": element_path,
+                        "type": source_utils.resolve(type_).import_path,
+                        "materializer": source_utils.resolve(
+                            materializer_class
+                        ).import_path,
+                    }
+                )
             # Write metadata as JSON.
-            metadata = {"length": len(data), "paths": paths, "types": types}
             yaml_utils.write_json(self.metadata_path, metadata)
             # Materialize each element.
             for element, materializer in zip(data, materializers):
@@ -370,8 +396,8 @@ class BuiltInContainerMaterializer(BaseMaterializer):
             if fileio.exists(self.metadata_path):
                 fileio.remove(self.metadata_path)
             # Delete all elements that were already saved.
-            for element_path in paths:
-                fileio.rmtree(element_path)
+            for entry in metadata:
+                fileio.rmtree(entry["path"])
             raise e
 
     def extract_metadata(self, data: Any) -> Dict[str, "MetadataType"]:
