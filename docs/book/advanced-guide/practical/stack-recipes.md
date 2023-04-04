@@ -14,11 +14,6 @@ Check out the full list of available recipes at the [mlops-stacks repository](ht
 
 ### Deploying a recipe 🚀
 
-{% hint style="info" %}
-To use the stack recipe CLI commands, you will have to install some optional dependencies with `zenml`.
-Run `pip install "zenml[stacks]"` to get started! 
-{% endhint %}
-
 Detailed steps are available [in the
 README](https://github.com/zenml-io/mlops-stacks#-list-of-recipes) of the
 respective stack's recipe but here's what a simple flow could look like:
