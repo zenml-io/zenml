@@ -40,7 +40,7 @@ def test_server_cli_up_down(clean_client, mocker):
     )
     mocker.patch(
         "zenml.zen_server.deploy.local.local_zen_server.LOCAL_ZENML_SERVER_DEFAULT_TIMEOUT",
-        return_vaue=60,
+        return_value=60,
     )
     cli_runner = CliRunner()
 
@@ -76,7 +76,7 @@ def test_server_cli_up_and_connect(clean_client, mocker):
     )
     mocker.patch(
         "zenml.zen_server.deploy.local.local_zen_server.LOCAL_ZENML_SERVER_DEFAULT_TIMEOUT",
-        return_vaue=60,
+        return_value=60,
     )
 
     cli_runner = CliRunner()
