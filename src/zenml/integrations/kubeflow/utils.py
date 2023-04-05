@@ -62,6 +62,5 @@ def apply_pod_settings(
     for name, value in resource_limits.items():
         container_op.add_resource_limit(name, value)
 
-    annotations = settings.annotations or {}
-    for name, value in annotations.items():
+    for name, value in settings.annotations.items():
         container_op.add_pod_annotation(name, value)
