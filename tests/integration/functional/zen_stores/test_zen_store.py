@@ -838,6 +838,65 @@ def test_deleting_a_stack_succeeds():
                     store.get_stack(stack.id)
 
 
+def test_deleting_a_stack_recursively_succeeds():
+    """Tests deleting stack recursively."""
+    client = Client()
+    store = client.zen_store
+
+    with ComponentContext(
+        c_type=StackComponentType.ORCHESTRATOR, flavor="local", config={}
+    ) as orchestrator:
+        with ComponentContext(
+            c_type=StackComponentType.ARTIFACT_STORE, flavor="local", config={}
+        ) as artifact_store:
+            components = {
+                StackComponentType.ORCHESTRATOR: [orchestrator.id],
+                StackComponentType.ARTIFACT_STORE: [artifact_store.id],
+            }
+            with StackContext(components=components) as stack:
+                client.delete_stack(stack.id, recursive=True)
+                with pytest.raises(KeyError):
+                    store.get_stack(stack.id)
+                with pytest.raises(KeyError):
+                    store.get_stack_component(orchestrator.id)
+                with pytest.raises(KeyError):
+                    store.get_stack_component(artifact_store.id)
+
+
+def test_deleting_a_stack_recursively_with_some_stack_components_present_in_another_stack_succeeds():
+    """Tests deleting stack recursively."""
+    client = Client()
+    store = client.zen_store
+
+    with ComponentContext(
+        c_type=StackComponentType.ORCHESTRATOR, flavor="local", config={}
+    ) as orchestrator:
+        with ComponentContext(
+            c_type=StackComponentType.ARTIFACT_STORE, flavor="local", config={}
+        ) as artifact_store:
+            components = {
+                StackComponentType.ORCHESTRATOR: [orchestrator.id],
+                StackComponentType.ARTIFACT_STORE: [artifact_store.id],
+            }
+            with StackContext(components=components) as stack:
+                with ComponentContext(
+                    c_type=StackComponentType.SECRETS_MANAGER,
+                    flavor="local",
+                    config={},
+                ) as secret:
+                    components = {
+                        StackComponentType.ORCHESTRATOR: [orchestrator.id],
+                        StackComponentType.ARTIFACT_STORE: [artifact_store.id],
+                        StackComponentType.SECRETS_MANAGER: [secret.id],
+                    }
+                    with StackContext(components=components) as stack:
+                        client.delete_stack(stack.id, recursive=True)
+                        with pytest.raises(KeyError):
+                            store.get_stack(stack.id)
+                        with pytest.raises(KeyError):
+                            store.get_stack_component(secret.id)
+
+
 def test_private_stacks_are_inaccessible():
     """Tests stack scoping via sharing on rest zen stores."""
     if Client().zen_store.type == StoreType.SQL:

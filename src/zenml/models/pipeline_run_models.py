@@ -117,10 +117,10 @@ class PipelineRunResponseModel(
     """Pipeline run model with user, workspace, pipeline, and stack hydrated."""
 
     pipeline: Optional["PipelineResponseModel"] = Field(
-        title="The pipeline this run belongs to."
+        default=None, title="The pipeline this run belongs to."
     )
     stack: Optional["StackResponseModel"] = Field(
-        title="The stack that was used for this run."
+        default=None, title="The stack that was used for this run."
     )
 
     metadata: Dict[str, "RunMetadataResponseModel"] = Field(
@@ -129,11 +129,11 @@ class PipelineRunResponseModel(
     )
 
     build: Optional["PipelineBuildResponseModel"] = Field(
-        title="The pipeline build that was used for this run."
+        default=None, title="The pipeline build that was used for this run."
     )
 
     deployment: Optional["PipelineDeploymentResponseModel"] = Field(
-        title="The deployment that was used for this run."
+        default=None, title="The deployment that was used for this run."
     )
 
 
@@ -150,50 +150,50 @@ class PipelineRunFilterModel(WorkspaceScopedFilterModel):
         "unlisted",
     ]
 
-    name: str = Field(
+    name: Optional[str] = Field(
         default=None,
         description="Name of the Pipeline Run",
     )
-    orchestrator_run_id: str = Field(
+    orchestrator_run_id: Optional[str] = Field(
         default=None,
         description="Name of the Pipeline Run within the orchestrator",
     )
 
-    pipeline_id: Union[UUID, str] = Field(
+    pipeline_id: Optional[Union[UUID, str]] = Field(
         default=None, description="Pipeline associated with the Pipeline Run"
     )
-    workspace_id: Union[UUID, str] = Field(
+    workspace_id: Optional[Union[UUID, str]] = Field(
         default=None, description="Workspace of the Pipeline Run"
     )
-    user_id: Union[UUID, str] = Field(
-        None, description="User that created the Pipeline Run"
+    user_id: Optional[Union[UUID, str]] = Field(
+        default=None, description="User that created the Pipeline Run"
     )
 
-    stack_id: Union[UUID, str] = Field(
+    stack_id: Optional[Union[UUID, str]] = Field(
         default=None, description="Stack used for the Pipeline Run"
     )
-    schedule_id: Union[UUID, str] = Field(
+    schedule_id: Optional[Union[UUID, str]] = Field(
         default=None, description="Schedule that triggered the Pipeline Run"
     )
-    build_id: Union[UUID, str] = Field(
+    build_id: Optional[Union[UUID, str]] = Field(
         default=None, description="Build used for the Pipeline Run"
     )
-    deployment_id: Union[UUID, str] = Field(
+    deployment_id: Optional[Union[UUID, str]] = Field(
         default=None, description="Deployment used for the Pipeline Run"
     )
 
-    status: str = Field(
+    status: Optional[str] = Field(
         default=None,
         description="Name of the Pipeline Run",
     )
-    start_time: Union[datetime, str] = Field(
+    start_time: Optional[Union[datetime, str]] = Field(
         default=None, description="Start time for this run"
     )
-    end_time: Union[datetime, str] = Field(
+    end_time: Optional[Union[datetime, str]] = Field(
         default=None, description="End time for this run"
     )
 
-    num_steps: int = Field(
+    num_steps: Optional[int] = Field(
         default=None,
         description="Amount of steps in the Pipeline Run",
     )

@@ -13,7 +13,7 @@ the steps of your pipeline only get executed once all their inputs
 Many of ZenML's remote orchestrators build [Docker](https://www.docker.com/)
 images in order to transport and execute your pipeline code. If you want to 
 learn more  about how Docker images are built by ZenML, check out
-[this guide](../../advanced-guide/pipelines/containerization.md).
+[this guide](../../starter-guide/production-fundamentals/containerization.md).
 {% endhint %}
 
 ## When to use it

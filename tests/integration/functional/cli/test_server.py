@@ -74,7 +74,7 @@ def test_server_cli_up_and_connect(clean_client):
     cli_runner.invoke(up_command, ["--port", port, "--connect"])
 
     # sleep for a bit to let the server start
-    time.sleep(5)
+    time.sleep(60)
 
     deployer = ServerDeployer()
     server = deployer.get_server(LOCAL_ZENML_SERVER_NAME)

@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "zenml"
-version = "0.36.1"
+version = "0.37.0"
 packages = [
     { include = "zenml", from = "src" },
 ]
@@ -84,7 +84,7 @@ orjson = { version = "~3.8.3", optional = true}
 copier = { version = ">=7.0.0", optional = true }
 jinja2-time = { version = "^0.2.0", optional = true }
 black = { version = "^22.3.0", optional = true }
-ruff = { version = "^0.0.255", optional = true }
+ruff = { version = "^0.0.259", optional = true }
 
 # Optional dependencies for the AWS secrets store
 boto3 = { version=">=1.16.0", optional = true }
@@ -101,7 +101,7 @@ hvac = { version=">=0.11.2", optional = true }
 
 # Optional development dependencies
 coverage = { extras = ["toml"], version = "^5.5", optional = true }
-mypy = { version = "1.0.0", optional = true }
+mypy = { version = "1.1.1", optional = true }
 pre-commit = { version = "^2.14.0", optional = true }
 pyment = { version = "^0.3.3", optional = true }
 tox = { version = "^3.24.3", optional = true }
@@ -228,6 +228,11 @@ max-complexity = 18
 convention = "google"
 
 [tool.mypy]
+
+plugins = [
+  "pydantic.mypy"
+]
+
 strict = true
 namespace_packages = true
 show_error_codes = true

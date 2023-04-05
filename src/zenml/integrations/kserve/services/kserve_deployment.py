@@ -74,13 +74,13 @@ class KServeDeploymentConfig(ServiceConfig):
 
     model_uri: str = ""
     model_name: str
-    secret_name: Optional[str]
-    k8s_secret: Optional[str]
-    k8s_service_account: Optional[str]
+    secret_name: Optional[str] = None
+    k8s_secret: Optional[str] = None
+    k8s_service_account: Optional[str] = None
     predictor: str
     replicas: int = 1
-    container: Optional[Dict[str, Any]]
-    resources: Optional[Dict[str, Any]]
+    container: Optional[Dict[str, Any]] = None
+    resources: Optional[Dict[str, Any]] = None
 
     @staticmethod
     def sanitize_labels(labels: Dict[str, str]) -> None:
@@ -112,8 +112,10 @@ class KServeDeploymentConfig(ServiceConfig):
         labels = {"app": "zenml"}
         if self.pipeline_name:
             labels["zenml.pipeline_name"] = self.pipeline_name
+        if self.run_name:
+            labels["zenml.run_name"] = self.run_name
         if self.pipeline_run_id:
-            labels["zenml.pipeline_run_id"] = self.pipeline_run_id
+            labels["zenml.pipeline_run_id"] = self.run_name
         if self.pipeline_step_name:
             labels["zenml.pipeline_step_name"] = self.pipeline_step_name
         if self.model_name:
@@ -196,10 +198,8 @@ class KServeDeploymentService(BaseDeploymentService):
         description="KServe inference service",
     )
 
-    config: KServeDeploymentConfig = Field(
-        default_factory=KServeDeploymentConfig
-    )
-    status: ServiceStatus = Field(default_factory=ServiceStatus)
+    config: KServeDeploymentConfig
+    status: ServiceStatus = Field(default_factory=lambda: ServiceStatus())
 
     def _get_model_deployer(self) -> "KServeModelDeployer":
         """Get the active KServe model deployer.

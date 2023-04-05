@@ -8,7 +8,7 @@ which comes built-in with ZenML and uses the local filesystem to store secrets.
 
 {% hint style="warning" %}
 We are deprecating secrets managers in favor of the
-[centralized ZenML secrets store](../../advanced-guide/practical/secrets-management.md#centralized-secrets-store).
+[centralized ZenML secrets store](../../starter-guide/production-fundamentals/secrets-management.md#centralized-secrets-store).
 Going forward, we recommend using the secrets store instead of secrets managers
 to configure and store secrets.
 

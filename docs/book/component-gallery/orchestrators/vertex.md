@@ -65,7 +65,7 @@ zenml stack register <STACK_NAME> -o <ORCHESTRATOR_NAME> ... --set
 {% hint style="info" %}
 ZenML will build a Docker image called `<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE_NAME>`
 which includes your code and use it to run your pipeline steps in Vertex AI. 
-Check out [this page](../../advanced-guide/pipelines/containerization.md)
+Check out [this page](../../starter-guide/production-fundamentals/containerization.md)
 if you want to learn more about how ZenML builds these images and
 how you can customize them.
 {% endhint %}
@@ -99,7 +99,7 @@ ZenML utilizes the [Cloud Scheduler](https://cloud.google.com/scheduler) and
 on Vertex Pipelines. The following is the sequence of events that happen when running
 a pipeline on Vertex with a schedule:
 
-* Docker image is created and pushed (see above [containerization](../../advanced-guide/pipelines/containerization.md)).
+* Docker image is created and pushed (see above [containerization](../../starter-guide/production-fundamentals/containerization.md)).
 * The Vertex AI pipeline JSON file is copied to the [Artifact Store](../../component-gallery/artifact-stores/artifact-stores.md) specified in your [Stack](../../starter-guide/stacks/stacks.md)
 * Cloud Function is created that creates the Vertex Pipeline job when triggered.
 * Cloud Scheduler job is created that triggers the Cloud Function on the defined schedule.

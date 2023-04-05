@@ -966,11 +966,15 @@ class SqlZenStore(BaseZenStore):
                 )
 
             # Get the Schemas of all components mentioned
-            component_ids = [
-                component_id
-                for list_of_component_ids in stack.components.values()
-                for component_id in list_of_component_ids
-            ]
+            component_ids = (
+                [
+                    component_id
+                    for list_of_component_ids in stack.components.values()
+                    for component_id in list_of_component_ids
+                ]
+                if stack.components is not None
+                else []
+            )
             filters = [
                 (StackComponentSchema.id == component_id)
                 for component_id in component_ids
