@@ -20,6 +20,7 @@ import time
 from typing import TYPE_CHECKING, Any, Dict, Optional, Type, Union, cast
 from uuid import uuid4
 
+from docker.errors import ContainerError
 from pydantic import validator
 
 from zenml.client import Client
@@ -99,12 +100,18 @@ class LocalDockerOrchestrator(ContainerizedOrchestrator):
         self,
         deployment: "PipelineDeploymentResponseModel",
         stack: "Stack",
+        environment: Dict[str, str],
     ) -> Any:
         """Sequentially runs all pipeline steps in local Docker containers.
 
         Args:
             deployment: The pipeline deployment to prepare or run.
             stack: The stack the pipeline will run on.
+            environment: Environment variables to set in the orchestration
+                environment.
+
+        Raises:
+            RuntimeError: If a step fails.
         """
         if deployment.schedule:
             logger.warning(
@@ -128,10 +135,8 @@ class LocalDockerOrchestrator(ContainerizedOrchestrator):
             }
         }
         orchestrator_run_id = str(uuid4())
-        environment = {
-            ENV_ZENML_DOCKER_ORCHESTRATOR_RUN_ID: orchestrator_run_id,
-            ENV_ZENML_LOCAL_STORES_PATH: local_stores_path,
-        }
+        environment[ENV_ZENML_DOCKER_ORCHESTRATOR_RUN_ID] = orchestrator_run_id
+        environment[ENV_ZENML_LOCAL_STORES_PATH] = local_stores_path
         start_time = time.time()
 
         # Run each step
@@ -158,20 +163,25 @@ class LocalDockerOrchestrator(ContainerizedOrchestrator):
             if sys.platform != "win32":
                 user = os.getuid()
             logger.info("Running step `%s` in Docker:", step_name)
-            logs = docker_client.containers.run(
-                image=image,
-                entrypoint=entrypoint,
-                command=arguments,
-                user=user,
-                volumes=volumes,
-                environment=environment,
-                stream=True,
-                extra_hosts={"host.docker.internal": "host-gateway"},
-                **settings.run_args,
-            )
 
-            for line in logs:
-                logger.info(line.strip().decode())
+            try:
+                logs = docker_client.containers.run(
+                    image=image,
+                    entrypoint=entrypoint,
+                    command=arguments,
+                    user=user,
+                    volumes=volumes,
+                    environment=environment,
+                    stream=True,
+                    extra_hosts={"host.docker.internal": "host-gateway"},
+                    **settings.run_args,
+                )
+
+                for line in logs:
+                    logger.info(line.strip().decode())
+            except ContainerError as e:
+                error_message = e.stderr.decode()
+                raise RuntimeError(error_message)
 
         run_duration = time.time() - start_time
         run_id = orchestrator_utils.get_run_id_for_orchestrator_run_id(

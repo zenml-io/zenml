@@ -601,7 +601,7 @@ Vault service instead, you need to configure it in the Helm values:
 ### Using a custom secrets store backend implementation
 
 You have the option of using
-[a custom implementation of the secrets store API](../../advanced-guide/practical/secrets-management.md#build-your-own-custom-secrets-manager) as your secrets store back-end.
+[a custom implementation of the secrets store API](../../starter-guide/production-fundamentals/secrets-management.md#build-your-own-custom-secrets-manager) as your secrets store back-end.
 This must come in the form of a class derived from
 `zenml.zen_stores.secrets_stores.base_secrets_store.BaseSecretsStore`. This
 class must be importable from within the ZenML server container, which means

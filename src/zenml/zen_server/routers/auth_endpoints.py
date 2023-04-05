@@ -109,6 +109,7 @@ def token(
         *[
             zen_store().get_role(ra.role.id).permissions
             for ra in role_assignments.items
+            if ra.role is not None
         ]
     )
 

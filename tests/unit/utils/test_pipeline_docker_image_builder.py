@@ -24,18 +24,22 @@ from zenml.utils.pipeline_docker_image_builder import (
 
 def test_check_user_is_set():
     """Tests the setting of the user if configured."""
-    config = DockerSettings(user=None)
+    docker_settings = DockerSettings(user=None)
     generated_dockerfile = (
         PipelineDockerImageBuilder._generate_zenml_pipeline_dockerfile(
-            "image:tag", config
+            "image:tag",
+            docker_settings,
+            download_files=False,
         )
     )
     assert "USER" not in generated_dockerfile
 
-    config = DockerSettings(user="test_user")
+    docker_settings = DockerSettings(user="test_user")
     generated_dockerfile = (
         PipelineDockerImageBuilder._generate_zenml_pipeline_dockerfile(
-            "image:tag", config
+            "image:tag",
+            docker_settings,
+            download_files=False,
         )
     )
     assert "USER test_user" in generated_dockerfile
@@ -56,7 +60,7 @@ def test_requirements_file_generation(mocker, local_stack, tmp_path: Path):
         required_integrations=[],
         replicate_local_python_environment="pip_freeze",
     )
-    files = PipelineDockerImageBuilder._gather_requirements_files(
+    files = PipelineDockerImageBuilder.gather_requirements_files(
         settings, stack=local_stack
     )
     assert len(files) == 1
@@ -69,7 +73,7 @@ def test_requirements_file_generation(mocker, local_stack, tmp_path: Path):
         required_integrations=[],
         replicate_local_python_environment=None,
     )
-    files = PipelineDockerImageBuilder._gather_requirements_files(
+    files = PipelineDockerImageBuilder.gather_requirements_files(
         settings, stack=local_stack
     )
     assert len(files) == 1
@@ -82,7 +86,7 @@ def test_requirements_file_generation(mocker, local_stack, tmp_path: Path):
         required_integrations=[],
         replicate_local_python_environment=None,
     )
-    files = PipelineDockerImageBuilder._gather_requirements_files(
+    files = PipelineDockerImageBuilder.gather_requirements_files(
         settings, stack=local_stack
     )
     assert len(files) == 1
@@ -97,7 +101,7 @@ def test_requirements_file_generation(mocker, local_stack, tmp_path: Path):
         required_integrations=[SKLEARN],
         replicate_local_python_environment="pip_freeze",
     )
-    files = PipelineDockerImageBuilder._gather_requirements_files(
+    files = PipelineDockerImageBuilder.gather_requirements_files(
         settings, stack=local_stack
     )
     assert len(files) == 3
@@ -117,5 +121,9 @@ def test_build_skipping():
     to `True`."""
     settings = DockerSettings(skip_build=True, parent_image="my_parent_image")
     assert PipelineDockerImageBuilder().build_docker_image(
-        docker_settings=settings, tag="tag", stack=Client().active_stack
+        docker_settings=settings,
+        tag="tag",
+        stack=Client().active_stack,
+        include_files=True,
+        download_files=False,
     )

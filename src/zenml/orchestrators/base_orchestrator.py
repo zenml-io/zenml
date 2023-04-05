@@ -20,6 +20,7 @@ from pydantic import root_validator
 from zenml.enums import StackComponentType
 from zenml.logger import get_logger
 from zenml.orchestrators.step_launcher import StepLauncher
+from zenml.orchestrators.utils import get_config_environment_vars
 from zenml.stack import Flavor, Stack, StackComponent, StackComponentConfig
 
 if TYPE_CHECKING:
@@ -51,7 +52,7 @@ class BaseOrchestratorConfig(StackComponentConfig):
                     "The 'custom_docker_base_image_name' field has been "
                     "deprecated. To use a custom base container image with your "
                     "orchestrators, please use the DockerSettings in your "
-                    "pipeline (see https://docs.zenml.io/advanced-guide/pipelines/containerization)."
+                    "pipeline (see https://docs.zenml.io/starter-guide/production-fundamentals/containerization)."
                 )
 
         return values
@@ -102,6 +103,7 @@ class BaseOrchestrator(StackComponent, ABC):
         self,
         deployment: "PipelineDeploymentResponseModel",
         stack: "Stack",
+        environment: Dict[str, str],
     ) -> Any:
         """The method needs to be implemented by the respective orchestrator.
 
@@ -135,6 +137,8 @@ class BaseOrchestrator(StackComponent, ABC):
         Args:
             deployment: The pipeline deployment to prepare or run.
             stack: The stack the pipeline will run on.
+            environment: Environment variables to set in the orchestration
+                environment. These don't need to be set if running locally.
 
         Returns:
             The optional return value from this method will be returned by the
@@ -156,9 +160,11 @@ class BaseOrchestrator(StackComponent, ABC):
             Orchestrator-specific return value.
         """
         self._prepare_run(deployment=deployment)
+
+        environment = get_config_environment_vars()
         try:
             result = self.prepare_or_run_pipeline(
-                deployment=deployment, stack=stack
+                deployment=deployment, stack=stack, environment=environment
             )
         finally:
             self._cleanup_run()

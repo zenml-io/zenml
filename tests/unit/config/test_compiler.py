@@ -18,8 +18,8 @@ from zenml.config.base_settings import BaseSettings
 from zenml.config.compiler import Compiler
 from zenml.config.pipeline_configurations import (
     PipelineRunConfiguration,
-    PipelineSpec,
 )
+from zenml.config.pipeline_spec import PipelineSpec
 from zenml.config.step_configurations import StepConfigurationUpdate
 from zenml.exceptions import PipelineInterfaceError, StackValidationError
 from zenml.hooks.hook_validators import resolve_and_validate_hook

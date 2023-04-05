@@ -48,16 +48,17 @@ from zenml.steps.utils import (
 if TYPE_CHECKING:
     from zenml.artifacts.base_artifact import BaseArtifact
     from zenml.config.base_settings import SettingsOrDict
+    from zenml.config.source import Source
     from zenml.materializers.base_materializer import BaseMaterializer
 
     ArtifactClassOrStr = Union[str, Type["BaseArtifact"]]
-    MaterializerClassOrStr = Union[str, Type["BaseMaterializer"]]
-    HookSpecification = Union[str, FunctionType]
+    MaterializerClassOrSource = Union[str, "Source", Type["BaseMaterializer"]]
+    HookSpecification = Union[str, "Source", FunctionType]
     OutputArtifactsSpecification = Union[
         "ArtifactClassOrStr", Mapping[str, "ArtifactClassOrStr"]
     ]
     OutputMaterializersSpecification = Union[
-        "MaterializerClassOrStr", Mapping[str, "MaterializerClassOrStr"]
+        "MaterializerClassOrSource", Mapping[str, "MaterializerClassOrSource"]
     ]
 
 F = TypeVar("F", bound=Callable[..., Any])

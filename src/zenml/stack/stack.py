@@ -795,7 +795,6 @@ class Stack:
                 ZenML server with a local one.
         """
         self.validate(fail_if_secrets_missing=True)
-        self._validate_build(deployment=deployment)
 
         for component in self.components.values():
             if not component.is_running:
@@ -863,66 +862,6 @@ class Stack:
             The return value of the call to `orchestrator.run_pipeline(...)`.
         """
         return self.orchestrator.run(deployment=deployment, stack=self)
-
-    def _validate_build(
-        self,
-        deployment: "PipelineDeploymentResponseModel",
-    ) -> None:
-        """Validates the build of a pipeline deployment.
-
-        Args:
-            deployment: The deployment for which to validate the build.
-
-        Raises:
-            RuntimeError: If some required images for the deployment are missing
-                in the build.
-        """
-        required_builds = self.get_docker_builds(deployment=deployment)
-
-        if required_builds and not deployment.build:
-            # This should never actually happen as we either used a build
-            # provided by the user or run the build process
-            raise RuntimeError(
-                f"Running the pipeline "
-                f"{deployment.pipeline_configuration.name} on stack "
-                f"{self.name} requires Docker builds but no pipeline build "
-                "was passed."
-            )
-        elif not deployment.build:
-            return
-
-        build_stack = deployment.build.stack
-        if build_stack and build_stack.id != self.id:
-            logger.warning(
-                f"The stack `{build_stack.name}` used for the build "
-                f"`{deployment.build.id}` is not the same as the stack "
-                f"`{self.name}` that the pipeline will run on. This could lead "
-                "to issues if the stacks have different build requirements."
-            )
-
-        for build_config in required_builds:
-            try:
-                image = deployment.build.get_image(
-                    component_key=build_config.key, step=build_config.step_name
-                )
-            except KeyError:
-                raise RuntimeError(
-                    f"Missing build for key: {build_config.key}."
-                )
-
-            if build_config.compute_settings_checksum(
-                stack=self
-            ) != deployment.build.get_settings_checksum(
-                component_key=build_config.key, step=build_config.step_name
-            ):
-                logger.warning(
-                    "The Docker settings used to build the image `%s` are "
-                    "not the same as currently specified for you pipeline. "
-                    "This means that the build you specified to run this "
-                    "pipeline might be outdated and most likely contains "
-                    "outdated code of your steps.",
-                    image,
-                )
 
     def _get_active_components_for_step(
         self, step_config: "StepConfiguration"

@@ -18,7 +18,7 @@ from abc import abstractmethod
 from typing import Any, ClassVar, Dict, Generator, Optional, Tuple, Type, cast
 from uuid import UUID, uuid4
 
-from pydantic import Field
+from pydantic import Field, root_validator
 
 from zenml.console import console
 from zenml.logger import get_logger
@@ -42,15 +42,63 @@ class ServiceConfig(BaseTypedModel):
         name: name for the service instance
         description: description of the service
         pipeline_name: name of the pipeline that spun up the service
-        pipeline_run_id: ID of the pipeline run that spun up the service
         pipeline_step_name: name of the pipeline step that spun up the service
+        run_name: name of the pipeline run that spun up the service.
     """
 
     name: str = ""
     description: str = ""
     pipeline_name: str = ""
-    pipeline_run_id: str = ""
     pipeline_step_name: str = ""
+    run_name: str = ""
+
+    @property
+    def pipeline_run_id(self) -> str:
+        """Getter for the pipeline_run_id attribute.
+
+        Returns:
+            The pipeline_run_id attribute.
+        """
+        logger.warning(
+            "The 'pipeline_run_id' attribute is deprecated. Use 'run_name' instead.",
+        )
+        return self.run_name
+
+    def __setattr__(self, key: str, value: Any) -> None:
+        """Sets the attribute value.
+
+        Args:
+            key: name of the attribute.
+            value: value of the attribute.
+        """
+        if key == "pipeline_run_id":
+            logger.warning(
+                "The 'pipeline_run_id' attribute is deprecated. Use 'run_name' instead.",
+            )
+            self.run_name = value
+        else:
+            super().__setattr__(key, value)
+
+    @root_validator(pre=True)
+    def set_run_name(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        """Sets the run_name attribute to the value of pipeline_run_id.
+
+        Args:
+            values: dictionary of attribute values.
+
+        Returns:
+            The dictionary of attribute values.
+        """
+        if values.get("run_name"):
+            return values
+        if values.get("pipeline_run_id"):
+            # raise a warning that pipeline_run_id is deprecated
+            logger.warning(
+                "pipeline_run_id is deprecated, use run_name instead"
+            )
+            # set the run_name attribute to the value of pipeline_run_id
+            values["run_name"] = values.pop("pipeline_run_id")
+        return values
 
 
 class BaseServiceMeta(BaseTypedModelMeta):

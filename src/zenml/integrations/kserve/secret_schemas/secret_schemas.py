@@ -38,12 +38,12 @@ class KServeS3SecretSchema(BaseSecretSchema):
 
     TYPE: ClassVar[str] = KSERVE_S3_SECRET_SCHEMA_TYPE
 
-    aws_access_key_id: Optional[str]
-    aws_secret_access_key: Optional[str]
-    s3_endpoint: Optional[str]
-    s3_region: Optional[str]
-    s3_use_https: Optional[str]
-    s3_verify_ssl: Optional[str]
+    aws_access_key_id: Optional[str] = None
+    aws_secret_access_key: Optional[str] = None
+    s3_endpoint: Optional[str] = None
+    s3_region: Optional[str] = None
+    s3_use_https: Optional[str] = None
+    s3_verify_ssl: Optional[str] = None
 
 
 @register_secret_schema_class

@@ -11,9 +11,9 @@ interface:
 
 ```python
 from abc import ABC, abstractmethod
-from typing import Any, Type
+from typing import Any, Dict, Type 
 
-from zenml.config.pipeline_deployment import PipelineDeployment
+from zenml.models import PipelineDeploymentResponseModel
 from zenml.enums import StackComponentType
 from zenml.stack import StackComponent, StackComponentConfig, Stack, Flavor
 
@@ -28,8 +28,9 @@ class BaseOrchestrator(StackComponent, ABC):
     @abstractmethod
     def prepare_or_run_pipeline(
         self,
-        deployment: PipelineDeployment,
+        deployment: PipelineDeploymentResponseModel,
         stack: Stack,
+        environment: Dict[str, str],
     ) -> Any:
         """Prepares and runs the pipeline outright or returns an intermediate
         pipeline representation that gets deployed.
@@ -153,7 +154,7 @@ configuration could be added around this.
 
 ## Container-based Orchestration
 
-The `kubeflow` orchestrator is a great example of container-based orchestration.
+The `KubeflowOrchestrator` is a great example of container-based orchestration.
 In an implementation-specific method called `prepare_pipeline_deployment()`
 a Docker image containing the complete project context is built.
 
@@ -164,6 +165,12 @@ is created for each step. This ContainerOp contains the container entrypoint
 command and arguments that will make the image run just the one step.
 The ContainerOps are assembled according to their interdependencies inside a
 `dsl.Pipeline` which can then be compiled into the yaml file.
+
+Additionally, the `prepare_or_run_pipeline()` method receives a dictionary of
+environment variables that need to be set in the environment in which the steps
+will be executed. Coming back to our example of the `KubeflowOrchestrator`, we
+set these environment variables on the `dsl.ContainerOp` objects that we created
+earlier.
 
 ## Handling per-step resources
 

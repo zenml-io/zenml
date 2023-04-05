@@ -16,6 +16,7 @@ import hashlib
 import inspect
 from abc import abstractmethod
 from datetime import datetime
+from pathlib import Path
 from types import FunctionType
 from typing import (
     TYPE_CHECKING,
@@ -45,8 +46,8 @@ from zenml.config.pipeline_configurations import (
     PipelineConfiguration,
     PipelineConfigurationUpdate,
     PipelineRunConfiguration,
-    PipelineSpec,
 )
+from zenml.config.pipeline_spec import PipelineSpec
 from zenml.config.schedule import Schedule
 from zenml.config.step_configurations import StepConfigurationUpdate
 from zenml.enums import StackComponentType
@@ -54,7 +55,7 @@ from zenml.exceptions import PipelineInterfaceError
 from zenml.hooks.hook_validators import resolve_and_validate_hook
 from zenml.logger import get_logger
 from zenml.models import (
-    PipelineBuildRequestModel,
+    CodeReferenceRequestModel,
     PipelineBuildResponseModel,
     PipelineDeploymentRequestModel,
     PipelineDeploymentResponseModel,
@@ -63,10 +64,10 @@ from zenml.models import (
     ScheduleRequestModel,
 )
 from zenml.models.pipeline_build_models import (
-    BuildItem,
     PipelineBuildBaseModel,
 )
 from zenml.models.pipeline_deployment_models import PipelineDeploymentBaseModel
+from zenml.pipelines import build_utils
 from zenml.stack import Stack
 from zenml.steps import BaseStep
 from zenml.steps.base_step import BaseStepMeta
@@ -75,21 +76,20 @@ from zenml.utils import (
     dict_utils,
     pydantic_utils,
     settings_utils,
+    source_utils,
     yaml_utils,
 )
 from zenml.utils.analytics_utils import AnalyticsEvent, event_handler
-from zenml.utils.pipeline_docker_image_builder import (
-    PipelineDockerImageBuilder,
-)
 
 if TYPE_CHECKING:
     from zenml.config.base_settings import SettingsOrDict
+    from zenml.config.source import Source
     from zenml.post_execution import PipelineRunView
 
     StepConfigurationUpdateOrDict = Union[
         Dict[str, Any], StepConfigurationUpdate
     ]
-    HookSpecification = Union[str, FunctionType]
+    HookSpecification = Union[str, "Source", FunctionType]
 
 logger = get_logger(__name__)
 PIPELINE_INNER_FUNC_NAME = "connect"
@@ -295,13 +295,13 @@ class BasePipeline(metaclass=BasePipelineMeta):
                 overwrite all existing ones. See the general description of this
                 method for an example.
             on_failure: Callback function in event of failure of the step. Can be
-                a function with three possible parameters, `StepContext`, `BaseParameters`,
-                and `BaseException`, or a source path to a function of the same specifications
-                (e.g. `module.my_function`)
+                a function with three possible parameters, `StepContext`,
+                `BaseParameters`, and `BaseException`, or a source path to a
+                function of the same specifications (e.g. `module.my_function`)
             on_success: Callback function in event of failure of the step. Can be
-                a function with two possible parameters, `StepContext` and `BaseParameters, or
-                a source path to a function of the same specifications
-                (e.g. `module.my_function`).
+                a function with two possible parameters, `StepContext` and
+                `BaseParameters, or a source path to a function of the same
+                specifications (e.g. `module.my_function`).
 
         Returns:
             The pipeline instance that this method was called on.
@@ -385,7 +385,8 @@ class BasePipeline(metaclass=BasePipelineMeta):
             settings: Settings for the pipeline.
             step_configurations: Configurations for steps of the pipeline.
             config_path: Path to a yaml configuration file. This file will
-                be parsed as a `zenml.config.pipeline_configurations.PipelineRunConfiguration`
+                be parsed as a
+                `zenml.config.pipeline_configurations.PipelineRunConfiguration`
                 object. Options provided in this file will be overwritten by
                 options provided in code using the other arguments of this
                 method.
@@ -393,13 +394,24 @@ class BasePipeline(metaclass=BasePipelineMeta):
         Returns:
             The build output.
         """
-        deployment, pipeline_spec, _, _ = self._compile(
-            config_path=config_path,
-            steps=step_configurations,
-            settings=settings,
-        )
-        pipeline_id = self._register(pipeline_spec=pipeline_spec).id
-        return self._build(deployment=deployment, pipeline_id=pipeline_id)
+        with event_handler(event=AnalyticsEvent.BUILD_PIPELINE, v2=True):
+            deployment, pipeline_spec, _, _ = self._compile(
+                config_path=config_path,
+                steps=step_configurations,
+                settings=settings,
+            )
+            pipeline_id = self._register(pipeline_spec=pipeline_spec).id
+
+            local_repo = source_utils.find_active_code_repository()
+            code_repository = build_utils.verify_local_repository_context(
+                deployment=deployment, local_repo_context=local_repo
+            )
+
+            return build_utils.create_pipeline_build(
+                deployment=deployment,
+                pipeline_id=pipeline_id,
+                code_repository=code_repository,
+            )
 
     def run(
         self,
@@ -416,6 +428,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
         extra: Optional[Dict[str, Any]] = None,
         config_path: Optional[str] = None,
         unlisted: bool = False,
+        prevent_build_reuse: bool = False,
     ) -> None:
         """Runs the pipeline on the active stack of the current repository.
 
@@ -430,12 +443,14 @@ class BasePipeline(metaclass=BasePipelineMeta):
             step_configurations: Configurations for steps of the pipeline.
             extra: Extra configurations for this pipeline run.
             config_path: Path to a yaml configuration file. This file will
-                be parsed as a `zenml.config.pipeline_configurations.PipelineRunConfiguration`
+                be parsed as a
+                `zenml.config.pipeline_configurations.PipelineRunConfiguration`
                 object. Options provided in this file will be overwritten by
                 options provided in code using the other arguments of this
                 method.
             unlisted: Whether the pipeline run should be unlisted (not assigned
                 to any pipeline).
+            prevent_build_reuse: Whether to prevent the reuse of a build.
         """
         if constants.SHOULD_PREVENT_PIPELINE_EXECUTION:
             # An environment variable was set to stop the execution of
@@ -451,7 +466,9 @@ class BasePipeline(metaclass=BasePipelineMeta):
             )
             return
 
-        with event_handler(AnalyticsEvent.RUN_PIPELINE) as analytics_handler:
+        with event_handler(
+            event=AnalyticsEvent.RUN_PIPELINE, v2=True
+        ) as analytics_handler:
             deployment, pipeline_spec, schedule, build = self._compile(
                 config_path=config_path,
                 run_name=run_name,
@@ -465,7 +482,8 @@ class BasePipeline(metaclass=BasePipelineMeta):
             )
 
             skip_pipeline_registration = constants.handle_bool_env_var(
-                constants.ENV_ZENML_SKIP_PIPELINE_REGISTRATION, default=False
+                constants.ENV_ZENML_SKIP_PIPELINE_REGISTRATION,
+                default=False,
             )
 
             register_pipeline = not (skip_pipeline_registration or unlisted)
@@ -511,13 +529,34 @@ class BasePipeline(metaclass=BasePipelineMeta):
 
             stack = Client().active_stack
 
-            build_model = self._load_or_create_pipeline_build(
+            local_repo_context = source_utils.find_active_code_repository()
+            code_repository = build_utils.verify_local_repository_context(
+                deployment=deployment, local_repo_context=local_repo_context
+            )
+
+            build_model = build_utils.reuse_or_create_pipeline_build(
                 deployment=deployment,
-                pipeline_spec=pipeline_spec,
                 pipeline_id=pipeline_id,
+                allow_build_reuse=not prevent_build_reuse,
                 build=build,
+                code_repository=code_repository,
             )
             build_id = build_model.id if build_model else None
+
+            code_reference = None
+            if local_repo_context and not local_repo_context.is_dirty:
+                source_root = source_utils.get_source_root()
+                subdirectory = (
+                    Path(source_root)
+                    .resolve()
+                    .relative_to(local_repo_context.root)
+                )
+
+                code_reference = CodeReferenceRequestModel(
+                    commit=local_repo_context.current_commit,
+                    subdirectory=subdirectory.as_posix(),
+                    code_repository=local_repo_context.code_repository_id,
+                )
 
             deployment_request = PipelineDeploymentRequestModel(
                 user=Client().active_user.id,
@@ -526,6 +565,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
                 pipeline=pipeline_id,
                 build=build_id,
                 schedule=schedule_id,
+                code_reference=code_reference,
                 **deployment.dict(),
             )
             deployment_model = Client().zen_store.create_deployment(
@@ -556,15 +596,14 @@ class BasePipeline(metaclass=BasePipelineMeta):
             # unexpected behavior
             constants.SHOULD_PREVENT_PIPELINE_EXECUTION = True
             try:
-                stack.deploy_pipeline(
-                    deployment=deployment_model,
-                )
+                stack.deploy_pipeline(deployment=deployment_model)
             finally:
                 constants.SHOULD_PREVENT_PIPELINE_EXECUTION = False
 
             # Log the dashboard URL
             dashboard_utils.print_run_url(
-                run_name=deployment.run_name_template, pipeline_id=pipeline_id
+                run_name=deployment.run_name_template,
+                pipeline_id=pipeline_id,
             )
 
     @classmethod
@@ -823,7 +862,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
         custom_materializer = False
         for step in deployment.step_configurations.values():
             for output in step.config.outputs.values():
-                if not output.materializer_source.startswith("zenml."):
+                if not output.materializer_source.is_internal:
                     custom_materializer = True
 
         stack_creator = Client().get_stack(stack.id).user
@@ -1064,7 +1103,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
             The unique identifier of the pipeline.
         """
         hash_ = hashlib.md5()
-        hash_.update(pipeline_spec.json(sort_keys=False).encode())
+        hash_.update(pipeline_spec.json_with_string_sources.encode())
 
         for step_spec in pipeline_spec.steps:
             step_source = self.steps[
@@ -1109,167 +1148,3 @@ class BasePipeline(metaclass=BasePipelineMeta):
             return pipelines.items[0]
 
         return None
-
-    def _load_or_create_pipeline_build(
-        self,
-        deployment: "PipelineDeploymentBaseModel",
-        pipeline_spec: "PipelineSpec",
-        pipeline_id: Optional[UUID] = None,
-        build: Union["UUID", "PipelineBuildBaseModel", None] = None,
-    ) -> Optional["PipelineBuildResponseModel"]:
-        """Loads or creates a pipeline build.
-
-        Args:
-            deployment: The pipeline deployment for which to load or create the
-                build.
-            pipeline_spec: Spec of the pipeline.
-            pipeline_id: Optional ID of the pipeline to reference in the build.
-            build: Optional existing build. If given, the build will be loaded
-                (or registered) in the database. If not given, a new build will
-                be created.
-
-        Returns:
-            The build response.
-        """
-        if not build:
-            return self._build(deployment=deployment, pipeline_id=pipeline_id)
-
-        logger.info(
-            "Using an old build for a pipeline run can lead to "
-            "unexpected behavior as the pipeline will run with the step "
-            "code that was included in the Docker images which might "
-            "differ from the code in your client environment."
-        )
-
-        build_model = None
-
-        if isinstance(build, UUID):
-            build_model = Client().zen_store.get_build(build_id=build)
-
-            if build_model.pipeline:
-                build_hash = build_model.pipeline.version_hash
-                current_hash = self._compute_unique_identifier(
-                    pipeline_spec=pipeline_spec
-                )
-
-                if build_hash != current_hash:
-                    logger.warning(
-                        "The pipeline associated with the build you "
-                        "specified for this run has a different spec "
-                        "or step code. This might lead to unexpected "
-                        "behavior as this pipeline run will use the "
-                        "code that was included in the Docker images which "
-                        "might differ from the code in your client "
-                        "environment."
-                    )
-        else:
-            build_request = PipelineBuildRequestModel(
-                user=Client().active_user.id,
-                workspace=Client().active_workspace.id,
-                stack=Client().active_stack_model.id,
-                pipeline=pipeline_id,
-                **build.dict(),
-            )
-            build_model = Client().zen_store.create_build(build=build_request)
-
-        if build_model.is_local:
-            logger.warning(
-                "You're using a local build to run your pipeline. This "
-                "might lead to errors if the images don't exist on "
-                "your local machine or the image tags have been "
-                "overwritten since the original build happened."
-            )
-
-        return build_model
-
-    def _build(
-        self,
-        deployment: "PipelineDeploymentBaseModel",
-        pipeline_id: Optional[UUID] = None,
-    ) -> Optional["PipelineBuildResponseModel"]:
-        """Builds images and registers the output in the server.
-
-        Args:
-            deployment: The compiled pipeline deployment.
-            pipeline_id: The ID of the pipeline.
-
-        Returns:
-            The build output.
-
-        Raises:
-            RuntimeError: If multiple builds with the same key but different
-                settings were specified.
-        """
-        client = Client()
-        stack = client.active_stack
-        required_builds = stack.get_docker_builds(deployment=deployment)
-
-        if not required_builds:
-            logger.debug("No docker builds required.")
-            return None
-
-        logger.info(
-            "Building Docker image(s) for pipeline `%s`.",
-            deployment.pipeline_configuration.name,
-        )
-
-        docker_image_builder = PipelineDockerImageBuilder()
-        images: Dict[str, BuildItem] = {}
-        image_names: Dict[str, str] = {}
-
-        for build_config in required_builds:
-            combined_key = PipelineBuildBaseModel.get_image_key(
-                component_key=build_config.key, step=build_config.step_name
-            )
-            checksum = build_config.compute_settings_checksum(stack=stack)
-
-            if combined_key in images:
-                previous_checksum = images[combined_key].settings_checksum
-
-                if previous_checksum != checksum:
-                    raise RuntimeError(
-                        f"Trying to build image for key `{combined_key}` but "
-                        "an image for this key was already built with a "
-                        "different configuration. This happens if multiple "
-                        "stack components specified Docker builds for the same "
-                        "key in the `StackComponent.get_docker_builds(...)` "
-                        "method. If you're using custom components, make sure "
-                        "to provide unique keys when returning your build "
-                        "configurations to avoid this error."
-                    )
-                else:
-                    continue
-
-            if checksum in image_names:
-                image_name_or_digest = image_names[checksum]
-            else:
-                tag = deployment.pipeline_configuration.name
-                if build_config.step_name:
-                    tag += f"-{build_config.step_name}"
-                tag += f"-{build_config.key}"
-
-                image_name_or_digest = docker_image_builder.build_docker_image(
-                    docker_settings=build_config.settings,
-                    tag=tag,
-                    stack=stack,
-                    entrypoint=build_config.entrypoint,
-                    extra_files=build_config.extra_files,
-                )
-
-            images[combined_key] = BuildItem(
-                image=image_name_or_digest, settings_checksum=checksum
-            )
-            image_names[checksum] = image_name_or_digest
-
-        logger.info("Finished building Docker image(s).")
-
-        is_local = stack.container_registry is None
-        build_request = PipelineBuildRequestModel(
-            user=client.active_user.id,
-            workspace=client.active_workspace.id,
-            stack=client.active_stack_model.id,
-            pipeline=pipeline_id,
-            is_local=is_local,
-            images=images,
-        )
-        return client.zen_store.create_build(build_request)

@@ -20,7 +20,7 @@ from uuid import UUID
 from sqlalchemy import TEXT, Column
 from sqlmodel import Field, Relationship
 
-from zenml.config.pipeline_configurations import PipelineSpec
+from zenml.config.pipeline_spec import PipelineSpec
 from zenml.models.pipeline_models import (
     PipelineRequestModel,
     PipelineResponseModel,
