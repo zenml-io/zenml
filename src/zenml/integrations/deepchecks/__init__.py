@@ -39,7 +39,7 @@ class DeepchecksIntegration(Integration):
     REQUIREMENTS = [
         "deepchecks[vision]==0.8.0",
         "torchvision==0.14.0",
-        "pandas<1.3.0",
+        "pandas<2.0.0",
     ]
     APT_PACKAGES = ["ffmpeg", "libsm6", "libxext6"]
 
