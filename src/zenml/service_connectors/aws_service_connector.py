@@ -146,10 +146,12 @@ fields that are ignored by the connector ?
 """
 import base64
 import re
+import tempfile
 from typing import Any, List, Optional
 
 import boto3
 from botocore.exceptions import ClientError
+from botocore.signers import RequestSigner
 from pydantic import SecretStr
 
 from zenml.exceptions import AuthorizationException
@@ -257,9 +259,9 @@ class AWSServiceConnectorSpecification(ServiceConnectorSpecification):
                 AWS_RESOURCE_TYPE,
                 *boto3.Session().get_available_services(),
             ]
-        if resource_type == KUBERNETES_RESOURCE_TYPE:
+        if resource_type in [KUBERNETES_RESOURCE_TYPE, "eks"]:
             return [KUBERNETES_RESOURCE_TYPE, "eks"]
-        if resource_type == DOCKER_RESOURCE_TYPE:
+        if resource_type in [DOCKER_RESOURCE_TYPE, "ecr"]:
             return [DOCKER_RESOURCE_TYPE, "ecr"]
         return [resource_type]
 
@@ -437,6 +439,59 @@ connector config if it cannot be inferred from the resource ID.
             ],
         )
 
+    @classmethod
+    def _get_eks_bearer_token(
+        cls, session: boto3.Session, cluster_id: str, region: str
+    ) -> str:
+        """Generate a bearer token for authenticating to the EKS API server.
+
+        Based on: https://github.com/kubernetes-sigs/aws-iam-authenticator/blob/master/README.md#api-authorization-from-outside-a-cluster
+
+        Args:
+            session: An authenticated boto3 session to use for generating the
+                token.
+            cluster_id: The name of the EKS cluster.
+            region: The AWS region the EKS cluster is in.
+
+        Returns:
+            A bearer token for authenticating to the EKS API server.
+        """
+        STS_TOKEN_EXPIRES_IN = 60
+
+        client = session.client("sts", region_name=region)
+        service_id = client.meta.service_model.service_id
+
+        signer = RequestSigner(
+            service_id,
+            region,
+            "sts",
+            "v4",
+            session.get_credentials(),
+            session.events,
+        )
+
+        params = {
+            "method": "GET",
+            "url": f"https://sts.{region}.amazonaws.com/?Action=GetCallerIdentity&Version=2011-06-15",
+            "body": {},
+            "headers": {"x-k8s-aws-id": cluster_id},
+            "context": {},
+        }
+
+        signed_url = signer.generate_presigned_url(
+            params,
+            region_name=region,
+            expires_in=STS_TOKEN_EXPIRES_IN,
+            operation_name="",
+        )
+
+        base64_url = base64.urlsafe_b64encode(
+            signed_url.encode("utf-8")
+        ).decode("utf-8")
+
+        # remove any base64 encoding padding:
+        return "k8s-aws-v1." + re.sub(r"=*", "", base64_url)
+
     def _connect_to_resource(
         self,
         config: ServiceConnectorConfig,
@@ -545,8 +600,8 @@ connector config if it cannot be inferred from the resource ID.
             resource_id = resource_id or self.config.resource_id
             if not resource_id:
                 raise ValueError(
-                    "The AWS connector was not configured with a Docker "
-                    "registry ID and one was not provided at runtime."
+                    "The AWS connector was not configured with an ECR "
+                    "repository ID and one was not provided at runtime."
                 )
 
             # The resource ID could mean different things:
@@ -659,6 +714,13 @@ connector config if it cannot be inferred from the resource ID.
             from kubernetes import client as k8s_client
             from kubernetes import config as k8s_config
 
+            resource_id = resource_id or self.config.resource_id
+            if not resource_id:
+                raise ValueError(
+                    "The AWS connector was not configured with an EKS "
+                    "cluster ID and one was not provided at runtime."
+                )
+            
             # The resource ID could mean different things:
             #
             # - an EKS cluster ARN
@@ -712,6 +774,7 @@ connector config if it cannot be inferred from the resource ID.
             # a different region?
 
             region_id = config.auth_config.region
+            cluster_id = resource_id
 
             if not region_id:
                 raise ValueError(
@@ -724,10 +787,21 @@ connector config if it cannot be inferred from the resource ID.
                 "eks", region_name=config.auth_config.region
             )
             try:
-                cluster = client.describe_cluster(name=resource_id)
+                cluster = client.describe_cluster(name=cluster_id)
             except ClientError as e:
                 raise AuthorizationException(
                     f"Failed to get EKS cluster: {e}"
+                ) from e
+
+            try:
+                token = self._get_eks_bearer_token(
+                    session=session,
+                    cluster_id=cluster_id,
+                    region=region_id,
+                )
+            except ClientError as e:
+                raise AuthorizationException(
+                    f"Failed to get EKS bearer token: {e}"
                 ) from e
 
             # endpoint = response["cluster"]["endpoint"]
@@ -735,9 +809,21 @@ connector config if it cannot be inferred from the resource ID.
             # k8s_config.load_kube_config()
             # k8s_config.kube_config.KUBE_CONFIG_DEFAULT_LOCATION = "/tmp/kubeconfig"
 
-            # # get cluster details
+            # get cluster details
             cluster_cert = cluster["cluster"]["certificateAuthority"]["data"]
             cluster_ep = cluster["cluster"]["endpoint"]
+
+            with tempfile.NamedTemporaryFile(delete=False) as fp:
+                ca_filename = fp.name
+                cert_bs = base64.urlsafe_b64decode(cluster_cert.encode("utf-8"))
+                fp.write(cert_bs)
+
+            conf = k8s_client.Configuration()
+            conf.host = cluster["cluster"]["endpoint"]
+            conf.api_key["authorization"] = token
+            conf.api_key_prefix["authorization"] = "Bearer"
+            conf.ssl_ca_cert = ca_filename
+            return k8s_client.ApiClient(conf)
 
             # # build the cluster config hash
             cluster_config = {
