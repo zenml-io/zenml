@@ -866,6 +866,13 @@ class Pipeline:
     def __exit__(self, type, value, traceback):
         Pipeline.ACTIVE_PIPELINE = None
 
+    def with_options(self, **kwargs) -> "Pipeline":
+        import copy
+
+        pipeline_copy = copy.deepcopy(self)
+        pipeline_copy.configure(**kwargs)
+        return pipeline_copy
+
     def __call__(self, *args: Any, **kwds: Any) -> Any:
         if Pipeline.ACTIVE_PIPELINE:
             # Calling a pipeline inside a pipeline, we return the potential
@@ -906,4 +913,4 @@ class Pipeline:
             update={"outputs": outputs}
         )
 
-        return self
+        return self.run()
