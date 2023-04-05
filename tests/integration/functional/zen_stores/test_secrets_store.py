@@ -85,6 +85,35 @@ def test_list_secret_excludes_values():
         assert len(all_secrets[0].values) == 0
 
 
+def test_secret_empty_values():
+    """Tests that secrets can hold empty values."""
+    client = Client()
+    store = client.zen_store
+
+    values = dict(
+        aria="space cat",
+        axl="",
+    )
+    with SecretContext(values=values) as secret:
+        saved_secret = store.get_secret(secret_id=secret.id)
+        assert saved_secret.secret_values == values
+
+        values["axl"] = "also space cat"
+        updated_secret = store.update_secret(
+            secret_id=secret.id,
+            secret_update=SecretUpdateModel(
+                values=dict(
+                    axl=values["axl"],
+                ),
+            ),
+        )
+
+        assert updated_secret.secret_values == values
+
+        saved_secret = store.get_secret(secret_id=secret.id)
+        assert saved_secret.secret_values == values
+
+
 def test_update_secret_existing_values():
     """Tests that existing values a secret can be updated."""
     client = Client()
