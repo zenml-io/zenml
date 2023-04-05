@@ -163,12 +163,6 @@ from zenml.service_connectors.service_connector import (
 )
 from zenml.utils.enum_utils import StrEnum
 
-# TODO: use "resource" instead of service:
-# resource connector, resource type, resource name
-# allow the resource ID/name to be supplied as a generic parameter during
-# authentication, either configured in the connector or supplied by the user
-# during authentication (e.g. ECR repository name, S3 bucket name, etc.)
-
 
 class DockerCredentials(AuthenticationSecrets):
     """Docker authentication secrets."""
@@ -717,7 +711,6 @@ connector config if it cannot be inferred from the resource ID.
             # and the resource ID is an ECR repository ARN or URI that specifies
             # a different region?
 
-
             region_id = config.auth_config.region
 
             if not region_id:
@@ -727,11 +720,11 @@ connector config if it cannot be inferred from the resource ID.
                     f"provided resource ID: {resource_id}"
                 )
 
-            client = session.client('eks', region_name=config.auth_config.region)
+            client = session.client(
+                "eks", region_name=config.auth_config.region
+            )
             try:
-                cluster = client.describe_cluster(
-                    name=resource_id
-                )
+                cluster = client.describe_cluster(name=resource_id)
             except ClientError as e:
                 raise AuthorizationException(
                     f"Failed to get EKS cluster: {e}"
@@ -748,43 +741,38 @@ connector config if it cannot be inferred from the resource ID.
 
             # # build the cluster config hash
             cluster_config = {
-                    "apiVersion": "v1",
-                    "kind": "Config",
-                    "clusters": [
-                        {
-                            "cluster": {
-                                "server": str(cluster_ep),
-                                "certificate-authority-data": str(cluster_cert)
-                            },
-                            "name": "kubernetes"
-                        }
-                    ],
-                    "contexts": [
-                        {
-                            "context": {
-                                "cluster": "kubernetes",
-                                "user": "aws"
-                            },
-                            "name": "aws"
-                        }
-                    ],
-                    "current-context": "aws",
-                    "preferences": {},
-                    "users": [
-                        {
-                            "name": "aws",
-                            "user": {
-                                "exec": {
-                                    "apiVersion": "client.authentication.k8s.io/v1alpha1",
-                                    "command": "heptio-authenticator-aws",
-                                    "args": [
-                                        "token", "-i", cluster_name
-                                    ]
-                                }
+                "apiVersion": "v1",
+                "kind": "Config",
+                "clusters": [
+                    {
+                        "cluster": {
+                            "server": str(cluster_ep),
+                            "certificate-authority-data": str(cluster_cert),
+                        },
+                        "name": "kubernetes",
+                    }
+                ],
+                "contexts": [
+                    {
+                        "context": {"cluster": "kubernetes", "user": "aws"},
+                        "name": "aws",
+                    }
+                ],
+                "current-context": "aws",
+                "preferences": {},
+                "users": [
+                    {
+                        "name": "aws",
+                        "user": {
+                            "exec": {
+                                "apiVersion": "client.authentication.k8s.io/v1alpha1",
+                                "command": "heptio-authenticator-aws",
+                                "args": ["token", "-i", cluster_name],
                             }
-                        }
-                    ]
-                }
+                        },
+                    }
+                ],
+            }
 
             # # Write in YAML.
             # config_text=yaml.dump(cluster_config, default_flow_style=False)
@@ -893,7 +881,6 @@ connector config if it cannot be inferred from the resource ID.
                 local configuration for the indicated resource type or client
                 type.
         """
-
 
     @classmethod
     def _auto_configure(
