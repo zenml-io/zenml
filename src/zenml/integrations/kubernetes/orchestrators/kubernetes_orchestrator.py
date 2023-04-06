@@ -327,13 +327,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         )
 
         # Authorize pod to run Kubernetes commands inside the cluster.
-        service_account_name = "zenml-service-account"
-        kube_utils.create_edit_service_account(
-            core_api=self._k8s_core_api,
-            rbac_api=self._k8s_rbac_api,
-            service_account_name=service_account_name,
-            namespace=self.config.kubernetes_namespace,
-        )
+        service_account_name = self._get_service_account_name(settings)
 
         # Schedule as CRON job if CRON schedule is given.
         if deployment.schedule:
@@ -405,6 +399,32 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                 f"Run the following command to inspect the logs: "
                 f"`kubectl logs {pod_name} -n {self.config.kubernetes_namespace}`."
             )
+
+    def _get_service_account_name(
+        self, settings: KubernetesOrchestratorSettings
+    ) -> str:
+        """Returns the service account name to use for the orchestrator pod.
+
+        If the user has not specified a service account name in the settings,
+        we create a new service account with the required permissions.
+
+        Args:
+            settings: The orchestrator settings.
+
+        Returns:
+            The service account name.
+        """
+        if settings.service_account_name:
+            return settings.service_account_name
+        else:
+            service_account_name = "zenml-service-account"
+            kube_utils.create_edit_service_account(
+                core_api=self._k8s_core_api,
+                rbac_api=self._k8s_rbac_api,
+                service_account_name=service_account_name,
+                namespace=self.config.kubernetes_namespace,
+            )
+            return service_account_name
 
     def get_orchestrator_run_id(self) -> str:
         """Returns the active orchestrator run id.
