@@ -1084,8 +1084,12 @@ class BaseStep(metaclass=BaseStepMeta):
             if is_union(get_origin(annotation) or annotation):
                 allowed_types = get_args(annotation)
             elif issubclass(annotation, BaseModel):
-                # TODO: handle custom pydantic __root__ type here
-                allowed_types = (annotation, dict)
+                if annotation.__custom_root_type__:
+                    allowed_types = (annotation,) + _get_allowed_types(
+                        annotation.__fields__["__root__"].outer_type_
+                    )
+                else:
+                    allowed_types = (annotation, dict)
             else:
                 allowed_types = (get_origin(annotation) or annotation,)
 
