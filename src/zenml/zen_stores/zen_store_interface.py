@@ -54,6 +54,10 @@ from zenml.models import (
     RunMetadataResponseModel,
     ScheduleRequestModel,
     ScheduleResponseModel,
+    ServiceConnectorFilterModel,
+    ServiceConnectorRequestModel,
+    ServiceConnectorResponseModel,
+    ServiceConnectorUpdateModel,
     StackFilterModel,
     StackRequestModel,
     StackResponseModel,
@@ -1443,4 +1447,83 @@ class ZenStoreInterface(ABC):
 
         Raises:
             KeyError: If no code repository with the given ID exists.
+        """
+
+    # ------------------
+    # Service Connectors
+    # ------------------
+
+    @abstractmethod
+    def create_service_connector(
+        self, service_connector: ServiceConnectorRequestModel
+    ) -> ServiceConnectorResponseModel:
+        """Creates a new service connector.
+
+        Args:
+            service_connector: Service connector to be created.
+
+        Returns:
+            The newly created service connector.
+
+        Raises:
+            EntityExistsError: If a service connector with the given name
+                is already owned by this user in this workspace.
+        """
+
+    @abstractmethod
+    def get_service_connector(
+        self, service_connector_id: UUID
+    ) -> ServiceConnectorResponseModel:
+        """Gets a specific service connector.
+
+        Args:
+            service_connector_id: The ID of the service connector to get.
+
+        Returns:
+            The requested service connector, if it was found.
+
+        Raises:
+            KeyError: If no service connector with the given ID exists.
+        """
+
+    @abstractmethod
+    def list_service_connectors(
+        self, filter_model: ServiceConnectorFilterModel
+    ) -> Page[ServiceConnectorResponseModel]:
+        """List all service connectors.
+
+        Args:
+            filter_model: All filter parameters including pagination
+                params.
+
+        Returns:
+            A page of all service connectors.
+        """
+
+    @abstractmethod
+    def update_service_connector(
+        self, service_connector_id: UUID, update: ServiceConnectorUpdateModel
+    ) -> ServiceConnectorResponseModel:
+        """Updates an existing service connector.
+
+        Args:
+            service_connector_id: The ID of the service connector to update.
+            update: The update to be applied to the service connector.
+
+        Returns:
+            The updated service connector.
+
+        Raises:
+            KeyError: If no service connector with the given name exists.
+        """
+
+    @abstractmethod
+    def delete_service_connector(self, service_connector_id: UUID) -> None:
+        """Deletes a service connector.
+
+        Args:
+            service_connector_id: The ID of the service connector to delete.
+
+        Raises:
+            KeyError: If no service connector with the given ID exists.
         """

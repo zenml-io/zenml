@@ -56,6 +56,7 @@ from zenml.constants import (
     RUN_METADATA,
     RUNS,
     SCHEDULES,
+    SERVICE_CONNECTORS,
     STACK_COMPONENTS,
     STACKS,
     STEPS,
@@ -112,6 +113,10 @@ from zenml.models import (
     ScheduleRequestModel,
     ScheduleResponseModel,
     ScheduleUpdateModel,
+    ServiceConnectorFilterModel,
+    ServiceConnectorRequestModel,
+    ServiceConnectorResponseModel,
+    ServiceConnectorUpdateModel,
     StackFilterModel,
     StackRequestModel,
     StackResponseModel,
@@ -1877,6 +1882,97 @@ class RestZenStore(BaseZenStore):
         """
         self._delete_resource(
             resource_id=code_repository_id, route=CODE_REPOSITORIES
+        )
+
+    # ------------------
+    # Service Connectors
+    # ------------------
+
+    def create_service_connector(
+        self, service_connector: ServiceConnectorRequestModel
+    ) -> ServiceConnectorResponseModel:
+        """Creates a new service connector.
+
+        Args:
+            service_connector: Service connector to be created.
+
+        Returns:
+            The newly created service connector.
+        """
+        return self._create_workspace_scoped_resource(
+            resource=service_connector,
+            route=SERVICE_CONNECTORS,
+            response_model=ServiceConnectorResponseModel,
+        )
+
+    def get_service_connector(
+        self, service_connector_id: UUID
+    ) -> ServiceConnectorResponseModel:
+        """Gets a specific service connector.
+
+        Args:
+            service_connector_id: The ID of the service connector to get.
+
+        Returns:
+            The requested service connector, if it was found.
+        """
+        return self._get_resource(
+            resource_id=service_connector_id,
+            route=SERVICE_CONNECTORS,
+            response_model=ServiceConnectorResponseModel,
+        )
+
+    def list_service_connectors(
+        self, filter_model: ServiceConnectorFilterModel
+    ) -> Page[ServiceConnectorResponseModel]:
+        """List all service connectors.
+
+        Args:
+            filter_model: All filter parameters including pagination
+                params.
+
+        Returns:
+            A page of all service connectors.
+        """
+        return self._list_paginated_resources(
+            route=SERVICE_CONNECTORS,
+            response_model=ServiceConnectorResponseModel,
+            filter_model=filter_model,
+        )
+
+    def update_service_connector(
+        self, service_connector_id: UUID, update: ServiceConnectorUpdateModel
+    ) -> ServiceConnectorResponseModel:
+        """Updates an existing service connector.
+
+        Args:
+            service_connector_id: The ID of the service connector to update.
+            update: The update to be applied to the service connector.
+
+        Returns:
+            The updated service connector.
+
+        Raises:
+            KeyError: If no service connector with the given name exists.
+        """
+        return self._update_resource(
+            resource_id=service_connector_id,
+            resource_update=update,
+            response_model=ServiceConnectorResponseModel,
+            route=SERVICE_CONNECTORS,
+        )
+
+    def delete_service_connector(self, service_connector_id: UUID) -> None:
+        """Deletes a service connector.
+
+        Args:
+            service_connector_id: The ID of the service connector to delete.
+
+        Raises:
+            KeyError: If no service connector with the given ID exists.
+        """
+        self._delete_resource(
+            resource_id=service_connector_id, route=SERVICE_CONNECTORS
         )
 
     # =======================

@@ -113,6 +113,10 @@ from zenml.models import (
     ScheduleRequestModel,
     ScheduleResponseModel,
     ScheduleUpdateModel,
+    ServiceConnectorFilterModel,
+    ServiceConnectorRequestModel,
+    ServiceConnectorResponseModel,
+    ServiceConnectorUpdateModel,
     StackFilterModel,
     StackRequestModel,
     StackResponseModel,
@@ -173,6 +177,7 @@ from zenml.zen_stores.schemas import (
     CodeRepositorySchema,
     FlavorSchema,
     IdentitySchema,
+    LabelSchema,
     NamedSchema,
     PipelineBuildSchema,
     PipelineDeploymentSchema,
@@ -182,6 +187,7 @@ from zenml.zen_stores.schemas import (
     RoleSchema,
     RunMetadataSchema,
     ScheduleSchema,
+    ServiceConnectorSchema,
     StackComponentSchema,
     StackCompositionSchema,
     StackSchema,
@@ -4042,6 +4048,306 @@ class SqlZenStore(BaseZenStore):
                 )
 
             session.delete(existing_repo)
+            session.commit()
+
+    # ------------------
+    # Service Connectors
+    # ------------------
+
+    @staticmethod
+    def _fail_if_service_connector_with_name_exists_for_user(
+        name: str,
+        workspace_id: UUID,
+        user_id: UUID,
+        session: Session,
+    ) -> None:
+        """Raise an exception if a service connector with same name exists.
+
+        Args:
+            name: The name of the service connector
+            workspace_id: The ID of the workspace
+            user_id: The ID of the user
+            session: The Session
+
+        Returns:
+            None
+
+        Raises:
+            EntityExistsError: If a service connector with the given name is
+                already owned by the user
+        """
+        assert user_id
+        # Check if service connector with the same domain key (name, workspace,
+        # owner) already exists
+        existing_domain_connector = session.exec(
+            select(ServiceConnectorSchema)
+            .where(ServiceConnectorSchema.name == name)
+            .where(ServiceConnectorSchema.workspace_id == workspace_id)
+            .where(ServiceConnectorSchema.user_id == user_id)
+        ).first()
+        if existing_domain_connector is not None:
+            # Theoretically the user schema is optional, in this case there is
+            #  no way that it will be None
+            assert existing_domain_connector.user
+            raise EntityExistsError(
+                f"Unable to register service connector with name '{name}': "
+                "Found an existing service connector with the same name in the "
+                f"same workspace, '{existing_domain_connector.workspace.name}', "
+                "owned by the same user, "
+                f"{existing_domain_connector.user.name}'."
+            )
+        return None
+
+    @staticmethod
+    def _fail_if_service_connector_with_name_already_shared(
+        name: str,
+        workspace_id: UUID,
+        session: Session,
+    ) -> None:
+        """Raise an exception if a service connector with same name is already shared.
+
+        Args:
+            name: The name of the service connector
+            workspace_id: The ID of the workspace
+            session: The Session
+
+        Raises:
+            EntityExistsError: If a service connector with the given name is
+                already shared by another user
+        """
+        # Check if a service connector with the same name is already shared
+        # within the workspace
+        existing_shared_connector = session.exec(
+            select(ServiceConnectorSchema)
+            .where(ServiceConnectorSchema.name == name)
+            .where(ServiceConnectorSchema.workspace_id == workspace_id)
+            .where(ServiceConnectorSchema.is_shared is True)
+        ).first()
+        if existing_shared_connector is not None:
+            raise EntityExistsError(
+                f"Unable to share service connector with name '{name}': Found "
+                "an existing shared service connector with the same name in "
+                f"workspace '{workspace_id}'."
+            )
+
+    def create_service_connector(
+        self, service_connector: ServiceConnectorRequestModel
+    ) -> ServiceConnectorResponseModel:
+        """Creates a new service connector.
+
+        Args:
+            service_connector: Service connector to be created.
+
+        Returns:
+            The newly created service connector.
+        """
+        with Session(self.engine) as session:
+            self._fail_if_service_connector_with_name_exists_for_user(
+                name=service_connector.name,
+                user_id=service_connector.user,
+                workspace_id=service_connector.workspace,
+                session=session,
+            )
+
+            if service_connector.is_shared:
+                self._fail_if_service_connector_with_name_already_shared(
+                    name=service_connector.name,
+                    workspace_id=service_connector.workspace,
+                    session=session,
+                )
+
+            # Create labels.
+            labels = []
+            for key, value in service_connector.labels.items():
+                label = LabelSchema(
+                    name=key,
+                    value=value,
+                )
+                session.add(label)
+                labels.append(label)
+
+            # Create the service connector
+            new_service_connector = ServiceConnectorSchema.from_request(
+                service_connector
+            )
+            new_service_connector.labels = labels
+
+            session.add(new_service_connector)
+            session.commit()
+
+            session.refresh(new_service_connector)
+
+            return new_service_connector.to_model()
+
+    def get_service_connector(
+        self, service_connector_id: UUID
+    ) -> ServiceConnectorResponseModel:
+        """Gets a specific service connector.
+
+        Args:
+            service_connector_id: The ID of the service connector to get.
+
+        Returns:
+            The requested service connector, if it was found.
+
+        Raises:
+            KeyError: If no service connector with the given ID exists.
+        """
+        with Session(self.engine) as session:
+            service_connector = session.exec(
+                select(ServiceConnectorSchema).where(
+                    ServiceConnectorSchema.id == service_connector_id
+                )
+            ).first()
+
+            if service_connector is None:
+                raise KeyError(
+                    f"Service connector with ID {service_connector_id} not "
+                    "found."
+                )
+
+            return service_connector.to_model()
+
+    def list_service_connectors(
+        self, filter_model: ServiceConnectorFilterModel
+    ) -> Page[ServiceConnectorResponseModel]:
+        """List all service connectors.
+
+        Args:
+            filter_model: All filter parameters including pagination
+                params.
+
+        Returns:
+            A page of all service connectors.
+        """
+        with Session(self.engine) as session:
+            query = select(ServiceConnectorSchema)
+            paged_connectors: Page[
+                ServiceConnectorResponseModel
+            ] = self.filter_and_paginate(
+                session=session,
+                query=query,
+                table=ServiceConnectorSchema,
+                filter_model=filter_model,
+            )
+            return paged_connectors
+
+    def update_service_connector(
+        self, service_connector_id: UUID, update: ServiceConnectorUpdateModel
+    ) -> ServiceConnectorResponseModel:
+        """Updates an existing service connector.
+
+        Args:
+            service_connector_id: The ID of the service connector to update.
+            update: The update to be applied to the service connector.
+
+        Returns:
+            The updated service connector.
+
+        Raises:
+            KeyError: If no service connector with the given ID exists.
+        """
+        with Session(self.engine) as session:
+            existing_service_connector = session.exec(
+                select(ServiceConnectorSchema).where(
+                    ServiceConnectorSchema.id == service_connector_id
+                )
+            ).first()
+
+            if existing_service_connector is None:
+                raise KeyError(
+                    f"Unable to update service connector with ID "
+                    f"'{service_connector_id}': Found no existing service "
+                    "connector with this ID."
+                )
+
+            # In case of a renaming update, make sure no service connector uses
+            # that name already
+            if update.name:
+                if (
+                    existing_service_connector.name != update.name
+                    and existing_service_connector.user_id is not None
+                ):
+                    self._fail_if_service_connector_with_name_exists_for_user(
+                        name=existing_service_connector.name,
+                        workspace_id=existing_service_connector.workspace_id,
+                        user_id=existing_service_connector.user_id,
+                        session=session,
+                    )
+
+            # Check if service connector update makes the service connector a
+            # shared service connector
+            # In that case, check if a service connector with the same name is
+            # already shared within the workspace
+            if update.is_shared:
+                if (
+                    not existing_service_connector.is_shared
+                    and update.is_shared
+                ):
+                    self._fail_if_service_connector_with_name_already_shared(
+                        name=update.name or existing_service_connector.name,
+                        workspace_id=existing_service_connector.workspace_id,
+                        session=session,
+                    )
+
+            # Update labels
+            if update.labels:
+                # Delete existing labels
+                for label in existing_service_connector.labels:
+                    session.delete(label)
+
+                # Create new labels
+                for key, value in update.labels.items():
+                    label = LabelSchema(
+                        name=key,
+                        value=value,
+                    )
+                    session.add(label)
+                    existing_service_connector.labels.append(label)
+
+            existing_service_connector.update(connector_update=update)
+            session.add(existing_service_connector)
+            session.commit()
+
+            return existing_service_connector.to_model()
+
+    def delete_service_connector(self, service_connector_id: UUID) -> None:
+        """Deletes a service connector.
+
+        Args:
+            service_connector_id: The ID of the service connector to delete.
+
+        Raises:
+            KeyError: If no service connector with the given ID exists.
+        """
+        with Session(self.engine) as session:
+            try:
+                service_connector = session.exec(
+                    select(ServiceConnectorSchema).where(
+                        ServiceConnectorSchema.id == service_connector_id
+                    )
+                ).one()
+
+                if service_connector is None:
+                    raise KeyError(
+                        f"Service connector with ID {service_connector_id} not "
+                        "found."
+                    )
+
+                if len(service_connector.stack_components) > 0:
+                    raise IllegalOperationError(
+                        f"Service connector with ID {service_connector_id} "
+                        f"cannot be deleted as it is still referenced by "
+                        f"{len(service_connector.stack_components)} "
+                        "stack components. Before deleting this service "
+                        "connector, make sure to remove it from all stack "
+                        "components."
+                    )
+                else:
+                    session.delete(service_connector)
+            except NoResultFound as error:
+                raise KeyError from error
+
             session.commit()
 
     # =======================

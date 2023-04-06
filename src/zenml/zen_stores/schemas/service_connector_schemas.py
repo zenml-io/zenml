@@ -16,17 +16,19 @@
 import base64
 import json
 from datetime import datetime
-from typing import Optional
+from typing import List, Optional
 from uuid import UUID
 
 from sqlalchemy import TEXT, Column
 from sqlmodel import Field, Relationship
 
-from zenml.models.service_connectors import (
+from zenml.models import (
+    ServiceConnectorRequestModel,
     ServiceConnectorResponseModel,
     ServiceConnectorUpdateModel,
 )
 from zenml.zen_stores.schemas.base_schemas import ShareableSchema
+from zenml.zen_stores.schemas.label_schemas import LabelSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
@@ -39,14 +41,14 @@ class ServiceConnectorSchema(ShareableSchema, table=True):
 
     type: str
     auth_method: str
-    resource_type: Optional[str] = Field(
-        sa_column=Column(TEXT, nullable=True)
-    )
-    resource_id: Optional[str] = Field(
-        sa_column=Column(TEXT, nullable=True)
-    )
-    configuration: bytes
+    resource_type: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
+    resource_id: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
+    configuration: Optional[bytes]
     secret_reference: Optional[UUID]
+
+    labels: List[LabelSchema] = Relationship(
+        sa_relationship_kwargs={"cascade": "delete"},
+    )
 
     workspace_id: UUID = build_foreign_key_field(
         source=__tablename__,
@@ -56,7 +58,9 @@ class ServiceConnectorSchema(ShareableSchema, table=True):
         ondelete="CASCADE",
         nullable=False,
     )
-    workspace: "WorkspaceSchema" = Relationship(back_populates="components")
+    workspace: "WorkspaceSchema" = Relationship(
+        back_populates="service_connectors"
+    )
 
     user_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
@@ -66,7 +70,41 @@ class ServiceConnectorSchema(ShareableSchema, table=True):
         ondelete="SET NULL",
         nullable=True,
     )
-    user: Optional["UserSchema"] = Relationship(back_populates="components")
+    user: Optional["UserSchema"] = Relationship(
+        back_populates="service_connectors"
+    )
+
+    @classmethod
+    def from_request(
+        cls,
+        connector_request: ServiceConnectorRequestModel,
+    ) -> "ServiceConnectorSchema":
+        """Create a `ServiceConnectorSchema` from a `ServiceConnectorRequestModel`.
+
+        Args:
+            connector_request: The `ServiceConnectorRequestModel` from which to
+                create the schema.
+
+        Returns:
+            The created `ServiceConnectorSchema`.
+        """
+        assert connector_request.user is not None, "User must be set."
+        return cls(
+            workspace_id=connector_request.workspace,
+            user_id=connector_request.user,
+            is_shared=connector_request.is_shared,
+            name=connector_request.name,
+            type=connector_request.type,
+            auth_method=connector_request.auth_method,
+            resource_type=connector_request.resource_type,
+            resource_id=connector_request.resource_id,
+            configuration=base64.b64encode(
+                json.dumps(connector_request.configuration).encode("utf-8")
+            )
+            if connector_request.configuration
+            else None,
+            secret_reference=connector_request.secret_reference,
+        )
 
     def update(
         self, connector_update: ServiceConnectorUpdateModel
@@ -83,8 +121,14 @@ class ServiceConnectorSchema(ShareableSchema, table=True):
             exclude_unset=True, exclude={"workspace", "user"}
         ).items():
             if field == "configuration":
-                self.configuration = base64.b64encode(
-                    json.dumps(connector_update.configuration).encode("utf-8")
+                self.configuration = (
+                    base64.b64encode(
+                        json.dumps(connector_update.configuration).encode(
+                            "utf-8"
+                        )
+                    )
+                    if connector_update.configuration
+                    else None
                 )
             else:
                 setattr(self, field, value)
@@ -95,22 +139,28 @@ class ServiceConnectorSchema(ShareableSchema, table=True):
     def to_model(
         self,
     ) -> "ServiceConnectorResponseModel":
-        """Creates a `ServiceConnectorModel` from an instance of a `StackSchema`.
+        """Creates a `ServiceConnectorModel` from an instance of a `ServiceConnectorSchema`.
 
         Returns:
             A `ServiceConnectorModel`
         """
         return ServiceConnectorResponseModel(
             id=self.id,
-            auth_method=self.auth_method,
-            name=self.name,
-            type=self.type,
             user=self.user.to_model(True) if self.user else None,
             workspace=self.workspace.to_model(),
             is_shared=self.is_shared,
-            configuration=json.loads(
-                base64.b64decode(self.configuration).decode()
-            ),
             created=self.created,
             updated=self.updated,
+            name=self.name,
+            type=self.type,
+            auth_method=self.auth_method,
+            resource_type=self.resource_type,
+            resource_id=self.resource_id,
+            configuration=json.loads(
+                base64.b64decode(self.configuration).decode()
+            )
+            if self.configuration
+            else None,
+            secret_reference=self.secret_reference,
+            labels={label.name: label.value for label in self.labels},
         )

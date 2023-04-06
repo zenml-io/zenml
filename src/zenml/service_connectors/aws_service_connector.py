@@ -596,6 +596,7 @@ connector config if it cannot be inferred from the resource ID.
         if resource_type == AWS_RESOURCE_TYPE:
             return session
 
+        region_id: Optional[str] = None
         if resource_type == DOCKER_RESOURCE_TYPE:
             from docker import DockerClient
 
@@ -617,7 +618,6 @@ connector config if it cannot be inferred from the resource ID.
             # resource ID
             registry_id: Optional[str] = None
             registry_name: Optional[str] = None
-            region_id: Optional[str] = None
             if re.match(
                 r"^arn:aws:ecr:[a-z0-9-]+:\d{12}:repository(/.*)*$",
                 resource_id,
@@ -724,7 +724,6 @@ connector config if it cannot be inferred from the resource ID.
 
         if resource_type == KUBERNETES_RESOURCE_TYPE:
             from kubernetes import client as k8s_client
-            from kubernetes import config as k8s_config
 
             resource_id = resource_id or self.config.resource_id
             if not resource_id:
@@ -741,7 +740,6 @@ connector config if it cannot be inferred from the resource ID.
             # We need to extract the cluster name and region ID from the
             # provided resource ID
             cluster_name: Optional[str] = None
-            region_id: Optional[str] = None
             if re.match(
                 r"^arn:aws:eks:[a-z0-9-]+:\d{12}:cluster/.+$",
                 resource_id,
@@ -936,6 +934,7 @@ connector config if it cannot be inferred from the resource ID.
         # the connector secrets.
         credentials = session.get_credentials()
         auth_method = AWSAuthenticationMethods.SECRET_KEY
+        auth_secrets: AuthenticationSecrets
         if credentials.token:
             auth_method = AWSAuthenticationMethods.STS_TOKEN
             auth_secrets = STSToken(
@@ -951,7 +950,7 @@ connector config if it cannot be inferred from the resource ID.
 
         return ServiceConnectorConfig(
             auth_method=auth_method,
-            resource_types=[resource_type] if resource_type else None,
+            resource_type=resource_type,
             resource_id=resource_id,
             auth_config=auth_config,
             auth_secrets=auth_secrets,

@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Base ZenML Service Connector class."""
 
-import re
 import uuid
 from abc import abstractmethod
 from typing import Any, Dict, List, Optional, Tuple, Type, Union
@@ -24,7 +23,6 @@ from pydantic import (
     SecretStr,
     ValidationError,
     root_validator,
-    validator,
 )
 
 from zenml.client import Client
@@ -579,10 +577,9 @@ class ServiceConnector(BaseModel):
         if restrict_resource_type:
             auth_method_resource_types = [restrict_resource_type]
         else:
-            auth_method_resource_types = auth_method_spec.resource_types
-            if auth_method_resource_types is None:
-                auth_method_resource_types = spec.resource_types
-            auth_method_resource_types = auth_method_resource_types or []
+            auth_method_resource_types = (
+                auth_method_spec.resource_types or spec.resource_types or []
+            )
 
         uses_resource_ids = auth_method_spec.supports_resource_ids
         if uses_resource_ids is None:

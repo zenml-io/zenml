@@ -13,14 +13,12 @@
 #  permissions and limitations under the License.
 """Model definitions for ZenML service connectors."""
 
-import re
-from typing import Any, ClassVar, Dict, List, Optional, Type, Union
+from typing import Any, ClassVar, Dict, List, Optional, Union
 from uuid import UUID
 
 from pydantic import (
     BaseModel,
     Field,
-    validator,
 )
 
 from zenml.models.base_models import (
@@ -39,12 +37,17 @@ from zenml.models.filter_models import ShareableWorkspaceScopedFilterModel
 class ServiceConnectorBaseModel(BaseModel):
     """Base model for service connectors."""
 
+    name: str = Field(
+        title="The service connector name.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
     type: str = Field(
         title="The type of service connector.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    name: str = Field(
-        title="The service connector name.",
+    description: str = Field(
+        default="",
+        title="The service connector description.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
     auth_method: str = Field(
@@ -79,6 +82,10 @@ class ServiceConnectorBaseModel(BaseModel):
         default=None,
         title="The ID of the secret that contains the service connector "
         "credentials.",
+    )
+    labels: Dict[str, str] = Field(
+        default_factory=dict,
+        title="Service connector labels.",
     )
 
 

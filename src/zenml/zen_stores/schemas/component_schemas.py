@@ -46,7 +46,7 @@ class StackComponentSchema(ShareableSchema, table=True):
     __tablename__ = "stack_component"
 
     type: StackComponentType
-    auth_method: str
+    flavor: str
     configuration: bytes
     labels: Optional[bytes]
 
