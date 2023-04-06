@@ -134,6 +134,7 @@ class VisualizationType(StrEnum):
     HTML = "html"
     MARKDOWN = "markdown"
     IMAGE = "image"
+    CSV = "csv"
 
 
 class VisualizationResponse(BaseModel):
@@ -176,5 +177,10 @@ def get_artifact_visualization(
         visualization_type = VisualizationType.HTML
         with open("src/zenml/mock_html.html", "r") as html_file:
             visualization = html_file.read()
+
+    elif artifact.name == "csv":
+        visualization_type = VisualizationType.CSV
+        with open("src/zenml/mock_csv.csv", "r") as csv_file:
+            visualization = csv_file.read()
 
     return VisualizationResponse(type=visualization_type, value=visualization)

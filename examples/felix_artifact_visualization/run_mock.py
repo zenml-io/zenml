@@ -5,10 +5,13 @@ from zenml.steps import Output, step
 
 
 @pipeline
-def three_step_pipeline(get_image, get_markdown, get_html):
+def artifact_visualization_pipeline(
+    get_image, get_markdown, get_html, get_table
+):
     get_image()
     get_markdown()
     get_html()
+    get_table()
 
 
 @step
@@ -26,11 +29,17 @@ def get_html() -> Output(html=str):
     return "<html><body><h1>Hello I am HTML</h1></body></html>"
 
 
+@step
+def get_csv() -> Output(csv=str):
+    return "a,b,c\n1,2,3"
+
+
 def main():
-    pip = three_step_pipeline(
+    pip = artifact_visualization_pipeline(
         get_image=get_image(),
         get_markdown=get_markdown(),
         get_html=get_html(),
+        get_table=get_csv(),
     )
     pip.configure(enable_cache=False)
     pip.run()
