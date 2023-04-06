@@ -168,6 +168,11 @@ def get_artifact_visualization(
         with open("src/zenml/mock_img.png", "rb") as image_file:
             visualization = base64.b64encode(image_file.read())
 
+    elif artifact.name == "csv":
+        visualization_type = VisualizationType.CSV
+        with open("src/zenml/mock_csv.csv", "r") as csv_file:
+            visualization = csv_file.read()
+
     elif artifact.name == "markdown":
         visualization_type = VisualizationType.MARKDOWN
         with open("src/zenml/mock_markdown.md", "r") as md_file:
@@ -178,9 +183,9 @@ def get_artifact_visualization(
         with open("src/zenml/mock_html.html", "r") as html_file:
             visualization = html_file.read()
 
-    elif artifact.name == "csv":
-        visualization_type = VisualizationType.CSV
-        with open("src/zenml/mock_csv.csv", "r") as csv_file:
-            visualization = csv_file.read()
+    elif artifact.name == "html_large":
+        visualization_type = VisualizationType.HTML
+        with open("src/zenml/mock_html_large.html", "r") as html_file:
+            visualization = html_file.read()
 
     return VisualizationResponse(type=visualization_type, value=visualization)
