@@ -2417,21 +2417,23 @@ class RestZenStore(BaseZenStore):
         resource_update: BaseModel,
         response_model: Type[AnyResponseModel],
         route: str,
+        params: Optional[Dict[str, Any]] = None,
     ) -> AnyResponseModel:
         """Update an existing resource.
 
         Args:
             resource_id: The id of the resource to update.
             resource_update: The resource update.
-            route: The resource REST API route to use.
             response_model: Optional model to use to deserialize the response
                 body. If not provided, the resource class itself will be used.
+            route: The resource REST API route to use.
+            params: Optional query parameters to pass to the endpoint.
 
         Returns:
             The updated resource.
         """
         response_body = self.put(
-            f"{route}/{str(resource_id)}", body=resource_update
+            f"{route}/{str(resource_id)}", body=resource_update, params=params
         )
 
         return response_model.parse_obj(response_body)
