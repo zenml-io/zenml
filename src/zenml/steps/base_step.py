@@ -20,6 +20,7 @@ from types import FunctionType
 from typing import (
     TYPE_CHECKING,
     Any,
+    Callable,
     ClassVar,
     Dict,
     Mapping,
@@ -267,6 +268,7 @@ class BaseStep(metaclass=BaseStepMeta):
 
         name: str
         step_name: str
+        annotation: Any
         pipeline: "Pipeline"
 
     def __init__(
@@ -530,6 +532,9 @@ class BaseStep(metaclass=BaseStepMeta):
 
         for key, value in bound_args.arguments.items():
             if isinstance(value, BaseStep._OutputArtifact):
+                self._validate_input_artifact(
+                    parameter=signature.parameters[key], artifact=value
+                )
                 artifacts[key] = value
                 if key in self.configuration.parameters:
                     logger.warning(
@@ -594,10 +599,11 @@ class BaseStep(metaclass=BaseStepMeta):
         )
 
         outputs = []
-        for key in self.OUTPUT_SIGNATURE:
+        for key, annotation in self.OUTPUT_SIGNATURE.items():
             output = BaseStep._OutputArtifact(
                 name=key,
                 step_name=invocation_id,
+                annotation=annotation,
                 pipeline=Pipeline.ACTIVE_PIPELINE,
             )
             outputs.append(output)
@@ -1065,6 +1071,46 @@ class BaseStep(metaclass=BaseStepMeta):
 
         return values
 
+    def _validate_input_artifact(
+        self,
+        parameter: inspect.Parameter,
+        artifact: "BaseStep._OutputArtifact",
+    ) -> None:
+        from pydantic.typing import get_origin, is_union
+
+        from zenml.steps.utils import get_args
+
+        def _get_allowed_types(annotation) -> Tuple:
+            if is_union(get_origin(annotation) or annotation):
+                allowed_types = get_args(annotation)
+            elif issubclass(annotation, BaseModel):
+                # TODO: handle custom pydantic __root__ type here
+                allowed_types = (annotation, dict)
+            else:
+                allowed_types = (get_origin(annotation) or annotation,)
+
+            return allowed_types
+
+        input_types = _get_allowed_types(annotation=parameter.annotation)
+        output_types = _get_allowed_types(annotation=artifact.annotation)
+        breakpoint()
+        if Any in input_types or Any in output_types:
+            # Skip type checks for `Any` annotations
+            return
+
+        for output_type in output_types:
+            if any(
+                issubclass(output_type, input_type)
+                for input_type in input_types
+            ):
+                continue
+
+            raise StepInterfaceError(
+                f"Wrong artifact type (`{artifact.annotation}`) for argument "
+                f"'{parameter.name}' of step '{self.name}'. The argument "
+                f"should be of type `{parameter.annotation}`."
+            )
+
     def _validate_parameter_value(
         self, parameter: inspect.Parameter, value: Any
     ) -> None:
@@ -1089,9 +1135,8 @@ class BaseStep(metaclass=BaseStepMeta):
             if not isinstance(value, expected_type):
                 raise StepInterfaceError(
                     f"Wrong argument type (`{type(value)}`) for argument "
-                    f"'{parameter.name}' of step '{self.name}'. The argument should "
-                    f"either be an output of a previous steps or of type "
-                    f"`{expected_type}`."
+                    f"'{parameter.name}' of step '{self.name}'. The argument "
+                    f"should be of type `{expected_type}`."
                 )
 
         if not is_json_serializable(value):
@@ -1322,3 +1367,13 @@ class ExternalArtifact:
                     f"its `ASSOCIATED_TYPES` class variable.",
                     url="https://docs.zenml.io/advanced-guide/pipelines/materializers",
                 )
+
+
+def validate_reserved_arguments(
+    func: Callable[..., Any], reserved_arguments: Sequence[str]
+):
+    function_params = inspect.signature(func).parameters
+
+    for arg in reserved_arguments:
+        if arg in function_params:
+            raise RuntimeError(f"Reserved argument name {arg}.")
