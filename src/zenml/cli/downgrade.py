@@ -22,7 +22,6 @@ from zenml.config.global_config import GlobalConfiguration
 @cli.command("downgrade", help="Downgrade zenml version in global config.")
 def disconnect_server() -> None:
     """Downgrade zenml version in global config to match the current version."""
-
     gc = GlobalConfiguration()
 
     if gc.version == __version__:
