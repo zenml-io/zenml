@@ -529,12 +529,16 @@ class BaseStep(metaclass=BaseStepMeta):
         artifacts = {}
         external_artifacts = {}
         parameters = {}
+        from zenml.materializers import UnmaterializedArtifact
 
         for key, value in bound_args.arguments.items():
             if isinstance(value, BaseStep._OutputArtifact):
-                self._validate_input_artifact(
-                    parameter=signature.parameters[key], artifact=value
-                )
+                parameter = signature.parameters[key]
+                if parameter.annotation is not UnmaterializedArtifact:
+                    # Only validate if the type isn't unmaterialized artifact
+                    self._validate_input_type(
+                        parameter=parameter, input_type=value.annotation
+                    )
                 artifacts[key] = value
                 if key in self.configuration.parameters:
                     logger.warning(
@@ -1071,10 +1075,10 @@ class BaseStep(metaclass=BaseStepMeta):
 
         return values
 
-    def _validate_input_artifact(
+    def _validate_input_type(
         self,
         parameter: inspect.Parameter,
-        artifact: "BaseStep._OutputArtifact",
+        input_type: Any,
     ) -> None:
         from pydantic.typing import get_origin, is_union
 
@@ -1095,53 +1099,37 @@ class BaseStep(metaclass=BaseStepMeta):
 
             return allowed_types
 
-        input_types = _get_allowed_types(annotation=parameter.annotation)
-        output_types = _get_allowed_types(annotation=artifact.annotation)
+        allowed_types = _get_allowed_types(annotation=parameter.annotation)
+        input_types = _get_allowed_types(annotation=input_type)
 
-        if Any in input_types or Any in output_types:
+        if Any in input_types or Any in allowed_types:
             # Skip type checks for `Any` annotations
             return
 
-        for output_type in output_types:
-            if any(
-                issubclass(output_type, input_type)
-                for input_type in input_types
-            ):
-                continue
-
-            raise StepInterfaceError(
-                f"Wrong artifact type (`{artifact.annotation}`) for argument "
-                f"'{parameter.name}' of step '{self.name}'. The argument "
-                f"should be of type `{parameter.annotation}`."
-            )
+        for type_ in input_types:
+            if not issubclass(type_, allowed_types):
+                raise StepInterfaceError(
+                    f"Wrong input type (`{input_type}`) for argument "
+                    f"'{parameter.name}' of step '{self.name}'. The argument "
+                    f"should be of type `{parameter.annotation}`."
+                )
 
     def _validate_parameter_value(
         self, parameter: inspect.Parameter, value: Any
     ) -> None:
-        from pydantic.typing import get_origin, is_union
+        from zenml.materializers import UnmaterializedArtifact
 
-        from zenml.steps.utils import get_args
+        if parameter.annotation is UnmaterializedArtifact:
+            raise RuntimeError(
+                "Passing parameter for input of type `UnmaterializedArtifact` "
+                "is not allowed."
+            )
 
-        expected_type = (
-            get_origin(parameter.annotation) or parameter.annotation
+        self._validate_input_type(
+            parameter=parameter,
+            input_type=type(value),
+            allow_unmaterialized_artifacts=False,
         )
-
-        if expected_type is Any:
-            # Any type is allowed
-            pass
-        else:
-            if is_union(expected_type):
-                expected_type = get_args(parameter.annotation)
-            elif issubclass(expected_type, BaseModel):
-                # TODO: handle custom pydantic __root__ type here
-                expected_type = (expected_type, dict)
-
-            if not isinstance(value, expected_type):
-                raise StepInterfaceError(
-                    f"Wrong argument type (`{type(value)}`) for argument "
-                    f"'{parameter.name}' of step '{self.name}'. The argument "
-                    f"should be of type `{expected_type}`."
-                )
 
         if not is_json_serializable(value):
             raise StepInterfaceError(
@@ -1184,14 +1172,6 @@ def get_step_entrypoint_signature(
 
     signature = signature.replace(parameters=params_without_step_context)
     return signature
-
-
-# step_1()
-# step_1()
-# step_2()
-
-# step_1.after(step_2)
-# step_2.after(step_1)
 
 
 class StepInvocation:
