@@ -30,6 +30,15 @@ class ArtifactType(StrEnum):
     BASE = "BaseArtifact"
 
 
+class ArtifactVisualizationType(StrEnum):
+    """All possible types an artifact visualization can have."""
+
+    CSV = "csv"
+    HTML = "html"
+    IMAGE = "image"
+    MARKDOWN = "markdown"
+
+
 class ExecutionStatus(StrEnum):
     """Enum that represents the current status of a step or pipeline run."""
 

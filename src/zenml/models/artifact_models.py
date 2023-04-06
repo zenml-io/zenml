@@ -19,7 +19,7 @@ from uuid import UUID
 from pydantic import BaseModel, Field
 
 from zenml.config.source import Source, convert_source_validator
-from zenml.enums import ArtifactType
+from zenml.enums import ArtifactType, ArtifactVisualizationType
 from zenml.models.base_models import (
     WorkspaceScopedRequestModel,
     WorkspaceScopedResponseModel,
@@ -69,6 +69,13 @@ class ArtifactResponseModel(ArtifactBaseModel, WorkspaceScopedResponseModel):
     metadata: Dict[str, "RunMetadataResponseModel"] = Field(
         default={}, title="Metadata of the artifact."
     )
+
+
+class ArtifactVisualizationResponse(BaseModel):
+    """Response model for artifact visualizations."""
+
+    type: ArtifactVisualizationType
+    value: Union[str, bytes]
 
 
 # ------ #
