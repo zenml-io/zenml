@@ -177,7 +177,6 @@ from zenml.zen_stores.schemas import (
     CodeRepositorySchema,
     FlavorSchema,
     IdentitySchema,
-    LabelSchema,
     NamedSchema,
     PipelineBuildSchema,
     PipelineDeploymentSchema,
@@ -188,6 +187,7 @@ from zenml.zen_stores.schemas import (
     RunMetadataSchema,
     ScheduleSchema,
     ServiceConnectorSchema,
+    ServiceConnectorLabelSchema,
     StackComponentSchema,
     StackCompositionSchema,
     StackSchema,
@@ -4156,20 +4156,22 @@ class SqlZenStore(BaseZenStore):
                     session=session,
                 )
 
-            # Create labels.
-            labels = []
-            for key, value in service_connector.labels.items():
-                label = LabelSchema(
-                    name=key,
-                    value=value,
-                )
-                session.add(label)
-                labels.append(label)
-
             # Create the service connector
             new_service_connector = ServiceConnectorSchema.from_request(
                 service_connector
             )
+
+            # Create labels.
+            labels = []
+            for key, value in service_connector.labels.items():
+                label = ServiceConnectorLabelSchema(
+                    name=key,
+                    value=value,
+                    service_connector=new_service_connector,
+                )
+                session.add(label)
+                labels.append(label)
+
             new_service_connector.labels = labels
 
             session.add(new_service_connector)
@@ -4298,9 +4300,10 @@ class SqlZenStore(BaseZenStore):
 
                 # Create new labels
                 for key, value in update.labels.items():
-                    label = LabelSchema(
+                    label = ServiceConnectorLabelSchema(
                         name=key,
                         value=value,
+                        service_connector=existing_service_connector,
                     )
                     session.add(label)
                     existing_service_connector.labels.append(label)

@@ -20,7 +20,7 @@ from typing import List, Optional
 from uuid import UUID
 
 from sqlalchemy import TEXT, Column
-from sqlmodel import Field, Relationship
+from sqlmodel import Field, Relationship, SQLModel
 
 from zenml.models import (
     ServiceConnectorRequestModel,
@@ -28,7 +28,6 @@ from zenml.models import (
     ServiceConnectorUpdateModel,
 )
 from zenml.zen_stores.schemas.base_schemas import ShareableSchema
-from zenml.zen_stores.schemas.label_schemas import LabelSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
@@ -46,7 +45,8 @@ class ServiceConnectorSchema(ShareableSchema, table=True):
     configuration: Optional[bytes]
     secret_reference: Optional[UUID]
 
-    labels: List[LabelSchema] = Relationship(
+    labels: List["ServiceConnectorLabelSchema"] = Relationship(
+        back_populates="service_connector",
         sa_relationship_kwargs={"cascade": "delete"},
     )
 
@@ -164,3 +164,25 @@ class ServiceConnectorSchema(ShareableSchema, table=True):
             secret_reference=self.secret_reference,
             labels={label.name: label.value for label in self.labels},
         )
+
+
+class ServiceConnectorLabelSchema(SQLModel, table=True):
+    """SQL Model for service connector labels."""
+
+    __tablename__ = "service_connector_label"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    name: str
+    value: str
+
+    service_connector_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target=ServiceConnectorSchema.__tablename__,
+        source_column="service_connector_id",
+        target_column="id",
+        ondelete="CASCADE",
+        nullable=False,
+    )
+    service_connector: ServiceConnectorSchema = Relationship(
+        back_populates="labels"
+    )
