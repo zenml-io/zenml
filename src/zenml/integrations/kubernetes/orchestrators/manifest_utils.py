@@ -158,6 +158,9 @@ def build_pod_manifest(
         },
     )
 
+    if settings.pod_settings and settings.pod_settings.annotations:
+        pod_metadata.annotations = settings.pod_settings.annotations
+
     pod_manifest = k8s_client.V1Pod(
         kind="Pod",
         api_version="v1",

@@ -78,20 +78,19 @@ def is_inside_kubernetes() -> bool:
         return False
 
 
-def load_kube_config(context: Optional[str] = None) -> None:
+def load_kube_config(
+    incluster: bool = False, context: Optional[str] = None
+) -> None:
     """Load the Kubernetes client config.
 
-    Depending on the environment (whether it is inside the running Kubernetes
-    cluster or remote host), different location will be searched for the config
-    file.
-
     Args:
+        incluster: Whether to load the in-cluster config.
         context: Name of the Kubernetes context. If not provided, uses the
-            currently active context.
+            currently active context. Will be ignored if `incluster` is True.
     """
-    try:
+    if incluster:
         k8s_config.load_incluster_config()
-    except k8s_config.ConfigException:
+    else:
         k8s_config.load_kube_config(context=context)
 
 
