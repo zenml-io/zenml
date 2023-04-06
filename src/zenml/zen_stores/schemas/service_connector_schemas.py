@@ -118,7 +118,7 @@ class ServiceConnectorSchema(ShareableSchema, table=True):
             The updated `ServiceConnectorSchema`.
         """
         for field, value in connector_update.dict(
-            exclude_unset=True, exclude={"workspace", "user"}
+            exclude_unset=True, exclude={"workspace", "user", "labels"}
         ).items():
             if field == "configuration":
                 self.configuration = (

@@ -66,7 +66,7 @@ __all__ = [
     "CodeReferenceSchema",
     "FlavorSchema",
     "IdentitySchema",
-    "LabelSchema",
+    "ServiceConnectorLabelSchema",
     "PipelineBuildSchema",
     "PipelineDeploymentSchema",
     "PipelineRunSchema",
