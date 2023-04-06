@@ -14,19 +14,23 @@
 """Endpoint definitions for steps (and artifacts) of pipeline runs."""
 
 import base64
+from typing import Union
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Security
 
 from zenml.constants import API, ARTIFACTS, VERSION_1, VISUALIZE
-from zenml.enums import ArtifactVisualizationType, PermissionType
+from zenml.enums import PermissionType, VisualizationType
+from zenml.exceptions import DoesNotExistException
 from zenml.models import (
     ArtifactFilterModel,
     ArtifactRequestModel,
     ArtifactResponseModel,
 )
-from zenml.models.artifact_models import ArtifactVisualizationResponse
 from zenml.models.page_model import Page
+from zenml.models.visualization_models import (
+    LoadedVisualizationModel,
+)
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.utils import (
     error_response,
@@ -129,49 +133,44 @@ def delete_artifact(
 
 @router.get(
     "/{artifact_id}" + VISUALIZE,
-    response_model=ArtifactVisualizationResponse,
+    response_model=LoadedVisualizationModel,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def get_artifact_visualization(
     artifact_id: UUID,
+    index: int = 0,
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> ArtifactVisualizationResponse:
+) -> LoadedVisualizationModel:
     """Get the visualization of an artifact.
 
     Args:
         artifact_id: ID of the artifact for which to get the visualization.
+        index: Index of the visualization to get.
 
     Returns:
         The visualization of the artifact.
+
+    Raises:
+        DoesNotExistException: If the artifact has no visualizations.
     """
     artifact = zen_store().get_artifact(artifact_id)
 
-    if artifact.name == "image":
-        visualization_type = ArtifactVisualizationType.IMAGE
-        with open("src/zenml/mock_img.png", "rb") as image_file:
-            visualization = base64.b64encode(image_file.read())
+    if not artifact.visualizations:
+        raise DoesNotExistException(
+            f"Artifact '{artifact_id}' has no visualizations."
+        )
 
-    elif artifact.name == "csv":
-        visualization_type = ArtifactVisualizationType.CSV
-        with open("src/zenml/mock_csv.csv", "r") as csv_file:
-            visualization = csv_file.read()
+    unloaded_visualization = artifact.visualizations[index]
+    uri = unloaded_visualization.uri
+    type_ = unloaded_visualization.type
+    value: Union[str, bytes]
 
-    elif artifact.name == "markdown":
-        visualization_type = ArtifactVisualizationType.MARKDOWN
-        with open("src/zenml/mock_markdown.md", "r") as md_file:
-            visualization = md_file.read()
+    if type_ == VisualizationType.IMAGE:
+        with open(uri, "rb") as image_file:
+            value = base64.b64encode(image_file.read())
+    else:
+        with open(uri, "r") as text_file:
+            value = text_file.read()
 
-    elif artifact.name == "html":
-        visualization_type = ArtifactVisualizationType.HTML
-        with open("src/zenml/mock_html.html", "r") as html_file:
-            visualization = html_file.read()
-
-    elif artifact.name == "html_large":
-        visualization_type = ArtifactVisualizationType.HTML
-        with open("src/zenml/mock_html_large.html", "r") as html_file:
-            visualization = html_file.read()
-
-    return ArtifactVisualizationResponse(
-        type=visualization_type, value=visualization
-    )
+    return LoadedVisualizationModel(type=type_, value=value)

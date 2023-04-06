@@ -190,6 +190,9 @@ from zenml.zen_stores.schemas import (
     UserSchema,
     WorkspaceSchema,
 )
+from zenml.zen_stores.schemas.artifact_schemas import (
+    ArtifactVisualizationSchema,
+)
 from zenml.zen_stores.secrets_stores.sql_secrets_store import (
     SqlSecretsStoreConfiguration,
 )
@@ -3730,8 +3733,19 @@ class SqlZenStore(BaseZenStore):
             The created artifact.
         """
         with Session(self.engine) as session:
+
+            # Save artifact.
             artifact_schema = ArtifactSchema.from_request(artifact)
             session.add(artifact_schema)
+
+            # Save visualizations of the artifact.
+            if artifact.visualizations:
+                for vis in artifact.visualizations:
+                    vis_schema = ArtifactVisualizationSchema.from_model(
+                        visualization=vis, artifact_id=artifact_schema.id
+                    )
+                    session.add(vis_schema)
+
             session.commit()
             return self._artifact_schema_to_model(artifact_schema)
 

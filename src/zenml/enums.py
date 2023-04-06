@@ -30,8 +30,8 @@ class ArtifactType(StrEnum):
     BASE = "BaseArtifact"
 
 
-class ArtifactVisualizationType(StrEnum):
-    """All possible types an artifact visualization can have."""
+class VisualizationType(StrEnum):
+    """All possible visualization types."""
 
     CSV = "csv"
     HTML = "html"

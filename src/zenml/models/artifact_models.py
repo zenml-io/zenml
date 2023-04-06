@@ -19,13 +19,14 @@ from uuid import UUID
 from pydantic import BaseModel, Field
 
 from zenml.config.source import Source, convert_source_validator
-from zenml.enums import ArtifactType, ArtifactVisualizationType
+from zenml.enums import ArtifactType
 from zenml.models.base_models import (
     WorkspaceScopedRequestModel,
     WorkspaceScopedResponseModel,
 )
 from zenml.models.constants import STR_FIELD_MAX_LENGTH
 from zenml.models.filter_models import WorkspaceScopedFilterModel
+from zenml.models.visualization_models import VisualizationModel
 
 if TYPE_CHECKING:
     from zenml.models.run_metadata_models import RunMetadataResponseModel
@@ -53,6 +54,9 @@ class ArtifactBaseModel(BaseModel):
     data_type: Source = Field(
         title="Data type of the artifact.",
     )
+    visualizations: Optional[List[VisualizationModel]] = Field(
+        default=None, title="Visualizations of the artifact."
+    )
 
     _convert_source = convert_source_validator("materializer", "data_type")
 
@@ -69,13 +73,6 @@ class ArtifactResponseModel(ArtifactBaseModel, WorkspaceScopedResponseModel):
     metadata: Dict[str, "RunMetadataResponseModel"] = Field(
         default={}, title="Metadata of the artifact."
     )
-
-
-class ArtifactVisualizationResponse(BaseModel):
-    """Response model for artifact visualizations."""
-
-    type: ArtifactVisualizationType
-    value: Union[str, bytes]
 
 
 # ------ #

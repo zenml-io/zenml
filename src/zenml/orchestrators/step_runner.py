@@ -39,6 +39,7 @@ from zenml.models.artifact_models import (
     ArtifactRequestModel,
     ArtifactResponseModel,
 )
+from zenml.models.visualization_models import VisualizationModel
 from zenml.orchestrators.publish_utils import (
     publish_output_artifact_metadata,
     publish_output_artifacts,
@@ -491,6 +492,27 @@ class StepRunner:
             uri = output_artifact_uris[output_name]
             materializer = materializer_class(uri)
             materializer.save(return_value)
+
+            # Save artifact visualizations.
+            visualizations: List[VisualizationModel] = []
+            artifact_visualization_enabled = True  # TODO: parameterize
+            if artifact_visualization_enabled:
+                try:
+                    vis_data = materializer.save_visualizations(return_value)
+                    for vis_uri, vis_type in vis_data.items():
+                        vis_model = VisualizationModel(
+                            type=vis_type,
+                            uri=vis_uri,
+                        )
+                        visualizations.append(vis_model)
+                except Exception as e:
+                    logger.warning(
+                        f"Failed to save visualization for output artifact "
+                        f"'{output_name}' of step '{self.configuration.name}': "
+                        f"{e}"
+                    )
+
+            # Get artifact metadata.
             if artifact_metadata_enabled:
                 try:
                     artifact_metadata = materializer.extract_metadata(
@@ -512,6 +534,7 @@ class StepRunner:
                 user=active_user_id,
                 workspace=active_workspace_id,
                 artifact_store_id=artifact_store_id,
+                visualizations=visualizations,
             )
             output_artifacts[output_name] = output_artifact
         return output_artifacts, output_artifact_metadata

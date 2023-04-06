@@ -17,7 +17,7 @@ import inspect
 from typing import Any, ClassVar, Dict, Optional, Tuple, Type, cast
 
 from zenml.artifacts.base_artifact import BaseArtifact
-from zenml.enums import ArtifactType
+from zenml.enums import ArtifactType, VisualizationType
 from zenml.exceptions import MaterializerInterfaceError
 from zenml.io import fileio
 from zenml.logger import get_logger
@@ -261,6 +261,37 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
                 "`materializer.save` instead."
             )
             self.handle_return(data)
+
+    def save_visualizations(self, data: Any) -> Dict[str, VisualizationType]:
+        """Save visualizations of the given data.
+
+        If this method is not overridden, no visualizations will be saved.
+
+        When overriding this method, make sure to save all visualizations to
+        files within `self.uri`.
+
+        Example:
+        ```
+        visualization_uri = os.path.join(self.uri, "visualization.html")
+        with open(visualization_uri, "w") as f:
+            f.write("<html><body>data</body></html>")
+
+        visualization_uri_2 = os.path.join(self.uri, "visualization.png")
+        data.save_as_png(visualization_uri_2)
+
+        return {
+            visualization_uri: ArtifactVisualizationType.HTML,
+            visualization_uri_2: ArtifactVisualizationType.IMAGE
+        }
+        ```
+
+        Args:
+            data: The data of the artifact to visualize.
+
+        Returns:
+            A dictionary of visualization URIs and their types.
+        """
+        return {}
 
     def extract_metadata(self, data: Any) -> Dict[str, "MetadataType"]:
         """Extract metadata from the given data.
