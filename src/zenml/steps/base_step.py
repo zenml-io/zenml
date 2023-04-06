@@ -203,7 +203,7 @@ class BaseStepMeta(type):
                 "nothing, please annotate it with `-> None`."
             )
         cls.OUTPUT_SIGNATURE = parse_return_type_annotations(
-            step_function_signature.annotations,
+            step_function_signature.annotations["return"],
         )
 
         return cls
@@ -1128,7 +1128,6 @@ class BaseStep(metaclass=BaseStepMeta):
         self._validate_input_type(
             parameter=parameter,
             input_type=type(value),
-            allow_unmaterialized_artifacts=False,
         )
 
         if not is_json_serializable(value):
@@ -1361,3 +1360,155 @@ def validate_reserved_arguments(
     for arg in reserved_arguments:
         if arg in function_params:
             raise RuntimeError(f"Reserved argument name {arg}.")
+
+
+class EntrypointFunctionDefinition(NamedTuple):
+    inputs: Dict[str, inspect.Parameter]
+    outputs: Dict[str, Any]
+    context: Optional[inspect.Parameter]
+    params: Optional[inspect.Parameter]
+
+    def validate_input(
+        self,
+        key: str,
+        input_: Union[ExternalArtifact, BaseStep._OutputArtifact, Any],
+    ) -> None:
+        from zenml.materializers import UnmaterializedArtifact
+
+        if key not in self.inputs:
+            raise KeyError(f"No input for key {key}.")
+
+        parameter = self.inputs[key]
+
+        if isinstance(input_, BaseStep._OutputArtifact):
+            if parameter.annotation is not UnmaterializedArtifact:
+                self._validate_input_type(
+                    parameter=parameter, annotation=input_.annotation
+                )
+        elif isinstance(input_, ExternalArtifact):
+            if (
+                parameter.annotation is not UnmaterializedArtifact
+                and input_._value
+            ):
+                self._validate_input_type(
+                    parameter=parameter, annotation=type(input_._value)
+                )
+        else:
+            # Not an artifact -> This is a parameter
+            if parameter.annotation is UnmaterializedArtifact:
+                raise RuntimeError(
+                    "Passing parameter for input of type `UnmaterializedArtifact` "
+                    "is not allowed."
+                )
+
+            self._validate_input_type(
+                parameter=parameter, annotation=type(input_)
+            )
+
+            if not is_json_serializable(input_):
+                raise StepInterfaceError(
+                    f"Argument type (`{type(input_)}`) for argument "
+                    f"'{key}' is not JSON "
+                    "serializable."
+                )
+
+    def _validate_input_type(
+        self, parameter: inspect.Parameter, annotation: Any
+    ) -> None:
+
+        from pydantic.typing import get_origin, is_union
+
+        from zenml.steps.utils import get_args
+
+        def _get_allowed_types(annotation) -> Tuple:
+            if is_union(get_origin(annotation) or annotation):
+                allowed_types = get_args(annotation)
+            elif issubclass(annotation, BaseModel):
+                if annotation.__custom_root_type__:
+                    allowed_types = (annotation,) + _get_allowed_types(
+                        annotation.__fields__["__root__"].outer_type_
+                    )
+                else:
+                    allowed_types = (annotation, dict)
+            else:
+                allowed_types = (get_origin(annotation) or annotation,)
+
+            return allowed_types
+
+        allowed_types = _get_allowed_types(annotation=parameter.annotation)
+        input_types = _get_allowed_types(annotation=annotation)
+
+        if Any in input_types or Any in allowed_types:
+            # Skip type checks for `Any` annotations
+            return
+
+        for type_ in input_types:
+            if not issubclass(type_, allowed_types):
+                raise StepInterfaceError(
+                    f"Wrong input type (`{annotation}`) for argument "
+                    f"'{parameter.name}'. The argument "
+                    f"should be of type `{parameter.annotation}`."
+                )
+
+
+def validate_entrypoint_function(
+    func: Callable[..., Any]
+) -> EntrypointFunctionDefinition:
+    signature = inspect.signature(func, follow_wrapped=True)
+
+    validate_reserved_arguments(func=func, reserved_arguments=[])
+
+    inputs = {}
+    context: Optional[inspect.Parameter] = None
+    params: Optional[inspect.Parameter] = None
+
+    for key, parameter in signature.parameters.items():
+        if parameter.kind in {parameter.VAR_POSITIONAL, parameter.VAR_KEYWORD}:
+            raise StepInterfaceError(
+                f"Variable args or kwargs not allowed for function {func.__name__}."
+            )
+
+        annotation = parameter.annotation
+        if annotation is parameter.empty:
+            raise StepInterfaceError(
+                f"Missing type annotation for argument '{key}'. Please make "
+                "sure to include type annotations for all your step inputs "
+                f"and outputs."
+            )
+
+        if inspect.isclass(annotation) and issubclass(
+            annotation, BaseParameters
+        ):
+            if params is not None:
+                raise StepInterfaceError(
+                    f"Found multiple parameter arguments "
+                    f"('{params.name}' and '{key}') "
+                    f"for function {func.__name__}."
+                )
+            params = parameter
+
+        elif inspect.isclass(annotation) and issubclass(
+            annotation, StepContext
+        ):
+            if context is not None:
+                raise StepInterfaceError(
+                    f"Found multiple context arguments "
+                    f"('{context.name}' and '{key}') "
+                    f"for function {func.__name__}."
+                )
+            context = parameter
+        else:
+            inputs[key] = parameter
+
+    if signature.return_annotation is signature.empty:
+        raise StepInterfaceError(
+            f"Missing return type annotation for function {func.__name__}."
+        )
+
+    outputs = parse_return_type_annotations(
+        return_annotation=signature.return_annotation
+    )
+
+    return EntrypointFunctionDefinition(
+        inputs=inputs, outputs=outputs, context=context, params=params
+    )

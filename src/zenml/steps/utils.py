@@ -57,9 +57,7 @@ def get_args(obj: Any) -> Tuple[Any]:
     )
 
 
-def parse_return_type_annotations(
-    step_annotations: Dict[str, Any]
-) -> Dict[str, Any]:
+def parse_return_type_annotations(return_annotation: Any) -> Dict[str, Any]:
     """Parse the returns of a step function into a dict of resolved types.
 
     Called within `BaseStepMeta.__new__()` to define `cls.OUTPUT_SIGNATURE`.
@@ -70,17 +68,18 @@ def parse_return_type_annotations(
     Returns:
         Output signature of the new step class.
     """
-    return_type = step_annotations.get("return", None)
-    if return_type is None:
+    if return_annotation is None:
         return {}
 
     # Cast simple output types to `Output`.
-    if not isinstance(return_type, Output):
-        return_type = Output(**{SINGLE_RETURN_OUT_NAME: return_type})
+    if not isinstance(return_annotation, Output):
+        return_annotation = Output(
+            **{SINGLE_RETURN_OUT_NAME: return_annotation}
+        )
 
     # Resolve type annotations of all outputs and save in new dict.
     output_signature = {
         output_name: resolve_type_annotation(output_type)
-        for output_name, output_type in return_type.items()
+        for output_name, output_type in return_annotation.items()
     }
     return output_signature
