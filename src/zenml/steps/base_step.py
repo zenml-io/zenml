@@ -1093,7 +1093,7 @@ class BaseStep(metaclass=BaseStepMeta):
 
         input_types = _get_allowed_types(annotation=parameter.annotation)
         output_types = _get_allowed_types(annotation=artifact.annotation)
-        breakpoint()
+
         if Any in input_types or Any in output_types:
             # Skip type checks for `Any` annotations
             return
