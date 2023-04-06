@@ -305,14 +305,9 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
             if config_version > curr_version:
                 logger.error(
                     "The ZenML global configuration version (%s) is higher "
-                    "than the version of ZenML currently being used (%s). "
-                    "This may happen if you recently downgraded ZenML to an "
-                    "earlier version, or if you have already used a more "
-                    "recent ZenML version on the same machine. "
-                    "It is highly recommended that you update ZenML to at "
-                    "least match the global configuration version, otherwise "
-                    "you may run into unexpected issues such as model schema "
-                    "validation failures or even loss of information.",
+                    "than the version of ZenML currently being used (%s)."
+                    "Read more about this issue and how to solve it here: "
+                    "`https://docs.zenml.io/guidelines/global-config#zenml-version-mismatch---downgrading-the-global-config`",
                     config_version,
                     curr_version,
                 )
