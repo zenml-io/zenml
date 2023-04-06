@@ -31,7 +31,9 @@ if TYPE_CHECKING:
 
 logger = get_logger(__name__)
 
-
+from zenml.code_repositories import (
+    LocalRepositoryContext,
+)
 _CODE_REPOSITORY_CACHE: Dict[str, "LocalRepositoryContext"] = {}
 
 
