@@ -208,7 +208,6 @@ VERSION_1 = "/v1"
 STATUS = "/status"
 GET_OR_CREATE = "/get-or-create"
 SECRETS = "/secrets"
-LOGS = "/logs"
 VISUALIZE = "/visualize"
 CODE_REPOSITORIES = "/code_repositories"
 

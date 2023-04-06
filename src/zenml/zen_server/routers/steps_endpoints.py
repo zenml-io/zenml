@@ -18,14 +18,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, Security
 
-from zenml.constants import (
-    API,
-    LOGS,
-    STATUS,
-    STEP_CONFIGURATION,
-    STEPS,
-    VERSION_1,
-)
+from zenml.constants import API, STATUS, STEP_CONFIGURATION, STEPS, VERSION_1
 from zenml.enums import ExecutionStatus, PermissionType
 from zenml.models import (
     StepRunFilterModel,
@@ -182,33 +175,3 @@ def get_step_status(
         The status of the step.
     """
     return zen_store().get_run_step(step_id).status
-
-
-@router.get(
-    "/{step_id}" + LOGS,
-    response_model=str,
-    responses={401: error_response, 404: error_response, 422: error_response},
-)
-@handle_exceptions
-def get_step_logs(
-    step_id: UUID,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> str:
-    """Get the logs of a specific step.
-
-    Args:
-        step_id: ID of the step for which to get the logs.
-
-    Returns:
-        The logs of the step.
-    """
-    return """
-Registered pipeline first_pipeline (version 1).
-Running pipeline first_pipeline on stack default (caching disabled)
-Step step_1 has started.
-Step step_1 has finished in 0.199s.
-Step step_2 has started.
-Step step_2 has finished in 0.086s.
-Pipeline run first_pipeline-2023_03_20-14_30_18_890138 has finished in 0.623s.
-Pipeline visualization can be seen in the ZenML Dashboard. Run zenml up to see your pipeline!
-    """
