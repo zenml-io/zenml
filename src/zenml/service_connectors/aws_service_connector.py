@@ -257,6 +257,8 @@ class AWSServiceConnectorSpecification(ServiceConnectorSpecification):
         if resource_type == AWS_RESOURCE_TYPE:
             return [
                 AWS_RESOURCE_TYPE,
+                KUBERNETES_RESOURCE_TYPE,
+                DOCKER_RESOURCE_TYPE,
                 *boto3.Session().get_available_services(),
             ]
         if resource_type in [KUBERNETES_RESOURCE_TYPE, "eks"]:
@@ -651,9 +653,19 @@ connector config if it cannot be inferred from the resource ID.
                     f"ECR repository name: [repository-name]"
                 )
 
-            # TODO: what do we do if the connector is configured with a region
-            # and the resource ID is an ECR repository ARN or URI that specifies
-            # a different region?
+            # If the connector is configured with a region and the resource ID
+            # is an ECR repository ARN or URI that specifies a different region
+            # we raise an error
+            if (
+                config.auth_config.region
+                and region_id
+                and region_id != config.auth_config.region
+            ):
+                raise AuthorizationException(
+                    f"The AWS region for the {resource_id} ECR registry "
+                    f"({region_id}) does not match the region configured in "
+                    f"the connector ({config.auth_config.region})."
+                )
 
             if not region_id:
                 raise ValueError(
@@ -720,61 +732,54 @@ connector config if it cannot be inferred from the resource ID.
                     "The AWS connector was not configured with an EKS "
                     "cluster ID and one was not provided at runtime."
                 )
-            
+
             # The resource ID could mean different things:
             #
             # - an EKS cluster ARN
-            # - an EKS cluster name
-            # - an EKS cluster endpoint
             # - an EKS cluster ID
-            # - an EKS cluster OIDC issuer URL
             #
-            # We need to extract the registry ID and region ID from the provided
-            # resource ID
-            # cluster_id: Optional[str] = None
-            # registry_name: Optional[str] = None
-            # region_id: Optional[str] = None
-            # if re.match(
-            #     r"^arn:aws:ecr:[a-z0-9-]+:\d{12}:repository(/.*)*$",
-            #     resource_id,
-            # ):
-            #     # The resource ID is an ECR repository ARN
-            #     registry_id = resource_id.split(":")[4]
-            #     region_id = resource_id.split(":")[3]
-            # elif re.match(
-            #     r"^(https://)?\d{12}\.dkr\.ecr\.[a-z0-9-]+\.amazonaws\.com(/.*)*$",
-            #     resource_id,
-            # ):
-            #     # The resource ID is an ECR repository URI
-            #     registry_id = resource_id.split(".")[0].split("/")[-1]
-            #     region_id = resource_id.split(".")[3]
-            # elif re.match(r"^\d{12}$", resource_id):
-            #     # The resource ID is an ECR registry ID
-            #     registry_id = resource_id
-            #     region_id = config.auth_config.region
-            # elif re.match(
-            #     r"^([a-z0-9]+([._-][a-z0-9]+)*/)*[a-z0-9]+([._-][a-z0-9]+)*$",
-            #     resource_id,
-            # ):
-            #     # Assume the resource ID is an ECR repository name
-            #     region_id = config.auth_config.region
-            #     registry_name = resource_id
-            # else:
-            #     raise ValueError(
-            #         f"Invalid resource ID for a ECR registry: {resource_id}. "
-            #         f"Supported formats are:\n"
-            #         f"ECR repository ARN: arn:aws:ecr:[region]:[account-id]:repository/[repository-name]\n"
-            #         f"ECR repository URI: [https://][account-id].dkr.ecr.[region].amazonaws.com/[repository-name]\n"
-            #         f"ECR registry ID: [account-id]\n"
-            #         f"ECR repository name: [repository-name]"
-            #     )
+            # We need to extract the cluster name and region ID from the
+            # provided resource ID
+            cluster_name: Optional[str] = None
+            region_id: Optional[str] = None
+            if re.match(
+                r"^arn:aws:eks:[a-z0-9-]+:\d{12}:cluster/.+$",
+                resource_id,
+            ):
+                # The resource ID is an EKS cluster ARN
+                cluster_name = resource_id.split("/")[-1]
+                region_id = resource_id.split(":")[3]
+            elif re.match(
+                r"^[a-z0-9]+[a-z0-9_-]*$",
+                resource_id,
+            ):
+                # Assume the resource ID is an EKS cluster name
+                region_id = config.auth_config.region
+                registry_name = resource_id
+            else:
+                raise ValueError(
+                    f"Invalid resource ID for a EKS cluster: {resource_id}. "
+                    f"Supported formats are:\n"
+                    f"EKS cluster ARN: arn:aws:eks:[region]:[account-id]:cluster/[cluster-name]\n"
+                    f"ECR cluster name: [cluster-name]"
+                )
 
-            # TODO: what do we do if the connector is configured with a region
-            # and the resource ID is an ECR repository ARN or URI that specifies
-            # a different region?
+            # If the connector is configured with a region and the resource ID
+            # is an EKS registry ARN or URI that specifies a different region
+            # we raise an error
+            if (
+                config.auth_config.region
+                and region_id
+                and region_id != config.auth_config.region
+            ):
+                raise AuthorizationException(
+                    f"The AWS region for the {resource_id} EKS cluster "
+                    f"({region_id}) does not match the region configured in "
+                    f"the connector ({config.auth_config.region})."
+                )
 
             region_id = config.auth_config.region
-            cluster_id = resource_id
+            cluster_name = resource_id
 
             if not region_id:
                 raise ValueError(
@@ -787,16 +792,16 @@ connector config if it cannot be inferred from the resource ID.
                 "eks", region_name=config.auth_config.region
             )
             try:
-                cluster = client.describe_cluster(name=cluster_id)
+                cluster = client.describe_cluster(name=cluster_name)
             except ClientError as e:
                 raise AuthorizationException(
-                    f"Failed to get EKS cluster: {e}"
+                    f"Failed to get EKS cluster {cluster_name}: {e}"
                 ) from e
 
             try:
                 token = self._get_eks_bearer_token(
                     session=session,
-                    cluster_id=cluster_id,
+                    cluster_id=cluster_name,
                     region=region_id,
                 )
             except ClientError as e:
@@ -804,124 +809,27 @@ connector config if it cannot be inferred from the resource ID.
                     f"Failed to get EKS bearer token: {e}"
                 ) from e
 
-            # endpoint = response["cluster"]["endpoint"]
-            # cert = response["cluster"]["certificateAuthority"]["data"]
-            # k8s_config.load_kube_config()
-            # k8s_config.kube_config.KUBE_CONFIG_DEFAULT_LOCATION = "/tmp/kubeconfig"
-
             # get cluster details
             cluster_cert = cluster["cluster"]["certificateAuthority"]["data"]
             cluster_ep = cluster["cluster"]["endpoint"]
 
+            # TODO: choose a more secure location for the temporary file
+            # and use the right permissions
+
             with tempfile.NamedTemporaryFile(delete=False) as fp:
                 ca_filename = fp.name
-                cert_bs = base64.urlsafe_b64decode(cluster_cert.encode("utf-8"))
+                cert_bs = base64.urlsafe_b64decode(
+                    cluster_cert.encode("utf-8")
+                )
                 fp.write(cert_bs)
 
             conf = k8s_client.Configuration()
-            conf.host = cluster["cluster"]["endpoint"]
+            conf.host = cluster_ep
             conf.api_key["authorization"] = token
             conf.api_key_prefix["authorization"] = "Bearer"
             conf.ssl_ca_cert = ca_filename
+
             return k8s_client.ApiClient(conf)
-
-            # # build the cluster config hash
-            cluster_config = {
-                "apiVersion": "v1",
-                "kind": "Config",
-                "clusters": [
-                    {
-                        "cluster": {
-                            "server": str(cluster_ep),
-                            "certificate-authority-data": str(cluster_cert),
-                        },
-                        "name": "kubernetes",
-                    }
-                ],
-                "contexts": [
-                    {
-                        "context": {"cluster": "kubernetes", "user": "aws"},
-                        "name": "aws",
-                    }
-                ],
-                "current-context": "aws",
-                "preferences": {},
-                "users": [
-                    {
-                        "name": "aws",
-                        "user": {
-                            "exec": {
-                                "apiVersion": "client.authentication.k8s.io/v1alpha1",
-                                "command": "heptio-authenticator-aws",
-                                "args": ["token", "-i", cluster_name],
-                            }
-                        },
-                    }
-                ],
-            }
-
-            # # Write in YAML.
-            # config_text=yaml.dump(cluster_config, default_flow_style=False)
-            # open(config_file, "w").write(config_text)
-
-            # eks = boto3.client(
-            #     "eks",
-            #     aws_session_token=session_token,
-            #     aws_access_key_id=access_key_id,
-            #     aws_secret_access_key=secret_access_key,
-            #     region_name=region_name,
-            # )
-
-            # clusters = eks.list_clusters()["clusters"]
-            # if cluster_name not in clusters:
-            #     raise RuntimeError(f"configured cluster: {cluster_name} not found among {clusters}")
-
-            # with TemporaryDirectory() as kube:
-            #     kubeconfig_path = Path(kube) / "config"
-
-            #     # let awscli generate the kubeconfig
-            #     result = aws(
-            #         "eks",
-            #         "update-kubeconfig",
-            #         "--name",
-            #         cluster_name,
-            #         _env={
-            #             "AWS_ACCESS_KEY_ID": access_key_id,
-            #             "AWS_SECRET_ACCESS_KEY": secret_access_key,
-            #             "AWS_SESSION_TOKEN": session_token,
-            #             "AWS_DEFAULT_REGION": region_name,
-            #             "KUBECONFIG": str(kubeconfig_path),
-            #         },
-            #     )
-
-            #     # read the generated file
-            #     with open(kubeconfig_path, "r") as f:
-            #         kubeconfig_str = f.read()
-            #     kubeconfig = yaml.load(kubeconfig_str, Loader=yaml.SafeLoader)
-
-            #     # the generated kubeconfig assumes that upon use it will have access to
-            #     # `~/.aws/credentials`, but maybe this filesystem is ephemeral,
-            #     # so add the creds as env vars on the aws command in the kubeconfig
-            #     # so that even if the kubeconfig is separated from ~/.aws it is still
-            #     # useful
-            #     users = kubeconfig["users"]
-            #     for i in range(len(users)):
-            #         kubeconfig["users"][i]["user"]["exec"]["env"] = [
-            #             {"name": "AWS_ACCESS_KEY_ID", "value": access_key_id},
-            #             {"name": "AWS_SECRET_ACCESS_KEY", "value": secret_access_key},
-            #             {"name": "AWS_SESSION_TOKEN", "value": session_token},
-            #         ]
-
-            #     # write the updates to disk
-            #     with open(kubeconfig_path, "w") as f:
-            #         f.write(yaml.dump(kubeconfig))
-
-            #     awsclipath = str(Path(sh("-c", "which aws").stdout.decode()).parent)
-            #     kubectlpath = str(Path(sh("-c", "which kubectl").stdout.decode()).parent)
-            #     pathval = f"{awsclipath}:{kubectlpath}"
-
-            # return self.connect_to_kubernetes(auth_method, **kwargs)
-            return None
 
         if not resource_type:
             # If no AWS resource type is specified, return the generic boto3

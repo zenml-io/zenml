@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2023. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -11,44 +11,42 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""SQL Model Implementations for Stack Components."""
+"""SQL Model Implementations for Service Connectors."""
 
 import base64
 import json
 from datetime import datetime
-from typing import TYPE_CHECKING, List, Optional
+from typing import Optional
 from uuid import UUID
 
-from sqlmodel import Relationship
+from sqlalchemy import TEXT, Column
+from sqlmodel import Field, Relationship
 
-from zenml.enums import StackComponentType
-from zenml.models.component_models import (
-    ComponentResponseModel,
-    ComponentUpdateModel,
+from zenml.models.service_connectors import (
+    ServiceConnectorResponseModel,
+    ServiceConnectorUpdateModel,
 )
 from zenml.zen_stores.schemas.base_schemas import ShareableSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
-from zenml.zen_stores.schemas.stack_schemas import StackCompositionSchema
 from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
 
-if TYPE_CHECKING:
-    from zenml.zen_stores.schemas import StackSchema
-    from zenml.zen_stores.schemas.run_metadata_schemas import RunMetadataSchema
 
-if TYPE_CHECKING:
-    from zenml.zen_stores.schemas import ScheduleSchema
+class ServiceConnectorSchema(ShareableSchema, table=True):
+    """SQL Model for service connectors."""
 
+    __tablename__ = "service_connector"
 
-class StackComponentSchema(ShareableSchema, table=True):
-    """SQL Model for stack components."""
-
-    __tablename__ = "stack_component"
-
-    type: StackComponentType
+    type: str
     auth_method: str
+    resource_type: Optional[str] = Field(
+        sa_column=Column(TEXT, nullable=True)
+    )
+    resource_id: Optional[str] = Field(
+        sa_column=Column(TEXT, nullable=True)
+    )
     configuration: bytes
-    labels: Optional[bytes]
+    secret_reference: Optional[UUID]
 
     workspace_id: UUID = build_foreign_key_field(
         source=__tablename__,
@@ -70,38 +68,23 @@ class StackComponentSchema(ShareableSchema, table=True):
     )
     user: Optional["UserSchema"] = Relationship(back_populates="components")
 
-    stacks: List["StackSchema"] = Relationship(
-        back_populates="components", link_model=StackCompositionSchema
-    )
-    schedules: List["ScheduleSchema"] = Relationship(
-        back_populates="orchestrator",
-    )
-
-    run_metadata: List["RunMetadataSchema"] = Relationship(
-        back_populates="stack_component",
-    )
-
     def update(
-        self, component_update: ComponentUpdateModel
-    ) -> "StackComponentSchema":
-        """Updates a `StackSchema` from a `ComponentUpdateModel`.
+        self, connector_update: ServiceConnectorUpdateModel
+    ) -> "ServiceConnectorSchema":
+        """Updates a `ServiceConnectorSchema` from a `ServiceConnectorUpdateModel`.
 
         Args:
-            component_update: The `ComponentUpdateModel` to update from.
+            connector_update: The `ServiceConnectorUpdateModel` to update from.
 
         Returns:
-            The updated `StackComponentSchema`.
+            The updated `ServiceConnectorSchema`.
         """
-        for field, value in component_update.dict(
+        for field, value in connector_update.dict(
             exclude_unset=True, exclude={"workspace", "user"}
         ).items():
             if field == "configuration":
                 self.configuration = base64.b64encode(
-                    json.dumps(component_update.configuration).encode("utf-8")
-                )
-            elif field == "labels":
-                self.labels = base64.b64encode(
-                    json.dumps(component_update.labels).encode("utf-8")
+                    json.dumps(connector_update.configuration).encode("utf-8")
                 )
             else:
                 setattr(self, field, value)
@@ -111,26 +94,23 @@ class StackComponentSchema(ShareableSchema, table=True):
 
     def to_model(
         self,
-    ) -> "ComponentResponseModel":
-        """Creates a `ComponentModel` from an instance of a `StackSchema`.
+    ) -> "ServiceConnectorResponseModel":
+        """Creates a `ServiceConnectorModel` from an instance of a `StackSchema`.
 
         Returns:
-            A `ComponentModel`
+            A `ServiceConnectorModel`
         """
-        return ComponentResponseModel(
+        return ServiceConnectorResponseModel(
             id=self.id,
+            auth_method=self.auth_method,
             name=self.name,
             type=self.type,
-            flavor=self.flavor,
             user=self.user.to_model(True) if self.user else None,
             workspace=self.workspace.to_model(),
             is_shared=self.is_shared,
             configuration=json.loads(
                 base64.b64decode(self.configuration).decode()
             ),
-            labels=json.loads(base64.b64decode(self.labels).decode())
-            if self.labels
-            else None,
             created=self.created,
             updated=self.updated,
         )

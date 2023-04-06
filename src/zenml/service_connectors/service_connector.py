@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Base ZenML Service Connector class."""
 
+import re
 import uuid
 from abc import abstractmethod
 from typing import Any, Dict, List, Optional, Tuple, Type, Union
@@ -23,6 +24,7 @@ from pydantic import (
     SecretStr,
     ValidationError,
     root_validator,
+    validator,
 )
 
 from zenml.client import Client
@@ -137,13 +139,15 @@ class ServiceConnectorConfig(BaseModel):
         auth_method: Identifies the authentication method that the connector
             instance uses to access the service. Must be one of the
             authentication methods declared in the connector's specification.
-        resource_types: Identifies the types of resource that the connector
+        resource_type: Identifies the type of resource that the connector
             instance can be used to gain access to. Only applicable if the
             connector's specification indicates that resource types are
-            supported. If the connector's specification doesn't allow arbitrary
-            resource types, then these values must a subset of those enumerated
-            in the specification. If omitted in the connector configuration, the
-            resource type must be provided by the connector consumer.
+            supported, in which case this field is mandatory. If the connector's
+            specification doesn't allow arbitrary resource types, then this
+            value must be one of those enumerated in the specification. The
+            connector instance may support other types of resources in addition
+            to the one specified here, e.g. if the connector implements aliasing
+            or subordination of resource types.
         resource_id: Uniquely identifies a specific resource instance that the
             connector instance can be used to access. Only applicable if the
             connector's specification indicates that resource IDs are
@@ -157,7 +161,7 @@ class ServiceConnectorConfig(BaseModel):
     """
 
     auth_method: str
-    resource_types: Optional[List[str]] = None
+    resource_type: Optional[str] = None
     resource_id: Optional[str] = None
     auth_config: Optional[AuthenticationConfig] = None
     auth_secrets: Optional[AuthenticationSecrets] = None
@@ -277,25 +281,30 @@ class ServiceConnectorSpecification(BaseModel):
         substitute or are a subordinated specialization of the given resource
         type.
 
+        This method is used to answer the questions: "What are all possible
+        types of resources that this connector instance can be used to access?"
+        and "Which connector instances can be used to access a resource of this
+        type?".
+
         Override this method to implement mechanisms such as:
 
         * resource type aliases, where two or more identifiers can be used
         interchangeably to refer to the same resource type (e.g. "GCS" and
         "google_cloud_storage" or "S3" and "aws_s3" can be used interchangeably
-        to refer to the same resource type)
+        to refer to the same resource type).
         * resource type wildcards, where a resource type can be used to
         generally refer to a larger group of resource types that share a common
         interface or point of access and authentication (e.g. "AWS" can be used
-        to represent all AWS resources, including S3, DynamoDB, etc.)
+        to represent all AWS resources, including S3, ECR, EKS, etc.).
         * resource type inheritance, where a resource type is a specialization
         of a more general resource type (e.g. "GKE" and "EKS" are both
-        special flavors of "Kubernetes")
+        special flavors of "Kubernetes").
 
         Args:
             resource_type: The resource type identifier to match.
 
         Returns:
-            A list of resource type identifiers that are equivalent or
+            A list of resource type identifiers that are equivalent to or
             subordinate to the given one.
         """
         return [resource_type]
@@ -321,6 +330,40 @@ class ServiceConnectorSpecification(BaseModel):
                 for rt in target_resource_types
             ]
         )
+
+    @classmethod
+    def is_equivalent_resource_id(
+        cls, resource_id: str, target_resource_id: str
+    ) -> bool:
+        """Check whether a resource ID is equivalent to another one.
+
+        Given two resource instance IDs, this method returns True if they are
+        equivalent to each other, and False otherwise.
+
+        This method is used to answer the questions: "Can this connector be
+        used to access this resource instance with this ID ?" and "Which
+        connector instances can be used to access a resource instance with of
+        this ID?".
+
+        Override this method to implement mechanisms such as:
+
+        * resource instance ID aliases, where two or more identifiers can be
+        used interchangeably to refer to the same resource instance (e.g. a
+        GCS bucket can be referred to by its name, its URI or its ID).
+        * multiple resource ID formats, where the same resource instance ID can
+        have multiple forms, all of which are equivalent to each other
+        (e.g. an S3 bucket can be referred to by using s3://bucket-name or
+        bucket-name).
+
+        Args:
+            resource_id: The resource instance ID to match.
+            target_resource_id: The resource instance ID to match
+                against.
+
+        Returns:
+            True if the resource IDs are equivalent, False otherwise.
+        """
+        return resource_id == target_resource_id
 
 
 class ServiceConnector(BaseModel):
@@ -467,7 +510,7 @@ class ServiceConnector(BaseModel):
                 authentication method to use or raise an exception.
             resource_type: The type of resource to configure. Omitted if the
                 connector does not support resource types.
-            resource_id: The ID of the resource to connect to. The
+            resource_id: The ID of the resource to configure. The
                 implementation may choose to either require or ignore this
                 parameter if it does not support or detect an authentication
                 methods that uses a resource ID.
@@ -489,32 +532,39 @@ class ServiceConnector(BaseModel):
         cls,
         auth_method_spec: AuthenticationMethodSpecification,
         auth_method: str,
-        resource_types: Optional[List[str]] = None,
+        resource_type: Optional[str] = None,
         resource_id: Optional[str] = None,
-        allow_incomplete: bool = True,
+        allow_partial_config: bool = True,
+        restrict_resource_type: Optional[str] = None,
+        restrict_resource_id: Optional[str] = None,
     ) -> Tuple[bool, Optional[str]]:
         """Validate the configuration for an authentication method against a method specification.
 
         Args:
             auth_method_spec: The specification for the authentication method.
             auth_method: The name of the authentication method.
-            resource_types: The types of resources being configured. Only valid
-                for connectors that support resource types.
+            resource_type: The type of resource being configured. Only valid
+                (and mandatory) for connectors that support resource types.
             resource_id: The ID of the resource being configured. Only valid
                 for authentication methods that support resource IDs.
-            allow_incomplete: Whether to allow the resource type or resource
-                ID to be omitted when the authentication method requires them.
+            allow_partial_config: Whether to allow the authentication method
+                configuration to be incomplete (i.e. the resource ID to be
+                omitted when the authentication method requires it).
+            restrict_resource_type: An optional resource type used to further
+                restrict the list of valid resource types allowed for the
+                authentication method. If provided, only resource types that
+                are equivalent to the specified resource type will be allowed.
+                Only valid for connectors that support resource types.
+            restrict_resource_id: An optional resource ID used to further
+                restrict the list of valid resource IDs allowed for the
+                authentication method. If provided, only resource IDs that are
+                equivalent to the specified resource ID will be allowed. Only
+                valid for authentication methods that support resource IDs.
 
         Returns:
             A tuple containing a boolean indicating whether the configuration
             is valid and a string containing an error message if the
             configuration is invalid.
-
-        Raises:
-            KeyError: If the authentication method is not supported by the
-                connector for the specified resource type and ID.
-            ValueError: If the connector does not support resource types or
-                resource IDs, but one of them was provided.
         """
         spec = cls.get_specification()
 
@@ -522,44 +572,54 @@ class ServiceConnector(BaseModel):
         if auth_method_spec.auth_method != auth_method:
             # The authentication method does not match
             return False, (
-                f"Authentication method '{auth_method}' does not match "
+                f"authentication method '{auth_method}' does not match "
                 f"expected value '{auth_method_spec.auth_method}'."
             )
 
-        auth_method_resource_types = auth_method_spec.resource_types
-        if auth_method_resource_types is None:
-            auth_method_resource_types = spec.resource_types
-        auth_method_resource_types = auth_method_resource_types or []
+        if restrict_resource_type:
+            auth_method_resource_types = [restrict_resource_type]
+        else:
+            auth_method_resource_types = auth_method_spec.resource_types
+            if auth_method_resource_types is None:
+                auth_method_resource_types = spec.resource_types
+            auth_method_resource_types = auth_method_resource_types or []
 
         uses_resource_ids = auth_method_spec.supports_resource_ids
         if uses_resource_ids is None:
             uses_resource_ids = spec.supports_resource_ids
 
-        # Verify the resource types
-        if resource_types:
+        # Verify the resource type
+        resource_type_msg = ""
+        if resource_type:
 
             # Verify that the connector supports resource types
             if spec.supports_resource_types is False:
                 return False, (
                     f"connector '{spec.connector_type}' does not "
-                    "support resource types, but one was provided."
+                    "support resource types, but a resource type was "
+                    f"provided: '{resource_type}'."
                 )
 
-            # Verify that the resource types configured for the authentication
-            # method is a subset of those supported by the connector
-            if not spec.arbitrary_resource_types and not set(
-                resource_types
-            ).issubset(auth_method_resource_types):
+            # Verify that the resource type configured for the authentication
+            # method is one of those supported by the authentication method
+            if (
+                not spec.arbitrary_resource_types
+                and not spec.is_equivalent_resource_type(
+                    resource_type, auth_method_resource_types
+                )
+            ):
                 # The resource types do not match
                 return False, (
                     f"the '{auth_method}' authentication method is not "
-                    f"supported for resource types "
-                    f"{set(resource_types).difference(auth_method_resource_types)}."
-                    f"This authentication method only supports the following "
-                    f"resource types: {auth_method_resource_types}."
+                    f"supported for resource type '{resource_type}'."
+                    "This authentication method only supports the following "
+                    "resource types and their equivalents: "
+                    f"{auth_method_resource_types}."
                 )
 
-        elif not allow_incomplete and spec.supports_resource_types:
+            resource_type_msg = f" for the '{resource_type}' resource type"
+
+        elif spec.supports_resource_types:
 
             # The resource type is required
             return False, (
@@ -573,16 +633,30 @@ class ServiceConnector(BaseModel):
                 # The auth method does not support resource IDs
                 return False, (
                     f"the '{auth_method}' authentication method does not "
-                    "support resource IDs, but one was provided."
+                    f"support resource IDs{resource_type_msg}, but a resource "
+                    f"ID was provided: '{resource_id}'."
                 )
 
-        elif not allow_incomplete and uses_resource_ids:
+            if restrict_resource_id and not spec.is_equivalent_resource_id(
+                resource_id, restrict_resource_id
+            ):
+                # The resource ID does not match
+                return False, (
+                    f"the '{auth_method}' authentication method is configured "
+                    f"for resource with ID '{restrict_resource_id}', but a "
+                    f"different resource ID was provided: '{resource_id}'."
+                )
 
-            # The resource ID is required
-            return False, (
-                f"the '{auth_method}' authentication method requires a "
-                "resource ID, but none was provided."
-            )
+        elif not allow_partial_config and uses_resource_ids:
+
+            if not restrict_resource_id:
+                # The resource ID is required and not restricted to a value
+                # that can be used as a default
+                return False, (
+                    f"the '{auth_method}' authentication method requires a "
+                    f"resource ID to be specified{resource_type_msg}, but none "
+                    "was provided."
+                )
 
         return True, None
 
@@ -590,14 +664,14 @@ class ServiceConnector(BaseModel):
     def find_auth_method_specification(
         cls,
         auth_method: str,
-        resource_types: Optional[List[str]] = None,
+        resource_type: Optional[str] = None,
         resource_id: Optional[str] = None,
     ) -> AuthenticationMethodSpecification:
         """Find the specification for a configurable authentication method.
 
         Args:
             auth_method: The name of the authentication method.
-            resource_types: The types of resources being configured. Only valid
+            resource_type: The type of resource being configured. Only valid
                 for connectors that support resource types.
             resource_id: The ID of the resource being configured. Only valid
                 for authentication methods that support resource IDs.
@@ -614,13 +688,14 @@ class ServiceConnector(BaseModel):
         spec = cls.get_specification()
 
         # Verify the resource type
-        if resource_types:
+        if resource_type:
 
             # Verify that the connector supports resource types
             if spec.supports_resource_types is False:
                 raise ValueError(
                     f"connector '{spec.connector_type}' does not "
-                    "support resource types, but one was provided."
+                    "support resource types, but a resource type was "
+                    f"provided: '{resource_type}'."
                 )
 
         auth_method_found = False
@@ -639,9 +714,9 @@ class ServiceConnector(BaseModel):
             valid, error = cls.validate_auth_method_config(
                 auth_method_spec,
                 auth_method,
-                resource_types=resource_types,
+                resource_type=resource_type,
                 resource_id=resource_id,
-                allow_incomplete=True,
+                allow_partial_config=True,
             )
 
             if not valid:
@@ -683,7 +758,7 @@ class ServiceConnector(BaseModel):
         """
         method_spec = cls.find_auth_method_specification(
             config.auth_method,
-            config.resource_types,
+            config.resource_type,
             config.resource_id,
         )
 
@@ -769,6 +844,97 @@ class ServiceConnector(BaseModel):
                 "require secrets to be configured, but some were provided."
             )
 
+    def validate_runtime_args(
+        self,
+        auth_method: Optional[str] = None,
+        resource_type: Optional[str] = None,
+        resource_id: Optional[str] = None,
+        client_type: Optional[str] = None,
+    ) -> Tuple[Optional[str], Optional[str], Optional[str], Optional[str]]:
+        """Validate the runtime arguments against the connector configuration.
+
+        Validate that the runtime arguments are compatible with the connector
+        configuration and its specification. This includes validating that the
+        authentication method, resource type and resource ID are compatible
+        with the connector configuration and its capabilities.
+
+        Args:
+            auth_method: The authentication method to use.
+            resource_type: The type of resource to connect to.
+            resource_id: The ID of the resource to connect to.
+            client_type: The type of client to connect to the resource with.
+
+        Returns:
+            A tuple containing the validated authentication method, resource
+            type, resource ID and client type.
+
+        Raises:
+            ValueError: If the runtime arguments are not valid.
+        """
+        if auth_method and auth_method != self.config.auth_method:
+            raise ValueError(
+                f"the authentication method '{auth_method}' is not compatible "
+                "with the one configured for the connector: "
+                f"'{self.config.auth_method}'"
+            )
+
+        auth_method = auth_method or self.config.auth_method
+
+        spec = self.get_specification()
+
+        # Get the authentication method specification originally used to
+        # validate the connector configuration.
+        method_spec = self.find_auth_method_specification(
+            self.config.auth_method,
+            self.config.resource_type,
+            self.config.resource_id,
+        )
+
+        # Validate the the resource type and resource ID supplied by the
+        # consumer connector config against the connector configuration.
+        # This time we require that the configuration be complete.
+        valid, error = self.validate_auth_method_config(
+            auth_method_spec=method_spec,
+            auth_method=auth_method,
+            resource_type=resource_type,
+            resource_id=resource_id,
+            allow_partial_config=False,
+            restrict_resource_type=self.config.resource_type,
+            restrict_resource_id=self.config.resource_id,
+        )
+
+        if not valid:
+            raise ValueError(
+                f"the connector configuration is not valid: {error}"
+            )
+
+        # Ignore the supplied resource type if the connector does not support
+        # resource types.
+        if not spec.supports_resource_types:
+            resource_type = None
+        else:
+            resource_type = resource_type or self.config.resource_type
+
+        supports_resource_ids = (
+            method_spec.supports_resource_ids
+            if method_spec.supports_resource_ids is not None
+            else spec.supports_resource_ids
+        )
+
+        # Ignore the supplied resource ID if the authentication method does not
+        # support resource IDs.
+        if not supports_resource_ids:
+            resource_id = None
+        else:
+            resource_id = resource_id or self.config.resource_id
+
+        return (
+            auth_method,
+            resource_type,
+            resource_id,
+            client_type,
+        )
+
     def save(self) -> None:
         """Save the connector configuration.
 
@@ -799,13 +965,10 @@ class ServiceConnector(BaseModel):
         to access the indicated resource type.
 
         Args:
-            resource_type: The type of resource to connect to. Use this with
-                connector instances configured to allow a resource type to be
-                dynamically supplied at runtime. If the connector instance is
-                already configured with one or more resource types and the
-                supplied value is not a match, an exception will be raised.
-                If the connector does not support resource types, this parameter
-                is ignored.
+            resource_type: The type of resource to connect to. If the connector
+                instance configured with a resource type and the supplied value
+                is not the same or equivalent, or if the connector does not
+                support resource types, an exception is raised.
             resource_id: The ID of a particular resource instance to connect
                 to. Use this with connector instances configured to allow
                 a resource ID to be dynamically supplied at runtime.
@@ -821,85 +984,17 @@ class ServiceConnector(BaseModel):
         Returns:
             An implementation specific object representing the authenticated
             service client, connection or session.
-
-        Raises:
-            ValueError: If the connector instance does not support resource
-                types or resource IDs and a resource type or resource ID is
-                supplied, or if the connector instance is already configured
-                with a resource type or resource ID that are different from
-                those supplied as parameters.
-            AuthorizationException: If authentication failed.
-            NotImplementedError: If the connector instance does not support
-                connecting to the indicated resource type or client type.
         """
-        spec = self.get_specification()
-
-        # Ignore the supplied resource type if the connector does not support
-        # resource types.
-        if not spec.supports_resource_types:
-            resource_type = None
-
-        # Get the authentication method specification originally used to
-        # validate the connector configuration.
-        method_spec = self.find_auth_method_specification(
-            self.config.auth_method,
-            self.config.resource_types,
-            self.config.resource_id,
+        (
+            auth_method,
+            resource_type,
+            resource_id,
+            client_type,
+        ) = self.validate_runtime_args(
+            resource_type=resource_type,
+            resource_id=resource_id,
+            client_type=client_type,
         )
-
-        supports_resource_ids = (
-            method_spec.supports_resource_ids
-            if method_spec.supports_resource_ids is not None
-            else spec.supports_resource_ids
-        )
-
-        # Ignore the supplied resource ID if the authentication method does not
-        # support resource IDs.
-        if not supports_resource_ids:
-            resource_id = None
-
-        # Validate the supplied resource type against the connector
-        # configuration.
-        if resource_type:
-            if (
-                self.config.resource_types
-                and not spec.is_equivalent_resource_type(
-                    resource_type, self.config.resource_types
-                )
-            ):
-                raise ValueError(
-                    f"the connector instance is configured to connect to "
-                    f"resource type '{self.config.resource_types}', but "
-                    f"the supplied resource type '{resource_type}' is "
-                    "different."
-                )
-
-        # Validate the supplied resource ID against the connector
-        # configuration.
-        if resource_id:
-            if (
-                self.config.resource_id
-                and resource_id != self.config.resource_id
-            ):
-                raise ValueError(
-                    f"the connector instance is configured to connect to "
-                    f"resource ID '{self.config.resource_id}', but the "
-                    f"supplied resource ID '{resource_id}' is different."
-                )
-
-        # TODO: figure this out and make it return more meaningful errors
-        # to consumers that point out what the problem is.
-        # valid, error = self.validate_auth_method_config(
-        #     auth_method_spec=method_spec,
-        #     auth_method=self.config.auth_method,
-        #     resource_types=[resource_type]
-        #     if resource_type
-        #     else self.config.resource_types,
-        #     resource_id=resource_id or self.config.resource_id,
-        #     allow_incomplete=False,
-        # )
-        # if not valid:
-        #     raise ValueError(error)
 
         return self._connect_to_resource(
             config=self.config,
@@ -909,52 +1004,50 @@ class ServiceConnector(BaseModel):
             **kwargs,
         )
 
-
-
     def auto_configure(
         self,
+        auth_method: Optional[str] = None,
         resource_type: Optional[str] = None,
         resource_id: Optional[str] = None,
         client_type: Optional[str] = None,
         **kwargs: Any,
-    ) -> Any:
-        """Authenticate and connect to a resource.
+    ) -> ServiceConnectorConfig:
+        """Auto-configure the connector.
 
-        Initialize and return an implementation specific object representing an
-        authenticated service client, connection or session that can be used
-        to access the indicated resource type.
+        Auto-configure the connector by looking for authentication
+        configuration in the environment (e.g. environment variables or
+        configuration files) and storing it in the connector configuration.
 
         Args:
-            resource_type: The type of resource to connect to. Use this with
-                connector instances configured to allow a resource type to be
-                dynamically supplied at runtime. If the connector instance is
-                already configured with one or more resource types and the
-                supplied value is not a match, an exception will be raised.
-                If the connector does not support resource types, this parameter
-                is ignored.
-            resource_id: The ID of a particular resource instance to connect
-                to. Use this with connector instances configured to allow
-                a resource ID to be dynamically supplied at runtime.
-                If the connector instance is already configured with a resource
-                ID and this parameter has a different value, an exception will
-                be raised. If the connector instance does not support resource
-                instances, this parameter is ignored.
-            client_type: The particular type of client to instantiate, configure
-                and return.
-            kwargs: Additional implementation specific keyword arguments to use
-                to configure the client.
+            auth_method: The particular authentication method to use. If
+                omitted and if the connector implementation cannot decide which
+                authentication method to use, it may raise an exception.
+            resource_type: The type of resource to configure. If the connector
+                does not support resource types, an exception is raised.
+            resource_id: The ID of the resource to configure. The connector
+                implementation may choose to either require or ignore this
+                parameter if it does not support or detect an authentication
+                methods that uses a resource ID.
+            client_type: The particular type of client to auto-configure.
+            kwargs: Additional implementation specific keyword arguments to use.
 
         Returns:
-            An implementation specific object representing the authenticated
-            service client, connection or session.
+            The connector configuration populated with auto-configured
+            parameters and authentication credentials.
 
         Raises:
-            ValueError: If the connector instance does not support resource
-                types or resource IDs and a resource type or resource ID is
-                supplied, or if the connector instance is already configured
-                with a resource type or resource ID that are different from
-                those supplied as parameters.
-            AuthorizationException: If authentication failed.
-            NotImplementedError: If the connector instance does not support
-                connecting to the indicated resource type or client type.
+            ValueError: If the connector does not support resource types and
+                the resource type parameter is supplied.
         """
+        spec = self.get_specification()
+
+        if resource_type and not spec.supports_resource_types:
+            raise ValueError("the connector does not support resource types")
+
+        return self._auto_configure(
+            auth_method=auth_method,
+            resource_type=resource_type,
+            resource_id=resource_id,
+            client_type=client_type,
+            **kwargs,
+        )
