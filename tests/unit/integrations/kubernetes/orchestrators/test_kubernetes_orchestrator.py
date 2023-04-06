@@ -23,6 +23,7 @@ from zenml.enums import StackComponentType
 from zenml.exceptions import StackValidationError
 from zenml.integrations.kubernetes.flavors.kubernetes_orchestrator_flavor import (
     KubernetesOrchestratorConfig,
+    KubernetesOrchestratorSettings,
 )
 from zenml.integrations.kubernetes.orchestrators import KubernetesOrchestrator
 from zenml.stack import Stack
@@ -51,10 +52,8 @@ def _get_kubernetes_orchestrator(
     )
 
 
-def test_kubernetes_orchestrator_remote_stack(
-    mocker, remote_artifact_store, remote_container_registry
-) -> None:
-    """Test the remote and local kubernetes orchestrator with remote stacks."""
+def _patch_k8s_clients(mocker):
+    """Helper function to patch k8s clients."""
     mocker.patch(
         "zenml.integrations.kubernetes.orchestrators.kubernetes_orchestrator.KubernetesOrchestrator._initialize_k8s_clients",
         return_value=(None),
@@ -63,6 +62,13 @@ def test_kubernetes_orchestrator_remote_stack(
         "zenml.integrations.kubernetes.orchestrators.kubernetes_orchestrator.KubernetesOrchestrator.get_kubernetes_contexts",
         return_value=([K8S_CONTEXT], K8S_CONTEXT),
     )
+
+
+def test_kubernetes_orchestrator_remote_stack(
+    mocker, remote_artifact_store, remote_container_registry
+) -> None:
+    """Test the remote and local kubernetes orchestrator with remote stacks."""
+    _patch_k8s_clients(mocker)
 
     # Test remote stack with remote orchestrator
     orchestrator = _get_kubernetes_orchestrator()
@@ -102,14 +108,7 @@ def test_kubernetes_orchestrator_local_stack(
     mocker, local_artifact_store, local_container_registry
 ) -> None:
     """Test the remote and local kubernetes orchestrator with remote stacks."""
-    mocker.patch(
-        "zenml.integrations.kubernetes.orchestrators.kubernetes_orchestrator.KubernetesOrchestrator._initialize_k8s_clients",
-        return_value=(None),
-    )
-    mocker.patch(
-        "zenml.integrations.kubernetes.orchestrators.kubernetes_orchestrator.KubernetesOrchestrator.get_kubernetes_contexts",
-        return_value=([K8S_CONTEXT], K8S_CONTEXT),
-    )
+    _patch_k8s_clients(mocker)
 
     # Test missing container registry
     orchestrator = _get_kubernetes_orchestrator(local=True)
@@ -151,3 +150,17 @@ def test_kubernetes_orchestrator_local_stack(
             artifact_store=local_artifact_store,
             container_registry=local_container_registry,
         ).validate()
+
+
+def test_kubernetes_orchestrator_uses_service_account_from_settings(mocker):
+    """Test that the service account from the settings is used."""
+    _patch_k8s_clients(mocker)
+    orchestrator = _get_kubernetes_orchestrator(local=True)
+    service_account_name = "aria-service-account"
+    settings = KubernetesOrchestratorSettings(
+        service_account_name=service_account_name
+    )
+    assert (
+        orchestrator._get_service_account_name(settings)
+        == service_account_name
+    )

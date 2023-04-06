@@ -12,8 +12,14 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 import os
+from tempfile import TemporaryDirectory
+from typing import Optional, Type
 
 from tests.unit.test_general import _test_materializer
+from zenml.materializers.base_materializer import BaseMaterializer
+from zenml.materializers.built_in_materializer import (
+    BuiltInContainerMaterializer,
+)
 
 
 def test_basic_type_materialization():
@@ -128,4 +134,77 @@ def test_none_values():
         result = _test_materializer(
             step_output_type=type_, step_output=example
         )
+        assert result == example
+
+
+class CustomType:
+    """Custom type used for testing the container materializer below."""
+
+    myname = "aria"
+
+    def __eq__(self, __value: object) -> bool:
+        if isinstance(__value, CustomType):
+            return self.myname == __value.myname
+        return False
+
+
+class CustomSubType(CustomType):
+    """Subtype of CustomType."""
+
+    myname = "axl"
+
+
+class CustomTypeMaterializer(BaseMaterializer):
+    """Mock materializer for custom types.
+
+    Does not actually save anything to disk, just initializes the type.
+    """
+
+    ASSOCIATED_TYPES = (CustomType,)
+
+    def save(self, data: CustomType) -> None:
+        """Save the data (not)."""
+        pass
+
+    def load(self, data_type: Type[CustomType]) -> Optional[CustomType]:
+        """Load the data."""
+        return data_type()
+
+
+def test_container_materializer_for_custom_types(mocker):
+    """Test container materializer for custom types.
+
+    This ensures that:
+    - The container materializer can handle custom types.
+    - Custom types are loaded as the correct type.
+    - The materializer of the subtype does not need to be registered in the
+        materializer registry when the container is loaded.
+    """
+    from zenml.materializers.default_materializer_registry import (
+        default_materializer_registry,
+    )
+
+    example = [CustomType(), CustomSubType()]
+    with TemporaryDirectory() as artifact_uri:
+        materializer = BuiltInContainerMaterializer(uri=artifact_uri)
+
+        # Container materializer should find materializer for both elements in
+        # the default materializer registry.
+        materializer.save(example)
+
+        # When loading, the default materializer registry should no longer be
+        # needed because the container materializer should have saved the
+        # materializer that was used for each element.
+        mocker.patch.object(
+            default_materializer_registry,
+            "materializer_types",
+            {},
+        )
+        result = materializer.load(list)
+
+        # Check that the loaded elements are of the correct types.
+        assert isinstance(result[0], CustomType)
+        assert isinstance(result[1], CustomSubType)
+        assert result[0].myname == "aria"
+        assert result[1].myname == "axl"
         assert result == example
