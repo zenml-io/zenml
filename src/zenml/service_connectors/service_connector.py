@@ -27,7 +27,11 @@ from pydantic import (
 
 from zenml.client import Client
 from zenml.enums import SecretScope
-from zenml.models.secret_models import SecretBaseModel, SecretRequestModel
+from zenml.models import (
+    SecretBaseModel,
+    SecretRequestModel,
+    ServiceConnectorResponseModel,
+)
 
 
 class AuthenticationConfig(BaseModel):
@@ -256,19 +260,14 @@ class ServiceConnectorSpecification(BaseModel):
             can be used to gain access to. If set to False, the resource ID is
             ignored. This option may also be configured individually for each
             authentication method.
-        client_types: For each resource type, this field may be used to
-            list the types of client that the service connector can
-            initialize and provide to consumers.
     """
 
     connector_type: str
     description: str = ""
     auth_methods: List[AuthenticationMethodSpecification]
     supports_resource_types: bool = False
-    resource_types: Optional[List[str]] = None
     arbitrary_resource_types: bool = False
     supports_resource_ids: bool = False
-    client_types: Optional[Dict[str, List[str]]] = None
 
     @classmethod
     def get_equivalent_resource_types(cls, resource_type: str) -> List[str]:
@@ -364,7 +363,7 @@ class ServiceConnectorSpecification(BaseModel):
         return resource_id == target_resource_id
 
 
-class ServiceConnector(BaseModel):
+class ServiceConnector:
     """Base service connector class.
 
     Service connectors are standalone components that can be used to link ZenML
@@ -402,7 +401,25 @@ class ServiceConnector(BaseModel):
     types of resources that they need to access.
     """
 
-    config: ServiceConnectorConfig
+    def __init__(self, config: ServiceConnectorConfig):
+        """Initialize the connector.
+
+        Args:
+            config: The connector configuration.
+        """
+        self._config = config
+
+    @property
+    def config(self) -> ServiceConnectorConfig:
+        """Returns the service connector configuration.
+
+        This should be overridden by the subclass if it defines a custom
+        configuration to return the correct config class.
+
+        Returns:
+            The configuration of the service connector.
+        """
+        return self._config
 
     @classmethod
     @abstractmethod
@@ -419,7 +436,6 @@ class ServiceConnector(BaseModel):
         config: ServiceConnectorConfig,
         resource_type: Optional[str] = None,
         resource_id: Optional[str] = None,
-        client_type: Optional[str] = None,
         **kwargs: Any,
     ) -> Any:
         """Authenticate and connect to a resource.
@@ -435,9 +451,6 @@ class ServiceConnector(BaseModel):
                 connector does not support multiple resource types.
             resource_id: The ID of the resource to connect to. Omitted if the
                 configured authentication method does not require a resource ID.
-            client_type: The type of client to instantiate, configure and
-                return. Omitted if the connector does not support multiple
-                client types.
             kwargs: Additional implementation specific keyword arguments to use
                 to configure the client.
 
@@ -457,7 +470,6 @@ class ServiceConnector(BaseModel):
         config: ServiceConnectorConfig,
         resource_type: Optional[str] = None,
         resource_id: Optional[str] = None,
-        client_type: Optional[str] = None,
         **kwargs: Any,
     ) -> None:
         """Configure a local client for a service using the specified authentication method.
@@ -471,11 +483,6 @@ class ServiceConnector(BaseModel):
                 connector does not support multiple resource types.
             resource_id: The ID of the resource to connect to. Omitted if the
                 configured authentication method does not require a resource ID.
-            client_type: The type of client to configure. If not specified,
-                the connector implementation must decide which client to
-                configure or raise an exception. For connectors and resources
-                that do not support multiple client types, this parameter may be
-                omitted.
             kwargs: Additional implementation specific keyword arguments to use
                 to configure the client.
 
@@ -493,7 +500,6 @@ class ServiceConnector(BaseModel):
         auth_method: Optional[str] = None,
         resource_type: Optional[str] = None,
         resource_id: Optional[str] = None,
-        client_type: Optional[str] = None,
         **kwargs: Any,
     ) -> ServiceConnectorConfig:
         """Auto-configure the connector.
@@ -512,8 +518,6 @@ class ServiceConnector(BaseModel):
                 implementation may choose to either require or ignore this
                 parameter if it does not support or detect an authentication
                 methods that uses a resource ID.
-            client_type: The type of client to configure. Omitted if the
-                connector does not support multiple client types.
             kwargs: Additional implementation specific keyword arguments to use.
 
         Returns:
@@ -577,9 +581,7 @@ class ServiceConnector(BaseModel):
         if restrict_resource_type:
             auth_method_resource_types = [restrict_resource_type]
         else:
-            auth_method_resource_types = (
-                auth_method_spec.resource_types or spec.resource_types or []
-            )
+            auth_method_resource_types = spec.resource_types or []
 
         uses_resource_ids = auth_method_spec.supports_resource_ids
         if uses_resource_ids is None:
@@ -736,6 +738,129 @@ class ServiceConnector(BaseModel):
         )
 
     @classmethod
+    def from_model(
+        cls, model: "ServiceConnectorResponseModel"
+    ) -> "ServiceConnector":
+        """Creates a service connector from a service connector model.
+
+        Args:
+            model: The service connector model.
+
+        Returns:
+            The created service connector.
+
+        Raises:
+            NotImplementedError: If the service connector implementation is not
+                available.
+        """
+        from zenml.service_connectors.service_connector_registry import (
+            service_connector_registry,
+        )
+
+        try:
+            connector = service_connector_registry.get_service_connector_type(
+                model.type
+            )
+        except KeyError:
+            raise NotImplementedError(
+                f"A service connector implementation for type "
+                f"'{model.type}' is not available on this machine. "
+                f"Please install the relevant integrations and  package(s) to "
+                "use this service connector."
+            )
+
+        try:
+            method_spec = cls.find_auth_method_specification(
+                model.auth_method,
+                model.resource_type,
+                model.resource_id,
+            )
+        except (KeyError, ValueError) as e:
+            raise ValueError(
+                f"the configuration for the '{model.id}' service connector "
+                f"of type '{model.type}' is not valid: {e}"
+            )
+        
+
+        # Validate and extract the authentication configuration
+        auth_config: Optional[AuthenticationConfig] = None
+        if method_spec.auth_config:
+            if model.configuration is None:
+                raise ValueError(
+                    f"authentication method '{method_spec.auth_method}' "
+                    "requires a configuration but none was provided for the "
+                    f"'{model.id}' service connector of type '{model.type}'."
+                )
+            try:
+                auth_config = method_spec.auth_config(
+                    **model.configuration
+                )
+            except ValidationError as e:
+                raise ValueError(
+                    f"the configuration for the '{model.id}' service "
+                    f"connector of type '{model.type}' is not valid: {e}"
+                )
+        elif model.configuration:
+            raise ValueError(
+                f"authentication method '{method_spec.auth_method}' does not "
+                "require a configuration, but one was provided for the "
+                f"'{model.id}' service connector of type '{model.type}'."
+            )
+
+        # Validate (but don't extract) the authentication secrets
+        if method_spec.auth_secrets:
+            if not model.secret_reference:
+                raise ValueError(
+                    f"authentication method '{method_spec.auth_method}' "
+                    "requires secrets to be configured via a reference to an "
+                    "existing ZenML secret, but none was provided for the "
+                    f"'{model.id}' service connector of type '{model.type}'."
+                )
+            try:
+                secret = Client().get_secret(
+                    name_id_or_prefix=model.secret_reference
+                )
+            except (KeyError, NotImplementedError) as e:
+                raise ValueError(
+                    f"the secret referenced in the configuration for the "
+                    f"'{model.id}' service connector of type '{model.type}' "
+                    f"could not be retrieved: {e}"
+                )
+            try:
+                method_spec.auth_secrets(**secret.secret_values)
+            except ValidationError as e:
+                raise ValueError(
+                    f"the contents of the secret referenced in the "
+                    f"'{model.id}' service connector of type '{model.type}' "
+                    f"are not valid: {e}"
+                )
+
+        elif model.secret_reference:
+            raise ValueError(
+                f"authentication method '{method_spec.auth_method}' does not "
+                "require secrets to be configured, but some were provided "
+                f"for the '{model.id}' service connector of type "
+                f"'{model.type}'."
+            )
+
+        if component_model.user is not None:
+            user_id = component_model.user.id
+        else:
+            user_id = None
+
+        return flavor.implementation_class(
+            user=user_id,
+            workspace=component_model.workspace.id,
+            name=component_model.name,
+            id=component_model.id,
+            config=configuration,
+            flavor=component_model.flavor,
+            type=component_model.type,
+            created=component_model.created,
+            updated=component_model.updated,
+        )
+
+    @classmethod
     def validate_connector_config(
         cls,
         config: ServiceConnectorConfig,
@@ -846,7 +971,6 @@ class ServiceConnector(BaseModel):
         auth_method: Optional[str] = None,
         resource_type: Optional[str] = None,
         resource_id: Optional[str] = None,
-        client_type: Optional[str] = None,
     ) -> Tuple[Optional[str], Optional[str], Optional[str], Optional[str]]:
         """Validate the runtime arguments against the connector configuration.
 
@@ -859,11 +983,10 @@ class ServiceConnector(BaseModel):
             auth_method: The authentication method to use.
             resource_type: The type of resource to connect to.
             resource_id: The ID of the resource to connect to.
-            client_type: The type of client to connect to the resource with.
 
         Returns:
             A tuple containing the validated authentication method, resource
-            type, resource ID and client type.
+            type and resource ID.
 
         Raises:
             ValueError: If the runtime arguments are not valid.
@@ -929,7 +1052,6 @@ class ServiceConnector(BaseModel):
             auth_method,
             resource_type,
             resource_id,
-            client_type,
         )
 
     def save(self) -> None:
@@ -952,7 +1074,6 @@ class ServiceConnector(BaseModel):
         self,
         resource_type: Optional[str] = None,
         resource_id: Optional[str] = None,
-        client_type: Optional[str] = None,
         **kwargs: Any,
     ) -> Any:
         """Authenticate and connect to a resource.
@@ -973,8 +1094,6 @@ class ServiceConnector(BaseModel):
                 ID and this parameter has a different value, an exception will
                 be raised. If the connector instance does not support resource
                 instances, this parameter is ignored.
-            client_type: The particular type of client to instantiate, configure
-                and return.
             kwargs: Additional implementation specific keyword arguments to use
                 to configure the client.
 
@@ -986,18 +1105,15 @@ class ServiceConnector(BaseModel):
             auth_method,
             resource_type,
             resource_id,
-            client_type,
         ) = self.validate_runtime_args(
             resource_type=resource_type,
             resource_id=resource_id,
-            client_type=client_type,
         )
 
         return self._connect_to_resource(
             config=self.config,
             resource_type=resource_type,
             resource_id=resource_id,
-            client_type=client_type,
             **kwargs,
         )
 
@@ -1006,7 +1122,6 @@ class ServiceConnector(BaseModel):
         auth_method: Optional[str] = None,
         resource_type: Optional[str] = None,
         resource_id: Optional[str] = None,
-        client_type: Optional[str] = None,
         **kwargs: Any,
     ) -> ServiceConnectorConfig:
         """Auto-configure the connector.
@@ -1025,7 +1140,6 @@ class ServiceConnector(BaseModel):
                 implementation may choose to either require or ignore this
                 parameter if it does not support or detect an authentication
                 methods that uses a resource ID.
-            client_type: The particular type of client to auto-configure.
             kwargs: Additional implementation specific keyword arguments to use.
 
         Returns:
@@ -1045,6 +1159,5 @@ class ServiceConnector(BaseModel):
             auth_method=auth_method,
             resource_type=resource_type,
             resource_id=resource_id,
-            client_type=client_type,
             **kwargs,
         )

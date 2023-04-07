@@ -348,10 +348,6 @@ connector config if it cannot be inferred from the resource ID.
             supports_resource_types=True,
             # Allow arbitrary resource types to be specified, e.g. "S3", "ECR",
             arbitrary_resource_types=False,
-            resource_types=[
-                AWS_RESOURCE_TYPE,
-                *boto3.Session().get_available_services(),
-            ],
             auth_methods=[
                 AuthenticationMethodSpecification(
                     auth_method=AWSAuthenticationMethods.SECRET_KEY,
@@ -409,6 +405,10 @@ connector config if it cannot be inferred from the resource ID.
                 ),
                 AuthenticationMethodSpecification(
                     auth_method=AWSAuthenticationMethods.SECRET_KEY,
+                    resource_types=[
+                        AWS_RESOURCE_TYPE,
+                        *boto3.Session().get_available_services(),
+                    ],
                     # Request an AWS specific resource instance ID (e.g. an S3
                     # bucket name, ECR repository name) to be configured in the
                     # connector or provided by the consumer
@@ -421,6 +421,10 @@ connector config if it cannot be inferred from the resource ID.
                 ),
                 AuthenticationMethodSpecification(
                     auth_method=AWSAuthenticationMethods.STS_TOKEN,
+                    resource_types=[
+                        AWS_RESOURCE_TYPE,
+                        *boto3.Session().get_available_services(),
+                    ],
                     # Request an AWS specific resource instance ID (e.g. an S3
                     # bucket name, ECR repository name) to be configured in the
                     # connector or provided by the consumer
@@ -431,6 +435,10 @@ connector config if it cannot be inferred from the resource ID.
                 ),
                 AuthenticationMethodSpecification(
                     auth_method=AWSAuthenticationMethods.IAM_ROLE,
+                    resource_types=[
+                        AWS_RESOURCE_TYPE,
+                        *boto3.Session().get_available_services(),
+                    ],
                     # Request an AWS specific resource instance ID (e.g. an S3
                     # bucket name, ECR repository name) to be configured in the
                     # connector or provided by the consumer
@@ -499,7 +507,6 @@ connector config if it cannot be inferred from the resource ID.
         config: ServiceConnectorConfig,
         resource_type: Optional[str] = None,
         resource_id: Optional[str] = None,
-        client_type: Optional[str] = None,
         **kwargs: Any,
     ) -> Any:
         """Authenticate and connect to an AWS resource.
@@ -518,8 +525,6 @@ connector config if it cannot be inferred from the resource ID.
             config: The connector configuration.
             resource_type: The type of resource to connect to.
             resource_id: The ID of the AWS resource to connect to.
-            client_type: The type of client to instantiate, configure and
-                return.
             kwargs: Additional implementation specific keyword arguments to pass
                 to the session or client constructor.
 
@@ -845,7 +850,6 @@ connector config if it cannot be inferred from the resource ID.
         config: ServiceConnectorConfig,
         resource_type: Optional[str] = None,
         resource_id: Optional[str] = None,
-        client_type: Optional[str] = None,
         **kwargs: Any,
     ) -> None:
         """Configure a local client for a service using the specified authentication method.
@@ -859,11 +863,6 @@ connector config if it cannot be inferred from the resource ID.
                 connector does not support multiple resource types.
             resource_id: The ID of the resource to connect to. Omitted if the
                 configured authentication method does not require a resource ID.
-            client_type: The type of client to configure. If not specified,
-                the connector implementation must decide which client to
-                configure or raise an exception. For connectors and resources
-                that do not support multiple client types, this parameter may be
-                omitted.
             kwargs: Additional implementation specific keyword arguments to use
                 to configure the client.
 
@@ -880,7 +879,6 @@ connector config if it cannot be inferred from the resource ID.
         auth_method: Optional[str] = None,
         resource_type: Optional[str] = None,
         resource_id: Optional[str] = None,
-        client_type: Optional[str] = None,
         region_name: Optional[str] = None,
         profile_name: Optional[str] = None,
         **kwargs: Any,
@@ -901,8 +899,6 @@ connector config if it cannot be inferred from the resource ID.
                 implementation may choose to either require or ignore this
                 parameter if it does not support or detect an authentication
                 methods that uses a resource ID.
-            client_type: The type of client to configure. Omitted if the
-                connector does not support multiple client types.
             region_name: The name of the AWS region to use. If not specified,
                 the implicit region is used.
             profile_name: The name of the AWS profile to use. If not specified,
