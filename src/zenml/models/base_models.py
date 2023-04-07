@@ -41,7 +41,9 @@ class BaseZenModel(AnalyticsTrackedModelMixin):
         # This is needed to allow the REST client and server to unpack SecretStr
         # values correctly.
         json_encoders = {
-            SecretStr: lambda v: v.get_secret_value() if v else None
+            SecretStr: lambda v: v.get_secret_value()
+            if v is not None
+            else None
         }
 
         # Allow extras on all models to support forwards and backwards
