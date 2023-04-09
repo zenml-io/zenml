@@ -644,5 +644,5 @@ def test_remove_labels(clean_workspace) -> None:
                 component_type=StackComponentType.ORCHESTRATOR,
             )
         ).labels.get("key1")
-        == None
+        is None
     )
