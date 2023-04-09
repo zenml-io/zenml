@@ -2285,7 +2285,7 @@ class Client(metaclass=ClientMetaClass):
         component_type: StackComponentType,
         configuration: Optional[Dict[str, Any]] = None,
         labels: Optional[Dict[str, Any]] = None,
-    ) -> "ComponentResponseModel" | None:
+    ) -> Optional["ComponentResponseModel"]:
         """Deploys a stack component.
 
         Args:
