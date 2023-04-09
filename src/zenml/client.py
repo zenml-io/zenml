@@ -2309,7 +2309,7 @@ class Client(metaclass=ClientMetaClass):
 
         if configuration:
             # convert configuration dict to a json object
-            configuration = json.dumps(configuration)
+            config = json.dumps(configuration)
 
         # set the stack component and flavor
         component = {component_type.value: flavor}
@@ -2329,7 +2329,7 @@ class Client(metaclass=ClientMetaClass):
                 deploy,
                 path=path,
                 stack_recipe_name=f"{cloud}-modular",
-                config=configuration,
+                config=config,
                 no_server=True,
                 **component,
             )

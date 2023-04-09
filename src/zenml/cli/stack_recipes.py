@@ -18,7 +18,7 @@ import shutil
 import subprocess
 import sys
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union, cast
 
 import click
 from rich.text import Text
@@ -1555,7 +1555,7 @@ def get_outputs(
                 if output:
                     if output in outputs:
                         cli_utils.declare(f"Output {output}: ")
-                        return outputs[output]
+                        return cast(Dict[str, Any], outputs[output])
                     else:
                         cli_utils.error(
                             f"Output {output} not found in stack recipe "
@@ -1567,11 +1567,15 @@ def get_outputs(
                     outputs = {k: v for k, v in outputs.items() if v != ""}
 
                     if format == "json":
-                        outputs = json.dumps(outputs, indent=4)
+                        outputs_json = json.dumps(outputs, indent=4)
+                        cli_utils.declare(outputs_json)
+                        return outputs_json
                     elif format == "yaml":
-                        outputs = yaml.dump(outputs, indent=4)
-
-                    cli_utils.declare(str(outputs))
-                    return outputs
+                        outputs_yaml = yaml.dump(outputs, indent=4)
+                        cli_utils.declare(outputs_yaml)
+                        return cast(str, outputs_yaml)
+                    else:
+                        cli_utils.declare(str(outputs))
+                        return outputs
             except python_terraform.TerraformCommandError as e:
                 cli_utils.error(str(e))
