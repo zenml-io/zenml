@@ -1571,7 +1571,7 @@ def get_outputs(
                     elif format == "yaml":
                         outputs = yaml.dump(outputs, indent=4)
 
-                    cli_utils.declare(outputs)
+                    cli_utils.declare(str(outputs))
                     return outputs
             except python_terraform.TerraformCommandError as e:
                 cli_utils.error(str(e))

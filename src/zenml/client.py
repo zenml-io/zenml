@@ -2065,7 +2065,6 @@ class Client(metaclass=ClientMetaClass):
             user_id: The id of the user to filter by.
             name: The name of the component to filter by.
             is_shared: The shared status of the component to filter by.
-            metadata: The metadata of the component to filter by.
 
         Returns:
             A page of stack components.
@@ -2285,8 +2284,8 @@ class Client(metaclass=ClientMetaClass):
         cloud: str,
         component_type: StackComponentType,
         configuration: Optional[Dict[str, Any]] = None,
-        metadata: Optional[Dict[str, Any]] = None,
-    ) -> "ComponentResponseModel":
+        labels: Optional[Dict[str, Any]] = None,
+    ) -> "ComponentResponseModel" | None:
         """Deploys a stack component.
 
         Args:
@@ -2296,7 +2295,7 @@ class Client(metaclass=ClientMetaClass):
             cloud: The cloud of the deployed stack component.
             component_type: The type of the stack component to deploy.
             configuration: The configuration of the deployed stack component.
-            metadata: The metadata of the deployed stack component.
+            labels: The labels of the deployed stack component.
 
         Returns:
             The deployed stack component.
@@ -2340,7 +2339,7 @@ class Client(metaclass=ClientMetaClass):
                 "that might not exist. Please raise an issue on our GitHub "
                 "page if you see this."
             )
-            return
+            return None
 
         # get the outputs from the deployed recipe
         outputs = ctx.invoke(
@@ -2364,14 +2363,14 @@ class Client(metaclass=ClientMetaClass):
 
         # call the register stack component function using the values of the outputs
         # truncate the component type from the output
-        self.create_stack_component(
+        stack_comp = self.create_stack_component(
             name=name or comp_outputs[f"{component_type.value}_name"],
             flavor=comp_outputs[f"{component_type.value}_flavor"],
             component_type=component_type,
             configuration=eval(
                 comp_outputs[f"{component_type.value}_configuration"]
             ),
-            metadata=metadata,
+            labels=labels,
         )
 
         # if the component is an experiment tracker of flavor mlflow, then
@@ -2411,12 +2410,13 @@ class Client(metaclass=ClientMetaClass):
                     ),
                 )
 
+        return stack_comp
+
     def destroy_stack_component(
         self,
         ctx: click.Context,
         name_id_or_prefix: Union[str, UUID],
         component_type: StackComponentType,
-        yes: bool = False,
     ) -> None:
         """Destroys a stack component.
 
@@ -2425,7 +2425,6 @@ class Client(metaclass=ClientMetaClass):
             name: The name of the deployed stack component.
             name_id_or_prefix: The model of the component to destroy.
             component_type: The type of the stack component to destroy.
-            yes: Whether to skip checks.
         """
         try:
             component = self.get_stack_component(
@@ -2440,12 +2439,12 @@ class Client(metaclass=ClientMetaClass):
             )
             return
 
-        # if the component's metadata doesn't have a key created_by
+        # if the component's labels don't have a key created_by
         # equal to 'recipe', then destroy cannot be called on it
         if (
-            not component.metadata
-            or "created_by" not in component.metadata
-            or component.metadata["created_by"] != "recipe"
+            not component.labels
+            or "created_by" not in component.labels
+            or component.labels["created_by"] != "recipe"
         ):
             logger.error(
                 "Cannot destroy stack component %s. It was not created by a "
@@ -2477,7 +2476,7 @@ class Client(metaclass=ClientMetaClass):
             ctx.invoke(
                 destroy,
                 path=path,
-                stack_recipe_name=f"{component.metadata['cloud']}-modular",
+                stack_recipe_name=f"{component.labels['cloud']}-modular",
                 **component_flavor,
             )
         except ModuleNotFoundError:
