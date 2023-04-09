@@ -315,6 +315,10 @@ class StackComponent:
             created: The creation time of the component.
             updated: The last update time of the component.
             labels: The labels of the component.
+            *args: Additional positional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Raises:
             ValueError: If a secret reference is passed as name.
         """
         if secret_utils.is_secret_reference(name):

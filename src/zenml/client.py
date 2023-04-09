@@ -2108,7 +2108,10 @@ class Client(metaclass=ClientMetaClass):
             component_type: The type of the stack component.
             configuration: The configuration of the stack component.
             labels: The labels of the stack component.
+            is_shared: Whether the stack component is shared or not.
+
         Returns:
+            The model of the registered component.
         """
         # Get the flavor model
         flavor_model = self.get_flavor_by_name_and_type(
