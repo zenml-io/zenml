@@ -40,7 +40,12 @@ import pymysql
 from pydantic import root_validator, validator
 from sqlalchemy import asc, desc, func, text
 from sqlalchemy.engine import URL, Engine, make_url
-from sqlalchemy.exc import ArgumentError, NoResultFound, OperationalError
+from sqlalchemy.exc import (
+    ArgumentError,
+    IntegrityError,
+    NoResultFound,
+    OperationalError,
+)
 from sqlalchemy.orm import noload
 from sqlmodel import Session, create_engine, or_, select
 from sqlmodel.sql.expression import Select, SelectOfScalar
@@ -1272,8 +1277,8 @@ class SqlZenStore(BaseZenStore):
                 configuration=base64.b64encode(
                     json.dumps(component.configuration).encode("utf-8")
                 ),
-                metadata_values=base64.b64encode(
-                    json.dumps(component.metadata).encode("utf-8")
+                labels=base64.b64encode(
+                    json.dumps(component.labels).encode("utf-8")
                 ),
             )
 
@@ -3238,10 +3243,10 @@ class SqlZenStore(BaseZenStore):
         # it first will reduce concurrency issues.
         try:
             return self.create_run(pipeline_run), True
-        except EntityExistsError:
-            # Currently, an `EntityExistsError` is raised if either the run ID
-            # or the run name already exists. Therefore, we need to have another
-            # try block since getting the run by ID might still fail.
+        except (EntityExistsError, IntegrityError):
+            # Catch both `EntityExistsError`` and `IntegrityError`` exceptions
+            # since either one can be raised by the database when trying
+            # to create a new pipeline run with duplicate ID or name.
             try:
                 return self.get_run(pipeline_run.id), False
             except KeyError:

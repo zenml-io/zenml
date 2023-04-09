@@ -67,9 +67,9 @@ class ComponentBaseModel(BaseModel):
     configuration: Dict[str, Any] = Field(
         title="The stack component configuration.",
     )
-    metadata: Optional[Dict[str, str]] = Field(
+    labels: Optional[Dict[str, Any]] = Field(
         default=None,
-        title="The stack component metadata.",
+        title="The stack component labels.",
     )
 
 

@@ -298,7 +298,7 @@ class StackComponent:
         workspace: UUID,
         created: datetime,
         updated: datetime,
-        metadata: Optional[Dict[str, str]],
+        labels: Optional[Dict[str, Any]] = None,
         *args: Any,
         **kwargs: Any,
     ):
@@ -314,11 +314,7 @@ class StackComponent:
             workspace: The ID of the workspace the component belongs to.
             created: The creation time of the component.
             updated: The last update time of the component.
-            metadata: The metadata of the component.
-            *args: Additional positional arguments.
-            **kwargs: Additional keyword arguments.
-
-        Raises:
+            labels: The labels of the component.
             ValueError: If a secret reference is passed as name.
         """
         if secret_utils.is_secret_reference(name):
@@ -336,7 +332,7 @@ class StackComponent:
         self.workspace = workspace
         self.created = created
         self.updated = updated
-        self.metadata = metadata
+        self.labels = labels
 
     @classmethod
     def from_model(
@@ -382,6 +378,7 @@ class StackComponent:
             name=component_model.name,
             id=component_model.id,
             config=configuration,
+            labels=component_model.labels,
             flavor=component_model.flavor,
             type=component_model.type,
             created=component_model.created,

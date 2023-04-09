@@ -431,13 +431,13 @@ def print_stack_component_configuration(
 
         console.print(rich_table)
 
-    if not component.metadata:
-        declare("No metadata is set for this component.")
+    if not component.labels:
+        declare("No labels are set for this component.")
         return
 
     title_ = (
         f"'{component.name}' {component.type.value.upper()} "
-        f"Component Metadata"
+        f"Component Labels"
     )
 
     if active_status:
@@ -450,7 +450,7 @@ def print_stack_component_configuration(
     rich_table.add_column("COMPONENT_PROPERTY")
     rich_table.add_column("VALUE", overflow="fold")
 
-    items = component.metadata.items()
+    items = component.labels.items()
     for item in items:
         elements = []
         for idx, elem in enumerate(item):
@@ -1569,3 +1569,23 @@ def warn_deprecated_secrets_manager() -> None:
         "https://docs.zenml.io/starter-guide/production-fundamentals/secrets-management "
         "documentation page for more information."
     )
+
+
+def get_parsed_labels(labels: Optional[List[str]]) -> Dict[str, str]:
+    """Parse labels into a dictionary.
+
+    Args:
+        labels: The labels to parse.
+
+    Returns:
+        A dictionary of the metadata.
+    """
+    if not labels:
+        return {}
+
+    metadata_dict = {}
+    for m in labels:
+        key, value = m.split("=")
+        metadata_dict[key] = value
+
+    return metadata_dict
