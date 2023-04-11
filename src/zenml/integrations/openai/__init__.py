@@ -21,7 +21,7 @@ class OpenAIIntegration(Integration):
     """Definition of OpenAI integration for ZenML."""
 
     NAME = OPEN_AI
-    REQUIREMENTS = ["openai"]
+    REQUIREMENTS = ["openai>=0.27.0"]
 
 
 OpenAIIntegration.check_installation()
