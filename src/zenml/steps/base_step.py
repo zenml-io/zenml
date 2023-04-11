@@ -1353,12 +1353,10 @@ class ExternalArtifact:
 
 
 def validate_reserved_arguments(
-    func: Callable[..., Any], reserved_arguments: Sequence[str]
+    signature: inspect.Signature, reserved_arguments: Sequence[str]
 ):
-    function_params = inspect.signature(func).parameters
-
     for arg in reserved_arguments:
-        if arg in function_params:
+        if arg in signature.parameters:
             raise RuntimeError(f"Reserved argument name {arg}.")
 
 
@@ -1451,12 +1449,10 @@ class EntrypointFunctionDefinition(NamedTuple):
                 )
 
 
-def validate_entrypoint_function(
-    func: Callable[..., Any]
+def validate_entrypoint_signature(
+    signature: inspect.Signature
 ) -> EntrypointFunctionDefinition:
-    signature = inspect.signature(func, follow_wrapped=True)
-
-    validate_reserved_arguments(func=func, reserved_arguments=[])
+    validate_reserved_arguments(signature=signature, reserved_arguments=[])
 
     inputs = {}
     context: Optional[inspect.Parameter] = None
