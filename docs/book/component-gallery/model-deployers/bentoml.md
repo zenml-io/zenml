@@ -2,8 +2,8 @@
 description: How to deploy your models locally with BentoML
 ---
 
-BentoML is an open source framework for machine learning model serving. 
-it can be used to serve to deploy models locally, in a cloud environment, or
+BentoML is an open-source framework for machine learning model serving. 
+it can be used to deploy models locally, in a cloud environment, or
 on a Kubernetes environment.
 
 The BentoML Model Deployer is one of the available flavors of the [Model Deployer](./model-deployers.md) 
