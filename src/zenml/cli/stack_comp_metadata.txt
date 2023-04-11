@@ -1,5 +1,0 @@
-- cli to add metadata after creation
-- add to describe output
-- option to specify metadata when Registering, updating
-- call it metadata or labels?
-- zenml stack component list by label
