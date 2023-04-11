@@ -312,6 +312,7 @@ class GitStackRecipesHandler(object):
                 and not name == "LICENSE"
                 and not name.endswith(".md")
                 and not name.endswith(".sh")
+                and not name == "modules"
             )
         ]
 
