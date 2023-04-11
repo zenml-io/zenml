@@ -51,7 +51,9 @@ class GreatExpectationsVisualizer(BaseVisualizer):
             # filter out anything but Great Expectations data analysis artifacts
             if (
                 artifact_view.type == ArtifactType.DATA_ANALYSIS
-                and artifact_view.data_type.startswith("great_expectations.")
+                and artifact_view.data_type.import_path.startswith(
+                    "great_expectations."
+                )
             ):
                 artifact = artifact_view.read()
                 if isinstance(artifact, CheckpointResult):

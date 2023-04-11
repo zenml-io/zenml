@@ -133,12 +133,16 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
         self,
         deployment: "PipelineDeploymentResponseModel",
         stack: "Stack",
+        environment: Dict[str, str],
     ) -> None:
         """Prepares or runs a pipeline on Sagemaker.
 
         Args:
             deployment: The deployment to prepare or run.
             stack: The stack to run on.
+            environment: Environment variables to set in the orchestration
+                environment.
+
         """
         if deployment.schedule:
             logger.warning(
@@ -175,6 +179,10 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                 else {}
             )
 
+            environment[
+                ENV_ZENML_SAGEMAKER_RUN_ID
+            ] = ExecutionVariables.PIPELINE_EXECUTION_ARN
+
             processor = sagemaker.processing.Processor(
                 role=processor_role,
                 image_uri=image,
@@ -183,9 +191,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                 instance_type=step_settings.instance_type,
                 entrypoint=entrypoint,
                 base_job_name=orchestrator_run_name,
-                env={
-                    ENV_ZENML_SAGEMAKER_RUN_ID: ExecutionVariables.PIPELINE_EXECUTION_ARN,
-                },
+                env=environment,
                 volume_size_in_gb=step_settings.volume_size_in_gb,
                 max_runtime_in_seconds=step_settings.max_runtime_in_seconds,
                 **kwargs,

@@ -12,9 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 import os
-from uuid import uuid4
-
-import pytest
 
 from zenml.config.global_config import GlobalConfiguration
 from zenml.io import fileio
@@ -27,12 +24,6 @@ def test_global_config_file_creation(clean_client):
 
     GlobalConfiguration._reset_instance()
     assert fileio.exists(GlobalConfiguration()._config_file())
-
-
-def test_global_config_user_id_is_immutable(clean_client):
-    """Tests that the global config user id attribute is immutable."""
-    with pytest.raises(TypeError):
-        GlobalConfiguration().user_id = uuid4()
 
 
 def test_global_config_returns_value_from_environment_variable(

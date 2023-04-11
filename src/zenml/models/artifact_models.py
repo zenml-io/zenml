@@ -18,6 +18,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field
 
+from zenml.config.source import Source, convert_source_validator
 from zenml.enums import ArtifactType
 from zenml.models.base_models import (
     WorkspaceScopedRequestModel,
@@ -46,14 +47,14 @@ class ArtifactBaseModel(BaseModel):
     uri: str = Field(
         title="URI of the artifact.", max_length=STR_FIELD_MAX_LENGTH
     )
-    materializer: str = Field(
+    materializer: Source = Field(
         title="Materializer class to use for this artifact.",
-        max_length=STR_FIELD_MAX_LENGTH,
     )
-    data_type: str = Field(
+    data_type: Source = Field(
         title="Data type of the artifact.",
-        max_length=STR_FIELD_MAX_LENGTH,
     )
+
+    _convert_source = convert_source_validator("materializer", "data_type")
 
 
 # -------- #
@@ -86,36 +87,36 @@ class ArtifactFilterModel(WorkspaceScopedFilterModel):
         "only_unused",
     ]
 
-    name: str = Field(
+    name: Optional[str] = Field(
         default=None,
         description="Name of the artifact",
     )
-    uri: str = Field(
+    uri: Optional[str] = Field(
         default=None,
         description="Uri of the artifact",
     )
-    materializer: str = Field(
+    materializer: Optional[str] = Field(
         default=None,
         description="Materializer used to produce the artifact",
     )
-    type: str = Field(
+    type: Optional[str] = Field(
         default=None,
         description="Type of the artifact",
     )
-    data_type: str = Field(
+    data_type: Optional[str] = Field(
         default=None,
         description="Datatype of the artifact",
     )
-    artifact_store_id: Union[UUID, str] = Field(
+    artifact_store_id: Optional[Union[UUID, str]] = Field(
         default=None, description="Artifact store for this artifact"
     )
-    workspace_id: Union[UUID, str] = Field(
+    workspace_id: Optional[Union[UUID, str]] = Field(
         default=None, description="Workspace for this artifact"
     )
-    user_id: Union[UUID, str] = Field(
+    user_id: Optional[Union[UUID, str]] = Field(
         default=None, description="User that produced this artifact"
     )
-    only_unused: bool = Field(
+    only_unused: Optional[bool] = Field(
         default=False, description="Filter only for unused artifacts"
     )
 

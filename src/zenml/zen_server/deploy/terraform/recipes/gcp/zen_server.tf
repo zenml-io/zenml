@@ -12,9 +12,14 @@ resource "helm_release" "zen-server" {
   namespace = kubernetes_namespace.zen-server.metadata[0].name
 
   set {
-    name  = "zenml.image.tag"
+    name  = "zenml.image.repository"
+    value = var.zenmlserver_image_repo
+  }
+  set {
+    name = "zenml.image.tag"
     value = var.zenmlserver_image_tag
   }
+
   set {
     name  = "zenml.defaultUsername"
     value = var.username
@@ -35,6 +40,12 @@ resource "helm_release" "zen-server" {
   set {
     name  = "zenml.secretsStore.gcp.project_idd"
     value = var.project_id
+
+  }
+
+  set {
+    name = "zenml.analyticsOptIn"
+    value = var.analytics_opt_in
   }
 
   # set up the right path for ZenML

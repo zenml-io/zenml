@@ -71,7 +71,7 @@ possible without employing some form of authentication. ZenML currently provides
 two options for managing GCS authentication: one for which you don't need to
 manage credentials explicitly, the other one that requires you to generate
 a GCP Service Account key and store it in a
-[ZenML Secret](../../advanced-guide/practical/secrets-management.md). Each
+[ZenML Secret](../../starter-guide/production-fundamentals/secrets-management.md). Each
 method has advantages and disadvantages, and you should choose the one that
 best suits your use-case. If you're looking for a quick way to get started
 locally, we recommend using the *Implicit Authentication* method. However, if
@@ -125,7 +125,7 @@ Identity, you should use one of the other authentication methods.
 
 When you register the GCS Artifact Store, you can
 [generate a GCP Service Account Key](https://cloud.google.com/docs/authentication/application-default-credentials#attached-sa),
-store it in a [ZenML Secret](../../advanced-guide/practical/secrets-management.md)
+store it in a [ZenML Secret](../../starter-guide/production-fundamentals/secrets-management.md)
 and then reference it in the Artifact Store configuration.
 
 This method has some advantages over the implicit authentication method:

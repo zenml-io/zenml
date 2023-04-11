@@ -1,7 +1,7 @@
 #!/bin/sh -e
 set -x
 
-SRC=${1:-"src/zenml tests examples docs/mkdocstrings_helper.py"}
+SRC=${1:-"src/zenml tests examples docs/mkdocstrings_helper.py scripts"}
 
 export ZENML_DEBUG=1
 export ZENML_ANALYTICS_OPT_IN=false

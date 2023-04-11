@@ -37,6 +37,7 @@ from typing import (
 from pydantic import ValidationError
 
 from zenml.artifacts.base_artifact import BaseArtifact
+from zenml.config.source import Source
 from zenml.config.step_configurations import (
     ArtifactConfiguration,
     InputSpec,
@@ -47,7 +48,6 @@ from zenml.config.step_configurations import (
 )
 from zenml.constants import STEP_SOURCE_PARAMETER_NAME
 from zenml.exceptions import MissingStepParameterError, StepInterfaceError
-from zenml.hooks.hook_validators import resolve_and_validate_hook
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.materializers.default_materializer_registry import (
@@ -76,6 +76,7 @@ from zenml.utils import (
     dict_utils,
     pydantic_utils,
     settings_utils,
+    source_code_utils,
     source_utils,
 )
 
@@ -85,13 +86,13 @@ if TYPE_CHECKING:
 
     ParametersOrDict = Union["BaseParameters", Dict[str, Any]]
     ArtifactClassOrStr = Union[str, Type["BaseArtifact"]]
-    MaterializerClassOrStr = Union[str, Type["BaseMaterializer"]]
-    HookSpecification = Union[str, FunctionType]
+    MaterializerClassOrSource = Union[str, Source, Type["BaseMaterializer"]]
+    HookSpecification = Union[str, Source, FunctionType]
     OutputArtifactsSpecification = Union[
         "ArtifactClassOrStr", Mapping[str, "ArtifactClassOrStr"]
     ]
     OutputMaterializersSpecification = Union[
-        "MaterializerClassOrStr", Mapping[str, "MaterializerClassOrStr"]
+        "MaterializerClassOrSource", Mapping[str, "MaterializerClassOrSource"]
     ]
 
 
@@ -257,7 +258,7 @@ class BaseStep(metaclass=BaseStepMeta):
 
         name: str
         step_name: str
-        materializer_source: str
+        materializer_source: Source
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         """Initializes a step.
@@ -339,7 +340,7 @@ class BaseStep(metaclass=BaseStepMeta):
         )
 
     @classmethod
-    def load_from_source(cls, source: str) -> "BaseStep":
+    def load_from_source(cls, source: Union[Source, str]) -> "BaseStep":
         """Loads a step from source.
 
         Args:
@@ -455,15 +456,15 @@ class BaseStep(metaclass=BaseStepMeta):
         parameters = {}
         parameters[
             STEP_SOURCE_PARAMETER_NAME
-        ] = source_utils.get_hashed_source(self.source_object)
+        ] = source_code_utils.get_hashed_source_code(self.source_object)
 
         for name, output in self.configuration.outputs.items():
             if output.materializer_source:
                 key = f"{name}_materializer_source"
-                materializer_class = source_utils.load_source_path(
+                materializer_class = source_utils.load(
                     output.materializer_source
                 )
-                parameters[key] = source_utils.get_hashed_source(
+                parameters[key] = source_code_utils.get_hashed_source_code(
                     materializer_class
                 )
 
@@ -777,15 +778,19 @@ class BaseStep(metaclass=BaseStepMeta):
         Returns:
             The step instance that this method was called on.
         """
+        from zenml.hooks.hook_validators import resolve_and_validate_hook
 
-        def _resolve_if_necessary(value: Union[str, Type[Any]]) -> str:
-            return (
-                value
-                if isinstance(value, str)
-                else source_utils.resolve_class(value)
-            )
+        def _resolve_if_necessary(
+            value: Union[str, Source, Type[Any]]
+        ) -> Source:
+            if isinstance(value, str):
+                return Source.from_import_path(value)
+            elif isinstance(value, Source):
+                return value
+            else:
+                return source_utils.resolve(value)
 
-        outputs: Dict[str, Dict[str, str]] = defaultdict(dict)
+        outputs: Dict[str, Dict[str, Source]] = defaultdict(dict)
         allowed_output_names = set(self.OUTPUT_SIGNATURE)
 
         if output_materializers:
@@ -969,7 +974,7 @@ class BaseStep(metaclass=BaseStepMeta):
                 materializer assigned to it and there is no default
                 materializer registered for the output type.
         """
-        outputs: Dict[str, Dict[str, str]] = defaultdict(dict)
+        outputs: Dict[str, Dict[str, Source]] = defaultdict(dict)
 
         for output_name, output_class in self.OUTPUT_SIGNATURE.items():
             output = self._configuration.outputs.get(
@@ -995,7 +1000,7 @@ class BaseStep(metaclass=BaseStepMeta):
                     )
                 outputs[output_name][
                     "materializer_source"
-                ] = source_utils.resolve_class(materializer_class)
+                ] = source_utils.resolve(materializer_class)
 
         function_parameters = self._finalize_function_parameters()
         values = dict_utils.remove_none_values(

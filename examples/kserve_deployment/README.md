@@ -417,6 +417,7 @@ This stack consists of the following components:
 * a GCP artifact store
 * the local orchestrator
 * a KServe model deployer
+* an image builder
 
 To have access to the GCP artifact store from your local workstation, the
 gcloud client needs to be properly set up locally.
@@ -460,7 +461,8 @@ zenml model-deployer register kserve_gke --flavor=kserve \
   --kubernetes_namespace=zenml-workloads \
   --base_url=$INGRESS_URL \
 zenml artifact-store register gcp_artifact_store --flavor=gcp --path gs://my-bucket
-zenml stack register local_gcp_kserve_stack -a gcp_artifact_store -o default -d kserve_gke --set
+zenml image-builder register local_builder --flavor=local
+zenml stack register local_gcp_kserve_stack -a gcp_artifact_store -o default -d kserve_gke -i local_builder --set
 ```
 
 >**Note**:
@@ -795,7 +797,7 @@ $ zenml model-deployer models describe a9e967a1-9b26-4d5c-855c-e5abba0b020b
 ┠──────────────────────────┼─────────────────────────────────────────────────────────────────────────────────────────────────────────────┨
 ┃ PIPELINE_NAME            │ tensorflow_training_deployment_pipeline                                                                     ┃
 ┠──────────────────────────┼─────────────────────────────────────────────────────────────────────────────────────────────────────────────┨
-┃ PIPELINE_RUN_ID          │ tensorflow_training_deployment_pipeline-25_Jul_22-00_17_10_197418                                           ┃
+┃ RUN_NAME                 │ tensorflow_training_deployment_pipeline-25_Jul_22-00_17_10_197418                                           ┃
 ┠──────────────────────────┼─────────────────────────────────────────────────────────────────────────────────────────────────────────────┨
 ┃ PIPELINE_STEP_NAME       │ kserve_model_deployer_step                                                                                  ┃
 ┠──────────────────────────┼─────────────────────────────────────────────────────────────────────────────────────────────────────────────┨

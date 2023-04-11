@@ -120,7 +120,7 @@ class LocalExample:
         """Checks if a setup.sh file exists in the example dir.
 
         This indicates the possibility to run the example without any user
-        input. Examples with no setup.sh file need the user to setup
+        input. Examples with no setup.sh file need the user to set up
         infrastructure and/or connect to tools/service providers.
 
         Returns:
@@ -181,8 +181,8 @@ class LocalExample:
         with event_handler(
             event=AnalyticsEvent.RUN_EXAMPLE,
             metadata={"example_name": self.name},
+            v2=True,
         ):
-
             call = [sys.executable, self.executable_python_example, *args]
             try:
                 subprocess.check_call(
@@ -219,8 +219,8 @@ class LocalExample:
         with event_handler(
             event=AnalyticsEvent.RUN_EXAMPLE,
             metadata={"example_name": self.name},
+            v2=True,
         ):
-
             if all(map(fileio.exists, example_runner)):
                 call = (
                     example_runner

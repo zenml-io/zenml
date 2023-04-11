@@ -218,6 +218,8 @@ This stack consists of the following components:
 * a KServe model deployer
 * a GCP container registry used to store the custom Docker images used by the
 KServe model deployer
+* an image builder component that builds the custom Docker images used by the
+KServe model deployer
 
 To have access to the GCP artifact store from your local workstation, the
 `gcloud` (CLI) client needs to be properly set up locally.
@@ -261,7 +263,8 @@ zenml model-deployer register kserve_gke --flavor=kserve \
   --base_url=$INGRESS_URL \
 zenml artifact-store register gcp_artifact_store --flavor=fcp --path gs://my-bucket
 zenml container-registry register gcp_registry --flavor=gcp --uri=eu.gcr.io/container-registry
-zenml stack register local_gcp_kserve_stack -a gcp_artifact_store -o default -d kserve_gke -c gcp_registry --set
+zenml image-builder register local_builder --flavor=local
+zenml stack register local_gcp_kserve_stack -a gcp_artifact_store -o default -d kserve_gke -c gcp_registry -i local_builder --set
 ```
 
 >**Note**:
@@ -446,7 +449,8 @@ zenml model-deployer register seldon_eks --flavor=seldon \
   --base_url=http://$INGRESS_HOST \
 zenml artifact-store register gcp_artifact_store --flavor=fcp --path gs://my-bucket
 zenml container-registry register gcp_registry --flavor=gcp --uri=eu.gcr.io/container-registry
-zenml stack register local_gcp_seldon_stack -a gcp_artifact_store -o default -d seldon_eks -c gcp_registry --set
+zenml image-builder register local_builder --flavor=local
+zenml stack register local_gcp_seldon_stack -a gcp_artifact_store -o default -d seldon_eks -c gcp_registry -i local_builder --set
 ```
 
 >**Note**:
@@ -598,7 +602,7 @@ $ zenml model-deployer models describe
 ┠────────────────────────┼─────────────────────────────────────────────────────────────────────────────────────────────────────────┨
 ┃ PIPELINE_NAME          │ tensorflow_custom_code_pipeline                                                                         ┃
 ┠────────────────────────┼─────────────────────────────────────────────────────────────────────────────────────────────────────────┨
-┃ PIPELINE_RUN_ID        │ tensorflow_custom_code_pipeline-22_Aug_22-08_31_09_994315                                               ┃
+┃ RUN_NAME               │ tensorflow_custom_code_pipeline-22_Aug_22-08_31_09_994315                                               ┃
 ┠────────────────────────┼─────────────────────────────────────────────────────────────────────────────────────────────────────────┨
 ┃ PIPELINE_STEP_NAME     │ seldon_custom_model_deployer_step                                                                       ┃
 ┠────────────────────────┼─────────────────────────────────────────────────────────────────────────────────────────────────────────┨

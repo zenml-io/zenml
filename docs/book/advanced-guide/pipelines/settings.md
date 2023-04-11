@@ -25,7 +25,7 @@ Looked at one way, `BaseParameters` configure steps within a pipeline to behave 
 things can be configured at runtime? Here is a list:
 
 - The [resources](./step-resources.md) of a step.
-- Configuring the [containerization](./containerization.md) process of a pipeline (e.g. What requirements get installed in the Docker image).
+- Configuring the [containerization](../../starter-guide/production-fundamentals/containerization.md) process of a pipeline (e.g. What requirements get installed in the Docker image).
 - Stack component specific configuration, e.g., if you have an experiment tracker passing in the name of the experiment at runtime.
 
 You will learn about all of the above in more detail later, but for now,
@@ -36,7 +36,7 @@ let's try to understand that all of this configuration flows through one central
 Settings are categorized into two types:
 
 - **General settings** that can be used on all ZenML pipelines. Examples of these are:
-  - [`DockerSettings`](./containerization.md) to specify docker settings.
+  - [`DockerSettings`](../../starter-guide/production-fundamentals/containerization.md) to specify docker settings.
   - [`ResourceSettings`](./step-resources.md) to specify resource settings.
 - **Stack component specific settings**: These can be used to supply runtime configurations to certain stack components (key= <COMPONENT_CATEGORY>.<COMPONENT_FLAVOR>). Settings for components not in the active stack will be ignored. Examples of these are:
   - [`KubeflowOrchestratorSettings`](../../component-gallery/orchestrators/kubeflow.md) to specify Kubeflow settings.
@@ -191,7 +191,7 @@ settings:
   docker:
     build_context_root: .
     # build_options: Mapping[str, Any]
-    # copy_files: bool
+    # source_files: str
     # copy_global_config: bool
     # dockerfile: Optional[str]
     # dockerignore: Optional[str]

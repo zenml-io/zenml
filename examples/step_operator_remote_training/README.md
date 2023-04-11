@@ -67,6 +67,8 @@ The stack will consist of:
   artifacts of your pipeline.
 * The **Sagemaker step operator** which will be utilized to run the training
   step on Sagemaker.
+* An **Image Builder** which will be used to build the Docker image that will
+  be used to run the training step.
 
 To configure resources for the step operators, please
 follow [this guide](https://docs.zenml.io/component-gallery/step-operators/amazon-sagemaker)
@@ -92,12 +94,17 @@ zenml step-operator register sagemaker \
 # register the container registry
 zenml container-registry register ecr_registry --flavor=aws --uri=<ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com
 
+# Register the image builder
+zenml image-builder register local_builder \
+  --flavor=local
+
 # register and activate the sagemaker stack
 zenml stack register sagemaker_stack \
     -o default \
     -c ecr_registry \
     -a s3_store \
     -s sagemaker \
+    -i local_builder \
     --set
 ```
 

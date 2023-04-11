@@ -11,7 +11,10 @@ resource "helm_release" "zen-server" {
   chart     = var.helm_chart
   namespace = kubernetes_namespace.zen-server.metadata[0].name
 
-
+  set {
+    name  = "zenml.image.repository"
+    value = var.zenmlserver_image_repo
+  }
   set {
     name  = "zenml.image.tag"
     value = var.zenmlserver_image_tag
@@ -38,6 +41,11 @@ resource "helm_release" "zen-server" {
     value = var.region
   }
 
+  set {
+    name = "zenml.analyticsOptIn"
+    value = var.analytics_opt_in
+  }
+  
   # set up the right path for ZenML
   set {
     name  = "zenml.rootUrlPath"
