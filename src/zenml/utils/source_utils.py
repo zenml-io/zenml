@@ -22,10 +22,8 @@ from distutils.sysconfig import get_python_lib
 from pathlib import Path, PurePath
 from types import FunctionType, ModuleType
 from typing import (
-    TYPE_CHECKING,
     Any,
     Callable,
-    Dict,
     Iterator,
     Optional,
     Type,
@@ -40,18 +38,10 @@ from zenml.config.source import (
     SourceType,
 )
 from zenml.logger import get_logger
-from zenml.utils.pagination_utils import depaginate
-
-if TYPE_CHECKING:
-    from zenml.code_repositories import (
-        BaseCodeRepository,
-        LocalRepositoryContext,
-    )
 
 logger = get_logger(__name__)
 
 
-_CODE_REPOSITORY_CACHE: Dict[str, "LocalRepositoryContext"] = {}
 _CUSTOM_SOURCE_ROOT: Optional[str] = None
 
 
@@ -139,7 +129,11 @@ def resolve(obj: Union[Type[Any], FunctionType, ModuleType]) -> Source:
     source_type = get_source_type(module=module)
 
     if source_type == SourceType.USER:
-        local_repo_context = find_active_code_repository()
+        from zenml.utils import code_repository_utils
+
+        local_repo_context = (
+            code_repository_utils.find_active_code_repository()
+        )
 
         if local_repo_context and not local_repo_context.has_local_changes:
             module_name = _resolve_module(module)
@@ -234,94 +228,6 @@ def set_custom_source_root(source_root: Optional[str]) -> None:
     logger.debug("Setting custom source root: %s", source_root)
     global _CUSTOM_SOURCE_ROOT
     _CUSTOM_SOURCE_ROOT = source_root
-
-
-def set_custom_local_repository(
-    root: str, commit: str, repo: "BaseCodeRepository"
-) -> None:
-    """Manually defines a local repository for a path.
-
-    To explain what this function does we need to take a dive into source
-    resolving and what happens inside the Docker image entrypoint:
-    * When trying to resolve an object to a source, we first determine whether
-    the file is a user file or not.
-    * If the file is a user file, we check if that user file is inside a clean
-    code repository using the `source_utils.find_active_code_repository(...)`
-    function. If that is the case, the object will be resolved to a
-    `CodeRepositorySource` which includes additional information about the
-    current commit and the ID of the code repository.
-    * The `source_utils.find_active_code_repository(...)` uses the
-    code repository implementation classes to check whether the code repository
-    "exists" at that local path. For git repositories, this check might look as
-    follows: The code repository first checks if there is a git repository at
-    that path or in any parent directory. If there is, the remote URLs of this
-    git repository will be checked to see if one matches the URL defined for
-    the code repository.
-    * When running a step inside a Docker image, ZenML potentially downloads
-    files from a code repository. This usually does not download the entire
-    repository (and in the case of git might not download a .git directory which
-    defines a local git repository) but only specific files. If we now try to
-    resolve any object while running in this container, it will not get resolved
-    to a `CodeRepositorySource` as
-    `source_utils.find_active_code_repository(...)` won't find an active
-    repository. As we downloaded these files, we however know that they belong
-    to a certain code repository at a specific commit, and that's what we can
-    define using this function.
-
-    Args:
-        root: The repository root.
-        commit: The commit of the repository.
-        repo: The code repository associated with the local repository.
-    """
-    from zenml.utils.downloaded_repository_context import (
-        _DownloadedRepositoryContext,
-    )
-
-    global _CODE_REPOSITORY_CACHE
-
-    path = os.path.abspath(get_source_root())
-    _CODE_REPOSITORY_CACHE[path] = _DownloadedRepositoryContext(
-        code_repository_id=repo.id, root=root, commit=commit
-    )
-
-
-def find_active_code_repository(
-    path: Optional[str] = None,
-) -> Optional["LocalRepositoryContext"]:
-    """Find the active code repository for a given path.
-
-    Args:
-        path: Path at which to look for the code repository. If not given, the
-            source root will be used.
-
-    Returns:
-        The local repository context active at that path or None.
-    """
-    global _CODE_REPOSITORY_CACHE
-    from zenml.client import Client
-    from zenml.code_repositories import BaseCodeRepository
-
-    path = path or get_source_root()
-    path = os.path.abspath(path)
-
-    if path in _CODE_REPOSITORY_CACHE:
-        return _CODE_REPOSITORY_CACHE[path]
-
-    for model in depaginate(list_method=Client().list_code_repositories):
-        try:
-            repo = BaseCodeRepository.from_model(model)
-        except Exception:
-            logger.debug(
-                "Failed to instantiate code repository class.", exc_info=True
-            )
-            continue
-
-        local_context = repo.get_local_context(path)
-        if local_context:
-            _CODE_REPOSITORY_CACHE[path] = local_context
-            return local_context
-
-    return None
 
 
 def is_internal_module(module_name: str) -> bool:
@@ -450,7 +356,9 @@ def _warn_about_potential_source_loading_issues(
     Args:
         source: The code repository source.
     """
-    local_repo = find_active_code_repository()
+    from zenml.utils import code_repository_utils
+
+    local_repo = code_repository_utils.find_active_code_repository()
 
     if not local_repo:
         logger.warning(

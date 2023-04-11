@@ -21,12 +21,10 @@ from uuid import uuid4
 import pytest
 
 from tests.unit.pipelines.test_build_utils import (
-    StubCodeRepository,
     StubLocalRepositoryContext,
 )
 from zenml.config.source import CodeRepositorySource, Source, SourceType
-from zenml.models import Page
-from zenml.utils import source_utils
+from zenml.utils import code_repository_utils, source_utils
 
 CURRENT_MODULE_PARENT_DIR = str(pathlib.Path(__file__).resolve().parent)
 
@@ -156,7 +154,7 @@ def test_basic_source_resolving(mocker):
         root=CURRENT_MODULE_PARENT_DIR, commit="commit"
     )
     mocker.patch.object(
-        source_utils,
+        code_repository_utils,
         "find_active_code_repository",
         return_value=clean_local_context,
     )
@@ -174,7 +172,7 @@ def test_basic_source_resolving(mocker):
         root=CURRENT_MODULE_PARENT_DIR, commit="commit", has_local_changes=True
     )
     mocker.patch.object(
-        source_utils,
+        code_repository_utils,
         "find_active_code_repository",
         return_value=dirty_local_context,
     )
@@ -322,90 +320,3 @@ def test_package_utility_functions():
         source_utils._get_package_version(package_name="non_existent_package")
         is None
     )
-
-
-def test_finding_active_code_repo(mocker, sample_code_repo_response_model):
-    """Tests finding the active code repo for a path."""
-    source_utils._CODE_REPOSITORY_CACHE = {}
-    mock_list_repos = mocker.patch(
-        "zenml.client.Client.list_code_repositories",
-        return_value=Page(
-            index=1,
-            max_size=1,
-            total_pages=1,
-            total=0,
-            items=[],
-        ),
-    )
-    assert not source_utils.find_active_code_repository()
-    mock_list_repos.assert_called()
-
-    mock_list_repos = mocker.patch(
-        "zenml.client.Client.list_code_repositories",
-        return_value=Page(
-            index=1,
-            max_size=1,
-            total_pages=1,
-            total=1,
-            items=[sample_code_repo_response_model],
-        ),
-    )
-
-    # Don't fail if the `from_model` method fails
-    mocker.patch(
-        "zenml.code_repositories.BaseCodeRepository.from_model",
-        side_effect=ImportError,
-    )
-    source_utils._CODE_REPOSITORY_CACHE = {}
-    assert not source_utils.find_active_code_repository()
-
-    repo_without_local = StubCodeRepository(local_context=None)
-    mocker.patch(
-        "zenml.code_repositories.BaseCodeRepository.from_model",
-        return_value=repo_without_local,
-    )
-
-    source_utils._CODE_REPOSITORY_CACHE = {}
-    assert not source_utils.find_active_code_repository()
-
-    local_context = StubLocalRepositoryContext()
-    repo_with_local = StubCodeRepository(local_context=local_context)
-    mocker.patch(
-        "zenml.code_repositories.BaseCodeRepository.from_model",
-        return_value=repo_with_local,
-    )
-    source_utils._CODE_REPOSITORY_CACHE = {}
-    assert source_utils.find_active_code_repository() is local_context
-
-    # Cleanup
-    source_utils._CODE_REPOSITORY_CACHE = {}
-
-
-def test_setting_a_custom_active_code_repo(mocker):
-    """Tests setting and getting a custom local repo."""
-    mock_list_repos = mocker.patch(
-        "zenml.client.Client.list_code_repositories",
-        return_value=Page(
-            index=1,
-            max_size=1,
-            total_pages=1,
-            total=0,
-            items=[],
-        ),
-    )
-
-    source_utils._CODE_REPOSITORY_CACHE = {}
-
-    repo = StubCodeRepository()
-    source_utils.set_custom_local_repository(
-        root=".", commit="commit", repo=repo
-    )
-    local_repo = source_utils.find_active_code_repository()
-    assert local_repo.code_repository_id == repo.id
-    assert local_repo.root == "."
-    assert local_repo.current_commit == "commit"
-
-    mock_list_repos.assert_not_called()
-
-    # Cleanup
-    source_utils._CODE_REPOSITORY_CACHE = {}

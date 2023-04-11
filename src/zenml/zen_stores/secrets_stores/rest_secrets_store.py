@@ -243,6 +243,10 @@ class RestSecretsStore(BaseSecretsStore):
             resource_update=secret_update,
             route=SECRETS,
             response_model=SecretResponseModel,
+            # The default endpoint behavior is to replace all secret values
+            # with the values in the update. We want to merge the values
+            # instead.
+            params=dict(patch_values=True),
         )
 
     @track(AnalyticsEvent.DELETED_SECRET)
