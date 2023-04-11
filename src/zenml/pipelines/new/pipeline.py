@@ -62,8 +62,13 @@ from zenml.models.pipeline_deployment_models import PipelineDeploymentBaseModel
 from zenml.pipelines import build_utils
 from zenml.stack import Stack
 from zenml.steps import BaseStep
-from zenml.steps.base_step import ExternalArtifact, StepInvocation
+from zenml.steps.base_step import (
+    ExternalArtifact,
+    StepArtifact,
+    StepInvocation,
+)
 from zenml.utils import (
+    code_repository_utils,
     dashboard_utils,
     dict_utils,
     pydantic_utils,
@@ -297,7 +302,7 @@ class Pipeline:
             )
             pipeline_id = self._register(pipeline_spec=pipeline_spec).id
 
-            local_repo = source_utils.find_active_code_repository()
+            local_repo = code_repository_utils.find_active_code_repository()
             code_repository = build_utils.verify_local_repository_context(
                 deployment=deployment, local_repo_context=local_repo
             )
@@ -423,7 +428,9 @@ class Pipeline:
 
             stack = Client().active_stack
 
-            local_repo_context = source_utils.find_active_code_repository()
+            local_repo_context = (
+                code_repository_utils.find_active_code_repository()
+            )
             code_repository = build_utils.verify_local_repository_context(
                 deployment=deployment, local_repo_context=local_repo_context
             )
@@ -801,7 +808,7 @@ class Pipeline:
     def add_step(
         self,
         step: "BaseStep",
-        input_artifacts: Dict[str, BaseStep._OutputArtifact],
+        input_artifacts: Dict[str, StepArtifact],
         external_artifacts: Dict[str, ExternalArtifact],
         parameters: Dict[str, Any],
         upstream_steps: Sequence[str],
@@ -873,6 +880,11 @@ class Pipeline:
         pipeline_copy.configure(**kwargs)
         return pipeline_copy
 
+    def copy(self) -> "Pipeline":
+        import copy
+
+        return copy.deepcopy(self)
+
     def __call__(self, *args: Any, **kwds: Any) -> Any:
         if Pipeline.ACTIVE_PIPELINE:
             # Calling a pipeline inside a pipeline, we return the potential
@@ -884,9 +896,7 @@ class Pipeline:
 
         if entrypoint_outputs is None:
             entrypoint_outputs = ()
-        elif isinstance(
-            entrypoint_outputs, BaseStep._OutputArtifact
-        ) or not isinstance(entrypoint_outputs, Tuple):
+        elif not isinstance(entrypoint_outputs, Tuple):
             entrypoint_outputs = (entrypoint_outputs,)
 
         from zenml.config.pipeline_configurations import PipelineOutput
@@ -894,9 +904,10 @@ class Pipeline:
         outputs = {}
         for i, output in enumerate(entrypoint_outputs):
             key = f"output_{i}"
-            if isinstance(output, BaseStep._OutputArtifact):
+            if isinstance(output, StepArtifact):
                 outputs[key] = PipelineOutput(
-                    step_name=output.step_name, output_name=output.name
+                    step_name=output.invocation_id,
+                    output_name=output.output_name,
                 )
             else:
                 from zenml.steps.base_step import is_json_serializable

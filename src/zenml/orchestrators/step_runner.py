@@ -169,7 +169,7 @@ class StepRunner:
 
             # Store and publish the output artifacts of the step function.
             output_annotations = parse_return_type_annotations(
-                spec.annotations
+                spec.annotations.get("return")
             )
             output_data = self._validate_outputs(
                 return_values, output_annotations

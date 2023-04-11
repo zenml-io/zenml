@@ -254,23 +254,6 @@ class BaseStep(metaclass=BaseStepMeta):
     PARAMETERS_CLASS: ClassVar[Optional[Type["BaseParameters"]]] = None
     CONTEXT_PARAMETER_NAME: ClassVar[Optional[str]] = None
 
-    class _OutputArtifact(NamedTuple):
-        """Internal step output artifact.
-
-        This class is used for inputs/outputs of the __call__ method of
-        BaseStep. It passes all the information about step outputs so downstream
-        steps can finalize their configuration.
-
-        Attributes:
-            name: Name of the output.
-            step_name: Name of the step that produced this output.
-        """
-
-        name: str
-        step_name: str
-        annotation: Any
-        pipeline: "Pipeline"
-
     def __init__(
         self,
         *args: Any,
@@ -514,7 +497,11 @@ class BaseStep(metaclass=BaseStepMeta):
 
     def _parse_call_args(
         self, *args: Any, **kwargs: Any
-    ) -> Tuple[Dict[str, _OutputArtifact], Dict[str, Any]]:
+    ) -> Tuple[
+        Dict[str, "StepArtifact"],
+        Dict[str, "ExternalArtifact"],
+        Dict[str, Any],
+    ]:
         signature = get_step_entrypoint_signature(step=self)
 
         try:
@@ -529,16 +516,13 @@ class BaseStep(metaclass=BaseStepMeta):
         artifacts = {}
         external_artifacts = {}
         parameters = {}
-        from zenml.materializers import UnmaterializedArtifact
+
+        entrypoint_def = validate_entrypoint_function(self.entrypoint)
 
         for key, value in bound_args.arguments.items():
-            if isinstance(value, BaseStep._OutputArtifact):
-                parameter = signature.parameters[key]
-                if parameter.annotation is not UnmaterializedArtifact:
-                    # Only validate if the type isn't unmaterialized artifact
-                    self._validate_input_type(
-                        parameter=parameter, input_type=value.annotation
-                    )
+            entrypoint_def.validate_input(key=key, input_=value)
+
+            if isinstance(value, StepArtifact):
                 artifacts[key] = value
                 if key in self.configuration.parameters:
                     logger.warning(
@@ -558,9 +542,6 @@ class BaseStep(metaclass=BaseStepMeta):
                         "artifacts which will improve this behavior."
                     )
             else:
-                self._validate_parameter_value(
-                    parameter=signature.parameters[key], value=value
-                )
                 parameters[key] = value
 
         return artifacts, external_artifacts, parameters
@@ -585,7 +566,7 @@ class BaseStep(metaclass=BaseStepMeta):
             parameters,
         ) = self._parse_call_args(*args, **kwargs)
         upstream_steps = {
-            artifact.step_name for artifact in input_artifacts.values()
+            artifact.invocation_id for artifact in input_artifacts.values()
         }
         if isinstance(after, str):
             upstream_steps.add(after)
@@ -604,9 +585,9 @@ class BaseStep(metaclass=BaseStepMeta):
 
         outputs = []
         for key, annotation in self.OUTPUT_SIGNATURE.items():
-            output = BaseStep._OutputArtifact(
-                name=key,
-                step_name=invocation_id,
+            output = StepArtifact(
+                invocation_id=invocation_id,
+                output_name=key,
                 annotation=annotation,
                 pipeline=Pipeline.ACTIVE_PIPELINE,
             )
@@ -870,7 +851,7 @@ class BaseStep(metaclass=BaseStepMeta):
 
     def _validate_inputs(
         self,
-        input_artifacts: Dict[str, _OutputArtifact],
+        input_artifacts: Dict[str, "StepArtifact"],
         external_artifacts: Dict[str, UUID],
     ) -> None:
         signature = get_step_entrypoint_signature(step=self)
@@ -885,7 +866,7 @@ class BaseStep(metaclass=BaseStepMeta):
 
     def _finalize_configuration(
         self,
-        input_artifacts: Dict[str, _OutputArtifact],
+        input_artifacts: Dict[str, "StepArtifact"],
         external_artifacts: Dict[str, UUID],
     ) -> StepConfiguration:
         """Finalizes the configuration after the step was called.
@@ -1178,7 +1159,7 @@ class StepInvocation:
         self,
         id: str,
         step: "BaseStep",
-        input_artifacts: Dict[str, BaseStep._OutputArtifact],
+        input_artifacts: Dict[str, "StepArtifact"],
         external_artifacts: Dict[str, "ExternalArtifact"],
         parameters: Dict[str, Any],
         upstream_steps: Sequence[str],
@@ -1255,16 +1236,39 @@ import os
 
 # StepArtifactSpec
 # ExternalArtifactSpec
-class StepArtifact:
-    ...
+class Artifact:
+    @property
+    @abstractmethod
+    def type(self) -> Any:
+        """The data type of the artifact."""
 
 
-class ExternalArtifact:
+class StepArtifact(Artifact):
+    def __init__(
+        self,
+        invocation_id: str,
+        output_name: str,
+        annotation: Any,
+        pipeline: "Pipeline",
+    ) -> None:
+        self.invocation_id = invocation_id
+        self.output_name = output_name
+        self.annotation = annotation
+        self.pipeline = pipeline
+
+    @property
+    def type(self) -> Any:
+        return self.annotation
+
+
+class ExternalArtifact(Artifact):
     def __init__(
         self,
         value: Any = None,
         id: Optional[UUID] = None,
         materializer: Optional["MaterializerClassOrSource"] = None,
+        store_artifact_metadata: bool = True,
+        skip_type_checking: bool = False,
     ) -> None:
         if value is not None and id is not None:
             raise ValueError("Only value or ID allowed")
@@ -1274,6 +1278,20 @@ class ExternalArtifact:
         self._value = value
         self._id = id
         self._materializer = materializer
+        self._store_artifact_metadata = store_artifact_metadata
+        self._skip_type_checking = skip_type_checking
+
+    @property
+    def type(self) -> Any:
+        from zenml.client import Client
+
+        if self._skip_type_checking:
+            return Any
+        elif self._id:
+            response = Client().get_artifact(artifact_id=self._id)
+            return source_utils.load(response.data_type)
+        else:
+            return type(self._value)
 
     def do_something(self) -> UUID:
         from uuid import uuid4
@@ -1369,7 +1387,7 @@ class EntrypointFunctionDefinition(NamedTuple):
     def validate_input(
         self,
         key: str,
-        input_: Union[ExternalArtifact, BaseStep._OutputArtifact, Any],
+        input_: Union["Artifact", Any],
     ) -> None:
         from zenml.materializers import UnmaterializedArtifact
 
@@ -1378,18 +1396,10 @@ class EntrypointFunctionDefinition(NamedTuple):
 
         parameter = self.inputs[key]
 
-        if isinstance(input_, BaseStep._OutputArtifact):
+        if isinstance(input_, Artifact):
             if parameter.annotation is not UnmaterializedArtifact:
                 self._validate_input_type(
-                    parameter=parameter, annotation=input_.annotation
-                )
-        elif isinstance(input_, ExternalArtifact):
-            if (
-                parameter.annotation is not UnmaterializedArtifact
-                and input_._value
-            ):
-                self._validate_input_type(
-                    parameter=parameter, annotation=type(input_._value)
+                    parameter=parameter, annotation=input_.type
                 )
         else:
             # Not an artifact -> This is a parameter
@@ -1449,10 +1459,13 @@ class EntrypointFunctionDefinition(NamedTuple):
                 )
 
 
-def validate_entrypoint_signature(
-    signature: inspect.Signature
+def validate_entrypoint_function(
+    func: Callable[..., Any], reserved_arguments: Sequence[str] = ()
 ) -> EntrypointFunctionDefinition:
-    validate_reserved_arguments(signature=signature, reserved_arguments=[])
+    signature = inspect.signature(func, follow_wrapped=True)
+    validate_reserved_arguments(
+        signature=signature, reserved_arguments=reserved_arguments
+    )
 
     inputs = {}
     context: Optional[inspect.Parameter] = None

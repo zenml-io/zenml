@@ -322,7 +322,8 @@ class Compiler:
         """
         inputs = {
             key: InputSpec(
-                step_name=artifact.step_name, output_name=artifact.name
+                step_name=artifact.invocation_id,
+                output_name=artifact.output_name,
             )
             for key, artifact in step.input_artifacts.items()
         }

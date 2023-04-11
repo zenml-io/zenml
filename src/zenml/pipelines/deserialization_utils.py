@@ -19,7 +19,7 @@ from packaging import version
 
 from zenml.logger import get_logger
 from zenml.pipelines.new import Pipeline, PipelineTemplate
-from zenml.steps import BaseStep
+from zenml.steps.base_step import BaseStep, StepArtifact
 from zenml.utils import source_utils
 
 if TYPE_CHECKING:
@@ -89,8 +89,8 @@ def load_pipeline_v_0_3(model: "PipelineResponseModel") -> "Pipeline":
             )
             output_keys = list(step_class.OUTPUT_SIGNATURE.keys())
 
-            if isinstance(step_outputs, BaseStep._OutputArtifact):
-                step_outputs = [step_outputs]
+            if isinstance(step_outputs, StepArtifact):
+                step_outputs = (step_outputs,)
 
             outputs[step_spec.pipeline_parameter_name] = {
                 key: step_outputs[i] for i, key in enumerate(output_keys)
@@ -188,7 +188,7 @@ def _generate_connect_method(
         # the arguments defined in the signature are allowed
         inspect.signature(connect).bind(**steps)
 
-        step_outputs: Dict[str, Dict[str, BaseStep._OutputArtifact]] = {}
+        step_outputs: Dict[str, Dict[str, StepArtifact]] = {}
         for step_spec in model.spec.steps:
             step = steps[step_spec.pipeline_parameter_name]
 
@@ -210,8 +210,8 @@ def _generate_connect_method(
             step_output = step(**step_inputs)
             output_keys = list(step.OUTPUT_SIGNATURE.keys())
 
-            if isinstance(step_output, BaseStep._OutputArtifact):
-                step_output = [step_output]
+            if isinstance(step_output, StepArtifact):
+                step_output = (step_output,)
 
             step_outputs[step.name] = {
                 key: step_output[i] for i, key in enumerate(output_keys)
