@@ -893,7 +893,7 @@ def deploy(
         v2=True,
     ) as handler:
 
-        # build a dict of all stack componnet options that have non-null values
+        # build a dict of all stack component options that have non-null values
         stack_component_options = {
             "artifact_store": artifact_store,
             "orchestrator": orchestrator,

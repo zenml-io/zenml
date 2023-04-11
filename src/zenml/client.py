@@ -2307,6 +2307,7 @@ class Client(metaclass=ClientMetaClass):
 
         STACK_COMPONENT_RECIPE_DIR = "deployed_stack_components"
 
+        config = None
         if configuration:
             # convert configuration dict to a json object
             config = json.dumps(configuration)
