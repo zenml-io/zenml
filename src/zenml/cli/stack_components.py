@@ -1105,9 +1105,11 @@ def generate_stack_component_deploy_command(
             ctx: Click context.
             name: Name of the component to register.
             flavor: Flavor of the component to register.
-            share: Share the stack with other users.
             cloud: Cloud provider to use to deploy the stack component.
             args: Additional arguments to pass to the component.
+
+        Raises:
+            error: If the component type is not supported.
         """
         # generate a python dict with the above structure
         # and then use it to check if the flavor is valid
@@ -1125,7 +1127,7 @@ def generate_stack_component_deploy_command(
         # if the flavor is not allowed for the given component type
         # raise an error
         if flavor not in allowed_flavors[component_type.value]:
-            raise cli_utils.error(
+            cli_utils.error(
                 f"Flavor '{flavor}' is not supported for "
                 f"{_component_display_name(component_type, True)}. "
                 "Allowed flavors are: "

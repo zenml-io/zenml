@@ -2423,7 +2423,6 @@ class Client(metaclass=ClientMetaClass):
 
         Args:
             ctx: The click context.
-            name: The name of the deployed stack component.
             name_id_or_prefix: The model of the component to destroy.
             component_type: The type of the stack component to destroy.
         """
