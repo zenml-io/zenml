@@ -563,13 +563,15 @@ class Pipeline:
         for step_name, invocation in self.steps.items():
             step = invocation.step
             parameters = (
-                pydantic_utils.TemplateGenerator(step.PARAMETERS_CLASS).run()
-                if step.PARAMETERS_CLASS
+                pydantic_utils.TemplateGenerator(
+                    step.entrypoint_definition.params.annotation
+                ).run()
+                if step.entrypoint_definition.params
                 else {}
             )
             outputs = {
                 name: PartialArtifactConfiguration()
-                for name in step.OUTPUT_SIGNATURE
+                for name in step.entrypoint_definition.outputs
             }
             step_template = StepConfigurationUpdate(
                 parameters=parameters,

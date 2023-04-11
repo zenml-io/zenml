@@ -21,7 +21,6 @@ from typing import (
     TYPE_CHECKING,
     Any,
     Callable,
-    ClassVar,
     Dict,
     Mapping,
     NamedTuple,
@@ -57,7 +56,6 @@ from zenml.steps.base_parameters import BaseParameters
 from zenml.steps.step_context import StepContext
 from zenml.steps.utils import (
     parse_return_type_annotations,
-    resolve_type_annotation,
 )
 from zenml.utils import (
     dict_utils,
@@ -108,103 +106,9 @@ class BaseStepMeta(type):
         Raises:
             StepInterfaceError: When unable to create the step.
         """
-        from zenml.steps.base_parameters import BaseParameters
-
         cls = cast(Type["BaseStep"], super().__new__(mcs, name, bases, dct))
-
-        cls.INPUT_SIGNATURE = {}
-        cls.OUTPUT_SIGNATURE = {}
-        cls.PARAMETERS_FUNCTION_PARAMETER_NAME = None
-        cls.PARAMETERS_CLASS = None
-        cls.CONTEXT_PARAMETER_NAME = None
-
-        # Get the signature of the step function
-        step_function_signature = inspect.getfullargspec(
-            inspect.unwrap(cls.entrypoint)
-        )
-
         if name not in {"BaseStep", "_DecoratedStep"}:
-            # We're not creating one of the abstract base classes
-            # but a concrete implementation. Make sure the step function
-            # signature does not contain variable *args or **kwargs
-            variable_arguments = None
-            if step_function_signature.varargs:
-                variable_arguments = f"*{step_function_signature.varargs}"
-            elif step_function_signature.varkw:
-                variable_arguments = f"**{step_function_signature.varkw}"
-
-            if variable_arguments:
-                raise StepInterfaceError(
-                    f"Unable to create step '{name}' with variable arguments "
-                    f"'{variable_arguments}'. Please make sure your step "
-                    f"functions are defined with a fixed amount of arguments."
-                )
-
-        step_function_args = (
-            step_function_signature.args + step_function_signature.kwonlyargs
-        )
-
-        # Remove 'self' from the signature if it exists
-        if step_function_args and step_function_args[0] == "self":
-            step_function_args.pop(0)
-
-        # Verify the input arguments of the step function
-        for arg in step_function_args:
-            arg_type = step_function_signature.annotations.get(arg, None)
-            arg_type = resolve_type_annotation(arg_type)
-
-            if not arg_type:
-                raise StepInterfaceError(
-                    f"Missing type annotation for argument '{arg}' when "
-                    f"trying to create step '{name}'. Please make sure to "
-                    f"include type annotations for all your step inputs "
-                    f"and outputs."
-                )
-
-            if inspect.isclass(arg_type) and issubclass(
-                arg_type, BaseParameters
-            ):
-                # Raise an error if we already found a config in the signature
-                if cls.PARAMETERS_CLASS is not None:
-                    raise StepInterfaceError(
-                        f"Found multiple parameter arguments "
-                        f"('{cls.PARAMETERS_FUNCTION_PARAMETER_NAME}' and '{arg}') when "
-                        f"trying to create step '{name}'. Please make sure to "
-                        f"only have one `Parameters` subclass as input "
-                        f"argument for a step."
-                    )
-                cls.PARAMETERS_FUNCTION_PARAMETER_NAME = arg
-                cls.PARAMETERS_CLASS = arg_type
-
-            elif inspect.isclass(arg_type) and issubclass(
-                arg_type, StepContext
-            ):
-                if cls.CONTEXT_PARAMETER_NAME is not None:
-                    raise StepInterfaceError(
-                        f"Found multiple context arguments "
-                        f"('{cls.CONTEXT_PARAMETER_NAME}' and '{arg}') when "
-                        f"trying to create step '{name}'. Please make sure to "
-                        f"only have one `StepContext` as input "
-                        f"argument for a step."
-                    )
-                cls.CONTEXT_PARAMETER_NAME = arg
-            else:
-                # Can't do any check for existing materializers right now
-                # as they might get be defined later, so we simply store the
-                # argument name and type for later use.
-                cls.INPUT_SIGNATURE.update({arg: arg_type})
-
-        # Parse the returns of the step function
-        if "return" not in step_function_signature.annotations:
-            raise StepInterfaceError(
-                "Missing return type annotation when trying to create step "
-                f"'{name}'. Please make sure to include type annotations for "
-                "all your step inputs and outputs. If your step returns "
-                "nothing, please annotate it with `-> None`."
-            )
-        cls.OUTPUT_SIGNATURE = parse_return_type_annotations(
-            step_function_signature.annotations["return"],
-        )
+            validate_entrypoint_function(cls.entrypoint)
 
         return cls
 
@@ -248,12 +152,6 @@ class BaseStep(metaclass=BaseStepMeta):
             is enabled for this step.
     """
 
-    INPUT_SIGNATURE: ClassVar[Dict[str, Type[Any]]] = None  # type: ignore[assignment] # noqa
-    OUTPUT_SIGNATURE: ClassVar[Dict[str, Type[Any]]] = None  # type: ignore[assignment] # noqa
-    PARAMETERS_FUNCTION_PARAMETER_NAME: ClassVar[Optional[str]] = None
-    PARAMETERS_CLASS: ClassVar[Optional[Type["BaseParameters"]]] = None
-    CONTEXT_PARAMETER_NAME: ClassVar[Optional[str]] = None
-
     def __init__(
         self,
         *args: Any,
@@ -280,9 +178,13 @@ class BaseStep(metaclass=BaseStepMeta):
             **kwargs: Keyword arguments passed to the step.
         """
         self._upstream_steps: Set[str] = set()
+        self.entrypoint_definition = validate_entrypoint_function(
+            self.entrypoint
+        )
+
         name = name or self.__class__.__name__
 
-        requires_context = bool(self.CONTEXT_PARAMETER_NAME)
+        requires_context = self.entrypoint_definition.context is not None
         if enable_cache is None:
             if requires_context:
                 # Using the StepContext inside a step provides access to
@@ -456,7 +358,7 @@ class BaseStep(metaclass=BaseStepMeta):
             StepInterfaceError: If there are too many arguments or arguments
                 with a wrong name/type.
         """
-        maximum_arg_count = 1 if self.PARAMETERS_CLASS else 0
+        maximum_arg_count = 1 if self.entrypoint_definition.params else 0
         arg_count = len(args) + len(kwargs)
         if arg_count > maximum_arg_count:
             raise StepInterfaceError(
@@ -465,18 +367,18 @@ class BaseStep(metaclass=BaseStepMeta):
                 f"'{self.name}' step."
             )
 
-        if self.PARAMETERS_FUNCTION_PARAMETER_NAME and self.PARAMETERS_CLASS:
+        if self.entrypoint_definition.params:
             if args:
                 config = args[0]
             elif kwargs:
                 key, config = kwargs.popitem()
 
-                if key != self.PARAMETERS_FUNCTION_PARAMETER_NAME:
+                if key != self.entrypoint_definition.params.name:
                     raise StepInterfaceError(
                         f"Unknown keyword argument '{key}' when creating a "
                         f"'{self.name}' step, only expected a single "
                         "argument with key "
-                        f"'{self.PARAMETERS_FUNCTION_PARAMETER_NAME}'."
+                        f"'{self.entrypoint_definition.params.name}'."
                     )
             else:
                 # This step requires configuration parameters but no parameters
@@ -486,11 +388,13 @@ class BaseStep(metaclass=BaseStepMeta):
                 # that all parameters are set before running the step
                 return
 
-            if not isinstance(config, self.PARAMETERS_CLASS):
+            if not isinstance(
+                config, self.entrypoint_definition.params.annotation
+            ):
                 raise StepInterfaceError(
                     f"`{config}` object passed when creating a "
                     f"'{self.name}' step is not a "
-                    f"`{self.PARAMETERS_CLASS.__name__}` instance."
+                    f"`{self.entrypoint_definition.params.annotation.__name__}` instance."
                 )
 
             self.configure(parameters=config)
@@ -584,7 +488,7 @@ class BaseStep(metaclass=BaseStepMeta):
         )
 
         outputs = []
-        for key, annotation in self.OUTPUT_SIGNATURE.items():
+        for key, annotation in self.entrypoint_definition.outputs.items():
             output = StepArtifact(
                 invocation_id=invocation_id,
                 output_name=key,
@@ -706,7 +610,7 @@ class BaseStep(metaclass=BaseStepMeta):
                 return source_utils.resolve(value)
 
         outputs: Dict[str, Dict[str, Source]] = defaultdict(dict)
-        allowed_output_names = set(self.OUTPUT_SIGNATURE)
+        allowed_output_names = set(self.entrypoint_definition.outputs)
 
         if output_materializers:
             if not isinstance(output_materializers, Mapping):
@@ -810,7 +714,7 @@ class BaseStep(metaclass=BaseStepMeta):
                 self._validate_parameter_value(
                     parameter=signature.parameters[key], value=value
                 )
-            elif not self.PARAMETERS_CLASS:
+            elif not self.entrypoint_definition.params:
                 raise StepInterfaceError(
                     "Can't set parameter without param class."
                 )
@@ -828,7 +732,7 @@ class BaseStep(metaclass=BaseStepMeta):
                 configured of an output artifact/materializer source does not
                 resolve to the correct class.
         """
-        allowed_output_names = set(self.OUTPUT_SIGNATURE)
+        allowed_output_names = set(self.entrypoint_definition.outputs)
         for output_name, output in outputs.items():
             if output_name not in allowed_output_names:
                 raise StepInterfaceError(
@@ -889,7 +793,10 @@ class BaseStep(metaclass=BaseStepMeta):
         """
         outputs: Dict[str, Dict[str, Source]] = defaultdict(dict)
 
-        for output_name, output_annotation in self.OUTPUT_SIGNATURE.items():
+        for (
+            output_name,
+            output_annotation,
+        ) in self.entrypoint_definition.outputs.items():
             output = self._configuration.outputs.get(
                 output_name, PartialArtifactConfiguration()
             )
@@ -983,9 +890,9 @@ class BaseStep(metaclass=BaseStepMeta):
             if key in signature.parameters
         }
 
-        if self.PARAMETERS_CLASS and self.PARAMETERS_FUNCTION_PARAMETER_NAME:
+        if self.entrypoint_definition.params:
             legacy_params = self._finalize_legacy_parameters()
-            params[self.PARAMETERS_FUNCTION_PARAMETER_NAME] = legacy_params
+            params[self.entrypoint_definition.params.name] = legacy_params
 
         # TODO: Should we treat pydantic classes special here and verify
         # that they can be instantiated?
@@ -1008,7 +915,7 @@ class BaseStep(metaclass=BaseStepMeta):
                 more config parameters.
             StepInterfaceError: If the parameter class validation failed.
         """
-        if not self.PARAMETERS_CLASS:
+        if not self.entrypoint_definition.params:
             return {}
 
         # parameters for the `BaseParameters` class specified in the "new" way
@@ -1016,14 +923,17 @@ class BaseStep(metaclass=BaseStepMeta):
         # key `self.PARAMETERS_FUNCTION_PARAMETER_NAME`
         params_defined_in_new_way = (
             self.configuration.parameters.get(
-                self.PARAMETERS_FUNCTION_PARAMETER_NAME
+                self.entrypoint_definition.params.name
             )
             or {}
         )
 
         values = {}
         missing_keys = []
-        for name, field in self.PARAMETERS_CLASS.__fields__.items():
+        for (
+            name,
+            field,
+        ) in self.entrypoint_definition.params.annotation.__fields__.items():
             if name in self.configuration.parameters:
                 # a value for this parameter has been set already
                 values[name] = self.configuration.parameters[name]
@@ -1041,16 +951,21 @@ class BaseStep(metaclass=BaseStepMeta):
 
         if missing_keys:
             raise MissingStepParameterError(
-                self.name, missing_keys, self.PARAMETERS_CLASS
+                self.name,
+                missing_keys,
+                self.entrypoint_definition.params.annotation,
             )
 
-        if self.PARAMETERS_CLASS.Config.extra == Extra.allow:
+        if (
+            self.entrypoint_definition.params.annotation.Config.extra
+            == Extra.allow
+        ):
             # Add all parameters for the config class for backwards
             # compatibility if the config class allows extra attributes
             values.update(self.configuration.parameters)
 
         try:
-            self.PARAMETERS_CLASS(**values)
+            self.entrypoint_definition.params.annotation(**values)
         except ValidationError:
             raise StepInterfaceError("Failed to validate function parameters.")
 

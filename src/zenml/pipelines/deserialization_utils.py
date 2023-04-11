@@ -165,7 +165,9 @@ def _load_and_verify_steps(
             )
 
         steps[step_spec.pipeline_parameter_name] = step
-        available_outputs[step.name] = set(step.OUTPUT_SIGNATURE.keys())
+        available_outputs[step.name] = set(
+            step.entrypoint_definition.outputs.keys()
+        )
 
     return steps
 
@@ -208,7 +210,7 @@ def _generate_connect_method(
                     )
 
             step_output = step(**step_inputs)
-            output_keys = list(step.OUTPUT_SIGNATURE.keys())
+            output_keys = list(step.entrypoint_definition.outputs.keys())
 
             if isinstance(step_output, StepArtifact):
                 step_output = (step_output,)
