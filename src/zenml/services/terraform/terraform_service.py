@@ -387,6 +387,10 @@ class TerraformService(BaseService):
     def get_outputs(self, output: Optional[str] = None) -> Dict[str, Any]:
         """Get outputs from the terraform state.
 
+        Args:
+            output: if specified, only the output with the given name will be
+                returned. Otherwise, all outputs will be returned.
+
         Returns:
             A dictionary of outputs from the terraform state.
         """
