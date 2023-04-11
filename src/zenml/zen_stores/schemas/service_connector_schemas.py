@@ -38,12 +38,14 @@ class ServiceConnectorSchema(ShareableSchema, table=True):
 
     __tablename__ = "service_connector"
 
-    type: str
-    auth_method: str
-    resource_type: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
+    type: str = Field(sa_column=Column(TEXT))
+    description: str
+    auth_method: str = Field(sa_column=Column(TEXT))
+    resource_type: str = Field(sa_column=Column(TEXT))
+    alt_resource_types: Optional[bytes]
     resource_id: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
     configuration: Optional[bytes]
-    secret_reference: Optional[UUID]
+    secret_id: Optional[UUID]
 
     labels: List["ServiceConnectorLabelSchema"] = Relationship(
         back_populates="service_connector",
@@ -78,12 +80,14 @@ class ServiceConnectorSchema(ShareableSchema, table=True):
     def from_request(
         cls,
         connector_request: ServiceConnectorRequestModel,
+        secret_id: Optional[UUID] = None,
     ) -> "ServiceConnectorSchema":
         """Create a `ServiceConnectorSchema` from a `ServiceConnectorRequestModel`.
 
         Args:
             connector_request: The `ServiceConnectorRequestModel` from which to
                 create the schema.
+            secret_id: The ID of the secret to use for this connector.
 
         Returns:
             The created `ServiceConnectorSchema`.
@@ -94,25 +98,36 @@ class ServiceConnectorSchema(ShareableSchema, table=True):
             user_id=connector_request.user,
             is_shared=connector_request.is_shared,
             name=connector_request.name,
+            description=connector_request.description,
             type=connector_request.type,
             auth_method=connector_request.auth_method,
             resource_type=connector_request.resource_type,
+            alt_resource_types=base64.b64encode(
+                json.dumps(connector_request.alt_resource_types).encode(
+                    "utf-8"
+                )
+            )
+            if connector_request.alt_resource_types
+            else None,
             resource_id=connector_request.resource_id,
             configuration=base64.b64encode(
                 json.dumps(connector_request.configuration).encode("utf-8")
             )
             if connector_request.configuration
             else None,
-            secret_reference=connector_request.secret_reference,
+            secret_id=secret_id,
         )
 
     def update(
-        self, connector_update: ServiceConnectorUpdateModel
+        self,
+        connector_update: ServiceConnectorUpdateModel,
+        secret_id: Optional[UUID] = None,
     ) -> "ServiceConnectorSchema":
         """Updates a `ServiceConnectorSchema` from a `ServiceConnectorUpdateModel`.
 
         Args:
             connector_update: The `ServiceConnectorUpdateModel` to update from.
+            secret_id: The ID of the secret to use for this connector.
 
         Returns:
             The updated `ServiceConnectorSchema`.
@@ -132,7 +147,7 @@ class ServiceConnectorSchema(ShareableSchema, table=True):
                 )
             else:
                 setattr(self, field, value)
-
+        self.secret_id = secret_id
         self.updated = datetime.utcnow()
         return self
 
@@ -146,22 +161,28 @@ class ServiceConnectorSchema(ShareableSchema, table=True):
         """
         return ServiceConnectorResponseModel(
             id=self.id,
+            name=self.name,
+            description=self.description,
             user=self.user.to_model(True) if self.user else None,
             workspace=self.workspace.to_model(),
             is_shared=self.is_shared,
             created=self.created,
             updated=self.updated,
-            name=self.name,
             type=self.type,
             auth_method=self.auth_method,
             resource_type=self.resource_type,
+            alt_resource_types=json.loads(
+                base64.b64decode(self.alt_resource_types).decode()
+            )
+            if self.alt_resource_types
+            else None,
             resource_id=self.resource_id,
             configuration=json.loads(
                 base64.b64decode(self.configuration).decode()
             )
             if self.configuration
             else None,
-            secret_reference=self.secret_reference,
+            secret_id=self.secret_id,
             labels={label.name: label.value for label in self.labels},
         )
 

@@ -92,9 +92,13 @@ from zenml.models.stack_models import (
     StackUpdateModel,
 )
 from zenml.models.service_connector_models import (
+    AuthenticationMethodSpecificationModel,
+    ResourceTypeSpecificationModel,
+    ServiceConnectorBaseModel,
     ServiceConnectorFilterModel,
     ServiceConnectorRequestModel,
     ServiceConnectorResponseModel,
+    ServiceConnectorSpecificationModel,
     ServiceConnectorUpdateModel,
 )
 from zenml.models.step_run_models import (
@@ -304,6 +308,10 @@ __all__ = [
     "SecretFilterModel",
     "SecretResponseModel",
     "SecretUpdateModel",
+    "AuthenticationMethodSpecificationModel",
+    "ResourceTypeSpecificationModel",
+    "ServiceConnectorSpecificationModel",
+    "ServiceConnectorBaseModel",
     "ServiceConnectorFilterModel",
     "ServiceConnectorRequestModel",
     "ServiceConnectorResponseModel",

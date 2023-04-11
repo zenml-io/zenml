@@ -13,10 +13,10 @@
 #  permissions and limitations under the License.
 """Implementation of a service connector registry."""
 
-from typing import TYPE_CHECKING, Any, Dict, Type
+from typing import TYPE_CHECKING, Dict, List, Optional, Type
 
-from zenml.exceptions import StepInterfaceError
 from zenml.logger import get_logger
+from zenml.models import ServiceConnectorBaseModel
 
 logger = get_logger(__name__)
 
@@ -29,85 +29,150 @@ class ServiceConnectorRegistry:
 
     def __init__(self) -> None:
         """Initialize the service connector registry."""
-        self.service_connector_types: Dict[str, Type["ServiceConnector"]] = {}
+        self.service_connectors: Dict[str, Type["ServiceConnector"]] = {}
 
-    def register_service_connector_type(
+    def register_service_connector(
         self,
-        connector_type: str,
-        type_: Type["ServiceConnector"],
+        service_connector: Type[ServiceConnector],
         overwrite: bool = False,
     ) -> None:
         """Registers a new service connector.
 
         Args:
-            connector_type: Service connector type identifier.
-            type_: A ServiceConnector subclass.
-            overwrite: Whether to overwrite an existing connector.
+            service_connector: Service connector.
+            overwrite: Whether to overwrite an existing service connector.
         """
-        if connector_type not in self.service_connector_types or overwrite:
-            self.service_connector_types[connector_type] = type_
+        spec = service_connector.get_specification()
+        if spec.type not in self.service_connectors or overwrite:
+            self.service_connectors[spec.type] = service_connector
             logger.debug(
-                f"Registered service connector {type_} for {connector_type}"
+                f"Registered service connector with type {spec.type}."
             )
         else:
             logger.debug(
-                f"Found existing materializer class for {connector_type}: "
-                f"{self.service_connector_types[connector_type]}. Skipping "
-                f"registration of {type_}."
+                f"Found existing service connector for type "
+                f"{spec.type}: Skipping registration."
             )
 
-    def get_service_connector_type(
+    def get_service_connector(
         self,
         connector_type: str,
-    ) -> Type["ServiceConnector"]:
-        """Get a service connector class by its type identifier.
+    ) -> Type[ServiceConnector]:
+        """Get a service connector by its connector type identifier.
 
         Args:
             connector_type: The service connector type identifier.
 
         Returns:
-            A `ServiceConnector` subclass that was registered for the given
-            type identifier.
+            A service connector that was registered for the given
+            connector type identifier.
         """
-        return self.service_connector_types[connector_type]
+        return self.service_connectors[connector_type]
 
-    def __getitem__(self, key: str) -> Type["ServiceConnector"]:
-        """Get a service connector class by its type identifier.
+    def __getitem__(self, key: str) -> Type[ServiceConnector]:
+        """Get a service connector by its connector type identifier.
 
         Args:
             key: The service connector type identifier.
 
         Returns:
-            A `ServiceConnector` subclass that was registered for the given
-            type identifier.
+            A service connector that was registered for the given service
+            connector type identifier.
 
         Raises:
-            KeyError: If no service connector was registered for the given
-                type identifier.
+            KeyError: If no service connector was registered for the given type
+                identifier.
         """
-        return self.get_service_connector_type(key)
+        return self.get_service_connector(key)
 
-    def get_service_connector_types(
+    def get_service_connectors(
         self,
-    ) -> Dict[str, Type["ServiceConnector"]]:
-        """Get all registered service connector types.
+    ) -> Dict[str, Type[ServiceConnector]]:
+        """Get all registered service connectors.
 
         Returns:
             A dictionary of registered service connector types.
         """
-        return self.service_connector_types.copy()
+        return self.service_connectors.copy()
 
     def is_registered(self, connector_type: str) -> bool:
-        """Returns if a service connector is registered for the given type.
+        """Returns if a service connector is registered for the given type identifier.
 
         Args:
             connector_type: The service connector type identifier.
 
         Returns:
-            True if a service connector is registered for the given type,
-            False otherwise.
+            True if a service connector is registered for the given type
+            identifier, False otherwise.
         """
-        return connector_type in self.service_connector_types
+        return connector_type in self.service_connectors
+
+    def find_service_connector(
+        self,
+        connector_type: Optional[str] = None,
+        resource_type: Optional[str] = None,
+        auth_method: Optional[str] = None,
+    ) -> List[Type[ServiceConnector]]:
+        """Find one or more service connectors that match the given criteria.
+
+        Args:
+            connector_type: Filter by service connector type identifier.
+            resource_type: Filter by a resource type that the connector can
+                be used to give access to.
+            auth_method: Filter by an authentication method that the connector
+                uses to authenticate with the resource provider.
+
+        Returns:
+            A list of service connector types that match the given criteria.
+        """
+        matches: List[Type[ServiceConnector]] = []
+        for service_connector in self.service_connectors.values():
+            spec = service_connector.get_specification()
+            if (
+                (connector_type is None or connector_type == spec.type)
+                and (
+                    resource_type is None
+                    or resource_type in spec.resource_type_map
+                )
+                and (
+                    auth_method is None or auth_method in spec.auth_method_map
+                )
+            ):
+                matches.append(service_connector)
+
+        return matches
+
+    def instantiate_service_connector(
+        self,
+        model: ServiceConnectorBaseModel,
+    ) -> "ServiceConnector":
+        """Validate a service connector model and create an instance from it.
+
+        Args:
+            model: The service connector model to validate and instantiate.
+
+        Returns:
+            A service connector instance.
+
+        Raises:
+            NotImplementedError: If no service connector is registered for the
+                given type identifier.
+        """
+        try:
+            service_connector = self.get_service_connector(model.type)
+        except KeyError:
+            raise NotImplementedError(
+                f"Service connector type {model.type} is not available."
+                f"Please make sure the corresponding packages and/or ZenML "
+                f"integration are installed."
+            )
+
+        try:
+            return service_connector.from_model(model)
+        except ValueError as e:
+            raise ValueError(
+                f"The service connector configuration is not valid: {e}"
+            )
 
 
 service_connector_registry = ServiceConnectorRegistry()

@@ -37,7 +37,7 @@ from typing import (
 from uuid import UUID
 
 import pymysql
-from pydantic import root_validator, validator
+from pydantic import SecretStr, root_validator, validator
 from sqlalchemy import asc, desc, func, text
 from sqlalchemy.engine import URL, Engine, make_url
 from sqlalchemy.exc import (
@@ -60,6 +60,7 @@ from zenml.constants import (
 from zenml.enums import (
     ExecutionStatus,
     LoggingLevels,
+    SecretScope,
     SorterOps,
     StackComponentType,
     StoreType,
@@ -113,6 +114,9 @@ from zenml.models import (
     ScheduleRequestModel,
     ScheduleResponseModel,
     ScheduleUpdateModel,
+    SecretFilterModel,
+    SecretRequestModel,
+    SecretUpdateModel,
     ServiceConnectorFilterModel,
     ServiceConnectorRequestModel,
     ServiceConnectorResponseModel,
@@ -158,6 +162,7 @@ from zenml.utils.enum_utils import StrEnum
 from zenml.utils.networking_utils import (
     replace_localhost_with_internal_hostname,
 )
+from zenml.utils.string_utils import random_str
 from zenml.zen_stores.base_zen_store import (
     DEFAULT_ADMIN_ROLE,
     DEFAULT_GUEST_ROLE,
@@ -4130,6 +4135,70 @@ class SqlZenStore(BaseZenStore):
                 f"workspace '{workspace_id}'."
             )
 
+    def _create_connector_secret(
+        self,
+        connector_name: str,
+        user: UUID,
+        workspace: UUID,
+        is_shared: bool,
+        secrets: Optional[Dict[str, Optional[SecretStr]]],
+    ) -> Optional[UUID]:
+        """Creates a new secret to store the service connector secret credentials.
+
+        Args:
+            connector_name: The name of the service connector for which to
+                create a secret.
+            user: The ID of the user who owns the service connector.
+            workspace: The ID of the workspace in which the service connector
+                is registered.
+            is_shared: Whether the service connector is shared.
+            secrets: The secret credentials to store.
+
+        Returns:
+            The ID of the newly created secret or None, if the service connector
+            does not contain any secret credentials.
+
+        Raises:
+            NotImplementedError: If a secrets store is not configured or
+                supported.
+        """
+        if not secrets:
+            return None
+
+        if not self.secrets_store:
+            raise NotImplementedError(
+                "A secrets store is not configured or supported."
+            )
+
+        # Generate a unique name for the secret
+        # Replace all non-alphanumeric characters with a dash
+        connector_name = re.sub(r"[^a-zA-Z0-9-]", "-", connector_name)
+        # Generate unique names using a random suffix until we find a name
+        # that is not already in use
+        while True:
+            secret_name = f"connector-{connector_name}-{random_str(4)}"
+            existing_secrets = self.secrets_store.list_secrets(
+                SecretFilterModel(
+                    name=secret_name,
+                )
+            )
+            if not existing_secrets.size:
+                try:
+                    return self.secrets_store.create_secret(
+                        SecretRequestModel(
+                            name=secret_name,
+                            user=user,
+                            workspace=workspace,
+                            scope=SecretScope.WORKSPACE
+                            if is_shared
+                            else SecretScope.USER,
+                            values=secrets,
+                        )
+                    ).id
+                except KeyError:
+                    # The secret already exists, try again
+                    continue
+
     def create_service_connector(
         self, service_connector: ServiceConnectorRequestModel
     ) -> ServiceConnectorResponseModel:
@@ -4156,28 +4225,49 @@ class SqlZenStore(BaseZenStore):
                     session=session,
                 )
 
-            # Create the service connector
-            new_service_connector = ServiceConnectorSchema.from_request(
-                service_connector
+            # Create the secret
+            secret_id = self._create_connector_secret(
+                connector_name=service_connector.name,
+                user=service_connector.user,
+                workspace=service_connector.workspace,
+                is_shared=service_connector.is_shared,
+                secrets=service_connector.secrets,
             )
-
-            # Create labels.
-            labels = []
-            for key, value in service_connector.labels.items():
-                label = ServiceConnectorLabelSchema(
-                    name=key,
-                    value=value,
-                    service_connector=new_service_connector,
+            try:
+                # Create the service connector
+                new_service_connector = ServiceConnectorSchema.from_request(
+                    service_connector,
+                    secret_id=secret_id,
                 )
-                session.add(label)
-                labels.append(label)
 
-            new_service_connector.labels = labels
+                # Create labels.
+                labels = []
+                for key, value in service_connector.labels.items():
+                    label = ServiceConnectorLabelSchema(
+                        name=key,
+                        value=value,
+                        service_connector=new_service_connector,
+                    )
+                    session.add(label)
+                    labels.append(label)
 
-            session.add(new_service_connector)
-            session.commit()
+                new_service_connector.labels = labels
 
-            session.refresh(new_service_connector)
+                session.add(new_service_connector)
+                session.commit()
+
+                session.refresh(new_service_connector)
+            except Exception:
+                # Delete the secret if it was created
+                if secret_id and self.secrets_store:
+                    try:
+                        self.secrets_store.delete_secret(secret_id)
+                    except Exception:
+                        # Ignore any errors that occur while deleting the
+                        # secret
+                        pass
+
+                raise
 
             return new_service_connector.to_model()
 
@@ -4222,6 +4312,7 @@ class SqlZenStore(BaseZenStore):
         Returns:
             A page of all service connectors.
         """
+        # TODO: Add support for filtering by labels and alternative resource types
         with Session(self.engine) as session:
             query = select(ServiceConnectorSchema)
             paged_connectors: Page[
@@ -4233,6 +4324,91 @@ class SqlZenStore(BaseZenStore):
                 filter_model=filter_model,
             )
             return paged_connectors
+
+    def _update_connector_secret(
+        self,
+        existing_connector: ServiceConnectorResponseModel,
+        updated_connector: ServiceConnectorUpdateModel,
+    ) -> Optional[UUID]:
+        """Updates the secret for a service connector.
+
+        Args:
+            existing_connector: Existing service connector for which to update a
+                secret.
+            updated_connector: Updated service connector.
+
+        Returns:
+            The ID of the updated secret or None, if the new service connector
+            does not contain any secret credentials.
+
+        Raises:
+            NotImplementedError: If a secrets store is not configured or
+                supported.
+        """
+        if not self.secrets_store:
+            raise NotImplementedError(
+                "A secrets store is not configured or supported."
+            )
+
+        if updated_connector.secrets is None:
+            # The new service connector does not contain any secret updates
+            return existing_connector.secret_id
+
+        # If the new service connector does not contain any secret credentials,
+        # delete the existing secret (if any) and return None
+        if not updated_connector.secrets:
+            if existing_connector.secret_id:
+                try:
+                    self.secrets_store.delete_secret(
+                        existing_connector.secret_id
+                    )
+                except KeyError:
+                    # Ignore if the secret no longer exists
+                    pass
+            return None
+
+        assert existing_connector.user is not None
+        if not existing_connector.secret_id:
+            return self._create_connector_secret(
+                connector_name=existing_connector.name,
+                user=existing_connector.user.id,
+                workspace=existing_connector.workspace.id,
+                is_shared=existing_connector.is_shared,
+                secrets=updated_connector.secrets,
+            )
+
+        # Update the existing secret
+        existing_secret = self.secrets_store.get_secret(
+            existing_connector.secret_id
+        )
+        updated_values = updated_connector.secrets.copy()
+        # Set removed keys to None in the secret update
+        updated_values.update(
+            {
+                k: None
+                for k in existing_secret.values.keys()
+                if k not in updated_values
+            }
+        )
+        is_shared = (
+            existing_connector.is_shared
+            if updated_connector.is_shared is None
+            else updated_connector.is_shared
+        )
+
+        # Update the existing secret with the new values
+        self.secrets_store.update_secret(
+            existing_connector.secret_id,
+            SecretUpdateModel(
+                user=existing_connector.user.id,
+                name=existing_connector.name,
+                workspace=existing_connector.workspace.id,
+                scope=SecretScope.WORKSPACE if is_shared else SecretScope.USER,
+                values=updated_values,
+            ),
+        )
+
+        return existing_connector.secret_id
 
     def update_service_connector(
         self, service_connector_id: UUID, update: ServiceConnectorUpdateModel
@@ -4248,6 +4424,9 @@ class SqlZenStore(BaseZenStore):
 
         Raises:
             KeyError: If no service connector with the given ID exists.
+            IllegalOperationError: If the service connector is referenced by
+                one or more stack components and the update would change the
+                connector type, resource type or resource ID.
         """
         with Session(self.engine) as session:
             existing_service_connector = session.exec(
@@ -4281,7 +4460,7 @@ class SqlZenStore(BaseZenStore):
             # shared service connector
             # In that case, check if a service connector with the same name is
             # already shared within the workspace
-            if update.is_shared:
+            if update.is_shared is not None:
                 if (
                     not existing_service_connector.is_shared
                     and update.is_shared
@@ -4290,6 +4469,42 @@ class SqlZenStore(BaseZenStore):
                         name=update.name or existing_service_connector.name,
                         workspace_id=existing_service_connector.workspace_id,
                         session=session,
+                    )
+
+            if len(existing_service_connector.stack_components):
+                # If the service connector is already used in one or more
+                # stack components, the update is no longer allowed to change
+                # the service connector's type, resource type, or resource ID
+                if (
+                    update.type
+                    and update.type != existing_service_connector.type
+                ):
+                    raise IllegalOperationError(
+                        "The service type of a service connector that is "
+                        "already actively used in one or more stack components "
+                        "cannot be changed."
+                    )
+
+                if (
+                    update.resource_type
+                    and update.resource_type
+                    != existing_service_connector.resource_type
+                ):
+                    raise IllegalOperationError(
+                        "The resource type of a service connector that is "
+                        "already actively used in one or more stack components "
+                        "cannot be changed."
+                    )
+
+                if (
+                    update.resource_id
+                    and update.resource_id
+                    != existing_service_connector.resource_id
+                ):
+                    raise IllegalOperationError(
+                        "The resource ID of a service connector that is "
+                        "already actively used in one or more stack components "
+                        "cannot be changed."
                     )
 
             # Update labels
@@ -4308,7 +4523,15 @@ class SqlZenStore(BaseZenStore):
                     session.add(label)
                     existing_service_connector.labels.append(label)
 
-            existing_service_connector.update(connector_update=update)
+            # Update secret
+            secret_id = self._update_connector_secret(
+                existing_connector=existing_service_connector.to_model(),
+                updated_connector=update,
+            )
+
+            existing_service_connector.update(
+                connector_update=update, secret_id=secret_id
+            )
             session.add(existing_service_connector)
             session.commit()
 
@@ -4348,6 +4571,16 @@ class SqlZenStore(BaseZenStore):
                     )
                 else:
                     session.delete(service_connector)
+
+                if service_connector.secret_id and self.secrets_store:
+                    try:
+                        self.secrets_store.delete_secret(
+                            service_connector.secret_id
+                        )
+                    except KeyError:
+                        # If the secret doesn't exist anymore, we can ignore
+                        # this error
+                        pass
             except NoResultFound as error:
                 raise KeyError from error
 

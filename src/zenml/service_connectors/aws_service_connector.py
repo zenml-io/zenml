@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """AWS Service Connector.
 
-The AWS ServiceConnector implements various authentication methods for AWS
+The AWS Service Connector implements various authentication methods for AWS
 services:
 
 - AWS secret key (access key, secret key)
@@ -26,128 +26,21 @@ Best practices:
 - development: use the AWS secret key associated with your AWS account
 - production environment: apply the principle of least privilege by configuring
 different IAM roles for each AWS service that you use, and use the IAM role
-authentication method to generate temporary STS token credentials (with the
-limitation that these credentials are only valid for a short period of time,
-e.g. 1 hour, 12 hours, etc. and need to be refreshed periodically; if the
-service consumer is a long-running process, e.g. a kubernetes cluster that
+authentication method to generate temporary STS token credentials. This has the
+limitation that STS tokens are only valid for a short period of time,
+e.g. 12 hours and need to be refreshed periodically. If the
+connector consumer is a long-running process like a kubernetes cluster that
 needs authenticated access to the ECR registry, the credentials need to be
 refreshed periodically by means outside of the service consumer, or the
 consumer needs to poll ZenML for new credentials on every authentication
 attempt, or ZenML needs to implement an asynchronous periodic refresh mechanism
 outside of the interaction between the service consumer and the service
-connector).
-
-Functionality and workflow:
-
-- registration: you can register an AWSServiceConnector with a chosen
-authentication method configuration (e.g. AWS credentials, IAM role, ZenML
-secrets etc.)
-    - if credentials are provided, they are validated against the required
-    schema in addition to non-credentials configuration
-    - if a reference to an existing secret is provided, the secret contents is
-    validated against the required schema
-    - if a new secret is provided alongside credentials, the secret is created
-    - if a secret is not provided and credentials are provided, a new secret
-    with a random name is created and referenced in the saved configuration.
-    - the saved connector instance doesn't contain any credentials, only
-    references to secrets that contain the credentials
-    - an optional validation is performed to ensure that the credentials are
-    valid and can be used to authenticate against AWS services (TBD: how)
-    - a default method/list of methods is chosen by the connector
-    instance if none are provided
-        - the first one that already works without credentials ? all of them ?
-
-- discovery: stack components find and instantiate one (or more ?) connectors
-that they need for their functionality
-    - the definition or implementation of each component can declare a list of
-    supported connectors and authentication methods
-    - when a component is registered/updated, it can be configured to reference a
-    particular registered connector (by name/ID) or it can be configured to
-    perform dynamic discovery of an connector that supports the required
-    type / authentication methods and is otherwise accessible to the component
-    (e.g. in the same namespace, in the same project, etc.)
-    - when an explicit connector is referenced, validation is performed to
-    ensure that the connector supports the required type / authentication
-    methods and that it is accessible to the component
-    
-- instantiation: you can instantiate an existing AWSServiceConnector and optionally
-provide an authentication method or a list of authentication methods to try in
-order. If no list is provided, the saved list of methods is used.
-
-- credentials update: you can update the credentials of an existing
-AWSServiceConnector by providing new credentials or a reference to a new secret
-    - the new credentials are validated against the required schema/method
-    - much of what happens during registration happens during update as well,
-    but only needs to happen for a single method
-
-- resolution (after instantiation): the connector tries to resolve credentials using the provided
-methods in order and uses the first successful method/result.
-    - in the simplest case, it only supports one method (explicit long-term
-    credentials) and extracts the credentials contained in the referenced secret
-    - more complex cases involve trying multiple methods in order and remembering
-    the first successful method/result
-    - the credentials fetched from secrets are validated against the required
-    schema (to prevent tampering with the secret contents)
-    - TBD: do we also validate that the credentials themselves haven't been
-    tampered with? (e.g. by keeping a hash and checking it against the secret
-    contents or by keeping/checking the last update timestamp) 
-    - the instance is context aware, e.g. depending on the context (local,
-    remote, container registry, kubernetes, etc.) it will try to resolve
-    credentials using the provided methods in order and return the first
-    successful result.
-
-- validity check (after resolution): you can check if a registered AWSServiceConnector is still valid
-    - the check is performed by trying to resolve credentials using the
-    registered methods in order and returning the first successful method/result
-    - if the check fails, the connector is deemed invalid
-    - an optional validation is performed to ensure that the credentials are
-    valid and can be used to authenticate against AWS services (TBD: how)
-    - must be able to detect expired temporary credentials (e.g. STS tokens)
-
-- consume (after resolution): the connector provides authentication
-configuration and credentials or authenticated clients for third-party consumers.
-    - can optionally include running the validity check
-    - in the simplest case, returns the same authentication configuration and
-    credentials that were registered
-    - more complex cases involve returning authenticated clients (e.g. boto3
-    clients, kubernetes clients, etc.) that are configured to use the resolved
-    credentials) or generating different credentials (e.g. STS tokens) from the
-    configuration and credentials resolved by the connector  
-        - for a method that uses temporary credentials, the credentials resolved
-        by the connector can be used to generate temporary credentials (e.g.
-        STS tokens)
-        - for different services, the credentials resolved by the connector
-        can be used to generate different credentials (e.g. IAM role credentials
-        STS tokens for ECR, Kubernetes credentials for EKS.)
-        - various other contexts require generating credentials resolved with
-        an authentication method to be used by a different method (e.g. local
-        implicit credentials converted into environment variables to be used
-        by the same connector in a remote context)
-    - the consumer must be aware of which authentication methods/clients it
-    needs to use
-    (e.g. the S3 artifact store needs to use the credentials or S3 client provided
-    by the connector to access S3) and even which authentication method or
-    credential types are/are not supported for the service it needs to access
-    (e.g. authenticating to a private ECR container registry only supports STS
-    tokens generated with an IAM role, not long-term credentials)
-    - in some cases, the consumer can be configured with additional configuration
-    needed in the authentication process (e.g. the ECR container registry needs
-    to be configured with the AWS region to use and an optional role to assume
-    if the credentials are temporary)
-
-
-Q: how are connectors scoped ? project, user, global ? what about scoping
-an connector to be used only by a specific stack component ? can a user scoped
-connector reference a project scoped secret and vice versa ? are secrets
-referenced in the connector by ID or by name ? what about their contents, do
-they have to conform to the connector schema 1:1 or can they contain additional
-fields that are ignored by the connector ?
-
+connector.
 """
 import base64
 import re
 import tempfile
-from typing import Any, List, Optional
+from typing import Any, Optional
 
 import boto3
 from botocore.exceptions import ClientError
@@ -155,19 +48,20 @@ from botocore.signers import RequestSigner
 from pydantic import SecretStr
 
 from zenml.exceptions import AuthorizationException
+from zenml.models import (
+    AuthenticationMethodSpecificationModel,
+    ResourceTypeSpecificationModel,
+    ServiceConnectorSpecificationModel,
+)
 from zenml.service_connectors.service_connector import (
     AuthenticationConfig,
-    AuthenticationMethodSpecification,
-    AuthenticationSecrets,
     ServiceConnector,
-    ServiceConnectorConfig,
-    ServiceConnectorSpecification,
 )
 from zenml.utils.enum_utils import StrEnum
 
 
-class DockerCredentials(AuthenticationSecrets):
-    """Docker authentication secrets."""
+class DockerCredentials(AuthenticationConfig):
+    """Docker client authentication credentials."""
 
     username: SecretStr
     password: SecretStr
@@ -176,7 +70,7 @@ class DockerCredentials(AuthenticationSecrets):
 DOCKER_RESOURCE_TYPE = "docker"
 
 
-class KubernetesCredentials(AuthenticationSecrets):
+class KubernetesCredentials(AuthenticationConfig):
     """Kubernetes authentication config."""
 
     certificate_authority: SecretStr
@@ -188,35 +82,43 @@ class KubernetesCredentials(AuthenticationSecrets):
 KUBERNETES_RESOURCE_TYPE = "kubernetes"
 # ----------------------------------
 
-AWS_CONNECTOR_TYPE = "AWS"
+AWS_CONNECTOR_TYPE = "aws"
 AWS_RESOURCE_TYPE = "aws"
 
 
-class AWSAuthenticationConfig(AuthenticationConfig):
-    """AWS authentication configuration."""
-
-    region: Optional[str] = None
-    endpoint_url: Optional[str] = None
-
-
-class AWSSecretKey(AuthenticationSecrets):
-    """AWS credentials authentication secrets."""
+class AWSSecretKey(AuthenticationConfig):
+    """AWS secret key credentials."""
 
     aws_access_key_id: SecretStr
     aws_secret_access_key: SecretStr
-
-
-class IAMRoleAuthenticationConfig(AWSAuthenticationConfig):
-    """AWS IAM authentication config."""
-
-    role_arn: str
-    expiration_seconds: Optional[int] = None
 
 
 class STSToken(AWSSecretKey):
     """AWS STS token."""
 
     aws_session_token: SecretStr
+
+
+class AWSBaseConfig(AWSSecretKey):
+    """AWS base configuration."""
+
+    region: Optional[str] = None
+    endpoint_url: Optional[str] = None
+
+
+class AWSSecretKeyConfig(AWSBaseConfig, AWSSecretKey):
+    """AWS secret key authentication configuration."""
+
+
+class STSTokenConfig(AWSBaseConfig, STSToken):
+    """AWS STS token authentication configuration."""
+
+
+class IAMRoleAuthenticationConfig(AWSSecretKeyConfig):
+    """AWS IAM authentication config."""
+
+    role_arn: str
+    expiration_seconds: Optional[int] = None
 
 
 class AWSAuthenticationMethods(StrEnum):
@@ -227,62 +129,9 @@ class AWSAuthenticationMethods(StrEnum):
     IAM_ROLE = "AWS IAM role"
 
 
-class AWSServiceConnectorSpecification(ServiceConnectorSpecification):
-    """AWS service connector specification."""
-
-    @classmethod
-    def get_equivalent_resource_types(cls, resource_type: str) -> List[str]:
-        """Get a list of AWS resource types that are equivalent to the given one.
-
-        This method is an override of the base class method and is used to
-        model the following:
-
-        * `aws` is a wildcard that matches all AWS resource types: if a
-        connector is configured to provide `aws` resources, it will match
-        queries for any AWS resource type
-        * `eks` is a specialization of `kubernetes`: if a connector is
-        configured to provide `eks` resources, it will match queries for
-        `kubernetes` resources as well as `eks` resources (but not vice-versa)
-        * `ecr` is a specialization of `docker`: if a connector is configured
-        to provide `ecr` resources, it will match queries for `docker`
-        resources as well as `ecr` resources (but not vice-versa)
-
-        Args:
-            resource_type: The resource type identifier to match.
-
-        Returns:
-            A list of resource type identifiers that are equivalent or
-            subordinate to the given one.
-        """
-        if resource_type == AWS_RESOURCE_TYPE:
-            return [
-                AWS_RESOURCE_TYPE,
-                KUBERNETES_RESOURCE_TYPE,
-                DOCKER_RESOURCE_TYPE,
-                *boto3.Session().get_available_services(),
-            ]
-        if resource_type in [KUBERNETES_RESOURCE_TYPE, "eks"]:
-            return [KUBERNETES_RESOURCE_TYPE, "eks"]
-        if resource_type in [DOCKER_RESOURCE_TYPE, "ecr"]:
-            return [DOCKER_RESOURCE_TYPE, "ecr"]
-        return [resource_type]
-
-
-class AWSServiceConnector(ServiceConnector):
-    """AWS service connector."""
-
-    config: ServiceConnectorConfig
-
-    @classmethod
-    def get_specification(cls) -> ServiceConnectorSpecification:
-        """Get AWS connector specification.
-
-        Returns:
-            AWS connector specification.
-        """
-        return AWSServiceConnectorSpecification(
-            connector_type=AWS_CONNECTOR_TYPE,
-            description="""
+AWS_SERVICE_CONNECTOR_SPECIFICATION = ServiceConnectorSpecificationModel(
+    type=AWS_CONNECTOR_TYPE,
+    description="""
 This ZenML AWS service connector facilitates connecting to, authenticating to
 and accessing AWS services, from S3 buckets to EKS clusters. Explicit long-term
 AWS credentials are supported, as well as temporary credentials such as STS
@@ -293,11 +142,11 @@ credentials stored on a local environment.
 The connector supports the following authentication methods:
 
 - `AWS secret key`: uses long-term AWS credentials consisting of an access key
-ID and secret access key. This method is preferred during development and testing
-due to its simplicity and ease of use. It is not recommended for production
-use due to the risk of long-term credentials being exposed. The IAM roles method
-is preferred for production, unless there are specific reasons to use
-long-term credentials (e.g. an external client or long-running process is
+ID and secret access key. This method is preferred during development and
+testing due to its simplicity and ease of use. It is not recommended for
+production use due to the risk of long-term credentials being exposed. The IAM
+roles method is preferred for production, unless there are specific reasons to
+use long-term credentials (e.g. an external client or long-running process is
 involved and it is not possible to periodically regenerate temporary credentials
 upon expiration).
 
@@ -317,137 +166,111 @@ upon expiration (e.g. an external client or long-running process is involved).
 
 The connector facilitates access to any AWS service, including S3, ECR, EKS,
 EC2, etc. by providing pre-configured boto3 clients for these services. In
-addition to multi-purpose AWS authentication, the connector also supports
+addition to authenticating to AWS services, the connector also supports
 authentication for Docker and Kubernetes clients. This is reflected in the range
 of resource types supported by the connector:
 
-- `aws`: this is used as a wildcard resource type indicating that the connector
-can be used to access any of the AWS services. When this resource type is
-used, connector consumers are handed in a general purpose pre-authenticated
-boto3 session instead of a particular boto3 client.
-- in addition to the generic AWS resource type, the connector also supports any
-of the well known AWS service names as a resource type. The AWS service name
-must be one of the values listed in the boto3 documentation (e.g. "s3",
-"secretsmanager", "sagemaker"):
+- the connector supports any of the well known AWS service names as a resource
+type. The AWS service name must be one of the values listed in the boto3
+documentation (e.g. "s3", "secretsmanager", "sagemaker"):
 https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/index.html
 When this resource type is used, the connector provides to consumers a boto3
 client specifically configured for the specified service.
-- `docker`: this is an alias for the AWS ECR service that allows consumers to
-discover this connector as a Docker client provider. When used by connector
-consumers, then are provided a pre-authenticated python-docker client instance
-instead of a boto3 client.
-- `kubernetes`: this is an alias for the AWS EKS service that allows consumers
+
+- `docker`: this is an alternative to the AWS ECR service that allows consumers
 to discover this connector as a Docker client provider. When used by connector
-consumers, they are issued a pre-authenticated python-kubernetes client instance
+consumers, they are provided a pre-authenticated python-docker client instance
 instead of a boto3 client.
 
-Some AWS resources are region-specific, e.g. S3 buckets, ECR repositories, etc.
-For these resources, the connector allows the user to specify the region in the
-connector config if it cannot be inferred from the resource ID.
+- `kubernetes`: this is an alternative to the AWS EKS service that allows
+consumers to discover this connector as a Docker client provider. When used by
+connector consumers, they are issued a pre-authenticated python-kubernetes
+client instance instead of a boto3 client.
+
+- `aws`: this is a special multi-purpose AWS resource type. It allows consumers
+to use the connector to connect to any AWS service. When used by connector
+consumers, they are provided a generic boto3 session instance pre-configured
+with AWS credentials. This session can then be used to create boto3 clients
+for any particular AWS service.
 """,
-            supports_resource_types=True,
-            # Allow arbitrary resource types to be specified, e.g. "S3", "ECR",
-            arbitrary_resource_types=False,
-            auth_methods=[
-                AuthenticationMethodSpecification(
-                    auth_method=AWSAuthenticationMethods.SECRET_KEY,
-                    resource_types=[DOCKER_RESOURCE_TYPE],
-                    # Request an ECR registry to be configured in the
-                    # connector or provided by the consumer
-                    supports_resource_ids=True,
-                    auth_config=AWSAuthenticationConfig,
-                    auth_secrets=AWSSecretKey,
-                ),
-                AuthenticationMethodSpecification(
-                    auth_method=AWSAuthenticationMethods.STS_TOKEN,
-                    resource_types=[DOCKER_RESOURCE_TYPE],
-                    # Request an ECR registry to be configured in the
-                    # connector or provided by the consumer
-                    supports_resource_ids=True,
-                    auth_config=AWSAuthenticationConfig,
-                    auth_secrets=STSToken,
-                ),
-                AuthenticationMethodSpecification(
-                    auth_method=AWSAuthenticationMethods.IAM_ROLE,
-                    resource_types=[DOCKER_RESOURCE_TYPE],
-                    # Request an ECR registry to be configured in the
-                    # connector or provided by the consumer
-                    supports_resource_ids=True,
-                    auth_config=IAMRoleAuthenticationConfig,
-                    auth_secrets=AWSSecretKey,
-                ),
-                AuthenticationMethodSpecification(
-                    auth_method=AWSAuthenticationMethods.SECRET_KEY,
-                    resource_types=[KUBERNETES_RESOURCE_TYPE],
-                    # Request an EKS cluster name to be configured in the
-                    # connector or provided by the consumer
-                    supports_resource_ids=True,
-                    auth_config=AWSAuthenticationConfig,
-                    auth_secrets=AWSSecretKey,
-                ),
-                AuthenticationMethodSpecification(
-                    auth_method=AWSAuthenticationMethods.STS_TOKEN,
-                    resource_types=[KUBERNETES_RESOURCE_TYPE],
-                    # Request an EKS cluster name to be configured in the
-                    # connector or provided by the consumer
-                    supports_resource_ids=True,
-                    auth_config=AWSAuthenticationConfig,
-                    auth_secrets=STSToken,
-                ),
-                AuthenticationMethodSpecification(
-                    auth_method=AWSAuthenticationMethods.IAM_ROLE,
-                    resource_types=[KUBERNETES_RESOURCE_TYPE],
-                    # Request an EKS cluster name to be configured in the
-                    # connector or provided by the consumer
-                    supports_resource_ids=True,
-                    auth_config=IAMRoleAuthenticationConfig,
-                    auth_secrets=AWSSecretKey,
-                ),
-                AuthenticationMethodSpecification(
-                    auth_method=AWSAuthenticationMethods.SECRET_KEY,
-                    resource_types=[
-                        AWS_RESOURCE_TYPE,
-                        *boto3.Session().get_available_services(),
-                    ],
-                    # Request an AWS specific resource instance ID (e.g. an S3
-                    # bucket name, ECR repository name) to be configured in the
-                    # connector or provided by the consumer
-                    supports_resource_ids=True,
-                    auth_config=AWSAuthenticationConfig,
-                    auth_secrets=AWSSecretKey,
-                    description="Configure long-term AWS credentials "
-                    "consisting of an access key ID and secret access key "
-                    "associated with an AWS user account.",
-                ),
-                AuthenticationMethodSpecification(
-                    auth_method=AWSAuthenticationMethods.STS_TOKEN,
-                    resource_types=[
-                        AWS_RESOURCE_TYPE,
-                        *boto3.Session().get_available_services(),
-                    ],
-                    # Request an AWS specific resource instance ID (e.g. an S3
-                    # bucket name, ECR repository name) to be configured in the
-                    # connector or provided by the consumer
-                    supports_resource_ids=True,
-                    auth_config=AWSAuthenticationConfig,
-                    auth_secrets=STSToken,
-                    description="Configure a temporary AWS STS token.",
-                ),
-                AuthenticationMethodSpecification(
-                    auth_method=AWSAuthenticationMethods.IAM_ROLE,
-                    resource_types=[
-                        AWS_RESOURCE_TYPE,
-                        *boto3.Session().get_available_services(),
-                    ],
-                    # Request an AWS specific resource instance ID (e.g. an S3
-                    # bucket name, ECR repository name) to be configured in the
-                    # connector or provided by the consumer
-                    supports_resource_ids=True,
-                    auth_config=IAMRoleAuthenticationConfig,
-                    auth_secrets=AWSSecretKey,
-                ),
-            ],
+    auth_methods=[
+        AuthenticationMethodSpecificationModel(
+            auth_method=AWSAuthenticationMethods.SECRET_KEY,
+            description="Uses long-term AWS credentials consisting of an "
+            "access key ID and secret access key.",
+            config_class=AWSSecretKeyConfig,
+        ),
+        AuthenticationMethodSpecificationModel(
+            auth_method=AWSAuthenticationMethods.STS_TOKEN,
+            description="Uses temporary STS tokens explicitly generated by "
+            "the user or auto-configured from a local environment.",
+            config_class=STSTokenConfig,
+        ),
+        AuthenticationMethodSpecificationModel(
+            auth_method=AWSAuthenticationMethods.IAM_ROLE,
+            description="Generates temporary STS credentials by assuming an "
+            "IAM role.",
+            config_class=IAMRoleAuthenticationConfig,
+        ),
+    ],
+    resource_types=[
+        ResourceTypeSpecificationModel(
+            resource_types=[svc],
+            description=f"{svc} AWS resource.",
+            auth_methods=AWSAuthenticationMethods.values(),
+            # Request an AWS specific resource instance ID (e.g. an S3
+            # bucket name, ECR repository name) to be configured in the
+            # connector or provided by the consumer
+            multi_instance=True,
+            logo_url="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/container_registry/aws.png",
         )
+        for svc in boto3.Session().get_available_services()
+        if svc not in ["ecr", "eks"]
+    ]
+    + [
+        ResourceTypeSpecificationModel(
+            resource_types=[AWS_RESOURCE_TYPE],
+            description="Any AWS resource.",
+            auth_methods=AWSAuthenticationMethods.values(),
+            # Don't request an AWS specific resource instance ID, given that
+            # the connector provides a generic boto3 session instance.
+            multi_instance=False,
+            logo_url="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/container_registry/aws.png",
+        ),
+        ResourceTypeSpecificationModel(
+            resource_types=[KUBERNETES_RESOURCE_TYPE, "eks"],
+            description="EKS Kubernetes cluster.",
+            auth_methods=AWSAuthenticationMethods.values(),
+            # Request an EKS cluster name to be configured in the
+            # connector or provided by the consumer
+            multi_instance=True,
+            logo_url="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/orchestrator/kubernetes.png",
+        ),
+        ResourceTypeSpecificationModel(
+            resource_types=[DOCKER_RESOURCE_TYPE, "ecr"],
+            description="ECR container registry.",
+            auth_methods=AWSAuthenticationMethods.values(),
+            # Request an ECR registry to be configured in the
+            # connector or provided by the consumer
+            multi_instance=True,
+        ),
+    ],
+)
+
+
+class AWSServiceConnector(ServiceConnector):
+    """AWS service connector."""
+
+    config: AWSBaseConfig
+
+    @classmethod
+    def get_specification(cls) -> ServiceConnectorSpecificationModel:
+        """Get the service connector specification.
+
+        Returns:
+            The service connector specification.
+        """
+        return AWS_SERVICE_CONNECTOR_SPECIFICATION
 
     @classmethod
     def _get_eks_bearer_token(
@@ -504,7 +327,6 @@ connector config if it cannot be inferred from the resource ID.
 
     def _connect_to_resource(
         self,
-        config: ServiceConnectorConfig,
         resource_type: Optional[str] = None,
         resource_id: Optional[str] = None,
         **kwargs: Any,
@@ -514,8 +336,9 @@ connector config if it cannot be inferred from the resource ID.
         Initialize and return a session or client object depending on the
         connector configuration and the requested resource type:
 
-        - initialize and return a boto3 session for a generic AWS resource
-        - initialize and return a boto3 client for a specific AWS service
+        - initialize and return a boto3 session if the requested resource type
+        is a generic AWS resource
+        - initialize and return a boto3 client for an AWS service
         - initialize and return a python-docker client if the requested resource
         type is a Docker registry
         - initialize and return a python-kubernetes client if the requested
@@ -540,47 +363,42 @@ connector config if it cannot be inferred from the resource ID.
         """
         # Regardless of the resource type, we must authenticate to AWS first
         # before we can connect to any AWS resource
-        auth_method = config.auth_method
+        auth_method = self.auth_method
+        cfg = self.config
         if auth_method == AWSAuthenticationMethods.SECRET_KEY:
-            assert isinstance(config.auth_config, AWSAuthenticationConfig)
-            assert isinstance(config.auth_secrets, AWSSecretKey)
+            assert isinstance(cfg, AWSSecretKeyConfig)
             # Create a boto3 session using long-term AWS credentials
-            s = config.auth_secrets
             session = boto3.Session(
-                aws_access_key_id=s.aws_access_key_id.get_secret_value(),
-                aws_secret_access_key=s.aws_secret_access_key.get_secret_value(),
-                region_name=config.auth_config.region,
+                aws_access_key_id=cfg.aws_access_key_id.get_secret_value(),
+                aws_secret_access_key=cfg.aws_secret_access_key.get_secret_value(),
+                region_name=self.config.region,
             )
         elif auth_method == AWSAuthenticationMethods.STS_TOKEN:
-            assert isinstance(config.auth_config, AWSAuthenticationConfig)
-            assert isinstance(config.auth_secrets, STSToken)
+            assert isinstance(cfg, STSTokenConfig)
             # Create a boto3 session using a temporary AWS STS token
-            s = config.auth_secrets
             session = boto3.Session(
-                aws_access_key_id=s.aws_access_key_id.get_secret_value(),
-                aws_secret_access_key=s.aws_secret_access_key.get_secret_value(),
-                aws_session_token=s.aws_session_token.get_secret_value(),
-                region_name=config.auth_config.region,
+                aws_access_key_id=cfg.aws_access_key_id.get_secret_value(),
+                aws_secret_access_key=cfg.aws_secret_access_key.get_secret_value(),
+                aws_session_token=cfg.aws_session_token.get_secret_value(),
+                region_name=self.config.region,
             )
         elif auth_method == AWSAuthenticationMethods.IAM_ROLE:
-            assert isinstance(config.auth_config, IAMRoleAuthenticationConfig)
-            assert isinstance(config.auth_secrets, AWSSecretKey)
+            assert isinstance(cfg, IAMRoleAuthenticationConfig)
             # Create a boto3 session using an IAM role
-            s = config.auth_secrets
             session = boto3.Session(
-                aws_access_key_id=s.aws_access_key_id.get_secret_value(),
-                aws_secret_access_key=s.aws_secret_access_key.get_secret_value(),
-                region_name=config.auth_config.region,
+                aws_access_key_id=cfg.aws_access_key_id.get_secret_value(),
+                aws_secret_access_key=cfg.aws_secret_access_key.get_secret_value(),
+                region_name=self.config.region,
             )
 
             sts = session.client("sts")
             try:
                 response = sts.assume_role(
-                    RoleArn=config.auth_config.role_arn,
+                    RoleArn=cfg.role_arn,
                 )
             except ClientError as e:
                 raise AuthorizationException(
-                    f"Failed to assume IAM role {config.auth_config.role_arn} "
+                    f"Failed to assume IAM role {cfg.role_arn} "
                     f"using the AWS credentials configured in the connector: "
                     f"{e}"
                 ) from e
@@ -594,8 +412,8 @@ connector config if it cannot be inferred from the resource ID.
             )
         else:
             raise NotImplementedError(
-                f"Authentication method {auth_method} is not supported by the "
-                f"AWS connector."
+                f"Authentication method '{auth_method}' is not supported by "
+                "the AWS connector."
             )
 
         if resource_type == AWS_RESOURCE_TYPE:
@@ -605,7 +423,7 @@ connector config if it cannot be inferred from the resource ID.
         if resource_type == DOCKER_RESOURCE_TYPE:
             from docker import DockerClient
 
-            resource_id = resource_id or self.config.resource_id
+            resource_id = resource_id or self.resource_id
             if not resource_id:
                 raise ValueError(
                     "The AWS connector was not configured with an ECR "
@@ -640,13 +458,13 @@ connector config if it cannot be inferred from the resource ID.
             elif re.match(r"^\d{12}$", resource_id):
                 # The resource ID is an ECR registry ID
                 registry_id = resource_id
-                region_id = config.auth_config.region
+                region_id = self.config.region
             elif re.match(
                 r"^([a-z0-9]+([._-][a-z0-9]+)*/)*[a-z0-9]+([._-][a-z0-9]+)*$",
                 resource_id,
             ):
                 # Assume the resource ID is an ECR repository name
-                region_id = config.auth_config.region
+                region_id = self.config.region
                 registry_name = resource_id
             else:
                 raise ValueError(
@@ -662,14 +480,14 @@ connector config if it cannot be inferred from the resource ID.
             # is an ECR repository ARN or URI that specifies a different region
             # we raise an error
             if (
-                config.auth_config.region
+                self.config.region
                 and region_id
-                and region_id != config.auth_config.region
+                and region_id != self.config.region
             ):
                 raise AuthorizationException(
                     f"The AWS region for the {resource_id} ECR registry "
                     f"({region_id}) does not match the region configured in "
-                    f"the connector ({config.auth_config.region})."
+                    f"the connector ({self.config.region})."
                 )
 
             if not region_id:
@@ -679,9 +497,7 @@ connector config if it cannot be inferred from the resource ID.
                     f"provided resource ID: {resource_id}"
                 )
 
-            client = session.client(
-                "ecr", region_name=config.auth_config.region
-            )
+            client = session.client("ecr", region_name=self.config.region)
 
             if registry_name:
                 # Get the registry ID from the repository name
@@ -716,8 +532,7 @@ connector config if it cannot be inferred from the resource ID.
             username, token = (
                 base64.b64decode(token).decode("utf-8").split(":")
             )
-            print(f"username: {username}")
-            print(f"token: {token}")
+
             docker_client = DockerClient.from_env()
             docker_client.login(
                 username=username,
@@ -730,7 +545,7 @@ connector config if it cannot be inferred from the resource ID.
         if resource_type == KUBERNETES_RESOURCE_TYPE:
             from kubernetes import client as k8s_client
 
-            resource_id = resource_id or self.config.resource_id
+            resource_id = resource_id or self.resource_id
             if not resource_id:
                 raise ValueError(
                     "The AWS connector was not configured with an EKS "
@@ -757,7 +572,7 @@ connector config if it cannot be inferred from the resource ID.
                 resource_id,
             ):
                 # Assume the resource ID is an EKS cluster name
-                region_id = config.auth_config.region
+                region_id = self.config.region
                 registry_name = resource_id
             else:
                 raise ValueError(
@@ -771,17 +586,17 @@ connector config if it cannot be inferred from the resource ID.
             # is an EKS registry ARN or URI that specifies a different region
             # we raise an error
             if (
-                config.auth_config.region
+                self.config.region
                 and region_id
-                and region_id != config.auth_config.region
+                and region_id != self.config.region
             ):
                 raise AuthorizationException(
                     f"The AWS region for the {resource_id} EKS cluster "
                     f"({region_id}) does not match the region configured in "
-                    f"the connector ({config.auth_config.region})."
+                    f"the connector ({self.config.region})."
                 )
 
-            region_id = config.auth_config.region
+            region_id = self.config.region
             cluster_name = resource_id
 
             if not region_id:
@@ -791,9 +606,7 @@ connector config if it cannot be inferred from the resource ID.
                     f"provided resource ID: {resource_id}"
                 )
 
-            client = session.client(
-                "eks", region_name=config.auth_config.region
-            )
+            client = session.client("eks", region_name=self.config.region)
             try:
                 cluster = client.describe_cluster(name=cluster_name)
             except ClientError as e:
@@ -841,28 +654,31 @@ connector config if it cannot be inferred from the resource ID.
 
         return session.client(
             resource_type,
-            region_name=config.auth_config.region,
-            endpoint_url=config.auth_config.endpoint_url,
+            region_name=self.config.region,
+            endpoint_url=self.config.endpoint_url,
         )
 
     def _configure_local_client(
         self,
-        config: ServiceConnectorConfig,
         resource_type: Optional[str] = None,
         resource_id: Optional[str] = None,
         **kwargs: Any,
     ) -> None:
-        """Configure a local client for a service using the specified authentication method.
+        """Configure a local client to authenticate and connect to a resource.
 
         This method uses the connector's configuration to configure a local
         client or SDK installed on the localhost for the indicated resource.
 
         Args:
-            config: The connector configuration.
-            resource_type: The type of resource to connect to. Omitted if the
-                connector does not support multiple resource types.
+            resource_type: The type of resource to connect to. Can be different
+                than the resource type that the connector is configured to
+                access if alternative resource types or arbitrary
+                resource types are allowed by the connector configuration.
             resource_id: The ID of the resource to connect to. Omitted if the
-                configured authentication method does not require a resource ID.
+                configured resource type does not allow multiple instances.
+                Can be different than the resource ID that the connector is
+                configured to access if resource ID aliases or wildcards
+                are supported.
             kwargs: Additional implementation specific keyword arguments to use
                 to configure the client.
 
@@ -872,6 +688,45 @@ connector config if it cannot be inferred from the resource ID.
                 local configuration for the indicated resource type or client
                 type.
         """
+        # # # build the cluster config hash
+        # cluster_config = {
+        #         "apiVersion": "v1",
+        #         "kind": "Config",
+        #         "clusters": [
+        #             {
+        #                 "cluster": {
+        #                     "server": str(cluster_ep),
+        #                     "certificate-authority-data": str(cluster_cert)
+        #                 },
+        #                 "name": "kubernetes"
+        #             }
+        #         ],
+        #         "contexts": [
+        #             {
+        #                 "context": {
+        #                     "cluster": "kubernetes",
+        #                     "user": "aws"
+        #                 },
+        #                 "name": "aws"
+        #             }
+        #         ],
+        #         "current-context": "aws",
+        #         "preferences": {},
+        #         "users": [
+        #             {
+        #                 "name": "aws",
+        #                 "user": {
+        #                     "exec": {
+        #                         "apiVersion": "client.authentication.k8s.io/v1alpha1",
+        #                         "command": "heptio-authenticator-aws",
+        #                         "args": [
+        #                             "token", "-i", cluster_name
+        #                         ]
+        #                     }
+        #                 }
+        #             }
+        #         ]
+        #     }
 
     @classmethod
     def _auto_configure(
@@ -882,23 +737,25 @@ connector config if it cannot be inferred from the resource ID.
         region_name: Optional[str] = None,
         profile_name: Optional[str] = None,
         **kwargs: Any,
-    ) -> ServiceConnectorConfig:
+    ) -> "AWSServiceConnector":
         """Auto-configure the connector.
 
-        Auto-configure the AWS connector by looking for authentication
-        configuration in the environment (e.g. environment variables or
-        configuration files) and storing it in the connector configuration.
+        Instantiate an AWS connector with a configuration extracted from the
+        authentication configuration available in the environment (e.g.
+        environment variables or local AWS client/SDK configuration files).
 
         Args:
             auth_method: The particular authentication method to use. If not
                 specified, the connector implementation must decide which
                 authentication method to use or raise an exception.
-            resource_type: The type of resource to configure. Omitted if the
-                connector does not support resource types.
-            resource_id: The ID of the resource to connect to. The
+            resource_type: The type of resource to configure. The implementation
+                may choose to either require or ignore this parameter if it
+                does not support or is able to detect a resource type and the
+                connector specification does not allow arbitrary resource types.
+            resource_id: The ID of the resource to configure. The
                 implementation may choose to either require or ignore this
-                parameter if it does not support or detect an authentication
-                methods that uses a resource ID.
+                parameter if it does not support or detect an resource type that
+                supports multiple instances.
             region_name: The name of the AWS region to use. If not specified,
                 the implicit region is used.
             profile_name: The name of the AWS profile to use. If not specified,
@@ -906,12 +763,8 @@ connector config if it cannot be inferred from the resource ID.
             kwargs: Additional implementation specific keyword arguments to use.
 
         Returns:
-            The connector configuration populated with auto-configured
-            authentication credentials.
-
-        Raises:
-            NotImplementedError: If the connector does not support
-                auto-configuration.
+            An AWS connector instance configured with authentication credentials
+            automatically extracted from the environment.
         """
         # Initialize an AWS session with the default configuration loaded
         # from the environment.
@@ -919,35 +772,35 @@ connector config if it cannot be inferred from the resource ID.
             profile_name=profile_name, region_name=region_name
         )
 
-        # Extract the AWS configuration from the session and store it in
-        # the connector configuration.
-        auth_config = AWSAuthenticationConfig(
-            region=session.region_name,
-            endpoint_url=session._session.get_config_variable("endpoint_url"),
-        )
-
         # Extract the AWS credentials from the session and store them in
         # the connector secrets.
         credentials = session.get_credentials()
         auth_method = AWSAuthenticationMethods.SECRET_KEY
-        auth_secrets: AuthenticationSecrets
+        auth_config: AWSBaseConfig
         if credentials.token:
             auth_method = AWSAuthenticationMethods.STS_TOKEN
-            auth_secrets = STSToken(
+            auth_config = STSTokenConfig(
+                region=session.region_name,
+                endpoint_url=session._session.get_config_variable(
+                    "endpoint_url"
+                ),
                 aws_access_key_id=credentials.access_key,
                 aws_secret_access_key=credentials.secret_key,
                 aws_session_token=credentials.token,
             )
         else:
-            auth_secrets = AWSSecretKey(
+            auth_config = AWSSecretKeyConfig(
+                region=session.region_name,
+                endpoint_url=session._session.get_config_variable(
+                    "endpoint_url"
+                ),
                 aws_access_key_id=credentials.access_key,
                 aws_secret_access_key=credentials.secret_key,
             )
 
-        return ServiceConnectorConfig(
+        return cls(
             auth_method=auth_method,
-            resource_type=resource_type,
+            resource_type=resource_type or AWS_RESOURCE_TYPE,
             resource_id=resource_id,
-            auth_config=auth_config,
-            auth_secrets=auth_secrets,
+            config=auth_config,
         )

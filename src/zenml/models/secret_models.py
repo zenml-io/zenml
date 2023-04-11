@@ -133,7 +133,7 @@ class SecretFilterModel(WorkspaceScopedFilterModel):
     )
 
     user_id: Optional[Union[UUID, str]] = Field(
-        None, description="User that created the Secret"
+        default=None, description="User that created the Secret"
     )
 
     @staticmethod
