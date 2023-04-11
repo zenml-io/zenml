@@ -27,19 +27,19 @@ def disconnect_server() -> None:
     if gc.version == __version__:
         cli_utils.declare(
             "The ZenML Global Configuration version is already "
-            "set to the same version as the current ZenML Client."
+            "set to the same version as the current ZenML client."
         )
         return
 
     if cli_utils.confirmation(
         "Are you sure you want to downgrade the ZenML Global Configuration "
-        "version to match the current ZenML Client version? It is "
+        "version to match the current ZenML client version? It is "
         "recommended to upgrade the ZenML Global Configuration version "
-        "instead. otherwise, you might experience unexpected behavior "
-        "such as model schema validation failures or even loss of information."
+        "instead. Otherwise, you might experience unexpected behavior "
+        "such as model schema validation failures or even data loss."
     ):
         gc.version = __version__
         cli_utils.declare(
             "The ZenML Global Configuration version has been "
-            "downgraded to match the current ZenML Client version."
+            "downgraded to match the current ZenML client version."
         )
