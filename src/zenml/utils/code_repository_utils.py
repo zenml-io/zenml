@@ -14,20 +14,17 @@
 """Utilities for code repositories."""
 import os
 from typing import (
-    TYPE_CHECKING,
     Dict,
     Optional,
 )
 
+from zenml.code_repositories import (
+    BaseCodeRepository,
+    LocalRepositoryContext,
+)
 from zenml.logger import get_logger
 from zenml.utils import source_utils
 from zenml.utils.pagination_utils import depaginate
-
-if TYPE_CHECKING:
-    from zenml.code_repositories import (
-        BaseCodeRepository,
-        LocalRepositoryContext,
-    )
 
 logger = get_logger(__name__)
 
