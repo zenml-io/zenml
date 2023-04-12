@@ -1,5 +1,5 @@
 ---
-description: How to collaborate with the ZenML community
+description: Collaborate with the ZenML community
 ---
 
 
@@ -109,7 +109,13 @@ You should see a table similar to:
 
 In order to create your own plugin and submit it to the ZenML hub, you need to 
 first log in. In the first version, authentication is only possible through 
-GitHub.
+GitHub. 
+
+{% hint style="info" %}
+If you haven't used the ZenML Hub before, this process will create a ZenML Hub 
+account that shares the same username as your GitHub account. It will also 
+associate your current ZenML user with this newly generated ZenML Hub account.
+{% endhint %}
 
 {% tabs %}
 {% tab title="Dashboard" %}
@@ -130,8 +136,7 @@ zenml hub login
 ```
 
 This will open up a page where you can log in to your GitHub account and copy 
-over the generated token to your CLI. This will associate your current ZenML 
-user with your ZenML Hub account.
+over the generated token to your CLI.
 
 In order to log out, you can do:
 
@@ -141,7 +146,6 @@ zenml hub logout
 
 {% endtab %}
 {% endtabs %}
-
 
 After logging in, you can start submitting your own plugins. The submitted 
 plugins need to follow a set of standards which are described as guidelines 
