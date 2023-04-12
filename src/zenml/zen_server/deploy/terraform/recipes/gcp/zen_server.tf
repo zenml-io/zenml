@@ -5,6 +5,14 @@ resource "kubernetes_namespace" "zen-server" {
   }
 }
 
+# enable secret manager
+resource "google_project_service" "secret_manager" {
+  project = var.project_id
+  service = "secretmanager.googleapis.com"
+
+  disable_on_destroy = false
+}
+
 resource "helm_release" "zen-server" {
 
   name      = "${var.name}-zenmlserver"
