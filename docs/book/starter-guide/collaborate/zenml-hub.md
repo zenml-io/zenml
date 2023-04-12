@@ -43,7 +43,7 @@ well as a stability/maturity rating.
 With the release of ZenML version 0.38.0, the ZenML Hub will make its first 
 appearance and be equipped with a set of plugins that feature ZenML-verified 
 steps (with a heavy-emphasis on data loader steps). For the future iterations, 
-the ZenML team is actively working on expanding the hub's capabilities and 
+the ZenML team is actively working on expanding the Hub's capabilities and 
 plans to introduce additional entities, such as materializers and flavors.
 
 ## How do I use it?
