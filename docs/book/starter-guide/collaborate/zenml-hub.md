@@ -165,3 +165,7 @@ zenml hub submit -i
 
 {% endtab %}
 {% endtabs %}
+
+Once submitted, a wheel will be created and stored based on your plugin. This
+process might take some time before the plugin is ready to install and use. You
+can check the status of this process by inspecting the status of the plugin.
