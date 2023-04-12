@@ -46,7 +46,7 @@ If you would like more control over the `zenml deploy` command, then read [optio
 {% hint style="info" %} 
 If you have trouble with the `zenml deploy` command and are stuck at
 this point, please join our [Slack community](https://zenml.io/slack-invite) and send a message to the #general channel. The
-community is more than willing to help out.
+community is more than willing to help out and the core team are also there to answer questions.
 {% endhint %}
 
 At the end of the deployment, you will receive:
