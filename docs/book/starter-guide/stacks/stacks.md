@@ -31,7 +31,7 @@ and infrastructure. For instance, you might want to:
 - Deploy models on Kubernetes with [Seldon](../../component-gallery/model-deployers/seldon.md) or [KServe](../../component-gallery/model-deployers/kserve.md),
 
 In the illustration, you see one user register two stacks, the `Local Stack` and a `Production Stack`. These stacks can be shared
-with other people easily - something we'll dig into more [later](../collaborate/collaborate.md).
+with other people easily - something we'll dig into more [later](sharing-stacks.md).
 
 ![Running your pipeline in the cloud](../../assets/core_concepts/03_multi_stack.png)
 

@@ -26,7 +26,7 @@ cloud](../../getting-started/deploying-zenml/deploying-zenml.md). It would be
 recommended to deploy ZenML in the same region as you plan on using for
 Sagemaker, but it is not necessary to do so. You must ensure that you are
 [connected to the remote ZenML
-server](../../starter-guide/collaborate/zenml-deployment.md) before using this
+server](../../starter-guide/production-fundamentals/production-fundamentals.md) before using this
 stack component.
 
 The only other thing necessary to use the ZenML Sagemaker orchestrator is
