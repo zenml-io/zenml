@@ -20,7 +20,7 @@ teams and project structures. They can easily share pipelines, runs, stacks,
 and other resources, streamlining the workflow and promoting teamwork.
 
 - On the flip side, there's the ZenML Hub. Here, you can peruse a collection 
-of community-driven solutions, share your own solutions, and collaborate with 
+of community-driven solutions, share your own code, and collaborate with 
 fellow members of the community.
 
 This section will center on managing users, their roles, and permissions 
