@@ -138,7 +138,7 @@ variable "ingress_path" {
 # set to true if you don't already have an nginx ingress
 # controller in your cluster
 variable "create_ingress_controller" {
-  description = "set to true  if you want the recipe to create an ingress controller in your cluster"  
+  description = "set to true  if you want the recipe to create an ingress controller in your cluster"
   default     = true
   type        = bool
 }
@@ -173,7 +173,7 @@ variable "zenmlserver_image_repo" {
 variable "zenmlserver_image_tag" {
   description = "The tag to use for the zenmlserver docker image."
   default     = "latest"
-  type        = string   
+  type        = string
 }
 
 # variables for creating a ZenML stack configuration file

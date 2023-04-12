@@ -1555,3 +1555,4 @@ from zenml.cli.stack_components import *  # noqa
 from zenml.cli.stack_recipes import *  # noqa
 from zenml.cli.user_management import *  # noqa
 from zenml.cli.version import *  # noqa
+from zenml.cli.downgrade import *  # noqa
