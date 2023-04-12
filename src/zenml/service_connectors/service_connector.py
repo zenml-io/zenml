@@ -106,6 +106,15 @@ class ServiceConnector(BaseModel):
     config: AuthenticationConfig
 
     @classmethod
+    def register(cls) -> None:
+        """Register the connector with the connector registry."""
+        from zenml.service_connectors.service_connector_registry import (
+            service_connector_registry,
+        )
+
+        service_connector_registry.register_service_connector(cls)
+
+    @classmethod
     @abstractmethod
     def get_specification(cls) -> ServiceConnectorSpecificationModel:
         """Get the connector specification.
@@ -563,3 +572,16 @@ class ServiceConnector(BaseModel):
             resource_id=resource_id,
             **kwargs,
         )
+
+    def check(self) -> None:
+        """Validate that the connector is configured with valid credentials.
+
+        This method verifies that the connector is configured with valid
+        credentials and resource information by actively trying to connect to
+        the remote resource provider service.
+
+        Raises:
+            ValueError: If the connector is not configured with valid
+                credentials and resource information.
+        """
+        self._validate()

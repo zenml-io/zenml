@@ -95,6 +95,10 @@ from zenml.models import (
     SecretRequestModel,
     SecretResponseModel,
     SecretUpdateModel,
+    ServiceConnectorFilterModel,
+    ServiceConnectorRequestModel,
+    ServiceConnectorResponseModel,
+    ServiceConnectorUpdateModel,
     StackFilterModel,
     StackRequestModel,
     StackResponseModel,
@@ -4066,6 +4070,383 @@ class Client(metaclass=ClientMetaClass):
             name_id_or_prefix=name_id_or_prefix, allow_name_prefix_match=False
         )
         self.zen_store.delete_code_repository(code_repository_id=repo.id)
+
+    # .--------------------.
+    # | SERVICE CONNECTORS |
+    # '--------------------'
+
+    def get_service_connector(
+        self,
+        name_id_or_prefix: Union[str, UUID],
+        allow_name_prefix_match: bool = True,
+    ) -> "ServiceConnectorResponseModel":
+        """Fetches a registered service connector.
+
+        Args:
+            name_id_or_prefix: The id of the service connector to fetch.
+            allow_name_prefix_match: If True, allow matching by name prefix.
+
+        Returns:
+            The registered service connector.
+        """
+        return self._get_entity_by_id_or_name_or_prefix(
+            get_method=self.zen_store.get_service_connector,
+            list_method=self.list_service_connectors,
+            name_id_or_prefix=name_id_or_prefix,
+            allow_name_prefix_match=allow_name_prefix_match,
+        )
+
+    def list_service_connectors(
+        self,
+        sort_by: str = "created",
+        page: int = PAGINATION_STARTING_PAGE,
+        size: int = PAGE_SIZE_DEFAULT,
+        logical_operator: LogicalOperators = LogicalOperators.AND,
+        id: Optional[Union[UUID, str]] = None,
+        created: Optional[datetime] = None,
+        updated: Optional[datetime] = None,
+        is_shared: Optional[bool] = None,
+        name: Optional[str] = None,
+        type: Optional[str] = None,
+        auth_method: Optional[str] = None,
+        resource_type: Optional[str] = None,
+        resource_id: Optional[str] = None,
+        workspace_id: Optional[Union[str, UUID]] = None,
+        user_id: Optional[Union[str, UUID]] = None,
+        labels: Optional[Dict[str, Optional[str]]] = None,
+        secret_id: Optional[Union[str, UUID]] = None,
+    ) -> Page[ServiceConnectorResponseModel]:
+        """Lists all registered service connectors.
+
+        Args:
+            sort_by: The column to sort by
+            page: The page of items
+            size: The maximum size of all pages
+            logical_operator: Which logical operator to use [and, or]
+            id: The id of the service connector to filter by.
+            created: Filter service connectors by time of creation
+            updated: Use the last updated date for filtering
+            type: Use the service connector type for filtering
+            auth_method: Use the service connector auth method for filtering
+            resource_type: Filter service connectors by the resource type that
+                they can give access to.
+            resource_id: Filter service connectors by the resource id that
+                they can give access to.
+            workspace_id: The id of the workspace to filter by.
+            user_id: The id of the user to filter by.
+            name: The name of the service connector to filter by.
+            is_shared: The shared status of the service connector to filter by.
+            labels: The labels of the service connector to filter by.
+            secret_id: Filter by the id of the secret that is referenced by the
+                service connector.
+
+        Returns:
+            A page of service connectors.
+        """
+        connector_filter_model = ServiceConnectorFilterModel(
+            page=page,
+            size=size,
+            sort_by=sort_by,
+            logical_operator=logical_operator,
+            workspace_id=workspace_id or self.active_workspace.id,
+            user_id=user_id,
+            name=name,
+            is_shared=is_shared,
+            type=type,
+            auth_method=auth_method,
+            resource_type=resource_type,
+            resource_id=resource_id,
+            id=id,
+            created=created,
+            updated=updated,
+            labels=labels,
+            secret_id=secret_id,
+        )
+        connector_filter_model.set_scope_workspace(self.active_workspace.id)
+        return self.zen_store.list_service_connectors(
+            filter_model=connector_filter_model
+        )
+
+    def create_service_connector(
+        self,
+        name: str,
+        type: str,
+        auth_method: str,
+        resource_type: str,
+        configuration: Optional[Dict[str, str]] = None,
+        secrets: Optional[Dict[str, Optional[SecretStr]]] = None,
+        resource_id: Optional[str] = None,
+        description: str = "",
+        is_shared: bool = False,
+        labels: Optional[Dict[str, str]] = None,
+        check: bool = True,
+        register: bool = True,
+    ) -> Optional["ServiceConnectorResponseModel"]:
+        """Create, validate and/or register a service connector.
+
+        Args:
+            name: The name of the service connector.
+            type: The service connector type.
+            auth_method: The authentication method of the service connector.
+            resource_type: The resource type of the service connector.
+            configuration: The configuration of the service connector.
+            secrets: The secrets of the service connector.
+            resource_id: The resource id of the service connector.
+            description: The description of the service connector.
+            is_shared: Whether the service connector is shared or not.
+            labels: The labels of the service connector.
+            check: Whether to validate that the service connector configuration
+                and credentials can be used to gain access to the resource.
+            register: Whether to register the service connector or not.
+
+        Returns:
+            The model of the registered service connector, or None, if the
+            registration was skipped.
+        """
+        from zenml.service_connectors.service_connector_registry import (
+            service_connector_registry,
+        )
+
+        # Get the service connector specification
+        try:
+            connector = service_connector_registry.get_service_connector(
+                connector_type=type,
+            )
+        except KeyError:
+            raise KeyError(
+                f"Service connector type {type} not found in registry. Please "
+                "check that you have installed all required Python "
+                "packages and ZenML integrations and try again."
+            )
+
+        connector_model = ServiceConnectorRequestModel(
+            name=name,
+            type=type,
+            description=description,
+            auth_method=auth_method,
+            resource_type=resource_type,
+            resource_id=resource_id,
+            configuration=configuration or {},
+            secrets=secrets or {},
+            is_shared=is_shared,
+            user=self.active_user.id,
+            workspace=self.active_workspace.id,
+            labels=labels or {},
+        )
+
+        if check:
+            # This will also check that a connector class is registered for the
+            # given type and that the configuration is valid
+            connector = (
+                service_connector_registry.instantiate_service_connector(
+                    model=connector_model
+                )
+            )
+            connector.check()
+
+            # Get an updated model from the connector instance
+            connector_model = connector.to_model(
+                name=name,
+                user=self.active_user.id,
+                workspace=self.active_workspace.id,
+                is_shared=is_shared,
+                description=description,
+            )
+
+        if not register:
+            return None
+
+        # Register the new model
+        return self.zen_store.create_service_connector(
+            service_connector=connector_model
+        )
+
+    def update_service_connector(
+        self,
+        name_id_or_prefix: Union[UUID, str],
+        name: Optional[str] = None,
+        type: Optional[str] = None,
+        auth_method: Optional[str] = None,
+        resource_type: Optional[str] = None,
+        configuration: Optional[Dict[str, str]] = None,
+        secrets: Optional[Dict[str, Optional[SecretStr]]] = None,
+        resource_id: Optional[str] = None,
+        description: Optional[str] = None,
+        is_shared: Optional[bool] = None,
+        labels: Optional[Dict[str, str]] = None,
+        check: bool = True,
+        register: bool = True,
+    ) -> "ServiceConnectorResponseModel":
+        """Validate and/or update a service connector.
+
+        Args:
+            name_id_or_prefix: The name, id or prefix of the service connector to
+                update.
+            name: The new name of the service connector.
+            type: The new type of the service connector.
+            auth_method: The new authentication method of the service connector.
+            resource_type: The new resource type of the service connector.
+            configuration: The new configuration of the service connector.
+            secrets: The new secrets of the service connector.
+            resource_id: The new resource id of the service connector. If set to
+                an empty string, the existing resource id value will be removed.
+            description: The new description of the service connector.
+            is_shared: The new shared status of the service connector.
+            labels: The new labels of the service connector.
+            check: Whether to validate that the new service connector
+                configuration and credentials can be used to gain access to the
+                resource.
+            register: Whether to register the new service connector or not.
+
+        Returns:
+            The updated service connector.
+
+        Raises:
+            EntityExistsError: If the new name is already taken.
+        """
+        from zenml.service_connectors.service_connector_registry import (
+            service_connector_registry,
+        )
+
+        # Get the existing service connector model
+        service_connector = self.get_service_connector(
+            name_id_or_prefix=name_id_or_prefix,
+            allow_name_prefix_match=False,
+        )
+
+        # Update the existing model in place with the new values, we'll use this
+        # to validate the new configuration and credentials, if requested, and
+        # to populate the update model
+        if name is not None:
+            shared_status = is_shared or service_connector.is_shared
+
+            existing_connectors = self.list_service_connectors(
+                name=name,
+                is_shared=shared_status,
+            )
+            if existing_connectors.total > 0:
+                raise EntityExistsError(
+                    f"There are already existing "
+                    f"{'shared' if shared_status else 'unshared'} service "
+                    f"connectors with the name '{name}'."
+                )
+            service_connector.name = name
+
+        if is_shared is not None:
+            existing_connectors = self.list_service_connectors(
+                name=service_connector.name, is_shared=is_shared
+            )
+            if any(
+                [
+                    e.id != service_connector.id
+                    for e in existing_connectors.items
+                ]
+            ):
+                raise EntityExistsError(
+                    f"There are already existing shared service connectors "
+                    f"with the name '{service_connector.name}'"
+                )
+            service_connector.is_shared = is_shared
+
+        service_connector.type = type or service_connector.type
+        service_connector.auth_method = (
+            auth_method or service_connector.auth_method
+        )
+        service_connector.resource_type = (
+            resource_type or service_connector.resource_type
+        )
+        service_connector.configuration = (
+            configuration
+            if configuration is not None
+            else service_connector.configuration
+        )
+        service_connector.secrets = (
+            secrets if secrets is not None else service_connector.secrets
+        )
+        service_connector.resource_id = (
+            None
+            if resource_id == ""
+            else resource_id or service_connector.resource_id
+        )
+        service_connector.description = (
+            description or service_connector.description
+        )
+        service_connector.labels = (
+            labels if labels is not None else service_connector.labels
+        )
+
+        if check:
+
+            # This will also check that a connector class is registered for the
+            # given type and that the configuration is valid
+            connector = (
+                service_connector_registry.instantiate_service_connector(
+                    model=service_connector
+                )
+            )
+            connector.check()
+
+            # Get an updated model from the connector instance and treat it
+            # as the update model
+            assert service_connector.user is not None
+            update_model = cast(
+                ServiceConnectorUpdateModel,
+                connector.to_model(
+                    name=service_connector.name,
+                    user=service_connector.user.id,
+                    workspace=service_connector.workspace.id,
+                    is_shared=service_connector.is_shared,
+                    description=service_connector.description,
+                ),
+            )
+
+        elif not register:
+            return service_connector
+
+        else:
+            # Create an update model from the existing model
+            update_model = ServiceConnectorUpdateModel(  # type: ignore[call-arg]
+                name=service_connector.name,
+                type=service_connector.type,
+                auth_method=service_connector.auth_method,
+                resource_type=service_connector.resource_type,
+                configuration=service_connector.configuration,
+                secrets=service_connector.secrets,
+                resource_id=service_connector.resource_id,
+                description=service_connector.description,
+                is_shared=service_connector.is_shared,
+                labels=service_connector.labels,
+                workspace=self.active_workspace.id,
+                user=self.active_user.id,
+            )
+
+        # Send the updated service connector to the ZenStore
+        return self.zen_store.update_service_connector(
+            service_connector_id=service_connector.id, update=update_model
+        )
+
+    def delete_service_connector(
+        self,
+        name_id_or_prefix: Union[str, UUID],
+    ) -> None:
+        """Deletes a registered service connector.
+
+        Args:
+            name_id_or_prefix: The ID or name of the service connector to delete.
+        """
+        service_connector = self.get_service_connector(
+            name_id_or_prefix=name_id_or_prefix,
+            allow_name_prefix_match=False,
+        )
+
+        self.zen_store.delete_service_connector(
+            service_connector_id=service_connector.id
+        )
+        logger.info(
+            "Removed service connector (type: %s) with name '%s'.",
+            service_connector.type,
+            service_connector.name,
+        )
 
     # ---- utility prefix matching get functions -----
 

@@ -16,7 +16,7 @@
 import base64
 import json
 from datetime import datetime
-from typing import List, Optional
+from typing import TYPE_CHECKING, List, Optional
 from uuid import UUID
 
 from sqlalchemy import TEXT, Column
@@ -31,6 +31,9 @@ from zenml.zen_stores.schemas.base_schemas import ShareableSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
+
+if TYPE_CHECKING:
+    from zenml.zen_stores.schemas.component_schemas import StackComponentSchema
 
 
 class ServiceConnectorSchema(ShareableSchema, table=True):
@@ -74,6 +77,9 @@ class ServiceConnectorSchema(ShareableSchema, table=True):
     )
     user: Optional["UserSchema"] = Relationship(
         back_populates="service_connectors"
+    )
+    components: List["StackComponentSchema"] = Relationship(
+        back_populates="connector",
     )
 
     @classmethod

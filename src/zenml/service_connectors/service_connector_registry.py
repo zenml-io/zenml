@@ -13,15 +13,13 @@
 #  permissions and limitations under the License.
 """Implementation of a service connector registry."""
 
-from typing import TYPE_CHECKING, Dict, List, Optional, Type
+from typing import Dict, List, Optional, Type
 
 from zenml.logger import get_logger
 from zenml.models import ServiceConnectorBaseModel
+from zenml.service_connectors.service_connector import ServiceConnector
 
 logger = get_logger(__name__)
-
-if TYPE_CHECKING:
-    from zenml.service_connectors.service_connector import ServiceConnector
 
 
 class ServiceConnectorRegistry:
@@ -29,7 +27,7 @@ class ServiceConnectorRegistry:
 
     def __init__(self) -> None:
         """Initialize the service connector registry."""
-        self.service_connectors: Dict[str, Type["ServiceConnector"]] = {}
+        self.service_connectors: Dict[str, Type[ServiceConnector]] = {}
 
     def register_service_connector(
         self,
@@ -145,7 +143,7 @@ class ServiceConnectorRegistry:
     def instantiate_service_connector(
         self,
         model: ServiceConnectorBaseModel,
-    ) -> "ServiceConnector":
+    ) -> ServiceConnector:
         """Validate a service connector model and create an instance from it.
 
         Args:
@@ -162,9 +160,9 @@ class ServiceConnectorRegistry:
             service_connector = self.get_service_connector(model.type)
         except KeyError:
             raise NotImplementedError(
-                f"Service connector type {model.type} is not available."
+                f"Service connector type {model.type} is not available. "
                 f"Please make sure the corresponding packages and/or ZenML "
-                f"integration are installed."
+                f"integration are installed and try again."
             )
 
         try:

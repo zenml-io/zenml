@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Model definitions for ZenML service connectors."""
 
+import json
 from typing import Any, ClassVar, Dict, List, Optional, Tuple, Type, Union
 from uuid import UUID
 
@@ -164,7 +165,7 @@ class AuthenticationMethodSpecificationModel(BaseModel):
 
         config_class = values["config_class"]
         if issubclass(config_class, BaseModel):
-            values["config_schema"] = config_class.schema_json()
+            values["config_schema"] = json.loads(config_class.schema_json())
 
         return values
 
@@ -457,7 +458,7 @@ class ServiceConnectorResponseModel(
     """Response model for service connectors."""
 
     ANALYTICS_FIELDS: ClassVar[List[str]] = [
-        "connector_type",
+        "type",
         "auth_method",
         "resource_type",
     ]
@@ -510,7 +511,11 @@ class ServiceConnectorFilterModel(ShareableWorkspaceScopedFilterModel):
         title="Filter by the ID of the resource instance that the connector "
         "is configured to access",
     )
-    secret_id: Optional[UUID] = Field(
+    labels: Optional[Dict[str, Optional[str]]] = Field(
+        default=None,
+        title="Filter by labels",
+    )
+    secret_id: Optional[Union[UUID, str]] = Field(
         default=None,
         title="Filter by the ID of the secret that contains the service "
         "connector's credentials",
@@ -528,7 +533,7 @@ class ServiceConnectorRequestModel(
     """Request model for service connectors."""
 
     ANALYTICS_FIELDS: ClassVar[List[str]] = [
-        "connector_type",
+        "type",
         "auth_method",
         "resource_type",
     ]

@@ -34,6 +34,7 @@ if TYPE_CHECKING:
         PipelineDeploymentBaseModel,
         PipelineDeploymentResponseModel,
     )
+    from zenml.service_connectors.service_connector import ServiceConnector
     from zenml.stack import Stack, StackValidator
 
 logger = get_logger(__name__)
@@ -299,6 +300,7 @@ class StackComponent:
         created: datetime,
         updated: datetime,
         labels: Optional[Dict[str, Any]] = None,
+        connector: Optional[UUID] = None,
         *args: Any,
         **kwargs: Any,
     ):
@@ -315,6 +317,7 @@ class StackComponent:
             created: The creation time of the component.
             updated: The last update time of the component.
             labels: The labels of the component.
+            connector: The ID of a connector linked to the component.
             *args: Additional positional arguments.
             **kwargs: Additional keyword arguments.
 
@@ -337,6 +340,8 @@ class StackComponent:
         self.created = created
         self.updated = updated
         self.labels = labels
+        self.connector = connector
+        self._connector_instance: Optional[ServiceConnector] = None
 
     @classmethod
     def from_model(
@@ -387,6 +392,9 @@ class StackComponent:
             type=component_model.type,
             created=component_model.created,
             updated=component_model.updated,
+            connector=component_model.connector.id
+            if component_model.connector
+            else None,
         )
 
     @property
@@ -451,6 +459,42 @@ class StackComponent:
             return self.settings_class.parse_obj(all_settings[key])
         else:
             return self.settings_class()
+
+    def get_connector(self) -> Optional["ServiceConnector"]:
+        """Returns the connector linked to this stack component.
+
+        Returns:
+            The connector linked to this stack component.
+        """
+        from zenml.client import Client
+        from zenml.service_connectors.service_connector_registry import (
+            service_connector_registry,
+        )
+
+        if self.connector is None:
+            return None
+
+        if self._connector_instance is not None:
+            return self._connector_instance
+
+        client = Client()
+        try:
+            connector_model = client.get_service_connector(
+                name_id_or_prefix=self.connector
+            )
+        except KeyError:
+            raise RuntimeError(
+                f"Unable to find the connector with ID {self.connector} linked "
+                f"to the '{self.name}' {self.type} stack component."
+            )
+
+        self._connector_instance = (
+            service_connector_registry.instantiate_service_connector(
+                model=connector_model
+            )
+        )
+
+        return self._connector_instance
 
     @property
     def log_file(self) -> Optional[str]:

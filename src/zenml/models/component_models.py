@@ -29,6 +29,7 @@ from pydantic import BaseModel, Field, validator
 
 from zenml.enums import StackComponentType
 from zenml.logger import get_logger
+from zenml.models import ServiceConnectorResponseModel
 from zenml.models.base_models import (
     ShareableRequestModel,
     ShareableResponseModel,
@@ -83,6 +84,11 @@ class ComponentResponseModel(ComponentBaseModel, ShareableResponseModel):
 
     ANALYTICS_FIELDS: ClassVar[List[str]] = ["type", "flavor"]
 
+    connector: Optional["ServiceConnectorResponseModel"] = Field(
+        default=None,
+        title="The service connector linked to this stack component.",
+    )
+
 
 # ------ #
 # FILTER #
@@ -132,6 +138,9 @@ class ComponentFilterModel(ShareableWorkspaceScopedFilterModel):
     user_id: Optional[Union[UUID, str]] = Field(
         default=None, description="User of the stack"
     )
+    connector_id: Optional[Union[UUID, str]] = Field(
+        default=None, description="Connector linked to the stack component"
+    )
 
     def set_scope_type(self, component_type: str) -> None:
         """Set the type of component on which to perform the filtering to scope the response.
@@ -172,6 +181,11 @@ class ComponentRequestModel(ComponentBaseModel, ShareableRequestModel):
     """Request model for stack components."""
 
     ANALYTICS_FIELDS: ClassVar[List[str]] = ["type", "flavor"]
+
+    connector: Optional[UUID] = Field(
+        default=None,
+        title="The service connector linked to this stack component.",
+    )
 
     @validator("name")
     def name_cant_be_a_secret_reference(cls, name: str) -> str:

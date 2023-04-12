@@ -4471,7 +4471,7 @@ class SqlZenStore(BaseZenStore):
                         session=session,
                     )
 
-            if len(existing_service_connector.stack_components):
+            if len(existing_service_connector.components):
                 # If the service connector is already used in one or more
                 # stack components, the update is no longer allowed to change
                 # the service connector's type, resource type, or resource ID
@@ -4560,11 +4560,11 @@ class SqlZenStore(BaseZenStore):
                         "found."
                     )
 
-                if len(service_connector.stack_components) > 0:
+                if len(service_connector.components) > 0:
                     raise IllegalOperationError(
                         f"Service connector with ID {service_connector_id} "
                         f"cannot be deleted as it is still referenced by "
-                        f"{len(service_connector.stack_components)} "
+                        f"{len(service_connector.components)} "
                         "stack components. Before deleting this service "
                         "connector, make sure to remove it from all stack "
                         "components."

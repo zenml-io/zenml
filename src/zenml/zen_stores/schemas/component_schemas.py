@@ -28,6 +28,9 @@ from zenml.models.component_models import (
 )
 from zenml.zen_stores.schemas.base_schemas import ShareableSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
+from zenml.zen_stores.schemas.service_connector_schemas import (
+    ServiceConnectorSchema,
+)
 from zenml.zen_stores.schemas.stack_schemas import StackCompositionSchema
 from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
@@ -81,6 +84,18 @@ class StackComponentSchema(ShareableSchema, table=True):
         back_populates="stack_component",
     )
 
+    connector_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target=ServiceConnectorSchema.__tablename__,
+        source_column="connector_id",
+        target_column="id",
+        ondelete="SET NULL",
+        nullable=True,
+    )
+    connector: "ServiceConnectorSchema" = Relationship(
+        back_populates="components"
+    )
+
     def update(
         self, component_update: ComponentUpdateModel
     ) -> "StackComponentSchema":
@@ -93,7 +108,7 @@ class StackComponentSchema(ShareableSchema, table=True):
             The updated `StackComponentSchema`.
         """
         for field, value in component_update.dict(
-            exclude_unset=True, exclude={"workspace", "user"}
+            exclude_unset=True, exclude={"workspace", "user", "connector"}
         ).items():
             if field == "configuration":
                 self.configuration = base64.b64encode(
@@ -124,6 +139,7 @@ class StackComponentSchema(ShareableSchema, table=True):
             flavor=self.flavor,
             user=self.user.to_model(True) if self.user else None,
             workspace=self.workspace.to_model(),
+            connector=self.connector.to_model() if self.connector else None,
             is_shared=self.is_shared,
             configuration=json.loads(
                 base64.b64decode(self.configuration).decode()
