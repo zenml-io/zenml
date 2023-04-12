@@ -101,7 +101,7 @@ zenml hub list
 
 You should see a table similar to:
 
-![CLI List Plugin](../../assets/zenml_hub/login_dashboard.png)
+![CLI List Plugin](../../assets/zenml_hub/plugins_cli.png)
 
 {% endtab %}
 {% endtabs %}
