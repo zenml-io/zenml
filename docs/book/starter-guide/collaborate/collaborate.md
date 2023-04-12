@@ -1,5 +1,5 @@
 ---
-description: How to collaborate with the ZenML community
+description: Combine your efforts, expertise and resources.
 ---
 
 Collaboration is a crucial aspect of any MLOps team as they often need to bring 
@@ -10,9 +10,10 @@ professionals to develop, train, deploy, and maintain machine learning models.
 This can be a challenging task as it requires coordination across different 
 tools, processes, and frameworks. 
 
-This is where one of the biggest strengths of ZenML comes into play, a platform 
-open to collaboration. This includes not just a collaboration platform within 
-your team but with the ZenML community as well.
+Herein lies one of ZenML's most significant strengths: a collaborative platform 
+that extends beyond your team and includes the community. With ZenML, you can 
+seamlessly work together with others, sharing resources and insights to achieve 
+your common goals.
 
 - With a deployed ZenML instance, users have the ability to create their own 
 teams and project structures. They can easily share pipelines, runs, stacks, 
