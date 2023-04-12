@@ -37,6 +37,7 @@ from zenml.config.source import (
     Source,
     SourceType,
 )
+from zenml.environment import Environment
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
@@ -310,7 +311,9 @@ def get_source_type(module: ModuleType) -> SourceType:
     try:
         file_path = inspect.getfile(module)
     except (TypeError, OSError):
-        # builtin file
+        if module.__name__ == "__main__" and Environment.in_notebook():
+            return SourceType.USER
+
         return SourceType.BUILTIN
 
     if is_internal_module(module_name=module.__name__):
@@ -422,7 +425,7 @@ def _resolve_module(module: ModuleType) -> str:
         The resolved module import path.
     """
     if not hasattr(module, "__file__") or not module.__file__:
-        if module.__name__ == "__main__":
+        if module.__name__ == "__main__" and not Environment.in_notebook():
             raise RuntimeError(
                 f"Unable to resolve module `{module}` because it was "
                 "not loaded from a file."
