@@ -13,9 +13,10 @@ range of implementations.
 
 {% hint style="info" %}
 If you're interested in learning more about our motivation for implementing the 
-ZenML Hub and our plans for its future, we invite you to read our blog post. In 
-addition to this technical documentation, the blog post provides a comprehensive 
-overview of the ZenML Hub's goals and objectives, as well as the features that 
+ZenML Hub and our plans for its future, we invite you to read 
+[our new blog post](https://blog.zenml.io/zenml-hub-launch). In addition to 
+this technical documentation, the blog post provides a comprehensive overview 
+of the ZenML Hub's goals and objectives, as well as the features that 
 we plan to introduce in the future.
 {% endhint %}
 
