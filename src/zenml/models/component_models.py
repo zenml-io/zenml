@@ -29,7 +29,6 @@ from pydantic import BaseModel, Field, validator
 
 from zenml.enums import StackComponentType
 from zenml.logger import get_logger
-from zenml.models import ServiceConnectorResponseModel
 from zenml.models.base_models import (
     ShareableRequestModel,
     ShareableResponseModel,
@@ -37,6 +36,7 @@ from zenml.models.base_models import (
 )
 from zenml.models.constants import STR_FIELD_MAX_LENGTH
 from zenml.models.filter_models import ShareableWorkspaceScopedFilterModel
+from zenml.models.service_connector_models import ServiceConnectorResponseModel
 from zenml.utils import secret_utils
 
 if TYPE_CHECKING:

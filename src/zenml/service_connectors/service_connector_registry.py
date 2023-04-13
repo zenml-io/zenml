@@ -28,6 +28,7 @@ class ServiceConnectorRegistry:
     def __init__(self) -> None:
         """Initialize the service connector registry."""
         self.service_connectors: Dict[str, Type[ServiceConnector]] = {}
+        self.register_builtin_service_connectors()
 
     def register_service_connector(
         self,
@@ -171,6 +172,30 @@ class ServiceConnectorRegistry:
             raise ValueError(
                 f"The service connector configuration is not valid: {e}"
             )
+
+    @property
+    def builtin_connectors(self) -> List[Type[ServiceConnector]]:
+        """A list of all default in-built importable connectors.
+
+        Returns:
+            A list of builtin importable connectors.
+        """
+        builtin_connectors: List[Type[ServiceConnector]] = []
+        try:
+            from zenml.service_connectors.aws_service_connector import (
+                AWSServiceConnector,
+            )
+
+            builtin_connectors.append(AWSServiceConnector)
+        except ImportError as e:
+            logger.warning(f"Could not import AWS service connector: {e}.")
+
+        return builtin_connectors
+
+    def register_builtin_service_connectors(self) -> None:
+        """Registers the default built-in service connectors."""
+        for connector in self.builtin_connectors:
+            self.register_service_connector(connector, overwrite=True)
 
 
 service_connector_registry = ServiceConnectorRegistry()
