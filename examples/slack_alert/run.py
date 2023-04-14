@@ -42,7 +42,20 @@ ASK = "ask"
     default=POST,
     help="Configure whether to run the post or ask pipeline.",
 )
-def main(config: str):
+@click.option(
+    "--slack-token",
+    "-t",
+    prompt=True,
+    hide_input=True,
+    help="Slack bot user token for the alerter.",
+)
+@click.option(
+    "--slack-channel",
+    "-ch",
+    prompt=True,
+    help="Slack channel ID for the alerter.",
+)
+def main(config: str, slack_token: str, slack_channel: str):
     """Run the Slack alerter example pipeline."""
     post = config == POST
 
@@ -52,7 +65,7 @@ def main(config: str):
             trainer=svc_trainer(),
             evaluator=evaluator(),
             formatter=test_acc_post_formatter(),
-            alerter=slack_alerter_post_step(),
+            alerter=slack_alerter_post_step(slack_token, slack_channel),
         ).run()
     else:
         slack_ask_pipeline(
@@ -60,7 +73,7 @@ def main(config: str):
             trainer=svc_trainer_mlflow(),
             evaluator=evaluator(),
             formatter=test_acc_ask_formatter(),
-            alerter=slack_alerter_ask_step(),
+            alerter=slack_alerter_ask_step(slack_token, slack_channel),
             deployer=mlflow_model_deployer_step(),
         ).run()
 
