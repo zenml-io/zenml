@@ -226,8 +226,8 @@ class ServiceConnector(BaseModel):
             automatically extracted from the environment.
 
         Raises:
-            NotImplementedError: If the connector does not support
-                auto-configuration.
+            NotImplementedError: If the connector auto-configuration fails or
+                is not supported.
         """
 
     @classmethod

@@ -79,6 +79,7 @@ if TYPE_CHECKING:
         ComponentResponseModel,
         FlavorResponseModel,
         PipelineRunResponseModel,
+        ServiceConnectorResponseModel,
         StackResponseModel,
     )
     from zenml.stack import Stack
@@ -1127,6 +1128,45 @@ def print_components_table(
         configurations.append(component_config)
     print_table(configurations)
 
+
+def print_service_connectors_table(
+    client: "Client",
+    connectors: Sequence["ServiceConnectorResponseModel"],
+) -> None:
+    """Prints a table with details for a list of service connectors.
+
+    Args:
+        client: Instance of the Repository singleton
+        connectors: List of service connectors to print.
+    """
+    if len(connectors) == 0:
+        warning("No service connectors registered.")
+        return
+    active_stack = client.active_stack_model
+    active_connector_ids: List[UUID] = []
+    for components in active_stack.components.values():
+        active_connector_ids.extend(
+            [
+                component.connector.id
+                for component in components
+                if component.connector
+            ]
+        )
+
+    configurations = []
+    for connector in connectors:
+        is_active = connector.id in active_connector_ids
+        connector_config = {
+            "ACTIVE": ":point_right:" if is_active else "",
+            "NAME": connector.name,
+            "ID": connector.id,
+            "TYPE": connector.type,
+            "RESOURCE": connector.resource_type + ("/" + connector.resource_id) if connector.resource_id else "",
+            "SHARED": get_shared_emoji(connector.is_shared),
+            "OWNER": f"{connector.user.name if connector.user else 'DELETED!'}",
+        }
+        configurations.append(connector_config)
+    print_table(configurations)
 
 def _get_stack_components(
     stack: "Stack",

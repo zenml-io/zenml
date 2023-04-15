@@ -4179,6 +4179,7 @@ class Client(metaclass=ClientMetaClass):
         description: str = "",
         is_shared: bool = False,
         labels: Optional[Dict[str, str]] = None,
+        auto_configure: bool = False,
         check: bool = True,
         register: bool = True,
     ) -> Optional["ServiceConnectorResponseModel"]:
@@ -4195,6 +4196,8 @@ class Client(metaclass=ClientMetaClass):
             description: The description of the service connector.
             is_shared: Whether the service connector is shared or not.
             labels: The labels of the service connector.
+            auto_configure: Whether to automatically configure the service
+                connector from the local environment.
             check: Whether to validate that the service connector configuration
                 and credentials can be used to gain access to the resource.
             register: Whether to register the service connector or not.
@@ -4219,39 +4222,58 @@ class Client(metaclass=ClientMetaClass):
                 "packages and ZenML integrations and try again."
             )
 
-        connector_model = ServiceConnectorRequestModel(
-            name=name,
-            type=type,
-            description=description,
-            auth_method=auth_method,
-            resource_type=resource_type,
-            resource_id=resource_id,
-            configuration=configuration or {},
-            secrets=secrets or {},
-            is_shared=is_shared,
-            user=self.active_user.id,
-            workspace=self.active_workspace.id,
-            labels=labels or {},
-        )
-
-        if check:
-            # This will also check that a connector class is registered for the
-            # given type and that the configuration is valid
-            connector = (
-                service_connector_registry.instantiate_service_connector(
-                    model=connector_model
-                )
+        # If auto_configure is set, we will try to automatically configure the
+        # service connector from the local environment
+        if auto_configure:
+            connector_instance = connector.auto_configure(
+                resource_type=resource_type,
+                auth_method=auth_method,
+                resource_id=resource_id,
             )
-            connector.check()
+            if check:
+                connector_instance.check()
 
-            # Get an updated model from the connector instance
-            connector_model = connector.to_model(
+            connector_model = connector_instance.to_model(
                 name=name,
                 user=self.active_user.id,
                 workspace=self.active_workspace.id,
+                description=description or "",
                 is_shared=is_shared,
-                description=description,
             )
+        else:
+            connector_model = ServiceConnectorRequestModel(
+                name=name,
+                type=type,
+                description=description,
+                auth_method=auth_method,
+                resource_type=resource_type,
+                resource_id=resource_id,
+                configuration=configuration or {},
+                secrets=secrets or {},
+                is_shared=is_shared,
+                user=self.active_user.id,
+                workspace=self.active_workspace.id,
+                labels=labels or {},
+            )
+
+            if check:
+                # This will also check that a connector class is registered for
+                # the given type and that the configuration is valid
+                connector = (
+                    service_connector_registry.instantiate_service_connector(
+                        model=connector_model
+                    )
+                )
+                connector.check()
+
+                # Get an updated model from the connector instance
+                connector_model = connector.to_model(
+                    name=name,
+                    user=self.active_user.id,
+                    workspace=self.active_workspace.id,
+                    is_shared=is_shared,
+                    description=description,
+                )
 
         if not register:
             return None
