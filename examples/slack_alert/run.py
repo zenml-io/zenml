@@ -65,7 +65,7 @@ def main(config: str, slack_token: str, slack_channel: str):
             trainer=svc_trainer(),
             evaluator=evaluator(),
             formatter=test_acc_post_formatter(),
-            alerter=slack_alerter_post_step(slack_token, slack_channel),
+            alerter=slack_alerter_post_step(params=SlackAlerterParameters(slack_channel_id=slack_channel)),
         ).run()
     else:
         slack_ask_pipeline(
