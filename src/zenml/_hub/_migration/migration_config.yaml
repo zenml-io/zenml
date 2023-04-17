@@ -1,0 +1,96 @@
+- description: "Steps using ZenML's `great_expectations` data validator integration. These allow you to run data profiling and data quality tests on the data circulated through your pipelines."
+  logo: https://public-flavor-logos.s3.eu-central-1.amazonaws.com/data_validator/greatexpectations.jpeg
+  name: great_expectations_steps
+  requirements:
+    - great-expectations>=0.15.0,<=0.15.47
+  src:
+    - src/zenml/integrations/great_expectations/steps/ge_profiler.py
+    - src/zenml/integrations/great_expectations/steps/ge_validator.py
+  tags: []
+- description: "Steps using ZenML's Slack alerter integration. These steps allow you to send messages to Slack when events happen during or after your pipeline runs."
+  logo: https://public-flavor-logos.s3.eu-central-1.amazonaws.com/alerter/slack.png
+  name: slack_steps
+  requirements:
+    - slack-sdk>=3.16.1
+    - aiohttp>=3.8.1
+  src:
+    - src/zenml/integrations/slack/steps/slack_alerter_post_step.py
+    - src/zenml/integrations/slack/steps/slack_alerter_ask_step.py
+  tags: []
+- description: "Steps using ZenML's `bentoml` integration, which allows you to deploy models locally, in a cloud environment or onto a Kubernetes cluster."
+  logo: https://public-flavor-logos.s3.eu-central-1.amazonaws.com/model_deployer/bentoml.png
+  name: bentoml_steps
+  requirements:
+    - bentoml>=1.0.10
+  src:
+    - src/zenml/integrations/bentoml/steps/bentoml_deployer.py
+    - src/zenml/integrations/bentoml/steps/bento_builder.py
+  tags: []
+- description: "Steps using ZenML's `kserve` integration, which allows you to deploy and manage models on an inference server running on top of a Kubernetes cluster."
+  logo: https://public-flavor-logos.s3.eu-central-1.amazonaws.com/model_deployer/kserve.png
+  name: kserve_steps
+  requirements:
+    - kserve>=0.9.0,<=10
+    - torch-model-archiver
+  src:
+    - src/zenml/integrations/kserve/steps/kserve_deployer.py
+  tags: []
+- description: "Steps using ZenML's `evidently` data validator integration, which allow you to perform data quality, data drift, model drift and model performance analyses, to generate reports and run checks. The reports and check results can be used to implement automated corrective actions in your pipelines or to render interactive representations for further visual interpretation, evaluation and documentation."
+  logo: https://public-flavor-logos.s3.eu-central-1.amazonaws.com/data_validator/evidently.png
+  name: evidently_steps
+  requirements:
+    - evidently==0.2.2
+  src:
+    - src/zenml/integrations/evidently/steps/evidently_test.py
+    - src/zenml/integrations/evidently/steps/evidently_profile.py
+    - src/zenml/integrations/evidently/steps/evidently_report.py
+  tags: []
+- description: "Steps using ZenML's `whylogs` data validator integration, which allow you to generate and track data profiles, highly accurate descriptive representations of your data. The profiles can be used to implement automated corrective actions in your pipelines, or to render interactive representations for further visual interpretation, evaluation and documentation."
+  logo: https://public-flavor-logos.s3.eu-central-1.amazonaws.com/data_validator/whylogs.png
+  name: whylogs_steps
+  requirements:
+    - whylogs[viz]~=1.0.5
+    - whylogs[whylabs]~=1.0.5
+  src:
+    - src/zenml/integrations/whylogs/steps/whylogs_profiler.py
+  tags: []
+- description: "Steps using ZenML's `label_studio` integration, which allows you to label data in a web-based UI. It is used to create or edit datasets that you can then use as part of training or validation workflows. It supports a broad range of annotation types (including custom types)."
+  logo: https://public-flavor-logos.s3.eu-central-1.amazonaws.com/annotator/label_studio.png
+  name: label_studio_steps
+  requirements:
+    - label-studio==1.6.0
+    - label-studio-sdk>=0.0.17
+  src:
+    - src/zenml/integrations/label_studio/steps/label_studio_standard_steps.py
+  tags: []
+- description: "Steps using ZenML's `mlflow` experiment tracker integration, which allows you to log and visualize information from your pipeline steps (e.g. models, parameters, metrics)."
+  logo: https://public-flavor-logos.s3.eu-central-1.amazonaws.com/model_deployer/mlflow.png
+  name: mlflow_steps
+  requirements:
+    - mlflow>=1.24.0,<=2.2.2
+    - mlserver>=0.5.3
+    - mlserver-mlflow>=0.5.3
+  src:
+    - src/zenml/integrations/mlflow/steps/mlflow_deployer.py
+    - src/zenml/integrations/mlflow/steps/mlflow_registry.py
+  tags: []
+- description: "Steps using ZenML's Seldon integration, which can be used to deploy and manage models on an inference server running on top of a Kubernetes cluster."
+  logo: https://public-flavor-logos.s3.eu-central-1.amazonaws.com/model_deployer/seldon.png
+  name: seldon_steps
+  requirements:
+    - kubernetes==18.20.0
+  src:
+    - src/zenml/integrations/seldon/steps/seldon_deployer.py
+  tags: []
+- description: "Steps using ZenML's Deepchecks data validator integration which allow you to run data integrity, data drift, model drift and model performance tests on the datasets and models circulated in your ZenML pipelines. The test results can be used to implement automated corrective actions in your pipelines or to render interactive representations for further visual interpretation, evaluation and documentation."
+  logo: https://public-flavor-logos.s3.eu-central-1.amazonaws.com/data_validator/deepchecks.png
+  name: deepchecks_steps
+  requirements:
+    - deepchecks[vision]==0.8.0
+    - torchvision==0.14.0
+  src:
+    - src/zenml/integrations/deepchecks/steps/deepchecks_model_drift.py
+    - src/zenml/integrations/deepchecks/steps/deepchecks_model_validation.py
+    - src/zenml/integrations/deepchecks/steps/deepchecks_data_drift.py
+    - src/zenml/integrations/deepchecks/steps/deepchecks_data_integrity.py
+  tags: []

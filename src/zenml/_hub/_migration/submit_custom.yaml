@@ -1,0 +1,75 @@
+- description: An example that shows how to use langchain + ZenML to build a GPT-based question answering pipeline.
+  logo_url: https://public-flavor-logos.s3.eu-central-1.amazonaws.com/hub_logos/langchain.png
+  name: langchain_qa_example
+  repository_subdirectory: src/langchain_qa_example
+  repository_url: https://github.com/zenml-io/zenml-hub-plugins
+  tags:
+    - zenml-type-step
+    - zenml-type-pipeline
+    - zenml-type-example
+    - zenml-badge-official
+    - langchain
+    - llama-index
+    - question-answering
+    - example
+- description: Steps that allow you to load datasets from sklearn.
+  logo_url: https://public-flavor-logos.s3.eu-central-1.amazonaws.com/hub_logos/scikit_learn.png
+  name: sklearn_dataset_steps
+  repository_subdirectory: src/sklearn_dataset_steps
+  repository_url: https://github.com/zenml-io/zenml-hub-plugins
+  tags:
+    - zenml-type-step
+    - zenml-badge-official
+    - sklearn
+    - dataloader
+- description: Steps that allow you to load datasets from TorchVision.
+  logo_url: https://public-flavor-logos.s3.eu-central-1.amazonaws.com/hub_logos/pytorch.png
+  name: torchvision_dataset_steps
+  repository_subdirectory: src/torchvision_dataset_steps
+  repository_url: https://github.com/zenml-io/zenml-hub-plugins
+  tags:
+    - zenml-type-step
+    - zenml-badge-official
+    - pytorch
+    - torchvision
+    - dataloader
+- description: Steps that allow you to load datasets from Tensorflow.
+  logo_url: https://public-flavor-logos.s3.eu-central-1.amazonaws.com/hub_logos/tensorflow.png
+  name: tensorflow_dataset_steps
+  repository_subdirectory: src/tensorflow_dataset_steps
+  repository_url: https://github.com/zenml-io/zenml-hub-plugins
+  tags:
+    - zenml-type-step
+    - zenml-badge-official
+    - tensorflow
+    - dataloader
+- description: Steps that allow you to use Langchain document loaders.
+  logo_url: https://public-flavor-logos.s3.eu-central-1.amazonaws.com/hub_logos/langchain.png
+  name: langchain_loader_steps
+  repository_subdirectory: src/langchain_loader_steps
+  repository_url: https://github.com/zenml-io/zenml-hub-plugins
+  tags:
+    - zenml-type-step
+    - zenml-badge-official
+    - langchain
+    - dataloader
+- description: Steps that allow you to use Llama Index Hub document loaders.
+  logo_url: https://public-flavor-logos.s3.eu-central-1.amazonaws.com/hub_logos/llama_index.png
+  name: llama_index_loader_steps
+  repository_subdirectory: src/llama_index_loader_steps
+  repository_url: https://github.com/zenml-io/zenml-hub-plugins
+  tags:
+    - zenml-type-step
+    - zenml-badge-official
+    - llama_index
+    - dataloader
+- description: Steps that allow you to load Huggingface Datasets from the Huggingface Hub.
+  logo_url: https://public-flavor-logos.s3.eu-central-1.amazonaws.com/hub_logos/huggingface.png
+  name: huggingface_hub_steps
+  repository_subdirectory: src/huggingface_hub_steps
+  repository_url: https://github.com/zenml-io/zenml-hub-plugins
+  tags:
+    - zenml-type-step
+    - zenml-badge-official
+    - huggingface
+    - dataloader
