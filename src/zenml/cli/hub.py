@@ -984,8 +984,8 @@ def batch_submit(config: str) -> None:
     WARNING: This command is intended for advanced users only. It does not
     perform any client-side validation which might lead to server-side HTTP
     errors that are hard to debug if the config file you specify is invalid or
-    contains invalid plugin definitions. When in doubt, better use the `zenml
-    hub submit` command instead.
+    contains invalid plugin definitions. When in doubt, use the
+    `zenml hub submit` command instead.
 
     Args:
         config: Path to the config file. The config file is expected to be a
@@ -1011,11 +1011,11 @@ def batch_submit(config: str) -> None:
 
     from zenml.utils.yaml_utils import read_yaml
 
-    config = read_yaml(config)
     client = HubClient()
-    declare(f"Submitting {len(config)} plugins to the hub...")
+    config = read_yaml(config)
     if not isinstance(config, list):
         error("Config file must be a list of plugin definitions.")
+    declare(f"Submitting {len(config)} plugins to the hub...")
     for plugin_dict in config:
         try:
             assert isinstance(plugin_dict, dict)
