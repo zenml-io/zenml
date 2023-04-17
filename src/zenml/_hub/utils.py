@@ -49,7 +49,7 @@ def parse_plugin_name(
         raise ValueError(invalid_format_err_msg)
     name, version = parts[0], "latest" if len(parts) == 1 else parts[1]
 
-    parts = name.split("/")
+    parts = name.split(author_separator)
     if len(parts) > 2:
         raise ValueError(invalid_format_err_msg)
     name, author = parts[-1], None if len(parts) == 1 else parts[0]
