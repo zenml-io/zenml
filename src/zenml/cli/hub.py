@@ -1011,11 +1011,11 @@ def batch_submit(config: str) -> None:
 
     from zenml.utils.yaml_utils import read_yaml
 
-    config = read_yaml(config)
     client = HubClient()
-    declare(f"Submitting {len(config)} plugins to the hub...")
+    config = read_yaml(config)
     if not isinstance(config, list):
         error("Config file must be a list of plugin definitions.")
+    declare(f"Submitting {len(config)} plugins to the hub...")
     for plugin_dict in config:
         try:
             assert isinstance(plugin_dict, dict)

@@ -16,6 +16,7 @@
 import os
 from typing import Optional
 
+from git import GitCommandError
 from git.repo import Repo
 
 
@@ -25,7 +26,7 @@ def clone_git_repository(
     branch: Optional[str] = None,
     commit: Optional[str] = None,
 ) -> Repo:
-    """Clone a repository and get the hash of the latest commit.
+    """Clone a Git repository.
 
     Args:
         url: URL of the repository to clone.
@@ -40,9 +41,6 @@ def clone_git_repository(
     Raises:
         RuntimeError: If the repository could not be cloned.
     """
-    from git import GitCommandError
-    from git.repo import Repo
-
     os.makedirs(os.path.basename(to_path), exist_ok=True)
     try:
         if commit:
