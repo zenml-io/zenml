@@ -15,7 +15,7 @@
 
 ZENML_HUB_DEFAULT_URL = "https://hubapi.zenml.io/"
 ZENML_HUB_ADMIN_USERNAME = "ZenML"
-ZENML_HUB_CLIENT_VERIFY = False  # TODO: set to True once the hub has certs
+ZENML_HUB_CLIENT_VERIFY = True
 ZENML_HUB_CLIENT_TIMEOUT = 10
 ZENML_HUB_INTERNAL_TAG_PREFIX = "zenml-"
 ZENML_HUB_VERIFIED_TAG = "zenml-badge-verified"

@@ -92,7 +92,11 @@ def list_plugins(
         declare("No plugins found.")
     if installed:
         plugins = [
-            plugin for plugin in plugins if _is_plugin_installed(plugin)
+            plugin
+            for plugin in plugins
+            if _is_plugin_installed(
+                author=plugin.author, plugin_name=plugin.name
+            )
         ]
     plugins_table = _format_plugins_table(plugins)
     print_table(plugins_table)
@@ -111,7 +115,7 @@ def _format_plugins_table(
     """
     plugins_table = []
     for plugin in sorted(plugins, key=_sort_plugin_key_fn):
-        if _is_plugin_installed(plugin):
+        if _is_plugin_installed(author=plugin.author, plugin_name=plugin.name):
             installed_icon = ":white_check_mark:"
         else:
             installed_icon = ":x:"
@@ -131,7 +135,9 @@ def _format_plugins_table(
             "PLUGIN": display_name,
             "STATUS": status_icon,
             "INSTALLED": installed_icon,
-            "MODULE": _get_plugin_module(plugin),
+            "MODULE": _get_plugin_module(
+                author=plugin.author, plugin_name=plugin.name
+            ),
             "PACKAGE NAME": plugin.package_name or "",
             "REPOSITORY URL": plugin.repository_url,
         }
@@ -219,7 +225,10 @@ def install_plugin(
             )
 
         # Check if plugin is already installed
-        if _is_plugin_installed(plugin) and not upgrade:
+        if (
+            _is_plugin_installed(author=plugin.author, plugin_name=plugin.name)
+            and not upgrade
+        ):
             declare(f"Plugin '{plugin_name}' is already installed.")
             return
 
@@ -1071,16 +1080,17 @@ def get_logs(plugin_name: str) -> None:
 # GENERAL HELPER FUNCTIONS
 
 
-def _is_plugin_installed(plugin: HubPluginResponseModel) -> bool:
+def _is_plugin_installed(author: str, plugin_name: str) -> bool:
     """Helper function to check if a plugin is installed.
 
     Args:
-        plugin: The plugin.
+        author: The author of the plugin.
+        plugin_name: The name of the plugin.
 
     Returns:
         Whether the plugin is installed.
     """
-    module_name = _get_plugin_module(plugin)
+    module_name = _get_plugin_module(author=author, plugin_name=plugin_name)
     try:
         spec = find_spec(module_name)
         return spec is not None
@@ -1088,17 +1098,18 @@ def _is_plugin_installed(plugin: HubPluginResponseModel) -> bool:
         return False
 
 
-def _get_plugin_module(plugin: HubPluginResponseModel) -> str:
+def _get_plugin_module(author: str, plugin_name: str) -> str:
     """Helper function to get the module name of a plugin.
 
     Args:
-        plugin: The plugin.
+        author: The author of the plugin.
+        plugin_name: The name of the plugin.
 
     Returns:
         The module name of the plugin.
     """
     module_name = "zenml.hub"
-    if plugin.author != ZENML_HUB_ADMIN_USERNAME:
-        module_name += f".{plugin.author}"
-    module_name += f".{plugin.name}"
+    if author != ZENML_HUB_ADMIN_USERNAME:
+        module_name += f".{author}"
+    module_name += f".{plugin_name}"
     return module_name
