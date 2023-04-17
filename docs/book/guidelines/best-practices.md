@@ -23,7 +23,6 @@ description: Best practices, recommendations, and tips from the ZenML team
 │   │   ├── ...
 ├── .dockerignore 
 ├── .gitignore
-├── config.yaml
 ├── Dockerfile
 ├── README.md
 ├── requirements.txt

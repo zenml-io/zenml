@@ -24,14 +24,15 @@
 * [Stacks](./starter-guide/stacks/stacks.md)
   * [Registering Stacks](./starter-guide/stacks/registering-stacks.md)
   * [Managing Stacks](./starter-guide/stacks/managing-stacks.md)
-* [Collaboration](./starter-guide/collaborate/collaborate.md)
-  * [Connecting to a Deployed ZenML](./starter-guide/collaborate/zenml-deployment.md)
-  * [Inviting Users](./starter-guide/collaborate/users.md)
-  * [User Roles & Permissions](./starter-guide/collaborate/roles-and-permissions.md)
+  * [Sharing Stacks](./starter-guide/stacks/sharing-stacks.md)
 * [Production Fundamentals](./starter-guide/production-fundamentals/production-fundamentals.md)
   * [Secrets Management](./starter-guide/production-fundamentals/secrets-management.md)
   * [Containerization (Docker)](./starter-guide/production-fundamentals/containerization.md)
   * [Code Repositories](./starter-guide/production-fundamentals/code-repositories.md)
+* [Collaboration](./starter-guide/collaborate/collaborate.md)
+  * [Inviting Users](./starter-guide/collaborate/users.md)
+  * [User Roles & Permissions](./starter-guide/collaborate/roles-and-permissions.md)
+  * [ZenML Hub](./starter-guide/collaborate/zenml-hub.md)
 
 ## Advanced Guide
 

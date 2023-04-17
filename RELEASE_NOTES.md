@@ -1,5 +1,57 @@
 <!-- markdown-link-check-disable -->
 
+# 0.38.0
+
+The 0.38.0 ZenML release is a major milestone for the ZenML project. It marks
+the introduction of the ZenML Hub, a central platform that enables our users to
+search, share and discover community-contributed code, such as stack component
+flavors, materializers, and pipeline steps. The ZenML Hub allows our users to
+extend their ZenML experience by leveraging the community's diverse range of
+implementations and MLOps best practices.
+
+If you're interested in learning more about our motivation for implementing the 
+ZenML Hub and our plans for its future, we invite you to read 
+[our new blog post](https://blog.zenml.io/zenml-hub-launch). In addition to 
+this technical documentation, the blog post provides a comprehensive overview 
+of the ZenML Hub's goals and objectives, as well as the features that 
+we plan to introduce in the future.
+
+Aside from this major new feature, the release also includes a number of small
+improvements and bug fixes.
+
+## What's Changed
+* Fix broken ENV variable by @strickvl in https://github.com/zenml-io/zenml/pull/1458
+* fix screenshot size in code repo by @safoinme in https://github.com/zenml-io/zenml/pull/1467
+* Fix CI (Deepchecks integration tests) by @fa9r in https://github.com/zenml-io/zenml/pull/1470
+* chore: update teams.yml by @Cahllagerfeld in https://github.com/zenml-io/zenml/pull/1459
+* Fix `BuiltInContainerMaterializer` for subtypes and non-built-in types by @fa9r in https://github.com/zenml-io/zenml/pull/1464
+* Kubernetes Orchestrator Improvements by @fa9r in https://github.com/zenml-io/zenml/pull/1460
+* Fix flaky CLI tests by @schustmi in https://github.com/zenml-io/zenml/pull/1465
+* Fix circular import during type checking by @schustmi in https://github.com/zenml-io/zenml/pull/1463
+* Allow secret values replacement in REST API PUT by @stefannica in https://github.com/zenml-io/zenml/pull/1471
+* Fix two steps race condition by @safoinme in https://github.com/zenml-io/zenml/pull/1473
+* Downgrading ZenML Version in global config by @safoinme in https://github.com/zenml-io/zenml/pull/1474
+* Revert "Downgrading ZenML Version in global config" by @safoinme in https://github.com/zenml-io/zenml/pull/1476
+* Add metadata to stack components by @wjayesh in https://github.com/zenml-io/zenml/pull/1416
+* remove modules from the list output for stack recipes by @wjayesh in https://github.com/zenml-io/zenml/pull/1480
+* Pin `openai` integration to `>0.27.0` by @strickvl in https://github.com/zenml-io/zenml/pull/1461
+* Apply formatting fixes to `/scripts` by @strickvl in https://github.com/zenml-io/zenml/pull/1462
+* Move import outside of type checking by @schustmi in https://github.com/zenml-io/zenml/pull/1482
+* Delete extra word from `bentoml` docs by @strickvl in https://github.com/zenml-io/zenml/pull/1484
+* Remove top-level config from recommended repo structure by @schustmi in https://github.com/zenml-io/zenml/pull/1485
+* Bump `mypy` and `ruff` by @strickvl in https://github.com/zenml-io/zenml/pull/1481
+* ZenML Version Downgrade - Silence Warnning by @safoinme in https://github.com/zenml-io/zenml/pull/1477
+* Update ZenServer recipes to include secret stores by @wjayesh in https://github.com/zenml-io/zenml/pull/1483
+* Fix alembic order by @schustmi in https://github.com/zenml-io/zenml/pull/1487
+* Fix source resolving for classes in notebooks by @schustmi in https://github.com/zenml-io/zenml/pull/1486
+* fix: use pool_pre_ping to discard invalid SQL connections when borrow… by @francoisserra in https://github.com/zenml-io/zenml/pull/1489
+
+## New Contributors
+* @Cahllagerfeld made their first contribution in https://github.com/zenml-io/zenml/pull/1459
+* @francoisserra made their first contribution in https://github.com/zenml-io/zenml/pull/1489
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.37.0...0.38.0
+
 # 0.37.0
 
 In this ZenML release, we are pleased to introduce a compelling new feature:
