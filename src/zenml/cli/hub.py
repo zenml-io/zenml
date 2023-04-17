@@ -202,8 +202,8 @@ def install_plugin(
 
         # Get plugin from hub
         plugin = client.get_plugin(
-            plugin_name=plugin_name,
-            plugin_version=plugin_version,
+            name=plugin_name,
+            version=plugin_version,
             author=author,
         )
         if not plugin:
@@ -309,8 +309,8 @@ def uninstall_plugin(plugin_name: str) -> None:
 
         # Get plugin from hub
         plugin = client.get_plugin(
-            plugin_name=plugin_name,
-            plugin_version=plugin_version,
+            name=plugin_name,
+            version=plugin_version,
             author=author,
         )
         if not plugin:
@@ -365,8 +365,8 @@ def clone_plugin(
 
         # Get plugin from hub
         plugin = client.get_plugin(
-            plugin_name=plugin_name,
-            plugin_version=plugin_version,
+            name=plugin_name,
+            version=plugin_version,
             author=author,
         )
         if not plugin:
@@ -732,9 +732,7 @@ def _validate_plugin_name(
         declare("Please enter a name for the plugin.")
         plugin_name = click.prompt("Plugin name")
 
-    existing_plugin = client.get_plugin(
-        plugin_name=plugin_name, author=username
-    )
+    existing_plugin = client.get_plugin(name=plugin_name, author=username)
     return plugin_name, bool(existing_plugin)
 
 
@@ -1046,8 +1044,8 @@ def get_logs(plugin_name: str) -> None:
 
     # Get the plugin from the hub
     plugin = client.get_plugin(
-        plugin_name=plugin_name,
-        plugin_version=plugin_version,
+        name=plugin_name,
+        version=plugin_version,
         author=author,
     )
     if not plugin:
