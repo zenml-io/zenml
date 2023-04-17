@@ -52,7 +52,7 @@ def list_integrations() -> None:
     from zenml.integrations.registry import integration_registry
 
     formatted_table = format_integration_list(
-        list(integration_registry.integrations.items())
+        sorted(list(integration_registry.integrations.items()))
     )
     print_table(formatted_table)
     warning(
