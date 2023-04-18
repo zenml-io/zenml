@@ -12,8 +12,8 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Base Step for ZenML."""
-
 import inspect
+import os
 from abc import abstractmethod
 from collections import defaultdict
 from types import FunctionType
@@ -884,18 +884,26 @@ class BaseStep(metaclass=BaseStepMeta):
 
     def _finalize_parameters(self) -> Dict[str, Any]:
         signature = get_step_entrypoint_signature(step=self)
-        params = {
-            key: value
-            for key, value in self.configuration.parameters.items()
-            if key in signature.parameters
-        }
+
+        params = {}
+        for key, value in self.configuration.parameters.items():
+            if key not in signature.parameters:
+                continue
+
+            annotation = signature.parameters[key].annotation
+            if inspect.isclass(annotation) and issubclass(
+                annotation, BaseModel
+            ):
+                # Make sure we have all necessary values to instantiate the
+                # pydantic model later
+                model = annotation(**value)
+                params[key] = model.dict()
+            else:
+                params[key] = value
 
         if self.entrypoint_definition.params:
             legacy_params = self._finalize_legacy_parameters()
             params[self.entrypoint_definition.params.name] = legacy_params
-
-        # TODO: Should we treat pydantic classes special here and verify
-        # that they can be instantiated?
 
         return params
 
@@ -919,8 +927,7 @@ class BaseStep(metaclass=BaseStepMeta):
             return {}
 
         # parameters for the `BaseParameters` class specified in the "new" way
-        # by specifying a dict of parameters for the
-        # key `self.PARAMETERS_FUNCTION_PARAMETER_NAME`
+        # by specifying a dict of parameters for the corresponding key
         params_defined_in_new_way = (
             self.configuration.parameters.get(
                 self.entrypoint_definition.params.name
@@ -1146,11 +1153,6 @@ class StepInvocation:
         )
 
 
-import os
-
-
-# StepArtifactSpec
-# ExternalArtifactSpec
 class Artifact:
     @property
     @abstractmethod
@@ -1344,9 +1346,12 @@ class EntrypointFunctionDefinition(NamedTuple):
         from zenml.steps.utils import get_args
 
         def _get_allowed_types(annotation) -> Tuple:
-            if is_union(get_origin(annotation) or annotation):
+            origin = get_origin(annotation) or annotation
+            if is_union(origin):
                 allowed_types = get_args(annotation)
-            elif issubclass(annotation, BaseModel):
+            elif inspect.isclass(annotation) and issubclass(
+                annotation, BaseModel
+            ):
                 if annotation.__custom_root_type__:
                     allowed_types = (annotation,) + _get_allowed_types(
                         annotation.__fields__["__root__"].outer_type_
@@ -1354,7 +1359,7 @@ class EntrypointFunctionDefinition(NamedTuple):
                 else:
                     allowed_types = (annotation, dict)
             else:
-                allowed_types = (get_origin(annotation) or annotation,)
+                allowed_types = (origin,)
 
             return allowed_types
 

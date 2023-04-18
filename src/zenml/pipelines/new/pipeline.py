@@ -887,43 +887,64 @@ class Pipeline:
 
         return copy.deepcopy(self)
 
-    def __call__(self, *args: Any, **kwds: Any) -> Any:
+    def __call__(self, *args: Any, **kwargs: Any) -> Any:
         if Pipeline.ACTIVE_PIPELINE:
             # Calling a pipeline inside a pipeline, we return the potential
             # outputs of the entrypoint function
-            return self.entrypoint(*args, **kwds)
+
+            # TODO: how do we handle the pipeline config here?
+            return self.entrypoint(*args, **kwargs)
 
         with self:
-            entrypoint_outputs = self.entrypoint(*args, **kwds)
+            entrypoint_outputs = self.entrypoint(*args, **kwargs)
 
         if entrypoint_outputs is None:
             entrypoint_outputs = ()
         elif not isinstance(entrypoint_outputs, Tuple):
             entrypoint_outputs = (entrypoint_outputs,)
 
-        from zenml.config.pipeline_configurations import PipelineOutput
+        import inspect
+
+        from zenml.config.pipeline_configurations import (
+            ArtifactReference,
+            Parameter,
+            StepOutput,
+        )
+
+        signature = inspect.signature(self.entrypoint)
+        bound_args = signature.bind(*args, **kwargs)
+        bound_args.apply_defaults()
+
+        def _convert(value: Any) -> Any:
+            if isinstance(value, StepArtifact):
+                return StepOutput(
+                    invocation_id=value.invocation_id,
+                    output_name=value.output_name,
+                )
+            elif isinstance(value, ExternalArtifact):
+                return ArtifactReference(id=value._id)
+            else:
+                from zenml.steps.base_step import is_json_serializable
+
+                if not is_json_serializable(value):
+                    raise RuntimeError(
+                        f"Pipeline output of type (`{type(value)}`) is not "
+                        "a step output or JSON serializable."
+                    )
+
+                return Parameter(value=value)
+
+        inputs = {}
+        for key, value in bound_args.arguments.items():
+            inputs[key] = _convert(value)
 
         outputs = {}
         for i, output in enumerate(entrypoint_outputs):
             key = f"output_{i}"
-            if isinstance(output, StepArtifact):
-                outputs[key] = PipelineOutput(
-                    step_name=output.invocation_id,
-                    output_name=output.output_name,
-                )
-            else:
-                from zenml.steps.base_step import is_json_serializable
-
-                if not is_json_serializable(output):
-                    raise RuntimeError(
-                        f"Pipeline output of type (`{type(output)}`) is not "
-                        "a step output or JSON serializable."
-                    )
-
-                outputs[key] = PipelineOutput(value=output)
+            outputs[key] = _convert(output)
 
         self._configuration = self._configuration.copy(
-            update={"outputs": outputs}
+            update={"inputs": inputs, "outputs": outputs}
         )
 
         return self.run()

@@ -48,16 +48,30 @@ class PipelineConfigurationUpdate(StrictBaseModel):
     )
 
 
-class PipelineOutput(StrictBaseModel):
-    step_name: Optional[str] = None
-    output_name: Optional[str] = None
-    value: Any = None
+class StepOutput(StrictBaseModel):
+    invocation_id: str
+    output_name: str
+
+
+class ArtifactReference(StrictBaseModel):
+    id: UUID
+
+
+class Parameter(StrictBaseModel):
+    # TODO: either store the type here or somehow infer it from the pipeline/
+    # step function when needed
+    value: Any
+
+
+Input = Union[StepOutput, ArtifactReference, Parameter]
+PipelineOutput = Input
 
 
 class PipelineConfiguration(PipelineConfigurationUpdate):
     """Pipeline configuration class."""
 
     name: str
+    inputs: Dict[str, Input] = {}
     outputs: Dict[str, PipelineOutput] = {}
 
     @validator("name")

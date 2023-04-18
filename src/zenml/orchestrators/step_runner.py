@@ -247,7 +247,6 @@ class StepRunner:
         Returns:
             The parsed inputs for the step entrypoint function.
         """
-        from pydantic import BaseModel
 
         function_params: Dict[str, Any] = {}
 
@@ -271,17 +270,27 @@ class StepRunner:
                     input_artifacts[arg], arg_type
                 )
             elif arg in self.configuration.parameters:
-                value = self.configuration.parameters[arg]
-                if inspect.isclass(arg_type) and issubclass(
-                    arg_type, BaseModel
-                ):
-                    value = arg_type.parse_obj(value)
-
-                function_params[arg] = value
+                function_params[arg] = self.configuration.parameters[arg]
             else:
                 raise RuntimeError(
                     f"Unable to find value for step function argument `{arg}`."
                 )
+
+        from pydantic.decorator import ValidatedFunction
+
+        entrypoint_func = self._load_step_entrypoint()
+        validation_func = ValidatedFunction(
+            entrypoint_func, config={"arbitrary_types_allowed": True}
+        )
+        model = validation_func.init_model_instance(**function_params)
+
+        function_params = {
+            k: v
+            for k, v in model._iter()
+            if k in model.__fields_set__
+            or model.__fields__[k].default_factory
+            or model.__fields__[k].default
+        }
 
         return function_params
 
