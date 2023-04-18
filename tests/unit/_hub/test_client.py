@@ -55,7 +55,7 @@ def test_get_plugin():
     assert plugin.version == version
 
     # Test getting a non-existent plugin.
-    plugin_name = "non_existent_plugin"
+    plugin_name = "non_existent_plugin_by_aria_and_blupus"
     client = HubClient()
     plugin = client.get_plugin(plugin_name)
     assert plugin is None
