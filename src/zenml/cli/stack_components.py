@@ -196,6 +196,14 @@ def generate_stack_component_register_command(
         type=str,
     )
     @click.option(
+        "--label",
+        "-l",
+        "labels",
+        help="Labels to be associated with the component, in the form "
+        "-l key1=value1 -l key2=value2.",
+        multiple=True,
+    )
+    @click.option(
         "--share",
         "share",
         is_flag=True,
@@ -208,6 +216,7 @@ def generate_stack_component_register_command(
         flavor: str,
         share: bool,
         args: List[str],
+        labels: Optional[List[str]] = None,
     ) -> None:
         """Registers a stack component.
 
@@ -216,6 +225,7 @@ def generate_stack_component_register_command(
             flavor: Flavor of the component to register.
             share: Share the stack with other users.
             args: Additional arguments to pass to the component.
+            labels: Labels to be associated with the component.
         """
         if component_type == StackComponentType.SECRETS_MANAGER:
             warn_deprecated_secrets_manager()
@@ -228,6 +238,8 @@ def generate_stack_component_register_command(
             list(args) + [name], expand_args=True
         )
 
+        parsed_labels = cli_utils.get_parsed_labels(labels)
+
         # click<8.0.0 gives flags a default of None
         if share is None:
             share = False
@@ -239,6 +251,7 @@ def generate_stack_component_register_command(
                 flavor=flavor,
                 component_type=component_type,
                 configuration=parsed_args,
+                labels=parsed_labels,
                 is_shared=share,
             )
 
@@ -267,15 +280,26 @@ def generate_stack_component_update_command(
         type=str,
         required=False,
     )
+    @click.option(
+        "--label",
+        "-l",
+        "labels",
+        help="Labels to be associated with the component, in the form "
+        "-l key1=value1 -l key2=value2.",
+        multiple=True,
+    )
     @click.argument("args", nargs=-1, type=click.UNPROCESSED)
     def update_stack_component_command(
-        name_id_or_prefix: Optional[str], args: List[str]
+        name_id_or_prefix: Optional[str],
+        args: List[str],
+        labels: Optional[List[str]] = None,
     ) -> None:
         """Updates a stack component.
 
         Args:
             name_id_or_prefix: The name or id of the stack component to update.
             args: Additional arguments to pass to the update command.
+            labels: Labels to be associated with the component.
         """
         if component_type == StackComponentType.SECRETS_MANAGER:
             warn_deprecated_secrets_manager()
@@ -293,12 +317,15 @@ def generate_stack_component_update_command(
             name_mandatory=False,
         )
 
+        parsed_labels = cli_utils.get_parsed_labels(labels)
+
         with console.status(f"Updating {display_name}...\n"):
             try:
                 updated_component = client.update_stack_component(
                     name_id_or_prefix=name_or_id,
                     component_type=component_type,
                     configuration=parsed_args,
+                    labels=parsed_labels,
                 )
             except KeyError as err:
                 cli_utils.error(str(err))
@@ -380,9 +407,18 @@ def generate_stack_component_remove_attribute_command(
         type=str,
         required=True,
     )
+    @click.option(
+        "--label",
+        "-l",
+        "labels",
+        help="Labels to be removed from the component.",
+        multiple=True,
+    )
     @click.argument("args", nargs=-1, type=click.UNPROCESSED)
     def remove_attribute_stack_component_command(
-        name_id_or_prefix: str, args: List[str]
+        name_id_or_prefix: str,
+        args: List[str],
+        labels: Optional[List[str]] = None,
     ) -> None:
         """Removes one or more attributes from a stack component.
 
@@ -390,6 +426,7 @@ def generate_stack_component_remove_attribute_command(
             name_id_or_prefix: The name of the stack component to remove the
                 attribute from.
             args: Additional arguments to pass to the remove_attribute command.
+            labels: Labels to be removed from the component.
         """
         if component_type == StackComponentType.SECRETS_MANAGER:
             warn_deprecated_secrets_manager()
@@ -404,6 +441,7 @@ def generate_stack_component_remove_attribute_command(
                     name_id_or_prefix=name_id_or_prefix,
                     component_type=component_type,
                     configuration={k: None for k in args},
+                    labels={k: None for k in labels} if labels else None,
                 )
             except (KeyError, IllegalOperationError) as err:
                 cli_utils.error(str(err))
@@ -560,6 +598,7 @@ def generate_stack_component_copy_command(
                 flavor=component_to_copy.flavor,
                 component_type=component_to_copy.type,
                 configuration=component_to_copy.configuration,
+                labels=component_to_copy.labels,
                 is_shared=component_to_copy.is_shared,
             )
 

@@ -40,7 +40,12 @@ import pymysql
 from pydantic import root_validator, validator
 from sqlalchemy import asc, desc, func, text
 from sqlalchemy.engine import URL, Engine, make_url
-from sqlalchemy.exc import ArgumentError, NoResultFound, OperationalError
+from sqlalchemy.exc import (
+    ArgumentError,
+    IntegrityError,
+    NoResultFound,
+    OperationalError,
+)
 from sqlalchemy.orm import noload
 from sqlmodel import Session, create_engine, or_, select
 from sqlmodel.sql.expression import Select, SelectOfScalar
@@ -265,6 +270,9 @@ class SqlZenStoreConfiguration(StoreConfiguration):
             pool.
         max_overflow: The maximum number of connections to allow in the
             SQLAlchemy pool in addition to the pool_size.
+        pool_pre_ping: Enable emitting a test statement on the SQL connection
+            at the start of each connection pool checkout, to test that the
+            database connection is still viable.
     """
 
     type: StoreType = StoreType.SQL
@@ -281,6 +289,7 @@ class SqlZenStoreConfiguration(StoreConfiguration):
     ssl_verify_server_cert: bool = False
     pool_size: int = 20
     max_overflow: int = 20
+    pool_pre_ping: bool = True
 
     @validator("secrets_store")
     def validate_secrets_store(
@@ -569,6 +578,7 @@ class SqlZenStoreConfiguration(StoreConfiguration):
             engine_args = {
                 "pool_size": self.pool_size,
                 "max_overflow": self.max_overflow,
+                "pool_pre_ping": self.pool_pre_ping,
             }
 
             sql_url = sql_url._replace(
@@ -1274,6 +1284,9 @@ class SqlZenStore(BaseZenStore):
                 flavor=component.flavor,
                 configuration=base64.b64encode(
                     json.dumps(component.configuration).encode("utf-8")
+                ),
+                labels=base64.b64encode(
+                    json.dumps(component.labels).encode("utf-8")
                 ),
             )
 
@@ -3238,10 +3251,10 @@ class SqlZenStore(BaseZenStore):
         # it first will reduce concurrency issues.
         try:
             return self.create_run(pipeline_run), True
-        except EntityExistsError:
-            # Currently, an `EntityExistsError` is raised if either the run ID
-            # or the run name already exists. Therefore, we need to have another
-            # try block since getting the run by ID might still fail.
+        except (EntityExistsError, IntegrityError):
+            # Catch both `EntityExistsError`` and `IntegrityError`` exceptions
+            # since either one can be raised by the database when trying
+            # to create a new pipeline run with duplicate ID or name.
             try:
                 return self.get_run(pipeline_run.id), False
             except KeyError:
