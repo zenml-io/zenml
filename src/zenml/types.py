@@ -15,4 +15,8 @@
 
 
 class HTMLString(str):
-    """Special string class to indicate that the string is an HTML snippet."""
+    """Special string class to indicate an HTML snippet."""
+
+
+class MarkdownString(str):
+    """Special string class to indicate a Markdown snippet."""
