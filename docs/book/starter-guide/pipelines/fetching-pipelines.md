@@ -64,6 +64,17 @@ You can also access your pipelines through the CLI by executing the following co
 zenml pipeline list
 ```
 
+ZenML allows you to filter and/or sort the output of this command using a variety of flags.
+For example, you could sort the pipelines list in a reverse alphabetical order
+by passing in:
+
+```shell
+zenml pipeline list --sort_by "asc:name"
+```
+
+Please [refer to our
+documentation](https://apidocs.zenml.io/0.38.0/cli/#zenml.cli--filtering-cli-output-when-listing)
+for full details on the available flags.
 </details>
 
 ## Runs
@@ -135,6 +146,17 @@ zenml pipeline runs list
 zenml pipeline runs list -p <MY_PIPELINE_NAME_OR_ID>
 ```
 
+ZenML allows you to filter and/or sort the output of this command using a variety of flags.
+For example, you could filter the pipelines runs list to give you only pipelines
+created after January 1st, 2021 using the following command:
+
+```shell
+zenml pipeline runs list --created "gt:2021-01-01 00:00:00"
+```
+
+Please [refer to our
+documentation](https://apidocs.zenml.io/0.38.0/cli/#zenml.cli--filtering-cli-output-when-listing)
+for full details on the available flags.
 </details>
 
 ### Runs Configuration
