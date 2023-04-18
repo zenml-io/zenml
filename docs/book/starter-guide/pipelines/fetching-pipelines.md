@@ -73,7 +73,7 @@ zenml pipeline list --sort_by "asc:name"
 ```
 
 Please [refer to our
-documentation](https://apidocs.zenml.io/0.38.0/cli/#zenml.cli--filtering-cli-output-when-listing)
+documentation](https://apidocs.zenml.io/latest/cli/#zenml.cli--filtering-cli-output-when-listing)
 for full details on the available flags.
 </details>
 
@@ -155,9 +155,32 @@ zenml pipeline runs list --created "gt:2021-01-01 00:00:00"
 ```
 
 Please [refer to our
-documentation](https://apidocs.zenml.io/0.38.0/cli/#zenml.cli--filtering-cli-output-when-listing)
+documentation](https://apidocs.zenml.io/latest/cli/#zenml.cli--filtering-cli-output-when-listing)
 for full details on the available flags.
 </details>
+
+## Querying the Client
+
+You can also access ZenML artifacts and objects directly from the ZenML client,
+from artifacts to pipelines to runs and more. This is useful if you don't want to use the
+CLI to access these things. It also allows you to filter and sort the results
+using our powerful syntax [as described in the CLI
+docs](https://apidocs.zenml.io/latest/cli/#zenml.cli--filtering-cli-output-when-listing).
+
+For example, you could get all pipeline runs that have been run since January
+1 2023 using the following code:
+
+```python
+from zenml.client import Client
+
+client = Client()
+client.list_runs(created="gt:2023-01-01 00:00:00")
+```
+
+The syntax that you'll need to pass into the various methods is described [in our
+documentation](https://apidocs.zenml.io/latest/cli/#zenml.cli--filtering-cli-output-when-listing)
+and you can learn more about the methods available to you [within the `Client`
+API docs here](https://apidocs.zenml.io/latest/core_code_docs/core-client/).
 
 ### Runs Configuration
 
