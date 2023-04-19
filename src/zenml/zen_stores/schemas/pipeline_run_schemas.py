@@ -218,7 +218,7 @@ class PipelineRunSchema(NamedSchema, table=True):
             metadata_schema.key: metadata_schema.to_model()
             for metadata_schema in self.run_metadata
         }
-        config = PipelineConfiguration.parse_obj(self.pipeline_configuration)
+        config = PipelineConfiguration.parse_raw(self.pipeline_configuration)
 
         if _block_recursion:
             return PipelineRunResponseModel(
