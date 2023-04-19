@@ -83,7 +83,7 @@ class DeepchecksResultMaterializer(BaseMaterializer):
         """Saves visualizations for the given Deepchecks result.
 
         Args:
-            image: The Deepchecks result to save visualizations for.
+            result: The Deepchecks result to save visualizations for.
 
         Returns:
             A dictionary of visualization URIs and their types.
