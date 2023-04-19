@@ -282,6 +282,21 @@ def some_step() -> Output(output_name=int):
 ```
 {% endhint %}
 
+### Visualizing Artifacts
+
+ZenML automatically saves visualizations for many common data types. For
+instance, 3D NumPy Arrays with three channels are automatically visualized as 
+images and data validation reports as embedded HTML visualizations. In Jupyter
+notebooks, you can view the visualization of an artifact using the `visualize()`
+method:
+
+```python
+output.visualize()
+```
+
+In all other runtime environments, please open your ZenML dashboard 
+using `zenml up` and view the visualizations by clicking on the respective artifact in the pipeline run DAG.
+
 ### Output Artifact Metadata
 
 All output artifacts saved through ZenML will automatically have certain
