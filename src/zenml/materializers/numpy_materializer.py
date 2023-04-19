@@ -19,7 +19,7 @@ from typing import TYPE_CHECKING, Any, Dict, Type, cast
 
 import numpy as np
 
-from zenml.enums import ArtifactType
+from zenml.enums import ArtifactType, VisualizationType
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
@@ -117,6 +117,53 @@ class NumpyMaterializer(BaseMaterializer):
             # about either an untyped function call or an unused ignore
             # statement
             cast(Any, np.save)(f, arr)
+
+    def save_visualizations(
+        self, arr: "NDArray[Any]"
+    ) -> Dict[str, VisualizationType]:
+        """Saves visualizations for a numpy array.
+
+        If the array is 1D, a histogram is saved. If the array is 2D or 3D with
+        3 or 4 channels, an image is saved.
+
+        Args:
+            arr: The numpy array to visualize.
+
+        Returns:
+            A dictionary of visualization URIs and their types.
+        """
+        visualizations = super().save_visualizations(arr)
+
+        try:
+            import matplotlib.pyplot as plt  # type: ignore
+            from matplotlib.image import imsave  # type: ignore
+        except ImportError:
+            logger.info(
+                "Matplotlib is not installed. Skipping visualization of numpy "
+                "array."
+            )
+            return visualizations
+
+        if not np.issubdtype(arr.dtype, np.number):
+            return visualizations
+
+        # Save histogram for 1D arrays
+        if len(arr.shape) == 1:
+            histogram_path = os.path.join(self.uri, "histogram.png")
+            plt.hist(arr)
+            plt.savefig(histogram_path)
+            plt.close()
+            visualizations[histogram_path] = VisualizationType.IMAGE
+
+        # Save image for 2D or 3D arrays with 3 or 4 channels
+        elif len(arr.shape) == 2 or (
+            len(arr.shape) == 3 and arr.shape[2] in [3, 4]
+        ):
+            image_path = os.path.join(self.uri, "image.png")
+            imsave(image_path, arr)
+            visualizations[image_path] = VisualizationType.IMAGE
+
+        return visualizations
 
     def extract_numeric_metadata(
         self, arr: "NDArray[Any]"
