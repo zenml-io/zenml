@@ -154,6 +154,8 @@ def get_artifact_visualization(
     Raises:
         DoesNotExistException: If the artifact has no visualizations.
     """
+    from zenml.io.fileio import open
+
     artifact = zen_store().get_artifact(artifact_id)
 
     if not artifact.visualizations:
