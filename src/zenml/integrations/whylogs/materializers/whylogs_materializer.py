@@ -15,11 +15,12 @@
 
 import os
 import tempfile
-from typing import Any, Type, cast
+from typing import Any, Dict, Type, cast
 
 from whylogs.core import DatasetProfileView  # type: ignore
+from whylogs.viz import NotebookProfileVisualizer  # type: ignore
 
-from zenml.enums import ArtifactType
+from zenml.enums import ArtifactType, VisualizationType
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
@@ -27,6 +28,7 @@ from zenml.materializers.base_materializer import BaseMaterializer
 logger = get_logger(__name__)
 
 PROFILE_FILENAME = "profile.pb"
+HTML_FILENAME = "profile.html"
 
 
 class WhylogsMaterializer(BaseMaterializer):
@@ -85,6 +87,36 @@ class WhylogsMaterializer(BaseMaterializer):
             logger.error(
                 "Failed to upload whylogs profile view to Whylabs: %s", e
             )
+
+    def save_visualizations(
+        self,
+        profile_view: DatasetProfileView,
+    ) -> Dict[str, VisualizationType]:
+        """Saves visualizations for the given whylogs dataset profile view.
+
+        Args:
+            profile_view: The whylogs dataset profile view to visualize.
+
+        Returns:
+            A dictionary of visualization URIs and their types.
+        """
+        visualizations = super().save_visualizations(profile_view)
+
+        # currently, whylogs doesn't support visualizing a single profile, so
+        # we trick it by using the same profile twice, both as reference and
+        # target, in a drift report
+        visualization = NotebookProfileVisualizer()
+        visualization.set_profiles(
+            target_profile_view=profile_view,
+            reference_profile_view=profile_view,
+        )
+        rendered_html = visualization.summary_drift_report()
+        filepath = os.path.join(self.uri, HTML_FILENAME)
+        with open(filepath, "w") as f:
+            f.write(rendered_html)
+        visualizations[filepath] = VisualizationType.HTML
+
+        return visualizations
 
     def _upload_to_whylabs(self, profile_view: DatasetProfileView) -> None:
         """Uploads a whylogs dataset profile view to Whylabs.
