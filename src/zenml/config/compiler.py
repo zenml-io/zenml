@@ -175,6 +175,7 @@ class Compiler:
         pipeline.configure(
             enable_cache=config.enable_cache,
             enable_artifact_metadata=config.enable_artifact_metadata,
+            enable_artifact_visualization=config.enable_artifact_visualization,
             settings=config.settings,
             extra=config.extra,
         )
@@ -194,6 +195,13 @@ class Compiler:
             for step_ in pipeline.steps.values():
                 step_.configure(
                     enable_artifact_metadata=config.enable_artifact_metadata
+                )
+
+        # Override `enable_artifact_visualization` if set at run level
+        if config.enable_artifact_visualization is not None:
+            for step_ in pipeline.steps.values():
+                step_.configure(
+                    enable_artifact_visualization=config.enable_artifact_visualization
                 )
 
     def _apply_stack_default_settings(

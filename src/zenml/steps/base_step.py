@@ -59,6 +59,7 @@ from zenml.steps.utils import (
     INSTANCE_CONFIGURATION,
     PARAM_CREATED_BY_FUNCTIONAL_API,
     PARAM_ENABLE_ARTIFACT_METADATA,
+    PARAM_ENABLE_ARTIFACT_VISUALIZATION,
     PARAM_ENABLE_CACHE,
     PARAM_EXPERIMENT_TRACKER,
     PARAM_EXTRA_OPTIONS,
@@ -232,6 +233,8 @@ class BaseStep(metaclass=BaseStepMeta):
         enable_cache: A boolean indicating if caching is enabled for this step.
         enable_artifact_metadata: A boolean indicating if artifact metadata
             is enabled for this step.
+        enable_artifact_visualization: A boolean indicating if artifact
+            visualization is enabled for this step.
     """
 
     INPUT_SIGNATURE: ClassVar[Dict[str, Type[Any]]] = None  # type: ignore[assignment] # noqa
@@ -307,10 +310,23 @@ class BaseStep(metaclass=BaseStepMeta):
             "enabled" if enable_artifact_metadata is not False else "disabled",
         )
 
+        enable_artifact_visualization = kwargs.pop(
+            PARAM_ENABLE_ARTIFACT_VISUALIZATION, None
+        )
+
+        logger.debug(
+            "Step '%s': Artifact visualization %s.",
+            name,
+            "enabled"
+            if enable_artifact_visualization is not False
+            else "disabled",
+        )
+
         self._configuration = PartialStepConfiguration(
             name=name,
             enable_cache=enable_cache,
             enable_artifact_metadata=enable_artifact_metadata,
+            enable_artifact_visualization=enable_artifact_visualization,
         )
         self._apply_class_configuration(kwargs)
         self._verify_and_apply_init_params(*args, **kwargs)
@@ -718,6 +734,7 @@ class BaseStep(metaclass=BaseStepMeta):
         name: Optional[str] = None,
         enable_cache: Optional[bool] = None,
         enable_artifact_metadata: Optional[bool] = None,
+        enable_artifact_visualization: Optional[bool] = None,
         experiment_tracker: Optional[str] = None,
         step_operator: Optional[str] = None,
         parameters: Optional["ParametersOrDict"] = None,
@@ -748,6 +765,8 @@ class BaseStep(metaclass=BaseStepMeta):
             enable_cache: If caching should be enabled for this step.
             enable_artifact_metadata: If artifact metadata should be enabled
                 for this step.
+            enable_artifact_visualization: If artifact visualization should be
+                enabled for this step.
             experiment_tracker: The experiment tracker to use for this step.
             step_operator: The step operator to use for this step.
             parameters: Function parameters for this step
@@ -829,6 +848,7 @@ class BaseStep(metaclass=BaseStepMeta):
                 "name": name,
                 "enable_cache": enable_cache,
                 "enable_artifact_metadata": enable_artifact_metadata,
+                "enable_artifact_visualization": enable_artifact_visualization,
                 "experiment_tracker": experiment_tracker,
                 "step_operator": step_operator,
                 "parameters": parameters,

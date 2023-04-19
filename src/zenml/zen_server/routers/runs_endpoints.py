@@ -203,7 +203,11 @@ def get_pipeline_configuration(
     Returns:
         The pipeline configuration of the pipeline run.
     """
-    return zen_store().get_run(run_name_or_id=run_id).pipeline_configuration
+    return (
+        zen_store()
+        .get_run(run_name_or_id=run_id)
+        .pipeline_configuration.dict()
+    )
 
 
 @router.get(

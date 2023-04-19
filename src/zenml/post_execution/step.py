@@ -140,6 +140,15 @@ class StepView(BaseView):
         return self.step_configuration.enable_artifact_metadata
 
     @property
+    def enable_artifact_visualization(self) -> Optional[bool]:
+        """Returns whether artifact visualization is enabled for this step.
+
+        Returns:
+            Whether artifact visualization is enabled for this step.
+        """
+        return self.step_configuration.enable_artifact_visualization
+
+    @property
     def step_operator(self) -> Optional[str]:
         """Returns the name of the step operator of the step.
 

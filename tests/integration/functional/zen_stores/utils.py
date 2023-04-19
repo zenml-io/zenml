@@ -18,6 +18,7 @@ from pydantic import BaseModel
 from tests.integration.functional.utils import sample_name
 from zenml.client import Client
 from zenml.config.global_config import GlobalConfiguration
+from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.pipeline_spec import PipelineSpec
 from zenml.config.store_config import StoreConfiguration
 from zenml.enums import (
@@ -508,7 +509,7 @@ pipeline_run_crud_test_config = CrudTestConfig(
         id=uuid.uuid4(),
         name=sample_name("sample_pipeline_run"),
         status=ExecutionStatus.RUNNING,
-        pipeline_configuration={},
+        pipeline_configuration=PipelineConfiguration(name="aria_pipeline"),
         user=uuid.uuid4(),
         workspace=uuid.uuid4(),
     ),

@@ -38,6 +38,7 @@ class PipelineConfigurationUpdate(StrictBaseModel):
 
     enable_cache: Optional[bool] = None
     enable_artifact_metadata: Optional[bool] = None
+    enable_artifact_visualization: Optional[bool] = None
     settings: Dict[str, BaseSettings] = {}
     extra: Dict[str, Any] = {}
     failure_hook_source: Optional[Source] = None
@@ -96,6 +97,7 @@ class PipelineRunConfiguration(
     run_name: Optional[str] = None
     enable_cache: Optional[bool] = None
     enable_artifact_metadata: Optional[bool] = None
+    enable_artifact_visualization: Optional[bool] = None
     schedule: Optional[Schedule] = None
     build: Union[PipelineBuildBaseModel, UUID, None] = None
     steps: Dict[str, StepConfigurationUpdate] = {}
