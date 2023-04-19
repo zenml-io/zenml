@@ -550,8 +550,8 @@ class PipelineDockerImageBuilder:
             )
 
             plugin = client.get_plugin(
-                plugin_name=name,
-                plugin_version=version,
+                name=name,
+                version=version,
                 author=author,
             )
 

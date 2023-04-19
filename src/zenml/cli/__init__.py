@@ -1517,7 +1517,7 @@ zenml hub clone
 This is useful, e.g., for extending an existing plugin or for getting the 
 examples of a plugin.
 
-Submitting/contributing a plugin to the Hub (requires login, see below):
+- Submitting/contributing a plugin to the Hub (requires login, see below):
 ```bash
 zenml hub submit
 ```
