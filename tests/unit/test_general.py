@@ -17,6 +17,7 @@ from tempfile import TemporaryDirectory
 from typing import Any, Callable, Optional, Type
 
 from zenml.constants import ENV_ZENML_DEBUG
+from zenml.enums import VisualizationType
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.materializers.default_materializer_registry import (
     default_materializer_registry,
@@ -71,6 +72,13 @@ def _test_materializer(
         materializer.save(step_output)
         new_files = os.listdir(artifact_uri)
         assert len(new_files) > len(existing_files)  # something was written
+
+        # Assert that visualization extraction returns a dict
+        visualizations = materializer.save_visualizations(step_output)
+        assert isinstance(visualizations, dict)
+        for key, value in visualizations.items():
+            assert isinstance(key, str)
+            assert isinstance(value, VisualizationType)
 
         # Assert that metadata extraction returns a dict
         metadata = materializer.extract_metadata(step_output)
