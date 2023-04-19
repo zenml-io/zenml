@@ -43,18 +43,13 @@ class ResourceTypeSpecificationModel(BaseModel):
 
     Describes the authentication methods and resource instantiation model for
     one or more resource types.
-
-    All resource types grouped under the same resource type specification are
-    considered equivalent in the sense that a service connector instance
-    configured for one of the resource types can be used to access resources of
-    any of the other resource types.
     """
 
     name: str = Field(
         title="User readable name for the resource type.",
     )
-    resource_types: List[Optional[str]] = Field(
-        title="List of equivalent resource type identifiers. Use None to "
+    resource_type: Optional[str] = Field(
+        title="Resource type identifier. If set to None, this specification "
         "represent a wildcard that allows arbitrary resource types.",
     )
     description: str = Field(
@@ -89,7 +84,7 @@ class ResourceTypeSpecificationModel(BaseModel):
             True if the resource type is supported, False otherwise.
         """
         return (
-            resource_type in self.resource_types or None in self.resource_types
+            self.resource_type is None or self.resource_type == resource_type
         )
 
     def is_equivalent_resource_id(
@@ -260,9 +255,7 @@ class ServiceConnectorSpecificationModel(BaseModel):
         """
         # Gather all resource types from the list of resource type
         # specifications.
-        resource_types = []
-        for r in v:
-            resource_types.extend(r.resource_types)
+        resource_types = [r.resource_type for r in v]
 
         if len(resource_types) != len(set(resource_types)):
             raise ValueError(
@@ -284,6 +277,8 @@ class ServiceConnectorSpecificationModel(BaseModel):
         Returns:
             The list of authentication methods.
         """
+        # Gather all auth methods from the list of auth method
+        # specifications.
         auth_methods = [a.auth_method for a in v]
         if len(auth_methods) != len(set(auth_methods)):
             raise ValueError(
@@ -302,16 +297,31 @@ class ServiceConnectorSpecificationModel(BaseModel):
         Returns:
             A map of resource types to resource type specifications.
         """
-        map: Dict[Optional[str], ResourceTypeSpecificationModel] = {}
-        for r_spec in self.resource_types:
-            map.update(
-                {
-                    resource_types: r_spec
-                    for resource_types in r_spec.resource_types
-                }
-            )
+        return {r.resource_type: r for r in self.resource_types}
 
-        return map
+    @property
+    def auth_method_map(
+        self,
+    ) -> Dict[str, AuthenticationMethodSpecificationModel]:
+        """Returns a map of authentication methods to authentication method specifications.
+
+        Returns:
+            A map of authentication methods to authentication method
+            specifications.
+        """
+        return {a.auth_method: a for a in self.auth_methods}
+
+    def is_supported_resource_type(self, resource_type: str) -> bool:
+        """Check if a resource type is supported by this specification.
+
+        Args:
+            resource_type: The resource type to check.
+
+        Returns:
+            True if the resource type is supported, False otherwise.
+        """
+        resource_type_map = self.resource_type_map
+        return resource_type in resource_type_map or None in resource_type_map
 
     def get_resource_spec(
         self, resource_type: str
@@ -333,23 +343,11 @@ class ServiceConnectorSpecificationModel(BaseModel):
             return self.resource_type_map[resource_type]
         if None in resource_type_map:
             return self.resource_type_map[None]
-        
+
         raise KeyError(
             f"Resource type '{resource_type}' is not supported by "
             f"service connector '{self.name}'."
         )
-
-    @property
-    def auth_method_map(
-        self,
-    ) -> Dict[str, AuthenticationMethodSpecificationModel]:
-        """Returns a map of authentication methods to authentication method specifications.
-
-        Returns:
-            A map of authentication methods to authentication method
-            specifications.
-        """
-        return {a.auth_method: a for a in self.auth_methods}
 
     def find_resource_specifications(
         self,
@@ -452,11 +450,6 @@ class ServiceConnectorBaseModel(BaseModel):
     resource_type: str = Field(
         title="The type of resource that the connector instance can be used "
         "to gain access to.",
-    )
-    alt_resource_types: Optional[List[Optional[str]]] = Field(
-        default=None,
-        title="A list of alternate resource types that the connector "
-        "instance can be used to gain access to.",
     )
     resource_id: Optional[str] = Field(
         default=None,

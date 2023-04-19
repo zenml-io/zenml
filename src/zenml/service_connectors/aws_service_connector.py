@@ -44,13 +44,14 @@ import tempfile
 from typing import Any, Dict, Optional, Tuple
 
 import boto3
+import yaml
 from botocore.client import BaseClient
 from botocore.exceptions import ClientError
 from botocore.signers import RequestSigner
 from pydantic import Field, SecretStr
-import yaml
 
 from zenml.exceptions import AuthorizationException
+from zenml.logger import get_logger
 from zenml.models import (
     AuthenticationMethodSpecificationModel,
     ResourceTypeSpecificationModel,
@@ -64,7 +65,6 @@ from zenml.service_connectors.service_connector import (
     ServiceConnector,
 )
 from zenml.utils.enum_utils import StrEnum
-from zenml.logger import get_logger
 
 logger = get_logger(__name__)
 
@@ -84,8 +84,6 @@ KUBERNETES_RESOURCE_TYPE = "kubernetes"
 AWS_CONNECTOR_TYPE = "aws"
 AWS_RESOURCE_TYPE = "aws"
 S3_RESOURCE_TYPE = "s3"
-ECR_RESOURCE_TYPE = "ecr"
-EKS_RESOURCE_TYPE = "eks"
 
 
 class AWSSecretKey(AuthenticationConfig):
@@ -163,8 +161,8 @@ environment.
 The connector can be used to access to any generic AWS service, such as S3, ECR,
 EKS, EC2, etc. by providing pre-authenticated boto3 sessions for these services.
 In addition to authenticating to AWS services, the connector is also able to
-manage specialized authentication for S3 buckets, ECR/Docker clients and
-EKS/Kubernetes clients.
+manage specialized authentication for S3 buckets, Docker clients and
+Kubernetes clients.
 """,
     logo_url="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/container_registry/aws.png",
     auth_methods=[
@@ -214,7 +212,7 @@ upon expiration (e.g. an external client or long-running process is involved).
     resource_types=[
         ResourceTypeSpecificationModel(
             name="Generic AWS resource",
-            resource_types=[AWS_RESOURCE_TYPE],
+            resource_type=AWS_RESOURCE_TYPE,
             description="""
 Multi-purpose AWS resource type. It allows consumers to use the connector to
 connect to any AWS service. When used by connector consumers, they are provided
@@ -229,7 +227,7 @@ session can then be used to create boto3 clients for any particular AWS service.
         ),
         ResourceTypeSpecificationModel(
             name="AWS S3 bucket",
-            resource_types=[S3_RESOURCE_TYPE],
+            resource_type=S3_RESOURCE_TYPE,
             description="""
 Allows users to connect to S3 buckets. When used by connector consumers, they
 are provided a pre-configured boto3 S3 client instance.
@@ -248,13 +246,11 @@ The resource ID must identify an S3 bucket using one of the following formats:
         ),
         ResourceTypeSpecificationModel(
             name="AWS EKS Kubernetes cluster",
-            resource_types=[KUBERNETES_RESOURCE_TYPE, EKS_RESOURCE_TYPE],
+            resource_type=KUBERNETES_RESOURCE_TYPE,
             description="""
-Allows users to access an EKS registry either as an AWS resource or as a
-standard Kubernetes cluster resource. When used by connector consumers, they are
-provided either a pre-configured boto3 EKS client instance or a
-pre-authenticated python-kubernetes client instance, depending on the resource
-type requested at runtime.
+Allows users to access an EKS registry as a standard Kubernetes cluster
+resource. When used by connector consumers, they are provided a
+pre-authenticated python-kubernetes client instance.
 
 The resource ID must identify an EKS cluster using one of the following formats:
 
@@ -272,13 +268,11 @@ from the resource ID, it must be provided as a configuration parameter.
         ),
         ResourceTypeSpecificationModel(
             name="AWS ECR container registry",
-            resource_types=[DOCKER_RESOURCE_TYPE, ECR_RESOURCE_TYPE],
+            resource_type=DOCKER_RESOURCE_TYPE,
             description="""
-Allows users to access an ECR repository either as an AWS resource or as a
-standard Docker registry resource. When used by connector consumers, they are
-provided either a pre-configured boto3 ECR client instance or a
-pre-authenticated python-docker client instance, depending on the resource type
-requested at runtime.
+Allows users to access an ECR repository as a standard Docker registry resource.
+When used by connector consumers, they are provided a pre-authenticated
+python-docker client instance.
 
 The resource ID must identify an ECR repository using one of the following
 formats:
@@ -404,7 +398,7 @@ class AWSServiceConnector(ServiceConnector):
             A bearer token for authenticating to the EKS API server.
         """
         # TODO: make this configurable
-        STS_TOKEN_EXPIRES_IN = 3600
+        STS_TOKEN_EXPIRES_IN = 60
 
         client = session.client("sts", region_name=region)
         service_id = client.meta.service_model.service_id
@@ -436,6 +430,8 @@ class AWSServiceConnector(ServiceConnector):
         base64_url = base64.urlsafe_b64encode(
             signed_url.encode("utf-8")
         ).decode("utf-8")
+
+        breakpoint()
 
         # remove any base64 encoding padding:
         return "k8s-aws-v1." + re.sub(r"=*", "", base64_url)
@@ -551,7 +547,9 @@ class AWSServiceConnector(ServiceConnector):
         cluster_arn = cluster["cluster"]["arn"]
         cluster_cert = cluster["cluster"]["certificateAuthority"]["data"]
         cluster_ep = cluster["cluster"]["endpoint"]
-        cert_bs = base64.urlsafe_b64decode(cluster_cert.encode("utf-8")).decode()
+        cert_bs = base64.urlsafe_b64decode(
+            cluster_cert.encode("utf-8")
+        ).decode()
 
         return dict(
             cluster_arn=cluster_arn,
@@ -762,33 +760,31 @@ class AWSServiceConnector(ServiceConnector):
 
     def _connect_to_resource(
         self,
-        resource_type: Optional[str] = None,
         resource_id: Optional[str] = None,
         **kwargs: Any,
     ) -> Any:
         """Authenticate and connect to an AWS resource.
 
         Initialize and return a session or client object depending on the
-        connector configuration and the requested resource type:
+        connector configuration:
 
-        - initialize and return a boto3 session if the requested resource type
+        - initialize and return a boto3 session if the configured resource type
         is a generic AWS resource
-        - initialize and return a boto3 client for an S3, ECR or EKS service
-        - initialize and return a python-docker client if the requested resource
-        type is a Docker registry
-        - initialize and return a python-kubernetes client if the requested
+        - initialize and return a boto3 client for an S3 resource type
+        - initialize and return a python-docker client if the configured
+        resource type is a Docker registry
+        - initialize and return a python-kubernetes client if the configured
         resource type is a Kubernetes cluster
 
         Args:
-            resource_type: The type of resource to connect to.
             resource_id: The ID of the AWS resource to connect to.
             kwargs: Additional implementation specific keyword arguments to pass
                 to the session or client constructor.
 
         Returns:
-            A boto3 session or client object for AWS resources, a python-docker
-            client object for Docker registries, or a python-kubernetes client
-            object for Kubernetes clusters.
+            A boto3 session for AWS resources, a python-docker client object for
+            Docker registries, and a python-kubernetes client object for
+            Kubernetes clusters.
 
         Raises:
             AuthorizationException: If authentication failed.
@@ -797,11 +793,9 @@ class AWSServiceConnector(ServiceConnector):
         """
         # Regardless of the resource type, we must authenticate to AWS first
         # before we can connect to any AWS resource
+        resource_type = self.resource_type
         resource_id = resource_id or self.resource_id
         session = self._authenticate(self.auth_method)
-
-        if resource_type == AWS_RESOURCE_TYPE:
-            return session
 
         if resource_type == S3_RESOURCE_TYPE:
             assert resource_id is not None
@@ -817,8 +811,8 @@ class AWSServiceConnector(ServiceConnector):
             )
             return client
 
-        if resource_type in [DOCKER_RESOURCE_TYPE, ECR_RESOURCE_TYPE]:
-            from docker import DockerClient
+        if resource_type == DOCKER_RESOURCE_TYPE:
+            from docker.client import DockerClient
 
             assert resource_id is not None
 
@@ -831,17 +825,10 @@ class AWSServiceConnector(ServiceConnector):
             )
 
             client = session.client(
-                ECR_RESOURCE_TYPE,
+                "ecr",
                 region_name=region_id,
                 endpoint_url=self.config.endpoint_url,
             )
-
-            if resource_type == ECR_RESOURCE_TYPE:
-                # Return the ECR client if the resource type is "ecr"
-                return client
-
-            # Continue and create a Docker client for the ECR repository
-            # if the resource type is "docker"
 
             assert isinstance(client, BaseClient)
             client_kwargs = self._get_docker_client_config(
@@ -855,7 +842,7 @@ class AWSServiceConnector(ServiceConnector):
 
             return docker_client
 
-        if resource_type in [KUBERNETES_RESOURCE_TYPE, EKS_RESOURCE_TYPE]:
+        if resource_type == KUBERNETES_RESOURCE_TYPE:
             from kubernetes import client as k8s_client
 
             assert resource_id is not None
@@ -865,17 +852,10 @@ class AWSServiceConnector(ServiceConnector):
             )
 
             client = session.client(
-                EKS_RESOURCE_TYPE,
+                "eks",
                 region_name=region_id,
                 endpoint_url=self.config.endpoint_url,
             )
-
-            if resource_type == EKS_RESOURCE_TYPE:
-                # Return the EKS client if the resource type is "eks"
-                return client
-
-            # Continue and create a Kubernetes client for the EKS cluster
-            # if the resource type is "kubernetes"
 
             client_kwargs = self._get_kubernetes_client_config(
                 session=session,
@@ -887,6 +867,8 @@ class AWSServiceConnector(ServiceConnector):
             ssl_ca_cert = client_kwargs["ssl_ca_cert"]
             host = client_kwargs["host"]
             token = client_kwargs["token"]
+
+            breakpoint()
 
             # TODO: choose a more secure location for the temporary file
             # and use the right permissions
@@ -902,20 +884,13 @@ class AWSServiceConnector(ServiceConnector):
 
             return k8s_client.ApiClient(conf)
 
-        if not resource_type:
-            # If no AWS resource type is specified, return the generic boto3
-            # session
-            return session
+        # The only remaining resource type is AWS_RESOURCE_TYPE
+        assert resource_type != AWS_RESOURCE_TYPE
 
-        return session.client(
-            resource_type,
-            region_name=self.config.region,
-            endpoint_url=self.config.endpoint_url,
-        )
+        return session
 
     def _configure_local_client(
         self,
-        resource_type: Optional[str] = None,
         resource_id: Optional[str] = None,
         **kwargs: Any,
     ) -> None:
@@ -925,10 +900,6 @@ class AWSServiceConnector(ServiceConnector):
         client or SDK installed on the localhost for the indicated resource.
 
         Args:
-            resource_type: The type of resource to connect to. Can be different
-                than the resource type that the connector is configured to
-                access if alternative resource types or arbitrary
-                resource types are allowed by the connector configuration.
             resource_id: The ID of the resource to connect to. Omitted if the
                 configured resource type does not allow multiple instances.
                 Can be different than the resource ID that the connector is
@@ -940,13 +911,15 @@ class AWSServiceConnector(ServiceConnector):
         Raises:
             AuthorizationException: If authentication failed.
             NotImplementedError: If the connector instance does not support
-                local configuration for the indicated resource type or client
-                type.
+                local configuration for the configured resource type or
+                authentication method.
         """
-        resource_type = resource_type or self.resource_type
+        resource_type = self.resource_type
         resource_id = resource_id or self.resource_id
+
+        # Verify that the configuration is valid before configuring the local
+        # client
         # self._verify(
-        #     resource_type=resource_type,
         #     resource_id=resource_id,
         # )
 
@@ -961,10 +934,15 @@ class AWSServiceConnector(ServiceConnector):
                 resource_id, config_region_id=self.config.region
             )
 
+            # Get a boto3 session
+            session = self._authenticate(self.auth_method)
+
             # Get an ECR boto3 client
-            client = self._connect_to_resource(
-                resource_type=ECR_RESOURCE_TYPE,
-                resource_id=resource_id,
+            assert isinstance(session, boto3.Session)
+            client = session.client(
+                "ecr",
+                region_name=region_id,
+                endpoint_url=self.config.endpoint_url,
             )
 
             assert isinstance(client, BaseClient)
@@ -1006,14 +984,12 @@ class AWSServiceConnector(ServiceConnector):
             )
 
             # Get a boto3 session
-            session = self._connect_to_resource(
-                resource_type=AWS_RESOURCE_TYPE,
-            )
+            session = self._authenticate(self.auth_method)
 
             assert isinstance(session, boto3.Session)
             # Get a boto3 EKS client
             client = session.client(
-                EKS_RESOURCE_TYPE,
+                "eks",
                 region_name=region_id,
                 endpoint_url=self.config.endpoint_url,
             )
@@ -1097,6 +1073,11 @@ class AWSServiceConnector(ServiceConnector):
                 logger.info(
                     f"Kubernetes cluster config written to {config_filename}"
                 )
+        else:
+            raise NotImplementedError(
+                f"Auto-configuration for resource type "
+                f"{resource_type} is not supported"
+            )
 
     @classmethod
     def _auto_configure(
@@ -1196,26 +1177,20 @@ class AWSServiceConnector(ServiceConnector):
 
     def _verify(
         self,
-        resource_type: Optional[str] = None,
         resource_id: Optional[str] = None,
     ) -> None:
         """Verify that the connector can authenticate and connect.
 
         Args:
-            resource_type: The type of resource to connect to. Can be different
-                than the resource type that the connector is configured to
-                access if alternative resource types or arbitrary
-                resource types are allowed by the connector configuration.
             resource_id: The ID of the resource to connect to. Omitted if the
                 configured resource type does not allow multiple instances.
                 Can be different than the resource ID that the connector is
                 configured to access if resource ID aliases or wildcards
                 are supported.
         """
-        resource_type = resource_type or self.resource_type
+        resource_type = self.resource_type
         resource_id = resource_id or self.resource_id
         client = self._connect_to_resource(
-            resource_type=resource_type,
             resource_id=resource_id,
         )
 
@@ -1243,41 +1218,8 @@ class AWSServiceConnector(ServiceConnector):
                 raise AuthorizationException(
                     f"failed to verify S3 bucket access: {err}"
                 ) from err
-        elif resource_type == ECR_RESOURCE_TYPE:
-            assert isinstance(client, BaseClient)
-            assert resource_id is not None
-
-            (
-                region_id,
-                repository_name,
-                registry_id,
-            ) = self._parse_ecr_resource_id(
-                resource_id, config_region_id=self.config.region
-            )
-
-            # Verify that the ECR repository exists and is accessible
-            try:
-                client.describe_repositories(repositoryNames=[repository_name])
-            except ClientError as err:
-                raise AuthorizationException(
-                    f"failed to verify ECR repository access: {err}"
-                ) from err
-        elif resource_type == EKS_RESOURCE_TYPE:
-            assert isinstance(client, BaseClient)
-
-            assert resource_id is not None
-            region_id, cluster_name = self._parse_eks_resource_id(
-                resource_id, config_region_id=self.config.region
-            )
-            # Verify that the EKS cluster exists
-            try:
-                client.describe_cluster(name=cluster_name)
-            except ClientError as err:
-                raise AuthorizationException(
-                    f"failed to verify EKS cluster access: {err}"
-                ) from err
         elif resource_type == DOCKER_RESOURCE_TYPE:
-            from docker import DockerClient
+            from docker.client import DockerClient
 
             assert isinstance(client, DockerClient)
 

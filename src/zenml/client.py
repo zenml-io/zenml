@@ -4290,15 +4290,15 @@ class Client(metaclass=ClientMetaClass):
             if verify:
                 # This will also check that a connector class is registered for
                 # the given type and that the configuration is valid
-                connector = (
+                connector_instance = (
                     service_connector_registry.instantiate_service_connector(
                         model=connector_model
                     )
                 )
-                connector.verify()
+                connector_instance.verify()
 
                 # Get an updated model from the connector instance
-                connector_model = connector.to_model(
+                connector_model = connector_instance.to_model(
                     name=name,
                     user=self.active_user.id,
                     workspace=self.active_workspace.id,
@@ -4459,7 +4459,7 @@ class Client(metaclass=ClientMetaClass):
 
         else:
             # Create an update model from the existing model
-            update_model = ServiceConnectorUpdateModel(  # type: ignore[call-arg]
+            update_model = ServiceConnectorUpdateModel(
                 name=service_connector.name,
                 type=service_connector.type,
                 auth_method=service_connector.auth_method,
@@ -4505,12 +4505,19 @@ class Client(metaclass=ClientMetaClass):
     def verify_service_connector(
         self,
         name_id_or_prefix: Union[UUID, str],
+        resource_id: Optional[str] = None,
+        **kwargs: Any,
     ) -> "ServiceConnector":
         """Verify that the connector can connect to the remote resource.
 
         Args:
             name_id_or_prefix: The name, id or prefix of the service connector to
                 update.
+            resource_id: The ID of the resource to connect to. If not provided,
+                the resource ID from the service connector configuration will be
+                used.
+            kwargs: Additional keyword arguments to pass to the connector
+                instance.
 
         Returns:
             The service connector instance that was used to verify the
@@ -4532,14 +4539,16 @@ class Client(metaclass=ClientMetaClass):
             model=service_connector
         )
 
-        connector.verify()
+        connector.verify(
+            resource_id=resource_id,
+            **kwargs,
+        )
 
         return connector
 
     def login_service_connector(
         self,
         name_id_or_prefix: Union[UUID, str],
-        resource_type: Optional[str] = None,
         resource_id: Optional[str] = None,
         **kwargs: Any,
     ) -> "ServiceConnector":
@@ -4548,10 +4557,6 @@ class Client(metaclass=ClientMetaClass):
         Args:
             name_id_or_prefix: The name, id or prefix of the service connector to
                 use.
-            resource_type: The type of resource to configure the local client
-                to connect to. If the connector instance is configured with a
-                resource type that is not the same or an alternative to the one
-                requested, a `ValueError` exception is raised.
             resource_id: The ID of a particular resource instance to configure
                 the local client to connect to. Use this with resource types
                 that allow multiple instances. If the connector instance is
@@ -4583,7 +4588,6 @@ class Client(metaclass=ClientMetaClass):
         )
 
         connector.configure_local_client(
-            resource_type=resource_type,
             resource_id=resource_id,
             **kwargs,
         )

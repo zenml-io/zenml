@@ -1225,18 +1225,12 @@ def print_service_connector_configuration(
     rich_table.add_column("PROPERTY")
     rich_table.add_column("VALUE", overflow="fold")
 
-    alt_res_types = (
-        [v for v in connector.alt_resource_types if v]
-        if connector.alt_resource_types
-        else []
-    )
     properties = {
         "ID": connector.id,
         "NAME": connector.name,
         "TYPE": connector.type,
         "AUTH_METHOD": connector.auth_method,
         "RESOURCE_TYPE": connector.resource_type,
-        "ALT_RESOURCE_TYPES": ", ".join(alt_res_types),
         "RESOURCE_ID": connector.resource_id or "",
         "SECRET_ID": connector.secret_id or "",
         "OWNER": user_name,

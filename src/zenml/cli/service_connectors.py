@@ -158,7 +158,7 @@ def register_service_connector(
     client = Client()
 
     # Parse the given args
-    name, parsed_args = cli_utils.parse_name_and_extra_arguments(  # type: ignore[assignment]
+    name, parsed_args = cli_utils.parse_name_and_extra_arguments(
         list(args) + [name or ""],
         expand_args=True,
         name_mandatory=not interactive,
@@ -217,7 +217,7 @@ def register_service_connector(
         connector = available_types[connector_type]
         specification = connector.get_specification()
 
-        available_types = [
+        available_resource_types = [
             t for t in specification.resource_type_map.keys() if t
         ]
 
@@ -227,21 +227,22 @@ def register_service_connector(
         # Print the name, resource type identifiers and description of all
         # available resource types
         for r in specification.resource_types:
-            resource_types = [t or "<arbitrary>" for t in r.resource_types]
-            message += f"## {r.name} ({', '.join(resource_types)})\n"
+            resource_type_str = r.resource_type or "<arbitrary>"
+            message += f"## {r.name} ({resource_type_str})\n"
             message += f"{r.description}\n"
 
         console.print(Markdown(f"{message}---"), justify="left", width=80)
 
-        if len(available_types) == 1:
+        if len(available_resource_types) == 1:
             # Default to the first resource type if not supplied and if
             # only one type is available
-            resource_type = resource_type or available_types[0]
+            resource_type = resource_type or available_resource_types[0]
 
         if None in specification.resource_type_map:
             # Allow arbitrary resource types
             resource_type = click.prompt(
-                f"Please select a resource type ({', '.join(available_types)}) "
+                "Please select a resource type "
+                f"({', '.join(available_resource_types)}) "
                 "or enter a custom resource type",
                 type=str,
                 default=resource_type,
@@ -250,7 +251,7 @@ def register_service_connector(
             # Ask the user to select a resource type
             resource_type = click.prompt(
                 "Please select a resource type",
-                type=click.Choice(available_types),
+                type=click.Choice(available_resource_types),
                 default=resource_type,
             )
 
@@ -272,6 +273,16 @@ def register_service_connector(
             )
             if resource_id == "":
                 resource_id = None
+
+            if not resource_id and not no_verify:
+                cli_utils.warning(
+                    "You have not specified a resource ID. "
+                    "The service connector will not be verified before "
+                    "registration because it cannot be fully configured. "
+                    "You can verify the service connector later by running "
+                    "`zenml service-connector verify`."
+                )
+                no_verify = True
 
         auth_methods = resource_type_spec.auth_methods
 
@@ -361,9 +372,11 @@ def register_service_connector(
                 NotImplementedError,
                 AuthorizationException,
             ) as e:
+                cli_utils.warning(
+                    f"Auto-configuration was not successful: {e} "
+                )
                 # Ask the user whether to continue with manual configuration
                 manual = click.confirm(
-                    f"Auto-configuration was not successful: {e}. "
                     "Would you like to continue with manual configuration ?",
                     default=True,
                 )
@@ -380,12 +393,13 @@ def register_service_connector(
             "authentication method."
         )
 
-        config_schema = auth_method_spec.config_schema
+        config_schema = auth_method_spec.config_schema or {}
         config_dict = {}
         for attr_name, attr_schema in config_schema.get(
             "properties", {}
         ).items():
             title = attr_schema.get("title", attr_name)
+            title = f"[{attr_name}] {title}"
             required = attr_name in config_schema.get("required", [])
             hidden = attr_schema.get("format", "") == "password"
             subtitles: List[str] = []
@@ -885,12 +899,24 @@ def delete_service_connector(name_id_or_prefix: str) -> None:
     help="""Verify that the connector can connect to the remote resource.
 """,
 )
+@click.option(
+    "--resource-id",
+    "-ri",
+    "resource_id",
+    help="The ID of the resource to connect to.",
+    required=False,
+    type=str,
+)
 @click.argument("name_id_or_prefix", type=str, required=False)
-def verify_service_connector(name_id_or_prefix: str) -> None:
+def verify_service_connector(
+    name_id_or_prefix: str,
+    resource_id: Optional[str] = None,
+) -> None:
     """Verify that the connector can connect to the remote resource.
 
     Args:
         name_id_or_prefix: The name or id of the service connector to verify.
+        resource_id: The ID of the custom resource to connect to.
     """
     client = Client()
 
@@ -900,6 +926,7 @@ def verify_service_connector(name_id_or_prefix: str) -> None:
         try:
             client.verify_service_connector(
                 name_id_or_prefix=name_id_or_prefix,
+                resource_id=resource_id,
             )
         except (
             KeyError,
@@ -926,14 +953,6 @@ the service connector.
 """,
 )
 @click.option(
-    "--resource-type",
-    "-r",
-    "resource_type",
-    help="Explicit type of resource to connect to.",
-    required=False,
-    type=str,
-)
-@click.option(
     "--resource-id",
     "-ri",
     "resource_id",
@@ -944,14 +963,12 @@ the service connector.
 @click.argument("name_id_or_prefix", type=str, required=True)
 def login_service_connector(
     name_id_or_prefix: str,
-    resource_type: Optional[str] = None,
     resource_id: Optional[str] = None,
 ) -> None:
     """Authenticate the local client/SDK with connector credentials.
 
     Args:
         name_id_or_prefix: The name or id of the service connector to use.
-        resource_type: Explicit type of resource to connect to.
         resource_id: Explicit resource ID to connect to.
     """
     client = Client()
@@ -963,7 +980,6 @@ def login_service_connector(
         try:
             connector = client.login_service_connector(
                 name_id_or_prefix=name_id_or_prefix,
-                resource_type=resource_type,
                 resource_id=resource_id,
             )
         except (
@@ -979,12 +995,12 @@ def login_service_connector(
             )
 
         spec = connector.get_specification()
-        resource_type = resource_type or connector.resource_type
-        resource_name = spec.get_resource_spec(resource_type).name
+        resource_name = spec.get_resource_spec(connector.resource_type).name
         cli_utils.declare(
             f"The '{name_id_or_prefix}' {spec.name} connector was used to "
             f"successfully configure the local {resource_name} client/SDK."
         )
+
 
 # def generate_stack_component_logs_command(
 #     component_type: StackComponentType,

@@ -45,7 +45,6 @@ class ServiceConnectorSchema(ShareableSchema, table=True):
     description: str
     auth_method: str = Field(sa_column=Column(TEXT))
     resource_type: str = Field(sa_column=Column(TEXT))
-    alt_resource_types: Optional[bytes]
     resource_id: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
     configuration: Optional[bytes]
     secret_id: Optional[UUID]
@@ -108,13 +107,6 @@ class ServiceConnectorSchema(ShareableSchema, table=True):
             type=connector_request.type,
             auth_method=connector_request.auth_method,
             resource_type=connector_request.resource_type,
-            alt_resource_types=base64.b64encode(
-                json.dumps(connector_request.alt_resource_types).encode(
-                    "utf-8"
-                )
-            )
-            if connector_request.alt_resource_types
-            else None,
             resource_id=connector_request.resource_id,
             configuration=base64.b64encode(
                 json.dumps(connector_request.configuration).encode("utf-8")
@@ -152,16 +144,6 @@ class ServiceConnectorSchema(ShareableSchema, table=True):
                     if connector_update.configuration
                     else None
                 )
-            elif field == "alt_resource_types":
-                self.alt_resource_types = (
-                    base64.b64encode(
-                        json.dumps(connector_update.alt_resource_types).encode(
-                            "utf-8"
-                        )
-                    )
-                    if connector_update.alt_resource_types
-                    else None
-                )
             else:
                 setattr(self, field, value)
         self.secret_id = secret_id
@@ -188,11 +170,6 @@ class ServiceConnectorSchema(ShareableSchema, table=True):
             type=self.type,
             auth_method=self.auth_method,
             resource_type=self.resource_type,
-            alt_resource_types=json.loads(
-                base64.b64decode(self.alt_resource_types).decode()
-            )
-            if self.alt_resource_types
-            else None,
             resource_id=self.resource_id,
             configuration=json.loads(
                 base64.b64decode(self.configuration).decode()

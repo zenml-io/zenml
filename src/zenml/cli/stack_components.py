@@ -1084,6 +1084,16 @@ def generate_stack_component_connect_command(
         type=str,
     )
     @click.option(
+        "--resource-id",
+        "-r",
+        "resource_id",
+        help="The resource ID to use with the connector. Only required for "
+        "multi-instance connectors that are not already configured with a "
+        "particular resource ID.",
+        required=False,
+        type=str,
+    )
+    @click.option(
         "--interactive",
         "-i",
         "interactive",
@@ -1095,6 +1105,7 @@ def generate_stack_component_connect_command(
     def connect_stack_component_command(
         name_id_or_prefix: str,
         connector_id: Optional[str] = None,
+        resource_id: Optional[str] = None,
         interactive: bool = False,
     ) -> None:
         """Connect the stack component to a connector.
@@ -1102,6 +1113,9 @@ def generate_stack_component_connect_command(
         Args:
             name_id_or_prefix: The name of the stack component to connect.
             connector_id: The ID of the connector to use.
+            resource_id: The resource ID to use with the connector. Only
+                required for multi-instance connectors that are not already
+                configured with a particular resource ID.
             interactive: Select a service connector interactively.
         """
         from zenml.stack import Flavor
@@ -1147,7 +1161,7 @@ def generate_stack_component_connect_command(
         if not req:
             cli_utils.error(
                 f"The '{component_model.name}' {display_name} implementation "
-                "does not use a service connector."
+                "does not support using a service connector."
             )
 
         if interactive:
@@ -1198,11 +1212,11 @@ def generate_stack_component_connect_command(
                     f"{str(err)}"
                 )
 
-            satisfied, err = req.is_satisfied_by(connector_model)
+            satisfied, msg = req.is_satisfied_by(connector_model)
             if not satisfied:
                 cli_utils.error(
                     f"The connector with ID {connector_id} does not match the "
-                    f"component's connector requirements: {err}. Please verify "
+                    f"component's connector requirements: {msg}. Please verify "
                     "that the connector is compatible with the component "
                     "flavor and try again, or use the interactive mode to "
                     "select a compatible connector."

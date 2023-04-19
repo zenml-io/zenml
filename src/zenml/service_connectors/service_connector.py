@@ -14,7 +14,7 @@
 """Base ZenML Service Connector class."""
 
 from abc import abstractmethod
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, Optional, Tuple
 from uuid import UUID
 
 from pydantic import (
@@ -99,23 +99,18 @@ class ServiceConnectorRequirements(BaseModel):
             return (
                 False,
                 f"connector type '{connector.type}' does not match the "
-                f"'{self.connector_type}' specified in the requirements",
+                f"'{self.connector_type}' connector type specified in the "
+                "requirements",
             )
-        if not self.resource_type:
-            provided_resource_types: List[Optional[str]] = [
-                connector.resource_type
-            ]
-            if connector.alt_resource_types:
-                if None in connector.alt_resource_types:
-                    # Arbitrary resource type is allowed
-                    return True, ""
-                provided_resource_types.extend(connector.alt_resource_types)
-            if self.resource_type not in provided_resource_types:
-                return False, (
-                    f"connector resource type '{connector.resource_type}' "
-                    f"is not compatible with the '{self.resource_type}' "
-                    "resource type specified in the requirements"
-                )
+        if (
+            self.resource_type
+            and self.resource_type != connector.resource_type
+        ):
+            return False, (
+                f"connector resource type '{connector.resource_type}' "
+                f"does not match the '{self.resource_type}' "
+                "resource type specified in the requirements"
+            )
 
         return True, ""
 
@@ -186,7 +181,6 @@ class ServiceConnector(BaseModel):
     @abstractmethod
     def _connect_to_resource(
         self,
-        resource_type: Optional[str] = None,
         resource_id: Optional[str] = None,
         **kwargs: Any,
     ) -> Any:
@@ -195,13 +189,9 @@ class ServiceConnector(BaseModel):
         This method uses the connector's configuration to initialize
         and return an implementation specific object representing an
         authenticated service client, connection or session that can be used
-        to access the indicated resource type.
+        to access the configured resource type.
 
         Args:
-            resource_type: The type of resource to connect to. Can be different
-                than the resource type that the connector is configured to
-                access if alternative resource types or arbitrary
-                resource types are allowed by the connector configuration.
             resource_id: The ID of the resource to connect to. Omitted if the
                 configured resource type does not allow multiple instances.
                 Can be different than the resource ID that the connector is
@@ -216,27 +206,20 @@ class ServiceConnector(BaseModel):
 
         Raises:
             AuthorizationException: If authentication failed.
-            NotImplementedError: If the connector instance does not support
-                connecting to the indicated resource type.
         """
 
     @abstractmethod
     def _configure_local_client(
         self,
-        resource_type: Optional[str] = None,
         resource_id: Optional[str] = None,
         **kwargs: Any,
     ) -> None:
         """Configure a local client to authenticate and connect to a resource.
 
         This method uses the connector's configuration to configure a local
-        client or SDK installed on the localhost for the indicated resource.
+        client or SDK installed on the localhost for the indicated resource ID.
 
         Args:
-            resource_type: The type of resource to connect to. Can be different
-                than the resource type that the connector is configured to
-                access if alternative resource types or arbitrary
-                resource types are allowed by the connector configuration.
             resource_id: The ID of the resource to connect to. Omitted if the
                 configured resource type does not allow multiple instances.
                 Can be different than the resource ID that the connector is
@@ -248,8 +231,8 @@ class ServiceConnector(BaseModel):
         Raises:
             AuthorizationException: If authentication failed.
             NotImplementedError: If the connector instance does not support
-                local configuration for the indicated resource type or client
-                type.
+                local configuration for the configured resource type or
+                authentication method.
         """
 
     @classmethod
@@ -293,16 +276,11 @@ class ServiceConnector(BaseModel):
     @abstractmethod
     def _verify(
         self,
-        resource_type: Optional[str] = None,
         resource_id: Optional[str] = None,
     ) -> None:
         """Verify that the connector can authenticate and connect.
 
         Args:
-            resource_type: The type of resource to connect to. Can be different
-                than the resource type that the connector is configured to
-                access if alternative resource types or arbitrary
-                resource types are allowed by the connector configuration.
             resource_id: The ID of the resource to connect to. Omitted if the
                 configured resource type does not allow multiple instances.
                 Can be different than the resource ID that the connector is
@@ -432,7 +410,6 @@ class ServiceConnector(BaseModel):
             is_shared=is_shared,
             auth_method=self.auth_method,
             resource_type=self.resource_type,
-            alt_resource_types=resource_spec.resource_types,
             resource_id=self.resource_id,
             configuration=self.config.non_secret_values,
             secrets=self.config.secret_values,
@@ -440,27 +417,22 @@ class ServiceConnector(BaseModel):
 
     def validate_runtime_args(
         self,
-        resource_type: Optional[str] = None,
         resource_id: Optional[str] = None,
+        **kwargs: Any,
     ) -> None:
         """Validate the runtime arguments against the connector configuration.
 
         Validate that the runtime arguments supplied by the connector's consumer
         are compatible with the connector configuration and its specification.
-        This includes validating that the authentication method, resource type
-        and resource ID are compatible with the connector configuration and its
-        capabilities.
+        This includes validating that resource ID is compatible with the
+        connector configuration and its capabilities.
 
         Args:
-            resource_type: The type of resource requested by the connector's
-                consumer. Can be different than the resource type that the
-                connector is configured to access if alternative resource
-                types or arbitrary resource types are allowed by the connector
-                configuration.
             resource_id: The ID of the resource requested by the connector's
                 consumer. Can be different than the resource ID that the
                 connector is configured to access, e.g. if resource ID aliases
                 or wildcards are used.
+            kwargs: Additional runtime arguments.
 
         Raises:
             ValueError: If the runtime arguments are not valid.
@@ -478,17 +450,6 @@ class ServiceConnector(BaseModel):
             raise ValueError(
                 f"connector configuration is not valid: {e}"
             ) from e
-
-        # Verify that the requested resource type is the same as or an
-        # alternative of the one configured for the connector.
-        if resource_type and not resource_spec.is_supported_resource_type(
-            resource_type,
-        ):
-            raise ValueError(
-                f"the connector is configured to provide access to a "
-                f"'{self.resource_type}' resource type, but an "
-                f"incompatible '{resource_type}' resource type was requested."
-            )
 
         # Verify the resource ID
         if resource_id:
@@ -523,7 +484,6 @@ class ServiceConnector(BaseModel):
 
     def connect(
         self,
-        resource_type: Optional[str] = None,
         resource_id: Optional[str] = None,
         **kwargs: Any,
     ) -> Any:
@@ -534,10 +494,6 @@ class ServiceConnector(BaseModel):
         to access the indicated resource type.
 
         Args:
-            resource_type: The type of resource to connect to. If the connector
-                instance is configured with a resource type that is not the same
-                or an alternative to the one requested, a `ValueError` exception
-                is raised.
             resource_id: The ID of a particular resource instance to connect
                 to. Use this with resource types that allow multiple instances.
                 If the connector instance is already configured with a resource
@@ -552,12 +508,10 @@ class ServiceConnector(BaseModel):
             service client, connection or session.
         """
         self.validate_runtime_args(
-            resource_type=resource_type,
             resource_id=resource_id,
         )
 
         return self._connect_to_resource(
-            resource_type=resource_type,
             resource_id=resource_id,
             **kwargs,
         )
@@ -605,11 +559,8 @@ class ServiceConnector(BaseModel):
                 f"unsupported authentication method: '{auth_method}'"
             )
 
-        resource_types = spec.resource_type_map.keys()
-        if (
+        if resource_type and not spec.is_supported_resource_type(
             resource_type
-            and resource_type not in spec.resource_type_map
-            and None not in resource_types
         ):
             raise ValueError(f"unsupported resource type: '{resource_type}'")
 
@@ -622,7 +573,6 @@ class ServiceConnector(BaseModel):
 
     def configure_local_client(
         self,
-        resource_type: Optional[str] = None,
         resource_id: Optional[str] = None,
         **kwargs: Any,
     ) -> None:
@@ -632,10 +582,6 @@ class ServiceConnector(BaseModel):
         client or SDK installed on the localhost for the indicated resource.
 
         Args:
-            resource_type: The type of resource to configure the local client
-                to connect to. If the connector instance is configured with a
-                resource type that is not the same or an alternative to the one
-                requested, a `ValueError` exception is raised.
             resource_id: The ID of a particular resource instance to configure
                 the local client to connect to. Use this with resource types
                 that allow multiple instances. If the connector instance is
@@ -647,22 +593,35 @@ class ServiceConnector(BaseModel):
                 to configure the client.
         """
         self.validate_runtime_args(
-            resource_type=resource_type,
             resource_id=resource_id,
         )
 
         self._configure_local_client(
-            resource_type=resource_type or self.resource_type,
             resource_id=resource_id or self.resource_id,
             **kwargs,
         )
 
-    def verify(self) -> None:
-        """Verify that the connector can connect to the remote resource.
+    def verify(
+        self,
+        resource_id: Optional[str] = None,
+        **kwargs: Any,
+    ) -> None:
+        """Verify that the connector can connect to a remote resource.
 
         This method verifies that the connector is configured with valid
         credentials and resource information by actively trying to connect to
         the remote resource provider service.
+
+        Args:
+            resource_id: The ID of a particular resource instance to configure
+                the local client to connect to. Use this with resource types
+                that allow multiple instances. If the connector instance is
+                already configured with a resource ID that is not the same or
+                equivalent to the one requested, or if the resource type does
+                not support multiple instances, a `ValueError` exception is
+                raised.
+            kwargs: Additional implementation specific keyword arguments to use
+                to configure the client.
 
         Raises:
             ValueError: If the connector is not configured with valid
@@ -670,15 +629,12 @@ class ServiceConnector(BaseModel):
             AuthorizationException: If the connector is not authorized to
                 connect to the remote resource.
         """
-        # For validation, we must not rely on runtime arguments supplied by
-        # the user, but only on the connector's configuration.
         try:
             self.validate_runtime_args(
-                resource_type=None,
-                resource_id=None,
+                resource_id=resource_id,
             )
 
-            self._verify()
+            self._verify(resource_id or self.resource_id, **kwargs)
         except ValueError as exc:
             logger.exception("connector validation failed")
             raise ValueError(
