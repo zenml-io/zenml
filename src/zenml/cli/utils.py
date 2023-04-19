@@ -80,6 +80,7 @@ if TYPE_CHECKING:
         FlavorResponseModel,
         PipelineRunResponseModel,
         ServiceConnectorResponseModel,
+        ServiceConnectorSpecificationModel,
         StackResponseModel,
     )
     from zenml.stack import Stack
@@ -1292,6 +1293,39 @@ def print_service_connector_configuration(
         rich_table.add_row(*elements)
 
     console.print(rich_table)
+
+
+def print_service_connector_types_table(
+    connector_types: Sequence["ServiceConnectorSpecificationModel"],
+) -> None:
+    """Prints a table with details for a list of service connectors types.
+
+    Args:
+        connector_types: List of service connector types to print.
+    """
+    if len(connector_types) == 0:
+        warning("No service connector types found.")
+        return
+
+    configurations = []
+    for connector_type in connector_types:
+        supported_auth_methods = list(connector_type.auth_method_map.keys())
+        supported_resource_types = list(
+            connector_type.resource_type_map.keys()
+        )
+        # Replace the `None` resource type with `<arbitrary>`
+        if None in supported_resource_types:
+            supported_resource_types.remove(None)
+            supported_resource_types.append("<arbitrary>")
+
+        connector_type_config = {
+            "NAME": connector_type.name,
+            "TYPE": connector_type.type,
+            "RESOURCE_TYPES": "\n".join(supported_resource_types),
+            "AUTH_METHODS": "\n".join(supported_auth_methods),
+        }
+        configurations.append(connector_type_config)
+    print_table(configurations)
 
 
 def _get_stack_components(

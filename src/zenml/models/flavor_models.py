@@ -47,6 +47,14 @@ class FlavorBaseModel(BaseModel):
     config_schema: Dict[str, Any] = Field(
         title="The JSON schema of this flavor's corresponding configuration.",
     )
+    connector_type: Optional[str] = Field(
+        title="The type of the connector that this flavor uses.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
+    connector_resource_type: Optional[str] = Field(
+        title="The resource type of the connector that this flavor uses.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
     source: str = Field(
         title="The path to the module which contains this Flavor.",
         max_length=STR_FIELD_MAX_LENGTH,

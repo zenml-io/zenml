@@ -152,6 +152,17 @@ class Flavor:
         from zenml.client import Client
 
         client = Client()
+        connector_requirements = self.service_connector_requirements
+        connector_type = (
+            connector_requirements.connector_type
+            if connector_requirements
+            else None
+        )
+        resource_type = (
+            connector_requirements.resource_type
+            if connector_requirements
+            else None
+        )
         model = FlavorRequestModel(
             user=client.active_user.id if is_custom else None,
             workspace=client.active_workspace.id if is_custom else None,
@@ -159,6 +170,8 @@ class Flavor:
             type=self.type,
             source=source_utils.resolve(self.__class__).import_path,
             config_schema=self.config_schema,
+            connector_type=connector_type,
+            connector_resource_type=resource_type,
             integration=integration,
             logo_url=self.logo_url,
             docs_url=self.docs_url,

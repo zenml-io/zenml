@@ -96,6 +96,8 @@ class StackComponentSchema(ShareableSchema, table=True):
         back_populates="components"
     )
 
+    connector_resource_id: Optional[str]
+
     def update(
         self, component_update: ComponentUpdateModel
     ) -> "StackComponentSchema":
@@ -140,6 +142,7 @@ class StackComponentSchema(ShareableSchema, table=True):
             user=self.user.to_model(True) if self.user else None,
             workspace=self.workspace.to_model(),
             connector=self.connector.to_model() if self.connector else None,
+            connector_resource_id=self.connector_resource_id,
             is_shared=self.is_shared,
             configuration=json.loads(
                 base64.b64decode(self.configuration).decode()

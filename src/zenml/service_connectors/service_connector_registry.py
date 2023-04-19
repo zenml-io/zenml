@@ -131,7 +131,7 @@ class ServiceConnectorRegistry:
                 (connector_type is None or connector_type == spec.type)
                 and (
                     resource_type is None
-                    or resource_type in spec.resource_type_map
+                    or spec.is_supported_resource_type(resource_type)
                 )
                 and (
                     auth_method is None or auth_method in spec.auth_method_map

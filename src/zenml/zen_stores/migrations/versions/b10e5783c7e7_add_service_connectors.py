@@ -1,8 +1,8 @@
-"""Add service connectors [0bb9b6507c79].
+"""Add service connectors [b10e5783c7e7].
 
-Revision ID: 0bb9b6507c79
+Revision ID: b10e5783c7e7
 Revises: 0.38.0
-Create Date: 2023-04-19 09:40:59.311291
+Create Date: 2023-04-19 20:13:20.083822
 
 """
 import sqlalchemy as sa
@@ -10,7 +10,7 @@ import sqlmodel
 from alembic import op
 
 # revision identifiers, used by Alembic.
-revision = "0bb9b6507c79"
+revision = "b10e5783c7e7"
 down_revision = "0.38.0"
 branch_labels = None
 depends_on = None
@@ -71,10 +71,33 @@ def upgrade() -> None:
         ),
         sa.PrimaryKeyConstraint("id"),
     )
+    with op.batch_alter_table("flavor", schema=None) as batch_op:
+        batch_op.add_column(
+            sa.Column(
+                "connector_type",
+                sqlmodel.sql.sqltypes.AutoString(),
+                nullable=True,
+            )
+        )
+        batch_op.add_column(
+            sa.Column(
+                "connector_resource_type",
+                sqlmodel.sql.sqltypes.AutoString(),
+                nullable=True,
+            )
+        )
+
     with op.batch_alter_table("stack_component", schema=None) as batch_op:
         batch_op.add_column(
             sa.Column(
                 "connector_id", sqlmodel.sql.sqltypes.GUID(), nullable=True
+            )
+        )
+        batch_op.add_column(
+            sa.Column(
+                "connector_resource_id",
+                sqlmodel.sql.sqltypes.AutoString(),
+                nullable=True,
             )
         )
         batch_op.create_foreign_key(
@@ -96,7 +119,12 @@ def downgrade() -> None:
             "fk_stack_component_connector_id_service_connector",
             type_="foreignkey",
         )
+        batch_op.drop_column("connector_resource_id")
         batch_op.drop_column("connector_id")
+
+    with op.batch_alter_table("flavor", schema=None) as batch_op:
+        batch_op.drop_column("connector_resource_type")
+        batch_op.drop_column("connector_type")
 
     op.drop_table("service_connector_label")
     op.drop_table("service_connector")

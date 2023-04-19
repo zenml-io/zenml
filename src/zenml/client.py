@@ -4199,8 +4199,8 @@ class Client(metaclass=ClientMetaClass):
         self,
         name: str,
         type: str,
-        auth_method: str,
         resource_type: str,
+        auth_method: Optional[str] = None,
         configuration: Optional[Dict[str, str]] = None,
         secrets: Optional[Dict[str, Optional[SecretStr]]] = None,
         resource_id: Optional[str] = None,
@@ -4217,6 +4217,7 @@ class Client(metaclass=ClientMetaClass):
             name: The name of the service connector.
             type: The service connector type.
             auth_method: The authentication method of the service connector.
+                May be omitted if auto-configuration is used.
             resource_type: The resource type of the service connector.
             configuration: The configuration of the service connector.
             secrets: The secrets of the service connector.
@@ -4236,6 +4237,7 @@ class Client(metaclass=ClientMetaClass):
 
         Raises:
             RuntimeError: If the service connector could not be verified.
+            ValueError: If the arguments are invalid.
         """
         from zenml.service_connectors.service_connector_registry import (
             service_connector_registry,
@@ -4272,6 +4274,10 @@ class Client(metaclass=ClientMetaClass):
                 is_shared=is_shared,
             )
         else:
+            if not auth_method:
+                raise ValueError(
+                    "auth_method must be set if auto_configure is not set."
+                )
             connector_model = ServiceConnectorRequestModel(
                 name=name,
                 type=type,

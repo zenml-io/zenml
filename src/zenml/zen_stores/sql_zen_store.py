@@ -1310,6 +1310,7 @@ class SqlZenStore(BaseZenStore):
                     json.dumps(component.labels).encode("utf-8")
                 ),
                 connector=service_connector,
+                connector_resource_id=component.connector_resource_id,
             )
 
             session.add(new_component)
@@ -1658,6 +1659,8 @@ class SqlZenStore(BaseZenStore):
                     source=flavor.source,
                     config_schema=config_schema,
                     integration=flavor.integration,
+                    connector_type=flavor.connector_type,
+                    connector_resource_type=flavor.connector_resource_type,
                     workspace_id=flavor.workspace,
                     user_id=flavor.user,
                     logo_url=flavor.logo_url,

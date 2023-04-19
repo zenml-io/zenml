@@ -56,6 +56,7 @@ class ComponentBaseModel(BaseModel):
         title="The name of the stack component.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
+
     type: StackComponentType = Field(
         title="The type of the stack component.",
     )
@@ -68,6 +69,13 @@ class ComponentBaseModel(BaseModel):
     configuration: Dict[str, Any] = Field(
         title="The stack component configuration.",
     )
+
+    connector_resource_id: Optional[str] = Field(
+        default=None,
+        description="The ID of a specific resource instance to "
+        "gain access to through the connector",
+    )
+
     labels: Optional[Dict[str, Any]] = Field(
         default=None,
         title="The stack component labels.",

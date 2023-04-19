@@ -44,6 +44,8 @@ class FlavorSchema(NamedSchema, table=True):
     source: str
     config_schema: str = Field(sa_column=Column(TEXT, nullable=False))
     integration: Optional[str] = Field(default="")
+    connector_type: Optional[str]
+    connector_resource_type: Optional[str]
 
     workspace_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
@@ -106,6 +108,8 @@ class FlavorSchema(NamedSchema, table=True):
             source=self.source,
             config_schema=json.loads(self.config_schema),
             integration=self.integration,
+            connector_type=self.connector_type,
+            connector_resource_type=self.connector_resource_type,
             user=self.user.to_model() if self.user else None,
             workspace=self.workspace.to_model() if self.workspace else None,
             created=self.created,

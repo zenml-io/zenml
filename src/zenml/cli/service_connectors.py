@@ -123,6 +123,14 @@ def service_connector() -> None:
     help="Register a new service connector interactively.",
     type=click.BOOL,
 )
+@click.option(
+    "--auto-configure",
+    "auto_configure",
+    is_flag=True,
+    default=False,
+    help="Auto configure the service connector.",
+    type=click.BOOL,
+)
 @click.argument("args", nargs=-1, type=click.UNPROCESSED)
 def register_service_connector(
     name: Optional[str],
@@ -136,6 +144,7 @@ def register_service_connector(
     no_verify: bool = False,
     labels: Optional[List[str]] = None,
     interactive: bool = False,
+    auto_configure: bool = False,
 ) -> None:
     """Registers a service connector.
 
@@ -152,6 +161,7 @@ def register_service_connector(
             registering.
         labels: Labels to be associated with the service connector.
         interactive: Register a new service connector interactively.
+        auto_configure: Auto configure the service connector.
     """
     from rich.markdown import Markdown
 
@@ -466,10 +476,16 @@ def register_service_connector(
             )
             return
 
-    if not type or not resource_type or not auth_method:
+    if not type or not resource_type:
         cli_utils.error(
-            "The connector type, resource type and authentication method must "
+            "The connector type and resource type must "
             "all be specified when using non-interactive configuration."
+        )
+
+    if not auth_method and not auto_configure:
+        cli_utils.error(
+            "The authentication method must be specified when using "
+            "non-interactive configuration and not using auto-configuration."
         )
 
     with console.status(f"Registering service connector '{name}'...\n"):
@@ -487,6 +503,7 @@ def register_service_connector(
                 is_shared=share,
                 labels=parsed_labels,
                 verify=not no_verify,
+                auto_configure=auto_configure,
                 register=True,
             )
         except (
@@ -516,19 +533,17 @@ def list_service_connectors(**kwargs: Any) -> None:
         kwargs: Keyword arguments to filter the components.
     """
     client = Client()
-    with console.status("Listing service connectors..."):
-        connectors = client.list_service_connectors(**kwargs)
-        if not connectors:
-            cli_utils.declare(
-                "No service connectors found for the given filters."
-            )
-            return
 
-        cli_utils.print_service_connectors_table(
-            client=client,
-            connectors=connectors.items,
-        )
-        print_page_info(connectors)
+    connectors = client.list_service_connectors(**kwargs)
+    if not connectors:
+        cli_utils.declare("No service connectors found for the given filters.")
+        return
+
+    cli_utils.print_service_connectors_table(
+        client=client,
+        connectors=connectors.items,
+    )
+    print_page_info(connectors)
 
 
 @service_connector.command(
@@ -1123,33 +1138,120 @@ def login_service_connector(
 #     return explain_stack_components_command
 
 
-# def generate_stack_component_flavor_list_command(
-#     component_type: StackComponentType,
-# ) -> Callable[[], None]:
-#     """Generates a `list` command for the flavors of a stack component.
+@service_connector.command(
+    "list-types",
+    help="""List available service connector types.
+""",
+)
+@click.option(
+    "--type",
+    "-t",
+    "type",
+    help="Filter by service connector type.",
+    required=False,
+    type=str,
+)
+@click.option(
+    "--resource-type",
+    "-r",
+    "resource_type",
+    help="Filter by the type of resource to connect to.",
+    required=False,
+    type=str,
+)
+@click.option(
+    "--auth-method",
+    "-a",
+    "auth_method",
+    help="Filter by the supported authentication method.",
+    required=False,
+    type=str,
+)
+@click.option(
+    "--detailed",
+    "-d",
+    "detailed",
+    help="Show detailed information about the service connectors.",
+    required=False,
+    is_flag=True,
+)
+def list_service_connector_types(
+    type: Optional[str] = None,
+    resource_type: Optional[str] = None,
+    auth_method: Optional[str] = None,
+    detailed: bool = False,
+) -> None:
+    """List service connector types.
 
-#     Args:
-#         component_type: Type of the component to generate the command for.
+    Args:
+        type: Filter by service connector type.
+        resource_type: Filter by the type of resource to connect to.
+        auth_method: Filter by the supported authentication method.
+        detailed: Show detailed information about the service connectors.
+    """
+    from zenml.service_connectors.service_connector_registry import (
+        service_connector_registry,
+    )
 
-#     Returns:
-#         A function that can be used as a `click` command.
-#     """
-#     display_name = _component_display_name(component_type)
+    service_connector_types = (
+        service_connector_registry.find_service_connector(
+            connector_type=type,
+            resource_type=resource_type,
+            auth_method=auth_method,
+        )
+    )
 
-#     def list_stack_component_flavor_command() -> None:
-#         """Lists the flavors for a single type of stack component."""
-#         if component_type == StackComponentType.SECRETS_MANAGER:
-#             warn_deprecated_secrets_manager()
+    if not service_connector_types:
+        cli_utils.error("No service connectors found matching the criteria.")
 
-#         client = Client()
+    if detailed:
+        from rich.markdown import Markdown
 
-#         with console.status(f"Listing {display_name} flavors`...\n"):
-#             flavors = client.get_flavors_by_type(component_type=component_type)
+        message = ""
+        for connector in service_connector_types:
+            filtered_auth_methods = [auth_method] if auth_method else []
+            spec = connector.get_specification()
+            supported_auth_methods = list(spec.auth_method_map.keys())
+            supported_resource_types = list(spec.resource_type_map.keys())
+            # Replace the `None` resource type with `<arbitrary>`
+            if None in supported_resource_types:
+                supported_resource_types.remove(None)
+                supported_resource_types.append("<arbitrary>")
 
-#             cli_utils.print_flavor_list(flavors=flavors)
-#             cli_utils.print_page_info(flavors)
+            message += f"# {spec.name} (connector type: {spec.type})\n"
+            message += f"**Authentication methods**: {', '.join(supported_auth_methods)}\n"
+            message += (
+                f"**Resource types**: {', '.join(supported_resource_types)}\n"
+            )
+            message += f"{spec.description}\n"
 
-#     return list_stack_component_flavor_command
+            for r in spec.resource_types:
+                if resource_type and not r.is_supported_resource_type(
+                    resource_type
+                ):
+                    continue
+                resource_type_str = r.resource_type or "<arbitrary>"
+                message += (
+                    f"## {r.name} (resource type: {resource_type_str})\n"
+                )
+                message += f"**Authentication methods**: {', '.join(r.auth_methods)}\n"
+                message += f"{r.description}\n"
+                filtered_auth_methods.extend(r.auth_methods)
+
+            for a in spec.auth_methods:
+                if a.auth_method not in filtered_auth_methods:
+                    continue
+                message += f"## {a.name} (auth method: {a.auth_method})\n"
+                message += f"{a.description}\n"
+
+        console.print(Markdown(f"{message}---"), justify="left", width=80)
+    else:
+        cli_utils.print_service_connector_types_table(
+            connector_types=[
+                connector.get_specification()
+                for connector in service_connector_types
+            ]
+        )
 
 
 # def generate_stack_component_flavor_register_command(

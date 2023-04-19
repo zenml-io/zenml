@@ -44,7 +44,6 @@ import tempfile
 from typing import Any, Dict, Optional, Tuple
 
 import boto3
-import yaml
 from botocore.client import BaseClient
 from botocore.exceptions import ClientError
 from botocore.signers import RequestSigner
@@ -431,8 +430,6 @@ class AWSServiceConnector(ServiceConnector):
             signed_url.encode("utf-8")
         ).decode("utf-8")
 
-        breakpoint()
-
         # remove any base64 encoding padding:
         return "k8s-aws-v1." + re.sub(r"=*", "", base64_url)
 
@@ -547,14 +544,11 @@ class AWSServiceConnector(ServiceConnector):
         cluster_arn = cluster["cluster"]["arn"]
         cluster_cert = cluster["cluster"]["certificateAuthority"]["data"]
         cluster_ep = cluster["cluster"]["endpoint"]
-        cert_bs = base64.urlsafe_b64decode(
-            cluster_cert.encode("utf-8")
-        ).decode()
 
         return dict(
             cluster_arn=cluster_arn,
             host=cluster_ep,
-            ssl_ca_cert=cert_bs,
+            ssl_ca_cert=cluster_cert,
             token=token,
         )
 
@@ -857,6 +851,7 @@ class AWSServiceConnector(ServiceConnector):
                 endpoint_url=self.config.endpoint_url,
             )
 
+            assert isinstance(client, BaseClient)
             client_kwargs = self._get_kubernetes_client_config(
                 session=session,
                 eks_client=client,
@@ -867,14 +862,13 @@ class AWSServiceConnector(ServiceConnector):
             ssl_ca_cert = client_kwargs["ssl_ca_cert"]
             host = client_kwargs["host"]
             token = client_kwargs["token"]
-
-            breakpoint()
+            cert_bs = base64.urlsafe_b64decode(ssl_ca_cert.encode("utf-8"))
 
             # TODO: choose a more secure location for the temporary file
             # and use the right permissions
             with tempfile.NamedTemporaryFile(delete=False) as fp:
                 ca_filename = fp.name
-                fp.write(ssl_ca_cert)
+                fp.write(cert_bs)
 
             conf = k8s_client.Configuration()
             conf.host = host
@@ -977,6 +971,7 @@ class AWSServiceConnector(ServiceConnector):
                 ) from e
 
         elif resource_type == KUBERNETES_RESOURCE_TYPE:
+
             assert resource_id is not None
 
             region_id, cluster_name = self._parse_eks_resource_id(
@@ -1007,71 +1002,68 @@ class AWSServiceConnector(ServiceConnector):
             ssl_ca_cert = client_kwargs["ssl_ca_cert"]
             host = client_kwargs["host"]
             token = client_kwargs["token"]
-            # Encode the CA cert in base64
-            ssl_ca_cert = base64.b64encode(ssl_ca_cert.encode()).decode()
+            cert_bs = base64.urlsafe_b64decode(ssl_ca_cert.encode("utf-8"))
 
-            # build the cluster config
-            cluster_config = {
-                "apiVersion": "v1",
-                "kind": "Config",
-                "clusters": [
-                    {
-                        "cluster": {
-                            "server": host,
-                            "certificate-authority-data": ssl_ca_cert,
-                        },
-                        "name": cluster_arn,
-                    }
-                ],
-                "contexts": [
-                    {
-                        "context": {
-                            "cluster": cluster_arn,
-                            "user": cluster_arn,
-                        },
-                        "name": cluster_arn,
-                    }
-                ],
-                "current-context": cluster_arn,
-                "preferences": {},
-                "users": [
-                    {
-                        "name": cluster_arn,
-                        "user": {
-                            "token": token,
-                        },
-                    }
-                ],
-            }
-            # write the cluster config to a temporary file
             with tempfile.NamedTemporaryFile(delete=False) as fp:
-                config_filename = fp.name
-                fp.write(yaml.dump(cluster_config).encode())
+                ca_filename = fp.name
+                fp.write(cert_bs)
+                fp.close()
 
-                # # merge the cluster config with the default kubeconfig
-                # merge_cmd = [
-                #     "kubectl",
-                #     "config",
-                #     "view",
-                #     "--flatten",
-                #     "--merge",
-                #     "--kubeconfig",
-                #     config_filename,
-                #     "--kubeconfig",
-
-                # ]
-                # try:
-                #     subprocess.run(
-                #         merge_cmd,
-                #         check=True,
-                #     )
-                # except subprocess.CalledProcessError as e:
-                #     raise AuthorizationException(
-                #         f"Failed to merge cluster config with default "
-                #         f"kubeconfig: {e}"
-                #     ) from e
+                # add the cluster config to the default kubeconfig
+                add_cluster_cmd = [
+                    "kubectl",
+                    "config",
+                    "set-cluster",
+                    cluster_arn,
+                    "--embed-certs",
+                    "--certificate-authority",
+                    ca_filename,
+                    "--server",
+                    host,
+                ]
+                add_user_cmd = [
+                    "kubectl",
+                    "config",
+                    "set-credentials",
+                    cluster_arn,
+                    "--token",
+                    token,
+                ]
+                add_context_cmd = [
+                    "kubectl",
+                    "config",
+                    "set-context",
+                    cluster_arn,
+                    "--cluster",
+                    cluster_arn,
+                    "--user",
+                    cluster_arn,
+                ]
+                set_context_cmd = [
+                    "kubectl",
+                    "config",
+                    "use-context",
+                    cluster_arn,
+                ]
+                try:
+                    for cmd in [
+                        add_cluster_cmd,
+                        add_user_cmd,
+                        add_context_cmd,
+                        set_context_cmd,
+                    ]:
+                        subprocess.run(
+                            cmd,
+                            check=True,
+                        )
+                except subprocess.CalledProcessError as e:
+                    raise AuthorizationException(
+                        f"Failed to update local kubeconfig with the EKS "
+                        f"cluster configuration: {e}"
+                    ) from e
                 logger.info(
-                    f"Kubernetes cluster config written to {config_filename}"
+                    f"Updated local kubeconfig with the EKS cluster details. "
+                    f"The current kubectl context was set to '{cluster_arn}'."
                 )
         else:
             raise NotImplementedError(

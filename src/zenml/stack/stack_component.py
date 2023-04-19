@@ -305,6 +305,7 @@ class StackComponent:
         labels: Optional[Dict[str, Any]] = None,
         connector_requirements: Optional[ServiceConnectorRequirements] = None,
         connector: Optional[UUID] = None,
+        connector_resource_id: Optional[str] = None,
         *args: Any,
         **kwargs: Any,
     ):
@@ -323,6 +324,8 @@ class StackComponent:
             labels: The labels of the component.
             connector_requirements: The requirements for the connector.
             connector: The ID of a connector linked to the component.
+            connector_resource_id: The custom resource ID to access through
+                the connector.
             *args: Additional positional arguments.
             **kwargs: Additional keyword arguments.
 
@@ -347,6 +350,7 @@ class StackComponent:
         self.labels = labels
         self.connector_requirements = connector_requirements
         self.connector = connector
+        self.connector_resource_id = connector_resource_id
         self._connector_instance: Optional[ServiceConnector] = None
 
     @classmethod
@@ -522,7 +526,11 @@ class StackComponent:
                 f"flavor: {err}. Please verify that the connector is "
                 f"compatible with the component flavor and try again."
             )
-
+        # Override the connector's resource ID with the one specified in the
+        # stack component if it is set.
+        connector_model.resource_id = (
+            self.connector_resource_id or connector_model.resource_id
+        )
         self._connector_instance = (
             service_connector_registry.instantiate_service_connector(
                 model=connector_model
