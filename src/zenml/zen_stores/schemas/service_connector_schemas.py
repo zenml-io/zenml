@@ -139,7 +139,8 @@ class ServiceConnectorSchema(ShareableSchema, table=True):
             The updated `ServiceConnectorSchema`.
         """
         for field, value in connector_update.dict(
-            exclude_unset=True, exclude={"workspace", "user", "labels"}
+            exclude_unset=True,
+            exclude={"workspace", "user", "labels", "secrets"},
         ).items():
             if field == "configuration":
                 self.configuration = (
@@ -149,6 +150,16 @@ class ServiceConnectorSchema(ShareableSchema, table=True):
                         )
                     )
                     if connector_update.configuration
+                    else None
+                )
+            elif field == "alt_resource_types":
+                self.alt_resource_types = (
+                    base64.b64encode(
+                        json.dumps(connector_update.alt_resource_types).encode(
+                            "utf-8"
+                        )
+                    )
+                    if connector_update.alt_resource_types
                     else None
                 )
             else:
@@ -187,7 +198,7 @@ class ServiceConnectorSchema(ShareableSchema, table=True):
                 base64.b64decode(self.configuration).decode()
             )
             if self.configuration
-            else None,
+            else {},
             secret_id=self.secret_id,
             labels={label.name: label.value for label in self.labels},
         )

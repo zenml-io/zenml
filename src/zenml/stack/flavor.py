@@ -18,6 +18,9 @@ from typing import Any, Dict, Optional, Type, cast
 
 from zenml.enums import StackComponentType
 from zenml.models import FlavorRequestModel, FlavorResponseModel
+from zenml.service_connectors.service_connector import (
+    ServiceConnectorRequirements,
+)
 from zenml.stack.stack_component import StackComponent, StackComponentConfig
 from zenml.utils import source_utils
 
@@ -99,6 +102,21 @@ class Flavor:
             self.config_class.schema_json()
         )
         return config_schema
+
+    @property
+    def service_connector_requirements(
+        self,
+    ) -> Optional[ServiceConnectorRequirements]:
+        """Requirements for service connectors.
+
+        Models requirements that are used to filter the available service
+        connector types that are compatible with this flavor.
+
+        Returns:
+            Requirements for compatible service connectors, if a service
+            connector is required for this flavor.
+        """
+        return None
 
     @classmethod
     def from_model(cls, flavor_model: FlavorResponseModel) -> "Flavor":

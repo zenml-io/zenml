@@ -190,6 +190,15 @@ class ServiceConnectorRegistry:
         except ImportError as e:
             logger.warning(f"Could not import AWS service connector: {e}.")
 
+        try:
+            from zenml.service_connectors.docker_service_connector import (
+                DockerServiceConnector,
+            )
+
+            builtin_connectors.append(DockerServiceConnector)
+        except ImportError as e:
+            logger.warning(f"Could not import Docker service connector: {e}.")
+
         return builtin_connectors
 
     def register_builtin_service_connectors(self) -> None:

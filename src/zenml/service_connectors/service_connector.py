@@ -14,7 +14,7 @@
 """Base ZenML Service Connector class."""
 
 from abc import abstractmethod
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional, Tuple
 from uuid import UUID
 
 from pydantic import (
@@ -24,12 +24,16 @@ from pydantic import (
 )
 
 from zenml.client import Client
+from zenml.exceptions import AuthorizationException
+from zenml.logger import get_logger
 from zenml.models.service_connector_models import (
     ServiceConnectorBaseModel,
     ServiceConnectorRequestModel,
     ServiceConnectorResponseModel,
     ServiceConnectorSpecificationModel,
 )
+
+logger = get_logger(__name__)
 
 
 class AuthenticationConfig(BaseModel):
@@ -43,7 +47,9 @@ class AuthenticationConfig(BaseModel):
             A dictionary of all secret values in the configuration.
         """
         return {
-            k: v for k, v in self.dict().items() if isinstance(v, SecretStr)
+            k: v
+            for k, v in self.dict(exclude_none=True).items()
+            if isinstance(v, SecretStr)
         }
 
     @property
@@ -55,9 +61,63 @@ class AuthenticationConfig(BaseModel):
         """
         return {
             k: v
-            for k, v in self.dict().items()
+            for k, v in self.dict(exclude_none=True).items()
             if not isinstance(v, SecretStr)
         }
+
+
+class ServiceConnectorRequirements(BaseModel):
+    """Service connector requirements.
+
+    Describes requirements that a service connector consumer has for a
+    service connector instance that it needs in order to access a resource.
+
+    Attributes:
+        connector_type: The type of service connector that is required. If
+            omitted, any service connector type can be used.
+        resource_type: The type of resource that the service connector instance
+            must be able to access. If omitted, any resource type can be
+            accessed.
+    """
+
+    connector_type: Optional[str] = None
+    resource_type: Optional[str] = None
+
+    def is_satisfied_by(
+        self, connector: "ServiceConnectorBaseModel"
+    ) -> Tuple[bool, str]:
+        """Check if the requirements are satisfied by a connector.
+
+        Args:
+            connector: The connector to check.
+
+        Returns:
+            True if the requirements are satisfied, False otherwise, and a
+            message describing the reason for the failure.
+        """
+        if self.connector_type and self.connector_type != connector.type:
+            return (
+                False,
+                f"connector type '{connector.type}' does not match the "
+                f"'{self.connector_type}' specified in the requirements",
+            )
+        if not self.resource_type:
+            provided_resource_types: List[Optional[str]] = [
+                connector.resource_type
+            ]
+            if connector.alt_resource_types:
+                if None in connector.alt_resource_types:
+                    # Arbitrary resource type is allowed
+                    return True, ""
+                provided_resource_types.extend(connector.alt_resource_types)
+            if self.resource_type not in provided_resource_types:
+                return False, (
+                    f"connector resource type '{connector.resource_type}' "
+                    f"is not compatible with the '{self.resource_type}' "
+                    "resource type specified in the requirements"
+                )
+
+        return True, ""
 
 
 class ServiceConnector(BaseModel):
@@ -228,6 +288,30 @@ class ServiceConnector(BaseModel):
         Raises:
             NotImplementedError: If the connector auto-configuration fails or
                 is not supported.
+        """
+
+    @abstractmethod
+    def _verify(
+        self,
+        resource_type: Optional[str] = None,
+        resource_id: Optional[str] = None,
+    ) -> None:
+        """Verify that the connector can authenticate and connect.
+
+        Args:
+            resource_type: The type of resource to connect to. Can be different
+                than the resource type that the connector is configured to
+                access if alternative resource types or arbitrary
+                resource types are allowed by the connector configuration.
+            resource_id: The ID of the resource to connect to. Omitted if the
+                configured resource type does not allow multiple instances.
+                Can be different than the resource ID that the connector is
+                configured to access if resource ID aliases or wildcards
+                are supported.
+
+        Raises:
+            ValueError: If the connector configuration is invalid.
+            AuthorizationException: If authentication failed.
         """
 
     @classmethod
@@ -430,7 +514,7 @@ class ServiceConnector(BaseModel):
                 )
 
         else:
-            if resource_spec.multi_instance:
+            if not self.resource_id and resource_spec.multi_instance:
                 raise ValueError(
                     f"the connector is configured to provide access to a "
                     f"'{self.resource_type}' resource type that supports "
@@ -568,13 +652,13 @@ class ServiceConnector(BaseModel):
         )
 
         self._configure_local_client(
-            resource_type=resource_type,
-            resource_id=resource_id,
+            resource_type=resource_type or self.resource_type,
+            resource_id=resource_id or self.resource_id,
             **kwargs,
         )
 
-    def check(self) -> None:
-        """Validate that the connector is configured with valid credentials.
+    def verify(self) -> None:
+        """Verify that the connector can connect to the remote resource.
 
         This method verifies that the connector is configured with valid
         credentials and resource information by actively trying to connect to
@@ -582,6 +666,28 @@ class ServiceConnector(BaseModel):
 
         Raises:
             ValueError: If the connector is not configured with valid
-                credentials and resource information.
+                credentials or resource information.
+            AuthorizationException: If the connector is not authorized to
+                connect to the remote resource.
         """
-        self._validate()
+        # For validation, we must not rely on runtime arguments supplied by
+        # the user, but only on the connector's configuration.
+        try:
+            self.validate_runtime_args(
+                resource_type=None,
+                resource_id=None,
+            )
+
+            self._verify()
+        except ValueError as exc:
+            logger.exception("connector validation failed")
+            raise ValueError(
+                "The connector configuration is incomplete, invalid or does "
+                f"not allow for a verification: {exc}",
+            )
+        except AuthorizationException as exc:
+            logger.exception("connector validation failed")
+            raise AuthorizationException(
+                "The connector is not authorized to connect to the remote "
+                f"resource: {exc}",
+            )

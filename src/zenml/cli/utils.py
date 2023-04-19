@@ -434,34 +434,43 @@ def print_stack_component_configuration(
 
     if not component.labels:
         declare("No labels are set for this component.")
-        return
+    else:
+        rich_table = table.Table(
+            box=box.HEAVY_EDGE,
+            title="Labels",
+            show_lines=True,
+        )
+        rich_table.add_column("LABEL")
+        rich_table.add_column("VALUE", overflow="fold")
 
-    title_ = (
-        f"'{component.name}' {component.type.value.upper()} "
-        f"Component Labels"
-    )
+        for label, value in component.labels.items():
+            rich_table.add_row(label, value)
 
-    if active_status:
-        title_ += " (ACTIVE)"
-    rich_table = table.Table(
-        box=box.HEAVY_EDGE,
-        title=title_,
-        show_lines=True,
-    )
-    rich_table.add_column("COMPONENT_PROPERTY")
-    rich_table.add_column("VALUE", overflow="fold")
+        console.print(rich_table)
 
-    items = component.labels.items()
-    for item in items:
-        elements = []
-        for idx, elem in enumerate(item):
-            if idx == 0:
-                elements.append(f"{elem.upper()}")
-            else:
-                elements.append(str(elem))
-        rich_table.add_row(*elements)
+    if not component.connector:
+        declare("No connector is set for this component.")
+    else:
+        rich_table = table.Table(
+            box=box.HEAVY_EDGE,
+            title="Service Connector",
+            show_lines=True,
+        )
+        rich_table.add_column("PROPERTY")
+        rich_table.add_column("VALUE", overflow="fold")
 
-    console.print(rich_table)
+        connector_dict = {
+            "ID": str(component.connector.id),
+            "NAME": component.connector.name,
+            "TYPE": component.connector.type,
+            "RESOURCE_TYPE": component.connector.resource_type,
+            "RESOURCE_ID": component.connector.resource_id or "",
+        }
+
+        for label, value in connector_dict.items():
+            rich_table.add_row(label, value)
+
+        console.print(rich_table)
 
 
 def print_active_config() -> None:
@@ -593,6 +602,9 @@ def parse_name_and_extra_arguments(
     # The name was not supplied as the first argument, we have to
     # search the other arguments for the name.
     for i, arg in enumerate(args):
+        if not arg:
+            # Skip empty arguments.
+            continue
         if arg.startswith("--"):
             continue
         name = args.pop(i)
@@ -611,6 +623,9 @@ def parse_name_and_extra_arguments(
     )
     args_dict: Dict[str, str] = {}
     for a in args:
+        if not a:
+            # Skip empty arguments.
+            continue
         if not a.startswith("--") or "=" not in a:
             error(f"Invalid argument: '{a}'. {message}")
         key, value = a[2:].split("=", maxsplit=1)
@@ -1161,12 +1176,129 @@ def print_service_connectors_table(
             "NAME": connector.name,
             "ID": connector.id,
             "TYPE": connector.type,
-            "RESOURCE": connector.resource_type + ("/" + connector.resource_id) if connector.resource_id else "",
+            "RESOURCE_TYPE": connector.resource_type,
+            "RESOURCE_ID": connector.resource_id
+            if connector.resource_id
+            else "",
             "SHARED": get_shared_emoji(connector.is_shared),
             "OWNER": f"{connector.user.name if connector.user else 'DELETED!'}",
         }
         configurations.append(connector_config)
     print_table(configurations)
+
+
+def print_service_connector_configuration(
+    connector: "ServiceConnectorResponseModel",
+    active_status: bool,
+    show_secrets: bool,
+) -> None:
+    """Prints the configuration options of a service connector.
+
+    Args:
+        connector: The service connector to print.
+        active_status: Whether the connector is active.
+        show_secrets: Whether to show secrets.
+    """
+    if connector.user:
+        user_name = connector.user.name
+    else:
+        user_name = "[DELETED]"
+
+    declare(
+        f"Service connector '{connector.name}' of type "
+        f"'{connector.type}' with id '{connector.id}' is owned by "
+        f"user '{user_name}' and is "
+        f"'{'shared' if connector.is_shared else 'private'}'."
+    )
+
+    title_ = (
+        f"'{connector.name}' {connector.type} Service Connector " "Details"
+    )
+
+    if active_status:
+        title_ += " (ACTIVE)"
+    rich_table = table.Table(
+        box=box.HEAVY_EDGE,
+        title=title_,
+        show_lines=True,
+    )
+    rich_table.add_column("PROPERTY")
+    rich_table.add_column("VALUE", overflow="fold")
+
+    alt_res_types = (
+        [v for v in connector.alt_resource_types if v]
+        if connector.alt_resource_types
+        else []
+    )
+    properties = {
+        "ID": connector.id,
+        "NAME": connector.name,
+        "TYPE": connector.type,
+        "AUTH_METHOD": connector.auth_method,
+        "RESOURCE_TYPE": connector.resource_type,
+        "ALT_RESOURCE_TYPES": ", ".join(alt_res_types),
+        "RESOURCE_ID": connector.resource_id or "",
+        "SECRET_ID": connector.secret_id or "",
+        "OWNER": user_name,
+        "WORKSPACE": connector.workspace.name,
+        "SHARED": get_shared_emoji(connector.is_shared),
+        "CREATED_AT": connector.created,
+        "UPDATED_AT": connector.updated,
+    }
+
+    for item in properties.items():
+        elements = [str(elem) for elem in item]
+        rich_table.add_row(*elements)
+
+    console.print(rich_table)
+
+    if len(connector.configuration) and len(connector.secrets) == 0:
+        declare("No configuration options are set for this component.")
+
+    else:
+        rich_table = table.Table(
+            box=box.HEAVY_EDGE,
+            title="Configuration",
+            show_lines=True,
+        )
+        rich_table.add_column("PROPERTY")
+        rich_table.add_column("VALUE", overflow="fold")
+
+        config = connector.configuration.copy()
+        secrets = connector.secrets.copy()
+        for key, value in secrets.items():
+            if not show_secrets:
+                config[key] = "[HIDDEN]"
+            elif value is None:
+                config[key] = "[UNAVAILABLE]"
+            else:
+                config[key] = value.get_secret_value()
+
+        for item in config.items():
+            elements = [str(elem) for elem in item]
+            rich_table.add_row(*elements)
+
+        console.print(rich_table)
+
+    if not connector.labels:
+        declare("No labels are set for this service connector.")
+        return
+
+    rich_table = table.Table(
+        box=box.HEAVY_EDGE,
+        title="Labels",
+        show_lines=True,
+    )
+    rich_table.add_column("LABEL")
+    rich_table.add_column("VALUE", overflow="fold")
+
+    items = connector.labels.items()
+    for item in items:
+        elements = [str(elem) for elem in item]
+        rich_table.add_row(*elements)
+
+    console.print(rich_table)
+
 
 def _get_stack_components(
     stack: "Stack",

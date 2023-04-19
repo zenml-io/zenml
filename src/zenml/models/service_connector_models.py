@@ -50,6 +50,9 @@ class ResourceTypeSpecificationModel(BaseModel):
     any of the other resource types.
     """
 
+    name: str = Field(
+        title="User readable name for the resource type.",
+    )
     resource_types: List[Optional[str]] = Field(
         title="List of equivalent resource type identifiers. Use None to "
         "represent a wildcard that allows arbitrary resource types.",
@@ -131,6 +134,9 @@ class AuthenticationMethodSpecificationModel(BaseModel):
     resources that the authentication method can be used to access.
     """
 
+    name: str = Field(
+        title="User readable name for the authentication method.",
+    )
     auth_method: str = Field(
         title="The name of the authentication method.",
         max_length=STR_FIELD_MAX_LENGTH,
@@ -190,6 +196,9 @@ class ServiceConnectorSpecificationModel(BaseModel):
     (e.g. a stack component).
     """
 
+    name: str = Field(
+        title="User readable name for the service connector type.",
+    )
     type: str = Field(
         title="The type of service connector. It can be used to represent a "
         "generic resource (e.g. Docker, Kubernetes) or a group of different "
@@ -303,6 +312,32 @@ class ServiceConnectorSpecificationModel(BaseModel):
             )
 
         return map
+
+    def get_resource_spec(
+        self, resource_type: str
+    ) -> ResourceTypeSpecificationModel:
+        """Returns the resource specification for a resource type.
+
+        Args:
+            resource_type: The type of resource.
+
+        Returns:
+            The resource specification for the resource type.
+
+        Raises:
+            KeyError: If the resource type is not supported by the service
+                connector.
+        """
+        resource_type_map = self.resource_type_map
+        if resource_type in resource_type_map:
+            return self.resource_type_map[resource_type]
+        if None in resource_type_map:
+            return self.resource_type_map[None]
+        
+        raise KeyError(
+            f"Resource type '{resource_type}' is not supported by "
+            f"service connector '{self.name}'."
+        )
 
     @property
     def auth_method_map(
@@ -477,6 +512,19 @@ class ServiceConnectorResponseModel(
 
 class ServiceConnectorFilterModel(ShareableWorkspaceScopedFilterModel):
     """Model to enable advanced filtering of service connectors."""
+
+    FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
+        *ShareableWorkspaceScopedFilterModel.FILTER_EXCLUDE_FIELDS,
+        "scope_type",
+    ]
+    CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
+        *ShareableWorkspaceScopedFilterModel.CLI_EXCLUDE_FIELDS,
+        "scope_type",
+    ]
+    scope_type: Optional[str] = Field(
+        default=None,
+        description="The type to scope this query to.",
+    )
 
     is_shared: Optional[Union[bool, str]] = Field(
         default=None,

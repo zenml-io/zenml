@@ -84,7 +84,7 @@ class StackComponentSchema(ShareableSchema, table=True):
         back_populates="stack_component",
     )
 
-    connector_id: UUID = build_foreign_key_field(
+    connector_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
         target=ServiceConnectorSchema.__tablename__,
         source_column="connector_id",
@@ -92,7 +92,7 @@ class StackComponentSchema(ShareableSchema, table=True):
         ondelete="SET NULL",
         nullable=True,
     )
-    connector: "ServiceConnectorSchema" = Relationship(
+    connector: Optional["ServiceConnectorSchema"] = Relationship(
         back_populates="components"
     )
 

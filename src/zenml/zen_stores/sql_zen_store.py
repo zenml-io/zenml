@@ -719,7 +719,10 @@ class SqlZenStore(BaseZenStore):
             ValueError: if the filtered page number is out of bounds.
             RuntimeError: if the schema does not have a `to_model` method.
         """
-        query = filter_model.apply_filter(query=query, table=table)
+        # Filtering
+        filters = filter_model.generate_filter(table=table)
+        if filters is not None:
+            query = query.where(filters)
 
         # Get the total amount of items in the database for a given query
         total = session.scalar(
@@ -1278,6 +1281,20 @@ class SqlZenStore(BaseZenStore):
                     session=session,
                 )
 
+            service_connector: Optional[ServiceConnectorSchema] = None
+            if component.connector:
+                service_connector = session.exec(
+                    select(ServiceConnectorSchema).where(
+                        ServiceConnectorSchema.id == component.connector
+                    )
+                ).first()
+
+                if service_connector is None:
+                    raise KeyError(
+                        f"Service connector with ID {component.connector} not "
+                        "found."
+                    )
+
             # Create the component
             new_component = StackComponentSchema(
                 name=component.name,
@@ -1292,6 +1309,7 @@ class SqlZenStore(BaseZenStore):
                 labels=base64.b64encode(
                     json.dumps(component.labels).encode("utf-8")
                 ),
+                connector=service_connector,
             )
 
             session.add(new_component)
@@ -1428,6 +1446,24 @@ class SqlZenStore(BaseZenStore):
                     )
 
             existing_component.update(component_update=component_update)
+
+            service_connector: Optional[ServiceConnectorSchema] = None
+            if component_update.connector:
+                service_connector = session.exec(
+                    select(ServiceConnectorSchema).where(
+                        ServiceConnectorSchema.id == component_update.connector
+                    )
+                ).first()
+
+                if service_connector is None:
+                    raise KeyError(
+                        "Service connector with ID "
+                        f"{component_update.connector} not found."
+                    )
+
+            if service_connector:
+                existing_component.connector = service_connector
+
             session.add(existing_component)
             session.commit()
 

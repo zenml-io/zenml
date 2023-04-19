@@ -25,6 +25,9 @@ from zenml.config.step_run_info import StepRunInfo
 from zenml.enums import StackComponentType
 from zenml.logger import get_logger
 from zenml.models import ComponentResponseModel
+from zenml.service_connectors.service_connector import (
+    ServiceConnectorRequirements,
+)
 from zenml.utils import secret_utils, settings_utils
 
 if TYPE_CHECKING:
@@ -300,6 +303,7 @@ class StackComponent:
         created: datetime,
         updated: datetime,
         labels: Optional[Dict[str, Any]] = None,
+        connector_requirements: Optional[ServiceConnectorRequirements] = None,
         connector: Optional[UUID] = None,
         *args: Any,
         **kwargs: Any,
@@ -317,6 +321,7 @@ class StackComponent:
             created: The creation time of the component.
             updated: The last update time of the component.
             labels: The labels of the component.
+            connector_requirements: The requirements for the connector.
             connector: The ID of a connector linked to the component.
             *args: Additional positional arguments.
             **kwargs: Additional keyword arguments.
@@ -340,6 +345,7 @@ class StackComponent:
         self.created = created
         self.updated = updated
         self.labels = labels
+        self.connector_requirements = connector_requirements
         self.connector = connector
         self._connector_instance: Optional[ServiceConnector] = None
 
@@ -392,6 +398,7 @@ class StackComponent:
             type=component_model.type,
             created=component_model.created,
             updated=component_model.updated,
+            connector_requirements=flavor.service_connector_requirements,
             connector=component_model.connector.id
             if component_model.connector
             else None,
@@ -465,6 +472,11 @@ class StackComponent:
 
         Returns:
             The connector linked to this stack component.
+
+        Raises:
+            RuntimeError: If the stack component does not specify connector
+                requirements or if the connector linked to the component is not
+                compatible or not found.
         """
         from zenml.client import Client
         from zenml.service_connectors.service_connector_registry import (
@@ -477,6 +489,16 @@ class StackComponent:
         if self._connector_instance is not None:
             return self._connector_instance
 
+        if self.connector_requirements is None:
+            raise RuntimeError(
+                f"Unable to get connector for component {self} because this "
+                "component does not declare any connector requirements in its. "
+                "flavor specification. Override the "
+                "`service_connector_requirements` method in its flavor class "
+                "to return a connector requirements specification and try "
+                "again."
+            )
+
         client = Client()
         try:
             connector_model = client.get_service_connector(
@@ -484,8 +506,21 @@ class StackComponent:
             )
         except KeyError:
             raise RuntimeError(
-                f"Unable to find the connector with ID {self.connector} linked "
-                f"to the '{self.name}' {self.type} stack component."
+                f"The connector with ID {self.connector} linked "
+                f"to the '{self.name}' {self.type} stack component could not "
+                f"be found or is not accessible. Please verify that the "
+                f"connector exists and that you have access to it."
+            )
+        satisfied, err = self.connector_requirements.is_satisfied_by(
+            connector_model
+        )
+        if not satisfied:
+            raise RuntimeError(
+                f"The connector with ID {self.connector} linked "
+                f"to the '{self.name}' {self.type} stack component does not "
+                f"match the connector requirements specified in the component "
+                f"flavor: {err}. Please verify that the connector is "
+                f"compatible with the component flavor and try again."
             )
 
         self._connector_instance = (

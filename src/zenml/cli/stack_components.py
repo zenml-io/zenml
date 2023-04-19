@@ -16,6 +16,7 @@
 import time
 from importlib import import_module
 from typing import Any, Callable, List, Optional
+from uuid import UUID
 
 import click
 from rich.markdown import Markdown
@@ -1056,6 +1057,179 @@ def generate_stack_component_flavor_delete_command(
     return delete_stack_component_flavor_command
 
 
+def generate_stack_component_connect_command(
+    component_type: StackComponentType,
+) -> Callable[[str, str], None]:
+    """Generates a `connect` command for the specific stack component type.
+
+    Args:
+        component_type: Type of the component to generate the command for.
+
+    Returns:
+        A function that can be used as a `click` command.
+    """
+    display_name = _component_display_name(component_type)
+
+    @click.argument(
+        "name_id_or_prefix",
+        type=str,
+        required=True,
+    )
+    @click.option(
+        "--connector-id",
+        "-c",
+        "connector_id",
+        help="The ID of the connector to use.",
+        required=False,
+        type=str,
+    )
+    @click.option(
+        "--interactive",
+        "-i",
+        "interactive",
+        is_flag=True,
+        default=False,
+        help="Select a service connector interactively.",
+        type=click.BOOL,
+    )
+    def connect_stack_component_command(
+        name_id_or_prefix: str,
+        connector_id: Optional[str] = None,
+        interactive: bool = False,
+    ) -> None:
+        """Connect the stack component to a connector.
+
+        Args:
+            name_id_or_prefix: The name of the stack component to connect.
+            connector_id: The ID of the connector to use.
+            interactive: Select a service connector interactively.
+        """
+        from zenml.stack import Flavor
+
+        if component_type == StackComponentType.SECRETS_MANAGER:
+            warn_deprecated_secrets_manager()
+
+        if not connector_id and not interactive:
+            cli_utils.error(
+                "Please provide either a connector ID or set the interactive "
+                "flag."
+            )
+
+        if connector_id and interactive:
+            cli_utils.error(
+                "Please provide either a connector ID or set the interactive "
+                "flag, not both."
+            )
+
+        client = Client()
+
+        try:
+            component_model = client.get_stack_component(
+                name_id_or_prefix=name_id_or_prefix,
+                component_type=component_type,
+            )
+        except KeyError as err:
+            cli_utils.error(str(err))
+
+        try:
+            flavor_model = client.get_flavor_by_name_and_type(
+                name=component_model.flavor, component_type=component_type
+            )
+        except KeyError as err:
+            cli_utils.error(
+                f"Could not find flavor '{component_model.flavor}' for "
+                f"{display_name} '{name_id_or_prefix}': {str(err)}"
+            )
+
+        flavor = Flavor.from_model(flavor_model)
+        req = flavor.service_connector_requirements
+
+        if not req:
+            cli_utils.error(
+                f"The '{component_model.name}' {display_name} implementation "
+                "does not use a service connector."
+            )
+
+        if interactive:
+            connectors = client.list_service_connectors(
+                type=req.connector_type,
+                resource_type=req.resource_type,
+            )
+
+            if not connectors:
+                cli_utils.error(
+                    f"No compatible connectors were found for the "
+                    f"'{component_model.name}' {display_name}."
+                )
+
+            cli_utils.declare(
+                f"The following {len(connectors.items)} connector(s) were "
+                f"found to be compatible with the '{component_model.name}' "
+                f"{display_name}:"
+            )
+
+            cli_utils.print_service_connectors_table(client, connectors.items)
+
+            if len(connectors.items) == 1:
+                connect = click.confirm(
+                    "Would you like to use this connector?",
+                    default=True,
+                )
+                if not connect:
+                    return
+                connector_uuid = connectors.items[0].id
+            else:
+                connector_id = click.prompt(
+                    "Please enter the ID of the connector you want to use",
+                    type=click.Choice(
+                        [str(connector.id) for connector in connectors.items]
+                    ),
+                    show_choices=False,
+                )
+                connector_uuid = UUID(connector_id)
+
+        else:
+            assert connector_id is not None
+            try:
+                connector_model = client.get_service_connector(connector_id)
+            except KeyError as err:
+                cli_utils.error(
+                    f"Could not find a connector with ID '{connector_id}': "
+                    f"{str(err)}"
+                )
+
+            satisfied, err = req.is_satisfied_by(connector_model)
+            if not satisfied:
+                cli_utils.error(
+                    f"The connector with ID {connector_id} does not match the "
+                    f"component's connector requirements: {err}. Please verify "
+                    "that the connector is compatible with the component "
+                    "flavor and try again, or use the interactive mode to "
+                    "select a compatible connector."
+                )
+
+            connector_uuid = connector_model.id
+
+        with console.status(
+            f"Updating {display_name} '{name_id_or_prefix}'...\n"
+        ):
+            try:
+                client.update_stack_component(
+                    name_id_or_prefix=name_id_or_prefix,
+                    component_type=component_type,
+                    connector_id=connector_uuid,
+                )
+            except (KeyError, IllegalOperationError) as err:
+                cli_utils.error(str(err))
+
+            cli_utils.declare(
+                f"Successfully connected {display_name} `{name_id_or_prefix}` "
+                f"to service connector `{connector_uuid}`."
+            )
+
+    return connect_stack_component_command
+
+
 def register_single_stack_component_cli_commands(
     component_type: StackComponentType, parent_group: click.Group
 ) -> None:
@@ -1180,6 +1354,13 @@ def register_single_stack_component_cli_commands(
     command_group.command(
         "logs", help=f"Display {singular_display_name} logs."
     )(logs_command)
+
+    # zenml stack-component connect
+    connect_command = generate_stack_component_connect_command(component_type)
+    command_group.command(
+        "connect",
+        help=f"Connect {singular_display_name} to a service connector.",
+    )(connect_command)
 
     # zenml stack-component explain
     explain_command = generate_stack_component_explain_command(component_type)

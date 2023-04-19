@@ -33,6 +33,9 @@ from zenml.artifact_stores import (
     BaseArtifactStoreFlavor,
 )
 from zenml.integrations.s3 import S3_ARTIFACT_STORE_FLAVOR
+from zenml.service_connectors.service_connector import (
+    ServiceConnectorRequirements,
+)
 from zenml.stack.authentication_mixin import AuthenticationConfigMixin
 from zenml.utils.networking_utils import (
     replace_localhost_with_internal_hostname,
@@ -154,6 +157,24 @@ class S3ArtifactStoreFlavor(BaseArtifactStoreFlavor):
             The name of the flavor.
         """
         return S3_ARTIFACT_STORE_FLAVOR
+
+    @property
+    def service_connector_requirements(
+        self,
+    ) -> Optional[ServiceConnectorRequirements]:
+        """Requirements for service connectors.
+
+        Models requirements that are used to filter the available service
+        connector types that are compatible with this flavor.
+
+        Returns:
+            Requirements for compatible service connectors, if a service
+            connector is required for this flavor.
+        """
+        return ServiceConnectorRequirements(
+            connector_type="aws",
+            resource_type="s3",
+        )
 
     @property
     def docs_url(self) -> Optional[str]:

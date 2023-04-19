@@ -143,6 +143,7 @@ from zenml.utils.pagination_utils import depaginate
 
 if TYPE_CHECKING:
     from zenml.metadata.metadata_types import MetadataType
+    from zenml.service_connectors.service_connector import ServiceConnector
     from zenml.stack import Stack, StackComponentConfig
     from zenml.zen_stores.base_zen_store import BaseZenStore
 
@@ -2051,6 +2052,7 @@ class Client(metaclass=ClientMetaClass):
         type: Optional[str] = None,
         workspace_id: Optional[Union[str, UUID]] = None,
         user_id: Optional[Union[str, UUID]] = None,
+        connector_id: Optional[Union[str, UUID]] = None,
     ) -> Page[ComponentResponseModel]:
         """Lists all registered stack components.
 
@@ -2066,6 +2068,7 @@ class Client(metaclass=ClientMetaClass):
             type: Use the component type for filtering
             workspace_id: The id of the workspace to filter by.
             user_id: The id of the user to filter by.
+            connector_id: The id of the connector to filter by.
             name: The name of the component to filter by.
             is_shared: The shared status of the component to filter by.
 
@@ -2079,6 +2082,7 @@ class Client(metaclass=ClientMetaClass):
             logical_operator=logical_operator,
             workspace_id=workspace_id or self.active_workspace.id,
             user_id=user_id,
+            connector_id=connector_id,
             name=name,
             is_shared=is_shared,
             flavor=flavor,
@@ -2157,6 +2161,7 @@ class Client(metaclass=ClientMetaClass):
         configuration: Optional[Dict[str, Any]] = None,
         labels: Optional[Dict[str, Any]] = None,
         is_shared: Optional[bool] = None,
+        connector_id: Optional[UUID] = None,
     ) -> "ComponentResponseModel":
         """Updates a stack component.
 
@@ -2168,6 +2173,7 @@ class Client(metaclass=ClientMetaClass):
             configuration: The new configuration of the stack component.
             labels: The new labels of the stack component.
             is_shared: The new shared status of the stack component.
+            connector_id: The new connector id of the stack component.
 
         Returns:
             The updated stack component.
@@ -2248,6 +2254,9 @@ class Client(metaclass=ClientMetaClass):
                 k: v for k, v in existing_labels.items() if v is not None
             }
             update_model.labels = existing_labels
+
+        if connector_id is not None:
+            update_model.connector = connector_id
 
         # Send the updated component to the ZenStore
         return self.zen_store.update_stack_component(
@@ -4089,9 +4098,28 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             The registered service connector.
         """
+
+        def scoped_list_method(
+            **kwargs: Any,
+        ) -> Page[ServiceConnectorResponseModel]:
+            """Call `zen_store.list_service_connectors` with workspace scoping.
+
+            Args:
+                **kwargs: Keyword arguments to pass to
+                    `ServiceConnectorFilterModel`.
+
+            Returns:
+                The list of service connectors.
+            """
+            filter_model = ServiceConnectorFilterModel(**kwargs)
+            filter_model.set_scope_workspace(self.active_workspace.id)
+            return self.zen_store.list_service_connectors(
+                filter_model=filter_model,
+            )
+
         return self._get_entity_by_id_or_name_or_prefix(
             get_method=self.zen_store.get_service_connector,
-            list_method=self.list_service_connectors,
+            list_method=scoped_list_method,
             name_id_or_prefix=name_id_or_prefix,
             allow_name_prefix_match=allow_name_prefix_match,
         )
@@ -4180,7 +4208,7 @@ class Client(metaclass=ClientMetaClass):
         is_shared: bool = False,
         labels: Optional[Dict[str, str]] = None,
         auto_configure: bool = False,
-        check: bool = True,
+        verify: bool = True,
         register: bool = True,
     ) -> Optional["ServiceConnectorResponseModel"]:
         """Create, validate and/or register a service connector.
@@ -4198,13 +4226,16 @@ class Client(metaclass=ClientMetaClass):
             labels: The labels of the service connector.
             auto_configure: Whether to automatically configure the service
                 connector from the local environment.
-            check: Whether to validate that the service connector configuration
+            verify: Whether to verify that the service connector configuration
                 and credentials can be used to gain access to the resource.
             register: Whether to register the service connector or not.
 
         Returns:
             The model of the registered service connector, or None, if the
             registration was skipped.
+
+        Raises:
+            RuntimeError: If the service connector could not be verified.
         """
         from zenml.service_connectors.service_connector_registry import (
             service_connector_registry,
@@ -4230,8 +4261,8 @@ class Client(metaclass=ClientMetaClass):
                 auth_method=auth_method,
                 resource_id=resource_id,
             )
-            if check:
-                connector_instance.check()
+            if verify:
+                connector_instance.verify()
 
             connector_model = connector_instance.to_model(
                 name=name,
@@ -4256,7 +4287,7 @@ class Client(metaclass=ClientMetaClass):
                 labels=labels or {},
             )
 
-            if check:
+            if verify:
                 # This will also check that a connector class is registered for
                 # the given type and that the configuration is valid
                 connector = (
@@ -4264,7 +4295,7 @@ class Client(metaclass=ClientMetaClass):
                         model=connector_model
                     )
                 )
-                connector.check()
+                connector.verify()
 
                 # Get an updated model from the connector instance
                 connector_model = connector.to_model(
@@ -4296,7 +4327,7 @@ class Client(metaclass=ClientMetaClass):
         description: Optional[str] = None,
         is_shared: Optional[bool] = None,
         labels: Optional[Dict[str, str]] = None,
-        check: bool = True,
+        verify: bool = True,
         register: bool = True,
     ) -> "ServiceConnectorResponseModel":
         """Validate and/or update a service connector.
@@ -4315,7 +4346,7 @@ class Client(metaclass=ClientMetaClass):
             description: The new description of the service connector.
             is_shared: The new shared status of the service connector.
             labels: The new labels of the service connector.
-            check: Whether to validate that the new service connector
+            verify: Whether to validate that the new service connector
                 configuration and credentials can be used to gain access to the
                 resource.
             register: Whether to register the new service connector or not.
@@ -4325,6 +4356,7 @@ class Client(metaclass=ClientMetaClass):
 
         Raises:
             EntityExistsError: If the new name is already taken.
+            RuntimeError: If the service connector could not be verified.
         """
         from zenml.service_connectors.service_connector_registry import (
             service_connector_registry,
@@ -4397,7 +4429,7 @@ class Client(metaclass=ClientMetaClass):
             labels if labels is not None else service_connector.labels
         )
 
-        if check:
+        if verify:
 
             # This will also check that a connector class is registered for the
             # given type and that the configuration is valid
@@ -4406,7 +4438,7 @@ class Client(metaclass=ClientMetaClass):
                     model=service_connector
                 )
             )
-            connector.check()
+            connector.verify()
 
             # Get an updated model from the connector instance and treat it
             # as the update model
@@ -4469,6 +4501,94 @@ class Client(metaclass=ClientMetaClass):
             service_connector.type,
             service_connector.name,
         )
+
+    def verify_service_connector(
+        self,
+        name_id_or_prefix: Union[UUID, str],
+    ) -> "ServiceConnector":
+        """Verify that the connector can connect to the remote resource.
+
+        Args:
+            name_id_or_prefix: The name, id or prefix of the service connector to
+                update.
+
+        Returns:
+            The service connector instance that was used to verify the
+            connection.
+        """
+        from zenml.service_connectors.service_connector_registry import (
+            service_connector_registry,
+        )
+
+        # Get the service connector model
+        service_connector = self.get_service_connector(
+            name_id_or_prefix=name_id_or_prefix,
+            allow_name_prefix_match=False,
+        )
+
+        # This will also check that a connector class is registered for the
+        # given type and that the configuration is valid
+        connector = service_connector_registry.instantiate_service_connector(
+            model=service_connector
+        )
+
+        connector.verify()
+
+        return connector
+
+    def login_service_connector(
+        self,
+        name_id_or_prefix: Union[UUID, str],
+        resource_type: Optional[str] = None,
+        resource_id: Optional[str] = None,
+        **kwargs: Any,
+    ) -> "ServiceConnector":
+        """Use a service connector to authenticate a local client/SDK.
+
+        Args:
+            name_id_or_prefix: The name, id or prefix of the service connector to
+                use.
+            resource_type: The type of resource to configure the local client
+                to connect to. If the connector instance is configured with a
+                resource type that is not the same or an alternative to the one
+                requested, a `ValueError` exception is raised.
+            resource_id: The ID of a particular resource instance to configure
+                the local client to connect to. Use this with resource types
+                that allow multiple instances. If the connector instance is
+                already configured with a resource ID that is not the same or
+                equivalent to the one requested, or if the resource type does
+                not support multiple instances, a `ValueError` exception is
+                raised.
+            kwargs: Additional implementation specific keyword arguments to use
+                to configure the client.
+
+        Returns:
+            The service connector instance that was used to configure the local
+            client.
+        """
+        from zenml.service_connectors.service_connector_registry import (
+            service_connector_registry,
+        )
+
+        # Get the service connector model
+        service_connector = self.get_service_connector(
+            name_id_or_prefix=name_id_or_prefix,
+            allow_name_prefix_match=False,
+        )
+
+        # This will also check that a connector class is registered for the
+        # given type and that the configuration is valid
+        connector = service_connector_registry.instantiate_service_connector(
+            model=service_connector
+        )
+
+        connector.configure_local_client(
+            resource_type=resource_type,
+            resource_id=resource_id,
+            **kwargs,
+        )
+
+        return connector
 
     # ---- utility prefix matching get functions -----
 

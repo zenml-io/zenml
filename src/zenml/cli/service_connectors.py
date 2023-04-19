@@ -13,28 +13,22 @@
 #  permissions and limitations under the License.
 """Service connector CLI commands."""
 
-import time
-from importlib import import_module
-from typing import Any, Callable, List, Optional
+from typing import Any, List, Optional
+from uuid import UUID
 
 import click
-from rich.markdown import Markdown
 
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
 from zenml.cli.utils import (
-    _component_display_name,
     list_options,
     print_page_info,
-    warn_deprecated_secrets_manager,
 )
 from zenml.client import Client
 from zenml.console import console
-from zenml.enums import CliCategories, StackComponentType
-from zenml.exceptions import IllegalOperationError
-from zenml.io import fileio
+from zenml.enums import CliCategories
+from zenml.exceptions import AuthorizationException, IllegalOperationError
 from zenml.models import ServiceConnectorFilterModel
-from zenml.utils.analytics_utils import AnalyticsEvent, track
 
 
 # Service connectors
@@ -48,6 +42,7 @@ def service_connector() -> None:
 
 @service_connector.command(
     "register",
+    context_settings={"ignore_unknown_options": True},
     help="""Configure, validate and register a ZenML service connector.
 """,
 )
@@ -112,11 +107,11 @@ def service_connector() -> None:
     type=click.BOOL,
 )
 @click.option(
-    "--skip-validation",
-    "skip_validation",
+    "--no-verify",
+    "no_verify",
     is_flag=True,
     default=False,
-    help="Do not validate the service connector before registering.",
+    help="Do not verify the service connector before registering.",
     type=click.BOOL,
 )
 @click.option(
@@ -130,7 +125,7 @@ def service_connector() -> None:
 )
 @click.argument("args", nargs=-1, type=click.UNPROCESSED)
 def register_service_connector(
-    name: str,
+    name: Optional[str],
     args: List[str],
     description: Optional[str] = None,
     type: Optional[str] = None,
@@ -138,7 +133,7 @@ def register_service_connector(
     resource_id: Optional[str] = None,
     auth_method: Optional[str] = None,
     share: bool = False,
-    skip_validation: bool = False,
+    no_verify: bool = False,
     labels: Optional[List[str]] = None,
     interactive: bool = False,
 ) -> None:
@@ -153,12 +148,23 @@ def register_service_connector(
         resource_id: The ID of the resource to connect to.
         auth_method: The authentication method to use.
         share: Share the service connector with other users.
-        skip_validation: Do not validate the service connector before
+        no_verify: Do not verify the service connector before
             registering.
         labels: Labels to be associated with the service connector.
         interactive: Register a new service connector interactively.
     """
+    from rich.markdown import Markdown
+
     client = Client()
+
+    # Parse the given args
+    name, parsed_args = cli_utils.parse_name_and_extra_arguments(  # type: ignore[assignment]
+        list(args) + [name or ""],
+        expand_args=True,
+        name_mandatory=not interactive,
+    )
+
+    parsed_labels = cli_utils.get_parsed_labels(labels)
 
     if interactive:
         from zenml.service_connectors.service_connector_registry import (
@@ -183,18 +189,6 @@ def register_service_connector(
                 else "",
             )
 
-        # Ask for a name
-        name = click.prompt(
-            "Please enter a name for the service connector", type=str
-        )
-
-        # Ask for a description
-        description = click.prompt(
-            "Please enter a description for the service connector",
-            type=str,
-            default="",
-        )
-
         available_types = {
             c.get_specification().type: c for c in connector_types
         }
@@ -202,6 +196,16 @@ def register_service_connector(
             # Default to the first connector type if not supplied and if
             # only one type is available
             type = type or list(available_types.keys())[0]
+
+        message = "# Available service connector types\n"
+        # Print the name, type and description of all available service
+        # connectors
+        for c in connector_types:
+            spec = c.get_specification()
+            message += f"## {spec.name} ({spec.type})\n"
+            message += f"{spec.description}\n"
+
+        console.print(Markdown(f"{message}---"), justify="left", width=80)
 
         # Ask the user to select a service connector type
         connector_type = click.prompt(
@@ -213,30 +217,49 @@ def register_service_connector(
         connector = available_types[connector_type]
         specification = connector.get_specification()
 
-        resource_types = [
+        available_types = [
             t for t in specification.resource_type_map.keys() if t
         ]
-        if len(resource_types) == 1:
+
+        message = (
+            f"# Available resource types for connector {specification.name}\n"
+        )
+        # Print the name, resource type identifiers and description of all
+        # available resource types
+        for r in specification.resource_types:
+            resource_types = [t or "<arbitrary>" for t in r.resource_types]
+            message += f"## {r.name} ({', '.join(resource_types)})\n"
+            message += f"{r.description}\n"
+
+        console.print(Markdown(f"{message}---"), justify="left", width=80)
+
+        if len(available_types) == 1:
             # Default to the first resource type if not supplied and if
             # only one type is available
-            resource_type = resource_type or resource_types[0]
+            resource_type = resource_type or available_types[0]
 
-        # TODO: better support arbitrary resource types
-        if (
-            resource_type
-            and resource_type not in resource_types
-            and None in specification.resource_type_map
-        ):
-            resource_types.append(resource_type)
+        if None in specification.resource_type_map:
+            # Allow arbitrary resource types
+            resource_type = click.prompt(
+                f"Please select a resource type ({', '.join(available_types)}) "
+                "or enter a custom resource type",
+                type=str,
+                default=resource_type,
+            )
+        else:
+            # Ask the user to select a resource type
+            resource_type = click.prompt(
+                "Please select a resource type",
+                type=click.Choice(available_types),
+                default=resource_type,
+            )
 
-        # Ask the user to select a resource type
-        resource_type = click.prompt(
-            "Please select a resource type",
-            type=click.Choice(resource_types),
-            default=resource_type,
-        )
         assert resource_type
-        resource_type_spec = specification.resource_type_map[resource_type]
+
+        if resource_type not in specification.resource_type_map:
+            resource_type_spec = specification.resource_type_map[None]
+        else:
+            resource_type_spec = specification.resource_type_map[resource_type]
 
         if resource_type_spec.multi_instance:
             # Ask the user to enter an optional resource ID
@@ -251,6 +274,20 @@ def register_service_connector(
                 resource_id = None
 
         auth_methods = resource_type_spec.auth_methods
+
+        message = (
+            "# Available authentication methods for resource "
+            f"{resource_type_spec.name}\n"
+        )
+        # Print the name, identifier and description of all available auth
+        # methods
+        for a in auth_methods:
+            auth_method_spec = specification.auth_method_map[a]
+            message += f"## {auth_method_spec.name} ({a})\n"
+            message += f"{auth_method_spec.description}\n"
+
+        console.print(Markdown(f"{message}---"), justify="left", width=80)
+
         if len(auth_methods) == 1:
             # Default to the first auth method if not supplied and if
             # only one type is available
@@ -264,6 +301,36 @@ def register_service_connector(
         )
         assert auth_method
         auth_method_spec = specification.auth_method_map[auth_method]
+
+        while True:
+            # Ask for a name
+            name = click.prompt(
+                "Please enter a name for the service connector",
+                type=str,
+                default=name,
+            )
+            if not name:
+                cli_utils.warning("The name cannot be empty")
+                continue
+            # Check if the name is taken
+            try:
+                client.get_service_connector(
+                    name_id_or_prefix=name, allow_name_prefix_match=False
+                )
+            except KeyError:
+                break
+            else:
+                cli_utils.warning(
+                    f"A service connector with the name '{name}' already "
+                    "exists. Please choose a different name."
+                )
+
+        # Ask for a description
+        description = click.prompt(
+            "Please enter a description for the service connector",
+            type=str,
+            default="",
+        )
 
         # Ask the user whether to use auto-configuration
         auto_configure = click.confirm(
@@ -284,9 +351,16 @@ def register_service_connector(
                     resource_id=resource_id,
                     is_shared=share,
                     auto_configure=True,
-                    check=False,
+                    verify=not no_verify,
+                    labels=parsed_labels,
                 )
-            except NotImplementedError as e:
+            except (
+                KeyError,
+                ValueError,
+                IllegalOperationError,
+                NotImplementedError,
+                AuthorizationException,
+            ) as e:
                 # Ask the user whether to continue with manual configuration
                 manual = click.confirm(
                     f"Auto-configuration was not successful: {e}. "
@@ -301,42 +375,118 @@ def register_service_connector(
                 )
                 return
 
-    # # Parse the given args
-    # # name is guaranteed to be set by parse_name_and_extra_arguments
-    # name, parsed_args = cli_utils.parse_name_and_extra_arguments(  # type: ignore[assignment]
-    #     list(args) + [name], expand_args=True
-    # )
-    # parsed_labels = cli_utils.get_parsed_labels(labels)
+        cli_utils.declare(
+            f"Please enter the configuration for the {auth_method_spec.name} "
+            "authentication method."
+        )
 
-    # # click<8.0.0 gives flags a default of None
-    # if share is None:
-    #     share = False
-    # if skip_validation is None:
-    #     skip_validation = False
+        config_schema = auth_method_spec.config_schema
+        config_dict = {}
+        for attr_name, attr_schema in config_schema.get(
+            "properties", {}
+        ).items():
+            title = attr_schema.get("title", attr_name)
+            required = attr_name in config_schema.get("required", [])
+            hidden = attr_schema.get("format", "") == "password"
+            subtitles: List[str] = []
+            if hidden:
+                subtitles.append("hidden")
+            if required:
+                subtitles.append("required")
+            else:
+                subtitles.append("optional")
+            if subtitles:
+                title += f" {{{', '.join(subtitles)}}}"
 
-    # with console.status(f"Registering service connector '{name}'...\n"):
-    #     try:
-    #         # Create a new service connector
-    #         client.create_service_connector(
-    #             name=name,
-    #             type=type,
-    #             auth_method=auth_method,
-    #             resource_type=resource_type,
-    #             configuration=parsed_args,
-    #             secrets={},
-    #             resource_id=resource_id,
-    #             description=description or "",
-    #             is_shared=share,
-    #             labels=parsed_labels,
-    #             check=not skip_validation,
-    #             register=True,
-    #         )
-    #     except (KeyError, ValueError, IllegalOperationError) as e:
-    #         cli_utils.error(str(e))
+            while True:
+                # Ask the user to enter a value for the attribute
+                default = parsed_args.get(
+                    attr_name, "" if not required else None
+                )
+                value = click.prompt(
+                    title,
+                    type=str,
+                    hide_input=hidden,
+                    default=default,
+                    show_default=default not in (None, ""),
+                )
+                if not value:
+                    if required:
+                        cli_utils.warning(
+                            f"The attribute '{title}' is mandatory. "
+                            "Please enter a non-empty value."
+                        )
+                        continue
+                    else:
+                        value = None
+                        break
+                else:
+                    config_dict[attr_name] = value
+                    break
 
-    #     cli_utils.declare(
-    #         f"Successfully registered service connector `{name}`."
-    #     )
+        try:
+            client.create_service_connector(
+                name=name,
+                description=description or "",
+                type=connector_type,
+                resource_type=resource_type,
+                auth_method=auth_method,
+                resource_id=resource_id,
+                configuration=config_dict,
+                is_shared=share,
+                auto_configure=False,
+                verify=not no_verify,
+                labels=parsed_labels,
+            )
+        except (
+            KeyError,
+            ValueError,
+            IllegalOperationError,
+            NotImplementedError,
+            AuthorizationException,
+        ) as e:
+            cli_utils.error(f"Failed to register service connector: {e}")
+        else:
+            cli_utils.declare(
+                f"Successfully registered service connector `{name}`."
+            )
+            return
+
+    if not type or not resource_type or not auth_method:
+        cli_utils.error(
+            "The connector type, resource type and authentication method must "
+            "all be specified when using non-interactive configuration."
+        )
+
+    with console.status(f"Registering service connector '{name}'...\n"):
+        try:
+            # Create a new service connector
+            assert name is not None
+            client.create_service_connector(
+                name=name,
+                type=type,
+                auth_method=auth_method,
+                resource_type=resource_type,
+                configuration=parsed_args,
+                resource_id=resource_id,
+                description=description or "",
+                is_shared=share,
+                labels=parsed_labels,
+                verify=not no_verify,
+                register=True,
+            )
+        except (
+            KeyError,
+            ValueError,
+            IllegalOperationError,
+            NotImplementedError,
+            AuthorizationException,
+        ) as e:
+            cli_utils.error(f"Failed to register service connector: {e}")
+
+        cli_utils.declare(
+            f"Successfully registered service connector `{name}`."
+        )
 
 
 @service_connector.command(
@@ -367,105 +517,76 @@ def list_service_connectors(**kwargs: Any) -> None:
         print_page_info(connectors)
 
 
-# def generate_stack_component_get_command(
-#     component_type: StackComponentType,
-# ) -> Callable[[], None]:
-#     """Generates a `get` command for the specific stack component type.
+@service_connector.command(
+    "describe",
+    help="""Show detailed information about a service connector.
+""",
+)
+@click.argument(
+    "name_id_or_prefix",
+    type=str,
+    required=True,
+)
+@click.option(
+    "--show-secrets",
+    "-x",
+    "show_secrets",
+    is_flag=True,
+    default=False,
+    help="Show security sensitive configuration attributes in the terminal.",
+    type=click.BOOL,
+)
+def describe_service_connector(
+    name_id_or_prefix: str, show_secrets: bool = False
+) -> None:
+    """Prints details about a service connector.
 
-#     Args:
-#         component_type: Type of the component to generate the command for.
+    Args:
+        name_id_or_prefix: Name or id of the service connector to describe.
+        show_secrets: Whether to show security sensitive configuration
+            attributes in the terminal.
+    """
+    client = Client()
+    try:
+        connector = client.get_service_connector(
+            name_id_or_prefix=name_id_or_prefix,
+        )
+    except KeyError as err:
+        cli_utils.error(str(err))
 
-#     Returns:
-#         A function that can be used as a `click` command.
-#     """
+    if connector.secret_id:
+        try:
+            secret = client.get_secret(
+                name_id_or_prefix=connector.secret_id,
+                allow_partial_id_match=False,
+                allow_partial_name_match=False,
+            )
+        except KeyError as err:
+            cli_utils.warning(
+                "Unable to retrieve secret values associated with "
+                f"service connector '{connector.name}': {err}"
+            )
+        else:
+            # Add secret values to connector configuration
+            connector.secrets.update(secret.values)
 
-#     def get_stack_component_command() -> None:
-#         """Prints the name of the active component."""
-#         if component_type == StackComponentType.SECRETS_MANAGER:
-#             warn_deprecated_secrets_manager()
+    with console.status(f"Describing connector '{connector.name}'..."):
+        active_stack = client.active_stack_model
+        active_connector_ids: List[UUID] = []
+        for components in active_stack.components.values():
+            active_connector_ids.extend(
+                [
+                    component.connector.id
+                    for component in components
+                    if component.connector
+                ]
+            )
 
-#         client = Client()
-#         display_name = _component_display_name(component_type)
-
-#         with console.status(f"Getting the active `{display_name}`...\n"):
-#             active_stack = client.active_stack_model
-#             components = active_stack.components.get(component_type, None)
-
-#             if components:
-#                 cli_utils.declare(
-#                     f"Active {display_name}: '{components[0].name}'"
-#                 )
-#             else:
-#                 cli_utils.warning(
-#                     f"No {display_name} set for active stack "
-#                     f"('{active_stack.name}')."
-#                 )
-
-#     return get_stack_component_command
-
-
-# def generate_stack_component_describe_command(
-#     component_type: StackComponentType,
-# ) -> Callable[[str], None]:
-#     """Generates a `describe` command for the specific stack component type.
-
-#     Args:
-#         component_type: Type of the component to generate the command for.
-
-#     Returns:
-#         A function that can be used as a `click` command.
-#     """
-
-#     @click.argument(
-#         "name_id_or_prefix",
-#         type=str,
-#         required=False,
-#     )
-#     def describe_stack_component_command(name_id_or_prefix: str) -> None:
-#         """Prints details about the active/specified component.
-
-#         Args:
-#             name_id_or_prefix: Name or id of the component to describe.
-#         """
-#         if component_type == StackComponentType.SECRETS_MANAGER:
-#             warn_deprecated_secrets_manager()
-
-#         client = Client()
-#         try:
-#             component_ = client.get_stack_component(
-#                 name_id_or_prefix=name_id_or_prefix,
-#                 component_type=component_type,
-#             )
-#         except KeyError as err:
-#             cli_utils.error(str(err))
-
-#         with console.status(f"Describing component '{component_.name}'..."):
-#             active_component_id = None
-#             active_components = client.active_stack_model.components.get(
-#                 component_type, None
-#             )
-#             if active_components:
-#                 active_component_id = active_components[0].id
-
-#             cli_utils.print_stack_component_configuration(
-#                 component=component_,
-#                 active_status=component_.id == active_component_id,
-#             )
-
-#     return describe_stack_component_command
-
-
-# def generate_stack_component_list_command(
-#     component_type: StackComponentType,
-# ) -> Callable[[], None]:
-#     """Generates a `list` command for the specific stack component type.
-
-#     Args:
-#         component_type: Type of the component to generate the command for.
-
-#     Returns:
-#         A function that can be used as a `click` command.
-#     """
+        cli_utils.print_service_connector_configuration(
+            connector=connector,
+            active_status=connector.id in active_connector_ids,
+            show_secrets=show_secrets,
+        )
 
 
 # def generate_stack_component_update_command(
@@ -530,55 +651,40 @@ def list_service_connectors(**kwargs: Any) -> None:
 #     return update_stack_component_command
 
 
-# def generate_stack_component_share_command(
-#     component_type: StackComponentType,
-# ) -> Callable[[str], None]:
-#     """Generates an `share` command for the specific stack component type.
+@service_connector.command(
+    "share",
+    help="""Share a service connector with other users.
+""",
+)
+@click.argument(
+    "name_id_or_prefix",
+    type=str,
+    required=False,
+)
+def share_service_connector_command(
+    name_id_or_prefix: str,
+) -> None:
+    """Shares a service connector.
 
-#     Args:
-#         component_type: Type of the component to generate the command for.
+    Args:
+        name_id_or_prefix: The name or id of the service connector to share.
+    """
+    client = Client()
 
-#     Returns:
-#         A function that can be used as a `click` command.
-#     """
-#     display_name = _component_display_name(component_type)
+    with console.status(
+        f"Updating service connector '{name_id_or_prefix}'...\n"
+    ):
+        try:
+            client.update_service_connector(
+                name_id_or_prefix=name_id_or_prefix,
+                is_shared=True,
+            )
+        except (KeyError, IllegalOperationError) as err:
+            cli_utils.error(str(err))
 
-#     @click.argument(
-#         "name_id_or_prefix",
-#         type=str,
-#         required=False,
-#     )
-#     def share_stack_component_command(
-#         name_id_or_prefix: str,
-#     ) -> None:
-#         """Shares a stack component.
-
-#         Args:
-#             name_id_or_prefix: The name or id of the stack component to update.
-#         """
-#         if component_type == StackComponentType.SECRETS_MANAGER:
-#             warn_deprecated_secrets_manager()
-
-#         client = Client()
-
-#         with console.status(
-#             f"Updating {display_name} '{name_id_or_prefix}'...\n"
-#         ):
-#             try:
-#                 client.update_stack_component(
-#                     name_id_or_prefix=name_id_or_prefix,
-#                     component_type=component_type,
-#                     is_shared=True,
-#                 )
-#             except (KeyError, IllegalOperationError) as err:
-#                 cli_utils.error(str(err))
-
-#             cli_utils.declare(
-#                 f"Successfully shared {display_name} "
-#                 f"`{name_id_or_prefix}`."
-#             )
-
-#     return share_stack_component_command
+        cli_utils.declare(
+            "Successfully shared service connector " f"`{name_id_or_prefix}`."
+        )
 
 
 # def generate_stack_component_remove_attribute_command(
@@ -691,41 +797,30 @@ def list_service_connectors(**kwargs: Any) -> None:
 #     return rename_stack_component_command
 
 
-# def generate_stack_component_delete_command(
-#     component_type: StackComponentType,
-# ) -> Callable[[str], None]:
-#     """Generates a `delete` command for the specific stack component type.
+@service_connector.command(
+    "delete",
+    help="""Delete a service connector.
+""",
+)
+@click.argument("name_id_or_prefix", type=str)
+def delete_service_connector(name_id_or_prefix: str) -> None:
+    """Deletes a service connector.
 
-#     Args:
-#         component_type: Type of the component to generate the command for.
+    Args:
+        name_id_or_prefix: The name of the service connector to delete.
+    """
+    client = Client()
 
-#     Returns:
-#         A function that can be used as a `click` command.
-#     """
-#     display_name = _component_display_name(component_type)
-
-#     @click.argument("name_id_or_prefix", type=str)
-#     def delete_stack_component_command(name_id_or_prefix: str) -> None:
-#         """Deletes a stack component.
-
-#         Args:
-#             name_id_or_prefix: The name of the stack component to delete.
-#         """
-#         client = Client()
-
-#         with console.status(
-#             f"Deleting {display_name} '{name_id_or_prefix}'...\n"
-#         ):
-#             try:
-#                 client.delete_stack_component(
-#                     name_id_or_prefix=name_id_or_prefix,
-#                     component_type=component_type,
-#                 )
-#             except (KeyError, IllegalOperationError) as err:
-#                 cli_utils.error(str(err))
-#             cli_utils.declare(f"Deleted {display_name}: {name_id_or_prefix}")
-
-#     return delete_stack_component_command
+    with console.status(
+        f"Deleting service connector '{name_id_or_prefix}'...\n"
+    ):
+        try:
+            client.delete_service_connector(
+                name_id_or_prefix=name_id_or_prefix,
+            )
+        except (KeyError, IllegalOperationError) as err:
+            cli_utils.error(str(err))
+        cli_utils.declare(f"Deleted service connector: {name_id_or_prefix}")
 
 
 # def generate_stack_component_copy_command(
@@ -785,161 +880,111 @@ def list_service_connectors(**kwargs: Any) -> None:
 #     return copy_stack_component_command
 
 
-# def generate_stack_component_up_command(
-#     component_type: StackComponentType,
-# ) -> Callable[[str], None]:
-#     """Generates a `up` command for the specific stack component type.
+@service_connector.command(
+    "verify",
+    help="""Verify that the connector can connect to the remote resource.
+""",
+)
+@click.argument("name_id_or_prefix", type=str, required=False)
+def verify_service_connector(name_id_or_prefix: str) -> None:
+    """Verify that the connector can connect to the remote resource.
 
-#     Args:
-#         component_type: Type of the component to generate the command for.
+    Args:
+        name_id_or_prefix: The name or id of the service connector to verify.
+    """
+    client = Client()
 
-#     Returns:
-#         A function that can be used as a `click` command.
-#     """
-#     display_name = _component_display_name(component_type)
+    with console.status(
+        f"Verifying service connector '{name_id_or_prefix}'...\n"
+    ):
+        try:
+            client.verify_service_connector(
+                name_id_or_prefix=name_id_or_prefix,
+            )
+        except (
+            KeyError,
+            ValueError,
+            IllegalOperationError,
+            NotImplementedError,
+            AuthorizationException,
+        ) as e:
+            cli_utils.error(
+                f"Service connector '{name_id_or_prefix}' verification failed: "
+                f"{e}"
+            )
 
-#     @click.argument("name_id_or_prefix", type=str, required=False)
-#     def up_stack_component_command(name_id_or_prefix: str) -> None:
-#         """Deploys a stack component locally.
-
-#         Args:
-#             name_id_or_prefix: The name or_id of the stack component to deploy.
-#         """
-#         client = Client()
-
-#         with console.status(
-#             f"Provisioning {display_name} '{name_id_or_prefix}' locally...\n"
-#         ):
-#             try:
-#                 component_model = client.get_stack_component(
-#                     name_id_or_prefix=name_id_or_prefix,
-#                     component_type=component_type,
-#                 )
-#             except KeyError as err:
-#                 cli_utils.error(str(err))
-
-#             from zenml.stack import StackComponent
-
-#             component = StackComponent.from_model(
-#                 component_model=component_model
-#             )
-
-#             if component.is_running:
-#                 cli_utils.declare(
-#                     f"Local deployment is already running for {display_name} "
-#                     f"'{component.name}'."
-#                 )
-#                 return
-
-#             if not component.is_provisioned:
-#                 cli_utils.declare(
-#                     f"Provisioning local resources for {display_name} "
-#                     f"'{component.name}'."
-#                 )
-#                 try:
-#                     component.provision()
-#                 except NotImplementedError:
-#                     cli_utils.error(
-#                         f"Provisioning local resources not implemented for "
-#                         f"{display_name} '{component.name}'."
-#                     )
-
-#             if not component.is_running:
-#                 cli_utils.declare(
-#                     f"Resuming local resources for {display_name} "
-#                     f"'{component.name}'."
-#                 )
-#                 component.resume()
-
-#     return up_stack_component_command
+        cli_utils.declare(
+            f"Service connector '{name_id_or_prefix}' verified "
+            "successfully."
+        )
 
 
-# def generate_stack_component_down_command(
-#     component_type: StackComponentType,
-# ) -> Callable[[str, bool], None]:
-#     """Generates a `down` command for the specific stack component type.
+@service_connector.command(
+    "login",
+    help="""Configure the local client/SDK with credentials extracted from
+the service connector.
+""",
+)
+@click.option(
+    "--resource-type",
+    "-r",
+    "resource_type",
+    help="Explicit type of resource to connect to.",
+    required=False,
+    type=str,
+)
+@click.option(
+    "--resource-id",
+    "-ri",
+    "resource_id",
+    help="Explicit resource ID to connect to.",
+    required=False,
+    type=str,
+)
+@click.argument("name_id_or_prefix", type=str, required=True)
+def login_service_connector(
+    name_id_or_prefix: str,
+    resource_type: Optional[str] = None,
+    resource_id: Optional[str] = None,
+) -> None:
+    """Authenticate the local client/SDK with connector credentials.
 
-#     Args:
-#         component_type: Type of the component to generate the command for.
+    Args:
+        name_id_or_prefix: The name or id of the service connector to use.
+        resource_type: Explicit type of resource to connect to.
+        resource_id: Explicit resource ID to connect to.
+    """
+    client = Client()
 
-#     Returns:
-#         A function that can be used as a `click` command.
-#     """
-#     display_name = _component_display_name(component_type)
+    with console.status(
+        "Attempting to configure local client using service connector "
+        f"'{name_id_or_prefix}'...\n"
+    ):
+        try:
+            connector = client.login_service_connector(
+                name_id_or_prefix=name_id_or_prefix,
+                resource_type=resource_type,
+                resource_id=resource_id,
+            )
+        except (
+            KeyError,
+            ValueError,
+            IllegalOperationError,
+            NotImplementedError,
+            AuthorizationException,
+        ) as e:
+            cli_utils.error(
+                f"Service connector '{name_id_or_prefix}' could not configure "
+                f"the local client/SDK: {e}"
+            )
 
-#     @click.argument("name_id_or_prefix", type=str, required=False)
-#     @click.option(
-#         "--force",
-#         "-f",
-#         "force",
-#         is_flag=True,
-#         help="Deprovisions local resources instead of suspending them.",
-#     )
-#     def down_stack_component_command(
-#         name_id_or_prefix: str,
-#         force: bool = False,
-#     ) -> None:
-#         """Stops/Tears down the local deployment of a stack component.
-
-#         Args:
-#             name_id_or_prefix: The name or id of the component to
-#                 stop/deprovision.
-#             force: Deprovision local resources instead of suspending them.
-#         """
-#         client = Client()
-
-#         with console.status(
-#             f"De-provisioning {display_name} '{name_id_or_prefix}' locally...\n"
-#         ):
-#             try:
-#                 component_model = client.get_stack_component(
-#                     name_id_or_prefix=name_id_or_prefix,
-#                     component_type=component_type,
-#                 )
-#             except KeyError as err:
-#                 cli_utils.error(str(err))
-
-#             from zenml.stack import StackComponent
-
-#             component = StackComponent.from_model(
-#                 component_model=component_model
-#             )
-
-#             if not force:
-#                 if not component.is_suspended:
-#                     cli_utils.declare(
-#                         f"Suspending local resources for {display_name} "
-#                         f"'{component.name}'."
-#                     )
-#                     try:
-#                         component.suspend()
-#                     except NotImplementedError:
-#                         cli_utils.error(
-#                             f"Provisioning local resources not implemented for "
-#                             f"{display_name} '{component.name}'. If you want "
-#                             f"to deprovision all resources for this component, "
-#                             f"use the `--force/-f` flag."
-#                         )
-#                 else:
-#                     cli_utils.declare(
-#                         f"No running resources found for {display_name} "
-#                         f"'{component.name}'."
-#                     )
-#             else:
-#                 if component.is_provisioned:
-#                     cli_utils.declare(
-#                         f"Deprovisioning resources for {display_name} "
-#                         f"'{component.name}'."
-#                     )
-#                     component.deprovision()
-#                 else:
-#                     cli_utils.declare(
-#                         f"No provisioned resources found for {display_name} "
-#                         f"'{component.name}'."
-#                     )
-
-#     return down_stack_component_command
-
+        spec = connector.get_specification()
+        resource_type = resource_type or connector.resource_type
+        resource_name = spec.get_resource_spec(resource_type).name
+        cli_utils.declare(
+            f"The '{name_id_or_prefix}' {spec.name} connector was used to "
+            f"successfully configure the local {resource_name} client/SDK."
+        )
 
 # def generate_stack_component_logs_command(
 #     component_type: StackComponentType,

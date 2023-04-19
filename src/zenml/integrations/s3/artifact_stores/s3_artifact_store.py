@@ -65,6 +65,23 @@ class S3ArtifactStore(BaseArtifactStore, AuthenticationMixin):
             Tuple (key, secret, token) of credentials used to authenticate with
             the S3 filesystem.
         """
+        connector = self.get_connector()
+        if connector:
+            import boto3  # type: ignore[import]
+
+            session = connector.connect(resource_id=self.path)
+            if not isinstance(session, boto3.Session):
+                raise RuntimeError(
+                    f"Expected a boto3.Session while trying to use the linked "
+                    f"connector, but got {type(session)}."
+                )
+            credentials = session.get_credentials()
+            return (
+                credentials.access_key,
+                credentials.secret_key,
+                credentials.token,
+            )
+
         secret = self.get_authentication_secret(
             expected_schema_type=AWSSecretSchema
         )
