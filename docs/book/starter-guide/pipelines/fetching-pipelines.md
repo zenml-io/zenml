@@ -295,7 +295,8 @@ output.visualize()
 ```
 
 In all other runtime environments, please open your ZenML dashboard 
-using `zenml up` and view the visualizations by clicking on the respective artifact in the pipeline run DAG.
+using `zenml up` and view the visualizations by clicking on the respective 
+artifact in the pipeline run DAG.
 
 ### Output Artifact Metadata
 

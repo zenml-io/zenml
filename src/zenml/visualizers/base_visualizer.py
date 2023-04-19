@@ -24,6 +24,17 @@ logger = get_logger(__name__)
 class BaseVisualizer:
     """Base class for all ZenML Visualizers."""
 
+    def __init__(self) -> None:
+        """Initializes the BaseVisualizer."""
+        super().__init__()
+        logger.warning(
+            "Visualizers are deprecated and will be removed in a future "
+            "release. Please view your data in the ZenML dashboard instead. "
+            "To visualize artifacts within Jupyter notebooks, use the post "
+            "execution `output.visualize()` method as described here: "
+            "https://docs.zenml.io/starter-guide/pipelines/fetching-pipelines#visualizing-artifacts."
+        )
+
     @abstractmethod
     def visualize(self, object: Any, *args: Any, **kwargs: Any) -> None:
         """Method to visualize objects.
