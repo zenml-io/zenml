@@ -20,10 +20,11 @@ from typing import TYPE_CHECKING, Any, Union
 from zenml.client import Client
 from zenml.config.source import Source
 from zenml.constants import MODEL_METADATA_YAML_FILE_NAME
-from zenml.enums import StackComponentType
+from zenml.enums import StackComponentType, VisualizationType
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
+from zenml.models.visualization_models import VisualizationModel
 from zenml.stack import StackComponent
 from zenml.utils import source_utils
 from zenml.utils.yaml_utils import read_yaml, write_yaml
@@ -186,3 +187,20 @@ def _load_artifact(
     logger.debug("Artifact loaded successfully.")
 
     return artifact
+
+
+def load_visualization(visualization: VisualizationModel) -> Union[str, bytes]:
+    """Load the given visualization.
+
+    Args:
+        visualization: The visualization to load.
+
+    Returns:
+        The loaded visualization.
+    """
+    if visualization.type == VisualizationType.IMAGE:
+        with fileio.open(visualization.uri, "rb") as image_file:
+            return bytes(image_file.read())
+    else:
+        with fileio.open(visualization.uri, "r") as text_file:
+            return str(text_file.read())

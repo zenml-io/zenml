@@ -15,6 +15,7 @@
 
 from typing import TYPE_CHECKING, Any, Optional, Type, cast
 
+from zenml.enums import VisualizationType
 from zenml.logger import get_logger
 from zenml.models.artifact_models import ArtifactResponseModel
 from zenml.models.base_models import BaseResponseModel
@@ -74,3 +75,53 @@ class ArtifactView(BaseView):
         from zenml.utils.materializer_utils import load_artifact
 
         return load_artifact(self.model)
+
+    def visualize(self, index: int = 0) -> None:
+        """Visualize the artifact in notebook environments.
+
+        Args:
+            index: Index of the visualization to get (if there are multiple).
+
+        Raises:
+            RuntimeError: If no visualizations are found.
+            IndexError: If the index is out of range.
+        """
+        from IPython.core.display import HTML, Image, display
+
+        from zenml.environment import Environment
+        from zenml.utils.materializer_utils import load_visualization
+
+        if not self.model.visualizations:
+            raise RuntimeError(
+                "No visualizations found for this artifact. Nothing to show."
+            )
+
+        if index < 0 or index >= len(self.model.visualizations):
+            raise IndexError(
+                f"Index {index} out of range. The artifact only has "
+                f"{len(self.model.visualizations)} visualizations."
+            )
+
+        if not Environment.in_notebook() and not Environment.in_google_colab():
+            raise RuntimeError(
+                "The `output.visualize()` method is only usable in Jupyter "
+                "notebooks. In all other runtime environments, please open "
+                "your ZenML dashboard using `zenml up` and view the "
+                "visualization by clicking on the respective artifact in the "
+                "pipeline run DAG instead."
+            )
+
+        visualization = self.model.visualizations[index]
+        value = load_visualization(visualization)
+
+        if visualization.type == VisualizationType.IMAGE:
+            display(Image(value))
+        elif visualization.type == VisualizationType.HTML:
+            display(HTML(value))
+        else:
+            raise RuntimeError(
+                f"Visualization type {visualization.type} cannot be displayed "
+                "in a notebook environment. Please open your ZenML dashboard "
+                "using `zenml up` and view the visualization by clicking on "
+                "the respective artifact in the pipeline run DAG instead."
+            )

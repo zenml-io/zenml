@@ -14,7 +14,6 @@
 """Endpoint definitions for steps (and artifacts) of pipeline runs."""
 
 import base64
-from typing import Union
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Security
@@ -31,6 +30,7 @@ from zenml.models.page_model import Page
 from zenml.models.visualization_models import (
     LoadedVisualizationModel,
 )
+from zenml.utils.materializer_utils import load_visualization
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.utils import (
     error_response,
@@ -146,16 +146,15 @@ def get_artifact_visualization(
 
     Args:
         artifact_id: ID of the artifact for which to get the visualization.
-        index: Index of the visualization to get.
+        index: Index of the visualization to get (if there are multiple).
 
     Returns:
         The visualization of the artifact.
 
     Raises:
         DoesNotExistException: If the artifact has no visualizations.
+        KeyError: If the artifact has no visualization at the given index.
     """
-    from zenml.io.fileio import open
-
     artifact = zen_store().get_artifact(artifact_id)
 
     if not artifact.visualizations:
@@ -163,16 +162,15 @@ def get_artifact_visualization(
             f"Artifact '{artifact_id}' has no visualizations."
         )
 
-    unloaded_visualization = artifact.visualizations[index]
-    uri = unloaded_visualization.uri
-    type_ = unloaded_visualization.type
-    value: Union[str, bytes]
+    if index < 0 or index >= len(artifact.visualizations):
+        raise KeyError(
+            f"Artifact '{artifact_id}' only has {len(artifact.visualizations)} "
+            f"visualizations, but index {index} was requested."
+        )
 
-    if type_ == VisualizationType.IMAGE:
-        with open(uri, "rb") as image_file:
-            value = base64.b64encode(image_file.read())
-    else:
-        with open(uri, "r") as text_file:
-            value = text_file.read()
-
-    return LoadedVisualizationModel(type=type_, value=value)
+    visualization = artifact.visualizations[index]
+    value = load_visualization(visualization)
+    if visualization.type == VisualizationType.IMAGE:
+        assert isinstance(value, bytes)
+        value = base64.b64encode(value)
+    return LoadedVisualizationModel(type=visualization.type, value=value)
