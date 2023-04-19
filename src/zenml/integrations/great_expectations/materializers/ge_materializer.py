@@ -33,7 +33,7 @@ from great_expectations.types import (  # type: ignore[import]
     SerializableDictDot,
 )
 
-from zenml.enums import ArtifactType
+from zenml.enums import ArtifactType, VisualizationType
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.utils import source_utils, yaml_utils
 
@@ -122,6 +122,21 @@ class GreatExpectationsMaterializer(BaseMaterializer):
             "data_type"
         ] = f"{artifact_type.__module__}.{artifact_type.__name__}"
         yaml_utils.write_json(filepath, artifact_dict)
+
+    def save_visualizations(
+        self, data: Union[ExpectationSuite, CheckpointResult]
+    ) -> Dict[str, VisualizationType]:
+        """Saves visualizations for the given Great Expectations object.
+
+        Args:
+            data: The Great Expectations object to save visualizations for.
+
+        Returns:
+            A dictionary of visualization URIs and their types.
+        """
+        visualizations = super().save_visualizations(data)
+        # TODO: Find the HTML report
+        return visualizations
 
     def extract_metadata(
         self, data: Union[ExpectationSuite, CheckpointResult]
