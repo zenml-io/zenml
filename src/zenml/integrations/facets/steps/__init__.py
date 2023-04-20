@@ -11,22 +11,18 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Facets integration for ZenML."""
+"""Facets Standard Steps."""
 
-from zenml.integrations.constants import FACETS
-from zenml.integrations.integration import Integration
+from zenml.integrations.facets.models import FacetsComparison
+from zenml.integrations.facets.steps.facets_visualization_steps import (
+    facets_visualization_step,
+    facets_dict_visualization_step,
+    facets_list_visualization_step,
+)
 
-
-class FacetsIntegration(Integration):
-    """Definition of Facets integration for ZenML."""
-
-    NAME = FACETS
-    REQUIREMENTS = ["facets-overview>=1.0.0", "pandas"]
-
-    @staticmethod
-    def activate() -> None:
-        """Activate the Deepchecks integration."""
-        from zenml.integrations.facets import materializers  # noqa
-
-
-FacetsIntegration.check_installation()
+__all__ = [
+    "facets_visualization_step",
+    "facets_dict_visualization_step",
+    "facets_list_visualization_step",
+    "FacetsComparison",
+]

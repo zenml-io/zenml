@@ -11,22 +11,24 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Facets integration for ZenML."""
-
-from zenml.integrations.constants import FACETS
-from zenml.integrations.integration import Integration
+"""Models used by the Facets integration."""
 
 
-class FacetsIntegration(Integration):
-    """Definition of Facets integration for ZenML."""
+from typing import Dict, List, Union
 
-    NAME = FACETS
-    REQUIREMENTS = ["facets-overview>=1.0.0", "pandas"]
-
-    @staticmethod
-    def activate() -> None:
-        """Activate the Deepchecks integration."""
-        from zenml.integrations.facets import materializers  # noqa
+import pandas as pd
+from pydantic import BaseModel
 
 
-FacetsIntegration.check_installation()
+class FacetsComparison(BaseModel):
+    """Facets comparison model.
+
+    Returning this from any step will automatically visualize the datasets
+    statistics using Facets.
+
+    Attributes:
+        datasets: List of datasets to compare. Should be in the format
+            `[{"name": "dataset_name", "table": pd.DataFrame}, ...]`.
+    """
+
+    datasets: List[Dict[str, Union[str, pd.DataFrame]]]
