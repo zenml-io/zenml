@@ -39,7 +39,6 @@ from zenml.models.hub_plugin_models import (
     PluginStatus,
 )
 from zenml.utils.analytics_utils import AnalyticsEvent, event_handler
-from zenml.utils.git_utils import clone_git_repository
 
 logger = get_logger(__name__)
 
@@ -361,6 +360,8 @@ def clone_plugin(
             the plugin will be cloned to a directory with the same name as the
             plugin in the current working directory.
     """
+    from zenml.utils.git_utils import clone_git_repository
+
     with event_handler(
         event=AnalyticsEvent.ZENML_HUB_PLUGIN_CLONE,
         v2=True,
@@ -764,6 +765,8 @@ def _validate_repository(
     Returns:
         The validated URL, commit, branch, and subdirectory.
     """
+    from zenml.utils.git_utils import clone_git_repository
+
     while True:
 
         # Make sure the repository URL is provided.
