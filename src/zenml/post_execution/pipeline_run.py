@@ -273,6 +273,11 @@ class PipelineRunView(BaseView):
 
         return self._steps[step]
 
+    def visualize(self) -> None:
+        """Visualizes all output artifacts produced by this pipeline run."""
+        for step_ in self.steps:
+            step_.visualize()
+
     def _ensure_steps_fetched(self) -> None:
         """Fetches all steps for this pipeline run from the metadata store."""
         if self._steps:

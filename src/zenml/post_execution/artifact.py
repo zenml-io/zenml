@@ -76,14 +76,11 @@ class ArtifactView(BaseView):
 
         return load_artifact(self.model)
 
-    def visualize(self, index: int = 0) -> None:
+    def visualize(self) -> None:
         """Visualize the artifact in notebook environments.
 
-        Args:
-            index: Index of the visualization to get (if there are multiple).
-
         Raises:
-            RuntimeError: If the visualization cannot be displayed.
+            RuntimeError: If not in a notebook environment.
         """
         from IPython.core.display import HTML, Image, Markdown, display
 
@@ -92,19 +89,23 @@ class ArtifactView(BaseView):
 
         if not Environment.in_notebook() and not Environment.in_google_colab():
             raise RuntimeError(
-                "The `output.visualize()` method is only usable in Jupyter "
+                "The `output.visualize()` method is only available in Jupyter "
                 "notebooks. In all other runtime environments, please open "
                 "your ZenML dashboard using `zenml up` and view the "
-                "visualization by clicking on the respective artifact in the "
+                "visualizations by clicking on the respective artifacts in the "
                 "pipeline run DAG instead."
             )
 
-        visualization = load_artifact_visualization(self.model)
-        if visualization.type == VisualizationType.IMAGE:
-            display(Image(visualization.value))
-        elif visualization.type == VisualizationType.HTML:
-            display(HTML(visualization.value))
-        elif visualization.type == VisualizationType.MARKDOWN:
-            display(Markdown(visualization.value))
-        else:
-            display(visualization.value)
+        if not self.model.visualizations:
+            return
+
+        for i in range(len(self.model.visualizations)):
+            visualization = load_artifact_visualization(self.model, index=i)
+            if visualization.type == VisualizationType.IMAGE:
+                display(Image(visualization.value))
+            elif visualization.type == VisualizationType.HTML:
+                display(HTML(visualization.value))
+            elif visualization.type == VisualizationType.MARKDOWN:
+                display(Markdown(visualization.value))
+            else:
+                display(visualization.value)

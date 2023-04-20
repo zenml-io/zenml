@@ -261,6 +261,11 @@ class StepView(BaseView):
             )
         return next(iter(self.outputs.values()))
 
+    def visualize(self) -> None:
+        """Visualizes all output artifacts of the step."""
+        for artifact in self.outputs.values():
+            artifact.visualize()
+
     def _ensure_inputs_fetched(self) -> None:
         """Fetches all step inputs from the ZenStore."""
         if self._inputs:
