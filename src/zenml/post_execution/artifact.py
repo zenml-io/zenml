@@ -83,24 +83,12 @@ class ArtifactView(BaseView):
             index: Index of the visualization to get (if there are multiple).
 
         Raises:
-            RuntimeError: If no visualizations are found.
-            IndexError: If the index is out of range.
+            RuntimeError: If the visualization cannot be displayed.
         """
-        from IPython.core.display import HTML, Image, display
+        from IPython.core.display import HTML, Image, Markdown, display
 
         from zenml.environment import Environment
-        from zenml.utils.materializer_utils import load_visualization
-
-        if not self.model.visualizations:
-            raise RuntimeError(
-                "No visualizations found for this artifact. Nothing to show."
-            )
-
-        if index < 0 or index >= len(self.model.visualizations):
-            raise IndexError(
-                f"Index {index} out of range. The artifact only has "
-                f"{len(self.model.visualizations)} visualizations."
-            )
+        from zenml.utils.materializer_utils import load_artifact_visualization
 
         if not Environment.in_notebook() and not Environment.in_google_colab():
             raise RuntimeError(
@@ -111,17 +99,12 @@ class ArtifactView(BaseView):
                 "pipeline run DAG instead."
             )
 
-        visualization = self.model.visualizations[index]
-        value = load_visualization(visualization)
-
+        visualization = load_artifact_visualization(self.model)
         if visualization.type == VisualizationType.IMAGE:
-            display(Image(value))
+            display(Image(visualization.value))
         elif visualization.type == VisualizationType.HTML:
-            display(HTML(value))
+            display(HTML(visualization.value))
+        elif visualization.type == VisualizationType.MARKDOWN:
+            display(Markdown(visualization.value))
         else:
-            raise RuntimeError(
-                f"Visualization type {visualization.type} cannot be displayed "
-                "in a notebook environment. Please open your ZenML dashboard "
-                "using `zenml up` and view the visualization by clicking on "
-                "the respective artifact in the pipeline run DAG instead."
-            )
+            display(visualization.value)

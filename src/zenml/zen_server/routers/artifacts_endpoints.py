@@ -13,14 +13,12 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for steps (and artifacts) of pipeline runs."""
 
-import base64
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Security
 
 from zenml.constants import API, ARTIFACTS, VERSION_1, VISUALIZE
-from zenml.enums import PermissionType, VisualizationType
-from zenml.exceptions import DoesNotExistException
+from zenml.enums import PermissionType
 from zenml.models import (
     ArtifactFilterModel,
     ArtifactRequestModel,
@@ -30,7 +28,7 @@ from zenml.models.page_model import Page
 from zenml.models.visualization_models import (
     LoadedVisualizationModel,
 )
-from zenml.utils.materializer_utils import load_visualization
+from zenml.utils.materializer_utils import load_artifact_visualization
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.utils import (
     error_response,
@@ -150,27 +148,9 @@ def get_artifact_visualization(
 
     Returns:
         The visualization of the artifact.
-
-    Raises:
-        DoesNotExistException: If the artifact has no visualizations.
-        KeyError: If the artifact has no visualization at the given index.
     """
-    artifact = zen_store().get_artifact(artifact_id)
-
-    if not artifact.visualizations:
-        raise DoesNotExistException(
-            f"Artifact '{artifact_id}' has no visualizations."
-        )
-
-    if index < 0 or index >= len(artifact.visualizations):
-        raise KeyError(
-            f"Artifact '{artifact_id}' only has {len(artifact.visualizations)} "
-            f"visualizations, but index {index} was requested."
-        )
-
-    visualization = artifact.visualizations[index]
-    value = load_visualization(visualization)
-    if visualization.type == VisualizationType.IMAGE:
-        assert isinstance(value, bytes)
-        value = base64.b64encode(value)
-    return LoadedVisualizationModel(type=visualization.type, value=value)
+    store = zen_store()
+    artifact = store.get_artifact(artifact_id)
+    return load_artifact_visualization(
+        artifact=artifact, index=index, zen_store=store, encode_image=True
+    )

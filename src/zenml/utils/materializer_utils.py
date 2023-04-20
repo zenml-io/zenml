@@ -13,24 +13,28 @@
 #  permissions and limitations under the License.
 """Util functions for models and materializers."""
 
+import base64
 import os
 import tempfile
-from typing import TYPE_CHECKING, Any, Union
+from typing import TYPE_CHECKING, Any, Optional, Union, cast
 
+from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
 from zenml.client import Client
 from zenml.config.source import Source
 from zenml.constants import MODEL_METADATA_YAML_FILE_NAME
 from zenml.enums import StackComponentType, VisualizationType
+from zenml.exceptions import DoesNotExistException
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
-from zenml.models.visualization_models import VisualizationModel
+from zenml.models.visualization_models import LoadedVisualizationModel
 from zenml.stack import StackComponent
 from zenml.utils import source_utils
 from zenml.utils.yaml_utils import read_yaml, write_yaml
 
 if TYPE_CHECKING:
     from zenml.models import ArtifactResponseModel
+    from zenml.zen_stores.base_zen_store import BaseZenStore
 
 logger = get_logger(__name__)
 
@@ -189,18 +193,76 @@ def _load_artifact(
     return artifact
 
 
-def load_visualization(visualization: VisualizationModel) -> Union[str, bytes]:
-    """Load the given visualization.
+def load_artifact_visualization(
+    artifact: "ArtifactResponseModel",
+    index: int = 0,
+    zen_store: Optional["BaseZenStore"] = None,
+    encode_image: bool = False,
+) -> LoadedVisualizationModel:
+    """Load a visualization of the given artifact.
 
     Args:
-        visualization: The visualization to load.
+        artifact: The artifact to visualize.
+        index: The index of the visualization to load.
+        zen_store: The ZenStore to use for finding the artifact store. If not
+            provided, the ZenStore of the client will be used.
+        encode_image: Whether to base64 encode image visualizations.
 
     Returns:
         The loaded visualization.
+
+    Raises:
+        DoesNotExistException: If the artifact does not have the requested
+            visualization or if the visualization was not found in the artifact
+            store.
     """
-    if visualization.type == VisualizationType.IMAGE:
-        with fileio.open(visualization.uri, "rb") as image_file:
-            return bytes(image_file.read())
-    else:
-        with fileio.open(visualization.uri, "r") as text_file:
-            return str(text_file.read())
+    if not artifact.artifact_store_id:
+        raise DoesNotExistException(
+            f"Artifact '{artifact.id}' cannot be visualized because the "
+            f"underlying artifact store was deleted."
+        )
+
+    if not artifact.visualizations:
+        raise DoesNotExistException(
+            f"Artifact '{artifact.id}' has no visualizations."
+        )
+
+    if index < 0 or index >= len(artifact.visualizations):
+        raise DoesNotExistException(
+            f"Artifact '{artifact.id}' only has {len(artifact.visualizations)} "
+            f"visualizations, but index {index} was requested."
+        )
+
+    if zen_store is None:
+        zen_store = Client().zen_store
+
+    artifact_store_model = zen_store.get_stack_component(
+        artifact.artifact_store_id
+    )
+
+    try:
+        artifact_store = cast(
+            BaseArtifactStore, StackComponent.from_model(artifact_store_model)
+        )
+    except ImportError:
+        raise DoesNotExistException(
+            f"Artifact '{artifact.id}' cannot be visualized because the "
+            f"underlying artifact store '{artifact_store_model.name}' "
+            f"could not be instantiated."
+        )
+
+    visualization = artifact.visualizations[index]
+    mode = "rb" if visualization.type == VisualizationType.IMAGE else "r"
+    try:
+        with artifact_store.open(visualization.uri, mode) as text_file:
+            value = text_file.read()
+    except FileNotFoundError:
+        raise DoesNotExistException(
+            f"Artifact '{artifact.id}' could not be visualized because the "
+            f"visualization file '{visualization.uri}' was not be found in "
+            f"the underlying artifact store '{artifact_store_model.name}'."
+        )
+
+    if visualization.type == VisualizationType.IMAGE and encode_image:
+        value = base64.b64encode(bytes(value))
+    return LoadedVisualizationModel(type=visualization.type, value=value)
