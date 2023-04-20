@@ -99,6 +99,7 @@ class ArtifactView(BaseView):
         if not self.model.visualizations:
             return
 
+        display(Markdown(f"### {self.model.name}"))
         for i in range(len(self.model.visualizations)):
             visualization = load_artifact_visualization(self.model, index=i)
             if visualization.type == VisualizationType.IMAGE:
@@ -107,5 +108,15 @@ class ArtifactView(BaseView):
                 display(HTML(visualization.value))
             elif visualization.type == VisualizationType.MARKDOWN:
                 display(Markdown(visualization.value))
+            elif visualization.type == VisualizationType.CSV:
+                assert isinstance(visualization.value, str)
+                table = "<table>"
+                for row in visualization.value.splitlines():
+                    table += "<tr>"
+                    for cell in row.split(","):
+                        table += f"<td>{cell}</td>"
+                    table += "</tr>"
+                table += "</table>"
+                display(HTML(table))
             else:
                 display(visualization.value)
