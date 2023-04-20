@@ -80,7 +80,7 @@ if TYPE_CHECKING:
         FlavorResponseModel,
         PipelineRunResponseModel,
         ServiceConnectorResponseModel,
-        ServiceConnectorSpecificationModel,
+        ServiceConnectorTypeModel,
         StackResponseModel,
     )
     from zenml.stack import Stack
@@ -1296,7 +1296,7 @@ def print_service_connector_configuration(
 
 
 def print_service_connector_types_table(
-    connector_types: Sequence["ServiceConnectorSpecificationModel"],
+    connector_types: Sequence["ServiceConnectorTypeModel"],
 ) -> None:
     """Prints a table with details for a list of service connectors types.
 

@@ -52,9 +52,9 @@ from pydantic import Field, SecretStr
 from zenml.exceptions import AuthorizationException
 from zenml.logger import get_logger
 from zenml.models import (
-    AuthenticationMethodSpecificationModel,
-    ResourceTypeSpecificationModel,
-    ServiceConnectorSpecificationModel,
+    AuthenticationMethodModel,
+    ResourceTypeModel,
+    ServiceConnectorTypeModel,
 )
 from zenml.service_connectors.docker_service_connector import (
     DOCKER_RESOURCE_TYPE,
@@ -145,7 +145,7 @@ class AWSAuthenticationMethods(StrEnum):
     IAM_ROLE = "iam-role"
 
 
-AWS_SERVICE_CONNECTOR_SPECIFICATION = ServiceConnectorSpecificationModel(
+AWS_SERVICE_CONNECTOR_TYPE_SPEC = ServiceConnectorTypeModel(
     name="AWS Service Connector",
     type=AWS_CONNECTOR_TYPE,
     description="""
@@ -165,7 +165,7 @@ Kubernetes clients.
 """,
     logo_url="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/container_registry/aws.png",
     auth_methods=[
-        AuthenticationMethodSpecificationModel(
+        AuthenticationMethodModel(
             name="Explicit AWS secret key",
             auth_method=AWSAuthenticationMethods.SECRET_KEY,
             description="""
@@ -181,7 +181,7 @@ credentials upon expiration).
 """,
             config_class=AWSSecretKeyConfig,
         ),
-        AuthenticationMethodSpecificationModel(
+        AuthenticationMethodModel(
             name="Explicit AWS STS token",
             auth_method=AWSAuthenticationMethods.STS_TOKEN,
             description="""
@@ -193,7 +193,7 @@ to be used for a short period of time.
 """,
             config_class=STSTokenConfig,
         ),
-        AuthenticationMethodSpecificationModel(
+        AuthenticationMethodModel(
             name="AWS IAM role",
             auth_method=AWSAuthenticationMethods.IAM_ROLE,
             description="""
@@ -209,7 +209,7 @@ upon expiration (e.g. an external client or long-running process is involved).
         ),
     ],
     resource_types=[
-        ResourceTypeSpecificationModel(
+        ResourceTypeModel(
             name="Generic AWS resource",
             resource_type=AWS_RESOURCE_TYPE,
             description="""
@@ -224,7 +224,7 @@ session can then be used to create boto3 clients for any particular AWS service.
             multi_instance=False,
             logo_url="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/container_registry/aws.png",
         ),
-        ResourceTypeSpecificationModel(
+        ResourceTypeModel(
             name="AWS S3 bucket",
             resource_type=S3_RESOURCE_TYPE,
             description="""
@@ -243,7 +243,7 @@ The resource ID must identify an S3 bucket using one of the following formats:
             multi_instance=True,
             logo_url="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/container_registry/aws.png",
         ),
-        ResourceTypeSpecificationModel(
+        ResourceTypeModel(
             name="AWS EKS Kubernetes cluster",
             resource_type=KUBERNETES_RESOURCE_TYPE,
             description="""
@@ -265,7 +265,7 @@ from the resource ID, it must be provided as a configuration parameter.
             multi_instance=True,
             logo_url="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/orchestrator/kubernetes.png",
         ),
-        ResourceTypeSpecificationModel(
+        ResourceTypeModel(
             name="AWS ECR container registry",
             resource_type=DOCKER_RESOURCE_TYPE,
             description="""
@@ -299,13 +299,13 @@ class AWSServiceConnector(ServiceConnector):
     config: AWSBaseConfig
 
     @classmethod
-    def get_specification(cls) -> ServiceConnectorSpecificationModel:
-        """Get the service connector specification.
+    def get_type(cls) -> ServiceConnectorTypeModel:
+        """Get the service connector type specification.
 
         Returns:
-            The service connector specification.
+            The service connector type specification.
         """
-        return AWS_SERVICE_CONNECTOR_SPECIFICATION
+        return AWS_SERVICE_CONNECTOR_TYPE_SPEC
 
     def _authenticate(self, auth_method: str) -> boto3.Session:
         """Authenticate to AWS.

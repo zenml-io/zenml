@@ -2162,6 +2162,7 @@ class Client(metaclass=ClientMetaClass):
         labels: Optional[Dict[str, Any]] = None,
         is_shared: Optional[bool] = None,
         connector_id: Optional[UUID] = None,
+        connector_resource_id: Optional[str] = None,
     ) -> "ComponentResponseModel":
         """Updates a stack component.
 
@@ -2174,6 +2175,8 @@ class Client(metaclass=ClientMetaClass):
             labels: The new labels of the stack component.
             is_shared: The new shared status of the stack component.
             connector_id: The new connector id of the stack component.
+            connector_resource_id: The new connector resource id of the
+                stack component.
 
         Returns:
             The updated stack component.
@@ -2257,6 +2260,8 @@ class Client(metaclass=ClientMetaClass):
 
         if connector_id is not None:
             update_model.connector = connector_id
+        if connector_resource_id is not None:
+            update_model.connector_resource_id = connector_resource_id
 
         # Send the updated component to the ZenStore
         return self.zen_store.update_stack_component(
@@ -4243,7 +4248,7 @@ class Client(metaclass=ClientMetaClass):
             service_connector_registry,
         )
 
-        # Get the service connector specification
+        # Get the service connector type class
         try:
             connector = service_connector_registry.get_service_connector(
                 connector_type=type,
@@ -4272,6 +4277,7 @@ class Client(metaclass=ClientMetaClass):
                 workspace=self.active_workspace.id,
                 description=description or "",
                 is_shared=is_shared,
+                labels=labels,
             )
         else:
             if not auth_method:
@@ -4310,6 +4316,7 @@ class Client(metaclass=ClientMetaClass):
                     workspace=self.active_workspace.id,
                     is_shared=is_shared,
                     description=description,
+                    labels=labels,
                 )
 
         if not register:
@@ -4457,6 +4464,7 @@ class Client(metaclass=ClientMetaClass):
                     workspace=service_connector.workspace.id,
                     is_shared=service_connector.is_shared,
                     description=service_connector.description,
+                    labels=service_connector.labels,
                 ),
             )
 

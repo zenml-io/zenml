@@ -25,9 +25,9 @@ from pydantic import SecretStr
 
 from zenml.exceptions import AuthorizationException
 from zenml.models import (
-    AuthenticationMethodSpecificationModel,
-    ResourceTypeSpecificationModel,
-    ServiceConnectorSpecificationModel,
+    AuthenticationMethodModel,
+    ResourceTypeModel,
+    ServiceConnectorTypeModel,
 )
 from zenml.service_connectors.service_connector import (
     AuthenticationConfig,
@@ -54,7 +54,7 @@ class DockerAuthenticationMethods(StrEnum):
     PASSWORD = "password"
 
 
-DOCKER_SERVICE_CONNECTOR_SPECIFICATION = ServiceConnectorSpecificationModel(
+DOCKER_SERVICE_CONNECTOR_SPECIFICATION = ServiceConnectorTypeModel(
     name="Docker Service Connector",
     type=DOCKER_CONNECTOR_TYPE,
     description="""
@@ -65,7 +65,7 @@ The connector provides pre-authenticated python-docker clients.
 """,
     logo_url="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/container_registry/docker.png",
     auth_methods=[
-        AuthenticationMethodSpecificationModel(
+        AuthenticationMethodModel(
             name="Docker username and password",
             auth_method=DockerAuthenticationMethods.PASSWORD,
             description="""
@@ -75,7 +75,7 @@ Use a username and password or token to authenticate with a Docker registry.
         ),
     ],
     resource_types=[
-        ResourceTypeSpecificationModel(
+        ResourceTypeModel(
             name="Docker/OCI container registry",
             resource_type=DOCKER_RESOURCE_TYPE,
             description="""
@@ -105,7 +105,7 @@ class DockerServiceConnector(ServiceConnector):
     config: DockerCredentials
 
     @classmethod
-    def get_specification(cls) -> ServiceConnectorSpecificationModel:
+    def get_type(cls) -> ServiceConnectorTypeModel:
         """Get the service connector specification.
 
         Returns:

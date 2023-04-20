@@ -210,6 +210,8 @@ GET_OR_CREATE = "/get-or-create"
 SECRETS = "/secrets"
 CODE_REPOSITORIES = "/code_repositories"
 SERVICE_CONNECTORS = "/service_connectors"
+SERVICE_CONNECTOR_VERIFY = "/verify"
+SERVICE_CONNECTOR_TYPES = "/service_connector_types"
 
 # mandatory stack component attributes
 MANDATORY_COMPONENT_ATTRIBUTES = ["name", "uuid"]

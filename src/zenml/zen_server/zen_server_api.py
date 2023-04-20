@@ -43,6 +43,7 @@ from zenml.zen_server.routers import (
     schedule_endpoints,
     secrets_endpoints,
     server_endpoints,
+    service_connectors_endpoints,
     stack_components_endpoints,
     stacks_endpoints,
     steps_endpoints,
@@ -170,6 +171,7 @@ app.include_router(run_metadata_endpoints.router)
 app.include_router(schedule_endpoints.router)
 app.include_router(secrets_endpoints.router)
 app.include_router(server_endpoints.router)
+app.include_router(service_connectors_endpoints.router)
 app.include_router(stacks_endpoints.router)
 app.include_router(stack_components_endpoints.router)
 app.include_router(stack_components_endpoints.types_router)

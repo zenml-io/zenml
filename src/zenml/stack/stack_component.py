@@ -24,10 +24,7 @@ from zenml.config.step_configurations import Step
 from zenml.config.step_run_info import StepRunInfo
 from zenml.enums import StackComponentType
 from zenml.logger import get_logger
-from zenml.models import ComponentResponseModel
-from zenml.service_connectors.service_connector import (
-    ServiceConnectorRequirements,
-)
+from zenml.models import ComponentResponseModel, ServiceConnectorRequirements
 from zenml.utils import secret_utils, settings_utils
 
 if TYPE_CHECKING:
@@ -526,10 +523,10 @@ class StackComponent:
                 f"flavor: {err}. Please verify that the connector is "
                 f"compatible with the component flavor and try again."
             )
-        # Override the connector's resource ID with the one specified in the
-        # stack component if it is set.
+        # Use resource ID specified in the stack component if not set in the
+        # service connector configuration.
         connector_model.resource_id = (
-            self.connector_resource_id or connector_model.resource_id
+            connector_model.resource_id or self.connector_resource_id
         )
         self._connector_instance = (
             service_connector_registry.instantiate_service_connector(

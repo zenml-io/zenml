@@ -14,7 +14,7 @@
 """Base ZenML Service Connector class."""
 
 from abc import abstractmethod
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, Optional
 from uuid import UUID
 
 from pydantic import (
@@ -30,7 +30,7 @@ from zenml.models.service_connector_models import (
     ServiceConnectorBaseModel,
     ServiceConnectorRequestModel,
     ServiceConnectorResponseModel,
-    ServiceConnectorSpecificationModel,
+    ServiceConnectorTypeModel,
 )
 
 logger = get_logger(__name__)
@@ -64,55 +64,6 @@ class AuthenticationConfig(BaseModel):
             for k, v in self.dict(exclude_none=True).items()
             if not isinstance(v, SecretStr)
         }
-
-
-class ServiceConnectorRequirements(BaseModel):
-    """Service connector requirements.
-
-    Describes requirements that a service connector consumer has for a
-    service connector instance that it needs in order to access a resource.
-
-    Attributes:
-        connector_type: The type of service connector that is required. If
-            omitted, any service connector type can be used.
-        resource_type: The type of resource that the service connector instance
-            must be able to access. If omitted, any resource type can be
-            accessed.
-    """
-
-    connector_type: Optional[str] = None
-    resource_type: Optional[str] = None
-
-    def is_satisfied_by(
-        self, connector: "ServiceConnectorBaseModel"
-    ) -> Tuple[bool, str]:
-        """Check if the requirements are satisfied by a connector.
-
-        Args:
-            connector: The connector to check.
-
-        Returns:
-            True if the requirements are satisfied, False otherwise, and a
-            message describing the reason for the failure.
-        """
-        if self.connector_type and self.connector_type != connector.type:
-            return (
-                False,
-                f"connector type '{connector.type}' does not match the "
-                f"'{self.connector_type}' connector type specified in the "
-                "requirements",
-            )
-        if (
-            self.resource_type
-            and self.resource_type != connector.resource_type
-        ):
-            return False, (
-                f"connector resource type '{connector.resource_type}' "
-                f"does not match the '{self.resource_type}' "
-                "resource type specified in the requirements"
-            )
-
-        return True, ""
 
 
 class ServiceConnector(BaseModel):
@@ -171,11 +122,11 @@ class ServiceConnector(BaseModel):
 
     @classmethod
     @abstractmethod
-    def get_specification(cls) -> ServiceConnectorSpecificationModel:
-        """Get the connector specification.
+    def get_type(cls) -> ServiceConnectorTypeModel:
+        """Get the connector type specification.
 
         Returns:
-            The connector specification.
+            The connector type specification.
         """
 
     @abstractmethod
@@ -305,7 +256,7 @@ class ServiceConnector(BaseModel):
             The created service connector instance.
         """
         # Validate the connector configuration model
-        spec = cls.get_specification()
+        spec = cls.get_type()
         try:
             method_spec, _ = spec.find_resource_specifications(
                 model.auth_method,
@@ -370,6 +321,7 @@ class ServiceConnector(BaseModel):
         workspace: UUID,
         is_shared: bool = False,
         description: str = "",
+        labels: Optional[Dict[str, str]] = None,
     ) -> "ServiceConnectorRequestModel":
         """Convert the connector instance to a service connector model.
 
@@ -379,6 +331,7 @@ class ServiceConnector(BaseModel):
             workspace: The ID of the workspace that the connector belongs to.
             is_shared: Whether the connector is shared with other users.
             description: The description of the connector.
+            labels: The labels of the connector.
 
         Returns:
             The service connector model corresponding to the connector
@@ -387,7 +340,7 @@ class ServiceConnector(BaseModel):
         Raises:
             ValueError: If the connector configuration is not valid.
         """
-        spec = self.get_specification()
+        spec = self.get_type()
         try:
             # Get the resource specification corresponding to the
             # connector configuration.
@@ -402,7 +355,7 @@ class ServiceConnector(BaseModel):
             ) from e
 
         return ServiceConnectorRequestModel(
-            type=self.get_specification().type,
+            type=self.get_type().type,
             name=name,
             description=description,
             user=user,
@@ -413,6 +366,7 @@ class ServiceConnector(BaseModel):
             resource_id=self.resource_id,
             configuration=self.config.non_secret_values,
             secrets=self.config.secret_values,
+            labels=labels or {},
         )
 
     def validate_runtime_args(
@@ -437,7 +391,7 @@ class ServiceConnector(BaseModel):
         Raises:
             ValueError: If the runtime arguments are not valid.
         """
-        spec = self.get_specification()
+        spec = self.get_type()
         try:
             # Get the resource specification corresponding to the
             # connector configuration.
@@ -551,7 +505,7 @@ class ServiceConnector(BaseModel):
             ValueError: If the connector does not support the requested
                 authentication method or resource type.
         """
-        spec = cls.get_specification()
+        spec = cls.get_type()
 
         auth_methods = spec.auth_method_map.keys()
         if auth_method and auth_method not in auth_methods:

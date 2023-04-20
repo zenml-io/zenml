@@ -17,8 +17,9 @@ from abc import abstractmethod
 from typing import Any, Dict, Optional, Type, cast
 
 from zenml.enums import StackComponentType
-from zenml.models import FlavorRequestModel, FlavorResponseModel
-from zenml.service_connectors.service_connector import (
+from zenml.models import (
+    FlavorRequestModel,
+    FlavorResponseModel,
     ServiceConnectorRequirements,
 )
 from zenml.stack.stack_component import StackComponent, StackComponentConfig

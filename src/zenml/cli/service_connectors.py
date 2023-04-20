@@ -182,7 +182,7 @@ def register_service_connector(
         )
 
         # Get the list of available service connector types
-        connector_types = service_connector_registry.find_service_connector(
+        connector_types = service_connector_registry.list_service_connectors(
             connector_type=type,
             resource_type=resource_type,
             auth_method=auth_method,
@@ -198,130 +198,6 @@ def register_service_connector(
                 if auth_method
                 else "",
             )
-
-        available_types = {
-            c.get_specification().type: c for c in connector_types
-        }
-        if len(available_types) == 1:
-            # Default to the first connector type if not supplied and if
-            # only one type is available
-            type = type or list(available_types.keys())[0]
-
-        message = "# Available service connector types\n"
-        # Print the name, type and description of all available service
-        # connectors
-        for c in connector_types:
-            spec = c.get_specification()
-            message += f"## {spec.name} ({spec.type})\n"
-            message += f"{spec.description}\n"
-
-        console.print(Markdown(f"{message}---"), justify="left", width=80)
-
-        # Ask the user to select a service connector type
-        connector_type = click.prompt(
-            "Please select a service connector type",
-            type=click.Choice(list(available_types.keys())),
-            default=type,
-        )
-
-        connector = available_types[connector_type]
-        specification = connector.get_specification()
-
-        available_resource_types = [
-            t for t in specification.resource_type_map.keys() if t
-        ]
-
-        message = (
-            f"# Available resource types for connector {specification.name}\n"
-        )
-        # Print the name, resource type identifiers and description of all
-        # available resource types
-        for r in specification.resource_types:
-            resource_type_str = r.resource_type or "<arbitrary>"
-            message += f"## {r.name} ({resource_type_str})\n"
-            message += f"{r.description}\n"
-
-        console.print(Markdown(f"{message}---"), justify="left", width=80)
-
-        if len(available_resource_types) == 1:
-            # Default to the first resource type if not supplied and if
-            # only one type is available
-            resource_type = resource_type or available_resource_types[0]
-
-        if None in specification.resource_type_map:
-            # Allow arbitrary resource types
-            resource_type = click.prompt(
-                "Please select a resource type "
-                f"({', '.join(available_resource_types)}) "
-                "or enter a custom resource type",
-                type=str,
-                default=resource_type,
-            )
-        else:
-            # Ask the user to select a resource type
-            resource_type = click.prompt(
-                "Please select a resource type",
-                type=click.Choice(available_resource_types),
-                default=resource_type,
-            )
-
-        assert resource_type
-
-        if resource_type not in specification.resource_type_map:
-            resource_type_spec = specification.resource_type_map[None]
-        else:
-            resource_type_spec = specification.resource_type_map[resource_type]
-
-        if resource_type_spec.multi_instance:
-            # Ask the user to enter an optional resource ID
-            resource_id = click.prompt(
-                "The selected resource type supports multiple instances. "
-                "Please enter a resource ID value or leave it empty to be "
-                "supplied later at runtime",
-                default=resource_id or "",
-                type=str,
-            )
-            if resource_id == "":
-                resource_id = None
-
-            if not resource_id and not no_verify:
-                cli_utils.warning(
-                    "You have not specified a resource ID. "
-                    "The service connector will not be verified before "
-                    "registration because it cannot be fully configured. "
-                    "You can verify the service connector later by running "
-                    "`zenml service-connector verify`."
-                )
-                no_verify = True
-
-        auth_methods = resource_type_spec.auth_methods
-
-        message = (
-            "# Available authentication methods for resource "
-            f"{resource_type_spec.name}\n"
-        )
-        # Print the name, identifier and description of all available auth
-        # methods
-        for a in auth_methods:
-            auth_method_spec = specification.auth_method_map[a]
-            message += f"## {auth_method_spec.name} ({a})\n"
-            message += f"{auth_method_spec.description}\n"
-
-        console.print(Markdown(f"{message}---"), justify="left", width=80)
-
-        if len(auth_methods) == 1:
-            # Default to the first auth method if not supplied and if
-            # only one type is available
-            auth_method = auth_method or auth_methods[0]
-
-        # Ask the user to select an authentication method
-        auth_method = click.prompt(
-            "Please select an authentication method",
-            type=click.Choice(auth_methods),
-            default=auth_method,
-        )
-        assert auth_method
-        auth_method_spec = specification.auth_method_map[auth_method]
 
         while True:
             # Ask for a name
@@ -351,6 +227,113 @@ def register_service_connector(
             "Please enter a description for the service connector",
             type=str,
             default="",
+        )
+
+        available_types = {c.get_type().type: c for c in connector_types}
+        if len(available_types) == 1:
+            # Default to the first connector type if not supplied and if
+            # only one type is available
+            type = type or list(available_types.keys())[0]
+
+        message = "# Available service connector types\n"
+        # Print the name, type and description of all available service
+        # connectors
+        for c in connector_types:
+            spec = c.get_type()
+            message += f"## {spec.name} ({spec.type})\n"
+            message += f"{spec.description}\n"
+
+        console.print(Markdown(f"{message}---"), justify="left", width=80)
+
+        # Ask the user to select a service connector type
+        connector_type = click.prompt(
+            "Please select a service connector type",
+            type=click.Choice(list(available_types.keys())),
+            default=type,
+        )
+
+        connector = available_types[connector_type]
+        connector_type_spec = connector.get_type()
+
+        available_resource_types = [
+            t for t in connector_type_spec.resource_type_map.keys() if t
+        ]
+
+        message = f"# Available resource types for connector {connector_type_spec.name}\n"
+        # Print the name, resource type identifiers and description of all
+        # available resource types
+        for r in connector_type_spec.resource_types:
+            resource_type_str = r.resource_type or "<arbitrary>"
+            message += f"## {r.name} ({resource_type_str})\n"
+            message += f"{r.description}\n"
+
+        console.print(Markdown(f"{message}---"), justify="left", width=80)
+
+        if len(available_resource_types) == 1:
+            # Default to the first resource type if not supplied and if
+            # only one type is available
+            resource_type = resource_type or available_resource_types[0]
+
+        if None in connector_type_spec.resource_type_map:
+            # Allow arbitrary resource types
+            resource_type = click.prompt(
+                "Please select a resource type "
+                f"({', '.join(available_resource_types)}) "
+                "or enter a custom resource type",
+                type=str,
+                default=resource_type,
+            )
+        else:
+            # Ask the user to select a resource type
+            resource_type = click.prompt(
+                "Please select a resource type",
+                type=click.Choice(available_resource_types),
+                default=resource_type,
+            )
+
+        assert resource_type
+
+        if resource_type not in connector_type_spec.resource_type_map:
+            resource_type_spec = connector_type_spec.resource_type_map[None]
+        else:
+            resource_type_spec = connector_type_spec.resource_type_map[
+                resource_type
+            ]
+
+        if resource_type_spec.multi_instance:
+            # Ask the user to enter an optional resource ID
+            resource_id = click.prompt(
+                "The selected resource type supports multiple instances. "
+                f"Please enter a {resource_type_spec.name} resource ID value "
+                "or leave it empty to create a connector that can be used "
+                "with whatever resource ID is supplied at runtime by the "
+                "stack component that uses it.",
+                default=resource_id or "",
+                type=str,
+            )
+            if resource_id == "":
+                resource_id = None
+
+        no_verify = False
+        if (
+            resource_type_spec.multi_instance
+            and not resource_id
+            and not no_verify
+        ):
+            cli_utils.warning(
+                "You have not specified a resource ID. "
+                "The service connector will not be verified before "
+                "registration because it cannot be fully configured. "
+                "You can verify the service connector later by running "
+                "`zenml service-connector verify`."
+            )
+            no_verify = True
+
+        # Ask the user whether to verify the service connector
+        no_verify = no_verify or not click.confirm(
+            "Would you like to verify the service connector before "
+            "registration ?",
+            default=True,
         )
 
         # Ask the user whether to use auto-configuration
@@ -397,6 +380,35 @@ def register_service_connector(
                     f"Successfully registered service connector `{name}`."
                 )
                 return
+
+        auth_methods = resource_type_spec.auth_methods
+
+        message = (
+            "# Available authentication methods for resource "
+            f"{resource_type_spec.name}\n"
+        )
+        # Print the name, identifier and description of all available auth
+        # methods
+        for a in auth_methods:
+            auth_method_spec = connector_type_spec.auth_method_map[a]
+            message += f"## {auth_method_spec.name} ({a})\n"
+            message += f"{auth_method_spec.description}\n"
+
+        console.print(Markdown(f"{message}---"), justify="left", width=80)
+
+        if len(auth_methods) == 1:
+            # Default to the first auth method if not supplied and if
+            # only one type is available
+            auth_method = auth_method or auth_methods[0]
+
+        # Ask the user to select an authentication method
+        auth_method = click.prompt(
+            "Please select an authentication method",
+            type=click.Choice(auth_methods),
+            default=auth_method,
+        )
+        assert auth_method
+        auth_method_spec = connector_type_spec.auth_method_map[auth_method]
 
         cli_utils.declare(
             f"Please enter the configuration for the {auth_method_spec.name} "
@@ -1009,7 +1021,7 @@ def login_service_connector(
                 f"the local client/SDK: {e}"
             )
 
-        spec = connector.get_specification()
+        spec = connector.get_type()
         resource_name = spec.get_resource_spec(connector.resource_type).name
         cli_utils.declare(
             f"The '{name_id_or_prefix}' {spec.name} connector was used to "
@@ -1194,7 +1206,7 @@ def list_service_connector_types(
     )
 
     service_connector_types = (
-        service_connector_registry.find_service_connector(
+        service_connector_registry.list_service_connectors(
             connector_type=type,
             resource_type=resource_type,
             auth_method=auth_method,
@@ -1210,7 +1222,7 @@ def list_service_connector_types(
         message = ""
         for connector in service_connector_types:
             filtered_auth_methods = [auth_method] if auth_method else []
-            spec = connector.get_specification()
+            spec = connector.get_type()
             supported_auth_methods = list(spec.auth_method_map.keys())
             supported_resource_types = list(spec.resource_type_map.keys())
             # Replace the `None` resource type with `<arbitrary>`
@@ -1248,8 +1260,7 @@ def list_service_connector_types(
     else:
         cli_utils.print_service_connector_types_table(
             connector_types=[
-                connector.get_specification()
-                for connector in service_connector_types
+                connector.get_type() for connector in service_connector_types
             ]
         )
 

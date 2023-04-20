@@ -41,7 +41,7 @@ class ServiceConnectorRegistry:
             service_connector: Service connector.
             overwrite: Whether to overwrite an existing service connector.
         """
-        spec = service_connector.get_specification()
+        spec = service_connector.get_type()
         if spec.type not in self.service_connectors or overwrite:
             self.service_connectors[spec.type] = service_connector
             logger.debug(
@@ -65,7 +65,17 @@ class ServiceConnectorRegistry:
         Returns:
             A service connector that was registered for the given
             connector type identifier.
+
+        Raises:
+            KeyError: If no service connector was registered for the given type
+                identifier.
         """
+        if connector_type not in self.service_connectors:
+            raise KeyError(
+                f"Service connector type {connector_type} is not available. "
+                f"Please make sure the corresponding packages and/or ZenML "
+                f"integration are installed and try again."
+            )
         return self.service_connectors[connector_type]
 
     def __getitem__(self, key: str) -> Type[ServiceConnector]:
@@ -106,7 +116,7 @@ class ServiceConnectorRegistry:
         """
         return connector_type in self.service_connectors
 
-    def find_service_connector(
+    def list_service_connectors(
         self,
         connector_type: Optional[str] = None,
         resource_type: Optional[str] = None,
@@ -126,7 +136,7 @@ class ServiceConnectorRegistry:
         """
         matches: List[Type[ServiceConnector]] = []
         for service_connector in self.service_connectors.values():
-            spec = service_connector.get_specification()
+            spec = service_connector.get_type()
             if (
                 (connector_type is None or connector_type == spec.type)
                 and (

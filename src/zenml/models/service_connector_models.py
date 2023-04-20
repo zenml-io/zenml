@@ -38,7 +38,7 @@ from zenml.models.filter_models import ShareableWorkspaceScopedFilterModel
 # ---- #
 
 
-class ResourceTypeSpecificationModel(BaseModel):
+class ResourceTypeModel(BaseModel):
     """Resource type specification.
 
     Describes the authentication methods and resource instantiation model for
@@ -121,7 +121,7 @@ class ResourceTypeSpecificationModel(BaseModel):
         return resource_id == target_resource_id
 
 
-class AuthenticationMethodSpecificationModel(BaseModel):
+class AuthenticationMethodModel(BaseModel):
     """Authentication method specification.
 
     Describes the schema for the configuration and secrets that need to be
@@ -178,8 +178,8 @@ class AuthenticationMethodSpecificationModel(BaseModel):
         fields = {"config_class": {"exclude": True}}
 
 
-class ServiceConnectorSpecificationModel(BaseModel):
-    """Service connector specification.
+class ServiceConnectorTypeModel(BaseModel):
+    """Service connector type specification.
 
     Describes the types of resources to which the service connector can be used
     to gain access and the authentication methods that are supported by the
@@ -205,11 +205,11 @@ class ServiceConnectorSpecificationModel(BaseModel):
         default="",
         title="A description of the service connector.",
     )
-    resource_types: List[ResourceTypeSpecificationModel] = Field(
+    resource_types: List[ResourceTypeModel] = Field(
         title="A list of resource types that the connector can be used to "
         "access.",
     )
-    auth_methods: List[AuthenticationMethodSpecificationModel] = Field(
+    auth_methods: List[AuthenticationMethodModel] = Field(
         title="A list of specifications describing the authentication "
         "methods that are supported by the service connector, along with the "
         "configuration and secrets attributes that need to be configured for "
@@ -243,8 +243,8 @@ class ServiceConnectorSpecificationModel(BaseModel):
 
     @validator("resource_types")
     def validate_resource_types(
-        cls, v: List[ResourceTypeSpecificationModel]
-    ) -> List[ResourceTypeSpecificationModel]:
+        cls, v: List[ResourceTypeModel]
+    ) -> List[ResourceTypeModel]:
         """Validate that the resource types are unique.
 
         Args:
@@ -267,8 +267,8 @@ class ServiceConnectorSpecificationModel(BaseModel):
 
     @validator("auth_methods")
     def validate_auth_methods(
-        cls, v: List[AuthenticationMethodSpecificationModel]
-    ) -> List[AuthenticationMethodSpecificationModel]:
+        cls, v: List[AuthenticationMethodModel]
+    ) -> List[AuthenticationMethodModel]:
         """Validate that the authentication methods are unique.
 
         Args:
@@ -291,7 +291,7 @@ class ServiceConnectorSpecificationModel(BaseModel):
     @property
     def resource_type_map(
         self,
-    ) -> Dict[Optional[str], ResourceTypeSpecificationModel]:
+    ) -> Dict[Optional[str], ResourceTypeModel]:
         """Returns a map of resource types to resource type specifications.
 
         Returns:
@@ -302,7 +302,7 @@ class ServiceConnectorSpecificationModel(BaseModel):
     @property
     def auth_method_map(
         self,
-    ) -> Dict[str, AuthenticationMethodSpecificationModel]:
+    ) -> Dict[str, AuthenticationMethodModel]:
         """Returns a map of authentication methods to authentication method specifications.
 
         Returns:
@@ -323,9 +323,7 @@ class ServiceConnectorSpecificationModel(BaseModel):
         resource_type_map = self.resource_type_map
         return resource_type in resource_type_map or None in resource_type_map
 
-    def get_resource_spec(
-        self, resource_type: str
-    ) -> ResourceTypeSpecificationModel:
+    def get_resource_spec(self, resource_type: str) -> ResourceTypeModel:
         """Returns the resource specification for a resource type.
 
         Args:
@@ -354,9 +352,7 @@ class ServiceConnectorSpecificationModel(BaseModel):
         auth_method: str,
         resource_type: str,
         resource_id: Optional[str] = None,
-    ) -> Tuple[
-        AuthenticationMethodSpecificationModel, ResourceTypeSpecificationModel
-    ]:
+    ) -> Tuple[AuthenticationMethodModel, ResourceTypeModel]:
         """Find the specifications for a configurable resource.
 
         Validate the supplied connector configuration parameters against the
@@ -473,6 +469,55 @@ class ServiceConnectorBaseModel(BaseModel):
         default_factory=dict,
         title="Service connector labels.",
     )
+
+
+class ServiceConnectorRequirements(BaseModel):
+    """Service connector requirements.
+
+    Describes requirements that a service connector consumer has for a
+    service connector instance that it needs in order to access a resource.
+
+    Attributes:
+        connector_type: The type of service connector that is required. If
+            omitted, any service connector type can be used.
+        resource_type: The type of resource that the service connector instance
+            must be able to access. If omitted, any resource type can be
+            accessed.
+    """
+
+    connector_type: Optional[str] = None
+    resource_type: Optional[str] = None
+
+    def is_satisfied_by(
+        self, connector: "ServiceConnectorBaseModel"
+    ) -> Tuple[bool, str]:
+        """Check if the requirements are satisfied by a connector.
+
+        Args:
+            connector: The connector to check.
+
+        Returns:
+            True if the requirements are satisfied, False otherwise, and a
+            message describing the reason for the failure.
+        """
+        if self.connector_type and self.connector_type != connector.type:
+            return (
+                False,
+                f"connector type '{connector.type}' does not match the "
+                f"'{self.connector_type}' connector type specified in the "
+                "requirements",
+            )
+        if (
+            self.resource_type
+            and self.resource_type != connector.resource_type
+        ):
+            return False, (
+                f"connector resource type '{connector.resource_type}' "
+                f"does not match the '{self.resource_type}' "
+                "resource type specified in the requirements"
+            )
+
+        return True, ""
 
 
 # -------- #

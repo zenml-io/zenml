@@ -16,7 +16,6 @@
 import time
 from importlib import import_module
 from typing import Any, Callable, List, Optional
-from uuid import UUID
 
 import click
 from rich.markdown import Markdown
@@ -37,7 +36,7 @@ from zenml.cli.utils import (
 from zenml.client import Client
 from zenml.console import console
 from zenml.enums import CliCategories, StackComponentType
-from zenml.exceptions import IllegalOperationError
+from zenml.exceptions import AuthorizationException, IllegalOperationError
 from zenml.io import fileio
 from zenml.models import ComponentFilterModel
 from zenml.utils.analytics_utils import AnalyticsEvent, track
@@ -1102,11 +1101,20 @@ def generate_stack_component_connect_command(
         help="Select a service connector interactively.",
         type=click.BOOL,
     )
+    @click.option(
+        "--no-verify",
+        "no_verify",
+        is_flag=True,
+        default=False,
+        help="Skip verification of the connector.",
+        type=click.BOOL,
+    )
     def connect_stack_component_command(
         name_id_or_prefix: str,
         connector_id: Optional[str] = None,
         resource_id: Optional[str] = None,
         interactive: bool = False,
+        no_verify: bool = False,
     ) -> None:
         """Connect the stack component to a connector.
 
@@ -1117,8 +1125,11 @@ def generate_stack_component_connect_command(
                 required for multi-instance connectors that are not already
                 configured with a particular resource ID.
             interactive: Select a service connector interactively.
+            no_verify: Skip verification of the connector.
         """
-        from zenml.stack import Flavor
+        from zenml.service_connectors.service_connector_registry import (
+            service_connector_registry,
+        )
 
         if component_type == StackComponentType.SECRETS_MANAGER:
             warn_deprecated_secrets_manager()
@@ -1155,10 +1166,9 @@ def generate_stack_component_connect_command(
                 f"{display_name} '{name_id_or_prefix}': {str(err)}"
             )
 
-        flavor = Flavor.from_model(flavor_model)
-        req = flavor.service_connector_requirements
+        requirements = flavor_model.connector_requirements
 
-        if not req:
+        if not requirements:
             cli_utils.error(
                 f"The '{component_model.name}' {display_name} implementation "
                 "does not support using a service connector."
@@ -1166,8 +1176,8 @@ def generate_stack_component_connect_command(
 
         if interactive:
             connectors = client.list_service_connectors(
-                type=req.connector_type,
-                resource_type=req.resource_type,
+                type=requirements.connector_type,
+                resource_type=requirements.resource_type,
             )
 
             if not connectors:
@@ -1191,16 +1201,37 @@ def generate_stack_component_connect_command(
                 )
                 if not connect:
                     return
-                connector_uuid = connectors.items[0].id
+                connector_model = connectors.items[0]
             else:
-                connector_id = click.prompt(
-                    "Please enter the ID of the connector you want to use",
-                    type=click.Choice(
-                        [str(connector.id) for connector in connectors.items]
-                    ),
-                    show_choices=False,
-                )
-                connector_uuid = UUID(connector_id)
+                while True:
+                    connector_id = click.prompt(
+                        "Please enter the name or ID of the connector you want "
+                        "to use",
+                        type=click.Choice(
+                            [
+                                str(connector.id)
+                                for connector in connectors.items
+                            ]
+                            + [
+                                connector.name
+                                for connector in connectors.items
+                            ]
+                        ),
+                        show_choices=False,
+                    )
+                    matches = [
+                        c
+                        for c in connectors.items
+                        if str(c.id) == connector_id or c.name == connector_id
+                    ]
+                    if len(matches) > 1:
+                        cli_utils.declare(
+                            f"Multiple connectors with name '{connector_id}' "
+                            "were found. Please try again."
+                        )
+                    else:
+                        connector_model = matches[0]
+                        break
 
         else:
             assert connector_id is not None
@@ -1212,7 +1243,7 @@ def generate_stack_component_connect_command(
                     f"{str(err)}"
                 )
 
-            satisfied, msg = req.is_satisfied_by(connector_model)
+            satisfied, msg = requirements.is_satisfied_by(connector_model)
             if not satisfied:
                 cli_utils.error(
                     f"The connector with ID {connector_id} does not match the "
@@ -1222,7 +1253,57 @@ def generate_stack_component_connect_command(
                     "select a compatible connector."
                 )
 
-            connector_uuid = connector_model.id
+        # Get the connector type specification to verify the resource ID
+        connector = service_connector_registry.get_service_connector(
+            connector_type=connector_model.type,
+        )
+        connector_type_spec = connector.get_type()
+        resource_spec = connector_type_spec.get_resource_spec(
+            connector_model.resource_type
+        )
+        if resource_spec.multi_instance:
+            if resource_id is None and connector_model.resource_id is None:
+                if interactive:
+                    resource_id = click.prompt(
+                        f"The connector with ID '{connector_model.id}' is a "
+                        "multi-instance connector that requires a "
+                        f"{resource_spec.name} resource ID to be specified at "
+                        "runtime. Please specify a resource ID",
+                        type=click.STRING,
+                    )
+                else:
+                    cli_utils.error(
+                        f"The connector with ID '{connector_model.id}' is a "
+                        "multi-instance connector that requires a "
+                        f"{resource_spec.name} resource ID to be specified at "
+                        "runtime. Please specify a resource ID and try again."
+                    )
+
+        if interactive:
+
+            # Ask the user whether to verify the service connector
+            no_verify = not click.confirm(
+                "Would you like to verify the service connector before "
+                "registration ?",
+                default=True,
+            )
+
+        if not no_verify:
+            try:
+                client.verify_service_connector(
+                    connector_model.id,
+                    resource_id=resource_id,
+                )
+            except (
+                KeyError,
+                ValueError,
+                IllegalOperationError,
+                NotImplementedError,
+                AuthorizationException,
+            ) as e:
+                cli_utils.error(f"Could not verify service connector: {e}")
+
+        connector_uuid = connector_model.id
 
         with console.status(
             f"Updating {display_name} '{name_id_or_prefix}'...\n"
@@ -1232,6 +1313,7 @@ def generate_stack_component_connect_command(
                     name_id_or_prefix=name_id_or_prefix,
                     component_type=component_type,
                     connector_id=connector_uuid,
+                    connector_resource_id=resource_id,
                 )
             except (KeyError, IllegalOperationError) as err:
                 cli_utils.error(str(err))
