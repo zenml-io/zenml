@@ -17,6 +17,7 @@ import os
 from typing import Dict, Type, Union
 
 from zenml.enums import ArtifactType, VisualizationType
+from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.types import HTMLString, MarkdownString
@@ -46,7 +47,7 @@ class HTMLMarkdownMaterializer(BaseMaterializer):
             The loaded data.
         """
         super().load(data_type)
-        with open(self._get_filepath(data_type), "r") as f:
+        with fileio.open(self._get_filepath(data_type), "r") as f:
             return data_type(f.read())
 
     def save(self, data: HTML_OR_MARKDOWN) -> None:
@@ -56,7 +57,7 @@ class HTMLMarkdownMaterializer(BaseMaterializer):
             data: The data to save as an HTML or Markdown file.
         """
         super().save(data)
-        with open(self._get_filepath(type(data)), "w") as f:
+        with fileio.open(self._get_filepath(type(data)), "w") as f:
             f.write(data)
 
     def save_visualizations(

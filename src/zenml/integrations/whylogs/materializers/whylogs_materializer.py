@@ -112,7 +112,7 @@ class WhylogsMaterializer(BaseMaterializer):
         )
         rendered_html = visualization.summary_drift_report()
         filepath = os.path.join(self.uri, HTML_FILENAME)
-        with open(filepath, "w") as f:
+        with fileio.open(filepath, "w") as f:
             f.write(rendered_html.data)
         visualizations[filepath] = VisualizationType.HTML
 

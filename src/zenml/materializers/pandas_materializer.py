@@ -148,7 +148,8 @@ class PandasMaterializer(BaseMaterializer):
 
         # Save `df.describe()` as a CSV.
         describe_uri = os.path.join(self.uri, "describe.csv")
-        df.describe().to_csv(describe_uri)
+        with fileio.open(describe_uri, mode="wb") as f:
+            df.describe().to_csv(f)
         visualizations[describe_uri] = VisualizationType.CSV
 
         return visualizations

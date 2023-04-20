@@ -151,7 +151,8 @@ class NumpyMaterializer(BaseMaterializer):
         if len(arr.shape) == 1:
             histogram_path = os.path.join(self.uri, "histogram.png")
             plt.hist(arr)
-            plt.savefig(histogram_path)
+            with fileio.open(histogram_path, "wb") as f:
+                plt.savefig(f)
             plt.close()
             visualizations[histogram_path] = VisualizationType.IMAGE
 
@@ -160,7 +161,8 @@ class NumpyMaterializer(BaseMaterializer):
             len(arr.shape) == 3 and arr.shape[2] in [3, 4]
         ):
             image_path = os.path.join(self.uri, "image.png")
-            imsave(image_path, arr)
+            with fileio.open(image_path, "wb") as f:
+                imsave(f, arr)
             visualizations[image_path] = VisualizationType.IMAGE
 
         return visualizations

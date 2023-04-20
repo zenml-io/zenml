@@ -21,6 +21,7 @@ from deepchecks.core.check_result import CheckResult
 from deepchecks.core.suite import SuiteResult
 
 from zenml.enums import ArtifactType, VisualizationType
+from zenml.io import fileio
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.utils import io_utils
 
@@ -90,7 +91,7 @@ class DeepchecksResultMaterializer(BaseMaterializer):
         """
         visualizations = super().save_visualizations(result)
         visualization_path = os.path.join(self.uri, HTML_FILENAME)
-        with open(visualization_path, "w") as f:
+        with fileio.open(visualization_path, "w") as f:
             result.save_as_html(f)
         visualizations[visualization_path] = VisualizationType.HTML
         return visualizations

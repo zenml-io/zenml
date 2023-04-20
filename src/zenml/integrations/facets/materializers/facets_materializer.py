@@ -25,6 +25,7 @@ from zenml.enums import ArtifactType, VisualizationType
 from zenml.integrations.facets.models import (
     FacetsComparison,
 )
+from zenml.io import fileio
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.utils import io_utils
 
@@ -64,5 +65,6 @@ class FacetsMaterializer(BaseMaterializer):
         html = io_utils.read_file_contents_as_string(template)
         html.replace("protostr", protostr)
         visualization_path = os.path.join(self.uri, VISUALIZATION_FILENAME)
-        io_utils.write_file_contents_as_string(visualization_path, html)
+        with fileio.open(visualization_path, "w") as f:
+            f.write(html)
         return {visualization_path: VisualizationType.HTML}
