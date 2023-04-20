@@ -244,6 +244,7 @@ class PipelineRunFilterModel(WorkspaceScopedFilterModel):
             )
 
             code_repo_filter = and_(
+                True,
                 PipelineRunSchema.deployment_id == PipelineDeploymentSchema.id,
                 PipelineDeploymentSchema.code_reference_id
                 == CodeReferenceSchema.id,
