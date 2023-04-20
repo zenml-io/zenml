@@ -39,6 +39,7 @@ from zenml.models.hub_plugin_models import (
     PluginStatus,
 )
 from zenml.utils.analytics_utils import AnalyticsEvent, event_handler
+from zenml.utils.git_utils import clone_git_repository
 
 logger = get_logger(__name__)
 
@@ -70,7 +71,7 @@ def hub() -> None:
 def list_plugins(
     all: bool = False, mine: bool = False, installed: bool = False
 ) -> None:
-    """List all plugins available on the hub.
+    """List all plugins available on the ZenML Hub.
 
     Args:
         all: Whether to list all plugins, including ones that are not available.
@@ -91,7 +92,11 @@ def list_plugins(
         declare("No plugins found.")
     if installed:
         plugins = [
-            plugin for plugin in plugins if _is_plugin_installed(plugin)
+            plugin
+            for plugin in plugins
+            if _is_plugin_installed(
+                author=plugin.author, plugin_name=plugin.name
+            )
         ]
     plugins_table = _format_plugins_table(plugins)
     print_table(plugins_table)
@@ -109,8 +114,8 @@ def _format_plugins_table(
         The formatted table.
     """
     plugins_table = []
-    for plugin in plugins:
-        if _is_plugin_installed(plugin):
+    for plugin in sorted(plugins, key=_sort_plugin_key_fn):
+        if _is_plugin_installed(author=plugin.author, plugin_name=plugin.name):
             installed_icon = ":white_check_mark:"
         else:
             installed_icon = ":x:"
@@ -122,7 +127,7 @@ def _format_plugins_table(
             status_icon = ":x:"
 
         display_name = plugin_display_name(
-            plugin_name=plugin.name,
+            name=plugin.name,
             version=plugin.version,
             author=plugin.author,
         )
@@ -130,12 +135,30 @@ def _format_plugins_table(
             "PLUGIN": display_name,
             "STATUS": status_icon,
             "INSTALLED": installed_icon,
-            "MODULE": _get_plugin_module(plugin),
+            "MODULE": _get_plugin_module(
+                author=plugin.author, plugin_name=plugin.name
+            ),
             "PACKAGE NAME": plugin.package_name or "",
             "REPOSITORY URL": plugin.repository_url,
         }
         plugins_table.append(display_data)
     return plugins_table
+
+
+def _sort_plugin_key_fn(
+    plugin: HubPluginResponseModel,
+) -> Tuple[str, str, str]:
+    """Helper function to sort plugins by name, version and author.
+
+    Args:
+        plugin: The plugin to sort.
+
+    Returns:
+        A tuple of the plugin's author, name and version.
+    """
+    if plugin.author == ZENML_HUB_ADMIN_USERNAME:
+        return "0", plugin.name, plugin.version  # Sort admin plugins first
+    return plugin.author, plugin.name, plugin.version
 
 
 @hub.command("install")
@@ -164,7 +187,7 @@ def install_plugin(
     no_deps: bool = False,
     yes: bool = False,
 ) -> None:
-    """Install a plugin from the hub.
+    """Install a plugin from the ZenML Hub.
 
     Args:
         plugin_name: Name of the plugin.
@@ -185,8 +208,8 @@ def install_plugin(
 
         # Get plugin from hub
         plugin = client.get_plugin(
-            plugin_name=plugin_name,
-            plugin_version=plugin_version,
+            name=plugin_name,
+            version=plugin_version,
             author=author,
         )
         if not plugin:
@@ -202,7 +225,10 @@ def install_plugin(
             )
 
         # Check if plugin is already installed
-        if _is_plugin_installed(plugin) and not upgrade:
+        if (
+            _is_plugin_installed(author=plugin.author, plugin_name=plugin.name)
+            and not upgrade
+        ):
             declare(f"Plugin '{plugin_name}' is already installed.")
             return
 
@@ -274,7 +300,7 @@ def install_plugin(
 @hub.command("uninstall")
 @click.argument("plugin_name", type=str, required=True)
 def uninstall_plugin(plugin_name: str) -> None:
-    """Uninstall a hub plugin.
+    """Uninstall a ZenML Hub plugin.
 
     Args:
         plugin_name: Name of the plugin.
@@ -292,8 +318,8 @@ def uninstall_plugin(plugin_name: str) -> None:
 
         # Get plugin from hub
         plugin = client.get_plugin(
-            plugin_name=plugin_name,
-            plugin_version=plugin_version,
+            name=plugin_name,
+            version=plugin_version,
             author=author,
         )
         if not plugin:
@@ -327,7 +353,7 @@ def clone_plugin(
     plugin_name: str,
     output_dir: Optional[str] = None,
 ) -> None:
-    """Clone a plugin from the hub.
+    """Clone the source code of a ZenML Hub plugin.
 
     Args:
         plugin_name: Name of the plugin.
@@ -348,8 +374,8 @@ def clone_plugin(
 
         # Get plugin from hub
         plugin = client.get_plugin(
-            plugin_name=plugin_name,
-            plugin_version=plugin_version,
+            name=plugin_name,
+            version=plugin_version,
             author=author,
         )
         if not plugin:
@@ -365,7 +391,9 @@ def clone_plugin(
         declare(f"Cloning plugin '{display_name}' to {output_dir}...")
         with tempfile.TemporaryDirectory() as tmp_dir:
             try:
-                _clone_repo(url=repo_url, to_path=tmp_dir, commit=commit)
+                clone_git_repository(
+                    url=repo_url, to_path=tmp_dir, commit=commit
+                )
             except RuntimeError:
                 error(
                     f"Could not find commit '{commit}' in repository "
@@ -377,46 +405,6 @@ def clone_plugin(
             plugin_dir = os.path.join(tmp_dir, subdir or "")
             shutil.move(plugin_dir, output_dir)
         declare(f"Successfully Cloned plugin '{display_name}'.")
-
-
-def _clone_repo(
-    url: str,
-    to_path: str,
-    branch: Optional[str] = None,
-    commit: Optional[str] = None,
-) -> None:
-    """Clone a repository and get the hash of the latest commit.
-
-    Args:
-        url: URL of the repository to clone.
-        to_path: Path to clone the repository to.
-        branch: Branch to clone. Defaults to "main".
-        commit: Commit to checkout. If specified, the branch argument is
-            ignored.
-
-    Raises:
-        RuntimeError: If the repository could not be cloned.
-    """
-    from git import GitCommandError
-    from git.repo import Repo
-
-    os.makedirs(os.path.basename(to_path), exist_ok=True)
-    try:
-        if commit:
-            repo = Repo.clone_from(
-                url=url,
-                to_path=to_path,
-                no_checkout=True,
-            )
-            repo.git.checkout(commit)
-        else:
-            repo = Repo.clone_from(
-                url=url,
-                to_path=to_path,
-                branch=branch or "main",
-            )
-    except GitCommandError as e:
-        raise RuntimeError from e
 
 
 @hub.command("login")
@@ -753,9 +741,7 @@ def _validate_plugin_name(
         declare("Please enter a name for the plugin.")
         plugin_name = click.prompt("Plugin name")
 
-    existing_plugin = client.get_plugin(
-        plugin_name=plugin_name, author=username
-    )
+    existing_plugin = client.get_plugin(name=plugin_name, author=username)
     return plugin_name, bool(existing_plugin)
 
 
@@ -815,7 +801,7 @@ def _validate_repository(
         try:
             # Check if the URL/branch/commit are valid.
             with tempfile.TemporaryDirectory() as tmp_dir:
-                _clone_repo(
+                clone_git_repository(
                     url=url,
                     commit=commit,
                     branch=branch,
@@ -995,10 +981,68 @@ def _ask_for_tags() -> List[str]:
             tags.append(tag)
 
 
+@hub.command("submit-batch")
+@click.argument(
+    "config", type=click.Path(exists=True, dir_okay=False), required=True
+)
+def batch_submit(config: str) -> None:
+    """Batch submit plugins to the ZenML Hub.
+
+    WARNING: This command is intended for advanced users only. It does not
+    perform any client-side validation which might lead to server-side HTTP
+    errors that are hard to debug if the config file you specify is invalid or
+    contains invalid plugin definitions. When in doubt, use the
+    `zenml hub submit` command instead.
+
+    Args:
+        config: Path to the config file. The config file is expected to be a
+            list of plugin definitions. Each plugin definition must be a dict
+            with keys and values matching the fields of `HubPluginRequestModel`:
+            ```yaml
+            - name: str
+              version: str
+              release_notes: str
+              description: str
+              repository_url: str
+              repository_subdirectory: str
+              repository_branch: str
+              repository_commit: str
+              logo_url: str
+              tags:
+                - str
+                - ...
+            - ...
+            ```
+    """
+    from pydantic import ValidationError
+
+    from zenml.utils.yaml_utils import read_yaml
+
+    client = HubClient()
+    config = read_yaml(config)
+    if not isinstance(config, list):
+        error("Config file must be a list of plugin definitions.")
+    declare(f"Submitting {len(config)} plugins to the hub...")
+    for plugin_dict in config:
+        try:
+            assert isinstance(plugin_dict, dict)
+            plugin_request = HubPluginRequestModel(**plugin_dict)
+            plugin = client.create_plugin(plugin_request=plugin_request)
+        except (AssertionError, ValidationError, HubAPIError) as e:
+            warning(f"Could not submit plugin: {str(e)}")
+            continue
+        display_name = plugin_display_name(
+            name=plugin.name,
+            version=plugin.version,
+            author=plugin.author,
+        )
+        declare(f"Submitted plugin '{display_name}' to the hub.")
+
+
 @hub.command("logs")
 @click.argument("plugin_name", type=str, required=True)
 def get_logs(plugin_name: str) -> None:
-    """Get the build logs of a plugin.
+    """Get the build logs of a ZenML Hub plugin.
 
     Args:
         plugin_name: Name of the plugin.
@@ -1009,8 +1053,8 @@ def get_logs(plugin_name: str) -> None:
 
     # Get the plugin from the hub
     plugin = client.get_plugin(
-        plugin_name=plugin_name,
-        plugin_version=plugin_version,
+        name=plugin_name,
+        version=plugin_version,
         author=author,
     )
     if not plugin:
@@ -1030,29 +1074,23 @@ def get_logs(plugin_name: str) -> None:
         return
 
     for line in plugin.build_logs.splitlines():
-        if line.startswith("DEBUG"):
-            pass
-        if line.startswith("INFO"):
-            declare(line)
-        elif line.startswith("WARNING"):
-            warning(line)
-        else:
-            error(line)
+        declare(line)
 
 
 # GENERAL HELPER FUNCTIONS
 
 
-def _is_plugin_installed(plugin: HubPluginResponseModel) -> bool:
+def _is_plugin_installed(author: str, plugin_name: str) -> bool:
     """Helper function to check if a plugin is installed.
 
     Args:
-        plugin: The plugin.
+        author: The author of the plugin.
+        plugin_name: The name of the plugin.
 
     Returns:
         Whether the plugin is installed.
     """
-    module_name = _get_plugin_module(plugin)
+    module_name = _get_plugin_module(author=author, plugin_name=plugin_name)
     try:
         spec = find_spec(module_name)
         return spec is not None
@@ -1060,17 +1098,18 @@ def _is_plugin_installed(plugin: HubPluginResponseModel) -> bool:
         return False
 
 
-def _get_plugin_module(plugin: HubPluginResponseModel) -> str:
+def _get_plugin_module(author: str, plugin_name: str) -> str:
     """Helper function to get the module name of a plugin.
 
     Args:
-        plugin: The plugin.
+        author: The author of the plugin.
+        plugin_name: The name of the plugin.
 
     Returns:
         The module name of the plugin.
     """
     module_name = "zenml.hub"
-    if plugin.author != ZENML_HUB_ADMIN_USERNAME:
-        module_name += f".{plugin.author}"
-    module_name += f".{plugin.name}"
+    if author != ZENML_HUB_ADMIN_USERNAME:
+        module_name += f".{author}"
+    module_name += f".{plugin_name}"
     return module_name
