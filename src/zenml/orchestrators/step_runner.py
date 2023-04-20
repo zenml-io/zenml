@@ -26,7 +26,6 @@ from typing import (
     Type,
 )
 
-from zenml.artifacts.base_artifact import BaseArtifact
 from zenml.client import Client
 from zenml.config.step_configurations import StepConfiguration
 from zenml.config.step_run_info import StepRunInfo
@@ -358,17 +357,6 @@ class StepRunner:
         # Skip materialization for `UnmaterializedArtifact`.
         if data_type == UnmaterializedArtifact:
             return UnmaterializedArtifact.parse_obj(artifact)
-
-        # Skip materialization for `BaseArtifact` and its subtypes.
-        if issubclass(data_type, BaseArtifact):
-            logger.warning(
-                "Skipping materialization by specifying a subclass of "
-                "`zenml.artifacts.BaseArtifact` as input data type is "
-                "deprecated and will be removed in a future release. Please "
-                "type your input as "
-                "`zenml.materializers.UnmaterializedArtifact` instead."
-            )
-            return artifact
 
         materializer_class: Type[
             BaseMaterializer
