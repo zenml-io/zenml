@@ -3012,6 +3012,7 @@ class Client(metaclass=ClientMetaClass):
         schedule_id: Optional[Union[str, UUID]] = None,
         build_id: Optional[Union[str, UUID]] = None,
         deployment_id: Optional[Union[str, UUID]] = None,
+        code_repository_id: Optional[Union[str, UUID]] = None,
         orchestrator_run_id: Optional[str] = None,
         status: Optional[str] = None,
         start_time: Optional[Union[datetime, str]] = None,
@@ -3036,6 +3037,7 @@ class Client(metaclass=ClientMetaClass):
             schedule_id: The id of the schedule to filter by.
             build_id: The id of the build to filter by.
             deployment_id: The id of the deployment to filter by.
+            code_repository_id: The id of the code repository to filter by.
             orchestrator_run_id: The run id of the orchestrator to filter by.
             name: The name of the run to filter by.
             status: The status of the pipeline run
@@ -3061,6 +3063,7 @@ class Client(metaclass=ClientMetaClass):
             schedule_id=schedule_id,
             build_id=build_id,
             deployment_id=deployment_id,
+            code_repository_id=code_repository_id,
             orchestrator_run_id=orchestrator_run_id,
             user_id=user_id,
             stack_id=stack_id,
@@ -4016,6 +4019,8 @@ class Client(metaclass=ClientMetaClass):
         self,
         name_id_or_prefix: Union[UUID, str],
         name: Optional[str] = None,
+        description: Optional[str] = None,
+        logo_url: Optional[str] = None,
     ) -> CodeRepositoryResponseModel:
         """Update a code repository.
 
@@ -4023,6 +4028,8 @@ class Client(metaclass=ClientMetaClass):
             name_id_or_prefix: Name, ID or prefix of the code repository to
                 update.
             name: New name of the code repository.
+            description: New description of the code repository.
+            logo_url: New logo URL of the code repository.
 
         Returns:
             The updated code repository.
@@ -4030,7 +4037,9 @@ class Client(metaclass=ClientMetaClass):
         repo = self.get_code_repository(
             name_id_or_prefix=name_id_or_prefix, allow_name_prefix_match=False
         )
-        update = CodeRepositoryUpdateModel(name=repo.name)  # type: ignore[call-arg]
+        update = CodeRepositoryUpdateModel(  # type: ignore[call-arg]
+            name=name, description=description, logo_url=logo_url
+        )
         return self.zen_store.update_code_repository(
             code_repository_id=repo.id, update=update
         )
