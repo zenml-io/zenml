@@ -1,7 +1,7 @@
 """Artifact Visualizations [9971237fa937].
 
 Revision ID: 9971237fa937
-Revises: 0.37.0
+Revises: 0.38.0
 Create Date: 2023-04-06 16:40:44.430701
 
 """
@@ -11,7 +11,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "9971237fa937"
-down_revision = "0.37.0"
+down_revision = "0.38.0"
 branch_labels = None
 depends_on = None
 
