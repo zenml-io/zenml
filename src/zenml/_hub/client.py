@@ -79,16 +79,16 @@ class HubClient:
 
     def get_plugin(
         self,
-        plugin_name: str,
-        plugin_version: Optional[str] = None,
+        name: str,
+        version: Optional[str] = None,
         author: Optional[str] = None,
     ) -> Optional[HubPluginResponseModel]:
         """Get a specific plugin from the hub.
 
         Args:
-            plugin_name: The name of the plugin.
-            plugin_version: The version of the plugin. If not specified, the
-                latest version will be returned.
+            name: The name of the plugin.
+            version: The version of the plugin. If not specified, the latest
+                version will be returned.
             author: Username of the author of the plugin.
 
         Returns:
@@ -98,11 +98,11 @@ class HubClient:
         if not author:
             author = ZENML_HUB_ADMIN_USERNAME
         options = [
-            f"name={plugin_name}",
+            f"name={name}",
             f"username={author}",
         ]
-        if plugin_version:
-            options.append(f"version={plugin_version}")
+        if version:
+            options.append(f"version={version}")
         if options:
             route += "?" + "&".join(options)
         try:
