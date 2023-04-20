@@ -205,10 +205,7 @@ class ServiceConnector(BaseModel):
             auth_method: The particular authentication method to use. If not
                 specified, the connector implementation must decide which
                 authentication method to use or raise an exception.
-            resource_type: The type of resource to configure. The implementation
-                may choose to either require or ignore this parameter if it
-                does not support or is able to detect a resource type and the
-                connector specification does not allow arbitrary resource types.
+            resource_type: The type of resource to configure.
             resource_id: The ID of the resource to configure. The
                 implementation may choose to either require or ignore this
                 parameter if it does not support or detect an resource type that
@@ -507,15 +504,12 @@ class ServiceConnector(BaseModel):
         """
         spec = cls.get_type()
 
-        auth_methods = spec.auth_method_map.keys()
-        if auth_method and auth_method not in auth_methods:
+        if auth_method and auth_method not in spec.auth_method_map:
             raise ValueError(
                 f"unsupported authentication method: '{auth_method}'"
             )
 
-        if resource_type and not spec.is_supported_resource_type(
-            resource_type
-        ):
+        if resource_type and resource_type not in spec.resource_type_map:
             raise ValueError(f"unsupported resource type: '{resource_type}'")
 
         return cls._auto_configure(

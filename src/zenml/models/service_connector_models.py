@@ -48,13 +48,12 @@ class ResourceTypeModel(BaseModel):
     name: str = Field(
         title="User readable name for the resource type.",
     )
-    resource_type: Optional[str] = Field(
-        title="Resource type identifier. If set to None, this specification "
-        "represent a wildcard that allows arbitrary resource types.",
+    resource_type: str = Field(
+        title="Resource type identifier.",
     )
     description: str = Field(
         default="",
-        title="A description of the resource type(s).",
+        title="A description of the resource type.",
     )
     auth_methods: List[str] = Field(
         title="The list of authentication methods that can be used to access "
@@ -73,19 +72,6 @@ class ResourceTypeModel(BaseModel):
         title="Optionally, a url pointing to a png,"
         "svg or jpg can be attached.",
     )
-
-    def is_supported_resource_type(self, resource_type: str) -> bool:
-        """Check if a resource type is supported by this specification.
-
-        Args:
-            resource_type: The resource type to check.
-
-        Returns:
-            True if the resource type is supported, False otherwise.
-        """
-        return (
-            self.resource_type is None or self.resource_type == resource_type
-        )
 
     def is_equivalent_resource_id(
         self, resource_id: str, target_resource_id: str
@@ -256,7 +242,6 @@ class ServiceConnectorTypeModel(BaseModel):
         # Gather all resource types from the list of resource type
         # specifications.
         resource_types = [r.resource_type for r in v]
-
         if len(resource_types) != len(set(resource_types)):
             raise ValueError(
                 "Two or more resource type specifications must not list "
@@ -291,7 +276,7 @@ class ServiceConnectorTypeModel(BaseModel):
     @property
     def resource_type_map(
         self,
-    ) -> Dict[Optional[str], ResourceTypeModel]:
+    ) -> Dict[str, ResourceTypeModel]:
         """Returns a map of resource types to resource type specifications.
 
         Returns:
@@ -310,42 +295,6 @@ class ServiceConnectorTypeModel(BaseModel):
             specifications.
         """
         return {a.auth_method: a for a in self.auth_methods}
-
-    def is_supported_resource_type(self, resource_type: str) -> bool:
-        """Check if a resource type is supported by this specification.
-
-        Args:
-            resource_type: The resource type to check.
-
-        Returns:
-            True if the resource type is supported, False otherwise.
-        """
-        resource_type_map = self.resource_type_map
-        return resource_type in resource_type_map or None in resource_type_map
-
-    def get_resource_spec(self, resource_type: str) -> ResourceTypeModel:
-        """Returns the resource specification for a resource type.
-
-        Args:
-            resource_type: The type of resource.
-
-        Returns:
-            The resource specification for the resource type.
-
-        Raises:
-            KeyError: If the resource type is not supported by the service
-                connector.
-        """
-        resource_type_map = self.resource_type_map
-        if resource_type in resource_type_map:
-            return self.resource_type_map[resource_type]
-        if None in resource_type_map:
-            return self.resource_type_map[None]
-
-        raise KeyError(
-            f"Resource type '{resource_type}' is not supported by "
-            f"service connector '{self.name}'."
-        )
 
     def find_resource_specifications(
         self,
@@ -392,11 +341,7 @@ class ServiceConnectorTypeModel(BaseModel):
         # Verify the resource type
         resource_type_map = self.resource_type_map
         if resource_type in resource_type_map:
-            # An exact match was found for the resource type
             resource_type_spec = resource_type_map[resource_type]
-        elif None in resource_type_map:
-            # A wildcard match was found for the resource type
-            resource_type_spec = resource_type_map[None]
         else:
             raise KeyError(
                 f"connector type '{self.type}' does not support resource type "

@@ -1091,10 +1091,7 @@ class AWSServiceConnector(ServiceConnector):
             auth_method: The particular authentication method to use. If not
                 specified, the connector implementation must decide which
                 authentication method to use or raise an exception.
-            resource_type: The type of resource to configure. The implementation
-                may choose to either require or ignore this parameter if it
-                does not support or is able to detect a resource type and the
-                connector specification does not allow arbitrary resource types.
+            resource_type: The type of resource to configure.
             resource_id: The ID of the resource to configure. The
                 implementation may choose to either require or ignore this
                 parameter if it does not support or detect an resource type that

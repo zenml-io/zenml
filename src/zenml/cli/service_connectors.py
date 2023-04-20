@@ -255,16 +255,15 @@ def register_service_connector(
         connector = available_types[connector_type]
         connector_type_spec = connector.get_type()
 
-        available_resource_types = [
-            t for t in connector_type_spec.resource_type_map.keys() if t
-        ]
+        available_resource_types = list(
+            connector_type_spec.resource_type_map.keys()
+        )
 
         message = f"# Available resource types for connector {connector_type_spec.name}\n"
         # Print the name, resource type identifiers and description of all
         # available resource types
         for r in connector_type_spec.resource_types:
-            resource_type_str = r.resource_type or "<arbitrary>"
-            message += f"## {r.name} ({resource_type_str})\n"
+            message += f"## {r.name} ({r.resource_type})\n"
             message += f"{r.description}\n"
 
         console.print(Markdown(f"{message}---"), justify="left", width=80)
@@ -274,31 +273,17 @@ def register_service_connector(
             # only one type is available
             resource_type = resource_type or available_resource_types[0]
 
-        if None in connector_type_spec.resource_type_map:
-            # Allow arbitrary resource types
-            resource_type = click.prompt(
-                "Please select a resource type "
-                f"({', '.join(available_resource_types)}) "
-                "or enter a custom resource type",
-                type=str,
-                default=resource_type,
-            )
-        else:
-            # Ask the user to select a resource type
-            resource_type = click.prompt(
-                "Please select a resource type",
-                type=click.Choice(available_resource_types),
-                default=resource_type,
-            )
+        # Ask the user to select a resource type
+        resource_type = click.prompt(
+            "Please select a resource type",
+            type=click.Choice(available_resource_types),
+            default=resource_type,
+        )
 
         assert resource_type
-
-        if resource_type not in connector_type_spec.resource_type_map:
-            resource_type_spec = connector_type_spec.resource_type_map[None]
-        else:
-            resource_type_spec = connector_type_spec.resource_type_map[
-                resource_type
-            ]
+        resource_type_spec = connector_type_spec.resource_type_map[
+            resource_type
+        ]
 
         if resource_type_spec.multi_instance:
             # Ask the user to enter an optional resource ID
@@ -1022,7 +1007,7 @@ def login_service_connector(
             )
 
         spec = connector.get_type()
-        resource_name = spec.get_resource_spec(connector.resource_type).name
+        resource_name = spec.resource_type_map[connector.resource_type].name
         cli_utils.declare(
             f"The '{name_id_or_prefix}' {spec.name} connector was used to "
             f"successfully configure the local {resource_name} client/SDK."
@@ -1225,10 +1210,6 @@ def list_service_connector_types(
             spec = connector.get_type()
             supported_auth_methods = list(spec.auth_method_map.keys())
             supported_resource_types = list(spec.resource_type_map.keys())
-            # Replace the `None` resource type with `<arbitrary>`
-            if None in supported_resource_types:
-                supported_resource_types.remove(None)
-                supported_resource_types.append("<arbitrary>")
 
             message += f"# {spec.name} (connector type: {spec.type})\n"
             message += f"**Authentication methods**: {', '.join(supported_auth_methods)}\n"
@@ -1238,14 +1219,9 @@ def list_service_connector_types(
             message += f"{spec.description}\n"
 
             for r in spec.resource_types:
-                if resource_type and not r.is_supported_resource_type(
-                    resource_type
-                ):
+                if resource_type and r.resource_type != resource_type:
                     continue
-                resource_type_str = r.resource_type or "<arbitrary>"
-                message += (
-                    f"## {r.name} (resource type: {resource_type_str})\n"
-                )
+                message += f"## {r.name} (resource type: {r.resource_type})\n"
                 message += f"**Authentication methods**: {', '.join(r.auth_methods)}\n"
                 message += f"{r.description}\n"
                 filtered_auth_methods.extend(r.auth_methods)

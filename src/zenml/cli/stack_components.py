@@ -1258,9 +1258,9 @@ def generate_stack_component_connect_command(
             connector_type=connector_model.type,
         )
         connector_type_spec = connector.get_type()
-        resource_spec = connector_type_spec.get_resource_spec(
+        resource_spec = connector_type_spec.resource_type_map[
             connector_model.resource_type
-        )
+        ]
         if resource_spec.multi_instance:
             if resource_id is None and connector_model.resource_id is None:
                 if interactive:

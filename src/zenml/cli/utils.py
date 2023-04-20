@@ -1313,10 +1313,6 @@ def print_service_connector_types_table(
         supported_resource_types = list(
             connector_type.resource_type_map.keys()
         )
-        # Replace the `None` resource type with `<arbitrary>`
-        if None in supported_resource_types:
-            supported_resource_types.remove(None)
-            supported_resource_types.append("<arbitrary>")
 
         connector_type_config = {
             "NAME": connector_type.name,
