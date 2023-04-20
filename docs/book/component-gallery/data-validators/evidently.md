@@ -796,7 +796,7 @@ from zenml.post_execution import get_pipeline
 def visualize_results(pipeline_name: str, step_name: str) -> None:
     pipeline = get_pipeline(pipeline=pipeline_name)
     evidently_step = pipeline.runs[0].get_step(step=step_name)
-    evidently_step.outputs[-1].visualize()
+    evidently_step.outputs["dashboard"].visualize()
 
 if __name__ == "__main__":
     visualize_results("text_data_report_pipeline", "text_report")

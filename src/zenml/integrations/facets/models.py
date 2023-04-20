@@ -32,3 +32,8 @@ class FacetsComparison(BaseModel):
     """
 
     datasets: List[Dict[str, Union[str, pd.DataFrame]]]
+
+    class Config:
+        """Pydantic config."""
+
+        arbitrary_types_allowed = True
