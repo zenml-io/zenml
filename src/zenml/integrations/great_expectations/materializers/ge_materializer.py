@@ -14,7 +14,7 @@
 """Implementation of the Great Expectations materializers."""
 
 import os
-from typing import TYPE_CHECKING, Any, Dict, Type, Union
+from typing import TYPE_CHECKING, Any, Dict, Type, Union, cast
 
 from great_expectations.checkpoint.types.checkpoint_result import (  # type: ignore[import]
     CheckpointResult,
@@ -26,7 +26,8 @@ from great_expectations.core.expectation_validation_result import (  # type: ign
 from great_expectations.data_context.types.base import (  # type: ignore[import]
     CheckpointConfig,
 )
-from great_expectations.data_context.types.resource_identifiers import (  # type: ignore[import]
+from great_expectations.data_context.types.resource_identifiers import (  # type: ignore[import]  # type: ignore[import]
+    ExpectationSuiteIdentifier,
     ValidationResultIdentifier,
 )
 from great_expectations.types import (  # type: ignore[import]
@@ -34,6 +35,9 @@ from great_expectations.types import (  # type: ignore[import]
 )
 
 from zenml.enums import ArtifactType, VisualizationType
+from zenml.integrations.great_expectations.data_validators.ge_data_validator import (
+    GreatExpectationsDataValidator,
+)
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.utils import source_utils, yaml_utils
 
@@ -135,7 +139,22 @@ class GreatExpectationsMaterializer(BaseMaterializer):
             A dictionary of visualization URIs and their types.
         """
         visualizations = super().save_visualizations(data)
-        # TODO: Find the HTML report
+
+        if isinstance(data, CheckpointResult):
+            result = cast(CheckpointResult, data)
+            identifier = next(iter(result.run_results.keys()))
+        else:
+            suite = cast(ExpectationSuite, data)
+            identifier = ExpectationSuiteIdentifier(
+                suite.expectation_suite_name
+            )
+
+        context = GreatExpectationsDataValidator.get_data_context()
+        sites = context.get_docs_sites_urls(identifier)
+        for site in sites:
+            url = site["site_url"]
+            visualizations[url] = VisualizationType.HTML
+
         return visualizations
 
     def extract_metadata(

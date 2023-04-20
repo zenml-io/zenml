@@ -16,13 +16,36 @@ from contextlib import ExitStack as does_not_raise
 from great_expectations.core import ExpectationSuite
 
 from tests.unit.test_general import _test_materializer
+from zenml.integrations.great_expectations.data_validators.ge_data_validator import (
+    GreatExpectationsDataValidator,
+)
 from zenml.integrations.great_expectations.materializers.ge_materializer import (
     GreatExpectationsMaterializer,
 )
 
 
-def test_great_expectations_materializer(clean_client):
+def test_great_expectations_materializer(clean_client, mocker):
     """Tests whether the steps work for the Great Expectations materializer."""
+
+    class MockContext:
+        """Mock class for the GE DataContext."""
+
+        @staticmethod
+        def get_docs_sites_urls(identifier):
+            """Mock method to get all docs sites (visualizations)."""
+            return []
+
+    # The GE materializer needs to access the GE data validator of the active
+    # stack in order to find where the data docs (visualizations) were saved.
+    # This is not possible in a unit test, so we mock the data context. This
+    # means, however, that we do not test whether the visualizations are
+    # actually accessible.
+    mocker.patch.object(
+        GreatExpectationsDataValidator,
+        "get_data_context",
+        return_value=MockContext(),
+    )
+
     with does_not_raise():
         expectation_suite = _test_materializer(
             step_output=ExpectationSuite("arias_suite"),

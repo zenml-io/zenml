@@ -76,9 +76,10 @@ def _test_materializer(
         # Assert that visualization extraction returns a dict
         visualizations = materializer.save_visualizations(step_output)
         assert isinstance(visualizations, dict)
-        for key, value in visualizations.items():
-            assert isinstance(key, str)
+        for uri, value in visualizations.items():
+            assert isinstance(uri, str)
             assert isinstance(value, VisualizationType)
+            assert os.path.exists(uri)
 
         # Assert that metadata extraction returns a dict
         metadata = materializer.extract_metadata(step_output)
