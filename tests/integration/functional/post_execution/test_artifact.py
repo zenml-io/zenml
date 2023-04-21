@@ -16,17 +16,12 @@
 
 from typing import List, Optional
 
+from tests.integration.functional.conftest import visualizable_step
 from zenml.models.visualization_models import VisualizationModel
 from zenml.pipelines.base_pipeline import BasePipeline
+from zenml.post_execution.artifact import ArtifactView
 from zenml.post_execution.pipeline_run import get_unlisted_runs
-from zenml.steps import step
-from zenml.types import HTMLString
-
-
-@step
-def visualizable_step() -> HTMLString:
-    """A step that returns a visualizable artifact."""
-    return HTMLString("<h1>Test</h1>")
+from zenml.utils.materializer_utils import load_artifact_visualization
 
 
 def test_disabling_artifact_visualization(clean_client, one_step_pipeline):
@@ -69,19 +64,19 @@ def test_disabling_artifact_visualization(clean_client, one_step_pipeline):
     _assert_visualization_enabled()
 
 
-def _assert_visualization_enabled():
-    """Assert that artifact visualization was enabled in the last run."""
-    assert _get_visualization_of_last_run()
+def test_load_artifact_visualization(clean_client, one_step_pipeline):
+    """Integration test for loading artifact visualizations."""
+    step_ = visualizable_step()
+    pipe: BasePipeline = one_step_pipeline(step_)
+    pipe.configure(enable_cache=False)
+    pipe.run(unlisted=True)
 
-
-def _assert_visualization_disabled():
-    """Assert that artifact visualization was disabled in the last run."""
-    assert not _get_visualization_of_last_run()
-
-
-def _get_visualization_of_last_run() -> Optional[List[VisualizationModel]]:
-    """Get the artifact visualization of the last run."""
-    return get_unlisted_runs()[0].steps[0].output.visualizations
+    artifact = _get_output_of_last_run()
+    assert artifact.visualizations
+    for i in range(len(artifact.visualizations)):
+        load_artifact_visualization(
+            artifact=artifact, index=i, zen_store=clean_client.zen_store
+        )
 
 
 def test_disabling_artifact_metadata(clean_client, one_step_pipeline):
@@ -124,6 +119,31 @@ def test_disabling_artifact_metadata(clean_client, one_step_pipeline):
     _assert_metadata_enabled()
 
 
+def _get_output_of_last_run() -> ArtifactView:
+    """Get the output of the last run."""
+    return get_unlisted_runs()[0].steps[0].output
+
+
+def _get_visualizations_of_last_run() -> Optional[List[VisualizationModel]]:
+    """Get the artifact visualizations of the last run."""
+    return _get_output_of_last_run().visualizations
+
+
+def _get_metadata_of_last_run() -> Optional[List[VisualizationModel]]:
+    """Get the artifact metadata of the last run."""
+    return _get_output_of_last_run().metadata
+
+
+def _assert_visualization_enabled():
+    """Assert that artifact visualization was enabled in the last run."""
+    assert _get_visualizations_of_last_run()
+
+
+def _assert_visualization_disabled():
+    """Assert that artifact visualization was disabled in the last run."""
+    assert not _get_visualizations_of_last_run()
+
+
 def _assert_metadata_enabled():
     """Assert that artifact metadata was enabled in the last run."""
     assert _get_metadata_of_last_run()
@@ -132,8 +152,3 @@ def _assert_metadata_enabled():
 def _assert_metadata_disabled():
     """Assert that artifact metadata was disabled in the last run."""
     assert not _get_metadata_of_last_run()
-
-
-def _get_metadata_of_last_run() -> Optional[List[VisualizationModel]]:
-    """Get the artifact metadata of the last run."""
-    return get_unlisted_runs()[0].steps[0].output.metadata

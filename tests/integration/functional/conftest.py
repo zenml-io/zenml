@@ -16,6 +16,7 @@ import pytest
 
 from zenml.pipelines import pipeline
 from zenml.steps import step
+from zenml.types import HTMLString
 
 
 @pytest.fixture
@@ -49,6 +50,12 @@ def constant_int_output_test_step() -> int:
 @step
 def int_plus_one_test_step(input: int) -> int:
     return input + 1
+
+
+@step
+def visualizable_step() -> HTMLString:
+    """A step that returns a visualizable artifact."""
+    return HTMLString("<h1>Test</h1>")
 
 
 @pytest.fixture
