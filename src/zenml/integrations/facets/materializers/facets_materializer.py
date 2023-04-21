@@ -63,7 +63,7 @@ class FacetsMaterializer(BaseMaterializer):
             "stats.html",
         )
         html = io_utils.read_file_contents_as_string(template)
-        html.replace("protostr", protostr)
+        html = html.replace("protostr", protostr)
         visualization_path = os.path.join(self.uri, VISUALIZATION_FILENAME)
         with fileio.open(visualization_path, "w") as f:
             f.write(html)
