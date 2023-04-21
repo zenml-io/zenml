@@ -36,6 +36,8 @@ def _test_materializer(
     materializer_class: Optional[Type[BaseMaterializer]] = None,
     validation_function: Optional[Callable[[str], Any]] = None,
     return_metadata: bool = False,
+    assert_data_exists: bool = True,
+    assert_data_type: bool = True,
     assert_visualization_exists: bool = False,
 ) -> Any:
     """Test whether the materialization of a given step output works.
@@ -56,6 +58,10 @@ def _test_materializer(
             to `artifact_uri`. Can be used, e.g., to check whether a certain
             file exists or a certain number of files were written.
         return_metadata: Whether to return the metadata dict.
+        assert_data_exists: If `True`, we also assert that `materializer.save()`
+            wrote something to disk.
+        assert_data_type: If `True`, we also assert that `materializer.load()`
+            returns an object of the same type as `step_output`.
         assert_visualization_exists: If `True`, we also assert that the result
             of `materializer.save_visualizations()` is not empty.
 
@@ -74,8 +80,9 @@ def _test_materializer(
 
         # Assert that materializer saves something to disk
         materializer.save(step_output)
-        new_files = os.listdir(artifact_uri)
-        assert len(new_files) > len(existing_files)  # something was written
+        if assert_data_exists:
+            new_files = os.listdir(artifact_uri)
+            assert len(new_files) > len(existing_files)
 
         # Assert that visualization extraction returns a dict
         visualizations = materializer.save_visualizations(step_output)
@@ -96,7 +103,8 @@ def _test_materializer(
 
         # Assert that materializer loads the data with the correct type
         loaded_data = materializer.load(step_output_type)
-        assert isinstance(loaded_data, step_output_type)  # correct type
+        if assert_data_type:
+            assert isinstance(loaded_data, step_output_type)  # correct type
 
         # Run additional validation function if provided
         if validation_function:
