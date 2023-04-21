@@ -57,6 +57,7 @@ def test_deepchecks_dataset_materializer_with_check_result(
         _test_materializer(
             step_output=check_result,
             materializer_class=DeepchecksResultMaterializer,
+            assert_visualization_exists=True,
         )
 
 
@@ -69,4 +70,5 @@ def test_deepchecks_dataset_materializer_with_suite_result(
         _test_materializer(
             step_output=suite,
             materializer_class=DeepchecksResultMaterializer,
+            assert_visualization_exists=True,
         )

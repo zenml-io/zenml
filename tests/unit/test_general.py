@@ -36,6 +36,7 @@ def _test_materializer(
     materializer_class: Optional[Type[BaseMaterializer]] = None,
     validation_function: Optional[Callable[[str], Any]] = None,
     return_metadata: bool = False,
+    assert_visualization_exists: bool = False,
 ) -> Any:
     """Test whether the materialization of a given step output works.
 
@@ -54,6 +55,9 @@ def _test_materializer(
         validation_function: An optional function to call on the absolute path
             to `artifact_uri`. Can be used, e.g., to check whether a certain
             file exists or a certain number of files were written.
+        return_metadata: Whether to return the metadata dict.
+        assert_visualization_exists: If `True`, we also assert that the result
+            of `materializer.save_visualizations()` is not empty.
 
     Returns:
         The result of materializing `step_output` to disk and loading it again.
@@ -76,6 +80,8 @@ def _test_materializer(
         # Assert that visualization extraction returns a dict
         visualizations = materializer.save_visualizations(step_output)
         assert isinstance(visualizations, dict)
+        if assert_visualization_exists:
+            assert len(visualizations) > 0
         for uri, value in visualizations.items():
             assert isinstance(uri, str)
             assert isinstance(value, VisualizationType)

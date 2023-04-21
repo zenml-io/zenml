@@ -32,6 +32,7 @@ def test_whylogs_materializer(clean_client):
                 creation_timestamp=datetime.now(),
             ),
             materializer_class=WhylogsMaterializer,
+            assert_visualization_exists=True,
         )
 
     assert dataset_profile_view.creation_timestamp is not None

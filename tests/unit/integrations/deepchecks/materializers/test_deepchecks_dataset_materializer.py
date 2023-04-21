@@ -34,4 +34,5 @@ def test_deepchecks_dataset_materializer(clean_client):
         _test_materializer(
             step_output=deepchecks_dataset,
             materializer_class=DeepchecksDatasetMaterializer,
+            assert_visualization_exists=True,
         )
