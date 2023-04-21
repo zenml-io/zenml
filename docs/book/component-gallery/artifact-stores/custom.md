@@ -221,3 +221,20 @@ in our local setting (assuming the `CustomArtifactStoreFlavor` and the
 `CustomArtifactStoreConfig` are implemented in a different module/path than 
 the actual `CustomArtifactStore`).
 {% endhint %}
+
+### Enabling Artifact Visualizations with Custom Artifact Stores
+
+ZenML automatically saves visualizations for many common data types and allows
+you to view these visualizations in the ZenML dashboard. Under the hood, this
+works by saving the visualizations together with the artifacts in the artifact
+store.
+
+In order to load and display these visualizations, ZenML needs to be able to
+load and access the corresponding artifact store. For deployed ZenML instances,
+this means that you need to install the package dependencies of your artifact
+store in the environment where you have deployed ZenML. 
+
+You can do so either by building a custom Dockerfile based on the
+[ZenML base.Dockerfile](https://github.com/zenml-io/zenml/blob/main/docker/base.Dockerfile),
+and using that to redeploy your ZenML instance or by installing the respective
+packages in the deployed environment manually.

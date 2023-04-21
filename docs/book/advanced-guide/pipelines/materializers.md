@@ -179,7 +179,6 @@ set `enable_artifact_visualization` at either pipeline, step, or run level via
 `my_pipeline(...).run(enable_artifact_visualization=False)`.
 {% endhint %}
 
-
 ### (Optional) Which Metadata to Extract for the Artifact
 
 Optionally, you can override the `extract_metadata()` method to track custom 

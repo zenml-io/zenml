@@ -17,7 +17,12 @@ models, etc.) with others.
 
 {% hint style="warning" %}
 The local Artifact Store is not meant to be utilized in production. The local
-filesystem cannot be shared across your team and doesn't cover services like
+filesystem cannot be shared across your team and the artifacts stored in it
+cannot be accessed from other machines. This also means that
+[artifact visualizations](../../starter-guide/pipelines/fetching-pipelines.md#visualizing-artifacts)
+will not be available when using a local Artifact Store through a
+[ZenML instance deployed in the cloud](../../getting-started/deploying-zenml/deploying-zenml.md#deploying-zenml-in-the-cloud-remote-deployment-of-the-http-server-and-database).
+Furthermore, the local Artifact Store doesn't cover services like
 high-availability, scalability, backup and restore and other features that are
 expected from a production grade MLOps system.
 
@@ -30,8 +35,8 @@ a [local Kubeflow Orchestrator](../orchestrators/kubeflow.md), or a
 [local Kubernetes Orchestrator](../orchestrators/kubernetes.md) can be combined
 with a local Artifact Store
 * only [Model Deployers](../model-deployers/model-deployers.md) that are running
-locally, such as the [MLflow Model Deployer](../model-deployers/mlflow.md)
-can only be used in combination with a local Artifact Store
+locally, such as the [MLflow Model Deployer](../model-deployers/mlflow.md),
+can be used in combination with a local Artifact Store
 * [Step Operators](../step-operators/step-operators.md): none of the Step Operators can be used
 in the same stack as a local Artifact Store, given that their very purpose is
 to run ZenML steps in remote specialized environments
