@@ -43,11 +43,7 @@ class ArtifactView(BaseView):
         return cast(ArtifactResponseModel, self._model)
 
     def read(self) -> Any:
-        """Materializes the data stored in this artifact.
-
-        Args:
-            output_data_type: Deprecated; will be ignored.
-            materializer_class: Deprecated; will be ignored.
+        """Materializes (loads) the data stored in this artifact.
 
         Returns:
             The materialized data.
