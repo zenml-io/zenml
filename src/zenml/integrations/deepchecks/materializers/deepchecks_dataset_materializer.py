@@ -15,9 +15,10 @@
 
 from typing import TYPE_CHECKING, Any, Dict, Type
 
+import pandas as pd
 from deepchecks.tabular import Dataset
 
-from zenml.enums import ArtifactType
+from zenml.enums import ArtifactType, VisualizationType
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.materializers.pandas_materializer import PandasMaterializer
 
@@ -46,7 +47,7 @@ class DeepchecksDatasetMaterializer(BaseMaterializer):
 
         # Outsource to pandas
         pandas_materializer = PandasMaterializer(self.uri)
-        df = pandas_materializer.load(data_type)
+        df = pandas_materializer.load(pd.DataFrame)
 
         # Recreate from pandas dataframe
         return Dataset(df)
@@ -62,6 +63,21 @@ class DeepchecksDatasetMaterializer(BaseMaterializer):
         # Outsource to pandas
         pandas_materializer = PandasMaterializer(self.uri)
         pandas_materializer.save(df.data)
+
+    def save_visualizations(self, df: Dataset) -> Dict[str, VisualizationType]:
+        """Saves visualizations for the given Deepchecks dataset.
+
+        Args:
+            df: The Deepchecks dataset to save visualizations for.
+
+        Returns:
+            A dictionary of visualization URIs and their types.
+        """
+        visualizations = super().save_visualizations(df)
+        pandas_materializer = PandasMaterializer(self.uri)
+        pandas_vis = pandas_materializer.save_visualizations(df.data)
+        visualizations.update(pandas_vis)
+        return visualizations
 
     def extract_metadata(self, df: Dataset) -> Dict[str, "MetadataType"]:
         """Extract metadata from the given `Dataset` object.

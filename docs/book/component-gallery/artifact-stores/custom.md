@@ -235,6 +235,6 @@ this means that you need to install the package dependencies of your artifact
 store in the environment where you have deployed ZenML. 
 
 You can do so either by building a custom Dockerfile based on the
-[ZenML base.Dockerfile](https://github.com/zenml-io/zenml/blob/main/docker/base.Dockerfile),
+[ZenML base.Dockerfile](https://github.com/zenml-io/zenml/blob/main/docker/base.Dockerfile)
 and using that to redeploy your ZenML instance or by installing the respective
 packages in the deployed environment manually.
