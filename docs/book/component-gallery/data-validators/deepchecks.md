@@ -542,7 +542,7 @@ def visualize_results(pipeline_name: str, step_name: str) -> None:
     pipeline = get_pipeline(pipeline=pipeline_name)
     last_run = pipeline.runs[0]
     step = last_run.get_step(step=step_name)
-    step.output.visualize()
+    step.visualize()
 
 if __name__ == "__main__":
     visualize_results("data_validation_pipeline", "data_integrity_check")

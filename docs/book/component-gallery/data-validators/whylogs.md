@@ -359,7 +359,7 @@ def visualize_statistics(
     """
     pipe = get_pipeline(pipeline="data_profiling_pipeline")
     whylogs_step = pipe.runs[0].get_step(step=step_name)
-    whylogs_step.output.visualize()
+    whylogs_step.visualize()
 
 if __name__ == "__main__":
     visualize_statistics("data_loader")

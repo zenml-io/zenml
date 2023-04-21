@@ -31,7 +31,7 @@ class BaseVisualizer:
             "Visualizers are deprecated and will be removed in a future "
             "release. Please view your data in the ZenML dashboard instead. "
             "To visualize artifacts within Jupyter notebooks, use the post "
-            "execution `output.visualize()` method as described here: "
+            "execution `visualize()` method instead, as described here: "
             "https://docs.zenml.io/starter-guide/pipelines/fetching-pipelines#visualizing-artifacts."
         )
 
