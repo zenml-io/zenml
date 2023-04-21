@@ -30,6 +30,9 @@ def facets_visualization_step(
     Args:
         reference: Reference dataset.
         comparison: Dataset to compare to reference.
+
+    Returns:
+        `FacetsComparison` object.
     """
     return FacetsComparison(
         datasets=[
@@ -47,6 +50,9 @@ def facets_list_visualization_step(
 
     Args:
         dataframes: List of dataframes whose statistics should be compared.
+
+    Returns:
+        `FacetsComparison` object.
     """
     datasets: List[Dict[str, Union[str, pd.DataFrame]]] = []
     for i, df in enumerate(dataframes):
@@ -63,6 +69,9 @@ def facets_dict_visualization_step(
     Args:
         dataframes: Dict of dataframes whose statistics should be compared,
             mapping names to dataframes.
+
+    Returns:
+        `FacetsComparison` object.
     """
     datasets: List[Dict[str, Union[str, pd.DataFrame]]] = []
     for name, df in dataframes.items():
