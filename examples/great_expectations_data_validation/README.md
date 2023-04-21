@@ -38,9 +38,6 @@ and two builtin pipeline steps:
  * a Great Expectations validator that uses an existing Expectation Suite to
  validate an input dataset
 
-Expectation Suites and Validation Results produced by ZenML can be visualized
-locally with the use of a Great Expectation ZenML Visualizer.
-
 ## 🧰 How the example is implemented
 In this example, we split the Steel Plates Faults dataset into training and
 validation slices. We then use the training dataset to generate an Expectations
