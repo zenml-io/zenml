@@ -82,3 +82,58 @@ def _assert_visualization_disabled():
 def _get_visualization_of_last_run() -> Optional[List[VisualizationModel]]:
     """Get the artifact visualization of the last run."""
     return get_unlisted_runs()[0].steps[0].output.visualizations
+
+
+def test_disabling_artifact_metadata(clean_client, one_step_pipeline):
+    """Test that disabling artifact metadata works."""
+
+    # By default, artifact metadata should be enabled
+    step_ = visualizable_step()
+    pipe: BasePipeline = one_step_pipeline(step_)
+    pipe.configure(enable_cache=False)
+    pipe.run(unlisted=True)
+    _assert_metadata_enabled()
+
+    # Test disabling artifact metadata on pipeline level
+    pipe.configure(enable_artifact_metadata=False)
+    pipe.run(unlisted=True)
+    _assert_metadata_disabled()
+
+    pipe.configure(enable_artifact_metadata=True)
+    pipe.run(unlisted=True)
+    _assert_metadata_enabled()
+
+    # Test disabling artifact metadata on step level
+    # This should override the pipeline level setting
+    step_.configure(enable_artifact_metadata=False)
+    pipe.run(unlisted=True)
+    _assert_metadata_disabled()
+
+    step_.configure(enable_artifact_metadata=True)
+    pipe.run(unlisted=True)
+    _assert_metadata_enabled()
+
+    # Test disabling artifact metadata on run level
+    # This should override both the pipeline and step level setting
+    pipe.run(unlisted=True, enable_artifact_metadata=False)
+    _assert_metadata_disabled()
+
+    pipe.configure(enable_artifact_metadata=False)
+    step_.configure(enable_artifact_metadata=False)
+    pipe.run(unlisted=True, enable_artifact_metadata=True)
+    _assert_metadata_enabled()
+
+
+def _assert_metadata_enabled():
+    """Assert that artifact metadata was enabled in the last run."""
+    assert _get_metadata_of_last_run()
+
+
+def _assert_metadata_disabled():
+    """Assert that artifact metadata was disabled in the last run."""
+    assert not _get_metadata_of_last_run()
+
+
+def _get_metadata_of_last_run() -> Optional[List[VisualizationModel]]:
+    """Get the artifact metadata of the last run."""
+    return get_unlisted_runs()[0].steps[0].output.metadata
