@@ -215,6 +215,7 @@ def load_artifact_visualization(
         DoesNotExistException: If the artifact does not have the requested
             visualization or if the visualization was not found in the artifact
             store.
+        NotImplementedError: If the artifact store cannot be loaded.
     """
     if not artifact.artifact_store_id:
         raise DoesNotExistException(
@@ -245,10 +246,13 @@ def load_artifact_visualization(
             BaseArtifactStore, StackComponent.from_model(artifact_store_model)
         )
     except ImportError:
-        raise DoesNotExistException(
-            f"Artifact '{artifact.id}' cannot be visualized because the "
+        link = "https://docs.zenml.io/component-gallery/artifact-stores/custom#enabling-artifact-visualizations-with-custom-artifact-stores"
+        raise NotImplementedError(
+            f"Artifact '{artifact.id}' could not be visualized because the "
             f"underlying artifact store '{artifact_store_model.name}' "
-            f"could not be instantiated."
+            f"could not be instantiated. This is likely because the "
+            f"artifact store's dependencies are not installed. For more "
+            f"information, see {link}."
         )
 
     visualization = artifact.visualizations[index]
