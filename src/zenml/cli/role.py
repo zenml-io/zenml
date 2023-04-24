@@ -43,7 +43,6 @@ def list_roles(**kwargs: Any) -> None:
     cli_utils.print_active_config()
     client = Client()
     with console.status("Listing roles...\n"):
-
         roles = client.list_roles(**kwargs)
         if not roles.items:
             cli_utils.declare("No roles found for the given filters.")
@@ -299,7 +298,6 @@ def list_role_assignments(**kwargs: Any) -> None:
     cli_utils.print_active_config()
     client = Client()
     with console.status("Listing roles...\n"):
-
         role_assignments = client.list_user_role_assignment(**kwargs)
         if not role_assignments.items:
             cli_utils.declare(

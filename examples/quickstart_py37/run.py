@@ -32,7 +32,6 @@ from zenml.integrations.mlflow.mlflow_utils import get_tracking_uri
 
 
 def main():
-
     # initialize and run the training pipeline
     training_pipeline_instance = training_pipeline(
         training_data_loader=training_data_loader(),

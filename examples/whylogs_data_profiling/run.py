@@ -54,7 +54,6 @@ def visualize_statistics(
 
 
 if __name__ == "__main__":
-
     pipeline_instance = data_profiling_pipeline(
         data_loader=data_loader(),
         data_splitter=data_splitter(),

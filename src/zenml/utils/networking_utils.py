@@ -136,7 +136,6 @@ def replace_localhost_with_internal_hostname(url: str) -> str:
 
     parsed_url = urlparse(url)
     if parsed_url.hostname in ("localhost", "127.0.0.1"):
-
         for internal_hostname in (
             "host.docker.internal",
             "host.k3d.internal",
@@ -184,7 +183,6 @@ def replace_internal_hostname_with_localhost(hostname: str) -> str:
         return hostname
 
     if Environment.in_container():
-
         # Try to resolve one of the special hostnames to see if it is available
         # inside the container and use that if it is.
         for internal_hostname in (

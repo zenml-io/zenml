@@ -3153,7 +3153,6 @@ class SqlZenStore(BaseZenStore):
             EntityExistsError: If an identical pipeline run already exists.
         """
         with Session(self.engine) as session:
-
             # Check if pipeline run with same name already exists.
             existing_domain_run = session.exec(
                 select(PipelineRunSchema).where(
@@ -3356,7 +3355,6 @@ class SqlZenStore(BaseZenStore):
             KeyError: if the pipeline run doesn't exist.
         """
         with Session(self.engine) as session:
-
             # Check if the pipeline run exists
             run = session.exec(
                 select(PipelineRunSchema).where(
@@ -3695,7 +3693,6 @@ class SqlZenStore(BaseZenStore):
             KeyError: if the step run doesn't exist.
         """
         with Session(self.engine) as session:
-
             # Check if the step exists
             existing_step_run = session.exec(
                 select(StepRunSchema).where(StepRunSchema.id == step_run_id)

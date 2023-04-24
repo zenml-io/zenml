@@ -35,7 +35,6 @@ def test_example(request: pytest.FixtureRequest) -> None:
             "inference_pipeline": (1, 4),
         },
     ) as run_result:
-
         from zenml.integrations.seldon.model_deployers.seldon_model_deployer import (
             SeldonModelDeployer,
         )
