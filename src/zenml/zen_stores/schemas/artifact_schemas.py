@@ -74,7 +74,7 @@ class ArtifactSchema(NamedSchema, table=True):
     workspace: "WorkspaceSchema" = Relationship(back_populates="artifacts")
 
     type: ArtifactType
-    uri: str
+    uri: str = Field(sa_column=Column(TEXT, nullable=False))
     materializer: str = Field(sa_column=Column(TEXT, nullable=False))
     data_type: str = Field(sa_column=Column(TEXT, nullable=False))
 
@@ -171,7 +171,7 @@ class ArtifactVisualizationSchema(BaseSchema, table=True):
     __tablename__ = "artifact_visualization"
 
     type: VisualizationType
-    uri: str
+    uri: str = Field(sa_column=Column(TEXT, nullable=False))
 
     artifact_id: UUID = build_foreign_key_field(
         source=__tablename__,
