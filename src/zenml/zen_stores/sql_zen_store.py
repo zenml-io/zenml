@@ -699,6 +699,16 @@ class SqlZenStore(BaseZenStore):
         custom_schema_to_model_conversion: Optional[
             Callable[[AnySchema], B]
         ] = None,
+        custom_fetch: Optional[
+            Callable[
+                [
+                    Session,
+                    Union[Select[AnySchema], SelectOfScalar[AnySchema]],
+                    BaseFilterModel,
+                ],
+                List[AnySchema],
+            ]
+        ] = None,
     ) -> Page[B]:
         """Given a query, return a Page instance with a list of filtered Models.
 
@@ -711,6 +721,12 @@ class SqlZenStore(BaseZenStore):
                 into a model. This is used if the Model contains additional
                 data that is not explicitly stored as a field or relationship
                 on the model.
+            custom_fetch: Custom callable to use to fetch items from the
+                database for a given query. This is used if the items fetched
+                from the database need to be processed differently (e.g. to
+                perform additional filtering). The callable should take a
+                `Session`, a `Select` query and a `BaseFilterModel` filter as
+                arguments and return a `List` of items.
 
         Returns:
             The Domain Model representation of the DB resource
@@ -725,11 +741,14 @@ class SqlZenStore(BaseZenStore):
             query = query.where(filters)
 
         # Get the total amount of items in the database for a given query
-        total = session.scalar(
-            select([func.count("*")]).select_from(
-                query.options(noload("*")).subquery()
+        if custom_fetch:
+            total = len(custom_fetch(session, query, filter_model))
+        else:
+            total = session.scalar(
+                select([func.count("*")]).select_from(
+                    query.options(noload("*")).subquery()
+                )
             )
-        )
 
         # Sorting
         column, operand = filter_model.sorting_params
@@ -753,13 +772,21 @@ class SqlZenStore(BaseZenStore):
             )
 
         # Get a page of the actual data
-        item_schemas: List[AnySchema] = (
-            session.exec(
-                query.limit(filter_model.size).offset(filter_model.offset)
+        item_schemas: List[AnySchema]
+        if custom_fetch:
+            item_schemas = custom_fetch(session, query, filter_model)
+            # select the items in the current page
+            item_schemas = item_schemas[
+                filter_model.offset : filter_model.offset + filter_model.size
+            ]
+        else:
+            item_schemas = (
+                session.exec(
+                    query.limit(filter_model.size).offset(filter_model.offset)
+                )
+                .unique()
+                .all()
             )
-            .unique()
-            .all()
-        )
 
         # Convert this page of items from schemas to models.
         items: List[B] = []
@@ -4339,6 +4366,46 @@ class SqlZenStore(BaseZenStore):
 
             return service_connector.to_model()
 
+    def _list_filtered_service_connectors(
+        self,
+        session: Session,
+        query: Union[
+            Select[ServiceConnectorSchema],
+            SelectOfScalar[ServiceConnectorSchema],
+        ],
+        filter_model: ServiceConnectorFilterModel,
+    ) -> List[ServiceConnectorSchema]:
+        """Refine a service connector query.
+
+        Applies resource type and label filters to the query.
+
+        Args:
+            session: The database session.
+            query: The query to filter.
+            filter_model: The filter model.
+
+        Returns:
+            The filtered list of service connectors.
+        """
+        items: List[ServiceConnectorSchema] = (
+            session.exec(query).unique().all()
+        )
+        # filter out items that don't match the resource type
+        if filter_model.resource_type:
+            items = [
+                item
+                for item in items
+                if filter_model.resource_type not in item.resource_types_list
+            ]
+
+        # filter out items that don't match the labels
+        if filter_model.labels:
+            items = [
+                item for item in items if item.has_labels(filter_model.labels)
+            ]
+
+        return items
+
     def list_service_connectors(
         self, filter_model: ServiceConnectorFilterModel
     ) -> Page[ServiceConnectorResponseModel]:
@@ -4351,7 +4418,32 @@ class SqlZenStore(BaseZenStore):
         Returns:
             A page of all service connectors.
         """
-        # TODO: Add support for filtering by labels and alternative resource types
+
+        def fetch_connectors(
+            session: Session,
+            query: Union[
+                Select[ServiceConnectorSchema],
+                SelectOfScalar[ServiceConnectorSchema],
+            ],
+            filter_model: BaseFilterModel,
+        ) -> List[ServiceConnectorSchema]:
+            """Custom fetch function for connector filtering and pagination.
+
+            Applies resource type and label filters to the query.
+
+            Args:
+                session: The database session.
+                query: The query to filter.
+                filter_model: The filter model.
+
+            Returns:
+                The filtered and paginated results.
+            """
+            assert isinstance(filter_model, ServiceConnectorFilterModel)
+            return self._list_filtered_service_connectors(
+                session=session, query=query, filter_model=filter_model
+            )
+
         with Session(self.engine) as session:
             query = select(ServiceConnectorSchema)
             paged_connectors: Page[
@@ -4361,6 +4453,7 @@ class SqlZenStore(BaseZenStore):
                 query=query,
                 table=ServiceConnectorSchema,
                 filter_model=filter_model,
+                custom_fetch=fetch_connectors,
             )
             return paged_connectors
 

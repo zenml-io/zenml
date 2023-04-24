@@ -66,10 +66,11 @@ The connector provides pre-authenticated python-docker clients.
     logo_url="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/container_registry/docker.png",
     auth_methods=[
         AuthenticationMethodModel(
-            name="Docker username and password",
+            name="Docker username and password/token",
             auth_method=DockerAuthenticationMethods.PASSWORD,
             description="""
-Use a username and password or token to authenticate with a Docker registry.
+Use a username and password or access token to authenticate with a container
+registry server.
 """,
             config_class=DockerCredentials,
         ),

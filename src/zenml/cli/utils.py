@@ -1177,7 +1177,7 @@ def print_service_connectors_table(
             "NAME": connector.name,
             "ID": connector.id,
             "TYPE": connector.type,
-            "RESOURCE_TYPE": connector.resource_type,
+            "RESOURCE_TYPES": "\n".join(connector.resource_types),
             "RESOURCE_ID": connector.resource_id
             if connector.resource_id
             else "",
@@ -1231,7 +1231,7 @@ def print_service_connector_configuration(
         "NAME": connector.name,
         "TYPE": connector.type,
         "AUTH_METHOD": connector.auth_method,
-        "RESOURCE_TYPE": connector.resource_type,
+        "RESOURCE_TYPES": ", ".join(connector.resource_types),
         "RESOURCE_ID": connector.resource_id or "",
         "SECRET_ID": connector.secret_id or "",
         "OWNER": user_name,

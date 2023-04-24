@@ -201,6 +201,17 @@ class ServiceConnectorRegistry:
             logger.warning(f"Could not import AWS service connector: {e}.")
 
         try:
+            from zenml.service_connectors.kubernetes_service_connector import (
+                KubernetesServiceConnector,
+            )
+
+            builtin_connectors.append(KubernetesServiceConnector)
+        except ImportError as e:
+            logger.warning(
+                f"Could not import Kubernetes service connector: {e}."
+            )
+
+        try:
             from zenml.service_connectors.docker_service_connector import (
                 DockerServiceConnector,
             )

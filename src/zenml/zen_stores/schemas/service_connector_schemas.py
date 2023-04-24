@@ -16,7 +16,7 @@
 import base64
 import json
 from datetime import datetime
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, Dict, List, Optional
 from uuid import UUID
 
 from sqlalchemy import TEXT, Column
@@ -44,7 +44,7 @@ class ServiceConnectorSchema(ShareableSchema, table=True):
     type: str = Field(sa_column=Column(TEXT))
     description: str
     auth_method: str = Field(sa_column=Column(TEXT))
-    resource_type: str = Field(sa_column=Column(TEXT))
+    resource_types: bytes
     resource_id: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
     configuration: Optional[bytes]
     secret_id: Optional[UUID]
@@ -81,6 +81,43 @@ class ServiceConnectorSchema(ShareableSchema, table=True):
         back_populates="connector",
     )
 
+    @property
+    def resource_types_list(self) -> List[str]:
+        """Returns the resource types as a list.
+
+        Returns:
+            The resource types as a list.
+        """
+        return json.loads(base64.b64decode(self.resource_types).decode())
+
+    @property
+    def labels_dict(self) -> dict:
+        """Returns the labels as a dictionary.
+
+        Returns:
+            The labels as a dictionary.
+        """
+        return {label.name: label.value for label in self.labels}
+
+    def has_labels(self, labels: Dict[str, Optional[str]]) -> bool:
+        """Checks if the connector has the given labels.
+
+        Args:
+            labels: The labels to check for.
+
+        Returns:
+            Whether the connector has the given labels.
+        """
+        return all(
+            self.labels_dict.get(key, None) == value
+            for key, value in labels.items()
+            if value is not None
+        ) and all(
+            key in self.labels_dict
+            for key, value in labels.items()
+            if value is None
+        )
+
     @classmethod
     def from_request(
         cls,
@@ -106,7 +143,9 @@ class ServiceConnectorSchema(ShareableSchema, table=True):
             description=connector_request.description,
             type=connector_request.type,
             auth_method=connector_request.auth_method,
-            resource_type=connector_request.resource_type,
+            resource_types=base64.b64encode(
+                json.dumps(connector_request.resource_types).encode("utf-8")
+            ),
             resource_id=connector_request.resource_id,
             configuration=base64.b64encode(
                 json.dumps(connector_request.configuration).encode("utf-8")
@@ -144,6 +183,16 @@ class ServiceConnectorSchema(ShareableSchema, table=True):
                     if connector_update.configuration
                     else None
                 )
+            elif field == "resource_types":
+                self.configuration = (
+                    base64.b64encode(
+                        json.dumps(connector_update.resource_types).encode(
+                            "utf-8"
+                        )
+                    )
+                    if connector_update.configuration
+                    else None
+                )
             else:
                 setattr(self, field, value)
         self.secret_id = secret_id
@@ -169,7 +218,7 @@ class ServiceConnectorSchema(ShareableSchema, table=True):
             updated=self.updated,
             type=self.type,
             auth_method=self.auth_method,
-            resource_type=self.resource_type,
+            resource_types=self.resource_types_list,
             resource_id=self.resource_id,
             configuration=json.loads(
                 base64.b64decode(self.configuration).decode()
@@ -177,7 +226,7 @@ class ServiceConnectorSchema(ShareableSchema, table=True):
             if self.configuration
             else {},
             secret_id=self.secret_id,
-            labels={label.name: label.value for label in self.labels},
+            labels=self.labels_dict,
         )
 
 

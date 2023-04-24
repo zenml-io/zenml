@@ -16,26 +16,13 @@
 The AWS Service Connector implements various authentication methods for AWS
 services:
 
-- AWS secret key (access key, secret key)
-- AWS STS tokens (access key, secret key, session token)
+- Explicit AWS secret key (access key, secret key)
+- Explicit  AWS STS tokens (access key, secret key, session token)
 - IAM roles (i.e. generating temporary STS tokens on the fly by assuming an
 IAM role)
+- IAM user federation tokens
+- STS Session tokens
 
-Best practices:
-
-- development: use the AWS secret key associated with your AWS account
-- production environment: apply the principle of least privilege by configuring
-different IAM roles for each AWS service that you use, and use the IAM role
-authentication method to generate temporary STS token credentials. This has the
-limitation that STS tokens are only valid for a short period of time,
-e.g. 12 hours and need to be refreshed periodically. If the
-connector consumer is a long-running process like a kubernetes cluster that
-needs authenticated access to the ECR registry, the credentials need to be
-refreshed periodically by means outside of the service consumer, or the
-consumer needs to poll ZenML for new credentials on every authentication
-attempt, or ZenML needs to implement an asynchronous periodic refresh mechanism
-outside of the interaction between the service consumer and the service
-connector.
 """
 import base64
 import re
@@ -59,6 +46,9 @@ from zenml.models import (
 from zenml.service_connectors.docker_service_connector import (
     DOCKER_RESOURCE_TYPE,
 )
+from zenml.service_connectors.kubernetes_service_connector import (
+    KUBERNETES_RESOURCE_TYPE,
+)
 from zenml.service_connectors.service_connector import (
     AuthenticationConfig,
     ServiceConnector,
@@ -67,18 +57,6 @@ from zenml.utils.enum_utils import StrEnum
 
 logger = get_logger(__name__)
 
-
-class KubernetesCredentials(AuthenticationConfig):
-    """Kubernetes authentication config."""
-
-    certificate_authority: SecretStr
-    server: SecretStr
-    client_certificate: SecretStr
-    client_key: SecretStr
-
-
-KUBERNETES_RESOURCE_TYPE = "kubernetes"
-# ----------------------------------
 
 AWS_CONNECTOR_TYPE = "aws"
 AWS_RESOURCE_TYPE = "aws"
@@ -264,7 +242,7 @@ This method might not be suitable for consumers that cannot automatically
 re-generate temporary credentials upon expiration (e.g. an external clients or
 long-running process).
 """,
-            min_expiration = 900,  # 15 minutes
+            min_expiration=900,  # 15 minutes
             config_class=IAMRoleAuthenticationConfig,
         ),
         AuthenticationMethodModel(
@@ -299,8 +277,8 @@ This method might not be suitable for consumers that cannot automatically
 re-generate temporary credentials upon expiration (e.g. an external clients or
 long-running process).
 """,
-            min_expiration = 900,  # 15 minutes
-            max_expiration = 43200,  # 12 hours
+            min_expiration=900,  # 15 minutes
+            max_expiration=43200,  # 12 hours
             config_class=SessionTokenAuthenticationConfig,
         ),
         AuthenticationMethodModel(
@@ -341,8 +319,8 @@ long-running process).
 
 This method is recommended for production use.
 """,
-            min_expiration = 900,  # 15 minutes
-            max_expiration = 43200,  # 12 hours
+            min_expiration=900,  # 15 minutes
+            max_expiration=43200,  # 12 hours
             config_class=FederationTokenAuthenticationConfig,
         ),
     ],

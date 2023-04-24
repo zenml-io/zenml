@@ -1,8 +1,8 @@
-"""Add service connectors [b10e5783c7e7].
+"""Add service connectors [ba713d4bc726].
 
-Revision ID: b10e5783c7e7
+Revision ID: ba713d4bc726
 Revises: 0.38.0
-Create Date: 2023-04-19 20:13:20.083822
+Create Date: 2023-04-24 23:25:00.518417
 
 """
 import sqlalchemy as sa
@@ -10,7 +10,7 @@ import sqlmodel
 from alembic import op
 
 # revision identifiers, used by Alembic.
-revision = "b10e5783c7e7"
+revision = "ba713d4bc726"
 down_revision = "0.38.0"
 branch_labels = None
 depends_on = None
@@ -23,7 +23,6 @@ def upgrade() -> None:
         "service_connector",
         sa.Column("type", sa.TEXT(), nullable=True),
         sa.Column("auth_method", sa.TEXT(), nullable=True),
-        sa.Column("resource_type", sa.TEXT(), nullable=True),
         sa.Column("resource_id", sa.TEXT(), nullable=True),
         sa.Column(
             "workspace_id", sqlmodel.sql.sqltypes.GUID(), nullable=False
@@ -37,6 +36,7 @@ def upgrade() -> None:
         sa.Column(
             "description", sqlmodel.sql.sqltypes.AutoString(), nullable=False
         ),
+        sa.Column("resource_types", sa.LargeBinary(), nullable=False),
         sa.Column("configuration", sa.LargeBinary(), nullable=True),
         sa.Column("secret_id", sqlmodel.sql.sqltypes.GUID(), nullable=True),
         sa.ForeignKeyConstraint(

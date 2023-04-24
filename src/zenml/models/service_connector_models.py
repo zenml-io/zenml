@@ -73,39 +73,6 @@ class ResourceTypeModel(BaseModel):
         "svg or jpg can be attached.",
     )
 
-    def is_equivalent_resource_id(
-        self, resource_id: str, target_resource_id: str
-    ) -> bool:
-        """Check whether a resource ID is equivalent to another one.
-
-        Given two resource instance IDs, this method returns True if they are
-        equivalent to each other, and False otherwise.
-
-        This method is used to answer the questions: "Can this connector be
-        used to access a resource instance with this ID ?" and "Which
-        connector instances can be used to access a resource instance with
-        this ID?".
-
-        Override this method to implement mechanisms such as:
-
-        * resource instance ID aliases, where two or more identifiers can be
-        used interchangeably to refer to the same resource instance (e.g. a
-        GCS bucket can be referred to by its name, its URI or its ID).
-        * multiple resource ID formats, where the same resource instance ID can
-        have multiple forms, all of which are equivalent to each other
-        (e.g. an S3 bucket can be referred to by using s3://bucket-name or
-        bucket-name).
-
-        Args:
-            resource_id: The resource instance ID to match.
-            target_resource_id: The resource instance ID to match
-                against.
-
-        Returns:
-            True if the resource IDs are equivalent, False otherwise.
-        """
-        return resource_id == target_resource_id
-
 
 class AuthenticationMethodModel(BaseModel):
     """Authentication method specification.
@@ -311,9 +278,9 @@ class ServiceConnectorTypeModel(BaseModel):
     def find_resource_specifications(
         self,
         auth_method: str,
-        resource_type: str,
+        resource_type: Optional[str] = None,
         resource_id: Optional[str] = None,
-    ) -> Tuple[AuthenticationMethodModel, ResourceTypeModel]:
+    ) -> Tuple[AuthenticationMethodModel, Optional[ResourceTypeModel]]:
         """Find the specifications for a configurable resource.
 
         Validate the supplied connector configuration parameters against the
@@ -349,6 +316,11 @@ class ServiceConnectorTypeModel(BaseModel):
                 f"'{auth_method}' authentication method. Supported "
                 f"authentication methods are: {list(auth_method_map.keys())}."
             )
+
+        if resource_type is None:
+            # No resource type was specified, so no resource type
+            # specification can be returned.
+            return auth_method_spec, None
 
         # Verify the resource type
         resource_type_map = self.resource_type_map
@@ -400,8 +372,8 @@ class ServiceConnectorBaseModel(BaseModel):
         "access the resources.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    resource_type: str = Field(
-        title="The type of resource that the connector instance can be used "
+    resource_types: List[str] = Field(
+        title="The type(s) of resource that the connector instance can be used "
         "to gain access to.",
     )
     resource_id: Optional[str] = Field(
@@ -490,7 +462,7 @@ class ServiceConnectorResponseModel(
     ANALYTICS_FIELDS: ClassVar[List[str]] = [
         "type",
         "auth_method",
-        "resource_type",
+        "resource_types",
     ]
 
     secret_id: Optional[UUID] = Field(
@@ -498,6 +470,19 @@ class ServiceConnectorResponseModel(
         title="The ID of the secret that contains the service connector "
         "secret configuration values.",
     )
+
+    def get_analytics_metadata(self) -> Dict[str, Any]:
+        """Format the resource types in the analytics metadata.
+
+        Returns:
+            Dict of analytics metadata.
+        """
+        metadata = super().get_analytics_metadata()
+        if len(self.resource_types) == 1:
+            metadata["resource_types"] = self.resource_types[0]
+        else:
+            metadata["resource_types"] = ", ".join(self.resource_types)
+        return metadata
 
 
 # ------ #
@@ -578,8 +563,21 @@ class ServiceConnectorRequestModel(
     ANALYTICS_FIELDS: ClassVar[List[str]] = [
         "type",
         "auth_method",
-        "resource_type",
+        "resource_types",
     ]
+
+    def get_analytics_metadata(self) -> Dict[str, Any]:
+        """Format the resource types in the analytics metadata.
+
+        Returns:
+            Dict of analytics metadata.
+        """
+        metadata = super().get_analytics_metadata()
+        if len(self.resource_types) == 1:
+            metadata["resource_types"] = self.resource_types[0]
+        else:
+            metadata["resource_types"] = ", ".join(self.resource_types)
+        return metadata
 
 
 # ------ #

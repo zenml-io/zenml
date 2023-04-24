@@ -4204,7 +4204,7 @@ class Client(metaclass=ClientMetaClass):
         self,
         name: str,
         type: str,
-        resource_type: str,
+        resource_type: Optional[str] = None,
         auth_method: Optional[str] = None,
         configuration: Optional[Dict[str, str]] = None,
         secrets: Optional[Dict[str, Optional[SecretStr]]] = None,
@@ -4223,7 +4223,7 @@ class Client(metaclass=ClientMetaClass):
             type: The service connector type.
             auth_method: The authentication method of the service connector.
                 May be omitted if auto-configuration is used.
-            resource_type: The resource type of the service connector.
+            resource_type: The resource type for the service connector.
             configuration: The configuration of the service connector.
             secrets: The secrets of the service connector.
             resource_id: The resource id of the service connector.
@@ -4284,12 +4284,20 @@ class Client(metaclass=ClientMetaClass):
                 raise ValueError(
                     "auth_method must be set if auto_configure is not set."
                 )
+            if resource_type:
+                resource_types = [resource_type]
+            else:
+                # A multi-type connector is associated with all resource types
+                # that it supports
+                resource_types = list(
+                    connector.get_type().resource_type_map.keys()
+                )
             connector_model = ServiceConnectorRequestModel(
                 name=name,
                 type=type,
                 description=description,
                 auth_method=auth_method,
-                resource_type=resource_type,
+                resource_types=resource_types,
                 resource_id=resource_id,
                 configuration=configuration or {},
                 secrets=secrets or {},
@@ -4419,8 +4427,10 @@ class Client(metaclass=ClientMetaClass):
         service_connector.auth_method = (
             auth_method or service_connector.auth_method
         )
-        service_connector.resource_type = (
-            resource_type or service_connector.resource_type
+        service_connector.resource_types = (
+            [resource_type]
+            if resource_type
+            else service_connector.resource_types
         )
         service_connector.configuration = (
             configuration
@@ -4477,7 +4487,7 @@ class Client(metaclass=ClientMetaClass):
                 name=service_connector.name,
                 type=service_connector.type,
                 auth_method=service_connector.auth_method,
-                resource_type=service_connector.resource_type,
+                resource_types=service_connector.resource_types,
                 configuration=service_connector.configuration,
                 secrets=service_connector.secrets,
                 resource_id=service_connector.resource_id,
