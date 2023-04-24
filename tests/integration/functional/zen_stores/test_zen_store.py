@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+import os
 import uuid
 from contextlib import ExitStack as does_not_raise
 
@@ -61,7 +62,7 @@ from zenml.models.base_models import (
     WorkspaceScopedRequestModel,
 )
 from zenml.models.flavor_models import FlavorBaseModel
-from zenml.utils import code_repository_utils
+from zenml.utils import code_repository_utils, source_utils
 from zenml.zen_stores.base_zen_store import (
     DEFAULT_ADMIN_ROLE,
     DEFAULT_GUEST_ROLE,
@@ -1008,11 +1009,14 @@ def test_list_runs_is_ordered():
 
 def test_filter_runs_by_code_repo(mocker):
     """Tests filtering runs by code repository id."""
+    mocker.patch.object(
+        source_utils, "get_source_root", return_value=os.getcwd()
+    )
     store = Client().zen_store
 
     with CodeRepositoryContext() as repo:
         clean_local_context = StubLocalRepositoryContext(
-            code_repository_id=repo.id, root="/", commit="commit"
+            code_repository_id=repo.id, root=os.getcwd(), commit="commit"
         )
         mocker.patch.object(
             code_repository_utils,
