@@ -243,8 +243,7 @@ class PipelineRunFilterModel(WorkspaceScopedFilterModel):
                 PipelineRunSchema,
             )
 
-            code_repo_filter = and_(
-                True,
+            code_repo_filter = and_(  # type: ignore[type-var]
                 PipelineRunSchema.deployment_id == PipelineDeploymentSchema.id,
                 PipelineDeploymentSchema.code_reference_id
                 == CodeReferenceSchema.id,

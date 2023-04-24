@@ -3908,7 +3908,12 @@ class Client(metaclass=ClientMetaClass):
     # '-------------------'
 
     def create_code_repository(
-        self, name: str, config: Dict[str, Any], source: Source
+        self,
+        name: str,
+        config: Dict[str, Any],
+        source: Source,
+        description: Optional[str] = None,
+        logo_url: Optional[str] = None,
     ) -> CodeRepositoryResponseModel:
         """Create a new code repository.
 
@@ -3916,6 +3921,8 @@ class Client(metaclass=ClientMetaClass):
             name: Name of the code repository.
             config: The configuration for the code repository.
             source: The code repository implementation source.
+            description: The code repository description.
+            logo_url: URL of a logo (png, jpg or svg) for the code repository.
 
         Returns:
             The created code repository.
@@ -3944,6 +3951,8 @@ class Client(metaclass=ClientMetaClass):
             name=name,
             config=config,
             source=source,
+            description=description,
+            logo_url=logo_url,
         )
         return self.zen_store.create_code_repository(
             code_repository=repo_request
