@@ -131,6 +131,18 @@ class AuthenticationMethodModel(BaseModel):
         title="The JSON schema of the configuration for this authentication "
         "method.",
     )
+    min_expiration: Optional[int] = Field(
+        default=None,
+        title="The minimum number of seconds that the authentication "
+        "session can be configured to be valid for. Set to None for "
+        "authentication sessions and long-lived credentials that don't expire.",
+    )
+    max_expiration: Optional[int] = Field(
+        default=None,
+        title="The maximum number of seconds that the authentication "
+        "session can be configured to be valid for. Set to None for "
+        "authentication sessions and long-lived credentials that don't expire.",
+    )
     config_class: Type[BaseModel]
 
     @root_validator(pre=True)

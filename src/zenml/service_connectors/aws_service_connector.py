@@ -41,7 +41,7 @@ import base64
 import re
 import subprocess
 import tempfile
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import boto3
 from botocore.client import BaseClient
@@ -131,9 +131,49 @@ class IAMRoleAuthenticationConfig(AWSSecretKeyConfig):
     role_arn: str = Field(
         title="AWS IAM Role ARN",
     )
+    policy_arns: Optional[List[str]] = Field(
+        default=None,
+        title="ARNs of the IAM managed policies that you want to use as a "
+        "managed session policy. The policies must exist in the same account "
+        "as the IAM user that is requesting federated access.",
+    )
+    policy: Optional[str] = Field(
+        default=None,
+        title="An IAM policy in JSON format that you want to use as an inline "
+        "session policy",
+    )
     expiration_seconds: Optional[int] = Field(
-        default=3600,
+        default=3600,  # 1 hour
         title="AWS IAM Role Token Expiration in Seconds",
+    )
+
+
+class SessionTokenAuthenticationConfig(AWSSecretKeyConfig):
+    """AWS session token authentication config."""
+
+    expiration_seconds: Optional[int] = Field(
+        default=43200,  # 12 hours
+        title="AWS Session Token Expiration in Seconds",
+    )
+
+
+class FederationTokenAuthenticationConfig(AWSSecretKeyConfig):
+    """AWS federation token authentication config."""
+
+    policy_arns: Optional[List[str]] = Field(
+        default=None,
+        title="ARNs of the IAM managed policies that you want to use as a "
+        "managed session policy. The policies must exist in the same account "
+        "as the IAM user that is requesting federated access.",
+    )
+    policy: Optional[str] = Field(
+        default=None,
+        title="An IAM policy in JSON format that you want to use as an inline "
+        "session policy",
+    )
+    expiration_seconds: Optional[int] = Field(
+        default=43200,  # 12 hours
+        title="AWS Federation Token Expiration in Seconds",
     )
 
 
@@ -143,6 +183,8 @@ class AWSAuthenticationMethods(StrEnum):
     SECRET_KEY = "secret-key"
     STS_TOKEN = "sts-token"
     IAM_ROLE = "iam-role"
+    SESSION_TOKEN = "session-token"
+    FEDERATION_TOKEN = "federation-token"
 
 
 AWS_SERVICE_CONNECTOR_TYPE_SPEC = ServiceConnectorTypeModel(
@@ -152,40 +194,38 @@ AWS_SERVICE_CONNECTOR_TYPE_SPEC = ServiceConnectorTypeModel(
 This ZenML AWS service connector facilitates connecting to, authenticating to
 and accessing managed AWS services, such as S3 buckets, ECR repositories and EKS
 clusters. Explicit long-lived AWS credentials are supported, as well as
-temporary credentials such as STS tokens or IAM roles. The connector also allows
-configuration of local Docker and Kubernetes clients as well as
-auto-configuration by discovering and loading credentials stored on a local
-environment.
+temporary STS security tokens. The connector also supports auto-configuration
+by discovering and using credentials configured on a local environment.
 
 The connector can be used to access to any generic AWS service, such as S3, ECR,
 EKS, EC2, etc. by providing pre-authenticated boto3 sessions for these services.
-In addition to authenticating to AWS services, the connector is also able to
-manage specialized authentication for S3 buckets, Docker clients and
-Kubernetes clients.
+In addition to authenticating to AWS services, the connector is able to manage
+specialized authentication for Docker and Kubernetes python clients and also
+allows configuration of local Docker and Kubernetes clients.
 """,
     logo_url="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/container_registry/aws.png",
     auth_methods=[
         AuthenticationMethodModel(
-            name="Explicit AWS secret key",
+            name="AWS Secret Key",
             auth_method=AWSAuthenticationMethods.SECRET_KEY,
             description="""
-Long-lived AWS credentials consisting of an access key ID and secret access key.
-This method is preferred during development and testing due to its simplicity
-and ease of use. It is not recommended for production use due to the risk of
-long-term credentials being exposed.
+Long-lived AWS credentials consisting of an access key ID and secret access key
+associated with an IAM user or AWS account root user (not recommended). This
+method is preferred during development and testing due to its simplicity and
+ease of use. It is not recommended as a direct authentication method for
+production use cases because the clients are granted the full set of permissions
+of the IAM user or AWS account root user associated with the credentials.
 
-The IAM roles method is preferred for production, unless there are specific
-reasons to use long-term credentials (e.g. an external client or long-running
-process is involved and it is not possible to periodically regenerate temporary
-credentials upon expiration).
+For production, it is recommended to use the AWS IAM Role, AWS Session Token
+or AWS Federation Token authentication method.
 """,
             config_class=AWSSecretKeyConfig,
         ),
         AuthenticationMethodModel(
-            name="Explicit AWS STS token",
+            name="AWS STS Token",
             auth_method=AWSAuthenticationMethods.STS_TOKEN,
             description="""
-Uses temporary STS tokens explicitly generated by the user or auto-configured
+Uses temporary STS tokens explicitly configured by the user or auto-configured
 from a local environment. This method has the major limitation that the user
 must regularly generate new tokens and update the connector configuration as STS
 tokens expire. This method is best used in cases where the connector only needs
@@ -194,18 +234,116 @@ to be used for a short period of time.
             config_class=STSTokenConfig,
         ),
         AuthenticationMethodModel(
-            name="AWS IAM role",
+            name="AWS IAM Role",
             auth_method=AWSAuthenticationMethods.IAM_ROLE,
             description="""
-Use temporary STS credentials generated by assuming an IAM role.
-This is the recommended method for production use. The connector needs to be
-configured with an IAM role accompanied by an access key ID and secret access
-key that have permission to assume the IAM role. The connector will then
-generate new temporary STS tokens upon request. This method might not be
-suitable in cases where the consumer cannot re-generate temporary credentials
-upon expiration (e.g. an external client or long-running process is involved).
+Generates temporary STS credentials by assuming an IAM role.
+The connector needs to be configured with an IAM role accompanied by an access
+key ID and secret access key associated with an IAM user or an STS token
+associated with another IAM role. The IAM user or IAM role must have permissions
+to assume the IAM role. The connector will then generate new temporary STS
+tokens upon request by calling the AssumeRole STS API.
+
+One or more optional IAM managed policies can also be configured to further
+restrict the permissions of the generated STS tokens.
+
+The default expiration period for generated STS tokens is 1 hour with a
+minimum of 15 minutes up to the maximum session duration setting configured for
+the IAM role (default is 1 hour). If you need longer-lived tokens, you can
+configure the IAM role to use a higher maximum expiration value (up to 12 hours)
+or use the AWS Federation Token or AWS Session Token authentication methods.
+
+For more information on IAM roles and the AssumeRole AWS API, see:
+https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_temp_request.html#api_assumerole
+
+For more information about the difference between this method and the AWS
+Federation Token authentication method, see:
+https://aws.amazon.com/blogs/security/understanding-the-api-options-for-securely-delegating-access-to-your-aws-account/
+
+This method might not be suitable for consumers that cannot automatically
+re-generate temporary credentials upon expiration (e.g. an external clients or
+long-running process).
 """,
+            min_expiration = 900,  # 15 minutes
             config_class=IAMRoleAuthenticationConfig,
+        ),
+        AuthenticationMethodModel(
+            name="AWS Session Token",
+            auth_method=AWSAuthenticationMethods.SESSION_TOKEN,
+            description="""
+Generates temporary session STS tokens for IAM users.
+The connector needs to be configured with a key ID and secret access key
+associated with an IAM user or AWS account root user (not recommended). The
+connector will then generate new temporary STS tokens upon request by calling
+the GetSessionToken STS API. These STS tokens have an expiration period longer
+that those issued through the AWS IAM Role authentication method and are more
+suitable for long-running processes that cannot automatically re-generate
+credentials upon expiration.
+
+The default expiration period for generated STS tokens is 12 hours with a
+minimum of 15 minutes and a maximum of 36 hours. Temporary credentials obtained
+by using the AWS account root user credentials (not recommended) have a maximum
+duration of 1 hour.
+
+Generated STS tokens inherit the full set of permissions of the IAM user or
+AWS account root user that is calling the GetSessionToken. This is not
+recommended for production use, as it can lead to accidental privilege
+escalation. Instead, it is recommended to use the AWS Federation Token or AWS
+IAM Role authentication methods with additional session policies to restrict
+the permissions of the generated STS tokens.
+
+For more information on session tokens and the GetSessionToken AWS API, see:
+https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_temp_request.html#api_getsessiontoken
+
+This method might not be suitable for consumers that cannot automatically
+re-generate temporary credentials upon expiration (e.g. an external clients or
+long-running process).
+""",
+            min_expiration = 900,  # 15 minutes
+            max_expiration = 43200,  # 12 hours
+            config_class=SessionTokenAuthenticationConfig,
+        ),
+        AuthenticationMethodModel(
+            name="AWS Federation Token",
+            auth_method=AWSAuthenticationMethods.FEDERATION_TOKEN,
+            description="""
+Generates temporary STS tokens for federated users.
+The connector needs to be configured with a key ID and secret access key
+associated with an IAM user or AWS account root user (not recommended) and one
+or more session policies. The IAM user must have permissions to call the
+GetFederationToken STS API. The connector will then generate new temporary STS
+tokens upon request by calling the GetFederationToken STS API. These STS tokens
+have an expiration period longer that those issued through the AWS IAM Role
+authentication method and are more suitable for long-running processes that
+cannot automatically re-generate credentials upon expiration.
+
+One or more IAM managed policies must also be configured to grant permissions
+to the generated STS tokens, otherwise the tokens will not be able to access
+any AWS resources. If you need a simpler way to generate temporary STS tokens,
+you can use the AWS Session Token authentication method.
+
+The default expiration period for generated STS tokens is 12 hours with a
+minimum of 15 minutes and a maximum of 36 hours. Temporary credentials obtained
+by using the AWS account root user credentials (not recommended) have a maximum
+duration of 1 hour.
+
+For more information on user federation tokens, session policies and the
+GetFederationToken AWS API, see:
+https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_temp_request.html#api_getfederationtoken
+
+For more information about the difference between this method and the AWS
+IAM Role authentication method, see:
+https://aws.amazon.com/blogs/security/understanding-the-api-options-for-securely-delegating-access-to-your-aws-account/
+
+This method might not be suitable for consumers that cannot automatically
+re-generate temporary credentials upon expiration (e.g. an external clients or
+long-running process).
+
+This method is recommended for production use.
+""",
+            min_expiration = 900,  # 15 minutes
+            max_expiration = 43200,  # 12 hours
+            config_class=FederationTokenAuthenticationConfig,
         ),
     ],
     resource_types=[
