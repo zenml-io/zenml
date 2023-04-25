@@ -48,3 +48,4 @@ class SklearnMaterializer(DefaultMaterializer):
         TransformerMixin,
     )
     ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.MODEL
+    SKIP_REGISTRATION: ClassVar[bool] = False

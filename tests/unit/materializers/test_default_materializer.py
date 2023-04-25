@@ -18,6 +18,7 @@ from tempfile import TemporaryDirectory
 from tests.unit.test_general import _test_materializer
 from zenml.environment import Environment
 from zenml.materializers.default_materializer import DefaultMaterializer
+from zenml.materializers.materializer_registry import materializer_registry
 
 
 class Unmaterializable:
@@ -41,3 +42,11 @@ def test_default_materializer_python_version_check(clean_client):
         materializer._save_python_version()
         version = materializer._load_python_version()
         assert version == Environment().python_version()
+
+
+def test_default_materializer_is_not_registered(clean_client):
+    """Test that the default materializer is not registered in the registry."""
+    assert (
+        DefaultMaterializer
+        not in materializer_registry.materializer_types.values()
+    )
