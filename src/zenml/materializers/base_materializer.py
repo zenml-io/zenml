@@ -153,11 +153,12 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
         Returns:
             A dictionary of metadata.
         """
-        from zenml.metadata.metadata_types import StorageSize
-
-        storage_size = fileio.size(self.uri)
-        if storage_size:
-            return {"storage_size": StorageSize(storage_size)}
+        # Optionally, extract some metadata from `data` for ZenML to store.
+        # E.g.:
+        # return {
+        #     "some_attribute_i_want_to_track": self.some_attribute,
+        #     "pi": 3.14,
+        # }
         return {}
 
     # ================
@@ -193,3 +194,35 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
             issubclass(data_type, associated_type)
             for associated_type in self.ASSOCIATED_TYPES
         )
+
+    def extract_full_metadata(self, data: Any) -> Dict[str, "MetadataType"]:
+        """Extract both base and custom metadata from the given data.
+
+        Args:
+            data: The data to extract metadata from.
+
+        Returns:
+            A dictionary of metadata.
+        """
+        base_metadata = self._extract_base_metadata(data)
+        custom_metadata = self.extract_metadata(data)
+        return {**base_metadata, **custom_metadata}
+
+    def _extract_base_metadata(self, data: Any) -> Dict[str, "MetadataType"]:
+        """Extract metadata from the given data.
+
+        This metadata will be extracted for all artifacts in addition to the
+        metadata extracted by the `extract_metadata` method.
+
+        Args:
+            data: The data to extract metadata from.
+
+        Returns:
+            A dictionary of metadata.
+        """
+        from zenml.metadata.metadata_types import StorageSize
+
+        storage_size = fileio.size(self.uri)
+        if storage_size:
+            return {"storage_size": StorageSize(storage_size)}
+        return {}

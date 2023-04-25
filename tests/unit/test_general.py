@@ -40,7 +40,7 @@ def _test_materializer(
     the same materializer and ensure that:
     - `materializer.save()` did write something to disk
     - `materializer.load()` did load the original data type again
-    - `materializer.extract_metadata()` returned a dict
+    - `materializer.extract_full_metadata()` returned a dict
 
     Args:
         step_output: The output artifact we want to materialize.
@@ -71,7 +71,7 @@ def _test_materializer(
         assert len(new_files) > len(existing_files)  # something was written
 
         # Assert that metadata extraction returns a dict
-        metadata = materializer.extract_metadata(step_output)
+        metadata = materializer.extract_full_metadata(step_output)
         assert isinstance(metadata, dict)
         for key, value in metadata.items():
             assert isinstance(key, str)
