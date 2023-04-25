@@ -25,6 +25,7 @@ from typing import (
     Optional,
     Tuple,
     Type,
+    TypeVar,
     Union,
 )
 from uuid import UUID
@@ -45,6 +46,11 @@ from zenml.logger import get_logger
 
 if TYPE_CHECKING:
     from sqlalchemy.sql.elements import BinaryExpression, BooleanClauseList
+    from sqlmodel.sql.expression import Select, SelectOfScalar
+
+    from zenml.zen_stores.schemas import BaseSchema
+
+    AnySchema = TypeVar("AnySchema", bound=BaseSchema)
 
 logger = get_logger(__name__)
 
@@ -736,6 +742,27 @@ class BaseFilterModel(BaseModel):
         else:
             raise RuntimeError("No valid logical operator was supplied.")
 
+    def apply_filter(
+        self,
+        query: Union["Select[AnySchema]", "SelectOfScalar[AnySchema]"],
+        table: Type["AnySchema"],
+    ) -> Union["Select[AnySchema]", "SelectOfScalar[AnySchema]"]:
+        """Applies the filter to a query.
+
+        Args:
+            query: The query to which to apply the filter.
+            table: The query table.
+
+        Returns:
+            The query with filter applied.
+        """
+        filters = self.generate_filter(table=table)
+
+        if filters is not None:
+            query = query.where(filters)
+
+        return query
+
 
 class WorkspaceScopedFilterModel(BaseFilterModel):
     """Model to enable advanced scoping with workspace."""
@@ -761,32 +788,32 @@ class WorkspaceScopedFilterModel(BaseFilterModel):
         """
         self.scope_workspace = workspace_id
 
-    def generate_filter(
-        self, table: Type["SQLModel"]
-    ) -> Union["BinaryExpression[Any]", "BooleanClauseList[Any]"]:
-        """Generate the filter for the query.
-
-        Many resources are scoped by workspace, in which case only the resources
-        belonging to the active workspace should be returned. An empty workspace
-        field allows access from all scopes.
+    def apply_filter(
+        self,
+        query: Union["Select[AnySchema]", "SelectOfScalar[AnySchema]"],
+        table: Type["AnySchema"],
+    ) -> Union["Select[AnySchema]", "SelectOfScalar[AnySchema]"]:
+        """Applies the filter to a query.
 
         Args:
-            table: The Table that is being queried from.
+            query: The query to which to apply the filter.
+            table: The query table.
 
         Returns:
-            The filter expression for the query.
+            The query with filter applied.
         """
-        from sqlalchemy import and_
         from sqlmodel import or_
 
-        base_filter = super().generate_filter(table)
+        query = super().apply_filter(query=query, table=table)
+
         if self.scope_workspace:
-            workspace_filter = or_(
+            scope_filter = or_(
                 getattr(table, "workspace_id") == self.scope_workspace,
                 getattr(table, "workspace_id").is_(None),
             )
-            return and_(base_filter, workspace_filter)
-        return base_filter
+            query = query.where(scope_filter)
+
+        return query
 
 
 class ShareableWorkspaceScopedFilterModel(WorkspaceScopedFilterModel):
@@ -813,28 +840,29 @@ class ShareableWorkspaceScopedFilterModel(WorkspaceScopedFilterModel):
         """
         self.scope_user = user_id
 
-    def generate_filter(
-        self, table: Type["SQLModel"]
-    ) -> Union["BinaryExpression[Any]", "BooleanClauseList[Any]"]:
-        """Generate the filter for the query.
-
-        A user is only allowed to list the resources that either belong to them
-        or that are shared.
+    def apply_filter(
+        self,
+        query: Union["Select[AnySchema]", "SelectOfScalar[AnySchema]"],
+        table: Type["AnySchema"],
+    ) -> Union["Select[AnySchema]", "SelectOfScalar[AnySchema]"]:
+        """Applies the filter to a query.
 
         Args:
-            table: The Table that is being queried from.
+            query: The query to which to apply the filter.
+            table: The query table.
 
         Returns:
-            The filter expression for the query.
+            The query with filter applied.
         """
-        from sqlalchemy import and_
         from sqlmodel import or_
 
-        base_filter = super().generate_filter(table)
+        query = super().apply_filter(query=query, table=table)
+
         if self.scope_user:
-            user_filter = or_(
+            scope_filter = or_(
                 getattr(table, "user_id") == self.scope_user,
                 getattr(table, "is_shared").is_(True),
             )
-            return and_(base_filter, user_filter)
-        return base_filter
+            query = query.where(scope_filter)
+
+        return query

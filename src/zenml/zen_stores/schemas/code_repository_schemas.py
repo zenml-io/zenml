@@ -66,6 +66,8 @@ class CodeRepositorySchema(NamedSchema, table=True):
 
     config: str = Field(sa_column=Column(TEXT, nullable=False))
     source: str = Field(sa_column=Column(TEXT, nullable=False))
+    logo_url: Optional[str] = Field()
+    description: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
 
     @classmethod
     def from_request(
@@ -86,6 +88,8 @@ class CodeRepositorySchema(NamedSchema, table=True):
             user_id=request.user,
             config=json.dumps(request.config),
             source=request.source.json(),
+            description=request.description,
+            logo_url=request.logo_url,
         )
 
     def to_model(
@@ -105,6 +109,8 @@ class CodeRepositorySchema(NamedSchema, table=True):
             updated=self.updated,
             config=json.loads(self.config),
             source=json.loads(self.source),
+            description=self.description,
+            logo_url=self.logo_url,
         )
 
     def update(
@@ -120,6 +126,12 @@ class CodeRepositorySchema(NamedSchema, table=True):
         """
         if update.name:
             self.name = update.name
+
+        if update.description:
+            self.description = update.description
+
+        if update.logo_url:
+            self.logo_url = update.logo_url
 
         self.updated = datetime.utcnow()
         return self
