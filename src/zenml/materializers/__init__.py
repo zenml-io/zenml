@@ -24,6 +24,7 @@ from zenml.materializers.built_in_materializer import (
     BuiltInMaterializer,
     BytesMaterializer,
 )
+from zenml.materializers.default_materializer import DefaultMaterializer
 from zenml.materializers.numpy_materializer import NumpyMaterializer
 from zenml.materializers.pandas_materializer import PandasMaterializer
 from zenml.materializers.pydantic_materializer import PydanticMaterializer
@@ -34,6 +35,7 @@ __all__ = [
     "BuiltInContainerMaterializer",
     "BuiltInMaterializer",
     "BytesMaterializer",
+    "DefaultMaterializer",
     "NumpyMaterializer",
     "PandasMaterializer",
     "PydanticMaterializer",
