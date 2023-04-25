@@ -35,6 +35,14 @@ class SagemakerOrchestratorSettings(BaseSettings):
         max_runtime_in_seconds: The maximum runtime in seconds for the
             processing job.
         processor_tags: Tags to apply to the Processor assigned to the step.
+        processor_args: Arguments that are directly passed to the SageMaker
+            Processor for a specific step, allowing for overriding the default
+            settings provided when configuring the component. See
+            https://sagemaker.readthedocs.io/en/stable/api/training/processing.html#sagemaker.processing.Processor
+            for a full list of arguments.
+            For processor_args.instance_type, check
+            https://docs.aws.amazon.com/sagemaker/latest/dg/notebooks-available-instance-types.html
+            for a list of available instance types.
     """
 
     instance_type: str = "ml.t3.medium"
@@ -42,6 +50,8 @@ class SagemakerOrchestratorSettings(BaseSettings):
     volume_size_in_gb: int = 30
     max_runtime_in_seconds: int = 86400
     processor_tags: Dict[str, str] = {}
+    
+    processor_args: Dict[str, Any] = {}
 
 
 class SagemakerOrchestratorConfig(  # type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173
