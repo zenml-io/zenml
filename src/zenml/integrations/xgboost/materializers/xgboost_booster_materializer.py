@@ -15,7 +15,7 @@
 
 import os
 import tempfile
-from typing import Any, Type
+from typing import Any, ClassVar, Tuple, Type
 
 import xgboost as xgb
 
@@ -29,8 +29,8 @@ DEFAULT_FILENAME = "model.json"
 class XgboostBoosterMaterializer(BaseMaterializer):
     """Materializer to read data to and from xgboost.Booster."""
 
-    ASSOCIATED_TYPES = (xgb.Booster,)
-    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.MODEL
+    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (xgb.Booster,)
+    ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.MODEL
 
     def load(self, data_type: Type[Any]) -> xgb.Booster:
         """Reads a xgboost Booster model from a serialized JSON file.

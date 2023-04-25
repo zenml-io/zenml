@@ -14,7 +14,7 @@
 """Implementation of the Spark Dataframe Materializer."""
 
 import os.path
-from typing import Any, Dict, Type
+from typing import Any, ClassVar, Dict, Tuple, Type
 
 from pyspark.sql import DataFrame, SparkSession
 
@@ -28,8 +28,8 @@ DEFAULT_FILEPATH = "data"
 class SparkDataFrameMaterializer(BaseMaterializer):
     """Materializer to read/write Spark dataframes."""
 
-    ASSOCIATED_TYPES = (DataFrame,)
-    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATA
+    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (DataFrame,)
+    ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.DATA
 
     def load(self, data_type: Type[Any]) -> DataFrame:
         """Reads and returns a spark dataframe.

@@ -15,7 +15,7 @@
 
 import os
 from collections import Counter
-from typing import TYPE_CHECKING, Any, Dict, Type, cast
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, Tuple, Type, cast
 
 import numpy as np
 
@@ -41,8 +41,8 @@ DATA_VAR = "data_var"
 class NumpyMaterializer(BaseMaterializer):
     """Materializer to read data to and from pandas."""
 
-    ASSOCIATED_TYPES = (np.ndarray,)
-    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATA
+    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (np.ndarray,)
+    ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.DATA
 
     def load(self, data_type: Type[Any]) -> "Any":
         """Reads a numpy array from a `.npy` file.

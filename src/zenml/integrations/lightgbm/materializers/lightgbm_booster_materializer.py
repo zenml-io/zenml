@@ -15,7 +15,7 @@
 
 import os
 import tempfile
-from typing import Any, Type
+from typing import Any, ClassVar, Tuple, Type
 
 import lightgbm as lgb
 
@@ -29,8 +29,8 @@ DEFAULT_FILENAME = "model.txt"
 class LightGBMBoosterMaterializer(BaseMaterializer):
     """Materializer to read data to and from lightgbm.Booster."""
 
-    ASSOCIATED_TYPES = (lgb.Booster,)
-    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.MODEL
+    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (lgb.Booster,)
+    ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.MODEL
 
     def load(self, data_type: Type[Any]) -> lgb.Booster:
         """Reads a lightgbm Booster model from a serialized JSON file.

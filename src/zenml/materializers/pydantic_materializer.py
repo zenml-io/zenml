@@ -14,7 +14,7 @@
 """Implementation of ZenML's pydantic materializer."""
 
 import os
-from typing import TYPE_CHECKING, Any, Dict, Type
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, Tuple, Type
 
 from pydantic import BaseModel
 
@@ -31,8 +31,8 @@ DEFAULT_FILENAME = "data.json"
 class PydanticMaterializer(BaseMaterializer):
     """Handle Pydantic BaseModel objects."""
 
-    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATA
-    ASSOCIATED_TYPES = (BaseModel,)
+    ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.DATA
+    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (BaseModel,)
 
     def load(self, data_type: Type[BaseModel]) -> Any:
         """Reads BaseModel from JSON.

@@ -14,7 +14,7 @@
 """Implementation of the PyTorch DataLoader materializer."""
 
 import os
-from typing import TYPE_CHECKING, Any, Dict, Type
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, Tuple, Type
 
 import torch
 from torch.utils.data.dataloader import DataLoader
@@ -33,8 +33,8 @@ CHECKPOINT_FILENAME = "checkpoint.pt"
 class PyTorchDataLoaderMaterializer(BaseMaterializer):
     """Materializer to read/write PyTorch dataloaders."""
 
-    ASSOCIATED_TYPES = (DataLoader,)
-    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATA
+    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (DataLoader,)
+    ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.DATA
 
     def load(self, data_type: Type[Any]) -> Any:
         """Reads and returns a PyTorch dataloader.

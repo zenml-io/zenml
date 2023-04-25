@@ -15,7 +15,7 @@
 """Implementation of Deepchecks suite results materializer."""
 
 import os
-from typing import TYPE_CHECKING, Any, Dict, Type, Union
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, Tuple, Type, Union
 
 from deepchecks.core.check_result import CheckResult
 from deepchecks.core.suite import SuiteResult
@@ -33,11 +33,13 @@ RESULTS_FILENAME = "results.json"
 class DeepchecksResultMaterializer(BaseMaterializer):
     """Materializer to read data to and from CheckResult and SuiteResult objects."""
 
-    ASSOCIATED_TYPES = (
+    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (
         CheckResult,
         SuiteResult,
     )
-    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATA_ANALYSIS
+    ASSOCIATED_ARTIFACT_TYPE: ClassVar[
+        ArtifactType
+    ] = ArtifactType.DATA_ANALYSIS
 
     def load(self, data_type: Type[Any]) -> Union[CheckResult, SuiteResult]:
         """Reads a Deepchecks check or suite result from a serialized JSON file.

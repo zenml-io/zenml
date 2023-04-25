@@ -14,7 +14,7 @@
 """Implementation of Evidently profile materializer."""
 
 import os
-from typing import Any, Type
+from typing import Any, ClassVar, Tuple, Type
 
 from evidently.model_profile import Profile  # type: ignore
 from evidently.utils import NumpyEncoder  # type: ignore
@@ -32,8 +32,10 @@ DEFAULT_FILENAME = "profile.json"
 class EvidentlyProfileMaterializer(BaseMaterializer):
     """Materializer to read data to and from an Evidently Profile."""
 
-    ASSOCIATED_TYPES = (Profile,)
-    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATA_ANALYSIS
+    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (Profile,)
+    ASSOCIATED_ARTIFACT_TYPE: ClassVar[
+        ArtifactType
+    ] = ArtifactType.DATA_ANALYSIS
 
     def load(self, data_type: Type[Any]) -> Profile:
         """Reads an Evidently Profile object from a json file.

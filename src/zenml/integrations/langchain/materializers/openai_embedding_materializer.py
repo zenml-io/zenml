@@ -16,7 +16,7 @@
 import os
 import pickle
 import sys
-from typing import TYPE_CHECKING, Any, Type, cast
+from typing import TYPE_CHECKING, Any, ClassVar, Tuple, Type, cast
 
 import pkg_resources
 
@@ -46,8 +46,8 @@ logger = get_logger(__name__)
 class LangchainOpenaiEmbeddingMaterializer(BaseMaterializer):
     """Handle langchain openai embedding objects."""
 
-    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.MODEL
-    ASSOCIATED_TYPES = (OpenAIEmbeddings,)
+    ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.MODEL
+    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (OpenAIEmbeddings,)
 
     def load(self, data_type: Type[OpenAIEmbeddings]) -> OpenAIEmbeddings:
         """Reads an OpenAI embedding from a pickle file.

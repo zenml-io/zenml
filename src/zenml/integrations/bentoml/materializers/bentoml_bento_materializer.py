@@ -15,7 +15,7 @@
 
 import os
 import tempfile
-from typing import TYPE_CHECKING, Dict, Type
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, Tuple, Type
 
 import bentoml
 from bentoml._internal.bento import Bento, bento
@@ -37,8 +37,8 @@ logger = get_logger(__name__)
 class BentoMaterializer(BaseMaterializer):
     """Materializer for Bentoml Bento objects."""
 
-    ASSOCIATED_TYPES = (bento.Bento,)
-    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATA
+    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (bento.Bento,)
+    ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.DATA
 
     def load(self, data_type: Type[bento.Bento]) -> bento.Bento:
         """Read from artifact store and return a Bento object.

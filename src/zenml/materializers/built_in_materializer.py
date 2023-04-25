@@ -14,7 +14,17 @@
 """Implementation of ZenML's builtin materializer."""
 
 import os
-from typing import TYPE_CHECKING, Any, Dict, Iterable, Type, Union
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    ClassVar,
+    Dict,
+    Iterable,
+    List,
+    Tuple,
+    Type,
+    Union,
+)
 
 from zenml.enums import ArtifactType
 from zenml.io import fileio
@@ -41,8 +51,8 @@ BASIC_TYPES = (
 class BuiltInMaterializer(BaseMaterializer):
     """Handle JSON-serializable basic types (`bool`, `float`, `int`, `str`)."""
 
-    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATA
-    ASSOCIATED_TYPES = BASIC_TYPES
+    ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.DATA
+    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = BASIC_TYPES
 
     def __init__(self, uri: str):
         """Define `self.data_path`.
@@ -108,8 +118,8 @@ class BuiltInMaterializer(BaseMaterializer):
 class BytesMaterializer(BaseMaterializer):
     """Handle `bytes` data type, which is not JSON serializable."""
 
-    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATA
-    ASSOCIATED_TYPES = (bytes,)
+    ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.DATA
+    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (bytes,)
 
     def __init__(self, uri: str):
         """Define `self.data_path`.
@@ -241,7 +251,12 @@ def find_materializer_registry_type(type_: Type[Any]) -> Type[Any]:
 class BuiltInContainerMaterializer(BaseMaterializer):
     """Handle built-in container types (dict, list, set, tuple)."""
 
-    ASSOCIATED_TYPES = (dict, list, set, tuple)
+    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (
+        dict,
+        list,
+        set,
+        tuple,
+    )
 
     def __init__(self, uri: str):
         """Define `self.data_path` and `self.metadata_path`.
@@ -365,7 +380,8 @@ class BuiltInContainerMaterializer(BaseMaterializer):
 
         # non-serializable list: Materialize each element into a subfolder.
         # Get path, type, and corresponding materializer for each element.
-        metadata, materializers = [], []
+        metadata: List[Dict[str, str]] = []
+        materializers: List[BaseMaterializer] = []
         try:
             for i, element in enumerate(data):
                 element_path = os.path.join(self.uri, str(i))
@@ -387,6 +403,7 @@ class BuiltInContainerMaterializer(BaseMaterializer):
             yaml_utils.write_json(self.metadata_path, metadata)
             # Materialize each element.
             for element, materializer in zip(data, materializers):
+                materializer.validate_type_compatibility(type(element))
                 materializer.save(element)
         # If an error occurs, delete all created files.
         except Exception as e:

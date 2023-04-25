@@ -14,7 +14,7 @@
 """Implementation of the PyTorch Module materializer."""
 
 import os
-from typing import TYPE_CHECKING, Any, Dict, Type, cast
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, Tuple, Type, cast
 
 import torch
 from torch.nn import Module
@@ -38,8 +38,8 @@ class PyTorchModuleMaterializer(BaseMaterializer):
     https://pytorch.org/tutorials/beginner/saving_loading_models.html
     """
 
-    ASSOCIATED_TYPES = (Module,)
-    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.MODEL
+    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (Module,)
+    ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.MODEL
 
     def load(self, data_type: Type[Any]) -> Module:
         """Reads and returns a PyTorch model.

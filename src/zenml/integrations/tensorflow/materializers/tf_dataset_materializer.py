@@ -15,7 +15,7 @@
 
 import os
 import tempfile
-from typing import TYPE_CHECKING, Any, Dict, Type
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, Tuple, Type
 
 import tensorflow as tf
 
@@ -33,8 +33,8 @@ DEFAULT_FILENAME = "saved_data"
 class TensorflowDatasetMaterializer(BaseMaterializer):
     """Materializer to read data to and from tf.data.Dataset."""
 
-    ASSOCIATED_TYPES = (tf.data.Dataset,)
-    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATA
+    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (tf.data.Dataset,)
+    ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.DATA
 
     def load(self, data_type: Type[Any]) -> Any:
         """Reads data into tf.data.Dataset.

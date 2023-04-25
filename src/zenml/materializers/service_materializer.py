@@ -14,7 +14,7 @@
 """Implementation of a materializer to read and write ZenML service instances."""
 
 import os
-from typing import TYPE_CHECKING, Any, Dict, Type
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, Tuple, Type
 
 from zenml.enums import ArtifactType
 from zenml.io import fileio
@@ -31,8 +31,8 @@ SERVICE_CONFIG_FILENAME = "service.json"
 class ServiceMaterializer(BaseMaterializer):
     """Materializer to read/write service instances."""
 
-    ASSOCIATED_TYPES = (BaseService,)
-    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.SERVICE
+    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (BaseService,)
+    ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.SERVICE
 
     def load(self, data_type: Type[Any]) -> BaseService:
         """Creates and returns a service.

@@ -16,7 +16,7 @@
 import importlib
 import os
 from tempfile import TemporaryDirectory
-from typing import Dict, Type
+from typing import Any, ClassVar, Dict, Tuple, Type
 
 from transformers import AutoConfig, PreTrainedModel  # type: ignore [import]
 
@@ -31,8 +31,8 @@ DEFAULT_PT_MODEL_DIR = "hf_pt_model"
 class HFPTModelMaterializer(BaseMaterializer):
     """Materializer to read torch model to and from huggingface pretrained model."""
 
-    ASSOCIATED_TYPES = (PreTrainedModel,)
-    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.MODEL
+    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (PreTrainedModel,)
+    ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.MODEL
 
     def load(self, data_type: Type[PreTrainedModel]) -> PreTrainedModel:
         """Reads HFModel.

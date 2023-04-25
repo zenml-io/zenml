@@ -15,7 +15,7 @@
 
 import os
 import tempfile
-from typing import TYPE_CHECKING, Any, Dict, Type
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, Tuple, Type
 
 import xgboost as xgb
 
@@ -32,8 +32,8 @@ DEFAULT_FILENAME = "data.binary"
 class XgboostDMatrixMaterializer(BaseMaterializer):
     """Materializer to read data to and from xgboost.DMatrix."""
 
-    ASSOCIATED_TYPES = (xgb.DMatrix,)
-    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATA
+    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (xgb.DMatrix,)
+    ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.DATA
 
     def load(self, data_type: Type[Any]) -> xgb.DMatrix:
         """Reads a xgboost.DMatrix binary file and loads it.

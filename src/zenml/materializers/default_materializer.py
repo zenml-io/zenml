@@ -18,7 +18,7 @@ for a given data type.
 """
 
 import os
-from typing import Any, Type
+from typing import Any, ClassVar, Tuple, Type
 
 import cloudpickle
 
@@ -39,8 +39,8 @@ class DefaultMaterializer(BaseMaterializer):
     given data type.
     """
 
-    ASSOCIATED_TYPES = (object,)
-    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATA
+    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (object,)
+    ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.DATA
 
     def load(self, data_type: Type[Any]) -> Any:
         """Reads an artifact from a cloudpickle file.
@@ -65,15 +65,18 @@ class DefaultMaterializer(BaseMaterializer):
         """
         super().save(data)
 
-        logger.warning(
-            f"No materializer is registered for type `{type(data)}`, so the "
-            f"default Pickle materializer was used. Pickle is not production "
-            f"ready and should only be used for prototyping as the artifacts "
-            f"cannot be loaded under different Python versions. Please "
-            f"consider implementing a custom materializer for type "
-            f"`{type(data)}` according to the instructions at "
-            "https://docs.zenml.io/advanced-guide/pipelines/materializers."
-        )
+        # Log a warning if this materializer was not explicitly specified for
+        # the given data type.
+        if type(self) == DefaultMaterializer:
+            logger.warning(
+                f"No materializer is registered for type `{type(data)}`, so the "
+                f"default Pickle materializer was used. Pickle is not production "
+                f"ready and should only be used for prototyping as the artifacts "
+                f"cannot be loaded under different Python versions. Please "
+                f"consider implementing a custom materializer for type "
+                f"`{type(data)}` according to the instructions at "
+                "https://docs.zenml.io/advanced-guide/pipelines/materializers."
+            )
 
         filepath = os.path.join(self.uri, DEFAULT_FILENAME)
         with fileio.open(filepath, "wb") as fid:

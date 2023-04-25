@@ -14,7 +14,7 @@
 """Implementation of the Neural Prophet materializer."""
 
 import os
-from typing import Any, Type
+from typing import Any, ClassVar, Tuple, Type
 
 import torch
 from neuralprophet import NeuralProphet
@@ -34,8 +34,8 @@ DEFAULT_FILENAME = "entire_model.pt"
 class NeuralProphetMaterializer(BaseMaterializer):
     """Materializer to read/write NeuralProphet models."""
 
-    ASSOCIATED_TYPES = (NeuralProphet,)
-    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.MODEL
+    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (NeuralProphet,)
+    ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.MODEL
 
     def load(self, data_type: Type[Any]) -> NeuralProphet:
         """Reads and returns a NeuralProphet model.

@@ -14,7 +14,7 @@
 """Implementation of the Great Expectations materializers."""
 
 import os
-from typing import TYPE_CHECKING, Any, Dict, Type, Union
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, Tuple, Type, Union
 
 from great_expectations.checkpoint.types.checkpoint_result import (  # type: ignore[import]
     CheckpointResult,
@@ -46,11 +46,13 @@ ARTIFACT_FILENAME = "artifact.json"
 class GreatExpectationsMaterializer(BaseMaterializer):
     """Materializer to read/write Great Expectation objects."""
 
-    ASSOCIATED_TYPES = (
+    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (
         ExpectationSuite,
         CheckpointResult,
     )
-    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATA_ANALYSIS
+    ASSOCIATED_ARTIFACT_TYPE: ClassVar[
+        ArtifactType
+    ] = ArtifactType.DATA_ANALYSIS
 
     @staticmethod
     def preprocess_checkpoint_result_dict(

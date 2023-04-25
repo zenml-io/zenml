@@ -14,7 +14,7 @@
 """Implementation of the PyTorch Lightning Materializer."""
 
 import os
-from typing import Any, Type, cast
+from typing import Any, ClassVar, Tuple, Type, cast
 
 import torch
 from torch.nn import Module
@@ -29,8 +29,8 @@ CHECKPOINT_NAME = "final_checkpoint.ckpt"
 class PyTorchLightningMaterializer(BaseMaterializer):
     """Materializer to read/write PyTorch models."""
 
-    ASSOCIATED_TYPES = (Module,)
-    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.MODEL
+    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (Module,)
+    ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.MODEL
 
     def load(self, data_type: Type[Any]) -> Module:
         """Reads and returns a PyTorch Lightning model.

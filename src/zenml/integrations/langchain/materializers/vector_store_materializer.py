@@ -16,7 +16,7 @@
 import os
 import pickle
 import sys
-from typing import TYPE_CHECKING, Any, Type, cast
+from typing import TYPE_CHECKING, Any, ClassVar, Tuple, Type, cast
 
 import pkg_resources
 
@@ -46,8 +46,8 @@ logger = get_logger(__name__)
 class LangchainVectorStoreMaterializer(BaseMaterializer):
     """Handle langchain vector store objects."""
 
-    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATA
-    ASSOCIATED_TYPES = (VectorStore,)
+    ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.DATA
+    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (VectorStore,)
 
     def load(self, data_type: Type[VectorStore]) -> VectorStore:
         """Reads a langchain vector store from a pickle file.

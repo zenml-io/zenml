@@ -16,7 +16,7 @@
 import os
 from collections import defaultdict
 from tempfile import TemporaryDirectory, mkdtemp
-from typing import TYPE_CHECKING, Dict, Type, Union
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, Tuple, Type, Union
 
 from datasets import Dataset, load_from_disk
 from datasets.dataset_dict import DatasetDict
@@ -36,8 +36,10 @@ DEFAULT_DATASET_DIR = "hf_datasets"
 class HFDatasetMaterializer(BaseMaterializer):
     """Materializer to read data to and from huggingface datasets."""
 
-    ASSOCIATED_TYPES = (Dataset, DatasetDict)
-    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATA_ANALYSIS
+    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (Dataset, DatasetDict)
+    ASSOCIATED_ARTIFACT_TYPE: ClassVar[
+        ArtifactType
+    ] = ArtifactType.DATA_ANALYSIS
 
     def load(
         self, data_type: Union[Type[Dataset], Type[DatasetDict]]

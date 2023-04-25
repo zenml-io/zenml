@@ -15,7 +15,7 @@
 
 import os
 from tempfile import TemporaryDirectory
-from typing import Any, Type
+from typing import Any, ClassVar, Tuple, Type
 
 from transformers import AutoTokenizer  # type: ignore [import]
 from transformers.tokenization_utils_base import (  # type: ignore [import]
@@ -32,8 +32,10 @@ DEFAULT_TOKENIZER_DIR = "hf_tokenizer"
 class HFTokenizerMaterializer(BaseMaterializer):
     """Materializer to read tokenizer to and from huggingface tokenizer."""
 
-    ASSOCIATED_TYPES = (PreTrainedTokenizerBase,)
-    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.MODEL
+    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (
+        PreTrainedTokenizerBase,
+    )
+    ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.MODEL
 
     def load(self, data_type: Type[Any]) -> PreTrainedTokenizerBase:
         """Reads Tokenizer.

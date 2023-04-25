@@ -15,7 +15,7 @@
 
 import os
 import tempfile
-from typing import TYPE_CHECKING, Dict, Type
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, Tuple, Type
 
 from PIL import Image
 
@@ -42,8 +42,8 @@ class PillowImageMaterializer(BaseMaterializer):
     https://pillow.readthedocs.io/en/stable/handbook/image-file-formats.html.
     """
 
-    ASSOCIATED_TYPES = (Image.Image,)
-    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATA
+    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (Image.Image,)
+    ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.DATA
 
     def load(self, data_type: Type[Image.Image]) -> Image.Image:
         """Read from artifact store.

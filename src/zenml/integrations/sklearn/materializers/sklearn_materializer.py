@@ -15,7 +15,7 @@
 
 import os
 import pickle
-from typing import Any, Type, Union
+from typing import Any, ClassVar, Tuple, Type, Union
 
 from sklearn.base import (
     BaseEstimator,
@@ -40,7 +40,7 @@ DEFAULT_FILENAME = "model"
 class SklearnMaterializer(BaseMaterializer):
     """Materializer to read data to and from sklearn."""
 
-    ASSOCIATED_TYPES = (
+    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (
         BaseEstimator,
         ClassifierMixin,
         ClusterMixin,
@@ -52,7 +52,7 @@ class SklearnMaterializer(BaseMaterializer):
         DensityMixin,
         TransformerMixin,
     )
-    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.MODEL
+    ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.MODEL
 
     def load(
         self, data_type: Type[Any]
