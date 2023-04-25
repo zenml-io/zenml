@@ -49,9 +49,21 @@ def test_input_validation_inside_pipeline():
     def test_pipeline(step_input):
         return step_with_int_input(step_input)
 
-    with pytest.raises(Exception):
+    with pytest.raises(RuntimeError):
         test_pipeline(step_input="wrong_type")
 
     with does_not_raise():
         test_pipeline(step_input=1)
         test_pipeline(step_input=3.0)
+
+
+def test_using_step_instance_and_class():
+    step_instance = step_with_int_input()
+
+    @pipeline
+    def test_pipeline():
+        step_with_int_input(1)
+        step_instance(1)
+
+    with does_not_raise():
+        test_pipeline()

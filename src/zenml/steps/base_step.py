@@ -1283,9 +1283,7 @@ class EntrypointFunctionDefinition(NamedTuple):
                     "is not allowed."
                 )
 
-            # self._validate_input_type(
-            #     parameter=parameter, annotation=type(input_)
-            # )
+            self._validate_input_value(parameter=parameter, value=input_)
 
             if not is_json_serializable(input_):
                 raise StepInterfaceError(
@@ -1293,6 +1291,28 @@ class EntrypointFunctionDefinition(NamedTuple):
                     f"'{key}' is not JSON "
                     "serializable."
                 )
+
+    def _validate_input_value(
+        self, parameter: inspect.Parameter, value: Any
+    ) -> None:
+        from pydantic import BaseConfig, ValidationError, create_model
+
+        class ModelConfig(BaseConfig):
+            arbitrary_types_allowed = False
+
+        # Create a pydantic model with just a single required field with the
+        # type annotation of the parameter to verify the input type including
+        # pydantics type coercion
+        validation_model_class = create_model(
+            "input_validation_model",
+            __config__=ModelConfig,
+            value=(parameter.annotation, ...),
+        )
+
+        try:
+            validation_model_class(value=value)
+        except ValidationError:
+            raise RuntimeError("Input validation failed.")
 
     def _validate_input_type(
         self, parameter: inspect.Parameter, annotation: Any
