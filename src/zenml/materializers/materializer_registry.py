@@ -13,9 +13,8 @@
 #  permissions and limitations under the License.
 """Implementation of a default materializer registry."""
 
-from typing import TYPE_CHECKING, Any, Dict, Type
+from typing import TYPE_CHECKING, Any, Dict, Optional, Type
 
-from zenml.exceptions import StepInterfaceError
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
@@ -29,6 +28,7 @@ class MaterializerRegistry:
 
     def __init__(self) -> None:
         """Initialize the materializer registry."""
+        self.default_materializer: Optional[Type["BaseMaterializer"]] = None
         self.materializer_types: Dict[Type[Any], Type["BaseMaterializer"]] = {}
 
     def register_materializer_type(
@@ -70,23 +70,27 @@ class MaterializerRegistry:
 
         Returns:
             `BaseMaterializer` subclass that was registered for this key.
-
-        Raises:
-            StepInterfaceError: If the key (or any of its superclasses) is not
-                registered.
         """
         for class_ in key.__mro__:
             materializer = self.materializer_types.get(class_, None)
             if materializer:
                 return materializer
+        return self.get_default_materializer()
 
-        raise StepInterfaceError(
-            f"No materializer registered for class {key}. You can register a "
-            f"default materializer for specific types by subclassing "
-            f"`BaseMaterializer` and setting its `ASSOCIATED_TYPES` class"
-            f" variable.",
-            url="https://docs.zenml.io/advanced-guide/pipelines/materializers",
+    def get_default_materializer(self) -> Type["BaseMaterializer"]:
+        """Get the default materializer that is used if no other is found.
+
+        Returns:
+            The default materializer.
+        """
+        from zenml.materializers.default_materializer import (
+            DefaultMaterializer,
         )
+
+        if self.default_materializer:
+            return self.default_materializer
+
+        return DefaultMaterializer
 
     def get_materializer_types(
         self,
