@@ -12,12 +12,23 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import tempfile
+from pathlib import Path
+
 import lightgbm as lgb
+import pytest
 
 from tests.unit.test_general import _test_materializer
 from zenml.integrations.lightgbm.materializers.lightgbm_booster_materializer import (
     LightGBMBoosterMaterializer,
 )
+
+
+@pytest.fixture
+def empty_model_file() -> Path:
+    """Fixture to get an empty model.txt file."""
+    with tempfile.NamedTemporaryFile() as tmp:
+        yield tmp.name
 
 
 def test_lightgbm_booster_materializer(empty_model_file):
