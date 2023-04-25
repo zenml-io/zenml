@@ -13,9 +13,7 @@
 #  permissions and limitations under the License.
 """Implementation of the sklearn materializer."""
 
-import os
-import pickle
-from typing import Any, ClassVar, Tuple, Type, Union
+from typing import Any, ClassVar, Tuple, Type
 
 from sklearn.base import (
     BaseEstimator,
@@ -31,13 +29,10 @@ from sklearn.base import (
 )
 
 from zenml.enums import ArtifactType
-from zenml.io import fileio
-from zenml.materializers.base_materializer import BaseMaterializer
-
-DEFAULT_FILENAME = "model"
+from zenml.materializers.default_materializer import DefaultMaterializer
 
 
-class SklearnMaterializer(BaseMaterializer):
+class SklearnMaterializer(DefaultMaterializer):
     """Materializer to read data to and from sklearn."""
 
     ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (
@@ -53,56 +48,3 @@ class SklearnMaterializer(BaseMaterializer):
         TransformerMixin,
     )
     ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.MODEL
-
-    def load(
-        self, data_type: Type[Any]
-    ) -> Union[
-        BaseEstimator,
-        ClassifierMixin,
-        ClusterMixin,
-        BiclusterMixin,
-        OutlierMixin,
-        RegressorMixin,
-        MetaEstimatorMixin,
-        MultiOutputMixin,
-        DensityMixin,
-        TransformerMixin,
-    ]:
-        """Reads a base sklearn model from a pickle file.
-
-        Args:
-            data_type: The type of the model.
-
-        Returns:
-            The model.
-        """
-        super().load(data_type)
-        filepath = os.path.join(self.uri, DEFAULT_FILENAME)
-        with fileio.open(filepath, "rb") as fid:
-            clf = pickle.load(fid)
-        return clf
-
-    def save(
-        self,
-        clf: Union[
-            BaseEstimator,
-            ClassifierMixin,
-            ClusterMixin,
-            BiclusterMixin,
-            OutlierMixin,
-            RegressorMixin,
-            MetaEstimatorMixin,
-            MultiOutputMixin,
-            DensityMixin,
-            TransformerMixin,
-        ],
-    ) -> None:
-        """Creates a pickle for a sklearn model.
-
-        Args:
-            clf: A sklearn model.
-        """
-        super().save(clf)
-        filepath = os.path.join(self.uri, DEFAULT_FILENAME)
-        with fileio.open(filepath, "wb") as fid:
-            pickle.dump(clf, fid)
