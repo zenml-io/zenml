@@ -421,10 +421,8 @@ class BaseStep(metaclass=BaseStepMeta):
         external_artifacts = {}
         parameters = {}
 
-        entrypoint_def = validate_entrypoint_function(self.entrypoint)
-
         for key, value in bound_args.arguments.items():
-            entrypoint_def.validate_input(key=key, input_=value)
+            self.entrypoint_definition.validate_input(key=key, input_=value)
 
             if isinstance(value, StepArtifact):
                 artifacts[key] = value
@@ -462,7 +460,7 @@ class BaseStep(metaclass=BaseStepMeta):
         if not Pipeline.ACTIVE_PIPELINE:
             # The step is being called outside of the context of a pipeline,
             # we simply call the entrypoint
-            return self.entrypoint(*args, **kwargs)
+            return self.call_entrypoint(*args, **kwargs)
 
         (
             input_artifacts,
@@ -501,6 +499,24 @@ class BaseStep(metaclass=BaseStepMeta):
             return outputs[0]
         else:
             return outputs
+
+    def call_entrypoint(self, *args: Any, **kwargs: Any) -> Any:
+        from pydantic.decorator import ValidatedFunction
+
+        validation_func = ValidatedFunction(
+            self.entrypoint, config={"arbitrary_types_allowed": True}
+        )
+        model = validation_func.init_model_instance(*args, **kwargs)
+
+        validated_args = {
+            k: v
+            for k, v in model._iter()
+            if k in model.__fields_set__
+            or model.__fields__[k].default_factory
+            or model.__fields__[k].default
+        }
+
+        return self.entrypoint(**validated_args)
 
     @property
     def name(self) -> str:
@@ -708,12 +724,12 @@ class BaseStep(metaclass=BaseStepMeta):
         if not parameters:
             return
 
-        signature = get_step_entrypoint_signature(step=self)
         for key, value in parameters.items():
-            if key in signature.parameters:
-                self._validate_parameter_value(
-                    parameter=signature.parameters[key], value=value
+            if key in self.entrypoint_definition.inputs:
+                self.entrypoint_definition.validate_input(
+                    key=key, input_=value
                 )
+
             elif not self.entrypoint_definition.params:
                 raise StepInterfaceError(
                     "Can't set parameter without param class."
@@ -977,68 +993,6 @@ class BaseStep(metaclass=BaseStepMeta):
             raise StepInterfaceError("Failed to validate function parameters.")
 
         return values
-
-    def _validate_input_type(
-        self,
-        parameter: inspect.Parameter,
-        input_type: Any,
-    ) -> None:
-        from pydantic.typing import get_origin, is_union
-
-        from zenml.steps.utils import get_args
-
-        def _get_allowed_types(annotation) -> Tuple:
-            if is_union(get_origin(annotation) or annotation):
-                allowed_types = get_args(annotation)
-            elif issubclass(annotation, BaseModel):
-                if annotation.__custom_root_type__:
-                    allowed_types = (annotation,) + _get_allowed_types(
-                        annotation.__fields__["__root__"].outer_type_
-                    )
-                else:
-                    allowed_types = (annotation, dict)
-            else:
-                allowed_types = (get_origin(annotation) or annotation,)
-
-            return allowed_types
-
-        allowed_types = _get_allowed_types(annotation=parameter.annotation)
-        input_types = _get_allowed_types(annotation=input_type)
-
-        if Any in input_types or Any in allowed_types:
-            # Skip type checks for `Any` annotations
-            return
-
-        for type_ in input_types:
-            if not issubclass(type_, allowed_types):
-                raise StepInterfaceError(
-                    f"Wrong input type (`{input_type}`) for argument "
-                    f"'{parameter.name}' of step '{self.name}'. The argument "
-                    f"should be of type `{parameter.annotation}`."
-                )
-
-    def _validate_parameter_value(
-        self, parameter: inspect.Parameter, value: Any
-    ) -> None:
-        from zenml.materializers import UnmaterializedArtifact
-
-        if parameter.annotation is UnmaterializedArtifact:
-            raise RuntimeError(
-                "Passing parameter for input of type `UnmaterializedArtifact` "
-                "is not allowed."
-            )
-
-        self._validate_input_type(
-            parameter=parameter,
-            input_type=type(value),
-        )
-
-        if not is_json_serializable(value):
-            raise StepInterfaceError(
-                f"Argument type (`{type(value)}`) for argument "
-                f"'{parameter.name}' of step '{self.name}' is not JSON "
-                "serializable."
-            )
 
 
 def is_json_serializable(obj: Any) -> bool:
@@ -1314,10 +1268,13 @@ class EntrypointFunctionDefinition(NamedTuple):
         parameter = self.inputs[key]
 
         if isinstance(input_, Artifact):
-            if parameter.annotation is not UnmaterializedArtifact:
-                self._validate_input_type(
-                    parameter=parameter, annotation=input_.type
-                )
+            pass
+            # TODO: If we want to do some type validation here, it won't support
+            # type coercion
+            # if parameter.annotation is not UnmaterializedArtifact:
+            #     self._validate_input_type(
+            #         parameter=parameter, annotation=input_.type
+            #     )
         else:
             # Not an artifact -> This is a parameter
             if parameter.annotation is UnmaterializedArtifact:
@@ -1326,9 +1283,9 @@ class EntrypointFunctionDefinition(NamedTuple):
                     "is not allowed."
                 )
 
-            self._validate_input_type(
-                parameter=parameter, annotation=type(input_)
-            )
+            # self._validate_input_type(
+            #     parameter=parameter, annotation=type(input_)
+            # )
 
             if not is_json_serializable(input_):
                 raise StepInterfaceError(

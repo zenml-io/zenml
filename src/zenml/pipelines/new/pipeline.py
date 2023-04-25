@@ -895,6 +895,7 @@ class Pipeline:
             # TODO: how do we handle the pipeline config here?
             return self.entrypoint(*args, **kwargs)
 
+        self = self.copy()
         with self:
             entrypoint_outputs = self.entrypoint(*args, **kwargs)
 

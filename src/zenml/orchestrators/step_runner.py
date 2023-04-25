@@ -18,7 +18,6 @@ import inspect
 from typing import (
     TYPE_CHECKING,
     Any,
-    Callable,
     Dict,
     List,
     Optional,
@@ -59,6 +58,7 @@ if TYPE_CHECKING:
     from zenml.config.step_configurations import Step
     from zenml.metadata.metadata_types import MetadataType
     from zenml.stack import Stack
+    from zenml.steps import BaseStep
 
 
 logger = get_logger(__name__)
@@ -102,9 +102,9 @@ class StepRunner:
         Raises:
             BaseException: A general exception if the step fails.
         """
-        step_entrypoint = self._load_step_entrypoint()
+        step_instance = self._load_step()
         output_materializers = self._load_output_materializers()
-        spec = inspect.getfullargspec(inspect.unwrap(step_entrypoint))
+        spec = inspect.getfullargspec(inspect.unwrap(step_instance.entrypoint))
 
         # Parse the inputs for the entrypoint function.
         function_params = self._parse_inputs(
@@ -130,7 +130,9 @@ class StepRunner:
             self._stack.prepare_step_run(info=step_run_info)
             step_failed = False
             try:
-                return_values = step_entrypoint(**function_params)
+                return_values = step_instance.call_entrypoint(
+                    **function_params
+                )
             except BaseException as step_exception:  # noqa: E722
                 step_failed = True
                 failure_hook_source = self.configuration.failure_hook_source
@@ -199,17 +201,17 @@ class StepRunner:
             output_artifact_ids=output_artifact_ids,
         )
 
-    def _load_step_entrypoint(self) -> Callable[..., Any]:
-        """Load the step entrypoint function.
+    def _load_step(self) -> "BaseStep":
+        """Load the step instance.
 
         Returns:
-            The step entrypoint function.
+            The step instance.
         """
         from zenml.steps import BaseStep
 
         step_instance = BaseStep.load_from_source(self._step.spec.source)
         step_instance._configuration = self._step.config
-        return step_instance.entrypoint
+        return step_instance
 
     def _load_output_materializers(self) -> Dict[str, Type[BaseMaterializer]]:
         """Loads the output materializers for the step.
@@ -275,22 +277,6 @@ class StepRunner:
                 raise RuntimeError(
                     f"Unable to find value for step function argument `{arg}`."
                 )
-
-        from pydantic.decorator import ValidatedFunction
-
-        entrypoint_func = self._load_step_entrypoint()
-        validation_func = ValidatedFunction(
-            entrypoint_func, config={"arbitrary_types_allowed": True}
-        )
-        model = validation_func.init_model_instance(**function_params)
-
-        function_params = {
-            k: v
-            for k, v in model._iter()
-            if k in model.__fields_set__
-            or model.__fields__[k].default_factory
-            or model.__fields__[k].default
-        }
 
         return function_params
 
