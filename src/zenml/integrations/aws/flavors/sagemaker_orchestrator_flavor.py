@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Amazon SageMaker orchestrator flavor."""
 
-from typing import TYPE_CHECKING, Dict, Optional, Type
+from typing import TYPE_CHECKING, Any, Dict, Optional, Type, Union
 
 from zenml.config.base_settings import BaseSettings
 from zenml.integrations.aws import AWS_SAGEMAKER_STEP_OPERATOR_FLAVOR
