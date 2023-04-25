@@ -14,6 +14,7 @@
 """Implementation of the SageMaker orchestrator."""
 
 import os
+import re
 from typing import TYPE_CHECKING, Dict, Optional, Tuple, Type, cast
 from uuid import UUID
 
@@ -151,9 +152,14 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                 "and the pipeline will be run immediately."
             )
 
-        orchestrator_run_name = get_orchestrator_run_name(
+        # sagemaker requires pipelineName to use alphanum and hyphens only
+        unsanitized_orchestrator_run_name = get_orchestrator_run_name(
             pipeline_name=deployment.pipeline_configuration.name
-        ).replace("_", "-")
+        )
+        # replace all non-alphanum and non-hyphens with hyphens
+        orchestrator_run_name = re.sub(
+            r"[^a-zA-Z0-9\-]", "-", unsanitized_orchestrator_run_name
+        )
 
         session = sagemaker.Session(default_bucket=self.config.bucket)
 
