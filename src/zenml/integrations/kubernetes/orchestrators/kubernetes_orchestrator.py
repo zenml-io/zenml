@@ -197,7 +197,6 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                 not self.config.skip_local_validations
                 and not self.config.is_local
             ):
-
                 # if the orchestrator is not running in a local k3d cluster,
                 # we cannot have any other local components in our stack,
                 # because we cannot mount the local path into the container.

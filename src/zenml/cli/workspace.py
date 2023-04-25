@@ -47,7 +47,6 @@ def list_workspaces(**kwargs: Any) -> None:
     cli_utils.print_active_config()
     client = Client()
     with console.status("Listing workspaces...\n"):
-
         workspaces = client.list_workspaces(**kwargs)
         if workspaces:
             active_workspace = Client().active_workspace

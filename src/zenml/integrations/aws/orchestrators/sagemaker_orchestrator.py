@@ -179,22 +179,38 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
 
             # Set default values from configured orchestrator Component to arguments
             # to be used when they are not present in processor_args.
-            processor_args_for_step.setdefault('instance_type', step_settings.instance_type)
-            processor_args_for_step.setdefault('role', step_settings.processor_role or self.config.execution_role)
-            processor_args_for_step.setdefault('volume_size_in_gb', step_settings.volume_size_in_gb)
-            processor_args_for_step.setdefault('max_runtime_in_seconds', step_settings.max_runtime_in_seconds) 
-            processor_args_for_step.setdefault('processor_tags', [step_settings.processor_tags] if step_settings.processor_tags else {})
+            processor_args_for_step.setdefault(
+                "instance_type", step_settings.instance_type
+            )
+            processor_args_for_step.setdefault(
+                "role",
+                step_settings.processor_role or self.config.execution_role,
+            )
+            processor_args_for_step.setdefault(
+                "volume_size_in_gb", step_settings.volume_size_in_gb
+            )
+            processor_args_for_step.setdefault(
+                "max_runtime_in_seconds", step_settings.max_runtime_in_seconds
+            )
+            processor_args_for_step.setdefault(
+                "processor_tags",
+                [step_settings.processor_tags]
+                if step_settings.processor_tags
+                else {},
+            )
 
             # Set values that cannot be overwritten
-            processor_args_for_step['image_uri'] = image
-            processor_args_for_step['instance_count'] = 1
-            processor_args_for_step['sagemaker_session'] = session
-            processor_args_for_step['entrypoint'] = entrypoint
-            processor_args_for_step['base_job_name'] = orchestrator_run_name
-            processor_args_for_step['env'] = environment
-            
+            processor_args_for_step["image_uri"] = image
+            processor_args_for_step["instance_count"] = 1
+            processor_args_for_step["sagemaker_session"] = session
+            processor_args_for_step["entrypoint"] = entrypoint
+            processor_args_for_step["base_job_name"] = orchestrator_run_name
+            processor_args_for_step["env"] = environment
+
             # Create Processor and ProcessingStep
-            processor = sagemaker.processing.Processor(**processor_args_for_step)
+            processor = sagemaker.processing.Processor(
+                **processor_args_for_step
+            )
             sagemaker_step = ProcessingStep(
                 name=step.config.name,
                 processor=processor,

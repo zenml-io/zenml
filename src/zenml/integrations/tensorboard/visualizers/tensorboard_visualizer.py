@@ -132,7 +132,6 @@ class TensorboardVisualizer(BaseVisualizer):
             height: Height of the generated visualization.
         """
         if Environment.in_notebook():
-
             notebook.display(port, height=height)
             return
 
