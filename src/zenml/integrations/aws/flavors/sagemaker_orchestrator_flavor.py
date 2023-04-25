@@ -43,6 +43,16 @@ class SagemakerOrchestratorSettings(BaseSettings):
             For processor_args.instance_type, check
             https://docs.aws.amazon.com/sagemaker/latest/dg/notebooks-available-instance-types.html
             for a list of available instance types.
+        input_data_s3_mode: How data is made available to the container.
+            Two possible input modes: File, Pipe.
+        input_data_s3_uri: S3 URI where data is located if not locally,
+            e.g. s3://my-bucket/my-data/train. How data will be made available
+            to the container is configured with input_data_s3_mode. Two possible
+            input types:
+                - str: S3 location where training data is saved.
+                - Dict[str, str]: (ChannelName, S3Location) which represent
+                    channels (e.g. training, validation, testing) where
+                    specific parts of the data are saved in S3.
     """
 
     instance_type: str = "ml.t3.medium"
@@ -52,6 +62,8 @@ class SagemakerOrchestratorSettings(BaseSettings):
     processor_tags: Dict[str, str] = {}
 
     processor_args: Dict[str, Any] = {}
+    input_data_s3_mode: str = "File"
+    input_data_s3_uri: Optional[Union[str, Dict[str, str]]] = None
 
 
 class SagemakerOrchestratorConfig(  # type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173

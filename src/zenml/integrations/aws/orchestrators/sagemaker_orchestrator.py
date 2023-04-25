@@ -18,6 +18,7 @@ from typing import TYPE_CHECKING, Dict, Optional, Tuple, Type, cast
 from uuid import UUID
 
 import sagemaker
+from sagemaker.processing import ProcessingInput
 from sagemaker.workflow.execution_variables import ExecutionVariables
 from sagemaker.workflow.pipeline import Pipeline
 from sagemaker.workflow.steps import ProcessingStep
@@ -207,6 +208,26 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
             processor_args_for_step["base_job_name"] = orchestrator_run_name
             processor_args_for_step["env"] = environment
 
+            # Construct S3 inputs to container for step
+            inputs = None
+
+            if step_settings.input_data_s3_uri is None:
+                pass
+            elif isinstance(step_settings.input_data_s3_uri, str):
+                inputs = [ProcessingInput(
+                    source=step_settings.input_data_s3_uri,
+                    destination="/opt/ml/processing/input",
+                    s3_input_mode=step_settings.input_data_s3_mode
+                )]
+            elif isinstance(step_settings.input_data_s3_uri, dict):
+                inputs = []
+                for channel, s3_uri in step_settings.input_data_s3_uri.items():
+                    inputs.append(ProcessingInput(
+                        source=step_settings.input_data_s3_uri,
+                        destination=f"/opt/ml/processing/input/{channel}",
+                        s3_input_mode=step_settings.input_data_s3_mode
+                    ))
+
             # Create Processor and ProcessingStep
             processor = sagemaker.processing.Processor(
                 **processor_args_for_step
@@ -215,6 +236,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                 name=step.config.name,
                 processor=processor,
                 depends_on=step.spec.upstream_steps,
+                inputs=inputs
             )
             sagemaker_steps.append(sagemaker_step)
 
