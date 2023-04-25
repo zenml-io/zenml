@@ -13,8 +13,6 @@
 #  permissions and limitations under the License.
 """Implementation of the Sagemaker Step Operator."""
 
-import random
-import string
 from typing import TYPE_CHECKING, Dict, List, Optional, Tuple, Type, cast
 
 import sagemaker
@@ -29,6 +27,7 @@ from zenml.integrations.aws.flavors.sagemaker_step_operator_flavor import (
 from zenml.logger import get_logger
 from zenml.stack import Stack, StackValidator
 from zenml.step_operators import BaseStepOperator
+from zenml.utils.string_utils import random_str
 
 if TYPE_CHECKING:
     from zenml.config.base_settings import BaseSettings
@@ -185,7 +184,7 @@ class SagemakerStepOperator(BaseStepOperator):
         # SageMaker allows 63 characters at maximum for job name - ZenML uses 60 for safety margin.
         step_name = Client().get_run_step(info.step_run_id).name
         training_job_name = f"{info.pipeline.name}-{step_name}"[:55]
-        suffix = "".join(random.choices(string.ascii_lowercase, k=4))
+        suffix = random_str(4)
         unique_training_job_name = f"{training_job_name}-{suffix}"
 
         # Sagemaker doesn't allow any underscores in job/experiment/trial names
