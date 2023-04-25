@@ -77,8 +77,6 @@ class ServiceMaterializer(BaseMaterializer):
         """
         from zenml.metadata.metadata_types import Uri
 
-        base_metadata = super().extract_metadata(service)
-        service_metadata: Dict[str, "MetadataType"] = {}
         if service.endpoint and service.endpoint.status.uri:
-            service_metadata["uri"] = Uri(service.endpoint.status.uri)
-        return {**base_metadata, **service_metadata}
+            return {"uri": Uri(service.endpoint.status.uri)}
+        return {}

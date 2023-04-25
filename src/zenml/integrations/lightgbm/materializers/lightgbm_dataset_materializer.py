@@ -85,7 +85,4 @@ class LightGBMDatasetMaterializer(BaseMaterializer):
         Returns:
             The extracted metadata as a dictionary.
         """
-        super().extract_metadata(matrix)
-        return {
-            "shape": (matrix.num_data(), matrix.num_feature()),
-        }
+        return {"shape": (matrix.num_data(), matrix.num_feature())}

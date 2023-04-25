@@ -65,8 +65,4 @@ class PydanticMaterializer(BaseMaterializer):
         Returns:
             The extracted metadata as a dictionary.
         """
-        base_metadata = super().extract_metadata(data)
-        container_metadata = {
-            "schema": data.schema(),
-        }
-        return {**base_metadata, **container_metadata}
+        return {"schema": data.schema()}

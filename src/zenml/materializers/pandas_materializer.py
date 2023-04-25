@@ -143,7 +143,6 @@ class PandasMaterializer(BaseMaterializer):
         Returns:
             The extracted metadata as a dictionary.
         """
-        base_metadata = super().extract_metadata(df)
         pandas_metadata: Dict[str, "MetadataType"] = {"shape": df.shape}
 
         if isinstance(df, pd.Series):
@@ -168,4 +167,4 @@ class PandasMaterializer(BaseMaterializer):
                     for key, value in stat(numeric_only=True).to_dict().items()
                 }
 
-        return {**base_metadata, **pandas_metadata}
+        return pandas_metadata

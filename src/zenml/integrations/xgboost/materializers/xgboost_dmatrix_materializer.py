@@ -87,7 +87,6 @@ class XgboostDMatrixMaterializer(BaseMaterializer):
         Returns:
             The extracted metadata as a dictionary.
         """
-        super().extract_metadata(dataset)
         return {
             "shape": (dataset.num_row(), dataset.num_col()),
         }

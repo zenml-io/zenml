@@ -134,15 +134,13 @@ class GreatExpectationsMaterializer(BaseMaterializer):
         Returns:
             The extracted metadata as a dictionary.
         """
-        base_metadata = super().extract_metadata(data)
-        ge_metadata: Dict[str, "MetadataType"] = {}
         if isinstance(data, CheckpointResult):
-            ge_metadata = {
+            return {
                 "checkpoint_result_name": data.name,
                 "checkpoint_result_passed": data.success,
             }
         elif isinstance(data, ExpectationSuite):
-            ge_metadata = {
+            return {
                 "expectation_suite_name": data.name,
             }
-        return {**base_metadata, **ge_metadata}
+        return {}

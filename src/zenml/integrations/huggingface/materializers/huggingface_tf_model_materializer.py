@@ -79,7 +79,6 @@ class HFTFModelMaterializer(BaseMaterializer):
         Returns:
             The extracted metadata as a dictionary.
         """
-        super().extract_metadata(model)
         return {
             "num_layers": len(model.layers),
             "num_params": model.num_parameters(only_trainable=False),

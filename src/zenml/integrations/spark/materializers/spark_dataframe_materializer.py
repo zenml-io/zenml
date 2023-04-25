@@ -66,7 +66,6 @@ class SparkDataFrameMaterializer(BaseMaterializer):
         Returns:
             The extracted metadata as a dictionary.
         """
-        super().extract_metadata(df)
         return {
             "shape": (df.count(), len(df.columns)),
         }

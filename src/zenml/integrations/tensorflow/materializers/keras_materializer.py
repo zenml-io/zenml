@@ -82,7 +82,6 @@ class KerasMaterializer(BaseMaterializer):
         Returns:
             The extracted metadata as a dictionary.
         """
-        super().extract_metadata(model)
         return {
             "num_layers": len(model.layers),
             "num_params": count_params(model.weights),

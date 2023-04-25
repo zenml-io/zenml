@@ -81,7 +81,6 @@ class HFPTModelMaterializer(BaseMaterializer):
         """
         from zenml.integrations.pytorch.utils import count_module_params
 
-        super().extract_metadata(model)
         module_param_metadata = count_module_params(model)
         return {
             **module_param_metadata,

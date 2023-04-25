@@ -97,11 +97,9 @@ class BentoMaterializer(BaseMaterializer):
         Returns:
             The extracted metadata as a dictionary.
         """
-        base_metadata = super().extract_metadata(bento)
-        bento_metadata = {
+        return {
             "bento_info_name": bento.info.name,
             "bento_info_version": bento.info.version,
             "bento_tag_name": bento.tag.name,
             "bentoml_version": bento.info.bentoml_version,
         }
-        return {**base_metadata, **bento_metadata}

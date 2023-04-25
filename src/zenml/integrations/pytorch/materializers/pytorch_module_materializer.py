@@ -71,6 +71,4 @@ class PyTorchModuleMaterializer(BasePyTorchMaterliazer):
         Returns:
             The extracted metadata as a dictionary.
         """
-        metadata = super().extract_metadata(model)
-        metadata.update(**count_module_params(model))
         return {**count_module_params(model)}

@@ -44,8 +44,8 @@ class PyTorchDataLoaderMaterializer(BasePyTorchMaterliazer):
         Returns:
             The extracted metadata as a dictionary.
         """
-        metadata = super().extract_metadata(dataloader)
-        metadata["num_samples"] = len(dataloader.dataset)
-        metadata["batch_size"] = dataloader.batch_size
-        metadata["num_batches"] = len(dataloader)
-        return metadata
+        return {
+            "num_samples": len(dataloader.dataset),
+            "batch_size": dataloader.batch_size,
+            "num_batches": len(dataloader),
+        }

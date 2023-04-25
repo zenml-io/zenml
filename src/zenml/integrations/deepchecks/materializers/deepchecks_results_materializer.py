@@ -85,16 +85,14 @@ class DeepchecksResultMaterializer(BaseMaterializer):
         Returns:
             The extracted metadata as a dictionary.
         """
-        base_metadata = super().extract_metadata(result)
-        deepchecks_metadata: Dict[str, "MetadataType"] = {}
         if isinstance(result, CheckResult):
-            deepchecks_metadata = {
+            return {
                 "deepchecks_check_name": result.get_header(),
                 "deepchecks_check_passed": result.passed_conditions(),
             }
         elif isinstance(result, SuiteResult):
-            deepchecks_metadata = {
+            return {
                 "deepchecks_suite_name": result.name,
                 "deepchecks_suite_passed": result.passed(),
             }
-        return {**base_metadata, **deepchecks_metadata}
+        return {}

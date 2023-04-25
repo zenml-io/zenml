@@ -98,7 +98,6 @@ class PillowImageMaterializer(BaseMaterializer):
         Returns:
             The extracted metadata as a dictionary.
         """
-        super().extract_metadata(image)
         return {
             "width": image.width,
             "height": image.height,

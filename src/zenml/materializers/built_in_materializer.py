@@ -102,15 +102,12 @@ class BuiltInMaterializer(BaseMaterializer):
         Returns:
             The extracted metadata as a dictionary.
         """
-        base_metadata = super().extract_metadata(data)
-        builtin_metadata: Dict[str, "MetadataType"] = {}
-
         # For boolean and numbers, add the string representation as metadata.
         # We don't to this for strings because they can be arbitrarily long.
         if isinstance(data, (bool, float, int)):
-            builtin_metadata["string_representation"] = str(data)
+            return {"string_representation": str(data)}
 
-        return {**base_metadata, **builtin_metadata}
+        return {}
 
 
 class BytesMaterializer(BaseMaterializer):
@@ -416,10 +413,6 @@ class BuiltInContainerMaterializer(BaseMaterializer):
         Returns:
             The extracted metadata as a dictionary.
         """
-        base_metadata = super().extract_metadata(data)
-        container_metadata = {}
         if hasattr(data, "__len__"):
-            container_metadata = {
-                "length": len(data),
-            }
-        return {**base_metadata, **container_metadata}
+            return {"length": len(data)}
+        return {}

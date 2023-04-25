@@ -63,7 +63,6 @@ class SparseMaterializer(BaseMaterializer):
         Returns:
             The extracted metadata as a dictionary.
         """
-        super().extract_metadata(mat)
         return {
             "shape": mat.shape,
             "dtype": DType(mat.dtype),

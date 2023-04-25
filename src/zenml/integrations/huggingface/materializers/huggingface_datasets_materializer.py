@@ -90,7 +90,6 @@ class HFDatasetMaterializer(BaseMaterializer):
         Raises:
             ValueError: If the given object is not a `Dataset` or `DatasetDict`.
         """
-        super().extract_metadata(ds)
         pandas_materializer = PandasMaterializer(self.uri)
         if isinstance(ds, Dataset):
             return pandas_materializer.extract_metadata(ds.to_pandas())

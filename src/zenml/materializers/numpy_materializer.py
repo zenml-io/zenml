@@ -182,12 +182,11 @@ class NumpyMaterializer(BaseMaterializer):
         Returns:
             The extracted metadata as a dictionary.
         """
-        base_metadata = super().extract_metadata(arr)
         if np.issubdtype(arr.dtype, np.number):
-            return {**base_metadata, **self.extract_numeric_metadata(arr)}
+            return self.extract_numeric_metadata(arr)
         elif np.issubdtype(arr.dtype, np.unicode_) or np.issubdtype(
             arr.dtype, np.object_
         ):
-            return {**base_metadata, **self.extract_text_metadata(arr)}
+            return self.extract_text_metadata(arr)
         else:
-            return {**base_metadata}
+            return {}
