@@ -1,7 +1,7 @@
 """Increase step run field lengths [fbd7f18ced1e].
 
 Revision ID: fbd7f18ced1e
-Revises: 0.38.0
+Revises: 979eff8fc4b1
 Create Date: 2023-04-24 14:21:58.080294
 
 """
@@ -11,7 +11,7 @@ from sqlalchemy.dialects import mysql
 
 # revision identifiers, used by Alembic.
 revision = "fbd7f18ced1e"
-down_revision = "0.38.0"
+down_revision = "979eff8fc4b1"
 branch_labels = None
 depends_on = None
 
