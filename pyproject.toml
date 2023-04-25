@@ -312,7 +312,8 @@ module = [
     "fastapi_utils.*",
     "sqlalchemy_utils.*",
     "copier.*",
-    "datasets.*"
+    "datasets.*",
+    "cloudpickle.*",
 ]
 ignore_missing_imports = true
 

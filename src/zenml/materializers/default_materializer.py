@@ -20,7 +20,7 @@ for a given data type.
 import os
 from typing import Any, Type
 
-import cloudpickle  # type: ignore
+import cloudpickle
 
 from zenml.enums import ArtifactType
 from zenml.io import fileio
