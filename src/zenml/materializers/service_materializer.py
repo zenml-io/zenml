@@ -46,7 +46,6 @@ class ServiceMaterializer(BaseMaterializer):
         Returns:
             A ZenML service instance.
         """
-        super().load(data_type)
         filepath = os.path.join(self.uri, SERVICE_CONFIG_FILENAME)
         with fileio.open(filepath, "r") as f:
             service = ServiceRegistry().load_service_from_json(f.read())
@@ -61,7 +60,6 @@ class ServiceMaterializer(BaseMaterializer):
         Args:
             service: A ZenML service instance.
         """
-        super().save(service)
         filepath = os.path.join(self.uri, SERVICE_CONFIG_FILENAME)
         with fileio.open(filepath, "w") as f:
             f.write(service.json(indent=4))

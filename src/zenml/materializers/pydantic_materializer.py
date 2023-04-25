@@ -43,7 +43,6 @@ class PydanticMaterializer(BaseMaterializer):
         Returns:
             The data read.
         """
-        contents = super().load(data_type)
         data_path = os.path.join(self.uri, DEFAULT_FILENAME)
         contents = yaml_utils.read_json(data_path)
         return data_type.parse_raw(contents)
@@ -54,7 +53,6 @@ class PydanticMaterializer(BaseMaterializer):
         Args:
             data: The data to store.
         """
-        super().save(data)
         data_path = os.path.join(self.uri, DEFAULT_FILENAME)
         yaml_utils.write_json(data_path, data.json())
 

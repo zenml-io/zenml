@@ -43,8 +43,6 @@ class KerasMaterializer(BaseMaterializer):
         Returns:
             A tf.keras.Model model.
         """
-        super().load(data_type)
-
         # Create a temporary directory to store the model
         temp_dir = tempfile.TemporaryDirectory()
 
@@ -65,8 +63,6 @@ class KerasMaterializer(BaseMaterializer):
         Args:
             model: A tf.keras.Model model.
         """
-        super().save(model)
-
         # Create a temporary directory to store the model
         temp_dir = tempfile.TemporaryDirectory()
         model.save(temp_dir.name)

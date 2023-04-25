@@ -41,7 +41,6 @@ class XgboostBoosterMaterializer(BaseMaterializer):
         Returns:
             A xgboost Booster object.
         """
-        super().load(data_type)
         filepath = os.path.join(self.uri, DEFAULT_FILENAME)
 
         # Create a temporary folder
@@ -63,8 +62,6 @@ class XgboostBoosterMaterializer(BaseMaterializer):
         Args:
             booster: A xgboost Booster model.
         """
-        super().save(booster)
-
         filepath = os.path.join(self.uri, DEFAULT_FILENAME)
 
         # Make a temporary phantom artifact

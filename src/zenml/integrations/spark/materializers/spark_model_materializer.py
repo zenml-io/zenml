@@ -45,7 +45,6 @@ class SparkModelMaterializer(BaseMaterializer):
         Returns:
             A loaded spark model.
         """
-        super().load(model_type)
         path = os.path.join(self.uri, DEFAULT_FILEPATH)
         return model_type.load(path)  # type: ignore[no-any-return]
 
@@ -57,8 +56,6 @@ class SparkModelMaterializer(BaseMaterializer):
         Args:
             model: A spark model.
         """
-        super().save(model)
-
         # Write the dataframe to the artifact store
         path = os.path.join(self.uri, DEFAULT_FILEPATH)
         model.save(path)  # type: ignore[union-attr]

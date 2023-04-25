@@ -49,7 +49,6 @@ class EvidentlyProfileMaterializer(BaseMaterializer):
         Raises:
             TypeError: if the json file contains an invalid data type.
         """
-        super().load(data_type)
         filepath = os.path.join(self.uri, DEFAULT_FILENAME)
         contents = yaml_utils.read_json(filepath)
         if type(contents) != dict:
@@ -74,8 +73,6 @@ class EvidentlyProfileMaterializer(BaseMaterializer):
         Args:
             data: The Evidently Profile to be serialized.
         """
-        super().save(data)
-
         contents = data.object()
         # include the list of profile sections in the serialized dictionary,
         # so we'll be able to re-create them during de-serialization

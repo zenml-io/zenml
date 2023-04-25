@@ -41,7 +41,6 @@ class PyTorchLightningMaterializer(BaseMaterializer):
         Returns:
             A PyTorch Lightning model object.
         """
-        super().load(data_type)
         with fileio.open(os.path.join(self.uri, CHECKPOINT_NAME), "rb") as f:
             return cast(Module, torch.load(f))
 
@@ -51,6 +50,5 @@ class PyTorchLightningMaterializer(BaseMaterializer):
         Args:
             model: The PyTorch Lightning model to save.
         """
-        super().save(model)
         with fileio.open(os.path.join(self.uri, CHECKPOINT_NAME), "wb") as f:
             torch.save(model, f)

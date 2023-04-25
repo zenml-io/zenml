@@ -100,7 +100,6 @@ class GreatExpectationsMaterializer(BaseMaterializer):
         Returns:
             A loaded Great Expectations object.
         """
-        super().load(data_type)
         filepath = os.path.join(self.uri, ARTIFACT_FILENAME)
         artifact_dict = yaml_utils.read_json(filepath)
         data_type = source_utils.load(artifact_dict.pop("data_type"))
@@ -116,7 +115,6 @@ class GreatExpectationsMaterializer(BaseMaterializer):
         Args:
             obj: A Great Expectations object.
         """
-        super().save(obj)
         filepath = os.path.join(self.uri, ARTIFACT_FILENAME)
         artifact_dict = obj.to_json_dict()
         artifact_type = type(obj)

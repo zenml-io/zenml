@@ -45,7 +45,6 @@ class TensorflowDatasetMaterializer(BaseMaterializer):
         Returns:
             A tf.data.Dataset object.
         """
-        super().load(data_type)
         temp_dir = tempfile.mkdtemp()
         io_utils.copy_dir(self.uri, temp_dir)
         path = os.path.join(temp_dir, DEFAULT_FILENAME)
@@ -60,7 +59,6 @@ class TensorflowDatasetMaterializer(BaseMaterializer):
         Args:
             dataset: The dataset to persist.
         """
-        super().save(dataset)
         temp_dir = tempfile.TemporaryDirectory()
         path = os.path.join(temp_dir.name, DEFAULT_FILENAME)
         try:

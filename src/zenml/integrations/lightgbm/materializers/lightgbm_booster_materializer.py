@@ -41,7 +41,6 @@ class LightGBMBoosterMaterializer(BaseMaterializer):
         Returns:
             A lightgbm Booster object.
         """
-        super().load(data_type)
         filepath = os.path.join(self.uri, DEFAULT_FILENAME)
 
         # Create a temporary folder
@@ -62,8 +61,6 @@ class LightGBMBoosterMaterializer(BaseMaterializer):
         Args:
             booster: A lightgbm Booster model.
         """
-        super().save(booster)
-
         filepath = os.path.join(self.uri, DEFAULT_FILENAME)
 
         with tempfile.TemporaryDirectory() as tmp_dir:

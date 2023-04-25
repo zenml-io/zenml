@@ -52,7 +52,6 @@ class PyTorchModuleMaterializer(BaseMaterializer):
         Returns:
             A loaded pytorch model.
         """
-        super().load(data_type)
         with fileio.open(os.path.join(self.uri, DEFAULT_FILENAME), "rb") as f:
             return cast(Module, torch.load(f))
 
@@ -62,8 +61,6 @@ class PyTorchModuleMaterializer(BaseMaterializer):
         Args:
             model: A torch.nn.Module or a dict to pass into model.save
         """
-        super().save(model)
-
         # Save entire model to artifact directory, This is the default behavior
         # for loading model in development phase (training, evaluation)
         with fileio.open(os.path.join(self.uri, DEFAULT_FILENAME), "wb") as f:

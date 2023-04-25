@@ -43,8 +43,6 @@ class HFPTModelMaterializer(BaseMaterializer):
         Returns:
             The model read from the specified dir.
         """
-        super().load(data_type)
-
         temp_dir = TemporaryDirectory()
         io_utils.copy_dir(
             os.path.join(self.uri, DEFAULT_PT_MODEL_DIR), temp_dir.name
@@ -63,7 +61,6 @@ class HFPTModelMaterializer(BaseMaterializer):
         Args:
             model: The Torch Model to write.
         """
-        super().save(model)
         temp_dir = TemporaryDirectory()
         model.save_pretrained(temp_dir.name)
         io_utils.copy_dir(

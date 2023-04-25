@@ -44,7 +44,6 @@ class XgboostDMatrixMaterializer(BaseMaterializer):
         Returns:
             Materialized xgboost matrix.
         """
-        super().load(data_type)
         filepath = os.path.join(self.uri, DEFAULT_FILENAME)
 
         # Create a temporary folder
@@ -65,7 +64,6 @@ class XgboostDMatrixMaterializer(BaseMaterializer):
         Args:
             matrix: A xgboost.DMatrix object.
         """
-        super().save(matrix)
         filepath = os.path.join(self.uri, DEFAULT_FILENAME)
 
         # Make a temporary phantom artifact

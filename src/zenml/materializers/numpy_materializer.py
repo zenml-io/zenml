@@ -57,8 +57,6 @@ class NumpyMaterializer(BaseMaterializer):
         Returns:
             The numpy array.
         """
-        super().load(data_type)
-
         numpy_file = os.path.join(self.uri, NUMPY_FILENAME)
 
         if fileio.exists(numpy_file):
@@ -109,7 +107,6 @@ class NumpyMaterializer(BaseMaterializer):
         Args:
             arr: The numpy array to write.
         """
-        super().save(arr)
         with fileio.open(os.path.join(self.uri, NUMPY_FILENAME), "wb") as f:
             # This function is untyped for numpy versions supporting python
             # 3.7, but typed for numpy versions installed on python 3.8+.

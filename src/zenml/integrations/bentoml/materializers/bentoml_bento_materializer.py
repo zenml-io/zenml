@@ -49,8 +49,6 @@ class BentoMaterializer(BaseMaterializer):
         Returns:
             An bento.Bento object.
         """
-        super().load(data_type)
-
         # Create a temporary directory to store the model
         temp_dir = tempfile.TemporaryDirectory()
 
@@ -75,8 +73,6 @@ class BentoMaterializer(BaseMaterializer):
         Args:
             bento: An bento.Bento object.
         """
-        super().save(bento)
-
         # Create a temporary directory to store the model
         temp_dir = tempfile.TemporaryDirectory(prefix="zenml-temp-")
         temp_bento_path = os.path.join(temp_dir.name, DEFAULT_BENTO_FILENAME)

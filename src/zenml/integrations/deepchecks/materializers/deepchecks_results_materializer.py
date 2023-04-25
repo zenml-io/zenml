@@ -53,7 +53,6 @@ class DeepchecksResultMaterializer(BaseMaterializer):
         Raises:
             RuntimeError: if the input data type is not supported.
         """
-        super().load(data_type)
         filepath = os.path.join(self.uri, RESULTS_FILENAME)
 
         json_res = io_utils.read_file_contents_as_string(filepath)
@@ -71,10 +70,7 @@ class DeepchecksResultMaterializer(BaseMaterializer):
         Args:
             result: A Deepchecks CheckResult or SuiteResult.
         """
-        super().save(result)
-
         filepath = os.path.join(self.uri, RESULTS_FILENAME)
-
         serialized_json = result.to_json(True)
         io_utils.write_file_contents_as_string(filepath, serialized_json)
 

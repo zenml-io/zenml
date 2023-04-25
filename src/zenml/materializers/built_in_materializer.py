@@ -74,7 +74,6 @@ class BuiltInMaterializer(BaseMaterializer):
         Returns:
             The data read.
         """
-        super().load(data_type)
         contents = yaml_utils.read_json(self.data_path)
         if type(contents) != data_type:
             # TODO [ENG-142]: Raise error or try to coerce
@@ -90,7 +89,6 @@ class BuiltInMaterializer(BaseMaterializer):
         Args:
             data: The data to store.
         """
-        super().save(data)
         yaml_utils.write_json(self.data_path, data)
 
     def extract_metadata(
@@ -139,7 +137,6 @@ class BytesMaterializer(BaseMaterializer):
         Returns:
             The data read.
         """
-        super().load(data_type)
         with fileio.open(self.data_path, "rb") as file_:
             return file_.read()
 
@@ -149,7 +146,6 @@ class BytesMaterializer(BaseMaterializer):
         Args:
             data: The data to store.
         """
-        super().save(data)
         with fileio.open(self.data_path, "wb") as file_:
             file_.write(data)
 
@@ -288,8 +284,6 @@ class BuiltInContainerMaterializer(BaseMaterializer):
         Raises:
             RuntimeError: If the data was not found.
         """
-        super().load(data_type)
-
         # If the data was not serialized, there must be metadata present.
         if not fileio.exists(self.data_path) and not fileio.exists(
             self.metadata_path
@@ -363,8 +357,6 @@ class BuiltInContainerMaterializer(BaseMaterializer):
         Raises:
             Exception: If any exception occurs, it is raised after cleanup.
         """
-        super().save(data)
-
         # tuple and set: handle as list.
         if isinstance(data, tuple) or isinstance(data, set):
             data = list(data)

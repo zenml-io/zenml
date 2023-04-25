@@ -45,7 +45,6 @@ class PyTorchDataLoaderMaterializer(BaseMaterializer):
         Returns:
             A loaded PyTorch dataloader.
         """
-        super().load(data_type)
         with fileio.open(os.path.join(self.uri, DEFAULT_FILENAME), "rb") as f:
             return torch.load(f)
 
@@ -55,8 +54,6 @@ class PyTorchDataLoaderMaterializer(BaseMaterializer):
         Args:
             dataloader: A torch.utils.DataLoader or a dict to pass into dataloader.save
         """
-        super().save(dataloader)
-
         # Save entire dataloader to artifact directory
         with fileio.open(os.path.join(self.uri, DEFAULT_FILENAME), "wb") as f:
             torch.save(dataloader, f)

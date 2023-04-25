@@ -57,8 +57,6 @@ class DefaultMaterializer(BaseMaterializer):
         Returns:
             The loaded artifact data.
         """
-        super().load(data_type)
-
         # validate python version
         python_version_filepath = os.path.join(
             self.uri, DEFAULT_PYTHON_VERSION_FILENAME
@@ -86,8 +84,6 @@ class DefaultMaterializer(BaseMaterializer):
         Args:
             data: The data to save.
         """
-        super().save(data)
-
         # Log a warning if this materializer was not explicitly specified for
         # the given data type.
         if type(self) == DefaultMaterializer:

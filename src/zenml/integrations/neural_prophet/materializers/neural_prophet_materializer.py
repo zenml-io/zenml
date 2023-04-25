@@ -46,7 +46,6 @@ class NeuralProphetMaterializer(BaseMaterializer):
         Returns:
             A loaded NeuralProphet model.
         """
-        super().load(data_type)
         with fileio.open(os.path.join(self.uri, DEFAULT_FILENAME), "rb") as f:
             return torch.load(f)
 
@@ -56,6 +55,5 @@ class NeuralProphetMaterializer(BaseMaterializer):
         Args:
             model: A NeuralProphet model object.
         """
-        super().save(model)
         with fileio.open(os.path.join(self.uri, DEFAULT_FILENAME), "wb") as f:
             torch.save(model, f)

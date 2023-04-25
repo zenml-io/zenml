@@ -52,7 +52,6 @@ class HFDatasetMaterializer(BaseMaterializer):
         Returns:
             The dataset read from the specified dir.
         """
-        super().load(data_type)
         temp_dir = mkdtemp()
         io_utils.copy_dir(
             os.path.join(self.uri, DEFAULT_DATASET_DIR),
@@ -66,7 +65,6 @@ class HFDatasetMaterializer(BaseMaterializer):
         Args:
             ds: The Dataset to write.
         """
-        super().save(ds)
         temp_dir = TemporaryDirectory()
         path = os.path.join(temp_dir.name, DEFAULT_DATASET_DIR)
         try:

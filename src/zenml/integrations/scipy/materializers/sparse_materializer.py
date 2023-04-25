@@ -41,7 +41,6 @@ class SparseMaterializer(BaseMaterializer):
         Returns:
             A spmatrix object.
         """
-        super().load(data_type)
         with fileio.open(os.path.join(self.uri, DATA_FILENAME), "rb") as f:
             mat = load_npz(f)
         return mat
@@ -52,7 +51,6 @@ class SparseMaterializer(BaseMaterializer):
         Args:
             mat: The spmatrix to write.
         """
-        super().save(mat)
         with fileio.open(os.path.join(self.uri, DATA_FILENAME), "wb") as f:
             save_npz(f, mat)
 

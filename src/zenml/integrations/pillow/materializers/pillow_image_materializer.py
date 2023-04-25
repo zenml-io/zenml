@@ -54,7 +54,6 @@ class PillowImageMaterializer(BaseMaterializer):
         Returns:
             An Image.Image object.
         """
-        super().load(data_type)
         files = io_utils.find_files(self.uri, f"{DEFAULT_IMAGE_FILENAME}.*")
         filepath = [file for file in files if not fileio.isdir(file)][0]
 
@@ -75,7 +74,6 @@ class PillowImageMaterializer(BaseMaterializer):
         Args:
             image: An Image.Image object.
         """
-        super().save(image)
         temp_dir = tempfile.TemporaryDirectory(prefix="zenml-temp-")
         file_extension = image.format or DEFAULT_IMAGE_EXTENSION
         full_filename = f"{DEFAULT_IMAGE_FILENAME}.{file_extension}"

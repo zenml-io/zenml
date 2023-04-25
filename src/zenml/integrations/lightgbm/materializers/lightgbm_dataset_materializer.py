@@ -44,7 +44,6 @@ class LightGBMDatasetMaterializer(BaseMaterializer):
         Returns:
             A lightgbm.Dataset object.
         """
-        super().load(data_type)
         filepath = os.path.join(self.uri, DEFAULT_FILENAME)
 
         # Create a temporary folder
@@ -64,7 +63,6 @@ class LightGBMDatasetMaterializer(BaseMaterializer):
         Args:
             matrix: A lightgbm.Dataset object.
         """
-        super().save(matrix)
         filepath = os.path.join(self.uri, DEFAULT_FILENAME)
 
         # Make a temporary phantom artifact

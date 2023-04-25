@@ -62,7 +62,6 @@ class LlamaIndexGPTIndexMaterializer(Generic[T], BaseMaterializer):
         Returns:
             The index.
         """
-        super().load(data_type)
         filepath = os.path.join(self.uri, DEFAULT_FILENAME)
 
         # Create a temporary folder
@@ -85,7 +84,6 @@ class LlamaIndexGPTIndexMaterializer(Generic[T], BaseMaterializer):
         Args:
             index: The index to save.
         """
-        super().save(index)
         filepath = os.path.join(self.uri, DEFAULT_FILENAME)
 
         with tempfile.NamedTemporaryFile(
@@ -115,7 +113,6 @@ class LlamaIndexGPTFaissIndexMaterializer(BaseMaterializer):
         Returns:
             The index.
         """
-        super().load(data_type)
         filepath = os.path.join(self.uri, DEFAULT_FILENAME)
         faiss_filepath = os.path.join(self.uri, DEFAULT_FAISS_FILENAME)
 
@@ -140,7 +137,6 @@ class LlamaIndexGPTFaissIndexMaterializer(BaseMaterializer):
         Args:
             index: The index to save.
         """
-        super().save(index)
         filepath = os.path.join(self.uri, DEFAULT_FILENAME)
         faiss_filepath = os.path.join(self.uri, DEFAULT_FAISS_FILENAME)
 

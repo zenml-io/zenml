@@ -46,7 +46,6 @@ class WhylogsMaterializer(BaseMaterializer):
         Returns:
             A loaded whylogs dataset profile view object.
         """
-        super().load(data_type)
         filepath = os.path.join(self.uri, PROFILE_FILENAME)
 
         # Create a temporary folder
@@ -68,7 +67,6 @@ class WhylogsMaterializer(BaseMaterializer):
         Args:
             profile_view: A whylogs dataset profile view object.
         """
-        super().save(profile_view)
         filepath = os.path.join(self.uri, PROFILE_FILENAME)
 
         # Create a temporary folder

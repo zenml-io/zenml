@@ -40,7 +40,6 @@ class SparkDataFrameMaterializer(BaseMaterializer):
         Returns:
             A loaded spark dataframe.
         """
-        super().load(data_type)
         # Create the Spark session
         spark = SparkSession.builder.getOrCreate()
 
@@ -54,8 +53,6 @@ class SparkDataFrameMaterializer(BaseMaterializer):
         Args:
             df: A spark dataframe object.
         """
-        super().save(df)
-
         # Write the dataframe to the artifact store
         path = os.path.join(self.uri, DEFAULT_FILEPATH)
         df.write.parquet(path)

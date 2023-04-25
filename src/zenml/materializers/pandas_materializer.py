@@ -77,7 +77,6 @@ class PandasMaterializer(BaseMaterializer):
         Returns:
             The pandas dataframe or series.
         """
-        super().load(data_type)
         if fileio.exists(self.parquet_path):
             if self.pyarrow_exists:
                 with fileio.open(self.parquet_path, mode="rb") as f:
@@ -123,10 +122,7 @@ class PandasMaterializer(BaseMaterializer):
         Args:
             df: The pandas dataframe or series to write.
         """
-        super().save(df)
-
         if isinstance(df, pd.Series):
-
             df = df.to_frame(name="series")
 
         if self.pyarrow_exists:

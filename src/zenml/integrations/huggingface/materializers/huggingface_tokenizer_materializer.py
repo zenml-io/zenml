@@ -46,8 +46,6 @@ class HFTokenizerMaterializer(BaseMaterializer):
         Returns:
             The tokenizer read from the specified dir.
         """
-        super().load(data_type)
-
         temp_dir = TemporaryDirectory()
         io_utils.copy_dir(
             os.path.join(self.uri, DEFAULT_TOKENIZER_DIR), temp_dir.name
@@ -61,7 +59,6 @@ class HFTokenizerMaterializer(BaseMaterializer):
         Args:
             tokenizer: The HFTokenizer to write.
         """
-        super().save(tokenizer)
         temp_dir = TemporaryDirectory()
         tokenizer.save_pretrained(temp_dir.name)
         io_utils.copy_dir(
