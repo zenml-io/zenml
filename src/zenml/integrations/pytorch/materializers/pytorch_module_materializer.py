@@ -14,15 +14,17 @@
 """Implementation of the PyTorch Module materializer."""
 
 import os
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, Tuple, Type, cast
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, Tuple, Type
 
 import torch
 from torch.nn import Module
 
 from zenml.enums import ArtifactType
+from zenml.integrations.pytorch.materializers.base_pytorch_materializer import (
+    BasePyTorchMaterliazer,
+)
 from zenml.integrations.pytorch.utils import count_module_params
 from zenml.io import fileio
-from zenml.materializers.base_materializer import BaseMaterializer
 
 if TYPE_CHECKING:
     from zenml.metadata.metadata_types import MetadataType
@@ -31,7 +33,7 @@ DEFAULT_FILENAME = "entire_model.pt"
 CHECKPOINT_FILENAME = "checkpoint.pt"
 
 
-class PyTorchModuleMaterializer(BaseMaterializer):
+class PyTorchModuleMaterializer(BasePyTorchMaterliazer):
     """Materializer to read/write Pytorch models.
 
     Inspired by the guide:
@@ -40,20 +42,7 @@ class PyTorchModuleMaterializer(BaseMaterializer):
 
     ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (Module,)
     ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.MODEL
-
-    def load(self, data_type: Type[Any]) -> Module:
-        """Reads and returns a PyTorch model.
-
-        Only loads the model, not the checkpoint.
-
-        Args:
-            data_type: The type of the model to load.
-
-        Returns:
-            A loaded pytorch model.
-        """
-        with fileio.open(os.path.join(self.uri, DEFAULT_FILENAME), "rb") as f:
-            return cast(Module, torch.load(f))
+    FILENAME: ClassVar[str] = DEFAULT_FILENAME
 
     def save(self, model: Module) -> None:
         """Writes a PyTorch model, as a model and a checkpoint.
@@ -63,8 +52,7 @@ class PyTorchModuleMaterializer(BaseMaterializer):
         """
         # Save entire model to artifact directory, This is the default behavior
         # for loading model in development phase (training, evaluation)
-        with fileio.open(os.path.join(self.uri, DEFAULT_FILENAME), "wb") as f:
-            torch.save(model, f)
+        super().save(model)
 
         # Also save model checkpoint to artifact directory,
         # This is the default behavior for loading model in production phase (inference)
@@ -83,5 +71,6 @@ class PyTorchModuleMaterializer(BaseMaterializer):
         Returns:
             The extracted metadata as a dictionary.
         """
-        super().extract_metadata(model)
+        metadata = super().extract_metadata(model)
+        metadata.update(**count_module_params(model))
         return {**count_module_params(model)}
