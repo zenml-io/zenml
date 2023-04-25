@@ -22,7 +22,6 @@ from typing import (
     List,
     Optional,
     Type,
-    TypeVar,
     Union,
 )
 from uuid import UUID
@@ -50,10 +49,6 @@ if TYPE_CHECKING:
         RunMetadataResponseModel,
         StackResponseModel,
     )
-    from zenml.zen_stores.schemas import BaseSchema
-
-    AnySchema = TypeVar("AnySchema", bound=BaseSchema)
-
 
 # ---- #
 # BASE #
