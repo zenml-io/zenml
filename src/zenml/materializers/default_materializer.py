@@ -23,13 +23,19 @@ from typing import Any, ClassVar, Tuple, Type
 import cloudpickle
 
 from zenml.enums import ArtifactType
+from zenml.environment import Environment
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
+from zenml.utils.io_utils import (
+    read_file_contents_as_string,
+    write_file_contents_as_string,
+)
 
 logger = get_logger(__name__)
 
 DEFAULT_FILENAME = "artifact.pkl"
+DEFAULT_PYTHON_VERSION_FILENAME = "python_version.txt"
 
 
 class DefaultMaterializer(BaseMaterializer):
@@ -52,6 +58,23 @@ class DefaultMaterializer(BaseMaterializer):
             The loaded artifact data.
         """
         super().load(data_type)
+
+        # validate python version
+        python_version_filepath = os.path.join(
+            self.uri, DEFAULT_PYTHON_VERSION_FILENAME
+        )
+        source_python_version = read_file_contents_as_string(
+            python_version_filepath
+        )
+        current_python_version = Environment().python_version()
+        if source_python_version != current_python_version:
+            logger.warning(
+                f"Your `OpenAIEmbedding` was materialized with {source_python_version} "
+                f"but you are currently using {current_python_version}. "
+                f"This might cause unexpected behavior. Attempting to load."
+            )
+
+        # load data
         filepath = os.path.join(self.uri, DEFAULT_FILENAME)
         with fileio.open(filepath, "rb") as fid:
             data = cloudpickle.load(fid)
@@ -78,6 +101,16 @@ class DefaultMaterializer(BaseMaterializer):
                 "https://docs.zenml.io/advanced-guide/pipelines/materializers."
             )
 
+        # save python version for validation on loading
+        python_version_filepath = os.path.join(
+            self.uri, DEFAULT_PYTHON_VERSION_FILENAME
+        )
+        current_python_version = Environment().python_version()
+        write_file_contents_as_string(
+            python_version_filepath, current_python_version
+        )
+
+        # save data
         filepath = os.path.join(self.uri, DEFAULT_FILENAME)
         with fileio.open(filepath, "wb") as fid:
             cloudpickle.dump(data, fid)
