@@ -111,4 +111,4 @@ class MaterializerRegistry:
         return any(issubclass(key, type_) for type_ in self.materializer_types)
 
 
-default_materializer_registry = MaterializerRegistry()
+materializer_registry = MaterializerRegistry()

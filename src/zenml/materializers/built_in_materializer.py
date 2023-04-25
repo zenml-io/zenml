@@ -20,9 +20,7 @@ from zenml.enums import ArtifactType
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
-from zenml.materializers.default_materializer_registry import (
-    default_materializer_registry,
-)
+from zenml.materializers.materializer_registry import materializer_registry
 from zenml.utils import source_utils, yaml_utils
 
 if TYPE_CHECKING:
@@ -198,7 +196,7 @@ def find_type_by_str(type_str: str) -> Type[Any]:
     Returns:
         The type whose string representation is `type_str`.
     """
-    registered_types = default_materializer_registry.materializer_types.keys()
+    registered_types = materializer_registry.materializer_types.keys()
     type_str_mapping = {str(type_): type_ for type_ in registered_types}
     if type_str in type_str_mapping:
         return type_str_mapping[type_str]
@@ -220,10 +218,10 @@ def find_materializer_registry_type(type_: Type[Any]) -> Type[Any]:
         RuntimeError: If the type could not be resolved.
     """
     # Check that a unique materializer is registered for this type
-    default_materializer_registry[type_]
+    materializer_registry[type_]
 
     # Check if the type itself is registered
-    registered_types = default_materializer_registry.materializer_types.keys()
+    registered_types = materializer_registry.materializer_types.keys()
     if type_ in registered_types:
         return type_
 
@@ -301,7 +299,7 @@ class BuiltInContainerMaterializer(BaseMaterializer):
                     metadata["paths"], metadata["types"]
                 ):
                     type_ = find_type_by_str(type_str)
-                    materializer_class = default_materializer_registry[type_]
+                    materializer_class = materializer_registry[type_]
                     materializer = materializer_class(uri=path_)
                     element = materializer.load(type_)
                     outputs.append(element)
@@ -373,7 +371,7 @@ class BuiltInContainerMaterializer(BaseMaterializer):
                 element_path = os.path.join(self.uri, str(i))
                 fileio.mkdir(element_path)
                 type_ = type(element)
-                materializer_class = default_materializer_registry[type_]
+                materializer_class = materializer_registry[type_]
                 materializer = materializer_class(uri=element_path)
                 materializers.append(materializer)
                 metadata.append(

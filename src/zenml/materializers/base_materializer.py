@@ -20,9 +20,7 @@ from zenml.enums import ArtifactType
 from zenml.exceptions import MaterializerInterfaceError
 from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.materializers.default_materializer_registry import (
-    default_materializer_registry,
-)
+from zenml.materializers.materializer_registry import materializer_registry
 from zenml.metadata.metadata_types import MetadataType
 
 logger = get_logger(__name__)
@@ -93,7 +91,7 @@ class BaseMaterializerMeta(type):
 
         # Register the materializer.
         for associated_type in cls.ASSOCIATED_TYPES:
-            default_materializer_registry.register_materializer_type(
+            materializer_registry.register_materializer_type(
                 associated_type, cls
             )
 

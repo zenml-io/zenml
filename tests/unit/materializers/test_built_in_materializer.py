@@ -180,9 +180,7 @@ def test_container_materializer_for_custom_types(mocker):
     - The materializer of the subtype does not need to be registered in the
         materializer registry when the container is loaded.
     """
-    from zenml.materializers.default_materializer_registry import (
-        default_materializer_registry,
-    )
+    from zenml.materializers.materializer_registry import materializer_registry
 
     example = [CustomType(), CustomSubType()]
     with TemporaryDirectory() as artifact_uri:
@@ -196,7 +194,7 @@ def test_container_materializer_for_custom_types(mocker):
         # needed because the container materializer should have saved the
         # materializer that was used for each element.
         mocker.patch.object(
-            default_materializer_registry,
+            materializer_registry,
             "materializer_types",
             {},
         )

@@ -18,9 +18,7 @@ from typing import Any, Callable, Optional, Type
 
 from zenml.constants import ENV_ZENML_DEBUG
 from zenml.materializers.base_materializer import BaseMaterializer
-from zenml.materializers.default_materializer_registry import (
-    default_materializer_registry,
-)
+from zenml.materializers.materializer_registry import materializer_registry
 from zenml.metadata.metadata_types import MetadataTypeTuple
 
 
@@ -61,7 +59,7 @@ def _test_materializer(
         step_output_type = type(step_output)
 
     if materializer_class is None:
-        materializer_class = default_materializer_registry[step_output_type]
+        materializer_class = materializer_registry[step_output_type]
 
     with TemporaryDirectory() as artifact_uri:
         materializer = materializer_class(uri=artifact_uri)

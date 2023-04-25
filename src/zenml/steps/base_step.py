@@ -49,9 +49,7 @@ from zenml.constants import STEP_SOURCE_PARAMETER_NAME
 from zenml.exceptions import MissingStepParameterError, StepInterfaceError
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
-from zenml.materializers.default_materializer_registry import (
-    default_materializer_registry,
-)
+from zenml.materializers.materializer_registry import materializer_registry
 from zenml.steps.base_parameters import BaseParameters
 from zenml.steps.step_context import StepContext
 from zenml.steps.utils import (
@@ -963,10 +961,8 @@ class BaseStep(metaclass=BaseStepMeta):
             )
 
             if not output.materializer_source:
-                if default_materializer_registry.is_registered(output_class):
-                    materializer_class = default_materializer_registry[
-                        output_class
-                    ]
+                if materializer_registry.is_registered(output_class):
+                    materializer_class = materializer_registry[output_class]
                 else:
                     raise StepInterfaceError(
                         f"Unable to find materializer for output "
