@@ -58,16 +58,11 @@ class DefaultMaterializer(BaseMaterializer):
             The loaded artifact data.
         """
         # validate python version
-        python_version_filepath = os.path.join(
-            self.uri, DEFAULT_PYTHON_VERSION_FILENAME
-        )
-        source_python_version = read_file_contents_as_string(
-            python_version_filepath
-        )
+        source_python_version = self._load_python_version()
         current_python_version = Environment().python_version()
         if source_python_version != current_python_version:
             logger.warning(
-                f"Your `OpenAIEmbedding` was materialized with {source_python_version} "
+                f"Your artifact was materialized with {source_python_version} "
                 f"but you are currently using {current_python_version}. "
                 f"This might cause unexpected behavior. Attempting to load."
             )
@@ -77,6 +72,15 @@ class DefaultMaterializer(BaseMaterializer):
         with fileio.open(filepath, "rb") as fid:
             data = cloudpickle.load(fid)
         return data
+
+    def _load_python_version(self) -> str:
+        """Loads the Python version that was used to materialize the artifact.
+
+        Returns:
+            The Python version that was used to materialize the artifact.
+        """
+        filepath = os.path.join(self.uri, DEFAULT_PYTHON_VERSION_FILENAME)
+        return read_file_contents_as_string(filepath)
 
     def save(self, data: Any) -> None:
         """Saves an artifact to a cloudpickle file.
@@ -98,15 +102,15 @@ class DefaultMaterializer(BaseMaterializer):
             )
 
         # save python version for validation on loading
-        python_version_filepath = os.path.join(
-            self.uri, DEFAULT_PYTHON_VERSION_FILENAME
-        )
-        current_python_version = Environment().python_version()
-        write_file_contents_as_string(
-            python_version_filepath, current_python_version
-        )
+        self._save_python_version()
 
         # save data
         filepath = os.path.join(self.uri, DEFAULT_FILENAME)
         with fileio.open(filepath, "wb") as fid:
             cloudpickle.dump(data, fid)
+
+    def _save_python_version(self) -> None:
+        """Saves the Python version used to materialize the artifact."""
+        filepath = os.path.join(self.uri, DEFAULT_PYTHON_VERSION_FILENAME)
+        current_python_version = Environment().python_version()
+        write_file_contents_as_string(filepath, current_python_version)

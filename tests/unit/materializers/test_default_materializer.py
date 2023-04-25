@@ -13,7 +13,11 @@
 #  permissions and limitations under the License.
 
 
+from tempfile import TemporaryDirectory
+
 from tests.unit.test_general import _test_materializer
+from zenml.environment import Environment
+from zenml.materializers.default_materializer import DefaultMaterializer
 
 
 class Unmaterializable:
@@ -23,6 +27,15 @@ class Unmaterializable:
 
 
 def test_default_materializer(clean_client):
-    """Tests whether the default materializer is used if no other is found."""
+    """Test whether the default materializer is used if no other is found."""
     output = _test_materializer(step_output=Unmaterializable())
     assert output.cat == "aria"
+
+
+def test_default_materializer_python_version_check(clean_client):
+    """Test that the default materializer saves the correct Python version."""
+    with TemporaryDirectory() as artifact_uri:
+        materializer = DefaultMaterializer(uri=artifact_uri)
+        materializer._save_python_version()
+        version = materializer._load_python_version()
+        assert version == Environment().python_version()
