@@ -73,7 +73,7 @@ settings={'docker': {'requirements': ['pandas']}}
 ```
 
 #### Using stack component specific settings
-Settings for stack components must be passed with the key having a specific format being `(key= <COMPONENT_CATEGORY>.<COMPONENT_FLAVOR>)`. For example, an instance of [`SagemakerStepOperatorSettings`](https://apidocs.zenml.io/0.38.0/integration_code_docs/integrations-aws/#zenml.integrations.aws.flavors.sagemaker_step_operator_flavor.SagemakerStepOperatorSettings) for the [SageMaker Step Operator](../../component-gallery/step-operators/sagemaker.md) can be passed in as follows:
+Settings for stack components must be passed with the key having a specific format: `<COMPONENT_CATEGORY>.<COMPONENT_FLAVOR>`. For example, an instance of [`SagemakerStepOperatorSettings`](https://apidocs.zenml.io/latest/integration_code_docs/integrations-aws/#zenml.integrations.aws.flavors.sagemaker_step_operator_flavor.SagemakerStepOperatorSettings) for the [SageMaker Step Operator](../../component-gallery/step-operators/sagemaker.md) can be passed in as follows:
 
 ```python
 from zenml.integrations.aws.flavors.sagemaker_step_operator_flavor import SagemakerStepOperatorSettings
