@@ -197,7 +197,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                 "tags",
                 [step_settings.processor_tags]
                 if step_settings.processor_tags
-                else {},
+                else None,
             )
 
             # Set values that cannot be overwritten
