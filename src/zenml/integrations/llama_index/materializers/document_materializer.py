@@ -39,7 +39,7 @@ class LlamaIndexDocumentMaterializer(LangchainDocumentMaterializer):
     ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.DATA
     ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (Document,)
 
-    def load(self, data_type: Type[Document]) -> Document:  # type: ignore[override]
+    def load(self, data_type: Type[Any]) -> Any:
         """Reads a llama-index document from JSON.
 
         Args:
@@ -50,7 +50,7 @@ class LlamaIndexDocumentMaterializer(LangchainDocumentMaterializer):
         """
         return Document.from_langchain_format(super().load(LCDocument))
 
-    def save(self, data: Document) -> None:  # type: ignore[override]
+    def save(self, data: Any) -> None:
         """Serialize a llama-index document as a Langchain document.
 
         Args:
@@ -58,7 +58,7 @@ class LlamaIndexDocumentMaterializer(LangchainDocumentMaterializer):
         """
         super().save(data.to_langchain_format())
 
-    def extract_metadata(self, data: Document) -> Dict[str, "MetadataType"]:  # type: ignore[override]
+    def extract_metadata(self, data: Any) -> Dict[str, "MetadataType"]:
         """Extract metadata from the given Llama Index document.
 
         Args:
