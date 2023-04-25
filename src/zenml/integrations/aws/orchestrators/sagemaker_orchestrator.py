@@ -194,7 +194,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                 "max_runtime_in_seconds", step_settings.max_runtime_in_seconds
             )
             processor_args_for_step.setdefault(
-                "processor_tags",
+                "tags",
                 [step_settings.processor_tags]
                 if step_settings.processor_tags
                 else {},
