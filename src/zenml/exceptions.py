@@ -63,31 +63,6 @@ class DoesNotExistException(ZenMLBaseException):
         super().__init__(message)
 
 
-class AlreadyExistsException(ZenMLBaseException):
-    """Raises exception when the `name` already exists in the system.
-
-    This happens when an action is trying to create a resource with the same
-    name.
-    """
-
-    def __init__(
-        self,
-        message: Optional[str] = None,
-        name: str = "",
-        resource_type: str = "",
-    ):
-        """Initializes the exception.
-
-        Args:
-            message: Message with details of exception.
-            name: Name of the resource that already exists.
-            resource_type: Type of the resource that already exists.
-        """
-        if message is None:
-            message = f"{resource_type} `{name}` already exists!"
-        super().__init__(message)
-
-
 class PipelineNotSucceededException(ZenMLBaseException):
     """Raises exception when trying to fetch artifacts from a not succeeded pipeline."""
 
@@ -209,10 +184,6 @@ class DuplicateRunNameError(RuntimeError):
             message: Message with details of exception.
         """
         super().__init__(message)
-
-
-class NotAuthorizedError(ZenMLBaseException):
-    """Raised when the user does not have permission to perform an action."""
 
 
 class ValidationError(ZenMLBaseException):

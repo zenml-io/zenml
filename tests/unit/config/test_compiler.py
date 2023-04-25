@@ -16,9 +16,7 @@ import pytest
 from zenml.config import ResourceSettings
 from zenml.config.base_settings import BaseSettings
 from zenml.config.compiler import Compiler
-from zenml.config.pipeline_configurations import (
-    PipelineRunConfiguration,
-)
+from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
 from zenml.config.pipeline_spec import PipelineSpec
 from zenml.config.step_configurations import StepConfigurationUpdate
 from zenml.exceptions import PipelineInterfaceError, StackValidationError
