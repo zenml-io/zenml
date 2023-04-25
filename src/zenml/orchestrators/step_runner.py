@@ -363,7 +363,8 @@ class StepRunner:
         ] = source_utils.load_and_validate_class(
             artifact.materializer, expected_class=BaseMaterializer
         )
-        materializer = materializer_class(artifact.uri)
+        materializer: BaseMaterializer = materializer_class(artifact.uri)
+        materializer.validate_type_compatibility(data_type)
         return materializer.load(data_type=data_type)
 
     def _validate_outputs(
@@ -478,6 +479,7 @@ class StepRunner:
             ].materializer_source
             uri = output_artifact_uris[output_name]
             materializer = materializer_class(uri)
+            materializer.validate_type_compatibility(type(return_value))
             materializer.save(return_value)
             if artifact_metadata_enabled:
                 try:

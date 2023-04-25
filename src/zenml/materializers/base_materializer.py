@@ -112,6 +112,68 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
         """
         self.uri = uri
 
+    # ================
+    # Public Interface
+    # ================
+
+    def load(self, data_type: Type[Any]) -> Any:
+        """Write logic here to load the data of an artifact.
+
+        Args:
+            data_type: What type the artifact data should be loaded as.
+
+        Returns:
+            The data of the artifact.
+        """
+        # read from a location inside self.uri
+        return None
+
+    def save(self, data: Any) -> None:
+        """Write logic here to save the data of an artifact.
+
+        Args:
+            data: The data of the artifact to save.
+        """
+        # write `data` into self.uri
+
+    def extract_metadata(self, data: Any) -> Dict[str, "MetadataType"]:
+        """Extract metadata from the given data.
+
+        This metadata will be tracked and displayed alongside the artifact.
+
+        Args:
+            data: The data to extract metadata from.
+
+        Returns:
+            A dictionary of metadata.
+        """
+        from zenml.metadata.metadata_types import StorageSize
+
+        storage_size = fileio.size(self.uri)
+        if storage_size:
+            return {"storage_size": StorageSize(storage_size)}
+        return {}
+
+    # ================
+    # Internal Methods
+    # ================
+
+    def validate_type_compatibility(self, data_type: Type[Any]) -> None:
+        """Checks whether the materializer can read/write the given type.
+
+        Args:
+            data_type: The type to check.
+
+        Raises:
+            TypeError: If the materializer cannot read/write the given type.
+        """
+        if not self._can_handle_type(data_type):
+            raise TypeError(
+                f"Unable to handle type {data_type}. {self.__class__.__name__} "
+                f"can only read/write artifacts of the following types: "
+                f"{self.ASSOCIATED_TYPES}."
+            )
+
     def _can_handle_type(self, data_type: Type[Any]) -> bool:
         """Whether the materializer can read/write a certain type.
 
@@ -125,69 +187,3 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
             issubclass(data_type, associated_type)
             for associated_type in self.ASSOCIATED_TYPES
         )
-
-    def load(self, data_type: Type[Any]) -> Any:
-        """Write logic here to load the data of an artifact.
-
-        Args:
-            data_type: What type the artifact data should be loaded as.
-
-        Returns:
-            The data of the artifact.
-
-        Raises:
-            TypeError: If the artifact data is not of the correct type.
-        """
-        if not self._can_handle_type(data_type):
-            raise TypeError(
-                f"Unable to handle type {data_type}. {self.__class__.__name__} "
-                f"can only read artifacts to the following types: "
-                f"{self.ASSOCIATED_TYPES}."
-            )
-
-        return None
-
-    def save(self, data: Any) -> None:
-        """Write logic here to save the data of an artifact.
-
-        Args:
-            data: The data of the artifact to save.
-
-        Raises:
-            TypeError: If the artifact data is not of the correct type.
-        """
-        data_type = type(data)
-        if not self._can_handle_type(data_type):
-            raise TypeError(
-                f"Unable to write {data_type}. {self.__class__.__name__} "
-                f"can only write the following types: {self.ASSOCIATED_TYPES}."
-            )
-
-    def extract_metadata(self, data: Any) -> Dict[str, "MetadataType"]:
-        """Extract metadata from the given data.
-
-        This metadata will be tracked and displayed alongside the artifact.
-
-        Args:
-            data: The data to extract metadata from.
-
-        Returns:
-            A dictionary of metadata.
-
-        Raises:
-            TypeError: If the data is not of the correct type.
-        """
-        from zenml.metadata.metadata_types import StorageSize
-
-        data_type = type(data)
-        if not self._can_handle_type(data_type):
-            raise TypeError(
-                f"Unable to extract metadata from {data_type}. "
-                f"{self.__class__.__name__} can only write the following "
-                f"types: {self.ASSOCIATED_TYPES}."
-            )
-
-        storage_size = fileio.size(self.uri)
-        if storage_size:
-            return {"storage_size": StorageSize(storage_size)}
-        return {}
