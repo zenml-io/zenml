@@ -21,7 +21,8 @@ from fastapi.param_functions import Form
 from zenml.constants import API, LOGIN, VERSION_1
 from zenml.models import UserRoleAssignmentFilterModel
 from zenml.zen_server.auth import authenticate_credentials
-from zenml.zen_server.utils import error_response, zen_store
+from zenml.zen_server.exceptions import error_response
+from zenml.zen_server.utils import zen_store
 
 router = APIRouter(
     prefix=API + VERSION_1,
