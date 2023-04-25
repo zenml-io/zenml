@@ -80,6 +80,4 @@ class TensorflowDatasetMaterializer(BaseMaterializer):
         Returns:
             The extracted metadata as a dictionary.
         """
-        return {
-            "length": len(dataset),
-        }
+        return {"length": len(dataset)}

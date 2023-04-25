@@ -11,7 +11,6 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from contextlib import ExitStack as does_not_raise
 
 from torch.nn import Linear
 
@@ -23,11 +22,11 @@ from zenml.integrations.pytorch.materializers.pytorch_module_materializer import
 
 def test_pytorch_module_materializer(clean_client):
     """Tests whether the steps work for the Sklearn materializer."""
-    with does_not_raise():
-        module = _test_materializer(
-            step_output=Linear(20, 20),
-            materializer_class=PyTorchModuleMaterializer,
-        )
+    module = _test_materializer(
+        step_output=Linear(20, 20),
+        materializer_class=PyTorchModuleMaterializer,
+        expected_metadata_size=3,
+    )
 
     assert module.in_features == 20
     assert module.out_features == 20

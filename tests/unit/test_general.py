@@ -32,6 +32,7 @@ def _test_materializer(
     step_output_type: Optional[Type[Any]] = None,
     materializer_class: Optional[Type[BaseMaterializer]] = None,
     validation_function: Optional[Callable[[str], Any]] = None,
+    expected_metadata_size: Optional[int] = None,
     return_metadata: bool = False,
 ) -> Any:
     """Test whether the materialization of a given step output works.
@@ -51,6 +52,10 @@ def _test_materializer(
         validation_function: An optional function to call on the absolute path
             to `artifact_uri`. Can be used, e.g., to check whether a certain
             file exists or a certain number of files were written.
+        expected_metadata_size: If provided, we assert that the metadata dict
+            returned by `materializer.extract_full_metadata()` has this size.
+        return_metadata: If True, we return the metadata dict returned by
+            `materializer.extract_full_metadata()`.
 
     Returns:
         The result of materializing `step_output` to disk and loading it again.
@@ -73,6 +78,8 @@ def _test_materializer(
         # Assert that metadata extraction returns a dict
         metadata = materializer.extract_full_metadata(step_output)
         assert isinstance(metadata, dict)
+        if expected_metadata_size is not None:
+            assert len(metadata) == expected_metadata_size
         for key, value in metadata.items():
             assert isinstance(key, str)
             assert isinstance(value, MetadataTypeTuple)

@@ -11,24 +11,20 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from contextlib import ExitStack as does_not_raise
 
 import lightgbm as lgb
 
+from tests.unit.test_general import _test_materializer
 from zenml.integrations.lightgbm.materializers.lightgbm_dataset_materializer import (
     LightGBMDatasetMaterializer,
 )
-from zenml.steps import step
 
 
 def test_lightgbm_dataset_materializer():
     """Tests whether the steps work for the lightgbm dataset materializer."""
 
-    @step
-    def some_step() -> lgb.Dataset:
-        return lgb.Dataset(data=[[1, 2, 3]], label=[1])
-
-    with does_not_raise():
-        some_step().configure(
-            output_materializers=LightGBMDatasetMaterializer
-        )()
+    _test_materializer(
+        step_output=lgb.Dataset(data=[[1, 2, 3]], label=[1]),
+        materializer_class=LightGBMDatasetMaterializer,
+        expected_metadata_size=2,
+    )

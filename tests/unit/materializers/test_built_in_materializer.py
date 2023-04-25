@@ -31,7 +31,9 @@ def test_basic_type_materialization():
         (str, ""),
     ]:
         result = _test_materializer(
-            step_output_type=type_, step_output=example
+            step_output_type=type_,
+            step_output=example,
+            expected_metadata_size=1 if type_ == str else 2,
         )
         assert result == example
 
@@ -42,7 +44,9 @@ def test_bytes_materialization():
     This is a separate test since `bytes` is not JSON serializable.
     """
     example = b""
-    result = _test_materializer(step_output_type=bytes, step_output=example)
+    result = _test_materializer(
+        step_output_type=bytes, step_output=example, expected_metadata_size=1
+    )
     assert result == example
 
 
@@ -54,7 +58,9 @@ def test_empty_dict_list_tuple_materialization():
         (tuple, ()),
     ]:
         result = _test_materializer(
-            step_output_type=type_, step_output=example
+            step_output_type=type_,
+            step_output=example,
+            expected_metadata_size=2,
         )
         assert result == example
 
@@ -75,6 +81,7 @@ def test_simple_dict_list_tuple_materialization(tmp_path):
             step_output_type=type_,
             step_output=example,
             validation_function=_validate_single_file,
+            expected_metadata_size=2,
         )
         assert result == example
 
@@ -82,28 +89,36 @@ def test_simple_dict_list_tuple_materialization(tmp_path):
 def test_list_of_bytes_materialization():
     """Test materialization for lists of bytes."""
     example = [b"0", b"1", b"2"]
-    result = _test_materializer(step_output_type=list, step_output=example)
+    result = _test_materializer(
+        step_output_type=list, step_output=example, expected_metadata_size=2
+    )
     assert result == example
 
 
 def test_dict_of_bytes_materialization():
     """Test materialization for dicts of bytes."""
     example = {"a": b"0", "b": b"1", "c": b"2"}
-    result = _test_materializer(step_output_type=dict, step_output=example)
+    result = _test_materializer(
+        step_output_type=dict, step_output=example, expected_metadata_size=2
+    )
     assert result == example
 
 
 def test_tuple_of_bytes_materialization():
     """Test materialization for tuples of bytes."""
     example = (b"0", b"1", b"2")
-    result = _test_materializer(step_output_type=tuple, step_output=example)
+    result = _test_materializer(
+        step_output_type=tuple, step_output=example, expected_metadata_size=2
+    )
     assert result == example
 
 
 def test_set_materialization():
     """Test materialization for `set` objects."""
     for example in [set(), {1, 2, 3}, {b"0", b"1", b"2"}]:
-        result = _test_materializer(step_output_type=set, step_output=example)
+        result = _test_materializer(
+            step_output_type=set, step_output=example, expected_metadata_size=2
+        )
         assert result == example
 
 
@@ -120,7 +135,9 @@ def test_mixture_of_all_builtin_types():
         },  # non-serializable dict
         {1.0, 2.0, 4, 4},  # set of serializable types
     ]  # non-serializable list
-    result = _test_materializer(step_output_type=list, step_output=example)
+    result = _test_materializer(
+        step_output_type=list, step_output=example, expected_metadata_size=2
+    )
     assert result == example
 
 
@@ -132,7 +149,9 @@ def test_none_values():
         (dict, {"key": None}),
     ]:
         result = _test_materializer(
-            step_output_type=type_, step_output=example
+            step_output_type=type_,
+            step_output=example,
+            expected_metadata_size=2,
         )
         assert result == example
 

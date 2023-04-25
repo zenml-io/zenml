@@ -28,7 +28,9 @@ class Unmaterializable:
 
 def test_default_materializer(clean_client):
     """Test whether the default materializer is used if no other is found."""
-    output = _test_materializer(step_output=Unmaterializable())
+    output = _test_materializer(
+        step_output=Unmaterializable(), expected_metadata_size=1
+    )
     assert output.cat == "aria"
 
 

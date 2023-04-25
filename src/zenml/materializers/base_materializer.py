@@ -223,6 +223,6 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
         from zenml.metadata.metadata_types import StorageSize
 
         storage_size = fileio.size(self.uri)
-        if storage_size:
+        if isinstance(storage_size, int):
             return {"storage_size": StorageSize(storage_size)}
         return {}
