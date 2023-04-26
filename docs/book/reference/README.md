@@ -1,2 +1,2 @@
-# 📇 Reference
+# Reference
 

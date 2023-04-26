@@ -2,9 +2,9 @@
 
 ## Getting Started
 
-* [⛩ Introduction](introduction.md)
-* [💿 Installation](getting-started/installation.md)
-* [🧱 Core Concepts](getting-started/core-concepts.md)
+* [Introduction](introduction.md)
+* [Installation](getting-started/installation.md)
+* [Core Concepts](getting-started/core-concepts.md)
 
 ## User Guide
 
@@ -33,7 +33,7 @@
   * [Productionalize with CI/CD/CT](platform-guide/set-up-your-mlops-platform/productionalize-with-ci-cd-ct.md)
   * [Wrangle Big Data and Big Models](platform-guide/set-up-your-mlops-platform/wrangle-big-data-and-big-models.md)
   * [Implement a custom stack component](platform-guide/set-up-your-mlops-platform/implement-a-custom-stack-component.md)
-* [🧑🚒 Manage the Deployed Services](platform-guide/manage-the-deployed-services/README.md)
+* [🔧 Manage the Deployed Services](platform-guide/manage-the-deployed-services/README.md)
   * [Upgrading the ZenML Version](platform-guide/manage-the-deployed-services/upgrading-the-zenml-version.md)
   * [Adding Dependencies to your deployed Server](platform-guide/manage-the-deployed-services/adding-dependencies-to-your-deployed-server.md)
   * [Troubleshooting your deployed Server](platform-guide/manage-the-deployed-services/troubleshooting-your-deployed-server.md)
@@ -42,7 +42,7 @@
 ## Learning
 
 * [Quickstart](https://github.com/zenml-io/zenml/blob/cb1bcbda58df06e057fd0a152b4ba3facf9c2d59/examples/quickstart/README.md)
-* [🧑🏫 Examples](learning/examples/README.md)
+* [🧩 Examples](learning/examples/README.md)
   * [Build a LLM-powered Community Slack Bot](learning/examples/build-a-llm-powered-community-slack-bot.md)
   * [Train a Sign language detection model](learning/examples/train-a-sign-language-detection-model.md)
   * [Summarize news articles with NLP](learning/examples/summarize-news-articles-with-nlp.md)
@@ -52,7 +52,7 @@
 
 ***
 
-* [📇 Reference](reference/README.md)
+* [Reference](reference/README.md)
   * [API reference](reference/api-reference.md)
   * [ZenML CLI](reference/zenml-cli.md)
   * [Python SDK](reference/python-sdk.md)
