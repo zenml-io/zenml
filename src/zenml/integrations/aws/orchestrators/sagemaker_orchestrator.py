@@ -226,7 +226,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                 for channel, s3_uri in step_settings.input_data_s3_uri.items():
                     inputs.append(
                         ProcessingInput(
-                            source=step_settings.input_data_s3_uri,
+                            source=s3_uri,
                             destination=f"/opt/ml/processing/input/{channel}",
                             s3_input_mode=step_settings.input_data_s3_mode,
                         )
