@@ -1311,8 +1311,8 @@ class EntrypointFunctionDefinition(NamedTuple):
 
         try:
             validation_model_class(value=value)
-        except ValidationError:
-            raise RuntimeError("Input validation failed.")
+        except ValidationError as e:
+            raise RuntimeError("Input validation failed.") from e
 
     def _validate_input_type(
         self, parameter: inspect.Parameter, annotation: Any

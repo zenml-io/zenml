@@ -12,8 +12,10 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 from contextlib import ExitStack as does_not_raise
+from typing import Dict, List, Tuple
 
 import pytest
+from pydantic import BaseModel
 
 from zenml.pipelines.new import pipeline
 from zenml.steps import step
@@ -64,6 +66,48 @@ def test_using_step_instance_and_class():
     def test_pipeline():
         step_with_int_input(1)
         step_instance(1)
+
+    with does_not_raise():
+        test_pipeline()
+
+
+def test_passing_invalid_parameters():
+    class UnsupportedClass:
+        pass
+
+    @step
+    def s(a: UnsupportedClass) -> None:
+        pass
+
+    @pipeline
+    def test_pipeline():
+        s(a=UnsupportedClass())
+
+    with pytest.raises(RuntimeError):
+        test_pipeline()
+
+
+class BaseModelSubclass(BaseModel):
+    pass
+
+
+@step
+def step_with_valid_parameter_inputs(
+    a: BaseModelSubclass,
+    b: int,
+    c: Dict[str, float],
+    d: Tuple[int, ...],
+    e: List[int],
+) -> None:
+    pass
+
+
+def test_passing_valid_parameters():
+    @pipeline
+    def test_pipeline():
+        step_with_valid_parameter_inputs(
+            a=BaseModelSubclass(), b=1, c={"key": 0.1}, d=(1, 2), e=[3, 4]
+        )
 
     with does_not_raise():
         test_pipeline()
