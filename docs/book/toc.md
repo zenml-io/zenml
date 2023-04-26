@@ -10,7 +10,7 @@
 
 * [🐣 Starter Guide](user-guide/starter-guide/README.md)
   * [Create your first pipeline](user-guide/starter-guide/create-your-first-ml-pipeline.md)
-  * [Understanding your stack](user-guide/starter-guide/using-and-switching-stacks.md)
+  * [Understand your stack](user-guide/starter-guide/using-and-switching-stacks.md)
   * [Transition to the cloud](user-guide/starter-guide/transition-to-the-cloud.md)
   * [Discover the dashboard](user-guide/starter-guide/discover-the-dashboard.md)
   * [Join forces with other users](user-guide/starter-guide/collaborate-with-your-team.md)
