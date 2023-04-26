@@ -22,7 +22,7 @@ from zenml.cli.cli import cli
 from zenml.client import Client
 from zenml.config import DockerSettings
 from zenml.config.build_configuration import BuildConfiguration
-from zenml.config.pipeline_configurations import PipelineRunConfiguration
+from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
 from zenml.models.pipeline_build_models import (
     PipelineBuildBaseModel,
     PipelineBuildRequestModel,

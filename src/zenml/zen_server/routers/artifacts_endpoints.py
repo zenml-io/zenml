@@ -30,8 +30,8 @@ from zenml.models.visualization_models import (
 )
 from zenml.utils.materializer_utils import load_artifact_visualization
 from zenml.zen_server.auth import AuthContext, authorize
+from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.utils import (
-    error_response,
     handle_exceptions,
     make_dependable,
     zen_store,
