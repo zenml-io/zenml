@@ -604,22 +604,26 @@ class BasePipeline(metaclass=BasePipelineMeta):
             finally:
                 constants.SHOULD_PREVENT_PIPELINE_EXECUTION = False
 
-            if stack.orchestrator.config.is_remote:
-                cli_utils.warning(
+            # TODO: check for better filtering options
+            breakpoint()
+
+            runs = Client().list_runs(deployment_id=deployment_model.id) # TODO: add filtering here
+
+            if runs.items:
+                # Log the dashboard URL
+                dashboard_utils.print_run_url(
+                    run_name=deployment.run_name_template,
+                    pipeline_id=runs[0].id,
+                )
+            else:
+                logger.warning(
                     f"Your orchestrator '{stack.orchestrator.name}' is "
                     f"running remotely. Note that the pipeline run will "
                     f"only show up on the ZenML dashboard once the first "
                     f"step has started executing on the remote "
                     f"infrastructure. This could take up to twenty "
                     f"minutes.",
-                    italic=True,
                 )
-
-            # Log the dashboard URL
-            dashboard_utils.print_run_url(
-                run_name=deployment.run_name_template,
-                pipeline_id=pipeline_id,
-            )
 
     @classmethod
     def get_runs(cls) -> Optional[List["PipelineRunView"]]:
