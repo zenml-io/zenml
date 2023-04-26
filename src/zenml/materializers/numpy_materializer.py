@@ -139,8 +139,9 @@ class NumpyMaterializer(BaseMaterializer):
             from matplotlib.image import imsave  # type: ignore
         except ImportError:
             logger.info(
-                "Matplotlib is not installed. Skipping visualization of numpy "
-                "array."
+                "Skipping visualization of numpy array because matplotlib "
+                "is not installed. To install matplotlib, run "
+                "`pip install matplotlib`."
             )
             return visualizations
 

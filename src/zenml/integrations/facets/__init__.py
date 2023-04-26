@@ -25,7 +25,7 @@ class FacetsIntegration(Integration):
 
     @staticmethod
     def activate() -> None:
-        """Activate the Deepchecks integration."""
+        """Activate the Facets integration."""
         from zenml.integrations.facets import materializers  # noqa
 
 

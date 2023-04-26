@@ -273,7 +273,7 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
         Example:
         ```
         visualization_uri = os.path.join(self.uri, "visualization.html")
-        with open(visualization_uri, "w") as f:
+        with fileio.open(visualization_uri, "w") as f:
             f.write("<html><body>data</body></html>")
 
         visualization_uri_2 = os.path.join(self.uri, "visualization.png")

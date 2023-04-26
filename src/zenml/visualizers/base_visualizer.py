@@ -28,8 +28,9 @@ class BaseVisualizer:
         """Initializes the BaseVisualizer."""
         super().__init__()
         logger.warning(
-            "Visualizers are deprecated and will be removed in a future "
-            "release. Please view your data in the ZenML dashboard instead. "
+            "Visualizers in their current form are deprecated and will be "
+            "removed in a future release because all visualizations are now "
+            "automatically extracted and displayed in the ZenML dashboard."
             "To visualize artifacts within Jupyter notebooks, use the post "
             "execution `visualize()` method instead, as described here: "
             "https://docs.zenml.io/starter-guide/pipelines/fetching-pipelines#visualizing-artifacts."

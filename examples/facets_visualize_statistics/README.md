@@ -7,7 +7,7 @@ helps users visualize large amounts of data in a coherent way.
 ## 🗺 Overview
 We create a simple pipeline that returns two `pd.DataFrames`, one for training
 data and one for the test data. Then we use the `facets_visualization_step` to
-compare the statistics of the two datasets using Facets.
+compare the summary statistics of the two datasets using Facets.
 
 It produces the following visualization:
 

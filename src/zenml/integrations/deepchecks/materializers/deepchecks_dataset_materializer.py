@@ -52,44 +52,46 @@ class DeepchecksDatasetMaterializer(BaseMaterializer):
         # Recreate from pandas dataframe
         return Dataset(df)
 
-    def save(self, df: Dataset) -> None:
+    def save(self, dataset: Dataset) -> None:
         """Serializes pandas dataframe within a `Dataset` object.
 
         Args:
-            df: A deepchecks.Dataset object.
+            dataset: A deepchecks.Dataset object.
         """
-        super().save(df)
+        super().save(dataset)
 
         # Outsource to pandas
         pandas_materializer = PandasMaterializer(self.uri)
-        pandas_materializer.save(df.data)
+        pandas_materializer.save(dataset.data)
 
-    def save_visualizations(self, df: Dataset) -> Dict[str, VisualizationType]:
+    def save_visualizations(
+        self, dataset: Dataset
+    ) -> Dict[str, VisualizationType]:
         """Saves visualizations for the given Deepchecks dataset.
 
         Args:
-            df: The Deepchecks dataset to save visualizations for.
+            dataset: The Deepchecks dataset to save visualizations for.
 
         Returns:
             A dictionary of visualization URIs and their types.
         """
-        visualizations = super().save_visualizations(df)
+        visualizations = super().save_visualizations(dataset)
         pandas_materializer = PandasMaterializer(self.uri)
-        pandas_vis = pandas_materializer.save_visualizations(df.data)
+        pandas_vis = pandas_materializer.save_visualizations(dataset.data)
         visualizations.update(pandas_vis)
         return visualizations
 
-    def extract_metadata(self, df: Dataset) -> Dict[str, "MetadataType"]:
+    def extract_metadata(self, dataset: Dataset) -> Dict[str, "MetadataType"]:
         """Extract metadata from the given `Dataset` object.
 
         Args:
-            df: The `Dataset` object to extract metadata from.
+            dataset: The `Dataset` object to extract metadata from.
 
         Returns:
             The extracted metadata as a dictionary.
         """
-        super().extract_metadata(df)
+        super().extract_metadata(dataset)
 
         # Outsource to pandas
         pandas_materializer = PandasMaterializer(self.uri)
-        return pandas_materializer.extract_metadata(df.data)
+        return pandas_materializer.extract_metadata(dataset.data)

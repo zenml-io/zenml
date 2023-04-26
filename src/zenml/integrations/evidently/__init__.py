@@ -40,7 +40,7 @@ class EvidentlyIntegration(Integration):
 
     @staticmethod
     def activate() -> None:
-        """Activate the Deepchecks integration."""
+        """Activate the Evidently integration."""
         from zenml.integrations.evidently import materializers  # noqa
         from zenml.integrations.evidently import visualizers  # noqa
 

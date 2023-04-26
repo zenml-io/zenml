@@ -238,3 +238,8 @@ You can do so either by building a custom Dockerfile based on the
 [ZenML base.Dockerfile](https://github.com/zenml-io/zenml/blob/main/docker/base.Dockerfile)
 and using that to redeploy your ZenML instance or by installing the respective
 packages in the deployed environment manually.
+
+Furthermore, the custom artifact store instance needs to be configured in a way 
+that allows authenticating to the backend without relying on the local 
+environment, e.g., by embedding the authentication credentials in the stack 
+component configuration or by referencing a secret.

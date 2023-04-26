@@ -31,7 +31,7 @@ class ArtifactType(StrEnum):
 
 
 class VisualizationType(StrEnum):
-    """All possible visualization types."""
+    """All currently available visualization types."""
 
     CSV = "csv"
     HTML = "html"

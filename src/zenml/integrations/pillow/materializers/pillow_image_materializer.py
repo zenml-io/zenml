@@ -92,10 +92,10 @@ class PillowImageMaterializer(BaseMaterializer):
     def save_visualizations(
         self, image: Image.Image
     ) -> Dict[str, VisualizationType]:
-        """Saves visualizations for the given image.
+        """Finds and saves the given image as a visualization.
 
         Args:
-            image: The image to save visualizations for.
+            image: The image to save as a visualization.
 
         Returns:
             A dictionary of visualization URIs and their types.

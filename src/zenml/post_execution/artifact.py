@@ -20,6 +20,7 @@ from zenml.logger import get_logger
 from zenml.models.artifact_models import ArtifactResponseModel
 from zenml.models.base_models import BaseResponseModel
 from zenml.post_execution.base_view import BaseView
+from zenml.utils.visualization_utils import format_csv_visualization_as_html
 
 if TYPE_CHECKING:
     from zenml.materializers.base_materializer import BaseMaterializer
@@ -110,13 +111,7 @@ class ArtifactView(BaseView):
                 display(Markdown(visualization.value))
             elif visualization.type == VisualizationType.CSV:
                 assert isinstance(visualization.value, str)
-                table = "<table>"
-                for row in visualization.value.splitlines():
-                    table += "<tr>"
-                    for cell in row.split(","):
-                        table += f"<td>{cell}</td>"
-                    table += "</tr>"
-                table += "</table>"
+                table = format_csv_visualization_as_html(visualization.value)
                 display(HTML(table))
             else:
                 display(visualization.value)

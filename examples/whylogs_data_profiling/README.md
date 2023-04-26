@@ -109,6 +109,16 @@ test_data_profiler = whylogs_profiler_step(
 )
 ```
 
+All the generated profiles are uploaded to WhyLabs automatically for steps with 
+Whylabs logging enabled if the Whylabs credentials have been configured in the 
+whylogs Data Validator stack component.
+
+The `dataset_id` tags set for the profiles are used to associate
+the datasets models with the models in the WhyLabs platform.
+
+![WhyLabs UI image 1](assets/whylabs-ui-01.png)
+![WhyLabs UI image 2](assets/whylabs-ui-02.png)
+
 # ☁️ Run in Colab
 If you have a Google account, you can get started directly with 
 Google colab - [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/zenml-io/zenml/blob/main/examples/whylogs_data_profiling/whylogs.ipynb)

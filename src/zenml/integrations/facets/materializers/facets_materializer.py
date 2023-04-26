@@ -36,7 +36,7 @@ class FacetsMaterializer(BaseMaterializer):
     """Materializer to save Facets visualizations.
 
     This materializer is used to visualize and compare dataset statistics using
-    Facets. In difference to other materializers, this materializer only saves
+    Facets. In contrast to other materializers, this materializer only saves
     the visualization and not the data itself.
     """
 

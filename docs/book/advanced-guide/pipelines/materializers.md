@@ -82,7 +82,7 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
         # Optionally, define some visualizations for your artifact
         # E.g.:
         # visualization_uri = os.path.join(self.uri, "visualization.html")
-        # with open(visualization_uri, "w") as f:
+        # with fileio.open(visualization_uri, "w") as f:
         #     f.write("<html><body>data</body></html>")
         # visualization_uri_2 = os.path.join(self.uri, "visualization.png")
         # data.save_as_png(visualization_uri_2)
@@ -154,7 +154,10 @@ then you might want to use `torch.save()` and `torch.load()` here.
 
 Optionally, you can override the `save_visualizations()` method to 
 automatically save visualizations for all artifacts saved by your materializer.
-These visualizations are then shown next to your artifacts in the dashboard.
+These visualizations are then shown next to your artifacts in the dashboard:
+
+![Evidently Artifact Visualization Example](../../assets/dashboard/artifact_visualization.png)
+
 They can also be displayed in Jupyter notebooks via 
 [post-execution visualization](../../starter-guide/pipelines/fetching-pipelines.md#visualizing-artifacts).
 
