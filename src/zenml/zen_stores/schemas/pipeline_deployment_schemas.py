@@ -18,7 +18,8 @@ from typing import TYPE_CHECKING, List, Optional
 from uuid import UUID
 
 from pydantic.json import pydantic_encoder
-from sqlalchemy import TEXT, Column
+from sqlalchemy import TEXT, Column, String
+from sqlalchemy.dialects.mysql import MEDIUMTEXT
 from sqlmodel import Field, Relationship
 
 from zenml.config.pipeline_configurations import PipelineConfiguration
@@ -26,7 +27,11 @@ from zenml.models import (
     PipelineDeploymentRequestModel,
     PipelineDeploymentResponseModel,
 )
+from zenml.models.constants import MEDIUMTEXT_MAX_LENGTH
 from zenml.zen_stores.schemas.base_schemas import BaseSchema
+from zenml.zen_stores.schemas.code_repository_schemas import (
+    CodeReferenceSchema,
+)
 from zenml.zen_stores.schemas.pipeline_build_schemas import PipelineBuildSchema
 from zenml.zen_stores.schemas.pipeline_schemas import PipelineSchema
 from zenml.zen_stores.schemas.schedule_schema import ScheduleSchema
@@ -108,21 +113,42 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
     )
     workspace: "WorkspaceSchema" = Relationship(back_populates="deployments")
 
+    code_reference_id: Optional[UUID] = build_foreign_key_field(
+        source=__tablename__,
+        target=CodeReferenceSchema.__tablename__,
+        source_column="code_reference_id",
+        target_column="id",
+        ondelete="SET NULL",
+        nullable=True,
+    )
+    code_reference: Optional["CodeReferenceSchema"] = Relationship()
+
     runs: List["PipelineRunSchema"] = Relationship(back_populates="deployment")
 
     run_name_template: str
     pipeline_configuration: str = Field(sa_column=Column(TEXT, nullable=False))
-    step_configurations: str = Field(sa_column=Column(TEXT, nullable=False))
+    step_configurations: str = Field(
+        sa_column=Column(
+            String(length=MEDIUMTEXT_MAX_LENGTH).with_variant(
+                MEDIUMTEXT, "mysql"
+            ),
+            nullable=False,
+        )
+    )
     client_environment: str = Field(sa_column=Column(TEXT, nullable=False))
 
     @classmethod
     def from_request(
-        cls, request: PipelineDeploymentRequestModel
+        cls,
+        request: PipelineDeploymentRequestModel,
+        code_reference_id: Optional[UUID],
     ) -> "PipelineDeploymentSchema":
         """Convert a `PipelineDeploymentRequestModel` to a `PipelineDeploymentSchema`.
 
         Args:
             request: The request to convert.
+            code_reference_id: Optional ID of the code reference for the
+                deployment.
 
         Returns:
             The created `PipelineDeploymentSchema`.
@@ -134,6 +160,7 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
             build_id=request.build,
             user_id=request.user,
             schedule_id=request.schedule,
+            code_reference_id=code_reference_id,
             run_name_template=request.run_name_template,
             pipeline_configuration=request.pipeline_configuration.json(),
             step_configurations=json.dumps(
@@ -162,6 +189,9 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
             ),
             build=self.build.to_model() if self.build else None,
             schedule=self.schedule.to_model() if self.schedule else None,
+            code_reference=self.code_reference.to_model()
+            if self.code_reference
+            else None,
             created=self.created,
             updated=self.updated,
             run_name_template=self.run_name_template,

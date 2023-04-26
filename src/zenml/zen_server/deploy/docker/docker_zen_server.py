@@ -20,6 +20,7 @@ import zenml
 from zenml.config.global_config import GlobalConfiguration
 from zenml.config.store_config import StoreConfiguration
 from zenml.constants import (
+    ENV_ZENML_ANALYTICS_OPT_IN,
     ENV_ZENML_CONFIG_PATH,
     ENV_ZENML_DISABLE_DATABASE_MIGRATION,
     ENV_ZENML_LOCAL_STORES_PATH,
@@ -174,7 +175,7 @@ class DockerZenServer(ContainerService):
             Command needed to launch the docker container and the environment
             variables to set, in the formats accepted by subprocess.Popen.
         """
-        GlobalConfiguration()
+        gc = GlobalConfiguration()
 
         cmd, env = super()._get_container_cmd()
         env[ENV_ZENML_CONFIG_PATH] = os.path.join(
@@ -182,6 +183,8 @@ class DockerZenServer(ContainerService):
             SERVICE_CONTAINER_GLOBAL_CONFIG_DIR,
         )
         env[ENV_ZENML_SERVER_DEPLOYMENT_TYPE] = ServerDeploymentType.DOCKER
+        env[ENV_ZENML_ANALYTICS_OPT_IN] = str(gc.analytics_opt_in)
+
         # Set the local stores path to point to where the client's local stores
         # path is mounted in the container. This ensures that the server's store
         # configuration is initialized with the same path as the client.

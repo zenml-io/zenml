@@ -18,5 +18,8 @@ COPY README.md pyproject.toml ./
 # copying our source files which would invalidate caching
 COPY src/zenml/__init__.py ./src/zenml/
 
+ENV ZENML_DEBUG=true \
+    ZENML_ANALYTICS_OPT_IN=false
+
 RUN pip install -e .
 COPY src src

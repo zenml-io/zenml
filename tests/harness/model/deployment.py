@@ -16,7 +16,7 @@
 from enum import Enum
 from typing import TYPE_CHECKING, Dict, Optional
 
-from pydantic import Extra, Field
+from pydantic import Field
 
 from tests.harness.model.base import BaseTestConfigModel
 from tests.harness.model.secret import BaseTestSecretConfigModel
@@ -51,7 +51,7 @@ class DeploymentStoreConfig(BaseTestSecretConfigModel):
         """Pydantic configuration class."""
 
         validate_assignment = True
-        extra = Extra.allow
+        extra = "allow"
 
 
 class DeploymentConfig(BaseTestConfigModel):

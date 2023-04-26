@@ -27,6 +27,7 @@ from zenml.zen_stores.schemas.base_schemas import NamedSchema
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas import (
         ArtifactSchema,
+        CodeRepositorySchema,
         FlavorSchema,
         PipelineBuildSchema,
         PipelineDeploymentSchema,
@@ -103,6 +104,10 @@ class WorkspaceSchema(NamedSchema, table=True):
         sa_relationship_kwargs={"cascade": "delete"},
     )
     deployments: List["PipelineDeploymentSchema"] = Relationship(
+        back_populates="workspace",
+        sa_relationship_kwargs={"cascade": "delete"},
+    )
+    code_repositories: List["CodeRepositorySchema"] = Relationship(
         back_populates="workspace",
         sa_relationship_kwargs={"cascade": "delete"},
     )

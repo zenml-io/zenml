@@ -15,9 +15,10 @@
 
 import os
 import tempfile
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Union
 
 from zenml.client import Client
+from zenml.config.source import Source
 from zenml.constants import MODEL_METADATA_YAML_FILE_NAME
 from zenml.enums import StackComponentType
 from zenml.io import fileio
@@ -136,15 +137,15 @@ def load_artifact(artifact: "ArtifactResponseModel") -> Any:
 
 
 def _load_artifact(
-    materializer: str,
-    data_type: str,
+    materializer: Union[Source, str],
+    data_type: Union[Source, str],
     uri: str,
 ) -> Any:
     """Load an artifact using the given materializer.
 
     Args:
-        materializer: The path of the materializer class to use.
-        data_type: The data type of the artifact.
+        materializer: The source of the materializer class to use.
+        data_type: The source of the artifact data type.
         uri: The uri of the artifact.
 
     Returns:
@@ -155,7 +156,7 @@ def _load_artifact(
     """
     # Resolve the materializer class
     try:
-        materializer_class = source_utils.load_source_path(materializer)
+        materializer_class = source_utils.load(materializer)
     except (ModuleNotFoundError, AttributeError) as e:
         logger.error(
             f"ZenML cannot locate and import the materializer module "
@@ -165,7 +166,7 @@ def _load_artifact(
 
     # Resolve the artifact class
     try:
-        artifact_class = source_utils.load_source_path(data_type)
+        artifact_class = source_utils.load(data_type)
     except (ModuleNotFoundError, AttributeError) as e:
         logger.error(
             f"ZenML cannot locate and import the data type of this "

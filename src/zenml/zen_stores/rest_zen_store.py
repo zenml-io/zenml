@@ -41,6 +41,7 @@ from zenml.config.store_config import StoreConfiguration
 from zenml.constants import (
     API,
     ARTIFACTS,
+    CODE_REPOSITORIES,
     CURRENT_USER,
     DISABLE_CLIENT_SERVER_MISMATCH_WARNING,
     ENV_ZENML_DISABLE_CLIENT_SERVER_MISMATCH_WARNING,
@@ -68,11 +69,6 @@ from zenml.constants import (
 from zenml.enums import SecretsStoreType, StoreType
 from zenml.exceptions import (
     AuthorizationException,
-    DoesNotExistException,
-    EntityExistsError,
-    IllegalOperationError,
-    StackComponentExistsError,
-    StackExistsError,
 )
 from zenml.io import fileio
 from zenml.logger import get_logger
@@ -81,6 +77,10 @@ from zenml.models import (
     ArtifactRequestModel,
     ArtifactResponseModel,
     BaseFilterModel,
+    CodeRepositoryFilterModel,
+    CodeRepositoryRequestModel,
+    CodeRepositoryResponseModel,
+    CodeRepositoryUpdateModel,
     ComponentFilterModel,
     ComponentRequestModel,
     ComponentResponseModel,
@@ -151,6 +151,7 @@ from zenml.utils.analytics_utils import AnalyticsEvent, track
 from zenml.utils.networking_utils import (
     replace_localhost_with_internal_hostname,
 )
+from zenml.zen_server.exceptions import exception_from_response
 from zenml.zen_stores.base_zen_store import BaseZenStore
 from zenml.zen_stores.secrets_stores.rest_secrets_store import (
     RestSecretsStoreConfiguration,
@@ -1793,6 +1794,91 @@ class RestZenStore(BaseZenStore):
             filter_model=run_metadata_filter_model,
         )
 
+    # -----------------
+    # Code Repositories
+    # -----------------
+
+    def create_code_repository(
+        self, code_repository: CodeRepositoryRequestModel
+    ) -> CodeRepositoryResponseModel:
+        """Creates a new code repository.
+
+        Args:
+            code_repository: Code repository to be created.
+
+        Returns:
+            The newly created code repository.
+        """
+        return self._create_workspace_scoped_resource(
+            resource=code_repository,
+            response_model=CodeRepositoryResponseModel,
+            route=CODE_REPOSITORIES,
+        )
+
+    def get_code_repository(
+        self, code_repository_id: UUID
+    ) -> CodeRepositoryResponseModel:
+        """Gets a specific code repository.
+
+        Args:
+            code_repository_id: The ID of the code repository to get.
+
+        Returns:
+            The requested code repository, if it was found.
+        """
+        return self._get_resource(
+            resource_id=code_repository_id,
+            route=CODE_REPOSITORIES,
+            response_model=CodeRepositoryResponseModel,
+        )
+
+    def list_code_repositories(
+        self, filter_model: CodeRepositoryFilterModel
+    ) -> Page[CodeRepositoryResponseModel]:
+        """List all code repositories.
+
+        Args:
+            filter_model: All filter parameters including pagination
+                params.
+
+        Returns:
+            A page of all code repositories.
+        """
+        return self._list_paginated_resources(
+            route=CODE_REPOSITORIES,
+            response_model=CodeRepositoryResponseModel,
+            filter_model=filter_model,
+        )
+
+    def update_code_repository(
+        self, code_repository_id: UUID, update: CodeRepositoryUpdateModel
+    ) -> CodeRepositoryResponseModel:
+        """Updates an existing code repository.
+
+        Args:
+            code_repository_id: The ID of the code repository to update.
+            update: The update to be applied to the code repository.
+
+        Returns:
+            The updated code repository.
+        """
+        return self._update_resource(
+            resource_id=code_repository_id,
+            resource_update=update,
+            response_model=CodeRepositoryResponseModel,
+            route=CODE_REPOSITORIES,
+        )
+
+    def delete_code_repository(self, code_repository_id: UUID) -> None:
+        """Deletes a code repository.
+
+        Args:
+            code_repository_id: The ID of the code repository to delete.
+        """
+        self._delete_resource(
+            resource_id=code_repository_id, route=CODE_REPOSITORIES
+        )
+
     # =======================
     # Internal helper methods
     # =======================
@@ -1876,26 +1962,11 @@ class RestZenStore(BaseZenStore):
             The parsed response.
 
         Raises:
-            DoesNotExistException: If the response indicates that the
-                requested entity does not exist.
-            EntityExistsError: If the response indicates that the requested
-                entity already exists.
-            AuthorizationException: If the response indicates that the request
-                is not authorized.
-            IllegalOperationError: If the response indicates that the requested
-                operation is forbidden.
-            KeyError: If the response indicates that the requested entity
-                does not exist.
-            RuntimeError: If the response indicates that the requested entity
-                does not exist.
-            StackComponentExistsError: If the response indicates that the
-                requested entity already exists.
-            StackExistsError: If the response indicates that the requested
-                entity already exists.
-            ValueError: If the response indicates that the requested entity
-                does not exist.
-            NotImplementedError: If the response indicates that the requested
-                operation is not implemented.
+            ValueError: if the response is not in the right format.
+            RuntimeError: if an error response is received from the server
+                and a more specific exception cannot be determined.
+            exc: the exception converted from an error response, if one
+                is returned from the server.
         """
         if 200 <= response.status_code < 300:
             try:
@@ -1906,69 +1977,15 @@ class RestZenStore(BaseZenStore):
                     "Bad response from API. Expected json, got\n"
                     f"{response.text}"
                 )
-        elif response.status_code == 401:
-            raise AuthorizationException(
-                f"{response.status_code} Client Error: Unauthorized request to "
-                f"URL {response.url}: {response.json().get('detail')}"
-            )
-        elif response.status_code == 403:
-            msg = response.json().get("detail", response.text)
-            if isinstance(msg, list):
-                msg = msg[-1]
-            raise IllegalOperationError(msg)
-        elif response.status_code == 404:
-            if "KeyError" in response.text:
-                # In case the backend does not return more detailed info
-                error_message = "KeyError"
-
-                error_output = response.json().get("detail", (response.text,))
-                if len(error_output) > 1:
-                    error_message = error_output[1]
-                raise KeyError(error_message)
-            elif "DoesNotExistException" in response.text:
-                message = ": ".join(
-                    response.json().get("detail", (response.text,))
-                )
-                raise DoesNotExistException(message)
-            raise DoesNotExistException("Endpoint does not exist.")
-        elif response.status_code == 409:
-            if "StackComponentExistsError" in response.text:
-                raise StackComponentExistsError(
-                    message=": ".join(
-                        response.json().get("detail", (response.text,))
-                    )
-                )
-            elif "StackExistsError" in response.text:
-                raise StackExistsError(
-                    message=": ".join(
-                        response.json().get("detail", (response.text,))
-                    )
-                )
-            elif "EntityExistsError" in response.text:
-                raise EntityExistsError(
-                    message=": ".join(
-                        response.json().get("detail", (response.text,))
-                    )
-                )
+        elif response.status_code >= 400:
+            exc = exception_from_response(response)
+            if exc is not None:
+                raise exc
             else:
-                raise ValueError(
-                    ": ".join(response.json().get("detail", (response.text,)))
+                raise RuntimeError(
+                    f"{response.status_code} HTTP Error received from server: "
+                    f"{response.text}"
                 )
-        elif response.status_code == 422:
-            if "NotImplementedError" in response.text:
-                raise NotImplementedError(
-                    ": ".join(response.json().get("detail", (response.text,)))
-                )
-            response_details = response.json().get("detail", (response.text,))
-            if isinstance(response_details[0], str):
-                response_msg = ": ".join(response_details)
-            else:
-                # This is an "Unprocessable Entity" error, which has a special
-                # structure in the response.
-                response_msg = response.text
-            raise RuntimeError(response_msg)
-        elif response.status_code == 500:
-            raise RuntimeError(response.text)
         else:
             raise RuntimeError(
                 "Error retrieving from API. Got response "
@@ -2327,21 +2344,23 @@ class RestZenStore(BaseZenStore):
         resource_update: BaseModel,
         response_model: Type[AnyResponseModel],
         route: str,
+        params: Optional[Dict[str, Any]] = None,
     ) -> AnyResponseModel:
         """Update an existing resource.
 
         Args:
             resource_id: The id of the resource to update.
             resource_update: The resource update.
-            route: The resource REST API route to use.
             response_model: Optional model to use to deserialize the response
                 body. If not provided, the resource class itself will be used.
+            route: The resource REST API route to use.
+            params: Optional query parameters to pass to the endpoint.
 
         Returns:
             The updated resource.
         """
         response_body = self.put(
-            f"{route}/{str(resource_id)}", body=resource_update
+            f"{route}/{str(resource_id)}", body=resource_update, params=params
         )
 
         return response_model.parse_obj(response_body)

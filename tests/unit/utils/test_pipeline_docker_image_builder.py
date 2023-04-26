@@ -24,29 +24,38 @@ from zenml.utils.pipeline_docker_image_builder import (
 
 def test_check_user_is_set():
     """Tests the setting of the user if configured."""
-    config = DockerSettings(user=None)
+    docker_settings = DockerSettings(user=None)
     generated_dockerfile = (
         PipelineDockerImageBuilder._generate_zenml_pipeline_dockerfile(
-            "image:tag", config
+            "image:tag",
+            docker_settings,
+            download_files=False,
         )
     )
     assert "USER" not in generated_dockerfile
 
-    config = DockerSettings(user="test_user")
+    docker_settings = DockerSettings(user="test_user")
     generated_dockerfile = (
         PipelineDockerImageBuilder._generate_zenml_pipeline_dockerfile(
-            "image:tag", config
+            "image:tag",
+            docker_settings,
+            download_files=False,
         )
     )
     assert "USER test_user" in generated_dockerfile
 
 
-def test_requirements_file_generation(mocker, local_stack, tmp_path: Path):
+def test_requirements_file_generation(
+    mocker, local_stack, tmp_path: Path, sample_hub_plugin_response_model
+):
     """Tests that the requirements get included in the correct order and only when configured."""
     mocker.patch("subprocess.check_output", return_value=b"local_requirements")
-
     mocker.patch.object(
         local_stack, "requirements", return_value={"stack_requirements"}
+    )
+    mocker.patch(
+        "zenml._hub.client.HubClient.get_plugin",
+        return_value=sample_hub_plugin_response_model,
     )
 
     # just local requirements
@@ -56,7 +65,7 @@ def test_requirements_file_generation(mocker, local_stack, tmp_path: Path):
         required_integrations=[],
         replicate_local_python_environment="pip_freeze",
     )
-    files = PipelineDockerImageBuilder._gather_requirements_files(
+    files = PipelineDockerImageBuilder.gather_requirements_files(
         settings, stack=local_stack
     )
     assert len(files) == 1
@@ -69,7 +78,7 @@ def test_requirements_file_generation(mocker, local_stack, tmp_path: Path):
         required_integrations=[],
         replicate_local_python_environment=None,
     )
-    files = PipelineDockerImageBuilder._gather_requirements_files(
+    files = PipelineDockerImageBuilder.gather_requirements_files(
         settings, stack=local_stack
     )
     assert len(files) == 1
@@ -82,7 +91,7 @@ def test_requirements_file_generation(mocker, local_stack, tmp_path: Path):
         required_integrations=[],
         replicate_local_python_environment=None,
     )
-    files = PipelineDockerImageBuilder._gather_requirements_files(
+    files = PipelineDockerImageBuilder.gather_requirements_files(
         settings, stack=local_stack
     )
     assert len(files) == 1
@@ -95,21 +104,32 @@ def test_requirements_file_generation(mocker, local_stack, tmp_path: Path):
         install_stack_requirements=True,
         requirements=str(requirements_file),
         required_integrations=[SKLEARN],
+        required_hub_plugins=[sample_hub_plugin_response_model.name],
         replicate_local_python_environment="pip_freeze",
     )
-    files = PipelineDockerImageBuilder._gather_requirements_files(
+    files = PipelineDockerImageBuilder.gather_requirements_files(
         settings, stack=local_stack
     )
-    assert len(files) == 3
+    assert len(files) == 5
     # first up the local python requirements
     assert files[0][1] == "local_requirements"
     # then the user requirements
     assert files[1][1] == "user_requirements"
-    # last the integration requirements
+    # then the integration requirements
     expected_integration_requirements = "\n".join(
         sorted(SklearnIntegration.REQUIREMENTS + ["stack_requirements"])
     )
     assert files[2][1] == expected_integration_requirements
+    # last the hub requirements
+    expected_hub_internal_requirements = (
+        f"-i {sample_hub_plugin_response_model.index_url}\n"
+        f"{sample_hub_plugin_response_model.package_name}"
+    )
+    assert files[3][1] == expected_hub_internal_requirements
+    expected_hub_pypi_requirements = "\n".join(
+        sample_hub_plugin_response_model.requirements
+    )
+    assert files[4][1] == expected_hub_pypi_requirements
 
 
 def test_build_skipping():
@@ -117,5 +137,9 @@ def test_build_skipping():
     to `True`."""
     settings = DockerSettings(skip_build=True, parent_image="my_parent_image")
     assert PipelineDockerImageBuilder().build_docker_image(
-        docker_settings=settings, tag="tag", stack=Client().active_stack
+        docker_settings=settings,
+        tag="tag",
+        stack=Client().active_stack,
+        include_files=True,
+        download_files=False,
     )

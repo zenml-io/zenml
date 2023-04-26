@@ -112,8 +112,7 @@ def bentoml_model_deployer_step(
         # Add working dir in the bentoml load
         service = bentoml.load(
             bento_identifier=bento_tag,
-            working_dir=params.working_dir
-            or source_utils.get_source_root_path(),
+            working_dir=params.working_dir or source_utils.get_source_root(),
         )
         apis = service.apis
         apis_paths = list(apis.keys())
@@ -127,10 +126,10 @@ def bentoml_model_deployer_step(
         bento_uri=bento.info.labels.get("bento_uri"),
         apis=service_apis(str(bento.tag)),
         workers=params.workers,
-        working_dir=params.working_dir or source_utils.get_source_root_path(),
+        working_dir=params.working_dir or source_utils.get_source_root(),
         port=params.port,
         pipeline_name=pipeline_name,
-        pipeline_run_id=run_name,
+        run_name=run_name,
         pipeline_step_name=step_name,
         ssl_parameters=SSLBentoMLParametersConfig(
             ssl_certfile=params.ssl_certfile,

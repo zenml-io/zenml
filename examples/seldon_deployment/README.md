@@ -131,9 +131,18 @@ context.
 2. Seldon Core needs to be preinstalled and running in the target Kubernetes
 cluster (read below for a brief explanation of how to do that).
 
-3. models deployed with Seldon Core need to be stored in some form of
-persistent shared storage that is accessible from the Kubernetes cluster where
-Seldon Core is installed (e.g. AWS S3, GCS, Azure Blob Storage, etc.).
+3. models deployed with Seldon Core are stored in the ZenML Artifact
+Store that is used to train the models (e.g. Minio, AWS S3, GCS, Azure Blob
+Storage, etc.). The Seldon Core model deployer needs to access the artifact
+store to fetch the model artifacts, which means that it may need access to
+credentials for the Artifact Store, unless Seldon Core is deployed in the
+same cloud as the Artifact Store and is able to access it directly without
+requiring explicit credentials, through some in-cloud provider specific
+implicit authentication mechanism. For this reason, you may need to configure
+your Artifact Store stack component with explicit credentials. See the
+section [Local and remote authentication](#local-and-remote-authentication)
+for more details.
+
 
 #### Installing Seldon Core (e.g. in an EKS cluster)
 
@@ -224,6 +233,75 @@ components are described in this document, but similar stacks may be set up
 using different backends and used to run the example as long as the basic Stack
 prerequisites are met.
 
+
+#### Local and remote authentication
+
+The ZenML Stacks featured in this example are based on managed AWS services like
+S3 storage, EKS Kubernetes and ECR container registry. In order to access these
+services from your host, you need to have an AWS account and have the proper
+credentials set up on your machine. The easiest way to do this is to install the
+AWS CLI and set up AWS client credentials locally as documented in
+[the official AWS documentation](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html).
+
+In addition to local access, some stack components running remotely also need
+to access AWS services. For example:
+
+* the ZenML orchestrator (e.g. Kubeflow) needs to be able to access the AWS S3
+bucket to store and retrieve pipeline run artifacts.
+* the ZenML Seldon Core model deployer needs to be able to access the AWS S3 bucket
+configured for the ZenML Artifact Store, because this is where models will be
+stored and loaded from.
+
+If the ZenML orchestrator and Seldon Core are already running in the AWS cloud (e.g.
+in an EKS cluster), there are ways of configuring AWS workloads to have implicit
+access to other AWS resources like S3 without requiring explicit credentials.
+However, if either the ZenML Orchestrator or Seldon Core is running in a
+different cloud, or on-prem, or if the AWS implicit in-cloud workload
+authentication is not enabled, then explicit AWS credentials are required.
+
+Concretely, this means that the S3 Artifact Store ZenML stack component needs to
+be configured with explicit AWS credentials (i.e. an AWS access key and secret
+key) that can also be used by other ZenML stack components like the ZenML
+orchestrator and Seldon Core model deployer to access the bucket.
+
+In the sections that follow, this is explained in more detail for the two
+different examples of ZenML stacks featured in this document.
+
+##### AWS Authentication with Implicit IAM Access
+
+If the EKS cluster where Seldon Core is running already has
+[IAM access](https://docs.aws.amazon.com/eks/latest/userguide/security-iam.html)
+configured to grant the EKS nodes implicit access to the AWS S3 bucket,
+you don't need to configure any explicit AWS credentials for the S3 Artifact
+Store. The ZenML orchestrator and Seldon Core model deployer will automatically
+default to using the environment authentication.
+
+##### AWS Authentication with Explicit Credentials
+
+If IAM access is not configured for your EKS cluster, or you don't know how to
+configure it, you will need an explicit AWS access key and secret key that
+grants access to the S3 bucket. To create an AWS access key and secret key,
+follow the instructions in [the official AWS documentation](https://aws.amazon.com/premiumsupport/knowledge-center/create-access-key/). Please remember to grant the created IAM user permissions
+to read and write to your S3 bucket (i.e. use the `AmazonS3FullAccess` policy).
+
+When you have the AWS access key id and secret access key, you can configure a ZenML
+secret to store them securely. You will reference the secret when you configure
+the S3 Artifact Store stack component in the next sections:
+
+```bash
+zenml secret create s3-store \
+   --aws_access_key_id=<YOUR-AWS-ACCESS-KEY-ID> \
+   --aws_secret_access_key=<YOUR-AWS-SECRET-ACCESS-KEY>
+```
+
+This is how you would register a ZenML S3 Artifact Store with explicit
+credentials referencing the secret you just created:
+
+```bash
+zenml artifact-store register aws --flavor=s3 --path s3://mybucket \
+  --authentication_secret=s3_secret
+```
+
 #### Local orchestrator with S3 artifact store and EKS Seldon Core installation
 
 This stack consists of the following components:
@@ -231,12 +309,7 @@ This stack consists of the following components:
 * an AWS S3 artifact store
 * the local orchestrator
 * a Seldon Core model deployer
-* a local secret manager used to store the credentials needed by Seldon Core to
-access the AWS S3 artifact store
-
-To have access to the AWS S3 artifact store from your local workstation, the
-AWS client credentials needs to be properly set up locally as documented in
-[the official AWS documentation](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html).
+* an image builder
 
 In addition to the stack components, Seldon Core must be installed in a
 Kubernetes cluster that is locally accessible through a Kubernetes configuration
@@ -262,22 +335,24 @@ Extract the URL where the Seldon Core model server exposes its prediction API, e
 export INGRESS_HOST=$(kubectl -n istio-system get service istio-ingressgateway -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
 ```
 
-Configuring the stack can be done like this:
+Configuring the stack can look as described below:
 
-```shell
+```bash
 zenml integration install s3 seldon
 zenml model-deployer register seldon_eks --flavor=seldon \
   --kubernetes_context=zenml-eks --kubernetes_namespace=zenml-workloads \
-  --base_url=http://$INGRESS_HOST \
-  --secret=s3-store
+  --base_url=http://$INGRESS_HOST
 zenml artifact-store register aws --flavor=s3 --path s3://mybucket
-zenml secrets-manager register local --flavor=local
-zenml stack register local_with_aws_storage -a aws -o default -d seldon_eks -x local --set
+zenml image-builder register local_builder --flavor=local
+zenml stack register local_with_aws_storage -a aws -o default -d seldon_eks -i local_builder --set
 ```
 
-As the last step in setting up the stack, we need to configure a ZenML secret
-with the credentials needed by Seldon Core to access the Artifact Store. This is
-covered in the [Managing Seldon Core Credentials section](#managing-seldon-core-credentials).
+>**Note**:
+> As already covered in the [Local and remote authentication](#local-and-remote-authentication) section, you will need to configure the Artifact Store with explicit credentials if IAM access is not configured for your EKS cluster:
+> ```shell
+> zenml artifact-store register aws --flavor=s3 --path s3://mybucket \
+>   --authentication_secret=s3_secret
+> ```
 
 #### Full AWS stack
 
@@ -286,18 +361,12 @@ This stack has all components running in the AWS cloud:
 * an AWS S3 artifact store
 * a Kubeflow orchestrator installed in an AWS EKS Kubernetes cluster
 * an AWS ECR container registry
-* an AWS secret manager used to store the credentials needed by Seldon Core to
-access the AWS S3 artifact store
 * a Seldon Core model deployer pointing to the AWS EKS cluster
 
 In order to run this example with a remote orchestrator such as Kubeflow, the 
 first thing that you would require is a remote ZenML server deployed to the 
 cloud. See the [deployment guide](https://docs.zenml.io/getting-started/deploying-zenml) 
 for more information.
-
-To have access to the AWS S3 artifact store from your local workstation, the
-AWS client credentials needs to be properly set up locally as documented in
-[the official AWS documentation](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html).
 
 In addition to the stack components, Seldon Core must be installed in *the same*
 Kubernetes cluster as Kubeflow. The cluster must also be locally accessible
@@ -325,7 +394,7 @@ export INGRESS_HOST=$(kubectl -n istio-system get service istio-ingressgateway \
   -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
 ```
 
-Configuring the stack can be done like this:
+Configuring the stack can look as described below:
 
 ```shell
 zenml integration install s3 aws kubeflow seldon
@@ -333,13 +402,19 @@ zenml integration install s3 aws kubeflow seldon
 zenml artifact-store register aws --flavor=s3 --path=s3://mybucket
 zenml model-deployer register seldon_aws --flavor=seldon \
   --kubernetes_context=zenml-eks --kubernetes_namespace=kubeflow \
-  --base_url=http://$INGRESS_HOST \
-  --secret=s3-store
+  --base_url=http://$INGRESS_HOST
 zenml container-registry register aws --flavor=default --uri=715803424590.dkr.ecr.us-east-1.amazonaws.com
 zenml orchestrator register aws --flavor=kubeflow --kubernetes_context=zenml-eks --synchronous=True
-zenml secrets-manager register aws --flavor=aws
-zenml stack register aws -a aws -o aws -c aws -d seldon_aws -x aws --set
+zenml image-builder register local_builder --flavor=local
+zenml stack register aws -a aws -o aws -c aws -d seldon_aws -i local_builder --set
 ```
+
+>**Note**:
+> As already covered in the [Local and remote authentication](#local-and-remote-authentication) section, you will need to configure the Artifact Store with explicit credentials if IAM access is not configured for your EKS cluster:
+> ```shell
+> zenml artifact-store register aws --flavor=s3 --path s3://mybucket \
+>   --authentication_secret=s3_secret
+> ```
 
 ZenML will manage the Seldon Core deployments inside the same `kubeflow`
 namespace where the Kubeflow pipelines are running. You also have to update 
@@ -352,110 +427,6 @@ command:
 kubectl -n kubeflow patch role pipeline-runner --type='json' -p='[{"op": "add", "path": "/rules/0", "value": {"apiGroups": [""], "resources": ["secrets","serviceaccounts"], "verbs": ["*"]}}]'
 ```
 
-As the last step in setting up the stack, we need to configure a ZenML secret
-with the credentials needed by Seldon Core to access the Artifact Store. This is
-covered in the [Managing Seldon Core Credentials section](#managing-seldon-core-credentials).
-
-#### Managing Seldon Core Credentials
-
-The Seldon Core model servers need to access the Artifact Store in the ZenML
-stack to retrieve the model artifacts. This usually involve passing some
-credentials to the Seldon Core model servers required to authenticate with
-the Artifact Store. In ZenML, this is done by creating a ZenML secret with the
-proper credentials and configuring the Seldon Core Model Deployer stack 
-component to use it, by passing the `--secret` argument to the CLI command used
-to register the model deployer. We've already done the latter, now all that is
-left to do is to configure the `s3-store` ZenML secret specified before as a
-Seldon Model Deployer configuration attribute with the credentials needed by
-Seldon Core to access the artifact store.
-
-There are built-in secret schemas that the Seldon Core integration provides 
-which can be used to configure credentials for the 3 main types of Artifact 
-Stores supported by ZenML: S3, GCS and Azure.
-
-For this AWS S3 example, we'll use the standard `seldon_s3` secret schema, but
-you can also use `seldon_gs` for GCS and `seldon_az` for Azure. To read more 
-about secrets, secret schemas and how they are used in ZenML, please refer to 
-the [ZenML documentation](https://docs.zenml.io/component-gallery/secrets-managers/secrets-managers).
-
-The next sections cover two cases involving AWS authentication: with and without
-IAM role access.  Please look up the variables relevant to your use-case in the
-[official Seldon Core documentation](https://docs.seldon.io/projects/seldon-core/en/latest/servers/overview.html#handling-credentials)
-and set them accordingly for your ZenML secret.
-
-##### AWS Authentication with Implicit IAM Access
-
-If the EKS cluster where Seldon Core is running already has
-[IAM access](https://docs.aws.amazon.com/eks/latest/userguide/security-iam.html)
-configured to grant the EKS nodes access to the AWS S3 bucket, you won't need to
-save any explicit AWS credentials in the ZenML secret. You just have to set the
-`rclone_config_s3_env_auth` attribute value to `True` and leave everything else
-as is:
-
-```bash
-$ zenml secrets-manager secret register -s aws_seldon_secret s3-store --rclone_config_s3_env_auth=True
-The following secret will be registered.
-┏━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━┓
-┃        SECRET_KEY         │ SECRET_VALUE ┃
-┠───────────────────────────┼──────────────┨
-┃   rclone_config_s3_type   │ ***          ┃
-┃ rclone_config_s3_provider │ ***          ┃
-┃ rclone_config_s3_env_auth │ ***          ┃
-┗━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━┛
-
-$ zenml secrets-manager secret get s3-store
-INFO:botocore.credentials:Found credentials in shared credentials file: ~/.aws/credentials
-┏━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━┓
-┃        SECRET_KEY         │ SECRET_VALUE ┃
-┠───────────────────────────┼──────────────┨
-┃   rclone_config_s3_type   │ s3           ┃
-┃ rclone_config_s3_provider │ aws          ┃
-┃ rclone_config_s3_env_auth │ True         ┃
-┗━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━┛
-```
-
-##### AWS Authentication with Explicit Credentials
-
-If IAM access is not configured for your EKS cluster, or you don't know how to
-configure it, you will need to set up credentials explicitly in the ZenML 
-secret, e.g.:
-
-```bash
-$ zenml secrets-manager secret register -s seldon_s3 s3-store \
-    --rclone_config_s3_env_auth=False \
-    --rclone_config_s3_access_key_id='ASAK2NSJVO4HDQC7Z25F' \ --rclone_config_s3_secret_access_key='AhkFSfhjj23fSDFfjklsdfj34hkls32SDfscsaf+' \
-    --rclone_config_s3_session_token=@./aws_session_token.txt \
-    --rclone_config_s3_region=us-east-1
-Expanding argument value rclone_config_s3_session_token to contents of file ./aws_session_token.txt.
-The following secret will be registered.
-┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━┓
-┃             SECRET_KEY             │ SECRET_VALUE ┃
-┠────────────────────────────────────┼──────────────┨
-┃       rclone_config_s3_type        │ ***          ┃
-┃     rclone_config_s3_provider      │ ***          ┃
-┃     rclone_config_s3_env_auth      │ ***          ┃
-┃   rclone_config_s3_access_key_id   │ ***          ┃
-┃ rclone_config_s3_secret_access_key │ ***          ┃
-┃   rclone_config_s3_session_token   │ ***          ┃
-┃      rclone_config_s3_region       │ ***          ┃
-┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━┛
-INFO:botocore.credentials:Found credentials in shared credentials file: ~/.aws/credentials
-
-$ zenml secrets-manager secret get s3-store
-INFO:botocore.credentials:Found credentials in shared credentials file: ~/.aws/credentials
-┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃             SECRET_KEY             │ SECRET_VALUE                           ┃
-┠────────────────────────────────────┼────────────────────────────────────────┨
-┃       rclone_config_s3_type        │ s3                                     ┃
-┃     rclone_config_s3_provider      │ aws                                    ┃
-┃     rclone_config_s3_env_auth      │ False                                  ┃
-┃   rclone_config_s3_access_key_id   │ ASAK2NSJVO4HDQC7Z25F                   ┃
-┃ rclone_config_s3_secret_access_key │ AhkFSfhjj23fSDFfjklsdfj34hkls32SDfscs… ┃
-┃   rclone_config_s3_session_token   │ FwoGZXIvYXdzEG4aDHogqi7YRrJyVJUVfSKpA… ┃
-┃                                    │                                        ┃
-┃      rclone_config_s3_region       │ us-east-1                              ┃
-┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
-```
 
 ### 🏃️Run the code
 To run the continuous deployment pipeline:
@@ -596,7 +567,7 @@ $ zenml model-deployer models describe 8cbe671b-9fce-4394-a051-68e001f92765
 ┠────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────┨
 ┃ PIPELINE_NAME          │ continuous_deployment_pipeline                                                         ┃
 ┠────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────┨
-┃ PIPELINE_RUN_ID        │ continuous_deployment_pipeline-11_Apr_22-09_39_27_648527                               ┃
+┃ RUN_NAME               │ continuous_deployment_pipeline-11_Apr_22-09_39_27_648527                               ┃
 ┠────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────┨
 ┃ PIPELINE_STEP_NAME     │ seldon_model_deployer_step                                                             ┃
 ┠────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────┨

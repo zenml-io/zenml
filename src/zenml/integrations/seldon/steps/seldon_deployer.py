@@ -48,9 +48,8 @@ from zenml.steps import (
     step,
 )
 from zenml.steps.step_context import StepContext
-from zenml.utils import io_utils
+from zenml.utils import io_utils, source_utils
 from zenml.utils.materializer_utils import save_model_metadata
-from zenml.utils.source_utils import import_class_by_path
 
 logger = get_logger(__name__)
 
@@ -86,7 +85,7 @@ class CustomDeployParameters(BaseModel):
             TypeError: if predict function path is not a callable function
         """
         try:
-            predict_function = import_class_by_path(predict_func_path)
+            predict_function = source_utils.load(predict_func_path)
         except AttributeError:
             raise ValueError("Predict function can't be found.")
         if not callable(predict_function):
@@ -99,11 +98,6 @@ class SeldonDeployerStepParameters(BaseParameters):
 
     Attributes:
         service_config: Seldon Core deployment service configuration.
-        secrets: a list of ZenML secrets containing additional configuration
-            parameters for the Seldon Core deployment (e.g. credentials to
-            access the Artifact Store where the models are stored). If supplied,
-            the information fetched from these secrets is passed to the Seldon
-            Core deployment server as a list of environment variables.
         custom_deploy_parameters: custom deployment parameters
         registry_model_name: name of the model in the model registry
         registry_model_version: version of the model in the model registry
@@ -155,7 +149,7 @@ def seldon_model_deployer_step(
 
     # update the step configuration with the real pipeline runtime information
     params.service_config.pipeline_name = pipeline_name
-    params.service_config.pipeline_run_id = run_name
+    params.service_config.run_name = run_name
     params.service_config.pipeline_step_name = step_name
 
     def prepare_service_config(model_uri: str) -> SeldonDeploymentConfig:
@@ -306,7 +300,7 @@ def seldon_custom_model_deployer_step(
 
     # update the step configuration with the real pipeline runtime information
     params.service_config.pipeline_name = pipeline_name
-    params.service_config.pipeline_run_id = run_name
+    params.service_config.run_name = run_name
     params.service_config.pipeline_step_name = step_name
     params.service_config.is_custom_deployment = True
 

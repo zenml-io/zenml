@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Endpoint definitions for pipeline run secrets."""
+from typing import Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Security
@@ -25,8 +26,8 @@ from zenml.models.secret_models import (
     SecretUpdateModel,
 )
 from zenml.zen_server.auth import AuthContext, authorize
+from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.utils import (
-    error_response,
     handle_exceptions,
     make_dependable,
     zen_store,
@@ -114,6 +115,7 @@ def get_secret(
 def update_secret(
     secret_id: UUID,
     secret_update: SecretUpdateModel,
+    patch_values: Optional[bool] = False,
     _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
 ) -> SecretResponseModel:
     """Updates the attribute on a specific secret using its unique id.
@@ -121,10 +123,21 @@ def update_secret(
     Args:
         secret_id: ID of the secret to get.
         secret_update: the model containing the attributes to update.
+        patch_values: Whether to patch the secret values or replace them.
 
     Returns:
         The updated secret object.
     """
+    if not patch_values:
+        # If patch_values is False, interpret the update values as a complete
+        # replacement of the existing secret values. The only adjustment we
+        # need to make is to set the value of any keys that are not present in
+        # the update to None, so that they are deleted.
+        secret = zen_store().get_secret(secret_id=secret_id)
+        for key in secret.values.keys():
+            if key not in secret_update.values:
+                secret_update.values[key] = None
+
     return zen_store().update_secret(
         secret_id=secret_id, secret_update=secret_update
     )

@@ -15,8 +15,6 @@
 
 from typing import ClassVar, Optional
 
-from typing_extensions import Literal
-
 from zenml.secret import register_secret_schema_class
 from zenml.secret.base_secret import BaseSecretSchema
 
@@ -30,9 +28,8 @@ class KServeS3SecretSchema(BaseSecretSchema):
     """KServe S3 credentials.
 
     Attributes:
-        storage_type: the storage type. Must be set to "s3" for this schema.
-        credentials: the credentials to use.
-        service_account: the name of the service account.
+        aws_access_key_id: the AWS access key ID.
+        aws_secret_access_key: the AWS secret access key.
         s3_endpoint: the S3 endpoint.
         s3_region: the S3 region.
         s3_use_https: whether to use HTTPS.
@@ -41,13 +38,12 @@ class KServeS3SecretSchema(BaseSecretSchema):
 
     TYPE: ClassVar[str] = KSERVE_S3_SECRET_SCHEMA_TYPE
 
-    storage_type: Literal["S3"] = "S3"
-    credentials: Optional[str]
-    service_account: Optional[str]
-    s3_endpoint: Optional[str]
-    s3_region: Optional[str]
-    s3_use_https: Optional[str]
-    s3_verify_ssl: Optional[str]
+    aws_access_key_id: Optional[str] = None
+    aws_secret_access_key: Optional[str] = None
+    s3_endpoint: Optional[str] = None
+    s3_region: Optional[str] = None
+    s3_use_https: Optional[str] = None
+    s3_verify_ssl: Optional[str] = None
 
 
 @register_secret_schema_class
@@ -55,16 +51,13 @@ class KServeGSSecretSchema(BaseSecretSchema):
     """KServe GCS credentials.
 
     Attributes:
-        storage_type: the storage type. Must be set to "GCS" for this schema.
-        credentials: the credentials to use.
-        service_account: the service account.
+        google_application_credentials: the GCP application credentials to use,
+            in JSON format.
     """
 
     TYPE: ClassVar[str] = KSERVE_GS_SECRET_SCHEMA_TYPE
 
-    storage_type: Literal["GCS"] = "GCS"
-    credentials: Optional[str]
-    service_account: Optional[str]
+    google_application_credentials: Optional[str]
 
 
 @register_secret_schema_class
@@ -72,11 +65,15 @@ class KServeAzureSecretSchema(BaseSecretSchema):
     """KServe Azure Blob Storage credentials.
 
     Attributes:
-        storage_type: the storage type. Must be set to "GCS" for this schema.
-        credentials: the credentials to use.
+        azure_client_id: the Azure client ID.
+        azure_client_secret: the Azure client secret.
+        azure_tenant_id: the Azure tenant ID.
+        azure_subscription_id: the Azure subscription ID.
     """
 
     TYPE: ClassVar[str] = KSERVE_AZUREBLOB_SECRET_SCHEMA_TYPE
 
-    storage_type: Literal["Azure"] = "Azure"
-    credentials: Optional[str]
+    azure_client_id: Optional[str] = None
+    azure_client_secret: Optional[str] = None
+    azure_tenant_id: Optional[str] = None
+    azure_subscription_id: Optional[str] = None

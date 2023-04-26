@@ -16,17 +16,24 @@ import itertools
 import os
 import subprocess
 import sys
-import tempfile
-from pathlib import PurePosixPath
-from typing import TYPE_CHECKING, Dict, List, Optional, Sequence, Tuple
+from collections import defaultdict
+from typing import (
+    TYPE_CHECKING,
+    DefaultDict,
+    Dict,
+    List,
+    Optional,
+    Sequence,
+    Tuple,
+)
 
 import zenml
 from zenml.config import DockerSettings
 from zenml.config.docker_settings import PythonEnvironmentExportMethod
-from zenml.config.global_config import GlobalConfiguration
 from zenml.constants import (
     ENV_ZENML_CONFIG_PATH,
     ENV_ZENML_ENABLE_REPO_INIT_WARNINGS,
+    ENV_ZENML_REQUIRES_CODE_DOWNLOAD,
 )
 from zenml.enums import OperatingSystemType
 from zenml.integrations.registry import integration_registry
@@ -34,6 +41,7 @@ from zenml.logger import get_logger
 from zenml.utils import docker_utils, io_utils, source_utils
 
 if TYPE_CHECKING:
+    from zenml.code_repositories import BaseCodeRepository
     from zenml.container_registries import BaseContainerRegistry
     from zenml.image_builders import BuildContext
     from zenml.stack import Stack
@@ -60,8 +68,11 @@ class PipelineDockerImageBuilder:
         docker_settings: "DockerSettings",
         tag: str,
         stack: "Stack",
+        include_files: bool,
+        download_files: bool,
         entrypoint: Optional[str] = None,
         extra_files: Optional[Dict[str, str]] = None,
+        code_repository: Optional["BaseCodeRepository"] = None,
     ) -> str:
         """Builds (and optionally pushes) a Docker image to run a pipeline.
 
@@ -72,11 +83,15 @@ class PipelineDockerImageBuilder:
             docker_settings: The settings for the image build.
             tag: The tag to use for the image.
             stack: The stack on which the pipeline will be deployed.
+            include_files: Whether to include files in the build context.
+            download_files: Whether to download files in the build context.
             entrypoint: Entrypoint to use for the final image. If left empty,
                 no entrypoint will be included in the image.
             extra_files: Extra files to add to the build context. Keys are the
                 path inside the build context, values are either the file
                 content or a file path.
+            code_repository: The code repository from which files will be
+                downloaded.
 
         Returns:
             The Docker image repo digest or local name, depending on whether
@@ -118,12 +133,13 @@ class PipelineDockerImageBuilder:
             [
                 docker_settings.requirements,
                 docker_settings.required_integrations,
+                docker_settings.required_hub_plugins,
                 docker_settings.replicate_local_python_environment,
                 docker_settings.install_stack_requirements,
                 docker_settings.apt_packages,
                 docker_settings.environment,
-                docker_settings.copy_files,
-                docker_settings.copy_global_config,
+                include_files,
+                download_files,
                 entrypoint,
                 extra_files,
             ]
@@ -201,11 +217,9 @@ class PipelineDockerImageBuilder:
 
         if requires_zenml_build:
             logger.info("Building Docker image `%s`.", target_image_name)
-            # Leave the build context empty if we don't want to copy any files
+            # Leave the build context empty if we don't want to include any files
             build_context_root = (
-                source_utils.get_source_root_path()
-                if docker_settings.copy_files
-                else None
+                source_utils.get_source_root() if include_files else None
             )
             build_context = build_context_class(
                 root=build_context_root,
@@ -216,6 +230,9 @@ class PipelineDockerImageBuilder:
                 docker_settings=docker_settings,
                 build_context=build_context,
                 stack=stack,
+                # Only pass code repo to include its dependencies if we actually
+                # need to download code
+                code_repository=code_repository if download_files else None,
             )
 
             apt_packages = docker_settings.apt_packages
@@ -252,24 +269,12 @@ class PipelineDockerImageBuilder:
             dockerfile = self._generate_zenml_pipeline_dockerfile(
                 parent_image=parent_image,
                 docker_settings=docker_settings,
+                download_files=download_files,
                 requirements_files=requirements_file_names,
                 apt_packages=apt_packages,
                 entrypoint=entrypoint,
             )
             build_context.add_file(destination="Dockerfile", source=dockerfile)
-
-            if docker_settings.copy_global_config:
-                with tempfile.TemporaryDirectory() as tmpdir:
-                    GlobalConfiguration().copy_configuration(
-                        tmpdir,
-                        load_config_path=PurePosixPath(
-                            DOCKER_IMAGE_ZENML_CONFIG_PATH
-                        ),
-                    )
-                    build_context.add_directory(
-                        source=tmpdir,
-                        destination=DOCKER_IMAGE_ZENML_CONFIG_DIR,
-                    )
 
             if extra_files:
                 for destination, source in extra_files.items():
@@ -320,6 +325,7 @@ class PipelineDockerImageBuilder:
         docker_settings: DockerSettings,
         build_context: "BuildContext",
         stack: "Stack",
+        code_repository: Optional["BaseCodeRepository"] = None,
     ) -> List[str]:
         """Adds requirements files to the build context.
 
@@ -328,6 +334,8 @@ class PipelineDockerImageBuilder:
                 requirements to install.
             build_context: Build context to add the requirements files to.
             stack: The stack on which the pipeline will run.
+            code_repository: The code repository from which files will be
+                downloaded.
 
         Returns:
             Name of the requirements files in the build context.
@@ -336,10 +344,14 @@ class PipelineDockerImageBuilder:
             - User-defined requirements
             - Requirements defined by user-defined and/or stack integrations
         """
-        requirements_file_names = []
-        requirements_files = cls._gather_requirements_files(
-            docker_settings=docker_settings, stack=stack
+        requirements_file_names: List[str] = []
+
+        requirements_files = cls.gather_requirements_files(
+            docker_settings=docker_settings,
+            stack=stack,
+            code_repository=code_repository,
         )
+
         for filename, file_content in requirements_files:
             build_context.add_file(source=file_content, destination=filename)
             requirements_file_names.append(filename)
@@ -347,16 +359,26 @@ class PipelineDockerImageBuilder:
         return requirements_file_names
 
     @staticmethod
-    def _gather_requirements_files(
-        docker_settings: DockerSettings, stack: "Stack", log: bool = True
+    def gather_requirements_files(
+        docker_settings: DockerSettings,
+        stack: "Stack",
+        code_repository: Optional["BaseCodeRepository"] = None,
+        log: bool = True,
     ) -> List[Tuple[str, str]]:
         """Gathers and/or generates pip requirements files.
+
+        This method is called in `PipelineDockerImageBuilder.build_docker_image`
+        but it is also called by other parts of the codebase, e.g. the
+        `AzureMLStepOperator`, which needs to upload the requirements files to
+        AzureML where the step image is then built.
 
         Args:
             docker_settings: Docker settings that specifies which
                 requirements to install.
             stack: The stack on which the pipeline will run.
-            log: If `True`, will log the requirements.
+            code_repository: The code repository from which files will be
+                downloaded.
+            log: If True, will log the requirements.
 
         Raises:
             RuntimeError: If the command to export the local python packages
@@ -440,6 +462,8 @@ class PipelineDockerImageBuilder:
 
         if docker_settings.install_stack_requirements:
             integration_requirements.update(stack.requirements())
+            if code_repository:
+                integration_requirements.update(code_repository.requirements)
 
         if integration_requirements:
             integration_requirements_list = sorted(integration_requirements)
@@ -458,12 +482,101 @@ class PipelineDockerImageBuilder:
                     ", ".join(f"`{r}`" for r in integration_requirements_list),
                 )
 
+        # Generate requirements files for all ZenML Hub plugins
+        if docker_settings.required_hub_plugins:
+            (
+                hub_internal_requirements,
+                hub_pypi_requirements,
+            ) = PipelineDockerImageBuilder._get_hub_requirements(
+                docker_settings.required_hub_plugins
+            )
+
+            # Plugin packages themselves
+            for i, (index, packages) in enumerate(
+                hub_internal_requirements.items()
+            ):
+                file_name = f".zenml_hub_internal_requirements_{i}"
+                file_lines = [f"-i {index}", *packages]
+                file_contents = "\n".join(file_lines)
+                requirements_files.append((file_name, file_contents))
+                if log:
+                    logger.info(
+                        "- Including internal hub packages from index `%s`: %s",
+                        index,
+                        ", ".join(f"`{r}`" for r in packages),
+                    )
+
+            # PyPI requirements of plugin packages
+            if hub_pypi_requirements:
+                file_name = ".zenml_hub_pypi_requirements"
+                file_contents = "\n".join(hub_pypi_requirements)
+                requirements_files.append((file_name, file_contents))
+                if log:
+                    logger.info(
+                        "- Including hub requirements from PyPI: %s",
+                        ", ".join(f"`{r}`" for r in hub_pypi_requirements),
+                    )
+
         return requirements_files
+
+    @staticmethod
+    def _get_hub_requirements(
+        required_hub_plugins: List[str],
+    ) -> Tuple[Dict[str, List[str]], List[str]]:
+        """Get package requirements for ZenML Hub plugins.
+
+        Args:
+            required_hub_plugins: List of hub plugin names in the format
+                `(<author_username>/)<plugin_name>(==<version>)`.
+
+        Returns:
+            - A dict of the hub plugin packages themselves (which need to be
+                installed from a custom index, mapping index URLs to lists of
+                package names.
+            - A list of all unique dependencies of the required hub plugins
+                (which can be installed from PyPI).
+        """
+        from zenml._hub.client import HubClient
+        from zenml._hub.utils import parse_plugin_name, plugin_display_name
+
+        client = HubClient()
+
+        internal_requirements: DefaultDict[str, List[str]] = defaultdict(list)
+        pypi_requirements: List[str] = []
+
+        for plugin_str in required_hub_plugins:
+            author, name, version = parse_plugin_name(
+                plugin_str, version_separator="=="
+            )
+
+            plugin = client.get_plugin(
+                name=name,
+                version=version,
+                author=author,
+            )
+
+            if plugin and plugin.index_url and plugin.package_name:
+                internal_requirements[plugin.index_url].append(
+                    plugin.package_name
+                )
+                if plugin.requirements:
+                    pypi_requirements.extend(plugin.requirements)
+            else:
+                display_name = plugin_display_name(name, version, author)
+                logger.warning(
+                    "Hub plugin `%s` does not exist or cannot be installed."
+                    "Skipping installation of this plugin.",
+                    display_name,
+                )
+
+        pypi_requirements = sorted(set(pypi_requirements))
+        return dict(internal_requirements), pypi_requirements
 
     @staticmethod
     def _generate_zenml_pipeline_dockerfile(
         parent_image: str,
         docker_settings: DockerSettings,
+        download_files: bool,
         requirements_files: Sequence[str] = (),
         apt_packages: Sequence[str] = (),
         entrypoint: Optional[str] = None,
@@ -473,6 +586,7 @@ class PipelineDockerImageBuilder:
         Args:
             parent_image: The image to use as parent for the Dockerfile.
             docker_settings: Docker settings for this image build.
+            download_files: Whether to download files in the build context.
             requirements_files: Paths of requirements files to install.
             apt_packages: APT packages to install.
             entrypoint: The default entrypoint command that gets executed when
@@ -498,19 +612,17 @@ class PipelineDockerImageBuilder:
             )
 
         lines.append(f"ENV {ENV_ZENML_ENABLE_REPO_INIT_WARNINGS}=False")
-        if docker_settings.copy_global_config:
-            lines.append(
-                f"ENV {ENV_ZENML_CONFIG_PATH}={DOCKER_IMAGE_ZENML_CONFIG_PATH}"
-            )
+        if download_files:
+            lines.append(f"ENV {ENV_ZENML_REQUIRES_CODE_DOWNLOAD}=True")
+
+        lines.append(
+            f"ENV {ENV_ZENML_CONFIG_PATH}={DOCKER_IMAGE_ZENML_CONFIG_PATH}"
+        )
 
         for key, value in docker_settings.environment.items():
             lines.append(f"ENV {key.upper()}={value}")
 
-        if docker_settings.copy_files:
-            lines.append("COPY . .")
-        elif docker_settings.copy_global_config:
-            lines.append(f"COPY {DOCKER_IMAGE_ZENML_CONFIG_DIR} .")
-
+        lines.append("COPY . .")
         lines.append("RUN chmod -R a+rw .")
 
         if docker_settings.user:

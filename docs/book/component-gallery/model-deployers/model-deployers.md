@@ -137,9 +137,8 @@ zenml model-deployer register seldon --flavor=seldon \
           model_name="my-model",
           replicas=1,
           implementation="TENSORFLOW_SERVER",
-          secret_name="seldon-secret",
           pipeline_name = step_env.pipeline_name,
-          pipeline_run_id = step_env.pipeline_run_id,
+          run_name = step_env.run_name,
           pipeline_step_name = step_env.step_name,
       )
     
@@ -245,11 +244,11 @@ $ zenml model-deployer models describe 8cbe671b-9fce-4394-a051-68e001f92765
 ┠────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────┨
 ┃ MODEL_NAME             │ mnist                                                                                  ┃
 ┠────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────┨
-┃ MODEL_URI              │ s3://zenprojects/seldon_model_deployer_step/output/884/seldon                             ┃
+┃ MODEL_URI              │ s3://zenprojects/seldon_model_deployer_step/output/884/seldon                          ┃
 ┠────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────┨
 ┃ PIPELINE_NAME          │ continuous_deployment_pipeline                                                         ┃
 ┠────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────┨
-┃ PIPELINE_RUN_ID        │ continuous_deployment_pipeline-11_Apr_22-09_39_27_648527                               ┃
+┃ RUN_NAME               │ continuous_deployment_pipeline-11_Apr_22-09_39_27_648527                               ┃
 ┠────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────┨
 ┃ PIPELINE_STEP_NAME     │ seldon_model_deployer_step                                                             ┃
 ┠────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────┨

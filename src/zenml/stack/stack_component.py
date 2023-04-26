@@ -89,7 +89,7 @@ class StackComponentConfig(BaseModel, ABC):
                         "in sensitive information as secrets. Check out the "
                         "documentation on how to configure your stack "
                         "components with secrets here: "
-                        "https://docs.zenml.io/advanced-guide/practical/secrets-management"
+                        "https://docs.zenml.io/starter-guide/production-fundamentals/secrets-management"
                     )
                 continue
 
@@ -298,6 +298,7 @@ class StackComponent:
         workspace: UUID,
         created: datetime,
         updated: datetime,
+        labels: Optional[Dict[str, Any]] = None,
         *args: Any,
         **kwargs: Any,
     ):
@@ -313,6 +314,7 @@ class StackComponent:
             workspace: The ID of the workspace the component belongs to.
             created: The creation time of the component.
             updated: The last update time of the component.
+            labels: The labels of the component.
             *args: Additional positional arguments.
             **kwargs: Additional keyword arguments.
 
@@ -334,6 +336,7 @@ class StackComponent:
         self.workspace = workspace
         self.created = created
         self.updated = updated
+        self.labels = labels
 
     @classmethod
     def from_model(
@@ -379,6 +382,7 @@ class StackComponent:
             name=component_model.name,
             id=component_model.id,
             config=configuration,
+            labels=component_model.labels,
             flavor=component_model.flavor,
             type=component_model.type,
             created=component_model.created,

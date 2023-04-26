@@ -17,6 +17,7 @@ from asyncio.log import logger
 from typing import Any, List
 
 from fastapi import FastAPI, HTTPException, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import ORJSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -26,9 +27,11 @@ from starlette.responses import FileResponse
 
 import zenml
 from zenml.constants import API, HEALTH
+from zenml.zen_server.exceptions import error_detail
 from zenml.zen_server.routers import (
     artifacts_endpoints,
     auth_endpoints,
+    code_repositories_endpoints,
     flavors_endpoints,
     pipeline_builds_endpoints,
     pipeline_deployments_endpoints,
@@ -71,6 +74,24 @@ app = FastAPI(
     root_path=ROOT_URL_PATH,
     default_response_class=ORJSONResponse,
 )
+
+# Customize the default request validation handler that comes with FastAPI
+# to return a JSON response that matches the ZenML API spec.
+@app.exception_handler(RequestValidationError)
+def validation_exception_handler(
+    request: Any, exc: Exception
+) -> ORJSONResponse:
+    """Custom validation exception handler.
+
+    Args:
+        request: The request.
+        exc: The exception.
+
+    Returns:
+        The error response formatted using the ZenML API conventions.
+    """
+    return ORJSONResponse(error_detail(exc, ValueError), status_code=422)
+
 
 app.add_middleware(
     CORSMiddleware,
@@ -160,6 +181,7 @@ app.include_router(users_endpoints.current_user_router)
 app.include_router(users_endpoints.activation_router)
 app.include_router(pipeline_builds_endpoints.router)
 app.include_router(pipeline_deployments_endpoints.router)
+app.include_router(code_repositories_endpoints.router)
 
 
 def get_root_static_files() -> List[str]:

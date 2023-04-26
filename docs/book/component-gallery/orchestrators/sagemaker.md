@@ -26,7 +26,7 @@ cloud](../../getting-started/deploying-zenml/deploying-zenml.md). It would be
 recommended to deploy ZenML in the same region as you plan on using for
 Sagemaker, but it is not necessary to do so. You must ensure that you are
 [connected to the remote ZenML
-server](../../starter-guide/collaborate/zenml-deployment.md) before using this
+server](../../starter-guide/production-fundamentals/production-fundamentals.md) before using this
 stack component.
 
 The only other thing necessary to use the ZenML Sagemaker orchestrator is
@@ -49,8 +49,7 @@ zenml integration install aws s3
 
 * [Docker](https://www.docker.com) installed and running.
 * A [remote artifact store](../artifact-stores/artifact-stores.md) as part of 
-your stack (configured with an `authentication_secret` attribute) along with [a remote secrets manager](../secrets-managers/secrets-managers.md) to store that
-authentication secret.
+your stack (configured with an `authentication_secret` attribute).
 * A [remote container registry](../container-registries/container-registries.md) 
 as part of your stack.
 * An IAM role or user with [an `AmazonSageMakerFullAccess` managed policy](https://docs.aws.amazon.com/sagemaker/latest/dg/security-iam-awsmanpol.html) applied to it
@@ -76,7 +75,7 @@ zenml stack register <STACK_NAME> -o <ORCHESTRATOR_NAME> ... --set
 {% hint style="info" %}
 ZenML will build a Docker image called `<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE_NAME>`
 which includes your code and use it to run your pipeline steps in Sagemaker. 
-Check out [this page](../../advanced-guide/pipelines/containerization.md)
+Check out [this page](../../starter-guide/production-fundamentals/containerization.md)
 if you want to learn more about how ZenML builds these images and
 how you can customize them.
 {% endhint %}

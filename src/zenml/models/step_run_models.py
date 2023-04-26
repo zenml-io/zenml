@@ -92,45 +92,45 @@ class StepRunResponseModel(StepRunBaseModel, WorkspaceScopedResponseModel):
 class StepRunFilterModel(WorkspaceScopedFilterModel):
     """Model to enable advanced filtering of all Artifacts."""
 
-    name: str = Field(
+    name: Optional[str] = Field(
         default=None,
         description="Name of the step run",
     )
-    entrypoint_name: str = Field(
+    entrypoint_name: Optional[str] = Field(
         default=None,
         description="Entrypoint name of the step run",
     )
-    code_hash: str = Field(
+    code_hash: Optional[str] = Field(
         default=None,
         description="Code hash for this step run",
     )
-    cache_key: str = Field(
+    cache_key: Optional[str] = Field(
         default=None,
         description="Cache key for this step run",
     )
-    status: str = Field(
+    status: Optional[str] = Field(
         default=None,
         description="Status of the Step Run",
     )
-    start_time: Union[datetime, str] = Field(
+    start_time: Optional[Union[datetime, str]] = Field(
         default=None, description="Start time for this run"
     )
-    end_time: Union[datetime, str] = Field(
+    end_time: Optional[Union[datetime, str]] = Field(
         default=None, description="End time for this run"
     )
-    pipeline_run_id: Union[UUID, str] = Field(
+    pipeline_run_id: Optional[Union[UUID, str]] = Field(
         default=None, description="Pipeline run of this step run"
     )
-    original_step_run_id: Union[UUID, str] = Field(
+    original_step_run_id: Optional[Union[UUID, str]] = Field(
         default=None, description="Original id for this step run"
     )
-    user_id: Union[UUID, str] = Field(
+    user_id: Optional[Union[UUID, str]] = Field(
         default=None, description="User that produced this step run"
     )
-    workspace_id: Union[UUID, str] = Field(
+    workspace_id: Optional[Union[UUID, str]] = Field(
         default=None, description="Workspace of this step run"
     )
-    num_outputs: int = Field(
+    num_outputs: Optional[int] = Field(
         default=None,
         description="Amount of outputs for this Step Run",
     )

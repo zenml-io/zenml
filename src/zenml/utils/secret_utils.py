@@ -86,7 +86,7 @@ def SecretField(*args: Any, **kwargs: Any) -> Any:
         Pydantic field info.
     """
     kwargs[PYDANTIC_SENSITIVE_FIELD_MARKER] = True
-    return Field(*args, **kwargs)
+    return Field(*args, **kwargs)  # type: ignore[pydantic-field]
 
 
 def ClearTextField(*args: Any, **kwargs: Any) -> Any:
@@ -102,7 +102,7 @@ def ClearTextField(*args: Any, **kwargs: Any) -> Any:
         Pydantic field info.
     """
     kwargs[PYDANTIC_CLEAR_TEXT_FIELD_MARKER] = True
-    return Field(*args, **kwargs)
+    return Field(*args, **kwargs)  # type: ignore[pydantic-field]
 
 
 def is_secret_field(field: "ModelField") -> bool:

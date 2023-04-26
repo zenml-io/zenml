@@ -8,14 +8,12 @@ for standby compute.
 
 ## 📄 Pre-requisites
 
-In order to run on Vertex AI you will need to do quite a bit of configuration
+In order to run on Vertex AI you will need to do a bit of configuration
 within GCP to create all the required resources. In total, you will need to 
 have:
 
 - [GCP container registry](https://cloud.google.com/container-registry/docs)
 - [GCP bucket](https://cloud.google.com/storage/docs/creating-buckets)
-- [CloudSQL database](https://cloud.google.com/sql/docs/mysql/create-instance)
-- [GCP Secret Manager](https://cloud.google.com/secret-manager).
 
 Additionally, the [Vertex AI API](https://cloud.google.com/vertex-ai/?hl=en_GB&_ga=2.241201409.-205697788.1651483076)
 needs to be enabled.
@@ -43,9 +41,8 @@ You will also need to
 
 ![Grant user access to Service Account](assets/GCP_Service0.png)
 
-This service account will need permissions to run Vertex AI jobs, and access 
-secrets as Admin. Additionally, your user account will need to have permissions 
-to use the service account.
+This service account will need permissions to run Vertex AI jobs. Additionally,
+your user account will need to have permissions to use the service account.
 
 ![Grant user access to Service Account](assets/GCP_Service1.png)
 
@@ -63,7 +60,8 @@ stack with all of these components.
   **container registry**.
 * The **Vertex orchestrator** is responsible for running your ZenML pipeline
   in Vertex AI.
-* The **secrets manager** contains the secrets to allow access across Vertex AI.
+* An **Image Builder** which will be used to build the Docker image that will
+  be used to run the training step.
 
 When running the upcoming commands, make sure to
 replace all the <PLACEHOLDERS> with the correct values from your GCP project.
@@ -98,11 +96,11 @@ zenml artifact-store register gcp_artifact_store --flavor=gcp --path=<PATH_TO_YO
 #  manager access, it will be in the format: xxx@xxx.iam.gserviceaccount.com
 zenml orchestrator register vertex_orch --flavor=vertex --project=<PROJECT_ID> --location=<GCP_LOCATION>
 
-# For the secrets manager, all we'll need it the gcp PROJECT_ID
-zenml secrets-manager register gcp_secrets_manager --flavor=gcp --project_id=<PROJECT_ID>
+# Register the local image builder
+zenml image-builder register local_builder --flavor=local
 
 # Now we're ready to assemble our stack
-zenml stack register gcp_vertex_stack -a gcp_artifact_store -o vertex_orch -c gcp_registry -x gcp_secrets_manager --set
+zenml stack register gcp_vertex_stack -a gcp_artifact_store -o vertex_orch -c gcp_registry -i local_builder --set
 ```
 
 Your stack should look something like this when you're done:
@@ -148,7 +146,7 @@ rm -rf zenml_examples
 ```
 
 Additionally, you might have to clean up your cloud resources to avoid running 
-costs for storage of artifacts, containers, metadata or secrets.
+costs for storage of artifacts, containers or metadata.
 
 # 📜 Learn more
 
