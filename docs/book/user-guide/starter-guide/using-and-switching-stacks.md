@@ -1,8 +1,8 @@
 ---
-description: How to configure MLOps tooling and infrastructure with stacks
+description: How to use MLOps tools and infrastructure with stacks
 ---
 
-# Understanding your stack
+# Understand your stack
 
 * [ ] Shorter introduction?
 * [ ] Link to all the different types of stack components here?
