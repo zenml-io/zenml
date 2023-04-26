@@ -184,7 +184,8 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                 "instance_type", step_settings.instance_type
             )
             processor_args_for_step.setdefault(
-                "role", step_settings.processor_role or self.config.execution_role
+                "role",
+                step_settings.processor_role or self.config.execution_role,
             )
             processor_args_for_step.setdefault(
                 "volume_size_in_gb", step_settings.volume_size_in_gb
@@ -239,7 +240,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                 name=step.config.name,
                 processor=processor,
                 depends_on=step.spec.upstream_steps,
-                inputs=inputs
+                inputs=inputs,
             )
             sagemaker_steps.append(sagemaker_step)
 
@@ -247,7 +248,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
         pipeline = Pipeline(
             name=orchestrator_run_name,
             steps=sagemaker_steps,
-            sagemaker_session=session
+            sagemaker_session=session,
         )
 
         pipeline.create(role_arn=self.config.execution_role)
