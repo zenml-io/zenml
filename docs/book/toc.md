@@ -10,7 +10,7 @@
 
 * [🐣 Starter Guide](user-guide/starter-guide/README.md)
   * [Create your first ML pipeline](user-guide/starter-guide/create-your-first-ml-pipeline.md)
-  * [Using  and switching Stacks](user-guide/starter-guide/using-and-switching-stacks.md)
+  * [Using and switching Stacks](user-guide/starter-guide/using-and-switching-stacks.md)
   * [Transition to the Cloud](user-guide/starter-guide/transition-to-the-cloud.md)
   * [Strengthen your production fundamentals](user-guide/starter-guide/strengthen-your-production-fundamentals.md)
   * [Collaborate with your Team](user-guide/starter-guide/collaborate-with-your-team.md)
@@ -52,4 +52,3 @@
   * [API reference](reference/api-reference.md)
   * [ZenML CLI](reference/zenml-cli.md)
   * [Python SDK](reference/python-sdk.md)
-  * [Glossary](reference/glossary.md)
