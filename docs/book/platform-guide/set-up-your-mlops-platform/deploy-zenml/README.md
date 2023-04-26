@@ -2,41 +2,43 @@
 description: A guide on how to deploy ZenML
 ---
 
+* [ ] Should Scenarios 1 and 2 really be represented here, they feel out of place
+
 # Deploy ZenML
 
-ZenML is designed to live at the interface between all the ingredients to your
-machine learning development environment. As such there is a lot of configuration
+ZenML is designed to live at the interface between all the components of your
+machine learning tools and infrastructure. As such there is a lot of configuration
 and metadata to keep track of. This means that ZenML does not only give users an
 easy-to-use abstraction layer on top of their infrastructure and environments,
-but also needs to act as a collaborative metadata store. To get a complete overview of
-the architecture of ZenML, read [here](../architecture-diagrams.md).
+but also needs to act as a collaborative metadata store.
 
-As with any other service, however, ZenML needs to be deployed first in order to be able
-to use it. This section covers the various scenarios when it comes to deploying ZenML,
-from starting locally to transitioning to the cloud.
+As with any other service, however, ZenML needs to be deployed first to unlock 
+its full potential. This section covers the various scenarios when it comes to
+deploying ZenML, from starting locally to transitioning to the cloud.
 
-**Tip**: In order to skip deploying ZenML completely, or if you just want to get up and running
-quickly, you can use an early version of [ZenML Enterprise](https://zenml.io/pricing)
-where we'll give you a free and managed ZenML server!
+**Tip**: In order to skip deploying ZenML completely, or if you just want to 
+get up and running quickly, you can use an early version of 
+[ZenML Enterprise](https://zenml.io/pricing) where we'll give you a free and 
+managed ZenML server!
 
 ## The components of a ZenML Deployment
 
 A ZenML deployment typically consist of the following components:
-- A SQL database.
-- An optional FastAPI HTTP server that exposes a RESTful API and serves the 
+- An SQL database.
+- An FastAPI HTTP server that exposes a RESTful API and serves the 
 Dashboard.
 - An optional external secrets management service that is used as a backend for
 the ZenML secrets store.
 
 ZenML relies on a SQLAlchemy-compatible database to store all its data: stack 
 configurations, pipeline runs etc. The location and type of this database can be 
-freely chosen by the user. By default, a SQLite database on local 
+configured by the user. By default, an SQLite database on local 
 host is used (see [Scenario 1](#running-zenml-locally)).
 
 The following diagram visualizes how a client machine interacts with a ZenML
 deployment.
 
-![Secret Manager](../../book/assets/diagrams/Remote_with_secrets_manager.png) 
+![Secret Manager](../../../assets/diagrams/Remote_with_secrets_manager.png) 
 
 ## Running ZenML Locally
 
@@ -48,17 +50,18 @@ In these scenarios, the ZenML client and database are both located on the same m
 
 This is likely the first experience that users will run into. Simply `pip install 
 zenml` and dive right in without having to worry about a thing. Your stacks,
-stack components, pipeline runs and secrets are all stored in a SQLite database located
-in your global configuration directory (e.g. at
+stack components, pipeline runs and secrets are all stored in an SQLite 
+database located in your global configuration directory (e.g. at
 `~/.config/zenml/local_stores/default_zen_store/zenml.db` if you're running on
 Linux). The ZenML client creates and directly connects to this database. You
 don't need to worry about a thing.
 
-![ZenML on SQLite](../../assets/getting_started/Scenario1.png)
+![ZenML on SQLite](../../../assets/getting_started/Scenario1.png)
 
-Users that wish to be fancy about how they connect to the database can find
-out how to configure a different location for the SQLite database, or even a
-different database altogether [here](../../guidelines/global-config.md).
+{% hint style="info" %}
+In case you want to manually configure the location of your Database, see our
+guide on the [global configuration](../../../doc-orphanage/global-config.md)
+{% endhint %}
 
 ### Scenario 2: Local Deployment of the HTTP server
 

@@ -135,7 +135,7 @@
 ## Guidelines
 
 * [Best Practices](guidelines/best-practices.md)
-* [Global Configuration](guidelines/global-config.md)
+* [Global Configuration](../book/doc-orphanage/global-config.md)
 * [System Environmental Variables](guidelines/system-environmental-variables.md)
 * [Migration Guide 0.20.0](guidelines/migration-zero-twenty.md)
 
@@ -149,9 +149,9 @@
 
 ## Reference
 
-* [Community & Content](reference/community-and-content.md)
+* [Community & Content](../book/doc-orphanage/community-and-content.md)
 * [Glossary](reference/glossary.md)
 * [FAQ](reference/faq.md)
-* [CLI Cheat Sheet](reference/cheat-sheet.md)
+* [CLI Cheat Sheet](../book/learning/cheat-sheet.md)
 * [CLI Reference](https://apidocs.zenml.io/latest/cli/)
 * [API Reference](https://apidocs.zenml.io/latest/)

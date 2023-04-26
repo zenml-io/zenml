@@ -11,7 +11,7 @@ description: You can manage stacks in many different ways.
 If you are working locally and in a non-collaborative setting, then you should be
 aware of how ZenML by default stores stacks you are creating locally.
 There are two main locations where it stores information on the local machine.
-These are the [Global Configuration](../../guidelines/global-config.md) and the 
+These are the [Global Configuration](../../../book/doc-orphanage/global-config.md) and the 
 _Repository_. The latter is also referred to as the _.zen folder_.
 
 The ZenML **Repository** related to a pipeline run is the folder that contains 
