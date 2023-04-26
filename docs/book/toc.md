@@ -42,7 +42,11 @@
 ## Learning
 
 * [Quickstart](https://github.com/zenml-io/zenml/blob/cb1bcbda58df06e057fd0a152b4ba3facf9c2d59/examples/quickstart/README.md)
-* [🧑🏫 Examples](learning/examples.md)
+* [🧑🏫 Examples](learning/examples/README.md)
+  * [Build a LLM-powered Community Slack Bot](learning/examples/build-a-llm-powered-community-slack-bot.md)
+  * [Train a Sign language detection model](learning/examples/train-a-sign-language-detection-model.md)
+  * [Summarize news articles with NLP](learning/examples/summarize-news-articles-with-nlp.md)
+  * [Automated hyper-parameter tuning with CI/CD](learning/examples/automated-hyper-parameter-tuning-with-ci-cd.md)
 * [🙋 FAQ](learning/faq.md)
 * [📋 Glossary](learning/glossary.md)
 
