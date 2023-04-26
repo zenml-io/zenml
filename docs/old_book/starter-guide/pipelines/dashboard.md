@@ -36,7 +36,7 @@ connect to it using the 'default' username and an empty password.
 The Dashboard will be available at `http://localhost:8237` by
 default:
 
-![ZenML Dashboard Preview](../../assets/migration/zenml-dashboard.png)
+![ZenML Dashboard Preview](../../../book/assets/migration/zenml-dashboard.png)
 
 {% hint style="info" %}
 The ZenML Server is a [FastAPI application](https://fastapi.tiangolo.com/),
@@ -72,4 +72,4 @@ The dashboard serves as a visual interface to see pipelines, pipeline runs,
 stacks and stack components. It also gives you a way to inspect the artifacts
 produced through the pipeline runs.
 
-![ZenML DAG artifact inspection](../../assets/dashboard/zenml-dag-artifact-inspection.png)
+![ZenML DAG artifact inspection](../../../book/assets/dashboard/zenml-dag-artifact-inspection.png)

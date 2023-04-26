@@ -4,7 +4,7 @@ description: How to integrate with ZenML
 
 # External Integration Guide
 
-![ZenML integrates with a bunch of tools from the MLOps landscape](../assets/sam-side-by-side-full-text.png)
+![ZenML integrates with a bunch of tools from the MLOps landscape](../../book/assets/sam-side-by-side-full-text.png)
 
 One of the main goals of ZenML is to find some semblance of order in the 
 ever-growing MLOps landscape. ZenML already provides 

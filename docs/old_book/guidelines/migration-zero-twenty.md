@@ -74,14 +74,14 @@ all your pipelines and pipeline runs in the new ZenML Dashboard.
 
 The architecture changes for the local case are shown in the diagram below:
 
-![ZenML local metadata before 0.20.0](../assets/migration/local-metadata-pre-0.20.png)
-![ZenML local metadata after 0.20.0](../assets/migration/local-metadata-post-0.20.png)
+![ZenML local metadata before 0.20.0](../../book/assets/migration/local-metadata-pre-0.20.png)
+![ZenML local metadata after 0.20.0](../../book/assets/migration/local-metadata-post-0.20.png)
 
 
 The architecture changes for the remote case are shown in the diagram below:
 
-![ZenML remote metadata before 0.20.0](../assets/migration/remote-metadata-pre-0.20.png)
-![ZenML remote metadata after 0.20.0](../assets/migration/remote-metadata-post-0.20.png)
+![ZenML remote metadata before 0.20.0](../../book/assets/migration/remote-metadata-pre-0.20.png)
+![ZenML remote metadata after 0.20.0](../../book/assets/migration/remote-metadata-post-0.20.png)
 
 If you're already using ZenML, aside from the above limitation, this change will
 impact you differently, depending on the flavor of Metadata Stores you have in
@@ -220,7 +220,7 @@ connect to it using the 'default' username and an empty password.
 The Dashboard will be available at `http://localhost:8237` by
 default:
 
-![ZenML Dashboard Preview](../assets/migration/zenml-dashboard.png)
+![ZenML Dashboard Preview](../../book/assets/migration/zenml-dashboard.png)
 
 For more details on other possible deployment options, see the
 [ZenML deployment documentation](../getting-started/deploying-zenml/deploying-zenml.md), and/or follow the [starter guide](../starter-guide/pipelines/pipelines.md) to learn more.

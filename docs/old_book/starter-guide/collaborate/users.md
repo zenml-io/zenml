@@ -12,16 +12,16 @@ By default, all users have `Administrator` permissions throughout the ZenML dash
 
 You can go to the settings page from the bottom of the side bar or top right of the header, and edit your details below:
 
-![Personal Settings](../../assets/starter_guide/collaboration/01_personal_settings.png)
+![Personal Settings](../../../book/assets/starter_guide/collaboration/01_personal_settings.png)
 
 ## Workspace Settings
 
-![Workspace Settings](../../assets/starter_guide/collaboration/02_project_settings.png)
+![Workspace Settings](../../../book/assets/starter_guide/collaboration/02_project_settings.png)
 
 In project settings, you can see a list of users who are invited or signed up for this ZenML deployment. You can go ahead and invite a new user here with a
 unique username. The dashboard will generate a new token for you, in the form of a URL that you can copy and send to your teammate.
 
-![Invite Token](../../assets/starter_guide/collaboration/03_invite_token.png)
+![Invite Token](../../../book/assets/starter_guide/collaboration/03_invite_token.png)
 
 You can also mimic this behavior in a connected ZenML with the following commands:
 
@@ -35,7 +35,7 @@ d
 
 From the invitation URL, a user can sign up as expected:
 
-![Sign up](../../assets/starter_guide/collaboration/04_sign_up.png)
+![Sign up](../../../book/assets/starter_guide/collaboration/04_sign_up.png)
 
 And that's it 🚀. We went from a simple ZenML pip install to a fully fledged multi-user, cloud deployment of ZenML.
 

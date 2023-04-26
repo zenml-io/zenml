@@ -21,7 +21,7 @@ ZenML as an integration, with others to follow. All users have to
 do is run pipelines with the appropriate and easy-to-use configuration, and
 models get deployed instantly.
 
-![Seldon model deployer workflow, animated](../../assets/deployment/seldon-model-deployer.gif)
+![Seldon model deployer workflow, animated](../../../book/assets/deployment/seldon-model-deployer.gif)
 
 To achieve this end, model deployers play three major roles as stack components:
 
@@ -133,7 +133,7 @@ if services:
 
 And with the ZenML CLI we can interact with list of served models, start, stop or delete deployments that the active model deployer is responsible for.
 
-![Example of the output from the ZenML CLI](../../assets/deployment/served-models-cli.png)
+![Example of the output from the ZenML CLI](../../../book/assets/deployment/served-models-cli.png)
 
 {% hint style="info" %}
 To read a more detailed guide about how Model Deployers function in ZenML,

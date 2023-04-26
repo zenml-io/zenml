@@ -61,7 +61,7 @@ retrieve, load, and deploy these models.
 Here is an architecture diagram that shows how a model registry fits into the 
 overall story of a remote stack.
 
-![Model Registries](../../assets/diagrams/Remote_with_model_registry.png)
+![Model Registries](../../../book/assets/diagrams/Remote_with_model_registry.png)
 
 ### Model Registry Flavors
 

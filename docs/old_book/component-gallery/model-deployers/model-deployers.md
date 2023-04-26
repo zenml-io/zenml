@@ -37,7 +37,7 @@ and deployed to a production.
 Here is an architecture diagram that shows how model deployers fit into the 
 overall story of a remote stack. 
 
-![Experiment Tracker](../../assets/diagrams/Remote_with_exp_tracker.png)
+![Experiment Tracker](../../../book/assets/diagrams/Remote_with_exp_tracker.png)
 
 ### Model Deployers Flavors
 

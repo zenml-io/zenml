@@ -49,7 +49,7 @@ tools.
 Here is an architecture diagram that shows how experiment trackers fit into the 
 overall story of a remote stack.
 
-![Experiment Tracker](../../assets/diagrams/Remote_with_exp_tracker.png)
+![Experiment Tracker](../../../book/assets/diagrams/Remote_with_exp_tracker.png)
 
 ### Experiment Tracker Flavors
 

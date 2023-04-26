@@ -1,8 +1,8 @@
-# Deploy using HuggingFace Spaces
-
 ---
 description: Deploying ZenML to Huggingface Spaces
 ---
+
+# Deploy using HuggingFace Spaces
 
 A quick way to deploy ZenML and get started is to use [HuggingFace Spaces](https://huggingface.co/spaces).
 HuggingFace Spaces is a platform for hosting and sharing ML projects and

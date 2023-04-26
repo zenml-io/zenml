@@ -1,8 +1,8 @@
-# Deploy with Docker
-
 ---
 description: Deploying ZenML in a container.
 ---
+
+# Deploy with Docker
 
 The ZenML server container image is available at [`zenmldocker/zenml-server`](https://hub.docker.com/r/zenmldocker/zenml/)
 and can be used to deploy ZenML with a container management or orchestration

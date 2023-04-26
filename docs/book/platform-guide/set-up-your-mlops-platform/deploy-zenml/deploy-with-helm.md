@@ -1,8 +1,8 @@
-# Deploy with Helm
-
 ---
 description: Deploying ZenML in a Kubernetes cluster with Helm
 ---
+
+# Deploy with Helm
 
 If you wish to manually deploy and manage ZenML in a Kubernetes cluster of your
 choice, ZenML also includes a Helm chart among its available deployment options.

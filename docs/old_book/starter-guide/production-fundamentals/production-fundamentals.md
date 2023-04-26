@@ -4,7 +4,7 @@ description: Connect to a simply deployed ZenML on the cloud.
 
 ## Collaboration with ZenML Overview
 
-![Collaboration with ZenML Overview](../../assets/starter_guide/collaboration/04_cloud_collaboration_overview.png)
+![Collaboration with ZenML Overview](../../../book/assets/starter_guide/collaboration/04_cloud_collaboration_overview.png)
 
 The ZenML Server is a distributed client-server ZenML deployment scenario in which multiple ZenML clients can connect to a remote service that provides persistent storage and acts as a central management hub for all ZenML operations involving Stack configurations, Stack Components and other ZenML objects.
 
@@ -19,7 +19,7 @@ The easiest and fastest way to get running on the cloud is by using the `deploy`
 
 Before we begin, it will help to understand the [architecture](../../getting-started/deploying-zenml/deploying-zenml.md#scenario-3-server-and-database-hosted-in-the-cloud) around the ZenML server and the database that it uses. Here is an illustration:
 
-![ZenML with remote server and DB](../../assets/getting_started/Scenario3.1.png)
+![ZenML with remote server and DB](../../../book/assets/getting_started/Scenario3.1.png)
 
 If you don't have an existing Kubernetes cluster, you have the following two options to set it up:
 
@@ -61,7 +61,7 @@ to see the dashboard. It is important that you give permission in such a scenari
 - A `password`: This can be configured but is empty by default.
 - (Optionally) A `TLS certificate` that you can use to connect securely to the deployment (see below).
 
-![Login Page](../../assets/starter_guide/collaboration/00_login.png)
+![Login Page](../../../book/assets/starter_guide/collaboration/00_login.png)
 
 ### Connecting to a deployed ZenML Server
 

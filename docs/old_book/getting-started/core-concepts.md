@@ -22,7 +22,7 @@ A **pipeline** consists of a series of **steps**, organized in any order that ma
 
 Below, you can see three **steps** running one after another in a **pipeline**. 
 
-![The most basic ZenML pipeline](../assets/core_concepts/01_pipeline.png)
+![The most basic ZenML pipeline](../../book/assets/core_concepts/01_pipeline.png)
 
 The steps might have dependencies between them. 
 For example, a step might use the outputs from a previous step and thus must wait until the previous step completes before starting. This is something you can keep in mind when organizing your steps.
@@ -40,7 +40,7 @@ A **Stack** is the configuration of the underlying infrastructure and choices ar
 
 ZenML comes with a default stack that runs locally, as seen in the following diagram:
 
-![ZenML pipelines run on stacks](../assets/core_concepts/02_pipeline_local_stack.png)
+![ZenML pipelines run on stacks](../../book/assets/core_concepts/02_pipeline_local_stack.png)
 
 In any Stack, there **must** be at least two basic **Stack Components** - an *orchestrator* and an *artifact store*.
 
@@ -89,7 +89,7 @@ The only change is in the stack and its components.
 
 Below is an illustration showing how the same pipeline on a local machine can be scaled up to run on a full-fledged cloud infrastructure by switching stacks. You get all the benefits of using cloud infrastructures with minimal changes in your code.
 
-![Running your pipeline in the cloud](../assets/core_concepts/03_multi_stack.png)
+![Running your pipeline in the cloud](../../book/assets/core_concepts/03_multi_stack.png)
 
 ## ZenML Server and Dashboard
 
@@ -100,11 +100,11 @@ This is extremely helpful in troubleshooting.
 
 The **ZenML Server** also acts as a [centralized secrets store](../starter-guide/production-fundamentals/secrets-management.md) that safely and securely stores sensitive data such as credentials used to access the services that are part of your stack. It can be configured to use a variety of different backends for this purpose, such as the AWS Secrets Manager, GCP Secret Manager, Azure Key Vault and Hashicorp Vault.
 
-![ZenML Architectural Diagram](../assets/core_concepts/04_architecture.png)
+![ZenML Architectural Diagram](../../book/assets/core_concepts/04_architecture.png)
 
 The **ZenML Dashboard** also communicates with the ZenML Server to visualize your *pipelines*, *stacks*, and *stack components*. The dashboard serves as a visual interface to showcase collaboration with ZenML. You can invite *users*, and share your stacks with them.
 
-![ZenML Dashboard](../assets/pipelines_dashboard.png)
+![ZenML Dashboard](../../book/assets/pipelines_dashboard.png)
 
 When you start working with ZenML, you'll start with a local ZenML setup, and when you want to transition you will need to [deploy ZenML](./deploying-zenml/deploying-zenml.md). Don't worry though, there is a one-click way to do it which we'll learn about [later](../starter-guide/stacks/sharing-stacks.md).
 

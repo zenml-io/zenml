@@ -20,19 +20,7 @@ pertaining to the current pipeline run (this includes the location of previous
 step outputs/ cached data).
 
 
-![Remote Stack](../assets/diagrams/RemoteServer.png)
-
-
-## Using Git Ops
-In many production settings it is undesirable to have all developers accessing 
-and running on the production environments. Instead, this is usually centralized
-through the means of git ops. This same principle can be easily used for 
-pipeline deployments using ZenML. [Here](https://github.com/zenml-io/zenml-gitflow)
-is an example repository that shows how. The following architecture diagram
-visualizes how a pipeline would be run through an automated action that is
-triggered when new code is pushed to the main code repository.
-
-![ZenML with Git Ops](../assets/diagrams/Remote_with_git_ops.png)
+![Remote Stack](../../book/assets/diagrams/RemoteServer.png)
 
 
 ## Introducing a Secrets Manager
@@ -44,7 +32,7 @@ components (orchestrator/ step operator) can be separately authenticated with
 this secret manager (e.g. with CLI authentication). Now the component 
 configurations and docker images no longer rely on baked in credentials.
 
-![Secret Manager](../assets/diagrams/Remote_with_secrets_manager.png) 
+![Secret Manager](../../book/assets/diagrams/Remote_with_secrets_manager.png) 
 
 
 ## The Experiment Tracker
@@ -53,7 +41,7 @@ is a very popular component of the stack that helps log and compare the
 metrics of different runs. This diagram shows how the experiment tracker
 fits into the overall architecture.
 
-![Experiment Tracker](../assets/diagrams/Remote_with_exp_tracker.png) 
+![Experiment Tracker](../../book/assets/diagrams/Remote_with_exp_tracker.png) 
 
 
 ## The Model Deployer
@@ -61,7 +49,7 @@ At the end of a successful training pipeline, you might want to deploy your
 models as prediction endpoints. This can be easily accomplished using
 [model deployers](../component-gallery/model-deployers/model-deployers.md).
 
-![Model Deployer](../assets/diagrams/Remote_with_deployer.png) 
+![Model Deployer](../../book/assets/diagrams/Remote_with_deployer.png) 
 
 
 ## The Model Registry
@@ -71,7 +59,7 @@ keep track of the different versions of a model, as well as enabling you to
 easily deploy your models as prediction endpoints. This diagram shows how
 the model registry fits into the overall architecture.
 
-![Model Registry](../assets/diagrams/Remote_with_model_registry.png)
+![Model Registry](../../book/assets/diagrams/Remote_with_model_registry.png)
 
 
 ## The Code Repository
@@ -84,4 +72,4 @@ repository can speed up the Docker image building for containerized stack compon
 The diagram shows how downloading code from the code repository allows ZenML to reuse
 Docker images for consecutive pipeline runs.
 
-![Code Repository](../assets/diagrams/Remote_with_code_repository.png)
+![Code Repository](../../book/assets/diagrams/Remote_with_code_repository.png)

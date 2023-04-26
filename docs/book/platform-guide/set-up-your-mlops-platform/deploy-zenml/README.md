@@ -1,8 +1,8 @@
-# Deploy ZenML
-
 ---
 description: A guide on how to deploy ZenML
 ---
+
+# Deploy ZenML
 
 ZenML is designed to live at the interface between all the ingredients to your
 machine learning development environment. As such there is a lot of configuration
@@ -139,7 +139,8 @@ and container registry.
 
 
 You can use any of the following ways to get started:
-- The [`zenml deploy` CLI command](./cli.md) that provides an easy interface to deploy on Kubernetes in AWS, GCP or Azure.
+- The [`zenml deploy` CLI command](./cli.md) that provides an easy interface to 
+deploy on Kubernetes in AWS, GCP or Azure.
 - A [Docker image](./docker.md) that you can run in any environment of your choice.
 - A [Helm chart](./helm.md) that can be deployed to any Kubernetes cluster (on-prem or managed).
 

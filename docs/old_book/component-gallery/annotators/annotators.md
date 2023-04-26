@@ -12,7 +12,7 @@ of the conversation. ZenML will incrementally start to build in features that
 support an iterative annotation workflow that sees the people doing labeling
 (and their workflows/behaviors) as integrated parts of their ML process(es).
 
-![When and where to annotate.](../../assets/annotation/annotation-when-where.png)
+![When and where to annotate.](../../../book/assets/annotation/annotation-when-where.png)
 
 There are a number of different places in the ML lifecycle where this can
 happen:

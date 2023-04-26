@@ -802,5 +802,5 @@ The Evidently dashboards will be opened as tabs in your browser, or displayed
 inline in your Jupyter notebook, depending on where you are running the code:
 
 
-![Evidently metrics report visualization](../../assets/evidently/evidently-metrics-report.png)
-![Evidently test results visualization](../../assets/evidently/evidently-test-results.png)
+![Evidently metrics report visualization](../../../book/assets/evidently/evidently-metrics-report.png)
+![Evidently test results visualization](../../../book/assets/evidently/evidently-test-results.png)

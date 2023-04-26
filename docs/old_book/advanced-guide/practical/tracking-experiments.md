@@ -86,7 +86,7 @@ production-ready models. Neptune can also track and visualize the results
 produced by your automated pipeline runs, as you make the transition towards a
 more production oriented workflow.
 
-![Neptune experiment tracker](../../assets/neptune/neptune_charts.png)
+![Neptune experiment tracker](../../../book/assets/neptune/neptune_charts.png)
 
 ZenML handles initializing Neptune and ensures that the experiment name is the
 same as the pipeline name, and that the experiment run is the same name as the

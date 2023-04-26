@@ -439,5 +439,5 @@ if __name__ == "__main__":
 
 The Data Docs pages will be opened as tabs in your browser:
 
-![Expectations Suite Visualization](../../assets/great_expectations/expectation_suite.png)
-![Validation Results Visualization](../../assets/great_expectations/validation_result.png)
+![Expectations Suite Visualization](../../../book/assets/great_expectations/expectation_suite.png)
+![Validation Results Visualization](../../../book/assets/great_expectations/validation_result.png)

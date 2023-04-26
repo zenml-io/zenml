@@ -73,7 +73,7 @@ the orchestrator and container registry. Orchestrators and Step Operators can
 also query the secrets manager to get credentials for other stack components, 
 data sources, or other environments.
 
-![Secret Manager](../../assets/diagrams/Remote_with_secrets_manager.png)
+![Secret Manager](../../../book/assets/diagrams/Remote_with_secrets_manager.png)
 
 ## Secrets Manager Flavors
 
@@ -259,7 +259,7 @@ The following diagram depicts the available secret scopes that you can configure
 for your Secrets Manager instance, if the flavor supports secret scoping. Note
 how the different secret namespaces are isolated from each other:
 
-![Secret Scoping](../../assets/secrets-manager/secret-scoping.png)
+![Secret Scoping](../../../book/assets/secrets-manager/secret-scoping.png)
 
 
 ### Secret Scope Configuration

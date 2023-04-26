@@ -6,7 +6,7 @@ description: You can manage stacks in many different ways.
 
 ## Managing local stacks (Single-player mode)
 
-![Pipeline with local stack](../../assets/core_concepts/02_pipeline_local_stack.png)
+![Pipeline with local stack](../../../book/assets/core_concepts/02_pipeline_local_stack.png)
 
 If you are working locally and in a non-collaborative setting, then you should be
 aware of how ZenML by default stores stacks you are creating locally.
@@ -196,7 +196,7 @@ ZenML Server, even though this is not enforced by the system.
 are shared through a remotely deployed ZenML Server.
 
 
-![Running your pipeline in the cloud](../../assets/core_concepts/03_multi_stack.png)
+![Running your pipeline in the cloud](../../../book/assets/core_concepts/03_multi_stack.png)
 
 
 ### Viewing the dashboard
@@ -205,7 +205,7 @@ While in single-player mode, you can still use the dashboard. ZenML natively sup
 
 `zenml down` does the opposite and spins the process down. You can read more about this [here](../../getting-started/deploying-zenml/deploying-zenml.md).
 
-![ZenML Up](../../assets/getting_started/zenml-up.gif)
+![ZenML Up](../../../book/assets/getting_started/zenml-up.gif)
 
 ## Managing Remote Stacks (Multi-player mode)
 
@@ -246,7 +246,7 @@ pipeline runs. For that you need to set up a ZenML Server (see section below).
 
 ### Sharing stacks over a ZenML Server
 
-![Multi-user setting](../../assets/core_concepts/04_architecture.png)
+![Multi-user setting](../../../book/assets/core_concepts/04_architecture.png)
 
 To unleash the real power of ZenML, one must [deploy it in the cloud](../../getting-started/deploying-zenml/deploying-zenml.md).
 Once you have a deployed ZenML in the cloud, you can connect your client to it locally.

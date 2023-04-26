@@ -138,7 +138,7 @@ You can find the path of the model in the MLflow UI. Go to the `Artifacts` tab
 of the run that produced the model and click on the model. The path will be
 displayed in the URL.
 
-![MLflow UI](../../assets/mlflow/mlflow_ui_uri.png)
+![MLflow UI](../../../book/assets/mlflow/mlflow_ui_uri.png)
 {% endhint %}
 
 Check out the

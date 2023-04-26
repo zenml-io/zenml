@@ -49,7 +49,7 @@ As mentioned before, the most common starting point for most ZenML users would b
 to locally install it and start managing stacks. We have discussed the
 nitty-gritty details of such usage [previously](managing-stacks.md).
 
-![Working with local ZenML](../../assets/starter_guide/collaboration/01_local_stack.png)
+![Working with local ZenML](../../../book/assets/starter_guide/collaboration/01_local_stack.png)
 
 ## Step 2: Single user working with local and cloud stacks
 
@@ -64,7 +64,7 @@ the database that backs the server.
 The user can still keep using local, [non-shared](managing-stacks.md#sharing-stacks-over-a-zenml-server) stacks (e.g. the default stack). However, they will notice a significant dropoff in speed of execution
 of the pipelines because they are now communicating over the internet to a central location.
 
-![Single user working with local and cloud stacks](../../assets/starter_guide/collaboration/02_multiple_stacks.png)
+![Single user working with local and cloud stacks](../../../book/assets/starter_guide/collaboration/02_multiple_stacks.png)
 
 ## Step 3: Multiple users working with local and cloud stacks
 
@@ -97,7 +97,7 @@ zenml stack share mystack
 The moment the stack is shared, other users who [connect to the server](../production-fundamentals/production-fundamentals.md) will be able to see the
 stack and use it as well!
 
-![Multiple users working with local and cloud stacks](../../assets/starter_guide/collaboration/03_multiple_users.png)
+![Multiple users working with local and cloud stacks](../../../book/assets/starter_guide/collaboration/03_multiple_users.png)
 
 So, as you can see it all starts with a [deploying ZenML](../../getting-started/deploying-zenml/deploying-zenml.md)! So how
 do we do that - let's go into the [next section](../production-fundamentals/production-fundamentals.md) to learn how to do it in a beginner-friendly way.

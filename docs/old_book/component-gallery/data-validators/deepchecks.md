@@ -549,4 +549,4 @@ The Deepchecks test suite results will be opened as tabs in your browser, or
 displayed inline in your Jupyter notebook, depending on where you are running
 the code:
 
-![Deepchecks Visualization Example](../../assets/deepchecks/data-integrity-results.png)
+![Deepchecks Visualization Example](../../../book/assets/deepchecks/data-integrity-results.png)

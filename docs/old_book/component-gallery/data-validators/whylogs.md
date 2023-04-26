@@ -378,5 +378,5 @@ if __name__ == "__main__":
 The whylogs profile will be displayed as a new tab in your browser, or rendered
 inline in your Jupyter notebook, depending on where you are running the code:
 
-![Whylogs Visualization Example 1](../../assets/whylogs/whylogs-visualizer-01.png)
-![Whylogs Visualization Example 2](../../assets/whylogs/whylogs-visualizer-02.png)
+![Whylogs Visualization Example 1](../../../book/assets/whylogs/whylogs-visualizer-01.png)
+![Whylogs Visualization Example 2](../../../book/assets/whylogs/whylogs-visualizer-02.png)

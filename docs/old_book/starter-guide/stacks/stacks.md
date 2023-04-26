@@ -33,7 +33,7 @@ and infrastructure. For instance, you might want to:
 In the illustration, you see one user register two stacks, the `Local Stack` and a `Production Stack`. These stacks can be shared
 with other people easily - something we'll dig into more [later](sharing-stacks.md).
 
-![Running your pipeline in the cloud](../../assets/core_concepts/03_multi_stack.png)
+![Running your pipeline in the cloud](../../../book/assets/core_concepts/03_multi_stack.png)
 
 Any such combination of tools and infrastructure can be registered as a
 separate stack in ZenML. Since ZenML code is tooling-independent, you can

@@ -87,7 +87,7 @@ zenml hub clone <PLUGIN_NAME>
 
 You can see the available plugins on the `Plugins` page:
 
-![Dashboard List Plugin](../../assets/zenml_hub/plugins_dashboard.png)
+![Dashboard List Plugin](../../../book/assets/zenml_hub/plugins_dashboard.png)
 
 You can browse through the plugins to see more details.
 
@@ -101,7 +101,7 @@ zenml hub list
 
 You should see a table similar to:
 
-![CLI List Plugin](../../assets/zenml_hub/plugins_cli.png)
+![CLI List Plugin](../../../book/assets/zenml_hub/plugins_cli.png)
 
 {% endtab %}
 {% endtabs %}
@@ -124,7 +124,7 @@ associate your current ZenML user with this newly generated ZenML Hub account.
 In order to log in through the dashboard, you can use the connect button on the
 Plugins page.
 
-![Dashboard Login](../../assets/zenml_hub/login_dashboard.png)
+![Dashboard Login](../../../book/assets/zenml_hub/login_dashboard.png)
 
 Similar to the CLI, you can disconnect your account using the Disconnect button.
 
@@ -159,7 +159,7 @@ in [our template repository](https://github.com/zenml-io/zenml-hub-plugin-templa
 If you are submitting your plugin through the dashboard, you need to provide
 the required metadata about your plugin.
 
-![Dashboard Create Plugin](../../assets/zenml_hub/create_plugin_dashboard.png)
+![Dashboard Create Plugin](../../../book/assets/zenml_hub/create_plugin_dashboard.png)
 
 {% endtab %}
 {% tab title="CLI" %}

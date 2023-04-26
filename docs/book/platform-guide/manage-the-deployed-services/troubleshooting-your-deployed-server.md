@@ -1,8 +1,8 @@
-# Troubleshooting your deployed Server
-
 ---
 description: Troubleshooting tips for your ZenML deployment
 ---
+
+# Troubleshooting your deployed Server
 
 In this document, we will go over some common issues that you might face when deploying ZenML and how to solve them.
 
