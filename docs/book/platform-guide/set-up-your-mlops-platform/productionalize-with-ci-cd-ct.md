@@ -10,4 +10,4 @@ is an example repository that shows how. The following architecture diagram
 visualizes how a pipeline would be run through an automated action that is
 triggered when new code is pushed to the main code repository.
 
-![ZenML with Git Ops](../../assets/diagrams/Remote_with_git_ops.png)
+![ZenML with Git Ops](../../assets/diagrams/Remote\_with\_git\_ops.png)
