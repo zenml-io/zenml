@@ -4,6 +4,8 @@ description: What are the core concepts in ZenML
 
 # Core Concepts
 
+* [ ] Here we could maybe talk more from a non zenml point of view? MLOps concepts -> then show where ZenML slots in?
+
 ZenML consists of a few components. This guide walks through the various pieces you'll encounter, starting from the basics to things you'll only encounter when deploying to the cloud.
 
 Here's a high-level overview of a typical ZenML workflow:

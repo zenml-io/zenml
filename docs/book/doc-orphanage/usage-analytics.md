@@ -4,62 +4,37 @@ description: What are the usage statistics ZenML collects
 
 # Usage Analytics
 
-In order to help us better understand how the community uses **ZenML**, the pip
-package reports _anonymized_ usage statistics. You can always opt out by using
-the CLI command:
+* [ ] No Idea where to put this
+
+In order to help us better understand how the community uses **ZenML**, the pip package reports _anonymized_ usage statistics. You can always opt out by using the CLI command:
 
 ```bash
 zenml config analytics opt-out
 ```
 
-{% hint style="warning" %} Currently, opting in and out of analytics is a global
-setting applicable to all ZenML repositories within your system. {% endhint %}
+{% hint style="warning" %}
+Currently, opting in and out of analytics is a global setting applicable to all ZenML repositories within your system.
+{% endhint %}
 
-## Why ZenML collects analytics <a href="motivation" id="motivation"></a>
+## Why ZenML collects analytics <a href="#motivation" id="motivation"></a>
 
-In addition to the community at large, **ZenML** is created and maintained by a
-startup based in Munich, Germany called [ZenML GmbH](https://zenml.io). We're a
-team of techies that love MLOps and want to build tools that fellow developers
-would love to use in their daily work. [This is us](https://zenml.io/company#CompanyTeam), if
-you want to put faces to the names!
+In addition to the community at large, **ZenML** is created and maintained by a startup based in Munich, Germany called [ZenML GmbH](https://zenml.io). We're a team of techies that love MLOps and want to build tools that fellow developers would love to use in their daily work. [This is us](https://zenml.io/company#CompanyTeam), if you want to put faces to the names!
 
-However, in order to improve **ZenML** and understand how it is being used, we
-need to use analytics to have an overview of how it is used 'in the wild'. This
-not only helps us find bugs but also helps us prioritize features and commands
-that might be useful in future releases. If we did not have this information,
-all we really get is pip download statistics and chatting with people directly,
-which while being valuable, is not enough to seriously better the tool as a
-whole.
+However, in order to improve **ZenML** and understand how it is being used, we need to use analytics to have an overview of how it is used 'in the wild'. This not only helps us find bugs but also helps us prioritize features and commands that might be useful in future releases. If we did not have this information, all we really get is pip download statistics and chatting with people directly, which while being valuable, is not enough to seriously better the tool as a whole.
 
-## How ZenML collects these statistics <a href="implementation" id="implementation"></a>
+## How ZenML collects these statistics <a href="#implementation" id="implementation"></a>
 
-Currently, **ZenML** utilizes two different, yet similar, strategies to track 
-the analytics.
+Currently, **ZenML** utilizes two different, yet similar, strategies to track the analytics.
 
-In the first version, it uses [`Segment`](https://segment.com) as the data 
-aggregation library for all our analytics. The entire code is entirely visible 
-and can be seen at [`analytics_utils.py`](https://github.com/zenml-io/zenml/blob/main/src/zenml/utils/analytics_utils.py). 
-The main function is the `track(...)`function that triggers a
-[Segment Analytics Track event](https://segment.com/docs/connections/spec/track/),
-which runs on a separate background thread from the main thread.
+In the first version, it uses [`Segment`](https://segment.com) as the data aggregation library for all our analytics. The entire code is entirely visible and can be seen at [`analytics_utils.py`](https://github.com/zenml-io/zenml/blob/main/src/zenml/utils/analytics\_utils.py). The main function is the `track(...)`function that triggers a [Segment Analytics Track event](https://segment.com/docs/connections/spec/track/), which runs on a separate background thread from the main thread.
 
-In the second version, the creation of the events and their corresponding 
-metadata follows a similar process. However, before getting tracked by 
-[`Segment`](https://segment.com), the events first go through a central 
-ZenML analytics server. This added layer allows us to put various 
-countermeasures to incidents such as getting spammed events and enables us to 
-have a more optimized tracking process.
+In the second version, the creation of the events and their corresponding metadata follows a similar process. However, before getting tracked by [`Segment`](https://segment.com), the events first go through a central ZenML analytics server. This added layer allows us to put various countermeasures to incidents such as getting spammed events and enables us to have a more optimized tracking process.
 
-In both versions, none of the data sent can identify you individually but 
-allows us to understand how **ZenML** is being used holistically.
+In both versions, none of the data sent can identify you individually but allows us to understand how **ZenML** is being used holistically.
 
-## What does ZenML collect? <a href="what" id="what"></a>
+## What does ZenML collect? <a href="#what" id="what"></a>
 
-**ZenML** triggers an asynchronous
-[Segment Track Event](https://segment.com/docs/connections/spec/track/) on the
-following events, which is also viewable in the
-[`analytics_utils.py`](https://github.com/zenml-io/zenml/blob/main/src/zenml/utils/analytics_utils.py) 
-file in the GitHub repository.
+**ZenML** triggers an asynchronous [Segment Track Event](https://segment.com/docs/connections/spec/track/) on the following events, which is also viewable in the [`analytics_utils.py`](https://github.com/zenml-io/zenml/blob/main/src/zenml/utils/analytics\_utils.py) file in the GitHub repository.
 
 ```python
 # Pipelines
@@ -133,11 +108,6 @@ DESTROY_STACK_RECIPE = "Stack recipe destroyed"
 
 ## If I share my email, will you spam me?
 
-No, we won't. Our sole purpose of contacting you will be to ask for feedback 
-(e.g. in the shape of a user interview). These interviews help the core team 
-understand usage better, and prioritize feature requests.
+No, we won't. Our sole purpose of contacting you will be to ask for feedback (e.g. in the shape of a user interview). These interviews help the core team understand usage better, and prioritize feature requests.
 
-If you have any concerns about data privacy and usage of personal information, 
-please [contact us](mailto:support@zenml.io), and we will try to alleviate any 
-concerns as soon as possible.
-
+If you have any concerns about data privacy and usage of personal information, please [contact us](mailto:support@zenml.io), and we will try to alleviate any concerns as soon as possible.

@@ -64,7 +64,7 @@
   * [ZenML CLI](reference/zenml-cli.md)
   * [Python SDK](reference/python-sdk.md)
 
-## 🦺 Doc Orphanage
+## Doc Orphanage
 
 * [Best Practices](doc-orphanage/best-practices.md)
 * [Community and Contents](doc-orphanage/community-and-content.md)

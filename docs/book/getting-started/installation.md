@@ -4,6 +4,8 @@ description: How to install ZenML
 
 # Installation
 
+* [ ] Should we really talk about installing bleeding edge here? Unless we have a nightly package, I would recommend leaving this for the advanced section.
+
 **ZenML** is a Python package that can be installed directly via `pip`:
 
 ```shell
@@ -63,7 +65,7 @@ If you would like to run the ZenML server with Docker:
 docker run -it -d -p 8080:8080 zenmldocker/zenml-server
 ```
 
-## Installing Develop
+## Installing the Bleeding Edge
 
 If you want to use the bleeding edge of ZenML that has not even been released yet, you can install our `develop` branch directly.
 
