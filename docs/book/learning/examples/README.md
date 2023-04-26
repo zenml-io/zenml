@@ -6,7 +6,7 @@ description: Resources to learn how to use ZenML practically.
 
 ## ZenML In Code
 
-### ZenML Examples: See how all the integrations work
+## ZenML Examples: Productionalized ML in action
 
 ZenML Examples are small scale production-grade ML use-cases powered by ZenML. They are fully fleshed out, end-to-end, projects that showcase ZenML's capabilities. They can also serve as a template from which to start similar projects.
 

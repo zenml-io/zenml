@@ -21,22 +21,22 @@ where we'll give you a free and managed ZenML server!
 
 ## The components of a ZenML Deployment
 
-A ZenML deployment can consist of the following three components:
-- The ZenML client.
+A ZenML deployment typically consist of the following components:
 - A SQL database.
-- An optional FastAPI HTTP server that exposes a RESTful API as well as a UI.
+- An optional FastAPI HTTP server that exposes a RESTful API and serves the 
+Dashboard.
 - An optional external secrets management service that is used as a backend for
 the ZenML secrets store.
 
 ZenML relies on a SQLAlchemy-compatible database to store all its data: stack 
 configurations, pipeline runs etc. The location and type of this database can be 
-freely chosen by the user. By default, a SQLite database is stored on your local 
-host (see [Scenario 1](#running-zenml-locally)).
+freely chosen by the user. By default, a SQLite database on local 
+host is used (see [Scenario 1](#running-zenml-locally)).
 
-ZenML can also be deployed with an HTTP REST interface between the client machine
-and the database. This is also the interface used by the ZenML dashboard when 
-loaded in your browser. Especially in multi-user settings, this is the recommended
-configuration scenario.
+The following diagram visualizes how a client machine interacts with a ZenML
+deployment.
+
+![Secret Manager](../../book/assets/diagrams/Remote_with_secrets_manager.png) 
 
 ## Running ZenML Locally
 

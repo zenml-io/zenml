@@ -23,17 +23,6 @@ step outputs/ cached data).
 ![Remote Stack](../../book/assets/diagrams/RemoteServer.png)
 
 
-## Introducing a Secrets Manager
-In most production settings it is preferred to store/rotate secrets within one
-unified
-[secret manager](../component-gallery/secrets-managers/secrets-managers.md).
-The client machines as well as the orchestration 
-components (orchestrator/ step operator) can be separately authenticated with
-this secret manager (e.g. with CLI authentication). Now the component 
-configurations and docker images no longer rely on baked in credentials.
-
-![Secret Manager](../../book/assets/diagrams/Remote_with_secrets_manager.png) 
-
 
 ## The Experiment Tracker
 The [experiment tracker](../component-gallery/experiment-trackers/experiment-trackers.md) 
