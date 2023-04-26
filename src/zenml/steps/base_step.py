@@ -961,20 +961,7 @@ class BaseStep(metaclass=BaseStepMeta):
             )
 
             if not output.materializer_source:
-                if materializer_registry.is_registered(output_class):
-                    materializer_class = materializer_registry[output_class]
-                else:
-                    raise StepInterfaceError(
-                        f"Unable to find materializer for output "
-                        f"'{output_name}' of type `{output_class}` in step "
-                        f"'{self.name}'. Please make sure to either "
-                        f"explicitly set a materializer for step outputs "
-                        f"using `step.configure(output_materializers=...)` or "
-                        f"registering a default materializer for specific "
-                        f"types by subclassing `BaseMaterializer` and setting "
-                        f"its `ASSOCIATED_TYPES` class variable.",
-                        url="https://docs.zenml.io/advanced-guide/pipelines/materializers",
-                    )
+                materializer_class = materializer_registry[output_class]
                 outputs[output_name][
                     "materializer_source"
                 ] = source_utils.resolve(materializer_class)
