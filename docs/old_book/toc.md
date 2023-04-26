@@ -46,7 +46,7 @@
   * [Controlling the Step Execution Order](./advanced-guide/pipelines/step-order.md)
   * [Failure and Success Hooks](./advanced-guide/pipelines/hooks.md)
 * [Extending Stacks](./advanced-guide/stacks/stacks.md)
-  * [Writing Custom Flavors](./advanced-guide/stacks/custom-flavors.md)
+  * [Writing Custom Flavors](../book/platform-guide/set-up-your-mlops-platform/custom-flavors.md)
   * [Managing Stack Component States](./advanced-guide/stacks/stack-state-management.md)
   * [Managing External Services](./advanced-guide/stacks/manage-external-services.md)
   * [Tracking Custom Stack Component Metadata](./advanced-guide/stacks/component-metadata.md)

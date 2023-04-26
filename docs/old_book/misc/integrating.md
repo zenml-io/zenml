@@ -9,7 +9,7 @@ description: How to integrate with ZenML
 One of the main goals of ZenML is to find some semblance of order in the 
 ever-growing MLOps landscape. ZenML already provides 
 [numerous integrations](https://zenml.io/integrations) into many popular tools, 
-and allows you to [extend ZenML](../advanced-guide/stacks/custom-flavors.md) 
+and allows you to [extend ZenML](../../book/platform-guide/set-up-your-mlops-platform/custom-flavors.md) 
 in order to fill in any gaps that are remaining.
 
 However, what if you want to make your extension of ZenML part of the main 
@@ -19,7 +19,7 @@ to ZenML, this guide is intended for you.
 
 ## Step 1: Categorize your integration
 
-In [Extending ZenML](../advanced-guide/stacks/custom-flavors.md), 
+In [Extending ZenML](../../book/platform-guide/set-up-your-mlops-platform/custom-flavors.md), 
 we already looked at the categories and abstractions that core ZenML defines. 
 In order to create a new integration into ZenML, you would need to first find 
 the categories that your integration belongs to. The list of categories can be 
@@ -74,7 +74,7 @@ zenml orchestrator flavor list
 ```
 
 See the docs on extensibility of the different components 
-[here ](../advanced-guide/stacks/custom-flavors.md) or get inspired 
+[here ](../../book/platform-guide/set-up-your-mlops-platform/custom-flavors.md) or get inspired 
 by the many integrations that are already implemented, for example the mlflow 
 [experiment tracker](https://github.com/zenml-io/zenml/blob/main/src/zenml/integrations/mlflow/experiment_trackers/mlflow_experiment_tracker.py).
 

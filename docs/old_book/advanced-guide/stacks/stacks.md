@@ -7,7 +7,7 @@ ZenML stacks.
 
 ## List of topics
 
-* [Writing Custom Stack Component Flavors](./custom-flavors.md)
+* [Writing Custom Stack Component Flavors](../../../book/platform-guide/set-up-your-mlops-platform/custom-flavors.md)
   can be useful when trying to use ZenML with tooling or infrastructure for
   which no official integration exists yet.
 * [Managing Stack Component States](./stack-state-management.md)

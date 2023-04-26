@@ -10,12 +10,12 @@ You can combine various MLOps tools into a ZenML stack as follows:
 using `zenml <STACK_COMPONENT> register`.
 2. [Register a stack](#registering-a-stack) to bring a particular combination of stack components 
 together using `zenml stack register`.
-3. [Register a stack flavor](../../advanced-guide/stacks/custom-flavors.md) to add a
+3. [Register a stack flavor](../../../book/platform-guide/set-up-your-mlops-platform/custom-flavors.md) to add a
 new tool to the ZenML flavor registry, if the tool you are looking for is not supported out-of-the-box,
 or if you want to modify standard behavior of standard flavors.
 
 In this guide, we will learn about the first two, while the last is a slightly
-[advanced topic covered later](../../advanced-guide/stacks/custom-flavors.md).
+[advanced topic covered later](../../../book/platform-guide/set-up-your-mlops-platform/custom-flavors.md).
 
 ### Registering Stack Components
 
