@@ -81,7 +81,7 @@ step.
 ### Enable cache explicitly for steps that have a `context` argument, if they don't invalidate the caching behavior
 
 Cache is implicitly disabled for steps that have a
-[context](../advanced-guide/pipelines/step-metadata.md) argument,
+[context](../../old_book/advanced-guide/pipelines/step-metadata.md) argument,
 because it is assumed that you might use the step context to retrieve artifacts
 from the artifact store that are unrelated to the current step. However, if that
 is not the case, and your step logic doesn't invalidate the caching behavior, it
@@ -113,7 +113,7 @@ git repos, etc.) within the `.dockerignore`.
 
 ### Use `get_pipeline(pipeline=...)` instead of indexing (`[0]`) to retrieve previous pipelines
 
-When [inspecting pipeline runs](../starter-guide/pipelines/pipelines.md)
+When [inspecting pipeline runs](../../old_book/starter-guide/pipelines/pipelines.md)
 it is tempting to access the pipeline views directly by their index, but
 the pipelines are sorted in descending order of their creation time, so the 
 pipeline at `[0]` might not be the one you are expecting.

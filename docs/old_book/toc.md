@@ -134,7 +134,7 @@
   
 ## Guidelines
 
-* [Best Practices](guidelines/best-practices.md)
+* [Best Practices](../book/doc-orphanage/best-practices.md)
 * [Global Configuration](../book/doc-orphanage/global-config.md)
 * [System Environmental Variables](guidelines/system-environmental-variables.md)
 * [Migration Guide 0.20.0](guidelines/migration-zero-twenty.md)
@@ -145,7 +145,7 @@
 * [Debugging Guide](misc/debugging.md)
 * [Handling Dependencies](misc/handling-dependencies.md)
 * [External Integration Guide](misc/integrating.md)
-* [Usage Analytics](misc/usage-analytics.md)
+* [Usage Analytics](../book/doc-orphanage/usage-analytics.md)
 
 ## Reference
 

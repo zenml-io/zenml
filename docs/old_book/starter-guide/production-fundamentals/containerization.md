@@ -173,7 +173,7 @@ package manager to get a list of your local packages):
 
 You can even combine these methods, but do make sure that your
 list of pip requirements doesn't overlap with the ones specified by your required integrations.
-See our recommended [best practices](../../guidelines/best-practices.md) for more tips.
+See our recommended [best practices](../../../book/doc-orphanage/best-practices.md) for more tips.
 
 Depending on all the options specified in your Docker settings, ZenML will install the requirements
 in the following order (each step optional):
