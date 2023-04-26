@@ -9,15 +9,23 @@
 ## User Guide
 
 * [🐣 Starter Guide](user-guide/starter-guide/README.md)
-  * [Create your first ML pipeline](user-guide/starter-guide/create-your-first-ml-pipeline.md)
-  * [Using and switching Stacks](user-guide/starter-guide/using-and-switching-stacks.md)
-  * [Transition to the Cloud](user-guide/starter-guide/transition-to-the-cloud.md)
-  * [Strengthen your production fundamentals](user-guide/starter-guide/strengthen-your-production-fundamentals.md)
-  * [Collaborate with your Team](user-guide/starter-guide/collaborate-with-your-team.md)
+  * [Create your first pipeline](user-guide/starter-guide/create-your-first-ml-pipeline.md)
+  * [Understanding your stack](user-guide/starter-guide/using-and-switching-stacks.md)
+  * [Transition to the cloud](user-guide/starter-guide/transition-to-the-cloud.md)
+  * [Discover the dashboard](user-guide/starter-guide/discover-the-dashboard.md)
+  * [Join forces with other users](user-guide/starter-guide/collaborate-with-your-team.md)
 * [🐔 Advanced Guide](user-guide/advanced-guide/README.md)
-  * [Configure steps and pipelines](user-guide/advanced-guide/configure-steps-and-pipelines.md)
-  * [Data Versioning](user-guide/advanced-guide/data-versioning.md)
-  * [Implement Hyper Parameter Tuning](user-guide/advanced-guide/implement-hyper-parameter-tuning.md)
+  * [Configure steps/pipelines](user-guide/advanced-guide/configure-steps-and-pipelines.md)
+  * [Containerize your pipeline](user-guide/advanced-guide/containerize-your-pipeline.md)
+  * [Schedule pipeline runs](user-guide/advanced-guide/schedule-pipeline-runs.md)
+  * [Fetch runs after execution](user-guide/advanced-guide/fetch-runs-after-execution.md)
+  * [Handle custom data types](user-guide/advanced-guide/handle-custom-data-types.md)
+  * [Link your own repository](user-guide/advanced-guide/link-your-own-repository.md)
+  * [Use failure/success hooks](user-guide/advanced-guide/use-failure-success-hooks.md)
+  * [Enable GPU-backed hardware](user-guide/advanced-guide/enable-gpu-backed-hardware.md)
+  * [Access metadata within steps](user-guide/advanced-guide/access-metadata-within-steps.md)
+  * [Version your data](user-guide/advanced-guide/data-versioning.md)
+  * [Use hyperparameter tuning](user-guide/advanced-guide/implement-hyper-parameter-tuning.md)
 
 ## Platform Guide
 
