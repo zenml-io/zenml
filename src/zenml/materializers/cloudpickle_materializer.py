@@ -63,9 +63,11 @@ class CloudpickleMaterializer(BaseMaterializer):
         current_python_version = Environment().python_version()
         if source_python_version != current_python_version:
             logger.warning(
-                f"Your artifact was materialized with {source_python_version} "
-                f"but you are currently using {current_python_version}. "
-                f"This might cause unexpected behavior. Attempting to load."
+                f"Your artifact was materialized under Python version "
+                f"'{source_python_version}' but you are currently using "
+                f"'{current_python_version}'. This might cause unexpected "
+                "behavior since pickle is not reproducible across Python "
+                "versions. Attempting to load anyway..."
             )
 
         # load data
@@ -81,7 +83,9 @@ class CloudpickleMaterializer(BaseMaterializer):
             The Python version that was used to materialize the artifact.
         """
         filepath = os.path.join(self.uri, DEFAULT_PYTHON_VERSION_FILENAME)
-        return read_file_contents_as_string(filepath)
+        if os.path.exists(filepath):
+            return read_file_contents_as_string(filepath)
+        return "unknown"
 
     def save(self, data: Any) -> None:
         """Saves an artifact to a cloudpickle file.
