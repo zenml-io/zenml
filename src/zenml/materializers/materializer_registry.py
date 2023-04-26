@@ -83,14 +83,14 @@ class MaterializerRegistry:
         Returns:
             The default materializer.
         """
-        from zenml.materializers.default_materializer import (
-            DefaultMaterializer,
+        from zenml.materializers.cloudpickle_materializer import (
+            CloudpickleMaterializer,
         )
 
         if self.default_materializer:
             return self.default_materializer
 
-        return DefaultMaterializer
+        return CloudpickleMaterializer
 
     def get_materializer_types(
         self,

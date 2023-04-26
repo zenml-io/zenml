@@ -29,10 +29,12 @@ from sklearn.base import (
 )
 
 from zenml.enums import ArtifactType
-from zenml.materializers.default_materializer import DefaultMaterializer
+from zenml.materializers.cloudpickle_materializer import (
+    CloudpickleMaterializer,
+)
 
 
-class SklearnMaterializer(DefaultMaterializer):
+class SklearnMaterializer(CloudpickleMaterializer):
     """Materializer to read data to and from sklearn."""
 
     ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (

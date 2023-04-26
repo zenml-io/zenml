@@ -11,13 +11,15 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-
+"""Unit tests for the `CloudpickleMaterializer`."""
 
 from tempfile import TemporaryDirectory
 
 from tests.unit.test_general import _test_materializer
 from zenml.environment import Environment
-from zenml.materializers.default_materializer import DefaultMaterializer
+from zenml.materializers.cloudpickle_materializer import (
+    CloudpickleMaterializer,
+)
 from zenml.materializers.materializer_registry import materializer_registry
 
 
@@ -28,7 +30,7 @@ class Unmaterializable:
 
 
 def test_default_materializer(clean_client):
-    """Test whether the default materializer is used if no other is found."""
+    """Test that the cloudpickle materializer is used if no other is found."""
     output = _test_materializer(
         step_output=Unmaterializable(), expected_metadata_size=1
     )
@@ -36,17 +38,17 @@ def test_default_materializer(clean_client):
 
 
 def test_default_materializer_python_version_check(clean_client):
-    """Test that the default materializer saves the correct Python version."""
+    """Test that the cloudpickle materializer saves the Python version."""
     with TemporaryDirectory() as artifact_uri:
-        materializer = DefaultMaterializer(uri=artifact_uri)
+        materializer = CloudpickleMaterializer(uri=artifact_uri)
         materializer._save_python_version()
         version = materializer._load_python_version()
         assert version == Environment().python_version()
 
 
 def test_default_materializer_is_not_registered(clean_client):
-    """Test that the default materializer is not registered in the registry."""
+    """Test that the cloudpickle materializer is not registered by default."""
     assert (
-        DefaultMaterializer
+        CloudpickleMaterializer
         not in materializer_registry.materializer_types.values()
     )

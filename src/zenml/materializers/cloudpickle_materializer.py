@@ -11,11 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Implementation of ZenML's default materializer.
-
-This is the materializer that is used if no other materializer is registered
-for a given data type.
-"""
+"""Implementation of ZenML's cloudpickle materializer."""
 
 import os
 from typing import Any, ClassVar, Tuple, Type
@@ -38,11 +34,15 @@ DEFAULT_FILENAME = "artifact.pkl"
 DEFAULT_PYTHON_VERSION_FILENAME = "python_version.txt"
 
 
-class DefaultMaterializer(BaseMaterializer):
-    """Default materializer using cloudpickle.
+class CloudpickleMaterializer(BaseMaterializer):
+    """Materializer using cloudpickle.
 
-    This materializer is used if no other materializer is registered for a
-    given data type.
+    This materializer can materialize (almost) any object, but does so in a
+    non-reproducble way since artifacts cannot be loaded from other Python
+    versions. It is recommended to use this materializer only as a last resort.
+
+    That is also why it has SKIP_REGISTRATION set to True and is currently only
+    used as a fallback materializer inside the materializer registry.
     """
 
     ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (object,)
@@ -91,7 +91,7 @@ class DefaultMaterializer(BaseMaterializer):
         """
         # Log a warning if this materializer was not explicitly specified for
         # the given data type.
-        if type(self) == DefaultMaterializer:
+        if type(self) == CloudpickleMaterializer:
             logger.warning(
                 f"No materializer is registered for type `{type(data)}`, so the "
                 f"default Pickle materializer was used. Pickle is not production "

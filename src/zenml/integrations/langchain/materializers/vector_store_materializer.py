@@ -17,7 +17,9 @@ import sys
 from typing import TYPE_CHECKING, Any, ClassVar, Tuple, Type
 
 from zenml.enums import ArtifactType
-from zenml.materializers.default_materializer import DefaultMaterializer
+from zenml.materializers.cloudpickle_materializer import (
+    CloudpickleMaterializer,
+)
 
 if TYPE_CHECKING and sys.version_info < (3, 8):
     VectorStore = Any
@@ -25,7 +27,7 @@ else:
     from langchain.vectorstores import VectorStore
 
 
-class LangchainVectorStoreMaterializer(DefaultMaterializer):
+class LangchainVectorStoreMaterializer(CloudpickleMaterializer):
     """Handle langchain vector store objects."""
 
     ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.DATA
