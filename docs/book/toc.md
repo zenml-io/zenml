@@ -49,6 +49,7 @@
 
 ## Learning
 
+* [Component Galery](learning/component-galery.md)
 * [Quickstart](https://github.com/zenml-io/zenml/blob/cb1bcbda58df06e057fd0a152b4ba3facf9c2d59/examples/quickstart/README.md)
 * [🧩 Examples](learning/examples/README.md)
   * [Build a LLM-powered Community Slack Bot](learning/examples/build-a-llm-powered-community-slack-bot.md)
