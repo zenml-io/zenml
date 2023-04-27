@@ -85,7 +85,7 @@ from zenml.utils.analytics_utils import AnalyticsEvent, event_handler
 if TYPE_CHECKING:
     from zenml.config.base_settings import SettingsOrDict
     from zenml.config.source import Source
-    from zenml.post_execution import PipelineRunView
+    from zenml.post_execution import PipelineRunView, PipelineView
 
     StepConfigurationUpdateOrDict = Union[
         Dict[str, Any], StepConfigurationUpdate
@@ -141,6 +141,45 @@ class BasePipelineMeta(type):
 
 
 T = TypeVar("T", bound="BasePipeline")
+
+
+class GetRunsDescriptor:
+    """Descriptor to define the `BasePipeline.get_runs`.
+
+    Descriptors (https://docs.python.org/3/reference/datamodel.html#implementing-descriptors)
+    allow us to define different behaviors for pipeline classes and instances.
+    """
+
+    def __get__(
+        self, instance: Optional["BasePipeline"], cls: Type["BasePipeline"]
+    ) -> Callable[[], List["PipelineRunView"]]:
+        """Get all runs of this pipeline instance or class.
+
+        Args:
+            instance: The pipeline instance if called on an instance else None.
+            cls: The pipeline class.
+
+        Returns:
+            A list of all runs of this pipeline instance or class.
+
+        Raises:
+            RuntimeError: If the method is called on a pipeline instance that
+                has not been run yet.
+        """
+        from zenml.post_execution import get_pipeline
+
+        pipeline_view: PipelineView
+        if instance is None:
+            pipeline_view = get_pipeline(cls)
+        else:
+            pipeline_view = get_pipeline(instance)
+
+        if pipeline_view:
+            return lambda: pipeline_view.runs
+        raise RuntimeError(
+            "The pipeline view for this pipeline was not found. Are you sure "
+            "this pipeline has been run already?"
+        )
 
 
 class BasePipeline(metaclass=BasePipelineMeta):
@@ -609,28 +648,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
                 pipeline_id=pipeline_id,
             )
 
-    @classmethod
-    def get_runs(cls) -> Optional[List["PipelineRunView"]]:
-        """Get all past runs from the associated PipelineView.
-
-        Returns:
-            A list of all past PipelineRunViews.
-
-        Raises:
-            RuntimeError: In case the repository does not contain the view
-                of the current pipeline.
-        """
-        from zenml.post_execution import get_pipeline
-
-        pipeline_view = get_pipeline(cls)
-        if pipeline_view:
-            return pipeline_view.runs  # type: ignore[no-any-return]
-        else:
-            raise RuntimeError(
-                f"The PipelineView for `{cls.__name__}` could "
-                f"not be found. Are you sure this pipeline has "
-                f"been run already?"
-            )
+    get_runs = GetRunsDescriptor()
 
     def write_run_configuration_template(
         self, path: str, stack: Optional["Stack"] = None
