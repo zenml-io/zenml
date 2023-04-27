@@ -2,7 +2,7 @@
 description: How to create ML pipelines in ZenML
 ---
 
-# Write your first pipeline
+# Start with the Basics
 
 <details>
 
@@ -108,6 +108,10 @@ def step_2(input_one: str, input_two: str) -> None:
 ```
 
 Steps are functions. These functions have inputs and outputs. For ZenML to work properly, these need to be typed.
+
+### Artifacts
+
+The inputs and outputs of a step are called _artifacts._ They are automatically tracked and stored by ZenML in the artifact store. Artifacts are produced by and circulated among steps whenever your step returns an object or a value. This means the data is not passed between steps in memory. Rather at the output of a step they are written to storage and at the input of the step they are loaded from storage.
 
 ### Pipeline
 

@@ -2,70 +2,60 @@
 description: Learn how to configure steps, pipelines
 ---
 
-# Configure and interact with pipelines
+# Create an ML Pipeline
 
-## Caching
-
-* Run the Pipeline a second time
-##
-
-<details>
-
-<summary></summary>
-
-
-
-</details>
-
-## Step
-
-Steps are the atomic components of a ZenML pipeline. Each step is defined by its inputs, the logic it applies, and its outputs. Here is a very basic example of such a step, which uses a utility function to load the Digits dataset:
+In this section we build out the first ML pipeline. For this lets get the imports out of the way first:
 
 ```python
 import numpy as np
 from sklearn.datasets import load_digits
 from sklearn.model_selection import train_test_split
+from sklearn.base import ClassifierMixin
+from sklearn.svm import SVC
 
+from zenml.pipelines.new import pipeline
 from zenml.steps import Output, step
+```
 
+## Multiple Outputs
 
-@step
-def digits_data_loader() -> Output(
+Sometimes a step will have multiple outputs. In order to give each output a unique name, use the `Output()` Annotation. Here we load an open source dataset and split it into a train and a test dataset.
+
+<pre class="language-python"><code class="lang-python"><strong>@step
+</strong>def digits_data_loader() -> Output(
     X_train=np.ndarray, X_test=np.ndarray, y_train=np.ndarray, y_test=np.ndarray
 ):
-    """Loads the digits dataset as a tuple of flattened numpy arrays."""
+    """Loads the digits dataset and splits it into train and test data."""
+    # Load data from the digits dataset
     digits = load_digits()
+    # transform these images into flattened numpy arrays
     data = digits.images.reshape((len(digits.images), -1))
+    # split into datasets
     X_train, X_test, y_train, y_test = train_test_split(
         data, digits.target, test_size=0.2, shuffle=False
     )
     return X_train, X_test, y_train, y_test
-```
+</code></pre>
 
-As this step has multiple outputs, we need to use the `zenml.steps.step_output.Output` class to indicate the names of each output. These names can be used to directly access the outputs of steps after running a pipeline, as we will see [in a later chapter](broken-reference/).
+### Parametrize a Step
 
-Let's come up with a second step that consumes the output of our first step and performs some sort of transformation on it. In this case, let's train a support vector machine classifier on the training data using sklearn:
+Here we are creating a training step for a support vector machine classifier with sklearn. As we might want to adjust the hyperparameter `gamma` later on, we define it as an input value to the step as well.
 
 ```python
-import numpy as np
-from sklearn.base import ClassifierMixin
-from sklearn.svm import SVC
-
-from zenml.steps import step
-
-
 @step
 def svc_trainer(
+    gamma: float = 0.001,
     X_train: np.ndarray,
     y_train: np.ndarray,
 ) -> ClassifierMixin:
     """Train a sklearn SVC classifier."""
-    model = SVC(gamma=0.001)
+    
+    # instantiate a support vector machine model    
+    model = SVC(gamma=gamma)
+    # Train on the train dataset
     model.fit(X_train, y_train)
     return model
 ```
-
-Next, we will combine our two steps into our first ML pipeline.
 
 {% hint style="info" %}
 In case you want to run the step function outside the context of a ZenML pipeline, all you need to do is call the `.entrypoint()` method with the same input signature. For example:
@@ -75,52 +65,81 @@ svc_trainer.entrypoint(X_train=..., y_train=...)
 ```
 {% endhint %}
 
-### Artifacts
-
-The inputs and outputs of a step are _artifacts_ that are automatically tracked and stored by ZenML in the artifact store. Artifacts are produced by and circulated among steps whenever your step returns an object or a value.
-
 ## Pipeline
 
-Let us now define our first ML pipeline. This is agnostic of the implementation and can be done by routing outputs through the steps within the pipeline. You can think of this as a recipe for how we want data to flow through our steps.
+Next, we will combine our two steps into a pipeline and run it. As you can see here, the parameter gamma is configurable as a pipeline input.&#x20;
 
 ```python
-from zenml.pipelines import pipeline
+@pipeline
+def first_pipeline(gamma: float = 0.002):
+    X_train, X_test, y_train, y_test = step_1()
+    step_2(gamma=gamma, X_train, y_train)
+    
+first_pipeline(gamma=0.0015)
+```
+
+<details>
+
+<summary>All the code in one place</summary>
+
+```python
+import numpy as np
+from sklearn.datasets import load_digits
+from sklearn.model_selection import train_test_split
+from sklearn.base import ClassifierMixin
+from sklearn.svm import SVC
+
+from zenml.pipelines.new import pipeline
+from zenml.steps import Output, step
+
+@step
+def digits_data_loader() -> Output(
+    X_train=np.ndarray, X_test=np.ndarray, y_train=np.ndarray, y_test=np.ndarray
+):
+    """Loads the digits dataset and splits it into train and test data."""
+    # Load data from the digits dataset
+    digits = load_digits()
+    # transform these images into flattened numpy arrays
+    data = digits.images.reshape((len(digits.images), -1))
+    # split into datasets
+    X_train, X_test, y_train, y_test = train_test_split(
+        data, digits.target, test_size=0.2, shuffle=False
+    )
+    return X_train, X_test, y_train, y_test
+    
+@step
+def svc_trainer(
+    gamma: float = 0.001,
+    X_train: np.ndarray,
+    y_train: np.ndarray,
+) -> ClassifierMixin:
+    """Train a sklearn SVC classifier."""
+    
+    # instantiate a support vector machine model    
+    model = SVC(gamma=gamma)
+    # Train on the train dataset
+    model.fit(X_train, y_train)
+    return model
 
 @pipeline
-def first_pipeline(step_1, step_2):
+def first_pipeline(gamma: float = 0.002):
     X_train, X_test, y_train, y_test = step_1()
-    step_2(X_train, y_train)
+    step_2(gamma=gamma, X_train, y_train)
+    
+first_pipeline(gamma=0.0015)
 ```
 
-### Instantiate and run your Pipeline
-
-With your pipeline recipe in hand, you can now specify which concrete step implementations to use when instantiating the pipeline:
-
-```python
-first_pipeline_instance = first_pipeline(
-    step_1=digits_data_loader(),
-    step_2=svc_trainer(),
-)
-```
-
-You can then execute your pipeline instance with the `.run()` method:
-
-```python
-first_pipeline_instance.run()
-```
-
-You should see the following output in your terminal:
+</details>
 
 ```shell
 Registered new pipeline with name `first_pipeline`.
-Creating run `first_pipeline-03_Oct_22-14_08_44_284312` for pipeline `first_pipeline` (Caching enabled)
+Creating run `first_pipeline-...` for pipeline `first_pipeline` (Caching enabled)
 Using stack `default` to run pipeline `first_pipeline`...
 Step `digits_data_loader` has started.
 Step `digits_data_loader` has finished in 0.121s.
 Step `svc_trainer` has started.
 Step `svc_trainer` has finished in 0.099s.
-Pipeline run `first_pipeline-03_Oct_22-14_08_44_284312` has finished in 0.236s.
-Pipeline visualization can be seen in the ZenML Dashboard. Run `zenml up` to see your pipeline!
+Pipeline run `first_pipeline-...` has finished in 0.236s.
 ```
 
 ### Give each pipeline run a name
