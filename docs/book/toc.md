@@ -11,6 +11,7 @@
 * [🐣 Starter Guide](user-guide/starter-guide/README.md)
   * [Write your first pipeline](user-guide/starter-guide/create-your-first-ml-pipeline.md)
   * [Configure and interact with pipelines](user-guide/starter-guide/configure-and-interact-with-pipelines.md)
+  * [Untitled](user-guide/starter-guide/untitled.md)
   * [Understand your stack](user-guide/starter-guide/using-and-switching-stacks.md)
   * [Go from local to remote](user-guide/starter-guide/transition-to-the-cloud.md)
   * [Join forces with other users](user-guide/starter-guide/collaborate-with-your-team.md)

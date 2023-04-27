@@ -11,4 +11,4 @@ In this Guide you will learn
 Here is what you need to do before diving in to the guide.
 
 * Install ZenML -> Link to installation guide?
-* `zenml up` / connect to deployed server (if available) / connect to sandbox -> relevant links
+
