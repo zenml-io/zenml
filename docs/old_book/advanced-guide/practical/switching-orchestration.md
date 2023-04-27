@@ -71,5 +71,5 @@ code doesn't need to change at all!
 
 {% hint style="info" %}
 To read a more detailed guide about how Orchestrators function in ZenML,
-[click here](../../component-gallery/orchestrators/orchestrators.md).
+[click here](../../../book/platform-guide/component-gallery/orchestrators/orchestrators.md).
 {% endhint %}

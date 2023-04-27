@@ -32,7 +32,7 @@ In ZenML, a **Stack** represents a set of configurations for your MLOps tools an
 
 In the illustration, you see one user register two stacks, the `Local Stack` and a `Production Stack`. These stacks can be shared with other people easily - something we'll dig into more [later](broken-reference).
 
-![Running your pipeline in the cloud](broken-reference)
+![Running your pipeline in the cloud](../../assets/core_concepts/03_multi_stack.png)
 
 Any such combination of tools and infrastructure can be registered as a separate stack in ZenML. Since ZenML code is tooling-independent, you can switch between stacks with a single command and then automatically execute your ML workflows on the desired stack without having to modify your code.
 

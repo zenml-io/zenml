@@ -39,15 +39,15 @@ Settings are categorized into two types:
   - [`DockerSettings`](../../starter-guide/production-fundamentals/containerization.md) to specify docker settings.
   - [`ResourceSettings`](./step-resources.md) to specify resource settings.
 - **Stack component specific settings**: These can be used to supply runtime configurations to certain stack components `(key= <COMPONENT_CATEGORY>.<COMPONENT_FLAVOR>)`. Settings for components not in the active stack will be ignored. Examples of these are:
-  - [`KubeflowOrchestratorSettings`](../../component-gallery/orchestrators/kubeflow.md) to specify Kubeflow settings.
-  - [`MLflowExperimentTrackerSettings`](../../component-gallery/experiment-trackers/mlflow.md) to specify MLflow settings.
-  - [`WandbExperimentTrackerSettings`](../../component-gallery/experiment-trackers/wandb.md) to specify W&B settings.
-  - [`WhylogsDataValidatorSettings`](../../component-gallery/data-validators/whylogs.md) to specify Whylogs settings.
+  - [`KubeflowOrchestratorSettings`](../../../book/platform-guide/component-gallery/orchestrators/kubeflow.md) to specify Kubeflow settings.
+  - [`MLflowExperimentTrackerSettings`](../../../book/platform-guide/component-gallery/experiment-trackers/mlflow.md) to specify MLflow settings.
+  - [`WandbExperimentTrackerSettings`](../../../book/platform-guide/component-gallery/experiment-trackers/wandb.md) to specify W&B settings.
+  - [`WhylogsDataValidatorSettings`](../../../book/platform-guide/component-gallery/data-validators/whylogs.md) to specify Whylogs settings.
 
 For stack component specific settings, you might be wondering what the difference is between these and the configuration passed in while doing `zenml stack-component register <NAME> --config1=configvalue --config2=configvalue` etc.
 The answer is that the configuration passed in at registration time is static and fixed throughout all pipeline runs, while the settings can change.
 
-A good example of this is the [`MLflow Experiment Tracker`](../../component-gallery/experiment-trackers/mlflow.md), where configuration which remains static such as the `tracking_url` is sent through at registration time, while runtime configuration such as the `experiment_name` (which might change every pipeline run) is sent through as runtime settings.
+A good example of this is the [`MLflow Experiment Tracker`](../../../book/platform-guide/component-gallery/experiment-trackers/mlflow.md), where configuration which remains static such as the `tracking_url` is sent through at registration time, while runtime configuration such as the `experiment_name` (which might change every pipeline run) is sent through as runtime settings.
 
 Even though settings can be overridden at runtime, you can also specify *default* values for settings while configuring a stack component. For example, you could set a default value for the `nested` setting of your MLflow experiment tracker:
 `zenml experiment-tracker register <NAME> --flavor=mlflow --nested=True`
@@ -73,7 +73,7 @@ settings={'docker': {'requirements': ['pandas']}}
 ```
 
 #### Using stack component specific settings
-Settings for stack components must be passed with the key having a specific format: `<COMPONENT_CATEGORY>.<COMPONENT_FLAVOR>`. For example, an instance of [`SagemakerStepOperatorSettings`](https://apidocs.zenml.io/latest/integration_code_docs/integrations-aws/#zenml.integrations.aws.flavors.sagemaker_step_operator_flavor.SagemakerStepOperatorSettings) for the [SageMaker Step Operator](../../component-gallery/step-operators/sagemaker.md) can be passed in as follows:
+Settings for stack components must be passed with the key having a specific format: `<COMPONENT_CATEGORY>.<COMPONENT_FLAVOR>`. For example, an instance of [`SagemakerStepOperatorSettings`](https://apidocs.zenml.io/latest/integration_code_docs/integrations-aws/#zenml.integrations.aws.flavors.sagemaker_step_operator_flavor.SagemakerStepOperatorSettings) for the [SageMaker Step Operator](../../../book/platform-guide/component-gallery/step-operators/sagemaker.md) can be passed in as follows:
 
 ```python
 from zenml.integrations.aws.flavors.sagemaker_step_operator_flavor import SagemakerStepOperatorSettings

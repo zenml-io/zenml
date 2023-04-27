@@ -137,5 +137,5 @@ And with the ZenML CLI we can interact with list of served models, start, stop o
 
 {% hint style="info" %}
 To read a more detailed guide about how Model Deployers function in ZenML,
-[click here](../../component-gallery/model-deployers/model-deployers.md).
+[click here](../../../book/platform-guide/component-gallery/model-deployers/model-deployers.md).
 {% endhint %}

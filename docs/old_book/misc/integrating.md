@@ -42,7 +42,7 @@ instructions on each stack component page.
 Before you package your new components into an integration, you may want to 
 first register them with the `zenml <STACK_COMPONENT> flavor register` command 
 and use/test them as a regular custom flavor. E.g., when 
-[developing an orchestrator](../component-gallery/orchestrators/custom.md) 
+[developing an orchestrator](../../book/platform-guide/component-gallery/orchestrators/custom.md) 
 you can use:
 
 ```shell

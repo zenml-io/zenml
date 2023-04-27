@@ -256,7 +256,7 @@ pipe.get_runs()[0].get_step(step="step_1")
 
 {% hint style="info" %}
 The steps are ordered by time of execution. Depending on the 
-[orchestrator](../../component-gallery/orchestrators/orchestrators.md), steps can be 
+[orchestrator](../../../book/platform-guide/component-gallery/orchestrators/orchestrators.md), steps can be 
 run in parallel. Thus, accessing steps by index can be unreliable across 
 different runs, and it is recommended to access steps by the step class,
 an instance of the class or even the name of the step as a string: 

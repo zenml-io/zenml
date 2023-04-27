@@ -144,7 +144,7 @@ package manager to get a list of your local packages):
     def my_pipeline(...):
         ...
     ```
-* Specify a list of [ZenML integrations](../../component-gallery/integrations.md) that you're using in your pipeline:
+* Specify a list of [ZenML integrations](../../../book/platform-guide/component-gallery/integrations.md) that you're using in your pipeline:
     ```python
     from zenml.integrations.constants import PYTORCH, EVIDENTLY
 
@@ -261,10 +261,10 @@ def my_pipeline(...):
 
 ## Customizing the build environment
 
-The [image builder](../../component-gallery/image-builders/image-builders.md) component
+The [image builder](../../../book/platform-guide/component-gallery/image-builders/image-builders.md) component
 of your stack defines the environment in which the Docker build with the previously
 described Dockerfile gets executed. This could be either on your local machine
-(when using the [local image builder](../../component-gallery/image-builders/local.md))
+(when using the [local image builder](../../../book/platform-guide/component-gallery/image-builders/local.md))
 or in some remote environment. Check our the image builder documentation for more information.
 
 ## Building Docker images without running the pipeline

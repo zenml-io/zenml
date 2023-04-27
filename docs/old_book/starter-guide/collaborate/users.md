@@ -39,5 +39,5 @@ From the invitation URL, a user can sign up as expected:
 
 And that's it 🚀. We went from a simple ZenML pip install to a fully fledged multi-user, cloud deployment of ZenML.
 
-Now, the next steps are to create stacks with [components from the component gallery](../../component-gallery/categories.md), or dive into
+Now, the next steps are to create stacks with [components from the component gallery](../../../book/platform-guide/component-gallery/categories.md), or dive into
 [advanced topics](../../advanced-guide/pipelines/pipelines.md) to learn about the inner workings of ZenML!
