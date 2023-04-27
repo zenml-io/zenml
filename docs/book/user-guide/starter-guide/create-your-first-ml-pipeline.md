@@ -31,7 +31,7 @@ def step_1() -> str:
   return "world"
 
 @step
-def step_2(input_one: str, input_two: str):
+def step_2(input_one: str, input_two: str) -> None:
   combined_str = input_one + ' ' + input_two
   print(combined_str)
 
@@ -94,31 +94,35 @@ If you navigate to the run that you just executed, you will see a diagram view o
 // Placeholder for Screenshot
 ```
 
+## Recap
 
-
-
+### Step
 
 ```python
-from zenml.pipelines import pipeline
-from zenml.steps import step
-
 @step
-def step_1() -> str:
-  return "world"
-
-@step
-def step_2(input_one: str, input_two: str):
+def step_2(input_one: str, input_two: str) -> None:
   combined_str = input_one + input_two
-  print(combined_str)
+  return combined_str
+```
 
+Steps are functions. These functions have inputs and outputs. For ZenML to work properly, these need to be typed.
+
+### Pipeline
+
+```
 @pipeline
 def my_pipeline():
-  array = step_1()
-  step_2(input_one="hello", input_two="world")
-
-my_pipeline()
+  output_step_one = step_1()
+  step_2(input_one="hello", input_two=output_step_one)
 ```
 
+Pipelines are also functions. However you are only allowed to call steps within this function. The inputs for steps within a function can either be the outputs of previous steps, or alternatively you can pass in values directly.
+
+### Executing the Code
+
 ```
-// Some code
+if __name__ == "__main__":
+  my_pipeline()
 ```
+
+Executing the Pipeline is as easy as just calling the function.
