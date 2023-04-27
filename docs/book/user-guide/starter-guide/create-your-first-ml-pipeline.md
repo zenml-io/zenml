@@ -68,13 +68,15 @@ Pipeline visualization can be seen in the ZenML Dashboard. Run zenml up to see y
   * within this function the steps are called and their outputs are routed
 {% endhint %}
 
-In the output, there's a line with something like:
+In the output, there's a line with something like this.
 
 {% code overflow="wrap" %}
 ```bash
 Pipeline visualization can be seen in the ZenML Dashboard. Run zenml up to see your pipeline!
 ```
 {% endcode %}
+
+ZenML offers you a comprehensive Dashboard to interact with your Pipelines, Artifacts and Infrastructure. To see it, simply deploy the ZenML service locally in the next section.
 
 #### Check it
 
@@ -84,7 +86,7 @@ After a few seconds your browser should open the ZenML Dashboard for you at [htt
 
 The default user account is **Username**: _**default**_ with no password.
 
-<figure><img src="../../.gitbook/assets/Dashboard.png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../../.gitbook/assets/Dashboard.png" alt=""><figcaption><p>Landing Page of the Dashboard</p></figcaption></figure>
 
 As you can see, the dashboard shows you that there is 1 pipeline and 1 pipeline run. (feel free to ignore the stack and components for the time being)
 
