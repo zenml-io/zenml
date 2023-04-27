@@ -67,6 +67,7 @@ logger = get_logger(__name__)
 AWS_CONNECTOR_TYPE = "aws"
 AWS_RESOURCE_TYPE = "aws"
 S3_RESOURCE_TYPE = "s3"
+EKS_KUBE_API_EXPIRATION = 60
 
 
 class AWSSecretKey(AuthenticationConfig):
@@ -678,7 +679,7 @@ class AWSServiceConnector(ServiceConnector):
                         response = sts.assume_role(
                             RoleArn=cfg.role_arn,
                             RoleSessionName=session_name,
-                            DurationSeconds=cfg.expiration_seconds,
+                            DurationSeconds=self.expiration_seconds,
                             **policy_kwargs,
                         )
                     except ClientError as e:
@@ -694,7 +695,7 @@ class AWSServiceConnector(ServiceConnector):
                     try:
                         response = sts.get_federation_token(
                             Name=session_name[:32],
-                            DurationSeconds=cfg.expiration_seconds,
+                            DurationSeconds=self.expiration_seconds,
                             **policy_kwargs,
                         )
                     except ClientError as e:
@@ -708,7 +709,7 @@ class AWSServiceConnector(ServiceConnector):
                 assert isinstance(cfg, SessionTokenAuthenticationConfig)
                 try:
                     response = sts.get_session_token(
-                        DurationSeconds=cfg.expiration_seconds,
+                        DurationSeconds=self.expiration_seconds,
                     )
                 except ClientError as e:
                     raise AuthorizationException(
@@ -725,7 +726,8 @@ class AWSServiceConnector(ServiceConnector):
                 aws_session_token=response["Credentials"]["SessionToken"],
             )
             expiration = response["Credentials"]["Expiration"]
-
+            # Add the UTC timezone to the expiration time
+            expiration = expiration.replace(tzinfo=datetime.timezone.utc)
             return session, expiration
 
         raise NotImplementedError(
@@ -739,8 +741,7 @@ class AWSServiceConnector(ServiceConnector):
         session: boto3.Session,
         cluster_id: str,
         region: str,
-        expires_seconds: int = 60,
-    ) -> str:
+    ) -> Tuple[str, datetime.datetime]:
         """Generate a bearer token for authenticating to the EKS API server.
 
         Based on: https://github.com/kubernetes-sigs/aws-iam-authenticator/blob/master/README.md#api-authorization-from-outside-a-cluster
@@ -750,11 +751,10 @@ class AWSServiceConnector(ServiceConnector):
                 token.
             cluster_id: The name of the EKS cluster.
             region: The AWS region the EKS cluster is in.
-            expires_seconds: The number of seconds for which the token should
-                be valid.
 
         Returns:
-            A bearer token for authenticating to the EKS API server.
+            A bearer token for authenticating to the EKS API server and the
+            expiration time of the token.
         """
         client = session.client("sts", region_name=region)
         service_id = client.meta.service_model.service_id
@@ -776,10 +776,15 @@ class AWSServiceConnector(ServiceConnector):
             "context": {},
         }
 
+        # EKS Kubernetes API bearer tokens cannot have an expiration time
+        # greater than 60 seconds.
+        expires_at = datetime.datetime.now(
+            datetime.timezone.utc
+        ) + datetime.timedelta(seconds=EKS_KUBE_API_EXPIRATION)
         signed_url = signer.generate_presigned_url(
             params,
             region_name=region,
-            expires_in=expires_seconds,
+            expires_in=EKS_KUBE_API_EXPIRATION,
             operation_name="",
         )
 
@@ -788,7 +793,7 @@ class AWSServiceConnector(ServiceConnector):
         ).decode("utf-8")
 
         # remove any base64 encoding padding:
-        return "k8s-aws-v1." + re.sub(r"=*", "", base64_url)
+        return "k8s-aws-v1." + re.sub(r"=*", "", base64_url), expires_at
 
     def _parse_s3_resource_id(self, resource_id: str) -> str:
         """Validate and convert an S3 resource ID to an S3 bucket name.
@@ -1445,6 +1450,7 @@ class AWSServiceConnector(ServiceConnector):
                     # instance because it's fully formed and ready to use
                     # to connect to the specified resource
                     return self
+                expires_at = self.expires_at
             else:
                 # Get an authenticated boto3 session
                 session, expires_at = self._authenticate(
@@ -1566,13 +1572,11 @@ class AWSServiceConnector(ServiceConnector):
                     f"Failed to get EKS cluster {cluster_name}: {e}"
                 ) from e
 
-            assert self.expiration_seconds is not None
             try:
-                user_token = self._get_eks_bearer_token(
+                user_token, expires_at = self._get_eks_bearer_token(
                     session=session,
                     cluster_id=cluster_name,
                     region=self.config.region,
-                    expires_seconds=self.expiration_seconds,
                 )
             except ClientError as e:
                 raise AuthorizationException(

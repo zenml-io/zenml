@@ -14,7 +14,7 @@
 """Base ZenML Service Connector class."""
 
 from abc import abstractmethod
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Tuple
 from uuid import UUID
 
@@ -559,7 +559,7 @@ class ServiceConnector(BaseModel):
         if not self.expires_at:
             return False
 
-        return self.expires_at < datetime.utcnow()
+        return self.expires_at < datetime.now(timezone.utc)
 
     def validate_runtime_args(
         self,

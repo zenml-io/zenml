@@ -4211,6 +4211,7 @@ class Client(metaclass=ClientMetaClass):
         secrets: Optional[Dict[str, Optional[SecretStr]]] = None,
         resource_id: Optional[str] = None,
         description: str = "",
+        expiration_seconds: Optional[int] = None,
         is_shared: bool = False,
         labels: Optional[Dict[str, str]] = None,
         auto_configure: bool = False,
@@ -4229,6 +4230,7 @@ class Client(metaclass=ClientMetaClass):
             secrets: The secrets of the service connector.
             resource_id: The resource id of the service connector.
             description: The description of the service connector.
+            expiration_seconds: The expiration time of the service connector.
             is_shared: Whether the service connector is shared or not.
             labels: The labels of the service connector.
             auto_configure: Whether to automatically configure the service
@@ -4304,6 +4306,7 @@ class Client(metaclass=ClientMetaClass):
                 resource_id=resource_id,
                 configuration=configuration or {},
                 secrets=secrets or {},
+                expiration_seconds=expiration_seconds,
                 is_shared=is_shared,
                 user=self.active_user.id,
                 workspace=self.active_workspace.id,
@@ -4349,6 +4352,7 @@ class Client(metaclass=ClientMetaClass):
         secrets: Optional[Dict[str, Optional[SecretStr]]] = None,
         resource_id: Optional[str] = None,
         description: Optional[str] = None,
+        expiration_seconds: Optional[int] = None,
         is_shared: Optional[bool] = None,
         labels: Optional[Dict[str, str]] = None,
         verify: bool = True,
@@ -4368,6 +4372,8 @@ class Client(metaclass=ClientMetaClass):
             resource_id: The new resource id of the service connector. If set to
                 an empty string, the existing resource id value will be removed.
             description: The new description of the service connector.
+            expiration_seconds: The new expiration time of the service
+                connector.
             is_shared: The new shared status of the service connector.
             labels: The new labels of the service connector.
             verify: Whether to validate that the new service connector
@@ -4451,6 +4457,9 @@ class Client(metaclass=ClientMetaClass):
         service_connector.description = (
             description or service_connector.description
         )
+        service_connector.expiration_seconds = (
+            expiration_seconds or service_connector.expiration_seconds
+        )
         service_connector.labels = (
             labels if labels is not None else service_connector.labels
         )
@@ -4495,6 +4504,7 @@ class Client(metaclass=ClientMetaClass):
                 secrets=service_connector.secrets,
                 resource_id=service_connector.resource_id,
                 description=service_connector.description,
+                expiration_seconds=service_connector.expiration_seconds,
                 is_shared=service_connector.is_shared,
                 labels=service_connector.labels,
                 workspace=self.active_workspace.id,

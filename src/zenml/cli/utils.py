@@ -1234,6 +1234,7 @@ def print_service_connector_configuration(
         "RESOURCE_TYPES": ", ".join(connector.resource_types),
         "RESOURCE_ID": connector.resource_id or "",
         "SECRET_ID": connector.secret_id or "",
+        "EXPIRATION": str(connector.expiration_seconds or "")+"s",
         "OWNER": user_name,
         "WORKSPACE": connector.workspace.name,
         "SHARED": get_shared_emoji(connector.is_shared),

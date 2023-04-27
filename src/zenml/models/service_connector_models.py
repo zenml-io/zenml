@@ -142,6 +142,19 @@ class AuthenticationMethodModel(BaseModel):
 
         return values
 
+    def supports_temporary_credentials(self) -> bool:
+        """Check if the authentication method supports temporary credentials.
+
+        Returns:
+            True if the authentication method supports temporary credentials,
+            False otherwise.
+        """
+        return (
+            self.min_expiration_seconds is not None
+            or self.max_expiration_seconds is not None
+            or self.default_expiration_seconds is not None
+        )
+
     def validate_expiration(
         self, expiration_seconds: Optional[int]
     ) -> Optional[int]:
@@ -157,11 +170,7 @@ class AuthenticationMethodModel(BaseModel):
         Raises:
             ValueError: If the expiration time is not valid.
         """
-        if (
-            self.min_expiration_seconds is None
-            and self.max_expiration_seconds is None
-            and self.default_expiration_seconds is None
-        ):
+        if not self.supports_temporary_credentials():
             if expiration_seconds is not None:
                 # Expiration is not supported
                 raise ValueError(
