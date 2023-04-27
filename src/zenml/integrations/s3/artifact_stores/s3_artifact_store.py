@@ -67,15 +67,15 @@ class S3ArtifactStore(BaseArtifactStore, AuthenticationMixin):
         """
         connector = self.get_connector()
         if connector:
-            import boto3  # type: ignore[import]
+            from botocore.client import BaseClient
 
-            session = connector.connect(resource_id=self.path)
-            if not isinstance(session, boto3.Session):
+            client = connector.connect()
+            if not isinstance(client, BaseClient):
                 raise RuntimeError(
-                    f"Expected a boto3.Session while trying to use the linked "
-                    f"connector, but got {type(session)}."
+                    f"Expected a botocore.client.BaseClient while trying to "
+                    f"use the linked connector, but got {type(client)}."
                 )
-            credentials = session.get_credentials()
+            credentials = client.credentials
             return (
                 credentials.access_key,
                 credentials.secret_key,

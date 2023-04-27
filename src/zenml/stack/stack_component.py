@@ -523,15 +523,17 @@ class StackComponent:
                 f"flavor: {err}. Please verify that the connector is "
                 f"compatible with the component flavor and try again."
             )
-        # Use resource ID specified in the stack component if not set in the
-        # service connector configuration.
-        connector_model.resource_id = (
-            connector_model.resource_id or self.connector_resource_id
+
+        # Instantiate a base connector instance
+        connector = service_connector_registry.instantiate_service_connector(
+            model=connector_model
         )
-        self._connector_instance = (
-            service_connector_registry.instantiate_service_connector(
-                model=connector_model
-            )
+
+        # Use the base connector instance to get a client connector instance
+        # that can actually be used to make requests to the service.
+        self._connector_instance = connector.get_client_connector(
+            resource_type=self.connector_requirements.resource_type,
+            resource_id=self.connector_resource_id,
         )
 
         return self._connector_instance

@@ -27,6 +27,7 @@ from typing import (
     Mapping,
     Optional,
     Set,
+    Tuple,
     Type,
     TypeVar,
     Union,
@@ -4215,7 +4216,7 @@ class Client(metaclass=ClientMetaClass):
         auto_configure: bool = False,
         verify: bool = True,
         register: bool = True,
-    ) -> Optional["ServiceConnectorResponseModel"]:
+    ) -> Optional[Union["ServiceConnectorResponseModel", "ServiceConnector"]]:
         """Create, validate and/or register a service connector.
 
         Args:
@@ -4237,8 +4238,8 @@ class Client(metaclass=ClientMetaClass):
             register: Whether to register the service connector or not.
 
         Returns:
-            The model of the registered service connector, or None, if the
-            registration was skipped.
+            The model of the registered service connector or the service
+            connector instance.
 
         Raises:
             RuntimeError: If the service connector could not be verified.
@@ -4247,6 +4248,8 @@ class Client(metaclass=ClientMetaClass):
         from zenml.service_connectors.service_connector_registry import (
             service_connector_registry,
         )
+
+        connector_instance: Optional[ServiceConnector] = None
 
         # Get the service connector type class
         try:
@@ -4271,7 +4274,7 @@ class Client(metaclass=ClientMetaClass):
             if verify:
                 connector_instance.verify()
 
-            connector_model = connector_instance.to_model(
+            connector_request_model = connector_instance.to_model(
                 name=name,
                 user=self.active_user.id,
                 workspace=self.active_workspace.id,
@@ -4292,7 +4295,7 @@ class Client(metaclass=ClientMetaClass):
                 resource_types = list(
                     connector.get_type().resource_type_map.keys()
                 )
-            connector_model = ServiceConnectorRequestModel(
+            connector_request_model = ServiceConnectorRequestModel(
                 name=name,
                 type=type,
                 description=description,
@@ -4312,13 +4315,13 @@ class Client(metaclass=ClientMetaClass):
                 # the given type and that the configuration is valid
                 connector_instance = (
                     service_connector_registry.instantiate_service_connector(
-                        model=connector_model
+                        model=connector_request_model
                     )
                 )
                 connector_instance.verify()
 
                 # Get an updated model from the connector instance
-                connector_model = connector_instance.to_model(
+                connector_request_model = connector_instance.to_model(
                     name=name,
                     user=self.active_user.id,
                     workspace=self.active_workspace.id,
@@ -4328,11 +4331,11 @@ class Client(metaclass=ClientMetaClass):
                 )
 
         if not register:
-            return None
+            return connector_instance
 
         # Register the new model
         return self.zen_store.create_service_connector(
-            service_connector=connector_model
+            service_connector=connector_request_model
         )
 
     def update_service_connector(
@@ -4529,6 +4532,7 @@ class Client(metaclass=ClientMetaClass):
     def verify_service_connector(
         self,
         name_id_or_prefix: Union[UUID, str],
+        resource_type: Optional[str] = None,
         resource_id: Optional[str] = None,
         **kwargs: Any,
     ) -> "ServiceConnector":
@@ -4537,6 +4541,9 @@ class Client(metaclass=ClientMetaClass):
         Args:
             name_id_or_prefix: The name, id or prefix of the service connector to
                 update.
+            resource_type: The type of the resource to connect to. If not
+                provided, the resource type from the service connector
+                configuration will be used.
             resource_id: The ID of the resource to connect to. If not provided,
                 the resource ID from the service connector configuration will be
                 used.
@@ -4564,15 +4571,55 @@ class Client(metaclass=ClientMetaClass):
         )
 
         connector.verify(
+            resource_type=resource_type,
             resource_id=resource_id,
             **kwargs,
         )
 
         return connector
 
+    def list_service_connector_resources(
+        self,
+        name_id_or_prefix: Union[UUID, str],
+        resource_type: Optional[str] = None,
+        resource_id: Optional[str] = None,
+    ) -> Tuple[str, List[str]]:
+        """List all resources that a connector can give access to.
+
+        Args:
+            name_id_or_prefix: The name or id of the service connector.
+            resource_type: The type of resources to list.
+            resource_id: The ID of a particular resource to check.
+
+        Returns:
+            The resource type and list of resource IDs that the connector can
+            give access to.
+        """
+        from zenml.service_connectors.service_connector_registry import (
+            service_connector_registry,
+        )
+
+        # Get the service connector model
+        service_connector = self.get_service_connector(
+            name_id_or_prefix=name_id_or_prefix,
+            allow_name_prefix_match=False,
+        )
+
+        # This will also check that a connector class is registered for the
+        # given type and that the configuration is valid
+        connector = service_connector_registry.instantiate_service_connector(
+            model=service_connector
+        )
+
+        return connector.list_resource_ids(
+            resource_type=resource_type,
+            resource_id=resource_id,
+        )
+
     def login_service_connector(
         self,
         name_id_or_prefix: Union[UUID, str],
+        resource_type: Optional[str] = None,
         resource_id: Optional[str] = None,
         **kwargs: Any,
     ) -> "ServiceConnector":
@@ -4581,6 +4628,9 @@ class Client(metaclass=ClientMetaClass):
         Args:
             name_id_or_prefix: The name, id or prefix of the service connector to
                 use.
+            resource_type: The type of the resource to connect to. If not
+                provided, the resource type from the service connector
+                configuration will be used.
             resource_id: The ID of a particular resource instance to configure
                 the local client to connect to. Use this with resource types
                 that allow multiple instances. If the connector instance is
@@ -4611,8 +4661,13 @@ class Client(metaclass=ClientMetaClass):
             model=service_connector
         )
 
-        connector.configure_local_client(
+        # We need a client connector to use this functionality
+        client_connector = connector.get_client_connector(
+            resource_type=resource_type,
             resource_id=resource_id,
+        )
+
+        client_connector.configure_local_client(
             **kwargs,
         )
 

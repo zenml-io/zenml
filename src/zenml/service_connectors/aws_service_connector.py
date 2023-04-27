@@ -25,10 +25,10 @@ IAM role)
 
 """
 import base64
+import datetime
+import json
 import re
-import subprocess
-import tempfile
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, List, Optional, Tuple
 
 import boto3
 from botocore.client import BaseClient
@@ -45,9 +45,15 @@ from zenml.models import (
 )
 from zenml.service_connectors.docker_service_connector import (
     DOCKER_RESOURCE_TYPE,
+    DockerAuthenticationMethods,
+    DockerCredentials,
+    DockerServiceConnector,
 )
 from zenml.service_connectors.kubernetes_service_connector import (
     KUBERNETES_RESOURCE_TYPE,
+    KubernetesAuthenticationMethods,
+    KubernetesServiceConnector,
+    KubernetesTokenConfig,
 )
 from zenml.service_connectors.service_connector import (
     AuthenticationConfig,
@@ -85,8 +91,7 @@ class STSToken(AWSSecretKey):
 class AWSBaseConfig(AWSSecretKey):
     """AWS base configuration."""
 
-    region: Optional[str] = Field(
-        default=None,
+    region: str = Field(
         title="AWS Region",
     )
     endpoint_url: Optional[str] = Field(
@@ -102,57 +107,44 @@ class AWSSecretKeyConfig(AWSBaseConfig, AWSSecretKey):
 class STSTokenConfig(AWSBaseConfig, STSToken):
     """AWS STS token authentication configuration."""
 
-
-class IAMRoleAuthenticationConfig(AWSSecretKeyConfig):
-    """AWS IAM authentication config."""
-
-    role_arn: str = Field(
-        title="AWS IAM Role ARN",
+    expires: Optional[datetime.datetime] = Field(
+        default=None,
+        title="AWS STS Token Expiration",
     )
+
+
+class AWSSessionPolicy(AuthenticationConfig):
+    """AWS session IAM policy configuration."""
+
     policy_arns: Optional[List[str]] = Field(
         default=None,
         title="ARNs of the IAM managed policies that you want to use as a "
         "managed session policy. The policies must exist in the same account "
-        "as the IAM user that is requesting federated access.",
+        "as the IAM user that is requesting temporary credentials.",
     )
     policy: Optional[str] = Field(
         default=None,
         title="An IAM policy in JSON format that you want to use as an inline "
         "session policy",
     )
-    expiration_seconds: Optional[int] = Field(
-        default=3600,  # 1 hour
-        title="AWS IAM Role Token Expiration in Seconds",
+
+
+class IAMRoleAuthenticationConfig(AWSSecretKeyConfig, AWSSessionPolicy):
+    """AWS IAM authentication config."""
+
+    role_arn: str = Field(
+        title="AWS IAM Role ARN",
     )
 
 
 class SessionTokenAuthenticationConfig(AWSSecretKeyConfig):
     """AWS session token authentication config."""
 
-    expiration_seconds: Optional[int] = Field(
-        default=43200,  # 12 hours
-        title="AWS Session Token Expiration in Seconds",
-    )
 
-
-class FederationTokenAuthenticationConfig(AWSSecretKeyConfig):
+class FederationTokenAuthenticationConfig(
+    AWSSecretKeyConfig, AWSSessionPolicy
+):
     """AWS federation token authentication config."""
-
-    policy_arns: Optional[List[str]] = Field(
-        default=None,
-        title="ARNs of the IAM managed policies that you want to use as a "
-        "managed session policy. The policies must exist in the same account "
-        "as the IAM user that is requesting federated access.",
-    )
-    policy: Optional[str] = Field(
-        default=None,
-        title="An IAM policy in JSON format that you want to use as an inline "
-        "session policy",
-    )
-    expiration_seconds: Optional[int] = Field(
-        default=43200,  # 12 hours
-        title="AWS Federation Token Expiration in Seconds",
-    )
 
 
 class AWSAuthenticationMethods(StrEnum):
@@ -194,6 +186,9 @@ ease of use. It is not recommended as a direct authentication method for
 production use cases because the clients are granted the full set of permissions
 of the IAM user or AWS account root user associated with the credentials.
 
+An AWS region is required and the connector may only be used to access AWS
+resources in the specified region.
+
 For production, it is recommended to use the AWS IAM Role, AWS Session Token
 or AWS Federation Token authentication method.
 """,
@@ -208,6 +203,9 @@ from a local environment. This method has the major limitation that the user
 must regularly generate new tokens and update the connector configuration as STS
 tokens expire. This method is best used in cases where the connector only needs
 to be used for a short period of time.
+
+An AWS region is required and the connector may only be used to access AWS
+resources in the specified region.
 """,
             config_class=STSTokenConfig,
         ),
@@ -222,8 +220,13 @@ associated with another IAM role. The IAM user or IAM role must have permissions
 to assume the IAM role. The connector will then generate new temporary STS
 tokens upon request by calling the AssumeRole STS API.
 
-One or more optional IAM managed policies can also be configured to further
-restrict the permissions of the generated STS tokens.
+An AWS region is required and the connector may only be used to access AWS
+resources in the specified region.
+
+One or more optional IAM managed policies may also be configured to further
+restrict the permissions of the generated STS tokens. If not specified, the
+connector will automatically configure policies according to the resource
+type and resource ID that the connector is configured to access.
 
 The default expiration period for generated STS tokens is 1 hour with a
 minimum of 15 minutes up to the maximum session duration setting configured for
@@ -242,7 +245,8 @@ This method might not be suitable for consumers that cannot automatically
 re-generate temporary credentials upon expiration (e.g. an external clients or
 long-running process).
 """,
-            min_expiration=900,  # 15 minutes
+            min_expiration_seconds=900,  # 15 minutes
+            default_expiration_seconds=3600,  # 1 hour
             config_class=IAMRoleAuthenticationConfig,
         ),
         AuthenticationMethodModel(
@@ -257,6 +261,9 @@ the GetSessionToken STS API. These STS tokens have an expiration period longer
 that those issued through the AWS IAM Role authentication method and are more
 suitable for long-running processes that cannot automatically re-generate
 credentials upon expiration.
+
+An AWS region is required and the connector may only be used to access AWS
+resources in the specified region.
 
 The default expiration period for generated STS tokens is 12 hours with a
 minimum of 15 minutes and a maximum of 36 hours. Temporary credentials obtained
@@ -277,8 +284,9 @@ This method might not be suitable for consumers that cannot automatically
 re-generate temporary credentials upon expiration (e.g. an external clients or
 long-running process).
 """,
-            min_expiration=900,  # 15 minutes
-            max_expiration=43200,  # 12 hours
+            min_expiration_seconds=900,  # 15 minutes
+            max_expiration_seconds=43200,  # 12 hours
+            default_expiration_seconds=43200,  # 12 hours
             config_class=SessionTokenAuthenticationConfig,
         ),
         AuthenticationMethodModel(
@@ -289,16 +297,22 @@ Generates temporary STS tokens for federated users.
 The connector needs to be configured with a key ID and secret access key
 associated with an IAM user or AWS account root user (not recommended) and one
 or more session policies. The IAM user must have permissions to call the
-GetFederationToken STS API. The connector will then generate new temporary STS
+GetFederationToken STS API (i.e. allow the `sts:GetFederationToken` action on
+the `*` IAM resource). The connector will then generate new temporary STS
 tokens upon request by calling the GetFederationToken STS API. These STS tokens
 have an expiration period longer that those issued through the AWS IAM Role
 authentication method and are more suitable for long-running processes that
 cannot automatically re-generate credentials upon expiration.
 
-One or more IAM managed policies must also be configured to grant permissions
-to the generated STS tokens, otherwise the tokens will not be able to access
-any AWS resources. If you need a simpler way to generate temporary STS tokens,
-you can use the AWS Session Token authentication method.
+An AWS region is required and the connector may only be used to access AWS
+resources in the specified region.
+
+One or more IAM managed policies may also be configured to grant permissions
+to the generated STS tokens. If not specified, the connector will automatically
+configure policies according to the resource type and resource ID that the
+connector is configured to access. If this authentication method is used with
+the generic AWS resource type, a session policy MUST be explicitly specified,
+otherwise the generated STS tokens will not have any permissions.
 
 The default expiration period for generated STS tokens is 12 hours with a
 minimum of 15 minutes and a maximum of 36 hours. Temporary credentials obtained
@@ -319,8 +333,9 @@ long-running process).
 
 This method is recommended for production use.
 """,
-            min_expiration=900,  # 15 minutes
-            max_expiration=43200,  # 12 hours
+            min_expiration_seconds=900,  # 15 minutes
+            max_expiration_seconds=43200,  # 12 hours
+            default_expiration_seconds=43200,  # 12 hours
             config_class=FederationTokenAuthenticationConfig,
         ),
     ],
@@ -347,11 +362,20 @@ session can then be used to create boto3 clients for any particular AWS service.
 Allows users to connect to S3 buckets. When used by connector consumers, they
 are provided a pre-configured boto3 S3 client instance.
 
-The resource ID must identify an S3 bucket using one of the following formats:
+The configured credentials must have at least the following S3 permissions:
 
-- S3 bucket ARN: arn:aws:s3:::bucket-name
-- S3 bucket URI: s3://bucket-name
-- S3 bucket name: bucket-name
+- s3:ListBucket
+- s3:GetObject
+- s3:PutObject
+- s3:DeleteObject
+- s3:ListAllMyBuckets
+
+If set, the resource ID must identify an S3 bucket using one of the following
+formats:
+
+- S3 bucket URI: s3://<bucket-name>
+- S3 bucket ARN: arn:aws:s3:::<bucket-name>
+- S3 bucket name: <bucket-name>
 """,
             auth_methods=AWSAuthenticationMethods.values(),
             # Request an S3 bucket to be configured in the
@@ -367,13 +391,25 @@ Allows users to access an EKS registry as a standard Kubernetes cluster
 resource. When used by connector consumers, they are provided a
 pre-authenticated python-kubernetes client instance.
 
-The resource ID must identify an EKS cluster using one of the following formats:
+The configured credentials must have at least the following EKS permissions:
 
-- EKS cluster ARN: arn:aws:eks:[region]:[account-id]:cluster/[cluster-name]
-- ECR cluster name: [cluster-name]
+- eks:ListClusters
+- eks:DescribeCluster
 
-EKS registry names are region scoped. If the region name cannot be inferred
-from the resource ID, it must be provided as a configuration parameter.
+In addition to the above permissions, if the credentials are not associated
+with the same IAM user or role that created the EKS cluster, the IAM principal
+must be manually added to the EKS cluster's `aws-auth` ConfigMap. For more
+information, see:
+https://docs.aws.amazon.com/eks/latest/userguide/add-user-role.html
+
+If set, the resource ID must identify an EKS cluster using one of the following
+formats:
+
+- ECR cluster name: <cluster-name>
+- EKS cluster ARN: arn:aws:eks:<region>:<account-id>:cluster/<cluster-name>
+
+EKS registry names are region scoped. The connector can only be used to access
+EKS clusters in the AWS region that it is configured to use.
 """,
             auth_methods=AWSAuthenticationMethods.values(),
             # Request an EKS cluster name to be configured in the
@@ -389,15 +425,30 @@ Allows users to access an ECR repository as a standard Docker registry resource.
 When used by connector consumers, they are provided a pre-authenticated
 python-docker client instance.
 
-The resource ID must identify an ECR repository using one of the following
-formats:
-            
-- ECR repository ARN: arn:aws:ecr:[region]:[account-id]:repository/[repository-name]
-- ECR repository URI: [https://][account-id].dkr.ecr.[region].amazonaws.com/[repository-name]
-- ECR repository name: [repository-name]
+The configured credentials must have at least the following ECR permissions:
 
-ECR repository names are region scoped. If the region name cannot be inferred
-from the resource ID, it must be provided as a configuration parameter.
+- ecr:DescribeRegistry
+- ecr:DescribeRepositories
+- ecr:ListRepositories
+- ecr:BatchGetImage
+- ecr:DescribeImages
+- ecr:BatchCheckLayerAvailability
+- ecr:GetDownloadUrlForLayer
+- ecr:InitiateLayerUpload
+- ecr:UploadLayerPart
+- ecr:CompleteLayerUpload
+- ecr:PutImage
+- ecr:GetAuthorizationToken
+
+If set, the resource ID must identify an ECR repository using one of the
+following formats:
+            
+- ECR repository URI: [https://]<account-id>.dkr.ecr.<region>.amazonaws.com/<repository-name>
+- ECR repository ARN: arn:aws:ecr:<region>:<account-id>:repository/<repository-name>
+- ECR repository name: <repository-name>
+
+ECR repository names are region scoped. The connector can only be used to access
+ECR repositories in the AWS region that it is configured to use.
 """,
             auth_methods=AWSAuthenticationMethods.values(),
             # Request an ECR registry to be configured in the
@@ -423,14 +474,135 @@ class AWSServiceConnector(ServiceConnector):
         """
         return AWS_SERVICE_CONNECTOR_TYPE_SPEC
 
-    def _authenticate(self, auth_method: str) -> boto3.Session:
-        """Authenticate to AWS.
+    def _get_iam_policy(
+        self,
+        resource_type: Optional[str],
+        resource_id: Optional[str] = None,
+    ) -> Optional[str]:
+        """Get the IAM inline policy to use for the specified resource.
+
+        Args:
+            resource_type: The resource type to get the IAM inline policy for.
+            resource_id: The resource ID to get the IAM inline policy for.
+
+        Returns:
+            The IAM inline policy to use for the specified resource.
+        """
+        if resource_type == S3_RESOURCE_TYPE:
+            if resource_id:
+                bucket = self._parse_s3_resource_id(resource_id)
+                resource = [
+                    f"arn:aws:s3:::{bucket}",
+                    f"arn:aws:s3:::{bucket}/*",
+                ]
+            else:
+                resource = ["arn:aws:s3:::*", "arn:aws:s3:::*/*"]
+            policy = {
+                "Version": "2012-10-17",
+                "Statement": [
+                    {
+                        "Sid": "AllowS3BucketAccess",
+                        "Effect": "Allow",
+                        "Action": [
+                            "s3:ListBucket",
+                            "s3:GetObject",
+                            "s3:PutObject",
+                            "s3:DeleteObject",
+                            "s3:ListAllMyBuckets",
+                        ],
+                        "Resource": resource,
+                    },
+                ],
+            }
+            return json.dumps(policy)
+        elif resource_type == KUBERNETES_RESOURCE_TYPE:
+            if resource_id:
+                cluster_name = self._parse_eks_resource_id(resource_id)
+                resource = [
+                    f"arn:aws:eks:{self.config.region}:*:cluster/{cluster_name}",
+                ]
+            else:
+                resource = [f"arn:aws:eks:{self.config.region}:*:cluster/*"]
+            policy = {
+                "Version": "2012-10-17",
+                "Statement": [
+                    {
+                        "Sid": "AllowEKSClusterAccess",
+                        "Effect": "Allow",
+                        "Action": [
+                            "eks:ListClusters",
+                            "eks:DescribeCluster",
+                        ],
+                        "Resource": resource,
+                    },
+                ],
+            }
+            return json.dumps(policy)
+        elif resource_type == DOCKER_RESOURCE_TYPE:
+            if resource_id:
+                repo_name, _ = self._parse_ecr_resource_id(
+                    resource_id,
+                    need_registry_id=False,
+                )
+                resource = [
+                    f"arn:aws:ecr:{self.config.region}:*:repository/{repo_name}",
+                ]
+            else:
+                resource = [
+                    f"arn:aws:ecr:{self.config.region}:*:repository/*",
+                    f"arn:aws:ecr:{self.config.region}:*:repository",
+                ]
+            policy = {
+                "Version": "2012-10-17",
+                "Statement": [
+                    {
+                        "Sid": "AllowECRRepositoryAccess",
+                        "Effect": "Allow",
+                        "Action": [
+                            "ecr:DescribeRegistry",
+                            "ecr:DescribeRepositories",
+                            "ecr:ListRepositories",
+                            "ecr:BatchGetImage",
+                            "ecr:DescribeImages",
+                            "ecr:BatchCheckLayerAvailability",
+                            "ecr:GetDownloadUrlForLayer",
+                            "ecr:InitiateLayerUpload",
+                            "ecr:UploadLayerPart",
+                            "ecr:CompleteLayerUpload",
+                            "ecr:PutImage",
+                        ],
+                        "Resource": resource,
+                    },
+                    {
+                        "Sid": "AllowECRRepositoryGetToken",
+                        "Effect": "Allow",
+                        "Action": [
+                            "ecr:GetAuthorizationToken",
+                        ],
+                        "Resource": ["*"],
+                    },
+                ],
+            }
+            return json.dumps(policy)
+
+        return None
+
+    def _authenticate(
+        self,
+        auth_method: str,
+        resource_type: Optional[str] = None,
+        resource_id: Optional[str] = None,
+    ) -> Tuple[boto3.Session, Optional[datetime.datetime]]:
+        """Authenticate to AWS and return a boto3 session.
 
         Args:
             auth_method: The authentication method to use.
+            resource_type: The resource type to authenticate for.
+            resource_id: The resource ID to authenticate for.
 
         Returns:
-            An authenticated boto3 session.
+            An authenticated boto3 session and the expiration time of the
+            temporary credentials if applicable.
 
         Raises:
             AuthenticationError: If the IAM role authentication method is used
@@ -444,8 +616,9 @@ class AWSServiceConnector(ServiceConnector):
             session = boto3.Session(
                 aws_access_key_id=cfg.aws_access_key_id.get_secret_value(),
                 aws_secret_access_key=cfg.aws_secret_access_key.get_secret_value(),
-                region_name=self.config.region,
+                region_name=cfg.region,
             )
+            return session, None
         elif auth_method == AWSAuthenticationMethods.STS_TOKEN:
             assert isinstance(cfg, STSTokenConfig)
             # Create a boto3 session using a temporary AWS STS token
@@ -453,32 +626,96 @@ class AWSServiceConnector(ServiceConnector):
                 aws_access_key_id=cfg.aws_access_key_id.get_secret_value(),
                 aws_secret_access_key=cfg.aws_secret_access_key.get_secret_value(),
                 aws_session_token=cfg.aws_session_token.get_secret_value(),
-                region_name=self.config.region,
+                region_name=cfg.region,
             )
-        elif auth_method == AWSAuthenticationMethods.IAM_ROLE:
-            assert isinstance(cfg, IAMRoleAuthenticationConfig)
-            # Create a boto3 session using an IAM role
+            return session, None
+        elif auth_method in [
+            AWSAuthenticationMethods.IAM_ROLE,
+            AWSAuthenticationMethods.SESSION_TOKEN,
+            AWSAuthenticationMethods.FEDERATION_TOKEN,
+        ]:
+            assert isinstance(cfg, AWSSecretKey)
+
+            # Create a boto3 session
             session = boto3.Session(
                 aws_access_key_id=cfg.aws_access_key_id.get_secret_value(),
                 aws_secret_access_key=cfg.aws_secret_access_key.get_secret_value(),
-                region_name=self.config.region,
+                region_name=cfg.region,
             )
 
-            sts = session.client("sts", region_name=self.config.region)
+            sts = session.client("sts", region_name=cfg.region)
             session_name = "zenml-connector"
             if self.id:
                 session_name += f"-{self.id}"
 
-            try:
-                response = sts.assume_role(
-                    RoleArn=cfg.role_arn, RoleSessionName=session_name
-                )
-            except ClientError as e:
-                raise AuthorizationException(
-                    f"Failed to assume IAM role {cfg.role_arn} "
-                    f"using the AWS credentials configured in the connector: "
-                    f"{e}"
-                ) from e
+            # Next steps are different for each authentication method
+
+            # The IAM role and federation token authentication methods
+            # accept a managed IAM policy that restricts/grants permissions.
+            # If one isn't explicitly configured, we generate one based on the
+            # resource specified by the resource type and ID (if present).
+            if auth_method in [
+                AWSAuthenticationMethods.IAM_ROLE,
+                AWSAuthenticationMethods.FEDERATION_TOKEN,
+            ]:
+                assert isinstance(cfg, AWSSessionPolicy)
+                policy_kwargs = {}
+                policy = cfg.policy
+                if not cfg.policy and not cfg.policy_arns:
+                    policy = self._get_iam_policy(
+                        resource_type=resource_type,
+                        resource_id=resource_id,
+                    )
+                if policy:
+                    policy_kwargs["Policy"] = policy
+                elif cfg.policy_arns:
+                    policy_kwargs["PolicyArns"] = cfg.policy_arns
+
+                if auth_method == AWSAuthenticationMethods.IAM_ROLE:
+                    assert isinstance(cfg, IAMRoleAuthenticationConfig)
+
+                    try:
+                        response = sts.assume_role(
+                            RoleArn=cfg.role_arn,
+                            RoleSessionName=session_name,
+                            DurationSeconds=cfg.expiration_seconds,
+                            **policy_kwargs,
+                        )
+                    except ClientError as e:
+                        raise AuthorizationException(
+                            f"Failed to assume IAM role {cfg.role_arn} "
+                            f"using the AWS credentials configured in the "
+                            f"connector: {e}"
+                        ) from e
+
+                else:
+                    assert isinstance(cfg, FederationTokenAuthenticationConfig)
+
+                    try:
+                        response = sts.get_federation_token(
+                            Name=session_name[:32],
+                            DurationSeconds=cfg.expiration_seconds,
+                            **policy_kwargs,
+                        )
+                    except ClientError as e:
+                        raise AuthorizationException(
+                            "Failed to get federation token "
+                            "using the AWS credentials configured in the "
+                            f"connector: {e}"
+                        ) from e
+
+            else:
+                assert isinstance(cfg, SessionTokenAuthenticationConfig)
+                try:
+                    response = sts.get_session_token(
+                        DurationSeconds=cfg.expiration_seconds,
+                    )
+                except ClientError as e:
+                    raise AuthorizationException(
+                        "Failed to get session token "
+                        "using the AWS credentials configured in the "
+                        f"connector: {e}"
+                    ) from e
 
             session = boto3.Session(
                 aws_access_key_id=response["Credentials"]["AccessKeyId"],
@@ -487,17 +724,22 @@ class AWSServiceConnector(ServiceConnector):
                 ],
                 aws_session_token=response["Credentials"]["SessionToken"],
             )
-        else:
-            raise NotImplementedError(
-                f"Authentication method '{auth_method}' is not supported by "
-                "the AWS connector."
-            )
+            expiration = response["Credentials"]["Expiration"]
 
-        return session
+            return session, expiration
+
+        raise NotImplementedError(
+            f"Authentication method '{auth_method}' is not supported by "
+            "the AWS connector."
+        )
 
     @classmethod
     def _get_eks_bearer_token(
-        cls, session: boto3.Session, cluster_id: str, region: str
+        cls,
+        session: boto3.Session,
+        cluster_id: str,
+        region: str,
+        expires_seconds: int = 60,
     ) -> str:
         """Generate a bearer token for authenticating to the EKS API server.
 
@@ -508,13 +750,12 @@ class AWSServiceConnector(ServiceConnector):
                 token.
             cluster_id: The name of the EKS cluster.
             region: The AWS region the EKS cluster is in.
+            expires_seconds: The number of seconds for which the token should
+                be valid.
 
         Returns:
             A bearer token for authenticating to the EKS API server.
         """
-        # TODO: make this configurable
-        STS_TOKEN_EXPIRES_IN = 60
-
         client = session.client("sts", region_name=region)
         service_id = client.meta.service_model.service_id
 
@@ -538,7 +779,7 @@ class AWSServiceConnector(ServiceConnector):
         signed_url = signer.generate_presigned_url(
             params,
             region_name=region,
-            expires_in=STS_TOKEN_EXPIRES_IN,
+            expires_in=expires_seconds,
             operation_name="",
         )
 
@@ -549,127 +790,7 @@ class AWSServiceConnector(ServiceConnector):
         # remove any base64 encoding padding:
         return "k8s-aws-v1." + re.sub(r"=*", "", base64_url)
 
-    def _get_docker_client_config(
-        self,
-        ecr_client: BaseClient,
-        repository_name: str,
-        registry_id: Optional[str] = None,
-    ) -> Dict[str, Any]:
-        """Get the Docker client configuration for an ECR repository.
-
-        Args:
-            ecr_client: An authenticated boto3 client for the ECR service.
-            repository_name: The name of the ECR repository to authenticate
-                against.
-            registry_id: The ID of the ECR registry to authenticate against.
-                If not provided, the registry ID will be retrieved from the
-                repository name.
-
-        Returns:
-            A dictionary containing configuration parameters for the Docker
-            client.
-
-        Raises:
-            AuthorizationException: If the authorization token could not be
-                retrieved from ECR.
-        """
-        if not registry_id:
-            # Retrieve the registry ID from the repository name
-            try:
-                repositories = ecr_client.describe_repositories(
-                    repositoryNames=[
-                        repository_name,
-                    ]
-                )
-            except ClientError as e:
-                raise AuthorizationException(
-                    "Failed to get ECR registry ID from ECR repository "
-                    f"name: {e}"
-                ) from e
-
-            registry_id = repositories["repositories"][0]["registryId"]
-
-        try:
-            auth_token = ecr_client.get_authorization_token(
-                registryIds=[
-                    registry_id,
-                ]
-            )
-        except ClientError as e:
-            raise AuthorizationException(
-                f"Failed to get authorization token from ECR: {e}"
-            ) from e
-
-        token = auth_token["authorizationData"][0]["authorizationToken"]
-        endpoint = auth_token["authorizationData"][0]["proxyEndpoint"]
-        # The token is base64 encoded and has the format
-        # "username:password"
-        username, token = base64.b64decode(token).decode("utf-8").split(":")
-
-        return dict(
-            username=username,
-            password=token,
-            registry=endpoint,
-            reauth=True,
-        )
-
-    def _get_kubernetes_client_config(
-        self,
-        session: boto3.Session,
-        eks_client: BaseClient,
-        cluster_name: str,
-        region_id: str,
-    ) -> Dict[str, Any]:
-        """Get the Kubernetes client configuration for an EKS repository.
-
-        Args:
-            session: An authenticated boto3 session to use for generating the
-                token.
-            eks_client: An authenticated boto3 client for the EKS service.
-            cluster_name: The name of the EKS cluster to authenticate
-                against.
-            region_id: The ID of the AWS region the EKS cluster is in.
-
-        Returns:
-            A dictionary containing configuration parameters for the Kubernetes
-            client.
-
-        Raises:
-            AuthorizationException: If the authorization token could not be
-                retrieved from EKS.
-        """
-        try:
-            cluster = eks_client.describe_cluster(name=cluster_name)
-        except ClientError as e:
-            raise AuthorizationException(
-                f"Failed to get EKS cluster {cluster_name}: {e}"
-            ) from e
-
-        try:
-            token = self._get_eks_bearer_token(
-                session=session,
-                cluster_id=cluster_name,
-                region=region_id,
-            )
-        except ClientError as e:
-            raise AuthorizationException(
-                f"Failed to get EKS bearer token: {e}"
-            ) from e
-
-        # get cluster details
-        cluster_arn = cluster["cluster"]["arn"]
-        cluster_cert = cluster["cluster"]["certificateAuthority"]["data"]
-        cluster_ep = cluster["cluster"]["endpoint"]
-
-        return dict(
-            cluster_arn=cluster_arn,
-            host=cluster_ep,
-            ssl_ca_cert=cluster_cert,
-            token=token,
-        )
-
-    @classmethod
-    def _parse_s3_resource_id(cls, resource_id: str) -> str:
+    def _parse_s3_resource_id(self, resource_id: str) -> str:
         """Validate and convert an S3 resource ID to an S3 bucket name.
 
         Args:
@@ -712,26 +833,26 @@ class AWSServiceConnector(ServiceConnector):
             raise ValueError(
                 f"Invalid resource ID for an S3 bucket: {resource_id}. "
                 f"Supported formats are:\n"
-                f"S3 bucket ARN: arn:aws:s3:::bucket-name\n"
-                f"S3 bucket URI: s3://bucket-name\n"
-                f"S3 bucket name: bucket-name"
+                f"S3 bucket ARN: arn:aws:s3:::<bucket-name>\n"
+                f"S3 bucket URI: s3://<bucket-name>\n"
+                f"S3 bucket name: <bucket-name>"
             )
 
         return bucket_name
 
-    @classmethod
     def _parse_ecr_resource_id(
-        cls, resource_id: str, config_region_id: Optional[str] = None
-    ) -> Tuple[str, str, Optional[str]]:
-        """Validate and convert an ECR resource ID to an AWS region, ECR registry ID and repository name.
+        self,
+        resource_id: str,
+        need_registry_id: bool = True,
+    ) -> Tuple[str, Optional[str]]:
+        """Validate and convert an ECR resource ID to an ECR registry ID and repository name.
 
         Args:
             resource_id: The resource ID to convert.
-            config_region_id: The AWS region the ECR registry is in, if
-                configured explicitly in the connector.
+            need_registry_id: Whether the registry ID is required.
 
         Returns:
-            The AWS region, ECR repository name and (optional) ECR registry ID
+            The ECR repository name and ECR registry ID
 
         Raises:
             ValueError: If the provided resource ID is not a valid ECR
@@ -745,11 +866,12 @@ class AWSServiceConnector(ServiceConnector):
         #
         # We need to extract the region ID, registry ID and repository name from
         # the provided resource ID
+        config_region_id = self.config.region
         registry_id: Optional[str] = None
         repository_name: str
         region_id: Optional[str] = None
         if re.match(
-            r"^arn:aws:ecr:[a-z0-9-]+:\d{12}:repository/.*$",
+            r"^arn:aws:ecr:[a-z0-9-]+:\d{12}:repository/.+$",
             resource_id,
         ):
             # The resource ID is an ECR repository ARN
@@ -757,13 +879,18 @@ class AWSServiceConnector(ServiceConnector):
             region_id = resource_id.split(":")[3]
             repository_name = resource_id.split("/")[0]
         elif re.match(
-            r"^(https://)?\d{12}\.dkr\.ecr\.[a-z0-9-]+\.amazonaws\.com/.*$",
+            r"^(http[s]?://)?\d{12}\.dkr\.ecr\.[a-z0-9-]+\.amazonaws\.com/.+$",
             resource_id,
         ):
             # The resource ID is an ECR repository URI
             registry_id = resource_id.split(".")[0].split("/")[-1]
             region_id = resource_id.split(".")[3]
-            repository_name = resource_id.split("/")[4]
+            if resource_id.startswith("https://") or resource_id.startswith(
+                "http://"
+            ):
+                repository_name = resource_id.split("/")[4]
+            else:
+                repository_name = resource_id.split("/")[1]
         elif re.match(
             r"^([a-z0-9]+([._-][a-z0-9]+)*/)*[a-z0-9]+([._-][a-z0-9]+)*$",
             resource_id,
@@ -774,44 +901,46 @@ class AWSServiceConnector(ServiceConnector):
             raise ValueError(
                 f"Invalid resource ID for a ECR registry: {resource_id}. "
                 f"Supported formats are:\n"
-                f"ECR repository ARN: arn:aws:ecr:[region]:[account-id]:repository/[repository-name]\n"
-                f"ECR repository URI: [https://][account-id].dkr.ecr.[region].amazonaws.com/[repository-name]\n"
-                f"ECR repository name: [repository-name]"
+                f"ECR repository ARN: arn:aws:ecr:<region>:<account-id>:repository/<repository-name>\n"
+                f"ECR repository URI: [https://]<account-id>.dkr.ecr.<region>.amazonaws.com/<repository-name>\n"
+                f"ECR repository name: <repository-name>"
             )
 
         # If the connector is configured with a region and the resource ID
         # is an ECR repository ARN or URI that specifies a different region
         # we raise an error
-        if config_region_id and region_id and region_id != config_region_id:
+        if region_id and region_id != config_region_id:
             raise ValueError(
                 f"The AWS region for the {resource_id} ECR repository "
                 f"({region_id}) does not match the region configured in "
                 f"the connector ({config_region_id})."
             )
 
-        region_id = region_id or config_region_id
-        if not region_id:
-            raise ValueError(
-                f"The AWS region for the ECR repository was not configured "
-                f"in the connector and could not be determined from the "
-                f"provided resource ID: {resource_id}"
-            )
+        if not registry_id and need_registry_id:
+            # If the registry ID is not specified in the resource ID, we need
+            # to get it from the caller identity
+            try:
+                session, _ = self._authenticate(self.auth_method)
+                sts_client = session.client("sts")
+                response = sts_client.get_caller_identity()
+            except ClientError as e:
+                raise AuthorizationException(
+                    "Failed to get ECR registry ID from ECR repository "
+                    f"name: {e}"
+                ) from e
 
-        return region_id, repository_name, registry_id
+            registry_id = response["Account"]
 
-    @classmethod
-    def _parse_eks_resource_id(
-        cls, resource_id: str, config_region_id: Optional[str] = None
-    ) -> Tuple[str, str]:
+        return repository_name, registry_id
+
+    def _parse_eks_resource_id(self, resource_id: str) -> str:
         """Validate and convert an EKS resource ID to an AWS region and EKS cluster name.
 
         Args:
             resource_id: The resource ID to convert.
-            config_region_id: The AWS region the EKS cluster is in, if
-                configured explicitly in the connector.
 
         Returns:
-            The AWS region and EKS cluster name.
+            The EKS cluster name.
 
         Raises:
             ValueError: If the provided resource ID is not a valid EKS cluster
@@ -824,6 +953,7 @@ class AWSServiceConnector(ServiceConnector):
         #
         # We need to extract the cluster name and region ID from the
         # provided resource ID
+        config_region_id = self.config.region
         cluster_name: Optional[str] = None
         region_id: Optional[str] = None
         if re.match(
@@ -843,34 +973,53 @@ class AWSServiceConnector(ServiceConnector):
             raise ValueError(
                 f"Invalid resource ID for a EKS cluster: {resource_id}. "
                 f"Supported formats are:\n"
-                f"EKS cluster ARN: arn:aws:eks:[region]:[account-id]:cluster/[cluster-name]\n"
-                f"ECR cluster name: [cluster-name]"
+                f"EKS cluster ARN: arn:aws:eks:<region>:<account-id>:cluster/<cluster-name>\n"
+                f"ECR cluster name: <cluster-name>"
             )
 
         # If the connector is configured with a region and the resource ID
         # is an EKS registry ARN or URI that specifies a different region
         # we raise an error
-        if config_region_id and region_id and region_id != config_region_id:
+        if region_id and region_id != config_region_id:
             raise ValueError(
                 f"The AWS region for the {resource_id} EKS cluster "
                 f"({region_id}) does not match the region configured in "
                 f"the connector ({config_region_id})."
             )
 
-        region_id = region_id or config_region_id
+        return cluster_name
 
-        if not region_id:
-            raise ValueError(
-                f"The AWS region for the ECR registry was not configured "
-                f"in the connector and could not be determined from the "
-                f"provided resource ID: {resource_id}"
+    def _canonical_resource_id(
+        self, resource_type: str, resource_id: str
+    ) -> str:
+        """Convert a resource ID to its canonical form.
+
+        Args:
+            resource_type: The resource type to canonicalize.
+            resource_id: The resource ID to canonicalize.
+
+        Returns:
+            The canonical resource ID.
+        """
+        if resource_type == S3_RESOURCE_TYPE:
+            bucket = self._parse_s3_resource_id(resource_id)
+            return f"s3://{bucket}"
+        elif resource_type == KUBERNETES_RESOURCE_TYPE:
+            cluster_name = self._parse_eks_resource_id(resource_id)
+            return cluster_name
+        elif resource_type == DOCKER_RESOURCE_TYPE:
+            repository_name, registry_id = self._parse_ecr_resource_id(
+                resource_id,
             )
-
-        return region_id, cluster_name
+            return (
+                f"{registry_id}.dkr.ecr.{self.config.region}.amazonaws.com/"
+                f"{repository_name}"
+            )
+        else:
+            return resource_id
 
     def _connect_to_resource(
         self,
-        resource_id: Optional[str] = None,
         **kwargs: Any,
     ) -> Any:
         """Authenticate and connect to an AWS resource.
@@ -878,16 +1027,15 @@ class AWSServiceConnector(ServiceConnector):
         Initialize and return a session or client object depending on the
         connector configuration:
 
-        - initialize and return a boto3 session if the configured resource type
+        - initialize and return a boto3 session if the resource type
         is a generic AWS resource
         - initialize and return a boto3 client for an S3 resource type
-        - initialize and return a python-docker client if the configured
-        resource type is a Docker registry
-        - initialize and return a python-kubernetes client if the configured
-        resource type is a Kubernetes cluster
+        - initialize and return a python-docker client if the resource type is
+        a Docker registry
+        - initialize and return a python-kubernetes client if the resource type
+        is a Kubernetes cluster
 
         Args:
-            resource_id: The ID of the AWS resource to connect to.
             kwargs: Additional implementation specific keyword arguments to pass
                 to the session or client constructor.
 
@@ -901,11 +1049,18 @@ class AWSServiceConnector(ServiceConnector):
             NotImplementedError: If the connector instance does not support
                 connecting to the indicated resource type or client type.
         """
+        resource_type = self.resource_type
+        resource_id = self.resource_id
+
+        assert resource_type is not None
+
         # Regardless of the resource type, we must authenticate to AWS first
         # before we can connect to any AWS resource
-        resource_type = self.resource_type
-        resource_id = resource_id or self.resource_id
-        session = self._authenticate(self.auth_method)
+        session, _ = self._authenticate(
+            self.auth_method,
+            resource_type=resource_type,
+            resource_id=resource_id,
+        )
 
         if resource_type == S3_RESOURCE_TYPE:
             assert resource_id is not None
@@ -919,89 +1074,26 @@ class AWSServiceConnector(ServiceConnector):
                 region_name=self.config.region,
                 endpoint_url=self.config.endpoint_url,
             )
+
+            # There is no way to retrieve the credentials from the S3 client
+            # but some consumers need them to configure 3rd party services.
+            # We therefore store the credentials in the client object so that
+            # they can be retrieved later.
+            client.credentials = session.get_credentials()
             return client
 
-        if resource_type == DOCKER_RESOURCE_TYPE:
-            from docker.client import DockerClient
+        if resource_type == AWS_RESOURCE_TYPE:
+            return session
 
-            assert resource_id is not None
-
-            (
-                region_id,
-                repository_name,
-                registry_id,
-            ) = self._parse_ecr_resource_id(
-                resource_id, config_region_id=self.config.region
-            )
-
-            client = session.client(
-                "ecr",
-                region_name=region_id,
-                endpoint_url=self.config.endpoint_url,
-            )
-
-            assert isinstance(client, BaseClient)
-            client_kwargs = self._get_docker_client_config(
-                ecr_client=client,
-                repository_name=repository_name,
-                registry_id=registry_id,
-            )
-
-            docker_client = DockerClient.from_env()
-            docker_client.login(**client_kwargs)
-
-            return docker_client
-
-        if resource_type == KUBERNETES_RESOURCE_TYPE:
-            from kubernetes import client as k8s_client
-
-            assert resource_id is not None
-
-            region_id, cluster_name = self._parse_eks_resource_id(
-                resource_id, config_region_id=self.config.region
-            )
-
-            client = session.client(
-                "eks",
-                region_name=region_id,
-                endpoint_url=self.config.endpoint_url,
-            )
-
-            assert isinstance(client, BaseClient)
-            client_kwargs = self._get_kubernetes_client_config(
-                session=session,
-                eks_client=client,
-                cluster_name=cluster_name,
-                region_id=region_id,
-            )
-
-            ssl_ca_cert = client_kwargs["ssl_ca_cert"]
-            host = client_kwargs["host"]
-            token = client_kwargs["token"]
-            cert_bs = base64.urlsafe_b64decode(ssl_ca_cert.encode("utf-8"))
-
-            # TODO: choose a more secure location for the temporary file
-            # and use the right permissions
-            with tempfile.NamedTemporaryFile(delete=False) as fp:
-                ca_filename = fp.name
-                fp.write(cert_bs)
-
-            conf = k8s_client.Configuration()
-            conf.host = host
-            conf.api_key["authorization"] = token
-            conf.api_key_prefix["authorization"] = "Bearer"
-            conf.ssl_ca_cert = ca_filename
-
-            return k8s_client.ApiClient(conf)
-
-        # The only remaining resource type is AWS_RESOURCE_TYPE
-        assert resource_type != AWS_RESOURCE_TYPE
-
-        return session
+        raise NotImplementedError(
+            f"Connecting to {resource_type} resources is not directly "
+            "supported by the AWS connector. Please call the "
+            f"`get_client_connector` method to get a {resource_type} connector "
+            "instance for the resource."
+        )
 
     def _configure_local_client(
         self,
-        resource_id: Optional[str] = None,
         **kwargs: Any,
     ) -> None:
         """Configure a local client to authenticate and connect to a resource.
@@ -1010,11 +1102,6 @@ class AWSServiceConnector(ServiceConnector):
         client or SDK installed on the localhost for the indicated resource.
 
         Args:
-            resource_id: The ID of the resource to connect to. Omitted if the
-                configured resource type does not allow multiple instances.
-                Can be different than the resource ID that the connector is
-                configured to access if resource ID aliases or wildcards
-                are supported.
             kwargs: Additional implementation specific keyword arguments to use
                 to configure the client.
 
@@ -1022,170 +1109,22 @@ class AWSServiceConnector(ServiceConnector):
             AuthorizationException: If authentication failed.
             NotImplementedError: If the connector instance does not support
                 local configuration for the configured resource type or
-                authentication method.
+                authentication method.registry
         """
         resource_type = self.resource_type
-        resource_id = resource_id or self.resource_id
 
-        # Verify that the configuration is valid before configuring the local
-        # client
-        # self._verify(
-        #     resource_id=resource_id,
-        # )
-
-        if resource_type == DOCKER_RESOURCE_TYPE:
-            assert resource_id is not None
-
-            (
-                region_id,
-                repository_name,
-                registry_id,
-            ) = self._parse_ecr_resource_id(
-                resource_id, config_region_id=self.config.region
-            )
-
-            # Get a boto3 session
-            session = self._authenticate(self.auth_method)
-
-            # Get an ECR boto3 client
-            assert isinstance(session, boto3.Session)
-            client = session.client(
-                "ecr",
-                region_name=region_id,
-                endpoint_url=self.config.endpoint_url,
-            )
-
-            assert isinstance(client, BaseClient)
-            client_kwargs = self._get_docker_client_config(
-                ecr_client=client,
-                repository_name=repository_name,
-                registry_id=registry_id,
-            )
-
-            username = client_kwargs["username"]
-            password = client_kwargs["password"]
-            registry_url = client_kwargs["registry"]
-
-            docker_login_cmd = [
-                "docker",
-                "login",
-                "-u",
-                username,
-                "--password-stdin",
-                registry_url,
-            ]
-            try:
-                subprocess.run(
-                    docker_login_cmd,
-                    check=True,
-                    input=password.encode(),
-                )
-            except subprocess.CalledProcessError as e:
-                raise AuthorizationException(
-                    f"Failed to authenticate to Docker registry "
-                    f"{registry_url}': {e}"
-                ) from e
-
-        elif resource_type == KUBERNETES_RESOURCE_TYPE:
-
-            assert resource_id is not None
-
-            region_id, cluster_name = self._parse_eks_resource_id(
-                resource_id, config_region_id=self.config.region
-            )
-
-            # Get a boto3 session
-            session = self._authenticate(self.auth_method)
-
-            assert isinstance(session, boto3.Session)
-            # Get a boto3 EKS client
-            client = session.client(
-                "eks",
-                region_name=region_id,
-                endpoint_url=self.config.endpoint_url,
-            )
-
-            assert isinstance(client, BaseClient)
-
-            client_kwargs = self._get_kubernetes_client_config(
-                session=session,
-                eks_client=client,
-                cluster_name=cluster_name,
-                region_id=region_id,
-            )
-
-            cluster_arn = client_kwargs["cluster_arn"]
-            ssl_ca_cert = client_kwargs["ssl_ca_cert"]
-            host = client_kwargs["host"]
-            token = client_kwargs["token"]
-            cert_bs = base64.urlsafe_b64decode(ssl_ca_cert.encode("utf-8"))
-
-            with tempfile.NamedTemporaryFile(delete=False) as fp:
-                ca_filename = fp.name
-                fp.write(cert_bs)
-                fp.close()
-
-                # add the cluster config to the default kubeconfig
-                add_cluster_cmd = [
-                    "kubectl",
-                    "config",
-                    "set-cluster",
-                    cluster_arn,
-                    "--embed-certs",
-                    "--certificate-authority",
-                    ca_filename,
-                    "--server",
-                    host,
-                ]
-                add_user_cmd = [
-                    "kubectl",
-                    "config",
-                    "set-credentials",
-                    cluster_arn,
-                    "--token",
-                    token,
-                ]
-                add_context_cmd = [
-                    "kubectl",
-                    "config",
-                    "set-context",
-                    cluster_arn,
-                    "--cluster",
-                    cluster_arn,
-                    "--user",
-                    cluster_arn,
-                ]
-                set_context_cmd = [
-                    "kubectl",
-                    "config",
-                    "use-context",
-                    cluster_arn,
-                ]
-                try:
-                    for cmd in [
-                        add_cluster_cmd,
-                        add_user_cmd,
-                        add_context_cmd,
-                        set_context_cmd,
-                    ]:
-                        subprocess.run(
-                            cmd,
-                            check=True,
-                        )
-                except subprocess.CalledProcessError as e:
-                    raise AuthorizationException(
-                        f"Failed to update local kubeconfig with the EKS "
-                        f"cluster configuration: {e}"
-                    ) from e
-                logger.info(
-                    f"Updated local kubeconfig with the EKS cluster details. "
-                    f"The current kubectl context was set to '{cluster_arn}'."
-                )
-        else:
+        if resource_type in [AWS_RESOURCE_TYPE, S3_RESOURCE_TYPE]:
             raise NotImplementedError(
-                f"Auto-configuration for resource type "
+                f"Local client configuration for resource type "
                 f"{resource_type} is not supported"
             )
+
+        raise NotImplementedError(
+            f"Configuring the local client for {resource_type} resources is "
+            "not directly supported by the AWS connector. Please call the "
+            f"`get_client_connector` method to get a {resource_type} connector "
+            "instance for the resource."
+        )
 
     @classmethod
     def _auto_configure(
@@ -1270,39 +1209,43 @@ class AWSServiceConnector(ServiceConnector):
                 aws_secret_access_key=credentials.secret_key,
             )
 
-        resource_type = resource_type or AWS_RESOURCE_TYPE
         return cls(
             auth_method=auth_method,
             resource_type=resource_type,
             resource_id=resource_id
-            if resource_type != AWS_RESOURCE_TYPE
+            if resource_type not in [AWS_RESOURCE_TYPE, None]
             else None,
             config=auth_config,
         )
 
     def _verify(
         self,
+        resource_type: Optional[str] = None,
         resource_id: Optional[str] = None,
     ) -> None:
         """Verify that the connector can authenticate and connect.
 
         Args:
+            resource_type: The type of resource to connect to. Omitted if
+                verification is performed for multiple resource types.
             resource_id: The ID of the resource to connect to. Omitted if the
-                configured resource type does not allow multiple instances.
-                Can be different than the resource ID that the connector is
-                configured to access if resource ID aliases or wildcards
-                are supported.
+                supplied resource type does not allow multiple instances or
+                if verification is performed for multiple resource types.
         """
-        resource_type = self.resource_type
-        resource_id = resource_id or self.resource_id
-        client = self._connect_to_resource(
-            resource_id=resource_id,
-        )
+        # If the resource type or resource ID are not specified, treat this as
+        # a generic AWS connector.
+        if resource_type is None:
+            resource_type = AWS_RESOURCE_TYPE
 
-        if resource_type == AWS_RESOURCE_TYPE:
+            session, _ = self._authenticate(
+                self.auth_method,
+                resource_type=resource_type,
+                resource_id=resource_id,
+            )
+
             # Verify that the AWS account is accessible
-            assert isinstance(client, boto3.Session)
-            sts_client = client.client("sts")
+            assert isinstance(session, boto3.Session)
+            sts_client = session.client("sts")
             try:
                 sts_client.get_caller_identity()
             except ClientError as err:
@@ -1310,45 +1253,353 @@ class AWSServiceConnector(ServiceConnector):
                     f"failed to verify AWS account access: {err}"
                 ) from err
 
-        elif resource_type == S3_RESOURCE_TYPE:
-            assert isinstance(client, BaseClient)
+        else:
+            # Check that the resource ID exists
+            resource_ids = self._list_resource_ids(
+                resource_type=resource_type,
+                resource_id=resource_id,
+            )
+            if resource_id and resource_id not in resource_ids:
+                raise AuthorizationException(
+                    f"the specified resource ID '{resource_id}' of type "
+                    f"'{resource_type}' does not exist or cannot be accessed"
+                )
+
+    def _list_resource_ids(
+        self,
+        resource_type: str,
+        resource_id: Optional[str] = None,
+    ) -> List[str]:
+        """List the resource IDs for the given resource type.
+
+        This method uses the connector's configuration to retrieve a list with
+        the IDs of all resource instances of the given type that the connector
+        can access. An empty list is returned for generic AWS resources.
+
+        Args:
+            resource_type: The type of the resources to list.
+            resource_id: The ID of a particular resource to filter by.
+
+        Raises:
+            AuthorizationException: If authentication failed.
+            NotImplementedError: If the connector instance does not support
+                listing resource IDs for the configured resource type or
+                authentication method.
+        """
+        if resource_type == AWS_RESOURCE_TYPE:
+            return []
+
+        # Get an authenticated boto3 session
+        session, _ = self._authenticate(
+            self.auth_method,
+            resource_type=resource_type,
+            resource_id=resource_id,
+        )
+        assert isinstance(session, boto3.Session)
+
+        if resource_type == S3_RESOURCE_TYPE:
+            s3_client = session.client(
+                "s3",
+                region_name=self.config.region,
+                endpoint_url=self.config.endpoint_url,
+            )
+            if not resource_id:
+                # List all S3 buckets
+                try:
+                    response = s3_client.list_buckets()
+                except ClientError as e:
+                    logger.error(f"Failed to list S3 buckets: {e}")
+                    return []
+
+                return [
+                    f"s3://{bucket['Name']}" for bucket in response["Buckets"]
+                ]
+            else:
+                # Check if the specified S3 bucket exists
+                bucket_name = self._parse_s3_resource_id(resource_id)
+                try:
+                    s3_client.head_bucket(Bucket=bucket_name)
+                    return [resource_id]
+                except ClientError as e:
+                    logger.error(
+                        f"Failed to fetch S3 bucket {bucket_name}: {e}"
+                    )
+                    return []
+
+        if resource_type == DOCKER_RESOURCE_TYPE:
+            ecr_client = session.client(
+                "ecr",
+                region_name=self.config.region,
+                endpoint_url=self.config.endpoint_url,
+            )
+            if not resource_id:
+                # List all ECR repositories
+                try:
+                    repositories = ecr_client.describe_repositories()
+                except ClientError as e:
+                    logger.error(f"Failed to list ECR repositories name: {e}")
+                    return []
+
+                repo_list: List[str] = []
+                for repo in repositories["repositories"]:
+                    repo_list.append(repo["repositoryUri"].lstrip("https://"))
+                return repo_list
+            else:
+                # Check if the specified ECR repository exists
+                registry_name, registry_id = self._parse_ecr_resource_id(
+                    resource_id
+                )
+                try:
+                    repositories = ecr_client.describe_repositories(
+                        repositoryNames=[
+                            registry_name,
+                        ]
+                    )
+                except ClientError as e:
+                    logger.error(
+                        f"Failed to fetch ECR repository {registry_name}: {e}"
+                    )
+                    return []
+
+                return [resource_id]
+
+        if resource_type == KUBERNETES_RESOURCE_TYPE:
+            eks_client = session.client(
+                "eks",
+                region_name=self.config.region,
+                endpoint_url=self.config.endpoint_url,
+            )
+            if not resource_id:
+                # List all EKS clusters
+                try:
+                    clusters = eks_client.list_clusters()
+                except ClientError as e:
+                    logger.error(f"Failed to list EKS clusters name: {e}")
+                    return []
+
+                return clusters["clusters"]
+            else:
+                # Check if the specified EKS cluster exists
+                cluster_name = self._parse_eks_resource_id(resource_id)
+                try:
+                    clusters = eks_client.describe_cluster(name=cluster_name)
+                except ClientError as e:
+                    logger.error(
+                        f"Failed to fetch EKS cluster {cluster_name}: {e}"
+                    )
+                    return []
+
+                return [resource_id]
+
+        return []
+
+    def _get_client_connector(
+        self,
+        resource_type: str,
+        resource_id: Optional[str] = None,
+    ) -> "ServiceConnector":
+        """Get a connector instance that can be used to connect to a resource.
+
+        This method generates a client-side connector instance that can be used
+        to connect to a resource of the given type. The client-side connector
+        is configured with temporary AWS credentials extracted from the
+        current connector and, depending on resource type, it may also be
+        of a different connector type:
+
+        - a Kubernetes connector for Kubernetes clusters
+        - a Docker connector for Docker registries
+
+        Args:
+            resource_type: The type of the resources to connect to.
+            resource_id: The ID of a particular resource to connect to.
+
+        Raises:
+            AuthorizationException: If authentication failed.
+            NotImplementedError: If the connector instance does not support
+                connecting to the configured resource type or authentication
+                method.
+        """
+        connector_name = ""
+        if self.name:
+            connector_name = self.name
+        if resource_id:
+            connector_name += f"({resource_id} client)"
+        else:
+            connector_name += f"({resource_type} client)"
+
+        logger.debug(f"Getting client connector for {connector_name}")
+
+        if resource_type in [AWS_RESOURCE_TYPE, S3_RESOURCE_TYPE]:
+            if self.auth_method in [
+                AWSAuthenticationMethods.SECRET_KEY,
+                AWSAuthenticationMethods.STS_TOKEN,
+            ]:
+                # The secret key and STS token authentication methods do not
+                # involve generating temporary credentials, so we can just
+                # use the current connector configuration
+                config = self.config
+
+                if resource_type == AWS_RESOURCE_TYPE or resource_id:
+                    # If the resource type is AWS or a specific resource ID
+                    # is specified, we can even return the current connector
+                    # instance because it's fully formed and ready to use
+                    # to connect to the specified resource
+                    return self
+            else:
+                # Get an authenticated boto3 session
+                session, expires_at = self._authenticate(
+                    self.auth_method,
+                    resource_type=resource_type,
+                    resource_id=resource_id,
+                )
+                assert isinstance(session, boto3.Session)
+                credentials = session.get_credentials()
+                assert credentials.token is not None
+
+                # Use the temporary credentials extracted from the boto3 session
+                config = STSTokenConfig(
+                    region=self.config.region,
+                    endpoint_url=self.config.endpoint_url,
+                    aws_access_key_id=credentials.access_key,
+                    aws_secret_access_key=credentials.secret_key,
+                    aws_session_token=credentials.token,
+                )
+
+            # Create a client-side AWS connector instance that is fully formed
+            # and ready to use to connect to the specified resource (i.e. has
+            # all the necessary configuration and credentials, a resource type
+            # and a resource ID where applicable)
+            return AWSServiceConnector(
+                id=self.id,
+                name=connector_name,
+                auth_method=AWSAuthenticationMethods.STS_TOKEN,
+                resource_type=resource_type,
+                resource_id=resource_id,
+                config=config,
+                expires_at=expires_at,
+            )
+
+        if resource_type == DOCKER_RESOURCE_TYPE:
             assert resource_id is not None
 
-            bucket_name = self._parse_s3_resource_id(resource_id)
+            # Get an authenticated boto3 session
+            session, expires_at = self._authenticate(
+                self.auth_method,
+                resource_type=resource_type,
+                resource_id=resource_id,
+            )
+            assert isinstance(session, boto3.Session)
 
-            # Verify that the S3 bucket exists
+            repository_name, registry_id = self._parse_ecr_resource_id(
+                resource_id
+            )
+
+            ecr_client = session.client(
+                "ecr",
+                region_name=self.config.region,
+                endpoint_url=self.config.endpoint_url,
+            )
+
+            assert isinstance(ecr_client, BaseClient)
+            assert registry_id is not None
+
             try:
-                client.head_bucket(Bucket=bucket_name)
-            except ClientError as err:
-                raise AuthorizationException(
-                    f"failed to verify S3 bucket access: {err}"
-                ) from err
-        elif resource_type == DOCKER_RESOURCE_TYPE:
-            from docker.client import DockerClient
-
-            assert isinstance(client, DockerClient)
-
-            # Verify that the Docker registry exists and is accessible
-            try:
-                client.ping()
-            except ClientError as err:
-                raise AuthorizationException(
-                    f"failed to verify Docker registry access: {err}"
-                ) from err
-        elif resource_type == KUBERNETES_RESOURCE_TYPE:
-            from kubernetes import client as k8s_client
-
-            assert isinstance(client, k8s_client.ApiClient)
-
-            # Verify that the Kubernetes cluster exists and is accessible
-            try:
-                client.call_api(
-                    "/version",
-                    "GET",
-                    auth_settings=["BearerToken"],
-                    response_type="VersionInfo",
+                auth_token = ecr_client.get_authorization_token(
+                    registryIds=[
+                        registry_id,
+                    ]
                 )
-            except k8s_client.ApiException as err:
+            except ClientError as e:
                 raise AuthorizationException(
-                    f"failed to verify Kubernetes cluster access: {err}"
-                ) from err
+                    f"Failed to get authorization token from ECR: {e}"
+                ) from e
+
+            token = auth_token["authorizationData"][0]["authorizationToken"]
+            endpoint = auth_token["authorizationData"][0]["proxyEndpoint"]
+            # The token is base64 encoded and has the format
+            # "username:password"
+            username, token = (
+                base64.b64decode(token).decode("utf-8").split(":")
+            )
+
+            # Create a client-side Docker connector instance with the temporary
+            # Docker credentials
+            return DockerServiceConnector(
+                id=self.id,
+                name=connector_name,
+                auth_method=DockerAuthenticationMethods.PASSWORD,
+                resource_type=resource_type,
+                resource_id=f"{endpoint}/{repository_name}",
+                config=DockerCredentials(
+                    username=username,
+                    password=token,
+                ),
+                expires_at=expires_at,
+            )
+
+        if resource_type == KUBERNETES_RESOURCE_TYPE:
+            assert resource_id is not None
+
+            # Get an authenticated boto3 session
+            session, expires_at = self._authenticate(
+                self.auth_method,
+                resource_type=resource_type,
+                resource_id=resource_id,
+            )
+            assert isinstance(session, boto3.Session)
+
+            cluster_name = self._parse_eks_resource_id(resource_id)
+
+            # Get a boto3 EKS client
+            eks_client = session.client(
+                "eks",
+                region_name=self.config.region,
+                endpoint_url=self.config.endpoint_url,
+            )
+
+            assert isinstance(eks_client, BaseClient)
+
+            try:
+                cluster = eks_client.describe_cluster(name=cluster_name)
+            except ClientError as e:
+                raise AuthorizationException(
+                    f"Failed to get EKS cluster {cluster_name}: {e}"
+                ) from e
+
+            assert self.expiration_seconds is not None
+            try:
+                user_token = self._get_eks_bearer_token(
+                    session=session,
+                    cluster_id=cluster_name,
+                    region=self.config.region,
+                    expires_seconds=self.expiration_seconds,
+                )
+            except ClientError as e:
+                raise AuthorizationException(
+                    f"Failed to get EKS bearer token: {e}"
+                ) from e
+
+            # get cluster details
+            cluster_arn = cluster["cluster"]["arn"]
+            cluster_ca_cert = cluster["cluster"]["certificateAuthority"][
+                "data"
+            ]
+            cluster_server = cluster["cluster"]["endpoint"]
+
+            # Create a client-side Kubernetes connector instance with the
+            # temporary Kubernetes credentials
+            return KubernetesServiceConnector(
+                id=self.id,
+                name=connector_name,
+                auth_method=KubernetesAuthenticationMethods.TOKEN,
+                resource_type=resource_type,
+                config=KubernetesTokenConfig(
+                    cluster_name=cluster_arn,
+                    certificate_authority=cluster_ca_cert,
+                    server=cluster_server,
+                    token=user_token,
+                ),
+                expires_at=expires_at,
+            )
+
+        raise ValueError(f"Unsupported resource type: {resource_type}")

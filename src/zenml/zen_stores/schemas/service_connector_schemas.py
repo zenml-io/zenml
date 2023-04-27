@@ -48,6 +48,8 @@ class ServiceConnectorSchema(ShareableSchema, table=True):
     resource_id: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
     configuration: Optional[bytes]
     secret_id: Optional[UUID]
+    expires_at: Optional[datetime]
+    expiration_seconds: Optional[int]
 
     labels: List["ServiceConnectorLabelSchema"] = Relationship(
         back_populates="service_connector",
@@ -153,6 +155,8 @@ class ServiceConnectorSchema(ShareableSchema, table=True):
             if connector_request.configuration
             else None,
             secret_id=secret_id,
+            expires=connector_request.expires_at,
+            expiration_seconds=connector_request.expiration_seconds,
         )
 
     def update(
@@ -226,6 +230,8 @@ class ServiceConnectorSchema(ShareableSchema, table=True):
             if self.configuration
             else {},
             secret_id=self.secret_id,
+            expires_at=self.expires_at,
+            expiration_seconds=self.expiration_seconds,
             labels=self.labels_dict,
         )
 

@@ -4390,12 +4390,13 @@ class SqlZenStore(BaseZenStore):
         items: List[ServiceConnectorSchema] = (
             session.exec(query).unique().all()
         )
+
         # filter out items that don't match the resource type
         if filter_model.resource_type:
             items = [
                 item
                 for item in items
-                if filter_model.resource_type not in item.resource_types_list
+                if filter_model.resource_type in item.resource_types_list
             ]
 
         # filter out items that don't match the labels
@@ -4440,9 +4441,10 @@ class SqlZenStore(BaseZenStore):
                 The filtered and paginated results.
             """
             assert isinstance(filter_model, ServiceConnectorFilterModel)
-            return self._list_filtered_service_connectors(
+            items = self._list_filtered_service_connectors(
                 session=session, query=query, filter_model=filter_model
             )
+            return items
 
         with Session(self.engine) as session:
             query = select(ServiceConnectorSchema)

@@ -61,7 +61,7 @@ def service_connector() -> None:
 @click.option(
     "--type",
     "-t",
-    "type",
+    "connector_type",
     help="The service connector type.",
     required=False,
     type=str,
@@ -136,7 +136,7 @@ def register_service_connector(
     name: Optional[str],
     args: List[str],
     description: Optional[str] = None,
-    type: Optional[str] = None,
+    connector_type: Optional[str] = None,
     resource_type: Optional[str] = None,
     resource_id: Optional[str] = None,
     auth_method: Optional[str] = None,
@@ -165,6 +165,8 @@ def register_service_connector(
     """
     from rich.markdown import Markdown
 
+    from zenml.service_connectors.service_connector import ServiceConnector
+
     client = Client()
 
     # Parse the given args
@@ -183,15 +185,15 @@ def register_service_connector(
 
         # Get the list of available service connector types
         connector_types = service_connector_registry.list_service_connectors(
-            connector_type=type,
+            connector_type=connector_type,
             resource_type=resource_type,
             auth_method=auth_method,
         )
         if not connector_types:
             cli_utils.error(
                 "No service connectors found with the given parameters: "
-                + f"type={type} "
-                if type
+                + f"type={connector_type} "
+                if connector_type
                 else "" + f"resource_type={resource_type} "
                 if resource_type
                 else "" + f"auth_method={auth_method} "
@@ -233,7 +235,7 @@ def register_service_connector(
         if len(available_types) == 1:
             # Default to the first connector type if not supplied and if
             # only one type is available
-            type = type or list(available_types.keys())[0]
+            connector_type = connector_type or list(available_types.keys())[0]
 
         message = "# Available service connector types\n"
         # Print the name, type and description of all available service
@@ -249,17 +251,178 @@ def register_service_connector(
         connector_type = click.prompt(
             "Please select a service connector type",
             type=click.Choice(list(available_types.keys())),
-            default=type,
+            default=connector_type,
         )
 
-        connector = available_types[connector_type]
-        connector_type_spec = connector.get_type()
+        assert connector_type is not None
+        connector_type_spec = available_types[connector_type].get_type()
 
-        available_resource_types = list(
-            connector_type_spec.resource_type_map.keys()
+        # Ask the user whether to use auto-configuration
+        auto_configure = click.confirm(
+            "Would you like to attempt auto-configuration to extract the "
+            "authentication configuration from your local environment ?",
+            default=False,
         )
 
-        message = f"# Available resource types for connector {connector_type_spec.name}\n"
+        auth_method: Optional[str] = None
+        connector: Optional[ServiceConnector] = None
+        if auto_configure:
+            # Try to auto-configure the service connector
+            try:
+                connector_instance = client.create_service_connector(
+                    name=name,
+                    description=description or "",
+                    type=connector_type,
+                    is_shared=share,
+                    auto_configure=True,
+                    verify=True,
+                    register=False,
+                )
+                assert isinstance(connector_instance, ServiceConnector)
+                connector = connector_instance
+            except (
+                KeyError,
+                ValueError,
+                IllegalOperationError,
+                NotImplementedError,
+                AuthorizationException,
+            ) as e:
+                cli_utils.warning(
+                    f"Auto-configuration was not successful: {e} "
+                )
+                # Ask the user whether to continue with manual configuration
+                manual = click.confirm(
+                    "Would you like to continue with manual configuration ?",
+                    default=True,
+                )
+                if not manual:
+                    return
+            else:
+                auth_method = connector_instance.auth_method
+                cli_utils.declare(
+                    "Service connector auto-configured successfully with the "
+                    f"{connector_type_spec.auth_method_map[auth_method].name} "
+                    "authentication method."
+                )
+
+        if connector is None:
+            auth_methods = list(connector_type_spec.auth_method_map.keys())
+
+            message = "# Available authentication methods\n"
+            # Print the name, identifier and description of all available auth
+            # methods
+            for a in auth_methods:
+                auth_method_spec = connector_type_spec.auth_method_map[a]
+                message += f"## {auth_method_spec.name} ({a})\n"
+                message += f"{auth_method_spec.description}\n"
+
+            console.print(Markdown(f"{message}---"), justify="left", width=80)
+
+            if len(auth_methods) == 1:
+                # Default to the first auth method if only one method is available
+                confirm = click.confirm(
+                    "Only one authentication method is available for this "
+                    f"connector ({auth_methods[0]}). Would you like to use it?",
+                    default=True,
+                )
+                if not confirm:
+                    return
+
+                auth_method = auth_methods[0]
+            else:
+                # Ask the user to select an authentication method
+                auth_method = click.prompt(
+                    "Please select an authentication method",
+                    type=click.Choice(auth_methods),
+                    default=auth_method,
+                )
+
+            assert auth_method is not None
+            auth_method_spec = connector_type_spec.auth_method_map[auth_method]
+
+            cli_utils.declare(
+                f"Please enter the configuration for the {auth_method_spec.name} "
+                "authentication method."
+            )
+
+            config_schema = auth_method_spec.config_schema or {}
+            config_dict = {}
+            for attr_name, attr_schema in config_schema.get(
+                "properties", {}
+            ).items():
+                title = attr_schema.get("title", attr_name)
+                title = f"[{attr_name}] {title}"
+                required = attr_name in config_schema.get("required", [])
+                hidden = attr_schema.get("format", "") == "password"
+                subtitles: List[str] = []
+                if hidden:
+                    subtitles.append("hidden")
+                if required:
+                    subtitles.append("required")
+                else:
+                    subtitles.append("optional")
+                if subtitles:
+                    title += f" {{{', '.join(subtitles)}}}"
+
+                while True:
+                    # Ask the user to enter a value for the attribute
+                    default = parsed_args.get(
+                        attr_name, "" if not required else None
+                    )
+                    value = click.prompt(
+                        title,
+                        type=str,
+                        hide_input=hidden,
+                        default=default,
+                        show_default=default not in (None, ""),
+                    )
+                    if not value:
+                        if required:
+                            cli_utils.warning(
+                                f"The attribute '{title}' is mandatory. "
+                                "Please enter a non-empty value."
+                            )
+                            continue
+                        else:
+                            value = None
+                            break
+                    else:
+                        config_dict[attr_name] = value
+                        break
+
+            try:
+                connector_instance = client.create_service_connector(
+                    name=name,
+                    description=description or "",
+                    type=connector_type,
+                    auth_method=auth_method,
+                    configuration=config_dict,
+                    is_shared=share,
+                    auto_configure=False,
+                    verify=True,
+                    register=False,
+                )
+                assert isinstance(connector_instance, ServiceConnector)
+                connector = connector_instance
+            except (
+                KeyError,
+                ValueError,
+                IllegalOperationError,
+                NotImplementedError,
+                AuthorizationException,
+            ) as e:
+                cli_utils.error(f"Failed to configure service connector: {e}")
+
+        available_resource_types = [
+            r.resource_type
+            for r in connector_type_spec.resource_types
+            if auth_method in r.auth_methods
+        ]
+        if connector.resource_type:
+            # If the connector instance already chose a resource type, use it
+            available_resource_types = [connector.resource_type]
+
+        message = "# Available resource types\n"
         # Print the name, resource type identifiers and description of all
         # available resource types
         for r in connector_type_spec.resource_types:
@@ -282,13 +445,26 @@ def register_service_connector(
             resource_type = available_resource_types[0]
         else:
             # Ask the user to select a resource type
-            resource_type = click.prompt(
-                "Please select a resource type or leave it empty to create a "
-                "connector that can be used to access any of the supported "
-                f"resource types ({', '.join(available_resource_types)}).",
-                type=str,
-                default=resource_type or "",
-            )
+            while True:
+                resource_type = click.prompt(
+                    "Please select a resource type or leave it empty to create "
+                    "a connector that can be used to access any of the "
+                    "supported resource types "
+                    f"({', '.join(available_resource_types)}).",
+                    type=str,
+                    default="",
+                )
+                if (
+                    resource_type
+                    and resource_type not in available_resource_types
+                ):
+                    cli_utils.warning(
+                        f"The entered resource type '{resource_type}' is not "
+                        "one of the listed values. Please try again."
+                    )
+                    continue
+                break
+
             if resource_type == "":
                 resource_type = None
 
@@ -297,188 +473,106 @@ def register_service_connector(
                 resource_type
             ]
 
-            auth_methods = resource_type_spec.auth_methods
-
             if resource_type_spec.multi_instance:
-                # Ask the user to enter an optional resource ID
-                resource_id = click.prompt(
-                    "The selected resource type supports multiple instances. "
-                    f"Please enter a {resource_type_spec.name} resource ID "
-                    "value or leave it empty to create a connector that can be "
-                    "used to access multiple resources of this type.",
-                    default=resource_id or "",
-                    type=str,
-                )
+
+                # Try to retrieve the list of available resource IDs from the
+                # connector instance
+                resource_ids: List[str] = []
+                allow_arbitrary_resource_id = False
+                try:
+                    _, resource_ids = connector.list_resource_ids(
+                        resource_type=resource_type
+                    )
+                except (
+                    KeyError,
+                    ValueError,
+                    IllegalOperationError,
+                    AuthorizationException,
+                ) as e:
+                    cli_utils.warning(
+                        "Failed to retrieve the list of available "
+                        f"{resource_type_spec.name} resource IDs: {e}"
+                    )
+                except NotImplementedError:
+                    allow_arbitrary_resource_id = True
+                else:
+                    if not resource_ids:
+                        cli_utils.warning(
+                            "The connector instance did not return any "
+                            f"{resource_type_spec.name} resource IDs. Please "
+                            "check your configuration if this is unexpected."
+                        )
+
+                if resource_ids:
+                    resource_ids_list = "\n - " + "\n - ".join(resource_ids)
+                    prompt = (
+                        f"The following {resource_type_spec.name} resource IDs "
+                        "are reachable through this connector:"
+                        f"{resource_ids_list}\n"
+                        "Please select one or leave it empty to create a "
+                        "connector that can be used to access any of them"
+                    )
+                    while True:
+                        # Ask the user to enter an optional resource ID
+                        resource_id = click.prompt(
+                            prompt,
+                            default="",
+                            type=str,
+                        )
+                        if (
+                            not resource_ids
+                            or not resource_id
+                            or resource_id in resource_ids
+                        ):
+                            break
+
+                        cli_utils.warning(
+                            f"The resource ID '{resource_id}' is not one of "
+                            "the listed values. Please try again."
+                        )
+                elif allow_arbitrary_resource_id:
+                    prompt = (
+                        "The selected resource type supports multiple "
+                        f"{resource_type_spec.name} instances. Please enter a "
+                        "resource ID manually or leave it empty to create a "
+                        "multi-instance connector that can be used to "
+                        "access multiple resources of this type"
+                    )
+                    resource_id = click.prompt(
+                        prompt,
+                        default="",
+                        type=str,
+                    )
+                else:
+                    prompt = (
+                        "The selected resource type supports multiple "
+                        f"{resource_type_spec.name} instances but the "
+                        "connector returned an empty list of instances that it "
+                        "has access to. Would you still like to proceed and "
+                        "create a multi-instance connector that can be used to "
+                        "access multiple resources of this type?"
+                    )
+                    confirm = click.confirm(
+                        prompt,
+                        default=False,
+                    )
+                    if not confirm:
+                        return
+
                 if resource_id == "":
                     resource_id = None
-
-        else:
-            auth_methods = list(connector_type_spec.auth_method_map.keys())
-
-        # Ask the user whether to verify the service connector
-        no_verify = click.confirm(
-            "Would you like to verify the service connector before "
-            "registration ?",
-            default=True,
-        )
-
-        # Ask the user whether to use auto-configuration
-        auto_configure = click.confirm(
-            "Would you like to attempt auto-configuration to extract the "
-            "authentication configuration from your local environment ?",
-            default=False,
-        )
-
-        if auto_configure:
-            # Try to auto-configure the service connector
-            try:
-                client.create_service_connector(
-                    name=name,
-                    description=description or "",
-                    type=connector_type,
-                    resource_type=resource_type,
-                    auth_method=auth_method,
-                    resource_id=resource_id,
-                    is_shared=share,
-                    auto_configure=True,
-                    verify=not no_verify,
-                    labels=parsed_labels,
-                )
-            except (
-                KeyError,
-                ValueError,
-                IllegalOperationError,
-                NotImplementedError,
-                AuthorizationException,
-            ) as e:
-                cli_utils.warning(
-                    f"Auto-configuration was not successful: {e} "
-                )
-                # Ask the user whether to continue with manual configuration
-                manual = click.confirm(
-                    "Would you like to continue with manual configuration ?",
-                    default=True,
-                )
-                if not manual:
-                    return
             else:
-                cli_utils.declare(
-                    f"Successfully registered service connector `{name}`."
-                )
-                return
-
-        message = "# Available authentication methods\n"
-        # Print the name, identifier and description of all available auth
-        # methods
-        for a in auth_methods:
-            auth_method_spec = connector_type_spec.auth_method_map[a]
-            message += f"## {auth_method_spec.name} ({a})\n"
-            message += f"{auth_method_spec.description}\n"
-
-        console.print(Markdown(f"{message}---"), justify="left", width=80)
-
-        if len(auth_methods) == 1:
-            # Default to the first auth method if only one method is available
-            confirm = click.confirm(
-                "Only one authentication method is available for this "
-                f"connector and selected resource type ({auth_methods[0]}). "
-                "Would you like to use it?",
-                default=True,
-            )
-            if not confirm:
-                return
-
-            auth_method = auth_methods[0]
+                resource_id = None
         else:
-            # Ask the user to select an authentication method
-            auth_method = click.prompt(
-                "Please select an authentication method",
-                type=click.Choice(auth_methods),
-                default=auth_method,
-            )
+            resource_id = None
 
-        assert auth_method is not None
-        auth_method_spec = connector_type_spec.auth_method_map[auth_method]
+        # Prepare the rest of the variables to fall through to the
+        # non-interactive configuration case
+        parsed_args = connector.config.all_values
+        auto_configure = False
+        no_verify = False
 
-        cli_utils.declare(
-            f"Please enter the configuration for the {auth_method_spec.name} "
-            "authentication method."
-        )
-
-        config_schema = auth_method_spec.config_schema or {}
-        config_dict = {}
-        for attr_name, attr_schema in config_schema.get(
-            "properties", {}
-        ).items():
-            title = attr_schema.get("title", attr_name)
-            title = f"[{attr_name}] {title}"
-            required = attr_name in config_schema.get("required", [])
-            hidden = attr_schema.get("format", "") == "password"
-            subtitles: List[str] = []
-            if hidden:
-                subtitles.append("hidden")
-            if required:
-                subtitles.append("required")
-            else:
-                subtitles.append("optional")
-            if subtitles:
-                title += f" {{{', '.join(subtitles)}}}"
-
-            while True:
-                # Ask the user to enter a value for the attribute
-                default = parsed_args.get(
-                    attr_name, "" if not required else None
-                )
-                value = click.prompt(
-                    title,
-                    type=str,
-                    hide_input=hidden,
-                    default=default,
-                    show_default=default not in (None, ""),
-                )
-                if not value:
-                    if required:
-                        cli_utils.warning(
-                            f"The attribute '{title}' is mandatory. "
-                            "Please enter a non-empty value."
-                        )
-                        continue
-                    else:
-                        value = None
-                        break
-                else:
-                    config_dict[attr_name] = value
-                    break
-
-        try:
-            client.create_service_connector(
-                name=name,
-                description=description or "",
-                type=connector_type,
-                resource_type=resource_type,
-                auth_method=auth_method,
-                resource_id=resource_id,
-                configuration=config_dict,
-                is_shared=share,
-                auto_configure=False,
-                verify=not no_verify,
-                labels=parsed_labels,
-            )
-        except (
-            KeyError,
-            ValueError,
-            IllegalOperationError,
-            NotImplementedError,
-            AuthorizationException,
-        ) as e:
-            cli_utils.error(f"Failed to register service connector: {e}")
-        else:
-            cli_utils.declare(
-                f"Successfully registered service connector `{name}`."
-            )
-            return
-
-    if not type:
+    if not connector_type:
         cli_utils.error(
             "The connector type must be specified when using non-interactive "
             "configuration."
@@ -496,7 +590,7 @@ def register_service_connector(
             assert name is not None
             client.create_service_connector(
                 name=name,
-                type=type,
+                type=connector_type,
                 auth_method=auth_method,
                 resource_type=resource_type,
                 configuration=parsed_args,
@@ -917,6 +1011,14 @@ def delete_service_connector(name_id_or_prefix: str) -> None:
 """,
 )
 @click.option(
+    "--resource-type",
+    "-r",
+    "resource_type",
+    help="The type of the resource to connect to.",
+    required=False,
+    type=str,
+)
+@click.option(
     "--resource-id",
     "-ri",
     "resource_id",
@@ -927,12 +1029,14 @@ def delete_service_connector(name_id_or_prefix: str) -> None:
 @click.argument("name_id_or_prefix", type=str, required=False)
 def verify_service_connector(
     name_id_or_prefix: str,
+    resource_type: Optional[str] = None,
     resource_id: Optional[str] = None,
 ) -> None:
     """Verify that the connector can connect to the remote resource.
 
     Args:
         name_id_or_prefix: The name or id of the service connector to verify.
+        resource_type: The type of the custom resource to connect to.
         resource_id: The ID of the custom resource to connect to.
     """
     client = Client()
@@ -943,6 +1047,7 @@ def verify_service_connector(
         try:
             client.verify_service_connector(
                 name_id_or_prefix=name_id_or_prefix,
+                resource_type=resource_type,
                 resource_id=resource_id,
             )
         except (
@@ -964,10 +1069,105 @@ def verify_service_connector(
 
 
 @service_connector.command(
+    "list-resources",
+    help="""List all resources that a connector can give access to.
+""",
+)
+@click.option(
+    "--resource-type",
+    "-r",
+    "resource_type",
+    help="The type of resources to list.",
+    required=False,
+    type=str,
+)
+@click.option(
+    "--resource-id",
+    "-ri",
+    "resource_id",
+    help="The ID of the particular resource to check.",
+    required=False,
+    type=str,
+)
+@click.argument("name_id_or_prefix", type=str, required=False)
+def list_service_connector_resources(
+    name_id_or_prefix: str,
+    resource_type: Optional[str] = None,
+    resource_id: Optional[str] = None,
+) -> None:
+    """List all resources that a connector can give access to.
+
+    Args:
+        name_id_or_prefix: The name or id of the service connector.
+        resource_type: The type of resources to list.
+        resource_id: The ID of a particular resource to check.
+    """
+    client = Client()
+
+    with console.status(
+        f"Fetching service connector resources for '{name_id_or_prefix}'...\n"
+    ):
+        try:
+            (
+                resource_type,
+                resource_ids,
+            ) = client.list_service_connector_resources(
+                name_id_or_prefix=name_id_or_prefix,
+                resource_type=resource_type,
+                resource_id=resource_id,
+            )
+        except (
+            KeyError,
+            ValueError,
+            IllegalOperationError,
+            NotImplementedError,
+            AuthorizationException,
+        ) as e:
+            cli_utils.error(
+                f"Service connector '{name_id_or_prefix}' instantiation "
+                f"failed: {e}"
+            )
+
+        if resource_ids:
+            if resource_id:
+                cli_utils.declare(
+                    f"Service connector '{name_id_or_prefix}' has access to "
+                    f"the {resource_type} resource with ID '{resource_id}'."
+                )
+                return
+
+            resource_ids_list = "\n - " + "\n - ".join(resource_ids)
+            cli_utils.declare(
+                f"Service connector '{name_id_or_prefix}' has access to "
+                f"the following {resource_type} resources:{resource_ids_list}"
+            )
+            return
+
+        if resource_id:
+            cli_utils.error(
+                f"Service connector '{name_id_or_prefix}' does not have access "
+                f"to the {resource_type} resource with ID '{resource_id}'."
+            )
+
+        cli_utils.error(
+            f"Service connector '{name_id_or_prefix}' does not have access "
+            f"to any {resource_type} resources."
+        )
+
+
+@service_connector.command(
     "login",
     help="""Configure the local client/SDK with credentials extracted from
 the service connector.
 """,
+)
+@click.option(
+    "--resource-type",
+    "-r",
+    "resource_type",
+    help="The type of resource to connect to.",
+    required=False,
+    type=str,
 )
 @click.option(
     "--resource-id",
@@ -980,12 +1180,14 @@ the service connector.
 @click.argument("name_id_or_prefix", type=str, required=True)
 def login_service_connector(
     name_id_or_prefix: str,
+    resource_type: Optional[str] = None,
     resource_id: Optional[str] = None,
 ) -> None:
     """Authenticate the local client/SDK with connector credentials.
 
     Args:
         name_id_or_prefix: The name or id of the service connector to use.
+        resource_type: The type of resource to connect to.
         resource_id: Explicit resource ID to connect to.
     """
     client = Client()
@@ -997,6 +1199,7 @@ def login_service_connector(
         try:
             connector = client.login_service_connector(
                 name_id_or_prefix=name_id_or_prefix,
+                resource_type=resource_type,
                 resource_id=resource_id,
             )
         except (
@@ -1012,7 +1215,9 @@ def login_service_connector(
             )
 
         spec = connector.get_type()
-        resource_name = spec.resource_type_map[connector.resource_type].name
+        resource_type = resource_type or connector.resource_type
+        assert resource_type is not None
+        resource_name = spec.resource_type_map[resource_type].name
         cli_utils.declare(
             f"The '{name_id_or_prefix}' {spec.name} connector was used to "
             f"successfully configure the local {resource_name} client/SDK."
