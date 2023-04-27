@@ -18,7 +18,11 @@ from unittest.mock import ANY
 import pytest
 
 from zenml.pipelines import pipeline
-from zenml.post_execution.pipeline import get_pipeline
+from zenml.post_execution.pipeline import (
+    PipelineClassView,
+    PipelineView,
+    get_pipeline,
+)
 from zenml.steps import step
 
 
@@ -34,8 +38,7 @@ def test_get_pipeline():
         {"pipeline": "some_pipeline"},  # calling by name
         {"pipeline": some_pipeline},  # calling by pipeline class
         {"pipeline": some_pipeline()},  # calling by pipeline instance
-        {"pipeline_name": "some_pipeline"},
-    ]  # calling with deprecated kwarg
+    ]
 
     for input_arg in input_args:
         with does_not_raise():
@@ -52,9 +55,8 @@ def test_get_pipeline_raises_exception():
     input_args = [
         {"pipeline": NonPipeline},  # calling with wrong class
         {"pipeline": NonPipeline()},  # calling with wrong class instance
-        {"useless_arg": "some_pipeline"},  # calling with wrong kwarg
-        {"pipeline_name": 1234},
-    ]  # calling kwarg with wrong data type
+        {"pipeline": 1234},  # calling with wrong data type
+    ]
 
     for input_arg in input_args:
         with pytest.raises(RuntimeError):
@@ -94,23 +96,32 @@ def test_getting_pipeline_with_multiple_registered_versions(
     pipeline_instance_v2.run()
 
     post_execution_pipeline_v1 = get_pipeline(pipeline_instance_v1)
+    assert isinstance(post_execution_pipeline_v1, PipelineView)
     post_execution_pipeline_v2 = get_pipeline(pipeline_instance_v2)
-    assert post_execution_pipeline_v1.model != post_execution_pipeline_v2.model
+    assert post_execution_pipeline_v1 != post_execution_pipeline_v2
+    assert isinstance(post_execution_pipeline_v2, PipelineView)
+
+    post_execution_class_view = get_pipeline(one_step_pipeline.__name__)
+    assert isinstance(post_execution_class_view, PipelineClassView)
+    assert len(post_execution_class_view.versions) == 2
+    assert get_pipeline(one_step_pipeline) == post_execution_class_view
 
     assert (
-        get_pipeline(one_step_pipeline.__name__).model
-        == post_execution_pipeline_v2.model
+        get_pipeline(one_step_pipeline.__name__, version="1")
+        == post_execution_pipeline_v1
     )
     assert (
-        get_pipeline(one_step_pipeline).model
-        == post_execution_pipeline_v2.model
+        get_pipeline(one_step_pipeline, version="1")
+        == post_execution_pipeline_v1
+    )
+    assert (
+        get_pipeline(one_step_pipeline.__name__, version="2")
+        == post_execution_pipeline_v2
+    )
+    assert (
+        get_pipeline(one_step_pipeline, version="2")
+        == post_execution_pipeline_v2
     )
 
-    assert (
-        get_pipeline(one_step_pipeline.__name__, version="1").model
-        == post_execution_pipeline_v1.model
-    )
-    assert (
-        get_pipeline(one_step_pipeline, version="1").model
-        == post_execution_pipeline_v1.model
-    )
+    assert get_pipeline(one_step_pipeline.__name__, version="3") is None
+    assert get_pipeline(one_step_pipeline, version="3") is None
