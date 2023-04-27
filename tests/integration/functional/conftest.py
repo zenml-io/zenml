@@ -40,6 +40,11 @@ def int_plus_one_test_step(input: int) -> int:
     return input + 1
 
 
+@step
+def int_plus_two_test_step(input: int) -> int:
+    return input + 2
+
+
 @pytest.fixture
 def clean_client_with_run(clean_client, connected_two_step_pipeline):
     """Fixture to get a clean client with an existing pipeline run in it."""
