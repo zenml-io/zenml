@@ -6,13 +6,6 @@ description: Configuring pipelines, steps, and stack components in ZenML.
 
 * [ ] Add the step order to the configuration.
 
-## Video Tutorial
-
-{% embed url="https://www.youtube.com/embed/hI-UNV7uoNI" %}
-Configuring pipelines, steps, and stack components in ZenML
-{% endembed %}
-
-This video gives an overview of everything discussed in this chapter.
 
 ## Settings in ZenML
 

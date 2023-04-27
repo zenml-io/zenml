@@ -195,13 +195,19 @@ Machine learning pipelines are rerun many times over throughout their developmen
 
 ## Parameterizing steps
 
-In order to iterate quickly, one must be able to quickly tweak pipeline runs by changing various parameters for the steps that make up your pipeline.
+In order to iterate quickly, one must be able to quickly tweak pipeline runs 
+by changing various parameters for the steps that make up your pipeline.
 
 {% hint style="info" %}
-If you want to configure runtime settings of pipelines and stack components, you'll want to [read the part of the Advanced Guide](broken-reference) where we dive into how to do this with `BaseSettings`.
+If you want to configure runtime settings of pipelines and stack components, 
+you'll want to [read the part of the Advanced Guide](broken-reference) where 
+we dive into how to do this with `BaseSettings`.
 {% endhint %}
 
-You can parameterize a step by creating a subclass of the `BaseParameters`. When an object like this is passed to a step, it is not handled like other [Artifacts](broken-reference) within ZenML. Instead, it gets passed into the step when the pipeline is instantiated.
+You can parameterize a step by creating a subclass of the `BaseParameters`.
+When an object like this is passed to a step, it is not handled like other 
+[Artifacts](broken-reference) within ZenML. Instead, it gets passed into the 
+step when the pipeline is instantiated.
 
 ```python
 import numpy as np
@@ -228,7 +234,9 @@ def svc_trainer(
     return model
 ```
 
-The default value for the `gamma` parameter is set to `0.001` inside the `SVCTrainerParams` object. However, when the pipeline is instantiated you can override the default like this:
+The default value for the `gamma` parameter is set to `0.001` inside 
+the `SVCTrainerParams` object. However, when the pipeline is instantiated you 
+can override the default like this:
 
 ```python
 first_pipeline_instance = first_pipeline(
@@ -239,19 +247,32 @@ first_pipeline_instance = first_pipeline(
 first_pipeline_instance.run()
 ```
 
-By passing the `SVCTrainerParams` object to the instance of the pipeline, you can amend and override the default values of the parameters. This is a very powerful tool to quickly iterate over your pipeline.
+By passing the `SVCTrainerParams` object to the instance of the pipeline, you 
+can amend and override the default values of the parameters. This is a very
+powerful tool to quickly iterate over your pipeline.
 
 {% hint style="info" %}
-Behind the scenes, `BaseParameters` is implemented as a [Pydantic BaseModel](https://pydantic-docs.helpmanual.io/usage/models/). Therefore, any type that [Pydantic supports](https://pydantic-docs.helpmanual.io/usage/types/) is also supported as an attribute type in the `BaseParameters`.
+Behind the scenes, `BaseParameters` is implemented as a 
+[Pydantic BaseModel](https://pydantic-docs.helpmanual.io/usage/models/). 
+Therefore, any type that [Pydantic supports](https://pydantic-docs.helpmanual.io/usage/types/) 
+is also supported as an attribute type in the `BaseParameters`.
 {% endhint %}
 
-Try running the above pipeline, and changing the parameter `gamma` through many runs. In essence, each pipeline can be viewed as an experiment, and each run is a trial of the experiment, defined by the `BaseParameters`. You can always get the parameters again when you [fetch pipeline runs](broken-reference), to compare various runs, and of course all this information is also available in the ZenML Dashboard.
+Try running the above pipeline, and changing the parameter `gamma` through many 
+runs. In essence, each pipeline can be viewed as an experiment, and each run is
+a trial of the experiment, defined by the `BaseParameters`. You can always get 
+the parameters again when you [fetch pipeline runs](broken-reference), to
+compare various runs, and of course all this information is also available 
+in the ZenML Dashboard.
 
 <details>
 
 <summary>How-To: Parameterization of a step</summary>
 
-A practical example of how you might parameterize a step is shown below. We can start with a version of a step that has yet to be parameterized. You can see how arguments for \`gamma\`, \`C\` and \`kernel\` are passed in and are hard-coded in the step definition.
+A practical example of how you might parameterize a step is shown below. We can 
+start with a version of a step that has yet to be parameterized. You can see 
+how arguments for \`gamma\`, \`C\` and \`kernel\` are passed in and are 
+hard-coded in the step definition.
 
 ```python
 @step
@@ -265,7 +286,11 @@ def svc_trainer(
     return model
 ```
 
-If you are in the early stages of prototyping, you might want to quickly iterate over different values for `gamma`, `C` and `kernel`. Moreover, you might want to store these as specific hyperparameters that are tracked alongside the rest of the artifacts stored by ZenML. This is where `BaseParameters` comes in handy.
+If you are in the early stages of prototyping, you might want to quickly 
+iterate over different values for `gamma`, `C` and `kernel`. Moreover, you 
+might want to store these as specific hyperparameters that are tracked 
+alongside the rest of the artifacts stored by ZenML. This is where 
+`BaseParameters` comes in handy.
 
 ```python
 class SVCTrainerParams(BaseParameters):
@@ -275,7 +300,8 @@ class SVCTrainerParams(BaseParameters):
     kernel: str = 'rbf'
 ```
 
-Now, you can pass the `SVCTrainerParams` object to the step, and the values inside the object will be used instead of the hard-coded values.
+Now, you can pass the `SVCTrainerParams` object to the step, and the values 
+inside the object will be used instead of the hard-coded values.
 
 ```python
 @step
@@ -290,7 +316,8 @@ def svc_trainer(
     return model
 ```
 
-Finally, you can pass the `SVCTrainerParams` object to the instance of the pipeline, and override the default values of the parameters.
+Finally, you can pass the `SVCTrainerParams` object to the instance of the 
+pipeline, and override the default values of the parameters.
 
 ```python
 first_pipeline_instance = first_pipeline(
@@ -299,25 +326,50 @@ first_pipeline_instance = first_pipeline(
 )
 ```
 
-Parameterizing steps in ML pipelines is a crucial aspect of efficient and effective machine learning. By separating the configuration from the code, data scientists and machine learning engineers have greater control over the behavior of each step in the pipeline. This makes it easier to tune and optimize each step, as well as to reuse the code in different pipelines or experiments. Additionally, parameterization helps to make the pipelines more robust and reproducible, as the configuration can be stored and versioned alongside the code. Ultimately, parameterizing steps in ML pipelines can lead to improved model performance, reduced development time, and increased collaboration among team members.
+Parameterizing steps in ML pipelines is a crucial aspect of efficient and 
+effective machine learning. By separating the configuration from the code, 
+data scientists and machine learning engineers have greater control over the 
+behavior of each step in the pipeline. This makes it easier to tune and optimize
+each step, as well as to reuse the code in different pipelines or experiments. 
+Additionally, parameterization helps to make the pipelines more robust and 
+reproducible, as the configuration can be stored and versioned alongside the 
+code. Ultimately, parameterizing steps in ML pipelines can lead to improved 
+model performance, reduced development time, and increased collaboration among 
+team members.
 
 </details>
 
 ## Caching in ZenML
 
-When you tweaked the `gamma` variable above, you must have noticed that the `digits_data_loader` step does not re-execute for each subsequent run. This is because ZenML understands that nothing has changed between subsequent runs, so it re-uses the output of the last run (the outputs are persisted in the [artifact store](broken-reference). This behavior is known as **caching**.
+When you tweaked the `gamma` variable above, you must have noticed that the 
+`digits_data_loader` step does not re-execute for each subsequent run. This is
+because ZenML understands that nothing has changed between subsequent runs, so 
+it re-uses the output of the last run (the outputs are persisted in the 
+[artifact store](broken-reference). This behavior is known as **caching**.
 
-Prototyping is often a fast and iterative process that benefits a lot from caching. This makes caching a very powerful tool. Checkout this [ZenML Blogpost on Caching](https://blog.zenml.io/caching-ml-pipelines/) for more context on the benefits of caching and [ZenBytes lesson 1.2](https://github.com/zenml-io/zenbytes/blob/main/1-2\_Artifact\_Lineage.ipynb) for a detailed example on how to configure and visualize caching.
+Prototyping is often a fast and iterative process that benefits a lot from 
+caching. This makes caching a very powerful tool. Checkout this 
+[ZenML Blogpost on Caching](https://blog.zenml.io/caching-ml-pipelines/) for 
+more context on the benefits of caching and [ZenBytes lesson 1.2](https://github.com/zenml-io/zenbytes/blob/main/1-2\_Artifact\_Lineage.ipynb) 
+for a detailed example on how to configure and visualize caching.
 
-ZenML comes with caching enabled by default. Since ZenML automatically tracks and versions all inputs, outputs, and parameters of steps and pipelines, ZenML will not re-execute steps within the same pipeline on subsequent pipeline runs as long as there is no change in these three.
+ZenML comes with caching enabled by default. Since ZenML automatically tracks 
+and versions all inputs, outputs, and parameters of steps and pipelines, ZenML 
+will not re-execute steps within the same pipeline on subsequent pipeline runs 
+as long as there is no change in these three.
 
 {% hint style="warning" %}
-Currently, the caching does not automatically detect changes within the file system or on external APIs. Make sure to set caching to `False` on steps that depend on external inputs or if the step should run regardless of caching.
+Currently, the caching does not automatically detect changes within the file 
+system or on external APIs. Make sure to set caching to `False` on steps that 
+depend on external inputs or if the step should run regardless of caching.
 {% endhint %}
 
 ### Configuring caching behavior of your pipelines
 
-Although caching is desirable in many circumstances, one might want to disable it in certain instances. For example, if you are quickly prototyping with changing step definitions or you have an external API state change in your function that ZenML does not detect.
+Although caching is desirable in many circumstances, one might want to disable
+it in certain instances. For example, if you are quickly prototyping with 
+changing step definitions or you have an external API state change in your 
+function that ZenML does not detect.
 
 There are multiple ways to take control of when and where caching is used:
 
@@ -327,7 +379,8 @@ There are multiple ways to take control of when and where caching is used:
 
 #### Configuring caching for the entire pipeline
 
-On a pipeline level, the caching policy can be set as a parameter within the `@pipeline` decorator as shown below:
+On a pipeline level, the caching policy can be set as a parameter within the 
+`@pipeline` decorator as shown below:
 
 ```python
 @pipeline(enable_cache=False)
@@ -335,11 +388,13 @@ def first_pipeline(....):
     """Pipeline with cache disabled"""
 ```
 
-The setting above will disable caching for all steps in the pipeline, unless a step explicitly sets `enable_cache=True` (see below).
+The setting above will disable caching for all steps in the pipeline, unless 
+a step explicitly sets `enable_cache=True` (see below).
 
 #### Configuring caching for individual steps
 
-Caching can also be explicitly configured at a step level via a parameter of the `@step` decorator:
+Caching can also be explicitly configured at a step level via a parameter of 
+the `@step` decorator:
 
 ```python
 @step(enable_cache=False)
@@ -348,27 +403,35 @@ def import_data_from_api(...):
     ...
 ```
 
-The code above turns caching off for this step only. This is very useful in practice since you might want to turn off caching for certain steps that take external input (like fetching data from an API or File IO) without affecting the overall pipeline caching behavior.
+The code above turns caching off for this step only. This is very useful in 
+practice since you might want to turn off caching for certain steps that take 
+external input (like fetching data from an API or File IO) without affecting 
+the overall pipeline caching behavior.
 
 {% hint style="info" %}
-You can get a graphical visualization of which steps were cached using the [ZenML Dashboard](broken-reference).
+You can get a graphical visualization of which steps were cached using the 
+[ZenML Dashboard](broken-reference).
 {% endhint %}
 
 #### Dynamically configuring caching for a pipeline run
 
-Sometimes you want to have control over caching at runtime instead of defaulting to the hard-coded pipeline and step decorator settings. ZenML offers a way to override all caching settings at runtime:
+Sometimes you want to have control over caching at runtime instead of 
+defaulting to the hard-coded pipeline and step decorator settings. ZenML offers a way to override all caching settings at runtime:
 
 ```python
 first_pipeline(step_1=..., step_2=...).run(enable_cache=False)
 ```
 
-The code above disables caching for all steps of your pipeline, no matter what you have configured in the `@step` or `@parameter` decorators.
+The code above disables caching for all steps of your pipeline, no matter what 
+you have configured in the `@step` or `@parameter` decorators.
 
 ### Code Example
 
-The following example shows caching in action with the code example from the previous section.
+The following example shows caching in action with the code example from the 
+previous section.
 
-For a more detailed example on how caching is used at ZenML and how it works under the hood, checkout [ZenBytes lesson 1.2](https://github.com/zenml-io/zenbytes/blob/main/1-2\_Artifact\_Lineage.ipynb)!
+For a more detailed example on how caching is used at ZenML and how it works under 
+the hood, checkout [ZenBytes lesson 1.2](https://github.com/zenml-io/zenbytes/blob/main/1-2\_Artifact\_Lineage.ipynb)!
 
 <details>
 
