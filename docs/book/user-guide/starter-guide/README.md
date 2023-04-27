@@ -2,18 +2,13 @@
 
 *
 
-Write a description of this guide.
-
 In this Guide you will learn
-
-<details>
-
-<summary></summary>
-
-
-
-</details>
 
 * How to create, configure and run your pipelines
 * How to use stacks
-* How to transition to the cloud&#x20;
+* How to transition to the cloud
+
+Here is what you need to do before diving in to the guide.
+
+* Install ZenML -> Link to installation guide?
+* `zenml up` / connect to deployed server (if available) / connect to sandbox -> relevant links

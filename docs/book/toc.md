@@ -9,10 +9,10 @@
 ## User Guide
 
 * [🐣 Starter Guide](user-guide/starter-guide/README.md)
-  * [Create your first pipeline](user-guide/starter-guide/create-your-first-ml-pipeline.md)
+  * [Write your first pipeline](user-guide/starter-guide/create-your-first-ml-pipeline.md)
+  * [Configure and interact with pipelines](user-guide/starter-guide/configure-and-interact-with-pipelines.md)
   * [Understand your stack](user-guide/starter-guide/using-and-switching-stacks.md)
-  * [Transition to the cloud](user-guide/starter-guide/transition-to-the-cloud.md)
-  * [Discover the dashboard](user-guide/starter-guide/discover-the-dashboard.md)
+  * [Go from local to remote](user-guide/starter-guide/transition-to-the-cloud.md)
   * [Join forces with other users](user-guide/starter-guide/collaborate-with-your-team.md)
 * [🐔 Advanced Guide](user-guide/advanced-guide/README.md)
   * [Configure steps/pipelines](user-guide/advanced-guide/configure-steps-and-pipelines.md)
@@ -46,7 +46,6 @@
   * [Adding Dependencies to your deployed Server](platform-guide/manage-the-deployed-services/adding-dependencies-to-your-deployed-server.md)
   * [Troubleshooting your deployed Server](platform-guide/manage-the-deployed-services/troubleshooting-your-deployed-server.md)
   * [Troubleshooting Stack Components](platform-guide/manage-the-deployed-services/troubleshooting-stack-components.md)
-
 
 ## Learning
 
@@ -90,12 +89,12 @@
     * [Google Cloud Secrets Manager](learning/component-gallery/secrets-managers/gcp.md)
     * [Azure Secrets Manager](learning/component-gallery/secrets-managers/azure.md)
     * [HashiCorp Vault Secrets Manager](learning/component-gallery/secrets-managers/vault.md)
-  * [Data Validators](component-gallery/data-validators/data-validators.md)
-    * [Great Expectations](component-gallery/data-validators/great-expectations.md)
-    * [Deepchecks](component-gallery/data-validators/deepchecks.md)
-    * [Evidently](component-gallery/data-validators/evidently.md)
-    * [Whylogs](component-gallery/data-validators/whylogs.md)
-    * [Develop a Custom Data Validator](component-gallery/data-validators/custom.md)
+  * [Data Validators](learning/component-galery/data-validators/README.md)
+    * [Great Expectations](learning/component-galery/data-validators/great-expectations.md)
+    * [Deepchecks](learning/component-galery/data-validators/deepchecks.md)
+    * [Evidently](learning/component-galery/data-validators/evidently.md)
+    * [Whylogs](learning/component-galery/data-validators/whylogs.md)
+    * [Develop a Custom Data Validator](learning/component-galery/data-validators/develop-a-custom-data-validator.md)
   * [Experiment Trackers](learning/component-gallery/experiment-trackers/experiment-trackers.md)
     * [MLflow](learning/component-gallery/experiment-trackers/mlflow.md)
     * [Weights & Biases](learning/component-gallery/experiment-trackers/wandb.md)
@@ -147,3 +146,4 @@
 * [Migration Zero Twenty](doc-orphanage/migration-zero-twenty.md)
 * [System Environmental Variables](doc-orphanage/system-environmental-variables.md)
 * [Usage Analytics](doc-orphanage/usage-analytics.md)
+* [Discover the dashboard](doc-orphanage/discover-the-dashboard.md)

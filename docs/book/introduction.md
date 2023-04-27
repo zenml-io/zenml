@@ -1,6 +1,10 @@
 # Introduction
 
 * [ ] The text that goes here is crucial, what and how much of the old stuff do we use here?
+* [ ] I would suggest we give our Value Preposition in terms that don't sound like a marketing message rather to tell engineers what to expect from ZenML (and what not to expect)
+* [ ] Then I would explain where in the docs to go for what
+
+
 
 
 
