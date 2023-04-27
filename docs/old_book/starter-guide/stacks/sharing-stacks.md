@@ -72,10 +72,10 @@ Once the user is ready, they can now go ahead and register so called `cloud` (re
 stack components that point to tooling infrastructure that is also running on the cloud. A good example of this is a stack that
 uses the following components:
 
-- [Kubeflow**Orchestrator**](../../../book/platform-guide/component-gallery/orchestrators/kubeflow.md) which orchestrates your ML workflows on [Kubeflow Pipelines](https://www.kubeflow.org/docs/components/pipelines/v1/introduction/). 
-- [S3**ArtifactStore**](../../../book/platform-guide/component-gallery/artifact-stores/s3.md) which can store your artifacts in a [S3 storage](https://aws.amazon.com/s3/).
-- [MLflow**ExperimentTracker**](../../../book/platform-guide/component-gallery/experiment-trackers/mlflow.md) which can track your experiments with [MLFlow](https://mlflow.org/).
-- [Evidently**DataValidator**](../../../book/platform-guide/component-gallery/data-validators/evidently.md) which can help you validate your data with [Evidently](https://www.evidentlyai.com/).
+- [Kubeflow**Orchestrator**](../../../book/learning/component-gallery/orchestrators/kubeflow.md) which orchestrates your ML workflows on [Kubeflow Pipelines](https://www.kubeflow.org/docs/components/pipelines/v1/introduction/). 
+- [S3**ArtifactStore**](../../../book/learning/component-gallery/artifact-stores/s3.md) which can store your artifacts in a [S3 storage](https://aws.amazon.com/s3/).
+- [MLflow**ExperimentTracker**](../../../book/learning/component-gallery/experiment-trackers/mlflow.md) which can track your experiments with [MLFlow](https://mlflow.org/).
+- [Evidently**DataValidator**](../../../book/learning/component-gallery/data-validators/evidently.md) which can help you validate your data with [Evidently](https://www.evidentlyai.com/).
 
 Once a stack such as the above is [registered](registering-stacks.md) and [set active](managing-stacks.md#setting-the-local-active-stack), then running a ZenML pipeline will result in a much more different behavior then before.
 

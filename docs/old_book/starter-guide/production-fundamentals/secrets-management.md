@@ -244,7 +244,7 @@ will not work in combination with a remote orchestrator.
 
 ## Secrets management with Secrets Managers
 
-[Secrets Managers](../../../book/platform-guide/component-gallery/secrets-managers/secrets-managers.md)
+[Secrets Managers](../../../book/learning/component-gallery/secrets-managers/secrets-managers.md)
 are ZenML stack components that allow you to register and access secrets when
 used as part of your active stack.
 
@@ -260,7 +260,7 @@ secrets to the centralized secrets store.
 Managing secrets through a secrets manager stack component suffers from a
 number of limitations, some of which are:
 
-* you need to configure [a Secrets Manager stack component](../../../book/platform-guide/component-gallery/secrets-managers/secrets-managers.md)
+* you need to configure [a Secrets Manager stack component](../../../book/learning/component-gallery/secrets-managers/secrets-managers.md)
 and add it to your active stack before you can register and access secrets. With
 centralized secrets management, you don't need to configure anything, your ZenML
 local deployment or ZenML server takes on the secrets manager role.
@@ -278,7 +278,7 @@ to access the cloud back-end.
 ### How to register a secret
 
 {% hint style="info" %}
-To register a secret, you'll need a [secrets manager](../../../book/platform-guide/component-gallery/secrets-managers/secrets-managers.md)
+To register a secret, you'll need a [secrets manager](../../../book/learning/component-gallery/secrets-managers/secrets-managers.md)
 in your active stack.
 {% endhint %}
 
@@ -316,7 +316,7 @@ secrets is available [here](https://apidocs.zenml.io/latest/cli/#zenml.cli--secr
 If you're using components with
 [secret references](#reference-secrets-in-stack-component-attributes-and-settings)
 in your stack, you need to make sure that the stack contains a
-[secrets manager](../../../book/platform-guide/component-gallery/secrets-managers/secrets-managers.md)
+[secrets manager](../../../book/learning/component-gallery/secrets-managers/secrets-managers.md)
 and all the referenced secrets exist in this secrets manager. To make this process easier, you can
 use the following CLI command to interactively register all secrets for a stack:
 

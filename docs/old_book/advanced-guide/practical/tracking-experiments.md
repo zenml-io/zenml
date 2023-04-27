@@ -99,5 +99,5 @@ GitHub](https://github.com/zenml-io/zenml/tree/main/examples/neptune_tracking).
 
 {% hint style="info" %} To read a more detailed guide about how Experiment
 Trackers function in ZenML, [click
-here](../../../book/platform-guide/component-gallery/experiment-trackers/experiment-trackers.md). {%
+here](../../../book/learning/component-gallery/experiment-trackers/experiment-trackers.md). {%
 endhint %}

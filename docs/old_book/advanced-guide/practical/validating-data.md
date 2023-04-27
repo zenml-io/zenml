@@ -80,6 +80,6 @@ be used for.
 
 {% hint style="info" %}
 To read a more detailed guide about how Data Validators function in ZenML,
-[click here](../../../book/platform-guide/component-gallery/data-validators/data-validators.md).
+[click here](../../../book/learning/component-gallery/data-validators/data-validators.md).
 {% endhint %}
 

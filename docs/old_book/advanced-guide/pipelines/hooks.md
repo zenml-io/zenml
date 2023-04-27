@@ -96,7 +96,7 @@ def my_step(params: MyParameters)
 
 ## Linking to the `Alerter` Stack component
 
-A common use-case is to use the [Alerter](../../../book/platform-guide/component-gallery/alerters/alerters.md)
+A common use-case is to use the [Alerter](../../../book/learning/component-gallery/alerters/alerters.md)
 component inside the failure or success hooks to notify relevant
 people. It is quite easy to do this:
 
