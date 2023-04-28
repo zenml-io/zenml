@@ -101,17 +101,20 @@ class S3ArtifactStore(BaseArtifactStore, AuthenticationMixin):
         Returns:
             The s3 filesystem.
         """
-        if not self._filesystem:
-            key, secret, token = self.get_credentials()
+        # Refresh the credentials also if the connector has expired
+        if self._filesystem and not self.connector_has_expired():
+            return self._filesystem
 
-            self._filesystem = s3fs.S3FileSystem(
-                key=key,
-                secret=secret,
-                token=token,
-                client_kwargs=self.config.client_kwargs,
-                config_kwargs=self.config.config_kwargs,
-                s3_additional_kwargs=self.config.s3_additional_kwargs,
-            )
+        key, secret, token = self.get_credentials()
+
+        self._filesystem = s3fs.S3FileSystem(
+            key=key,
+            secret=secret,
+            token=token,
+            client_kwargs=self.config.client_kwargs,
+            config_kwargs=self.config.config_kwargs,
+            s3_additional_kwargs=self.config.s3_additional_kwargs,
+        )
         return self._filesystem
 
     def open(self, path: PathType, mode: str = "r") -> Any:

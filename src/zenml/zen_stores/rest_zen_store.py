@@ -1903,6 +1903,9 @@ class RestZenStore(BaseZenStore):
             resource=service_connector,
             route=SERVICE_CONNECTORS,
             response_model=ServiceConnectorResponseModel,
+            # Server-side service connector verification is only meant for the
+            # dashboard
+            params=dict(verify=False),
         )
 
     def get_service_connector(
@@ -1960,6 +1963,9 @@ class RestZenStore(BaseZenStore):
             resource_update=update,
             response_model=ServiceConnectorResponseModel,
             route=SERVICE_CONNECTORS,
+            # Server-side service connector verification is only meant for the
+            # dashboard
+            params=dict(verify=False),
         )
 
     def delete_service_connector(self, service_connector_id: UUID) -> None:

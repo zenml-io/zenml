@@ -70,9 +70,7 @@ ENV_ZENML_KUBERNETES_RUN_ID = "ZENML_KUBERNETES_RUN_ID"
 class KubernetesOrchestrator(ContainerizedOrchestrator):
     """Orchestrator for running ZenML pipelines using native Kubernetes."""
 
-    _k8s_core_api: k8s_client.CoreV1Api = None
-    _k8s_batch_api: k8s_client.BatchV1beta1Api = None
-    _k8s_rbac_api: k8s_client.RbacAuthorizationV1Api = None
+    _k8s_client: Optional[k8s_client.ApiClient] = None
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         """Initialize the class and the Kubernetes clients.
@@ -82,10 +80,21 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             **kwargs: The keyword arguments to pass to the Pydantic object.
         """
         super().__init__(*args, **kwargs)
-        self._initialize_k8s_clients()
 
-    def _initialize_k8s_clients(self) -> None:
-        """Initialize the Kubernetes clients."""
+        # Initialize the Kubernetes client
+        _ = self.kube_client
+
+    @property
+    def kube_client(self) -> k8s_client.ApiClient:
+        """Getter for the Kubernetes API client.
+
+        Returns:
+            The Kubernetes API client.
+        """
+        # Refresh the client also if the connector has expired
+        if self._k8s_client and not self.connector_has_expired():
+            return self._k8s_client
+
         connector = self.get_connector()
         if connector:
             client = connector.connect()
@@ -94,14 +103,39 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                     f"Expected a k8s_client.ApiClient while trying to use the "
                     f"linked connector, but got {type(client)}."
                 )
-            self._k8s_core_api = k8s_client.CoreV1Api(client)
-            self._k8s_batch_api = k8s_client.BatchV1beta1Api(client)
-            self._k8s_rbac_api = k8s_client.RbacAuthorizationV1Api(client)
+            self._k8s_client = client
         else:
             kube_utils.load_kube_config(context=self.config.kubernetes_context)
-            self._k8s_core_api = k8s_client.CoreV1Api()
-            self._k8s_batch_api = k8s_client.BatchV1beta1Api()
-            self._k8s_rbac_api = k8s_client.RbacAuthorizationV1Api()
+            self._k8s_client = k8s_client.ApiClient()
+
+        return self._k8s_client
+
+    @property
+    def _k8s_core_api(self) -> k8s_client.CoreV1Api:
+        """Getter for the Kubernetes Core API client.
+
+        Returns:
+            The Kubernetes Core API client.
+        """
+        return k8s_client.CoreV1Api(self.kube_client)
+
+    @property
+    def _k8s_batch_api(self) -> k8s_client.BatchV1beta1Api:
+        """Getter for the Kubernetes Batch API client.
+
+        Returns:
+            The Kubernetes Batch API client.
+        """
+        return k8s_client.BatchV1beta1Api(self.kube_client)
+
+    @property
+    def _k8s_rbac_api(self) -> k8s_client.RbacAuthorizationV1Api:
+        """Getter for the Kubernetes RBAC API client.
+
+        Returns:
+            The Kubernetes RBAC API client.
+        """
+        return k8s_client.RbacAuthorizationV1Api(self.kube_client)
 
     @property
     def config(self) -> KubernetesOrchestratorConfig:

@@ -79,6 +79,7 @@ if TYPE_CHECKING:
         ComponentResponseModel,
         FlavorResponseModel,
         PipelineRunResponseModel,
+        ServiceConnectorResourceListModel,
         ServiceConnectorResponseModel,
         ServiceConnectorTypeModel,
         StackResponseModel,
@@ -1188,6 +1189,32 @@ def print_service_connectors_table(
     print_table(configurations)
 
 
+def print_service_connector_resource_table(
+    resources: "ServiceConnectorResourceListModel",
+) -> None:
+    """Prints a table with details for a list of service connector resources.
+
+    Args:
+        resources: List of service connector resources to print.
+    """
+    resource_table = []
+    for resource_list in resources.resources:
+        resource_type = (
+            f"{resource_list.resource_type_name} "
+            f"({resource_list.resource_type})"
+        )
+        if not resource_list.multi_instance:
+            resource_ids = "N/A"
+        else:
+            resource_ids = "\n".join(resource_list.resource_ids)
+        resource_row = {
+            "RESOURCE_TYPE": resource_type,
+            "RESOURCES": resource_ids,
+        }
+        resource_table.append(resource_row)
+    print_table(resource_table)
+
+
 def print_service_connector_configuration(
     connector: "ServiceConnectorResponseModel",
     active_status: bool,
@@ -1226,6 +1253,11 @@ def print_service_connector_configuration(
     rich_table.add_column("PROPERTY")
     rich_table.add_column("VALUE", overflow="fold")
 
+    if connector.expiration_seconds is None:
+        expiration = "N/A"
+    else:
+        expiration = str(connector.expiration_seconds) + "s",
+
     properties = {
         "ID": connector.id,
         "NAME": connector.name,
@@ -1234,7 +1266,8 @@ def print_service_connector_configuration(
         "RESOURCE_TYPES": ", ".join(connector.resource_types),
         "RESOURCE_ID": connector.resource_id or "",
         "SECRET_ID": connector.secret_id or "",
-        "EXPIRATION": str(connector.expiration_seconds or "")+"s",
+        "SESSION_DURATION": expiration,
+        "EXPIRES_AT": str(connector.expires_at or "N/A"),
         "OWNER": user_name,
         "WORKSPACE": connector.workspace.name,
         "SHARED": get_shared_emoji(connector.is_shared),

@@ -530,35 +530,45 @@ def register_service_connector(
                 # Try to retrieve the list of available resource IDs from the
                 # connector instance
                 resource_ids: List[str] = []
-                allow_arbitrary_resource_id = False
-                try:
-                    _, resource_ids = connector.list_resource_ids(
-                        resource_type=resource_type
-                    )
-                except (
-                    KeyError,
-                    ValueError,
-                    IllegalOperationError,
-                    AuthorizationException,
-                ) as e:
-                    cli_utils.warning(
-                        "Failed to retrieve the list of available "
-                        f"{resource_type_spec.name} resource IDs: {e}"
-                    )
-                except NotImplementedError:
-                    allow_arbitrary_resource_id = True
-                else:
-                    if not resource_ids:
-                        cli_utils.warning(
-                            "The connector instance did not return any "
-                            f"{resource_type_spec.name} resource IDs. Please "
-                            "check your configuration if this is unexpected."
+                if resource_type_spec.instance_discovery:
+                    try:
+                        resource_list = connector.list_resource_ids(
+                            resource_type=resource_type
                         )
+                        if (
+                            resource_list.resources
+                            and resource_list.resources[0].resource_type
+                            == resource_type
+                        ):
+                            resource_ids = resource_list.resources[
+                                0
+                            ].resource_ids
+
+                    except (
+                        KeyError,
+                        ValueError,
+                        IllegalOperationError,
+                        AuthorizationException,
+                        NotImplementedError,
+                    ) as e:
+                        cli_utils.warning(
+                            "Failed to retrieve the list of available "
+                            f"{resource_type_spec.name} resource IDs: {e}"
+                        )
+
+                if resource_type_spec.instance_discovery and not resource_ids:
+                    cli_utils.error(
+                        "The connector instance does not have access to any "
+                        f"{resource_type_spec.name} instances. This means "
+                        "that the connector credentials are not valid or that "
+                        "the permissions are insufficient. Please "
+                        "check your configuration and try again."
+                    )
 
                 if resource_ids:
                     resource_ids_list = "\n - " + "\n - ".join(resource_ids)
                     prompt = (
-                        f"The following {resource_type_spec.name} resource IDs "
+                        f"The following {resource_type_spec.name} instances "
                         "are reachable through this connector:"
                         f"{resource_ids_list}\n"
                         "Please select one or leave it empty to create a "
@@ -582,34 +592,19 @@ def register_service_connector(
                             f"The resource ID '{resource_id}' is not one of "
                             "the listed values. Please try again."
                         )
-                elif allow_arbitrary_resource_id:
+                else:
                     prompt = (
                         "The selected resource type supports multiple "
                         f"{resource_type_spec.name} instances. Please enter a "
-                        "resource ID manually or leave it empty to create a "
-                        "multi-instance connector that can be used to "
-                        "access multiple resources of this type"
+                        "{resource_type_spec.name} ID manually or leave it "
+                        "empty to create a multi-instance connector that can "
+                        "be used to access any resource of this type"
                     )
                     resource_id = click.prompt(
                         prompt,
                         default="",
                         type=str,
                     )
-                else:
-                    prompt = (
-                        "The selected resource type supports multiple "
-                        f"{resource_type_spec.name} instances but the "
-                        "connector returned an empty list of instances that it "
-                        "has access to. Would you still like to proceed and "
-                        "create a multi-instance connector that can be used to "
-                        "access multiple resources of this type?"
-                    )
-                    confirm = click.confirm(
-                        prompt,
-                        default=False,
-                    )
-                    if not confirm:
-                        return
 
                 if resource_id == "":
                     resource_id = None
@@ -715,8 +710,29 @@ def list_service_connectors(**kwargs: Any) -> None:
     help="Show security sensitive configuration attributes in the terminal.",
     type=click.BOOL,
 )
+@click.option(
+    "--resource-type",
+    "-r",
+    "resource_type",
+    help="Use a resource type to fetch and describe a client service connector "
+    "instead of the base connector.",
+    required=False,
+    type=str,
+)
+@click.option(
+    "--resource-id",
+    "-ri",
+    "resource_id",
+    help="Use a resource ID to fetch and describe a client service connector "
+    "instead of the base connector.",
+    required=False,
+    type=str,
+)
 def describe_service_connector(
-    name_id_or_prefix: str, show_secrets: bool = False
+    name_id_or_prefix: str,
+    show_secrets: bool = False,
+    resource_type: Optional[str] = None,
+    resource_id: Optional[str] = None,
 ) -> None:
     """Prints details about a service connector.
 
@@ -724,30 +740,62 @@ def describe_service_connector(
         name_id_or_prefix: Name or id of the service connector to describe.
         show_secrets: Whether to show security sensitive configuration
             attributes in the terminal.
+        resource_type: Use a resource type to fetch and describe a client
+            service connector instead of the base connector.
+        resource_id: Use a resource ID to fetch and describe a client service
+            connector instead of the base connector.
     """
     client = Client()
-    try:
-        connector = client.get_service_connector(
-            name_id_or_prefix=name_id_or_prefix,
-        )
-    except KeyError as err:
-        cli_utils.error(str(err))
 
-    if connector.secret_id:
+    if resource_type or resource_id:
         try:
-            secret = client.get_secret(
-                name_id_or_prefix=connector.secret_id,
-                allow_partial_id_match=False,
-                allow_partial_name_match=False,
+            client_connector = client.get_client_service_connector(
+                name_id_or_prefix=name_id_or_prefix,
+                resource_type=resource_type,
+                resource_id=resource_id,
+            )
+        except (
+            KeyError,
+            ValueError,
+            IllegalOperationError,
+            NotImplementedError,
+            AuthorizationException,
+        ) as e:
+            resource_type = resource_type or "<unspecified>"
+            resource_id = resource_id or "<unspecified>"
+            cli_utils.error(
+                f"Failed fetching a client service connector for connector "
+                f"'{name_id_or_prefix}', resource type '{resource_type}' and "
+                f"resource ID {resource_id}: {e}"
+            )
+
+        connector = client_connector.to_response_model(
+            workspace=client.active_workspace,
+            user=client.active_user,
+        )
+    else:
+        try:
+            connector = client.get_service_connector(
+                name_id_or_prefix=name_id_or_prefix,
             )
         except KeyError as err:
-            cli_utils.warning(
-                "Unable to retrieve secret values associated with "
-                f"service connector '{connector.name}': {err}"
-            )
-        else:
-            # Add secret values to connector configuration
-            connector.secrets.update(secret.values)
+            cli_utils.error(str(err))
+
+        if connector.secret_id:
+            try:
+                secret = client.get_secret(
+                    name_id_or_prefix=connector.secret_id,
+                    allow_partial_id_match=False,
+                    allow_partial_name_match=False,
+                )
+            except KeyError as err:
+                cli_utils.warning(
+                    "Unable to retrieve secret values associated with "
+                    f"service connector '{connector.name}': {err}"
+                )
+            else:
+                # Add secret values to connector configuration
+                connector.secrets.update(secret.values)
 
     with console.status(f"Describing connector '{connector.name}'..."):
         active_stack = client.active_stack_model
@@ -1080,7 +1128,7 @@ def delete_service_connector(name_id_or_prefix: str) -> None:
     required=False,
     type=str,
 )
-@click.argument("name_id_or_prefix", type=str, required=False)
+@click.argument("name_id_or_prefix", type=str, required=True)
 def verify_service_connector(
     name_id_or_prefix: str,
     resource_type: Optional[str] = None,
@@ -1143,7 +1191,7 @@ def verify_service_connector(
     required=False,
     type=str,
 )
-@click.argument("name_id_or_prefix", type=str, required=False)
+@click.argument("name_id_or_prefix", type=str, required=True)
 def list_service_connector_resources(
     name_id_or_prefix: str,
     resource_type: Optional[str] = None,
@@ -1162,10 +1210,7 @@ def list_service_connector_resources(
         f"Fetching service connector resources for '{name_id_or_prefix}'...\n"
     ):
         try:
-            (
-                resource_type,
-                resource_ids,
-            ) = client.list_service_connector_resources(
+            resource_list = client.list_service_connector_resources(
                 name_id_or_prefix=name_id_or_prefix,
                 resource_type=resource_type,
                 resource_id=resource_id,
@@ -1182,30 +1227,8 @@ def list_service_connector_resources(
                 f"failed: {e}"
             )
 
-        if resource_ids:
-            if resource_id:
-                cli_utils.declare(
-                    f"Service connector '{name_id_or_prefix}' has access to "
-                    f"the {resource_type} resource with ID '{resource_id}'."
-                )
-                return
-
-            resource_ids_list = "\n - " + "\n - ".join(resource_ids)
-            cli_utils.declare(
-                f"Service connector '{name_id_or_prefix}' has access to "
-                f"the following {resource_type} resources:{resource_ids_list}"
-            )
-            return
-
-        if resource_id:
-            cli_utils.error(
-                f"Service connector '{name_id_or_prefix}' does not have access "
-                f"to the {resource_type} resource with ID '{resource_id}'."
-            )
-
-        cli_utils.error(
-            f"Service connector '{name_id_or_prefix}' does not have access "
-            f"to any {resource_type} resources."
+        cli_utils.print_service_connector_resource_table(
+            resources=resource_list,
         )
 
 

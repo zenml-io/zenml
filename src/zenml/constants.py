@@ -211,6 +211,8 @@ SECRETS = "/secrets"
 CODE_REPOSITORIES = "/code_repositories"
 SERVICE_CONNECTORS = "/service_connectors"
 SERVICE_CONNECTOR_VERIFY = "/verify"
+SERVICE_CONNECTOR_RESOURCES = "/service_connector_resources"
+SERVICE_CONNECTOR_CLIENT = "/client"
 SERVICE_CONNECTOR_TYPES = "/service_connector_types"
 
 # mandatory stack component attributes

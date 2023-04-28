@@ -12,13 +12,15 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Endpoint definitions for service connectors."""
-from typing import List, Optional
+from typing import List, Optional, cast
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Security
 
 from zenml.constants import (
     API,
+    SERVICE_CONNECTOR_CLIENT,
+    SERVICE_CONNECTOR_RESOURCES,
     SERVICE_CONNECTOR_TYPES,
     SERVICE_CONNECTOR_VERIFY,
     SERVICE_CONNECTORS,
@@ -27,6 +29,7 @@ from zenml.constants import (
 from zenml.enums import PermissionType
 from zenml.models import (
     ServiceConnectorFilterModel,
+    ServiceConnectorResourceListModel,
     ServiceConnectorResponseModel,
     ServiceConnectorTypeModel,
     ServiceConnectorUpdateModel,
@@ -116,6 +119,7 @@ def get_service_connector(
 def update_service_connector(
     connector_id: UUID,
     connector_update: ServiceConnectorUpdateModel,
+    verify: bool = True,
     _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
 ) -> ServiceConnectorResponseModel:
     """Updates a service connector.
@@ -123,10 +127,45 @@ def update_service_connector(
     Args:
         connector_id: ID of the service connector.
         connector_update: Service connector to use to update.
+        verify: Whether to verify the service connector before updating it.
+            This requires the service connector implementation to be installed
+            on the ZenML server, otherwise a 501 Not Implemented error will be
+            returned.
 
     Returns:
         Updated service connector.
     """
+    if verify:
+        connector = zen_store().get_service_connector(connector_id)
+
+        # Update the existing model in place with the new values, we'll use this
+        # to validate the new configuration and credentials, if requested, and
+        # to populate the update model
+        connector.apply_update(connector_update)
+
+        connector_instance = (
+            service_connector_registry.instantiate_service_connector(
+                model=connector
+            )
+        )
+
+        connector_instance.verify()
+
+        # Get an updated model from the connector instance and treat it
+        # as the update model
+        assert connector.user is not None
+        connector_update = cast(
+            ServiceConnectorUpdateModel,
+            connector_instance.to_model(
+                name=connector_update.name,
+                user=connector_update.user,
+                workspace=connector_update.workspace,
+                is_shared=connector_update.is_shared,
+                description=connector_update.description,
+                labels=connector_update.labels,
+            ),
+        )
+
     return zen_store().update_service_connector(
         service_connector_id=connector_id,
         update=connector_update,
@@ -162,6 +201,10 @@ def verify_service_connector(
 ) -> ServiceConnectorResponseModel:
     """Verifies a service connector.
 
+    This requires the service connector implementation to be installed
+    on the ZenML server, otherwise a 501 Not Implemented error will be
+    returned.
+
     Args:
         connector_id: ID of the service connector.
         auth_context: Authentication context.
@@ -178,6 +221,96 @@ def verify_service_connector(
     )
 
     connector_instance.verify()
+
+    return connector
+
+
+@router.get(
+    "/{connector_id}" + SERVICE_CONNECTOR_RESOURCES,
+    response_model=ServiceConnectorResourceListModel,
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@handle_exceptions
+def list_service_connector_resources(
+    connector_id: UUID,
+    resource_type: Optional[str] = None,
+    resource_id: Optional[str] = None,
+    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+) -> ServiceConnectorResourceListModel:
+    """Verifies a service connector.
+
+    Args:
+        connector_id: ID of the service connector.
+        resource_type: Type of the resource to list.
+        resource_id: ID of the resource to list.
+        auth_context: Authentication context.
+
+    Returns:
+        The list of resources that the service connector has access to.
+    """
+    connector = zen_store().get_service_connector(connector_id)
+
+    connector_instance = (
+        service_connector_registry.instantiate_service_connector(
+            model=connector
+        )
+    )
+
+    return connector_instance.list_resource_ids(
+        resource_type=resource_type, resource_id=resource_id
+    )
+
+
+@router.get(
+    "/{connector_id}" + SERVICE_CONNECTOR_CLIENT,
+    response_model=ServiceConnectorResponseModel,
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@handle_exceptions
+def get_service_connector_client(
+    connector_id: UUID,
+    resource_type: Optional[str] = None,
+    resource_id: Optional[str] = None,
+    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
+) -> ServiceConnectorResponseModel:
+    """Get a client service connector for a service connector and given resource.
+
+    This requires the service connector implementation to be installed
+    on the ZenML server, otherwise a 501 Not Implemented error will be
+    returned.
+
+    Args:
+        connector_id: ID of the service connector.
+        resource_type: Type of the resource to list.
+        resource_id: ID of the resource to list.
+        auth_context: Authentication context.
+
+    Returns:
+        A client service connector that can be used to access the given
+        resource.
+    """
+    connector = zen_store().get_service_connector(connector_id)
+
+    connector_instance = (
+        service_connector_registry.instantiate_service_connector(
+            model=connector
+        )
+    )
+
+    # Fetch the client connector
+    client_connector = connector_instance.get_client_connector(
+        resource_type=resource_type,
+        resource_id=resource_id,
+    )
+
+    # Return the model for the client connector
+    connector = client_connector.to_response_model(
+        user=connector.user,
+        workspace=connector.workspace,
+        is_shared=connector.is_shared,
+        description=connector.description,
+        labels=connector.labels,
+    )
 
     return connector
 

@@ -159,7 +159,7 @@ a Kubernetes client pre-configured with AWS credentials.
 """,
             auth_methods=KubernetesAuthenticationMethods.values(),
             # A Kubernetes connector instance is used to represent a single
-            # Kubernetes cluster
+            # Kubernetes cluster.
             multi_instance=False,
             logo_url="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/orchestrator/kubernetes.png",
         ),

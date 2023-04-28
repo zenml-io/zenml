@@ -1083,6 +1083,16 @@ def generate_stack_component_connect_command(
         type=str,
     )
     @click.option(
+        "--resource-type",
+        "-r",
+        "resource_type",
+        help="The resource type to use with the connector. Only required for "
+        "connectors that are not already configured with a particular resource "
+        "type.",
+        required=False,
+        type=str,
+    )
+    @click.option(
         "--resource-id",
         "-r",
         "resource_id",
@@ -1121,6 +1131,9 @@ def generate_stack_component_connect_command(
         Args:
             name_id_or_prefix: The name of the stack component to connect.
             connector_id: The ID of the connector to use.
+            resource_type: The resource type to use with the connector. Only
+                required for connectors that are not already configured with a
+                particular resource type.
             resource_id: The resource ID to use with the connector. Only
                 required for multi-instance connectors that are not already
                 configured with a particular resource ID.

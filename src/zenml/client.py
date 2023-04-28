@@ -27,7 +27,6 @@ from typing import (
     Mapping,
     Optional,
     Set,
-    Tuple,
     Type,
     TypeVar,
     Union,
@@ -98,6 +97,7 @@ from zenml.models import (
     SecretUpdateModel,
     ServiceConnectorFilterModel,
     ServiceConnectorRequestModel,
+    ServiceConnectorResourceListModel,
     ServiceConnectorResponseModel,
     ServiceConnectorUpdateModel,
     StackFilterModel,
@@ -4357,7 +4357,7 @@ class Client(metaclass=ClientMetaClass):
         labels: Optional[Dict[str, str]] = None,
         verify: bool = True,
         register: bool = True,
-    ) -> "ServiceConnectorResponseModel":
+    ) -> Union["ServiceConnectorResponseModel", "ServiceConnector"]:
         """Validate and/or update a service connector.
 
         Args:
@@ -4382,7 +4382,8 @@ class Client(metaclass=ClientMetaClass):
             register: Whether to register the new service connector or not.
 
         Returns:
-            The updated service connector.
+            The model of the updated service connector or the updated service
+            connector instance.
 
         Raises:
             EntityExistsError: If the new name is already taken.
@@ -4392,95 +4393,52 @@ class Client(metaclass=ClientMetaClass):
             service_connector_registry,
         )
 
+        connector_instance: Optional[ServiceConnector] = None
+
         # Get the existing service connector model
         service_connector = self.get_service_connector(
             name_id_or_prefix=name_id_or_prefix,
             allow_name_prefix_match=False,
         )
 
+        update_model = ServiceConnectorUpdateModel(  # type: ignore[call-arg]
+            name=name,
+            type=type,
+            auth_method=auth_method,
+            resource_types=[resource_types] if resource_type else None,
+            configuration=configuration,
+            secrets=secrets,
+            resource_id=resource_id,
+            description=description,
+            expiration_seconds=expiration_seconds,
+            is_shared=is_shared,
+            labels=labels,
+            workspace=self.active_workspace.id,
+            user=self.active_user.id,
+        )
+
         # Update the existing model in place with the new values, we'll use this
         # to validate the new configuration and credentials, if requested, and
         # to populate the update model
-        if name is not None:
-            shared_status = is_shared or service_connector.is_shared
-
-            existing_connectors = self.list_service_connectors(
-                name=name,
-                is_shared=shared_status,
-            )
-            if existing_connectors.total > 0:
-                raise EntityExistsError(
-                    f"There are already existing "
-                    f"{'shared' if shared_status else 'unshared'} service "
-                    f"connectors with the name '{name}'."
-                )
-            service_connector.name = name
-
-        if is_shared is not None:
-            existing_connectors = self.list_service_connectors(
-                name=service_connector.name, is_shared=is_shared
-            )
-            if any(
-                [
-                    e.id != service_connector.id
-                    for e in existing_connectors.items
-                ]
-            ):
-                raise EntityExistsError(
-                    f"There are already existing shared service connectors "
-                    f"with the name '{service_connector.name}'"
-                )
-            service_connector.is_shared = is_shared
-
-        service_connector.type = type or service_connector.type
-        service_connector.auth_method = (
-            auth_method or service_connector.auth_method
-        )
-        service_connector.resource_types = (
-            [resource_type]
-            if resource_type
-            else service_connector.resource_types
-        )
-        service_connector.configuration = (
-            configuration
-            if configuration is not None
-            else service_connector.configuration
-        )
-        service_connector.secrets = (
-            secrets if secrets is not None else service_connector.secrets
-        )
-        service_connector.resource_id = (
-            None
-            if resource_id == ""
-            else resource_id or service_connector.resource_id
-        )
-        service_connector.description = (
-            description or service_connector.description
-        )
-        service_connector.expiration_seconds = (
-            expiration_seconds or service_connector.expiration_seconds
-        )
-        service_connector.labels = (
-            labels if labels is not None else service_connector.labels
-        )
+        service_connector.apply_update(update_model)
 
         if verify:
 
             # This will also check that a connector class is registered for the
             # given type and that the configuration is valid
-            connector = (
+            connector_instance = (
                 service_connector_registry.instantiate_service_connector(
                     model=service_connector
                 )
             )
-            connector.verify()
+            connector_instance.verify()
 
             # Get an updated model from the connector instance and treat it
             # as the update model
             assert service_connector.user is not None
             update_model = cast(
                 ServiceConnectorUpdateModel,
-                connector.to_model(
+                connector_instance.to_model(
                     name=service_connector.name,
                     user=service_connector.user.id,
                     workspace=service_connector.workspace.id,
@@ -4490,26 +4448,8 @@ class Client(metaclass=ClientMetaClass):
                 ),
             )
 
-        elif not register:
-            return service_connector
-
-        else:
-            # Create an update model from the existing model
-            update_model = ServiceConnectorUpdateModel(
-                name=service_connector.name,
-                type=service_connector.type,
-                auth_method=service_connector.auth_method,
-                resource_types=service_connector.resource_types,
-                configuration=service_connector.configuration,
-                secrets=service_connector.secrets,
-                resource_id=service_connector.resource_id,
-                description=service_connector.description,
-                expiration_seconds=service_connector.expiration_seconds,
-                is_shared=service_connector.is_shared,
-                labels=service_connector.labels,
-                workspace=self.active_workspace.id,
-                user=self.active_user.id,
-            )
+        if not register:
+            return connector_instance or service_connector
 
         # Send the updated service connector to the ZenStore
         return self.zen_store.update_service_connector(
@@ -4593,7 +4533,7 @@ class Client(metaclass=ClientMetaClass):
         name_id_or_prefix: Union[UUID, str],
         resource_type: Optional[str] = None,
         resource_id: Optional[str] = None,
-    ) -> Tuple[str, List[str]]:
+    ) -> ServiceConnectorResourceListModel:
         """List all resources that a connector can give access to.
 
         Args:
@@ -4602,8 +4542,7 @@ class Client(metaclass=ClientMetaClass):
             resource_id: The ID of a particular resource to check.
 
         Returns:
-            The resource type and list of resource IDs that the connector can
-            give access to.
+            The resources that the connector can give access to.
         """
         from zenml.service_connectors.service_connector_registry import (
             service_connector_registry,
@@ -4652,8 +4591,46 @@ class Client(metaclass=ClientMetaClass):
                 to configure the client.
 
         Returns:
-            The service connector instance that was used to configure the local
-            client.
+            The client service connector instance that was used to configure the
+            local client.
+        """
+        client_connector = self.get_client_service_connector(
+            name_id_or_prefix=name_id_or_prefix,
+            resource_type=resource_type,
+            resource_id=resource_id,
+        )
+
+        client_connector.configure_local_client(
+            **kwargs,
+        )
+
+        return client_connector
+
+    def get_client_service_connector(
+        self,
+        name_id_or_prefix: Union[UUID, str],
+        resource_type: Optional[str] = None,
+        resource_id: Optional[str] = None,
+    ) -> "ServiceConnector":
+        """Get a client service connector instance to use with a local client.
+
+        Args:
+            name_id_or_prefix: The name, id or prefix of the service connector
+                to use.
+            resource_type: The type of the resource to connect to. If not
+                provided, the resource type from the service connector
+                configuration will be used.
+            resource_id: The ID of a particular resource instance to configure
+                the local client to connect to. Use this with resource types
+                that allow multiple instances. If the connector instance is
+                already configured with a resource ID that is not the same or
+                equivalent to the one requested, or if the resource type does
+                not support multiple instances, a `ValueError` exception is
+                raised.
+
+        Returns:
+            The client service connector instance that can be used to connect
+            to the resource.
         """
         from zenml.service_connectors.service_connector_registry import (
             service_connector_registry,
@@ -4671,18 +4648,14 @@ class Client(metaclass=ClientMetaClass):
             model=service_connector
         )
 
-        # We need a client connector to use this functionality
+        # Fetch the client connector for the resource
         client_connector = connector.get_client_connector(
             resource_type=resource_type,
             resource_id=resource_id,
         )
 
-        client_connector.configure_local_client(
-            **kwargs,
-        )
-
-        return connector
-
+        return client_connector
+    
     # ---- utility prefix matching get functions -----
 
     @staticmethod

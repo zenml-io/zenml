@@ -27,11 +27,15 @@ from pydantic import (
 from zenml.client import Client
 from zenml.exceptions import AuthorizationException
 from zenml.logger import get_logger
-from zenml.models.service_connector_models import (
+from zenml.models import (
     ServiceConnectorBaseModel,
     ServiceConnectorRequestModel,
+    ServiceConnectorResourceListModel,
     ServiceConnectorResponseModel,
+    ServiceConnectorTypedResourceListModel,
     ServiceConnectorTypeModel,
+    UserResponseModel,
+    WorkspaceResponseModel,
 )
 
 logger = get_logger(__name__)
@@ -386,6 +390,26 @@ class ServiceConnector(BaseModel):
 
         return self
 
+    @property
+    def supported_resource_types(self) -> List[str]:
+        """The resource types supported by this connector instance.
+
+        Returns:
+            A list with the resource types supported by this connector instance.
+        """
+        spec = self.get_type()
+
+        # An unset resource type means that the connector is configured to
+        # access any of the supported resource types (a multi-type connector).
+        # In that case, we report all the supported resource types to
+        # allow it to be discovered as compatible with any of them.
+        if self.resource_type:
+            resource_types = [self.resource_type]
+        else:
+            resource_types = list(spec.resource_type_map.keys())
+
+        return resource_types
+
     @classmethod
     def from_model(
         cls, model: "ServiceConnectorBaseModel"
@@ -483,9 +507,9 @@ class ServiceConnector(BaseModel):
 
     def to_model(
         self,
-        name: str,
         user: UUID,
         workspace: UUID,
+        name: Optional[str] = None,
         is_shared: bool = False,
         description: str = "",
         labels: Optional[Dict[str, str]] = None,
@@ -520,14 +544,11 @@ class ServiceConnector(BaseModel):
                 f"connector configuration is not valid: {e}"
             ) from e
 
-        # An unset resource type means that the connector is configured to
-        # access any of the supported resource types (a multi-type connector).
-        # In that case, we save all the supported resource types in the model to
-        # allow it to be discovered as compatible with any of them.
-        if self.resource_type:
-            resource_types = [self.resource_type]
-        else:
-            resource_types = list(spec.resource_type_map.keys())
+        name = name or self.name
+        if name is None:
+            raise ValueError(
+                "connector configuration is not valid: name must be set"
+            )
 
         return ServiceConnectorRequestModel(
             type=self.get_type().type,
@@ -537,7 +558,75 @@ class ServiceConnector(BaseModel):
             workspace=workspace,
             is_shared=is_shared,
             auth_method=self.auth_method,
-            resource_types=resource_types,
+            resource_types=self.supported_resource_types,
+            resource_id=self.resource_id,
+            configuration=self.config.non_secret_values,
+            secrets=self.config.secret_values,
+            expires_at=self.expires_at,
+            expiration_seconds=self.expiration_seconds,
+            labels=labels or {},
+        )
+
+    def to_response_model(
+        self,
+        workspace: WorkspaceResponseModel,
+        user: Optional[UserResponseModel] = None,
+        name: Optional[str] = None,
+        id: Optional[UUID] = None,
+        is_shared: bool = False,
+        description: str = "",
+        labels: Optional[Dict[str, str]] = None,
+    ) -> "ServiceConnectorResponseModel":
+        """Convert the connector instance to a service connector response model.
+
+        Args:
+            workspace: The workspace that the connector belongs to.
+            user: The user that created the connector.
+            name: The name of the connector.
+            id: The ID of the connector.
+            is_shared: Whether the connector is shared with other users.
+            description: The description of the connector.
+            labels: The labels of the connector.
+
+        Returns:
+            The service connector response model corresponding to the connector
+            instance.
+
+        Raises:
+            ValueError: If the connector configuration is not valid.
+        """
+        spec = self.get_type()
+        try:
+            # Validate the connector configuration.
+            spec.find_resource_specifications(
+                self.auth_method,
+                self.resource_type,
+                self.resource_id,
+            )
+        except (KeyError, ValueError) as e:
+            raise ValueError(
+                f"connector configuration is not valid: {e}"
+            ) from e
+
+        name = name or self.name
+        id = id or self.id
+        if name is None or id is None:
+            raise ValueError(
+                "connector configuration is not valid: name and ID must be set"
+            )
+
+        return ServiceConnectorResponseModel(
+            id=id,
+            created=datetime.utcnow(),
+            updated=datetime.utcnow(),
+            type=self.get_type().type,
+            name=name,
+            description=description,
+            user=user,
+            workspace=workspace,
+            is_shared=is_shared,
+            auth_method=self.auth_method,
+            resource_types=self.supported_resource_types,
             resource_id=self.resource_id,
             configuration=self.config.non_secret_values,
             secrets=self.config.secret_values,
@@ -866,24 +955,25 @@ class ServiceConnector(BaseModel):
         self,
         resource_type: Optional[str] = None,
         resource_id: Optional[str] = None,
-    ) -> Tuple[str, List[str]]:
-        """List the IDs of all resource instances that the connector can access.
+    ) -> ServiceConnectorResourceListModel:
+        """List all resources that the connector can access.
 
-        This method retrieves the IDs of all resource instances that the
-        connector can access. The connector must be configured with valid
+        This method retrieves the types and IDs of all resources that
+        the connector can access. The connector must be configured with valid
         credentials. If the connector is configured with a resource type, it
-        will only list the IDs of resources of that type. Otherwise, the
-        `resource_type` argument is mandatory.
+        will only list the IDs of resources of that type. Otherwise, it will
+        list the IDs of resources of all supported types grouped by resource
+        type.
 
         Args:
             resource_type: The type of the resources to list. If the connector
                 instance is already configured with a resource type, this
                 argument must be the same as the one configured if supplied.
-                Otherwise this argument is mandatory.
             resource_id: The ID of a particular resource instance to filter by.
 
         Returns:
-            A tuple containing the resource type and a list of resource IDs.
+            A list of resource list models containing the resource types and
+            resource IDs of all resources that the connector can access.
 
         Raises:
             ValueError: If the connector is not configured with valid
@@ -895,20 +985,44 @@ class ServiceConnector(BaseModel):
             resource_type, resource_id = self.validate_runtime_args(
                 resource_type=resource_type,
                 resource_id=resource_id,
-                require_resource_type=True,
+                require_resource_type=False,
                 require_resource_id=False,
             )
 
-            assert resource_type is not None
-            if self.resource_id is not None:
-                # If the connector is configured with a resource ID, it can
-                # only access that resource instance.
-                return resource_type, [self.resource_id]
+            if resource_type is not None:
+                resource_types = [resource_type]
+            else:
+                resource_types = self.supported_resource_types
 
-            return resource_type, self._list_resource_ids(
-                resource_type=resource_type,
-                resource_id=resource_id,
+            spec = self.get_type()
+
+            resource_list = (
+                ServiceConnectorResourceListModel.from_connector_type_model(
+                    spec
+                )
             )
+            resource_list.id = self.id
+            resource_list.name = self.name
+
+            for resource_type in resource_types:
+                resource_type_spec = spec.resource_type_map[resource_type]
+
+                typed_resources = ServiceConnectorTypedResourceListModel.from_resource_type_model(
+                    resource_type_spec
+                )
+
+                resource_list.resources.append(typed_resources)
+
+                if resource_type_spec.multi_instance:
+                    if resource_type_spec.instance_discovery:
+                        typed_resources.resource_ids = self._list_resource_ids(
+                            resource_type=resource_type,
+                            resource_id=resource_id,
+                        )
+                    elif resource_id:
+                        typed_resources.resource_ids = [resource_id]
+
+            return resource_list
         except ValueError as exc:
             logger.exception("connector validation failed")
             raise ValueError(

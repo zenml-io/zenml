@@ -98,8 +98,10 @@ from zenml.models.service_connector_models import (
     ServiceConnectorFilterModel,
     ServiceConnectorRequestModel,
     ServiceConnectorRequirements,
+    ServiceConnectorResourceListModel,
     ServiceConnectorResponseModel,
     ServiceConnectorTypeModel,
+    ServiceConnectorTypedResourceListModel,
     ServiceConnectorUpdateModel,
 )
 from zenml.models.step_run_models import (
@@ -316,7 +318,9 @@ __all__ = [
     "ServiceConnectorFilterModel",
     "ServiceConnectorRequestModel",
     "ServiceConnectorRequirements",
+    "ServiceConnectorResourceListModel",
     "ServiceConnectorResponseModel",
+    "ServiceConnectorTypedResourceListModel",
     "ServiceConnectorUpdateModel",
     "StackRequestModel",
     "StackResponseModel",

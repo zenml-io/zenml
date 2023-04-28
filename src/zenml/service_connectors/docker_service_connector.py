@@ -92,8 +92,14 @@ formats:
 """,
             auth_methods=DockerAuthenticationMethods.values(),
             # Request a Docker repository to be configured in the
-            # connector or provided by the consumer
+            # connector or provided by the consumer.
             multi_instance=True,
+            # Does not support listing all Docker repositories that can be
+            # accessed with a given set of credentials. A Docker repository
+            # must be manually configured in the connector or provided by the
+            # consumer (i.e. cannot be selected from a list of available
+            # repositories).
+            instance_discovery=True,
             logo_url="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/container_registry/docker.png",
         ),
     ],

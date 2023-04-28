@@ -67,7 +67,7 @@ logger = get_logger(__name__)
 AWS_CONNECTOR_TYPE = "aws"
 AWS_RESOURCE_TYPE = "aws"
 S3_RESOURCE_TYPE = "s3"
-EKS_KUBE_API_EXPIRATION = 60
+EKS_KUBE_API_TOKEN_EXPIRATION = 60
 
 
 class AWSSecretKey(AuthenticationConfig):
@@ -354,6 +354,7 @@ session can then be used to create boto3 clients for any particular AWS service.
             # Don't request an AWS specific resource instance ID, given that
             # the connector provides a generic boto3 session instance.
             multi_instance=False,
+            instance_discovery=False,
             logo_url="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/container_registry/aws.png",
         ),
         ResourceTypeModel(
@@ -382,6 +383,9 @@ formats:
             # Request an S3 bucket to be configured in the
             # connector or provided by the consumer
             multi_instance=True,
+            # Supports listing all S3 buckets that can be accessed with a given
+            # set of credentials
+            instance_discovery=True,
             logo_url="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/container_registry/aws.png",
         ),
         ResourceTypeModel(
@@ -416,10 +420,13 @@ EKS clusters in the AWS region that it is configured to use.
             # Request an EKS cluster name to be configured in the
             # connector or provided by the consumer
             multi_instance=True,
+            # Supports listing all EKS clusters that can be accessed with a
+            # given set of credentials
+            instance_discovery=True,
             logo_url="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/orchestrator/kubernetes.png",
         ),
         ResourceTypeModel(
-            name="AWS ECR container registry",
+            name="AWS ECR container repository",
             resource_type=DOCKER_RESOURCE_TYPE,
             description="""
 Allows users to access an ECR repository as a standard Docker registry resource.
@@ -452,9 +459,12 @@ ECR repository names are region scoped. The connector can only be used to access
 ECR repositories in the AWS region that it is configured to use.
 """,
             auth_methods=AWSAuthenticationMethods.values(),
-            # Request an ECR registry to be configured in the
+            # Request an ECR repository to be configured in the
             # connector or provided by the consumer
             multi_instance=True,
+            # Supports listing all ECR repositories that can be accessed with a
+            # given set of credentials
+            instance_discovery=True,
             logo_url="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/container_registry/docker.png",
         ),
     ],
@@ -741,7 +751,7 @@ class AWSServiceConnector(ServiceConnector):
         session: boto3.Session,
         cluster_id: str,
         region: str,
-    ) -> Tuple[str, datetime.datetime]:
+    ) -> str:
         """Generate a bearer token for authenticating to the EKS API server.
 
         Based on: https://github.com/kubernetes-sigs/aws-iam-authenticator/blob/master/README.md#api-authorization-from-outside-a-cluster
@@ -753,8 +763,7 @@ class AWSServiceConnector(ServiceConnector):
             region: The AWS region the EKS cluster is in.
 
         Returns:
-            A bearer token for authenticating to the EKS API server and the
-            expiration time of the token.
+            A bearer token for authenticating to the EKS API server.
         """
         client = session.client("sts", region_name=region)
         service_id = client.meta.service_model.service_id
@@ -776,15 +785,10 @@ class AWSServiceConnector(ServiceConnector):
             "context": {},
         }
 
-        # EKS Kubernetes API bearer tokens cannot have an expiration time
-        # greater than 60 seconds.
-        expires_at = datetime.datetime.now(
-            datetime.timezone.utc
-        ) + datetime.timedelta(seconds=EKS_KUBE_API_EXPIRATION)
         signed_url = signer.generate_presigned_url(
             params,
             region_name=region,
-            expires_in=EKS_KUBE_API_EXPIRATION,
+            expires_in=EKS_KUBE_API_TOKEN_EXPIRATION,
             operation_name="",
         )
 
@@ -793,7 +797,7 @@ class AWSServiceConnector(ServiceConnector):
         ).decode("utf-8")
 
         # remove any base64 encoding padding:
-        return "k8s-aws-v1." + re.sub(r"=*", "", base64_url), expires_at
+        return "k8s-aws-v1." + re.sub(r"=*", "", base64_url)
 
     def _parse_s3_resource_id(self, resource_id: str) -> str:
         """Validate and convert an S3 resource ID to an S3 bucket name.
@@ -1259,7 +1263,7 @@ class AWSServiceConnector(ServiceConnector):
                 ) from err
 
         else:
-            # Check that the resource ID exists
+            # Verify by checking that the resource exists
             resource_ids = self._list_resource_ids(
                 resource_type=resource_type,
                 resource_id=resource_id,
@@ -1291,9 +1295,6 @@ class AWSServiceConnector(ServiceConnector):
                 listing resource IDs for the configured resource type or
                 authentication method.
         """
-        if resource_type == AWS_RESOURCE_TYPE:
-            return []
-
         # Get an authenticated boto3 session
         session, _ = self._authenticate(
             self.auth_method,
@@ -1301,6 +1302,9 @@ class AWSServiceConnector(ServiceConnector):
             resource_id=resource_id,
         )
         assert isinstance(session, boto3.Session)
+
+        if resource_type == AWS_RESOURCE_TYPE:
+            return []
 
         if resource_type == S3_RESOURCE_TYPE:
             s3_client = session.client(
@@ -1428,9 +1432,9 @@ class AWSServiceConnector(ServiceConnector):
         if self.name:
             connector_name = self.name
         if resource_id:
-            connector_name += f"({resource_id} client)"
+            connector_name += f" ({resource_type} | {resource_id} client)"
         else:
-            connector_name += f"({resource_type} client)"
+            connector_name += f" ({resource_type} client)"
 
         logger.debug(f"Getting client connector for {connector_name}")
 
@@ -1573,7 +1577,7 @@ class AWSServiceConnector(ServiceConnector):
                 ) from e
 
             try:
-                user_token, expires_at = self._get_eks_bearer_token(
+                user_token = self._get_eks_bearer_token(
                     session=session,
                     cluster_id=cluster_name,
                     region=self.config.region,

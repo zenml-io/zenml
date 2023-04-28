@@ -68,6 +68,13 @@ class ResourceTypeModel(BaseModel):
         "be supplied either when the connector is configured or when it is "
         "used to access the resource.",
     )
+    instance_discovery: bool = Field(
+        default=False,
+        title="Models if the connector can be used to discover and list "
+        "instances of this resource type. If set to True, the connector "
+        "includes support to list all resource instances for this resource "
+        "type. Not applicable if multi_instance is set to False.",
+    )
     logo_url: Optional[str] = Field(
         default=None,
         title="Optionally, a url pointing to a png,"
@@ -529,6 +536,124 @@ class ServiceConnectorRequirements(BaseModel):
         return True, ""
 
 
+class ServiceConnectorTypedResourceListModel(BaseModel):
+    """Service connector typed resources list.
+
+    Lists the typed resource instances that a service connector
+    can provide access to.
+    """
+
+    resource_type_name: str = Field(
+        title="User readable name for the resource type.",
+    )
+
+    resource_type: str = Field(
+        title="The type of resource that the service connector instance can "
+        "be used to access.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
+
+    logo_url: Optional[str] = Field(
+        default=None,
+        title="A url pointing to a png, svg or jpg representation of the "
+        "resource type.",
+    )
+
+    multi_instance: bool = Field(
+        title="Whether the resource type supports multiple instances.",
+    )
+
+    instance_discovery: bool = Field(
+        title="Whether the connector supports list all resource instances for "
+        "this resource type. Not applicable if multi_instance is set to False. "
+        "If True, the resource_ids field is populated, otherwise it is empty."
+    )
+
+    resource_ids: List[str] = Field(
+        default_factory=list,
+        title="The resource IDs of the resource instances that the service "
+        "connector instance can be used to access.",
+    )
+
+    @classmethod
+    def from_resource_type_model(
+        cls, resource_type_model: ResourceTypeModel
+    ) -> "ServiceConnectorTypedResourceListModel":
+        """Initialize a typed resource list model from a resource type model.
+
+        Args:
+            resource_type_model: The resource type model.
+
+        Returns:
+            A typed resource list model instance.
+        """
+        return cls(
+            resource_type_name=resource_type_model.name,
+            resource_type=resource_type_model.resource_type,
+            logo_url=resource_type_model.logo_url,
+            multi_instance=resource_type_model.multi_instance,
+            instance_discovery=resource_type_model.instance_discovery,
+        )
+
+
+class ServiceConnectorResourceListModel(BaseModel):
+    """Service connector resources list.
+
+    Lists the resource types and resource instances that a service connector
+    can provide access to.
+    """
+
+    id: Optional[UUID] = Field(
+        default=None,
+        title="The connector ID.",
+    )
+
+    name: Optional[str] = Field(
+        default=None,
+        title="The connector instance name.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
+
+    connector_type: str = Field(
+        title="The type of service connector.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
+
+    connector_type_name: str = Field(
+        title="User readable name for the service connector type.",
+    )
+
+    logo_url: Optional[str] = Field(
+        default=None,
+        title="A url pointing to a png, svg or jpg representation of the "
+        "connector's logo.",
+    )
+
+    resources: List[ServiceConnectorTypedResourceListModel] = Field(
+        default_factory=list,
+        title="The list of resources that the connector instance can be used "
+        "to gain access to, grouped by resource type.",
+    )
+
+    @classmethod
+    def from_connector_type_model(
+        cls, connector_type_model: ServiceConnectorTypeModel
+    ) -> "ServiceConnectorResourceListModel":
+        """Initialize a resource list model from a connector type model.
+
+        Args:
+            connector_type_model: The connector type model.
+
+        Returns:
+            A resource list model instance.
+        """
+        return cls(
+            connector_type_name=connector_type_model.name,
+            connector_type=connector_type_model.type,
+            logo_url=connector_type_model.logo_url,
+        )
+
+
 # -------- #
 # RESPONSE #
 # -------- #
@@ -563,6 +688,96 @@ class ServiceConnectorResponseModel(
         else:
             metadata["resource_types"] = ", ".join(self.resource_types)
         return metadata
+
+    def apply_update(
+        self, update_model: "ServiceConnectorUpdateModel"
+    ) -> None:
+        """Apply an update model to this service connector model.
+
+        Args:
+            update_model: The update model.
+        """
+        self.name = update_model.name or self.name
+        self.is_shared = (
+            update_model.is_shared
+            if update_model.is_shared is not None
+            else (self.is_shared)
+        )
+
+        self.type = update_model.type or self.type
+        self.auth_method = update_model.auth_method or self.auth_method
+        self.resource_types = (
+            update_model.resource_types
+            if update_model.resource_types is not None
+            else self.resource_types
+        )
+        self.configuration = (
+            update_model.configuration
+            if update_model.configuration is not None
+            else self.configuration
+        )
+        self.secrets = (
+            update_model.secrets
+            if update_model.secrets is not None
+            else self.secrets
+        )
+        self.resource_id = (
+            None
+            if update_model.resource_id == ""
+            else update_model.resource_id or self.resource_id
+        )
+        self.description = update_model.description or self.description
+        self.expiration_seconds = (
+            update_model.expiration_seconds or self.expiration_seconds
+        )
+        self.expires_at = update_model.expires_at or self.expires_at
+        self.labels = (
+            update_model.labels
+            if update_model.labels is not None
+            else self.labels
+        )
+
+    @classmethod
+    def from_request_model(
+        cls,
+        request_model: "ServiceConnectorRequestModel",
+        secret_id: UUID,
+        resource_types: List[str],
+        connector_type: str,
+        logo_url: Optional[str] = None,
+    ) -> "ServiceConnectorResponseModel":
+        """Initialize a response model from a request model.
+
+        Args:
+            request_model: The request model.
+            secret_id: The ID of the secret that contains the service connector
+                secret configuration values.
+            resource_types: The list of resource types that the service
+                connector can provide access to.
+            connector_type: The type of service connector.
+            logo_url: A url pointing to a png, svg or jpg representation of the
+                connector's logo.
+
+        Returns:
+            A response model instance.
+        """
+        return cls(
+            id=uuid.uuid4(),
+            name=request_model.name,
+            is_shared=request_model.is_shared,
+            secret_id=secret_id,
+            type=connector_type,
+            auth_method=request_model.auth_method,
+            resource_types=resource_types,
+            configuration=request_model.configuration,
+            secrets=request_model.secrets,
+            resource_id=request_model.resource_id,
+            description=request_model.description,
+            expiration_seconds=request_model.expiration_seconds,
+            expires_at=request_model.expires_at,
+            labels=request_model.labels,
+            logo_url=logo_url,
+        )
 
 
 # ------ #

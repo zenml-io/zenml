@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Endpoint definitions for workspaces."""
-from typing import Dict, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Security
@@ -28,7 +28,7 @@ from zenml.constants import (
     RUNS,
     SCHEDULES,
     SECRETS,
-    SERVICE_CONNECTOR_VERIFY,
+    SERVICE_CONNECTOR_RESOURCES,
     SERVICE_CONNECTORS,
     STACK_COMPONENTS,
     STACKS,
@@ -63,8 +63,11 @@ from zenml.models import (
     RunMetadataResponseModel,
     ScheduleRequestModel,
     ScheduleResponseModel,
+    SecretRequestModel,
+    SecretResponseModel,
     ServiceConnectorFilterModel,
     ServiceConnectorRequestModel,
+    ServiceConnectorResourceListModel,
     ServiceConnectorResponseModel,
     StackFilterModel,
     StackRequestModel,
@@ -79,7 +82,6 @@ from zenml.models import (
     WorkspaceUpdateModel,
 )
 from zenml.models.page_model import Page
-from zenml.models.secret_models import SecretRequestModel, SecretResponseModel
 from zenml.service_connectors.service_connector_registry import (
     service_connector_registry,
 )
@@ -1182,6 +1184,7 @@ def list_workspace_service_connectors(
 def create_service_connector(
     workspace_name_or_id: Union[str, UUID],
     connector: ServiceConnectorRequestModel,
+    verify: bool = True,
     auth_context: AuthContext = Security(
         authorize, scopes=[PermissionType.WRITE]
     ),
@@ -1191,6 +1194,10 @@ def create_service_connector(
     Args:
         workspace_name_or_id: Name or ID of the workspace.
         connector: Service connector to register.
+        verify: Whether to verify the service connector before registering it.
+            This requires the service connector implementation to be installed
+            on the ZenML server, otherwise a 501 Not Implemented error will be
+            returned.
         auth_context: Authentication context.
 
     Returns:
@@ -1215,79 +1222,75 @@ def create_service_connector(
             "is not supported."
         )
 
-    # If the connector type is available in the server, we can use it to
-    # validate the connector configuration before it goes into the database.
-    try:
+    if verify:
         service_connector_registry.instantiate_service_connector(
             model=connector
         )
-    except NotImplementedError:
-        # The connector implementation is not present in the server, so we
-        pass
 
     return zen_store().create_service_connector(service_connector=connector)
 
 
-@router.put(
-    WORKSPACES
-    + "/{workspace_name_or_id}"
-    + SERVICE_CONNECTORS
-    + SERVICE_CONNECTOR_VERIFY,
-    response_model=ServiceConnectorResponseModel,
-    responses={401: error_response, 409: error_response, 422: error_response},
+@router.get(
+    WORKSPACES + "/{workspace_name_or_id}" + SERVICE_CONNECTOR_RESOURCES,
+    response_model=List[ServiceConnectorResourceListModel],
+    responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-def verify_service_connector(
+def list_service_type_resources(
     workspace_name_or_id: Union[str, UUID],
-    connector: ServiceConnectorRequestModel,
+    connector_type: Optional[str],
+    resource_type: Optional[str],
     auth_context: AuthContext = Security(
-        authorize, scopes=[PermissionType.WRITE]
+        authorize, scopes=[PermissionType.READ]
     ),
-) -> ServiceConnectorRequestModel:
-    """Verifies a service connector.
+) -> List[ServiceConnectorResourceListModel]:
+    """List all resources that all service connectors have access to.
 
     Args:
-        workspace_name_or_id: Name or ID of the workspace.
-        connector: Service connector to register.
+        connector_type: the service connector type identifier to filter by.
+        resource_type: the resource type identifier to filter by.
         auth_context: Authentication context.
 
     Returns:
-        The created service connector.
-
-    Raises:
-        IllegalOperationError: If the workspace or user specified in the service
-            connector does not match the current workspace or authenticated
-            user.
+        The matching list of resources that all configured service
+        connectors have access to.
     """
     workspace = zen_store().get_workspace(workspace_name_or_id)
 
-    if connector.workspace != workspace.id:
-        raise IllegalOperationError(
-            "Creating connectors outside of the workspace scope "
-            f"of this endpoint `{workspace_name_or_id}` is "
-            f"not supported."
-        )
-    if connector.user != auth_context.user.id:
-        raise IllegalOperationError(
-            "Creating connectors for a user other than yourself "
-            "is not supported."
-        )
+    connector_filter_model = ServiceConnectorFilterModel(
+        type=connector_type,
+        resource_type=resource_type,
+    )
+    connector_filter_model.set_scope_workspace(workspace.id)
+    connector_filter_model.set_scope_user(user_id=auth_context.user.id)
 
-    connector_instance = (
-        service_connector_registry.instantiate_service_connector(
-            model=connector
-        )
+    connectors = (
+        zen_store()
+        .list_service_connectors(filter_model=connector_filter_model)
+        .items
     )
 
-    connector_instance.verify()
+    # Of the returned connectors, we only process those that we can
+    # instantiate on the server, i.e. those that have a connector
+    # type registered in the server.
+    connectors = [
+        connector
+        for connector in connectors
+        if service_connector_registry.is_registered(connector.type)
+    ]
 
-    # Return an updated version of the connector with the updated
-    # configuration.
-    return connector_instance.to_model(
-        name=connector.name,
-        user=connector.user,
-        workspace=connector.workspace,
-        is_shared=connector.is_shared,
-        description=connector.description,
-        labels=connector.labels,
-    )
+    resource_list: List[ServiceConnectorResourceListModel] = []
+
+    for connector in connectors:
+        connector_instance = (
+            service_connector_registry.instantiate_service_connector(
+                model=connector
+            )
+        )
+        resource_list.append(
+            connector_instance.list_resource_ids(
+                resource_type=resource_type,
+            )
+        )
+
+    return resource_list

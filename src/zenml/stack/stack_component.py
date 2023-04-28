@@ -468,6 +468,21 @@ class StackComponent:
         else:
             return self.settings_class()
 
+    def connector_has_expired(self) -> bool:
+        """Checks whether the connector linked to this stack component has expired.
+
+        Returns:
+            Whether the connector linked to this stack component has expired.
+        """
+        if self.connector is None:
+            # The stack component isn't linked to a connector
+            return False
+
+        if self._connector_instance is None:
+            return True
+
+        return self._connector_instance.has_expired()
+
     def get_connector(self) -> Optional["ServiceConnector"]:
         """Returns the connector linked to this stack component.
 
@@ -488,7 +503,10 @@ class StackComponent:
             return None
 
         if self._connector_instance is not None:
-            return self._connector_instance
+            # If the connector instance is still valid, return it. Otherwise,
+            # we'll try to get a new one.
+            if not self._connector_instance.has_expired:
+                return self._connector_instance
 
         if self.connector_requirements is None:
             raise RuntimeError(
