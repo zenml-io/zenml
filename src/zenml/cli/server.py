@@ -118,7 +118,7 @@ def up(
         image: A custom Docker image to use for the server, when the
             `--docker` flag is set.
         ngrok: An ngrok auth token to use for exposing the ZenML server. Can
-            only be used with local deployments.
+            only be used with non-blocking local deployments.
     """
     with event_handler(
         AnalyticsEvent.ZENML_SERVER_STARTED
@@ -187,16 +187,6 @@ def up(
             "database_type": SQLDatabaseDriver.SQLITE.value,
         }
 
-        url: Optional[str] = None
-        if ngrok and isinstance(server_config, LocalServerDeploymentConfig):
-            try:
-                url = get_or_create_ngrok_tunnel(
-                    ngrok_token=ngrok, port=server_config.port
-                )
-            except ImportError as e:
-                cli_utils.error(str(e))
-            logger.info(f"Exposing ZenML dashboard at {url}.")
-
         if not blocking:
             from zenml.zen_stores.base_zen_store import (
                 DEFAULT_PASSWORD,
@@ -239,8 +229,21 @@ def up(
                     DEFAULT_PASSWORD,
                 )
 
-            if server.status and server.status.url:
-                url = url or server.status.url
+            url: Optional[str] = None
+            if ngrok and isinstance(
+                server.config, LocalServerDeploymentConfig
+            ):
+                try:
+                    url = get_or_create_ngrok_tunnel(
+                        ngrok_token=ngrok, port=server.config.port
+                    )
+                except ImportError as e:
+                    cli_utils.error(str(e))
+                logger.info(f"Exposing ZenML dashboard at {url}.")
+
+            if not url and server.status and server.status.url:
+                url = server.status.url
+            if url:
                 show_dashboard(url)
 
 
