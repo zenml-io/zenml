@@ -103,7 +103,7 @@ def get_pipeline(
     else:
         raise RuntimeError(
             f"Pipeline must be specified as a name (string), a class or an "
-            f"instance of a class. Got type `{type(pipeline)}` instead. "
+            f"instance of a class. Got type `{type(pipeline)}` instead."
         )
 
     # If no version is given, return a `PipelineClassView` that contains all
@@ -160,7 +160,7 @@ class PipelineClassView:
         Returns:
             The number of runs of this pipeline name/class.
         """
-        return sum([version.num_runs for version in self.versions])
+        return sum(version.num_runs for version in self.versions)
 
     @property
     def runs(self) -> List["PipelineRunView"]:
