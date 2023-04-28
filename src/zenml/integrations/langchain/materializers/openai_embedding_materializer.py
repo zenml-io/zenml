@@ -28,7 +28,7 @@ else:
 
 
 class LangchainOpenaiEmbeddingMaterializer(CloudpickleMaterializer):
-    """Handle langchain openai embedding objects."""
+    """Handle langchain OpenAI embedding objects."""
 
     ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.MODEL
     ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (OpenAIEmbeddings,)
