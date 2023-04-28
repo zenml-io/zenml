@@ -1,8 +1,8 @@
-"""Add service connectors [142e105a3f9a].
+"""Add service connectors [a7ae010088cb].
 
-Revision ID: 142e105a3f9a
-Revises: 0.38.0
-Create Date: 2023-04-27 22:34:29.811637
+Revision ID: a7ae010088cb
+Revises: fbd7f18ced1e
+Create Date: 2023-04-28 16:10:58.623233
 
 """
 import sqlalchemy as sa
@@ -10,8 +10,8 @@ import sqlmodel
 from alembic import op
 
 # revision identifiers, used by Alembic.
-revision = "142e105a3f9a"
-down_revision = "0.38.0"
+revision = "a7ae010088cb"
+down_revision = "fbd7f18ced1e"
 branch_labels = None
 depends_on = None
 

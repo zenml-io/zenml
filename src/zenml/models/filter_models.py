@@ -742,7 +742,6 @@ class BaseFilterModel(BaseModel):
         else:
             raise RuntimeError("No valid logical operator was supplied.")
 
-<<<<<<< HEAD
     def apply_filter(
         self,
         query: Union["Select[AnySchema]", "SelectOfScalar[AnySchema]"],
@@ -763,21 +762,6 @@ class BaseFilterModel(BaseModel):
             query = query.where(filters)
 
         return query
-=======
-    def custom_filter(self, k: str) -> bool:
-        """Checks if it's a string field.
-
-        Args:
-            k: The key to check.
-
-        Returns:
-            True if the field is a string field, False otherwise.
-        """
-        return (
-            issubclass(str, get_args(cls.__fields__[k].type_))
-            or cls.__fields__[k].type_ is str
-        )
->>>>>>> Implement multi-type service connectors and label filtering
 
 
 class WorkspaceScopedFilterModel(BaseFilterModel):
