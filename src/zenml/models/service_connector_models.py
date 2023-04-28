@@ -124,7 +124,7 @@ class AuthenticationMethodModel(BaseModel):
         "session is valid for. Set to None for authentication sessions and "
         "long-lived credentials that don't expire.",
     )
-    config_class: Type[BaseModel]
+    config_class: Optional[Type[BaseModel]] = None
 
     @root_validator(pre=True)
     def convert_config_schema_to_model(
@@ -138,14 +138,18 @@ class AuthenticationMethodModel(BaseModel):
         Returns:
             The validated values.
         """
-        if "config_schema" in values or "config_class" not in values:
-            # Let the other validators handle the config schema and
-            # config class
-            return values
+        if "config_schema" not in values and "config_class" not in values:
+            raise ValueError(
+                "Either config_schema or config_class must be present in "
+                "the authentication method specification."
+            )
 
-        config_class = values["config_class"]
-        if issubclass(config_class, BaseModel):
-            values["config_schema"] = json.loads(config_class.schema_json())
+        if "config_class" in values:
+            config_class = values["config_class"]
+            if issubclass(config_class, BaseModel):
+                values["config_schema"] = json.loads(
+                    config_class.schema_json()
+                )
 
         return values
 
@@ -619,7 +623,7 @@ class ServiceConnectorResourceListModel(BaseModel):
         max_length=STR_FIELD_MAX_LENGTH,
     )
 
-    connector_type_name: str = Field(
+    connector_type_name: Optional[str] = Field(
         title="User readable name for the service connector type.",
     )
 
@@ -635,22 +639,60 @@ class ServiceConnectorResourceListModel(BaseModel):
         "to gain access to, grouped by resource type.",
     )
 
+    resources_unavailable: bool = Field(
+        default=False,
+        title="Whether the connector instance is unavailable to access any "
+        "resources.",
+    )
+
     @classmethod
-    def from_connector_type_model(
-        cls, connector_type_model: ServiceConnectorTypeModel
+    def from_connector_model(
+        cls,
+        connector_type_model: Optional[ServiceConnectorTypeModel] = None,
+        connector_model: Optional[
+            Union[
+                "ServiceConnectorRequestModel", "ServiceConnectorResponseModel"
+            ]
+        ] = None,
     ) -> "ServiceConnectorResourceListModel":
-        """Initialize a resource list model from a connector type model.
+        """Initialize a resource list model from a connector model.
 
         Args:
             connector_type_model: The connector type model.
+            connector_model: The connector model.
 
         Returns:
             A resource list model instance.
         """
+        id: Optional[UUID] = None
+        if connector_model and isinstance(
+            connector_model, ServiceConnectorResponseModel
+        ):
+            id = connector_model.id
+
+        name = connector_model.name if connector_model else None
+
+        connector_type: Optional[str] = None
+        if connector_model:
+            connector_type = connector_model.type
+        elif connector_type_model:
+            connector_type = connector_type_model.type
+
+        connector_type_name = (
+            connector_type_model.name if connector_type_model else None
+        )
+        logo_url = (
+            connector_type_model.logo_url if connector_type_model else None
+        )
+
+        assert connector_type is not None
+        assert connector_type_name is not None
         return cls(
-            connector_type_name=connector_type_model.name,
-            connector_type=connector_type_model.type,
-            logo_url=connector_type_model.logo_url,
+            id=id,
+            name=name,
+            connector_type=connector_type,
+            connector_type_name=connector_type_name,
+            logo_url=logo_url,
         )
 
 

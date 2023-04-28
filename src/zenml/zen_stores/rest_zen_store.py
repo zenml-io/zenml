@@ -56,6 +56,10 @@ from zenml.constants import (
     RUN_METADATA,
     RUNS,
     SCHEDULES,
+    SERVICE_CONNECTOR_CLIENT,
+    SERVICE_CONNECTOR_RESOURCES,
+    SERVICE_CONNECTOR_TYPES,
+    SERVICE_CONNECTOR_VERIFY,
     SERVICE_CONNECTORS,
     STACK_COMPONENTS,
     STACKS,
@@ -115,7 +119,9 @@ from zenml.models import (
     ScheduleUpdateModel,
     ServiceConnectorFilterModel,
     ServiceConnectorRequestModel,
+    ServiceConnectorResourceListModel,
     ServiceConnectorResponseModel,
+    ServiceConnectorTypeModel,
     ServiceConnectorUpdateModel,
     StackFilterModel,
     StackRequestModel,
@@ -1903,9 +1909,6 @@ class RestZenStore(BaseZenStore):
             resource=service_connector,
             route=SERVICE_CONNECTORS,
             response_model=ServiceConnectorResponseModel,
-            # Server-side service connector verification is only meant for the
-            # dashboard
-            params=dict(verify=False),
         )
 
     def get_service_connector(
@@ -1963,9 +1966,6 @@ class RestZenStore(BaseZenStore):
             resource_update=update,
             response_model=ServiceConnectorResponseModel,
             route=SERVICE_CONNECTORS,
-            # Server-side service connector verification is only meant for the
-            # dashboard
-            params=dict(verify=False),
         )
 
     def delete_service_connector(self, service_connector_id: UUID) -> None:
@@ -1980,6 +1980,159 @@ class RestZenStore(BaseZenStore):
         self._delete_resource(
             resource_id=service_connector_id, route=SERVICE_CONNECTORS
         )
+
+    def verify_service_connector_config(
+        self,
+        service_connector: ServiceConnectorRequestModel,
+    ) -> ServiceConnectorResourceListModel:
+        """Verifies if a service connector configuration has access to resources.
+
+        Args:
+            service_connector: The service connector configuration to verify.
+
+        Returns:
+            The list of resources that the service connector configuration has
+            access to.
+        """
+        response_body = self.post(
+            f"{SERVICE_CONNECTORS}/{SERVICE_CONNECTOR_VERIFY}",
+            body=service_connector,
+        )
+
+        return ServiceConnectorResourceListModel.parse_obj(response_body)
+
+    def verify_service_connector(
+        self,
+        service_connector_id: UUID,
+        resource_type: Optional[str] = None,
+        resource_id: Optional[str] = None,
+    ) -> ServiceConnectorResourceListModel:
+        """Verifies if a service connector instance has access to one or more resources.
+
+        Args:
+            service_connector_id: The ID of the service connector to verify.
+            resource_type: The type of resource to verify access to.
+            resource_id: The ID of the resource to verify access to.
+
+        Returns:
+            The list of resources that the service connector has access to,
+            scoped to the supplied resource type and ID, if provided.
+        """
+        response_body = self.put(
+            f"{SERVICE_CONNECTORS}/{str(service_connector_id)}{SERVICE_CONNECTOR_VERIFY}",
+            params=dict(
+                resource_type=resource_type,
+                resource_id=resource_id,
+            ),
+        )
+
+        return ServiceConnectorResourceListModel.parse_obj(response_body)
+
+    def get_service_connector_client(
+        self,
+        service_connector_id: UUID,
+        resource_type: Optional[str] = None,
+        resource_id: Optional[str] = None,
+    ) -> ServiceConnectorResponseModel:
+        """Get a client service connector for a service connector and given resource.
+
+        Args:
+            service_connector_id: The ID of the base service connector to use.
+            resource_type: The type of resource to get a client for.
+            resource_id: The ID of the resource to get a client for.
+
+        Returns:
+            A client service connector that can be used to access the given
+            resource.
+        """
+        response_body = self.get(
+            f"{SERVICE_CONNECTORS}/{str(service_connector_id)}{SERVICE_CONNECTOR_CLIENT}",
+            params=dict(
+                resource_type=resource_type,
+                resource_id=resource_id,
+            ),
+        )
+
+        return ServiceConnectorResponseModel.parse_obj(response_body)
+
+    def list_service_connector_resources(
+        self,
+        user_name_or_id: Union[str, UUID],
+        workspace_name_or_id: Union[str, UUID],
+        connector_type: Optional[str] = None,
+        resource_type: Optional[str] = None,
+    ) -> List[ServiceConnectorResourceListModel]:
+        """List resources that can be accessed by service connectors.
+
+        Args:
+            user_name_or_id: The name or ID of the user to scope to.
+            workspace_name_or_id: The name or ID of the workspace to scope to.
+            connector_type: The type of service connector to filter by.
+            resource_type: The type of resource to filter by.
+
+        Returns:
+            The matching list of resources that available service
+            connectors have access to.
+        """
+        response_body = self.get(
+            f"{WORKSPACES}/{workspace_name_or_id}{SERVICE_CONNECTOR_RESOURCES}",
+            params=dict(
+                connector_type=connector_type,
+                resource_type=resource_type,
+            ),
+        )
+
+        return [
+            ServiceConnectorResourceListModel.parse_obj(item)
+            for item in response_body
+        ]
+
+    def list_service_connector_types(
+        self,
+        connector_type: Optional[str] = None,
+        resource_type: Optional[str] = None,
+        auth_method: Optional[str] = None,
+    ) -> List[ServiceConnectorTypeModel]:
+        """Get a list of service connector types.
+
+        Args:
+            connector_type: Filter by connector type.
+            resource_type: Filter by resource type.
+            auth_method: Filter by authentication method.
+
+        Returns:
+            List of service connector types.
+        """
+        response_body = self.get(
+            SERVICE_CONNECTOR_TYPES,
+            params=dict(
+                connector_type=connector_type,
+                resource_type=resource_type,
+                auth_method=auth_method,
+            ),
+        )
+
+        return [
+            ServiceConnectorTypeModel.parse_obj(item) for item in response_body
+        ]
+
+    def get_service_connector_type(
+        self,
+        connector_type: str,
+    ) -> ServiceConnectorTypeModel:
+        """Returns the requested service connector type.
+
+        Args:
+            connector_type: the service connector type identifier.
+
+        Returns:
+            The requested service connector type.
+        """
+        response_body = self.get(
+            f"{SERVICE_CONNECTOR_TYPES}/{connector_type}",
+        )
+
+        return ServiceConnectorTypeModel.parse_obj(response_body)
 
     # =======================
     # Internal helper methods
@@ -2208,7 +2361,7 @@ class RestZenStore(BaseZenStore):
     def put(
         self,
         path: str,
-        body: BaseModel,
+        body: Optional[BaseModel] = None,
         params: Optional[Dict[str, Any]] = None,
         **kwargs: Any,
     ) -> Json:
@@ -2224,10 +2377,11 @@ class RestZenStore(BaseZenStore):
             The response body.
         """
         logger.debug(f"Sending PUT request to {path}...")
+        data = body.json(exclude_unset=True) if body else None
         return self._request(
             "PUT",
             self.url + API + VERSION_1 + path,
-            data=body.json(exclude_unset=True),
+            data=data,
             params=params,
             **kwargs,
         )

@@ -210,9 +210,9 @@ GET_OR_CREATE = "/get-or-create"
 SECRETS = "/secrets"
 CODE_REPOSITORIES = "/code_repositories"
 SERVICE_CONNECTORS = "/service_connectors"
-SERVICE_CONNECTOR_VERIFY = "/verify"
+SERVICE_CONNECTOR_VERIFY = "/verify_service_connector"
 SERVICE_CONNECTOR_RESOURCES = "/service_connector_resources"
-SERVICE_CONNECTOR_CLIENT = "/client"
+SERVICE_CONNECTOR_CLIENT = "/service_connector_client"
 SERVICE_CONNECTOR_TYPES = "/service_connector_types"
 
 # mandatory stack component attributes

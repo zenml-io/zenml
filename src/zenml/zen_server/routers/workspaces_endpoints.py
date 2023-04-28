@@ -82,9 +82,6 @@ from zenml.models import (
     WorkspaceUpdateModel,
 )
 from zenml.models.page_model import Page
-from zenml.service_connectors.service_connector_registry import (
-    service_connector_registry,
-)
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.utils import (
@@ -1184,7 +1181,6 @@ def list_workspace_service_connectors(
 def create_service_connector(
     workspace_name_or_id: Union[str, UUID],
     connector: ServiceConnectorRequestModel,
-    verify: bool = True,
     auth_context: AuthContext = Security(
         authorize, scopes=[PermissionType.WRITE]
     ),
@@ -1194,10 +1190,6 @@ def create_service_connector(
     Args:
         workspace_name_or_id: Name or ID of the workspace.
         connector: Service connector to register.
-        verify: Whether to verify the service connector before registering it.
-            This requires the service connector implementation to be installed
-            on the ZenML server, otherwise a 501 Not Implemented error will be
-            returned.
         auth_context: Authentication context.
 
     Returns:
@@ -1222,11 +1214,6 @@ def create_service_connector(
             "is not supported."
         )
 
-    if verify:
-        service_connector_registry.instantiate_service_connector(
-            model=connector
-        )
-
     return zen_store().create_service_connector(service_connector=connector)
 
 
@@ -1236,61 +1223,29 @@ def create_service_connector(
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-def list_service_type_resources(
+def list_service_connector_resources(
     workspace_name_or_id: Union[str, UUID],
-    connector_type: Optional[str],
-    resource_type: Optional[str],
+    connector_type: Optional[str] = None,
+    resource_type: Optional[str] = None,
     auth_context: AuthContext = Security(
         authorize, scopes=[PermissionType.READ]
     ),
 ) -> List[ServiceConnectorResourceListModel]:
-    """List all resources that all service connectors have access to.
+    """List resources that can be accessed by service connectors.
 
     Args:
+        workspace_name_or_id: Name or ID of the workspace.
         connector_type: the service connector type identifier to filter by.
         resource_type: the resource type identifier to filter by.
         auth_context: Authentication context.
 
     Returns:
-        The matching list of resources that all configured service
+        The matching list of resources that available service
         connectors have access to.
     """
-    workspace = zen_store().get_workspace(workspace_name_or_id)
-
-    connector_filter_model = ServiceConnectorFilterModel(
-        type=connector_type,
+    return zen_store().list_service_connector_resources(
+        user_name_or_id=auth_context.user.id,
+        workspace_name_or_id=workspace_name_or_id,
+        connector_type=connector_type,
         resource_type=resource_type,
     )
-    connector_filter_model.set_scope_workspace(workspace.id)
-    connector_filter_model.set_scope_user(user_id=auth_context.user.id)
-
-    connectors = (
-        zen_store()
-        .list_service_connectors(filter_model=connector_filter_model)
-        .items
-    )
-
-    # Of the returned connectors, we only process those that we can
-    # instantiate on the server, i.e. those that have a connector
-    # type registered in the server.
-    connectors = [
-        connector
-        for connector in connectors
-        if service_connector_registry.is_registered(connector.type)
-    ]
-
-    resource_list: List[ServiceConnectorResourceListModel] = []
-
-    for connector in connectors:
-        connector_instance = (
-            service_connector_registry.instantiate_service_connector(
-                model=connector
-            )
-        )
-        resource_list.append(
-            connector_instance.list_resource_ids(
-                resource_type=resource_type,
-            )
-        )
-
-    return resource_list

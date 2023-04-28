@@ -4655,7 +4655,7 @@ class Client(metaclass=ClientMetaClass):
         )
 
         return client_connector
-    
+
     # ---- utility prefix matching get functions -----
 
     @staticmethod

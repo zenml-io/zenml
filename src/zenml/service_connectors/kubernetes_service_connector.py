@@ -21,6 +21,7 @@ import subprocess
 import tempfile
 from typing import Any, List, Optional
 
+from kubernetes import client as k8s_client
 from pydantic import Field, SecretStr
 
 from zenml.exceptions import AuthorizationException
@@ -214,8 +215,6 @@ class KubernetesServiceConnector(ServiceConnector):
         Returns:
             A python-kubernetes client object.
         """
-        from kubernetes import client as k8s_client
-
         cfg = self.config
         k8s_conf = k8s_client.Configuration()
 
@@ -404,8 +403,6 @@ class KubernetesServiceConnector(ServiceConnector):
             resource_id: The ID of the resource to connect to. Not applicable
                 to Kubernetes connectors.
         """
-        from kubernetes import client as k8s_client
-
         client = self._connect_to_resource()
         assert isinstance(client, k8s_client.ApiClient)
 

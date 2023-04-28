@@ -1256,7 +1256,7 @@ def print_service_connector_configuration(
     if connector.expiration_seconds is None:
         expiration = "N/A"
     else:
-        expiration = str(connector.expiration_seconds) + "s",
+        expiration = str(connector.expiration_seconds) + "s"
 
     properties = {
         "ID": connector.id,

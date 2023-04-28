@@ -481,6 +481,13 @@ class ServiceConnector(BaseModel):
                 }
             )
 
+        if method_spec.config_class is None:
+            raise ValueError(
+                f"the implementation of the {model.name} connector type is "
+                "not available in the environment. Please check that you "
+                "have installed the required dependencies."
+            )
+
         # Validate the authentication configuration
         try:
             auth_config = method_spec.config_class(**config)
@@ -997,12 +1004,13 @@ class ServiceConnector(BaseModel):
             spec = self.get_type()
 
             resource_list = (
-                ServiceConnectorResourceListModel.from_connector_type_model(
-                    spec
+                ServiceConnectorResourceListModel.from_connector_model(
+                    connector_type_model=spec,
                 )
             )
             resource_list.id = self.id
             resource_list.name = self.name
+            resource_list.resources_unavailable = False
 
             for resource_type in resource_types:
                 resource_type_spec = spec.resource_type_map[resource_type]

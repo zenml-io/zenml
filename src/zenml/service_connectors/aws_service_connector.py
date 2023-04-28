@@ -403,8 +403,9 @@ The configured credentials must have at least the following EKS permissions:
 
 In addition to the above permissions, if the credentials are not associated
 with the same IAM user or role that created the EKS cluster, the IAM principal
-must be manually added to the EKS cluster's `aws-auth` ConfigMap. For more
-information, see:
+must be manually added to the EKS cluster's `aws-auth` ConfigMap. This makes
+it more difficult to use the AWS Federation Token authentication method for
+this resource. For more information, see:
 https://docs.aws.amazon.com/eks/latest/userguide/add-user-role.html
 
 If set, the resource ID must identify an EKS cluster using one of the following

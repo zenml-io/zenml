@@ -119,7 +119,9 @@ from zenml.models import (
     SecretUpdateModel,
     ServiceConnectorFilterModel,
     ServiceConnectorRequestModel,
+    ServiceConnectorResourceListModel,
     ServiceConnectorResponseModel,
+    ServiceConnectorTypeModel,
     ServiceConnectorUpdateModel,
     StackFilterModel,
     StackRequestModel,
@@ -155,6 +157,9 @@ from zenml.models.page_model import Page
 from zenml.models.run_metadata_models import RunMetadataFilterModel
 from zenml.models.schedule_model import ScheduleFilterModel
 from zenml.models.server_models import ServerDatabaseType, ServerModel
+from zenml.service_connectors.service_connector_registry import (
+    service_connector_registry,
+)
 from zenml.stack.flavor_registry import FlavorRegistry
 from zenml.utils import uuid_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track
@@ -4719,6 +4724,210 @@ class SqlZenStore(BaseZenStore):
                 raise KeyError from error
 
             session.commit()
+
+    def verify_service_connector_config(
+        self,
+        service_connector: ServiceConnectorRequestModel,
+    ) -> ServiceConnectorResourceListModel:
+        """Verifies if a service connector configuration has access to resources.
+
+        Args:
+            service_connector: The service connector configuration to verify.
+
+        Returns:
+            The list of resources that the service connector configuration has
+            access to.
+        """
+        connector_instance = (
+            service_connector_registry.instantiate_service_connector(
+                model=service_connector
+            )
+        )
+
+        connector_instance.verify()
+
+        return connector_instance.list_resource_ids()
+
+    def verify_service_connector(
+        self,
+        service_connector_id: UUID,
+        resource_type: Optional[str] = None,
+        resource_id: Optional[str] = None,
+    ) -> ServiceConnectorResourceListModel:
+        """Verifies if a service connector instance has access to one or more resources.
+
+        Args:
+            service_connector_id: The ID of the service connector to verify.
+            resource_type: The type of resource to verify access to.
+            resource_id: The ID of the resource to verify access to.
+
+        Returns:
+            The list of resources that the service connector has access to,
+            scoped to the supplied resource type and ID, if provided.
+        """
+        connector = self.get_service_connector(service_connector_id)
+
+        connector_instance = (
+            service_connector_registry.instantiate_service_connector(
+                model=connector
+            )
+        )
+
+        connector_instance.verify(
+            resource_type=resource_type, resource_id=resource_id
+        )
+
+        return connector_instance.list_resource_ids(
+            resource_type=resource_type, resource_id=resource_id
+        )
+
+    def get_service_connector_client(
+        self,
+        service_connector_id: UUID,
+        resource_type: Optional[str] = None,
+        resource_id: Optional[str] = None,
+    ) -> ServiceConnectorResponseModel:
+        """Get a client service connector for a service connector and given resource.
+
+        Args:
+            service_connector_id: The ID of the base service connector to use.
+            resource_type: The type of resource to get a client for.
+            resource_id: The ID of the resource to get a client for.
+
+        Returns:
+            A client service connector that can be used to access the given
+            resource.
+
+        Raises:
+            KeyError: If no service connector with the given name exists.
+            NotImplementError: If the service connector cannot be instantiated
+                on the store e.g. due to missing package dependencies.
+        """
+        connector = self.get_service_connector(service_connector_id)
+
+        connector_instance = (
+            service_connector_registry.instantiate_service_connector(
+                model=connector
+            )
+        )
+
+        # Fetch the client connector
+        client_connector = connector_instance.get_client_connector(
+            resource_type=resource_type,
+            resource_id=resource_id,
+        )
+
+        # Return the model for the client connector
+        connector = client_connector.to_response_model(
+            user=connector.user,
+            workspace=connector.workspace,
+            is_shared=connector.is_shared,
+            description=connector.description,
+            labels=connector.labels,
+        )
+
+        return connector
+
+    def list_service_connector_resources(
+        self,
+        user_name_or_id: Union[str, UUID],
+        workspace_name_or_id: Union[str, UUID],
+        connector_type: Optional[str] = None,
+        resource_type: Optional[str] = None,
+    ) -> List[ServiceConnectorResourceListModel]:
+        """List resources that can be accessed by service connectors.
+
+        Args:
+            user_name_or_id: The name or ID of the user to scope to.
+            workspace_name_or_id: The name or ID of the workspace to scope to.
+            connector_type: The type of service connector to filter by.
+            resource_type: The type of resource to filter by.
+
+        Returns:
+            The matching list of resources that available service
+            connectors have access to.
+        """
+        user = self.get_user(user_name_or_id)
+        workspace = self.get_workspace(workspace_name_or_id)
+        connector_filter_model = ServiceConnectorFilterModel(
+            type=connector_type,
+            resource_type=resource_type,
+            user_id=user.id,
+            workspace_id=workspace.id,
+        )
+
+        connectors = self.list_service_connectors(
+            filter_model=connector_filter_model
+        ).items
+
+        resource_list: List[ServiceConnectorResourceListModel] = []
+
+        for connector in connectors:
+            if not service_connector_registry.is_registered(connector.type):
+                # We only process the connectors that we can instantiate, i.e.
+                # those that have a connector type available locally. For
+                # those that are not registered, we only return rudimentary
+                # information on the connector model.
+                resources = (
+                    ServiceConnectorResourceListModel.from_connector_model(
+                        connector_model=connector
+                    )
+                )
+                resources.resources_unavailable = True
+                resource_list.append(resources)
+                continue
+
+            connector_instance = (
+                service_connector_registry.instantiate_service_connector(
+                    model=connector
+                )
+            )
+            resource_list.append(
+                connector_instance.list_resource_ids(
+                    resource_type=resource_type,
+                )
+            )
+
+        return resource_list
+
+    def list_service_connector_types(
+        self,
+        connector_type: Optional[str] = None,
+        resource_type: Optional[str] = None,
+        auth_method: Optional[str] = None,
+    ) -> List[ServiceConnectorTypeModel]:
+        """Get a list of service connector types.
+
+        Args:
+            connector_type: Filter by connector type.
+            resource_type: Filter by resource type.
+            auth_method: Filter by authentication method.
+
+        Returns:
+            List of service connector types.
+        """
+        connectors = service_connector_registry.list_service_connectors(
+            connector_type=connector_type,
+            resource_type=resource_type,
+            auth_method=auth_method,
+        )
+        return [connector.get_type() for connector in connectors]
+
+    def get_service_connector_type(
+        self,
+        connector_type: str,
+    ) -> ServiceConnectorTypeModel:
+        """Returns the requested service connector type.
+
+        Args:
+            connector_type: the service connector type identifier.
+
+        Returns:
+            The requested service connector type.
+        """
+        return service_connector_registry.get_service_connector(
+            connector_type
+        ).get_type()
 
     # =======================
     # Internal helper methods

@@ -205,6 +205,10 @@ def exception_from_response(
         except requests.exceptions.JSONDecodeError:
             return None, response.text
 
+        # The detail can also be a single string
+        if isinstance(detail, str):
+            return None, detail
+
         # The detail should be a list of strings encoding the exception
         # class name and the exception message
         if not isinstance(detail, list):

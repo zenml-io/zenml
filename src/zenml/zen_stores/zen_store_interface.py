@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """ZenML Store interface."""
 from abc import ABC, abstractmethod
-from typing import Optional, Tuple, Union
+from typing import List, Optional, Tuple, Union
 from uuid import UUID
 
 from zenml.models import (
@@ -56,7 +56,9 @@ from zenml.models import (
     ScheduleResponseModel,
     ServiceConnectorFilterModel,
     ServiceConnectorRequestModel,
+    ServiceConnectorResourceListModel,
     ServiceConnectorResponseModel,
+    ServiceConnectorTypeModel,
     ServiceConnectorUpdateModel,
     StackFilterModel,
     StackRequestModel,
@@ -1455,7 +1457,8 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def create_service_connector(
-        self, service_connector: ServiceConnectorRequestModel
+        self,
+        service_connector: ServiceConnectorRequestModel,
     ) -> ServiceConnectorResponseModel:
         """Creates a new service connector.
 
@@ -1526,4 +1529,127 @@ class ZenStoreInterface(ABC):
 
         Raises:
             KeyError: If no service connector with the given ID exists.
+        """
+
+    @abstractmethod
+    def verify_service_connector_config(
+        self,
+        service_connector: ServiceConnectorRequestModel,
+    ) -> ServiceConnectorResourceListModel:
+        """Verifies if a service connector configuration has access to resources.
+
+        Args:
+            service_connector: The service connector configuration to verify.
+
+        Returns:
+            The list of resources that the service connector configuration has
+            access to.
+
+        Raises:
+            NotImplementError: If the service connector cannot be verified
+                on the store e.g. due to missing package dependencies.
+        """
+
+    @abstractmethod
+    def verify_service_connector(
+        self,
+        service_connector_id: UUID,
+        resource_type: Optional[str] = None,
+        resource_id: Optional[str] = None,
+    ) -> ServiceConnectorResourceListModel:
+        """Verifies if a service connector instance has access to one or more resources.
+
+        Args:
+            service_connector_id: The ID of the service connector to verify.
+            resource_type: The type of resource to verify access to.
+            resource_id: The ID of the resource to verify access to.
+
+        Returns:
+            The list of resources that the service connector has access to,
+            scoped to the supplied resource type and ID, if provided.
+
+        Raises:
+            KeyError: If no service connector with the given name exists.
+            NotImplementError: If the service connector cannot be verified
+                e.g. due to missing package dependencies.
+        """
+
+    @abstractmethod
+    def get_service_connector_client(
+        self,
+        service_connector_id: UUID,
+        resource_type: Optional[str] = None,
+        resource_id: Optional[str] = None,
+    ) -> ServiceConnectorResponseModel:
+        """Get a client service connector for a service connector and given resource.
+
+        Args:
+            service_connector_id: The ID of the base service connector to use.
+            resource_type: The type of resource to get a client for.
+            resource_id: The ID of the resource to get a client for.
+
+        Returns:
+            A client service connector that can be used to access the given
+            resource.
+
+        Raises:
+            KeyError: If no service connector with the given name exists.
+            NotImplementError: If the service connector cannot be instantiated
+                on the store e.g. due to missing package dependencies.
+        """
+
+    @abstractmethod
+    def list_service_connector_resources(
+        self,
+        user_name_or_id: Union[str, UUID],
+        workspace_name_or_id: Union[str, UUID],
+        connector_type: Optional[str] = None,
+        resource_type: Optional[str] = None,
+    ) -> List[ServiceConnectorResourceListModel]:
+        """List resources that can be accessed by service connectors.
+
+        Args:
+            user_name_or_id: The name or ID of the user to scope to.
+            workspace_name_or_id: The name or ID of the workspace to scope to.
+            connector_type: The type of service connector to filter by.
+            resource_type: The type of resource to filter by.
+
+        Returns:
+            The matching list of resources that available service
+            connectors have access to.
+        """
+
+    @abstractmethod
+    def list_service_connector_types(
+        self,
+        connector_type: Optional[str] = None,
+        resource_type: Optional[str] = None,
+        auth_method: Optional[str] = None,
+    ) -> List[ServiceConnectorTypeModel]:
+        """Get a list of service connector types.
+
+        Args:
+            connector_type: Filter by connector type.
+            resource_type: Filter by resource type.
+            auth_method: Filter by authentication method.
+
+        Returns:
+            List of service connector types.
+        """
+
+    @abstractmethod
+    def get_service_connector_type(
+        self,
+        connector_type: str,
+    ) -> ServiceConnectorTypeModel:
+        """Returns the requested service connector type.
+
+        Args:
+            connector_type: the service connector type identifier.
+
+        Returns:
+            The requested service connector type.
+
+        Raises:
+            KeyError: If no service connector type with the given ID exists.
         """
