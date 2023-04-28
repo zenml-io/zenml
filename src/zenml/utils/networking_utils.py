@@ -205,3 +205,35 @@ def replace_internal_hostname_with_localhost(hostname: str) -> str:
     logger.debug(f"Replacing internal hostname {hostname} with localhost.")
 
     return "127.0.0.1"
+
+
+def get_or_create_ngrok_tunnel(ngrok_token: str, port: int) -> str:
+    """Get or create an ngrok tunnel at the given port.
+
+    Args:
+        ngrok_token: The ngrok auth token.
+        port: The port to tunnel.
+
+    Returns:
+        The public URL of the ngrok tunnel.
+
+    Raises:
+        ImportError: If the `pyngrok` package is not installed.
+    """
+    try:
+        from pyngrok import ngrok as ngrok_client
+    except ImportError:
+        raise ImportError(
+            "The `pyngrok` package is required to create ngrok tunnels. "
+            "Please install it by running `pip install pyngrok`."
+        )
+
+    # Check if ngrok is already tunneling the port
+    tunnels = ngrok_client.get_tunnels()
+    for tunnel in tunnels:
+        if tunnel.config.proto == "http" and tunnel.config.addr == port:
+            return str(tunnel.public_url)
+
+    # Create new tunnel
+    ngrok_client.set_auth_token(ngrok_token)
+    return str(ngrok_client.connect(port).public_url)

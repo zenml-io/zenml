@@ -276,6 +276,7 @@ module = [
     "numpy.*",
     "facets_overview.*",
     "IPython.core.*",
+    "IPython.display.*",
     "plotly.*",
     "graphviz.*",
     "dash.*",
@@ -311,7 +312,8 @@ module = [
     "fastapi_utils.*",
     "sqlalchemy_utils.*",
     "copier.*",
-    "datasets.*"
+    "datasets.*",
+    "pyngrok.*",
 ]
 ignore_missing_imports = true
 
