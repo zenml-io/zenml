@@ -19,7 +19,7 @@ import pytest
 from zenml.config import DockerSettings
 from zenml.config.build_configuration import BuildConfiguration
 from zenml.config.compiler import Compiler
-from zenml.config.pipeline_configurations import PipelineRunConfiguration
+from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
 from zenml.enums import StackComponentType
 from zenml.exceptions import ProvisioningError, StackValidationError
 from zenml.stack import Stack

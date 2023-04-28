@@ -13,16 +13,12 @@
 #  permissions and limitations under the License.
 """Initialization for the post-execution artifact class."""
 
-from typing import TYPE_CHECKING, Any, Optional, Type, cast
+from typing import Any, Type, cast
 
 from zenml.logger import get_logger
 from zenml.models.artifact_models import ArtifactResponseModel
 from zenml.models.base_models import BaseResponseModel
 from zenml.post_execution.base_view import BaseView
-
-if TYPE_CHECKING:
-    from zenml.materializers.base_materializer import BaseMaterializer
-
 
 logger = get_logger(__name__)
 
@@ -46,31 +42,12 @@ class ArtifactView(BaseView):
         """
         return cast(ArtifactResponseModel, self._model)
 
-    def read(
-        self,
-        output_data_type: Optional[Type[Any]] = None,
-        materializer_class: Optional[Type["BaseMaterializer"]] = None,
-    ) -> Any:
-        """Materializes the data stored in this artifact.
-
-        Args:
-            output_data_type: Deprecated; will be ignored.
-            materializer_class: Deprecated; will be ignored.
+    def read(self) -> Any:
+        """Materializes (loads) the data stored in this artifact.
 
         Returns:
             The materialized data.
         """
-        if output_data_type is not None:
-            logger.warning(
-                "The `output_data_type` argument is deprecated and will be "
-                "removed in a future release."
-            )
-        if materializer_class is not None:
-            logger.warning(
-                "The `materializer_class` argument is deprecated and will be "
-                "removed in a future release."
-            )
-
         from zenml.utils.materializer_utils import load_artifact
 
         return load_artifact(self.model)

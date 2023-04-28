@@ -36,7 +36,6 @@ from typing import (
 
 from pydantic import ValidationError
 
-from zenml.artifacts.base_artifact import BaseArtifact
 from zenml.config.source import Source
 from zenml.config.step_configurations import (
     ArtifactConfiguration,
@@ -64,7 +63,6 @@ from zenml.steps.utils import (
     PARAM_EXTRA_OPTIONS,
     PARAM_ON_FAILURE,
     PARAM_ON_SUCCESS,
-    PARAM_OUTPUT_ARTIFACTS,
     PARAM_OUTPUT_MATERIALIZERS,
     PARAM_SETTINGS,
     PARAM_STEP_NAME,
@@ -85,12 +83,8 @@ if TYPE_CHECKING:
     from zenml.config.base_settings import SettingsOrDict
 
     ParametersOrDict = Union["BaseParameters", Dict[str, Any]]
-    ArtifactClassOrStr = Union[str, Type["BaseArtifact"]]
     MaterializerClassOrSource = Union[str, Source, Type["BaseMaterializer"]]
     HookSpecification = Union[str, Source, FunctionType]
-    OutputArtifactsSpecification = Union[
-        "ArtifactClassOrStr", Mapping[str, "ArtifactClassOrStr"]
-    ]
     OutputMaterializersSpecification = Union[
         "MaterializerClassOrSource", Mapping[str, "MaterializerClassOrSource"]
     ]
@@ -479,7 +473,6 @@ class BaseStep(metaclass=BaseStepMeta):
         step_operator = options.pop(PARAM_STEP_OPERATOR, None)
         settings = options.pop(PARAM_SETTINGS, None) or {}
         output_materializers = options.pop(PARAM_OUTPUT_MATERIALIZERS, None)
-        output_artifacts = options.pop(PARAM_OUTPUT_ARTIFACTS, None)
         extra = options.pop(PARAM_EXTRA_OPTIONS, None)
         experiment_tracker = options.pop(PARAM_EXPERIMENT_TRACKER, None)
         on_failure = options.pop(PARAM_ON_FAILURE, None)
@@ -488,7 +481,6 @@ class BaseStep(metaclass=BaseStepMeta):
         self.configure(
             experiment_tracker=experiment_tracker,
             step_operator=step_operator,
-            output_artifacts=output_artifacts,
             output_materializers=output_materializers,
             settings=settings,
             extra=extra,
@@ -724,7 +716,6 @@ class BaseStep(metaclass=BaseStepMeta):
         output_materializers: Optional[
             "OutputMaterializersSpecification"
         ] = None,
-        output_artifacts: Optional["OutputArtifactsSpecification"] = None,
         settings: Optional[Mapping[str, "SettingsOrDict"]] = None,
         extra: Optional[Dict[str, Any]] = None,
         on_failure: Optional["HookSpecification"] = None,
@@ -755,10 +746,6 @@ class BaseStep(metaclass=BaseStepMeta):
                 given as a dict, the keys must be a subset of the output names
                 of this step. If a single value (type or string) is given, the
                 materializer will be used for all outputs.
-            output_artifacts: Output artifacts for this step. If
-                given as a dict, the keys must be a subset of the output names
-                of this step. If a single value (type or string) is given, the
-                artifact class will be used for all outputs.
             settings: settings for this step.
             extra: Extra configurations for this step.
             merge: If `True`, will merge the given dictionary configurations
@@ -814,12 +801,6 @@ class BaseStep(metaclass=BaseStepMeta):
         if on_success:
             # string of on_success hook function to be used for this step
             success_hook_source = resolve_and_validate_hook(on_success)
-
-        if output_artifacts:
-            logger.warning(
-                "The `output_artifacts` argument has no effect and will be "
-                "removed in a future version."
-            )
 
         if isinstance(parameters, BaseParameters):
             parameters = parameters.dict()
