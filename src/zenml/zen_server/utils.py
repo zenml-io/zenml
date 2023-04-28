@@ -26,8 +26,9 @@ from zenml.constants import (
     ENV_ZENML_SERVER,
     ENV_ZENML_SERVER_ROOT_URL_PATH,
 )
-from zenml.enums import StoreType
+from zenml.enums import ServerProviderType, StoreType
 from zenml.logger import get_logger
+from zenml.zen_server.deploy.deployment import ServerDeployment
 from zenml.zen_server.exceptions import http_exception_from_error
 from zenml.zen_stores.base_zen_store import BaseZenStore
 
@@ -79,6 +80,86 @@ def initialize_zen_store() -> None:
             "configure ZenML to use a non-networked store backend "
             "when trying to start the ZenML Server."
         )
+
+
+def get_active_deployment(local: bool = False) -> Optional["ServerDeployment"]:
+    """Get the active local or remote server deployment.
+
+    Call this function to retrieve the local or remote server deployment that
+    was last provisioned on this machine.
+
+    Args:
+        local: Whether to return the local active deployment or the remote one.
+
+    Returns:
+        The local or remote active server deployment or None, if no deployment
+        was found.
+    """
+    from zenml.zen_server.deploy.deployer import ServerDeployer
+
+    deployer = ServerDeployer()
+    if local:
+        servers = deployer.list_servers(provider_type=ServerProviderType.LOCAL)
+        if not servers:
+            servers = deployer.list_servers(
+                provider_type=ServerProviderType.DOCKER
+            )
+    else:
+        servers = deployer.list_servers()
+
+    if not servers:
+        return None
+
+    for server in servers:
+        if server.config.provider in [
+            ServerProviderType.LOCAL,
+            ServerProviderType.DOCKER,
+        ]:
+            if local:
+                return server
+        elif not local:
+            return server
+
+    return None
+
+
+def get_server_url() -> str:
+    """Get the URL of the current ZenML Server.
+
+    When multiple servers are present, the following precedence is used to
+    determine which server to use:
+    - If the client is connected to a server, that server has precedence.
+    - If no server is connected, a server that was deployed remotely has
+        precedence over a server that was deployed locally.
+
+    Returns:
+        The URL of the currently active server.
+
+    Raises:
+        RuntimeError: If no server is active.
+    """
+    # Check for connected servers first
+    gc = GlobalConfiguration()
+    if not gc.uses_default_store() and gc.store is not None:
+        logger.debug("Getting URL of connected server.")
+        return gc.store.url
+
+    # Else, check for deployed servers
+    server = get_active_deployment(local=False)
+    if server:
+        logger.debug("Getting URL of remote server.")
+    else:
+        server = get_active_deployment(local=True)
+        logger.debug("Getting URL of local server.")
+
+    if server and server.status and server.status.url:
+        return server.status.url
+
+    raise RuntimeError(
+        "ZenML is not connected to any server right now. Please use "
+        "`zenml connect` to connect to a server or spin up a new local server "
+        "via `zenml up`."
+    )
 
 
 F = TypeVar("F", bound=Callable[..., Any])

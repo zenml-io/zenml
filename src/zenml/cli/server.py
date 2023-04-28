@@ -16,7 +16,7 @@
 import ipaddress
 import os
 import sys
-from typing import TYPE_CHECKING, Any, Dict, Optional, Union
+from typing import Any, Dict, Optional, Union
 
 import click
 import yaml
@@ -27,65 +27,21 @@ from zenml.cli.cli import cli
 from zenml.client import Client
 from zenml.config.global_config import GlobalConfiguration
 from zenml.console import console
-from zenml.constants import ENV_AUTO_OPEN_DASHBOARD, handle_bool_env_var
-from zenml.enums import EnvironmentType, ServerProviderType, StoreType
-from zenml.environment import get_environment
+from zenml.enums import ServerProviderType, StoreType
 from zenml.exceptions import IllegalOperationError
 from zenml.logger import get_logger
 from zenml.utils import yaml_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, event_handler
+from zenml.utils.dashboard_utils import show_dashboard
 from zenml.utils.networking_utils import get_or_create_ngrok_tunnel
 from zenml.zen_server.deploy.local.local_zen_server import (
     LocalServerDeploymentConfig,
 )
+from zenml.zen_server.utils import get_active_deployment, get_server_url
 
 logger = get_logger(__name__)
 
 LOCAL_ZENML_SERVER_NAME = "local"
-
-if TYPE_CHECKING:
-    from zenml.zen_server.deploy.deployment import ServerDeployment
-
-
-def get_active_deployment(local: bool = False) -> Optional["ServerDeployment"]:
-    """Get the active local or remote server deployment.
-
-    Call this function to retrieve the local or remote server deployment that
-    was last provisioned on this machine.
-
-    Args:
-        local: Whether to return the local active deployment or the remote one.
-
-    Returns:
-        The local or remote active server deployment or None, if no deployment
-        was found.
-    """
-    from zenml.zen_server.deploy.deployer import ServerDeployer
-
-    deployer = ServerDeployer()
-    if local:
-        servers = deployer.list_servers(provider_type=ServerProviderType.LOCAL)
-        if not servers:
-            servers = deployer.list_servers(
-                provider_type=ServerProviderType.DOCKER
-            )
-    else:
-        servers = deployer.list_servers()
-
-    if not servers:
-        return None
-
-    for server in servers:
-        if server.config.provider in [
-            ServerProviderType.LOCAL,
-            ServerProviderType.DOCKER,
-        ]:
-            if local:
-                return server
-        elif not local:
-            return server
-
-    return None
 
 
 @cli.command("up", help="Start the ZenML dashboard locally.")
@@ -290,88 +246,12 @@ def up(
 
 @cli.command("show", help="Show the ZenML dashboard.")
 def show() -> None:
-    """Show the ZenML dashboard.
-
-    When connected to multiple servers, the following precedence is used to
-    determine which dashboard to show:
-    - If the client is connected to a server, show that dashboard.
-    - If the client has deployed a remote server, show the dashboard of the
-        server it deployed.
-    - Else, show the local dashboard.
-    """
-    # Check for connected servers first
-    gc = GlobalConfiguration()
-    if not gc.uses_default_store() and gc.store is not None:
-        logger.debug("Showing dashboard of connected server.")
-        show_dashboard(gc.store.url)
-        return
-
-    # Else, check for deployed servers
-    server = get_active_deployment(local=False)
-    if server:
-        logger.debug("Showing dashboard of remote server.")
-    else:
-        server = get_active_deployment(local=True)
-        logger.debug("Showing dashboard of local server.")
-
-    if not server:
-        cli_utils.error(
-            "ZenML is not connected to any server right now. Please use "
-            "`zenml connect` to connect to a server or spin up a new local "
-            "server using `zenml up`."
-        )
-
-    if not server.status or not server.status.url:
-        cli_utils.error(
-            "The server seems to not have an URL, so it cannot be shown. Please "
-            "run `zenml status` to find detailed information about the server."
-        )
-
-    show_dashboard(server.status.url)
-
-
-def show_dashboard(url: str) -> None:
-    """Show the ZenML dashboard at the given URL.
-
-    In native environments, the dashboard is opened in the default browser.
-    In notebook environments, the dashboard is embedded in an iframe.
-
-    Args:
-        url: URL of the ZenML dashboard.
-    """
-    from zenml.zen_stores.base_zen_store import DEFAULT_USERNAME
-
-    cli_utils.declare(
-        f"The ZenML dashboard is available at "
-        f"'{url}'. You can connect to it using the "
-        f"'{DEFAULT_USERNAME}' username and an empty password. "
-    )
-
-    environment = get_environment()
-    if environment in (EnvironmentType.NOTEBOOK, EnvironmentType.COLAB):
-        from IPython.core.display import display
-        from IPython.display import IFrame
-
-        display(IFrame(src=url, width="100%", height=720))
-
-    elif environment == EnvironmentType.NATIVE:
-        if handle_bool_env_var(ENV_AUTO_OPEN_DASHBOARD, default=True):
-            try:
-                import webbrowser
-
-                webbrowser.open(url)
-                cli_utils.declare(
-                    "Automatically opening the dashboard in your "
-                    "browser. To disable this, set the env variable "
-                    "AUTO_OPEN_DASHBOARD=false."
-                )
-            except Exception as e:
-                logger.error(e)
-        else:
-            cli_utils.declare(
-                "To open the dashboard in a browser automatically, "
-                "set the env variable AUTO_OPEN_DASHBOARD=true."
-            )
+    """Show the ZenML dashboard."""
+    try:
+        url = get_server_url()
+    except RuntimeError as e:
+        cli_utils.error(str(e))
+    show_dashboard(url)
 
 
 @cli.command("down", help="Shut down the local ZenML dashboard.")

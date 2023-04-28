@@ -13,13 +13,16 @@
 #  permissions and limitations under the License.
 """Initialization for ZenML."""
 
+# Define ROOT_DIR
 import os
 
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 
+# Set the version
 with open(os.path.join(ROOT_DIR, "VERSION")) as version_file:
     __version__: str = version_file.read().strip()
 
+# Initialize logging
 from zenml.logger import init_logging  # noqa
 
 init_logging()
@@ -28,3 +31,11 @@ init_logging()
 from pkgutil import extend_path
 
 __path__ = extend_path(__path__, __name__)
+
+# Define public API
+def show() -> None:
+    """Show the ZenML dashboard."""
+    from zenml.zen_server.utils import get_server_url
+    from zenml.utils.dashboard_utils import show_dashboard
+
+    show_dashboard(get_server_url())
