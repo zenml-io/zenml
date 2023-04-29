@@ -158,6 +158,9 @@ from zenml.models.run_metadata_models import RunMetadataFilterModel
 from zenml.models.schedule_model import ScheduleFilterModel
 from zenml.models.server_models import ServerModel
 from zenml.models.team_models import TeamFilterModel, TeamUpdateModel
+from zenml.service_connectors.service_connector_registry import (
+    service_connector_registry,
+)
 from zenml.utils.analytics_utils import AnalyticsEvent, track
 from zenml.utils.networking_utils import (
     replace_localhost_with_internal_hostname,
@@ -1995,7 +1998,7 @@ class RestZenStore(BaseZenStore):
             access to.
         """
         response_body = self.post(
-            f"{SERVICE_CONNECTORS}/{SERVICE_CONNECTOR_VERIFY}",
+            f"{SERVICE_CONNECTORS}{SERVICE_CONNECTOR_VERIFY}",
             body=service_connector,
         )
 
@@ -2018,12 +2021,14 @@ class RestZenStore(BaseZenStore):
             The list of resources that the service connector has access to,
             scoped to the supplied resource type and ID, if provided.
         """
+        params = {}
+        if resource_type:
+            params["resource_type"] = resource_type
+        if resource_id:
+            params["resource_id"] = resource_id
         response_body = self.put(
             f"{SERVICE_CONNECTORS}/{str(service_connector_id)}{SERVICE_CONNECTOR_VERIFY}",
-            params=dict(
-                resource_type=resource_type,
-                resource_id=resource_id,
-            ),
+            params=params,
         )
 
         return ServiceConnectorResourceListModel.parse_obj(response_body)
@@ -2045,12 +2050,14 @@ class RestZenStore(BaseZenStore):
             A client service connector that can be used to access the given
             resource.
         """
+        params = {}
+        if resource_type:
+            params["resource_type"] = resource_type
+        if resource_id:
+            params["resource_id"] = resource_id
         response_body = self.get(
             f"{SERVICE_CONNECTORS}/{str(service_connector_id)}{SERVICE_CONNECTOR_CLIENT}",
-            params=dict(
-                resource_type=resource_type,
-                resource_id=resource_id,
-            ),
+            params=params,
         )
 
         return ServiceConnectorResponseModel.parse_obj(response_body)
@@ -2074,14 +2081,17 @@ class RestZenStore(BaseZenStore):
             The matching list of resources that available service
             connectors have access to.
         """
+        params = {}
+        if connector_type:
+            params["connector_type"] = connector_type
+        if resource_type:
+            params["resource_type"] = resource_type
         response_body = self.get(
             f"{WORKSPACES}/{workspace_name_or_id}{SERVICE_CONNECTOR_RESOURCES}",
-            params=dict(
-                connector_type=connector_type,
-                resource_type=resource_type,
-            ),
+            params=params,
         )
 
+        assert isinstance(response_body, list)
         return [
             ServiceConnectorResourceListModel.parse_obj(item)
             for item in response_body
@@ -2103,18 +2113,45 @@ class RestZenStore(BaseZenStore):
         Returns:
             List of service connector types.
         """
+        params = {}
+        if connector_type:
+            params["connector_type"] = connector_type
+        if resource_type:
+            params["resource_type"] = resource_type
+        if auth_method:
+            params["auth_method"] = auth_method
         response_body = self.get(
             SERVICE_CONNECTOR_TYPES,
-            params=dict(
+            params=params,
+        )
+
+        assert isinstance(response_body, list)
+        remote_connector_types = [
+            ServiceConnectorTypeModel.parse_obj(item) for item in response_body
+        ]
+
+        local_connector_types = (
+            service_connector_registry.list_service_connector_types(
                 connector_type=connector_type,
                 resource_type=resource_type,
                 auth_method=auth_method,
-            ),
+            )
         )
 
-        return [
-            ServiceConnectorTypeModel.parse_obj(item) for item in response_body
-        ]
+        # Add the connector types in the local registry to the list of
+        # connector types available remotely. Overwrite those that have
+        # the same connector type but mark them as being remotely available.
+        connector_types_map = {
+            connector_type.type: connector_type
+            for connector_type in remote_connector_types
+        }
+
+        for connector in local_connector_types:
+            if connector.remote in connector_types_map:
+                connector.remote = True
+            connector_types_map[connector.type] = connector
+
+        return list(connector_types_map.values())
 
     def get_service_connector_type(
         self,
@@ -2128,11 +2165,35 @@ class RestZenStore(BaseZenStore):
         Returns:
             The requested service connector type.
         """
-        response_body = self.get(
-            f"{SERVICE_CONNECTOR_TYPES}/{connector_type}",
-        )
+        # Use the local registry to get the service connector type, if it
+        # exists.
+        local_connector_type: Optional[ServiceConnectorTypeModel] = None
+        if service_connector_registry.is_registered(connector_type):
+            local_connector_type = (
+                service_connector_registry.get_service_connector_type(
+                    connector_type
+                )
+            )
+        try:
+            response_body = self.get(
+                f"{SERVICE_CONNECTOR_TYPES}/{connector_type}",
+            )
+            remote_connector_type = ServiceConnectorTypeModel.parse_obj(
+                response_body
+            )
+            if local_connector_type:
+                # If locally available, return the local connector type but
+                # mark it as being remotely available.
+                remote_connector_type.remote = True
+                return local_connector_type
 
-        return ServiceConnectorTypeModel.parse_obj(response_body)
+            return remote_connector_type
+        except KeyError:
+            # If the service connector type is not found, check the local
+            # registry.
+            return service_connector_registry.get_service_connector_type(
+                connector_type
+            )
 
     # =======================
     # Internal helper methods

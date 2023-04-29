@@ -543,7 +543,7 @@ class StackComponent:
             )
 
         # Instantiate a base connector instance
-        connector = service_connector_registry.instantiate_service_connector(
+        connector = service_connector_registry.instantiate_connector(
             model=connector_model
         )
 

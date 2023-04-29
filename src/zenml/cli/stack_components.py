@@ -1140,9 +1140,6 @@ def generate_stack_component_connect_command(
             interactive: Select a service connector interactively.
             no_verify: Skip verification of the connector.
         """
-        from zenml.service_connectors.service_connector_registry import (
-            service_connector_registry,
-        )
 
         if component_type == StackComponentType.SECRETS_MANAGER:
             warn_deprecated_secrets_manager()
@@ -1267,10 +1264,9 @@ def generate_stack_component_connect_command(
                 )
 
         # Get the connector type specification to verify the resource ID
-        connector = service_connector_registry.get_service_connector(
+        connector_type_spec = client.get_service_connector_type(
             connector_type=connector_model.type,
         )
-        connector_type_spec = connector.get_type()
         resource_spec = connector_type_spec.resource_type_map[
             connector_model.resource_type
         ]

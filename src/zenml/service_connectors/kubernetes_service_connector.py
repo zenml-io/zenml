@@ -174,7 +174,7 @@ class KubernetesServiceConnector(ServiceConnector):
     config: KubernetesBaseConfig
 
     @classmethod
-    def get_type(cls) -> ServiceConnectorTypeModel:
+    def _get_connector_type(cls) -> ServiceConnectorTypeModel:
         """Get the service connector type specification.
 
         Returns:

@@ -15,14 +15,23 @@
 
 import json
 from datetime import datetime
-from typing import Any, ClassVar, Dict, List, Optional, Tuple, Type, Union
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    ClassVar,
+    Dict,
+    List,
+    Optional,
+    Tuple,
+    Type,
+    Union,
+)
 from uuid import UUID
 
 from pydantic import (
     BaseModel,
     Field,
     SecretStr,
-    root_validator,
     validator,
 )
 
@@ -33,6 +42,9 @@ from zenml.models.base_models import (
 )
 from zenml.models.constants import STR_FIELD_MAX_LENGTH
 from zenml.models.filter_models import ShareableWorkspaceScopedFilterModel
+
+if TYPE_CHECKING:
+    from zenml.service_connectors.service_connector import ServiceConnector
 
 # ---- #
 # BASE #
@@ -101,8 +113,8 @@ class AuthenticationMethodModel(BaseModel):
         default="",
         title="A description of the authentication method.",
     )
-    config_schema: Optional[Dict[str, Any]] = Field(
-        default=None,
+    config_schema: Dict[str, Any] = Field(
+        default_factory=dict,
         title="The JSON schema of the configuration for this authentication "
         "method.",
     )
@@ -124,34 +136,31 @@ class AuthenticationMethodModel(BaseModel):
         "session is valid for. Set to None for authentication sessions and "
         "long-lived credentials that don't expire.",
     )
-    config_class: Optional[Type[BaseModel]] = None
+    _config_class: Optional[Type[BaseModel]] = None
 
-    @root_validator(pre=True)
-    def convert_config_schema_to_model(
-        cls, values: Dict[str, Any]
-    ) -> Dict[str, Any]:
-        """Convert the config class into a JSON schema.
+    def __init__(
+        self, config_class: Optional[Type[BaseModel]] = None, **values: Any
+    ):
+        """Initialize the authentication method.
 
         Args:
-            values: The values to validate.
+            config_class: The configuration class for the authentication
+                method.
+            **values: The data to initialize the authentication method with.
+        """
+        if config_class:
+            values["config_schema"] = json.loads(config_class.schema_json())
+        super().__init__(**values)
+        self._config_class = config_class
+
+    @property
+    def config_class(self) -> Optional[Type[BaseModel]]:
+        """Get the configuration class for the authentication method.
 
         Returns:
-            The validated values.
+            The configuration class for the authentication method.
         """
-        if "config_schema" not in values and "config_class" not in values:
-            raise ValueError(
-                "Either config_schema or config_class must be present in "
-                "the authentication method specification."
-            )
-
-        if "config_class" in values:
-            config_class = values["config_class"]
-            if issubclass(config_class, BaseModel):
-                values["config_schema"] = json.loads(
-                    config_class.schema_json()
-                )
-
-        return values
+        return self._config_class
 
     def supports_temporary_credentials(self) -> bool:
         """Check if the authentication method supports temporary credentials.
@@ -217,9 +226,7 @@ class AuthenticationMethodModel(BaseModel):
     class Config:
         """Pydantic config class."""
 
-        # Exclude the config class from the model schema. This is only used
-        # internally to convert the config schema into a Pydantic model.
-        fields = {"config_class": {"exclude": True}}
+        underscore_attrs_are_private = True
 
 
 class ServiceConnectorTypeModel(BaseModel):
@@ -284,6 +291,32 @@ class ServiceConnectorTypeModel(BaseModel):
         title="Optionally, a url pointing to SDK docs,"
         "within apidocs.zenml.io.",
     )
+    local: bool = Field(
+        default=True,
+        title="If True, the service connector is available locally.",
+    )
+    remote: bool = Field(
+        default=False,
+        title="If True, the service connector is available remotely.",
+    )
+    _connector_class: Optional[Type["ServiceConnector"]] = None
+
+    @property
+    def connector_class(self) -> Optional[Type["ServiceConnector"]]:
+        """Get the service connector class.
+
+        Returns:
+            The service connector class.
+        """
+        return self._connector_class
+
+    def set_connector_class(self, connector_class: Type["ServiceConnector"]):
+        """Set the service connector class.
+
+        Args:
+            connector_class: The service connector class.
+        """
+        self._connector_class = connector_class
 
     @validator("resource_types")
     def validate_resource_types(
@@ -430,6 +463,11 @@ class ServiceConnectorTypeModel(BaseModel):
 
         return auth_method_spec, resource_type_spec
 
+    class Config:
+        """Pydantic config class."""
+
+        underscore_attrs_are_private = True
+
 
 class ServiceConnectorBaseModel(BaseModel):
     """Base model for service connectors."""
@@ -452,6 +490,7 @@ class ServiceConnectorBaseModel(BaseModel):
         max_length=STR_FIELD_MAX_LENGTH,
     )
     resource_types: List[str] = Field(
+        default_factory=list,
         title="The type(s) of resource that the connector instance can be used "
         "to gain access to.",
     )
@@ -464,6 +503,11 @@ class ServiceConnectorBaseModel(BaseModel):
         "connector configuration, a resource ID must be provided by the "
         "connector consumer at runtime.",
         max_length=STR_FIELD_MAX_LENGTH,
+    )
+    multi_instance: bool = Field(
+        default=False,
+        title="Indicates whether the connector instance can be used to access "
+        "multiple instances of the configured resource type.",
     )
     expires_at: Optional[datetime] = Field(
         default=None,
@@ -489,6 +533,141 @@ class ServiceConnectorBaseModel(BaseModel):
         default_factory=dict,
         title="Service connector labels.",
     )
+
+    @property
+    def is_multi_type(self) -> bool:
+        """Checks if the connector is multi-type.
+
+        A multi-type connector can be used to access multiple types of
+        resources.
+
+        Returns:
+            True if the connector is multi-type, False otherwise.
+        """
+        return len(self.resource_types) > 1
+
+    @property
+    def is_multi_instance(self) -> bool:
+        """Checks if the connector is multi-instance.
+
+        A multi-instance connector can be used to access multiple instances
+        of the configured resource type.
+
+        Returns:
+            True if the connector is multi-instance, False otherwise.
+        """
+        return (
+            not self.is_multi_type
+            and not self.resource_id
+            and self.multi_instance
+        )
+
+    @property
+    def is_single_instance(self) -> bool:
+        """Checks if the connector is single-instance.
+
+        A single-instance connector can be used to access only a single
+        instance of the configured resource type or does not support multiple
+        resource instances.
+
+        Returns:
+            True if the connector is single-instance, False otherwise.
+        """
+        return not self.is_multi_type and not self.is_multi_instance
+
+    def validate_and_configure_resources(
+        self,
+        connector_type: "ServiceConnectorTypeModel",
+        resource_types: Optional[Union[str, List[str]]] = None,
+        resource_id: Optional[str] = None,
+        configuration: Optional[Dict[str, Any]] = None,
+        secrets: Optional[Dict[str, Optional[SecretStr]]] = None,
+    ) -> None:
+        """Validate and configure the resources that the connector can be used to access.
+
+        Args:
+            connector_type: The connector type specification used to validate
+                the connector configuration.
+            resource_types: The type(s) of resource that the connector instance
+                can be used to access. If omitted, a multi-type connector is
+                configured.
+            resource_id: Uniquely identifies a specific resource instance that
+                the connector instance can be used to access. Only applicable
+                if the connector supports multiple resource instances for the
+                configured resource type.
+            configuration: The connector configuration.
+            secrets: The connector secrets.
+        """
+        if resource_types is None:
+            resource_type = None
+        elif isinstance(resource_types, str):
+            resource_type = resource_types
+        elif len(resource_types) == 1:
+            resource_type = resource_types[0]
+        else:
+            # Multiple or no resource types specified
+            resource_type = None
+
+        try:
+            # Validate the connector configuration and retrieve the resource
+            # specification
+            (
+                auth_method_spec,
+                resource_spec,
+            ) = connector_type.find_resource_specifications(
+                self.auth_method,
+                resource_type,
+                resource_id,
+            )
+        except (KeyError, ValueError) as e:
+            raise ValueError(
+                f"connector configuration is not valid: {e}"
+            ) from e
+
+        if resource_type and resource_spec:
+            self.resource_types = [resource_spec.resource_type]
+
+            if resource_id:
+                self.resource_id = resource_id
+                self.multi_instance = False
+            else:
+                self.multi_instance = resource_spec.multi_instance
+
+        else:
+            # A multi-type connector is associated with all resource types
+            # that it supports
+            self.resource_types = list(connector_type.resource_type_map.keys())
+            self.multi_instance = False
+
+        # Validate and configure the connector configuration and secrets
+        configuration = configuration or {}
+        secrets = secrets or {}
+        for attr_name, attr_schema in auth_method_spec.config_schema.get(
+            "properties", {}
+        ).items():
+            required = attr_name in auth_method_spec.config_schema.get(
+                "required", []
+            )
+            secret = attr_schema.get("format", "") == "password"
+            value = configuration.get(attr_name, secrets.get(attr_name))
+            if required:
+                if value is None:
+                    raise ValueError(
+                        "connector configuration is not valid: missing "
+                        f"required attribute {attr_name}"
+                    )
+                continue
+            elif value is None:
+                continue
+
+            # Split the configuration into secrets and non-secrets
+            if secret:
+                if isinstance(value, SecretStr):
+                    self.secrets[attr_name] = value
+                else:
+                    self.secrets[attr_name] = SecretStr(value)
+            else:
+                self.configuration[attr_name] = value
 
 
 class ServiceConnectorRequirements(BaseModel):
@@ -547,14 +726,15 @@ class ServiceConnectorTypedResourceListModel(BaseModel):
     can provide access to.
     """
 
-    resource_type_name: str = Field(
-        title="User readable name for the resource type.",
-    )
-
     resource_type: str = Field(
         title="The type of resource that the service connector instance can "
         "be used to access.",
         max_length=STR_FIELD_MAX_LENGTH,
+    )
+
+    resource_type_name: Optional[str] = Field(
+        default=None,
+        title="User readable name for the resource type.",
     )
 
     logo_url: Optional[str] = Field(
@@ -599,6 +779,31 @@ class ServiceConnectorTypedResourceListModel(BaseModel):
             instance_discovery=resource_type_model.instance_discovery,
         )
 
+    @classmethod
+    def from_resource_model(
+        cls,
+        resource_model: "ServiceConnectorResponseModel",
+        resource_type: str,
+    ) -> "ServiceConnectorTypedResourceListModel":
+        """Initialize a typed resource list model from a resource model.
+
+        Args:
+            resource_model: The resource model.
+            resource_type: The resource type.
+
+        Returns:
+            A typed resource list model instance.
+        """
+        return cls(
+            resource_type=resource_type,
+            resource_type_name=resource_type,
+            multi_instance=resource_model.is_multi_instance,
+            instance_discovery=False,
+            resource_ids=[resource_model.resource_id]
+            if resource_model.resource_id
+            else [],
+        )
+
 
 class ServiceConnectorResourceListModel(BaseModel):
     """Service connector resources list.
@@ -624,6 +829,7 @@ class ServiceConnectorResourceListModel(BaseModel):
     )
 
     connector_type_name: Optional[str] = Field(
+        default=None,
         title="User readable name for the service connector type.",
     )
 
@@ -639,61 +845,53 @@ class ServiceConnectorResourceListModel(BaseModel):
         "to gain access to, grouped by resource type.",
     )
 
-    resources_unavailable: bool = Field(
-        default=False,
-        title="Whether the connector instance is unavailable to access any "
-        "resources.",
-    )
+    @classmethod
+    def from_connector_type_model(
+        cls,
+        connector_type_model: ServiceConnectorTypeModel,
+    ) -> "ServiceConnectorResourceListModel":
+        """Initialize a resource list model from a connector type model.
+
+        Args:
+            connector_type_model: The connector type model.
+
+        Returns:
+            A resource list model instance.
+        """
+        return cls(
+            connector_type=connector_type_model.type,
+            connector_type_name=connector_type_model.name,
+            logo_url=connector_type_model.logo_url,
+        )
 
     @classmethod
     def from_connector_model(
         cls,
-        connector_type_model: Optional[ServiceConnectorTypeModel] = None,
-        connector_model: Optional[
-            Union[
-                "ServiceConnectorRequestModel", "ServiceConnectorResponseModel"
-            ]
-        ] = None,
+        connector_model: "ServiceConnectorResponseModel",
     ) -> "ServiceConnectorResourceListModel":
         """Initialize a resource list model from a connector model.
 
         Args:
-            connector_type_model: The connector type model.
             connector_model: The connector model.
 
         Returns:
             A resource list model instance.
         """
-        id: Optional[UUID] = None
-        if connector_model and isinstance(
-            connector_model, ServiceConnectorResponseModel
-        ):
-            id = connector_model.id
-
-        name = connector_model.name if connector_model else None
-
-        connector_type: Optional[str] = None
-        if connector_model:
-            connector_type = connector_model.type
-        elif connector_type_model:
-            connector_type = connector_type_model.type
-
-        connector_type_name = (
-            connector_type_model.name if connector_type_model else None
-        )
-        logo_url = (
-            connector_type_model.logo_url if connector_type_model else None
+        resource_list = cls(
+            id=connector_model.id,
+            name=connector_model.name,
+            connector_type=connector_model.type,
+            connector_type_name=connector_model.type,
         )
 
-        assert connector_type is not None
-        assert connector_type_name is not None
-        return cls(
-            id=id,
-            name=name,
-            connector_type=connector_type,
-            connector_type_name=connector_type_name,
-            logo_url=logo_url,
-        )
+        for resource_type in connector_model.resource_types:
+            resource_list.resources.append(
+                ServiceConnectorTypedResourceListModel.from_resource_model(
+                    connector_model, resource_type=resource_type
+                )
+            )
+
+        return resource_list
 
 
 # -------- #
@@ -777,48 +975,6 @@ class ServiceConnectorResponseModel(
             update_model.labels
             if update_model.labels is not None
             else self.labels
-        )
-
-    @classmethod
-    def from_request_model(
-        cls,
-        request_model: "ServiceConnectorRequestModel",
-        secret_id: UUID,
-        resource_types: List[str],
-        connector_type: str,
-        logo_url: Optional[str] = None,
-    ) -> "ServiceConnectorResponseModel":
-        """Initialize a response model from a request model.
-
-        Args:
-            request_model: The request model.
-            secret_id: The ID of the secret that contains the service connector
-                secret configuration values.
-            resource_types: The list of resource types that the service
-                connector can provide access to.
-            connector_type: The type of service connector.
-            logo_url: A url pointing to a png, svg or jpg representation of the
-                connector's logo.
-
-        Returns:
-            A response model instance.
-        """
-        return cls(
-            id=uuid.uuid4(),
-            name=request_model.name,
-            is_shared=request_model.is_shared,
-            secret_id=secret_id,
-            type=connector_type,
-            auth_method=request_model.auth_method,
-            resource_types=resource_types,
-            configuration=request_model.configuration,
-            secrets=request_model.secrets,
-            resource_id=request_model.resource_id,
-            description=request_model.description,
-            expiration_seconds=request_model.expiration_seconds,
-            expires_at=request_model.expires_at,
-            labels=request_model.labels,
-            logo_url=logo_url,
         )
 
 

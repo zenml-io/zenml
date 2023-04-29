@@ -15,7 +15,7 @@
 
 from abc import abstractmethod
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, ClassVar, Dict, List, Optional, Tuple
 from uuid import UUID
 
 from pydantic import (
@@ -127,6 +127,8 @@ class ServiceConnector(BaseModel):
     expiration_seconds: Optional[int] = None
     config: AuthenticationConfig
 
+    _TYPE: ClassVar[Optional[ServiceConnectorTypeModel]] = None
+
     def __init__(self, **kwargs: Any) -> None:
         """Initialize a new service connector instance.
 
@@ -143,17 +145,8 @@ class ServiceConnector(BaseModel):
             )
 
     @classmethod
-    def register(cls) -> None:
-        """Register the connector with the connector registry."""
-        from zenml.service_connectors.service_connector_registry import (
-            service_connector_registry,
-        )
-
-        service_connector_registry.register_service_connector(cls)
-
-    @classmethod
     @abstractmethod
-    def get_type(cls) -> ServiceConnectorTypeModel:
+    def _get_connector_type(cls) -> ServiceConnectorTypeModel:
         """Get the connector type specification.
 
         Returns:
@@ -390,6 +383,30 @@ class ServiceConnector(BaseModel):
 
         return self
 
+    @classmethod
+    def get_type(cls) -> ServiceConnectorTypeModel:
+        """Get the connector type specification.
+
+        Returns:
+            The connector type specification.
+        """
+        if cls._TYPE is not None:
+            return cls._TYPE
+
+        connector_type = cls._get_connector_type()
+        connector_type.set_connector_class(cls)
+        cls._TYPE = connector_type
+        return cls._TYPE
+
+    @property
+    def type(self) -> ServiceConnectorTypeModel:
+        """Get the connector type specification.
+
+        Returns:
+            The connector type specification.
+        """
+        return self.get_type()
+
     @property
     def supported_resource_types(self) -> List[str]:
         """The resource types supported by this connector instance.
@@ -539,17 +556,6 @@ class ServiceConnector(BaseModel):
             ValueError: If the connector configuration is not valid.
         """
         spec = self.get_type()
-        try:
-            # Validate the connector configuration.
-            spec.find_resource_specifications(
-                self.auth_method,
-                self.resource_type,
-                self.resource_id,
-            )
-        except (KeyError, ValueError) as e:
-            raise ValueError(
-                f"connector configuration is not valid: {e}"
-            ) from e
 
         name = name or self.name
         if name is None:
@@ -557,22 +563,29 @@ class ServiceConnector(BaseModel):
                 "connector configuration is not valid: name must be set"
             )
 
-        return ServiceConnectorRequestModel(
-            type=self.get_type().type,
+        model = ServiceConnectorRequestModel(
+            type=spec.type,
             name=name,
             description=description,
             user=user,
             workspace=workspace,
             is_shared=is_shared,
             auth_method=self.auth_method,
-            resource_types=self.supported_resource_types,
-            resource_id=self.resource_id,
-            configuration=self.config.non_secret_values,
-            secrets=self.config.secret_values,
             expires_at=self.expires_at,
             expiration_seconds=self.expiration_seconds,
             labels=labels or {},
         )
+
+        # Validate the connector configuration.
+        model.validate_and_configure_resources(
+            connector_type=spec,
+            resource_types=self.resource_type,
+            resource_id=self.resource_id,
+            configuration=self.config.non_secret_values,
+            secrets=self.config.secret_values,
+        )
+
+        return model
 
     def to_response_model(
         self,
@@ -603,17 +616,6 @@ class ServiceConnector(BaseModel):
             ValueError: If the connector configuration is not valid.
         """
         spec = self.get_type()
-        try:
-            # Validate the connector configuration.
-            spec.find_resource_specifications(
-                self.auth_method,
-                self.resource_type,
-                self.resource_id,
-            )
-        except (KeyError, ValueError) as e:
-            raise ValueError(
-                f"connector configuration is not valid: {e}"
-            ) from e
 
         name = name or self.name
         id = id or self.id
@@ -622,7 +624,7 @@ class ServiceConnector(BaseModel):
                 "connector configuration is not valid: name and ID must be set"
             )
 
-        return ServiceConnectorResponseModel(
+        model = ServiceConnectorResponseModel(
             id=id,
             created=datetime.utcnow(),
             updated=datetime.utcnow(),
@@ -633,14 +635,21 @@ class ServiceConnector(BaseModel):
             workspace=workspace,
             is_shared=is_shared,
             auth_method=self.auth_method,
-            resource_types=self.supported_resource_types,
-            resource_id=self.resource_id,
-            configuration=self.config.non_secret_values,
-            secrets=self.config.secret_values,
             expires_at=self.expires_at,
             expiration_seconds=self.expiration_seconds,
             labels=labels or {},
         )
+
+        # Validate the connector configuration.
+        model.validate_and_configure_resources(
+            connector_type=spec,
+            resource_types=self.resource_type,
+            resource_id=self.resource_id,
+            configuration=self.config.non_secret_values,
+            secrets=self.config.secret_values,
+        )
+
+        return model
 
     def has_expired(self) -> bool:
         """Check if the connector has expired.
@@ -958,7 +967,7 @@ class ServiceConnector(BaseModel):
                 f"resource: {exc}",
             )
 
-    def list_resource_ids(
+    def list_resources(
         self,
         resource_type: Optional[str] = None,
         resource_id: Optional[str] = None,
@@ -1010,7 +1019,6 @@ class ServiceConnector(BaseModel):
             )
             resource_list.id = self.id
             resource_list.name = self.name
-            resource_list.resources_unavailable = False
 
             for resource_type in resource_types:
                 resource_type_spec = spec.resource_type_map[resource_type]
@@ -1073,6 +1081,13 @@ class ServiceConnector(BaseModel):
             resource_id=resource_id,
             require_resource_type=True,
             require_resource_id=True,
+        )
+
+        # Verify if the connector allows access to the requested resource type
+        # and instance.
+        self._verify(
+            resource_type=resource_type,
+            resource_id=resource_id,
         )
 
         assert resource_type is not None

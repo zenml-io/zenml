@@ -79,6 +79,7 @@ if TYPE_CHECKING:
         ComponentResponseModel,
         FlavorResponseModel,
         PipelineRunResponseModel,
+        ServiceConnectorRequestModel,
         ServiceConnectorResourceListModel,
         ServiceConnectorResponseModel,
         ServiceConnectorTypeModel,
@@ -1160,7 +1161,7 @@ def print_service_connectors_table(
         warning("No service connectors registered.")
         return
     active_stack = client.active_stack_model
-    active_connector_ids: List[UUID] = []
+    active_connector_ids: List["UUID"] = []
     for components in active_stack.components.values():
         active_connector_ids.extend(
             [
@@ -1190,7 +1191,7 @@ def print_service_connectors_table(
 
 
 def print_service_connector_resource_table(
-    resources: "ServiceConnectorResourceListModel",
+    resources: List["ServiceConnectorResourceListModel"],
 ) -> None:
     """Prints a table with details for a list of service connector resources.
 
@@ -1198,25 +1199,35 @@ def print_service_connector_resource_table(
         resources: List of service connector resources to print.
     """
     resource_table = []
-    for resource_list in resources.resources:
-        resource_type = (
-            f"{resource_list.resource_type_name} "
-            f"({resource_list.resource_type})"
-        )
-        if not resource_list.multi_instance:
-            resource_ids = "N/A"
-        else:
-            resource_ids = "\n".join(resource_list.resource_ids)
-        resource_row = {
-            "RESOURCE_TYPE": resource_type,
-            "RESOURCES": resource_ids,
-        }
-        resource_table.append(resource_row)
+    for resource_model in resources:
+        for resource_list in resource_model.resources:
+            resource_type = (
+                f"{resource_list.resource_type_name} "
+                f"({resource_list.resource_type})"
+            )
+            if not resource_list.multi_instance:
+                resource_ids = "N/A"
+            else:
+                resource_ids = "\n".join(resource_list.resource_ids)
+            resource_row: Dict[str, Any] = {
+                "RESOURCE_TYPE": resource_type,
+                "RESOURCES": resource_ids,
+            }
+            if len(resources) > 1:
+                resource_row.update(
+                    {
+                        "CONNECTOR_ID": str(resource_model.id),
+                        "CONNECTOR_NAME": resource_model.name,
+                    }
+                )
+            resource_table.append(resource_row)
     print_table(resource_table)
 
 
 def print_service_connector_configuration(
-    connector: "ServiceConnectorResponseModel",
+    connector: Union[
+        "ServiceConnectorResponseModel", "ServiceConnectorRequestModel"
+    ],
     active_status: bool,
     show_secrets: bool,
 ) -> None:
@@ -1227,17 +1238,31 @@ def print_service_connector_configuration(
         active_status: Whether the connector is active.
         show_secrets: Whether to show secrets.
     """
+    from uuid import UUID
+
+    from zenml.models import ServiceConnectorResponseModel
+
     if connector.user:
-        user_name = connector.user.name
+        if isinstance(connector.user, UUID):
+            user_name = str(connector.user)
+        else:
+            user_name = connector.user.name
     else:
         user_name = "[DELETED]"
 
-    declare(
-        f"Service connector '{connector.name}' of type "
-        f"'{connector.type}' with id '{connector.id}' is owned by "
-        f"user '{user_name}' and is "
-        f"'{'shared' if connector.is_shared else 'private'}'."
-    )
+    if isinstance(connector, ServiceConnectorResponseModel):
+        declare(
+            f"Service connector '{connector.name}' of type "
+            f"'{connector.type}' with id '{connector.id}' is owned by "
+            f"user '{user_name}' and is "
+            f"'{'shared' if connector.is_shared else 'private'}'."
+        )
+    else:
+        declare(
+            f"Service connector '{connector.name}' of type "
+            f"'{connector.type}' is "
+            f"'{'shared' if connector.is_shared else 'private'}'."
+        )
 
     title_ = (
         f"'{connector.name}' {connector.type} Service Connector " "Details"
@@ -1258,22 +1283,34 @@ def print_service_connector_configuration(
     else:
         expiration = str(connector.expiration_seconds) + "s"
 
-    properties = {
-        "ID": connector.id,
-        "NAME": connector.name,
-        "TYPE": connector.type,
-        "AUTH_METHOD": connector.auth_method,
-        "RESOURCE_TYPES": ", ".join(connector.resource_types),
-        "RESOURCE_ID": connector.resource_id or "",
-        "SECRET_ID": connector.secret_id or "",
-        "SESSION_DURATION": expiration,
-        "EXPIRES_AT": str(connector.expires_at or "N/A"),
-        "OWNER": user_name,
-        "WORKSPACE": connector.workspace.name,
-        "SHARED": get_shared_emoji(connector.is_shared),
-        "CREATED_AT": connector.created,
-        "UPDATED_AT": connector.updated,
-    }
+    if isinstance(connector, ServiceConnectorResponseModel):
+        properties = {
+            "ID": connector.id,
+            "NAME": connector.name,
+            "TYPE": connector.type,
+            "AUTH_METHOD": connector.auth_method,
+            "RESOURCE_TYPES": ", ".join(connector.resource_types),
+            "RESOURCE_ID": connector.resource_id or "",
+            "SECRET_ID": connector.secret_id or "",
+            "SESSION_DURATION": expiration,
+            "EXPIRES_AT": str(connector.expires_at or "N/A"),
+            "OWNER": user_name,
+            "WORKSPACE": connector.workspace.name,
+            "SHARED": get_shared_emoji(connector.is_shared),
+            "CREATED_AT": connector.created,
+            "UPDATED_AT": connector.updated,
+        }
+    else:
+        properties = {
+            "NAME": connector.name,
+            "TYPE": connector.type,
+            "AUTH_METHOD": connector.auth_method,
+            "RESOURCE_TYPES": ", ".join(connector.resource_types),
+            "RESOURCE_ID": connector.resource_id or "",
+            "SESSION_DURATION": expiration,
+            "EXPIRES_AT": str(connector.expires_at or "N/A"),
+            "SHARED": get_shared_emoji(connector.is_shared),
+        }
 
     for item in properties.items():
         elements = [str(elem) for elem in item]
@@ -1281,8 +1318,8 @@ def print_service_connector_configuration(
 
     console.print(rich_table)
 
-    if len(connector.configuration) and len(connector.secrets) == 0:
-        declare("No configuration options are set for this component.")
+    if len(connector.configuration) == 0 and len(connector.secrets) == 0:
+        declare("No configuration options are set for this connector.")
 
     else:
         rich_table = table.Table(
@@ -1353,9 +1390,46 @@ def print_service_connector_types_table(
             "TYPE": connector_type.type,
             "RESOURCE_TYPES": "\n".join(supported_resource_types),
             "AUTH_METHODS": "\n".join(supported_auth_methods),
+            "LOCAL": get_shared_emoji(connector_type.local),
+            "REMOTE": get_shared_emoji(connector_type.remote),
         }
         configurations.append(connector_type_config)
     print_table(configurations)
+
+
+def print_service_connector_type(
+    connector_type: "ServiceConnectorTypeModel",
+) -> None:
+    """Prints details for service connectors type.
+
+    Args:
+        connector_type: Service connector type to print.
+    """
+    from rich.markdown import Markdown
+
+    message = ""
+    supported_auth_methods = list(connector_type.auth_method_map.keys())
+    supported_resource_types = list(connector_type.resource_type_map.keys())
+
+    message += (
+        f"# {connector_type.name} (connector type: {connector_type.type})\n"
+    )
+    message += (
+        f"**Authentication methods**: {', '.join(supported_auth_methods)}\n"
+    )
+    message += f"**Resource types**: {', '.join(supported_resource_types)}\n"
+    message += f"{connector_type.description}\n"
+
+    for r in connector_type.resource_types:
+        message += f"## {r.name} (resource type: {r.resource_type})\n"
+        message += f"**Authentication methods**: {', '.join(r.auth_methods)}\n"
+        message += f"{r.description}\n"
+
+    for a in connector_type.auth_methods:
+        message += f"## {a.name} (auth method: {a.auth_method})\n"
+        message += f"{a.description}\n"
+
+    console.print(Markdown(f"{message}---"), justify="left", width=80)
 
 
 def _get_stack_components(

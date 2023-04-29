@@ -28,7 +28,11 @@ from zenml.client import Client
 from zenml.console import console
 from zenml.enums import CliCategories
 from zenml.exceptions import AuthorizationException, IllegalOperationError
-from zenml.models import ServiceConnectorFilterModel
+from zenml.models import (
+    ServiceConnectorBaseModel,
+    ServiceConnectorFilterModel,
+    ServiceConnectorResourceListModel,
+)
 
 
 # Service connectors
@@ -176,8 +180,6 @@ def register_service_connector(
     """
     from rich.markdown import Markdown
 
-    from zenml.service_connectors.service_connector import ServiceConnector
-
     client = Client()
 
     # Parse the given args
@@ -190,12 +192,8 @@ def register_service_connector(
     parsed_labels = cli_utils.get_parsed_labels(labels)
 
     if interactive:
-        from zenml.service_connectors.service_connector_registry import (
-            service_connector_registry,
-        )
-
         # Get the list of available service connector types
-        connector_types = service_connector_registry.list_service_connectors(
+        connector_types = client.list_service_connector_types(
             connector_type=connector_type,
             resource_type=resource_type,
             auth_method=auth_method,
@@ -242,7 +240,7 @@ def register_service_connector(
             default="",
         )
 
-        available_types = {c.get_type().type: c for c in connector_types}
+        available_types = {c.type: c for c in connector_types}
         if len(available_types) == 1:
             # Default to the first connector type if not supplied and if
             # only one type is available
@@ -251,8 +249,7 @@ def register_service_connector(
         message = "# Available service connector types\n"
         # Print the name, type and description of all available service
         # connectors
-        for c in connector_types:
-            spec = c.get_type()
+        for spec in connector_types:
             message += f"## {spec.name} ({spec.type})\n"
             message += f"{spec.description}\n"
 
@@ -266,31 +263,42 @@ def register_service_connector(
         )
 
         assert connector_type is not None
-        connector_type_spec = available_types[connector_type].get_type()
+        connector_type_spec = available_types[connector_type]
 
-        # Ask the user whether to use auto-configuration
-        auto_configure = click.confirm(
-            "Would you like to attempt auto-configuration to extract the "
-            "authentication configuration from your local environment ?",
-            default=False,
-        )
+        # Ask the user whether to use auto-configuration, if the connector
+        # implementation is locally available
+        if connector_type_spec.local:
+            auto_configure = click.confirm(
+                "Would you like to attempt auto-configuration to extract the "
+                "authentication configuration from your local environment ?",
+                default=False,
+            )
+        else:
+            auto_configure = False
 
         auth_method: Optional[str] = None
-        connector: Optional[ServiceConnector] = None
+        connector_resources: Optional[ServiceConnectorResourceListModel] = None
+        connector_model: Optional[ServiceConnectorBaseModel] = None
         if auto_configure:
             # Try to auto-configure the service connector
             try:
-                connector_instance = client.create_service_connector(
-                    name=name,
-                    description=description or "",
-                    type=connector_type,
-                    is_shared=share,
-                    auto_configure=True,
-                    verify=True,
-                    register=False,
-                )
-                assert isinstance(connector_instance, ServiceConnector)
-                connector = connector_instance
+                with console.status("Auto-configuring service connector...\n"):
+
+                    (
+                        connector_model,
+                        connector_resources,
+                    ) = client.create_service_connector(
+                        name=name,
+                        description=description or "",
+                        type=connector_type,
+                        is_shared=share,
+                        auto_configure=True,
+                        verify=True,
+                        register=False,
+                    )
+
+                assert connector_model is not None
+                assert connector_resources is not None
             except (
                 KeyError,
                 ValueError,
@@ -309,14 +317,29 @@ def register_service_connector(
                 if not manual:
                     return
             else:
-                auth_method = connector_instance.auth_method
+                auth_method = connector_model.auth_method
                 cli_utils.declare(
                     "Service connector auto-configured successfully with the "
-                    f"{connector_type_spec.auth_method_map[auth_method].name} "
-                    "authentication method."
+                    "following configuration:"
                 )
+                cli_utils.print_service_connector_configuration(
+                    connector_model,
+                    active_status=False,
+                    show_secrets=False,
+                )
+                # Ask the user whether to continue with the auto configuration
+                choice = click.prompt(
+                    "Would you like to continue with the auto-discovered "
+                    "configuration or switch to manual ?",
+                    type=click.Choice(["auto", "manual"]),
+                    default="auto",
+                )
+                if choice == "manual":
+                    # Reset the auto-configured connector
+                    connector_model = None
+                    connector_resources = None
 
-        if connector is not None:
+        if connector_model is not None and connector_resources is not None:
             assert auth_method is not None
             auth_method_spec = connector_type_spec.auth_method_map[auth_method]
         else:
@@ -442,20 +465,27 @@ def register_service_connector(
                     break
 
             try:
-                connector_instance = client.create_service_connector(
-                    name=name,
-                    description=description or "",
-                    type=connector_type,
-                    auth_method=auth_method,
-                    configuration=config_dict,
-                    expiration_seconds=expiration_seconds,
-                    is_shared=share,
-                    auto_configure=False,
-                    verify=True,
-                    register=False,
-                )
-                assert isinstance(connector_instance, ServiceConnector)
-                connector = connector_instance
+                with console.status(
+                    "Validating service connector configuration...\n"
+                ):
+
+                    (
+                        connector_model,
+                        connector_resources,
+                    ) = client.create_service_connector(
+                        name=name,
+                        description=description or "",
+                        type=connector_type,
+                        auth_method=auth_method,
+                        configuration=config_dict,
+                        expiration_seconds=expiration_seconds,
+                        is_shared=share,
+                        auto_configure=False,
+                        verify=True,
+                        register=False,
+                    )
+                assert connector_model is not None
+                assert connector_resources is not None
             except (
                 KeyError,
                 ValueError,
@@ -466,13 +496,39 @@ def register_service_connector(
                 cli_utils.error(f"Failed to configure service connector: {e}")
 
         available_resource_types = [
-            r.resource_type
-            for r in connector_type_spec.resource_types
-            if auth_method in r.auth_methods
+            t.resource_type
+            for t in connector_type_spec.resource_types
+            if auth_method in t.auth_methods
         ]
-        if connector.resource_type:
-            # If the connector instance already chose a resource type, use it
-            available_resource_types = [connector.resource_type]
+
+        # available_resources = []
+        # for typed_resource in connector_resources.resources:
+        #     available_resources.append(
+        #         (
+        #             typed_resource.resource_type,
+        #             typed_resource.resource_type_name,
+        #             None,
+        #         )
+        #     )
+        #     if not typed_resource.multi_instance:
+        #         continue
+        #     if typed_resource.instance_discovery:
+        #         for resource_id in typed_resource.resource_ids:
+        #             available_resources.append(
+        #                 (
+        #                     typed_resource.resource_type,
+        #                     typed_resource.resource_type_name,
+        #                     resource_id,
+        #                 )
+        #             )
+        #         continue
+        #     available_resources.append(
+        #         (
+        #             typed_resource.resource_type,
+        #             typed_resource.resource_type_name,
+        #             "<enter resource ID manually>",
+        #         )
+        #     )
 
         message = "# Available resource types\n"
         # Print the name, resource type identifiers and description of all
@@ -527,34 +583,13 @@ def register_service_connector(
 
             if resource_type_spec.multi_instance:
 
-                # Try to retrieve the list of available resource IDs from the
-                # connector instance
                 resource_ids: List[str] = []
                 if resource_type_spec.instance_discovery:
-                    try:
-                        resource_list = connector.list_resource_ids(
-                            resource_type=resource_type
-                        )
-                        if (
-                            resource_list.resources
-                            and resource_list.resources[0].resource_type
-                            == resource_type
-                        ):
-                            resource_ids = resource_list.resources[
-                                0
-                            ].resource_ids
-
-                    except (
-                        KeyError,
-                        ValueError,
-                        IllegalOperationError,
-                        AuthorizationException,
-                        NotImplementedError,
-                    ) as e:
-                        cli_utils.warning(
-                            "Failed to retrieve the list of available "
-                            f"{resource_type_spec.name} resource IDs: {e}"
-                        )
+                    resource_ids = [
+                        r.resource_ids
+                        for r in connector_resources.resources
+                        if r.resource_type == resource_type
+                    ][0]
 
                 if resource_type_spec.instance_discovery and not resource_ids:
                     cli_utils.error(
@@ -589,16 +624,18 @@ def register_service_connector(
                             break
 
                         cli_utils.warning(
-                            f"The resource ID '{resource_id}' is not one of "
+                            f"The selected '{resource_id}' value is not one of "
                             "the listed values. Please try again."
                         )
                 else:
                     prompt = (
-                        "The selected resource type supports multiple "
-                        f"{resource_type_spec.name} instances. Please enter a "
-                        "{resource_type_spec.name} ID manually or leave it "
+                        "The connector configuration can be used to access "
+                        f"multiple {resource_type_spec.name} instances. If you "
+                        "would like to limit the scope of the connector to one "
+                        "instance, please enter the ID of a particular "
+                        f"{resource_type_spec.name} instance. Or leave it "
                         "empty to create a multi-instance connector that can "
-                        "be used to access any resource of this type"
+                        "be used to access any {resource_type_spec.name}"
                     )
                     resource_id = click.prompt(
                         prompt,
@@ -615,10 +652,11 @@ def register_service_connector(
 
         # Prepare the rest of the variables to fall through to the
         # non-interactive configuration case
-        parsed_args = connector.config.all_values
+        parsed_args = connector_model.configuration
+        parsed_args.update(connector_model.secrets)
         auto_configure = False
         no_verify = False
-        expiration_seconds = connector.expiration_seconds
+        expiration_seconds = connector_model.expiration_seconds
 
     if not connector_type:
         cli_utils.error(
@@ -749,7 +787,7 @@ def describe_service_connector(
 
     if resource_type or resource_id:
         try:
-            client_connector = client.get_client_service_connector(
+            client_connector = client.get_service_connector_client(
                 name_id_or_prefix=name_id_or_prefix,
                 resource_type=resource_type,
                 resource_id=resource_id,
@@ -1109,14 +1147,14 @@ def delete_service_connector(name_id_or_prefix: str) -> None:
 
 @service_connector.command(
     "verify",
-    help="""Verify that the connector can connect to the remote resource.
+    help="""Verifies if a service connector has access to one or more resources.
 """,
 )
 @click.option(
     "--resource-type",
     "-r",
     "resource_type",
-    help="The type of the resource to connect to.",
+    help="The type of the resource for which to verify access.",
     required=False,
     type=str,
 )
@@ -1124,7 +1162,7 @@ def delete_service_connector(name_id_or_prefix: str) -> None:
     "--resource-id",
     "-ri",
     "resource_id",
-    help="The ID of the resource to connect to.",
+    help="The ID of the resource for which to verify access.",
     required=False,
     type=str,
 )
@@ -1134,12 +1172,12 @@ def verify_service_connector(
     resource_type: Optional[str] = None,
     resource_id: Optional[str] = None,
 ) -> None:
-    """Verify that the connector can connect to the remote resource.
+    """Verifies if a service connector has access to one or more resources.
 
     Args:
         name_id_or_prefix: The name or id of the service connector to verify.
-        resource_type: The type of the custom resource to connect to.
-        resource_id: The ID of the custom resource to connect to.
+        resource_type: The type of resource for which to verify access.
+        resource_id: The ID of the resource for which to verify access.
     """
     client = Client()
 
@@ -1147,7 +1185,7 @@ def verify_service_connector(
         f"Verifying service connector '{name_id_or_prefix}'...\n"
     ):
         try:
-            client.verify_service_connector(
+            resources = client.verify_service_connector(
                 name_id_or_prefix=name_id_or_prefix,
                 resource_type=resource_type,
                 resource_id=resource_id,
@@ -1164,71 +1202,8 @@ def verify_service_connector(
                 f"{e}"
             )
 
-        cli_utils.declare(
-            f"Service connector '{name_id_or_prefix}' verified "
-            "successfully."
-        )
-
-
-@service_connector.command(
-    "list-resources",
-    help="""List all resources that a connector can give access to.
-""",
-)
-@click.option(
-    "--resource-type",
-    "-r",
-    "resource_type",
-    help="The type of resources to list.",
-    required=False,
-    type=str,
-)
-@click.option(
-    "--resource-id",
-    "-ri",
-    "resource_id",
-    help="The ID of the particular resource to check.",
-    required=False,
-    type=str,
-)
-@click.argument("name_id_or_prefix", type=str, required=True)
-def list_service_connector_resources(
-    name_id_or_prefix: str,
-    resource_type: Optional[str] = None,
-    resource_id: Optional[str] = None,
-) -> None:
-    """List all resources that a connector can give access to.
-
-    Args:
-        name_id_or_prefix: The name or id of the service connector.
-        resource_type: The type of resources to list.
-        resource_id: The ID of a particular resource to check.
-    """
-    client = Client()
-
-    with console.status(
-        f"Fetching service connector resources for '{name_id_or_prefix}'...\n"
-    ):
-        try:
-            resource_list = client.list_service_connector_resources(
-                name_id_or_prefix=name_id_or_prefix,
-                resource_type=resource_type,
-                resource_id=resource_id,
-            )
-        except (
-            KeyError,
-            ValueError,
-            IllegalOperationError,
-            NotImplementedError,
-            AuthorizationException,
-        ) as e:
-            cli_utils.error(
-                f"Service connector '{name_id_or_prefix}' instantiation "
-                f"failed: {e}"
-            )
-
         cli_utils.print_service_connector_resource_table(
-            resources=resource_list,
+            resources=[resources],
         )
 
 
@@ -1301,92 +1276,59 @@ def login_service_connector(
         )
 
 
-# def generate_stack_component_logs_command(
-#     component_type: StackComponentType,
-# ) -> Callable[[str, bool], None]:
-#     """Generates a `logs` command for the specific stack component type.
+@service_connector.command(
+    "list-resources",
+    help="""List all resources that 
+""",
+)
+@click.option(
+    "--connector-type",
+    "-c",
+    "connector_type",
+    help="The type of service connector to filter by.",
+    required=False,
+    type=str,
+)
+@click.option(
+    "--resource-type",
+    "-r",
+    "resource_type",
+    help="The type of resource to filter by.",
+    required=False,
+    type=str,
+)
+def list_service_connector_resources(
+    connector_type: Optional[str] = None,
+    resource_type: Optional[str] = None,
+) -> None:
+    """List resources that can be accessed by service connectors.
 
-#     Args:
-#         component_type: Type of the component to generate the command for.
+    Args:
+        connector_type: The type of service connector to filter by.
+        resource_type: The type of resource to filter by.
+    """
+    client = Client()
 
-#     Returns:
-#         A function that can be used as a `click` command.
-#     """
-#     display_name = _component_display_name(component_type)
+    with console.status("Fetching service connector resources...\n"):
+        try:
+            resource_list = client.list_service_connector_resources(
+                connector_type=connector_type,
+                resource_type=resource_type,
+            )
+        except (
+            KeyError,
+            ValueError,
+            IllegalOperationError,
+            NotImplementedError,
+            AuthorizationException,
+        ) as e:
+            cli_utils.error(
+                f"Could not fetch service connector resources: {e}"
+            )
 
-#     @click.argument("name_id_or_prefix", type=str, required=False)
-#     @click.option(
-#         "--follow",
-#         "-f",
-#         is_flag=True,
-#         help="Follow the log file instead of just displaying the current logs.",
-#     )
-#     def stack_component_logs_command(
-#         name_id_or_prefix: str, follow: bool = False
-#     ) -> None:
-#         """Displays stack component logs.
-
-#         Args:
-#             name_id_or_prefix: The name of the stack component to display logs
-#                 for.
-#             follow: Follow the log file instead of just displaying the current
-#                 logs.
-#         """
-#         client = Client()
-
-#         with console.status(
-#             f"Fetching the logs for the {display_name} "
-#             f"'{name_id_or_prefix}'...\n"
-#         ):
-#             try:
-#                 component_model = client.get_stack_component(
-#                     name_id_or_prefix=name_id_or_prefix,
-#                     component_type=component_type,
-#                 )
-#             except KeyError as err:
-#                 cli_utils.error(str(err))
-
-#             from zenml.stack import StackComponent
-
-#             component = StackComponent.from_model(
-#                 component_model=component_model
-#             )
-#             log_file = component.log_file
-
-#             if not log_file or not fileio.exists(log_file):
-#                 cli_utils.warning(
-#                     f"Unable to find log file for {display_name} "
-#                     f"'{name_id_or_prefix}'."
-#                 )
-#                 return
-
-#         if not log_file or not fileio.exists(log_file):
-#             cli_utils.warning(
-#                 f"Unable to find log file for {display_name} "
-#                 f"'{component.name}'."
-#             )
-#             return
-
-#         if follow:
-#             try:
-#                 with open(log_file, "r") as f:
-#                     # seek to the end of the file
-#                     f.seek(0, 2)
-
-#                     while True:
-#                         line = f.readline()
-#                         if not line:
-#                             time.sleep(0.1)
-#                             continue
-#                         line = line.rstrip("\n")
-#                         click.echo(line)
-#             except KeyboardInterrupt:
-#                 cli_utils.declare(f"Stopped following {display_name} logs.")
-#         else:
-#             with open(log_file, "r") as f:
-#                 click.echo(f.read())
-
-#     return stack_component_logs_command
+        cli_utils.print_service_connector_resource_table(
+            resources=resource_list,
+        )
 
 
 # def generate_stack_component_explain_command(
@@ -1473,392 +1415,47 @@ def list_service_connector_types(
         auth_method: Filter by the supported authentication method.
         detailed: Show detailed information about the service connectors.
     """
-    from zenml.service_connectors.service_connector_registry import (
-        service_connector_registry,
-    )
+    client = Client()
 
-    service_connector_types = (
-        service_connector_registry.list_service_connectors(
-            connector_type=type,
-            resource_type=resource_type,
-            auth_method=auth_method,
-        )
+    service_connector_types = client.list_service_connector_types(
+        connector_type=type,
+        resource_type=resource_type,
+        auth_method=auth_method,
     )
 
     if not service_connector_types:
         cli_utils.error("No service connectors found matching the criteria.")
 
     if detailed:
-        from rich.markdown import Markdown
-
-        message = ""
-        for connector in service_connector_types:
-            filtered_auth_methods = [auth_method] if auth_method else []
-            spec = connector.get_type()
-            supported_auth_methods = list(spec.auth_method_map.keys())
-            supported_resource_types = list(spec.resource_type_map.keys())
-
-            message += f"# {spec.name} (connector type: {spec.type})\n"
-            message += f"**Authentication methods**: {', '.join(supported_auth_methods)}\n"
-            message += (
-                f"**Resource types**: {', '.join(supported_resource_types)}\n"
-            )
-            message += f"{spec.description}\n"
-
-            for r in spec.resource_types:
-                if resource_type and r.resource_type != resource_type:
-                    continue
-                message += f"## {r.name} (resource type: {r.resource_type})\n"
-                message += f"**Authentication methods**: {', '.join(r.auth_methods)}\n"
-                message += f"{r.description}\n"
-                filtered_auth_methods.extend(r.auth_methods)
-
-            for a in spec.auth_methods:
-                if a.auth_method not in filtered_auth_methods:
-                    continue
-                message += f"## {a.name} (auth method: {a.auth_method})\n"
-                message += f"{a.description}\n"
-
-        console.print(Markdown(f"{message}---"), justify="left", width=80)
+        for connector_type in service_connector_types:
+            cli_utils.print_service_connector_type(connector_type)
     else:
         cli_utils.print_service_connector_types_table(
-            connector_types=[
-                connector.get_type() for connector in service_connector_types
-            ]
+            connector_types=service_connector_types
         )
 
 
-# def generate_stack_component_flavor_register_command(
-#     component_type: StackComponentType,
-# ) -> Callable[[str], None]:
-#     """Generates a `register` command for the flavors of a stack component.
+@service_connector.command(
+    "get-type",
+    help="""List available service connector types.
+""",
+)
+@click.argument(
+    "type",
+    type=str,
+    required=True,
+)
+def describe_service_connector_type(type: str) -> None:
+    """Describes a service connector type.
 
-#     Args:
-#         component_type: Type of the component to generate the command for.
+    Args:
+        type: The connector type to describe.
+    """
+    client = Client()
 
-#     Returns:
-#         A function that can be used as a `click` command.
-#     """
-#     command_name = component_type.value.replace("_", "-")
-#     display_name = _component_display_name(component_type)
+    try:
+        connector_type = client.get_service_connector_type(type)
+    except KeyError:
+        cli_utils.error(f"Service connector type '{type}' not found.")
 
-#     @click.argument(
-#         "source",
-#         type=str,
-#         required=True,
-#     )
-#     def register_stack_component_flavor_command(source: str) -> None:
-#         """Adds a flavor for a stack component type.
-
-#         Example:
-#             Let's say you create an artifact store flavor class `MyArtifactStoreFlavor`
-#             in the file path `flavors/my_flavor.py`. You would register it as:
-
-#             ```shell
-#             zenml artifact-store flavor register flavors.my_flavor.MyArtifactStoreFlavor
-#             ```
-
-#         Args:
-#             source: The source path of the flavor class in dot notation format.
-#         """
-#         if component_type == StackComponentType.SECRETS_MANAGER:
-#             warn_deprecated_secrets_manager()
-
-#         client = Client()
-
-#         if not client.root:
-#             cli_utils.warning(
-#                 f"You're running the `zenml {command_name} flavor register` "
-#                 "command without a ZenML repository. Your current working "
-#                 "directory will be used as the source root relative to which "
-#                 "the `source` argument is expected. To silence this warning, "
-#                 "run `zenml init` at your source code root."
-#             )
-
-#         with console.status(f"Registering a new {display_name} flavor`...\n"):
-#             try:
-#                 # Register the new model
-#                 new_flavor = client.create_flavor(
-#                     source=source,
-#                     component_type=component_type,
-#                 )
-#             except ValueError as e:
-#                 root_path = Client.find_repository()
-#                 cli_utils.error(
-#                     f"Flavor registration failed! ZenML tried loading the module `{source}` from path "
-#                     f"`{root_path}`. If this is not what you expect, then please ensure you have run "
-#                     f"`zenml init` at the root of your repository.\n\nOriginal exception: {str(e)}"
-#                 )
-
-#             cli_utils.declare(
-#                 f"Successfully registered new flavor '{new_flavor.name}' "
-#                 f"for stack component '{new_flavor.type}'."
-#             )
-
-#     return register_stack_component_flavor_command
-
-
-# def generate_stack_component_flavor_describe_command(
-#     component_type: StackComponentType,
-# ) -> Callable[[str], None]:
-#     """Generates a `describe` command for a single flavor of a component.
-
-#     Args:
-#         component_type: Type of the component to generate the command for.
-
-#     Returns:
-#         A function that can be used as a `click` command.
-#     """
-#     display_name = _component_display_name(component_type)
-
-#     @click.argument(
-#         "name",
-#         type=str,
-#         required=True,
-#     )
-#     def describe_stack_component_flavor_command(name: str) -> None:
-#         """Describes a flavor based on its config schema.
-
-#         Args:
-#             name: The name of the flavor.
-#         """
-#         if component_type == StackComponentType.SECRETS_MANAGER:
-#             warn_deprecated_secrets_manager()
-
-#         client = Client()
-
-#         with console.status(f"Describing {display_name} flavor: {name}`...\n"):
-#             flavor_model = client.get_flavor_by_name_and_type(
-#                 name=name, component_type=component_type
-#             )
-
-#             cli_utils.describe_pydantic_object(flavor_model.config_schema)
-
-#     return describe_stack_component_flavor_command
-
-
-# def generate_stack_component_flavor_delete_command(
-#     component_type: StackComponentType,
-# ) -> Callable[[str], None]:
-#     """Generates a `delete` command for a single flavor of a component.
-
-#     Args:
-#         component_type: Type of the component to generate the command for.
-
-#     Returns:
-#         A function that can be used as a `click` command.
-#     """
-#     display_name = _component_display_name(component_type)
-
-#     @click.argument(
-#         "name_or_id",
-#         type=str,
-#         required=True,
-#     )
-#     def delete_stack_component_flavor_command(name_or_id: str) -> None:
-#         """Deletes a flavor.
-
-#         Args:
-#             name_or_id: The name of the flavor.
-#         """
-#         client = Client()
-
-#         with console.status(
-#             f"Deleting a {display_name} flavor: {name_or_id}`...\n"
-#         ):
-#             client.delete_flavor(name_or_id)
-
-#             cli_utils.declare(f"Successfully deleted flavor '{name_or_id}'.")
-
-#     return delete_stack_component_flavor_command
-
-
-# def register_single_stack_component_cli_commands(
-#     component_type: StackComponentType, parent_group: click.Group
-# ) -> None:
-#     """Registers all basic stack component CLI commands.
-
-#     Args:
-#         component_type: Type of the component to generate the command for.
-#         parent_group: The parent group to register the commands to.
-#     """
-#     command_name = component_type.value.replace("_", "-")
-#     singular_display_name = _component_display_name(component_type)
-#     plural_display_name = _component_display_name(component_type, plural=True)
-
-#     @parent_group.group(
-#         command_name,
-#         cls=TagGroup,
-#         help=f"Commands to interact with {plural_display_name}.",
-#         tag=CliCategories.STACK_COMPONENTS,
-#     )
-#     def command_group() -> None:
-#         """Group commands for a single stack component type."""
-#         cli_utils.print_active_config()
-#         cli_utils.print_active_stack()
-
-#     # zenml stack-component get
-#     get_command = generate_stack_component_get_command(component_type)
-#     command_group.command(
-#         "get", help=f"Get the name of the active {singular_display_name}."
-#     )(get_command)
-
-#     # zenml stack-component describe
-#     describe_command = generate_stack_component_describe_command(
-#         component_type
-#     )
-#     command_group.command(
-#         "describe",
-#         help=f"Show details about the (active) {singular_display_name}.",
-#     )(describe_command)
-
-#     # zenml stack-component list
-#     list_command = generate_stack_component_list_command(component_type)
-#     command_group.command(
-#         "list", help=f"List all registered {plural_display_name}."
-#     )(list_command)
-
-#     # zenml stack-component register
-#     register_command = generate_stack_component_register_command(
-#         component_type
-#     )
-#     context_settings = {"ignore_unknown_options": True}
-#     command_group.command(
-#         "register",
-#         context_settings=context_settings,
-#         help=f"Register a new {singular_display_name}.",
-#     )(register_command)
-
-#     # zenml stack-component update
-#     update_command = generate_stack_component_update_command(component_type)
-#     context_settings = {"ignore_unknown_options": True}
-#     command_group.command(
-#         "update",
-#         context_settings=context_settings,
-#         help=f"Update a registered {singular_display_name}.",
-#     )(update_command)
-
-#     # zenml stack-component share
-#     share_command = generate_stack_component_share_command(component_type)
-#     context_settings = {"ignore_unknown_options": True}
-#     command_group.command(
-#         "share",
-#         context_settings=context_settings,
-#         help=f"Share a registered {singular_display_name}.",
-#     )(share_command)
-
-#     # zenml stack-component remove-attribute
-#     remove_attribute_command = (
-#         generate_stack_component_remove_attribute_command(component_type)
-#     )
-#     context_settings = {"ignore_unknown_options": True}
-#     command_group.command(
-#         "remove-attribute",
-#         context_settings=context_settings,
-#         help=f"Remove attributes from a registered {singular_display_name}.",
-#     )(remove_attribute_command)
-
-#     # zenml stack-component rename
-#     rename_command = generate_stack_component_rename_command(component_type)
-#     command_group.command(
-#         "rename", help=f"Rename a registered {singular_display_name}."
-#     )(rename_command)
-
-#     # zenml stack-component delete
-#     delete_command = generate_stack_component_delete_command(component_type)
-#     command_group.command(
-#         "delete", help=f"Delete a registered {singular_display_name}."
-#     )(delete_command)
-
-#     # zenml stack-component copy
-#     copy_command = generate_stack_component_copy_command(component_type)
-#     command_group.command(
-#         "copy", help=f"Copy a registered {singular_display_name}."
-#     )(copy_command)
-
-#     # zenml stack-component up
-#     up_command = generate_stack_component_up_command(component_type)
-#     command_group.command(
-#         "up",
-#         help=f"Provisions or resumes local resources for the "
-#         f"{singular_display_name} if possible.",
-#     )(up_command)
-
-#     # zenml stack-component down
-#     down_command = generate_stack_component_down_command(component_type)
-#     command_group.command(
-#         "down",
-#         help=f"Suspends resources of the local {singular_display_name} "
-#         f"deployment.",
-#     )(down_command)
-
-#     # zenml stack-component logs
-#     logs_command = generate_stack_component_logs_command(component_type)
-#     command_group.command(
-#         "logs", help=f"Display {singular_display_name} logs."
-#     )(logs_command)
-
-#     # zenml stack-component explain
-#     explain_command = generate_stack_component_explain_command(component_type)
-#     command_group.command(
-#         "explain", help=f"Explaining the {plural_display_name}."
-#     )(explain_command)
-
-#     # zenml stack-component flavor
-#     @command_group.group(
-#         "flavor", help=f"Commands to interact with {plural_display_name}."
-#     )
-#     def flavor_group() -> None:
-#         """Group commands to handle flavors for a stack component type."""
-
-#     # zenml stack-component flavor register
-#     register_flavor_command = generate_stack_component_flavor_register_command(
-#         component_type=component_type
-#     )
-#     flavor_group.command(
-#         "register",
-#         help=f"Register a new {singular_display_name} flavor.",
-#     )(register_flavor_command)
-
-#     # zenml stack-component flavor list
-#     list_flavor_command = generate_stack_component_flavor_list_command(
-#         component_type=component_type
-#     )
-#     flavor_group.command(
-#         "list",
-#         help=f"List all registered flavors for {plural_display_name}.",
-#     )(list_flavor_command)
-
-#     # zenml stack-component flavor describe
-#     describe_flavor_command = generate_stack_component_flavor_describe_command(
-#         component_type=component_type
-#     )
-#     flavor_group.command(
-#         "describe",
-#         help=f"Describe a {singular_display_name} flavor.",
-#     )(describe_flavor_command)
-
-#     # zenml stack-component flavor delete
-#     delete_flavor_command = generate_stack_component_flavor_delete_command(
-#         component_type=component_type
-#     )
-#     flavor_group.command(
-#         "delete",
-#         help=f"Delete a {plural_display_name} flavor.",
-#     )(delete_flavor_command)
-
-
-# def register_all_stack_component_cli_commands() -> None:
-#     """Registers CLI commands for all stack components."""
-#     for component_type in StackComponentType:
-#         register_single_stack_component_cli_commands(
-#             component_type, parent_group=cli
-#         )
-
-
-# register_all_stack_component_cli_commands()
-# register_annotator_subcommands()
-# register_secrets_manager_subcommands()
-# register_feature_store_subcommands()
-# register_model_deployer_subcommands()
-# register_model_registry_subcommands()
+    cli_utils.print_service_connector_type(connector_type)

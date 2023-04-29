@@ -271,11 +271,19 @@ def list_service_connector_types(
     Returns:
         List of service connector types.
     """
-    return zen_store().list_service_connector_types(
+    connector_types = zen_store().list_service_connector_types(
         connector_type=connector_type,
         resource_type=resource_type,
         auth_method=auth_method,
     )
+
+    for c in connector_types:
+        # Mark the connector as not being available in the environment
+        # that issued the request but as being available in the server.
+        c.local = False
+        c.remote = True
+
+    return connector_types
 
 
 @types_router.get(
@@ -296,4 +304,11 @@ def get_service_connector_type(
     Returns:
         The requested service connector type.
     """
-    return zen_store().get_service_connector_type(connector_type)
+    c = zen_store().get_service_connector_type(connector_type)
+
+    # Mark the connector as not being available in the environment
+    # that issued the request but as being available in the server.
+    c.local = False
+    c.remote = True
+
+    return c

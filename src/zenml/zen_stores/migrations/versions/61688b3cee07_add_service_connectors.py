@@ -1,8 +1,8 @@
-"""Add service connectors [a7ae010088cb].
+"""Add service connectors [61688b3cee07].
 
-Revision ID: a7ae010088cb
+Revision ID: 61688b3cee07
 Revises: fbd7f18ced1e
-Create Date: 2023-04-28 16:10:58.623233
+Create Date: 2023-04-29 22:38:00.883184
 
 """
 import sqlalchemy as sa
@@ -10,7 +10,7 @@ import sqlmodel
 from alembic import op
 
 # revision identifiers, used by Alembic.
-revision = "a7ae010088cb"
+revision = "61688b3cee07"
 down_revision = "fbd7f18ced1e"
 branch_labels = None
 depends_on = None
@@ -37,6 +37,7 @@ def upgrade() -> None:
             "description", sqlmodel.sql.sqltypes.AutoString(), nullable=False
         ),
         sa.Column("resource_types", sa.LargeBinary(), nullable=False),
+        sa.Column("multi_instance", sa.Boolean(), nullable=False),
         sa.Column("configuration", sa.LargeBinary(), nullable=True),
         sa.Column("secret_id", sqlmodel.sql.sqltypes.GUID(), nullable=True),
         sa.Column("expires_at", sa.DateTime(), nullable=True),

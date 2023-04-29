@@ -331,8 +331,6 @@ https://aws.amazon.com/blogs/security/understanding-the-api-options-for-securely
 This method might not be suitable for consumers that cannot automatically
 re-generate temporary credentials upon expiration (e.g. an external clients or
 long-running process).
-
-This method is recommended for production use.
 """,
             min_expiration_seconds=900,  # 15 minutes
             max_expiration_seconds=43200,  # 12 hours
@@ -478,7 +476,7 @@ class AWSServiceConnector(ServiceConnector):
     config: AWSBaseConfig
 
     @classmethod
-    def get_type(cls) -> ServiceConnectorTypeModel:
+    def _get_connector_type(cls) -> ServiceConnectorTypeModel:
         """Get the service connector type specification.
 
         Returns:

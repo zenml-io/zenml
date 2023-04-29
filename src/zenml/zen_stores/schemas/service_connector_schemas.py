@@ -46,6 +46,7 @@ class ServiceConnectorSchema(ShareableSchema, table=True):
     auth_method: str = Field(sa_column=Column(TEXT))
     resource_types: bytes
     resource_id: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
+    multi_instance: bool
     configuration: Optional[bytes]
     secret_id: Optional[UUID]
     expires_at: Optional[datetime]
@@ -149,13 +150,14 @@ class ServiceConnectorSchema(ShareableSchema, table=True):
                 json.dumps(connector_request.resource_types).encode("utf-8")
             ),
             resource_id=connector_request.resource_id,
+            multi_instance=connector_request.multi_instance,
             configuration=base64.b64encode(
                 json.dumps(connector_request.configuration).encode("utf-8")
             )
             if connector_request.configuration
             else None,
             secret_id=secret_id,
-            expires=connector_request.expires_at,
+            expires_at=connector_request.expires_at,
             expiration_seconds=connector_request.expiration_seconds,
         )
 
@@ -224,6 +226,7 @@ class ServiceConnectorSchema(ShareableSchema, table=True):
             auth_method=self.auth_method,
             resource_types=self.resource_types_list,
             resource_id=self.resource_id,
+            multi_instance=self.multi_instance,
             configuration=json.loads(
                 base64.b64decode(self.configuration).decode()
             )

@@ -27,6 +27,7 @@ from typing import (
     Mapping,
     Optional,
     Set,
+    Tuple,
     Type,
     TypeVar,
     Union,
@@ -99,6 +100,7 @@ from zenml.models import (
     ServiceConnectorRequestModel,
     ServiceConnectorResourceListModel,
     ServiceConnectorResponseModel,
+    ServiceConnectorTypeModel,
     ServiceConnectorUpdateModel,
     StackFilterModel,
     StackRequestModel,
@@ -4217,7 +4219,15 @@ class Client(metaclass=ClientMetaClass):
         auto_configure: bool = False,
         verify: bool = True,
         register: bool = True,
-    ) -> Optional[Union["ServiceConnectorResponseModel", "ServiceConnector"]]:
+    ) -> Tuple[
+        Optional[
+            Union[
+                "ServiceConnectorResponseModel",
+                "ServiceConnectorRequestModel",
+            ]
+        ],
+        Optional[ServiceConnectorResourceListModel],
+    ]:
         """Create, validate and/or register a service connector.
 
         Args:
@@ -4240,8 +4250,8 @@ class Client(metaclass=ClientMetaClass):
             register: Whether to register the service connector or not.
 
         Returns:
-            The model of the registered service connector or the service
-            connector instance.
+            The model of the registered service connector and the resources
+            that the service connector can give access to (if verify is True).
 
         Raises:
             RuntimeError: If the service connector could not be verified.
@@ -4252,10 +4262,11 @@ class Client(metaclass=ClientMetaClass):
         )
 
         connector_instance: Optional[ServiceConnector] = None
+        connector_resources: Optional[ServiceConnectorResourceListModel] = None
 
         # Get the service connector type class
         try:
-            connector = service_connector_registry.get_service_connector(
+            connector_type = self.zen_store.get_service_connector_type(
                 connector_type=type,
             )
         except KeyError:
@@ -4268,15 +4279,24 @@ class Client(metaclass=ClientMetaClass):
         # If auto_configure is set, we will try to automatically configure the
         # service connector from the local environment
         if auto_configure:
-            connector_instance = connector.auto_configure(
+            if not connector_type.local:
+                raise ValueError(
+                    f"The {connector_type.name} service connector type "
+                    "implementation is not available locally. Please "
+                    "check that you have installed all required Python "
+                    "packages and ZenML integrations and try again, or "
+                    "skip auto-configuration."
+                )
+
+            assert connector_type.connector_class is not None
+
+            connector_instance = connector_type.connector_class.auto_configure(
                 resource_type=resource_type,
                 auth_method=auth_method,
                 resource_id=resource_id,
             )
-            if verify:
-                connector_instance.verify()
 
-            connector_request_model = connector_instance.to_model(
+            connector_request = connector_instance.to_model(
                 name=name,
                 user=self.active_user.id,
                 workspace=self.active_workspace.id,
@@ -4284,61 +4304,79 @@ class Client(metaclass=ClientMetaClass):
                 is_shared=is_shared,
                 labels=labels,
             )
+
+            if verify:
+                # Prefer to verify the connector config server-side if the
+                # implementation if available there, because it ensures
+                # that the connector can be shared with other users or used
+                # from other machines and because some auth methods rely on the
+                # server-side authentication environment
+                if connector_type.remote:
+                    connector_resources = (
+                        self.zen_store.verify_service_connector_config(
+                            connector_request
+                        )
+                    )
+                else:
+                    connector_instance.verify()
+                    connector_resources = connector_instance.list_resources()
+
         else:
             if not auth_method:
                 raise ValueError(
                     "auth_method must be set if auto_configure is not set."
                 )
-            if resource_type:
-                resource_types = [resource_type]
-            else:
-                # A multi-type connector is associated with all resource types
-                # that it supports
-                resource_types = list(
-                    connector.get_type().resource_type_map.keys()
-                )
-            connector_request_model = ServiceConnectorRequestModel(
+            connector_request = ServiceConnectorRequestModel(
                 name=name,
                 type=type,
                 description=description,
                 auth_method=auth_method,
-                resource_types=resource_types,
-                resource_id=resource_id,
-                configuration=configuration or {},
-                secrets=secrets or {},
                 expiration_seconds=expiration_seconds,
                 is_shared=is_shared,
                 user=self.active_user.id,
                 workspace=self.active_workspace.id,
                 labels=labels or {},
             )
+            # Validate and configure the resources
+            connector_request.validate_and_configure_resources(
+                connector_type=connector_type,
+                resource_types=resource_type,
+                resource_id=resource_id,
+                configuration=configuration,
+                secrets=secrets,
+            )
 
             if verify:
-                # This will also check that a connector class is registered for
-                # the given type and that the configuration is valid
-                connector_instance = (
-                    service_connector_registry.instantiate_service_connector(
-                        model=connector_request_model
-                    )
-                )
-                connector_instance.verify()
 
-                # Get an updated model from the connector instance
-                connector_request_model = connector_instance.to_model(
-                    name=name,
-                    user=self.active_user.id,
-                    workspace=self.active_workspace.id,
-                    is_shared=is_shared,
-                    description=description,
-                    labels=labels,
-                )
+                # Prefer to verify the connector config server-side if the
+                # implementation if available there, because it ensures
+                # that the connector can be shared with other users or used
+                # from other machines and because some auth methods rely on the
+                # server-side authentication environment
+                if connector_type.remote:
+                    connector_resources = (
+                        self.zen_store.verify_service_connector_config(
+                            connector_request
+                        )
+                    )
+                else:
+                    connector_instance = (
+                        service_connector_registry.instantiate_connector(
+                            model=connector_request
+                        )
+                    )
+                    connector_instance.verify()
+                    connector_resources = connector_instance.list_resources()
 
         if not register:
-            return connector_instance
+            return connector_request, connector_resources
 
         # Register the new model
-        return self.zen_store.create_service_connector(
-            service_connector=connector_request_model
+        return (
+            self.zen_store.create_service_connector(
+                service_connector=connector_request
+            ),
+            connector_resources,
         )
 
     def update_service_connector(
@@ -4427,7 +4465,7 @@ class Client(metaclass=ClientMetaClass):
             # This will also check that a connector class is registered for the
             # given type and that the configuration is valid
             connector_instance = (
-                service_connector_registry.instantiate_service_connector(
+                service_connector_registry.instantiate_connector(
                     model=service_connector
                 )
             )
@@ -4484,25 +4522,22 @@ class Client(metaclass=ClientMetaClass):
         name_id_or_prefix: Union[UUID, str],
         resource_type: Optional[str] = None,
         resource_id: Optional[str] = None,
-        **kwargs: Any,
-    ) -> "ServiceConnector":
-        """Verify that the connector can connect to the remote resource.
+    ) -> "ServiceConnectorResourceListModel":
+        """Verifies if a service connector has access to one or more resources.
 
         Args:
-            name_id_or_prefix: The name, id or prefix of the service connector to
-                update.
-            resource_type: The type of the resource to connect to. If not
-                provided, the resource type from the service connector
+            name_id_or_prefix: The name, id or prefix of the service connector
+                to verify.
+            resource_type: The type of the resource for which to verify access.
+                If not provided, the resource type from the service connector
                 configuration will be used.
-            resource_id: The ID of the resource to connect to. If not provided,
-                the resource ID from the service connector configuration will be
-                used.
-            kwargs: Additional keyword arguments to pass to the connector
-                instance.
+            resource_id: The ID of the resource for which to verify access. If
+                not provided, the resource ID from the service connector
+                configuration will be used.
 
         Returns:
-            The service connector instance that was used to verify the
-            connection.
+            The list of resources that the service connector has access to,
+            scoped to the supplied resource type and ID, if provided.
         """
         from zenml.service_connectors.service_connector_registry import (
             service_connector_registry,
@@ -4514,56 +4549,31 @@ class Client(metaclass=ClientMetaClass):
             allow_name_prefix_match=False,
         )
 
-        # This will also check that a connector class is registered for the
-        # given type and that the configuration is valid
-        connector = service_connector_registry.instantiate_service_connector(
-            model=service_connector
+        connector_type = self.get_service_connector_type(
+            service_connector.type
         )
 
-        connector.verify(
-            resource_type=resource_type,
-            resource_id=resource_id,
-            **kwargs,
-        )
+        # Prefer to verify the connector config server-side if the
+        # implementation if available there, because it ensures
+        # that the connector can be shared with other users or used
+        # from other machines and because some auth methods rely on the
+        # server-side authentication environment
+        if connector_type.remote:
+            connector_resources = self.zen_store.verify_service_connector(
+                service_connector_id=service_connector.id,
+                resource_type=resource_type,
+                resource_id=resource_id,
+            )
+        else:
+            connector_instance = (
+                service_connector_registry.instantiate_connector(
+                    model=service_connector
+                )
+            )
+            connector_instance.verify()
+            connector_resources = connector_instance.list_resources()
 
-        return connector
-
-    def list_service_connector_resources(
-        self,
-        name_id_or_prefix: Union[UUID, str],
-        resource_type: Optional[str] = None,
-        resource_id: Optional[str] = None,
-    ) -> ServiceConnectorResourceListModel:
-        """List all resources that a connector can give access to.
-
-        Args:
-            name_id_or_prefix: The name or id of the service connector.
-            resource_type: The type of resources to list.
-            resource_id: The ID of a particular resource to check.
-
-        Returns:
-            The resources that the connector can give access to.
-        """
-        from zenml.service_connectors.service_connector_registry import (
-            service_connector_registry,
-        )
-
-        # Get the service connector model
-        service_connector = self.get_service_connector(
-            name_id_or_prefix=name_id_or_prefix,
-            allow_name_prefix_match=False,
-        )
-
-        # This will also check that a connector class is registered for the
-        # given type and that the configuration is valid
-        connector = service_connector_registry.instantiate_service_connector(
-            model=service_connector
-        )
-
-        return connector.list_resource_ids(
-            resource_type=resource_type,
-            resource_id=resource_id,
-        )
+        return connector_resources
 
     def login_service_connector(
         self,
@@ -4575,8 +4585,8 @@ class Client(metaclass=ClientMetaClass):
         """Use a service connector to authenticate a local client/SDK.
 
         Args:
-            name_id_or_prefix: The name, id or prefix of the service connector to
-                use.
+            name_id_or_prefix: The name, id or prefix of the service connector
+                to use.
             resource_type: The type of the resource to connect to. If not
                 provided, the resource type from the service connector
                 configuration will be used.
@@ -4594,7 +4604,7 @@ class Client(metaclass=ClientMetaClass):
             The client service connector instance that was used to configure the
             local client.
         """
-        client_connector = self.get_client_service_connector(
+        client_connector = self.get_service_connector_client(
             name_id_or_prefix=name_id_or_prefix,
             resource_type=resource_type,
             resource_id=resource_id,
@@ -4606,13 +4616,13 @@ class Client(metaclass=ClientMetaClass):
 
         return client_connector
 
-    def get_client_service_connector(
+    def get_service_connector_client(
         self,
         name_id_or_prefix: Union[UUID, str],
         resource_type: Optional[str] = None,
         resource_id: Optional[str] = None,
     ) -> "ServiceConnector":
-        """Get a client service connector instance to use with a local client.
+        """Get the client side of a service connector instance to use with a local client.
 
         Args:
             name_id_or_prefix: The name, id or prefix of the service connector
@@ -4629,8 +4639,8 @@ class Client(metaclass=ClientMetaClass):
                 raised.
 
         Returns:
-            The client service connector instance that can be used to connect
-            to the resource.
+            The client side of the indicated service connector instance that can
+            be used to connect to the resource locally.
         """
         from zenml.service_connectors.service_connector_registry import (
             service_connector_registry,
@@ -4642,19 +4652,101 @@ class Client(metaclass=ClientMetaClass):
             allow_name_prefix_match=False,
         )
 
-        # This will also check that a connector class is registered for the
-        # given type and that the configuration is valid
-        connector = service_connector_registry.instantiate_service_connector(
-            model=service_connector
+        connector_type = self.get_service_connector_type(
+            service_connector.type
         )
 
-        # Fetch the client connector for the resource
-        client_connector = connector.get_client_connector(
-            resource_type=resource_type,
-            resource_id=resource_id,
-        )
+        # Prefer to fetch the client connector from the server if the
+        # implementation if available there, because some auth methods rely on
+        # the server-side authentication environment
+        if connector_type.remote:
+            client_connector_model = (
+                self.zen_store.get_service_connector_client(
+                    service_connector_id=service_connector.id,
+                    resource_type=resource_type,
+                    resource_id=resource_id,
+                )
+            )
+
+            client_connector = (
+                service_connector_registry.instantiate_connector(
+                    model=client_connector_model
+                )
+            )
+        else:
+            connector_instance = (
+                service_connector_registry.instantiate_connector(
+                    model=service_connector
+                )
+            )
+
+            # Fetch the client connector
+            client_connector = connector_instance.get_client_connector(
+                resource_type=resource_type,
+                resource_id=resource_id,
+            )
 
         return client_connector
+
+    def list_service_connector_resources(
+        self,
+        connector_type: Optional[str] = None,
+        resource_type: Optional[str] = None,
+    ) -> List[ServiceConnectorResourceListModel]:
+        """List resources that can be accessed by service connectors.
+
+        Args:
+            connector_type: The type of service connector to filter by.
+            resource_type: The type of resource to filter by.
+
+        Returns:
+            The matching list of resources that available service
+            connectors have access to.
+        """
+        return self.zen_store.list_service_connector_resources(
+            user_name_or_id=self.active_user.id,
+            workspace_name_or_id=self.active_workspace.id,
+            connector_type=connector_type,
+            resource_type=resource_type,
+        )
+
+    def list_service_connector_types(
+        self,
+        connector_type: Optional[str] = None,
+        resource_type: Optional[str] = None,
+        auth_method: Optional[str] = None,
+    ) -> List[ServiceConnectorTypeModel]:
+        """Get a list of service connector types.
+
+        Args:
+            connector_type: Filter by connector type.
+            resource_type: Filter by resource type.
+            auth_method: Filter by authentication method.
+
+        Returns:
+            List of service connector types.
+        """
+        return self.zen_store.list_service_connector_types(
+            connector_type=connector_type,
+            resource_type=resource_type,
+            auth_method=auth_method,
+        )
+
+    def get_service_connector_type(
+        self,
+        connector_type: str,
+    ) -> ServiceConnectorTypeModel:
+        """Returns the requested service connector type.
+
+        Args:
+            connector_type: the service connector type identifier.
+
+        Returns:
+            The requested service connector type.
+        """
+        return self.zen_store.get_service_connector_type(
+            connector_type=connector_type,
+        )
 
     # ---- utility prefix matching get functions -----
 
