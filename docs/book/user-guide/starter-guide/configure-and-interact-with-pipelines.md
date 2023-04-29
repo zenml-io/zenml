@@ -44,9 +44,9 @@ Here we are creating a training step for a support vector machine classifier wit
 ```python
 @step
 def svc_trainer(
-    gamma: float = 0.001,
     X_train: np.ndarray,
     y_train: np.ndarray,
+    gamma: float = 0.001,
 ) -> ClassifierMixin:
     """Train a sklearn SVC classifier."""
     
@@ -73,7 +73,7 @@ Next, we will combine our two steps into a pipeline and run it. As you can see h
 @pipeline
 def first_pipeline(gamma: float = 0.002):
     X_train, X_test, y_train, y_test = step_1()
-    step_2(gamma=gamma, X_train, y_train)
+    step_2(gamma=gamma, X_train=X_train, y_train=y_train)
     
 first_pipeline(gamma=0.0015)
 ```
@@ -85,7 +85,7 @@ Running it should look somewhat like this in the terminal.
 </strong>.
 .
 .
-Pipeline run `first_pipeline-...` has finished in 0.236s.
+Pipeline run `first_pipeline-2023_04_29-09_19_54_273710` has finished in 0.236s.
 </code></pre>
 
 ## Code Summary
@@ -145,7 +145,13 @@ first_pipeline(gamma=0.0015)
 
 ### Give each pipeline run a name
 
-When running a pipeline by calling `my_pipeline.run()`, ZenML uses the current date and time as the name for the pipeline run. In order to change the name for a run, pass `run_name` as a parameter to the `run()` function:
+In the output logs of a pipeline run you will see the name of the run:
+
+```bash
+Pipeline run `first_pipeline-2023_04_29-09_19_54_273710` has finished in 0.236s.
+```
+
+This name is automatically generated based on the current date and time. In order to change the name for a run, pass `run_name` as a parameter to the `run()` function:
 
 ```python
 first_pipeline_instance.run(run_name="custom_pipeline_run_name")
@@ -160,13 +166,18 @@ Pipeline run names must be unique, so if you plan to run your pipelines multiple
 first_pipeline_instance.run(run_name="custom_pipeline_run_name_{{date}}_{{time}}")
 ```
 
-Machine learning pipelines are rerun many times over throughout their development lifecycle.
+### Caching in ZenML
 
-## Caching in ZenML
+You might have noticed at this point that rerunning the pipeline a second time gives you the following logs:
 
-When you tweaked the `gamma` variable above, you must have noticed that the `digits_data_loader` step does not re-execute for each subsequent run. This is because ZenML understands that nothing has changed between subsequent runs, so it re-uses the output of the last run (the outputs are persisted in the [artifact store](broken-reference/). This behavior is known as **caching**.
+```bash
+Step step_1 has started.
+Using cached version of step_1.
+Step step_2 has started.
+Using cached version of step_2.
+```
 
-Prototyping is often a fast and iterative process that benefits a lot from caching. This makes caching a very powerful tool. Checkout this [ZenML Blogpost on Caching](https://blog.zenml.io/caching-ml-pipelines/) for more context on the benefits of caching and [ZenBytes lesson 1.2](https://github.com/zenml-io/zenbytes/blob/main/1-2\_Artifact\_Lineage.ipynb) for a detailed example on how to configure and visualize caching.
+This is because ZenML understands that nothing has changed between subsequent runs, so it re-uses the output of the last run (the outputs are persisted in the [artifact store](broken-reference/). This behavior is known as **caching**.
 
 ZenML comes with caching enabled by default. Since ZenML automatically tracks and versions all inputs, outputs, and parameters of steps and pipelines, ZenML will not re-execute steps within the same pipeline on subsequent pipeline runs as long as there is no change in these three.
 
@@ -179,10 +190,6 @@ Currently, the caching does not automatically detect changes within the file sys
 Although caching is desirable in many circumstances, one might want to disable it in certain instances. For example, if you are quickly prototyping with changing step definitions or you have an external API state change in your function that ZenML does not detect.
 
 There are multiple ways to take control of when and where caching is used:
-
-* [Configuring caching for the entire pipeline](create-your-first-ml-pipeline.md#disabling-caching-for-the-entire-pipeline): Do this if you want to configure caching for all steps of a pipeline.
-* [Configuring caching for individual steps](create-your-first-ml-pipeline.md#disabling-caching-for-individual-steps): Do this to configure caching for individual steps. This is, e.g., useful to disable caching for steps that depend on external input.
-* [Dynamically configuring caching for a pipeline run](create-your-first-ml-pipeline.md#dynamically-disabling-caching-for-a-pipeline-run): Do this if you want to change the caching behavior at runtime. This is, e.g., useful to force a complete rerun of a pipeline.
 
 #### Configuring caching for the entire pipeline
 
@@ -227,113 +234,109 @@ The code above disables caching for all steps of your pipeline, no matter what y
 
 The following example shows caching in action with the code example from the previous section.
 
-For a more detailed example on how caching is used at ZenML and how it works under the hood, checkout [ZenBytes lesson 1.2](https://github.com/zenml-io/zenbytes/blob/main/1-2\_Artifact\_Lineage.ipynb)!
-
 <details>
 
 <summary>Code Example of this Section</summary>
 
 ```python
 import numpy as np
-from sklearn.base import ClassifierMixin
 from sklearn.datasets import load_digits
 from sklearn.model_selection import train_test_split
+from sklearn.base import ClassifierMixin
 from sklearn.svm import SVC
 
-from zenml.steps import BaseParameters, Output, step
-from zenml.pipelines import pipeline
-
+from zenml.pipelines.new import pipeline
+from zenml.steps import Output, step
 
 @step
 def digits_data_loader() -> Output(
     X_train=np.ndarray, X_test=np.ndarray, y_train=np.ndarray, y_test=np.ndarray
 ):
-    """Loads the digits dataset as a tuple of flattened numpy arrays."""
+    """Loads the digits dataset and splits it into train and test data."""
+    # Load data from the digits dataset
     digits = load_digits()
+    # transform these images into flattened numpy arrays
     data = digits.images.reshape((len(digits.images), -1))
+    # split into datasets
     X_train, X_test, y_train, y_test = train_test_split(
         data, digits.target, test_size=0.2, shuffle=False
     )
     return X_train, X_test, y_train, y_test
-
-
-class SVCTrainerParams(BaseParameters):
-    """Trainer params"""
-    gamma: float = 0.001
-
-
-@step(enable_cache=False)  # never cache this step, always retrain
+    
+@step
 def svc_trainer(
-    params SVCTrainerParams,
+    gamma: float = 0.001,
     X_train: np.ndarray,
     y_train: np.ndarray,
 ) -> ClassifierMixin:
     """Train a sklearn SVC classifier."""
-    model = SVC(gamma=config.gamma)
+    
+    # instantiate a support vector machine model    
+    model = SVC(gamma=gamma)
+    # Train on the train dataset
     model.fit(X_train, y_train)
     return model
 
-
 @pipeline
-def first_pipeline(step_1, step_2):
+def first_pipeline(gamma: float = 0.002):
     X_train, X_test, y_train, y_test = step_1()
-    step_2(X_train, y_train)
-
-
-first_pipeline_instance = first_pipeline(
-    step_1=digits_data_loader(),
-    step_2=svc_trainer()
-)
+    step_2(gamma=gamma, X_train, y_train)
 
 # The pipeline is executed for the first time, so all steps are run.
-first_pipeline_instance.run()
+first_pipeline()
 
 # Step one will use cache, step two will rerun due to the decorator config
-first_pipeline_instance.run()
+first_pipeline()
 
-# The complete pipeline will be rerun
-first_pipeline_instance.run(enable_cache=False)
+# Explicitely set caching to false
+first_pipeline.with_option(enable_cache=False)()  # Explicitely disable the cache
+
 ```
 
 **Expected Output Run 1:**
 
-```
-Creating run for pipeline: first_pipeline
-Cache enabled for pipeline first_pipeline
-Using stack default to run pipeline first_pipeline...
+{% code overflow="wrap" %}
+```bash
+Registered pipeline first_pipeline (version 1).
+Running pipeline first_pipeline on stack default (caching enabled)
 Step digits_data_loader has started.
-Step digits_data_loader has finished in 0.135s.
+Step digits_data_loader has finished in 0.721s.
 Step svc_trainer has started.
-Step svc_trainer has finished in 0.109s.
-Pipeline run first_pipeline-07_Jul_22-12_05_54_573248 has finished in 0.417s.
+Step svc_trainer has finished in 0.172s.
+Pipeline run first_pipeline-2023_04_29-10_13_02_708462 has finished in 1.717s.
+Dashboard URL: http://127.0.0.1:8237/workspaces/default/pipelines/43ddd41b-aedc-4893-856d-f51eaf9a8699/runs
+
 ```
+{% endcode %}
 
 **Expected Output Run 2:**
 
-```
-Creating run for pipeline: first_pipeline
-Cache enabled for pipeline first_pipeline
-Using stack default to run pipeline first_pipeline...
+{% code overflow="wrap" %}
+```bash
+Reusing registered pipeline first_pipeline (version: 1).
+Running pipeline first_pipeline on stack default (caching enabled)
 Step digits_data_loader has started.
 Using cached version of digits_data_loader.
-Step digits_data_loader has finished in 0.014s.
 Step svc_trainer has started.
-Step svc_trainer has finished in 0.051s.
-Pipeline run first_pipeline-07_Jul_22-12_05_55_813554 has finished in 0.161s.
+Using cached version of svc_trainer.
+Pipeline run first_pipeline-2023_04_29-10_13_05_400797 has finished in 0.609s.
+Dashboard URL: http://127.0.0.1:8237/workspaces/default/pipelines/43ddd41b-aedc-4893-856d-f51eaf9a8699/runs
 ```
+{% endcode %}
 
 **Expected Output Run 3:**
 
-```
-Creating run for pipeline: first_pipeline
-Cache enabled for pipeline first_pipeline
-Using stack default to run pipeline first_pipeline...
-Runtime configuration overwriting the pipeline cache settings to enable_cache=False for this pipeline run. The default caching strategy is retained for future pipeline runs.
+{% code overflow="wrap" %}
+```bash
+Reusing registered pipeline first_pipeline (version: 1).
+Running pipeline first_pipeline on stack default (caching disabled)
 Step digits_data_loader has started.
-Step digits_data_loader has finished in 0.078s.
+Step digits_data_loader has finished in 0.721s.
 Step svc_trainer has started.
-Step svc_trainer has finished in 0.048s.
-Pipeline run first_pipeline-07_Jul_22-12_05_56_718489 has finished in 0.219s.
+Step svc_trainer has finished in 0.226s.
+Pipeline run first_pipeline-2023_04_29-10_13_06_840942 has finished in 0.942s.
+Dashboard URL: http://127.0.0.1:8237/workspaces/default/pipelines/43ddd41b-aedc-4893-856d-f51eaf9a8699/runs
 ```
+{% endcode %}
 
 </details>
