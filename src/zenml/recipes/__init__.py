@@ -14,8 +14,15 @@
 """Recipes for ZenML stacks."""
 
 from zenml.recipes.stack_recipe_service import (
+    GitStackRecipesHandler,
+    StackRecipe,
     StackRecipeService,
     StackRecipeServiceConfig,
 )
 
-__all__ = ["StackRecipeService", "StackRecipeServiceConfig"]
+__all__ = [
+    "GitStackRecipesHandler",
+    "StackRecipeService",
+    "StackRecipeServiceConfig",
+    "StackRecipe",
+]
