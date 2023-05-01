@@ -39,7 +39,6 @@ from sklearn.ensemble import (
 from sklearn.gaussian_process import GaussianProcessClassifier
 from sklearn.kernel_ridge import KernelRidge
 
-# Classification models supported by PyCaret
 from sklearn.linear_model import (
     ARDRegression,
     BayesianRidge,
