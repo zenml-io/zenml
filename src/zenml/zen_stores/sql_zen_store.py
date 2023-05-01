@@ -66,6 +66,7 @@ from zenml.enums import (
     StoreType,
 )
 from zenml.exceptions import (
+    AuthorizationException,
     EntityExistsError,
     IllegalOperationError,
     StackComponentExistsError,
@@ -119,7 +120,7 @@ from zenml.models import (
     SecretUpdateModel,
     ServiceConnectorFilterModel,
     ServiceConnectorRequestModel,
-    ServiceConnectorResourceListModel,
+    ServiceConnectorResourcesModel,
     ServiceConnectorResponseModel,
     ServiceConnectorTypeModel,
     ServiceConnectorUpdateModel,
@@ -4763,7 +4764,7 @@ class SqlZenStore(BaseZenStore):
     def verify_service_connector_config(
         self,
         service_connector: ServiceConnectorRequestModel,
-    ) -> ServiceConnectorResourceListModel:
+    ) -> ServiceConnectorResourcesModel:
         """Verifies if a service connector configuration has access to resources.
 
         Args:
@@ -4777,16 +4778,14 @@ class SqlZenStore(BaseZenStore):
             model=service_connector
         )
 
-        connector_instance.verify()
-
-        return connector_instance.list_resources()
+        return connector_instance.verify()
 
     def verify_service_connector(
         self,
         service_connector_id: UUID,
         resource_type: Optional[str] = None,
         resource_id: Optional[str] = None,
-    ) -> ServiceConnectorResourceListModel:
+    ) -> ServiceConnectorResourcesModel:
         """Verifies if a service connector instance has access to one or more resources.
 
         Args:
@@ -4804,11 +4803,7 @@ class SqlZenStore(BaseZenStore):
             model=connector
         )
 
-        connector_instance.verify(
-            resource_type=resource_type, resource_id=resource_id
-        )
-
-        return connector_instance.list_resources(
+        return connector_instance.verify(
             resource_type=resource_type, resource_id=resource_id
         )
 
@@ -4863,7 +4858,7 @@ class SqlZenStore(BaseZenStore):
         workspace_name_or_id: Union[str, UUID],
         connector_type: Optional[str] = None,
         resource_type: Optional[str] = None,
-    ) -> List[ServiceConnectorResourceListModel]:
+    ) -> List[ServiceConnectorResourcesModel]:
         """List resources that can be accessed by service connectors.
 
         Args:
@@ -4889,7 +4884,7 @@ class SqlZenStore(BaseZenStore):
             filter_model=connector_filter_model
         ).items
 
-        resource_list: List[ServiceConnectorResourceListModel] = []
+        resource_list: List[ServiceConnectorResourcesModel] = []
 
         for connector in connectors:
             if not service_connector_registry.is_registered(connector.type):
@@ -4902,23 +4897,36 @@ class SqlZenStore(BaseZenStore):
                 # without actively trying to discover the resources that they
                 # have access to.
                 resources = (
-                    ServiceConnectorResourceListModel.from_connector_model(
+                    ServiceConnectorResourcesModel.from_connector_model(
                         connector_model=connector
                     )
                 )
                 resource_list.append(resources)
+
+            else:
+                connector_instance = (
+                    service_connector_registry.instantiate_connector(
+                        model=connector
+                    )
+                )
+
+                try:
+                    resources = connector_instance.verify(
+                        resource_type=resource_type,
+                    )
+                except AuthorizationException as e:
+                    logger.error(
+                        f'Failed to fetch {resource_type or "available"} '
+                        f"resources from service connector {connector.name}/"
+                        f"{connector.id}: {e}"
+                    )
+                    continue
+
+            # Leave out connectors that don't report any resources
+            if not resources.resources:
                 continue
 
-            connector_instance = (
-                service_connector_registry.instantiate_connector(
-                    model=connector
-                )
-            )
-            resource_list.append(
-                connector_instance.list_resources(
-                    resource_type=resource_type,
-                )
-            )
+            resource_list.append(resources)
 
         return resource_list
 

@@ -119,7 +119,7 @@ from zenml.models import (
     ScheduleUpdateModel,
     ServiceConnectorFilterModel,
     ServiceConnectorRequestModel,
-    ServiceConnectorResourceListModel,
+    ServiceConnectorResourcesModel,
     ServiceConnectorResponseModel,
     ServiceConnectorTypeModel,
     ServiceConnectorUpdateModel,
@@ -1987,7 +1987,7 @@ class RestZenStore(BaseZenStore):
     def verify_service_connector_config(
         self,
         service_connector: ServiceConnectorRequestModel,
-    ) -> ServiceConnectorResourceListModel:
+    ) -> ServiceConnectorResourcesModel:
         """Verifies if a service connector configuration has access to resources.
 
         Args:
@@ -2002,14 +2002,14 @@ class RestZenStore(BaseZenStore):
             body=service_connector,
         )
 
-        return ServiceConnectorResourceListModel.parse_obj(response_body)
+        return ServiceConnectorResourcesModel.parse_obj(response_body)
 
     def verify_service_connector(
         self,
         service_connector_id: UUID,
         resource_type: Optional[str] = None,
         resource_id: Optional[str] = None,
-    ) -> ServiceConnectorResourceListModel:
+    ) -> ServiceConnectorResourcesModel:
         """Verifies if a service connector instance has access to one or more resources.
 
         Args:
@@ -2031,7 +2031,7 @@ class RestZenStore(BaseZenStore):
             params=params,
         )
 
-        return ServiceConnectorResourceListModel.parse_obj(response_body)
+        return ServiceConnectorResourcesModel.parse_obj(response_body)
 
     def get_service_connector_client(
         self,
@@ -2068,7 +2068,7 @@ class RestZenStore(BaseZenStore):
         workspace_name_or_id: Union[str, UUID],
         connector_type: Optional[str] = None,
         resource_type: Optional[str] = None,
-    ) -> List[ServiceConnectorResourceListModel]:
+    ) -> List[ServiceConnectorResourcesModel]:
         """List resources that can be accessed by service connectors.
 
         Args:
@@ -2093,7 +2093,7 @@ class RestZenStore(BaseZenStore):
 
         assert isinstance(response_body, list)
         return [
-            ServiceConnectorResourceListModel.parse_obj(item)
+            ServiceConnectorResourcesModel.parse_obj(item)
             for item in response_body
         ]
 
@@ -2147,7 +2147,7 @@ class RestZenStore(BaseZenStore):
         }
 
         for connector in local_connector_types:
-            if connector.remote in connector_types_map:
+            if connector.type in connector_types_map:
                 connector.remote = True
             connector_types_map[connector.type] = connector
 
@@ -2184,7 +2184,7 @@ class RestZenStore(BaseZenStore):
             if local_connector_type:
                 # If locally available, return the local connector type but
                 # mark it as being remotely available.
-                remote_connector_type.remote = True
+                local_connector_type.remote = True
                 return local_connector_type
 
             return remote_connector_type

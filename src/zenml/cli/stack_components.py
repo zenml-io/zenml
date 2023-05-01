@@ -1083,16 +1083,6 @@ def generate_stack_component_connect_command(
         type=str,
     )
     @click.option(
-        "--resource-type",
-        "-r",
-        "resource_type",
-        help="The resource type to use with the connector. Only required for "
-        "connectors that are not already configured with a particular resource "
-        "type.",
-        required=False,
-        type=str,
-    )
-    @click.option(
         "--resource-id",
         "-r",
         "resource_id",
@@ -1126,21 +1116,17 @@ def generate_stack_component_connect_command(
         interactive: bool = False,
         no_verify: bool = False,
     ) -> None:
-        """Connect the stack component to a connector.
+        """Connect the stack component to a resource.
 
         Args:
             name_id_or_prefix: The name of the stack component to connect.
             connector_id: The ID of the connector to use.
-            resource_type: The resource type to use with the connector. Only
-                required for connectors that are not already configured with a
-                particular resource type.
-            resource_id: The resource ID to use with the connector. Only
+            resource_id: The resource ID to use connect to. Only
                 required for multi-instance connectors that are not already
                 configured with a particular resource ID.
-            interactive: Select a service connector interactively.
-            no_verify: Skip verification of the connector.
+            interactive: Select a resource interactively.
+            no_verify: Do not verify whether the resource is accessible.
         """
-
         if component_type == StackComponentType.SECRETS_MANAGER:
             warn_deprecated_secrets_manager()
 
@@ -1185,24 +1171,24 @@ def generate_stack_component_connect_command(
             )
 
         if interactive:
-            connectors = client.list_service_connectors(
-                type=requirements.connector_type,
+            resource_list = client.list_service_connector_resources(
+                connector_type=requirements.connector_type,
                 resource_type=requirements.resource_type,
             )
 
-            if not connectors:
+            if not resource_list:
                 cli_utils.error(
-                    f"No compatible connectors were found for the "
+                    f"No compatible resources were found for the "
                     f"'{component_model.name}' {display_name}."
                 )
 
             cli_utils.declare(
-                f"The following {len(connectors.items)} connector(s) were "
+                f"The following resources were "
                 f"found to be compatible with the '{component_model.name}' "
                 f"{display_name}:"
             )
 
-            cli_utils.print_service_connectors_table(client, connectors.items)
+            cli_utils.print_service_connector_resource_table(resource_list)
 
             if len(connectors.items) == 1:
                 connect = click.confirm(
@@ -1270,7 +1256,7 @@ def generate_stack_component_connect_command(
         resource_spec = connector_type_spec.resource_type_map[
             connector_model.resource_type
         ]
-        if resource_spec.multi_instance:
+        if resource_spec.supports_instances:
             if resource_id is None and connector_model.resource_id is None:
                 if interactive:
                     resource_id = click.prompt(

@@ -67,7 +67,7 @@ from zenml.models import (
     SecretResponseModel,
     ServiceConnectorFilterModel,
     ServiceConnectorRequestModel,
-    ServiceConnectorResourceListModel,
+    ServiceConnectorResourcesModel,
     ServiceConnectorResponseModel,
     StackFilterModel,
     StackRequestModel,
@@ -1219,7 +1219,7 @@ def create_service_connector(
 
 @router.get(
     WORKSPACES + "/{workspace_name_or_id}" + SERVICE_CONNECTOR_RESOURCES,
-    response_model=List[ServiceConnectorResourceListModel],
+    response_model=List[ServiceConnectorResourcesModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -1230,7 +1230,7 @@ def list_service_connector_resources(
     auth_context: AuthContext = Security(
         authorize, scopes=[PermissionType.READ]
     ),
-) -> List[ServiceConnectorResourceListModel]:
+) -> List[ServiceConnectorResourcesModel]:
     """List resources that can be accessed by service connectors.
 
     Args:

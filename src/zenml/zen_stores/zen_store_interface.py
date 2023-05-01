@@ -56,7 +56,7 @@ from zenml.models import (
     ScheduleResponseModel,
     ServiceConnectorFilterModel,
     ServiceConnectorRequestModel,
-    ServiceConnectorResourceListModel,
+    ServiceConnectorResourcesModel,
     ServiceConnectorResponseModel,
     ServiceConnectorTypeModel,
     ServiceConnectorUpdateModel,
@@ -1535,7 +1535,7 @@ class ZenStoreInterface(ABC):
     def verify_service_connector_config(
         self,
         service_connector: ServiceConnectorRequestModel,
-    ) -> ServiceConnectorResourceListModel:
+    ) -> ServiceConnectorResourcesModel:
         """Verifies if a service connector configuration has access to resources.
 
         Args:
@@ -1556,7 +1556,7 @@ class ZenStoreInterface(ABC):
         service_connector_id: UUID,
         resource_type: Optional[str] = None,
         resource_id: Optional[str] = None,
-    ) -> ServiceConnectorResourceListModel:
+    ) -> ServiceConnectorResourcesModel:
         """Verifies if a service connector instance has access to one or more resources.
 
         Args:
@@ -1605,7 +1605,7 @@ class ZenStoreInterface(ABC):
         workspace_name_or_id: Union[str, UUID],
         connector_type: Optional[str] = None,
         resource_type: Optional[str] = None,
-    ) -> List[ServiceConnectorResourceListModel]:
+    ) -> List[ServiceConnectorResourcesModel]:
         """List resources that can be accessed by service connectors.
 
         Args:

@@ -29,7 +29,7 @@ from zenml.enums import PermissionType
 from zenml.models import (
     ServiceConnectorFilterModel,
     ServiceConnectorRequestModel,
-    ServiceConnectorResourceListModel,
+    ServiceConnectorResourcesModel,
     ServiceConnectorResponseModel,
     ServiceConnectorTypeModel,
     ServiceConnectorUpdateModel,
@@ -152,14 +152,14 @@ def delete_service_connector(
 
 @router.post(
     SERVICE_CONNECTOR_VERIFY,
-    response_model=ServiceConnectorResourceListModel,
+    response_model=ServiceConnectorResourcesModel,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
 def verify_service_connector_config(
     connector: ServiceConnectorRequestModel,
     _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
-) -> ServiceConnectorResourceListModel:
+) -> ServiceConnectorResourcesModel:
     """Verifies if a service connector configuration has access to resources.
 
     This requires the service connector implementation to be installed
@@ -181,7 +181,7 @@ def verify_service_connector_config(
 
 @router.put(
     "/{connector_id}" + SERVICE_CONNECTOR_VERIFY,
-    response_model=ServiceConnectorResourceListModel,
+    response_model=ServiceConnectorResourcesModel,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -190,7 +190,7 @@ def verify_service_connector(
     resource_type: Optional[str] = None,
     resource_id: Optional[str] = None,
     _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
-) -> ServiceConnectorResourceListModel:
+) -> ServiceConnectorResourcesModel:
     """Verifies if a service connector instance has access to one or more resources.
 
     This requires the service connector implementation to be installed

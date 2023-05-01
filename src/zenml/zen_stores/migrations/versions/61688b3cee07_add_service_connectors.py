@@ -37,7 +37,7 @@ def upgrade() -> None:
             "description", sqlmodel.sql.sqltypes.AutoString(), nullable=False
         ),
         sa.Column("resource_types", sa.LargeBinary(), nullable=False),
-        sa.Column("multi_instance", sa.Boolean(), nullable=False),
+        sa.Column("supports_instances", sa.Boolean(), nullable=False),
         sa.Column("configuration", sa.LargeBinary(), nullable=True),
         sa.Column("secret_id", sqlmodel.sql.sqltypes.GUID(), nullable=True),
         sa.Column("expires_at", sa.DateTime(), nullable=True),

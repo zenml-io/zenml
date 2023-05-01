@@ -72,7 +72,7 @@ class ResourceTypeModel(BaseModel):
         title="The list of authentication methods that can be used to access "
         "resources of this type.",
     )
-    multi_instance: bool = Field(
+    supports_instances: bool = Field(
         default=False,
         title="Models if the connector can be used to access multiple "
         "instances of this resource type. If set to False, the "
@@ -80,12 +80,12 @@ class ResourceTypeModel(BaseModel):
         "be supplied either when the connector is configured or when it is "
         "used to access the resource.",
     )
-    instance_discovery: bool = Field(
+    supports_discovery: bool = Field(
         default=False,
         title="Models if the connector can be used to discover and list "
         "instances of this resource type. If set to True, the connector "
         "includes support to list all resource instances for this resource "
-        "type. Not applicable if multi_instance is set to False.",
+        "type. Not applicable if supports_instances is set to False.",
     )
     logo_url: Optional[str] = Field(
         default=None,
@@ -266,16 +266,10 @@ class ServiceConnectorTypeModel(BaseModel):
         "configuration and secrets attributes that need to be configured for "
         "them.",
     )
-    source: Optional[str] = Field(
-        default=None,
-        title="The path to the module which contains this service connector.",
-        max_length=STR_FIELD_MAX_LENGTH,
-    )
-    integration: Optional[str] = Field(
-        default=None,
-        title="The name of the integration that the service connector belongs "
-        "to.",
-        max_length=STR_FIELD_MAX_LENGTH,
+    supports_auto_configuration: bool = Field(
+        default=False,
+        title="Models if the connector can be configured automatically based "
+        "on information extracted from a local environment.",
     )
     logo_url: Optional[str] = Field(
         default=None,
@@ -454,7 +448,7 @@ class ServiceConnectorTypeModel(BaseModel):
             )
 
         # Verify the resource ID
-        if resource_id and not resource_type_spec.multi_instance:
+        if resource_id and not resource_type_spec.supports_instances:
             raise ValueError(
                 f"the '{self.type}' connector type does not support "
                 f"multiple instances for the '{resource_type}' resource type "
@@ -504,7 +498,7 @@ class ServiceConnectorBaseModel(BaseModel):
         "connector consumer at runtime.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    multi_instance: bool = Field(
+    supports_instances: bool = Field(
         default=False,
         title="Indicates whether the connector instance can be used to access "
         "multiple instances of the configured resource type.",
@@ -559,7 +553,7 @@ class ServiceConnectorBaseModel(BaseModel):
         return (
             not self.is_multi_type
             and not self.resource_id
-            and self.multi_instance
+            and self.supports_instances
         )
 
     @property
@@ -629,15 +623,15 @@ class ServiceConnectorBaseModel(BaseModel):
 
             if resource_id:
                 self.resource_id = resource_id
-                self.multi_instance = False
+                self.supports_instances = False
             else:
-                self.multi_instance = resource_spec.multi_instance
+                self.supports_instances = resource_spec.supports_instances
 
         else:
             # A multi-type connector is associated with all resource types
             # that it supports
             self.resource_types = list(connector_type.resource_type_map.keys())
-            self.multi_instance = False
+            self.supports_instances = False
 
         # Validate and configure the connector configuration and secrets
         configuration = configuration or {}
@@ -656,7 +650,6 @@ class ServiceConnectorBaseModel(BaseModel):
                         "connector configuration is not valid: missing "
                         f"required attribute {attr_name}"
                     )
-                continue
             elif value is None:
                 continue
 
@@ -719,7 +712,7 @@ class ServiceConnectorRequirements(BaseModel):
         return True, ""
 
 
-class ServiceConnectorTypedResourceListModel(BaseModel):
+class ServiceConnectorResourceListModel(BaseModel):
     """Service connector typed resources list.
 
     Lists the typed resource instances that a service connector
@@ -743,13 +736,13 @@ class ServiceConnectorTypedResourceListModel(BaseModel):
         "resource type.",
     )
 
-    multi_instance: bool = Field(
+    supports_instances: bool = Field(
         title="Whether the resource type supports multiple instances.",
     )
 
-    instance_discovery: bool = Field(
+    supports_discovery: bool = Field(
         title="Whether the connector supports list all resource instances for "
-        "this resource type. Not applicable if multi_instance is set to False. "
+        "this resource type. Not applicable if supports_instances is set to False. "
         "If True, the resource_ids field is populated, otherwise it is empty."
     )
 
@@ -762,7 +755,7 @@ class ServiceConnectorTypedResourceListModel(BaseModel):
     @classmethod
     def from_resource_type_model(
         cls, resource_type_model: ResourceTypeModel
-    ) -> "ServiceConnectorTypedResourceListModel":
+    ) -> "ServiceConnectorResourceListModel":
         """Initialize a typed resource list model from a resource type model.
 
         Args:
@@ -775,37 +768,36 @@ class ServiceConnectorTypedResourceListModel(BaseModel):
             resource_type_name=resource_type_model.name,
             resource_type=resource_type_model.resource_type,
             logo_url=resource_type_model.logo_url,
-            multi_instance=resource_type_model.multi_instance,
-            instance_discovery=resource_type_model.instance_discovery,
+            supports_instances=resource_type_model.supports_instances,
+            supports_discovery=resource_type_model.supports_discovery,
         )
 
     @classmethod
-    def from_resource_model(
+    def from_connector_model(
         cls,
-        resource_model: "ServiceConnectorResponseModel",
-        resource_type: str,
-    ) -> "ServiceConnectorTypedResourceListModel":
-        """Initialize a typed resource list model from a resource model.
+        connector_model: "ServiceConnectorResponseModel",
+    ) -> "ServiceConnectorResourceListModel":
+        """Initialize a typed resource list model from a connector model.
 
         Args:
             resource_model: The resource model.
-            resource_type: The resource type.
 
         Returns:
             A typed resource list model instance.
         """
+        assert connector_model.resource_types
         return cls(
-            resource_type=resource_type,
-            resource_type_name=resource_type,
-            multi_instance=resource_model.is_multi_instance,
-            instance_discovery=False,
-            resource_ids=[resource_model.resource_id]
-            if resource_model.resource_id
+            resource_type=connector_model.resource_types[0],
+            resource_type_name=connector_model.resource_types[0],
+            supports_instances=connector_model.is_multi_instance,
+            supports_discovery=False,
+            resource_ids=[connector_model.resource_id]
+            if connector_model.resource_id
             else [],
         )
 
 
-class ServiceConnectorResourceListModel(BaseModel):
+class ServiceConnectorResourcesModel(BaseModel):
     """Service connector resources list.
 
     Lists the resource types and resource instances that a service connector
@@ -839,17 +831,18 @@ class ServiceConnectorResourceListModel(BaseModel):
         "connector's logo.",
     )
 
-    resources: List[ServiceConnectorTypedResourceListModel] = Field(
-        default_factory=list,
+    resources: Optional[ServiceConnectorResourceListModel] = Field(
+        default=None,
         title="The list of resources that the connector instance can be used "
-        "to gain access to, grouped by resource type.",
+        "to gain access to. Not included for multi-type service connectors "
+        "unless a resource type is specified when listing resources.",
     )
 
     @classmethod
     def from_connector_type_model(
         cls,
         connector_type_model: ServiceConnectorTypeModel,
-    ) -> "ServiceConnectorResourceListModel":
+    ) -> "ServiceConnectorResourcesModel":
         """Initialize a resource list model from a connector type model.
 
         Args:
@@ -868,7 +861,7 @@ class ServiceConnectorResourceListModel(BaseModel):
     def from_connector_model(
         cls,
         connector_model: "ServiceConnectorResponseModel",
-    ) -> "ServiceConnectorResourceListModel":
+    ) -> "ServiceConnectorResourcesModel":
         """Initialize a resource list model from a connector model.
 
         Args:
@@ -884,10 +877,13 @@ class ServiceConnectorResourceListModel(BaseModel):
             connector_type_name=connector_model.type,
         )
 
-        for resource_type in connector_model.resource_types:
-            resource_list.resources.append(
-                ServiceConnectorTypedResourceListModel.from_resource_model(
-                    connector_model, resource_type=resource_type
+        if (
+            connector_model.is_single_instance
+            or connector_model.is_multi_instance
+        ):
+            resource_list.resources = (
+                ServiceConnectorResourceListModel.from_connector_model(
+                    connector_model,
                 )
             )
 

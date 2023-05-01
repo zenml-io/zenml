@@ -170,8 +170,7 @@ class S3ArtifactStoreFlavor(BaseArtifactStoreFlavor):
             connector is required for this flavor.
         """
         return ServiceConnectorRequirements(
-            connector_type="aws",
-            resource_type="s3",
+            resource_type="s3-bucket",
         )
 
     @property

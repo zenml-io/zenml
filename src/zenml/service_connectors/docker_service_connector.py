@@ -18,12 +18,14 @@ The Docker Service Connector is responsible for authenticating with a Docker
 """
 import re
 import subprocess
-from typing import Any, List, Optional
+from typing import Any, List, Optional, Tuple
 
-from botocore.exceptions import ClientError
+from docker.client import DockerClient
+from docker.errors import DockerException
 from pydantic import SecretStr
 
 from zenml.exceptions import AuthorizationException
+from zenml.logger import get_logger
 from zenml.models import (
     AuthenticationMethodModel,
     ResourceTypeModel,
@@ -35,6 +37,8 @@ from zenml.service_connectors.service_connector import (
 )
 from zenml.utils.enum_utils import StrEnum
 
+logger = get_logger(__name__)
+
 
 class DockerCredentials(AuthenticationConfig):
     """Docker client authentication credentials."""
@@ -43,9 +47,8 @@ class DockerCredentials(AuthenticationConfig):
     password: SecretStr
 
 
-DOCKER_RESOURCE_TYPE = "docker"
 DOCKER_CONNECTOR_TYPE = "docker"
-DOCKER_RESOURCE_TYPE = "docker"
+DOCKER_RESOURCE_TYPE = "docker-registry"
 
 
 class DockerAuthenticationMethods(StrEnum):
@@ -87,19 +90,19 @@ python-docker client instance.
 The resource ID must identify a Docker/OCI repository using one of the following
 formats:
             
-- repository URI: http[s]://host[:port][/repository-name]
-- DockerHub repository name: repository-name
+- repository URI: http[s]://host[:port]/<repository-name>
+- DockerHub repository name: <repository-name>
 """,
             auth_methods=DockerAuthenticationMethods.values(),
             # Request a Docker repository to be configured in the
             # connector or provided by the consumer.
-            multi_instance=True,
+            supports_instances=True,
             # Does not support listing all Docker repositories that can be
             # accessed with a given set of credentials. A Docker repository
             # must be manually configured in the connector or provided by the
             # consumer (i.e. cannot be selected from a list of available
             # repositories).
-            instance_discovery=True,
+            supports_discovery=False,
             logo_url="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/container_registry/docker.png",
         ),
     ],
@@ -124,38 +127,44 @@ class DockerServiceConnector(ServiceConnector):
     def _parse_resource_id(
         cls,
         resource_id: str,
-    ) -> str:
-        """Validate and convert a Docker resource ID into a Docker registry URL.
+    ) -> Tuple[str, Optional[str]]:
+        """Validate and convert a Docker resource ID into a Docker repository name and registry.
 
         Args:
             resource_id: The resource ID to convert.
 
         Returns:
-            The Docker registry URL.
+            The Docker repository name and registry. The registry is None if
+            the resource ID is a DockerHub repository name.
 
         Raises:
             ValueError: If the provided resource ID is not a valid Docker
-                registry URL.
+                repository.
         """
-        registry_url: Optional[str] = None
+        repository_name: Optional[str] = None
+        registry: Optional[str] = None
         if re.match(
-            r"^http[s]?://[a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)*(:[0-9]+)?/.+$",
+            r"^(https?://)?[a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)*(:[0-9]+)?/.+$",
             resource_id,
         ):
             # The resource ID is a repository URL
-            registry_url = resource_id
-        elif re.match(r"^[a-zA-Z0-9-]+/.+$", resource_id):
+            if resource_id.startswith("https://"):
+                repository_name = resource_id.split("/", 2)[2]
+            else:
+                repository_name = resource_id
+            registry = repository_name.split("/", 1)[0]
+        elif re.match(r"^[a-zA-Z0-9-]+$", resource_id):
             # The resource ID is a DockerHub repository name
-            registry_url = "https://index.docker.io/v1/resource_id"
+            repository_name = resource_id
         else:
             raise ValueError(
                 f"Invalid resource ID for a Docker registry: {resource_id}. "
                 f"Please provide a valid repository name or URL in the "
                 f"following format:\n"
-                f"repository URL: http[s://host[:port]/repository-name\n"
-                f"DockerHub repository name: repository-name\n"
+                f"repository name/URL: [https://]host[:port]/<repository-name>\n"
+                f"DockerHub repository name: <repository-name>\n"
             )
-        return registry_url
+        return repository_name, registry
 
     def _canonical_resource_id(
         self, resource_type: str, resource_id: str
@@ -169,7 +178,27 @@ class DockerServiceConnector(ServiceConnector):
         Returns:
             The canonical resource ID.
         """
-        return self._parse_resource_id(resource_id)
+        return self._parse_resource_id(resource_id)[0]
+
+    def _authorize_client(
+        self,
+        docker_client: DockerClient,
+    ) -> None:
+        """Authorize a Docker client to have access to the configured Docker registry.
+
+        Args:
+            docker_client: The Docker client to authenticate.
+        """
+        cfg = self.config
+        assert self.resource_id is not None
+        _, registry = self._parse_resource_id(self.resource_id)
+
+        docker_client.login(
+            username=cfg.username.get_secret_value(),
+            password=cfg.password.get_secret_value(),
+            registry=registry,
+            reauth=True,
+        )
 
     def _connect_to_resource(
         self,
@@ -189,18 +218,8 @@ class DockerServiceConnector(ServiceConnector):
         Raises:
             AuthorizationException: If authentication failed.
         """
-        from docker.client import DockerClient
-
-        cfg = self.config
-
         docker_client = DockerClient.from_env()
-
-        docker_client.login(
-            username=cfg.username.get_secret_value(),
-            password=cfg.password.get_secret_value(),
-            registry=self.resource_id,
-            reauth=True,
-        )
+        self._authorize_client(docker_client)
 
         return docker_client
 
@@ -223,14 +242,19 @@ class DockerServiceConnector(ServiceConnector):
         # Call the docker CLI to authenticate to the Docker registry
         cfg = self.config
 
+        assert self.resource_id is not None
+        _, registry = self._parse_resource_id(self.resource_id)
+
         docker_login_cmd = [
             "docker",
             "login",
             "-u",
             cfg.username.get_secret_value(),
             "--password-stdin",
-            self.resource_id,
         ]
+        if registry:
+            docker_login_cmd.append(registry)
+
         try:
             subprocess.run(
                 docker_login_cmd,
@@ -240,7 +264,7 @@ class DockerServiceConnector(ServiceConnector):
         except subprocess.CalledProcessError as e:
             raise AuthorizationException(
                 f"Failed to authenticate to Docker registry "
-                f"{self.resource_id}': {e}"
+                f"'{self.resource_id}': {e}"
             ) from e
 
     @classmethod
@@ -282,8 +306,8 @@ class DockerServiceConnector(ServiceConnector):
         self,
         resource_type: Optional[str] = None,
         resource_id: Optional[str] = None,
-    ) -> None:
-        """Verify that the connector can authenticate and connect.
+    ) -> List[str]:
+        """Verify that the connector can authenticate and access resources.
 
         Args:
             resource_type: The type of resource to verify. Must be set to the
@@ -292,42 +316,17 @@ class DockerServiceConnector(ServiceConnector):
                 provided, this method will verify that it can connect to any
                 Docker registry.
         """
-        from docker.client import DockerClient
-
-        assert resource_type == DOCKER_RESOURCE_TYPE
-
-        cfg = self.config
-
-        docker_client = DockerClient.from_env()
-
-        if resource_id:
-            docker_client.login(
-                username=cfg.username.get_secret_value(),
-                password=cfg.password.get_secret_value(),
-                registry=self.resource_id,
-                reauth=True,
-            )
-
-        # Verify that we can ping the Docker client
+        # The docker server isn't available on the ZenML server, so we can't
+        # verify the credentials there.
         try:
-            docker_client.ping()
-        except ClientError as err:
-            raise AuthorizationException(
-                f"failed to connect to Docker: {err}"
-            ) from err
+            docker_client = DockerClient.from_env()
+        except DockerException as e:
+            logger.warning(
+                f"Failed to connect to Docker daemon: {e}"
+                f"\nSkipping Docker connector verification."
+            )
+        else:
+            self._authorize_client(docker_client)
+            docker_client.close()
 
-    def _list_resource_ids(
-        self,
-        resource_type: str,
-        resource_id: Optional[str] = None,
-    ) -> List[str]:
-        """List the Docker repositories that the connector can access.
-
-        Args:
-            resource_type: The type of the resources to list.
-            resource_id: The ID of a particular resource to filter by.
-        """
-        raise NotImplementedError(
-            "Listing all accessible Docker repositories is not supported by "
-            "the Docker connector."
-        )
+        return [resource_id] if resource_id else []

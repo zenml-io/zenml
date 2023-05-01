@@ -65,8 +65,8 @@ logger = get_logger(__name__)
 
 
 AWS_CONNECTOR_TYPE = "aws"
-AWS_RESOURCE_TYPE = "aws"
-S3_RESOURCE_TYPE = "s3"
+AWS_RESOURCE_TYPE = "aws-generic"
+S3_RESOURCE_TYPE = "s3-bucket"
 EKS_KUBE_API_TOKEN_EXPIRATION = 60
 
 
@@ -108,7 +108,7 @@ class AWSSecretKeyConfig(AWSBaseConfig, AWSSecretKey):
 class STSTokenConfig(AWSBaseConfig, STSToken):
     """AWS STS token authentication configuration."""
 
-    expires: Optional[datetime.datetime] = Field(
+    expires_at: Optional[datetime.datetime] = Field(
         default=None,
         title="AWS STS Token Expiration",
     )
@@ -174,6 +174,7 @@ In addition to authenticating to AWS services, the connector is able to manage
 specialized authentication for Docker and Kubernetes python clients and also
 allows configuration of local Docker and Kubernetes clients.
 """,
+    supports_auto_configuration=True,
     logo_url="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/container_registry/aws.png",
     auth_methods=[
         AuthenticationMethodModel(
@@ -351,8 +352,8 @@ session can then be used to create boto3 clients for any particular AWS service.
             auth_methods=AWSAuthenticationMethods.values(),
             # Don't request an AWS specific resource instance ID, given that
             # the connector provides a generic boto3 session instance.
-            multi_instance=False,
-            instance_discovery=False,
+            supports_instances=False,
+            supports_discovery=False,
             logo_url="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/container_registry/aws.png",
         ),
         ResourceTypeModel(
@@ -380,10 +381,10 @@ formats:
             auth_methods=AWSAuthenticationMethods.values(),
             # Request an S3 bucket to be configured in the
             # connector or provided by the consumer
-            multi_instance=True,
+            supports_instances=True,
             # Supports listing all S3 buckets that can be accessed with a given
             # set of credentials
-            instance_discovery=True,
+            supports_discovery=True,
             logo_url="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/container_registry/aws.png",
         ),
         ResourceTypeModel(
@@ -418,10 +419,10 @@ EKS clusters in the AWS region that it is configured to use.
             auth_methods=AWSAuthenticationMethods.values(),
             # Request an EKS cluster name to be configured in the
             # connector or provided by the consumer
-            multi_instance=True,
+            supports_instances=True,
             # Supports listing all EKS clusters that can be accessed with a
             # given set of credentials
-            instance_discovery=True,
+            supports_discovery=True,
             logo_url="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/orchestrator/kubernetes.png",
         ),
         ResourceTypeModel(
@@ -460,10 +461,10 @@ ECR repositories in the AWS region that it is configured to use.
             auth_methods=AWSAuthenticationMethods.values(),
             # Request an ECR repository to be configured in the
             # connector or provided by the consumer
-            multi_instance=True,
+            supports_instances=True,
             # Supports listing all ECR repositories that can be accessed with a
             # given set of credentials
-            instance_discovery=True,
+            supports_discovery=True,
             logo_url="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/container_registry/docker.png",
         ),
     ],
@@ -638,7 +639,7 @@ class AWSServiceConnector(ServiceConnector):
                 aws_session_token=cfg.aws_session_token.get_secret_value(),
                 region_name=cfg.region,
             )
-            return session, None
+            return session, cfg.expires_at
         elif auth_method in [
             AWSAuthenticationMethods.IAM_ROLE,
             AWSAuthenticationMethods.SESSION_TOKEN,
@@ -1230,77 +1231,46 @@ class AWSServiceConnector(ServiceConnector):
         self,
         resource_type: Optional[str] = None,
         resource_id: Optional[str] = None,
-    ) -> None:
-        """Verify that the connector can authenticate and connect.
+    ) -> List[str]:
+        """Verify that the connector can authenticate and access resources.
 
         Args:
-            resource_type: The type of resource to connect to. Omitted if
-                verification is performed for multiple resource types.
+            resource_type: The type of the resource to verify. If omitted and
+                if the connector supports multiple resource types, the
+                implementation must verify that it can authenticate and connect
+                to any of the supported resource types or raise a
+                NotImplementedError exception.
             resource_id: The ID of the resource to connect to. Omitted if the
                 supplied resource type does not allow multiple instances or
-                if verification is performed for multiple resource types.
+                if a resource type is not specified. If the supplied resource
+                type allows multiple instances, this parameter may still be
+                omitted to verify that the connector can authenticate and
+                connect to any instance of the given resource type.
+
+        Returns:
+            The list of resources IDs in canonical format identifying the
+            resources that the connector can access.
         """
-        # If the resource type or resource ID are not specified, treat this as
-        # a generic AWS connector.
+        # If the resource type or resource ID are not specified, treat this the
+        # same as a generic AWS connector.
         if resource_type is None:
             resource_type = AWS_RESOURCE_TYPE
 
-            session, _ = self._authenticate(
-                self.auth_method,
-                resource_type=resource_type,
-                resource_id=resource_id,
-            )
-
-            # Verify that the AWS account is accessible
-            assert isinstance(session, boto3.Session)
-            sts_client = session.client("sts")
-            try:
-                sts_client.get_caller_identity()
-            except ClientError as err:
-                raise AuthorizationException(
-                    f"failed to verify AWS account access: {err}"
-                ) from err
-
-        else:
-            # Verify by checking that the resource exists
-            resource_ids = self._list_resource_ids(
-                resource_type=resource_type,
-                resource_id=resource_id,
-            )
-            if resource_id and resource_id not in resource_ids:
-                raise AuthorizationException(
-                    f"the specified resource ID '{resource_id}' of type "
-                    f"'{resource_type}' does not exist or cannot be accessed"
-                )
-
-    def _list_resource_ids(
-        self,
-        resource_type: str,
-        resource_id: Optional[str] = None,
-    ) -> List[str]:
-        """List the resource IDs for the given resource type.
-
-        This method uses the connector's configuration to retrieve a list with
-        the IDs of all resource instances of the given type that the connector
-        can access. An empty list is returned for generic AWS resources.
-
-        Args:
-            resource_type: The type of the resources to list.
-            resource_id: The ID of a particular resource to filter by.
-
-        Raises:
-            AuthorizationException: If authentication failed.
-            NotImplementedError: If the connector instance does not support
-                listing resource IDs for the configured resource type or
-                authentication method.
-        """
-        # Get an authenticated boto3 session
         session, _ = self._authenticate(
             self.auth_method,
             resource_type=resource_type,
             resource_id=resource_id,
         )
+
+        # Verify that the AWS account is accessible
         assert isinstance(session, boto3.Session)
+        sts_client = session.client("sts")
+        try:
+            sts_client.get_caller_identity()
+        except ClientError as err:
+            msg = f"failed to verify AWS account access: {err}"
+            logger.debug(msg)
+            raise AuthorizationException(msg) from err
 
         if resource_type == AWS_RESOURCE_TYPE:
             return []
@@ -1316,8 +1286,9 @@ class AWSServiceConnector(ServiceConnector):
                 try:
                     response = s3_client.list_buckets()
                 except ClientError as e:
-                    logger.error(f"Failed to list S3 buckets: {e}")
-                    return []
+                    msg = f"failed to list S3 buckets: {e}"
+                    logger.error(msg)
+                    raise AuthorizationException(msg) from e
 
                 return [
                     f"s3://{bucket['Name']}" for bucket in response["Buckets"]
@@ -1329,10 +1300,9 @@ class AWSServiceConnector(ServiceConnector):
                     s3_client.head_bucket(Bucket=bucket_name)
                     return [resource_id]
                 except ClientError as e:
-                    logger.error(
-                        f"Failed to fetch S3 bucket {bucket_name}: {e}"
-                    )
-                    return []
+                    msg = f"failed to fetch S3 bucket {bucket_name}: {e}"
+                    logger.error(msg)
+                    raise AuthorizationException(msg) from e
 
         if resource_type == DOCKER_RESOURCE_TYPE:
             ecr_client = session.client(
@@ -1345,8 +1315,9 @@ class AWSServiceConnector(ServiceConnector):
                 try:
                     repositories = ecr_client.describe_repositories()
                 except ClientError as e:
-                    logger.error(f"Failed to list ECR repositories name: {e}")
-                    return []
+                    msg = f"failed to list ECR repositories: {e}"
+                    logger.error(msg)
+                    raise AuthorizationException(msg) from e
 
                 repo_list: List[str] = []
                 for repo in repositories["repositories"]:
@@ -1364,10 +1335,11 @@ class AWSServiceConnector(ServiceConnector):
                         ]
                     )
                 except ClientError as e:
-                    logger.error(
+                    msg = (
                         f"Failed to fetch ECR repository {registry_name}: {e}"
                     )
-                    return []
+                    logger.error(msg)
+                    raise AuthorizationException(msg) from e
 
                 return [resource_id]
 
@@ -1382,8 +1354,9 @@ class AWSServiceConnector(ServiceConnector):
                 try:
                     clusters = eks_client.list_clusters()
                 except ClientError as e:
-                    logger.error(f"Failed to list EKS clusters name: {e}")
-                    return []
+                    msg = f"Failed to list EKS clusters: {e}"
+                    logger.error(msg)
+                    raise AuthorizationException(msg) from e
 
                 return clusters["clusters"]
             else:
@@ -1392,10 +1365,9 @@ class AWSServiceConnector(ServiceConnector):
                 try:
                     clusters = eks_client.describe_cluster(name=cluster_name)
                 except ClientError as e:
-                    logger.error(
-                        f"Failed to fetch EKS cluster {cluster_name}: {e}"
-                    )
-                    return []
+                    msg = f"Failed to fetch EKS cluster {cluster_name}: {e}"
+                    logger.error(msg)
+                    raise AuthorizationException(msg) from e
 
                 return [resource_id]
 

@@ -21,6 +21,7 @@ from zenml.config.base_settings import BaseSettings
 from zenml.integrations.kubeflow import KUBEFLOW_ORCHESTRATOR_FLAVOR
 from zenml.integrations.kubernetes.pod_settings import KubernetesPodSettings
 from zenml.logger import get_logger
+from zenml.models.service_connector_models import ServiceConnectorRequirements
 from zenml.orchestrators import BaseOrchestratorConfig, BaseOrchestratorFlavor
 from zenml.utils.secret_utils import SecretField
 
@@ -294,6 +295,23 @@ class KubeflowOrchestratorFlavor(BaseOrchestratorFlavor):
             The name of the flavor.
         """
         return KUBEFLOW_ORCHESTRATOR_FLAVOR
+
+    @property
+    def service_connector_requirements(
+        self,
+    ) -> Optional[ServiceConnectorRequirements]:
+        """Requirements for service connectors.
+
+        Models requirements that are used to filter the available service
+        connector types that are compatible with this flavor.
+
+        Returns:
+            Requirements for compatible service connectors, if a service
+            connector is required for this flavor.
+        """
+        return ServiceConnectorRequirements(
+            resource_type="kubernetes-cluster",
+        )
 
     @property
     def docs_url(self) -> Optional[str]:

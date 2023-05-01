@@ -107,7 +107,7 @@ class KubernetesTokenConfig(KubernetesBaseConfig, KubernetesTokenCredentials):
 
 
 KUBERNETES_CONNECTOR_TYPE = "kubernetes"
-KUBERNETES_RESOURCE_TYPE = "kubernetes"
+KUBERNETES_RESOURCE_TYPE = "kubernetes-cluster"
 
 
 class KubernetesAuthenticationMethods(StrEnum):
@@ -161,7 +161,7 @@ a Kubernetes client pre-configured with AWS credentials.
             auth_methods=KubernetesAuthenticationMethods.values(),
             # A Kubernetes connector instance is used to represent a single
             # Kubernetes cluster.
-            multi_instance=False,
+            supports_instances=False,
             logo_url="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/orchestrator/kubernetes.png",
         ),
     ],
@@ -394,14 +394,18 @@ class KubernetesServiceConnector(ServiceConnector):
         self,
         resource_type: Optional[str] = None,
         resource_id: Optional[str] = None,
-    ) -> None:
-        """Verify that the connector can authenticate and connect.
+    ) -> List[str]:
+        """Verify that the connector can authenticate and access resources.
 
         Args:
             resource_type: The type of resource to verify. Must be set to the
                 Kubernetes resource type.
             resource_id: The ID of the resource to connect to. Not applicable
                 to Kubernetes connectors.
+
+        Returns:
+            The list of resources IDs in canonical format identifying the
+            resources that the connector can access.
         """
         client = self._connect_to_resource()
         assert isinstance(client, k8s_client.ApiClient)
@@ -419,18 +423,5 @@ class KubernetesServiceConnector(ServiceConnector):
                 f"failed to verify Kubernetes cluster access: {err}"
             ) from err
 
-    def _list_resource_ids(
-        self,
-        resource_type: str,
-        resource_id: Optional[str] = None,
-    ) -> List[str]:
-        """List the Kubernetes clusters that the connector can access.
-
-        Args:
-            resource_type: The type of the resources to list.
-            resource_id: The ID of a particular resource to filter by.
-        """
-        raise NotImplementedError(
-            "A Kubernetes service connector instance can only be used to "
-            "connect to a single cluster."
-        )
+        # Resource IDs are not applicable to Kubernetes connectors
+        return []

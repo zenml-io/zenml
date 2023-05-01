@@ -169,9 +169,9 @@ class ServiceConnectorRegistry:
             )
         except KeyError:
             raise NotImplementedError(
-                f"Service connector type {model.type} is not available. "
-                f"Please make sure the corresponding packages and/or ZenML "
-                f"integration are installed and try again."
+                f"Service connector type {model.type} is not available "
+                "locally. Please make sure the corresponding packages and/or "
+                "ZenML integration are installed and try again."
             )
 
         assert service_connector_type.connector_class is not None

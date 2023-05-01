@@ -98,7 +98,7 @@ from zenml.models import (
     SecretUpdateModel,
     ServiceConnectorFilterModel,
     ServiceConnectorRequestModel,
-    ServiceConnectorResourceListModel,
+    ServiceConnectorResourcesModel,
     ServiceConnectorResponseModel,
     ServiceConnectorTypeModel,
     ServiceConnectorUpdateModel,
@@ -4226,7 +4226,7 @@ class Client(metaclass=ClientMetaClass):
                 "ServiceConnectorRequestModel",
             ]
         ],
-        Optional[ServiceConnectorResourceListModel],
+        Optional[ServiceConnectorResourcesModel],
     ]:
         """Create, validate and/or register a service connector.
 
@@ -4262,7 +4262,7 @@ class Client(metaclass=ClientMetaClass):
         )
 
         connector_instance: Optional[ServiceConnector] = None
-        connector_resources: Optional[ServiceConnectorResourceListModel] = None
+        connector_resources: Optional[ServiceConnectorResourcesModel] = None
 
         # Get the service connector type class
         try:
@@ -4279,6 +4279,11 @@ class Client(metaclass=ClientMetaClass):
         # If auto_configure is set, we will try to automatically configure the
         # service connector from the local environment
         if auto_configure:
+            if not connector_type.supports_auto_configuration:
+                raise NotImplementedError(
+                    f"The {connector_type.name} service connector type "
+                    "does not support auto-configuration."
+                )
             if not connector_type.local:
                 raise ValueError(
                     f"The {connector_type.name} service connector type "
@@ -4296,6 +4301,7 @@ class Client(metaclass=ClientMetaClass):
                 resource_id=resource_id,
             )
 
+            assert connector_instance is not None
             connector_request = connector_instance.to_model(
                 name=name,
                 user=self.active_user.id,
@@ -4318,8 +4324,7 @@ class Client(metaclass=ClientMetaClass):
                         )
                     )
                 else:
-                    connector_instance.verify()
-                    connector_resources = connector_instance.list_resources()
+                    connector_resources = connector_instance.verify()
 
         else:
             if not auth_method:
@@ -4345,7 +4350,6 @@ class Client(metaclass=ClientMetaClass):
                 configuration=configuration,
                 secrets=secrets,
             )
-
             if verify:
 
                 # Prefer to verify the connector config server-side if the
@@ -4365,8 +4369,7 @@ class Client(metaclass=ClientMetaClass):
                             model=connector_request
                         )
                     )
-                    connector_instance.verify()
-                    connector_resources = connector_instance.list_resources()
+                    connector_resources = connector_instance.verify()
 
         if not register:
             return connector_request, connector_resources
@@ -4522,7 +4525,7 @@ class Client(metaclass=ClientMetaClass):
         name_id_or_prefix: Union[UUID, str],
         resource_type: Optional[str] = None,
         resource_id: Optional[str] = None,
-    ) -> "ServiceConnectorResourceListModel":
+    ) -> "ServiceConnectorResourcesModel":
         """Verifies if a service connector has access to one or more resources.
 
         Args:
@@ -4570,8 +4573,9 @@ class Client(metaclass=ClientMetaClass):
                     model=service_connector
                 )
             )
-            connector_instance.verify()
-            connector_resources = connector_instance.list_resources()
+            connector_resources = connector_instance.verify(
+                resource_type=resource_type, resource_id=resource_id
+            )
 
         return connector_resources
 
@@ -4673,6 +4677,10 @@ class Client(metaclass=ClientMetaClass):
                     model=client_connector_model
                 )
             )
+
+            # Verify the client connector on the local machine, because the
+            # server-side implementation may not be able to do so
+            client_connector.verify()
         else:
             connector_instance = (
                 service_connector_registry.instantiate_connector(
@@ -4692,7 +4700,7 @@ class Client(metaclass=ClientMetaClass):
         self,
         connector_type: Optional[str] = None,
         resource_type: Optional[str] = None,
-    ) -> List[ServiceConnectorResourceListModel]:
+    ) -> List[ServiceConnectorResourcesModel]:
         """List resources that can be accessed by service connectors.
 
         Args:

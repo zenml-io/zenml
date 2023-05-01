@@ -681,6 +681,19 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
         Returns:
             A KFP client instance.
         """
+        connector = self.get_connector()
+        if connector:
+            client = connector.connect()
+            if not isinstance(client, k8s_client.ApiClient):
+                raise RuntimeError(
+                    f"Expected a k8s_client.ApiClient while trying to use the "
+                    f"linked connector, but got {type(client)}."
+                )
+
+            # Transfer the credentials from the kubernetes client to the
+            # KFP client
+            return kfp.Client()
+
         client_args = {
             "kube_context": self.config.kubernetes_context,
         }
@@ -700,7 +713,8 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
             # If cookie is already set, then ignore
             if "cookie" in client_args:
                 logger.warning(
-                    "Cookie already set in `client_args`, ignoring `client_username` and `client_password`..."
+                    "Cookie already set in `client_args`, ignoring "
+                    "`client_username` and `client_password`..."
                 )
             else:
                 session_cookie = self._get_session_cookie(

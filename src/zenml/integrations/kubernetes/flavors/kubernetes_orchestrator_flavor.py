@@ -124,7 +124,7 @@ class KubernetesOrchestratorFlavor(BaseOrchestratorFlavor):
             connector is required for this flavor.
         """
         return ServiceConnectorRequirements(
-            resource_type="kubernetes",
+            resource_type="kubernetes-cluster",
         )
 
     @property

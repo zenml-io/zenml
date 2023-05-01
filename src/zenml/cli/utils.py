@@ -80,7 +80,7 @@ if TYPE_CHECKING:
         FlavorResponseModel,
         PipelineRunResponseModel,
         ServiceConnectorRequestModel,
-        ServiceConnectorResourceListModel,
+        ServiceConnectorResourcesModel,
         ServiceConnectorResponseModel,
         ServiceConnectorTypeModel,
         StackResponseModel,
@@ -1191,35 +1191,48 @@ def print_service_connectors_table(
 
 
 def print_service_connector_resource_table(
-    resources: List["ServiceConnectorResourceListModel"],
+    resources: List["ServiceConnectorResourcesModel"],
+    skip_empty: bool = False,
 ) -> None:
     """Prints a table with details for a list of service connector resources.
 
     Args:
         resources: List of service connector resources to print.
+        skip_empty: Whether to skip entries with no resources.
     """
     resource_table = []
     for resource_model in resources:
-        for resource_list in resource_model.resources:
-            resource_type = (
-                f"{resource_list.resource_type_name} "
-                f"({resource_list.resource_type})"
-            )
-            if not resource_list.multi_instance:
-                resource_ids = "N/A"
-            else:
-                resource_ids = "\n".join(resource_list.resource_ids)
+        if not resource_model.resources:
             resource_row: Dict[str, Any] = {
-                "RESOURCE_TYPE": resource_type,
-                "RESOURCES": resource_ids,
+                "CONNECTOR_ID": str(resource_model.id),
+                "CONNECTOR_NAME": resource_model.name,
+                "RESOURCE_TYPE": "*",
+                "RESOURCE": "*",
             }
-            if len(resources) > 1:
-                resource_row.update(
-                    {
-                        "CONNECTOR_ID": str(resource_model.id),
-                        "CONNECTOR_NAME": resource_model.name,
-                    }
-                )
+            resource_table.append(resource_row)
+            continue
+        resource_list = resource_model.resources
+        resource_type = (
+            f"{resource_list.resource_type_name} "
+            f"({resource_list.resource_type})"
+        )
+        if not resource_list.supports_instances:
+            resource_ids = ["N/A"]
+        elif resource_list.resource_ids:
+            resource_ids = resource_list.resource_ids
+        elif not resource_list.supports_discovery:
+            resource_ids = ["*"]
+        elif skip_empty:
+            resource_ids = []
+        else:
+            resource_ids = ["<no-resources-listed>"]
+        for resource_id in resource_ids:
+            resource_row: Dict[str, Any] = {
+                "CONNECTOR_ID": str(resource_model.id),
+                "CONNECTOR_NAME": resource_model.name,
+                "RESOURCE_TYPE": resource_type,
+                "RESOURCE": resource_id,
+            }
             resource_table.append(resource_row)
     print_table(resource_table)
 
@@ -1415,18 +1428,30 @@ def print_service_connector_type(
         f"# {connector_type.name} (connector type: {connector_type.type})\n"
     )
     message += (
-        f"**Authentication methods**: {', '.join(supported_auth_methods)}\n"
+        f"**Authentication methods**: {', '.join(supported_auth_methods)}\n\n"
     )
-    message += f"**Resource types**: {', '.join(supported_resource_types)}\n"
+    message += f"**Resource types**: {', '.join(supported_resource_types)}\n\n"
+    message += f"**Supports auto-configuration**: {connector_type.supports_auto_configuration}\n\n"
+    message += f"**Available locally**: {connector_type.local}\n\n"
+    message += f"**Available remotely**: {connector_type.remote}\n\n"
     message += f"{connector_type.description}\n"
 
     for r in connector_type.resource_types:
         message += f"## {r.name} (resource type: {r.resource_type})\n"
-        message += f"**Authentication methods**: {', '.join(r.auth_methods)}\n"
+        message += (
+            f"**Authentication methods**: {', '.join(r.auth_methods)}\n\n"
+        )
+        message += (
+            f"**Supports resource instances**: {r.supports_instances}\n\n"
+        )
+        message += (
+            f"**Supports resource discovery**: {r.supports_discovery}\n\n"
+        )
         message += f"{r.description}\n"
 
     for a in connector_type.auth_methods:
         message += f"## {a.name} (auth method: {a.auth_method})\n"
+        message += f"**Supports issuing temporary credentials**: {a.supports_temporary_credentials()}\n\n"
         message += f"{a.description}\n"
 
     console.print(Markdown(f"{message}---"), justify="left", width=80)

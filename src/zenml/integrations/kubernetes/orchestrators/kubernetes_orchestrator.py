@@ -120,13 +120,13 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         return k8s_client.CoreV1Api(self.kube_client)
 
     @property
-    def _k8s_batch_api(self) -> k8s_client.BatchV1beta1Api:
+    def _k8s_batch_api(self) -> k8s_client.BatchV1Api:
         """Getter for the Kubernetes Batch API client.
 
         Returns:
             The Kubernetes Batch API client.
         """
-        return k8s_client.BatchV1beta1Api(self.kube_client)
+        return k8s_client.BatchV1Api(self.kube_client)
 
     @property
     def _k8s_rbac_api(self) -> k8s_client.RbacAuthorizationV1Api:
