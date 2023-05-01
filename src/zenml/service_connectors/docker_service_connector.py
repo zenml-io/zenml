@@ -183,15 +183,19 @@ class DockerServiceConnector(ServiceConnector):
     def _authorize_client(
         self,
         docker_client: DockerClient,
+        resource_id: Optional[str] = None,
     ) -> None:
         """Authorize a Docker client to have access to the configured Docker registry.
 
         Args:
             docker_client: The Docker client to authenticate.
+            resource_id: The resource ID to authorize the client for. If None,
+                the client is authorized for the configured resource ID.
         """
         cfg = self.config
-        assert self.resource_id is not None
-        _, registry = self._parse_resource_id(self.resource_id)
+        resource_id = resource_id or self.resource_id
+        assert resource_id is not None
+        _, registry = self._parse_resource_id(resource_id)
 
         docker_client.login(
             username=cfg.username.get_secret_value(),
@@ -326,7 +330,8 @@ class DockerServiceConnector(ServiceConnector):
                 f"\nSkipping Docker connector verification."
             )
         else:
-            self._authorize_client(docker_client)
-            docker_client.close()
+            if resource_id:
+                self._authorize_client(docker_client, resource_id)
+                docker_client.close()
 
         return [resource_id] if resource_id else []

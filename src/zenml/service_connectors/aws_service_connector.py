@@ -28,7 +28,7 @@ import base64
 import datetime
 import json
 import re
-from typing import Any, List, Optional, Tuple
+from typing import Any, List, Optional, Tuple, cast
 
 import boto3
 from botocore.client import BaseClient
@@ -1358,7 +1358,7 @@ class AWSServiceConnector(ServiceConnector):
                     logger.error(msg)
                     raise AuthorizationException(msg) from e
 
-                return clusters["clusters"]
+                return cast(List[str], clusters["clusters"])
             else:
                 # Check if the specified EKS cluster exists
                 cluster_name = self._parse_eks_resource_id(resource_id)

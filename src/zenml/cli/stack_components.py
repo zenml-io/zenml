@@ -1176,6 +1176,13 @@ def generate_stack_component_connect_command(
                 resource_type=requirements.resource_type,
             )
 
+            # Filter out the connectors that did not list any resources
+            resource_list = [
+                resource
+                for resource in resource_list
+                if resource.resource_ids is not None
+            ]
+
             if not resource_list:
                 cli_utils.error(
                     f"No compatible resources were found for the "
@@ -1197,7 +1204,7 @@ def generate_stack_component_connect_command(
                 )
                 if not connect:
                     return
-                resource_list[0]
+                resources = resource_list[0]
             else:
                 while True:
                     connector_id = click.prompt(
@@ -1228,9 +1235,41 @@ def generate_stack_component_connect_command(
                             "were found. Please try again."
                         )
                     else:
-                        matches[0]
+                        resources = matches[0]
                         break
 
+            assert resources.resource_type is not None
+            connector_type = resources.connector_type
+            if not isinstance(connector_type, str):
+                # Use the connector type specification to determine if a resource
+                # ID is still required
+                resource_type_spec = connector_type.resource_type_map[
+                    requirements.resource_type or resources.resource_type
+                ]
+                if resource_type_spec.supports_instances:
+                    assert resources.resource_ids is not None
+                    if not resource_type_spec.supports_discovery:
+                        # User needs to manually enter a resource ID
+                        resource_id = click.prompt(
+                            "Please enter the resource ID you want to use",
+                            type=str,
+                        )
+                    elif len(resources.resource_ids) > 1:
+                        # User needs to select a resource ID from the list
+                        resource_id = click.prompt(
+                            "Please enter the resource ID you want to use",
+                            type=click.Choice(resources.resource_ids),
+                            show_choices=False,
+                        )
+                    else:
+                        # Only one resource ID is available
+                        resource_id = resources.resource_ids[0]
+                else:
+                    resource_id = None
+            else:
+                resource_id = None
+
+            no_verify = False
         else:
             assert connector_id is not None
             try:
@@ -1251,44 +1290,10 @@ def generate_stack_component_connect_command(
                     "select a compatible connector."
                 )
 
-        # Get the connector type specification to verify the resource ID
-        connector_type_spec = client.get_service_connector_type(
-            connector_type=connector_model.connector_type,
-        )
-        resource_spec = connector_type_spec.resource_type_map[
-            connector_model.resource_type
-        ]
-        if resource_spec.supports_instances:
-            if resource_id is None and connector_model.resource_id is None:
-                if interactive:
-                    resource_id = click.prompt(
-                        f"The connector with ID '{connector_model.id}' is a "
-                        "multi-instance connector that requires a "
-                        f"{resource_spec.name} resource ID to be specified at "
-                        "runtime. Please specify a resource ID",
-                        type=click.STRING,
-                    )
-                else:
-                    cli_utils.error(
-                        f"The connector with ID '{connector_model.id}' is a "
-                        "multi-instance connector that requires a "
-                        f"{resource_spec.name} resource ID to be specified at "
-                        "runtime. Please specify a resource ID and try again."
-                    )
-
-        if interactive:
-
-            # Ask the user whether to verify the service connector
-            no_verify = not click.confirm(
-                "Would you like to verify the service connector before "
-                "registration ?",
-                default=True,
-            )
-
-        if not no_verify:
             try:
-                client.verify_service_connector(
-                    connector_model.id,
+                resources = client.verify_service_connector(
+                    name_id_or_prefix=connector_id,
+                    resource_type=requirements.resource_type,
                     resource_id=resource_id,
                 )
             except (
@@ -1298,9 +1303,66 @@ def generate_stack_component_connect_command(
                 NotImplementedError,
                 AuthorizationException,
             ) as e:
-                cli_utils.error(f"Could not verify service connector: {e}")
+                cli_utils.error(
+                    f"Access to the resource could not be verified: {e}"
+                )
 
-        connector_uuid = connector_model.id
+            connector_type = resources.connector_type
+            assert resources.resource_type is not None
+            if not isinstance(connector_type, str):
+                # Use the connector type specification to determine if a
+                # resource ID is still required
+                resource_type_spec = connector_type.resource_type_map[
+                    requirements.resource_type or resources.resource_type
+                ]
+                if resource_type_spec.supports_instances:
+                    assert resources.resource_ids is not None
+                    if resource_id is not None:
+                        # Resource ID was provided on the command line
+                        # and validated by the server
+                        pass
+                    elif len(resources.resource_ids) == 1:
+                        # Only one resource ID is available
+                        resource_id = resources.resource_ids[0]
+                    elif resource_type_spec.supports_discovery:
+                        resource_ids_list = "\n - " + "\n - ".join(
+                            resources.resource_ids
+                        )
+                        cli_utils.error(
+                            "The connector requires a resource ID, but none "
+                            "was provided. Please use the interactive mode to "
+                            "select a resource ID or provide one of the "
+                            "following resource IDs on the command line:\n"
+                            f"{resource_ids_list}"
+                        )
+                    else:
+                        # User needs to enter a resource ID manually
+                        cli_utils.error(
+                            "The connector requires a resource ID, but none "
+                            "was provided. Please provide a resource ID on "
+                            "the command line"
+                        )
+                else:
+                    resource_id = None
+
+        assert resources.id is not None
+        if not no_verify:
+            try:
+                client.verify_service_connector(
+                    resources.id,
+                    resource_type=resources.resource_type,
+                    resource_id=resource_id,
+                )
+            except (
+                KeyError,
+                ValueError,
+                IllegalOperationError,
+                NotImplementedError,
+                AuthorizationException,
+            ) as e:
+                cli_utils.error(
+                    f"Access to the resource could not be verified: {e}"
+                )
 
         with console.status(
             f"Updating {display_name} '{name_id_or_prefix}'...\n"
@@ -1309,7 +1371,7 @@ def generate_stack_component_connect_command(
                 client.update_stack_component(
                     name_id_or_prefix=name_id_or_prefix,
                     component_type=component_type,
-                    connector_id=connector_uuid,
+                    connector_id=resources.id,
                     connector_resource_id=resource_id,
                 )
             except (KeyError, IllegalOperationError) as err:
@@ -1317,7 +1379,7 @@ def generate_stack_component_connect_command(
 
             cli_utils.declare(
                 f"Successfully connected {display_name} `{name_id_or_prefix}` "
-                f"to service connector `{connector_uuid}`."
+                "to resource."
             )
 
     return connect_stack_component_command

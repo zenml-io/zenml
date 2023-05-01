@@ -570,7 +570,7 @@ class ServiceConnector(BaseModel):
             resource_types=self.resource_type,
             resource_id=self.resource_id,
             configuration=self.config.non_secret_values,
-            secrets=self.config.secret_values,  # type: ignore[assignment]
+            secrets=self.config.secret_values,  # type: ignore[arg-type]
         )
 
         return model
@@ -634,7 +634,7 @@ class ServiceConnector(BaseModel):
             resource_types=self.resource_type,
             resource_id=self.resource_id,
             configuration=self.config.non_secret_values,
-            secrets=self.config.secret_values,  # type: ignore[assignment]
+            secrets=self.config.secret_values,  # type: ignore[arg-type]
         )
 
         return model
@@ -688,14 +688,7 @@ class ServiceConnector(BaseModel):
 
         Raises:
             ValueError: If the runtime arguments are not valid.
-            AuthorizationException: If the connector's authentication
-                credentials have expired.
         """
-        if self.has_expired():
-            raise AuthorizationException(
-                "the connector's authentication credentials have expired."
-            )
-
         if (
             self.resource_type
             and resource_type
@@ -797,6 +790,10 @@ class ServiceConnector(BaseModel):
         Returns:
             An implementation specific object representing the authenticated
             service client, connection or session.
+
+        Raises:
+            AuthorizationException: If the connector's authentication
+                credentials have expired.
         """
         resource_type, resource_id = self.validate_runtime_args(
             resource_type=self.resource_type,
@@ -804,6 +801,11 @@ class ServiceConnector(BaseModel):
             require_resource_type=True,
             require_resource_id=True,
         )
+
+        if self.has_expired():
+            raise AuthorizationException(
+                "the connector's authentication credentials have expired."
+            )
 
         self._verify(
             resource_type=resource_type,
@@ -852,6 +854,8 @@ class ServiceConnector(BaseModel):
         Raises:
             ValueError: If the connector does not support the requested
                 authentication method or resource type.
+            AuthorizationException: If the connector's authentication
+                credentials have expired.
         """
         spec = cls.get_type()
 
@@ -872,6 +876,11 @@ class ServiceConnector(BaseModel):
             resource_id=resource_id,
             **kwargs,
         )
+
+        if connector.has_expired():
+            raise AuthorizationException(
+                "the connector's authentication credentials have expired."
+            )
 
         connector._verify(
             resource_type=resource_type,
@@ -907,6 +916,11 @@ class ServiceConnector(BaseModel):
             require_resource_type=True,
             require_resource_id=True,
         )
+
+        if self.has_expired():
+            raise AuthorizationException(
+                "the connector's authentication credentials have expired."
+            )
 
         self._verify(
             resource_type=resource_type,
@@ -967,24 +981,35 @@ class ServiceConnector(BaseModel):
                 require_resource_type=False,
                 require_resource_id=False,
             )
-
-            resource_ids = self._verify(
-                resource_type=resource_type,
-                resource_id=resource_id,
-            )
         except ValueError as exc:
             logger.debug(f"connector verification failed: {exc}")
             raise ValueError(
                 f"The connector configuration is incomplete or invalid: {exc}",
             )
-        except AuthorizationException as exc:
-            logger.debug(f"connector verification failed: {exc}")
-            raise AuthorizationException(
-                "The connector is not authorized to connect to the remote "
-                f"resource: {exc}",
+
+        if self.has_expired():
+            resources.error = (
+                "the connector's authentication credentials have expired."
             )
+            return resources
 
         resources.resource_type = resource_type
+
+        try:
+            resource_ids = self._verify(
+                resource_type=resource_type,
+                resource_id=resource_id,
+            )
+        except AuthorizationException as exc:
+            resources.error = f"connector authorization failure: {exc}"
+            logger.exception(resources.error)
+            return resources
+        except Exception as exc:
+            logger.exception(
+                f"connector verification failed with unexpected error: {exc}"
+            )
+            resources.error = "unexpected error"
+            return resources
 
         if not resource_type:
             # For multi-type connectors, if a resource type is not provided
@@ -1010,7 +1035,7 @@ class ServiceConnector(BaseModel):
             # no resources should be listed
             resources.resource_ids = []
         elif not resource_ids:
-            raise AuthorizationException(
+            resources.error = (
                 f"The connector didn't list any resources of type "
                 f"'{resource_type}'. This is likely caused by the connector "
                 "credentials not being valid or not having sufficient "
@@ -1018,6 +1043,8 @@ class ServiceConnector(BaseModel):
                 "check the connector configuration and its credentials and try "
                 "again."
             )
+            logger.debug(resources.error)
+            return resources
         else:
             resources.resource_ids = resource_ids
 
@@ -1054,6 +1081,11 @@ class ServiceConnector(BaseModel):
             require_resource_id=True,
         )
 
+        if self.has_expired():
+            raise AuthorizationException(
+                "the connector's authentication credentials have expired."
+            )
+
         # Verify if the connector allows access to the requested resource type
         # and instance.
         self._verify(
@@ -1067,6 +1099,11 @@ class ServiceConnector(BaseModel):
             resource_type=resource_type,
             resource_id=resource_id,
         )
+
+        if client_connector.has_expired():
+            raise AuthorizationException(
+                "the connector's authentication credentials have expired."
+            )
 
         client_connector._verify(
             resource_type=resource_type,

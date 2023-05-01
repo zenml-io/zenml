@@ -91,10 +91,14 @@ class ServiceConnectorSchema(ShareableSchema, table=True):
         Returns:
             The resource types as a list.
         """
-        return json.loads(base64.b64decode(self.resource_types).decode())
+        resource_types = json.loads(
+            base64.b64decode(self.resource_types).decode()
+        )
+        assert isinstance(resource_types, list)
+        return resource_types
 
     @property
-    def labels_dict(self) -> dict:
+    def labels_dict(self) -> Dict[str, str]:
         """Returns the labels as a dictionary.
 
         Returns:

@@ -4925,6 +4925,7 @@ class SqlZenStore(BaseZenStore):
         resource_list: List[ServiceConnectorResourcesModel] = []
 
         for connector in connectors:
+
             if not service_connector_registry.is_registered(connector.type):
                 # For connectors that we can instantiate, i.e. those that have a
                 # connector type available locally, we return complete
@@ -4934,8 +4935,6 @@ class SqlZenStore(BaseZenStore):
                 # rudimentary information extracted from the connector model
                 # without actively trying to discover the resources that they
                 # have access to and we only return single-instance connectors.
-                if not connector.is_single_instance:
-                    continue
                 resources = (
                     ServiceConnectorResourcesModel.from_connector_model(
                         connector
@@ -4961,10 +4960,6 @@ class SqlZenStore(BaseZenStore):
                         f"{connector.id}: {e}"
                     )
                     continue
-
-            # Leave out connectors that don't report any resources
-            if resources.resource_ids is None:
-                continue
 
             resource_list.append(resources)
 

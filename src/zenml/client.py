@@ -58,6 +58,7 @@ from zenml.enums import (
     StoreType,
 )
 from zenml.exceptions import (
+    AuthorizationException,
     EntityExistsError,
     IllegalOperationError,
     InitializationException,
@@ -4210,7 +4211,7 @@ class Client(metaclass=ClientMetaClass):
         resource_type: Optional[str] = None,
         auth_method: Optional[str] = None,
         configuration: Optional[Dict[str, str]] = None,
-        secrets: Optional[Dict[str, Optional[SecretStr]]] = None,
+        secrets: Optional[Dict[str, SecretStr]] = None,
         resource_id: Optional[str] = None,
         description: str = "",
         expiration_seconds: Optional[int] = None,
@@ -4348,7 +4349,7 @@ class Client(metaclass=ClientMetaClass):
                 resource_types=resource_type,
                 resource_id=resource_id,
                 configuration=configuration,
-                secrets=secrets,
+                secrets=cast(Dict[str, Optional[SecretStr]], secrets),
             )
             if verify:
 
@@ -4442,11 +4443,11 @@ class Client(metaclass=ClientMetaClass):
             allow_name_prefix_match=False,
         )
 
-        update_model = ServiceConnectorUpdateModel(  # type: ignore[call-arg]
+        update_model = ServiceConnectorUpdateModel(
             name=name,
             connector_type=connector_type,
             auth_method=auth_method,
-            resource_types=[resource_types] if resource_type else None,
+            resource_types=[resource_type] if resource_type else None,
             configuration=configuration,
             secrets=secrets,
             resource_id=resource_id,
@@ -4541,6 +4542,10 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             The list of resources that the service connector has access to,
             scoped to the supplied resource type and ID, if provided.
+
+        Raises:
+            AuthorizationException: If the service connector does not have
+                access to the resources.
         """
         from zenml.service_connectors.service_connector_registry import (
             service_connector_registry,
@@ -4576,6 +4581,9 @@ class Client(metaclass=ClientMetaClass):
             connector_resources = connector_instance.verify(
                 resource_type=resource_type, resource_id=resource_id
             )
+
+        if connector_resources.error:
+            raise AuthorizationException(connector_resources.error)
 
         return connector_resources
 

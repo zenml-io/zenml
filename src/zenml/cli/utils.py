@@ -1187,6 +1187,7 @@ def print_service_connectors_table(
             else "",
             "SHARED": get_shared_emoji(connector.is_shared),
             "OWNER": f"{connector.user.name if connector.user else 'DELETED!'}",
+            "EXPIRED": ":warning:" if connector.has_expired() else "",
         }
         configurations.append(connector_config)
     print_table(configurations)
@@ -1194,19 +1195,14 @@ def print_service_connectors_table(
 
 def print_service_connector_resource_table(
     resources: List["ServiceConnectorResourcesModel"],
-    skip_empty: bool = False,
 ) -> None:
     """Prints a table with details for a list of service connector resources.
 
     Args:
         resources: List of service connector resources to print.
-        skip_empty: Whether to skip entries with no resources.
     """
     resource_table = []
     for resource_model in resources:
-
-        if skip_empty and resource_model.resource_ids is None:
-            continue
 
         connector_type = (
             resource_model.connector_type
@@ -1225,7 +1221,10 @@ def print_service_connector_resource_table(
                 )
             else:
                 resource_type = "*"
-            resource_ids = ["*"]
+            if resource_model.error:
+                resource_ids = [f"Error: {resource_model.error}"]
+            else:
+                resource_ids = ["*"]
         else:
             resource_type = resource_model.resource_type
             if connector_type:
@@ -1244,14 +1243,15 @@ def print_service_connector_resource_table(
                     resource_ids = ["<no-resources-listed>"]
             else:
                 resource_ids = resource_model.resource_ids or []
-        for resource_id in resource_ids:
-            resource_row: Dict[str, Any] = {
-                "CONNECTOR_ID": str(resource_model.id),
-                "CONNECTOR_NAME": resource_model.name,
-                "RESOURCE_TYPE": resource_type,
-                "RESOURCE": resource_id,
-            }
-            resource_table.append(resource_row)
+            if resource_model.error:
+                resource_ids = [f"Error: {resource_model.error}"]
+        resource_row: Dict[str, Any] = {
+            "CONNECTOR_ID": str(resource_model.id),
+            "CONNECTOR_NAME": resource_model.name,
+            "RESOURCE_TYPE": resource_type,
+            "RESOURCES": "\n".join(resource_ids),
+        }
+        resource_table.append(resource_row)
     print_table(resource_table)
 
 

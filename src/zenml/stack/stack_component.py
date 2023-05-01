@@ -505,7 +505,7 @@ class StackComponent:
         if self._connector_instance is not None:
             # If the connector instance is still valid, return it. Otherwise,
             # we'll try to get a new one.
-            if not self._connector_instance.has_expired:
+            if not self._connector_instance.has_expired():
                 return self._connector_instance
 
         if self.connector_requirements is None:

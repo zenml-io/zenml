@@ -279,7 +279,7 @@ def register_service_connector(
 
         console.print(Markdown(f"{message}---"), justify="left", width=80)
 
-        resource_type: Optional[str] = None
+        resource_type = None
         if len(available_resource_types) == 1:
             # Default to the first resource type if only one type is available
             confirm = click.confirm(
@@ -330,7 +330,7 @@ def register_service_connector(
         else:
             auto_configure = False
 
-        auth_method: Optional[str] = None
+        auth_method = None
         connector_model: Optional[ServiceConnectorBaseModel] = None
         connector_resources: Optional[ServiceConnectorResourcesModel] = None
         if auto_configure:
@@ -620,7 +620,13 @@ def register_service_connector(
         # Prepare the rest of the variables to fall through to the
         # non-interactive configuration case
         parsed_args = connector_model.configuration
-        parsed_args.update(connector_model.secrets)
+        parsed_args.update(
+            {
+                k: s.get_secret_value()
+                for k, s in connector_model.secrets.items()
+                if s is not None
+            }
+        )
         auto_configure = False
         no_verify = False
         expiration_seconds = connector_model.expiration_seconds

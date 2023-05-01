@@ -14,7 +14,7 @@
 """Model definitions for ZenML service connectors."""
 
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -304,7 +304,9 @@ class ServiceConnectorTypeModel(BaseModel):
         """
         return self._connector_class
 
-    def set_connector_class(self, connector_class: Type["ServiceConnector"]):
+    def set_connector_class(
+        self, connector_class: Type["ServiceConnector"]
+    ) -> None:
         """Set the service connector class.
 
         Args:
@@ -580,6 +582,21 @@ class ServiceConnectorBaseModel(BaseModel):
         """
         return not self.is_multi_type and not self.is_multi_instance
 
+    def has_expired(self) -> bool:
+        """Check if the connector has expired.
+
+        Verify that the authentication credentials associated with the connector
+        have not expired by checking the expiration time against the current
+        time.
+
+        Returns:
+            True if the connector has expired, False otherwise.
+        """
+        if not self.expires_at:
+            return False
+
+        return self.expires_at < datetime.now(timezone.utc)
+
     def validate_and_configure_resources(
         self,
         connector_type: "ServiceConnectorTypeModel",
@@ -715,9 +732,10 @@ class ServiceConnectorRequirements(BaseModel):
             and self.resource_type not in connector.resource_types
         ):
             return False, (
-                f"connector resource types '{connector.resource_types}' "
-                f"do not include the '{self.resource_type}' "
-                "resource type specified in the requirements"
+                f"connector does not provide the '{self.resource_type}' "
+                "resource type specified in the requirements. Only the "
+                "following resource types are supported: "
+                f"{', '.join(connector.resource_types)}"
             )
 
         return True, ""
@@ -754,11 +772,17 @@ class ServiceConnectorResourcesModel(BaseModel):
     )
 
     resource_ids: Optional[List[str]] = Field(
-        default_factory=list,
+        default=None,
         title="The resource IDs of the resource instances that the service "
         "connector instance can be used to access. Omitted for multi-type "
         "service connectors and for resource types that do not support "
         "instances.",
+    )
+
+    error: Optional[str] = Field(
+        default=None,
+        title="An error message describing why the service connector instance "
+        "could not list the resources that it is configured to access.",
     )
 
     @property
