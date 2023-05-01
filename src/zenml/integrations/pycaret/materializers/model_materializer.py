@@ -11,7 +11,9 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from typing import Type, Any, Union
+"""PyCaret materializer."""
+
+from typing import Any, Type, Union
 import tempfile
 
 from pycaret.classification import save_model, load_model
@@ -65,7 +67,6 @@ from sklearn.neural_network import MLPRegressor
 from xgboost import XGBRegressor
 from catboost import CatBoostRegressor
 from sklearn.ensemble import BaggingRegressor
-from sklearn.ensemble import AdaBoostRegressor
 from lightgbm import LGBMRegressor
 
 
