@@ -59,7 +59,7 @@ class DockerAuthenticationMethods(StrEnum):
 
 DOCKER_SERVICE_CONNECTOR_TYPE_SPEC = ServiceConnectorTypeModel(
     name="Docker Service Connector",
-    type=DOCKER_CONNECTOR_TYPE,
+    connector_type=DOCKER_CONNECTOR_TYPE,
     description="""
 The ZenML Docker Service Connector allows authenticating with a Docker or OCI
 container registry and managing Docker clients for the registry. 

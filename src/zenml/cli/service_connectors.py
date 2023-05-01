@@ -166,7 +166,7 @@ def register_service_connector(
         name: The name to use for the service connector.
         args: Configuration arguments for the service connector.
         description: Short description for the service connector.
-        type: The service connector type.
+        connector_type: The service connector type.
         resource_type: The type of resource to connect to.
         resource_id: The ID of the resource to connect to.
         auth_method: The authentication method to use.
@@ -241,7 +241,7 @@ def register_service_connector(
             default="",
         )
 
-        available_types = {c.type: c for c in connector_types}
+        available_types = {c.connector_type: c for c in connector_types}
         if len(available_types) == 1:
             # Default to the first connector type if not supplied and if
             # only one type is available
@@ -251,7 +251,7 @@ def register_service_connector(
         # Print the name, type and description of all available service
         # connectors
         for spec in connector_types:
-            message += f"## {spec.name} ({spec.type})\n"
+            message += f"## {spec.name} ({spec.connector_type})\n"
             message += f"{spec.description}\n"
 
         console.print(Markdown(f"{message}---"), justify="left", width=80)
@@ -344,7 +344,7 @@ def register_service_connector(
                     ) = client.create_service_connector(
                         name=name,
                         description=description or "",
-                        type=connector_type,
+                        connector_type=connector_type,
                         resource_type=resource_type,
                         is_shared=share,
                         auto_configure=True,
@@ -534,7 +534,7 @@ def register_service_connector(
                     ) = client.create_service_connector(
                         name=name,
                         description=description or "",
-                        type=connector_type,
+                        connector_type=connector_type,
                         auth_method=auth_method,
                         resource_type=resource_type,
                         configuration=config_dict,
@@ -562,10 +562,10 @@ def register_service_connector(
             ]
 
             if resource_type_spec.supports_instances:
-                assert connector_resources.resources is not None
                 resource_ids: List[str] = []
                 if resource_type_spec.supports_discovery:
-                    resource_ids = connector_resources.resources.resource_ids
+                    assert connector_resources.resource_ids is not None
+                    resource_ids = connector_resources.resource_ids
 
                 if resource_ids:
                     resource_ids_list = "\n - " + "\n - ".join(resource_ids)
@@ -643,7 +643,7 @@ def register_service_connector(
             assert name is not None
             client.create_service_connector(
                 name=name,
-                type=connector_type,
+                connector_type=connector_type,
                 auth_method=auth_method,
                 resource_type=resource_type,
                 configuration=parsed_args,

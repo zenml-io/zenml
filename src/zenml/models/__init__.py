@@ -101,7 +101,6 @@ from zenml.models.service_connector_models import (
     ServiceConnectorResourcesModel,
     ServiceConnectorResponseModel,
     ServiceConnectorTypeModel,
-    ServiceConnectorResourceListModel,
     ServiceConnectorUpdateModel,
 )
 from zenml.models.step_run_models import (
@@ -320,7 +319,6 @@ __all__ = [
     "ServiceConnectorRequirements",
     "ServiceConnectorResourcesModel",
     "ServiceConnectorResponseModel",
-    "ServiceConnectorResourceListModel",
     "ServiceConnectorUpdateModel",
     "StackRequestModel",
     "StackResponseModel",

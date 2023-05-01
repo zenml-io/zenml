@@ -466,8 +466,10 @@ def print_stack_component_configuration(
             "ID": str(component.connector.id),
             "NAME": component.connector.name,
             "TYPE": component.connector.type,
-            "RESOURCE_TYPE": component.connector.resource_type,
-            "RESOURCE_ID": component.connector.resource_id or "",
+            "RESOURCE_TYPE": component.connector.resource_types[0],
+            "RESOURCE_ID": component.connector_resource_id
+            or component.connector.resource_id
+            or "N/A",
         }
 
         for label, value in connector_dict.items():
@@ -1202,30 +1204,46 @@ def print_service_connector_resource_table(
     """
     resource_table = []
     for resource_model in resources:
-        if not resource_model.resources:
-            resource_row: Dict[str, Any] = {
-                "CONNECTOR_ID": str(resource_model.id),
-                "CONNECTOR_NAME": resource_model.name,
-                "RESOURCE_TYPE": "*",
-                "RESOURCE": "*",
-            }
-            resource_table.append(resource_row)
+
+        if skip_empty and resource_model.resource_ids is None:
             continue
-        resource_list = resource_model.resources
-        resource_type = (
-            f"{resource_list.resource_type_name} "
-            f"({resource_list.resource_type})"
+
+        connector_type = (
+            resource_model.connector_type
+            if not isinstance(resource_model.connector_type, str)
+            else None
         )
-        if not resource_list.supports_instances:
-            resource_ids = ["N/A"]
-        elif resource_list.resource_ids:
-            resource_ids = resource_list.resource_ids
-        elif not resource_list.supports_discovery:
+
+        if not resource_model.resource_type:
+            # Multi-type connector
+            if connector_type:
+                resource_type = "\n".join(
+                    [
+                        f"{r.name} ({r.resource_type})"
+                        for r in connector_type.resource_types
+                    ]
+                )
+            else:
+                resource_type = "*"
             resource_ids = ["*"]
-        elif skip_empty:
-            resource_ids = []
         else:
-            resource_ids = ["<no-resources-listed>"]
+            resource_type = resource_model.resource_type
+            if connector_type:
+                resource_type_spec = connector_type.resource_type_map[
+                    resource_type
+                ]
+                resource_type = f"{resource_type_spec.name} ({resource_type})"
+
+                if not resource_type_spec.supports_instances:
+                    resource_ids = ["N/A"]
+                elif resource_model.resource_ids:
+                    resource_ids = resource_model.resource_ids
+                elif not resource_type_spec.supports_discovery:
+                    resource_ids = ["*"]
+                else:
+                    resource_ids = ["<no-resources-listed>"]
+            else:
+                resource_ids = resource_model.resource_ids or []
         for resource_id in resource_ids:
             resource_row: Dict[str, Any] = {
                 "CONNECTOR_ID": str(resource_model.id),
@@ -1400,7 +1418,7 @@ def print_service_connector_types_table(
 
         connector_type_config = {
             "NAME": connector_type.name,
-            "TYPE": connector_type.type,
+            "TYPE": connector_type.connector_type,
             "RESOURCE_TYPES": "\n".join(supported_resource_types),
             "AUTH_METHODS": "\n".join(supported_auth_methods),
             "LOCAL": get_shared_emoji(connector_type.local),
@@ -1424,9 +1442,7 @@ def print_service_connector_type(
     supported_auth_methods = list(connector_type.auth_method_map.keys())
     supported_resource_types = list(connector_type.resource_type_map.keys())
 
-    message += (
-        f"# {connector_type.name} (connector type: {connector_type.type})\n"
-    )
+    message += f"# {connector_type.name} (connector type: {connector_type.connector_type})\n"
     message += (
         f"**Authentication methods**: {', '.join(supported_auth_methods)}\n\n"
     )

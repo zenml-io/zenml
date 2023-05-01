@@ -4206,7 +4206,7 @@ class Client(metaclass=ClientMetaClass):
     def create_service_connector(
         self,
         name: str,
-        type: str,
+        connector_type: str,
         resource_type: Optional[str] = None,
         auth_method: Optional[str] = None,
         configuration: Optional[Dict[str, str]] = None,
@@ -4232,7 +4232,7 @@ class Client(metaclass=ClientMetaClass):
 
         Args:
             name: The name of the service connector.
-            type: The service connector type.
+            connector_type: The service connector type.
             auth_method: The authentication method of the service connector.
                 May be omitted if auto-configuration is used.
             resource_type: The resource type for the service connector.
@@ -4266,36 +4266,36 @@ class Client(metaclass=ClientMetaClass):
 
         # Get the service connector type class
         try:
-            connector_type = self.zen_store.get_service_connector_type(
-                connector_type=type,
+            connector = self.zen_store.get_service_connector_type(
+                connector_type=connector_type,
             )
         except KeyError:
             raise KeyError(
-                f"Service connector type {type} not found in registry. Please "
-                "check that you have installed all required Python "
-                "packages and ZenML integrations and try again."
+                f"Service connector type {connector_type} not found in "
+                "registry. Please check that you have installed all required "
+                "Python packages and ZenML integrations and try again."
             )
 
         # If auto_configure is set, we will try to automatically configure the
         # service connector from the local environment
         if auto_configure:
-            if not connector_type.supports_auto_configuration:
+            if not connector.supports_auto_configuration:
                 raise NotImplementedError(
-                    f"The {connector_type.name} service connector type "
+                    f"The {connector.name} service connector type "
                     "does not support auto-configuration."
                 )
-            if not connector_type.local:
+            if not connector.local:
                 raise ValueError(
-                    f"The {connector_type.name} service connector type "
+                    f"The {connector.name} service connector type "
                     "implementation is not available locally. Please "
                     "check that you have installed all required Python "
                     "packages and ZenML integrations and try again, or "
                     "skip auto-configuration."
                 )
 
-            assert connector_type.connector_class is not None
+            assert connector.connector_class is not None
 
-            connector_instance = connector_type.connector_class.auto_configure(
+            connector_instance = connector.connector_class.auto_configure(
                 resource_type=resource_type,
                 auth_method=auth_method,
                 resource_id=resource_id,
@@ -4317,7 +4317,7 @@ class Client(metaclass=ClientMetaClass):
                 # that the connector can be shared with other users or used
                 # from other machines and because some auth methods rely on the
                 # server-side authentication environment
-                if connector_type.remote:
+                if connector.remote:
                     connector_resources = (
                         self.zen_store.verify_service_connector_config(
                             connector_request
@@ -4333,7 +4333,7 @@ class Client(metaclass=ClientMetaClass):
                 )
             connector_request = ServiceConnectorRequestModel(
                 name=name,
-                type=type,
+                connector_type=connector_type,
                 description=description,
                 auth_method=auth_method,
                 expiration_seconds=expiration_seconds,
@@ -4344,7 +4344,7 @@ class Client(metaclass=ClientMetaClass):
             )
             # Validate and configure the resources
             connector_request.validate_and_configure_resources(
-                connector_type=connector_type,
+                connector_type=connector,
                 resource_types=resource_type,
                 resource_id=resource_id,
                 configuration=configuration,
@@ -4357,7 +4357,7 @@ class Client(metaclass=ClientMetaClass):
                 # that the connector can be shared with other users or used
                 # from other machines and because some auth methods rely on the
                 # server-side authentication environment
-                if connector_type.remote:
+                if connector.remote:
                     connector_resources = (
                         self.zen_store.verify_service_connector_config(
                             connector_request
@@ -4386,7 +4386,7 @@ class Client(metaclass=ClientMetaClass):
         self,
         name_id_or_prefix: Union[UUID, str],
         name: Optional[str] = None,
-        type: Optional[str] = None,
+        connector_type: Optional[str] = None,
         auth_method: Optional[str] = None,
         resource_type: Optional[str] = None,
         configuration: Optional[Dict[str, str]] = None,
@@ -4405,7 +4405,7 @@ class Client(metaclass=ClientMetaClass):
             name_id_or_prefix: The name, id or prefix of the service connector to
                 update.
             name: The new name of the service connector.
-            type: The new type of the service connector.
+            connector_type: The new type of the service connector.
             auth_method: The new authentication method of the service connector.
             resource_type: The new resource type of the service connector.
             configuration: The new configuration of the service connector.
@@ -4444,7 +4444,7 @@ class Client(metaclass=ClientMetaClass):
 
         update_model = ServiceConnectorUpdateModel(  # type: ignore[call-arg]
             name=name,
-            type=type,
+            connector_type=connector_type,
             auth_method=auth_method,
             resource_types=[resource_types] if resource_type else None,
             configuration=configuration,

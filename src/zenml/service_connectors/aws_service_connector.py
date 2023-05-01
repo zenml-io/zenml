@@ -160,7 +160,7 @@ class AWSAuthenticationMethods(StrEnum):
 
 AWS_SERVICE_CONNECTOR_TYPE_SPEC = ServiceConnectorTypeModel(
     name="AWS Service Connector",
-    type=AWS_CONNECTOR_TYPE,
+    connector_type=AWS_CONNECTOR_TYPE,
     description="""
 This ZenML AWS service connector facilitates connecting to, authenticating to
 and accessing managed AWS services, such as S3 buckets, ECR repositories and EKS
@@ -1419,7 +1419,7 @@ class AWSServiceConnector(ServiceConnector):
                 # use the current connector configuration
                 config = self.config
 
-                if resource_type == AWS_RESOURCE_TYPE or resource_id:
+                if resource_type == AWS_RESOURCE_TYPE or self.resource_id:
                     # If the resource type is AWS or a specific resource ID
                     # is specified, we can even return the current connector
                     # instance because it's fully formed and ready to use

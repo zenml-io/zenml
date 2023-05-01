@@ -690,8 +690,8 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
                     f"linked connector, but got {type(client)}."
                 )
 
-            # Transfer the credentials from the kubernetes client to the
-            # KFP client
+            # The KFP client uses the global k8s configuration that was just
+
             return kfp.Client()
 
         client_args = {

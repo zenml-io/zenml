@@ -4271,6 +4271,31 @@ class SqlZenStore(BaseZenStore):
                     # The secret already exists, try again
                     continue
 
+    def _populate_connector_type(
+        self, *service_connectors: ServiceConnectorResponseModel
+    ) -> None:
+        """Populates the connector type of the given service connectors.
+
+        If the connector type is not locally available, the connector type
+        field is left as is.
+
+        Args:
+            service_connectors: The service connectors to populate.
+
+        Returns:
+            None
+        """
+        for service_connector in service_connectors:
+            if not service_connector_registry.is_registered(
+                service_connector.type
+            ):
+                continue
+            service_connector.connector_type = (
+                service_connector_registry.get_service_connector_type(
+                    service_connector.type
+                )
+            )
+
     def create_service_connector(
         self, service_connector: ServiceConnectorRequestModel
     ) -> ServiceConnectorResponseModel:
@@ -4357,7 +4382,9 @@ class SqlZenStore(BaseZenStore):
 
                 raise
 
-            return new_service_connector.to_model()
+            connector = new_service_connector.to_model()
+            self._populate_connector_type(connector)
+            return connector
 
     def get_service_connector(
         self, service_connector_id: UUID
@@ -4386,7 +4413,9 @@ class SqlZenStore(BaseZenStore):
                     "found."
                 )
 
-            return service_connector.to_model()
+            connector = service_connector.to_model()
+            self._populate_connector_type(connector)
+            return connector
 
     def _list_filtered_service_connectors(
         self,
@@ -4480,6 +4509,8 @@ class SqlZenStore(BaseZenStore):
                 filter_model=filter_model,
                 custom_fetch=fetch_connectors,
             )
+
+            self._populate_connector_type(*paged_connectors.items)
             return paged_connectors
 
     def _update_connector_secret(
@@ -4629,7 +4660,10 @@ class SqlZenStore(BaseZenStore):
                 # If the service connector is already used in one or more
                 # stack components, the update is no longer allowed to change
                 # the service connector's type, resource type, or resource ID
-                if update.type and update.type != existing_connector.type:
+                if (
+                    update.connector_type
+                    and update.type != existing_connector.connector_type
+                ):
                     raise IllegalOperationError(
                         "The service type of a service connector that is "
                         "already actively used in one or more stack components "
@@ -4661,11 +4695,11 @@ class SqlZenStore(BaseZenStore):
             # against the connector type schema before storing it in the
             # database
             if service_connector_registry.is_registered(
-                existing_connector.type
+                existing_connector.connector_type
             ):
                 connector_type = (
                     service_connector_registry.get_service_connector_type(
-                        existing_connector.type
+                        existing_connector.connector_type
                     )
                 )
 
@@ -4710,7 +4744,9 @@ class SqlZenStore(BaseZenStore):
             session.add(existing_connector)
             session.commit()
 
-            return existing_connector.to_model()
+            connector = existing_connector.to_model()
+            self._populate_connector_type(connector)
+            return connector
 
     def delete_service_connector(self, service_connector_id: UUID) -> None:
         """Deletes a service connector.
@@ -4850,6 +4886,8 @@ class SqlZenStore(BaseZenStore):
             labels=connector.labels,
         )
 
+        self._populate_connector_type(connector)
+
         return connector
 
     def list_service_connector_resources(
@@ -4895,10 +4933,12 @@ class SqlZenStore(BaseZenStore):
                 # For those that are not locally available, we only return
                 # rudimentary information extracted from the connector model
                 # without actively trying to discover the resources that they
-                # have access to.
+                # have access to and we only return single-instance connectors.
+                if not connector.is_single_instance:
+                    continue
                 resources = (
                     ServiceConnectorResourcesModel.from_connector_model(
-                        connector_model=connector
+                        connector
                     )
                 )
                 resource_list.append(resources)
@@ -4923,7 +4963,7 @@ class SqlZenStore(BaseZenStore):
                     continue
 
             # Leave out connectors that don't report any resources
-            if not resources.resources:
+            if resources.resource_ids is None:
                 continue
 
             resource_list.append(resources)

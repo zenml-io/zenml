@@ -277,12 +277,6 @@ def list_service_connector_types(
         auth_method=auth_method,
     )
 
-    for c in connector_types:
-        # Mark the connector as not being available in the environment
-        # that issued the request but as being available in the server.
-        c.local = False
-        c.remote = True
-
     return connector_types
 
 
@@ -305,10 +299,5 @@ def get_service_connector_type(
         The requested service connector type.
     """
     c = zen_store().get_service_connector_type(connector_type)
-
-    # Mark the connector as not being available in the environment
-    # that issued the request but as being available in the server.
-    c.local = False
-    c.remote = True
 
     return c

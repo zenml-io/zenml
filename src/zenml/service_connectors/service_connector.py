@@ -30,7 +30,6 @@ from zenml.logger import get_logger
 from zenml.models import (
     ServiceConnectorBaseModel,
     ServiceConnectorRequestModel,
-    ServiceConnectorResourceListModel,
     ServiceConnectorResourcesModel,
     ServiceConnectorResponseModel,
     ServiceConnectorTypeModel,
@@ -553,7 +552,7 @@ class ServiceConnector(BaseModel):
             )
 
         model = ServiceConnectorRequestModel(
-            type=spec.type,
+            connector_type=spec.connector_type,
             name=name,
             description=description,
             user=user,
@@ -571,7 +570,7 @@ class ServiceConnector(BaseModel):
             resource_types=self.resource_type,
             resource_id=self.resource_id,
             configuration=self.config.non_secret_values,
-            secrets=self.config.secret_values,
+            secrets=self.config.secret_values,  # type: ignore[assignment]
         )
 
         return model
@@ -617,7 +616,7 @@ class ServiceConnector(BaseModel):
             id=id,
             created=datetime.utcnow(),
             updated=datetime.utcnow(),
-            type=self.get_type().type,
+            connector_type=self.get_type(),
             name=name,
             description=description,
             user=user,
@@ -635,7 +634,7 @@ class ServiceConnector(BaseModel):
             resource_types=self.resource_type,
             resource_id=self.resource_id,
             configuration=self.config.non_secret_values,
-            secrets=self.config.secret_values,
+            secrets=self.config.secret_values,  # type: ignore[assignment]
         )
 
         return model
@@ -955,11 +954,11 @@ class ServiceConnector(BaseModel):
         """
         spec = self.get_type()
 
-        resources = ServiceConnectorResourcesModel.from_connector_type_model(
-            connector_type_model=spec,
+        resources = ServiceConnectorResourcesModel(
+            connector_type=spec,
+            id=self.id,
+            name=self.name,
         )
-        resources.id = self.id
-        resources.name = self.name
 
         try:
             resource_type, resource_id = self.validate_runtime_args(
@@ -985,22 +984,19 @@ class ServiceConnector(BaseModel):
                 f"resource: {exc}",
             )
 
+        resources.resource_type = resource_type
+
         if not resource_type:
             # For multi-type connectors, if a resource type is not provided
             # as argument, we don't expect any resources to be listed
             return resources
 
         resource_type_spec = spec.resource_type_map[resource_type]
-        resources.resources = (
-            resource_list
-        ) = ServiceConnectorResourceListModel.from_resource_type_model(
-            resource_type_spec
-        )
 
         if not resource_type_spec.supports_instances:
             # For resource types that don't support multiple instances,
-            # it doesn't make sense to list resources at all
-            return resources
+            # it doesn't make sense to list resources
+            resources.resource_ids = []
         elif resource_id:
             if [resource_id] != resource_ids:
                 logger.error(
@@ -1008,11 +1004,11 @@ class ServiceConnector(BaseModel):
                     f"requested: {resource_ids}. This is likely a bug in the "
                     "connector implementation."
                 )
-            resource_list.resource_ids = [resource_id]
+            resources.resource_ids = [resource_id]
         elif not resource_type_spec.supports_discovery:
             # For resource types that don't support instance discovery,
             # no resources should be listed
-            return resources
+            resources.resource_ids = []
         elif not resource_ids:
             raise AuthorizationException(
                 f"The connector didn't list any resources of type "
@@ -1023,7 +1019,7 @@ class ServiceConnector(BaseModel):
                 "again."
             )
         else:
-            resource_list.resource_ids = resource_ids
+            resources.resource_ids = resource_ids
 
         return resources
 

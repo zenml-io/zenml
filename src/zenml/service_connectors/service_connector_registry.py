@@ -42,20 +42,21 @@ class ServiceConnectorRegistry:
             overwrite: Whether to overwrite an existing service connector type.
         """
         if (
-            service_connector_type.type not in self.service_connector_types
+            service_connector_type.connector_type
+            not in self.service_connector_types
             or overwrite
         ):
             self.service_connector_types[
-                service_connector_type.type
+                service_connector_type.connector_type
             ] = service_connector_type
             logger.debug(
                 "Registered service connector type "
-                f"{service_connector_type.type}."
+                f"{service_connector_type.connector_type}."
             )
         else:
             logger.debug(
                 f"Found existing service connector for type "
-                f"{service_connector_type.type}: Skipping registration."
+                f"{service_connector_type.connector_type}: Skipping registration."
             )
 
     def get_service_connector_type(
@@ -131,7 +132,7 @@ class ServiceConnectorRegistry:
             if (
                 (
                     connector_type is None
-                    or connector_type == service_connector_type.type
+                    or connector_type == service_connector_type.connector_type
                 )
                 and (
                     resource_type is None

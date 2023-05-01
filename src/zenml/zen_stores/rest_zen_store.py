@@ -1897,6 +1897,44 @@ class RestZenStore(BaseZenStore):
     # Service Connectors
     # ------------------
 
+    def _populate_connector_type(
+        self,
+        *connector_models: Union[
+            ServiceConnectorResponseModel, ServiceConnectorResourcesModel
+        ],
+    ) -> None:
+        """Populates or updates the connector type of the given connector or resource models.
+
+        If the connector type is not locally available, the connector type
+        field is left as is. The local and remote flags of the connector type
+        are updated accordingly.
+
+        Args:
+            connector_models: The service connector or resource models to
+            populate.
+
+        Returns:
+            None
+        """
+        for service_connector in connector_models:
+            # Mark the remote connector type as being only remotely available
+            if not isinstance(service_connector.connector_type, str):
+                service_connector.connector_type.local = False
+                service_connector.connector_type.remote = True
+
+            if not service_connector_registry.is_registered(
+                service_connector.type
+            ):
+                continue
+
+            connector_type = (
+                service_connector_registry.get_service_connector_type(
+                    service_connector.type
+                )
+            )
+            connector_type.remote = True
+            service_connector.connector_type = connector_type
+
     def create_service_connector(
         self, service_connector: ServiceConnectorRequestModel
     ) -> ServiceConnectorResponseModel:
@@ -1908,11 +1946,13 @@ class RestZenStore(BaseZenStore):
         Returns:
             The newly created service connector.
         """
-        return self._create_workspace_scoped_resource(
+        connector_model = self._create_workspace_scoped_resource(
             resource=service_connector,
             route=SERVICE_CONNECTORS,
             response_model=ServiceConnectorResponseModel,
         )
+        self._populate_connector_type(connector_model)
+        return connector_model
 
     def get_service_connector(
         self, service_connector_id: UUID
@@ -1925,11 +1965,13 @@ class RestZenStore(BaseZenStore):
         Returns:
             The requested service connector, if it was found.
         """
-        return self._get_resource(
+        connector_model = self._get_resource(
             resource_id=service_connector_id,
             route=SERVICE_CONNECTORS,
             response_model=ServiceConnectorResponseModel,
         )
+        self._populate_connector_type(connector_model)
+        return connector_model
 
     def list_service_connectors(
         self, filter_model: ServiceConnectorFilterModel
@@ -1943,11 +1985,13 @@ class RestZenStore(BaseZenStore):
         Returns:
             A page of all service connectors.
         """
-        return self._list_paginated_resources(
+        connector_models = self._list_paginated_resources(
             route=SERVICE_CONNECTORS,
             response_model=ServiceConnectorResponseModel,
             filter_model=filter_model,
         )
+        self._populate_connector_type(*connector_models.items)
+        return connector_models
 
     def update_service_connector(
         self, service_connector_id: UUID, update: ServiceConnectorUpdateModel
@@ -1964,12 +2008,14 @@ class RestZenStore(BaseZenStore):
         Raises:
             KeyError: If no service connector with the given name exists.
         """
-        return self._update_resource(
+        connector_model = self._update_resource(
             resource_id=service_connector_id,
             resource_update=update,
             response_model=ServiceConnectorResponseModel,
             route=SERVICE_CONNECTORS,
         )
+        self._populate_connector_type(connector_model)
+        return connector_model
 
     def delete_service_connector(self, service_connector_id: UUID) -> None:
         """Deletes a service connector.
@@ -2002,7 +2048,9 @@ class RestZenStore(BaseZenStore):
             body=service_connector,
         )
 
-        return ServiceConnectorResourcesModel.parse_obj(response_body)
+        resources = ServiceConnectorResourcesModel.parse_obj(response_body)
+        self._populate_connector_type(resources)
+        return resources
 
     def verify_service_connector(
         self,
@@ -2031,7 +2079,9 @@ class RestZenStore(BaseZenStore):
             params=params,
         )
 
-        return ServiceConnectorResourcesModel.parse_obj(response_body)
+        resources = ServiceConnectorResourcesModel.parse_obj(response_body)
+        self._populate_connector_type(resources)
+        return resources
 
     def get_service_connector_client(
         self,
@@ -2060,7 +2110,9 @@ class RestZenStore(BaseZenStore):
             params=params,
         )
 
-        return ServiceConnectorResponseModel.parse_obj(response_body)
+        connector = ServiceConnectorResponseModel.parse_obj(response_body)
+        self._populate_connector_type(connector)
+        return connector
 
     def list_service_connector_resources(
         self,
@@ -2092,10 +2144,13 @@ class RestZenStore(BaseZenStore):
         )
 
         assert isinstance(response_body, list)
-        return [
+        resource_list = [
             ServiceConnectorResourcesModel.parse_obj(item)
             for item in response_body
         ]
+
+        self._populate_connector_type(*resource_list)
+        return resource_list
 
     def list_service_connector_types(
         self,
@@ -2130,6 +2185,11 @@ class RestZenStore(BaseZenStore):
             ServiceConnectorTypeModel.parse_obj(item) for item in response_body
         ]
 
+        # Mark the remote connector types as being only remotely available
+        for c in remote_connector_types:
+            c.local = False
+            c.remote = True
+
         local_connector_types = (
             service_connector_registry.list_service_connector_types(
                 connector_type=connector_type,
@@ -2142,14 +2202,14 @@ class RestZenStore(BaseZenStore):
         # connector types available remotely. Overwrite those that have
         # the same connector type but mark them as being remotely available.
         connector_types_map = {
-            connector_type.type: connector_type
+            connector_type.connector_type: connector_type
             for connector_type in remote_connector_types
         }
 
         for connector in local_connector_types:
-            if connector.type in connector_types_map:
+            if connector.connector_type in connector_types_map:
                 connector.remote = True
-            connector_types_map[connector.type] = connector
+            connector_types_map[connector.connector_type] = connector
 
         return list(connector_types_map.values())
 
@@ -2186,6 +2246,10 @@ class RestZenStore(BaseZenStore):
                 # mark it as being remotely available.
                 local_connector_type.remote = True
                 return local_connector_type
+
+            # Mark the remote connector type as being only remotely available
+            remote_connector_type.local = False
+            remote_connector_type.remote = True
 
             return remote_connector_type
         except KeyError:

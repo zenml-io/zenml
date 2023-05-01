@@ -41,7 +41,7 @@ class ServiceConnectorSchema(ShareableSchema, table=True):
 
     __tablename__ = "service_connector"
 
-    type: str = Field(sa_column=Column(TEXT))
+    connector_type: str = Field(sa_column=Column(TEXT))
     description: str
     auth_method: str = Field(sa_column=Column(TEXT))
     resource_types: bytes
@@ -144,7 +144,7 @@ class ServiceConnectorSchema(ShareableSchema, table=True):
             is_shared=connector_request.is_shared,
             name=connector_request.name,
             description=connector_request.description,
-            type=connector_request.type,
+            connector_type=connector_request.type,
             auth_method=connector_request.auth_method,
             resource_types=base64.b64encode(
                 json.dumps(connector_request.resource_types).encode("utf-8")
@@ -222,7 +222,7 @@ class ServiceConnectorSchema(ShareableSchema, table=True):
             is_shared=self.is_shared,
             created=self.created,
             updated=self.updated,
-            type=self.type,
+            connector_type=self.connector_type,
             auth_method=self.auth_method,
             resource_types=self.resource_types_list,
             resource_id=self.resource_id,

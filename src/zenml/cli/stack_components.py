@@ -1190,14 +1190,14 @@ def generate_stack_component_connect_command(
 
             cli_utils.print_service_connector_resource_table(resource_list)
 
-            if len(connectors.items) == 1:
+            if len(resource_list) == 1:
                 connect = click.confirm(
                     "Would you like to use this connector?",
                     default=True,
                 )
                 if not connect:
                     return
-                connector_model = connectors.items[0]
+                resource_list[0]
             else:
                 while True:
                     connector_id = click.prompt(
@@ -1206,18 +1206,20 @@ def generate_stack_component_connect_command(
                         type=click.Choice(
                             [
                                 str(connector.id)
-                                for connector in connectors.items
+                                for connector in resource_list
+                                if connector.id is not None
                             ]
                             + [
                                 connector.name
-                                for connector in connectors.items
+                                for connector in resource_list
+                                if connector.name is not None
                             ]
                         ),
                         show_choices=False,
                     )
                     matches = [
                         c
-                        for c in connectors.items
+                        for c in resource_list
                         if str(c.id) == connector_id or c.name == connector_id
                     ]
                     if len(matches) > 1:
@@ -1226,7 +1228,7 @@ def generate_stack_component_connect_command(
                             "were found. Please try again."
                         )
                     else:
-                        connector_model = matches[0]
+                        matches[0]
                         break
 
         else:
@@ -1251,7 +1253,7 @@ def generate_stack_component_connect_command(
 
         # Get the connector type specification to verify the resource ID
         connector_type_spec = client.get_service_connector_type(
-            connector_type=connector_model.type,
+            connector_type=connector_model.connector_type,
         )
         resource_spec = connector_type_spec.resource_type_map[
             connector_model.resource_type

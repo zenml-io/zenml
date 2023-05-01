@@ -119,7 +119,7 @@ class KubernetesAuthenticationMethods(StrEnum):
 
 KUBERNETES_SERVICE_CONNECTOR_TYPE_SPEC = ServiceConnectorTypeModel(
     name="Kubernetes Service Connector",
-    type=KUBERNETES_CONNECTOR_TYPE,
+    connector_type=KUBERNETES_CONNECTOR_TYPE,
     description="""
 This ZenML Kubernetes service connector facilitates authenticating and
 connecting to a Kubernetes cluster.
