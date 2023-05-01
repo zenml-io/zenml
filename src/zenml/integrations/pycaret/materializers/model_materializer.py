@@ -40,14 +40,50 @@ from xgboost import XGBClassifier
 from catboost import CatBoostClassifier
 from lightgbm import LGBMClassifier
 
+from sklearn.linear_model import LinearRegression
+from sklearn.linear_model import Lasso
+from sklearn.linear_model import Ridge
+from sklearn.linear_model import ElasticNet
+from sklearn.linear_model import Lars
+from sklearn.linear_model import LassoLars
+from sklearn.linear_model import OrthogonalMatchingPursuit
+from sklearn.linear_model import BayesianRidge
+from sklearn.linear_model import ARDRegression
+from sklearn.linear_model import PassiveAggressiveRegressor
+from sklearn.linear_model import RANSACRegressor
+from sklearn.linear_model import TheilSenRegressor
+from sklearn.linear_model import HuberRegressor
+from sklearn.kernel_ridge import KernelRidge
+from sklearn.svm import SVR
+from sklearn.neighbors import KNeighborsRegressor
+from sklearn.tree import DecisionTreeRegressor
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.ensemble import ExtraTreesRegressor
+from sklearn.ensemble import AdaBoostRegressor
+from sklearn.ensemble import GradientBoostingRegressor
+from sklearn.neural_network import MLPRegressor
+from xgboost import XGBRegressor
+from catboost import CatBoostRegressor
+from sklearn.ensemble import BaggingRegressor
+from sklearn.ensemble import AdaBoostRegressor
+from lightgbm import LGBMRegressor
+
 class PyCaretMaterializer(BaseMaterializer):
     """Materializer to read/write PyCaret models."""
 
 
-    ASSOCIATED_TYPES = (LogisticRegression, KNeighborsClassifier, GaussianNB, DecisionTreeClassifier, SGDClassifier,\
+    ASSOCIATED_TYPES = (
+        # Classification
+        LogisticRegression, KNeighborsClassifier, GaussianNB, DecisionTreeClassifier, SGDClassifier,\
         SVC, GaussianProcessClassifier, MLPClassifier, RidgeClassifier, RandomForestClassifier, QuadraticDiscriminantAnalysis,\
         AdaBoostClassifier, GradientBoostingClassifier, LinearDiscriminantAnalysis, ExtraTreesClassifier , XGBClassifier, CatBoostClassifier,\
-        LGBMClassifier)
+        LGBMClassifier,
+        # Regression
+        LinearRegression, Lasso, Ridge, ElasticNet, Lars, LassoLars, OrthogonalMatchingPursuit, BayesianRidge, ARDRegression, PassiveAggressiveRegressor,\
+        RANSACRegressor, TheilSenRegressor, HuberRegressor, KernelRidge, SVR, KNeighborsRegressor, DecisionTreeRegressor, RandomForestRegressor,\
+        ExtraTreesRegressor, AdaBoostRegressor, GradientBoostingRegressor, MLPRegressor, XGBRegressor, CatBoostRegressor, BaggingRegressor, AdaBoostRegressor,\
+        LGBMRegressor
+    )
     ASSOCIATED_ARTIFACT_TYPE = ArtifactType.MODEL
 
     def load(self, data_type: Type[Any]) -> Any:
