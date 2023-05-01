@@ -98,8 +98,7 @@ class AuthenticationMethodModel(BaseModel):
     """Authentication method specification.
 
     Describes the schema for the configuration and secrets that need to be
-    provided to configure an authentication method, as well as the types of
-    resources that the authentication method can be used to access.
+    provided to configure an authentication method.
     """
 
     name: str = Field(

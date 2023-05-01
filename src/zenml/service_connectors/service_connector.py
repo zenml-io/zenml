@@ -100,7 +100,7 @@ class ServiceConnector(BaseModel):
     matching connector instance to connect to said resource(s).
 
     The resource types and authentication methods supported by a connector are
-    declared in the connector's specification. The role of the specification
+    declared in the connector type specification. The role of this specification
     is two-fold:
 
     - it declares a schema for the configuration that needs to be provided to

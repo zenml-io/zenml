@@ -51,10 +51,12 @@ class FlavorBaseModel(BaseModel):
         title="The JSON schema of this flavor's corresponding configuration.",
     )
     connector_type: Optional[str] = Field(
+        default=None,
         title="The type of the connector that this flavor uses.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
     connector_resource_type: Optional[str] = Field(
+        default=None,
         title="The resource type of the connector that this flavor uses.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
