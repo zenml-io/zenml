@@ -88,61 +88,6 @@ Running it should look somewhat like this in the terminal.
 Pipeline run `first_pipeline-2023_04_29-09_19_54_273710` has finished in 0.236s.
 </code></pre>
 
-## Code Summary
-
-<details>
-
-<summary>All the code in one place</summary>
-
-```python
-import numpy as np
-from sklearn.datasets import load_digits
-from sklearn.model_selection import train_test_split
-from sklearn.base import ClassifierMixin
-from sklearn.svm import SVC
-
-from zenml.pipelines.new import pipeline
-from zenml.steps import Output, step
-
-@step
-def digits_data_loader() -> Output(
-    X_train=np.ndarray, X_test=np.ndarray, y_train=np.ndarray, y_test=np.ndarray
-):
-    """Loads the digits dataset and splits it into train and test data."""
-    # Load data from the digits dataset
-    digits = load_digits()
-    # transform these images into flattened numpy arrays
-    data = digits.images.reshape((len(digits.images), -1))
-    # split into datasets
-    X_train, X_test, y_train, y_test = train_test_split(
-        data, digits.target, test_size=0.2, shuffle=False
-    )
-    return X_train, X_test, y_train, y_test
-    
-@step
-def svc_trainer(
-    gamma: float = 0.001,
-    X_train: np.ndarray,
-    y_train: np.ndarray,
-) -> ClassifierMixin:
-    """Train a sklearn SVC classifier."""
-    
-    # instantiate a support vector machine model    
-    model = SVC(gamma=gamma)
-    # Train on the train dataset
-    model.fit(X_train, y_train)
-    return model
-
-@pipeline
-def first_pipeline(gamma: float = 0.002):
-    X_train, X_test, y_train, y_test = step_1()
-    step_2(gamma=gamma, X_train, y_train)
-    
-first_pipeline(gamma=0.0015)
-```
-
-</details>
-
 ### Give each pipeline run a name
 
 In the output logs of a pipeline run you will see the name of the run:
@@ -168,14 +113,22 @@ first_pipeline_instance.run(run_name="custom_pipeline_run_name_{{date}}_{{time}}
 
 ### Caching in ZenML
 
-You might have noticed at this point that rerunning the pipeline a second time gives you the following logs:
+You might have noticed at this point that rerunning the pipeline a second time will use caching:
 
+{% tabs %}
+{% tab title="Logs" %}
 ```bash
 Step step_1 has started.
 Using cached version of step_1.
 Step step_2 has started.
 Using cached version of step_2.
 ```
+{% endtab %}
+
+{% tab title="Dashboard" %}
+<figure><img src="../../.gitbook/assets/cached_run_dashboard.png" alt=""><figcaption><p>DAG of a cached pipeline run</p></figcaption></figure>
+{% endtab %}
+{% endtabs %}
 
 This is because ZenML understands that nothing has changed between subsequent runs, so it re-uses the output of the last run (the outputs are persisted in the [artifact store](broken-reference/). This behavior is known as **caching**.
 

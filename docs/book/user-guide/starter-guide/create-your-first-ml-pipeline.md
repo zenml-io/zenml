@@ -44,6 +44,12 @@ if __name__ == "__main__":
   my_pipeline()
 ```
 
+{% hint style="info" %}
+* `@step` is a decorator that converts its function into a step that can be used within a pipeline
+* `@pipeline` defines a function as a pipeline
+  * within this function the steps are called and their outputs are routed
+{% endhint %}
+
 Copy this code into a file main.py and run it.
 
 {% code overflow="wrap" %}
@@ -62,12 +68,6 @@ Pipeline visualization can be seen in the ZenML Dashboard. Run zenml up to see y
 ```
 {% endcode %}
 
-{% hint style="info" %}
-* `@step` is a decorator that converts its function into a step that can be used within a pipeline
-* `@pipeline` defines a function as a pipeline
-  * within this function the steps are called and their outputs are routed
-{% endhint %}
-
 In the output, there's a line with something like this.
 
 {% code overflow="wrap" %}
@@ -78,7 +78,7 @@ Pipeline visualization can be seen in the ZenML Dashboard. Run zenml up to see y
 
 ZenML offers you a comprehensive Dashboard to interact with your Pipelines, Artifacts and Infrastructure. To see it, simply deploy the ZenML service locally in the next section.
 
-#### Check it
+#### Explore the Dashboard
 
 Run `zenml up` in the environment where you have ZenML installed.
 

@@ -4,23 +4,97 @@ description: How to use MLOps tools and infrastructure with stacks
 
 # Understand your stack
 
-* [ ] Shorter introduction?
-* [ ] Link to all the different types of stack components here?
-* [ ] I Propose the following flow -> Point to the line in the logs that mentions the default stack when running a pipeline -> explain what stacks are -> show where they live in the cli and on the dashboard ->&#x20;
+<details>
 
-Machine learning in production is not just about designing and training models. It is a fractured space consisting of a wide variety of tasks ranging from experiment tracking to orchestration, from model deployment to monitoring, from drift detection to feature stores, and much, much more than that. Even though there are already some seemingly well-established solutions for these tasks, it can become increasingly difficult to establish a running production system in a reliable and modular manner once all these solutions are brought together.
+<summary>Notes</summary>
 
-This is a problem that is especially critical when switching from a research setting to a production setting. Due to a lack of standards, the time and resources invested in proof of concepts frequently go completely to waste, because the initial system can not easily be transferred to a production-grade setting.
+* Shorter introduction?
+* Link to all the different types of stack components here?
+* I Propose the following flow -> Point to the line in the logs that mentions the default stack when running a pipeline -> explain what stacks are -> show where they live in the cli and on the dashboard ->&#x20;
 
-At **ZenML**, we believe that this is one of the most important and challenging problems in the field of MLOps, and it can be solved with a set of standards and well-structured abstractions. Owing to the nature of MLOps, it is essential that these abstractions not only cover concepts such as pipelines and steps but also the infrastructure elements on which the pipelines run.
+</details>
 
-Taking this into consideration, ZenML provides additional abstractions that help you simplify infrastructure configuration and management:
+### The stack
 
-* [Stacks](using-and-switching-stacks.md#stack): A combination of various MLOps _stack components_.
-* [Stack Components](using-and-switching-stacks.md#stack-components): Configuration of MLOps tools, which come in different _categories_ and _flavors_.
-* [Flavors](using-and-switching-stacks.md#stack-component-flavors): Represent a concrete implementation of a stack component.
+In the previous section you might have already noticed the term `stack` in the logs and on the dashboard.
 
-Let's discuss each in further detail:
+A `stack` is the combination of tools and infrastructure that your pipelines can run on. In simple terms you could think of it as `environments` . Let's explore this.
+
+{% tabs %}
+{% tab title="CLI" %}
+`zenml stack describe` lets you find out details about your active stack:
+
+```bash
+...
+Running with active workspace: 'default' (global)
+        Stack Configuration        
+┏━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┓
+┃ COMPONENT_TYPE │ COMPONENT_NAME ┃
+┠────────────────┼────────────────┨
+┃ ARTIFACT_STORE │ default        ┃
+┠────────────────┼────────────────┨
+┃ ORCHESTRATOR   │ default        ┃
+┗━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┛
+     'default' stack (ACTIVE)      
+Stack 'default' with id '...' is owned by user default and is 'private'.
+...
+```
+
+`zenml stack list` lets you see all stacks that are registered in your zenml deployment.
+
+```bash
+...
+┏━━━━━━━━┯━━━━━━━━━━━━┯━━━━━━━━━━━┯━━━━━━━━┯━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━┓
+┃ ACTIVE │ STACK NAME │ STACK ID  │ SHARED │ OWNER   │ ARTIFACT_STORE │ ORCHESTRATOR ┃
+┠────────┼────────────┼───────────┼────────┼─────────┼────────────────┼──────────────┨
+┃   👉   │ default    │ ...       │ ➖     │ default │ default        │ default      ┃
+┗━━━━━━━━┷━━━━━━━━━━━━┷━━━━━━━━━━━┷━━━━━━━━┷━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━┛
+...
+```
+
+{% hint style="info" %}
+As you can see a stack can be active on your client. This simply means that any pipeline you run, will be using the active stack as its environment.
+{% endhint %}
+{% endtab %}
+
+{% tab title="Dashboard" %}
+<figure><img src="../../.gitbook/assets/stack_in_dashboard.png" alt=""><figcaption></figcaption></figure>
+{% endtab %}
+{% endtabs %}
+
+### Components of the Stack
+
+As you can see in the section above, a stack consists of multiple components. All stacks have at minimum an **orchestrator** and an **artifact store**.&#x20;
+
+The **orchestrator** is responsible for executing the pipeline code. In the simplest case, this will be a simple python thread on your machine. Let's explore this default orchestrator.
+
+{% tabs %}
+{% tab title="First Tab" %}
+
+{% endtab %}
+
+{% tab title="Second Tab" %}
+
+{% endtab %}
+{% endtabs %}
+
+The **artifact store** is responsible for persisting the step outputs. As we learned in the previous section, the step outputs are not passed along in memory, rather the outputs of each step are stored in the **artifact store** and then loaded from there when the next step needs them. By default this will also be on your own machine:
+
+{% tabs %}
+{% tab title="First Tab" %}
+
+{% endtab %}
+
+{% tab title="Second Tab" %}
+
+{% endtab %}
+{% endtabs %}
+
+...
+
+...
+
+...
 
 ## Stack
 
@@ -36,17 +110,6 @@ In the illustration, you see one user register two stacks, the `Local Stack` and
 ![Running your pipeline in the cloud](../../assets/core\_concepts/03\_multi\_stack.png)
 
 Any such combination of tools and infrastructure can be registered as a separate stack in ZenML. Since ZenML code is tooling-independent, you can switch between stacks with a single command and then automatically execute your ML workflows on the desired stack without having to modify your code.
-
-### The Default Stack
-
-By default, every ZenML project that you create already come with an initial active `default` stack. If you followed the code examples in the [Steps and Pipelines](broken-reference/) section, then you have already used this stack implicitly to run all of your pipelines.
-
-This stack features two stack components:
-
-* A [Local Orchestrator](broken-reference/),
-* A [Local Artifact Store](broken-reference/),
-
-Speaking of stack components...
 
 ## Stack Components
 
