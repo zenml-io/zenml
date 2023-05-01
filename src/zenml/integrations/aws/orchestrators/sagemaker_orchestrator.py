@@ -234,7 +234,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
 
             # Construct S3 outputs from container for step
             outputs = None
-            
+
             if step_settings.output_data_s3_uri is None:
                 pass
             elif isinstance(step_settings.output_data_s3_uri, str):
@@ -242,28 +242,33 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                     ProcessingOutput(
                         source="/opt/ml/processing/output",
                         destination=step_settings.output_data_s3_uri,
-                        s3_upload_mode=step_settings.output_data_s3_mode
+                        s3_upload_mode=step_settings.output_data_s3_mode,
                     )
                 ]
             elif isinstance(step_settings.output_data_s3_uri, dict):
                 outputs = []
-                for channel, s3_uri in step_settings.output_data_s3_uri.items():
+                for (
+                    channel,
+                    s3_uri,
+                ) in step_settings.output_data_s3_uri.items():
                     outputs.append(
                         ProcessingOutput(
                             source=f"/opt/ml/processing/output/{channel}",
                             destination=s3_uri,
-                            s3_upload_mode=step_settings.output_data_s3_mode
+                            s3_upload_mode=step_settings.output_data_s3_mode,
                         )
                     )
 
             # Create Processor and ProcessingStep
-            processor = sagemaker.processing.Processor(**processor_args_for_step)
+            processor = sagemaker.processing.Processor(
+                **processor_args_for_step
+            )
             sagemaker_step = ProcessingStep(
                 name=step.config.name,
                 processor=processor,
                 depends_on=step.spec.upstream_steps,
                 inputs=inputs,
-                outputs=outputs
+                outputs=outputs,
             )
             sagemaker_steps.append(sagemaker_step)
 
