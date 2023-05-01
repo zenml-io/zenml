@@ -132,11 +132,12 @@ class ZenFormatter(formatting.HelpFormatter):
                     self.write("\n")
 
         elif len(widths) == 3:
+
             first_col = min(widths[0], col_max) + col_spacing
             second_col = min(widths[1], col_max) + col_spacing * 2
 
             current_tag = None
-            for first, second, third in iter_rows(rows, len(widths)):
+            for (first, second, third) in iter_rows(rows, len(widths)):
                 if current_tag != first:
                     current_tag = first
                     self.write("\n")

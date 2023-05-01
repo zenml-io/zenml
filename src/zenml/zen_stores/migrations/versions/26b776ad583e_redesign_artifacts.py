@@ -150,6 +150,7 @@ def upgrade() -> None:
     # Adjust columns
     # --------------
     with op.batch_alter_table("artifacts", schema=None) as batch_op:
+
         # Add artifact store link column
         batch_op.add_column(
             sa.Column(

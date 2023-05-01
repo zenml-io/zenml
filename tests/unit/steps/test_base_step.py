@@ -560,8 +560,8 @@ def list_of_str_output_step() -> List[str]:
 
 
 @step
-def dict_of_str_output_step() -> (
-    Output(str_output=str, dict_output=Dict[str, int])
+def dict_of_str_output_step() -> Output(
+    str_output=str, dict_output=Dict[str, int]
 ):
     return "", {}
 
@@ -605,8 +605,8 @@ def test_step_can_have_generic_input_types():
 
 
 @step
-def subscripted_generic_output_step() -> (
-    Output(dict_output=Dict[str, int], list_output=List[str])
+def subscripted_generic_output_step() -> Output(
+    dict_output=Dict[str, int], list_output=List[str]
 ):
     return {}, []
 

@@ -104,9 +104,7 @@ def test_neptune_experiment_tracker_stack_validation(
         ).validate()
 
 
-def test_neptune_experiment_tracker_does_not_need_explicit_api_token_or_project() -> (
-    None
-):
+def test_neptune_experiment_tracker_does_not_need_explicit_api_token_or_project() -> None:
     """Test that passing an empty config upon constructing neptune experiment tracker still works
     (arguments are optional).
     """

@@ -291,6 +291,7 @@ class GreatExpectationsDataValidator(BaseDataValidator):
                     ] = site_config
 
             if self.config.configure_local_docs:
+
                 client = Client()
                 artifact_store = client.active_stack.artifact_store
                 if artifact_store.flavor != "local":

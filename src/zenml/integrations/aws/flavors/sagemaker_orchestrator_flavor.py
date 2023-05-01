@@ -60,7 +60,7 @@ class SagemakerOrchestratorSettings(BaseSettings):
     volume_size_in_gb: int = 30
     max_runtime_in_seconds: int = 86400
     processor_tags: Dict[str, str] = {}
-
+    
     processor_args: Dict[str, Any] = {}
     input_data_s3_mode: str = "File"
     input_data_s3_uri: Optional[Union[str, Dict[str, str]]] = None

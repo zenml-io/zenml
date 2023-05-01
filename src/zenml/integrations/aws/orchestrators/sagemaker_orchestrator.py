@@ -233,9 +233,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                     )
 
             # Create Processor and ProcessingStep
-            processor = sagemaker.processing.Processor(
-                **processor_args_for_step
-            )
+            processor = sagemaker.processing.Processor(**processor_args_for_step)
             sagemaker_step = ProcessingStep(
                 name=step.config.name,
                 processor=processor,

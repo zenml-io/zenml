@@ -72,9 +72,11 @@ class TestEnvironment:
             return False
 
         with self.deployment.connect() as client:
+
             component_requirements: List[StackRequirement] = []
 
             for requirement in self.config.compiled_requirements:
+
                 if not requirement.mandatory:
                     # optional components the software requirements of which are
                     # not met locally do not need to exist for the environment
@@ -108,6 +110,7 @@ class TestEnvironment:
     ) -> None:
         """Collect the components managed or tracked by this environment."""
         with self.deployment.connect() as client:
+
             self._optional_components = {}
             self._mandatory_components = {}
 
@@ -228,10 +231,12 @@ class TestEnvironment:
         build_base_image: bool = False
 
         with self.deployment.connect() as client:
+
             component_requirements: List[StackRequirement] = []
             components: List[ComponentResponseModel] = []
 
             for requirement in self.config.compiled_requirements:
+
                 result, err = requirement.check_software_requirements()
                 if not result:
                     if requirement.mandatory:
@@ -291,6 +296,7 @@ class TestEnvironment:
                 BaseTestDeployment.build_base_image()
 
             for component_model in components:
+
                 component = StackComponent.from_model(
                     component_model=component_model
                 )
@@ -334,11 +340,13 @@ class TestEnvironment:
             return
 
         with self.deployment.connect() as client:
+
             component_requirements: List[StackRequirement] = []
             components: List[ComponentResponseModel] = []
             external_components: List[UUID] = []
 
             for requirement in self.config.compiled_requirements:
+
                 # components the software requirements of which are
                 # not met locally are ignored
                 result, _ = requirement.check_software_requirements()
@@ -348,6 +356,7 @@ class TestEnvironment:
                 component_requirements.extend(requirement.stacks)
 
             for component_requirement in component_requirements:
+
                 # Environment requirements are managed by the test framework
                 # by default
                 external = component_requirement.external or False

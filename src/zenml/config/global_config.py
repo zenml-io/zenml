@@ -592,6 +592,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
             )
 
         if len(env_secrets_store_config):
+
             if "type" not in env_secrets_store_config:
                 env_secrets_store_config["type"] = config.type.value
 

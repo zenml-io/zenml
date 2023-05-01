@@ -134,6 +134,7 @@ class StackRequirement(BaseTestConfigModel):
             # components (default artifact store and orchestrator) that are
             # always available.
             if environment is not None:
+
                 # If one or more mandatory components of the same type are
                 # enforced, the component must be one of them.
                 if len(mandatory_components) > 0:
@@ -181,6 +182,7 @@ class StackRequirement(BaseTestConfigModel):
             return None
 
         if len(components) > 1:
+
             logging.warning(
                 f"found multiple {self.type.value} components that meet the "
                 f"test requirements: {', '.join([c.name for c in components])}. "

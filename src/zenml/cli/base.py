@@ -141,6 +141,7 @@ def init(
             console.print(zenml_cli_privacy_message, width=80)
 
             if not starter:
+
                 from rich.markdown import Markdown
 
                 prompt_message = Markdown(

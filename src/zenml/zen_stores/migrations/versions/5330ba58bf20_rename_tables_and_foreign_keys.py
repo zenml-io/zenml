@@ -86,15 +86,13 @@ def _create_fk_constraint(
         )
 
 
-def _get_changes() -> (
-    Tuple[
-        List[str],
-        List[str],
-        List[str],
-        List[Tuple[str, str, str, str, str]],
-        List[Tuple[str, str, str, str, str]],
-    ]
-):
+def _get_changes() -> Tuple[
+    List[str],
+    List[str],
+    List[str],
+    List[Tuple[str, str, str, str, str]],
+    List[Tuple[str, str, str, str, str]],
+]:
     """Define the data that should be changed in the schema.
 
     Returns:

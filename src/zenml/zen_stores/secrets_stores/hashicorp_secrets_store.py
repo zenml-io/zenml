@@ -151,6 +151,7 @@ class HashiCorpVaultSecretsStore(BaseSecretsStore):
             The HashiCorp Vault client.
         """
         if self._client is None:
+
             # Initialize the HashiCorp Vault client with the
             # credentials from the configuration.
             self._client = hvac.Client(
