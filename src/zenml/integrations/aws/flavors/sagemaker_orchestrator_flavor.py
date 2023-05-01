@@ -53,6 +53,18 @@ class SagemakerOrchestratorSettings(BaseSettings):
                 - Dict[str, str]: (ChannelName, S3Location) which represent
                     channels (e.g. training, validation, testing) where
                     specific parts of the data are saved in S3.
+        output_data_s3_mode: How data is uploaded to the S3 bucket.
+            Two possible output modes: EndOfJob, Continuous.
+        output_data_s3_uri: S3 URI where data is uploaded after or during processing run.
+            e.g. s3://my-bucket/my-data/output. How data will be made available
+            to the container is configured with output_data_s3_mode. Two possible
+            input types:
+                - str: S3 location where data will be uploaded from a local folder
+                    named /opt/ml/processing/output.
+                - Dict[str, str]: (ChannelName, S3Location) which represent
+                    channels (e.g. output_one, output_two) where
+                    specific parts of the data are stored locally for S3 upload.
+                    Data must be available locally in /opt/ml/processing/output/<ChannelName>.
     """
 
     instance_type: str = "ml.t3.medium"
@@ -64,6 +76,9 @@ class SagemakerOrchestratorSettings(BaseSettings):
     processor_args: Dict[str, Any] = {}
     input_data_s3_mode: str = "File"
     input_data_s3_uri: Optional[Union[str, Dict[str, str]]] = None
+
+    output_data_s3_mode: str = "EndOfJob"
+    output_data_s3_uri: Optional[Union[str, Dict[str, str]]] = None
 
 
 class SagemakerOrchestratorConfig(  # type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173
