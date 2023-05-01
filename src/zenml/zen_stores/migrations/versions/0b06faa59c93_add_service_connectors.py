@@ -1,16 +1,17 @@
-"""Add service connectors [61688b3cee07].
+"""Add service connectors [0b06faa59c93].
 
-Revision ID: 61688b3cee07
+Revision ID: 0b06faa59c93
 Revises: fbd7f18ced1e
-Create Date: 2023-04-29 22:38:00.883184
+Create Date: 2023-05-01 23:19:18.775302
 
 """
-import sqlalchemy as sa
 import sqlmodel
 from alembic import op
+import sqlalchemy as sa
+
 
 # revision identifiers, used by Alembic.
-revision = "61688b3cee07"
+revision = "0b06faa59c93"
 down_revision = "fbd7f18ced1e"
 branch_labels = None
 depends_on = None
@@ -69,7 +70,7 @@ def upgrade() -> None:
         sa.ForeignKeyConstraint(
             ["service_connector_id"],
             ["service_connector.id"],
-            name="fk_service_connector_label_service_connector_id_service_connector",
+            name="fk_service_connector_label_service_connector",
             ondelete="CASCADE",
         ),
         sa.PrimaryKeyConstraint("id"),
