@@ -13,6 +13,6 @@
 #  permissions and limitations under the License.
 """Initialization for the PyCaret materializers."""
 
-from zenml.integrations.pycaret.materializers.classification_materializer import (
+from zenml.integrations.pycaret.materializers.classification_materializer import (  # noqa
     PyCaretClassificationMaterializer,
 )
