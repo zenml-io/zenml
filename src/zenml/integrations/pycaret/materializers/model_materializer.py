@@ -33,9 +33,9 @@ from sklearn.linear_model import RidgeClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
 from sklearn.ensemble import AdaBoostClassifier
-from sklearn.ensemble import GradientBoostingClassifier    
+from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
-from sklearn.ensemble import ExtraTreesClassifier 
+from sklearn.ensemble import ExtraTreesClassifier
 from xgboost import XGBClassifier
 from catboost import CatBoostClassifier
 from lightgbm import LGBMClassifier
@@ -68,21 +68,58 @@ from sklearn.ensemble import BaggingRegressor
 from sklearn.ensemble import AdaBoostRegressor
 from lightgbm import LGBMRegressor
 
+
 class PyCaretMaterializer(BaseMaterializer):
     """Materializer to read/write PyCaret models."""
 
-
     ASSOCIATED_TYPES = (
         # Classification
-        LogisticRegression, KNeighborsClassifier, GaussianNB, DecisionTreeClassifier, SGDClassifier,\
-        SVC, GaussianProcessClassifier, MLPClassifier, RidgeClassifier, RandomForestClassifier, QuadraticDiscriminantAnalysis,\
-        AdaBoostClassifier, GradientBoostingClassifier, LinearDiscriminantAnalysis, ExtraTreesClassifier , XGBClassifier, CatBoostClassifier,\
+        LogisticRegression,
+        KNeighborsClassifier,
+        GaussianNB,
+        DecisionTreeClassifier,
+        SGDClassifier,
+        SVC,
+        GaussianProcessClassifier,
+        MLPClassifier,
+        RidgeClassifier,
+        RandomForestClassifier,
+        QuadraticDiscriminantAnalysis,
+        AdaBoostClassifier,
+        GradientBoostingClassifier,
+        LinearDiscriminantAnalysis,
+        ExtraTreesClassifier,
+        XGBClassifier,
+        CatBoostClassifier,
         LGBMClassifier,
         # Regression
-        LinearRegression, Lasso, Ridge, ElasticNet, Lars, LassoLars, OrthogonalMatchingPursuit, BayesianRidge, ARDRegression, PassiveAggressiveRegressor,\
-        RANSACRegressor, TheilSenRegressor, HuberRegressor, KernelRidge, SVR, KNeighborsRegressor, DecisionTreeRegressor, RandomForestRegressor,\
-        ExtraTreesRegressor, AdaBoostRegressor, GradientBoostingRegressor, MLPRegressor, XGBRegressor, CatBoostRegressor, BaggingRegressor, AdaBoostRegressor,\
-        LGBMRegressor
+        LinearRegression,
+        Lasso,
+        Ridge,
+        ElasticNet,
+        Lars,
+        LassoLars,
+        OrthogonalMatchingPursuit,
+        BayesianRidge,
+        ARDRegression,
+        PassiveAggressiveRegressor,
+        RANSACRegressor,
+        TheilSenRegressor,
+        HuberRegressor,
+        KernelRidge,
+        SVR,
+        KNeighborsRegressor,
+        DecisionTreeRegressor,
+        RandomForestRegressor,
+        ExtraTreesRegressor,
+        AdaBoostRegressor,
+        GradientBoostingRegressor,
+        MLPRegressor,
+        XGBRegressor,
+        CatBoostRegressor,
+        BaggingRegressor,
+        AdaBoostRegressor,
+        LGBMRegressor,
     )
     ASSOCIATED_ARTIFACT_TYPE = ArtifactType.MODEL
 

@@ -21,7 +21,13 @@ class PyCaretIntegration(Integration):
     """Definition of PyCaret integration for ZenML."""
 
     NAME = PYCARET
-    REQUIREMENTS = ["pycaret", "scikit-learn", "xgboost", "catboost", "lightgbm"]
+    REQUIREMENTS = [
+        "pycaret",
+        "scikit-learn",
+        "xgboost",
+        "catboost",
+        "lightgbm",
+    ]
 
     @classmethod
     def activate(cls) -> None:
