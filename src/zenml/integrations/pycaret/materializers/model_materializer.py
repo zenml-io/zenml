@@ -20,6 +20,7 @@ from zenml.io import fileio
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.utils import io_utils
 
+# Classification models supported by PyCaret
 from sklearn.linear_model import LogisticRegression
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.naive_bayes import GaussianNB
@@ -39,8 +40,8 @@ from xgboost import XGBClassifier
 from catboost import CatBoostClassifier
 from lightgbm import LGBMClassifier
 
-class PyCaretClassificationMaterializer(BaseMaterializer):
-    """Materializer to read/write PyCaret classification models."""
+class PyCaretMaterializer(BaseMaterializer):
+    """Materializer to read/write PyCaret models."""
 
 
     ASSOCIATED_TYPES = (LogisticRegression, KNeighborsClassifier, GaussianNB, DecisionTreeClassifier, SGDClassifier,\
@@ -50,7 +51,7 @@ class PyCaretClassificationMaterializer(BaseMaterializer):
     ASSOCIATED_ARTIFACT_TYPE = ArtifactType.MODEL
 
     def load(self, data_type: Type[Any]) -> Any:
-        """Reads and returns a PyCaret classification model after copying it to temporary path.
+        """Reads and returns a PyCaret model after copying it to temporary path.
 
         Args:
             data_type: The type of the data to read.
@@ -75,7 +76,7 @@ class PyCaretClassificationMaterializer(BaseMaterializer):
         return model
 
     def save(self, model: Any) -> None:
-        """Writes a PyCaret classification model to the artifact store.
+        """Writes a PyCaret model to the artifact store.
 
         Args:
             model: Any of the supported models.
