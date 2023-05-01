@@ -13,61 +13,62 @@
 #  permissions and limitations under the License.
 """PyCaret materializer."""
 
-from typing import Any, Type, Union
 import tempfile
+from typing import (
+    Any,
+)
 
-from pycaret.classification import save_model, load_model
+from catboost import CatBoostClassifier, CatBoostRegressor
+from lightgbm import LGBMClassifier, LGBMRegressor
+from pycaret.classification import load_model, save_model
+from sklearn.discriminant_analysis import (
+    LinearDiscriminantAnalysis,
+    QuadraticDiscriminantAnalysis,
+)
+from sklearn.ensemble import (
+    AdaBoostClassifier,
+    AdaBoostRegressor,
+    BaggingRegressor,
+    ExtraTreesClassifier,
+    ExtraTreesRegressor,
+    GradientBoostingClassifier,
+    GradientBoostingRegressor,
+    RandomForestClassifier,
+    RandomForestRegressor,
+)
+from sklearn.gaussian_process import GaussianProcessClassifier
+from sklearn.kernel_ridge import KernelRidge
+
+# Classification models supported by PyCaret
+from sklearn.linear_model import (
+    ARDRegression,
+    BayesianRidge,
+    ElasticNet,
+    HuberRegressor,
+    Lars,
+    Lasso,
+    LassoLars,
+    LinearRegression,
+    LogisticRegression,
+    OrthogonalMatchingPursuit,
+    PassiveAggressiveRegressor,
+    RANSACRegressor,
+    Ridge,
+    RidgeClassifier,
+    SGDClassifier,
+    TheilSenRegressor,
+)
+from sklearn.naive_bayes import GaussianNB
+from sklearn.neighbors import KNeighborsClassifier, KNeighborsRegressor
+from sklearn.neural_network import MLPClassifier, MLPRegressor
+from sklearn.svm import SVC, SVR
+from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
+from xgboost import XGBClassifier, XGBRegressor
+
 from zenml.enums import ArtifactType
 from zenml.io import fileio
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.utils import io_utils
-
-# Classification models supported by PyCaret
-from sklearn.linear_model import LogisticRegression
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.naive_bayes import GaussianNB
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.linear_model import SGDClassifier
-from sklearn.svm import SVC
-from sklearn.gaussian_process import GaussianProcessClassifier
-from sklearn.neural_network import MLPClassifier
-from sklearn.linear_model import RidgeClassifier
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
-from sklearn.ensemble import AdaBoostClassifier
-from sklearn.ensemble import GradientBoostingClassifier
-from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
-from sklearn.ensemble import ExtraTreesClassifier
-from xgboost import XGBClassifier
-from catboost import CatBoostClassifier
-from lightgbm import LGBMClassifier
-
-from sklearn.linear_model import LinearRegression
-from sklearn.linear_model import Lasso
-from sklearn.linear_model import Ridge
-from sklearn.linear_model import ElasticNet
-from sklearn.linear_model import Lars
-from sklearn.linear_model import LassoLars
-from sklearn.linear_model import OrthogonalMatchingPursuit
-from sklearn.linear_model import BayesianRidge
-from sklearn.linear_model import ARDRegression
-from sklearn.linear_model import PassiveAggressiveRegressor
-from sklearn.linear_model import RANSACRegressor
-from sklearn.linear_model import TheilSenRegressor
-from sklearn.linear_model import HuberRegressor
-from sklearn.kernel_ridge import KernelRidge
-from sklearn.svm import SVR
-from sklearn.neighbors import KNeighborsRegressor
-from sklearn.tree import DecisionTreeRegressor
-from sklearn.ensemble import RandomForestRegressor
-from sklearn.ensemble import ExtraTreesRegressor
-from sklearn.ensemble import AdaBoostRegressor
-from sklearn.ensemble import GradientBoostingRegressor
-from sklearn.neural_network import MLPRegressor
-from xgboost import XGBRegressor
-from catboost import CatBoostRegressor
-from sklearn.ensemble import BaggingRegressor
-from lightgbm import LGBMRegressor
 
 
 class PyCaretMaterializer(BaseMaterializer):
