@@ -188,7 +188,9 @@ class SagemakerStepOperator(BaseStepOperator):
         unique_training_job_name = f"{training_job_name}-{suffix}"
 
         # Sagemaker doesn't allow any underscores in job/experiment/trial names
-        sanitized_training_job_name = unique_training_job_name.replace("_", "-")
+        sanitized_training_job_name = unique_training_job_name.replace(
+            "_", "-"
+        )
 
         # Construct training input object, if necessary
         inputs = None
