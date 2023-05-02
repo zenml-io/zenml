@@ -177,8 +177,8 @@ class GetRunsDescriptor:
         if pipeline_view:
             return lambda: pipeline_view.runs
         raise RuntimeError(
-            "The pipeline view for this pipeline was not found. Are you sure "
-            "this pipeline has been run already?"
+            "The pipeline view for this pipeline was not found. Please check "
+            "that the pipeline has been run already."
         )
 
 

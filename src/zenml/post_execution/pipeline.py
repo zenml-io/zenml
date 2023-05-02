@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Implementation of the post-execution pipeline."""
 
+from functools import partial
 from typing import TYPE_CHECKING, Any, List, Optional, Type, Union, cast
 
 from zenml.client import Client
@@ -22,6 +23,7 @@ from zenml.models.base_models import BaseResponseModel
 from zenml.post_execution.base_view import BaseView
 from zenml.post_execution.pipeline_run import PipelineRunView
 from zenml.utils.analytics_utils import AnalyticsEvent, track
+from zenml.utils.pagination_utils import depaginate
 
 if TYPE_CHECKING:
     from zenml.pipelines.base_pipeline import BasePipeline
@@ -144,12 +146,16 @@ class PipelineClassView:
             A list of all versions of this pipeline.
         """
         client = Client()
-        pipelines = client.list_pipelines(
-            workspace_id=client.active_workspace.id,
-            name=self.name,
-            sort_by="desc:created",
+
+        pipelines = depaginate(
+            partial(
+                client.list_pipelines,
+                workspace_id=client.active_workspace.id,
+                name=self.name,
+                sort_by="desc:created",
+            )
         )
-        return [PipelineView(model) for model in pipelines.items]
+        return [PipelineView(model) for model in pipelines]
 
     @property
     def num_runs(self) -> int:
