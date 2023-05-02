@@ -8,25 +8,42 @@ Although the basic functionalities of ZenML work perfectly on your local machine
 
 If you are the one setting up ZenML for your organization, head on over to the [Platform Guide](../../platform-guide/set-up-your-mlops-platform/) to set this up on your infrastructure of choice. Alternatively, if you are just getting started and want to try things out, the ZenML Sandbox is the right resource for you.
 
-### Why deploy
+### ZenML Server
 
-There are three scenarios&#x20;
+When you first get started with ZenML it is based on the following architecture on your machine.
 
-{% tabs %}
-{% tab title="Default" %}
-By default the ZenML client simply directly connects to it its local database.&#x20;
+<figure><img src="../../.gitbook/assets/Scenario1.png" alt="" width="375"><figcaption><p>Scenario 1: ZenML default local configuration</p></figcaption></figure>
 
-<figure><img src="../../.gitbook/assets/Scenario1.png" alt=""><figcaption><p>ZenML default local configuration</p></figcaption></figure>
-{% endtab %}
+The SQLite **Database** that you can see in this diagram is used to store information about pipelines, pipeline runs, stacks and other configurations. In the previous pages we have used the `zenml up` command to spin up a local rest server to serve the dashboard as well. The diagram for this will look as follows:
 
-{% tab title="Local Server" %}
+<figure><img src="../../.gitbook/assets/Scenario2.png" alt="" width="375"><figcaption><p>Scenario 2: ZenML with a local REST Server</p></figcaption></figure>
 
+In order to move into production, you will need to deploy this server somewhere centrally so that multiple users can interact with it. This is also important because some stack components will also need to communicate with the ZenML server.
 
-<figure><img src="../../.gitbook/assets/Scenario2.png" alt=""><figcaption></figcaption></figure>
-{% endtab %}
+<figure><img src="../../.gitbook/assets/Scenario3.png" alt="" width="375"><figcaption><p>Scenario 3: Deployed ZenML Server</p></figcaption></figure>
 
-{% tab title="Remote Server" %}
-<figure><img src="../../.gitbook/assets/Scenario3.png" alt=""><figcaption></figcaption></figure>
-{% endtab %}
-{% endtabs %}
+### Connect your client to the server
 
+In Scenario 2 the `zenml up` command implicitly connects the client to the server. When ZenML is deployed remotely, the client needs to be explicitly connected. This is how you do it:
+
+```bash
+zenml connect --url https://<your-own-deployment> --username default
+```
+
+You will be prompted for your password:
+
+```bash
+Connecting to: 'https://<your-own-deployment>'...
+Password for user zenml (press ENTER for empty password) []:
+```
+
+And just like that your client should be connected to the server. You can simply verify this by running `zenml status`
+
+```bash
+Using configuration from: '/home/apenner/.config/zenml'
+Local store files are located at: '/home/apenner/.config/zenml/local_stores'
+Connected to a ZenML server: '<your-own-deployment>'
+The current user is: 'zenml'
+The active workspace is: 'default' (global)
+The active stack is: 'default' (global)
+```
