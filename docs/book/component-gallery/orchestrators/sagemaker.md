@@ -126,7 +126,7 @@ They can then be applied to a step as follows:
 @step(settings = { "orchestrator.sagemaker": sagemaker_orchestrator_settings })
 ```
 
-For example, if your ZenML component is configured to use `ml.c5.xlarge` with 400GB additional storage by default; all steps will use it except for the step above, which will use `ml.t3.medium` with 30GB additional storage.
+For example, if your ZenML component is configured to use `ml.c5.xlarge` with 400GB additional storage by default, all steps will use it except for the step above, which will use `ml.t3.medium` with 30GB additional storage.
 
 Check out the [this docs page](../..//advanced-guide/pipelines/settings.md)
 for more information on how to specify settings in general.
