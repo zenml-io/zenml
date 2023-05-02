@@ -16,6 +16,7 @@
 import tempfile
 from typing import (
     Any,
+    Type,
 )
 
 from catboost import CatBoostClassifier, CatBoostRegressor
@@ -38,7 +39,6 @@ from sklearn.ensemble import (
 )
 from sklearn.gaussian_process import GaussianProcessClassifier
 from sklearn.kernel_ridge import KernelRidge
-
 from sklearn.linear_model import (
     ARDRegression,
     BayesianRidge,
