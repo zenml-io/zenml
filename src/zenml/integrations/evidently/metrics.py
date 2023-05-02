@@ -336,6 +336,7 @@ class EvidentlyMetricConfig(BaseModel):
         metric_class = self.get_metric_class(self.class_path)
 
         if self.is_generator:
+
             try:
                 return generate_column_metrics(
                     metric_class=metric_class,

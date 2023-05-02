@@ -115,6 +115,7 @@ if sys.platform == "win32":
         "Daemon functionality is currently not supported on Windows."
     )
 else:
+
     CHILD_PROCESS_WAIT_TIMEOUT = 5
 
     def terminate_children() -> None:

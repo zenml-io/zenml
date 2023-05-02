@@ -101,9 +101,7 @@ def create_sample_team() -> TeamResponseModel:
     return Client().create_team(name=sample_team_name())
 
 
-def test_parse_name_and_extra_arguments_returns_a_dict_of_known_options() -> (
-    None
-):
+def test_parse_name_and_extra_arguments_returns_a_dict_of_known_options() -> None:
     """Check that parse_name_and_extra_arguments returns a dict of known options."""
     name, parsed_sample_args = parse_name_and_extra_arguments(
         SAMPLE_CUSTOM_ARGUMENTS

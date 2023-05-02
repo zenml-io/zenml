@@ -123,6 +123,7 @@ class PandasMaterializer(BaseMaterializer):
         super().save(df)
 
         if isinstance(df, pd.Series):
+
             df = df.to_frame(name="series")
 
         if self.pyarrow_exists:

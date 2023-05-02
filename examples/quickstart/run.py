@@ -39,6 +39,7 @@ from zenml.model_registries.base_model_registry import (
 
 
 def main():
+
     # initialize and run the training pipeline
     training_pipeline_instance = training_pipeline(
         training_data_loader=training_data_loader(),

@@ -103,6 +103,7 @@ def docs(root_domain: str, ignore_passing: bool) -> None:
 
             Console().print(text, style=style)
         elif not ignore_passing:
+
             style = "green"
 
             text = (
@@ -125,6 +126,7 @@ def docs(root_domain: str, ignore_passing: bool) -> None:
 
             Console().print(text, style=style)
         elif not ignore_passing:
+
             style = "green"
 
             text = (
@@ -174,6 +176,7 @@ def logos(ignore_passing: bool) -> None:
         _verify_image_not_corrupt(r, flavor)
 
         if not ignore_passing:
+
             style = "green"
 
             text = (

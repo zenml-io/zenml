@@ -42,6 +42,7 @@ from zenml.services import (
 from zenml.services.service import BaseDeploymentService
 
 if TYPE_CHECKING:
+
     from zenml.integrations.kserve.model_deployers.kserve_model_deployer import (  # noqa
         KServeModelDeployer,
     )

@@ -153,6 +153,7 @@ def up(
     with event_handler(
         AnalyticsEvent.ZENML_SERVER_STARTED
     ) as analytics_handler:
+
         from zenml.zen_server.deploy.deployer import ServerDeployer
         from zenml.zen_stores.sql_zen_store import SQLDatabaseDriver
 

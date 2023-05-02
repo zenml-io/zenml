@@ -144,6 +144,7 @@ def exec_in_deployment(
         sys.exit(1)
 
     with deployment.connect():
+
         print(
             f"Running ZenML CLI command in test deployment '{name}': 'zenml {' '.join(args[1:])}'"
         )

@@ -421,6 +421,7 @@ def update_stack(
     client = Client()
 
     with console.status("Updating stack...\n"):
+
         updates: Dict[StackComponentType, List[Union[str, UUID]]] = dict()
         if artifact_store:
             updates[StackComponentType.ARTIFACT_STORE] = [artifact_store]
@@ -814,6 +815,7 @@ def delete_stack(
         client = Client()
 
         if recursive and recursive_confirmation:
+
             client.delete_stack(stack_name_or_id, recursive=True)
             return
 

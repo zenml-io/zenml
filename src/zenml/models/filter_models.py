@@ -404,6 +404,7 @@ class BaseFilterModel(BaseModel):
         list_of_filters: List[Filter] = []
 
         for key, value in values.items():
+
             # Ignore excluded filters
             if key in cls.FILTER_EXCLUDE_FIELDS:
                 continue

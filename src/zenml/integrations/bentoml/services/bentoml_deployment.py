@@ -38,6 +38,7 @@ from zenml.services import (
 from zenml.services.service import BaseDeploymentService
 
 if TYPE_CHECKING:
+
     from zenml.integrations.bentoml.model_deployers.bentoml_model_deployer import (  # noqa
         BentoMLModelDeployer,
     )
@@ -170,6 +171,7 @@ class BentoMLDeploymentService(LocalDaemonService, BaseDeploymentService):
             isinstance(config, BentoMLDeploymentConfig)
             and "endpoint" not in attrs
         ):
+
             endpoint = BentoMLDeploymentEndpoint(
                 config=BentoMLDeploymentEndpointConfig(
                     protocol=ServiceEndpointProtocol.HTTP,

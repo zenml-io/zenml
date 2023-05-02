@@ -167,6 +167,7 @@ class AWSSecretsStore(BaseSecretsStore):
             The AWS Secrets Manager client.
         """
         if self._client is None:
+
             # Initialize the AWS Secrets Manager client with the
             # credentials from the configuration, if provided.
             self._client = boto3.client(

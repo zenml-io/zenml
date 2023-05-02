@@ -20,11 +20,9 @@ from zenml.steps import Output, step
 
 
 @step
-def importer_mnist() -> (
-    Output(
-        train_dataloader=DataLoader,
-        test_dataloader=DataLoader,
-    )
+def importer_mnist() -> Output(
+    train_dataloader=DataLoader,
+    test_dataloader=DataLoader,
 ):
     """Download the Fashion MNIST dataset."""
     # Download training data from open datasets.

@@ -517,6 +517,7 @@ class KServeModelDeployer(BaseModelDeployer):
         secret_name = config.secret_name or self.config.secret
 
         if secret_name:
+
             if config.secret_name:
                 secret_source = "model deployment"
             else:
@@ -546,12 +547,14 @@ class KServeModelDeployer(BaseModelDeployer):
             credentials = zenml_secret.secret_values
 
         else:
+
             # if no secret is configured, try to fetch credentials from the
             # active artifact store and convert them into the appropriate format
             # expected by KServe
             converted_secret = self._convert_artifact_store_secret()
 
             if not converted_secret:
+
                 # If a secret and service account were previously configured, we
                 # need to delete them before we can proceed
                 if config.k8s_service_account:
@@ -631,6 +634,7 @@ class KServeModelDeployer(BaseModelDeployer):
             ) = artifact_store.get_credentials()
 
             if aws_access_key_id and aws_secret_access_key:
+
                 # Convert the credentials into the format expected by KServe
                 zenml_secret = KServeS3SecretSchema(
                     name="",
@@ -672,6 +676,7 @@ class KServeModelDeployer(BaseModelDeployer):
             gcp_credentials = artifact_store.get_credentials()
 
             if gcp_credentials:
+
                 # Convert the credentials into the format expected by KServe
                 return KServeGSSecretSchema(
                     name="",
@@ -710,6 +715,7 @@ class KServeModelDeployer(BaseModelDeployer):
                         azure_tenant_id=azure_credentials.tenant_id,
                     )
                 else:
+
                     logger.warning(
                         "The KServe model deployer could not use the "
                         "credentials currently configured in the active Azure "

@@ -132,7 +132,7 @@ class ZenMLCLI(click.Group):
                 )
             )
             rows: List[Tuple[str, str, str]] = []
-            for tag, subcommand, cmd in commands:
+            for (tag, subcommand, cmd) in commands:
                 help_ = cmd.get_short_help_str(limit=formatter.width)
                 rows.append((tag.value, subcommand, help_))
             if rows:

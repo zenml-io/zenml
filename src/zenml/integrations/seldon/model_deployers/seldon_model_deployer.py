@@ -191,6 +191,7 @@ class SeldonModelDeployer(BaseModelDeployer):
         # if a Kubernetes secret was explicitly configured in the model
         # deployer, use that instead of creating a new one
         if self.config.kubernetes_secret_name:
+
             logger.warning(
                 "Your Seldon Core model deployer is configured to use a "
                 "pre-existing Kubernetes secret that holds credentials needed "
@@ -209,6 +210,7 @@ class SeldonModelDeployer(BaseModelDeployer):
         # if a ZenML secret reference was configured in the model deployer,
         # create a Kubernetes secret from that
         if self.config.secret:
+
             logger.warning(
                 "Your Seldon Core model deployer is configured to use a "
                 "ZenML secret that holds credentials needed to access the "
@@ -235,6 +237,7 @@ class SeldonModelDeployer(BaseModelDeployer):
             )
 
         else:
+
             # if no ZenML secret was configured, try to convert the credentials
             # configured for the artifact store, if any are included, into
             # the format expected by Seldon Core
@@ -312,6 +315,7 @@ class SeldonModelDeployer(BaseModelDeployer):
             gcp_credentials = artifact_store.get_credentials()
 
             if gcp_credentials:
+
                 # Convert the credentials into the format expected by Seldon
                 # Core
                 if gcp_credentials.get("type") == "service_account":
@@ -722,6 +726,7 @@ class SeldonModelDeployer(BaseModelDeployer):
         service.stop(timeout=timeout, force=force)
 
         if service.config.secret_name:
+
             # delete the Kubernetes secret used to store the authentication
             # information for the Seldon Core model server storage initializer
             # if no other Seldon Core model servers are using it

@@ -538,6 +538,7 @@ class LabelStudioAnnotator(BaseAnnotator, AuthenticationMixin):
             gcp_credentials = artifact_store.get_credentials()
 
             if gcp_credentials:
+
                 # Save the credentials to a file in secure location, because
                 # Label Studio will need to read it from a file
                 secret_folder = Path(
@@ -600,6 +601,7 @@ class LabelStudioAnnotator(BaseAnnotator, AuthenticationMixin):
                     azure_credentials.account_name is not None
                     and azure_credentials.account_key is not None
                 ):
+
                     params.azure_account_name = azure_credentials.account_name
                     params.azure_account_key = azure_credentials.account_key
 
@@ -622,6 +624,7 @@ class LabelStudioAnnotator(BaseAnnotator, AuthenticationMixin):
             )
 
         elif artifact_store.flavor == "local":
+
             from zenml.artifact_stores.local_artifact_store import (
                 LocalArtifactStore,
             )

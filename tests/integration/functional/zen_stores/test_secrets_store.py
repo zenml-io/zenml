@@ -361,6 +361,7 @@ def test_update_secret_name_fails_if_exists_in_workspace():
 
     with SecretContext() as secret:
         with SecretContext() as other_secret:
+
             saved_secret = store.get_secret(secret_id=secret.id)
             assert saved_secret.name == secret.name
 
@@ -399,6 +400,7 @@ def test_update_user_secret_name_succeeds_if_exists_in_workspace():
 
     with SecretContext(scope=SecretScope.USER) as secret:
         with SecretContext() as other_secret:
+
             saved_secret = store.get_secret(secret_id=secret.id)
             assert saved_secret.name == secret.name
 
@@ -461,6 +463,7 @@ def test_update_workspace_secret_name_succeeds_if_exists_for_a_user():
 
     with SecretContext() as secret:
         with SecretContext(scope=SecretScope.USER) as other_secret:
+
             saved_secret = store.get_secret(secret_id=secret.id)
             assert saved_secret.name == secret.name
 
@@ -525,6 +528,7 @@ def test_reusing_user_secret_name_succeeds():
     store = client.zen_store
 
     with SecretContext(scope=SecretScope.USER) as secret:
+
         all_secrets = store.list_secrets(
             SecretFilterModel(name=secret.name)
         ).items
@@ -551,6 +555,7 @@ def test_reusing_user_secret_name_succeeds():
             with SecretContext(
                 secret_name=secret.name, scope=SecretScope.USER
             ) as other_secret:
+
                 all_secrets = other_store.list_secrets(
                     SecretFilterModel(name=secret.name),
                 ).items
@@ -596,6 +601,7 @@ def test_update_scope_succeeds():
     store = client.zen_store
 
     with SecretContext() as secret:
+
         saved_secret = store.get_secret(secret_id=secret.id)
         assert saved_secret.name == secret.name
         assert saved_secret.scope == SecretScope.WORKSPACE
@@ -737,6 +743,7 @@ def test_update_scope_fails_if_name_already_in_scope():
         with SecretContext(
             secret_name=secret.name, scope=SecretScope.USER
         ) as other_secret:
+
             all_secrets = store.list_secrets(
                 SecretFilterModel(name=secret.name)
             ).items
@@ -884,6 +891,7 @@ def test_user_secret_is_not_visible_to_other_users():
         with SecretContext(
             scope=SecretScope.USER, secret_name=secret.name
         ) as user_secret:
+
             all_secrets = store.list_secrets(
                 SecretFilterModel(name=secret.name)
             ).items
@@ -979,6 +987,7 @@ def test_workspace_secret_is_not_visible_to_other_workspaces():
         assert len(user_secrets) == 0
 
         with WorkspaceContext(activate=True):
+
             all_secrets = store.list_secrets(
                 SecretFilterModel(name=secret.name)
             ).items
@@ -1066,6 +1075,7 @@ def test_user_secret_is_not_visible_to_other_workspaces():
         with SecretContext(
             scope=SecretScope.USER, secret_name=secret.name
         ) as user_secret:
+
             all_secrets = store.list_secrets(
                 SecretFilterModel(name=secret.name)
             ).items
@@ -1094,6 +1104,7 @@ def test_user_secret_is_not_visible_to_other_workspaces():
             assert user_secret.id == user_secrets[0].id
 
             with WorkspaceContext(activate=True) as workspace:
+
                 all_secrets = store.list_secrets(
                     SecretFilterModel(name=secret.name)
                 ).items
@@ -1168,6 +1179,7 @@ def test_list_secrets_filter():
     ) as secret_three, SecretContext(
         secret_name=axl_secret_name, scope=SecretScope.USER
     ) as secret_four:
+
         all_secrets = store.list_secrets(SecretFilterModel()).items
         assert len(all_secrets) >= 4
         assert set(
@@ -1319,6 +1331,7 @@ def test_list_secrets_pagination_and_sorting():
         secret_name=f"axls-spots-{suffix}",
         scope=SecretScope.USER,
     ) as secret_four:
+
         secrets = store.list_secrets(
             SecretFilterModel(
                 name=f"endswith:{suffix}",
@@ -1581,6 +1594,7 @@ def test_secret_values_cannot_be_accessed_by_readonly_user():
     # Switch to a different user with read-write access
     password = random_str(32)
     with UserContext(password=password, login=True) as user:
+
         client = Client()
         store = client.zen_store
 
@@ -1588,6 +1602,7 @@ def test_secret_values_cannot_be_accessed_by_readonly_user():
         with SecretContext() as secret, SecretContext(
             scope=SecretScope.USER
         ) as user_secret:
+
             all_secrets = store.list_secrets(SecretFilterModel()).items
             assert len(all_secrets) >= 2
             assert secret.id in [s.id for s in all_secrets]
@@ -1635,6 +1650,7 @@ def test_secret_values_cannot_be_accessed_by_readonly_user():
             with UserContext(
                 user_name=user.name, password=password, existing_user=True
             ):
+
                 all_secrets = store.list_secrets(SecretFilterModel()).items
                 assert len(all_secrets) >= 2
                 assert secret.id in [s.id for s in all_secrets]
@@ -1679,6 +1695,7 @@ def test_secrets_cannot_be_created_or_updated_by_readonly_user():
     # Switch to a different user with read-write access
     password = random_str(32)
     with UserContext(password=password, login=True) as user:
+
         client = Client()
         store = client.zen_store
 
@@ -1686,6 +1703,7 @@ def test_secrets_cannot_be_created_or_updated_by_readonly_user():
         with SecretContext() as secret, SecretContext(
             scope=SecretScope.USER
         ) as user_secret:
+
             with does_not_raise():
                 store.update_secret(
                     secret.id, SecretUpdateModel(name=f"{secret.name}-new")
@@ -1747,6 +1765,7 @@ def test_secrets_cannot_be_created_or_updated_by_readonly_user():
             with UserContext(
                 user_name=user.name, password=password, existing_user=True
             ):
+
                 new_client = Client()
                 new_store = new_client.zen_store
 
@@ -1806,6 +1825,7 @@ def test_secret_is_deleted_with_workspace():
         assert secret.id == workspace_secrets[0].id
 
         with WorkspaceContext(activate=True) as workspace:
+
             all_secrets = store.list_secrets(
                 SecretFilterModel(name=secret.name)
             ).items
@@ -1821,6 +1841,7 @@ def test_secret_is_deleted_with_workspace():
             assert len(workspace_secrets) == 0
 
             with SecretContext(secret_name=secret.name) as other_secret:
+
                 with does_not_raise():
                     store.get_secret(other_secret.id)
 
@@ -1900,6 +1921,7 @@ def test_secret_is_deleted_with_user():
             with SecretContext(
                 secret_name=secret.name, scope=SecretScope.USER, delete=False
             ) as other_secret:
+
                 with does_not_raise():
                     other_store.get_secret(other_secret.id)
 

@@ -21,6 +21,7 @@ from steps.normalizer.normalizer_step import normalizer
 from steps.trainer.trainer_step import TrainerParameters, tf_trainer
 
 if __name__ == "__main__":
+
     # Initialize a pipeline run
     run_1 = wandb_example_pipeline(
         importer=importer_mnist(),

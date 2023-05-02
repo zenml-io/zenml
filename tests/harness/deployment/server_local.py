@@ -61,6 +61,7 @@ class ServerLocalTestDeployment(BaseTestDeployment):
         # Managing the local server deployment is done through a default
         # local deployment with the same config.
         with self.default_deployment.connect():
+
             deployer = ServerDeployer()
             servers = deployer.list_servers(
                 provider_type=ServerProviderType.LOCAL
@@ -103,6 +104,7 @@ class ServerLocalTestDeployment(BaseTestDeployment):
             pass
 
         if self.is_running:
+
             logging.info(
                 f"Deployment '{self.config.name}' is already running. "
                 f"Skipping provisioning."
@@ -114,6 +116,7 @@ class ServerLocalTestDeployment(BaseTestDeployment):
         # Managing the local server deployment is done through the default
         # deployment with the same config.
         with self.default_deployment.connect():
+
             port = scan_for_available_port(LOCAL_ZENML_SERVER_DEFAULT_PORT)
 
             if port is None:
@@ -147,6 +150,7 @@ class ServerLocalTestDeployment(BaseTestDeployment):
         # Managing the local server deployment is done through the default
         # deployment with the same config.
         with self.default_deployment.connect():
+
             deployer = ServerDeployer()
             deployer.remove_server(server.config.name)
 
