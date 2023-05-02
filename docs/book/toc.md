@@ -11,8 +11,9 @@
 * [🐣 Starter Guide](user-guide/starter-guide/README.md)
   * [Start with the Basics](user-guide/starter-guide/create-your-first-ml-pipeline.md)
   * [Create an ML Pipeline](user-guide/starter-guide/configure-and-interact-with-pipelines.md)
-  * [Understand your stack](user-guide/starter-guide/using-and-switching-stacks.md)
-  * [Go from local to remote](user-guide/starter-guide/transition-to-the-cloud.md)
+  * [Understand the default stack](user-guide/starter-guide/using-and-switching-stacks.md)
+  * [Connect to a deployed ZenML](user-guide/starter-guide/transition-to-the-cloud.md)
+  * [Use a remote stack](user-guide/starter-guide/use-a-remote-stack.md)
   * [Join forces with other users](user-guide/starter-guide/collaborate-with-your-team.md)
 * [🐔 Advanced Guide](user-guide/advanced-guide/README.md)
   * [Configure steps/pipelines](user-guide/advanced-guide/configure-steps-and-pipelines.md)
@@ -49,7 +50,7 @@
 
 ## Learning
 
-* [🚀 Quickstart](https://github.com/zenml-io/zenml/blob/cb1bcbda58df06e057fd0a152b4ba3facf9c2d59/examples/quickstart/README.md)
+* [Quickstart](https://github.com/zenml-io/zenml/blob/cb1bcbda58df06e057fd0a152b4ba3facf9c2d59/examples/quickstart/README.md)
 * [🧩 Examples](learning/examples/README.md)
   * [Build a LLM-powered Community Slack Bot](learning/examples/build-a-llm-powered-community-slack-bot.md)
   * [Summarize news articles with NLP](learning/examples/summarize-news-articles-with-nlp.md)
@@ -131,13 +132,13 @@
 
 * [🤷 CLI & API reference](https://apidocs.zenml.io/)
 * [💜 Community & Contents](reference/community-and-content.md)
-* [❓ FAQ](reference/faq.md)
+* [🙋 FAQ](learning/faq.md)
 
 ## Doc Orphanage
 
-* [💯 Best Practices](doc-orphanage/best-practices.md)
+* [Best Practices](doc-orphanage/best-practices.md)
 * [Global Config](doc-orphanage/global-config.md)
 * [System Environmental Variables](doc-orphanage/system-environmental-variables.md)
 * [Usage Analytics](doc-orphanage/usage-analytics.md)
 * [Discover the dashboard](doc-orphanage/discover-the-dashboard.md)
-* [📋 Glossary](doc-orphanage/glossary.md)
+* [📋 Glossary](learning/glossary.md)

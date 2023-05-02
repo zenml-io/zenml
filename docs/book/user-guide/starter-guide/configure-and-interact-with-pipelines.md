@@ -17,7 +17,7 @@ from zenml.pipelines.new import pipeline
 from zenml.steps import Output, step
 ```
 
-## Multiple Outputs
+### Multiple Outputs
 
 Sometimes a step will have multiple outputs. In order to give each output a unique name, use the `Output()` Annotation. Here we load an open source dataset and split it into a train and a test dataset.
 
@@ -65,7 +65,7 @@ svc_trainer.entrypoint(X_train=..., y_train=...)
 ```
 {% endhint %}
 
-## Pipeline
+### Pipeline
 
 Next, we will combine our two steps into a pipeline and run it. As you can see here, the parameter gamma is configurable as a pipeline input.&#x20;
 

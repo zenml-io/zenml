@@ -2,7 +2,7 @@
 description: Best practices, recommendations, and tips from the ZenML team
 ---
 
-# 💯 Best Practices
+# Best Practices
 
 * [ ] I believe this page should go to the end of the started guide or the beginning of the advanced guide
 

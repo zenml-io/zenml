@@ -2,7 +2,7 @@
 description: Find answers to the most frequently asked questions about ZenML
 ---
 
-# ❓ FAQ
+# 🙋 FAQ
 
 #### Is ZenML just another orchestrator like Airflow, Kubeflow, Flyte, etc?
 

@@ -18,7 +18,7 @@ description: How to create ML pipelines in ZenML
 
 ZenML helps you standardize your ML workflows as **Pipelines** consisting of decoupled, modular **Steps**. This enables you to write portable code that can be moved from experimentation to production in seconds.
 
-## Pipeline
+### Pipeline
 
 The simplest ZenML pipeline could look like this:
 
@@ -78,7 +78,7 @@ Pipeline visualization can be seen in the ZenML Dashboard. Run zenml up to see y
 
 ZenML offers you a comprehensive Dashboard to interact with your Pipelines, Artifacts and Infrastructure. To see it, simply deploy the ZenML service locally in the next section.
 
-#### Explore the Dashboard
+### Explore the Dashboard
 
 Run `zenml up` in the environment where you have ZenML installed.
 
