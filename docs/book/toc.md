@@ -2,9 +2,9 @@
 
 ## Getting Started
 
-* [Introduction](introduction.md)
-* [Installation](getting-started/installation.md)
-* [Core Concepts](getting-started/core-concepts.md)
+* [⭐ Introduction](introduction.md)
+* [🧙♂ Installation](getting-started/installation.md)
+* [🪄 Core Concepts](getting-started/core-concepts.md)
 
 ## User Guide
 
@@ -49,15 +49,12 @@
 
 ## Learning
 
-* [Quickstart](https://github.com/zenml-io/zenml/blob/cb1bcbda58df06e057fd0a152b4ba3facf9c2d59/examples/quickstart/README.md)
+* [🚀 Quickstart](https://github.com/zenml-io/zenml/blob/cb1bcbda58df06e057fd0a152b4ba3facf9c2d59/examples/quickstart/README.md)
 * [🧩 Examples](learning/examples/README.md)
   * [Build a LLM-powered Community Slack Bot](learning/examples/build-a-llm-powered-community-slack-bot.md)
   * [Summarize news articles with NLP](learning/examples/summarize-news-articles-with-nlp.md)
   * [Automated hyper-parameter tuning with CI/CD](learning/examples/automated-hyper-parameter-tuning-with-ci-cd.md)
-* [🙋 FAQ](learning/faq.md)
-* [📋 Glossary](learning/glossary.md)
-* [Component Galery](learning/component-galery.md)
-  * [Categories of MLOps Tools](learning/component-gallery/categories.md)
+* [📜 Component Gallery](learning/component-galery.md)
   * [Integration Overview](learning/component-gallery/integrations.md)
   * [Orchestrators](learning/component-gallery/orchestrators/orchestrators.md)
     * [Local Orchestrator](learning/component-gallery/orchestrators/local.md)
@@ -130,20 +127,17 @@
     * [MLflow Model Registry](learning/component-gallery/model-registries/mlflow.md)
     * [Develop a Custom Model Registry](learning/component-gallery/model-registries/custom.md)
 
-***
+## Reference
 
-* [Reference](reference/README.md)
-  * [API reference](reference/api-reference.md)
-  * [ZenML CLI](reference/zenml-cli.md)
-  * [Python SDK](reference/python-sdk.md)
+* [🤷 CLI & API reference](https://apidocs.zenml.io/)
+* [💜 Community & Contents](reference/community-and-content.md)
+* [❓ FAQ](reference/faq.md)
 
 ## Doc Orphanage
 
-* [Best Practices](doc-orphanage/best-practices.md)
-* [Community and Contents](doc-orphanage/community-and-content.md)
-* [Examples and Use Cases](doc-orphanage/examples-and-use-cases.md)
+* [💯 Best Practices](doc-orphanage/best-practices.md)
 * [Global Config](doc-orphanage/global-config.md)
-* [Migration Zero Twenty](doc-orphanage/migration-zero-twenty.md)
 * [System Environmental Variables](doc-orphanage/system-environmental-variables.md)
 * [Usage Analytics](doc-orphanage/usage-analytics.md)
 * [Discover the dashboard](doc-orphanage/discover-the-dashboard.md)
+* [📋 Glossary](doc-orphanage/glossary.md)

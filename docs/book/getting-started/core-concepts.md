@@ -1,8 +1,8 @@
 ---
-description: What are the core concepts in ZenML
+description: Understanding the core concepts behind ZenML.
 ---
 
-# Core Concepts
+# 🪄 Core Concepts
 
 * [ ] Here we could maybe talk more from a non zenml point of view? MLOps concepts -> then show where ZenML slots in?
 
