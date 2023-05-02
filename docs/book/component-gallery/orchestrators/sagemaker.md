@@ -179,7 +179,7 @@ In the simple case, data in `/opt/ml/processing/output` will be copied to S3 at 
 ```python
 sagemaker_orchestrator_settings = SagemakerOrchestratorSettings(
     "output_data_s3_mode": "EndOfJob",
-    "output_data_s3_uri": "s3://some-results-bucket-name/testing_data"
+    "output_data_s3_uri": "s3://some-results-bucket-name/results"
 )
 ```
 
