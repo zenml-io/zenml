@@ -19,9 +19,9 @@ from typing import (
     Type,
 )
 
-from catboost import CatBoostClassifier, CatBoostRegressor # type: ignore
+from catboost import CatBoostClassifier, CatBoostRegressor  # type: ignore
 from lightgbm import LGBMClassifier, LGBMRegressor
-from pycaret.classification import load_model, save_model # type: ignore
+from pycaret.classification import load_model, save_model  # type: ignore
 from sklearn.discriminant_analysis import (
     LinearDiscriminantAnalysis,
     QuadraticDiscriminantAnalysis,
