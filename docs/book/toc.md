@@ -13,7 +13,7 @@
   * [Create an ML Pipeline](user-guide/starter-guide/configure-and-interact-with-pipelines.md)
   * [Understand the default stack](user-guide/starter-guide/using-and-switching-stacks.md)
   * [Connect to a deployed ZenML](user-guide/starter-guide/transition-to-the-cloud.md)
-  * [Use a remote stack](user-guide/starter-guide/use-a-remote-stack.md)
+  * [Switch to a remote stack](user-guide/starter-guide/switch-to-a-remote-stack.md)
   * [Join forces with other users](user-guide/starter-guide/collaborate-with-your-team.md)
 * [🐔 Advanced Guide](user-guide/advanced-guide/README.md)
   * [Configure steps/pipelines](user-guide/advanced-guide/configure-steps-and-pipelines.md)

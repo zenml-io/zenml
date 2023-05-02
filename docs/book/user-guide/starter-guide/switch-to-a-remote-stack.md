@@ -1,8 +1,12 @@
-# Use a remote stack
+---
+description: Bring your pipelines into production using cloud stacks.
+---
 
-...
+# Switch to a remote stack
 
-...
+This page assumes that you are connected to a ZenML Deployment. If this is not the case please consult the explanations of what this means [here](switch-to-a-remote-stack.md) or learn how to deploy ZenML [here](../../platform-guide/set-up-your-mlops-platform/).
+
+
 
 ...
 
@@ -16,8 +20,8 @@ Out-of-the-box, ZenML already comes with a wide variety of flavors, which are ei
 
 You can combine various MLOps tools into a ZenML stack as follows:
 
-1. [Register a stack component](use-a-remote-stack.md#registering-stack-components) to configure each tool using `zenml <STACK_COMPONENT> register`.
-2. [Register a stack](use-a-remote-stack.md#registering-a-stack) to bring a particular combination of stack components together using `zenml stack register`.
+1. [Register a stack component](switch-to-a-remote-stack.md#registering-stack-components) to configure each tool using `zenml <STACK_COMPONENT> register`.
+2. [Register a stack](switch-to-a-remote-stack.md#registering-a-stack) to bring a particular combination of stack components together using `zenml stack register`.
 3. [Register a stack flavor](broken-reference/) to add a new tool to the ZenML flavor registry, if the tool you are looking for is not supported out-of-the-box, or if you want to modify standard behavior of standard flavors.
 
 In this guide, we will learn about the first two, while the last is a slightly [advanced topic covered later](broken-reference/).
@@ -96,7 +100,7 @@ Now all your code is automatically executed using this stack.
 
 ## Changing Stacks
 
-If you have multiple stacks configured, you can switch between them using the `zenml stack set` command, similar to how you [activate a stack](use-a-remote-stack.md#activating-a-stack).
+If you have multiple stacks configured, you can switch between them using the `zenml stack set` command, similar to how you [activate a stack](switch-to-a-remote-stack.md#activating-a-stack).
 
 ## Accessing the Active Stack in Python
 
