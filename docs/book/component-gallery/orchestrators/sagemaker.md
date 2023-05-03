@@ -98,7 +98,7 @@ want to enable scheduling for Sagemaker, please [do let us
 know](https://zenml.io/slack-invite)!
 
 ### Configuration at pipeline or step level
-When running your ZenML pipeline with the Sagemaker orchestrator, the configuration set when configuring the orchestrator as a ZenML component will be used by default. However, it is possible to provide additional configuration at [pipeline or step level](../../advanced-guide/pipelines/settings#how-to-use-settings). This allows you to run whole pipelines or individual steps with alternative configurations. For example, this allows you to run the training process with a heavier, GPU-enabled instance type, while running other steps with lighter instances.
+When running your ZenML pipeline with the Sagemaker orchestrator, the configuration set when configuring the orchestrator as a ZenML component will be used by default. However, it is possible to provide additional configuration at the [pipeline or step level](../../advanced-guide/pipelines/settings#how-to-use-settings). This allows you to run whole pipelines or individual steps with alternative configurations. For example, this allows you to run the training process with a heavier, GPU-enabled instance type, while running other steps with lighter instances.
 
 Additional configuration for the Sagemaker orchestrator can be passed via `SagemakerOrchestratorSettings`. Here, it is possible to configure `processor_args`, which is a dictionary of arguments for the Processor. For available arguments, see the [Sagemaker documentation](https://sagemaker.readthedocs.io/en/stable/api/training/processing.html#sagemaker.processing.Processor). Currently, it is not possible to provide custom configuration for the following attributes:
 
