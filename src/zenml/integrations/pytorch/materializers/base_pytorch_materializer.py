@@ -16,6 +16,7 @@
 import os
 from typing import Any, ClassVar, Type
 
+import cloudpickle
 import torch
 
 from zenml.io import fileio
@@ -40,7 +41,7 @@ class BasePyTorchMaterliazer(BaseMaterializer):
             The loaded PyTorch object.
         """
         with fileio.open(os.path.join(self.uri, self.FILENAME), "rb") as f:
-            return torch.load(f)
+            return torch.load(f, pickle_module=cloudpickle)
 
     def save(self, obj: Any) -> None:
         """Uses `torch.save` to save a PyTorch object.
@@ -49,4 +50,4 @@ class BasePyTorchMaterliazer(BaseMaterializer):
             obj: The PyTorch object to save.
         """
         with fileio.open(os.path.join(self.uri, self.FILENAME), "wb") as f:
-            torch.save(obj, f)
+            torch.save(obj, f, pickle_module=cloudpickle)

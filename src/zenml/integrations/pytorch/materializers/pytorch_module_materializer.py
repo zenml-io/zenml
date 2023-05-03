@@ -16,6 +16,7 @@
 import os
 from typing import TYPE_CHECKING, Any, ClassVar, Dict, Tuple, Type
 
+import cloudpickle
 import torch
 from torch.nn import Module
 
@@ -60,7 +61,7 @@ class PyTorchModuleMaterializer(BasePyTorchMaterliazer):
             with fileio.open(
                 os.path.join(self.uri, CHECKPOINT_FILENAME), "wb"
             ) as f:
-                torch.save(model.state_dict(), f)
+                torch.save(model.state_dict(), f, pickle_module=cloudpickle)
 
     def extract_metadata(self, model: Module) -> Dict[str, "MetadataType"]:
         """Extract metadata from the given `Model` object.
