@@ -19,7 +19,7 @@ import pytest
 
 from zenml.pipelines import pipeline
 from zenml.post_execution.pipeline import (
-    PipelineClassView,
+    PipelineVersionView,
     PipelineView,
     get_pipeline,
 )
@@ -96,13 +96,13 @@ def test_getting_pipeline_with_multiple_registered_versions(
     pipeline_instance_v2.run()
 
     post_execution_pipeline_v1 = get_pipeline(pipeline_instance_v1)
-    assert isinstance(post_execution_pipeline_v1, PipelineView)
+    assert isinstance(post_execution_pipeline_v1, PipelineVersionView)
     post_execution_pipeline_v2 = get_pipeline(pipeline_instance_v2)
     assert post_execution_pipeline_v1 != post_execution_pipeline_v2
-    assert isinstance(post_execution_pipeline_v2, PipelineView)
+    assert isinstance(post_execution_pipeline_v2, PipelineVersionView)
 
     post_execution_class_view = get_pipeline(one_step_pipeline.__name__)
-    assert isinstance(post_execution_class_view, PipelineClassView)
+    assert isinstance(post_execution_class_view, PipelineView)
     assert len(post_execution_class_view.versions) == 2
     assert get_pipeline(one_step_pipeline) == post_execution_class_view
 

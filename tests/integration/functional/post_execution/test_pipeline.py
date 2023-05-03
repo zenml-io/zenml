@@ -24,7 +24,7 @@ from tests.integration.functional.conftest import (
 )
 from zenml.pipelines.base_pipeline import BasePipeline
 from zenml.post_execution.pipeline import (
-    PipelineClassView,
+    PipelineVersionView,
     PipelineView,
     get_pipeline,
     get_pipelines,
@@ -60,7 +60,7 @@ def test_get_pipeline(clean_client, connected_two_step_pipeline):
 
     # Test getting existing pipeline by name
     pipeline1 = get_pipeline("connected_two_step_pipeline")
-    assert isinstance(pipeline1, PipelineClassView)
+    assert isinstance(pipeline1, PipelineView)
     assert pipeline1.name == "connected_two_step_pipeline"
 
     # Test getting existing pipeline by class
@@ -69,7 +69,7 @@ def test_get_pipeline(clean_client, connected_two_step_pipeline):
 
     # Test getting existing pipeline by instance
     pipeline3 = get_pipeline(pipeline_instance)
-    assert isinstance(pipeline3, PipelineView)
+    assert isinstance(pipeline3, PipelineVersionView)
     assert pipeline3.name == "connected_two_step_pipeline"
 
 

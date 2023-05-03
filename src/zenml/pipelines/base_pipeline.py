@@ -85,7 +85,11 @@ from zenml.utils.analytics_utils import AnalyticsEvent, event_handler
 if TYPE_CHECKING:
     from zenml.config.base_settings import SettingsOrDict
     from zenml.config.source import Source
-    from zenml.post_execution import PipelineRunView, PipelineView
+    from zenml.post_execution import (
+        PipelineRunView,
+        PipelineVersionView,
+        PipelineView,
+    )
 
     StepConfigurationUpdateOrDict = Union[
         Dict[str, Any], StepConfigurationUpdate
@@ -168,7 +172,7 @@ class GetRunsDescriptor:
         """
         from zenml.post_execution import get_pipeline
 
-        pipeline_view: PipelineView
+        pipeline_view: Union["PipelineVersionView", "PipelineView"]
         if instance is None:
             pipeline_view = get_pipeline(cls)
         else:

@@ -91,7 +91,7 @@ class PipelineRunView(BaseView):
         """Initializes a post-execution pipeline run object.
 
         In most cases `PipelineRunView` objects should not be created manually
-        but retrieved from a `PipelineView` object instead.
+        but retrieved from a `PipelineView` or `PipelineVersionView` instead.
 
         Args:
             model: The model to initialize this object from.

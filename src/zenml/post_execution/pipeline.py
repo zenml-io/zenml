@@ -32,7 +32,7 @@ logger = get_logger(__name__)
 
 
 @track(event=AnalyticsEvent.GET_PIPELINES)
-def get_pipelines() -> List["PipelineView"]:
+def get_pipelines() -> List["PipelineVersionView"]:
     """Fetches all post-execution pipeline views in the active workspace.
 
     Returns:
@@ -43,14 +43,14 @@ def get_pipelines() -> List["PipelineView"]:
         workspace_id=client.active_workspace.id,
         sort_by="desc:created",
     )
-    return [PipelineView(model) for model in pipelines.items]
+    return [PipelineVersionView(model) for model in pipelines.items]
 
 
 @track(event=AnalyticsEvent.GET_PIPELINE)
 def get_pipeline(
     pipeline: Union["BasePipeline", Type["BasePipeline"], str],
     version: Optional[str] = None,
-) -> Optional[Union["PipelineClassView", "PipelineView"]]:
+) -> Optional[Union["PipelineView", "PipelineVersionView"]]:
     """Fetches a post-execution pipeline view.
 
     Use it in one of these ways:
@@ -76,7 +76,7 @@ def get_pipeline(
             - If `pipeline` is a pipeline instance, this argument is ignored.
             - If `pipeline` is a pipeline class or name, then this argument
             specifies the version of the pipeline to return. If not given, a
-            `PipelineClassView` will be returned that contains all versions and
+            `PipelineView` will be returned that contains all versions and
             all runs of this pipeline name/class.
 
     Returns:
@@ -92,7 +92,7 @@ def get_pipeline(
     if isinstance(pipeline, BasePipeline):
         pipeline_model = pipeline._get_registered_model()
         if pipeline_model:
-            return PipelineView(model=pipeline_model)
+            return PipelineVersionView(model=pipeline_model)
         else:
             return None
 
@@ -108,10 +108,10 @@ def get_pipeline(
             f"instance of a class. Got type `{type(pipeline)}` instead."
         )
 
-    # If no version is given, return a `PipelineClassView` that contains all
+    # If no version is given, return a `PipelineView` that contains all
     # versions and all runs of this pipeline name/class.
     if version is None:
-        class_view = PipelineClassView(name=pipeline_name)
+        class_view = PipelineView(name=pipeline_name)
         if class_view.runs:
             return class_view
         return None
@@ -122,12 +122,12 @@ def get_pipeline(
         pipeline_model = client.get_pipeline(
             name_id_or_prefix=pipeline_name, version=version
         )
-        return PipelineView(model=pipeline_model)
+        return PipelineVersionView(model=pipeline_model)
     except KeyError:
         return None
 
 
-class PipelineClassView:
+class PipelineView:
     """Post-execution class for a pipeline name/class."""
 
     def __init__(self, name: str):
@@ -139,7 +139,7 @@ class PipelineClassView:
         self.name = name
 
     @property
-    def versions(self) -> List["PipelineView"]:
+    def versions(self) -> List["PipelineVersionView"]:
         """Returns all versions/instances of this pipeline name/class.
 
         Returns:
@@ -155,7 +155,7 @@ class PipelineClassView:
                 sort_by="desc:created",
             )
         )
-        return [PipelineView(model) for model in pipelines]
+        return [PipelineVersionView(model) for model in pipelines]
 
     @property
     def num_runs(self) -> int:
@@ -193,12 +193,12 @@ class PipelineClassView:
         Returns:
             Whether the other object is a pipeline class view with same name.
         """
-        if not isinstance(other, PipelineClassView):
+        if not isinstance(other, PipelineView):
             return False
         return self.name == other.name
 
 
-class PipelineView(BaseView):
+class PipelineVersionView(BaseView):
     """Post-execution class for a specific version/instance of a pipeline."""
 
     MODEL_CLASS: Type[BaseResponseModel] = PipelineResponseModel
