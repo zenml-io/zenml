@@ -131,7 +131,7 @@ class PyCaretMaterializer(BaseMaterializer):
             data_type: The type of the data to read.
 
         Returns:
-            A PyCaret  model.
+            A PyCaret model.
         """
         super().load(data_type)
 
