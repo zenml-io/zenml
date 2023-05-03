@@ -43,17 +43,19 @@ In this example, we define two hooks: `on_failure` and `on_success`, which print
 
 A step can also be specified as a local user-defined function path (of the form `mymodule.myfile.my_function`). This is particularly useful when defining the hooks via a [YAML Config](broken-reference).
 
-## Defining steps on a pipeline level
+## Defining hooks on a pipeline level
 
 In some cases, there is a need to define a hook on all steps of a given pipeline. Rather than having to define it on all steps individually, you can also specify any hook on the pipeline level.
-
-Note, that step-level defined hooks take precedence over pipeline-level defined hooks.
 
 ```python
 @pipeline(on_failure=on_failure, on_success=on_success)
 def my_pipeline(...):
     ...
 ```
+
+{% hint style="info" %}
+Note, that **step-level** defined hooks take **precedence** over **pipeline-leve**l defined hooks.
+{% endhint %}
 
 ## Accessing step information inside a hook
 
