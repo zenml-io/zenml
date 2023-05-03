@@ -42,21 +42,21 @@ class DeepchecksDatasetMaterializer(PandasMaterializer):
         df = super().load(data_type)
         return Dataset(df)
 
-    def save(self, df: Dataset) -> None:
+    def save(self, dataset: Dataset) -> None:
         """Serializes pandas dataframe within a `Dataset` object.
 
         Args:
-            df: A deepchecks.Dataset object.
+            dataset: A deepchecks.Dataset object.
         """
-        super().save(df.data)
+        super().save(dataset.data)
 
-    def extract_metadata(self, df: Dataset) -> Dict[str, "MetadataType"]:
+    def extract_metadata(self, dataset: Dataset) -> Dict[str, "MetadataType"]:
         """Extract metadata from the given `Dataset` object.
 
         Args:
-            df: The `Dataset` object to extract metadata from.
+            dataset: The `Dataset` object to extract metadata from.
 
         Returns:
             The extracted metadata as a dictionary.
         """
-        return super().extract_metadata(df.data)
+        return super().extract_metadata(dataset.data)
