@@ -48,6 +48,7 @@ EXCLUDED_RECIPE_DIRS = [""]
 STACK_RECIPES_GITHUB_REPO = "https://github.com/zenml-io/mlops-stacks.git"
 STACK_RECIPES_REPO_DIR = "zenml_stack_recipes"
 
+
 class LocalStackRecipe:
     """Class to encapsulate the local recipe that can be run from the CLI."""
 
@@ -143,7 +144,7 @@ class StackRecipe:
                     f"To list all available recipes, type: `zenml stack recipe "
                     f"list`"
                 )
-            
+
     @property
     def metadata(self) -> Dict[str, Any]:
         """Returns the metadata associated with a particular recipe.
@@ -383,7 +384,7 @@ class GitStackRecipesHandler(object):
 
     def pull(
         self,
-        branch: str,
+        branch: str = "main",
         force: bool = False,
     ) -> None:
         """Pulls the stack recipes from the main git stack recipes repository.
@@ -460,13 +461,14 @@ catch ky error and notexisterror(new) in the cli when the svc
 is initialized.
 """
 
+
 class StackRecipeServiceConfig(TerraformServiceConfig):
     """Class to represent the configuration of a stack recipe service."""
 
     STACK_RECIPES_CONFIG_PATH: ClassVar[str] = os.path.join(
         io_utils.get_global_config_directory(),
         "stack_recipes",
-        )
+    )
 
     # list of all enabled stack components
     enabled_services: List[str] = []
@@ -494,12 +496,13 @@ class StackRecipeService(TerraformService):
 
     config: StackRecipeServiceConfig
     stack_recipe_name: str
-
+    deployed: bool
 
     def __init__(
         self,
         stack_recipe_name: str,
         config: StackRecipeServiceConfig,
+        **kwargs,
     ):
         """Initializes the stack recipe service.
 
@@ -513,16 +516,19 @@ class StackRecipeService(TerraformService):
             str(config.directory_path)
         )
         if stack_recipe_service:
-            self.deployed = True
+            deployed = True
+            self = stack_recipe_service
         else:
-            self.deployed = False
-            stack_recipe_service = self(
+            deployed = False
+            super().__init__(
                 config=config,
+                stack_recipe_name=stack_recipe_name,
+                deployed=deployed,
+                **kwargs,
             )
-            super().__init__(config=config, stack_recipe_name=stack_recipe_name)
             self.stack_recipe_name = stack_recipe_name
 
-        return stack_recipe_service
+        self.deployed = deployed
 
     def local_recipe_exists(self) -> bool:
         """Checks if the local recipe exists.
@@ -557,9 +563,6 @@ class StackRecipeService(TerraformService):
 
         git_stack_recipes_handler.pull()
 
-        stack_recipes_dir = os.path.join(os.getcwd(), self.path)
-        io_utils.create_dir_if_not_exists(stack_recipes_dir)
-
         with event_handler(
             event=AnalyticsEvent.PULL_STACK_RECIPE,
             metadata={"stack_recipe_name": self.stack_recipe_name},
@@ -572,14 +575,18 @@ class StackRecipeService(TerraformService):
 
             logger.info(f"Pulling stack recipe {self.stack_recipe_name}...")
 
-            io_utils.create_dir_if_not_exists(self.config.directory_path)
+            io_utils.create_dir_recursive_if_not_exists(
+                self.config.directory_path
+            )
             stack_recipe = git_stack_recipes_handler.get_stack_recipes(
                 self.stack_recipe_name
             )[0]
             git_stack_recipes_handler.copy_stack_recipe(
                 stack_recipe, self.config.directory_path
             )
-            logger.info(f"Stack recipe pulled in directory: {self.config.directory_path}")
+            logger.info(
+                f"Stack recipe pulled in directory: {self.config.directory_path}"
+            )
             logger.info(
                 "\n Please edit the configuration values as you see fit, "
                 f"in the file: {os.path.join(self.config.directory_path, 'locals.tf')} "
@@ -594,12 +601,11 @@ class StackRecipeService(TerraformService):
                 logger.info("Copying modules folder...")
                 io_utils.copy_dir(
                     modules_dir,
-                    os.path.join(stack_recipes_dir, "modules"),
+                    os.path.join(
+                        os.path.dirname(self.config.directory_path), "modules"
+                    ),
                     True,
                 )
-
-
-
 
     def check_installation(self) -> None:
         """Checks if necessary tools are installed on the host system.
@@ -701,7 +707,9 @@ class StackRecipeService(TerraformService):
         from zenml.services import ServiceRegistry
 
         try:
-            for root, _, files in os.walk(str(StackRecipeServiceConfig.STACK_RECIPES_CONFIG_PATH)):
+            for root, _, files in os.walk(
+                str(StackRecipeServiceConfig.STACK_RECIPES_CONFIG_PATH)
+            ):
                 for file in files:
                     if file == SERVICE_CONFIG_FILE_NAME:
                         service_config_path = os.path.join(root, file)

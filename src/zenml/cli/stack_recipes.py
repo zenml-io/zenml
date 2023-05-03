@@ -51,6 +51,7 @@ NOT_INSTALLED_MESSAGE = (
 
 
 from zenml.recipes import GitStackRecipesHandler
+
 pass_git_stack_recipes_handler = click.make_pass_decorator(
     GitStackRecipesHandler, ensure=True
 )
@@ -258,9 +259,7 @@ def pull(
     )
 
     try:
-        stack_recipe = git_stack_recipes_handler.get_stack_recipes(
-            stack_recipe_name
-        )[0]
+        _ = git_stack_recipes_handler.get_stack_recipes(stack_recipe_name)[0]
     except KeyError as e:
         cli_utils.error(str(e))
 
@@ -269,7 +268,9 @@ def pull(
             stack_recipe_name=stack_recipe_name,
             config=StackRecipeServiceConfig(
                 force=force,
-                directory_path=str(Path(os.getcwd()) / path / stack_recipe_name),
+                directory_path=str(
+                    Path(os.getcwd()) / path / stack_recipe_name
+                ),
             ),
         )
         if stack_recipe_service.local_recipe_exists():
@@ -281,11 +282,23 @@ def pull(
                 "that you do this only once the remote resources have been "
                 "destroyed. Do you wish to proceed with overwriting?"
             ):
-                stack_recipe_service.pull(force=True)
+                stack_recipe_service.pull(
+                    force=True,
+                    git_stack_recipes_handler=git_stack_recipes_handler,
+                )
                 cli_utils.declare(
                     f"Stack recipe {stack_recipe_name} successfully "
                     f"overwritten at {stack_recipe_service.config.directory_path}."
                 )
+        else:
+            stack_recipe_service.pull(
+                force=force,
+                git_stack_recipes_handler=git_stack_recipes_handler,
+            )
+            cli_utils.declare(
+                f"Stack recipe {stack_recipe_name} successfully "
+                f"pulled at {stack_recipe_service.config.directory_path}."
+            )
 
 
 @stack_recipe.command(
@@ -544,14 +557,15 @@ def deploy(
 
             # get or create the stack recipe service.
             stack_recipe_service_config = StackRecipeServiceConfig(
-                directory_path=str(Path(os.getcwd()) / path / stack_recipe_name),
+                directory_path=str(
+                    Path(os.getcwd()) / path / stack_recipe_name
+                ),
                 skip_pull=skip_pull,
                 force=force,
                 log_level=log_level,
                 enabled_services=enabled_services,
                 input_variables=variables_dict,
             )
-
 
             stack_recipe_service = StackRecipeService(
                 stack_recipe_name=stack_recipe_name,
@@ -568,7 +582,7 @@ def deploy(
             try:
                 # start the service (the init and apply operation)
                 stack_recipe_service.start()
-            
+
             except RuntimeError as e:
                 cli_utils.error(
                     f"Running recipe {stack_recipe_name} failed: {str(e)} "
@@ -609,9 +623,7 @@ def deploy(
                     f"installation."
                 )
             else:
-                logger.info(
-                    "No remote deployment of ZenML detected. "
-                )
+                logger.info("No remote deployment of ZenML detected. ")
                 vars = stack_recipe_service.get_vars()
                 filter = [
                     "aws-stores-minimal",
@@ -665,12 +677,9 @@ def deploy(
                 "to import a new ZenML stack from the created "
                 "resources."
             )
-            import_stack_name = (
-                stack_name if stack_name else stack_recipe_name
-            )
+            import_stack_name = stack_name if stack_name else stack_recipe_name
             cli_utils.declare(
-                "Importing a new stack with the name "
-                f"{import_stack_name}."
+                "Importing a new stack with the name " f"{import_stack_name}."
             )
 
             # import deployed resources as ZenML stack
@@ -879,9 +888,7 @@ def destroy(
                 ]
             ]
 
-            stack_recipe_service.config.disabled_services = (
-                disabled_services
-            )
+            stack_recipe_service.config.disabled_services = disabled_services
 
             try:
                 # stop the service to destroy resources created by recipe
@@ -916,16 +923,12 @@ def destroy(
                 )
 
             cli_utils.declare(
-                "\n"
-                + "Your active stack might now be invalid. Please run:"
+                "\n" + "Your active stack might now be invalid. Please run:"
             )
-            text = Text(
-                "zenml stack describe", style="markdown.code_block"
-            )
+            text = Text("zenml stack describe", style="markdown.code_block")
             cli_utils.declare(text)
             cli_utils.declare(
-                "\n"
-                + "to investigate and switch to a new stack if needed."
+                "\n" + "to investigate and switch to a new stack if needed."
             )
 
 
