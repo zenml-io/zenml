@@ -217,7 +217,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                 inputs = [
                     ProcessingInput(
                         source=step_settings.input_data_s3_uri,
-                        destination="/opt/ml/processing/input",
+                        destination="/opt/ml/processing/input/data",
                         s3_input_mode=step_settings.input_data_s3_mode,
                     )
                 ]
@@ -227,7 +227,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                     inputs.append(
                         ProcessingInput(
                             source=s3_uri,
-                            destination=f"/opt/ml/processing/input/{channel}",
+                            destination=f"/opt/ml/processing/input/data/{channel}",
                             s3_input_mode=step_settings.input_data_s3_mode,
                         )
                     )
@@ -240,7 +240,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
             elif isinstance(step_settings.output_data_s3_uri, str):
                 outputs = [
                     ProcessingOutput(
-                        source="/opt/ml/processing/output",
+                        source="/opt/ml/processing/output/data",
                         destination=step_settings.output_data_s3_uri,
                         s3_upload_mode=step_settings.output_data_s3_mode,
                     )
@@ -253,7 +253,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                 ) in step_settings.output_data_s3_uri.items():
                     outputs.append(
                         ProcessingOutput(
-                            source=f"/opt/ml/processing/output/{channel}",
+                            source=f"/opt/ml/processing/output/data/{channel}",
                             destination=s3_uri,
                             s3_upload_mode=step_settings.output_data_s3_mode,
                         )

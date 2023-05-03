@@ -154,7 +154,7 @@ sagemaker_orchestrator_settings = SagemakerOrchestratorSettings(
 )
 ```
 
-In this case, data will be available at `/opt/ml/processing/input` within the job.
+In this case, data will be available at `/opt/ml/processing/input/data` within the job.
 
 It is also possible to split your input over channels. This can be useful if the dataset is already split in S3, or maybe even located in different buckets.
 
@@ -169,12 +169,12 @@ sagemaker_orchestrator_settings = SagemakerOrchestratorSettings(
 )
 ```
 
-Here, the data will be available in `/opt/ml/processing/input/train`, `/opt/ml/processing/input/val` and `/opt/ml/processing/input/test`.
+Here, the data will be available in `/opt/ml/processing/input/data/train`, `/opt/ml/processing/input/data/val` and `/opt/ml/processing/input/data/test`.
 
 #### Export: job -> S3
 Data from within the job (e.g. produced by the training process, or when preprocessing large data) can be exported as well. The structure is highly similar to that of importing data. Copying data to S3 can be configured with `output_data_s3_mode`, which supports `EndOfJob` (default) and `Continuous`.
 
-In the simple case, data in `/opt/ml/processing/output` will be copied to S3 at the end of a job:
+In the simple case, data in `/opt/ml/processing/output/data` will be copied to S3 at the end of a job:
 
 ```python
 sagemaker_orchestrator_settings = SagemakerOrchestratorSettings(
@@ -183,7 +183,7 @@ sagemaker_orchestrator_settings = SagemakerOrchestratorSettings(
 )
 ```
 
-In a more complex case, data in `/opt/ml/processing/output/metadata` and `/opt/ml/processing/output/checkpoints` will be written away continuously:
+In a more complex case, data in `/opt/ml/processing/output/data/metadata` and `/opt/ml/processing/output/data/checkpoints` will be written away continuously:
 
 ```python
 sagemaker_orchestrator_settings = SagemakerOrchestratorSettings(

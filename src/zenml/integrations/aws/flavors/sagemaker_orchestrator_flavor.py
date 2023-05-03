@@ -60,11 +60,11 @@ class SagemakerOrchestratorSettings(BaseSettings):
             to the container is configured with output_data_s3_mode. Two possible
             input types:
                 - str: S3 location where data will be uploaded from a local folder
-                    named /opt/ml/processing/output.
+                    named /opt/ml/processing/output/data.
                 - Dict[str, str]: (ChannelName, S3Location) which represent
                     channels (e.g. output_one, output_two) where
                     specific parts of the data are stored locally for S3 upload.
-                    Data must be available locally in /opt/ml/processing/output/<ChannelName>.
+                    Data must be available locally in /opt/ml/processing/output/data/<ChannelName>.
     """
 
     instance_type: str = "ml.t3.medium"
