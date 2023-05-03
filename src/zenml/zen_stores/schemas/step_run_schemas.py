@@ -19,12 +19,14 @@ from typing import TYPE_CHECKING, Dict, List, Optional
 from uuid import UUID
 
 from pydantic.json import pydantic_encoder
-from sqlalchemy import TEXT, Column
+from sqlalchemy import TEXT, Column, String
+from sqlalchemy.dialects.mysql import MEDIUMTEXT
 from sqlmodel import Field, Relationship, SQLModel
 
 from zenml.config.step_configurations import Step
 from zenml.constants import STEP_SOURCE_PARAMETER_NAME
 from zenml.enums import ExecutionStatus
+from zenml.models.constants import MEDIUMTEXT_MAX_LENGTH
 from zenml.models.step_run_models import (
     StepRunRequestModel,
     StepRunResponseModel,
@@ -95,8 +97,22 @@ class StepRunSchema(NamedSchema, table=True):
     end_time: Optional[datetime] = Field(nullable=True)
     status: ExecutionStatus
     entrypoint_name: str
-    parameters: str = Field(sa_column=Column(TEXT, nullable=False))
-    step_configuration: str = Field(sa_column=Column(TEXT, nullable=False))
+    parameters: str = Field(
+        sa_column=Column(
+            String(length=MEDIUMTEXT_MAX_LENGTH).with_variant(
+                MEDIUMTEXT, "mysql"
+            ),
+            nullable=False,
+        )
+    )
+    step_configuration: str = Field(
+        sa_column=Column(
+            String(length=MEDIUMTEXT_MAX_LENGTH).with_variant(
+                MEDIUMTEXT, "mysql"
+            ),
+            nullable=False,
+        )
+    )
     caching_parameters: Optional[str] = Field(
         sa_column=Column(TEXT, nullable=True)
     )

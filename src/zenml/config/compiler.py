@@ -17,9 +17,7 @@ import string
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence, Tuple
 
 from zenml.config.base_settings import BaseSettings, ConfigurationLevel
-from zenml.config.pipeline_configurations import (
-    PipelineRunConfiguration,
-)
+from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
 from zenml.config.pipeline_spec import PipelineSpec
 from zenml.config.settings_resolver import SettingsResolver
 from zenml.config.step_configurations import (
