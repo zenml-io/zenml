@@ -339,7 +339,7 @@ re-generate temporary credentials upon expiration (e.g. an external client or
 long-running process).
 """,
             min_expiration_seconds=900,  # 15 minutes
-            max_expiration_seconds=43200,  # 12 hours
+            max_expiration_seconds=129600,  # 36 hours
             default_expiration_seconds=DEFAULT_STS_TOKEN_EXPIRATION,  # 12 hours
             config_class=SessionTokenAuthenticationConfig,
         ),
@@ -386,7 +386,7 @@ re-generate temporary credentials upon expiration (e.g. an external client or
 long-running process).
 """,
             min_expiration_seconds=900,  # 15 minutes
-            max_expiration_seconds=43200,  # 12 hours
+            max_expiration_seconds=129600,  # 36 hours
             default_expiration_seconds=DEFAULT_STS_TOKEN_EXPIRATION,  # 12 hours
             config_class=FederationTokenAuthenticationConfig,
         ),

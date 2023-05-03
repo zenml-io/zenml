@@ -78,7 +78,7 @@ def list_service_connectors(
         auth_context: Authentication Context
 
     Returns:
-        List of service connectors for a specific type.
+        Page with list of service connectors for a specific type.
     """
     connector_filter_model.set_scope_user(user_id=auth_context.user.id)
     return zen_store().list_service_connectors(
@@ -156,7 +156,7 @@ def delete_service_connector(
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
-def verify_service_connector_config(
+def validate_and_verify_service_connector_config(
     connector: ServiceConnectorRequestModel,
     _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
 ) -> ServiceConnectorResourcesModel:
@@ -185,7 +185,7 @@ def verify_service_connector_config(
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-def verify_service_connector(
+def validate_and_verify_service_connector(
     connector_id: UUID,
     resource_type: Optional[str] = None,
     resource_id: Optional[str] = None,

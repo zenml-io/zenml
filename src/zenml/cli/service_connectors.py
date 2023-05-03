@@ -23,6 +23,7 @@ from zenml.cli.cli import TagGroup, cli
 from zenml.cli.utils import (
     list_options,
     print_page_info,
+    seconds_to_human_readable,
 )
 from zenml.client import Client
 from zenml.console import console
@@ -211,20 +212,28 @@ def prompt_expiration_time(
     Returns:
         The expiration time provided by the user.
     """
-    while True:
-        if min is None:
-            min = 0
-        if max is not None:
-            max_str = str(max)
-        else:
-            max = -1
-            max_str = "unlimited"
+    if min is None:
+        min = 0
+    min_str = f"min: {min} = {seconds_to_human_readable(min)}; "
+    if max is not None:
+        max_str = str(max)
+        max_str = f"max: {max} = {seconds_to_human_readable(max)}"
+    else:
+        max = -1
+        max_str = "max: unlimited"
+    if default:
+        default_str = (
+            f"; default: {default} = {seconds_to_human_readable(default)}"
+        )
+    else:
+        default_str = ""
 
+    while True:
         expiration_seconds = click.prompt(
             "The authentication method involves generating "
             "temporary credentials. Please enter the time that "
             "the credentials should be valid for, in seconds "
-            f"({min}-{max_str})",
+            f"({min_str}{max_str}{default_str})",
             type=int,
             default=default,
         )
@@ -243,7 +252,15 @@ def prompt_expiration_time(
                 f"{max} seconds. Please enter a smaller value."
             )
             continue
-        break
+
+        confirm = click.confirm(
+            f"Credentials will be valid for "
+            f"{seconds_to_human_readable(expiration_seconds)}. Keep this "
+            "value?",
+            default=True,
+        )
+        if confirm:
+            break
 
     return expiration_seconds
 
@@ -464,6 +481,7 @@ def register_service_connector(
         name_mandatory=not interactive,
     )
 
+    # Parse the given labels
     parsed_labels = cast(Dict[str, str], cli_utils.get_parsed_labels(labels))
 
     if interactive:
@@ -485,6 +503,7 @@ def register_service_connector(
                 else "",
             )
 
+        # Ask for a connector name
         name = prompt_connector_name(name)
 
         # Ask for a description
@@ -500,9 +519,9 @@ def register_service_connector(
             # only one type is available
             connector_type = connector_type or list(available_types.keys())[0]
 
-        message = "# Available service connector types\n"
         # Print the name, type and description of all available service
         # connectors
+        message = "# Available service connector types\n"
         for spec in connector_types:
             message += f"## {spec.name} ({spec.connector_type})\n"
             message += f"{spec.description}\n"
@@ -524,9 +543,9 @@ def register_service_connector(
             t.resource_type for t in connector_type_spec.resource_types
         ]
 
-        message = "# Available resource types\n"
         # Print the name, resource type identifiers and description of all
         # available resource types
+        message = "# Available resource types\n"
         for r in connector_type_spec.resource_types:
             message += f"## {r.name} ({r.resource_type})\n"
             message += f"{r.description}\n"
@@ -534,12 +553,14 @@ def register_service_connector(
         if not no_docs:
             console.print(Markdown(f"{message}---"), justify="left", width=80)
 
+        # Ask the user to select a resource type
         resource_type = prompt_resource_type(
             available_resource_types=available_resource_types
         )
 
         # Ask the user whether to use auto-configuration, if the connector
-        # implementation is locally available
+        # implementation is locally available and if auto-configuration is
+        # supported
         if (
             connector_type_spec.supports_auto_configuration
             and connector_type_spec.local
@@ -595,10 +616,14 @@ def register_service_connector(
                     return
             else:
                 auth_method = connector_model.auth_method
+                expiration_seconds = connector_model.expiration_seconds
                 cli_utils.declare(
                     "Service connector auto-configured successfully with the "
                     "following configuration:"
                 )
+
+                # Print the configuration detected by the auto-configuration
+                # process
                 cli_utils.print_service_connector_configuration(
                     connector_model,
                     active_status=False,
@@ -612,7 +637,8 @@ def register_service_connector(
                     default="auto",
                 )
                 if choice == "manual":
-                    # Reset the auto-configured connector
+                    # Reset the connector configuration to default to let the
+                    # manual configuration kick in in the next step
                     connector_model = None
                     connector_resources = None
 
@@ -620,11 +646,16 @@ def register_service_connector(
             assert auth_method is not None
             auth_method_spec = connector_type_spec.auth_method_map[auth_method]
         else:
+            # In this branch, we are either not using auto-configuration or the
+            # auto-configuration failed or was dismissed. In all cases, we need
+            # to ask the user for the authentication method to use and then
+            # prompt for the configuration
+
             auth_methods = list(connector_type_spec.auth_method_map.keys())
 
-            message = "# Available authentication methods\n"
             # Print the name, identifier and description of all available auth
             # methods
+            message = "# Available authentication methods\n"
             for a in auth_methods:
                 auth_method_spec = connector_type_spec.auth_method_map[a]
                 message += f"## {auth_method_spec.name} ({a})\n"
@@ -663,12 +694,15 @@ def register_service_connector(
                 "authentication method."
             )
 
+            # Prompt for the configuration of the selected authentication method
+            # field by field
             config_schema = auth_method_spec.config_schema or {}
             config_dict = cli_utils.prompt_configuration(
                 config_schema=config_schema,
                 show_secrets=show_secrets,
             )
 
+            # Prompt for an expiration time if the auth method supports it
             if auth_method_spec.supports_temporary_credentials():
                 expiration_seconds = prompt_expiration_time(
                     min=auth_method_spec.min_expiration_seconds,
@@ -677,6 +711,9 @@ def register_service_connector(
                 )
 
             try:
+                # Validate the connector configuration and fetch all available
+                # resources that are accessible with the provided configuration
+                # in the process
                 with console.status(
                     "Validating service connector configuration...\n"
                 ):
@@ -709,6 +746,10 @@ def register_service_connector(
                 cli_utils.error(f"Failed to configure service connector: {e}")
 
         if resource_type:
+            # Finally, for connectors that are configured with a particular
+            # resource type, prompt the user to select one of the available
+            # resources that can be accessed with the connector. We don't do
+            # this for resource types that don't support instances.
             resource_type_spec = connector_type_spec.resource_type_map[
                 resource_type
             ]
@@ -1147,8 +1188,11 @@ def update_service_connector(
         name_mandatory=True,
     )
     assert name_id_or_prefix is not None
+
+    # Parse the given labels
     parsed_labels = cli_utils.get_parsed_labels(labels, allow_label_only=True)
 
+    # Start by fetching the existing connector configuration
     try:
         connector = client.get_service_connector(
             name_id_or_prefix,
@@ -1160,6 +1204,8 @@ def update_service_connector(
 
     if interactive:
 
+        # Fetch the connector type specification if not already embedded
+        # into the connector model
         if isinstance(connector.connector_type, str):
             connector_type_spec = client.get_service_connector_type(
                 connector.connector_type
@@ -1167,9 +1213,10 @@ def update_service_connector(
         else:
             connector_type_spec = connector.connector_type
 
+        # Ask for a new name, if needed
         name = prompt_connector_name(connector.name, connector=connector.id)
 
-        # Ask for a new description
+        # Ask for a new description, if needed
         description = click.prompt(
             "Updated service connector description",
             type=str,
@@ -1193,6 +1240,9 @@ def update_service_connector(
         assert auth_method is not None
         auth_method_spec = connector_type_spec.auth_method_map[auth_method]
 
+        # If the authentication method has changed, we need to reconfigure
+        # the connector from scratch; otherwise, we ask the user if they
+        # want to update the existing configuration
         if auth_method != connector.auth_method:
             confirm = True
         else:
@@ -1201,21 +1251,22 @@ def update_service_connector(
                 default=False,
             )
 
-        existing_config = connector.configuration.copy()
-        existing_config.update(
-            {
-                k: v.get_secret_value()
-                for k, v in connector.secrets.items()
-                if v
-            }
-        )
+        existing_config = connector.full_configuration
+
         if confirm:
+
+            # Here we reconfigure the connector or update the existing
+            # configuration. The existing configuration is used as much
+            # as possible to avoid the user having to re-enter the same
+            # values from scratch.
 
             cli_utils.declare(
                 f"Please update or verify the existing configuration for the "
                 f"'{auth_method_spec.name}' authentication method."
             )
 
+            # Prompt for the configuration of the selected authentication method
+            # field by field
             config_schema = auth_method_spec.config_schema or {}
             config_dict = cli_utils.prompt_configuration(
                 config_schema=config_schema,
@@ -1226,6 +1277,10 @@ def update_service_connector(
         else:
             config_dict = existing_config
 
+        # Next, we address resource type updates. If the connector is
+        # configured to access a single resource type, we don't need to
+        # ask the user for a new resource type. We only look at the
+        # resource types that support the selected authentication method.
         available_resource_types = [
             r.resource_type
             for r in connector_type_spec.resource_types
@@ -1251,10 +1306,12 @@ def update_service_connector(
             confirm = click.confirm(title, default=False)
 
             if confirm:
+                # Prompt for a new resource type, if needed
                 resource_type = prompt_resource_type(
                     available_resource_types=available_resource_types
                 )
 
+        # Prompt for a new expiration time if the auth method supports it
         expiration_seconds = None
         if auth_method_spec.supports_temporary_credentials():
             expiration_seconds = prompt_expiration_time(
@@ -1265,6 +1322,9 @@ def update_service_connector(
             )
 
         try:
+            # Validate the connector configuration and fetch all available
+            # resources that are accessible with the provided configuration
+            # in the process
             with console.status("Validating service connector update...\n"):
 
                 (
@@ -1297,6 +1357,10 @@ def update_service_connector(
             cli_utils.error(f"Failed to verify service connector update: {e}")
 
         if resource_type:
+            # Finally, for connectors that are configured with a particular
+            # resource type, prompt the user to select one of the available
+            # resources that can be accessed with the connector. We don't do
+            # this for resource types that don't support instances.
             resource_type_spec = connector_type_spec.resource_type_map[
                 resource_type
             ]
@@ -1317,18 +1381,14 @@ def update_service_connector(
 
         # Prepare the rest of the variables to fall through to the
         # non-interactive configuration case
-        # config_dict = connector_model.configuration
         no_verify = False
 
     else:
-        config_dict = connector.configuration.copy()
-        config_dict.update(
-            **{
-                k: v.get_secret_value()
-                for k, v in connector.secrets.items()
-                if v
-            },
-        )
+
+        # Non-interactive configuration
+
+        # Apply the configuration from the command line arguments
+        config_dict = connector.full_configuration
         config_dict.update(parsed_args)
 
         if not resource_type and not connector.is_multi_type:
@@ -1337,6 +1397,7 @@ def update_service_connector(
         resource_id = resource_id or connector.resource_id
         expiration_seconds = expiration_seconds or connector.expiration_seconds
 
+        # Remove attributes that the user has indicated should be removed
         if remove_attrs:
             for remove_attr in remove_attrs:
                 config_dict.pop(remove_attr, None)

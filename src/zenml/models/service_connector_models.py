@@ -318,49 +318,49 @@ class ServiceConnectorTypeModel(BaseModel):
 
     @validator("resource_types")
     def validate_resource_types(
-        cls, v: List[ResourceTypeModel]
+        cls, values: List[ResourceTypeModel]
     ) -> List[ResourceTypeModel]:
         """Validate that the resource types are unique.
 
         Args:
-            v: The list of resource types.
+            values: The list of resource types.
 
         Returns:
             The list of resource types.
         """
         # Gather all resource types from the list of resource type
         # specifications.
-        resource_types = [r.resource_type for r in v]
+        resource_types = [r.resource_type for r in values]
         if len(resource_types) != len(set(resource_types)):
             raise ValueError(
                 "Two or more resource type specifications must not list "
                 "the same resource type."
             )
 
-        return v
+        return values
 
     @validator("auth_methods")
     def validate_auth_methods(
-        cls, v: List[AuthenticationMethodModel]
+        cls, values: List[AuthenticationMethodModel]
     ) -> List[AuthenticationMethodModel]:
         """Validate that the authentication methods are unique.
 
         Args:
-            v: The list of authentication methods.
+            values: The list of authentication methods.
 
         Returns:
             The list of authentication methods.
         """
         # Gather all auth methods from the list of auth method
         # specifications.
-        auth_methods = [a.auth_method for a in v]
+        auth_methods = [a.auth_method for a in values]
         if len(auth_methods) != len(set(auth_methods)):
             raise ValueError(
                 "Two or more authentication method specifications must not "
                 "share the same authentication method value."
             )
 
-        return v
+        return values
 
     @property
     def resource_type_map(
@@ -584,8 +584,21 @@ class ServiceConnectorBaseModel(BaseModel):
         """
         return not self.is_multi_type and not self.is_multi_instance
 
+    @property
+    def full_configuration(self) -> Dict[str, str]:
+        """Get the full connector configuration, including secrets.
+
+        Returns:
+            The full connector configuration, including secrets.
+        """
+        config = self.configuration.copy()
+        config.update(
+            {k: v.get_secret_value() for k, v in self.secrets.items() if v}
+        )
+        return config
+
     def has_expired(self) -> bool:
-        """Check if the connector has expired.
+        """Check if the connector credentials have expired.
 
         Verify that the authentication credentials associated with the connector
         have not expired by checking the expiration time against the current
@@ -1001,4 +1014,4 @@ class ServiceConnectorRequestModel(
 
 @update_model
 class ServiceConnectorUpdateModel(ServiceConnectorRequestModel):
-    """Update model for service connectors."""
+    """Model used for service connector updates."""

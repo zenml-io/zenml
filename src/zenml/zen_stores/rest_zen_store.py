@@ -2024,7 +2024,7 @@ class RestZenStore(BaseZenStore):
             The updated service connector.
 
         Raises:
-            KeyError: If no service connector with the given name exists.
+            KeyError: If no service connector with the given ID exists.
         """
         connector_model = self._update_resource(
             resource_id=service_connector_id,
@@ -2144,8 +2144,8 @@ class RestZenStore(BaseZenStore):
         Args:
             user_name_or_id: The name or ID of the user to scope to.
             workspace_name_or_id: The name or ID of the workspace to scope to.
-            connector_type: The type of service connector to filter by.
-            resource_type: The type of resource to filter by.
+            connector_type: The type of service connector to scope to.
+            resource_type: The type of resource to scope to.
 
         Returns:
             The matching list of resources that available service

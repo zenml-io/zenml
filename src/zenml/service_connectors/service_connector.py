@@ -355,9 +355,9 @@ class ServiceConnector(BaseModel):
         instantiate a Kubernetes connector client to access an EKS resource as
         if it were a generic Kubernetes cluster).
 
-        The default implementation returns the connector instance itself, if it
-        is ready to use to connect to the indicated resource, or raises an error
-        if it is not.
+        The default implementation returns the connector instance itself, or a
+        copy of it if the resource type or resource ID are different than the
+        ones configured in the connector instance.
 
         Args:
             resource_type: The type of the resources to connect to.
@@ -649,7 +649,7 @@ class ServiceConnector(BaseModel):
         return model
 
     def has_expired(self) -> bool:
-        """Check if the connector has expired.
+        """Check if the connector authentication credentials have expired.
 
         Verify that the authentication credentials associated with the connector
         have not expired by checking the expiration time against the current

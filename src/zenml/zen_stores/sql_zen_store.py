@@ -4277,9 +4277,6 @@ class SqlZenStore(BaseZenStore):
 
         Args:
             service_connectors: The service connectors to populate.
-
-        Returns:
-            None
         """
         for service_connector in service_connectors:
             if not service_connector_registry.is_registered(
@@ -4870,7 +4867,7 @@ class SqlZenStore(BaseZenStore):
             resource.
 
         Raises:
-            KeyError: If no service connector with the given name exists.
+            KeyError: If no service connector with the given ID exists.
             NotImplementError: If the service connector cannot be instantiated
                 on the store e.g. due to missing package dependencies.
         """
@@ -4911,8 +4908,8 @@ class SqlZenStore(BaseZenStore):
         Args:
             user_name_or_id: The name or ID of the user to scope to.
             workspace_name_or_id: The name or ID of the workspace to scope to.
-            connector_type: The type of service connector to filter by.
-            resource_type: The type of resource to filter by.
+            connector_type: The type of service connector to scope to.
+            resource_type: The type of resource to scope to.
 
         Returns:
             The matching list of resources that available service

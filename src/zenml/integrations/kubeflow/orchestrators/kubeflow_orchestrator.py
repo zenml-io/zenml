@@ -691,6 +691,7 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
                 )
 
             # The KFP client uses the global k8s configuration that was just
+            # initialized by the connector.
 
             return kfp.Client()
 

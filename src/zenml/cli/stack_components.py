@@ -1098,7 +1098,7 @@ def generate_stack_component_connect_command(
         "interactive",
         is_flag=True,
         default=False,
-        help="Select a service connector interactively.",
+        help="Configure a service connector resource interactively.",
         type=click.BOOL,
     )
     @click.option(
@@ -1124,7 +1124,7 @@ def generate_stack_component_connect_command(
             resource_id: The resource ID to use connect to. Only
                 required for multi-instance connectors that are not already
                 configured with a particular resource ID.
-            interactive: Select a resource interactively.
+            interactive: Configure a service connector resource interactively.
             no_verify: Do not verify whether the resource is accessible.
         """
         if component_type == StackComponentType.SECRETS_MANAGER:

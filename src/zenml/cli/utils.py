@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Utility functions for the CLI."""
 import contextlib
+import datetime
 import os
 import subprocess
 import sys
@@ -1252,6 +1253,49 @@ def print_components_table(
     print_table(configurations)
 
 
+def seconds_to_human_readable(time_seconds: int) -> str:
+    """Converts seconds to human readable format.
+
+    Args:
+        time_seconds: Seconds to convert.
+
+    Returns:
+        Human readable string.
+    """
+    seconds = time_seconds % 60
+    minutes = (time_seconds // 60) % 60
+    hours = (time_seconds // 3600) % 24
+    days = time_seconds // 86400
+    tokens = []
+    if days:
+        tokens.append(f"{days}d")
+    if hours:
+        tokens.append(f"{hours}h")
+    if minutes:
+        tokens.append(f"{minutes}m")
+    if seconds:
+        tokens.append(f"{seconds}s")
+
+    return "".join(tokens)
+
+
+def expires_in(expires_at: datetime.datetime, expired_str: str) -> str:
+    """Returns a human readable string of the time until the token expires.
+
+    Args:
+        expires_at: Datetime object of the token expiration.
+        expired_str: String to return if the token is expired.
+
+    Returns:
+        Human readable string.
+    """
+    now = datetime.datetime.now(datetime.timezone.utc)
+    expires_at = expires_at.replace(tzinfo=datetime.timezone.utc)
+    if expires_at < now:
+        return expired_str
+    return seconds_to_human_readable((expires_at - now).seconds)
+
+
 def print_service_connectors_table(
     client: "Client",
     connectors: Sequence["ServiceConnectorResponseModel"],
@@ -1263,8 +1307,8 @@ def print_service_connectors_table(
         connectors: List of service connectors to print.
     """
     if len(connectors) == 0:
-        warning("No service connectors registered.")
         return
+
     active_stack = client.active_stack_model
     active_connector_ids: List["UUID"] = []
     for components in active_stack.components.values():
@@ -1287,13 +1331,17 @@ def print_service_connectors_table(
             "NAME": connector.name,
             "ID": connector.id,
             "TYPE": connector.type,
-            "RESOURCE_TYPES": "\n".join(connector.resource_types),
-            "RESOURCE_ID": connector.resource_id
+            "RESOURCE TYPES": "\n".join(connector.resource_types),
+            "RESOURCE ID": connector.resource_id
             if connector.resource_id
             else "",
             "SHARED": get_shared_emoji(connector.is_shared),
             "OWNER": f"{connector.user.name if connector.user else 'DELETED!'}",
-            "EXPIRED": ":warning:" if connector.has_expired() else "",
+            "EXPIRES IN": expires_in(
+                connector.expires_at, ":warning: Expired!"
+            )
+            if connector.expires_at
+            else "",
             "LABELS": "\n".join(labels),
         }
         configurations.append(connector_config)
@@ -1426,12 +1474,16 @@ def print_service_connector_configuration(
             "ID": connector.id,
             "NAME": connector.name,
             "TYPE": connector.type,
-            "AUTH_METHOD": connector.auth_method,
-            "RESOURCE_TYPES": ", ".join(connector.resource_types),
-            "RESOURCE_ID": connector.resource_id or "",
-            "SECRET_ID": connector.secret_id or "",
-            "SESSION_DURATION": expiration,
-            "EXPIRES_AT": str(connector.expires_at or "N/A"),
+            "AUTH METHOD": connector.auth_method,
+            "RESOURCE TYPES": ", ".join(connector.resource_types),
+            "RESOURCE ID": connector.resource_id or "",
+            "SECRET ID": connector.secret_id or "",
+            "SESSION DURATION": expiration,
+            "EXPIRES IN": expires_in(
+                connector.expires_at, ":warning: Expired!"
+            )
+            if connector.expires_at
+            else "N/A",
             "OWNER": user_name,
             "WORKSPACE": connector.workspace.name,
             "SHARED": get_shared_emoji(connector.is_shared),
@@ -1442,11 +1494,15 @@ def print_service_connector_configuration(
         properties = {
             "NAME": connector.name,
             "TYPE": connector.type,
-            "AUTH_METHOD": connector.auth_method,
-            "RESOURCE_TYPES": ", ".join(connector.resource_types),
-            "RESOURCE_ID": connector.resource_id or "",
-            "SESSION_DURATION": expiration,
-            "EXPIRES_AT": str(connector.expires_at or "N/A"),
+            "AUTH METHOD": connector.auth_method,
+            "RESOURCE TYPES": ", ".join(connector.resource_types),
+            "RESOURCE ID": connector.resource_id or "",
+            "SESSION DURATION": expiration,
+            "EXPIRES IN": expires_in(
+                connector.expires_at, ":warning: Expired!"
+            )
+            if connector.expires_at
+            else "N/A",
             "SHARED": get_shared_emoji(connector.is_shared),
         }
 
@@ -1538,7 +1594,7 @@ def print_service_connector_types_table(
 def print_service_connector_type(
     connector_type: "ServiceConnectorTypeModel",
 ) -> None:
-    """Prints details for service connectors type.
+    """Prints details for a service connector type.
 
     Args:
         connector_type: Service connector type to print.

@@ -108,10 +108,10 @@ class Flavor:
     def service_connector_requirements(
         self,
     ) -> Optional[ServiceConnectorRequirements]:
-        """Requirements for service connectors.
+        """Service connector resource requirements for service connectors.
 
-        Models requirements that are used to filter the available service
-        connector types that are compatible with this flavor.
+        Specifies resource requirements that are used to filter the available
+        service connector types that are compatible with this flavor.
 
         Returns:
             Requirements for compatible service connectors, if a service
