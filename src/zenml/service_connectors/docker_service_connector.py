@@ -52,7 +52,7 @@ DOCKER_RESOURCE_TYPE = "docker-registry"
 
 
 class DockerAuthenticationMethods(StrEnum):
-    """AWS Authentication methods."""
+    """Docker Authentication methods."""
 
     PASSWORD = "password"
 

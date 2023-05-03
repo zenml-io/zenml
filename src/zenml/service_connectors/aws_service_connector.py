@@ -183,7 +183,7 @@ by discovering and using credentials configured on a local environment.
 The connector can be used to access to any generic AWS service, such as S3, ECR,
 EKS, EC2, etc. by providing pre-authenticated boto3 sessions for these services.
 In addition to authenticating to AWS services, the connector is able to manage
-specialized authentication for Docker and Kubernetes python clients and also
+specialized authentication for Docker and Kubernetes Python clients and also
 allows configuration of local Docker and Kubernetes clients.
 """,
     supports_auto_configuration=True,

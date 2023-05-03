@@ -74,13 +74,13 @@ class SecretBaseModel(BaseModel):
 
     @property
     def has_missing_values(self) -> bool:
-        """Returns True if the secret has missing values.
+        """Returns True if the secret has missing values (i.e. None).
 
         Values can be missing from a secret for example if the user retrieves a
         secret but does not have the permission to view the secret values.
 
         Returns:
-            True if the secret has all values removed.
+            True if the secret has any values set to None.
         """
         return any(v is None for v in self.values.values())
 

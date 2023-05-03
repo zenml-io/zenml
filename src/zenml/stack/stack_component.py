@@ -474,7 +474,7 @@ class StackComponent:
         """Checks whether the connector linked to this stack component has expired.
 
         Returns:
-            Whether the connector linked to this stack component has expired.
+            Whether the connector linked to this stack component has expired, or isn't linked to a connector.
         """
         if self.connector is None:
             # The stack component isn't linked to a connector

@@ -92,8 +92,8 @@ class ResourceTypeModel(BaseModel):
     )
     logo_url: Optional[str] = Field(
         default=None,
-        title="Optionally, a url pointing to a png,"
-        "svg or jpg can be attached.",
+        title="Optionally, a URL pointing to a png,"
+        "svg or jpg file can be attached.",
     )
 
 
@@ -275,16 +275,16 @@ class ServiceConnectorTypeModel(BaseModel):
     )
     logo_url: Optional[str] = Field(
         default=None,
-        title="Optionally, a url pointing to a png,"
+        title="Optionally, a URL pointing to a png,"
         "svg or jpg can be attached.",
     )
     docs_url: Optional[str] = Field(
         default=None,
-        title="Optionally, a url pointing to docs, within docs.zenml.io.",
+        title="Optionally, a URL pointing to docs, within docs.zenml.io.",
     )
     sdk_docs_url: Optional[str] = Field(
         default=None,
-        title="Optionally, a url pointing to SDK docs,"
+        title="Optionally, a URL pointing to SDK docs,"
         "within apidocs.zenml.io.",
     )
     local: bool = Field(

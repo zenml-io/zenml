@@ -137,7 +137,7 @@ class ServiceConnector(BaseModel):
         """
         super().__init__(**kwargs)
 
-        # Convert the resource ID in canonical form
+        # Convert the resource ID to its canonical form
         if self.resource_type and self.resource_id:
             self.resource_id = self._canonical_resource_id(
                 self.resource_type, self.resource_id
