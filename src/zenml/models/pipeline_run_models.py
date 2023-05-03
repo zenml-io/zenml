@@ -29,7 +29,7 @@ from uuid import UUID
 from pydantic import BaseModel, Field
 
 from zenml import __version__ as current_zenml_version
-from zenml.enums import ExecutionStatus
+from zenml.enums import ExecutionStatus, LogicalOperators
 from zenml.models.base_models import (
     WorkspaceScopedRequestModel,
     WorkspaceScopedResponseModel,
@@ -49,7 +49,6 @@ if TYPE_CHECKING:
         RunMetadataResponseModel,
         StackResponseModel,
     )
-
 
 # ---- #
 # BASE #
@@ -148,6 +147,7 @@ class PipelineRunFilterModel(WorkspaceScopedFilterModel):
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
         *WorkspaceScopedFilterModel.FILTER_EXCLUDE_FIELDS,
         "unlisted",
+        "code_repository_id",
     ]
 
     name: Optional[str] = Field(
@@ -181,6 +181,9 @@ class PipelineRunFilterModel(WorkspaceScopedFilterModel):
     deployment_id: Optional[Union[UUID, str]] = Field(
         default=None, description="Deployment used for the Pipeline Run"
     )
+    code_repository_id: Optional[Union[UUID, str]] = Field(
+        default=None, description="Code repository used for the Pipeline Run"
+    )
 
     status: Optional[str] = Field(
         default=None,
@@ -212,8 +215,13 @@ class PipelineRunFilterModel(WorkspaceScopedFilterModel):
             The filter expression for the query.
         """
         from sqlalchemy import and_
+        from sqlmodel import or_
 
         base_filter = super().generate_filter(table)
+
+        operator = (
+            or_ if self.logical_operator == LogicalOperators.OR else and_
+        )
 
         if self.unlisted is not None:
             if self.unlisted is True:
@@ -221,10 +229,24 @@ class PipelineRunFilterModel(WorkspaceScopedFilterModel):
             else:
                 unlisted_filter = getattr(table, "pipeline_id").is_not(None)
 
-            # TODO: make this right
-            # This needs to be an AND right now to work with the workspace
-            # scoping of the superclass
-            return and_(base_filter, unlisted_filter)
+            base_filter = operator(base_filter, unlisted_filter)
+
+        if self.code_repository_id:
+            from zenml.zen_stores.schemas import (
+                CodeReferenceSchema,
+                PipelineDeploymentSchema,
+                PipelineRunSchema,
+            )
+
+            code_repo_filter = and_(  # type: ignore[type-var]
+                PipelineRunSchema.deployment_id == PipelineDeploymentSchema.id,
+                PipelineDeploymentSchema.code_reference_id
+                == CodeReferenceSchema.id,
+                CodeReferenceSchema.code_repository_id
+                == self.code_repository_id,
+            )
+
+            base_filter = operator(base_filter, code_repo_filter)
 
         return base_filter
 
