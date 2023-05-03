@@ -53,7 +53,9 @@ class BaseMaterializerMeta(type):
         )
 
         # Skip the following validation and registration for base classes.
-        if name == "BaseMaterializer" or cls.SKIP_REGISTRATION:
+        if cls.SKIP_REGISTRATION:
+            # Reset the flag so subclasses don't have it set automatically.
+            cls.SKIP_REGISTRATION = False
             return cls
 
         # Validate that the class is properly defined.
@@ -104,11 +106,11 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
     ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.BASE
     ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = ()
 
-    # `SKIP_REGISTRATION`` can be set to True to skip automatic registration for
-    # custom materializers. This is primarily useful for defining base classes.
-    # The `BaseMaterializer` itself is always skipped and has this set to False
-    # so subclasses don't need to set it by default.
-    SKIP_REGISTRATION: ClassVar[bool] = False
+    # `SKIP_REGISTRATION` can be set to True to not register the class in the
+    # materializer registry. This is primarily useful for defining base classes.
+    # Subclasses will automatically have this set to False unless they override
+    # it themselves.
+    SKIP_REGISTRATION: ClassVar[bool] = True
 
     def __init__(self, uri: str):
         """Initializes a materializer with the given URI.

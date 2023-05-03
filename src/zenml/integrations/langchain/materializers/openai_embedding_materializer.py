@@ -32,4 +32,3 @@ class LangchainOpenaiEmbeddingMaterializer(CloudpickleMaterializer):
 
     ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.MODEL
     ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (OpenAIEmbeddings,)
-    SKIP_REGISTRATION: ClassVar[bool] = False

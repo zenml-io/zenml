@@ -41,8 +41,8 @@ class CloudpickleMaterializer(BaseMaterializer):
     non-reproducble way since artifacts cannot be loaded from other Python
     versions. It is recommended to use this materializer only as a last resort.
 
-    That is also why it has SKIP_REGISTRATION set to True and is currently only
-    used as a fallback materializer inside the materializer registry.
+    That is also why it has `SKIP_REGISTRATION` set to True and is currently
+    only used as a fallback materializer inside the materializer registry.
     """
 
     ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (object,)

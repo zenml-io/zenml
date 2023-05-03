@@ -32,4 +32,3 @@ class LangchainVectorStoreMaterializer(CloudpickleMaterializer):
 
     ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.DATA
     ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (VectorStore,)
-    SKIP_REGISTRATION: ClassVar[bool] = False
