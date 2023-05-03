@@ -4587,6 +4587,8 @@ class SqlZenStore(BaseZenStore):
         will replace the existing configuration and secrets values.
         * the `resource_id` field value is also a full replacement value: if set
         to `None`, the resource ID is removed from the service connector.
+        * the `expiration_seconds` field value is also a full replacement value:
+        if set to `None`, the expiration is removed from the service connector.
         * the `secret_id` field value in the update is ignored, given that
         secrets are managed internally by the ZenML store.
         * the `labels` field is also a full labels update: if set (i.e. not
@@ -4724,7 +4726,7 @@ class SqlZenStore(BaseZenStore):
                 )
 
             # Update labels
-            if update.labels:
+            if update.labels is not None:
                 # Delete existing labels
                 for label in existing_connector.labels:
                     session.delete(label)

@@ -4439,26 +4439,37 @@ class Client(metaclass=ClientMetaClass):
     ]:
         """Validate and/or register an updated service connector.
 
+        If the `resource_type`, `resource_id` and `expiration_seconds`
+        parameters are set to their "empty" values (empty string for resource
+        type and resource ID, 0 for expiration seconds), the existing values
+        will be removed from the service connector. Setting them to None or
+        omitting them will not affect the existing values.
+
+        If supplied, the `configuration` parameter is a full replacement of the
+        existing configuration rather than a partial update.
+
+        Labels can be updated or removed by setting the label value to None.
+
         Args:
             name_id_or_prefix: The name, id or prefix of the service connector
                 to update.
             name: The new name of the service connector.
             auth_method: The new authentication method of the service connector.
             resource_type: The new resource type for the service connector.
-                If set to None, the existing resource type will not be updated.
-            configuration: The new configuration of the service connector. This
-                needs to be a full replacement of the existing configuration
-                rather than a partial update.
+                If set to the empty string, the existing resource type will be
+                removed.
+            configuration: The new configuration of the service connector. If
+                set, this needs to be a full replacement of the existing
+                configuration rather than a partial update.
             resource_id: The new resource id of the service connector.
-                If set None, the existing resource ID will be removed.
+                If set to the empty string, the existing resource ID will be
+                removed.
             description: The description of the service connector.
             expiration_seconds: The expiration time of the service connector.
-                If set to None, the existing expiration time will be removed.
+                If set to 0, the existing expiration time will be removed.
             is_shared: Whether the service connector is shared or not.
             labels: The service connector to update or remove. If a label value
                 is set to None, the label will be removed.
-            auto_configure: Whether to automatically configure the service
-                connector from the local environment.
             verify: Whether to verify that the service connector configuration
                 and credentials can be used to gain access to the resource.
             update: Whether to update the service connector or not.
@@ -4491,8 +4502,26 @@ class Client(metaclass=ClientMetaClass):
         else:
             connector = connector_model.connector_type
 
+        resource_types: Optional[Union[str, List[str]]] = None
+        if resource_type == "":
+            resource_types = None
+        elif resource_type is None:
+            resource_types = connector_model.resource_types
+        else:
+            resource_types = resource_type
+
         if not resource_type and len(connector.resource_types) == 1:
-            resource_type = connector.resource_types[0].resource_type
+            resource_types = connector.resource_types[0].resource_type
+
+        if resource_id == "":
+            resource_id = None
+        elif resource_id is None:
+            resource_id = connector_model.resource_id
+
+        if expiration_seconds == 0:
+            expiration_seconds = None
+        elif expiration_seconds is None:
+            expiration_seconds = connector_model.expiration_seconds
 
         connector_update = ServiceConnectorUpdateModel(
             name=name or connector_model.name,
@@ -4512,14 +4541,14 @@ class Client(metaclass=ClientMetaClass):
             # existing configuration and secrets
             connector_update.validate_and_configure_resources(
                 connector_type=connector,
-                resource_types=resource_type,
+                resource_types=resource_types,
                 resource_id=resource_id,
                 configuration=configuration,
             )
         else:
             connector_update.validate_and_configure_resources(
                 connector_type=connector,
-                resource_types=resource_type,
+                resource_types=resource_types,
                 resource_id=resource_id,
                 configuration=connector_model.configuration,
                 secrets=connector_model.secrets,

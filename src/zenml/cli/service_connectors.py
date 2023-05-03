@@ -996,7 +996,7 @@ values and deleting others:
     $ zenml service-connector update aws-auto-multi \\                       
 --aws-access-key-id=<aws-key-id> \\                                 
 --aws_secret_access_key=<aws-secret-key>  \\                      
---remove-attribute aws-sts-token
+--remove-attr aws-sts-token
 
 - update the foo label to a new value and delete the baz label from a connector:
 
@@ -1091,7 +1091,7 @@ values and deleting others:
     type=click.BOOL,
 )
 @click.option(
-    "--remove-attribute",
+    "--remove-attr",
     "-r",
     "remove_attrs",
     help="Configuration attributes to be removed from the configuration. Takes "
@@ -1141,8 +1141,7 @@ def update_service_connector(
     client = Client()
 
     # Parse the given args
-    parsed_args: Dict[str, Optional[str]] = {}
-    name_id_or_prefix, parsed_args = cli_utils.parse_name_and_extra_arguments(  # type: ignore[assignment]
+    name_id_or_prefix, parsed_args = cli_utils.parse_name_and_extra_arguments(
         list(args) + [name_id_or_prefix or ""],
         expand_args=True,
         name_mandatory=True,
@@ -1276,9 +1275,13 @@ def update_service_connector(
                     name=name,
                     description=description,
                     auth_method=auth_method,
-                    resource_type=resource_type,
+                    # Use empty string to indicate that the resource type
+                    # should be removed in the update if not set here
+                    resource_type=resource_type or "",
                     configuration=config_dict,
-                    expiration_seconds=expiration_seconds,
+                    # Use zero value to indicate that the expiration time
+                    # should be removed in the update if not set here
+                    expiration_seconds=expiration_seconds or 0,
                     verify=True,
                     update=False,
                 )
@@ -1315,35 +1318,40 @@ def update_service_connector(
         # Prepare the rest of the variables to fall through to the
         # non-interactive configuration case
         # config_dict = connector_model.configuration
-        parsed_args.update(
-            {
-                k: s.get_secret_value()
-                for k, s in connector_model.secrets.items()
-                if s is not None
-            }
-        )
         no_verify = False
-        expiration_seconds = connector_model.expiration_seconds
 
     else:
         config_dict = connector.configuration.copy()
         config_dict.update(
-            {
+            **{
                 k: v.get_secret_value()
                 for k, v in connector.secrets.items()
                 if v
-            }
+            },
         )
-
-        if remove_attrs:
-            for remove_attr in remove_attrs:
-                config_dict.pop(remove_attr, None)
+        config_dict.update(parsed_args)
 
         if not resource_type and not connector.is_multi_type:
             resource_type = connector.resource_types[0]
 
         resource_id = resource_id or connector.resource_id
         expiration_seconds = expiration_seconds or connector.expiration_seconds
+
+        if remove_attrs:
+            for remove_attr in remove_attrs:
+                config_dict.pop(remove_attr, None)
+            if "resource_id" in remove_attrs or "resource-id" in remove_attrs:
+                resource_id = None
+            if (
+                "resource_type" in remove_attrs
+                or "resource-type" in remove_attrs
+            ):
+                resource_type = None
+            if (
+                "expiration_seconds" in remove_attrs
+                or "expiration-seconds" in remove_attrs
+            ):
+                expiration_seconds = None
 
     with console.status(
         f"Updating service connector {name_id_or_prefix}...\n"
@@ -1353,11 +1361,17 @@ def update_service_connector(
                 name_id_or_prefix=connector.id,
                 name=name,
                 auth_method=auth_method,
-                resource_type=resource_type,
+                # Use empty string to indicate that the resource type
+                # should be removed in the update if not set here
+                resource_type=resource_type or "",
                 configuration=config_dict,
-                resource_id=resource_id,
+                # Use empty string to indicate that the resource ID
+                # should be removed in the update if not set here
+                resource_id=resource_id or "",
                 description=description,
-                expiration_seconds=expiration_seconds,
+                # Use empty string to indicate that the expiration time
+                # should be removed in the update if not set here
+                expiration_seconds=expiration_seconds or 0,
                 labels=parsed_labels,
                 verify=not no_verify,
                 update=True,

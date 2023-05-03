@@ -189,6 +189,11 @@ class ServiceConnectorSchema(ShareableSchema, table=True):
                     # to None in the update, it triggers the existing resource
                     # ID to be cleared.
                     self.resource_id = None
+                if field == "expiration_seconds":
+                    # The expiration_seconds field in the update is special:
+                    # if set to None in the update, it triggers the existing
+                    # expiration_seconds to be cleared.
+                    self.expiration_seconds = None
                 continue
             if field == "configuration":
                 self.configuration = (

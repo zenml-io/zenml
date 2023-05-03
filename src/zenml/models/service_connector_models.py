@@ -35,6 +35,7 @@ from pydantic import (
     validator,
 )
 
+from zenml.logger import get_logger
 from zenml.models.base_models import (
     ShareableRequestModel,
     ShareableResponseModel,
@@ -45,6 +46,8 @@ from zenml.models.filter_models import ShareableWorkspaceScopedFilterModel
 
 if TYPE_CHECKING:
     from zenml.service_connectors.service_connector import ServiceConnector
+
+logger = get_logger(__name__)
 
 # ---- #
 # BASE #
@@ -670,9 +673,11 @@ class ServiceConnectorBaseModel(BaseModel):
         # Validate and configure the connector configuration and secrets
         configuration = configuration or {}
         secrets = secrets or {}
+        supported_attrs = []
         for attr_name, attr_schema in auth_method_spec.config_schema.get(
             "properties", {}
         ).items():
+            supported_attrs.append(attr_name)
             required = attr_name in auth_method_spec.config_schema.get(
                 "required", []
             )
@@ -695,6 +700,23 @@ class ServiceConnectorBaseModel(BaseModel):
                     self.secrets[attr_name] = SecretStr(value)
             else:
                 self.configuration[attr_name] = value
+
+        # Warn about attributes that are not part of the configuration schema
+        for attr_name in set(list(configuration.keys())) - set(
+            supported_attrs
+        ):
+            logger.warning(
+                f"Ignoring unknown attribute in connector '{self.name}' "
+                f"configuration {attr_name}. Supported attributes are: "
+                f"{supported_attrs}",
+            )
+        # Warn about secrets that are not part of the configuration schema
+        for attr_name in set(secrets.keys()) - self.secrets.keys():
+            logger.warning(
+                f"Ignoring unknown attribute in connector '{self.name}' "
+                f"configuration {attr_name}. Supported attributes are: "
+                f"{supported_attrs}",
+            )
 
 
 class ServiceConnectorRequirements(BaseModel):
