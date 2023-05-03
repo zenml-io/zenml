@@ -42,7 +42,6 @@ class EvidentlyIntegration(Integration):
     def activate() -> None:
         """Activate the Evidently integration."""
         from zenml.integrations.evidently import materializers  # noqa
-        from zenml.integrations.evidently import visualizers  # noqa
 
     @classmethod
     def flavors(cls) -> List[Type[Flavor]]:
