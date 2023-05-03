@@ -30,7 +30,7 @@ DEFAULT_FILENAME = "entire_dataloader.pt"
 
 
 class PyTorchDataLoaderMaterializer(BasePyTorchMaterliazer):
-    """Materializer to read/write PyTorch dataloader and datasets."""
+    """Materializer to read/write PyTorch dataloaders and datasets."""
 
     ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (DataLoader, Dataset)
     ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.DATA
