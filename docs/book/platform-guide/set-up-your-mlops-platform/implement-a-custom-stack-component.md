@@ -4,31 +4,17 @@ description: How to write a custom stack component flavor
 
 # Implement a custom stack component
 
+When building a sophisticated MLOps Platform, you will often need to come up with custom-tailored solutions. Sometimes, this might even require you to use custom components for your infrastructure or tooling.
 
-When building a sophisticated MLOps Platform, you will often need to come up
-with custom-tailored solutions. Sometimes, this might even require you to use
-custom components for your infrastructure or tooling.
-
-That is exactly why the stack component flavors in ZenML are designed to be
-modular and straightforward to extend. Using ZenML's base abstractions, you can
-create your own stack component flavor and use it in your stack.
+That is exactly why the stack component flavors in ZenML are designed to be modular and straightforward to extend. Using ZenML's base abstractions, you can create your own stack component flavor and use it in your stack.
 
 ## Base Abstractions
 
-Before we get into the topic of creating custom stack component flavors, let us
-briefly discuss some of the important design choices behind the abstraction of a 
-ZenML flavor. The overall implementation revolves around 
-three base interfaces, namely the `StackComponent`, the `StackComponentConfig`, 
-and the `Flavor`.
+Before we get into the topic of creating custom stack component flavors, let us briefly discuss some of the important design choices behind the abstraction of a ZenML flavor. The overall implementation revolves around three base interfaces, namely the `StackComponent`, the `StackComponentConfig`, and the `Flavor`.
 
-### Base Abstraction 1: `StackComponent` 
+### Base Abstraction 1: `StackComponent`
 
-The `StackComponent` is utilized as an interface to define the logic behind 
-the functionality of a flavor. For instance, you can take a look at the 
-`BaseArtifactStore` example down below. By inheriting from the `StackComponent`,
-the `BaseArtifactStore` establishes the interface for all artifact stores. 
-Any flavor of an artifact store needs to follows the standards set by this 
-base class.
+The `StackComponent` is utilized as an interface to define the logic behind the functionality of a flavor. For instance, you can take a look at the `BaseArtifactStore` example down below. By inheriting from the `StackComponent`, the `BaseArtifactStore` establishes the interface for all artifact stores. Any flavor of an artifact store needs to follows the standards set by this base class.
 
 ```python
 class StackComponent:
@@ -53,12 +39,7 @@ class BaseArtifactStore(StackComponent):
 
 ### Base Abstraction 2: `StackComponentConfig`
 
-As its name suggests, the `StackComponentConfig` is used to configure a 
-stack component instance. It is separated from the actual implementation on 
-purpose. This way, ZenML can use this class to validate the configuration of a 
-stack component during its registration/update, without having to import heavy 
-(or even non-installed) dependencies. Let us continue with the same example 
-up above and take a look at the `BaseArtifactStoreConfig`.
+As its name suggests, the `StackComponentConfig` is used to configure a stack component instance. It is separated from the actual implementation on purpose. This way, ZenML can use this class to validate the configuration of a stack component during its registration/update, without having to import heavy (or even non-installed) dependencies. Let us continue with the same example up above and take a look at the `BaseArtifactStoreConfig`.
 
 ```python
 from pydantic import BaseModel
@@ -85,28 +66,17 @@ class BaseArtifactStoreConfig(StackComponentConfig):
         ...
 ```
 
-There are a few things to unpack here. Let's talk about Pydantic first. Pydantic
-is a library for [data validation and settings management](https://pydantic-docs.helpmanual.io/). 
-By using their `BaseModel` as a base class, ZenML is able to configure and 
-serialize these configuration properties while being able to add a validation 
-layer to each implementation.
+There are a few things to unpack here. Let's talk about Pydantic first. Pydantic is a library for [data validation and settings management](https://pydantic-docs.helpmanual.io/). By using their `BaseModel` as a base class, ZenML is able to configure and serialize these configuration properties while being able to add a validation layer to each implementation.
 
-If you take a closer look at the example above, you will see that, 
-through the `BaseArtifacStoreConfig`, each artifact store will require users 
-to define a `path` variable along with a list of `SUPPORTED_SCHEMES`. Using 
-this configuration class, ZenML can check if the given `path` is actually 
-supported.
+If you take a closer look at the example above, you will see that, through the `BaseArtifacStoreConfig`, each artifact store will require users to define a `path` variable along with a list of `SUPPORTED_SCHEMES`. Using this configuration class, ZenML can check if the given `path` is actually supported.
 
 {% hint style="info" %}
-Similar to the example above, you can use class variables by denoting them 
-with the `ClassVar[..]`, which are also excluded from the serialization.
+Similar to the example above, you can use class variables by denoting them with the `ClassVar[..]`, which are also excluded from the serialization.
 {% endhint %}
 
 ### Base Abstraction 3: `Flavor`
 
-Ultimately, the `Flavor` abstraction is responsible for bringing the
-implementation of a `StackComponent` together with the corresponding 
-`StackComponentConfig` definition to create a `Flavor`.
+Ultimately, the `Flavor` abstraction is responsible for bringing the implementation of a `StackComponent` together with the corresponding `StackComponentConfig` definition to create a `Flavor`.
 
 ```python
 class Flavor:
@@ -147,15 +117,11 @@ class BaseArtifactStoreFlavor(Flavor):
         return BaseArtifactStoreConfig
 ```
 
-Following the same example, the `BaseArtifactStoreFlavor` sets the correct 
-`type` property and introduces the `BaseArtifactStoreConfig` as the default 
-configuration for all ZenML artifact stores.
-
+Following the same example, the `BaseArtifactStoreFlavor` sets the correct `type` property and introduces the `BaseArtifactStoreConfig` as the default configuration for all ZenML artifact stores.
 
 ## Implementing a Custom Stack Component Flavor
 
-Using all the abstraction layers above, let us create a custom artifact store
-flavor, starting with the configuration.
+Using all the abstraction layers above, let us create a custom artifact store flavor, starting with the configuration.
 
 ```python
 from zenml.artifact_stores import BaseArtifactStoreConfig
@@ -167,8 +133,7 @@ class MyArtifactStoreConfig(BaseArtifactStoreConfig):
     my_param: int  # Adding a custom parameter on top of the `path` variable
 ```
 
-With the configuration defined, we can move on to the logic behind the 
-implementation:
+With the configuration defined, we can move on to the logic behind the implementation:
 
 ```python
 PathType = Union[bytes, str]
@@ -193,8 +158,7 @@ class MyArtifactStore(BaseArtifactStore):
         print(self.config.my_param) # under self.config
 ```
 
-Now, let us bring these two classes together through a `Flavor`. Make sure 
-that you give your flavor a unique name here. 
+Now, let us bring these two classes together through a `Flavor`. Make sure that you give your flavor a unique name here.
 
 ```python
 from zenml.artifact_stores import BaseArtifactStoreFlavor
@@ -223,40 +187,31 @@ class MyArtifactStoreFlavor(BaseArtifactStoreFlavor):
 
 ## Managing a Custom Stack Component Flavor
 
-Once your implementation is complete, you can register it through the CLI.
-Please ensure you **point to the flavor class via dot notation**:
+Once your implementation is complete, you can register it through the CLI. Please ensure you **point to the flavor class via dot notation**:
 
 ```shell
 zenml artifact-store flavor register <path.to.MyArtifactStoreFlavor>
 ```
 
-For example, if your flavor class `MyArtifactStoreFlavor` is defined in `flavors/my_flavor.py`,
-you'd register it by doing:
+For example, if your flavor class `MyArtifactStoreFlavor` is defined in `flavors/my_flavor.py`, you'd register it by doing:
 
 ```shell
 zenml artifact-store flavor register flavors.my_flavor.MyArtifactStoreFlavor
 ```
 
 {% hint style="warning" %}
-ZenML resolves the flavor class by taking the path where you initialized ZenML
-(via `zenml init`) as the starting point of resolution. Therefore, please ensure
-you follow [the best practice](../../doc-orphanage/best-practices.md) of initializing
-ZenML at the root of your repository.
+ZenML resolves the flavor class by taking the path where you initialized ZenML (via `zenml init`) as the starting point of resolution. Therefore, please ensure you follow [the best practice](../../doc-orphanage/best-practices.md) of initializing ZenML at the root of your repository.
 
-If ZenML does not find an initialized ZenML repository in any parent directory, it
-will default to the current working directory, but usually its better to not have to
-rely on this mechanism, and initialize ZenML at the root.
+If ZenML does not find an initialized ZenML repository in any parent directory, it will default to the current working directory, but usually its better to not have to rely on this mechanism, and initialize ZenML at the root.
 {% endhint %}
 
-Afterwards, you should see the new custom artifact store flavor in the list of
-available artifact store flavors:
+Afterwards, you should see the new custom artifact store flavor in the list of available artifact store flavors:
 
 ```shell
 zenml artifact-store flavor list
 ```
 
-And that's it, you now have defined a custom stack component flavor that you
-can use in any of your stacks just like any other flavor you used before, e.g.:
+And that's it, you now have defined a custom stack component flavor that you can use in any of your stacks just like any other flavor you used before, e.g.:
 
 ```shell
 zenml artifact-store register <ARTIFACT_STORE_NAME> \
@@ -270,35 +225,31 @@ zenml stack register <STACK_NAME> \
 ```
 
 {% hint style="info" %}
-If your custom stack component flavor requires special setup before it can be
-used, check out the [Managing Stack Component States](../../../old_book/advanced-guide/stacks/stack-state-management.md)
-section for more details.
+If your custom stack component flavor requires special setup before it can be used, check out the [Managing Stack Component States](../../../old\_book/advanced-guide/stacks/stack-state-management.md) section for more details.
 
-If you would like to automatically track some metadata about your custom stack
-component with each pipeline run, check out the 
-[Tracking Custom Stack Component Metadata](../../../old_book/advanced-guide/stacks/component-metadata.md) section.
+If you would like to automatically track some metadata about your custom stack component with each pipeline run, check out the [Tracking Custom Stack Component Metadata](../../../old\_book/advanced-guide/stacks/component-metadata.md) section.
 {% endhint %}
 
-Check out [this short (< 3 minutes) video](https://www.youtube.com/watch?v=CQRVSKbBjtQ) on how to quickly get some more
-information about the registered flavors available to you:
+Check out [this short (< 3 minutes) video](https://www.youtube.com/watch?v=CQRVSKbBjtQ) on how to quickly get some more information about the registered flavors available to you:
 
-{% embed url="https://www.youtube.com/watch?v=CQRVSKbBjtQ" %} Describe MLOps Stack Component Flavors {% endembed %}
+{% embed url="https://www.youtube.com/watch?v=CQRVSKbBjtQ" %}
+Describe MLOps Stack Component Flavors
+{% endembed %}
 
 ## Extending Specific Stack Components
 
-If you would like to learn more about how to build a custom stack component
-flavor for a specific stack component, please check the links below:
+If you would like to learn more about how to build a custom stack component flavor for a specific stack component, please check the links below:
 
-| **Type of Stack Component**                                                  | **Description**                                                   |
-|------------------------------------------------------------------------------|-------------------------------------------------------------------|
-| [Orchestrator](../../learning/component-gallery/orchestrators/custom.md)              | Orchestrating the runs of your pipeline                           |
-| [Artifact Store](../../learning/component-gallery/artifact-stores/custom.md)          | Storage for the artifacts created by your pipelines               |
-| [Container Registry](../../learning/component-gallery/container-registries/custom.md) | Store for your containers                                         |
-| [Secrets Manager](../../component-gallery/secrets-managers/custom.md)        | Centralized location for the storage of your secrets              |
-| [Step Operator](../../learning/component-gallery/step-operators/custom.md)            | Execution of individual steps in specialized runtime environments |
-| [Model Deployer](../../learning/component-gallery/model-deployers/custom.md)          | Services/platforms responsible for online model serving           |
-| [Feature Store](../../learning/component-gallery/feature-stores/custom.md)            | Management of your data/features                                  |
-| [Experiment Tracker](../../learning/component-gallery/experiment-trackers/custom.md)  | Tracking your ML experiments                                      |
-| [Alerter](../../learning/component-gallery/alerters/custom.md)                        | Sending alerts through specified channels   |
-| [Annotator](../../learning/component-gallery/annotators/custom.md)                        | Annotating and labeling data   |
-| [Data Validator](../../learning/component-gallery/data-validators/custom.md)                        | Validating and monitoring your data          |
+| **Type of Stack Component**                                                            | **Description**                                                   |
+| -------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| [Orchestrator](../../user-guide/component-galery/orchestrators/custom.md)              | Orchestrating the runs of your pipeline                           |
+| [Artifact Store](../../user-guide/component-galery/artifact-stores/custom.md)          | Storage for the artifacts created by your pipelines               |
+| [Container Registry](../../user-guide/component-galery/container-registries/custom.md) | Store for your containers                                         |
+| [Secrets Manager](../../component-gallery/secrets-managers/custom.md)                  | Centralized location for the storage of your secrets              |
+| [Step Operator](../../user-guide/component-galery/step-operators/custom.md)            | Execution of individual steps in specialized runtime environments |
+| [Model Deployer](../../user-guide/component-galery/model-deployers/custom.md)          | Services/platforms responsible for online model serving           |
+| [Feature Store](../../user-guide/component-galery/feature-stores/custom.md)            | Management of your data/features                                  |
+| [Experiment Tracker](../../user-guide/component-galery/experiment-trackers/custom.md)  | Tracking your ML experiments                                      |
+| [Alerter](../../user-guide/component-galery/alerters/custom.md)                        | Sending alerts through specified channels                         |
+| [Annotator](../../user-guide/component-galery/annotators/custom.md)                    | Annotating and labeling data                                      |
+| [Data Validator](../../learning/component-gallery/data-validators/custom.md)           | Validating and monitoring your data                               |
