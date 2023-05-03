@@ -32,7 +32,7 @@
 
 * [🏗 Set up your MLOps Platform](platform-guide/set-up-your-mlops-platform/README.md)
   * [Deploy ZenML](platform-guide/set-up-your-mlops-platform/deploy-zenml/README.md)
-    * [Deployment using the CLI](platform-guide/set-up-your-mlops-platform/deploy-zenml/deployment-using-the-cli.md)
+    * [Deploy with the ZenML CLI](platform-guide/set-up-your-mlops-platform/deploy-zenml/deployment-using-the-cli.md)
     * [Deploy with Docker](platform-guide/set-up-your-mlops-platform/deploy-zenml/deploy-with-docker.md)
     * [Deploy with Helm](platform-guide/set-up-your-mlops-platform/deploy-zenml/deploy-with-helm.md)
     * [Deploy using HuggingFace Spaces](platform-guide/set-up-your-mlops-platform/deploy-zenml/deploy-using-huggingface-spaces.md)
