@@ -15,6 +15,7 @@
 
 from typing import TYPE_CHECKING, Any, ClassVar, Dict, Tuple, Type
 
+from torch.utils.data import Dataset
 from torch.utils.data.dataloader import DataLoader
 
 from zenml.enums import ArtifactType
@@ -29,23 +30,29 @@ DEFAULT_FILENAME = "entire_dataloader.pt"
 
 
 class PyTorchDataLoaderMaterializer(BasePyTorchMaterliazer):
-    """Materializer to read/write PyTorch dataloaders."""
+    """Materializer to read/write PyTorch dataloader and datasets."""
 
-    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (DataLoader,)
+    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (DataLoader, Dataset)
     ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.DATA
     FILENAME: ClassVar[str] = DEFAULT_FILENAME
 
     def extract_metadata(self, dataloader: Any) -> Dict[str, "MetadataType"]:
-        """Extract metadata from the given `DataLoader` object.
+        """Extract metadata from the given dataloader or dataset.
 
         Args:
-            dataloader: The `DataLoader` object to extract metadata from.
+            dataloader: The dataloader or dataset to extract metadata from.
 
         Returns:
             The extracted metadata as a dictionary.
         """
-        return {
-            "num_samples": len(dataloader.dataset),
-            "batch_size": dataloader.batch_size,
-            "num_batches": len(dataloader),
-        }
+        metadata: Dict[str, "MetadataType"] = {}
+        if isinstance(dataloader, DataLoader):
+            if hasattr(dataloader.dataset, "__len__"):
+                metadata["num_samples"] = len(dataloader.dataset)
+            if dataloader.batch_size:
+                metadata["batch_size"] = dataloader.batch_size
+            metadata["num_batches"] = len(dataloader)
+        elif isinstance(dataloader, Dataset):
+            if hasattr(dataloader, "__len__"):
+                metadata["num_samples"] = len(dataloader)
+        return metadata
