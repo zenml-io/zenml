@@ -41,7 +41,7 @@ class BasePyTorchMaterliazer(BaseMaterializer):
             The loaded PyTorch object.
         """
         with fileio.open(os.path.join(self.uri, self.FILENAME), "rb") as f:
-            return torch.load(f, pickle_module=cloudpickle)
+            return torch.load(f)
 
     def save(self, obj: Any) -> None:
         """Uses `torch.save` to save a PyTorch object.
