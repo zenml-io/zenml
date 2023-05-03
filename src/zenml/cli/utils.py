@@ -34,6 +34,7 @@ from typing import (
 )
 
 import click
+from pydantic import SecretStr
 from rich import box, table
 from rich.markup import escape
 from rich.prompt import Confirm
@@ -668,6 +669,108 @@ def parse_unknown_component_attributes(args: List[str]) -> List[str]:
     return p_args
 
 
+def prompt_configuration(
+    config_schema: Dict[str, Any],
+    show_secrets: bool = False,
+    existing_config: Optional[Dict[str, str]] = None,
+) -> Dict[str, str]:
+    """Prompt the user for configuration values using the provided schema.
+
+    Args:
+        config_schema: The configuration schema.
+        show_secrets: Whether to show secrets in the terminal.
+        existing_config: The existing configuration values.
+
+    Returns:
+        The configuration values provided by the user.
+    """
+    is_update = False
+    if existing_config is not None:
+        is_update = True
+    existing_config = existing_config or {}
+
+    config_dict = {}
+    for attr_name, attr_schema in config_schema.get("properties", {}).items():
+        title = attr_schema.get("title", attr_name)
+        title = f"[{attr_name}] {title}"
+        required = attr_name in config_schema.get("required", [])
+        hidden = attr_schema.get("format", "") == "password"
+        subtitles: List[str] = []
+        if hidden:
+            subtitles.append("secret")
+        if required:
+            subtitles.append("required")
+        else:
+            subtitles.append("optional")
+        if subtitles:
+            title += f" {{{', '.join(subtitles)}}}"
+
+        existing_value = existing_config.get(attr_name)
+        if is_update:
+            if existing_value:
+                if isinstance(existing_value, SecretStr):
+                    existing_value = existing_value.get_secret_value()
+                if hidden and not show_secrets:
+                    title += " is currently set to: [HIDDEN]"
+                else:
+                    title += f" is currently set to: '{existing_value}'"
+            else:
+                title += " is not currently set"
+
+            click.echo(title)
+
+            if existing_value:
+                title = (
+                    "Please enter a new value or press Enter to keep the "
+                    "existing one"
+                )
+            elif required:
+                title = "Please enter a new value"
+            else:
+                title = "Please enter a new value or press Enter to skip it"
+
+        while True:
+            # Ask the user to enter a value for the attribute
+            value = click.prompt(
+                title,
+                type=str,
+                hide_input=hidden and not show_secrets,
+                default=existing_value or ("" if not required else None),
+                show_default=False,
+            )
+            if not value:
+                if required:
+                    warning(
+                        f"The attribute '{title}' is mandatory. "
+                        "Please enter a non-empty value."
+                    )
+                    continue
+                else:
+                    value = None
+                    break
+            else:
+                break
+
+        if (
+            is_update
+            and value is not None
+            and value == existing_value
+            and not required
+        ):
+            confirm = click.confirm(
+                "You left this optional attribute unchanged. Would you "
+                "like to remove its value instead?",
+                default=False,
+            )
+            if confirm:
+                value = None
+
+        if value:
+            config_dict[attr_name] = value
+
+    return config_dict
+
+
 def install_packages(
     packages: List[str],
     upgrade: bool = False,
@@ -1176,6 +1279,9 @@ def print_service_connectors_table(
     configurations = []
     for connector in connectors:
         is_active = connector.id in active_connector_ids
+        labels = [
+            f"{label}:{value}" for label, value in connector.labels.items()
+        ]
         connector_config = {
             "ACTIVE": ":point_right:" if is_active else "",
             "NAME": connector.name,
@@ -1188,6 +1294,7 @@ def print_service_connectors_table(
             "SHARED": get_shared_emoji(connector.is_shared),
             "OWNER": f"{connector.user.name if connector.user else 'DELETED!'}",
             "EXPIRED": ":warning:" if connector.has_expired() else "",
+            "LABELS": "\n".join(labels),
         }
         configurations.append(connector_config)
     print_table(configurations)
@@ -1234,7 +1341,7 @@ def print_service_connector_resource_table(
                 resource_type = f"{resource_type_spec.name} ({resource_type})"
 
                 if not resource_type_spec.supports_instances:
-                    resource_ids = ["N/A"]
+                    resource_ids = ["<not-applicable>"]
                 elif resource_model.resource_ids:
                     resource_ids = resource_model.resource_ids
                 elif not resource_type_spec.supports_discovery:
@@ -1246,9 +1353,9 @@ def print_service_connector_resource_table(
             if resource_model.error:
                 resource_ids = [f"Error: {resource_model.error}"]
         resource_row: Dict[str, Any] = {
-            "CONNECTOR_ID": str(resource_model.id),
-            "CONNECTOR_NAME": resource_model.name,
-            "RESOURCE_TYPE": resource_type,
+            "CONNECTOR ID": str(resource_model.id),
+            "CONNECTOR NAME": resource_model.name,
+            "RESOURCE TYPE": resource_type,
             "RESOURCES": "\n".join(resource_ids),
         }
         resource_table.append(resource_row)
@@ -1903,11 +2010,14 @@ def warn_deprecated_secrets_manager() -> None:
     )
 
 
-def get_parsed_labels(labels: Optional[List[str]]) -> Dict[str, str]:
+def get_parsed_labels(
+    labels: Optional[List[str]], allow_label_only: bool = False
+) -> Dict[str, Optional[str]]:
     """Parse labels into a dictionary.
 
     Args:
         labels: The labels to parse.
+        allow_label_only: Whether to allow labels without values.
 
     Returns:
         A dictionary of the metadata.
@@ -1917,7 +2027,15 @@ def get_parsed_labels(labels: Optional[List[str]]) -> Dict[str, str]:
 
     metadata_dict = {}
     for m in labels:
-        key, value = m.split("=")
+        try:
+            key, value = m.split("=")
+        except ValueError:
+            if not allow_label_only:
+                raise ValueError(
+                    "Labels must be in the format key=value"
+                ) from None
+            key = m
+            value = None
         metadata_dict[key] = value
 
     return metadata_dict

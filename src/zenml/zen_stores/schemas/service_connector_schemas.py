@@ -180,9 +180,16 @@ class ServiceConnectorSchema(ShareableSchema, table=True):
             The updated `ServiceConnectorSchema`.
         """
         for field, value in connector_update.dict(
-            exclude_unset=True,
+            exclude_unset=False,
             exclude={"workspace", "user", "labels", "secrets"},
         ).items():
+            if value is None:
+                if field == "resource_id":
+                    # The resource ID field in the update is special: if set
+                    # to None in the update, it triggers the existing resource
+                    # ID to be cleared.
+                    self.resource_id = None
+                continue
             if field == "configuration":
                 self.configuration = (
                     base64.b64encode(
@@ -194,14 +201,8 @@ class ServiceConnectorSchema(ShareableSchema, table=True):
                     else None
                 )
             elif field == "resource_types":
-                self.configuration = (
-                    base64.b64encode(
-                        json.dumps(connector_update.resource_types).encode(
-                            "utf-8"
-                        )
-                    )
-                    if connector_update.configuration
-                    else None
+                self.resource_types = base64.b64encode(
+                    json.dumps(connector_update.resource_types).encode("utf-8")
                 )
             else:
                 setattr(self, field, value)

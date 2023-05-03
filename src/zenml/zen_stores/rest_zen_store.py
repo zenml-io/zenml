@@ -1998,6 +1998,22 @@ class RestZenStore(BaseZenStore):
     ) -> ServiceConnectorResponseModel:
         """Updates an existing service connector.
 
+        The update model contains the fields to be updated. If a field value is
+        set to None in the model, the field is not updated, but there are
+        special rules concerning some fields:
+
+        * the `configuration` and `secrets` fields together represent a full
+        valid configuration update, not just a partial update. If either is
+        set (i.e. not None) in the update, their values are merged together and
+        will replace the existing configuration and secrets values.
+        * the `resource_id` field value is also a full replacement value: if set
+        to `None`, the resource ID is removed from the service connector.
+        * the `secret_id` field value in the update is ignored, given that
+        secrets are managed internally by the ZenML store.
+        * the `labels` field is also a full labels update: if set (i.e. not
+        `None`), all existing labels are removed and replaced by the new labels
+        in the update.
+
         Args:
             service_connector_id: The ID of the service connector to update.
             update: The update to be applied to the service connector.
@@ -2089,7 +2105,7 @@ class RestZenStore(BaseZenStore):
         resource_type: Optional[str] = None,
         resource_id: Optional[str] = None,
     ) -> ServiceConnectorResponseModel:
-        """Get a client service connector for a service connector and given resource.
+        """Get a service connector client for a service connector and given resource.
 
         Args:
             service_connector_id: The ID of the base service connector to use.
@@ -2097,7 +2113,7 @@ class RestZenStore(BaseZenStore):
             resource_id: The ID of the resource to get a client for.
 
         Returns:
-            A client service connector that can be used to access the given
+            A service connector client that can be used to access the given
             resource.
         """
         params = {}

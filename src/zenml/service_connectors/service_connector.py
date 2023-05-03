@@ -310,7 +310,7 @@ class ServiceConnector(BaseModel):
                 authentication method.
         """
 
-    def _get_client_connector(
+    def _get_connector_client(
         self,
         resource_type: str,
         resource_id: Optional[str] = None,
@@ -318,7 +318,7 @@ class ServiceConnector(BaseModel):
         """Get a connector instance that can be used to connect to a resource.
 
         This method should return a connector instance that is fully configured
-        and ready to use to connect to the indicated resource:
+        and ready to use to access the indicated resource:
         - has proper authentication configuration and credentials. These can be
         either the same as the ones configured in this connector instance or
         different ones (e.g. if this connector is able to generate temporary
@@ -326,25 +326,34 @@ class ServiceConnector(BaseModel):
         - has a resource type
         - has a resource ID, if applicable
 
-        This method is useful in cases where the connector instance responsible
-        for authentication is not the same as the connector instance that
-        provides clients to access the authenticated resource. Some example
-        use-cases:
+        This method is useful in cases where the connector capable of
+        authenticating against the target service and accessing the configured
+        resource is different than the connector configured by the user. Some
+        example use-cases for this are:
 
         - a connector is configured with long-lived credentials or credentials
-        with wide permissions and is able to generate temporary credentials or
+        with wide permissions but is able to generate temporary credentials or
         credentials with a narrower permissions scope for a particular resource.
-        In this case, the "server connector" instance stores the long-lived
+        In this case, the "main connector" instance stores the long-lived
         credentials and is used to generate temporary credentials that are used
-        by the "client connector" instance to instantiate clients for the resource.
+        by the "connector client" instance to authenticate against the target
+        service and access the resource.
 
-        - a connector is able to handle multiple types of resources (e.g. cloud
-        providers). In this case, the main connector instance can be
-        configured without a resource type and is able to grant access to any
-        resource type. It can instantiate "client connectors" for a particular
-        resource type and instance. The "client connector" can even be an
-        instance of a different implementation (e.g. the AWS connector can
-        instantiate a Kubernetes connector to access an EKS resource).
+        - a connector is configured to access multiple types of resources (e.g.
+        cloud providers) or multiple resource instances. In this case, the "main
+        connector" instance is configured without a resource type or without a
+        resource ID and is able to grant access to any resource type/resource
+        ID. It can instantiate "connector clients" for a particular
+        resource type and resource ID.
+
+        - a connector is configured with a resource type but it is able to
+        generate configurations for a different resource type. In this case,
+        the "main connector" and the "connector client" can even belong to
+        different connector implementations and the "main connector" can
+        generate a "connector client" configuration of a different resource type
+        that is used to access the final resource (e.g. the AWS connector can
+        instantiate a Kubernetes connector client to access an EKS resource as
+        if it were a generic Kubernetes cluster).
 
         The default implementation returns the connector instance itself, if it
         is ready to use to connect to the indicated resource, or raises an error
@@ -728,9 +737,10 @@ class ServiceConnector(BaseModel):
         if not resource_type or not resource_spec:
             if resource_id:
                 raise ValueError(
-                    "a resource ID was specified, but no resource type was "
-                    "provided nor is the connector configured to provide "
-                    "access to a particular resource type."
+                    "the connector is configured to provide access to multiple "
+                    "resource types, but only a resource ID was specified. A "
+                    "resource type must also be specified when "
+                    "requesting access to a resource."
                 )
 
             return resource_type, resource_id
@@ -758,9 +768,9 @@ class ServiceConnector(BaseModel):
                 and require_resource_id
             ):
                 raise ValueError(
-                    f"the connector is configured to provide access to a "
-                    f"'{resource_type}' resource type that supports "
-                    "multiple instances, but no resource ID was provided."
+                    f"the connector is configured to provide access to "
+                    f"multiple '{resource_type}' resources. A resource ID must "
+                    "be specified when requesting access to a resource."
                 )
 
         return resource_type, resource_id
@@ -778,10 +788,9 @@ class ServiceConnector(BaseModel):
         The connector has to be fully configured for this method to succeed
         (i.e. the connector's configuration must be valid, a resource type must
         be specified and the resource ID must be specified if the resource type
-        supports multiple instances). For service connectors that are configured
-        to access multiple resource types or multiple resource instances, this
-        method should only be called on a client connector retrieved by calling
-        `get_client_connector` on the service connector.
+        supports multiple instances). This method should only be called on a
+        connector client retrieved by calling `get_connector_client` on the
+        main service connector.
 
         Args:
             kwargs: Additional implementation specific keyword arguments to use
@@ -901,10 +910,9 @@ class ServiceConnector(BaseModel):
         The connector has to be fully configured for this method to succeed
         (i.e. the connector's configuration must be valid, a resource type must
         be specified and the resource ID must be specified if the resource type
-        supports multiple instances). For service connectors that are configured
-        to access multiple resource types or multiple resource instances, this
-        method should only be called on a client connector retrieved by calling
-        `get_client_connector` on the service connector.
+        supports multiple instances). This method should only be called on a
+        connector client retrieved by calling `get_connector_client` on the
+        main service connector.
 
         Args:
             kwargs: Additional implementation specific keyword arguments to use
@@ -1050,14 +1058,14 @@ class ServiceConnector(BaseModel):
 
         return resources
 
-    def get_client_connector(
+    def get_connector_client(
         self,
         resource_type: Optional[str],
         resource_id: Optional[str] = None,
     ) -> "ServiceConnector":
-        """Get a client connector that can be used to connect to a resource.
+        """Get a connector client that can be used to connect to a resource.
 
-        The client connector can be used by consumers to connect to a resource
+        The connector client can be used by consumers to connect to a resource
         (i.e. make calls to `connect` and `configure_local_client`).
 
         The returned connector may be the same as the original connector
@@ -1095,19 +1103,19 @@ class ServiceConnector(BaseModel):
 
         assert resource_type is not None
 
-        client_connector = self._get_client_connector(
+        connector_client = self._get_connector_client(
             resource_type=resource_type,
             resource_id=resource_id,
         )
 
-        if client_connector.has_expired():
+        if connector_client.has_expired():
             raise AuthorizationException(
                 "the connector's authentication credentials have expired."
             )
 
-        client_connector._verify(
+        connector_client._verify(
             resource_type=resource_type,
-            resource_id=client_connector.resource_id,
+            resource_id=connector_client.resource_id,
         )
 
-        return client_connector
+        return connector_client

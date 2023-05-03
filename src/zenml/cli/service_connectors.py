@@ -13,11 +13,10 @@
 #  permissions and limitations under the License.
 """Service connector CLI commands."""
 
-from typing import Any, List, Optional
+from typing import Any, Dict, List, Optional, cast
 from uuid import UUID
 
 import click
-from pydantic import SecretStr
 
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
@@ -45,10 +44,260 @@ def service_connector() -> None:
     """Configure and manage service connectors."""
 
 
+def prompt_connector_name(
+    default_name: Optional[str] = None, connector: Optional[UUID] = None
+) -> str:
+    """Prompt the user for a service connector name.
+
+    Args:
+        default_name: The default name to use if the user doesn't provide one.
+        connector: The UUID of a service connector being renamed.
+
+    Returns:
+        The name provided by the user.
+    """
+    client = Client()
+
+    while True:
+        # Ask for a name
+        title = "Please enter a name for the service connector"
+        if connector:
+            title += " or press Enter to keep the current name"
+
+        name = click.prompt(
+            title,
+            type=str,
+            default=default_name,
+        )
+        if not name:
+            cli_utils.warning("The name cannot be empty")
+            continue
+        assert isinstance(name, str)
+
+        # Check if the name is taken
+        try:
+            existing_connector = client.get_service_connector(
+                name_id_or_prefix=name, allow_name_prefix_match=False
+            )
+        except KeyError:
+            break
+        else:
+            if existing_connector.id == connector:
+                break
+            cli_utils.warning(
+                f"A service connector with the name '{name}' already "
+                "exists. Please choose a different name."
+            )
+
+    return name
+
+
+def prompt_resource_type(available_resource_types: List[str]) -> Optional[str]:
+    """Prompt the user for a resource type.
+
+    Args:
+        available_resource_types: The list of available resource types.
+
+    Returns:
+        The resource type provided by the user.
+    """
+    resource_type = None
+    if len(available_resource_types) == 1:
+        # Default to the first resource type if only one type is available
+        click.echo(
+            "Only one resource type is available for this connector"
+            f" ({available_resource_types[0]})."
+        )
+        resource_type = available_resource_types[0]
+    else:
+        # Ask the user to select a resource type
+        while True:
+            resource_type = click.prompt(
+                "Please select a resource type or leave it empty to create "
+                "a connector that can be used to access any of the "
+                "supported resource types "
+                f"({', '.join(available_resource_types)}).",
+                type=str,
+                default="",
+            )
+            if resource_type and resource_type not in available_resource_types:
+                cli_utils.warning(
+                    f"The entered resource type '{resource_type}' is not "
+                    "one of the listed values. Please try again."
+                )
+                continue
+            break
+
+        if resource_type == "":
+            resource_type = None
+
+    return resource_type
+
+
+def prompt_resource_id(
+    resource_name: str, resource_ids: List[str]
+) -> Optional[str]:
+    """Prompt the user for a resource ID.
+
+    Args:
+        resource_name: The name of the resource.
+        resource_ids: The list of available resource IDs.
+
+    Returns:
+        The resource ID provided by the user.
+    """
+    resource_id: Optional[str] = None
+    if resource_ids:
+        resource_ids_list = "\n - " + "\n - ".join(resource_ids)
+        prompt = (
+            f"The following {resource_name} instances "
+            "are reachable through this connector:"
+            f"{resource_ids_list}\n"
+            "Please select one or leave it empty to create a "
+            "connector that can be used to access any of them"
+        )
+        while True:
+            # Ask the user to enter an optional resource ID
+            resource_id = click.prompt(
+                prompt,
+                default="",
+                type=str,
+            )
+            if (
+                not resource_ids
+                or not resource_id
+                or resource_id in resource_ids
+            ):
+                break
+
+            cli_utils.warning(
+                f"The selected '{resource_id}' value is not one of "
+                "the listed values. Please try again."
+            )
+    else:
+        prompt = (
+            "The connector configuration can be used to access "
+            f"multiple {resource_name} instances. If you "
+            "would like to limit the scope of the connector to one "
+            "instance, please enter the ID of a particular "
+            f"{resource_name} instance. Or leave it "
+            "empty to create a multi-instance connector that can "
+            f"be used to access any {resource_name}"
+        )
+        resource_id = click.prompt(
+            prompt,
+            default="",
+            type=str,
+        )
+
+    if resource_id == "":
+        resource_id = None
+
+    return resource_id
+
+
+def prompt_expiration_time(
+    min: Optional[int] = None,
+    max: Optional[int] = None,
+    default: Optional[int] = None,
+) -> int:
+    """Prompt the user for an expiration time.
+
+    Args:
+        min: The minimum allowed expiration time.
+        max: The maximum allowed expiration time.
+        default: The default expiration time.
+
+    Returns:
+        The expiration time provided by the user.
+    """
+    while True:
+        if min is None:
+            min = 0
+        if max is not None:
+            max_str = str(max)
+        else:
+            max = -1
+            max_str = "unlimited"
+
+        expiration_seconds = click.prompt(
+            "The authentication method involves generating "
+            "temporary credentials. Please enter the time that "
+            "the credentials should be valid for, in seconds "
+            f"({min}-{max_str})",
+            type=int,
+            default=default,
+        )
+
+        assert expiration_seconds is not None
+        assert isinstance(expiration_seconds, int)
+        if expiration_seconds < min:
+            cli_utils.warning(
+                f"The expiration time must be at least "
+                f"{min} seconds. Please enter a larger value."
+            )
+            continue
+        if max > 0 and expiration_seconds > max:
+            cli_utils.warning(
+                f"The expiration time must not exceed "
+                f"{max} seconds. Please enter a smaller value."
+            )
+            continue
+        break
+
+    return expiration_seconds
+
+
 @service_connector.command(
     "register",
     context_settings={"ignore_unknown_options": True},
     help="""Configure, validate and register a ZenML service connector.
+
+This command can be used to configure and register a ZenML service connector.
+If the `-i|--interactive` flag is set, it will prompt the user for all the
+information required to configure a service connector in a wizard-like fashion:
+
+    $ zenml service-connector register -i
+
+To trim down the amount of information displayed in interactive mode, pass the
+`-n|--no-docs` flag:
+
+    $ zenml service-connector register -ni
+
+Secret configuration attributes are not shown by default. Use the
+`-x|--show-secrets` flag to show them:
+
+    $ zenml service-connector register -ix
+
+Non-interactive examples:
+
+- register a shared, multi-purpose AWS service connector capable of accessing
+any of the resource types that it supports (e.g. S3 buckets, EKS Kubernetes
+clusters) using auto-configured credentials (i.e. extracted from the environment
+variables or AWS CLI configuration files):
+
+    $ zenml service-connector register aws-auto-multi --description \\
+"Multi-purpose AWS connector" --type aws --share --auto-configure \\
+--label auto=true --label purpose=multi
+
+- register a Docker service connector providing access to a single DockerHub
+repository named `dockerhub-hyppo` using explicit credentials:
+
+    $ zenml service-connector register dockerhub-hyppo --description \\
+"Hyppo's DockerHub repo" --type docker --resource-id dockerhub-hyppo \\
+--username=hyppo --password=mypassword
+
+- register an AWS service connector providing access to all the S3 buckets
+that it's authorized to access using IAM role credentials:
+
+    $ zenml service-connector register aws-s3-multi --description \\   
+"Multi-bucket S3 connector" --type aws --resource-type s3-bucket \\    
+--auth_method iam-role --role_arn=arn:aws:iam::<account>:role/<role> \\
+--aws_region=us-east-1 --aws-access-key-id=<aws-key-id> \\            
+--aws_secret_access_key=<aws-secret-key> --expiration-seconds 3600
+
+All registered service connectors are validated before being registered. To
+skip validation, pass the `--no-verify` flag.
 """,
 )
 @click.argument(
@@ -137,6 +386,25 @@ def service_connector() -> None:
     type=click.BOOL,
 )
 @click.option(
+    "--no-docs",
+    "-n",
+    "no_docs",
+    is_flag=True,
+    default=False,
+    help="Don't show documentation details during the interactive "
+    "configuration.",
+    type=click.BOOL,
+)
+@click.option(
+    "--show-secrets",
+    "-x",
+    "show_secrets",
+    is_flag=True,
+    default=False,
+    help="Show security sensitive configuration attributes in the terminal.",
+    type=click.BOOL,
+)
+@click.option(
     "--auto-configure",
     "auto_configure",
     is_flag=True,
@@ -158,6 +426,8 @@ def register_service_connector(
     no_verify: bool = False,
     labels: Optional[List[str]] = None,
     interactive: bool = False,
+    no_docs: bool = False,
+    show_secrets: bool = False,
     auto_configure: bool = False,
 ) -> None:
     """Registers a service connector.
@@ -177,6 +447,10 @@ def register_service_connector(
             registering.
         labels: Labels to be associated with the service connector.
         interactive: Register a new service connector interactively.
+        no_docs: Don't show documentation details during the interactive
+            configuration.
+        show_secrets: Show security sensitive configuration attributes in
+            the terminal.
         auto_configure: Auto configure the service connector.
     """
     from rich.markdown import Markdown
@@ -190,7 +464,7 @@ def register_service_connector(
         name_mandatory=not interactive,
     )
 
-    parsed_labels = cli_utils.get_parsed_labels(labels)
+    parsed_labels = cast(Dict[str, str], cli_utils.get_parsed_labels(labels))
 
     if interactive:
         # Get the list of available service connector types
@@ -211,28 +485,7 @@ def register_service_connector(
                 else "",
             )
 
-        while True:
-            # Ask for a name
-            name = click.prompt(
-                "Please enter a name for the service connector",
-                type=str,
-                default=name,
-            )
-            if not name:
-                cli_utils.warning("The name cannot be empty")
-                continue
-            # Check if the name is taken
-            try:
-                client.get_service_connector(
-                    name_id_or_prefix=name, allow_name_prefix_match=False
-                )
-            except KeyError:
-                break
-            else:
-                cli_utils.warning(
-                    f"A service connector with the name '{name}' already "
-                    "exists. Please choose a different name."
-                )
+        name = prompt_connector_name(name)
 
         # Ask for a description
         description = click.prompt(
@@ -254,7 +507,8 @@ def register_service_connector(
             message += f"## {spec.name} ({spec.connector_type})\n"
             message += f"{spec.description}\n"
 
-        console.print(Markdown(f"{message}---"), justify="left", width=80)
+        if not no_docs:
+            console.print(Markdown(f"{message}---"), justify="left", width=80)
 
         # Ask the user to select a service connector type
         connector_type = click.prompt(
@@ -277,44 +531,12 @@ def register_service_connector(
             message += f"## {r.name} ({r.resource_type})\n"
             message += f"{r.description}\n"
 
-        console.print(Markdown(f"{message}---"), justify="left", width=80)
+        if not no_docs:
+            console.print(Markdown(f"{message}---"), justify="left", width=80)
 
-        resource_type = None
-        if len(available_resource_types) == 1:
-            # Default to the first resource type if only one type is available
-            confirm = click.confirm(
-                "Only one resource type is available for this connector"
-                f" ({available_resource_types[0]}). Would you like to use it?",
-                default=True,
-            )
-            if not confirm:
-                return
-
-            resource_type = available_resource_types[0]
-        else:
-            # Ask the user to select a resource type
-            while True:
-                resource_type = click.prompt(
-                    "Please select a resource type or leave it empty to create "
-                    "a connector that can be used to access any of the "
-                    "supported resource types "
-                    f"({', '.join(available_resource_types)}).",
-                    type=str,
-                    default="",
-                )
-                if (
-                    resource_type
-                    and resource_type not in available_resource_types
-                ):
-                    cli_utils.warning(
-                        f"The entered resource type '{resource_type}' is not "
-                        "one of the listed values. Please try again."
-                    )
-                    continue
-                break
-
-            if resource_type == "":
-                resource_type = None
+        resource_type = prompt_resource_type(
+            available_resource_types=available_resource_types
+        )
 
         # Ask the user whether to use auto-configuration, if the connector
         # implementation is locally available
@@ -380,7 +602,7 @@ def register_service_connector(
                 cli_utils.print_service_connector_configuration(
                     connector_model,
                     active_status=False,
-                    show_secrets=False,
+                    show_secrets=show_secrets,
                 )
                 # Ask the user whether to continue with the auto configuration
                 choice = click.prompt(
@@ -408,10 +630,14 @@ def register_service_connector(
                 message += f"## {auth_method_spec.name} ({a})\n"
                 message += f"{auth_method_spec.description}\n"
 
-            console.print(Markdown(f"{message}---"), justify="left", width=80)
+            if not no_docs:
+                console.print(
+                    Markdown(f"{message}---"), justify="left", width=80
+                )
 
             if len(auth_methods) == 1:
-                # Default to the first auth method if only one method is available
+                # Default to the first auth method if only one method is
+                # available
                 confirm = click.confirm(
                     "Only one authentication method is available for this "
                     f"connector ({auth_methods[0]}). Would you like to use it?",
@@ -438,90 +664,17 @@ def register_service_connector(
             )
 
             config_schema = auth_method_spec.config_schema or {}
-            config_dict = {}
-            secrets_dict = {}
-            for attr_name, attr_schema in config_schema.get(
-                "properties", {}
-            ).items():
-                title = attr_schema.get("title", attr_name)
-                title = f"[{attr_name}] {title}"
-                required = attr_name in config_schema.get("required", [])
-                hidden = attr_schema.get("format", "") == "password"
-                subtitles: List[str] = []
-                if hidden:
-                    subtitles.append("hidden")
-                if required:
-                    subtitles.append("required")
-                else:
-                    subtitles.append("optional")
-                if subtitles:
-                    title += f" {{{', '.join(subtitles)}}}"
-
-                while True:
-                    # Ask the user to enter a value for the attribute
-                    default = parsed_args.get(
-                        attr_name, "" if not required else None
-                    )
-                    value = click.prompt(
-                        title,
-                        type=str,
-                        hide_input=hidden,
-                        default=default,
-                        show_default=default not in (None, ""),
-                    )
-                    if not value:
-                        if required:
-                            cli_utils.warning(
-                                f"The attribute '{title}' is mandatory. "
-                                "Please enter a non-empty value."
-                            )
-                            continue
-                        else:
-                            value = None
-                            break
-                    else:
-                        if hidden:
-                            secrets_dict[attr_name] = SecretStr(value)
-                        else:
-                            config_dict[attr_name] = value
-                        break
+            config_dict = cli_utils.prompt_configuration(
+                config_schema=config_schema,
+                show_secrets=show_secrets,
+            )
 
             if auth_method_spec.supports_temporary_credentials():
-                while True:
-                    if auth_method_spec.min_expiration_seconds is not None:
-                        min = auth_method_spec.min_expiration_seconds
-                    else:
-                        min = 0
-                    if auth_method_spec.max_expiration_seconds is not None:
-                        max = auth_method_spec.max_expiration_seconds
-                        max_str = str(max)
-                    else:
-                        max = -1
-                        max_str = "unlimited"
-
-                    expiration_seconds = click.prompt(
-                        "The authentication method involves generating "
-                        "temporary credentials. Please enter the time that "
-                        "the credentials should be valid for, in seconds "
-                        f"({min}-{max_str})",
-                        type=int,
-                        default=auth_method_spec.default_expiration_seconds,
-                    )
-
-                    assert expiration_seconds is not None
-                    if expiration_seconds < min:
-                        cli_utils.warning(
-                            f"The expiration time must be at least "
-                            f"{min} seconds. Please enter a larger value."
-                        )
-                        continue
-                    if max > 0 and expiration_seconds > max:
-                        cli_utils.warning(
-                            f"The expiration time must not exceed "
-                            f"{max} seconds. Please enter a smaller value."
-                        )
-                        continue
-                    break
+                expiration_seconds = prompt_expiration_time(
+                    min=auth_method_spec.min_expiration_seconds,
+                    max=auth_method_spec.max_expiration_seconds,
+                    default=auth_method_spec.default_expiration_seconds,
+                )
 
             try:
                 with console.status(
@@ -538,7 +691,6 @@ def register_service_connector(
                         auth_method=auth_method,
                         resource_type=resource_type,
                         configuration=config_dict,
-                        secrets=secrets_dict,
                         expiration_seconds=expiration_seconds,
                         is_shared=share,
                         auto_configure=False,
@@ -560,58 +712,16 @@ def register_service_connector(
             resource_type_spec = connector_type_spec.resource_type_map[
                 resource_type
             ]
-
             if resource_type_spec.supports_instances:
                 resource_ids: List[str] = []
                 if resource_type_spec.supports_discovery:
                     assert connector_resources.resource_ids is not None
                     resource_ids = connector_resources.resource_ids
 
-                if resource_ids:
-                    resource_ids_list = "\n - " + "\n - ".join(resource_ids)
-                    prompt = (
-                        f"The following {resource_type_spec.name} instances "
-                        "are reachable through this connector:"
-                        f"{resource_ids_list}\n"
-                        "Please select one or leave it empty to create a "
-                        "connector that can be used to access any of them"
-                    )
-                    while True:
-                        # Ask the user to enter an optional resource ID
-                        resource_id = click.prompt(
-                            prompt,
-                            default="",
-                            type=str,
-                        )
-                        if (
-                            not resource_ids
-                            or not resource_id
-                            or resource_id in resource_ids
-                        ):
-                            break
-
-                        cli_utils.warning(
-                            f"The selected '{resource_id}' value is not one of "
-                            "the listed values. Please try again."
-                        )
-                else:
-                    prompt = (
-                        "The connector configuration can be used to access "
-                        f"multiple {resource_type_spec.name} instances. If you "
-                        "would like to limit the scope of the connector to one "
-                        "instance, please enter the ID of a particular "
-                        f"{resource_type_spec.name} instance. Or leave it "
-                        "empty to create a multi-instance connector that can "
-                        f"be used to access any {resource_type_spec.name}"
-                    )
-                    resource_id = click.prompt(
-                        prompt,
-                        default="",
-                        type=str,
-                    )
-
-                if resource_id == "":
-                    resource_id = None
+                resource_id = prompt_resource_id(
+                    resource_name=resource_type_spec.name,
+                    resource_ids=resource_ids,
+                )
             else:
                 resource_id = None
         else:
@@ -635,12 +745,6 @@ def register_service_connector(
         cli_utils.error(
             "The connector type must be specified when using non-interactive "
             "configuration."
-        )
-
-    if not auth_method and not auto_configure:
-        cli_utils.error(
-            "The authentication method must be specified when using "
-            "non-interactive configuration and not using auto-configuration."
         )
 
     with console.status(f"Registering service connector '{name}'...\n"):
@@ -682,13 +786,29 @@ def register_service_connector(
 """,
 )
 @list_options(ServiceConnectorFilterModel)
-def list_service_connectors(**kwargs: Any) -> None:
+@click.option(
+    "--label",
+    "-l",
+    "labels",
+    help="Label to filter by. Takes the form `-l key1=value1` or `-l key` and "
+    "can be used multiple times.",
+    multiple=True,
+)
+def list_service_connectors(
+    labels: Optional[List[str]] = None, **kwargs: Any
+) -> None:
     """List all service connectors.
 
     Args:
+        labels: Labels to filter by.
         kwargs: Keyword arguments to filter the components.
     """
     client = Client()
+
+    if labels:
+        kwargs["labels"] = cli_utils.get_parsed_labels(
+            labels, allow_label_only=True
+        )
 
     connectors = client.list_service_connectors(**kwargs)
     if not connectors:
@@ -704,7 +824,24 @@ def list_service_connectors(**kwargs: Any) -> None:
 
 @service_connector.command(
     "describe",
-    help="""Show detailed information about a service connector.
+    help="""Show detailed information about a service connector or a service
+connector client.
+
+Connector clients are the connector configurations generated from the original
+connectors that are actually used to access a specific target resource (e.g. an
+AWS connector generates a Kubernetes connector client to access a specific EKS
+Kubernetes cluster). Connector clients have a limited lifetime and may contain
+temporary credentials to access the target resource (e.g. an AWS connector
+configured with an AWS secret key and IAM role generates a connector client
+containing temporary STS credentials).
+
+To show the details of a service connector client instead of the base connector
+use the `--client` flag. If the service connector is configured to provide
+access to multiple resources, you also need to use the `--resource-type` and
+`--resource-id` flags to specify the scope of the connector client.
+
+Secret configuration attributes are not shown by default. Use the
+`-x|--show-secrets` flag to show them.
 """,
 )
 @click.argument(
@@ -722,11 +859,20 @@ def list_service_connectors(**kwargs: Any) -> None:
     type=click.BOOL,
 )
 @click.option(
+    "--client",
+    "-c",
+    "describe_client",
+    is_flag=True,
+    default=False,
+    help="Fetch and describe a service connector client instead of the base "
+    "connector.",
+    type=click.BOOL,
+)
+@click.option(
     "--resource-type",
     "-r",
     "resource_type",
-    help="Use a resource type to fetch and describe a client service connector "
-    "instead of the base connector.",
+    help="Resource type to use when fetching the service connector client.",
     required=False,
     type=str,
 )
@@ -734,14 +880,14 @@ def list_service_connectors(**kwargs: Any) -> None:
     "--resource-id",
     "-ri",
     "resource_id",
-    help="Use a resource ID to fetch and describe a client service connector "
-    "instead of the base connector.",
+    help="Resource ID to use when fetching the service connector client.",
     required=False,
     type=str,
 )
 def describe_service_connector(
     name_id_or_prefix: str,
     show_secrets: bool = False,
+    describe_client: bool = False,
     resource_type: Optional[str] = None,
     resource_id: Optional[str] = None,
 ) -> None:
@@ -751,16 +897,18 @@ def describe_service_connector(
         name_id_or_prefix: Name or id of the service connector to describe.
         show_secrets: Whether to show security sensitive configuration
             attributes in the terminal.
-        resource_type: Use a resource type to fetch and describe a client
-            service connector instead of the base connector.
-        resource_id: Use a resource ID to fetch and describe a client service
-            connector instead of the base connector.
+        describe_client: Fetch and describe a service connector client
+            instead of the base connector if possible.
+        resource_type: Resource type to use when fetching the service connector
+            client.
+        resource_id: Resource ID to use when fetching the service connector
+            client.
     """
     client = Client()
 
-    if resource_type or resource_id:
+    if describe_client:
         try:
-            client_connector = client.get_service_connector_client(
+            connector_client = client.get_service_connector_client(
                 name_id_or_prefix=name_id_or_prefix,
                 resource_type=resource_type,
                 resource_id=resource_id,
@@ -775,12 +923,12 @@ def describe_service_connector(
             resource_type = resource_type or "<unspecified>"
             resource_id = resource_id or "<unspecified>"
             cli_utils.error(
-                f"Failed fetching a client service connector for connector "
+                f"Failed fetching a service connector client for connector "
                 f"'{name_id_or_prefix}', resource type '{resource_type}' and "
-                f"resource ID {resource_id}: {e}"
+                f"resource ID '{resource_id}': {e}"
             )
 
-        connector = client_connector.to_response_model(
+        connector = connector_client.to_response_model(
             workspace=client.active_workspace,
             user=client.active_user,
         )
@@ -788,25 +936,10 @@ def describe_service_connector(
         try:
             connector = client.get_service_connector(
                 name_id_or_prefix=name_id_or_prefix,
+                load_secrets=True,
             )
         except KeyError as err:
             cli_utils.error(str(err))
-
-        if connector.secret_id:
-            try:
-                secret = client.get_secret(
-                    name_id_or_prefix=connector.secret_id,
-                    allow_partial_id_match=False,
-                    allow_partial_name_match=False,
-                )
-            except KeyError as err:
-                cli_utils.warning(
-                    "Unable to retrieve secret values associated with "
-                    f"service connector '{connector.name}': {err}"
-                )
-            else:
-                # Add secret values to connector configuration
-                connector.secrets.update(secret.values)
 
     with console.status(f"Describing connector '{connector.name}'..."):
         active_stack = client.active_stack_model
@@ -827,66 +960,420 @@ def describe_service_connector(
         )
 
 
-# def generate_stack_component_update_command(
-#     component_type: StackComponentType,
-# ) -> Callable[[str, List[str]], None]:
-#     """Generates an `update` command for the specific stack component type.
+@service_connector.command(
+    "update",
+    context_settings={"ignore_unknown_options": True},
+    help="""Update and verify a ZenML service connector.
 
-#     Args:
-#         component_type: Type of the component to generate the command for.
+This command can be used to update and verify a ZenML service connector.
+If the `-i|--interactive` flag is set, it will prompt the user for all the
+information required to update the service connector configuration:
 
-#     Returns:
-#         A function that can be used as a `click` command.
-#     """
-#     display_name = _component_display_name(component_type)
+    $ zenml service-connector update -i <connector-name-or-id>
 
-#     @click.argument(
-#         "name_id_or_prefix",
-#         type=str,
-#         required=False,
-#     )
-#     @click.argument("args", nargs=-1, type=click.UNPROCESSED)
-#     def update_stack_component_command(
-#         name_id_or_prefix: Optional[str], args: List[str]
-#     ) -> None:
-#         """Updates a stack component.
+For consistency reasons, the connector type cannot be changed. If you need to
+change the connector type, you need to create a new service connector.
+You also cannot change the authentication method, resource type and resource ID
+of a service connector that is already actively being used by one or more stack
+components.
 
-#         Args:
-#             name_id_or_prefix: The name or id of the stack component to update.
-#             args: Additional arguments to pass to the update command.
-#         """
-#         if component_type == StackComponentType.SECRETS_MANAGER:
-#             warn_deprecated_secrets_manager()
+Secret configuration attributes are not shown by default. Use the
+`-x|--show-secrets` flag to show them:
 
-#         client = Client()
+    $ zenml service-connector update -ix <connector-name-or-id>
 
-#         # Parse the given args
-#         args = list(args)
-#         if name_id_or_prefix:
-#             args.append(name_id_or_prefix)
+Non-interactive examples:
 
-#         name_or_id, parsed_args = cli_utils.parse_name_and_extra_arguments(
-#             args,
-#             expand_args=True,
-#             name_mandatory=False,
-#         )
+- update the DockerHub repository that a Docker service connector is configured
+to provide access to:
 
-#         with console.status(f"Updating {display_name}...\n"):
-#             try:
-#                 updated_component = client.update_stack_component(
-#                     name_id_or_prefix=name_or_id,
-#                     component_type=component_type,
-#                     configuration=parsed_args,
-#                 )
-#             except KeyError as err:
-#                 cli_utils.error(str(err))
+    $ zenml service-connector update dockerhub-hyppo --resource-id lylemcnew
 
-#             cli_utils.declare(
-#                 f"Successfully updated {display_name} "
-#                 f"`{updated_component.name}`."
-#             )
+- update the AWS credentials that an AWS service connector is configured to
+use from an STS token to an AWS secret key. This involves updating some config
+values and deleting others:
 
-#     return update_stack_component_command
+    $ zenml service-connector update aws-auto-multi \\                       
+--aws-access-key-id=<aws-key-id> \\                                 
+--aws_secret_access_key=<aws-secret-key>  \\                      
+--remove-attribute aws-sts-token
+
+- update the foo label to a new value and delete the baz label from a connector:
+
+    $ zenml service-connector update gcp-eu-multi \\                          
+--label foo=bar --label baz
+
+""",
+)
+@click.argument(
+    "name_id_or_prefix",
+    type=str,
+    required=True,
+)
+@click.option(
+    "--name",
+    "name",
+    help="New connector name.",
+    required=False,
+    type=str,
+)
+@click.option(
+    "--description",
+    "description",
+    help="Short description for the connector instance.",
+    required=False,
+    type=str,
+)
+@click.option(
+    "--resource-type",
+    "-r",
+    "resource_type",
+    help="The type of resource to connect to.",
+    required=False,
+    type=str,
+)
+@click.option(
+    "--resource-id",
+    "-ri",
+    "resource_id",
+    help="The ID of the resource to connect to.",
+    required=False,
+    type=str,
+)
+@click.option(
+    "--auth-method",
+    "-a",
+    "auth_method",
+    help="The authentication method to use.",
+    required=False,
+    type=str,
+)
+@click.option(
+    "--expiration-seconds",
+    "expiration_seconds",
+    help="The duration, in seconds, that the temporary credentials "
+    "generated by this connector should remain valid.",
+    required=False,
+    type=int,
+)
+@click.option(
+    "--label",
+    "-l",
+    "labels",
+    help="Labels to be associated with the service connector. Takes the form "
+    "`-l key1=value1` or `-l key1` and can be used multiple times.",
+    multiple=True,
+)
+@click.option(
+    "--no-verify",
+    "no_verify",
+    is_flag=True,
+    default=False,
+    help="Do not verify the service connector before registering.",
+    type=click.BOOL,
+)
+@click.option(
+    "--interactive",
+    "-i",
+    "interactive",
+    is_flag=True,
+    default=False,
+    help="Register a new service connector interactively.",
+    type=click.BOOL,
+)
+@click.option(
+    "--show-secrets",
+    "-x",
+    "show_secrets",
+    is_flag=True,
+    default=False,
+    help="Show security sensitive configuration attributes in the terminal.",
+    type=click.BOOL,
+)
+@click.option(
+    "--remove-attribute",
+    "-r",
+    "remove_attrs",
+    help="Configuration attributes to be removed from the configuration. Takes "
+    "the form `-r attr-name` and can be used multiple times.",
+    multiple=True,
+)
+@click.argument("args", nargs=-1, type=click.UNPROCESSED)
+def update_service_connector(
+    args: List[str],
+    name_id_or_prefix: Optional[str] = None,
+    name: Optional[str] = None,
+    description: Optional[str] = None,
+    connector_type: Optional[str] = None,
+    resource_type: Optional[str] = None,
+    resource_id: Optional[str] = None,
+    auth_method: Optional[str] = None,
+    expiration_seconds: Optional[int] = None,
+    no_verify: bool = False,
+    labels: Optional[List[str]] = None,
+    interactive: bool = False,
+    show_secrets: bool = False,
+    remove_attrs: Optional[List[str]] = None,
+) -> None:
+    """Updates a service connector.
+
+    Args:
+        args: Configuration arguments for the service connector.
+        name_id_or_prefix: The name or ID of the service connector to
+            update.
+        name: New connector name.
+        description: Short description for the service connector.
+        connector_type: The service connector type.
+        resource_type: The type of resource to connect to.
+        resource_id: The ID of the resource to connect to.
+        auth_method: The authentication method to use.
+        expiration_seconds: The duration, in seconds, that the temporary
+            credentials generated by this connector should remain valid.
+        no_verify: Do not verify the service connector before
+            updating.
+        labels: Labels to be associated with the service connector.
+        interactive: Register a new service connector interactively.
+        show_secrets: Show security sensitive configuration attributes in
+            the terminal.
+        remove_attrs: Configuration attributes to be removed from the
+            configuration.
+    """
+    client = Client()
+
+    # Parse the given args
+    parsed_args: Dict[str, Optional[str]] = {}
+    name_id_or_prefix, parsed_args = cli_utils.parse_name_and_extra_arguments(  # type: ignore[assignment]
+        list(args) + [name_id_or_prefix or ""],
+        expand_args=True,
+        name_mandatory=True,
+    )
+    assert name_id_or_prefix is not None
+    parsed_labels = cli_utils.get_parsed_labels(labels, allow_label_only=True)
+
+    try:
+        connector = client.get_service_connector(
+            name_id_or_prefix,
+            allow_name_prefix_match=False,
+            load_secrets=True,
+        )
+    except KeyError as e:
+        cli_utils.error(str(e))
+
+    if interactive:
+
+        if isinstance(connector.connector_type, str):
+            connector_type_spec = client.get_service_connector_type(
+                connector.connector_type
+            )
+        else:
+            connector_type_spec = connector.connector_type
+
+        name = prompt_connector_name(connector.name, connector=connector.id)
+
+        # Ask for a new description
+        description = click.prompt(
+            "Updated service connector description",
+            type=str,
+            default=connector.description,
+        )
+
+        # Ask for a new authentication method
+        auth_method = click.prompt(
+            "If you would like to update the authentication method, please "
+            "select a new one from the following options, otherwise press "
+            "enter to keep the existing one. Please note that changing "
+            "the authentication method may invalidate the existing "
+            "configuration and credentials and may require you to reconfigure "
+            "the connector from scratch",
+            type=click.Choice(
+                list(connector_type_spec.auth_method_map.keys()),
+            ),
+            default=connector.auth_method,
+        )
+
+        assert auth_method is not None
+        auth_method_spec = connector_type_spec.auth_method_map[auth_method]
+
+        if auth_method != connector.auth_method:
+            confirm = True
+        else:
+            confirm = click.confirm(
+                "Would you like to update the authentication configuration?",
+                default=False,
+            )
+
+        existing_config = connector.configuration.copy()
+        existing_config.update(
+            {
+                k: v.get_secret_value()
+                for k, v in connector.secrets.items()
+                if v
+            }
+        )
+        if confirm:
+
+            cli_utils.declare(
+                f"Please update or verify the existing configuration for the "
+                f"'{auth_method_spec.name}' authentication method."
+            )
+
+            config_schema = auth_method_spec.config_schema or {}
+            config_dict = cli_utils.prompt_configuration(
+                config_schema=config_schema,
+                show_secrets=show_secrets,
+                existing_config=existing_config,
+            )
+
+        else:
+            config_dict = existing_config
+
+        available_resource_types = [
+            r.resource_type
+            for r in connector_type_spec.resource_types
+            if auth_method in r.auth_methods
+        ]
+        if len(available_resource_types) == 1:
+            resource_type = available_resource_types[0]
+        else:
+            if connector.is_multi_type:
+                resource_type = None
+                title = (
+                    "The connector is configured to access any of the supported "
+                    f'resource types ({", ".join(available_resource_types)}). '
+                    "Would you like to restrict it to a single resource type?"
+                )
+            else:
+                resource_type = connector.resource_types[0]
+                title = (
+                    "The connector is configured to access the "
+                    f"{resource_type} resource type. "
+                    "Would you like to change that?"
+                )
+            confirm = click.confirm(title, default=False)
+
+            if confirm:
+                resource_type = prompt_resource_type(
+                    available_resource_types=available_resource_types
+                )
+
+        expiration_seconds = None
+        if auth_method_spec.supports_temporary_credentials():
+            expiration_seconds = prompt_expiration_time(
+                min=auth_method_spec.min_expiration_seconds,
+                max=auth_method_spec.max_expiration_seconds,
+                default=connector.expiration_seconds
+                or auth_method_spec.default_expiration_seconds,
+            )
+
+        try:
+            with console.status("Validating service connector update...\n"):
+
+                (
+                    connector_model,
+                    connector_resources,
+                ) = client.update_service_connector(
+                    name_id_or_prefix=connector.id,
+                    name=name,
+                    description=description,
+                    auth_method=auth_method,
+                    resource_type=resource_type,
+                    configuration=config_dict,
+                    expiration_seconds=expiration_seconds,
+                    verify=True,
+                    update=False,
+                )
+            assert connector_model is not None
+            assert connector_resources is not None
+        except (
+            KeyError,
+            ValueError,
+            IllegalOperationError,
+            NotImplementedError,
+            AuthorizationException,
+        ) as e:
+            cli_utils.error(f"Failed to verify service connector update: {e}")
+
+        if resource_type:
+            resource_type_spec = connector_type_spec.resource_type_map[
+                resource_type
+            ]
+            if resource_type_spec.supports_instances:
+                resource_ids: List[str] = []
+                if resource_type_spec.supports_discovery:
+                    assert connector_resources.resource_ids is not None
+                    resource_ids = connector_resources.resource_ids
+
+                resource_id = prompt_resource_id(
+                    resource_name=resource_type_spec.name,
+                    resource_ids=resource_ids,
+                )
+            else:
+                resource_id = None
+        else:
+            resource_id = None
+
+        # Prepare the rest of the variables to fall through to the
+        # non-interactive configuration case
+        # config_dict = connector_model.configuration
+        parsed_args.update(
+            {
+                k: s.get_secret_value()
+                for k, s in connector_model.secrets.items()
+                if s is not None
+            }
+        )
+        no_verify = False
+        expiration_seconds = connector_model.expiration_seconds
+
+    else:
+        config_dict = connector.configuration.copy()
+        config_dict.update(
+            {
+                k: v.get_secret_value()
+                for k, v in connector.secrets.items()
+                if v
+            }
+        )
+
+        if remove_attrs:
+            for remove_attr in remove_attrs:
+                config_dict.pop(remove_attr, None)
+
+        if not resource_type and not connector.is_multi_type:
+            resource_type = connector.resource_types[0]
+
+        resource_id = resource_id or connector.resource_id
+        expiration_seconds = expiration_seconds or connector.expiration_seconds
+
+    with console.status(
+        f"Updating service connector {name_id_or_prefix}...\n"
+    ):
+        try:
+            client.update_service_connector(
+                name_id_or_prefix=connector.id,
+                name=name,
+                auth_method=auth_method,
+                resource_type=resource_type,
+                configuration=config_dict,
+                resource_id=resource_id,
+                description=description,
+                expiration_seconds=expiration_seconds,
+                labels=parsed_labels,
+                verify=not no_verify,
+                update=True,
+            )
+        except (
+            KeyError,
+            ValueError,
+            IllegalOperationError,
+            NotImplementedError,
+            AuthorizationException,
+        ) as e:
+            cli_utils.error(f"Failed to update service connector: {e}")
+
+        cli_utils.declare(
+            f"Successfully updated service connector `{connector.name}` "
+        )
 
 
 @service_connector.command(
@@ -925,116 +1412,6 @@ def share_service_connector_command(
         )
 
 
-# def generate_stack_component_remove_attribute_command(
-#     component_type: StackComponentType,
-# ) -> Callable[[str, List[str]], None]:
-#     """Generates `remove_attribute` command for a specific stack component type.
-
-#     Args:
-#         component_type: Type of the component to generate the command for.
-
-#     Returns:
-#         A function that can be used as a `click` command.
-#     """
-#     display_name = _component_display_name(component_type)
-
-#     @click.argument(
-#         "name_id_or_prefix",
-#         type=str,
-#         required=True,
-#     )
-#     @click.argument("args", nargs=-1, type=click.UNPROCESSED)
-#     def remove_attribute_stack_component_command(
-#         name_id_or_prefix: str, args: List[str]
-#     ) -> None:
-#         """Removes one or more attributes from a stack component.
-
-#         Args:
-#             name_id_or_prefix: The name of the stack component to remove the
-#                 attribute from.
-#             args: Additional arguments to pass to the remove_attribute command.
-#         """
-#         if component_type == StackComponentType.SECRETS_MANAGER:
-#             warn_deprecated_secrets_manager()
-
-#         client = Client()
-
-#         with console.status(
-#             f"Updating {display_name} '{name_id_or_prefix}'...\n"
-#         ):
-#             try:
-#                 client.update_stack_component(
-#                     name_id_or_prefix=name_id_or_prefix,
-#                     component_type=component_type,
-#                     configuration={k: None for k in args},
-#                 )
-#             except (KeyError, IllegalOperationError) as err:
-#                 cli_utils.error(str(err))
-
-#             cli_utils.declare(
-#                 f"Successfully updated {display_name} `{name_id_or_prefix}`."
-#             )
-
-#     return remove_attribute_stack_component_command
-
-
-# def generate_stack_component_rename_command(
-#     component_type: StackComponentType,
-# ) -> Callable[[str, str], None]:
-#     """Generates a `rename` command for the specific stack component type.
-
-#     Args:
-#         component_type: Type of the component to generate the command for.
-
-#     Returns:
-#         A function that can be used as a `click` command.
-#     """
-#     display_name = _component_display_name(component_type)
-
-#     @click.argument(
-#         "name_id_or_prefix",
-#         type=str,
-#         required=True,
-#     )
-#     @click.argument(
-#         "new_name",
-#         type=str,
-#         required=True,
-#     )
-#     def rename_stack_component_command(
-#         name_id_or_prefix: str, new_name: str
-#     ) -> None:
-#         """Rename a stack component.
-
-#         Args:
-#             name_id_or_prefix: The name of the stack component to rename.
-#             new_name: The new name of the stack component.
-#         """
-#         if component_type == StackComponentType.SECRETS_MANAGER:
-#             warn_deprecated_secrets_manager()
-
-#         client = Client()
-
-#         with console.status(
-#             f"Renaming {display_name} '{name_id_or_prefix}'...\n"
-#         ):
-#             try:
-#                 client.update_stack_component(
-#                     name_id_or_prefix=name_id_or_prefix,
-#                     component_type=component_type,
-#                     name=new_name,
-#                 )
-#             except (KeyError, IllegalOperationError) as err:
-#                 cli_utils.error(str(err))
-
-#             cli_utils.declare(
-#                 f"Successfully renamed {display_name} `{name_id_or_prefix}` to"
-#                 f" `{new_name}`."
-#             )
-
-#     return rename_stack_component_command
-
-
 @service_connector.command(
     "delete",
     help="""Delete a service connector.
@@ -1059,63 +1436,6 @@ def delete_service_connector(name_id_or_prefix: str) -> None:
         except (KeyError, IllegalOperationError) as err:
             cli_utils.error(str(err))
         cli_utils.declare(f"Deleted service connector: {name_id_or_prefix}")
-
-
-# def generate_stack_component_copy_command(
-#     component_type: StackComponentType,
-# ) -> Callable[[str, str], None]:
-#     """Generates a `copy` command for the specific stack component type.
-
-#     Args:
-#         component_type: Type of the component to generate the command for.
-
-#     Returns:
-#         A function that can be used as a `click` command.
-#     """
-#     display_name = _component_display_name(component_type)
-
-#     @click.argument(
-#         "source_component_name_id_or_prefix", type=str, required=True
-#     )
-#     @click.argument("target_component", type=str, required=True)
-#     @track(AnalyticsEvent.COPIED_STACK_COMPONENT)
-#     def copy_stack_component_command(
-#         source_component_name_id_or_prefix: str,
-#         target_component: str,
-#     ) -> None:
-#         """Copies a stack component.
-
-#         Args:
-#             source_component_name_id_or_prefix: Name or id prefix of the
-#                                          component to copy.
-#             target_component: Name of the copied component.
-#         """
-#         if component_type == StackComponentType.SECRETS_MANAGER:
-#             warn_deprecated_secrets_manager()
-
-#         client = Client()
-
-#         with console.status(
-#             f"Copying {display_name} "
-#             f"`{source_component_name_id_or_prefix}`..\n"
-#         ):
-#             try:
-#                 component_to_copy = client.get_stack_component(
-#                     name_id_or_prefix=source_component_name_id_or_prefix,
-#                     component_type=component_type,
-#                 )
-#             except KeyError as err:
-#                 cli_utils.error(str(err))
-
-#             client.create_stack_component(
-#                 name=target_component,
-#                 flavor=component_to_copy.flavor,
-#                 component_type=component_to_copy.type,
-#                 configuration=component_to_copy.configuration,
-#                 is_shared=component_to_copy.is_shared,
-#             )
-
-#     return copy_stack_component_command
 
 
 @service_connector.command(
@@ -1251,7 +1571,7 @@ def login_service_connector(
 
 @service_connector.command(
     "list-resources",
-    help="""List all resources that 
+    help="""List all resources that can be accessed by service connectors.
 """,
 )
 @click.option(
@@ -1308,39 +1628,6 @@ def list_service_connector_resources(
         cli_utils.print_service_connector_resource_table(
             resources=resource_list,
         )
-
-
-# def generate_stack_component_explain_command(
-#     component_type: StackComponentType,
-# ) -> Callable[[], None]:
-#     """Generates an `explain` command for the specific stack component type.
-
-#     Args:
-#         component_type: Type of the component to generate the command for.
-
-#     Returns:
-#         A function that can be used as a `click` command.
-#     """
-
-#     def explain_stack_components_command() -> None:
-#         """Explains the concept of the stack component."""
-#         if component_type == StackComponentType.SECRETS_MANAGER:
-#             warn_deprecated_secrets_manager()
-
-#         component_module = import_module(f"zenml.{component_type.plural}")
-
-#         if component_module.__doc__ is not None:
-#             md = Markdown(component_module.__doc__)
-#             console.print(md)
-#         else:
-#             console.print(
-#                 "The explain subcommand is yet not available for "
-#                 "this stack component. For more information, you can "
-#                 "visit our docs page: https://docs.zenml.io/ and "
-#                 "stay tuned for future releases."
-#             )
-
-#     return explain_stack_components_command
 
 
 @service_connector.command(
@@ -1416,7 +1703,7 @@ def list_service_connector_types(
 
 @service_connector.command(
     "get-type",
-    help="""List available service connector types.
+    help="""Describe a service connector type.
 """,
 )
 @click.argument(

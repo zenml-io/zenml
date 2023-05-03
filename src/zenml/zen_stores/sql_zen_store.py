@@ -117,7 +117,6 @@ from zenml.models import (
     ScheduleUpdateModel,
     SecretFilterModel,
     SecretRequestModel,
-    SecretUpdateModel,
     ServiceConnectorFilterModel,
     ServiceConnectorRequestModel,
     ServiceConnectorResourcesModel,
@@ -4517,6 +4516,10 @@ class SqlZenStore(BaseZenStore):
     ) -> Optional[UUID]:
         """Updates the secret for a service connector.
 
+        If the secrets field in the service connector update is set (i.e. not
+        None), the existing secret, if any, is replaced. If the secrets field is
+        set to an empty dict, the existing secret is deleted.
+
         Args:
             existing_connector: Existing service connector for which to update a
                 secret.
@@ -4536,69 +4539,59 @@ class SqlZenStore(BaseZenStore):
             )
 
         if updated_connector.secrets is None:
-            # The new service connector does not contain any secret updates
+            # If the connector update does not contain a secrets update, keep
+            # the existing secret (if any)
             return existing_connector.secret_id
 
+        # Delete the existing secret (if any), to be replaced by the new secret
+        if existing_connector.secret_id:
+            try:
+                self.secrets_store.delete_secret(existing_connector.secret_id)
+            except KeyError:
+                # Ignore if the secret no longer exists
+                pass
+
         # If the new service connector does not contain any secret credentials,
-        # delete the existing secret (if any) and return None
+        # return None
         if not updated_connector.secrets:
-            if existing_connector.secret_id:
-                try:
-                    self.secrets_store.delete_secret(
-                        existing_connector.secret_id
-                    )
-                except KeyError:
-                    # Ignore if the secret no longer exists
-                    pass
             return None
 
-        assert existing_connector.user is not None
-        if not existing_connector.secret_id:
-            return self._create_connector_secret(
-                connector_name=existing_connector.name,
-                user=existing_connector.user.id,
-                workspace=existing_connector.workspace.id,
-                is_shared=existing_connector.is_shared,
-                secrets=updated_connector.secrets,
-            )
-
-        # Update the existing secret
-        existing_secret = self.secrets_store.get_secret(
-            existing_connector.secret_id
-        )
-        updated_values = updated_connector.secrets.copy()
-        # Set removed keys to None in the secret update
-        updated_values.update(
-            {
-                k: None
-                for k in existing_secret.values.keys()
-                if k not in updated_values
-            }
-        )
         is_shared = (
             existing_connector.is_shared
             if updated_connector.is_shared is None
             else updated_connector.is_shared
         )
 
-        # Update the existing secret with the new values
-        self.secrets_store.update_secret(
-            existing_connector.secret_id,
-            SecretUpdateModel(
-                user=existing_connector.user.id,
-                name=existing_connector.name,
-                workspace=existing_connector.workspace.id,
-                scope=SecretScope.WORKSPACE if is_shared else SecretScope.USER,
-                values=updated_values,
-            ),
+        assert existing_connector.user is not None
+        # A secret does not exist yet, create a new one
+        return self._create_connector_secret(
+            connector_name=updated_connector.name or existing_connector.name,
+            user=existing_connector.user.id,
+            workspace=existing_connector.workspace.id,
+            is_shared=is_shared,
+            secrets=updated_connector.secrets,
         )
-
-        return existing_connector.secret_id
 
     def update_service_connector(
         self, service_connector_id: UUID, update: ServiceConnectorUpdateModel
     ) -> ServiceConnectorResponseModel:
         """Updates an existing service connector.
+
+        The update model contains the fields to be updated. If a field value is
+        set to None in the model, the field is not updated, but there are
+        special rules concerning some fields:
+
+        * the `configuration` and `secrets` fields together represent a full
+        valid configuration update, not just a partial update. If either is
+        set (i.e. not None) in the update, their values are merged together and
+        will replace the existing configuration and secrets values.
+        * the `resource_id` field value is also a full replacement value: if set
+        to `None`, the resource ID is removed from the service connector.
+        * the `secret_id` field value in the update is ignored, given that
+        secrets are managed internally by the ZenML store.
+        * the `labels` field is also a full labels update: if set (i.e. not
+        `None`), all existing labels are removed and replaced by the new labels
+        in the update.
 
         Args:
             service_connector_id: The ID of the service connector to update.
@@ -4635,7 +4628,7 @@ class SqlZenStore(BaseZenStore):
                     and existing_connector.user_id is not None
                 ):
                     self._fail_if_service_connector_with_name_exists_for_user(
-                        name=existing_connector.name,
+                        name=update.name,
                         workspace_id=existing_connector.workspace_id,
                         user_id=existing_connector.user_id,
                         session=session,
@@ -4653,13 +4646,16 @@ class SqlZenStore(BaseZenStore):
                         session=session,
                     )
 
+            existing_connector_model = existing_connector.to_model()
+
             if len(existing_connector.components):
                 # If the service connector is already used in one or more
                 # stack components, the update is no longer allowed to change
-                # the service connector's type, resource type, or resource ID
+                # the service connector's authentication method, connector type,
+                # resource type, or resource ID
                 if (
                     update.connector_type
-                    and update.type != existing_connector.connector_type
+                    and update.type != existing_connector_model.connector_type
                 ):
                     raise IllegalOperationError(
                         "The service type of a service connector that is "
@@ -4668,9 +4664,20 @@ class SqlZenStore(BaseZenStore):
                     )
 
                 if (
+                    update.auth_method
+                    and update.auth_method
+                    != existing_connector_model.auth_method
+                ):
+                    raise IllegalOperationError(
+                        "The authentication method of a service connector that "
+                        "is already actively used in one or more stack "
+                        "components cannot be changed."
+                    )
+
+                if (
                     update.resource_types
                     and update.resource_types
-                    != existing_connector.resource_types
+                    != existing_connector_model.resource_types
                 ):
                     raise IllegalOperationError(
                         "The resource type of a service connector that is "
@@ -4678,10 +4685,9 @@ class SqlZenStore(BaseZenStore):
                         "cannot be changed."
                     )
 
-                if (
-                    update.resource_id
-                    and update.resource_id != existing_connector.resource_id
-                ):
+                # The resource ID field cannot be used as a partial update: if
+                # set to None, the existing resource ID is also removed
+                if update.resource_id != existing_connector_model.resource_id:
                     raise IllegalOperationError(
                         "The resource ID of a service connector that is "
                         "already actively used in one or more stack components "
@@ -4699,19 +4705,23 @@ class SqlZenStore(BaseZenStore):
                         existing_connector.connector_type
                     )
                 )
-
-                existing_connector_model = existing_connector.to_model()
-
-                existing_connector_model.validate_and_configure_resources(
+                # We need the auth method to be set to be able to validate the
+                # configuration
+                update.auth_method = (
+                    update.auth_method or existing_connector_model.auth_method
+                )
+                # Validate the configuration update. If the configuration or
+                # secrets fields are set, together they are merged into a
+                # full configuration that is validated against the connector
+                # type schema and replaces the existing configuration and
+                # secrets values
+                update.validate_and_configure_resources(
                     connector_type=connector_type,
                     resource_types=update.resource_types,
                     resource_id=update.resource_id,
                     configuration=update.configuration,
                     secrets=update.secrets,
                 )
-
-                # TODO: update the existing connector with the validated
-                # configuration
 
             # Update labels
             if update.labels:
@@ -4731,7 +4741,7 @@ class SqlZenStore(BaseZenStore):
 
             # Update secret
             secret_id = self._update_connector_secret(
-                existing_connector=existing_connector.to_model(),
+                existing_connector=existing_connector_model,
                 updated_connector=update,
             )
 
@@ -4846,7 +4856,7 @@ class SqlZenStore(BaseZenStore):
         resource_type: Optional[str] = None,
         resource_id: Optional[str] = None,
     ) -> ServiceConnectorResponseModel:
-        """Get a client service connector for a service connector and given resource.
+        """Get a service connector client for a service connector and given resource.
 
         Args:
             service_connector_id: The ID of the base service connector to use.
@@ -4854,7 +4864,7 @@ class SqlZenStore(BaseZenStore):
             resource_id: The ID of the resource to get a client for.
 
         Returns:
-            A client service connector that can be used to access the given
+            A service connector client that can be used to access the given
             resource.
 
         Raises:
@@ -4868,14 +4878,14 @@ class SqlZenStore(BaseZenStore):
             model=connector
         )
 
-        # Fetch the client connector
-        client_connector = connector_instance.get_client_connector(
+        # Fetch the connector client
+        connector_client = connector_instance.get_connector_client(
             resource_type=resource_type,
             resource_id=resource_id,
         )
 
-        # Return the model for the client connector
-        connector = client_connector.to_response_model(
+        # Return the model for the connector client
+        connector = connector_client.to_response_model(
             user=connector.user,
             workspace=connector.workspace,
             is_shared=connector.is_shared,

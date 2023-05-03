@@ -225,7 +225,7 @@ def get_service_connector_client(
     resource_id: Optional[str] = None,
     _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
 ) -> ServiceConnectorResponseModel:
-    """Get a client service connector for a service connector and given resource.
+    """Get a service connector client for a service connector and given resource.
 
     This requires the service connector implementation to be installed
     on the ZenML server, otherwise a 501 Not Implemented error will be
@@ -238,7 +238,7 @@ def get_service_connector_client(
         auth_context: Authentication context.
 
     Returns:
-        A client service connector that can be used to access the given
+        A service connector client that can be used to access the given
         resource.
     """
     return zen_store().get_service_connector_client(

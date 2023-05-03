@@ -156,7 +156,8 @@ Use a token to authenticate to the Kubernetes cluster.
             resource_type=KUBERNETES_RESOURCE_TYPE,
             description="""
 Kubernetes cluster resource. When used by connector consumers, they are provided
-a Kubernetes client pre-configured with AWS credentials.
+a Kubernetes client pre-configured with credentials required to access a
+Kubernetes cluster.
 """,
             auth_methods=KubernetesAuthenticationMethods.values(),
             # A Kubernetes connector instance is used to represent a single

@@ -68,6 +68,8 @@ AWS_CONNECTOR_TYPE = "aws"
 AWS_RESOURCE_TYPE = "aws-generic"
 S3_RESOURCE_TYPE = "s3-bucket"
 EKS_KUBE_API_TOKEN_EXPIRATION = 60
+DEFAULT_IAM_ROLE_TOKEN_EXPIRATION = 3600  # 1 hour
+DEFAULT_STS_TOKEN_EXPIRATION = 43200  # 12 hours
 
 
 class AWSSecretKey(AuthenticationConfig):
@@ -89,7 +91,7 @@ class STSToken(AWSSecretKey):
     )
 
 
-class AWSBaseConfig(AWSSecretKey):
+class AWSBaseConfig(AuthenticationConfig):
     """AWS base configuration."""
 
     region: str = Field(
@@ -98,6 +100,15 @@ class AWSBaseConfig(AWSSecretKey):
     endpoint_url: Optional[str] = Field(
         default=None,
         title="AWS Endpoint URL",
+    )
+
+
+class AWSImplicitConfig(AWSBaseConfig):
+    """AWS implicit configuration."""
+
+    profile_name: Optional[str] = Field(
+        default=None,
+        title="AWS Profile Name",
     )
 
 
@@ -151,6 +162,7 @@ class FederationTokenAuthenticationConfig(
 class AWSAuthenticationMethods(StrEnum):
     """AWS Authentication methods."""
 
+    IMPLICIT = "implicit"
     SECRET_KEY = "secret-key"
     STS_TOKEN = "sts-token"
     IAM_ROLE = "iam-role"
@@ -177,6 +189,46 @@ allows configuration of local Docker and Kubernetes clients.
     supports_auto_configuration=True,
     logo_url="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/container_registry/aws.png",
     auth_methods=[
+        AuthenticationMethodModel(
+            name="AWS Implicit Authentication",
+            auth_method=AWSAuthenticationMethods.IMPLICIT,
+            description="""
+Implicit authentication to AWS services using environment variables, local
+configuration files or IAM roles. This authentication method doesn't require
+any credentials to be explicitly configured. It automatically discovers and uses
+credentials from one of the following sources:
+
+- environment variables (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY,
+AWS_SESSION_TOKEN, AWS_DEFAULT_REGION)
+- local configuration files (~/aws/credentials, ~/.aws/config)
+- IAM roles for Amazon EC2, ECS, EKS, Lambda, etc. Only works when running
+the ZenML server on an AWS resource with an IAM role attached to it.
+
+This is the quickest and easiest way to authenticate to AWS services. However,
+the results depend on how ZenML is deployed and the environment where it is used
+and is thus not fully reproducible:
+
+- when used with the default local ZenML deployment or a local ZenML server, the
+credentials are the same as those used by the AWS CLI.
+- when connected to a ZenML server, this method only works if the ZenML server
+is deployed in AWS and will use the IAM role attached to the AWS resource where
+the ZenML server is running (e.g. an EKS cluster). The IAM role permissions may
+need to be adjusted to allows listing and accessing/describing the AWS resources
+that the connector is configured to access.
+
+Note that the discovered credentials inherit the full set of permissions of the
+local AWS client configuration or remote AWS IAM role. This is not recommended
+for production use, as it can lead to accidental privilege escalation. Instead,
+it is recommended to use the AWS Federation Token or AWS IAM Role authentication
+methods with additional session policies to restrict the permissions that are
+granted to the connector clients.
+
+An AWS region is required and the connector may only be used to access AWS
+resources in the specified region. When used with a remote IAM role, the region
+has to be the same as the region where the IAM role is configured.
+""",
+            config_class=AWSImplicitConfig,
+        ),
         AuthenticationMethodModel(
             name="AWS Secret Key",
             auth_method=AWSAuthenticationMethods.SECRET_KEY,
@@ -244,11 +296,11 @@ Federation Token authentication method, see:
 https://aws.amazon.com/blogs/security/understanding-the-api-options-for-securely-delegating-access-to-your-aws-account/
 
 This method might not be suitable for consumers that cannot automatically
-re-generate temporary credentials upon expiration (e.g. an external clients or
+re-generate temporary credentials upon expiration (e.g. an external client or
 long-running process).
 """,
             min_expiration_seconds=900,  # 15 minutes
-            default_expiration_seconds=3600,  # 1 hour
+            default_expiration_seconds=DEFAULT_IAM_ROLE_TOKEN_EXPIRATION,  # 1 hour
             config_class=IAMRoleAuthenticationConfig,
         ),
         AuthenticationMethodModel(
@@ -283,12 +335,12 @@ For more information on session tokens and the GetSessionToken AWS API, see:
 https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_temp_request.html#api_getsessiontoken
 
 This method might not be suitable for consumers that cannot automatically
-re-generate temporary credentials upon expiration (e.g. an external clients or
+re-generate temporary credentials upon expiration (e.g. an external client or
 long-running process).
 """,
             min_expiration_seconds=900,  # 15 minutes
             max_expiration_seconds=43200,  # 12 hours
-            default_expiration_seconds=43200,  # 12 hours
+            default_expiration_seconds=DEFAULT_STS_TOKEN_EXPIRATION,  # 12 hours
             config_class=SessionTokenAuthenticationConfig,
         ),
         AuthenticationMethodModel(
@@ -330,12 +382,12 @@ IAM Role authentication method, see:
 https://aws.amazon.com/blogs/security/understanding-the-api-options-for-securely-delegating-access-to-your-aws-account/
 
 This method might not be suitable for consumers that cannot automatically
-re-generate temporary credentials upon expiration (e.g. an external clients or
+re-generate temporary credentials upon expiration (e.g. an external client or
 long-running process).
 """,
             min_expiration_seconds=900,  # 15 minutes
             max_expiration_seconds=43200,  # 12 hours
-            default_expiration_seconds=43200,  # 12 hours
+            default_expiration_seconds=DEFAULT_STS_TOKEN_EXPIRATION,  # 12 hours
             config_class=FederationTokenAuthenticationConfig,
         ),
     ],
@@ -402,9 +454,10 @@ The configured credentials must have at least the following EKS permissions:
 
 In addition to the above permissions, if the credentials are not associated
 with the same IAM user or role that created the EKS cluster, the IAM principal
-must be manually added to the EKS cluster's `aws-auth` ConfigMap. This makes
-it more difficult to use the AWS Federation Token authentication method for
-this resource. For more information, see:
+must be manually added to the EKS cluster's `aws-auth` ConfigMap, otherwise the
+Kubernetes client will not be allowed to access the cluster's resources. This
+makes it more challenging to use the AWS Implicit and AWS Federation Token
+authentication method for this resource. For more information, see:
 https://docs.aws.amazon.com/eks/latest/userguide/add-user-role.html
 
 If set, the resource ID must identify an EKS cluster using one of the following
@@ -487,12 +540,14 @@ class AWSServiceConnector(ServiceConnector):
 
     def _get_iam_policy(
         self,
+        region_id: str,
         resource_type: Optional[str],
         resource_id: Optional[str] = None,
     ) -> Optional[str]:
         """Get the IAM inline policy to use for the specified resource.
 
         Args:
+            region_id: The AWS region ID to get the IAM inline policy for.
             resource_type: The resource type to get the IAM inline policy for.
             resource_id: The resource ID to get the IAM inline policy for.
 
@@ -530,10 +585,10 @@ class AWSServiceConnector(ServiceConnector):
             if resource_id:
                 cluster_name = self._parse_eks_resource_id(resource_id)
                 resource = [
-                    f"arn:aws:eks:{self.config.region}:*:cluster/{cluster_name}",
+                    f"arn:aws:eks:{region_id}:*:cluster/{cluster_name}",
                 ]
             else:
-                resource = [f"arn:aws:eks:{self.config.region}:*:cluster/*"]
+                resource = [f"arn:aws:eks:{region_id}:*:cluster/*"]
             policy = {
                 "Version": "2012-10-17",
                 "Statement": [
@@ -556,12 +611,12 @@ class AWSServiceConnector(ServiceConnector):
                     need_registry_id=False,
                 )
                 resource = [
-                    f"arn:aws:ecr:{self.config.region}:*:repository/{repo_name}",
+                    f"arn:aws:ecr:{region_id}:*:repository/{repo_name}",
                 ]
             else:
                 resource = [
-                    f"arn:aws:ecr:{self.config.region}:*:repository/*",
-                    f"arn:aws:ecr:{self.config.region}:*:repository",
+                    f"arn:aws:ecr:{region_id}:*:repository/*",
+                    f"arn:aws:ecr:{region_id}:*:repository",
                 ]
             policy = {
                 "Version": "2012-10-17",
@@ -621,7 +676,33 @@ class AWSServiceConnector(ServiceConnector):
             NotImplementedError: If the authentication method is not supported.
         """
         cfg = self.config
-        if auth_method == AWSAuthenticationMethods.SECRET_KEY:
+        if auth_method == AWSAuthenticationMethods.IMPLICIT:
+            assert isinstance(cfg, AWSImplicitConfig)
+            # Create a boto3 session and use the default credentials provider
+            session = boto3.Session(
+                profile_name=cfg.profile_name, region_name=cfg.region
+            )
+
+            credentials = session.get_credentials()
+            if not credentials:
+                raise AuthorizationException(
+                    "Failed to get AWS credentials from the default provider. "
+                    "Please check your AWS configuration or attached IAM role."
+                )
+            if credentials.token:
+                # Temporary credentials were generated. It's not possible to
+                # determine the expiration time of the temporary credentials
+                # from the boto3 session, so we assume the default IAM role
+                # expiration date is used
+                expiration_time = datetime.datetime.now(
+                    tz=datetime.timezone.utc
+                ) + datetime.timedelta(
+                    seconds=DEFAULT_IAM_ROLE_TOKEN_EXPIRATION
+                )
+                return session, expiration_time
+
+            return session, None
+        elif auth_method == AWSAuthenticationMethods.SECRET_KEY:
             assert isinstance(cfg, AWSSecretKeyConfig)
             # Create a boto3 session using long-term AWS credentials
             session = boto3.Session(
@@ -674,6 +755,7 @@ class AWSServiceConnector(ServiceConnector):
                 policy = cfg.policy
                 if not cfg.policy and not cfg.policy_arns:
                     policy = self._get_iam_policy(
+                        region_id=cfg.region,
                         resource_type=resource_type,
                         resource_id=resource_id,
                     )
@@ -1097,7 +1179,7 @@ class AWSServiceConnector(ServiceConnector):
         raise NotImplementedError(
             f"Connecting to {resource_type} resources is not directly "
             "supported by the AWS connector. Please call the "
-            f"`get_client_connector` method to get a {resource_type} connector "
+            f"`get_connector_client` method to get a {resource_type} connector "
             "instance for the resource."
         )
 
@@ -1131,7 +1213,7 @@ class AWSServiceConnector(ServiceConnector):
         raise NotImplementedError(
             f"Configuring the local client for {resource_type} resources is "
             "not directly supported by the AWS connector. Please call the "
-            f"`get_client_connector` method to get a {resource_type} connector "
+            f"`get_connector_client` method to get a {resource_type} connector "
             "instance for the resource."
         )
 
@@ -1143,6 +1225,7 @@ class AWSServiceConnector(ServiceConnector):
         resource_id: Optional[str] = None,
         region_name: Optional[str] = None,
         profile_name: Optional[str] = None,
+        role_arn: Optional[str] = None,
         **kwargs: Any,
     ) -> "AWSServiceConnector":
         """Auto-configure the connector.
@@ -1164,59 +1247,145 @@ class AWSServiceConnector(ServiceConnector):
                 the implicit region is used.
             profile_name: The name of the AWS profile to use. If not specified,
                 the implicit profile is used.
+            role_arn: The ARN of the AWS role to assume. Applicable only if the
+                IAM role authentication method is specified or long-term
+                credentials are discovered.
             kwargs: Additional implementation specific keyword arguments to use.
 
         Returns:
             An AWS connector instance configured with authentication credentials
             automatically extracted from the environment.
         """
-        # Initialize an AWS session with the default configuration loaded
-        # from the environment.
-        session = boto3.Session(
-            profile_name=profile_name, region_name=region_name
-        )
-
-        # Extract the AWS credentials from the session and store them in
-        # the connector secrets.
-        credentials = session.get_credentials()
         auth_config: AWSBaseConfig
-        if credentials.token:
-            if (
-                auth_method
-                and auth_method != AWSAuthenticationMethods.STS_TOKEN
-            ):
-                raise NotImplementedError(
-                    f"The specified authentication method '{auth_method}' "
-                    "could not be used to auto-configure the connector. "
+        expiration_seconds: Optional[int] = None
+        expires_at: Optional[datetime.datetime] = None
+        if auth_method == AWSAuthenticationMethods.IMPLICIT:
+            if region_name is None:
+                raise ValueError(
+                    "The AWS region name must be specified when using the "
+                    "implicit authentication method"
                 )
-            auth_method = AWSAuthenticationMethods.STS_TOKEN
-            auth_config = STSTokenConfig(
-                region=session.region_name,
-                endpoint_url=session._session.get_config_variable(
-                    "endpoint_url"
-                ),
-                aws_access_key_id=credentials.access_key,
-                aws_secret_access_key=credentials.secret_key,
-                aws_session_token=credentials.token,
+            auth_config = AWSImplicitConfig(
+                profile_name=profile_name,
+                region=region_name,
             )
         else:
-            if (
-                auth_method
-                and auth_method != AWSAuthenticationMethods.SECRET_KEY
-            ):
-                raise NotImplementedError(
-                    f"The specified authentication method '{auth_method}' "
-                    "could not be used to auto-configure the connector. "
-                )
-            auth_method = AWSAuthenticationMethods.SECRET_KEY
-            auth_config = AWSSecretKeyConfig(
-                region=session.region_name,
-                endpoint_url=session._session.get_config_variable(
-                    "endpoint_url"
-                ),
-                aws_access_key_id=credentials.access_key,
-                aws_secret_access_key=credentials.secret_key,
+            # Initialize an AWS session with the default configuration loaded
+            # from the environment.
+            session = boto3.Session(
+                profile_name=profile_name, region_name=region_name
             )
+
+            region_name = region_name or session.region_name
+            if not region_name:
+                raise ValueError(
+                    "The AWS region name was not specified and could not "
+                    "be determined from the AWS session"
+                )
+            endpoint_url = session._session.get_config_variable("endpoint_url")
+
+            # Extract the AWS credentials from the session and store them in
+            # the connector secrets.
+            credentials = session.get_credentials()
+            if not credentials:
+                raise AuthorizationException(
+                    "Could not determine the AWS credentials from the "
+                    "environment"
+                )
+            if credentials.token:
+                # The session picked up temporary STS credentials
+                if (
+                    auth_method
+                    and auth_method != AWSAuthenticationMethods.STS_TOKEN
+                ):
+                    raise NotImplementedError(
+                        f"The specified authentication method '{auth_method}' "
+                        "could not be used to auto-configure the connector. "
+                    )
+
+                # Temporary credentials were generated. It's not possible to
+                # determine the expiration time of the temporary credentials
+                # from the boto3 session, so we assume the default IAM role
+                # expiration date is used
+                expires_at = datetime.datetime.now(
+                    tz=datetime.timezone.utc
+                ) + datetime.timedelta(
+                    seconds=DEFAULT_IAM_ROLE_TOKEN_EXPIRATION
+                )
+
+                auth_method = AWSAuthenticationMethods.STS_TOKEN
+                auth_config = STSTokenConfig(
+                    region=region_name,
+                    endpoint_url=endpoint_url,
+                    aws_access_key_id=credentials.access_key,
+                    aws_secret_access_key=credentials.secret_key,
+                    aws_session_token=credentials.token,
+                )
+            else:
+                # The session picked up long-lived credentials
+                if not auth_method:
+                    if role_arn:
+                        auth_method = AWSAuthenticationMethods.IAM_ROLE
+                    else:
+                        # If no authentication method was specified, use the
+                        # session token as a default recommended authentication
+                        # method to be used with long-lived credentials.
+                        auth_method = AWSAuthenticationMethods.SESSION_TOKEN
+
+                region_name = region_name or session.region_name
+                if not region_name:
+                    raise ValueError(
+                        "The AWS region name was not specified and could not "
+                        "be determined from the AWS session"
+                    )
+
+                if auth_method == AWSAuthenticationMethods.STS_TOKEN:
+                    raise NotImplementedError(
+                        f"The specified authentication method '{auth_method}' "
+                        "could not be used to auto-configure the connector. "
+                    )
+
+                if auth_method == AWSAuthenticationMethods.IAM_ROLE:
+                    if not role_arn:
+                        raise ValueError(
+                            "The ARN of the AWS role to assume must be "
+                            "specified when using the IAM role authentication "
+                            "method"
+                        )
+                    auth_config = IAMRoleAuthenticationConfig(
+                        region=region_name,
+                        endpoint_url=endpoint_url,
+                        aws_access_key_id=credentials.access_key,
+                        aws_secret_access_key=credentials.secret_key,
+                        role_arn=role_arn,
+                    )
+                    expiration_seconds = DEFAULT_IAM_ROLE_TOKEN_EXPIRATION
+
+                elif auth_method == AWSAuthenticationMethods.SECRET_KEY:
+                    auth_config = AWSSecretKeyConfig(
+                        region=region_name,
+                        endpoint_url=endpoint_url,
+                        aws_access_key_id=credentials.access_key,
+                        aws_secret_access_key=credentials.secret_key,
+                    )
+
+                elif auth_method == AWSAuthenticationMethods.SESSION_TOKEN:
+                    auth_config = SessionTokenAuthenticationConfig(
+                        region=region_name,
+                        endpoint_url=endpoint_url,
+                        aws_access_key_id=credentials.access_key,
+                        aws_secret_access_key=credentials.secret_key,
+                    )
+                    expiration_seconds = DEFAULT_STS_TOKEN_EXPIRATION
+
+                else:  # auth_method is AWSAuthenticationMethods.FEDERATION_TOKEN
+                    auth_config = FederationTokenAuthenticationConfig(
+                        region=region_name,
+                        endpoint_url=endpoint_url,
+                        aws_access_key_id=credentials.access_key,
+                        aws_secret_access_key=credentials.secret_key,
+                    )
+                    expiration_seconds = DEFAULT_STS_TOKEN_EXPIRATION
 
         return cls(
             auth_method=auth_method,
@@ -1224,6 +1393,8 @@ class AWSServiceConnector(ServiceConnector):
             resource_id=resource_id
             if resource_type not in [AWS_RESOURCE_TYPE, None]
             else None,
+            expiration_seconds=expiration_seconds,
+            expires_at=expires_at,
             config=auth_config,
         )
 
@@ -1373,7 +1544,7 @@ class AWSServiceConnector(ServiceConnector):
 
         return []
 
-    def _get_client_connector(
+    def _get_connector_client(
         self,
         resource_type: str,
         resource_id: Optional[str] = None,
@@ -1407,7 +1578,7 @@ class AWSServiceConnector(ServiceConnector):
         else:
             connector_name += f" ({resource_type} client)"
 
-        logger.debug(f"Getting client connector for {connector_name}")
+        logger.debug(f"Getting connector client for {connector_name}")
 
         if resource_type in [AWS_RESOURCE_TYPE, S3_RESOURCE_TYPE]:
             if self.auth_method in [

@@ -1072,7 +1072,7 @@ def generate_stack_component_connect_command(
     @click.argument(
         "name_id_or_prefix",
         type=str,
-        required=True,
+        required=False,
     )
     @click.option(
         "--connector-id",
@@ -1110,7 +1110,7 @@ def generate_stack_component_connect_command(
         type=click.BOOL,
     )
     def connect_stack_component_command(
-        name_id_or_prefix: str,
+        name_id_or_prefix: Optional[str],
         connector_id: Optional[str] = None,
         resource_id: Optional[str] = None,
         interactive: bool = False,

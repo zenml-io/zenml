@@ -660,6 +660,13 @@ class ServiceConnectorBaseModel(BaseModel):
             self.resource_types = list(connector_type.resource_type_map.keys())
             self.supports_instances = False
 
+        if configuration is None and secrets is None:
+            # No configuration or secrets provided
+            return
+
+        self.configuration = {}
+        self.secrets = {}
+
         # Validate and configure the connector configuration and secrets
         configuration = configuration or {}
         secrets = secrets or {}
@@ -675,7 +682,7 @@ class ServiceConnectorBaseModel(BaseModel):
                 if value is None:
                     raise ValueError(
                         "connector configuration is not valid: missing "
-                        f"required attribute {attr_name}"
+                        f"required attribute '{attr_name}'"
                     )
             elif value is None:
                 continue
@@ -838,7 +845,7 @@ class ServiceConnectorResponseModel(
     """Response model for service connectors."""
 
     ANALYTICS_FIELDS: ClassVar[List[str]] = [
-        "type",
+        "connector_type",
         "auth_method",
         "resource_types",
     ]
@@ -860,57 +867,9 @@ class ServiceConnectorResponseModel(
             metadata["resource_types"] = self.resource_types[0]
         else:
             metadata["resource_types"] = ", ".join(self.resource_types)
+        if not isinstance(self.connector_type, str):
+            metadata["connector_type"] = self.connector_type.connector_type
         return metadata
-
-    def apply_update(
-        self, update_model: "ServiceConnectorUpdateModel"
-    ) -> None:
-        """Apply an update model to this service connector model.
-
-        Args:
-            update_model: The update model.
-        """
-        self.name = update_model.name or self.name
-        self.is_shared = (
-            update_model.is_shared
-            if update_model.is_shared is not None
-            else (self.is_shared)
-        )
-
-        self.connector_type = (
-            update_model.connector_type or self.connector_type
-        )
-        self.auth_method = update_model.auth_method or self.auth_method
-        self.resource_types = (
-            update_model.resource_types
-            if update_model.resource_types is not None
-            else self.resource_types
-        )
-        self.configuration = (
-            update_model.configuration
-            if update_model.configuration is not None
-            else self.configuration
-        )
-        self.secrets = (
-            update_model.secrets
-            if update_model.secrets is not None
-            else self.secrets
-        )
-        self.resource_id = (
-            None
-            if update_model.resource_id == ""
-            else update_model.resource_id or self.resource_id
-        )
-        self.description = update_model.description or self.description
-        self.expiration_seconds = (
-            update_model.expiration_seconds or self.expiration_seconds
-        )
-        self.expires_at = update_model.expires_at or self.expires_at
-        self.labels = (
-            update_model.labels
-            if update_model.labels is not None
-            else self.labels
-        )
 
 
 # ------ #
@@ -925,10 +884,12 @@ class ServiceConnectorFilterModel(ShareableWorkspaceScopedFilterModel):
         *ShareableWorkspaceScopedFilterModel.FILTER_EXCLUDE_FIELDS,
         "scope_type",
         "resource_type",
+        "labels",
     ]
     CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
         *ShareableWorkspaceScopedFilterModel.CLI_EXCLUDE_FIELDS,
         "scope_type",
+        "labels",
     ]
     scope_type: Optional[str] = Field(
         default=None,
@@ -990,7 +951,7 @@ class ServiceConnectorRequestModel(
     """Request model for service connectors."""
 
     ANALYTICS_FIELDS: ClassVar[List[str]] = [
-        "type",
+        "connector_type",
         "auth_method",
         "resource_types",
     ]
@@ -1006,6 +967,8 @@ class ServiceConnectorRequestModel(
             metadata["resource_types"] = self.resource_types[0]
         else:
             metadata["resource_types"] = ", ".join(self.resource_types)
+        if not isinstance(self.connector_type, str):
+            metadata["connector_type"] = self.connector_type.connector_type
         return metadata
 
 

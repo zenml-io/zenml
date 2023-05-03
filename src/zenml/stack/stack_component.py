@@ -23,6 +23,7 @@ from zenml.config.build_configuration import BuildConfiguration
 from zenml.config.step_configurations import Step
 from zenml.config.step_run_info import StepRunInfo
 from zenml.enums import StackComponentType
+from zenml.exceptions import AuthorizationException
 from zenml.logger import get_logger
 from zenml.models import ComponentResponseModel, ServiceConnectorRequirements
 from zenml.utils import secret_utils, settings_utils
@@ -403,6 +404,7 @@ class StackComponent:
             connector=component_model.connector.id
             if component_model.connector
             else None,
+            connector_resource_id=component_model.connector_resource_id,
         )
 
     @property
@@ -495,9 +497,6 @@ class StackComponent:
                 compatible or not found.
         """
         from zenml.client import Client
-        from zenml.service_connectors.service_connector_registry import (
-            service_connector_registry,
-        )
 
         if self.connector is None:
             return None
@@ -520,8 +519,10 @@ class StackComponent:
 
         client = Client()
         try:
-            connector_model = client.get_service_connector(
-                name_id_or_prefix=self.connector
+            self._connector_instance = client.get_service_connector_client(
+                name_id_or_prefix=self.connector,
+                resource_type=self.connector_requirements.resource_type,
+                resource_id=self.connector_resource_id,
             )
         except KeyError:
             raise RuntimeError(
@@ -530,29 +531,19 @@ class StackComponent:
                 f"be found or is not accessible. Please verify that the "
                 f"connector exists and that you have access to it."
             )
-        satisfied, err = self.connector_requirements.is_satisfied_by(
-            connector_model
-        )
-        if not satisfied:
+        except ValueError as e:
             raise RuntimeError(
                 f"The connector with ID {self.connector} linked "
-                f"to the '{self.name}' {self.type} stack component does not "
-                f"match the connector requirements specified in the component "
-                f"flavor: {err}. Please verify that the connector is "
-                f"compatible with the component flavor and try again."
+                f"to the '{self.name}' {self.type} stack component could not "
+                f"be correctly configured: {e}."
             )
-
-        # Instantiate a base connector instance
-        connector = service_connector_registry.instantiate_connector(
-            model=connector_model
-        )
-
-        # Use the base connector instance to get a client connector instance
-        # that can actually be used to make requests to the service.
-        self._connector_instance = connector.get_client_connector(
-            resource_type=self.connector_requirements.resource_type,
-            resource_id=self.connector_resource_id,
-        )
+        except AuthorizationException as e:
+            raise RuntimeError(
+                f"The connector with ID {self.connector} linked "
+                f"to the '{self.name}' {self.type} stack component could not "
+                f"be accessed due to an authorization error: {e}. Please "
+                f"verify that you have access to the connector and try again."
+            )
 
         return self._connector_instance
 

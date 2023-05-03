@@ -4097,12 +4097,14 @@ class Client(metaclass=ClientMetaClass):
         self,
         name_id_or_prefix: Union[str, UUID],
         allow_name_prefix_match: bool = True,
+        load_secrets: bool = False,
     ) -> "ServiceConnectorResponseModel":
         """Fetches a registered service connector.
 
         Args:
             name_id_or_prefix: The id of the service connector to fetch.
             allow_name_prefix_match: If True, allow matching by name prefix.
+            load_secrets: If True, load the secrets for the service connector.
 
         Returns:
             The registered service connector.
@@ -4126,12 +4128,31 @@ class Client(metaclass=ClientMetaClass):
                 filter_model=filter_model,
             )
 
-        return self._get_entity_by_id_or_name_or_prefix(
+        connector = self._get_entity_by_id_or_name_or_prefix(
             get_method=self.zen_store.get_service_connector,
             list_method=scoped_list_method,
             name_id_or_prefix=name_id_or_prefix,
             allow_name_prefix_match=allow_name_prefix_match,
         )
+
+        if load_secrets and connector.secret_id:
+            client = Client()
+            try:
+                secret = client.get_secret(
+                    name_id_or_prefix=connector.secret_id,
+                    allow_partial_id_match=False,
+                    allow_partial_name_match=False,
+                )
+            except KeyError as err:
+                logger.error(
+                    "Unable to retrieve secret values associated with "
+                    f"service connector '{connector.name}': {err}"
+                )
+            else:
+                # Add secret values to connector configuration
+                connector.secrets.update(secret.values)
+
+        return connector
 
     def list_service_connectors(
         self,
@@ -4211,7 +4232,6 @@ class Client(metaclass=ClientMetaClass):
         resource_type: Optional[str] = None,
         auth_method: Optional[str] = None,
         configuration: Optional[Dict[str, str]] = None,
-        secrets: Optional[Dict[str, SecretStr]] = None,
         resource_id: Optional[str] = None,
         description: str = "",
         expiration_seconds: Optional[int] = None,
@@ -4238,7 +4258,6 @@ class Client(metaclass=ClientMetaClass):
                 May be omitted if auto-configuration is used.
             resource_type: The resource type for the service connector.
             configuration: The configuration of the service connector.
-            secrets: The secrets of the service connector.
             resource_id: The resource id of the service connector.
             description: The description of the service connector.
             expiration_seconds: The expiration time of the service connector.
@@ -4276,6 +4295,9 @@ class Client(metaclass=ClientMetaClass):
                 "registry. Please check that you have installed all required "
                 "Python packages and ZenML integrations and try again."
             )
+
+        if not resource_type and len(connector.resource_types) == 1:
+            resource_type = connector.resource_types[0].resource_type
 
         # If auto_configure is set, we will try to automatically configure the
         # service connector from the local environment
@@ -4329,9 +4351,16 @@ class Client(metaclass=ClientMetaClass):
 
         else:
             if not auth_method:
-                raise ValueError(
-                    "auth_method must be set if auto_configure is not set."
-                )
+                if len(connector.auth_methods) == 1:
+                    auth_method = connector.auth_methods[0].auth_method
+                else:
+                    raise ValueError(
+                        f"Multiple authentication methods are available for "
+                        f"the {connector.name} service connector type. Please "
+                        f"specify one of the following: "
+                        f"{list(connector.auth_method_map.keys())}."
+                    )
+
             connector_request = ServiceConnectorRequestModel(
                 name=name,
                 connector_type=connector_type,
@@ -4349,7 +4378,6 @@ class Client(metaclass=ClientMetaClass):
                 resource_types=resource_type,
                 resource_id=resource_id,
                 configuration=configuration,
-                secrets=cast(Dict[str, Optional[SecretStr]], secrets),
             )
             if verify:
 
@@ -4372,6 +4400,9 @@ class Client(metaclass=ClientMetaClass):
                     )
                     connector_resources = connector_instance.verify()
 
+                if connector_resources.error:
+                    raise AuthorizationException(connector_resources.error)
+
         if not register:
             return connector_request, connector_resources
 
@@ -4387,115 +4418,164 @@ class Client(metaclass=ClientMetaClass):
         self,
         name_id_or_prefix: Union[UUID, str],
         name: Optional[str] = None,
-        connector_type: Optional[str] = None,
         auth_method: Optional[str] = None,
         resource_type: Optional[str] = None,
         configuration: Optional[Dict[str, str]] = None,
-        secrets: Optional[Dict[str, Optional[SecretStr]]] = None,
         resource_id: Optional[str] = None,
         description: Optional[str] = None,
         expiration_seconds: Optional[int] = None,
         is_shared: Optional[bool] = None,
-        labels: Optional[Dict[str, str]] = None,
+        labels: Optional[Dict[str, Optional[str]]] = None,
         verify: bool = True,
-        register: bool = True,
-    ) -> Union["ServiceConnectorResponseModel", "ServiceConnector"]:
-        """Validate and/or update a service connector.
+        update: bool = True,
+    ) -> Tuple[
+        Optional[
+            Union[
+                "ServiceConnectorResponseModel",
+                "ServiceConnectorUpdateModel",
+            ]
+        ],
+        Optional[ServiceConnectorResourcesModel],
+    ]:
+        """Validate and/or register an updated service connector.
 
         Args:
-            name_id_or_prefix: The name, id or prefix of the service connector to
-                update.
+            name_id_or_prefix: The name, id or prefix of the service connector
+                to update.
             name: The new name of the service connector.
-            connector_type: The new type of the service connector.
             auth_method: The new authentication method of the service connector.
-            resource_type: The new resource type of the service connector.
-            configuration: The new configuration of the service connector.
-            secrets: The new secrets of the service connector.
-            resource_id: The new resource id of the service connector. If set to
-                an empty string, the existing resource id value will be removed.
-            description: The new description of the service connector.
-            expiration_seconds: The new expiration time of the service
-                connector.
-            is_shared: The new shared status of the service connector.
-            labels: The new labels of the service connector.
-            verify: Whether to validate that the new service connector
-                configuration and credentials can be used to gain access to the
-                resource.
-            register: Whether to register the new service connector or not.
+            resource_type: The new resource type for the service connector.
+                If set to None, the existing resource type will not be updated.
+            configuration: The new configuration of the service connector. This
+                needs to be a full replacement of the existing configuration
+                rather than a partial update.
+            resource_id: The new resource id of the service connector.
+                If set None, the existing resource ID will be removed.
+            description: The description of the service connector.
+            expiration_seconds: The expiration time of the service connector.
+                If set to None, the existing expiration time will be removed.
+            is_shared: Whether the service connector is shared or not.
+            labels: The service connector to update or remove. If a label value
+                is set to None, the label will be removed.
+            auto_configure: Whether to automatically configure the service
+                connector from the local environment.
+            verify: Whether to verify that the service connector configuration
+                and credentials can be used to gain access to the resource.
+            update: Whether to update the service connector or not.
 
         Returns:
-            The model of the updated service connector or the updated service
-            connector instance.
+            The model of the registered service connector and the resources
+            that the service connector can give access to (if verify is True).
 
         Raises:
-            EntityExistsError: If the new name is already taken.
             RuntimeError: If the service connector could not be verified.
+            ValueError: If the arguments are invalid.
         """
         from zenml.service_connectors.service_connector_registry import (
             service_connector_registry,
         )
 
-        connector_instance: Optional[ServiceConnector] = None
-
-        # Get the existing service connector model
-        service_connector = self.get_service_connector(
-            name_id_or_prefix=name_id_or_prefix,
+        connector_model = self.get_service_connector(
+            name_id_or_prefix,
             allow_name_prefix_match=False,
+            load_secrets=True,
         )
 
-        update_model = ServiceConnectorUpdateModel(
-            name=name,
-            connector_type=connector_type,
-            auth_method=auth_method,
-            resource_types=[resource_type] if resource_type else None,
-            configuration=configuration,
-            secrets=secrets,
-            resource_id=resource_id,
-            description=description,
+        connector_instance: Optional[ServiceConnector] = None
+        connector_resources: Optional[ServiceConnectorResourcesModel] = None
+
+        if isinstance(connector_model.connector_type, str):
+            connector = self.get_service_connector_type(
+                connector_model.connector_type
+            )
+        else:
+            connector = connector_model.connector_type
+
+        if not resource_type and len(connector.resource_types) == 1:
+            resource_type = connector.resource_types[0].resource_type
+
+        connector_update = ServiceConnectorUpdateModel(
+            name=name or connector_model.name,
+            connector_type=connector.connector_type,
+            description=description or connector_model.description,
+            auth_method=auth_method or connector_model.auth_method,
             expiration_seconds=expiration_seconds,
-            is_shared=is_shared,
-            labels=labels,
-            workspace=self.active_workspace.id,
+            is_shared=is_shared
+            if is_shared is not None
+            else connector_model.is_shared,
             user=self.active_user.id,
+            workspace=self.active_workspace.id,
         )
-
-        # Update the existing model in place with the new values, we'll use this
-        # to validate the new configuration and credentials, if requested, and
-        # to populate the update model
-        service_connector.apply_update(update_model)
+        # Validate and configure the resources
+        if configuration is not None:
+            # The supplied configuration is a drop-in replacement for the
+            # existing configuration and secrets
+            connector_update.validate_and_configure_resources(
+                connector_type=connector,
+                resource_types=resource_type,
+                resource_id=resource_id,
+                configuration=configuration,
+            )
+        else:
+            connector_update.validate_and_configure_resources(
+                connector_type=connector,
+                resource_types=resource_type,
+                resource_id=resource_id,
+                configuration=connector_model.configuration,
+                secrets=connector_model.secrets,
+            )
 
         if verify:
 
-            # This will also check that a connector class is registered for the
-            # given type and that the configuration is valid
-            connector_instance = (
-                service_connector_registry.instantiate_connector(
-                    model=service_connector
+            # Prefer to verify the connector config server-side if the
+            # implementation if available there, because it ensures
+            # that the connector can be shared with other users or used
+            # from other machines and because some auth methods rely on the
+            # server-side authentication environment
+            if connector.remote:
+                connector_resources = (
+                    self.zen_store.verify_service_connector_config(
+                        connector_update
+                    )
                 )
-            )
-            connector_instance.verify()
+            else:
+                connector_instance = (
+                    service_connector_registry.instantiate_connector(
+                        model=connector_update
+                    )
+                )
+                connector_resources = connector_instance.verify()
 
-            # Get an updated model from the connector instance and treat it
-            # as the update model
-            assert service_connector.user is not None
-            update_model = cast(
-                ServiceConnectorUpdateModel,
-                connector_instance.to_model(
-                    name=service_connector.name,
-                    user=service_connector.user.id,
-                    workspace=service_connector.workspace.id,
-                    is_shared=service_connector.is_shared,
-                    description=service_connector.description,
-                    labels=service_connector.labels,
-                ),
-            )
+            if connector_resources.error:
+                raise AuthorizationException(connector_resources.error)
 
-        if not register:
-            return connector_instance or service_connector
+        if not update:
+            return connector_update, connector_resources
 
-        # Send the updated service connector to the ZenStore
-        return self.zen_store.update_service_connector(
-            service_connector_id=service_connector.id, update=update_model
+        # Add the labels
+        if labels is not None:
+            # Apply the new label values, but don't keep any labels that
+            # have been set to None in the update
+            connector_update.labels = {
+                **{
+                    label: value
+                    for label, value in connector_model.labels.items()
+                    if label not in labels
+                },
+                **{
+                    label: value
+                    for label, value in labels.items()
+                    if value is not None
+                },
+            }
+
+        # Update the model
+        return (
+            self.zen_store.update_service_connector(
+                service_connector_id=connector_model.id,
+                update=connector_update,
+            ),
+            connector_resources,
         )
 
     def delete_service_connector(
@@ -4613,20 +4693,20 @@ class Client(metaclass=ClientMetaClass):
                 to configure the client.
 
         Returns:
-            The client service connector instance that was used to configure the
+            The service connector client instance that was used to configure the
             local client.
         """
-        client_connector = self.get_service_connector_client(
+        connector_client = self.get_service_connector_client(
             name_id_or_prefix=name_id_or_prefix,
             resource_type=resource_type,
             resource_id=resource_id,
         )
 
-        client_connector.configure_local_client(
+        connector_client.configure_local_client(
             **kwargs,
         )
 
-        return client_connector
+        return connector_client
 
     def get_service_connector_client(
         self,
@@ -4668,11 +4748,11 @@ class Client(metaclass=ClientMetaClass):
             service_connector.type
         )
 
-        # Prefer to fetch the client connector from the server if the
+        # Prefer to fetch the connector client from the server if the
         # implementation if available there, because some auth methods rely on
         # the server-side authentication environment
         if connector_type.remote:
-            client_connector_model = (
+            connector_client_model = (
                 self.zen_store.get_service_connector_client(
                     service_connector_id=service_connector.id,
                     resource_type=resource_type,
@@ -4680,15 +4760,15 @@ class Client(metaclass=ClientMetaClass):
                 )
             )
 
-            client_connector = (
+            connector_client = (
                 service_connector_registry.instantiate_connector(
-                    model=client_connector_model
+                    model=connector_client_model
                 )
             )
 
-            # Verify the client connector on the local machine, because the
+            # Verify the connector client on the local machine, because the
             # server-side implementation may not be able to do so
-            client_connector.verify()
+            connector_client.verify()
         else:
             connector_instance = (
                 service_connector_registry.instantiate_connector(
@@ -4696,13 +4776,13 @@ class Client(metaclass=ClientMetaClass):
                 )
             )
 
-            # Fetch the client connector
-            client_connector = connector_instance.get_client_connector(
+            # Fetch the connector client
+            connector_client = connector_instance.get_connector_client(
                 resource_type=resource_type,
                 resource_id=resource_id,
             )
 
-        return client_connector
+        return connector_client
 
     def list_service_connector_resources(
         self,
