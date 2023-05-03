@@ -22,7 +22,7 @@ class PyCaretIntegration(Integration):
 
     NAME = PYCARET
     REQUIREMENTS = [
-        "pycaret",
+        "pycaret>=3.0.0",
         "scikit-learn",
         "xgboost",
         "catboost",
