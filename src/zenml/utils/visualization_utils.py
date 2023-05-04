@@ -14,20 +14,66 @@
 """Utility functions for dashboard visualizations."""
 
 
-def format_csv_visualization_as_html(csv_visualization: str) -> str:
+def format_csv_visualization_as_html(
+    csv_visualization: str, max_rows: int = 10, max_cols: int = 10
+) -> str:
     """Formats a CSV visualization as an HTML table.
 
     Args:
         csv_visualization: CSV visualization as a string.
+        max_rows: Maximum number of rows to display. Remaining rows will be
+            replaced by an ellipsis in the middle of the table.
+        max_cols: Maximum number of columns to display. Remaining columns will
+            be replaced by an ellipsis at the end of each row.
 
     Returns:
         HTML table as a string.
     """
-    table = "<table>"
-    for row in csv_visualization.splitlines():
-        table += "<tr>"
-        for cell in row.split(","):
-            table += f"<td>{cell}</td>"
-        table += "</tr>"
-    table += "</table>"
-    return table
+    rows = csv_visualization.splitlines()
+    html = ""
+
+    # If there are fewer rows than the maximum, print all rows
+    if len(rows) <= max_rows:
+        for row in rows:
+            html += _format_csv_row_as_html(row, max_cols=max_cols)
+
+    else:
+        # Else, replace middle rows with ellipsis
+        half_max_rows = max_rows // 2
+
+        # Print first half of rows
+        for row in rows[:half_max_rows]:
+            html += _format_csv_row_as_html(row, max_cols=max_cols)
+
+        # Print ellipsis
+        if len(rows) > max_rows:
+            html += "<tr><td>...</td></tr>"
+
+        # Print last half of rows
+        for row in rows[-half_max_rows:]:
+            html += _format_csv_row_as_html(row, max_cols=max_cols)
+
+    return "<table>" + html + "</table>"
+
+
+def _format_csv_row_as_html(row: str, max_cols: int = 10) -> str:
+    """Formats a CSV row as an HTML table row.
+
+    Args:
+        row: CSV row as a string.
+        max_cols: Maximum number of columns to display. Remaining columns will
+            be replaced by an ellipsis at the end of the row.
+
+    Returns:
+        HTML table row as a string.
+    """
+    if not row:
+        return ""
+
+    csv_cols = row.split(",")
+    html = ""
+    for cell in csv_cols[:max_cols]:
+        html += f"<td>{cell}</td>"
+    if len(csv_cols) > max_cols:
+        html += "<td>...</td>"
+    return "<tr>" + html + "</tr>"
