@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Initialization for the post-execution artifact class."""
 
-from typing import Any, Type, cast
+from typing import Any, Optional, Type, cast
 
 from zenml.enums import VisualizationType
 from zenml.logger import get_logger
@@ -54,8 +54,11 @@ class ArtifactView(BaseView):
 
         return load_artifact(self.model)
 
-    def visualize(self) -> None:
+    def visualize(self, title: Optional[str] = None) -> None:
         """Visualize the artifact in notebook environments.
+
+        Args:
+            title: Optional title to show before the visualizations.
 
         Raises:
             RuntimeError: If not in a notebook environment.
@@ -77,7 +80,8 @@ class ArtifactView(BaseView):
         if not self.model.visualizations:
             return
 
-        display(Markdown(f"### {self.model.name}"))
+        if title:
+            display(Markdown(f"### {title}"))
         for i in range(len(self.model.visualizations)):
             visualization = load_artifact_visualization(self.model, index=i)
             if visualization.type == VisualizationType.IMAGE:

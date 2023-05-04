@@ -263,8 +263,10 @@ class StepView(BaseView):
 
     def visualize(self) -> None:
         """Visualizes all output artifacts of the step."""
-        for artifact in self.outputs.values():
-            artifact.visualize()
+        output_artifacts = self.outputs.values()
+        for artifact in sorted(output_artifacts, key=lambda a: a.model.name):
+            title = f"{self.model.name} - {artifact.model.name}"
+            artifact.visualize(title=title)
 
     def _ensure_inputs_fetched(self) -> None:
         """Fetches all step inputs from the ZenStore."""
