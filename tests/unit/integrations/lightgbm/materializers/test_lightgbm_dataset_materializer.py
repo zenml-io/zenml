@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 
 import lightgbm as lgb
+import numpy as np
 
 from tests.unit.test_general import _test_materializer
 from zenml.integrations.lightgbm.materializers.lightgbm_dataset_materializer import (
@@ -22,9 +23,9 @@ from zenml.integrations.lightgbm.materializers.lightgbm_dataset_materializer imp
 
 def test_lightgbm_dataset_materializer():
     """Tests whether the steps work for the lightgbm dataset materializer."""
-
+    ds = lgb.Dataset(data=np.array([[1, 2, 3]]), label=np.array([1]))
     _test_materializer(
-        step_output=lgb.Dataset(data=[[1, 2, 3]], label=[1]),
+        step_output=ds,
         materializer_class=LightGBMDatasetMaterializer,
         expected_metadata_size=2,
     )

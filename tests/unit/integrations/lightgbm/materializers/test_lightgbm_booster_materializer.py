@@ -12,11 +12,9 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-import tempfile
-from pathlib import Path
 
 import lightgbm as lgb
-import pytest
+import numpy as np
 
 from tests.unit.test_general import _test_materializer
 from zenml.integrations.lightgbm.materializers.lightgbm_booster_materializer import (
@@ -24,18 +22,12 @@ from zenml.integrations.lightgbm.materializers.lightgbm_booster_materializer imp
 )
 
 
-@pytest.fixture
-def empty_model_file() -> Path:
-    """Fixture to get an empty model.txt file."""
-    with tempfile.NamedTemporaryFile() as tmp:
-        yield tmp.name
-
-
-def test_lightgbm_booster_materializer(empty_model_file):
+def test_lightgbm_booster_materializer():
     """Tests whether the steps work for the lightgbm booster materializer."""
-
+    ds = lgb.Dataset(data=np.array([[1, 2, 3]]), label=np.array([1]))
+    booster = lgb.Booster(train_set=ds)
     _test_materializer(
-        step_output=lgb.Booster(model_file=empty_model_file),
+        step_output=booster,
         materializer_class=LightGBMBoosterMaterializer,
         expected_metadata_size=1,
     )
