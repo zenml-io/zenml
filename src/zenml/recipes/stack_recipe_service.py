@@ -450,18 +450,6 @@ class GitStackRecipesHandler(object):
         return self.stack_recipe_repo.active_version
 
 
-# todo
-"""
-in init
-
-do git stack recipe handler.get stack recipes
-and then the local recipe check saath hi mein
-
-catch ky error and notexisterror(new) in the cli when the svc
-is initialized.
-"""
-
-
 class StackRecipeServiceConfig(TerraformServiceConfig):
     """Class to represent the configuration of a stack recipe service."""
 

@@ -30,7 +30,10 @@ from zenml.config.global_config import GlobalConfiguration
 from zenml.exceptions import GitNotFoundError
 from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.recipes.stack_recipe_service import STACK_RECIPES_GITHUB_REPO
+from zenml.recipes.stack_recipe_service import (
+    STACK_RECIPES_GITHUB_REPO,
+    LocalStackRecipe,
+)
 from zenml.utils import io_utils, yaml_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, event_handler
 
