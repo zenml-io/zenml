@@ -4,7 +4,7 @@ description: How to include ZenML in the CI/CD/CT workflows
 
 # Productionalize with CI/CD/CT
 
-In many production settings it is undesirable to have all developers accessing and running on the production environments. Instead, this is typically centralized through the means of git ops.&#x20;
+In many production settings it is undesirable to have all developers accessing and running on the production environments. The concept of GitOps typically solves this issue. Here is how it could be applied in your ZenML projects.
 
 <div>
 
@@ -16,6 +16,17 @@ In many production settings it is undesirable to have all developers accessing a
 
 </div>
 
-This same principle can be easily used for pipeline deployments using ZenML. The architecture diagram above visualizes how a pipeline would be run through an automated action that is triggered when new code is pushed to the main code repository.
+You can find a code example that uses the visualized flow [here](https://github.com/zenml-io/zenml-gitflow).&#x20;
 
-You can find an example of this [here](https://github.com/zenml-io/zenml-gitflow).
+In essence this is what happens:
+
+1\) User writes and pushes code to their code repository
+
+2\) The CI/CD Framework of the code repository starts a worker
+
+3\) Within this worker zenml and other requirements will be installed
+
+4 - 6) The worker connects to the ZenML server and triggers a pipeline run
+
+7 - 11) The pipeline is now executed on the stack of choice
+
