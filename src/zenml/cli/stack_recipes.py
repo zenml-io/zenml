@@ -469,11 +469,6 @@ def deploy(
     """
     cli_utils.warning(ALPHA_MESSAGE)
 
-    from zenml.recipes import (
-        StackRecipeService,
-        StackRecipeServiceConfig,
-    )
-
     with event_handler(
         event=AnalyticsEvent.RUN_STACK_RECIPE,
         metadata={"stack_recipe_name": stack_recipe_name},
@@ -543,6 +538,11 @@ def deploy(
         except KeyError as e:
             cli_utils.error(str(e))
         else:
+            from zenml.recipes import (
+                StackRecipeService,
+                StackRecipeServiceConfig,
+            )
+
             # warn that prerequisites should be met
             metadata = stack_recipe.metadata
             if not cli_utils.confirmation(
@@ -555,11 +555,11 @@ def deploy(
                     "they are met and run deploy again."
                 )
 
+            local_recipe_dir = Path(os.getcwd()) / path / stack_recipe_name
+
             # get or create the stack recipe service.
             stack_recipe_service_config = StackRecipeServiceConfig(
-                directory_path=str(
-                    Path(os.getcwd()) / path / stack_recipe_name
-                ),
+                directory_path=str(local_recipe_dir),
                 skip_pull=skip_pull,
                 force=force,
                 log_level=log_level,
@@ -567,16 +567,20 @@ def deploy(
                 input_variables=variables_dict,
             )
 
-            stack_recipe_service = StackRecipeService(
-                stack_recipe_name=stack_recipe_name,
-                config=stack_recipe_service_config,
+            stack_recipe_service = StackRecipeService.get_service(
+                str(local_recipe_dir)
             )
 
-            if stack_recipe_service.deployed:
+            if stack_recipe_service:
                 cli_utils.declare(
                     "An existing deployment of the recipe found. "
-                    f"with path {stack_recipe_service.stack_recipe_dir}. "
+                    f"with path {local_recipe_dir}. "
                     "Proceeding to update or create resources. "
+                )
+            else:
+                stack_recipe_service = StackRecipeService(
+                    config=stack_recipe_service_config,
+                    stack_recipe_name=stack_recipe_name,
                 )
 
             try:
@@ -817,76 +821,83 @@ def destroy(
     with event_handler(
         event=AnalyticsEvent.DESTROY_STACK_RECIPE,
         metadata={"stack_recipe_name": stack_recipe_name},
-    ):
-        import python_terraform
-        from zenml.recipes import StackRecipeService
+    ) as handler:
+
+        # build a dict of all stack component options that have non-null values
+        stack_component_options = {
+            "artifact_store": artifact_store,
+            "orchestrator": orchestrator,
+            "container_registry": container_registry,
+            "model_deployer": model_deployer,
+            "experiment_tracker": experiment_tracker,
+            "secrets_manager": secrets_manager,
+            "step_operator": step_operator,
+        }
+
+        # filter out null values
+        stack_component_options = {
+            k: v for k, v in stack_component_options.items() if v is not None
+        }
+
+        handler.metadata.update(stack_component_options)
+
+        # add all values that are not None to the disabled services list
+        disabled_services = [
+            f"{name}_{value}"
+            for name, value in stack_component_options.items()
+            if name
+            not in [
+                "artifact_store",
+                "container_registry",
+                "secrets_manager",
+            ]
+        ]
+        # if artifact store, container registry or secrets manager
+        # are not none, add them as strings to the list of disabled services
+        disabled_services = disabled_services + [
+            f"{name}"
+            for name, _ in stack_component_options.items()
+            if name
+            in [
+                "artifact_store",
+                "container_registry",
+                "secrets_manager",
+            ]
+        ]
 
         try:
-            stack_recipe_service = StackRecipeService(
-                stack_recipe_name=stack_recipe_name,
-                path=path,
-            )
+            _ = git_stack_recipes_handler.get_stack_recipes(stack_recipe_name)[
+                0
+            ]
         except KeyError as e:
             cli_utils.error(str(e))
         else:
+            from zenml.recipes import (
+                StackRecipeService,
+            )
+            import python_terraform
+
+            local_recipe_dir = Path(os.getcwd()) / path / stack_recipe_name
+
+            stack_recipe_service = StackRecipeService.get_service(
+                str(local_recipe_dir)
+            )
+
+            if not stack_recipe_service:
+                cli_utils.error(
+                    "No stack recipe found with the path "
+                    f"{local_recipe_dir}. You need to first deploy "
+                    "the recipe by running \nzenml stack recipe deploy "
+                    f"{stack_recipe_name}"
+                )
+
             if not stack_recipe_service.local_recipe_exists():
                 raise ModuleNotFoundError(
                     f"The recipe {stack_recipe_name} "
-                    "has not been pulled at the specified path. "
-                    f"Run `zenml stack recipe pull {stack_recipe_name}` "
-                    f"followed by `zenml stack recipe deploy "
-                    f"{stack_recipe_name}` first."
+                    "has not been pulled at the path  "
+                    f"{local_recipe_dir}. Please check  "
+                    "if you've deleted the recipe from the path."
                 )
-
-            if not stack_recipe_service.deployed:
-                cli_utils.error(
-                    "No stack recipe found with the path "
-                    f"{stack_recipe_service.stack_recipe_dir}. You need "
-                    "to first deploy the recipe by running \n"
-                    f"zenml stack recipe deploy {stack_recipe_name}"
-                )
-
-            # build a dict of all stack component options that have non-null values
-            stack_component_options = {
-                "artifact_store": artifact_store,
-                "orchestrator": orchestrator,
-                "container_registry": container_registry,
-                "model_deployer": model_deployer,
-                "experiment_tracker": experiment_tracker,
-                "secrets_manager": secrets_manager,
-                "step_operator": step_operator,
-            }
-
-            # filter out null values
-            stack_component_options = {
-                k: v
-                for k, v in stack_component_options.items()
-                if v is not None
-            }
-
-            # add all values that are not None to the disabled services list
-            disabled_services = [
-                f"{name}_{value}"
-                for name, value in stack_component_options.items()
-                if name
-                not in [
-                    "artifact_store",
-                    "container_registry",
-                    "secrets_manager",
-                ]
-            ]
-            # if artifact store, container registry or secrets manager
-            # are not none, add them as strings to the list of disabled services
-            disabled_services = disabled_services + [
-                f"{name}"
-                for name, _ in stack_component_options.items()
-                if name
-                in [
-                    "artifact_store",
-                    "container_registry",
-                    "secrets_manager",
-                ]
-            ]
 
             stack_recipe_service.config.disabled_services = disabled_services
 

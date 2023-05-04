@@ -496,39 +496,6 @@ class StackRecipeService(TerraformService):
 
     config: StackRecipeServiceConfig
     stack_recipe_name: str
-    deployed: bool
-
-    def __init__(
-        self,
-        stack_recipe_name: str,
-        config: StackRecipeServiceConfig,
-        **kwargs,
-    ):
-        """Initializes the stack recipe service.
-
-        Args:
-            config: The configuration of the stack recipe service.
-            stack_recipe_name: The name of the stack recipe to deploy.
-        """
-        # find an existing service with the same terraform path
-        # create a new one if not found
-        stack_recipe_service = StackRecipeService.get_service(
-            str(config.directory_path)
-        )
-        if stack_recipe_service:
-            deployed = True
-            self = stack_recipe_service
-        else:
-            deployed = False
-            super().__init__(
-                config=config,
-                stack_recipe_name=stack_recipe_name,
-                deployed=deployed,
-                **kwargs,
-            )
-            self.stack_recipe_name = stack_recipe_name
-
-        self.deployed = deployed
 
     def local_recipe_exists(self) -> bool:
         """Checks if the local recipe exists.
