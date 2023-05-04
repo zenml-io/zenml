@@ -12,8 +12,11 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import platform
+
 import lightgbm as lgb
 import numpy as np
+import pytest
 
 from tests.unit.test_general import _test_materializer
 from zenml.integrations.lightgbm.materializers.lightgbm_dataset_materializer import (
@@ -21,6 +24,10 @@ from zenml.integrations.lightgbm.materializers.lightgbm_dataset_materializer imp
 )
 
 
+@pytest.mark.skipif(
+    platform.system() == "Darwin",
+    reason="https://github.com/microsoft/LightGBM/issues/4229",
+)
 def test_lightgbm_dataset_materializer():
     """Tests whether the steps work for the lightgbm dataset materializer."""
     ds = lgb.Dataset(data=np.array([[1, 2, 3]]), label=np.array([1]))
