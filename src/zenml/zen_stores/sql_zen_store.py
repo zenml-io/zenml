@@ -1292,6 +1292,10 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The created stack component.
+
+        Raises:
+            KeyError: if the stack component references a non-existent
+                connector.
         """
         with Session(self.engine) as session:
             self._fail_if_component_with_name_type_exists_for_user(
@@ -4299,6 +4303,10 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The newly created service connector.
+
+        Raises:
+            Exception: If anything goes wrong during the creation of the
+                service connector.
         """
         # If the connector type is locally available, we validate the request
         # against the connector type schema before storing it in the database
@@ -4762,6 +4770,8 @@ class SqlZenStore(BaseZenStore):
 
         Raises:
             KeyError: If no service connector with the given ID exists.
+            IllegalOperationError: If the service connector is still referenced
+                by one or more stack components.
         """
         with Session(self.engine) as session:
             try:
@@ -4865,11 +4875,6 @@ class SqlZenStore(BaseZenStore):
         Returns:
             A service connector client that can be used to access the given
             resource.
-
-        Raises:
-            KeyError: If no service connector with the given ID exists.
-            NotImplementError: If the service connector cannot be instantiated
-                on the store e.g. due to missing package dependencies.
         """
         connector = self.get_service_connector(service_connector_id)
 

@@ -671,8 +671,8 @@ class AWSServiceConnector(ServiceConnector):
             temporary credentials if applicable.
 
         Raises:
-            AuthenticationError: If the IAM role authentication method is used
-                and the role cannot be assumed.
+            AuthorizationException: If the IAM role authentication method is
+                used and the role cannot be assumed.
             NotImplementedError: If the authentication method is not supported.
         """
         cfg = self.config
@@ -948,6 +948,10 @@ class AWSServiceConnector(ServiceConnector):
         Raises:
             ValueError: If the provided resource ID is not a valid ECR
                 repository ARN, URI or repository name.
+            AuthorizationException: If an ECR registry ID (AWS account ID) is
+                not included in the resource ID and cannot be retrieved from
+                AWS because the connector is not authorized.
+
         """
         # The resource ID could mean different things:
         #
@@ -1136,7 +1140,6 @@ class AWSServiceConnector(ServiceConnector):
             Kubernetes clusters.
 
         Raises:
-            AuthorizationException: If authentication failed.
             NotImplementedError: If the connector instance does not support
                 connecting to the indicated resource type or client type.
         """
@@ -1197,7 +1200,6 @@ class AWSServiceConnector(ServiceConnector):
                 to configure the client.
 
         Raises:
-            AuthorizationException: If authentication failed.
             NotImplementedError: If the connector instance does not support
                 local configuration for the configured resource type or
                 authentication method.registry
@@ -1255,6 +1257,14 @@ class AWSServiceConnector(ServiceConnector):
         Returns:
             An AWS connector instance configured with authentication credentials
             automatically extracted from the environment.
+
+        Raises:
+            NotImplementedError: If the connector implementation does not
+                support auto-configuration for the specified authentication
+                method.
+            ValueError: If the supplied arguments are not valid.
+            AuthorizationException: If no AWS credentials can be loaded from
+                the environment.
         """
         auth_config: AWSBaseConfig
         expiration_seconds: Optional[int] = None
@@ -1421,6 +1431,10 @@ class AWSServiceConnector(ServiceConnector):
         Returns:
             The list of resources IDs in canonical format identifying the
             resources that the connector can access.
+
+        Raises:
+            AuthorizationException: If the connector cannot authenticate or
+                access the specified resource.
         """
         # If the resource type or resource ID are not specified, treat this the
         # same as a generic AWS connector.
@@ -1564,11 +1578,13 @@ class AWSServiceConnector(ServiceConnector):
             resource_type: The type of the resources to connect to.
             resource_id: The ID of a particular resource to connect to.
 
+        Returns:
+            An AWS, Kubernetes or Docker connector instance that can be used to
+            connect to the specified resource.
+
         Raises:
             AuthorizationException: If authentication failed.
-            NotImplementedError: If the connector instance does not support
-                connecting to the configured resource type or authentication
-                method.
+            ValueError: If the resource type is not supported.
         """
         connector_name = ""
         if self.name:

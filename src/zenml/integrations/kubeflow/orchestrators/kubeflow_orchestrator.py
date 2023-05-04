@@ -680,6 +680,10 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
 
         Returns:
             A KFP client instance.
+
+        Raises:
+            RuntimeError: If the linked Kubernetes connector behaves
+                unexpectedly.
         """
         connector = self.get_connector()
         if connector:

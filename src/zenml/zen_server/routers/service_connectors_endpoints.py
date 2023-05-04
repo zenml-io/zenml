@@ -168,7 +168,6 @@ def validate_and_verify_service_connector_config(
 
     Args:
         connector: The service connector configuration to verify.
-        auth_context: Authentication context.
 
     Returns:
         The list of resources that the service connector configuration has
@@ -235,7 +234,6 @@ def get_service_connector_client(
         connector_id: ID of the service connector.
         resource_type: Type of the resource to list.
         resource_id: ID of the resource to list.
-        auth_context: Authentication context.
 
     Returns:
         A service connector client that can be used to access the given
@@ -266,7 +264,6 @@ def list_service_connector_types(
         connector_type: Filter by connector type.
         resource_type: Filter by resource type.
         auth_method: Filter by auth method.
-        auth_context: Authentication Context
 
     Returns:
         List of service connector types.

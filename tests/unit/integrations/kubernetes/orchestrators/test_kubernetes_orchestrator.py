@@ -55,7 +55,7 @@ def _get_kubernetes_orchestrator(
 def _patch_k8s_clients(mocker):
     """Helper function to patch k8s clients."""
     mocker.patch(
-        "zenml.integrations.kubernetes.orchestrators.kubernetes_orchestrator.KubernetesOrchestrator._initialize_k8s_clients",
+        "zenml.integrations.kubernetes.orchestrators.kubernetes_orchestrator.KubernetesOrchestrator.kube_client",
         return_value=(None),
     )
     mocker.patch(

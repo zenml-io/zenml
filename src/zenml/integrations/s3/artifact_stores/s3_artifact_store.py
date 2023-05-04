@@ -64,6 +64,9 @@ class S3ArtifactStore(BaseArtifactStore, AuthenticationMixin):
         Returns:
             Tuple (key, secret, token) of credentials used to authenticate with
             the S3 filesystem.
+
+        Raises:
+            RuntimeError: If the AWS connector behaves unexpectedly.
         """
         connector = self.get_connector()
         if connector:

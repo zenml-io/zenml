@@ -1911,10 +1911,7 @@ class RestZenStore(BaseZenStore):
 
         Args:
             connector_models: The service connector or resource models to
-            populate.
-
-        Returns:
-            None
+                populate.
         """
         for service_connector in connector_models:
             # Mark the remote connector type as being only remotely available
@@ -2022,9 +2019,6 @@ class RestZenStore(BaseZenStore):
 
         Returns:
             The updated service connector.
-
-        Raises:
-            KeyError: If no service connector with the given ID exists.
         """
         connector_model = self._update_resource(
             resource_id=service_connector_id,
@@ -2040,9 +2034,6 @@ class RestZenStore(BaseZenStore):
 
         Args:
             service_connector_id: The ID of the service connector to delete.
-
-        Raises:
-            KeyError: If no service connector with the given ID exists.
         """
         self._delete_resource(
             resource_id=service_connector_id, route=SERVICE_CONNECTORS

@@ -192,9 +192,6 @@ class KubernetesServiceConnector(ServiceConnector):
             resource_type: The resource type to canonicalize.
             resource_id: The resource ID to canonicalize.
 
-        Returns:
-            The canonical resource ID.
-
         Raises:
             NotImplementedError: If multiple instances are not supported.
         """
@@ -263,9 +260,6 @@ class KubernetesServiceConnector(ServiceConnector):
 
         Raises:
             AuthorizationException: If authentication failed.
-            NotImplementedError: If the connector instance does not support
-                local configuration for the configured resource type or
-                authentication method.
         """
         cfg = self.config
         cluster_name = cfg.cluster_name
@@ -383,9 +377,8 @@ class KubernetesServiceConnector(ServiceConnector):
                 supports multiple instances.
             kwargs: Additional implementation specific keyword arguments to use.
 
-        Returns:
-            A Kubernetes connector instance configured with authentication
-            credentials automatically extracted from the environment.
+        Raises:
+            NotImplementedError: If auto-configuration is not supported.
         """
         raise NotImplementedError(
             "Auto-configuration of Kubernetes connectors is not supported."
@@ -407,6 +400,10 @@ class KubernetesServiceConnector(ServiceConnector):
         Returns:
             The list of resources IDs in canonical format identifying the
             resources that the connector can access.
+
+        Raises:
+            AuthorizationException: If the connector cannot authenticate or
+                access the Kubernetes cluster API.
         """
         client = self._connect_to_resource()
         assert isinstance(client, k8s_client.ApiClient)

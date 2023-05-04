@@ -4274,8 +4274,12 @@ class Client(metaclass=ClientMetaClass):
             that the service connector can give access to (if verify is True).
 
         Raises:
-            RuntimeError: If the service connector could not be verified.
             ValueError: If the arguments are invalid.
+            KeyError: If the service connector type is not found.
+            NotImplementedError: If auto-configuration is not supported or
+                not implemented for the service connector type.
+            AuthorizationException: If the connector verification failed due
+                to authorization issues.
         """
         from zenml.service_connectors.service_connector_registry import (
             service_connector_registry,
@@ -4291,8 +4295,8 @@ class Client(metaclass=ClientMetaClass):
             )
         except KeyError:
             raise KeyError(
-                f"Service connector type {connector_type} not found in "
-                "registry. Please check that you have installed all required "
+                f"Service connector type {connector_type} not found."
+                "Please check that you have installed all required "
                 "Python packages and ZenML integrations and try again."
             )
 
@@ -4308,7 +4312,7 @@ class Client(metaclass=ClientMetaClass):
                     "does not support auto-configuration."
                 )
             if not connector.local:
-                raise ValueError(
+                raise NotImplementedError(
                     f"The {connector.name} service connector type "
                     "implementation is not available locally. Please "
                     "check that you have installed all required Python "
@@ -4479,8 +4483,8 @@ class Client(metaclass=ClientMetaClass):
             that the service connector can give access to (if verify is True).
 
         Raises:
-            RuntimeError: If the service connector could not be verified.
-            ValueError: If the arguments are invalid.
+            AuthorizationException: If the service connector verification
+                fails due to invalid credentials or insufficient permissions.
         """
         from zenml.service_connectors.service_connector_registry import (
             service_connector_registry,

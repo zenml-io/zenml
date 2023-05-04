@@ -2077,6 +2077,9 @@ def get_parsed_labels(
 
     Returns:
         A dictionary of the metadata.
+
+    Raises:
+        ValueError: If the labels are not in the correct format.
     """
     if not labels:
         return {}

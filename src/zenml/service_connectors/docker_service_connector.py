@@ -218,9 +218,6 @@ class DockerServiceConnector(ServiceConnector):
 
         Returns:
             An authenticated python-docker client object.
-
-        Raises:
-            AuthorizationException: If authentication failed.
         """
         docker_client = DockerClient.from_env()
         self._authorize_client(docker_client)
@@ -239,9 +236,6 @@ class DockerServiceConnector(ServiceConnector):
 
         Raises:
             AuthorizationException: If authentication failed.
-            NotImplementedError: If the connector instance does not support
-                local configuration for the indicated resource type or client
-                type.
         """
         # Call the docker CLI to authenticate to the Docker registry
         cfg = self.config
@@ -294,10 +288,6 @@ class DockerServiceConnector(ServiceConnector):
                 supports multiple instances.
             kwargs: Additional implementation specific keyword arguments to use.
 
-        Returns:
-            A connector instance configured with authentication credentials
-            automatically extracted from the environment.
-
         Raises:
             NotImplementedError: If the connector auto-configuration fails or
                 is not supported.
@@ -319,6 +309,9 @@ class DockerServiceConnector(ServiceConnector):
             resource_id: The Docker registry name or URL to connect to. If not
                 provided, this method will verify that it can connect to any
                 Docker registry.
+
+        Returns:
+            The name of the Docker registry that this connector can access.
         """
         # The docker server isn't available on the ZenML server, so we can't
         # verify the credentials there.

@@ -327,6 +327,10 @@ class ServiceConnectorTypeModel(BaseModel):
 
         Returns:
             The list of resource types.
+
+        Raises:
+            ValueError: If two or more resource type specifications list the
+                same resource type.
         """
         # Gather all resource types from the list of resource type
         # specifications.
@@ -350,6 +354,10 @@ class ServiceConnectorTypeModel(BaseModel):
 
         Returns:
             The list of authentication methods.
+
+        Raises:
+            ValueError: If two or more authentication method specifications
+                share the same authentication method value.
         """
         # Gather all auth methods from the list of auth method
         # specifications.
@@ -634,6 +642,9 @@ class ServiceConnectorBaseModel(BaseModel):
                 configured resource type.
             configuration: The connector configuration.
             secrets: The connector secrets.
+
+        Raises:
+            ValueError: If the connector configuration is not valid.
         """
         if resource_types is None:
             resource_type = None

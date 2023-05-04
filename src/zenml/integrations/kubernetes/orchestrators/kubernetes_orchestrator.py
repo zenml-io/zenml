@@ -90,6 +90,9 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
 
         Returns:
             The Kubernetes API client.
+
+        Raises:
+            RuntimeError: if the Kubernetes connector behaves unexpectedly.
         """
         # Refresh the client also if the connector has expired
         if self._k8s_client and not self.connector_has_expired():

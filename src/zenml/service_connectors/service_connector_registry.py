@@ -163,6 +163,7 @@ class ServiceConnectorRegistry:
         Raises:
             NotImplementedError: If no service connector is registered for the
                 given type identifier.
+            ValueError: If the service connector model is not valid.
         """
         try:
             service_connector_type = self.get_service_connector_type(
