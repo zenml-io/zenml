@@ -27,7 +27,7 @@ def test_huggingface_tf_pretrained_model_materializer(clean_client):
             "bert-base-cased", num_labels=5
         ),
         materializer_class=HFTFModelMaterializer,
-        expected_metadata_size=5,
+        expected_metadata_size=4,
     )
 
     assert model.config.max_position_embeddings == 512
