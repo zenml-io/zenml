@@ -134,9 +134,22 @@ class NumpyMaterializer(BaseMaterializer):
         """
         visualizations = super().save_visualizations(arr)
 
+        if not np.issubdtype(arr.dtype, np.number):
+            return visualizations
+
         try:
-            import matplotlib.pyplot as plt  # type: ignore
-            from matplotlib.image import imsave  # type: ignore
+            # Save histogram for 1D arrays
+            if len(arr.shape) == 1:
+                histogram_path = os.path.join(self.uri, "histogram.png")
+                self._save_histogram(histogram_path, arr)
+                visualizations[histogram_path] = VisualizationType.IMAGE
+
+            # Save as image for 2D or 3D arrays with 3 or 4 channels
+            elif self._array_can_be_saved_as_image(arr):
+                image_path = os.path.join(self.uri, "image.png")
+                self._save_image(image_path, arr)
+                visualizations[image_path] = VisualizationType.IMAGE
+
         except ImportError:
             logger.info(
                 "Skipping visualization of numpy array because matplotlib "
@@ -145,30 +158,74 @@ class NumpyMaterializer(BaseMaterializer):
             )
             return visualizations
 
-        if not np.issubdtype(arr.dtype, np.number):
-            return visualizations
-
-        # Save histogram for 1D arrays
-        if len(arr.shape) == 1:
-            histogram_path = os.path.join(self.uri, "histogram.png")
-            plt.hist(arr)
-            with fileio.open(histogram_path, "wb") as f:
-                plt.savefig(f)
-            plt.close()
-            visualizations[histogram_path] = VisualizationType.IMAGE
-
-        # Save image for 2D or 3D arrays with 3 or 4 channels
-        elif len(arr.shape) == 2 or (
-            len(arr.shape) == 3 and arr.shape[2] in [3, 4]
-        ):
-            image_path = os.path.join(self.uri, "image.png")
-            with fileio.open(image_path, "wb") as f:
-                imsave(f, arr)
-            visualizations[image_path] = VisualizationType.IMAGE
-
         return visualizations
 
-    def extract_numeric_metadata(
+    def _save_histogram(self, output_path: str, arr: "NDArray[Any]") -> None:
+        """Saves a histogram of a numpy array.
+
+        Args:
+            output_path: The path to save the histogram to.
+            arr: The numpy array of which to save the histogram.
+        """
+        import matplotlib.pyplot as plt  # type: ignore
+
+        plt.hist(arr)
+        with fileio.open(output_path, "wb") as f:
+            plt.savefig(f)
+        plt.close()
+
+    @staticmethod
+    def _array_can_be_saved_as_image(arr: "NDArray[Any]") -> bool:
+        """Checks if a numpy array can be saved as an image.
+
+        This is the case if the array is 2D or 3D with 3 or 4 channels.
+
+        Args:
+            arr: The numpy array to check.
+
+        Returns:
+            True if the array can be saved as an image, False otherwise.
+        """
+        if len(arr.shape) == 2:
+            return True
+        if len(arr.shape) == 3 and arr.shape[2] in [3, 4]:
+            return True
+        return False
+
+    def _save_image(self, output_path: str, arr: "NDArray[Any]") -> None:
+        """Saves a numpy array as an image.
+
+        Args:
+            output_path: The path to save the image to.
+            arr: The numpy array to save.
+        """
+        from matplotlib.image import imsave  # type: ignore
+
+        with fileio.open(output_path, "wb") as f:
+            imsave(f, arr)
+
+    def extract_metadata(
+        self, arr: "NDArray[Any]"
+    ) -> Dict[str, "MetadataType"]:
+        """Extract metadata from the given numpy array.
+
+        Args:
+            arr: The numpy array to extract metadata from.
+
+        Returns:
+            The extracted metadata as a dictionary.
+        """
+        base_metadata = super().extract_metadata(arr)
+        if np.issubdtype(arr.dtype, np.number):
+            return {**base_metadata, **self._extract_numeric_metadata(arr)}
+        elif np.issubdtype(arr.dtype, np.unicode_) or np.issubdtype(
+            arr.dtype, np.object_
+        ):
+            return {**base_metadata, **self._extract_text_metadata(arr)}
+        else:
+            return {**base_metadata}
+
+    def _extract_numeric_metadata(
         self, arr: "NDArray[Any]"
     ) -> Dict[str, "MetadataType"]:
         """Extracts numeric metadata from a numpy array.
@@ -196,7 +253,7 @@ class NumpyMaterializer(BaseMaterializer):
         }
         return numpy_metadata
 
-    def extract_text_metadata(
+    def _extract_text_metadata(
         self, arr: "NDArray[Any]"
     ) -> Dict[str, "MetadataType"]:
         """Extracts text metadata from a numpy array.
@@ -223,24 +280,3 @@ class NumpyMaterializer(BaseMaterializer):
             "most_common_count": most_common_count,
         }
         return text_metadata
-
-    def extract_metadata(
-        self, arr: "NDArray[Any]"
-    ) -> Dict[str, "MetadataType"]:
-        """Extract metadata from the given numpy array.
-
-        Args:
-            arr: The numpy array to extract metadata from.
-
-        Returns:
-            The extracted metadata as a dictionary.
-        """
-        base_metadata = super().extract_metadata(arr)
-        if np.issubdtype(arr.dtype, np.number):
-            return {**base_metadata, **self.extract_numeric_metadata(arr)}
-        elif np.issubdtype(arr.dtype, np.unicode_) or np.issubdtype(
-            arr.dtype, np.object_
-        ):
-            return {**base_metadata, **self.extract_text_metadata(arr)}
-        else:
-            return {**base_metadata}
