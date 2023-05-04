@@ -947,11 +947,6 @@ class BaseStep(metaclass=BaseStepMeta):
 
         Returns:
             The finalized step configuration.
-
-        Raises:
-            StepInterfaceError: If an output does not have an explicit
-                materializer assigned to it and there is no default
-                materializer registered for the output type.
         """
         outputs: Dict[str, Dict[str, Source]] = defaultdict(dict)
 
