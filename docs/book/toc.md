@@ -24,8 +24,6 @@
   * [Link your own repository](user-guide/advanced-guide/link-your-own-repository.md)
   * [Use failure/success hooks](user-guide/advanced-guide/use-failure-success-hooks.md)
   * [Access metadata within steps](user-guide/advanced-guide/access-metadata-within-steps.md)
-  * [Version your data](user-guide/advanced-guide/data-versioning.md)
-  * [Use hyperparameter tuning](user-guide/advanced-guide/implement-hyper-parameter-tuning.md)
   * [Enable GPU-backed hardware](user-guide/advanced-guide/enable-gpu-backed-hardware.md)
 * [📜 Component Guide](user-guide/component-galery/README.md)
   * [Integration Overview](learning/component-gallery/integrations.md)
@@ -119,7 +117,7 @@
 
 ## Learning
 
-* [Quickstart](https://github.com/zenml-io/zenml/blob/cb1bcbda58df06e057fd0a152b4ba3facf9c2d59/examples/quickstart/README.md)
+* [🚀 Quickstart](https://github.com/zenml-io/zenml/blob/cb1bcbda58df06e057fd0a152b4ba3facf9c2d59/examples/quickstart/README.md)
 * [🧩 Examples](learning/examples/README.md)
   * [Build a LLM-powered Community Slack Bot](https://github.com/zenml-io/zenml-projects/tree/main/langchain-llamaindex-slackbot)
   * [Summarize news articles with NLP](https://github.com/zenml-io/zenml-projects/tree/main/zen-news-summarization)
@@ -134,10 +132,11 @@
 ## Doc Orphanage
 
 * [Best Practices](doc-orphanage/best-practices.md)
+* [Version your data](doc-orphanage/data-versioning.md)
+* [Use hyperparameter tuning](doc-orphanage/implement-hyper-parameter-tuning.md)
 * [Global Config](doc-orphanage/global-config.md)
 * [System Environmental Variables](doc-orphanage/system-environmental-variables.md)
 * [Usage Analytics](doc-orphanage/usage-analytics.md)
 * [Discover the dashboard](doc-orphanage/discover-the-dashboard.md)
 * [📋 Glossary](learning/glossary.md)
 * [Deploy using HuggingFace Spaces](doc-orphanage/deploy-using-huggingface-spaces.md)
-* [Page 1](doc-orphanage/page-1.md)

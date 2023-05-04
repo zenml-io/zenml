@@ -6,7 +6,7 @@ description: Ensuring your pipelines or steps run on GPU-backed hardware.
 
 ZenML allows for multiple ways to configure the hardware on which your steps run, from [step operator stack components](broken-reference) to [custom per-step or per-pipeline requirements](broken-reference). For steps or pipelines that are required to run on GPUs, it is essential to ensure that the environment has the required CUDA tools installed. The following section describes what you need to do to ensure that you will actually get the performance boost that running your training on a GPU will give you.
 
-The steps that will run on GPU-backed hardware will all be running from a containerized environment, whether you're using our local Docker orchestrator or on a cloud instance of Kubeflow. (Please see [the section on configuration of the Docker environment](broken-reference) for general context on this and what follows.) For this reason, you will need to make two amendments to your Docker settings for the relevant steps as follows:
+The steps that will run on GPU-backed hardware will all be running from a containerized environment, whether you're using our local Docker orchestrator or on a cloud instance of Kubeflow. (Please see [the section on the configuration of the Docker environment](broken-reference) for general context on this and what follows.) For this reason, you will need to make two amendments to your Docker settings for the relevant steps as follows:
 
 1. Specify a CUDA-enabled parent image in your `DockerSettings`
 
@@ -44,4 +44,4 @@ The core cloud operators all offer prebuilt Docker images that fit with their ha
 * [GCP](https://cloud.google.com/deep-learning-vm/docs/images)
 * [Azure](https://learn.microsoft.com/en-us/azure/machine-learning/concept-prebuilt-docker-images-inference)
 
-Not all of these images are available on DockerHub, so your please ensure that the orchestrator environment your pipeline runs in has sufficient permission(s) to pull images from registries if you are using one of those.
+Not all of these images are available on DockerHub, so please ensure that the orchestrator environment your pipeline runs in has sufficient permission(s) to pull images from registries if you are using one of those.

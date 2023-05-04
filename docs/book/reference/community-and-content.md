@@ -28,7 +28,7 @@ On our [Blog](https://blog.zenml.io/) page, you can find various articles writte
 
 ### Podcast
 
-We also have a [Podcast](https://podcast.zenml.io/) series that brings you interviews and discussions with industry leaders, top technology professionals and others. We discuss the latest developments in machine learning, deep learning, artificial intelligence, with a particular focus on MLOps, or how trained models are used in production.
+We also have a [Podcast](https://podcast.zenml.io/) series that brings you interviews and discussions with industry leaders, top technology professionals, and others. We discuss the latest developments in machine learning, deep learning, and artificial intelligence, with a particular focus on MLOps, or how trained models are used in production.
 
 ### Newsletter
 

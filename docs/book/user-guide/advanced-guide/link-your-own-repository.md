@@ -4,13 +4,13 @@ description: Tracking the code of your pipelines.
 
 # Link your own repository
 
-### What is a code repository
+### What is a code repository?
 
 A code repository in ZenML refers to a remote storage location for your code. Some commonly known code repository platforms include [GitHub](https://github.com/) and [GitLab](https://gitlab.com/).
 
-Code repositories enable ZenML to keep track of the code version that you use for your pipeline runs. Additionally, running a pipeline which is tracked in a registered code repository can speed up the Docker image building for containerized stack components.
+Code repositories enable ZenML to keep track of the code version that you use for your pipeline runs. Additionally, running a pipeline that is tracked in a registered code repository can speed up the Docker image building for containerized stack components.
 
-Check out [this diagram](broken-reference) for a visual representation how the code repository fits into the general ZenML architecture.
+Check out [this diagram](broken-reference) for a visual representation of how the code repository fits into the general ZenML architecture.
 
 {% hint style="info" %}
 Check out our [code repository example](https://github.com/zenml-io/zenml/tree/main/examples/code\_repository) for a practical tutorial on how to use a ZenML code repository.
@@ -35,15 +35,15 @@ Once you have registered one or more code repositories, ZenML will check whether
 
 #### Tracking code version for pipeline runs
 
-If a [local code repository checkout](link-your-own-repository.md#detecting-local-code-repository-checkouts) is detected when running a pipeline, ZenML will store a reference the current commit for the pipeline run so you'll be able to know exactly which code was used. Note that this reference is only tracked if your local checkout is clean (i.e. it does not contain any untracked or uncommitted files). This is to ensure that your pipeline is actually running with the exact code stored at the specific code repository commit.
+If a [local code repository checkout](link-your-own-repository.md#detecting-local-code-repository-checkouts) is detected when running a pipeline, ZenML will store a reference to the current commit for the pipeline run so you'll be able to know exactly which code was used. Note that this reference is only tracked if your local checkout is clean (i.e. it does not contain any untracked or uncommitted files). This is to ensure that your pipeline is actually running with the exact code stored at the specific code repository commit.
 
 #### Speeding up Docker builds for containerized components
 
-When using containerized components in your stack, ZenML needs to build Docker images to remotely execute your code. If you're not using a code repository, this code will be included in the Docker images that ZenML builds. This, however, means that new Docker images will be built and pushed whenever you make changes to any of your source files. When running a pipeline that is part of a [local code repository checkout](link-your-own-repository.md#detecting-local-code-repository-checkouts), ZenML can instead build the Docker images without including any of your source files, and download the files inside the container before running your code. This greatly speeds up the building process and also allows you to re-use images that one of your colleagues might have built for the same stack.
+When using containerized components in your stack, ZenML needs to build Docker images to remotely execute your code. If you're not using a code repository, this code will be included in the Docker images that ZenML builds. This, however, means that new Docker images will be built and pushed whenever you make changes to any of your source files. When running a pipeline that is part of a [local code repository checkout](link-your-own-repository.md#detecting-local-code-repository-checkouts), ZenML can instead build the Docker images without including any of your source files, and download the files inside the container before running your code. This greatly speeds up the building process and also allows you to reuse images that one of your colleagues might have built for the same stack.
 
 Some additional points:
 
-* The file download is only possible if the local checkout is clean (i.e. it does not contain any untracked or uncommitted files) and the latest commit has been pushed to the remote repository. This is necessary as otherwise the file download inside the Docker container will fail.
+* The file download is only possible if the local checkout is clean (i.e. it does not contain any untracked or uncommitted files) and the latest commit has been pushed to the remote repository. This is necessary as otherwise, the file download inside the Docker container will fail.
 * If you want to disable or enforce the downloading of files, check out [this docs page](broken-reference) for the available options.
 
 ### Available code repository implementation

@@ -2,16 +2,15 @@
 description: Using materializers to pass custom data types through steps.
 ---
 
-
 # Handle custom data types
 
-A ZenML pipeline is built in a data-centric way. The outputs and inputs of steps define how steps are connected and the order in which they are executed. Each step should be considered as its very own process that reads and writes its inputs and outputs from and to the [Artifact Store](broken-reference). This is where **Materializers** come into play.
+A ZenML pipeline is built in a data-centric way. The outputs and inputs of steps define how steps are connected and the order in which they are executed. Each step should be considered as its very own process that reads and writes its inputs and outputs from and to the [Artifact Store](broken-reference/). This is where **Materializers** come into play.
 
 A materializer dictates how a given artifact can be written to and retrieved from the artifact store and also contains all serialization and deserialization logic.
 
 Whenever you pass artifacts as outputs from one pipeline step to other steps as inputs, the corresponding materializer for the respective data type defines how this artifact is first serialized and written to the artifact store, and then deserialized and read in the next step.
 
-For most data types, ZenML already includes built-in materializers that automatically handle artifacts of those data types. For instance, all of the examples from the [Steps and Pipelines](broken-reference) section were using built-in materializers under the hood to store and load artifacts correctly.
+For most data types, ZenML already includes built-in materializers that automatically handle artifacts of those data types. For instance, all of the examples from the [Steps and Pipelines](broken-reference/) section were using built-in materializers under the hood to store and load artifacts correctly.
 
 However, if you want to pass custom objects between pipeline steps, such as a PyTorch model that does not inherit from `torch.nn.Module`, then you need to define a custom Materializer to tell ZenML how to handle this specific data type.
 
@@ -79,7 +78,7 @@ Each materializer has an `ASSOCIATED_TYPES` attribute that contains a list of da
 
 #### What Type of Artifact to Generate
 
-Each materializer also has an `ASSOCIATED_ARTIFACT_TYPE` attribute, which defines which `zenml.enums.ArtifactType` is assigned to this data.
+Each materializer also has an `ASSOCIATED_ARTIFACT_TYPE` attribute, which defines what `zenml.enums.ArtifactType` is assigned to this data.
 
 In most cases, you should choose either `ArtifactType.DATA` or `ArtifactType.MODEL` here. If you are unsure, just use `ArtifactType.DATA`. The exact choice is not too important, as the artifact type is only used as a tag in some of ZenML's visualizations.
 
@@ -137,7 +136,7 @@ Note that `.configure(output_materializers=...)` only needs to be called for the
 
 #### Configuring Materializers at Runtime
 
-As briefly outlined in the [Runtime Configuration](broken-reference) section, which materializer to use for the output of what step can also be configured within YAML config files.
+As briefly outlined in the [Runtime Configuration](broken-reference/) section, which materializer to use for the output of what step can also be configured within YAML config files.
 
 For each output of your steps, you can define custom materializers to handle the loading and saving. You can configure them like this in the config:
 
