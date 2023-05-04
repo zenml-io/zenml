@@ -64,6 +64,11 @@ class KubernetesOrchestratorConfig(  # type: ignore[misc] # https://github.com/p
             local stack components that store data in the local filesystem
             (i.e. it will mount the local stores directory into the pipeline
             containers).
+        incluster: If `True`, the orchestrator will be run inside the cluster
+            in which it is started. This requires the client to run in a
+            Kubernetes pod itself. If set, the `kubernetes_context` attribute
+            will be ignored.
+
         skip_local_validations: If `True`, the local validations will be
             skipped.
     """
@@ -71,6 +76,7 @@ class KubernetesOrchestratorConfig(  # type: ignore[misc] # https://github.com/p
     kubernetes_context: str  # TODO: Potential setting
     kubernetes_namespace: str = "zenml"
     local: bool = False
+    incluster: bool = False
     skip_local_validations: bool = False
 
     @root_validator(pre=True)

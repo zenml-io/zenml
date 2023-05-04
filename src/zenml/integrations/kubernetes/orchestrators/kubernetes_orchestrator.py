@@ -86,7 +86,10 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
 
     def _initialize_k8s_clients(self) -> None:
         """Initialize the Kubernetes clients."""
-        kube_utils.load_kube_config(context=self.config.kubernetes_context)
+        kube_utils.load_kube_config(
+            incluster=self.config.incluster,
+            context=self.config.kubernetes_context,
+        )
         self._k8s_core_api = k8s_client.CoreV1Api()
         self._k8s_batch_api = k8s_client.BatchV1beta1Api()
         self._k8s_rbac_api = k8s_client.RbacAuthorizationV1Api()
