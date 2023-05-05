@@ -14,23 +14,14 @@
 
 import pytest
 from bs4 import BeautifulSoup
-from hypothesis import given
-from hypothesis_csv.strategies import csv
 
 from zenml.utils.visualization_utils import format_csv_visualization_as_html
-
-
-@given(csv=csv())
-def test_format_csv_visualization_as_html(csv):
-    """Test that the output is valid html."""
-    html = format_csv_visualization_as_html(csv)
-    BeautifulSoup(html, "html.parser")  # will fail if not valid html
 
 
 @pytest.mark.parametrize("num_rows", list(range(11)))
 @pytest.mark.parametrize("num_cols", list(range(11)))
 def test_format_small_csv_visualization_as_html(num_rows, num_cols):
-    """Test that small CSVs are not cut off."""
+    """Test that small CSVs are valid html and not cut off."""
     csv = "\n".join([",".join(["a"] * num_cols)] * num_rows)
     html = format_csv_visualization_as_html(csv)
     if num_rows == 0 or num_cols == 0:
@@ -39,6 +30,7 @@ def test_format_small_csv_visualization_as_html(num_rows, num_cols):
         expected_row = "<tr>" + "<td>a</td>" * num_cols + "</tr>"
         expected_html = "<table>" + expected_row * num_rows + "</table>"
     assert html == expected_html
+    BeautifulSoup(html, "html.parser")  # will fail if not valid html
 
 
 @pytest.mark.parametrize("num_rows", [3, 8, 12, 17])
@@ -48,7 +40,7 @@ def test_format_small_csv_visualization_as_html(num_rows, num_cols):
 def test_format_large_csv_visualization_as_html(
     num_rows, num_cols, max_rows, max_cols
 ):
-    """Test that large CSVs are cut off."""
+    """Test that large CSVs are cut off but valid html."""
     csv = "\n".join([",".join(["a"] * num_cols)] * num_rows)
     html = format_csv_visualization_as_html(
         csv, max_rows=max_rows, max_cols=max_cols
@@ -71,3 +63,4 @@ def test_format_large_csv_visualization_as_html(
     else:
         expected_html = "<table>" + expected_row * num_rows + "</table>"
     assert html == expected_html
+    BeautifulSoup(html, "html.parser")  # will fail if not valid html
