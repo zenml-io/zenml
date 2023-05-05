@@ -36,17 +36,6 @@ description: Best practices, recommendations, and tips from the ZenML team
 
 ### Best Practices and Tips
 
-#### Nest `pipeline_instance.run()` in `if __name__ == "__main__"`
-
-```python
-pipeline_instance = training_pipeline(...)
-
-if __name__ == "__main__":
-    pipeline_instance.run()
-```
-
-This ensures that loading the pipeline from elsewhere does not also run it.
-
 #### Never call the pipeline instance `pipeline` or a step instance `step`
 
 Doing this will overwrite the imported `pipeline` and `step` decorators and lead to failures at later stages if more steps and pipelines are decorated there.
@@ -67,14 +56,6 @@ pipeline = first_pipeline(...)
 def second_pipeline():
     ...
 ```
-
-#### Explicitly set `enable_cache` at the `@pipeline` level
-
-Caching is enabled by default for ZenML Pipelines. It is good to be explicit, though, so that it is clear when looking at the code if caching is enabled or disabled for any given pipeline.
-
-#### Explicitly disable caching when loading data from filesystem or external APIs
-
-ZenML inherently uses caching. However, this caching relies on changes of input artifacts to invalidate the cache. In case a step has external data sources like external APIs or file systems, caching should be disabled explicitly for the step.
 
 #### Enable cache explicitly for steps that have a `context` argument, if they don't invalidate the caching behavior
 

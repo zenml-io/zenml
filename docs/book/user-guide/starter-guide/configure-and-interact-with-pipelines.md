@@ -75,8 +75,18 @@ def first_pipeline(gamma: float = 0.002):
     X_train, X_test, y_train, y_test = step_1()
     step_2(gamma=gamma, X_train=X_train, y_train=y_train)
     
-first_pipeline(gamma=0.0015)
+if __name__ == "__main__":
+    first_pipeline(gamma=0.0015)
 ```
+
+{% hint style="info" %}
+Best Practice: Always nest the actual execution of the pipeline inside an `if __name__ == "__main__"` condition. This ensures that loading the pipeline from elsewhere does not also run it.
+
+```python
+if __name__ == "__main__":
+    first_pipeline()
+```
+{% endhint %}
 
 Running it should look somewhat like this in the terminal.
 
@@ -155,6 +165,14 @@ def first_pipeline(....):
 ```
 
 The setting above will disable caching for all steps in the pipeline, unless a step explicitly sets `enable_cache=True` (see below).
+
+{% hint style="info" %}
+When writing your pipelines, be explicit. This makes it clear when looking at the code if caching is enabled or disabled for any given pipeline.
+{% endhint %}
+
+#### Explicitly set `enable_cache` at the `@pipeline` level
+
+Caching is enabled by default for ZenML Pipelines.&#x20;
 
 #### Configuring caching for individual steps
 
