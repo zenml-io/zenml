@@ -2362,8 +2362,8 @@ class Client(metaclass=ClientMetaClass):
 
             except python_terraform.TerraformCommandError:
                 logger.error(
-                    f"Deployment of the stack component failed or was "
-                    f"interrupted. "
+                    "Deployment of the stack component failed or was "
+                    "interrupted. "
                 )
                 return None
 
@@ -2500,10 +2500,10 @@ class Client(metaclass=ClientMetaClass):
                 # start the service (the init and apply operation)
                 stack_recipe_service.stop()
 
-            except python_terraform.TerraformCommandError as e:
+            except python_terraform.TerraformCommandError:
                 logger.error(
-                    f"Destruction of the stack component failed or was "
-                    f"interrupted. "
+                    "Destruction of the stack component failed or was "
+                    "interrupted. "
                 )
                 return None
 
