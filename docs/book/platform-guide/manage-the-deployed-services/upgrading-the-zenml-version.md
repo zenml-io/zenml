@@ -1,3 +1,9 @@
+---
+description: >-
+  Learn how to upgrade your server to a new version of ZenML for the different
+  deployment options.
+---
+
 # Upgrade the ZenML Version of your server
 
 The way to upgrade your ZenML server depends a lot on how you deployed it.
@@ -74,9 +80,9 @@ cd src/zenml/zen_server/deploy/helm/
     helm -n <namespace> upgrade zenml-server . -f custom-values.yaml
     ```
 
-> **Info** It is not recommended to change the container image tag in the Helm chart to custom values, since every Helm chart version is tested to work only with the default image tag, but if you really want to do it, you can do so by setting the `zenml.image.tag` value in your `custom-values.yaml` file to the desired ZenML version (e.g. `0.32.0`).
-
-> **Warning** If you wish to downgrade a server, make sure that the version of ZenML that you’re moving to has the same database schema. This is because reverse migration of the schema is not supported.
+{% hint style="info" %}
+It is not recommended to change the container image tag in the Helm chart to custom values, since every Helm chart version is tested to work only with the default image tag. However, if you know what you're doing you can change the `zenml.image.tag` value in your `custom-values.yaml` file to the desired ZenML version (e.g. `0.32.0`).
+{% endhint %}
 {% endtab %}
 {% endtabs %}
 

@@ -117,7 +117,7 @@
 
 ## Learning
 
-* [🚀 Quickstart](https://github.com/zenml-io/zenml/blob/cb1bcbda58df06e057fd0a152b4ba3facf9c2d59/examples/quickstart/README.md)
+* [Quickstart](https://github.com/zenml-io/zenml/blob/cb1bcbda58df06e057fd0a152b4ba3facf9c2d59/examples/quickstart/README.md)
 * [🧩 Examples](learning/examples/README.md)
   * [Build a LLM-powered Community Slack Bot](https://github.com/zenml-io/zenml-projects/tree/main/langchain-llamaindex-slackbot)
   * [Summarize news articles with NLP](https://github.com/zenml-io/zenml-projects/tree/main/zen-news-summarization)
@@ -132,8 +132,8 @@
 ## Doc Orphanage
 
 * [Best Practices](doc-orphanage/best-practices.md)
-* [Version your data](doc-orphanage/data-versioning.md)
-* [Use hyperparameter tuning](doc-orphanage/implement-hyper-parameter-tuning.md)
+* [Version your data](user-guide/advanced-guide/data-versioning.md)
+* [Use hyperparameter tuning](user-guide/advanced-guide/implement-hyper-parameter-tuning.md)
 * [Global Config](doc-orphanage/global-config.md)
 * [System Environmental Variables](doc-orphanage/system-environmental-variables.md)
 * [Usage Analytics](doc-orphanage/usage-analytics.md)
