@@ -47,6 +47,15 @@ class LocalImageBuilder(BaseImageBuilder):
         """
         return cast(LocalImageBuilderConfig, self._config)
 
+    @property
+    def is_building_locally(self) -> bool:
+        """Whether the image builder builds the images on the client machine.
+
+        Returns:
+            True if the image builder builds locally, False otherwise.
+        """
+        return True
+
     @staticmethod
     def _check_prerequisites() -> None:
         """Checks that all prerequisites are installed.
@@ -132,6 +141,15 @@ class LocalImageBuilderFlavor(BaseImageBuilderFlavor):
             A flavor docs url.
         """
         return self.generate_default_docs_url()
+
+    @property
+    def sdk_docs_url(self) -> Optional[str]:
+        """A url to point at docs explaining this flavor.
+
+        Returns:
+            A flavor docs url.
+        """
+        return self.generate_default_sdk_docs_url()
 
     @property
     def logo_url(self) -> str:

@@ -73,8 +73,7 @@ class VertexOrchestratorConfig(  # type: ignore[misc] # https://github.com/pydan
     Attributes:
         location: Name of GCP region where the pipeline job will be executed.
             Vertex AI Pipelines is available in the following regions:
-            https://cloud.google.com/vertex-ai/docs/general/locations#feature
-            -availability
+            https://cloud.google.com/vertex-ai/docs/general/locations#feature-availability
         pipeline_root: a Cloud Storage URI that will be used by the Vertex AI
             Pipelines. If not provided but the artifact store in the stack used
             to execute the pipeline is a
@@ -153,6 +152,15 @@ class VertexOrchestratorFlavor(BaseOrchestratorFlavor):
             A flavor docs url.
         """
         return self.generate_default_docs_url()
+
+    @property
+    def sdk_docs_url(self) -> Optional[str]:
+        """A url to point at SDK docs explaining this flavor.
+
+        Returns:
+            A flavor SDK docs url.
+        """
+        return self.generate_default_sdk_docs_url()
 
     @property
     def logo_url(self) -> str:

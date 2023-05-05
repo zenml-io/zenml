@@ -153,7 +153,7 @@ RUN apt-get install ffmpeg libsm6 libxext6  -y
 
 Then, place the following snippet above your pipeline definition. Note that 
 the path of the `dockerfile`  are relative to where the pipeline definition 
-file is. Read [the containerization guide](../../advanced-guide/pipelines/containerization.md) for more details:
+file is. Read [the containerization guide](../../starter-guide/production-fundamentals/containerization.md) for more details:
 
 ```python
 import zenml
@@ -537,7 +537,7 @@ from zenml.post_execution import get_pipeline
 
 def visualize_results(pipeline_name: str, step_name: str) -> None:
     pipeline = get_pipeline(pipeline=pipeline_name)
-    last_run = pipeline.runs[-1]
+    last_run = pipeline.runs[0]
     step = last_run.get_step(step=step_name)
     DeepchecksVisualizer().visualize(step)
 

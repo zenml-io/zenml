@@ -28,7 +28,7 @@ To use the Kaniko image builder, we need:
 * A [remote container registry](../container-registries/container-registries.md) 
 as part of your stack.
 * By default, the Kaniko image builder transfers the build context using the
-Kubernetes API. If you instead want to transer the build context by storing it in the artifact
+Kubernetes API. If you instead want to transfer the build context by storing it in the artifact
 store, you need to register it with the `store_context_in_artifact_store` attribute set to `True`.
 In this case, you also need a [remote artifact store](../artifact-stores/artifact-stores.md)
 as part of your stack.
@@ -52,7 +52,7 @@ The Kaniko image builder will create a Kubernetes pod which is running the build
 pod needs to be able to pull from/push to certain container registries, and depending on the
 stack component configuration also needs to be able to read from the artifact store:
 * The pod needs to be authenticated to push to the container registry in your active stack.
-* In case the [parent image](../../advanced-guide/pipelines/containerization.md#using-a-pre-built-parent-image)
+* In case the [parent image](../../starter-guide/production-fundamentals/containerization.md#using-a-pre-built-parent-image)
 you use in your `DockerSettings` is stored in a private registry, the pod needs to be authenticated to pull from
 this registry.
 * If you configured your image builder to store the build context in the artifact store, the

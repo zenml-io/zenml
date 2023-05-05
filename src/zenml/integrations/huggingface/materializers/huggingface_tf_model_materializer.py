@@ -16,7 +16,7 @@
 import importlib
 import os
 from tempfile import TemporaryDirectory
-from typing import Dict, Type
+from typing import Any, ClassVar, Dict, Tuple, Type
 
 from transformers import AutoConfig, TFPreTrainedModel  # type: ignore [import]
 
@@ -31,8 +31,8 @@ DEFAULT_TF_MODEL_DIR = "hf_tf_model"
 class HFTFModelMaterializer(BaseMaterializer):
     """Materializer to read Tensorflow model to and from huggingface pretrained model."""
 
-    ASSOCIATED_TYPES = (TFPreTrainedModel,)
-    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.MODEL
+    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (TFPreTrainedModel,)
+    ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.MODEL
 
     def load(self, data_type: Type[TFPreTrainedModel]) -> TFPreTrainedModel:
         """Reads HFModel.
@@ -43,18 +43,17 @@ class HFTFModelMaterializer(BaseMaterializer):
         Returns:
             The model read from the specified dir.
         """
-        super().load(data_type)
-
-        config = AutoConfig.from_pretrained(
-            os.path.join(self.uri, DEFAULT_TF_MODEL_DIR)
+        temp_dir = TemporaryDirectory()
+        io_utils.copy_dir(
+            os.path.join(self.uri, DEFAULT_TF_MODEL_DIR), temp_dir.name
         )
+
+        config = AutoConfig.from_pretrained(temp_dir.name)
         architecture = "TF" + config.architectures[0]
         model_cls = getattr(
             importlib.import_module("transformers"), architecture
         )
-        return model_cls.from_pretrained(
-            os.path.join(self.uri, DEFAULT_TF_MODEL_DIR)
-        )
+        return model_cls.from_pretrained(temp_dir.name)
 
     def save(self, model: TFPreTrainedModel) -> None:
         """Writes a Model to the specified dir.
@@ -62,7 +61,6 @@ class HFTFModelMaterializer(BaseMaterializer):
         Args:
             model: The TF Model to write.
         """
-        super().save(model)
         temp_dir = TemporaryDirectory()
         model.save_pretrained(temp_dir.name)
         io_utils.copy_dir(
@@ -81,7 +79,6 @@ class HFTFModelMaterializer(BaseMaterializer):
         Returns:
             The extracted metadata as a dictionary.
         """
-        super().extract_metadata(model)
         return {
             "num_layers": len(model.layers),
             "num_params": model.num_parameters(only_trainable=False),

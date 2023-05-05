@@ -20,7 +20,7 @@ from uuid import UUID, uuid4
 import pytest
 from click.testing import CliRunner
 
-from tests.integration.functional.cli.test_utils import (
+from tests.integration.functional.cli.utils import (
     create_sample_user_and_login,
 )
 from zenml.artifact_stores.local_artifact_store import (
@@ -37,7 +37,7 @@ from zenml.secrets_managers.local.local_secrets_manager import (
     LocalSecretsManagerConfig,
 )
 
-NOT_STACKS = ["abc", "my_other_cat_is_called_blupus", "stack123"]
+NOT_STACKS = ["abc_def", "my_other_cat_is_called_blupus", "stack123"]
 
 
 def _create_local_orchestrator(
@@ -745,6 +745,53 @@ def test_delete_stack_default_stack_fails(clean_workspace) -> None:
     assert clean_workspace.get_stack("default")
 
 
+def test_delete_stack_recursively_with_flag_succeeds(clean_workspace) -> None:
+    """Test recursively delete stack delete with flag succeeds."""
+    registered_stack = clean_workspace.active_stack_model
+
+    artifact_store_name = registered_stack.components[
+        StackComponentType.ARTIFACT_STORE
+    ][0].name
+
+    orchestrator_name = registered_stack.components[
+        StackComponentType.ORCHESTRATOR
+    ][0].name
+
+    new_secrets_manager = _create_local_secrets_manager(clean_workspace)
+
+    new_secrets_manager_model = clean_workspace.create_stack_component(
+        name=new_secrets_manager.name,
+        flavor=new_secrets_manager.flavor,
+        component_type=new_secrets_manager.type,
+        configuration=new_secrets_manager.config.dict(),
+    )
+    new_stack = clean_workspace.create_stack(
+        name="arias_new_stack",
+        components={
+            StackComponentType.ARTIFACT_STORE: artifact_store_name,
+            StackComponentType.ORCHESTRATOR: orchestrator_name,
+            StackComponentType.SECRETS_MANAGER: new_secrets_manager_model.name,
+        },
+    )
+
+    runner = CliRunner()
+    delete_command = cli.commands["stack"].commands["delete"]
+    result = runner.invoke(delete_command, [new_stack.name, "-y", "-r"])
+    assert result.exit_code == 0
+    with pytest.raises(KeyError):
+        clean_workspace.get_stack(new_stack.id)
+    with pytest.raises(KeyError):
+        clean_workspace.get_stack_component(
+            StackComponentType.SECRETS_MANAGER, new_secrets_manager_model.name
+        )
+    assert clean_workspace.get_stack_component(
+        StackComponentType.ARTIFACT_STORE, artifact_store_name
+    )
+    assert clean_workspace.get_stack_component(
+        StackComponentType.ORCHESTRATOR, orchestrator_name
+    )
+
+
 def test_stack_export(clean_workspace) -> None:
     """Test exporting default stack succeeds."""
     runner = CliRunner()
@@ -794,11 +841,11 @@ def test_stack_export_delete_import(clean_workspace) -> None:
 
     # delete stack and corresponding components
     clean_workspace.delete_stack(name_id_or_prefix=new_stack_model.name)
-    clean_workspace.deregister_stack_component(
+    clean_workspace.delete_stack_component(
         name_id_or_prefix=new_orchestrator_model.name,
         component_type=StackComponentType.ORCHESTRATOR,
     )
-    clean_workspace.deregister_stack_component(
+    clean_workspace.delete_stack_component(
         name_id_or_prefix=new_artifact_store_model.name,
         component_type=StackComponentType.ARTIFACT_STORE,
     )

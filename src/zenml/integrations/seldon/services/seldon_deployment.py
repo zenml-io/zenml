@@ -84,8 +84,10 @@ class SeldonDeploymentConfig(ServiceConfig):
         labels = {}
         if self.pipeline_name:
             labels["zenml.pipeline_name"] = self.pipeline_name
+        if self.run_name:
+            labels["zenml.run_name"] = self.run_name
         if self.pipeline_run_id:
-            labels["zenml.pipeline_run_id"] = self.pipeline_run_id
+            labels["zenml.pipeline_run_id"] = self.run_name
         if self.pipeline_step_name:
             labels["zenml.pipeline_step_name"] = self.pipeline_step_name
         if self.model_name:
@@ -94,6 +96,9 @@ class SeldonDeploymentConfig(ServiceConfig):
             labels["zenml.model_uri"] = self.model_uri
         if self.implementation:
             labels["zenml.model_type"] = self.implementation
+        if self.extra_args:
+            for key, value in self.extra_args.items():
+                labels[f"zenml.{key}"] = value
         SeldonClient.sanitize_labels(labels)
         return labels
 
@@ -171,11 +176,9 @@ class SeldonDeploymentService(BaseDeploymentService):
         description="Seldon Core prediction service",
     )
 
-    config: SeldonDeploymentConfig = Field(
-        default_factory=SeldonDeploymentConfig
-    )
+    config: SeldonDeploymentConfig
     status: SeldonDeploymentServiceStatus = Field(
-        default_factory=SeldonDeploymentServiceStatus
+        default_factory=lambda: SeldonDeploymentServiceStatus()
     )
 
     def _get_client(self) -> SeldonClient:

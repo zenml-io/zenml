@@ -237,7 +237,7 @@ def test_remove_attribute_component_succeeds(
             not in orchestrator_response.configuration
         )
         try:
-            clean_workspace.deregister_stack_component(
+            clean_workspace.delete_stack_component(
                 name_id_or_prefix=created_orchestrator.id,
                 component_type=StackComponentType.ORCHESTRATOR,
             )
@@ -313,7 +313,7 @@ def test_remove_attribute_component_required_attribute_fails(
         )
         assert remove_attribute.exit_code != 0
         try:
-            clean_workspace.deregister_stack_component(
+            clean_workspace.delete_stack_component(
                 name_id_or_prefix=created_orchestrator.id,
                 component_type=StackComponentType.ORCHESTRATOR,
             )
@@ -527,3 +527,122 @@ def test_delete_default_component_fails(clean_workspace) -> None:
             name_id_or_prefix="default",
             component_type=StackComponentType.ARTIFACT_STORE,
         )
+
+
+def test_set_labels_on_register(clean_workspace) -> None:
+    """Test that metadata can be set while registering components."""
+    register_command = cli.commands["orchestrator"].commands["register"]
+
+    runner = CliRunner()
+    register_result = runner.invoke(
+        register_command,
+        [
+            "new_orchestrator",
+            "--flavor",
+            "local",
+            "-l",
+            "key1=value1",
+        ],
+    )
+
+    assert register_result.exit_code == 0
+    assert (
+        StackComponent.from_model(
+            clean_workspace.get_stack_component(
+                name_id_or_prefix="new_orchestrator",
+                component_type=StackComponentType.ORCHESTRATOR,
+            )
+        ).labels.get("key1")
+        == "value1"
+    )
+
+
+def test_set_labels_on_update(clean_workspace) -> None:
+    """Test that metadata can be set while updating components."""
+    register_command = cli.commands["orchestrator"].commands["register"]
+
+    runner = CliRunner()
+    register_result = runner.invoke(
+        register_command,
+        [
+            "new_orchestrator",
+            "--flavor",
+            "local",
+        ],
+    )
+
+    assert register_result.exit_code == 0
+
+    update_command = cli.commands["orchestrator"].commands["update"]
+    update_result = runner.invoke(
+        update_command,
+        [
+            "new_orchestrator",
+            "-l",
+            "key1=value1",
+        ],
+    )
+
+    assert update_result.exit_code == 0
+    assert (
+        StackComponent.from_model(
+            clean_workspace.get_stack_component(
+                name_id_or_prefix="new_orchestrator",
+                component_type=StackComponentType.ORCHESTRATOR,
+            )
+        ).labels.get("key1")
+        == "value1"
+    )
+
+
+def test_remove_labels(clean_workspace) -> None:
+    """Test that metadata can be removed from components."""
+    register_command = cli.commands["orchestrator"].commands["register"]
+
+    runner = CliRunner()
+    register_result = runner.invoke(
+        register_command,
+        [
+            "new_orchestrator",
+            "--flavor",
+            "local",
+            "-l",
+            "key1=value1",
+        ],
+    )
+
+    assert register_result.exit_code == 0
+    assert (
+        StackComponent.from_model(
+            clean_workspace.get_stack_component(
+                name_id_or_prefix="new_orchestrator",
+                component_type=StackComponentType.ORCHESTRATOR,
+            )
+        ).labels.get("key1")
+        == "value1"
+    )
+
+    remove_attribute_command = cli.commands["orchestrator"].commands[
+        "remove-attribute"
+    ]
+
+    runner = CliRunner()
+    remove_result = runner.invoke(
+        remove_attribute_command,
+        [
+            "new_orchestrator",
+            "-l",
+            "key1",
+        ],
+    )
+
+    assert remove_result.exit_code == 0
+    assert (
+        StackComponent.from_model(
+            clean_workspace.get_stack_component(
+                name_id_or_prefix="new_orchestrator",
+                component_type=StackComponentType.ORCHESTRATOR,
+            )
+        ).labels.get("key1")
+        is None
+    )

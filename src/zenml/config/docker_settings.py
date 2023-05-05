@@ -16,10 +16,11 @@
 from enum import Enum
 from typing import Any, Dict, List, Optional, Union
 
-from pydantic import Extra
+from pydantic import Extra, root_validator
 
-from zenml.config.base_settings import BaseSettings, ConfigurationLevel
+from zenml.config.base_settings import BaseSettings
 from zenml.logger import get_logger
+from zenml.utils import deprecation_utils
 
 logger = get_logger(__name__)
 
@@ -46,6 +47,15 @@ class PythonEnvironmentExportMethod(Enum):
         }[self]
 
 
+class SourceFileMode(Enum):
+    """Different methods to handle source files in Docker images."""
+
+    INCLUDE = "include"
+    DOWNLOAD_OR_INCLUDE = "download_or_include"
+    DOWNLOAD = "download"
+    IGNORE = "ignore"
+
+
 class DockerSettings(BaseSettings):
     """Settings for building Docker images to run ZenML pipelines.
 
@@ -69,6 +79,7 @@ class DockerSettings(BaseSettings):
     - The packages specified via the `requirements` attribute
     - The packages specified via the `required_integrations` and potentially
       stack requirements
+    - The packages specified via the `required_hub_plugins` attribute
 
     Attributes:
         parent_image: Full name of the Docker image that should be
@@ -102,7 +113,9 @@ class DockerSettings(BaseSettings):
             args or a target stage. See
             https://docker-py.readthedocs.io/en/stable/images.html#docker.models.images.ImageCollection.build
             for a full list of available options.
-        docker_target_repository: Name of the Docker repository to which the
+        skip_build: If set to `True`, the parent image will be used directly to
+            run the steps of your pipeline.
+        target_repository: Name of the Docker repository to which the
             image should be pushed. This repository will be appended to the
             registry URI of the container registry of your stack and should
             therefore **not** include any registry.
@@ -118,6 +131,11 @@ class DockerSettings(BaseSettings):
         required_integrations: List of ZenML integrations that should be
             installed. All requirements for the specified integrations will
             be installed inside the Docker image.
+        required_hub_plugins: List of ZenML Hub plugins to install.
+            Expected format: '(<author_username>/)<plugin_name>==<version>'.
+            If no version is specified, the latest version is taken. The
+            packages of required plugins and all their dependencies will be
+            installed inside the Docker image.
         install_stack_requirements: If `True`, ZenML will automatically detect
             if components of your active stack are part of a ZenML integration
             and install the corresponding requirements and apt packages.
@@ -129,43 +147,106 @@ class DockerSettings(BaseSettings):
             Docker image.
         dockerignore: Path to a dockerignore file to use when building the
             Docker image.
-        copy_files: If `True`, user files will be copied into the Docker image.
-            If this is set to `False`, ZenML will not copy any of your files
-            into the Docker image and you're responsible that all the files
-            to run your pipeline exist in the right place.
-        copy_global_config: If `True`, the global configuration (contains
-            connection info for your ZenStore) will be copied into the Docker
-            image. If this is set to `False`, ZenML will not copy this
-            configuration and you're responsible for making sure ZenML can
-            access the ZenStore in the Docker image.
+        copy_files: DEPRECATED, use the `source_files` attribute instead.
+        copy_global_config: DEPRECATED/UNUSED.
         user: If not `None`, will set the user, make it owner of the `/app`
             directory which contains all the user code and run the container
             entrypoint as this user.
+        source_files: Defines how the user source files will be handled when
+            building the Docker image.
+            * INCLUDE: The files will be included in the Docker image.
+            * DOWNLOAD: The files will be downloaded when running the image. If
+              this is specified, the files must be inside a registered code
+              repository and the repository must have no local changes,
+              otherwise the build will fail.
+            * DOWNLOAD_OR_INCLUDE: The files will be downloaded if they're
+              inside a registered code repository and the repository has no
+              local changes, otherwise they will be included in the image.
+            * IGNORE: The files will not be included or downloaded in the image.
+              If you use this option, you're responsible that all the files
+              to run your steps exist in the right place.
     """
-
-    LEVEL = ConfigurationLevel.PIPELINE
 
     parent_image: Optional[str] = None
     dockerfile: Optional[str] = None
     build_context_root: Optional[str] = None
     build_options: Dict[str, Any] = {}
-
+    skip_build: bool = False
     target_repository: str = "zenml"
-
     replicate_local_python_environment: Optional[
         Union[List[str], PythonEnvironmentExportMethod]
     ] = None
     requirements: Union[None, str, List[str]] = None
     required_integrations: List[str] = []
+    required_hub_plugins: List[str] = []
     install_stack_requirements: bool = True
-
     apt_packages: List[str] = []
-
     environment: Dict[str, Any] = {}
     dockerignore: Optional[str] = None
     copy_files: bool = True
     copy_global_config: bool = True
     user: Optional[str] = None
+
+    source_files: SourceFileMode = SourceFileMode.DOWNLOAD_OR_INCLUDE
+
+    _deprecation_validator = deprecation_utils.deprecate_pydantic_attributes(
+        "copy_files", "copy_global_config"
+    )
+
+    @root_validator(pre=True)
+    def _migrate_copy_files(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        """Migrates the value from the old copy_files attribute.
+
+        Args:
+            values: The settings values.
+
+        Returns:
+            The migrated settings values.
+        """
+        copy_files = values.get("copy_files", None)
+
+        if copy_files is None:
+            return values
+
+        if values.get("source_files", None):
+            # Ignore the copy files value in favor of the new source files
+            logger.warning(
+                "Both `copy_files` and `source_files` specified for the "
+                "DockerSettings, ignoring the `copy_files` value."
+            )
+        elif copy_files is True:
+            values["source_files"] = SourceFileMode.INCLUDE
+        elif copy_files is False:
+            values["source_files"] = SourceFileMode.IGNORE
+
+        return values
+
+    @root_validator
+    def _validate_skip_build(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        """Ensures that a parent image is passed when trying to skip the build.
+
+        Args:
+            values: The settings values.
+
+        Returns:
+            The validated settings values.
+
+        Raises:
+            ValueError: If the build should be skipped but no parent image
+                was specified.
+        """
+        skip_build = values.get("skip_build", False)
+        parent_image = values.get("parent_image")
+
+        if skip_build and not parent_image:
+            raise ValueError(
+                "Docker settings that specify `skip_build=True` must always "
+                "contain a `parent_image`. This parent image will be used "
+                "to run the steps of your pipeline directly without additional "
+                "Docker builds on top of it."
+            )
+
+        return values
 
     class Config:
         """Pydantic configuration class."""

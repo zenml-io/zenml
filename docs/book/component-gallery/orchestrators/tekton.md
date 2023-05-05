@@ -121,7 +121,7 @@ zenml stack register <STACK_NAME> -o <ORCHESTRATOR_NAME> ... --set
 {% hint style="info" %}
 ZenML will build a Docker image called `<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE_NAME>`
 which includes your code and use it to run your pipeline steps in Tekton. Check 
-out [this page](../../advanced-guide/pipelines/containerization.md) if you want 
+out [this page](../../starter-guide/production-fundamentals/containerization.md) if you want 
 to learn more about how ZenML builds these images and how you can customize 
 them.
 {% endhint %}
@@ -137,7 +137,7 @@ For additional configuration of the Tekton orchestrator, you can pass
 `TektonOrchestratorSettings` which allows you to configure (among others) the following attributes:
 
 * `pod_settings`: Node selectors, affinity and tolerations to apply to the Kubernetes Pods running
-your pipline. These can be either specified using the Kubernetes model objects or as dictionaries.
+your pipeline. These can be either specified using the Kubernetes model objects or as dictionaries.
 
 ```python
 from zenml.integrations.tekton.flavors.tekton_orchestrator_flavor import TektonOrchestratorSettings

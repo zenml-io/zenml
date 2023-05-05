@@ -24,7 +24,7 @@ from zenml.post_execution import get_pipeline
 
 def visualize_statistics():
     pipe = get_pipeline(pipeline="facets_pipeline")
-    importer_outputs = pipe.runs[-1].get_step(step="importer")
+    importer_outputs = pipe.runs[0].get_step(step="importer")
     FacetStatisticsVisualizer().visualize(importer_outputs)
 
 

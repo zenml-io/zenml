@@ -25,7 +25,7 @@ Looked at one way, `BaseParameters` configure steps within a pipeline to behave 
 things can be configured at runtime? Here is a list:
 
 - The [resources](./step-resources.md) of a step.
-- Configuring the [containerization](./containerization.md) process of a pipeline (e.g. What requirements get installed in the Docker image).
+- Configuring the [containerization](../../starter-guide/production-fundamentals/containerization.md) process of a pipeline (e.g. What requirements get installed in the Docker image).
 - Stack component specific configuration, e.g., if you have an experiment tracker passing in the name of the experiment at runtime.
 
 You will learn about all of the above in more detail later, but for now,
@@ -36,9 +36,9 @@ let's try to understand that all of this configuration flows through one central
 Settings are categorized into two types:
 
 - **General settings** that can be used on all ZenML pipelines. Examples of these are:
-  - [`DockerSettings`](./containerization.md) to specify docker settings.
+  - [`DockerSettings`](../../starter-guide/production-fundamentals/containerization.md) to specify docker settings.
   - [`ResourceSettings`](./step-resources.md) to specify resource settings.
-- **Stack component specific settings**: These can be used to supply runtime configurations to certain stack components (key= <COMPONENT_CATEGORY>.<COMPONENT_FLAVOR>). Settings for components not in the active stack will be ignored. Examples of these are:
+- **Stack component specific settings**: These can be used to supply runtime configurations to certain stack components `(key= <COMPONENT_CATEGORY>.<COMPONENT_FLAVOR>)`. Settings for components not in the active stack will be ignored. Examples of these are:
   - [`KubeflowOrchestratorSettings`](../../component-gallery/orchestrators/kubeflow.md) to specify Kubeflow settings.
   - [`MLflowExperimentTrackerSettings`](../../component-gallery/experiment-trackers/mlflow.md) to specify MLflow settings.
   - [`WandbExperimentTrackerSettings`](../../component-gallery/experiment-trackers/wandb.md) to specify W&B settings.
@@ -70,6 +70,14 @@ Or like this:
 
 ```python
 settings={'docker': {'requirements': ['pandas']}}
+```
+
+#### Using stack component specific settings
+Settings for stack components must be passed with the key having a specific format: `<COMPONENT_CATEGORY>.<COMPONENT_FLAVOR>`. For example, an instance of [`SagemakerStepOperatorSettings`](https://apidocs.zenml.io/latest/integration_code_docs/integrations-aws/#zenml.integrations.aws.flavors.sagemaker_step_operator_flavor.SagemakerStepOperatorSettings) for the [SageMaker Step Operator](../../component-gallery/step-operators/sagemaker.md) can be passed in as follows:
+
+```python
+from zenml.integrations.aws.flavors.sagemaker_step_operator_flavor import SagemakerStepOperatorSettings
+settings = { 'step_operator.sagemaker': SagemakerStepOperatorSettings(estimator_args={}) }
 ```
 
 ### How to use settings
@@ -191,7 +199,7 @@ settings:
   docker:
     build_context_root: .
     # build_options: Mapping[str, Any]
-    # copy_files: bool
+    # source_files: str
     # copy_global_config: bool
     # dockerfile: Optional[str]
     # dockerignore: Optional[str]
@@ -279,7 +287,7 @@ from zenml.post_execution import get_pipeline
 p = get_pipeline('my_pipeline')
 
 # print out the extra
-print(p.runs[-1].pipeline_configuration['extra'])
+print(p.runs[0].pipeline_configuration['extra'])
 # {'tag': 'production'}
 ```
 

@@ -12,8 +12,14 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 import os
+from tempfile import TemporaryDirectory
+from typing import Optional, Type
 
 from tests.unit.test_general import _test_materializer
+from zenml.materializers.base_materializer import BaseMaterializer
+from zenml.materializers.built_in_materializer import (
+    BuiltInContainerMaterializer,
+)
 
 
 def test_basic_type_materialization():
@@ -25,7 +31,9 @@ def test_basic_type_materialization():
         (str, ""),
     ]:
         result = _test_materializer(
-            step_output_type=type_, step_output=example
+            step_output_type=type_,
+            step_output=example,
+            expected_metadata_size=1 if type_ == str else 2,
         )
         assert result == example
 
@@ -36,7 +44,9 @@ def test_bytes_materialization():
     This is a separate test since `bytes` is not JSON serializable.
     """
     example = b""
-    result = _test_materializer(step_output_type=bytes, step_output=example)
+    result = _test_materializer(
+        step_output_type=bytes, step_output=example, expected_metadata_size=1
+    )
     assert result == example
 
 
@@ -48,7 +58,9 @@ def test_empty_dict_list_tuple_materialization():
         (tuple, ()),
     ]:
         result = _test_materializer(
-            step_output_type=type_, step_output=example
+            step_output_type=type_,
+            step_output=example,
+            expected_metadata_size=2,
         )
         assert result == example
 
@@ -69,6 +81,7 @@ def test_simple_dict_list_tuple_materialization(tmp_path):
             step_output_type=type_,
             step_output=example,
             validation_function=_validate_single_file,
+            expected_metadata_size=2,
         )
         assert result == example
 
@@ -76,28 +89,36 @@ def test_simple_dict_list_tuple_materialization(tmp_path):
 def test_list_of_bytes_materialization():
     """Test materialization for lists of bytes."""
     example = [b"0", b"1", b"2"]
-    result = _test_materializer(step_output_type=list, step_output=example)
+    result = _test_materializer(
+        step_output_type=list, step_output=example, expected_metadata_size=2
+    )
     assert result == example
 
 
 def test_dict_of_bytes_materialization():
     """Test materialization for dicts of bytes."""
     example = {"a": b"0", "b": b"1", "c": b"2"}
-    result = _test_materializer(step_output_type=dict, step_output=example)
+    result = _test_materializer(
+        step_output_type=dict, step_output=example, expected_metadata_size=2
+    )
     assert result == example
 
 
 def test_tuple_of_bytes_materialization():
     """Test materialization for tuples of bytes."""
     example = (b"0", b"1", b"2")
-    result = _test_materializer(step_output_type=tuple, step_output=example)
+    result = _test_materializer(
+        step_output_type=tuple, step_output=example, expected_metadata_size=2
+    )
     assert result == example
 
 
 def test_set_materialization():
     """Test materialization for `set` objects."""
     for example in [set(), {1, 2, 3}, {b"0", b"1", b"2"}]:
-        result = _test_materializer(step_output_type=set, step_output=example)
+        result = _test_materializer(
+            step_output_type=set, step_output=example, expected_metadata_size=2
+        )
         assert result == example
 
 
@@ -114,7 +135,9 @@ def test_mixture_of_all_builtin_types():
         },  # non-serializable dict
         {1.0, 2.0, 4, 4},  # set of serializable types
     ]  # non-serializable list
-    result = _test_materializer(step_output_type=list, step_output=example)
+    result = _test_materializer(
+        step_output_type=list, step_output=example, expected_metadata_size=2
+    )
     assert result == example
 
 
@@ -126,6 +149,79 @@ def test_none_values():
         (dict, {"key": None}),
     ]:
         result = _test_materializer(
-            step_output_type=type_, step_output=example
+            step_output_type=type_,
+            step_output=example,
+            expected_metadata_size=2,
         )
+        assert result == example
+
+
+class CustomType:
+    """Custom type used for testing the container materializer below."""
+
+    myname = "aria"
+
+    def __eq__(self, __value: object) -> bool:
+        if isinstance(__value, CustomType):
+            return self.myname == __value.myname
+        return False
+
+
+class CustomSubType(CustomType):
+    """Subtype of CustomType."""
+
+    myname = "axl"
+
+
+class CustomTypeMaterializer(BaseMaterializer):
+    """Mock materializer for custom types.
+
+    Does not actually save anything to disk, just initializes the type.
+    """
+
+    ASSOCIATED_TYPES = (CustomType,)
+
+    def save(self, data: CustomType) -> None:
+        """Save the data (not)."""
+        pass
+
+    def load(self, data_type: Type[CustomType]) -> Optional[CustomType]:
+        """Load the data."""
+        return data_type()
+
+
+def test_container_materializer_for_custom_types(mocker):
+    """Test container materializer for custom types.
+
+    This ensures that:
+    - The container materializer can handle custom types.
+    - Custom types are loaded as the correct type.
+    - The materializer of the subtype does not need to be registered in the
+        materializer registry when the container is loaded.
+    """
+    from zenml.materializers.materializer_registry import materializer_registry
+
+    example = [CustomType(), CustomSubType()]
+    with TemporaryDirectory() as artifact_uri:
+        materializer = BuiltInContainerMaterializer(uri=artifact_uri)
+
+        # Container materializer should find materializer for both elements in
+        # the default materializer registry.
+        materializer.save(example)
+
+        # When loading, the default materializer registry should no longer be
+        # needed because the container materializer should have saved the
+        # materializer that was used for each element.
+        mocker.patch.object(
+            materializer_registry,
+            "materializer_types",
+            {},
+        )
+        result = materializer.load(list)
+
+        # Check that the loaded elements are of the correct types.
+        assert isinstance(result[0], CustomType)
+        assert isinstance(result[1], CustomSubType)
+        assert result[0].myname == "aria"
+        assert result[1].myname == "axl"
         assert result == example

@@ -21,7 +21,7 @@ import plotly.express as px
 from plotly.graph_objs import Figure
 
 from zenml.logger import get_logger
-from zenml.post_execution import PipelineView
+from zenml.post_execution import PipelineVersionView
 from zenml.visualizers import BaseVisualizer
 
 logger = get_logger(__name__)
@@ -35,7 +35,7 @@ class PipelineLineageVisualizer(BaseVisualizer):
 
     @abstractmethod
     def visualize(
-        self, object: PipelineView, *args: Any, **kwargs: Any
+        self, object: PipelineVersionView, *args: Any, **kwargs: Any
     ) -> Figure:
         """Creates a pipeline lineage diagram using plotly.
 

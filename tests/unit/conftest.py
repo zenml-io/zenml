@@ -23,6 +23,7 @@ from zenml.artifact_stores.local_artifact_store import (
     LocalArtifactStoreConfig,
 )
 from zenml.client import Client
+from zenml.config.pipeline_spec import PipelineSpec
 from zenml.config.step_configurations import Step
 from zenml.container_registries.base_container_registry import (
     BaseContainerRegistry,
@@ -32,12 +33,17 @@ from zenml.enums import ArtifactType, ExecutionStatus
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.models import (
     ArtifactResponseModel,
+    CodeRepositoryResponseModel,
+    PipelineBuildResponseModel,
+    PipelineDeploymentResponseModel,
+    PipelineResponseModel,
     PipelineRunResponseModel,
     StepRunResponseModel,
     UserResponseModel,
     WorkspaceResponseModel,
 )
 from zenml.models.artifact_models import ArtifactRequestModel
+from zenml.models.hub_plugin_models import HubPluginResponseModel, PluginStatus
 from zenml.models.pipeline_run_models import PipelineRunRequestModel
 from zenml.models.step_run_models import StepRunRequestModel
 from zenml.orchestrators.base_orchestrator import BaseOrchestratorConfig
@@ -360,7 +366,11 @@ def sample_step_request_model() -> StepRunRequestModel:
     """Return a sample step model for testing purposes."""
     step = Step.parse_obj(
         {
-            "spec": {"source": "", "upstream_steps": [], "inputs": {}},
+            "spec": {
+                "source": "module.step_class",
+                "upstream_steps": [],
+                "inputs": {},
+            },
             "config": {"name": "step_name", "enable_cache": True},
         }
     )
@@ -440,8 +450,8 @@ def sample_artifact_model(
         name="sample_artifact",
         uri="sample_uri",
         type=ArtifactType.DATA,
-        materializer="sample_materializer",
-        data_type="sample_data_type",
+        materializer="sample_module.sample_materializer",
+        data_type="sample_module.sample_data_type",
         parent_step_id=uuid4(),
         producer_step_id=uuid4(),
         is_cached=False,
@@ -484,7 +494,7 @@ def create_step_run(
     ) -> StepRunResponseModel:
         step = Step.parse_obj(
             {
-                "spec": {"source": "", "upstream_steps": []},
+                "spec": {"source": "module.step_class", "upstream_steps": []},
                 "config": {
                     "name": step_name or "step_name",
                     "outputs": outputs or {},
@@ -507,3 +517,98 @@ def create_step_run(
         return StepRunResponseModel(**model_args)
 
     return f
+
+
+@pytest.fixture
+def create_pipeline_model(
+    sample_user_model: UserResponseModel,
+    sample_workspace_model: WorkspaceResponseModel,
+) -> Callable[..., PipelineResponseModel]:
+    """Fixture that returns a function which can be used to create a
+    customizable PipelineResponseModel."""
+
+    def f(
+        **kwargs: Any,
+    ) -> PipelineResponseModel:
+        model_args = {
+            "id": uuid4(),
+            "name": "sample_pipeline",
+            "version": 1,
+            "version_hash": "",
+            "created": datetime.now(),
+            "updated": datetime.now(),
+            "workspace": sample_workspace_model,
+            "user": sample_user_model,
+            "spec": PipelineSpec(steps=[]),
+            **kwargs,
+        }
+        return PipelineResponseModel(**model_args)
+
+    return f
+
+
+@pytest.fixture
+def sample_deployment_response_model(
+    sample_user_model: UserResponseModel,
+    sample_workspace_model: WorkspaceResponseModel,
+) -> PipelineDeploymentResponseModel:
+    return PipelineDeploymentResponseModel(
+        id=uuid4(),
+        created=datetime.now(),
+        updated=datetime.now(),
+        user=sample_user_model,
+        workspace=sample_workspace_model,
+        run_name_template="",
+        pipeline_configuration={"name": ""},
+    )
+
+
+@pytest.fixture
+def sample_build_response_model(
+    sample_user_model: UserResponseModel,
+    sample_workspace_model: WorkspaceResponseModel,
+) -> PipelineBuildResponseModel:
+    return PipelineBuildResponseModel(
+        id=uuid4(),
+        created=datetime.now(),
+        updated=datetime.now(),
+        user=sample_user_model,
+        workspace=sample_workspace_model,
+        images={},
+        is_local=False,
+        contains_code=True,
+    )
+
+
+@pytest.fixture
+def sample_code_repo_response_model(
+    sample_user_model: UserResponseModel,
+    sample_workspace_model: WorkspaceResponseModel,
+) -> CodeRepositoryResponseModel:
+    return CodeRepositoryResponseModel(
+        id=uuid4(),
+        created=datetime.now(),
+        updated=datetime.now(),
+        user=sample_user_model,
+        workspace=sample_workspace_model,
+        name="name",
+        config={},
+        source={"module": "zenml", "type": "internal"},
+    )
+
+
+@pytest.fixture
+def sample_hub_plugin_response_model() -> HubPluginResponseModel:
+    return HubPluginResponseModel(
+        id=uuid4(),
+        author="AlexejPenner",
+        name="alexejs_ploogin",
+        version="3.14",
+        repository_url="https://github.com/zenml-io/zenml",
+        index_url="https://test.pypi.org/simple/",
+        package_name="ploogin",
+        status=PluginStatus.AVAILABLE,
+        created=datetime.now(),
+        updated=datetime.now(),
+        requirements=["ploogin==0.0.1", "zenml>=0.1.0"],
+    )

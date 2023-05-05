@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Utility functions for the CLI."""
-
+import contextlib
 import os
 import subprocess
 import sys
@@ -21,6 +21,7 @@ from typing import (
     Any,
     Callable,
     Dict,
+    Iterator,
     List,
     NoReturn,
     Optional,
@@ -43,6 +44,10 @@ from zenml.console import console, zenml_style_defaults
 from zenml.constants import FILTERING_DATETIME_FORMAT, IS_DEBUG_ENV
 from zenml.enums import GenericFilterOps, StackComponentType, StoreType
 from zenml.logger import get_logger
+from zenml.model_registries.base_model_registry import (
+    ModelVersion,
+    RegisteredModel,
+)
 from zenml.models import BaseFilterModel
 from zenml.models.base_models import BaseResponseModel
 from zenml.models.filter_models import (
@@ -54,11 +59,16 @@ from zenml.models.filter_models import (
 from zenml.models.page_model import Page
 from zenml.secret import BaseSecretSchema
 from zenml.services import BaseService, ServiceState
+from zenml.stack import StackComponent
+from zenml.stack.stack_component import StackComponentConfig
+from zenml.utils import secret_utils
 from zenml.zen_server.deploy import ServerDeployment
 
 logger = get_logger(__name__)
 
 if TYPE_CHECKING:
+    from uuid import UUID
+
     from rich.text import Text
 
     from zenml.client import Client
@@ -71,6 +81,7 @@ if TYPE_CHECKING:
         PipelineRunResponseModel,
         StackResponseModel,
     )
+    from zenml.stack import Stack
 
 MAX_ARGUMENT_VALUE_SIZE = 10240
 
@@ -148,7 +159,12 @@ def warning(
     console.print(text, style=style, **kwargs)
 
 
-def print_table(obj: List[Dict[str, Any]], **columns: table.Column) -> None:
+def print_table(
+    obj: List[Dict[str, Any]],
+    title: Optional[str] = None,
+    caption: Optional[str] = None,
+    **columns: table.Column,
+) -> None:
     """Prints the list of dicts in a table format.
 
     The input object should be a List of Dicts. Each item in that list represent
@@ -157,11 +173,15 @@ def print_table(obj: List[Dict[str, Any]], **columns: table.Column) -> None:
 
     Args:
         obj: A List containing dictionaries.
+        title: Title of the table.
+        caption: Caption of the table.
         columns: Optional column configurations to be used in the table.
     """
     column_keys = {key: None for dict_ in obj for key in dict_}
     column_names = [columns.get(key, key.upper()) for key in column_keys]
-    rich_table = table.Table(box=box.HEAVY_EDGE, show_lines=True)
+    rich_table = table.Table(
+        box=box.HEAVY_EDGE, show_lines=True, title=title, caption=caption
+    )
     for col_name in column_names:
         if isinstance(col_name, str):
             rich_table.add_column(str(col_name), overflow="fold")
@@ -292,7 +312,9 @@ def format_integration_list(
             {
                 "INSTALLED": ":white_check_mark:" if is_installed else ":x:",
                 "INTEGRATION": name,
-                "REQUIRED_PACKAGES": ", ".join(integration_impl.REQUIREMENTS),
+                "REQUIRED_PACKAGES": ", ".join(
+                    integration_impl.get_requirements()
+                ),
             }
         )
     return list_of_dicts
@@ -376,11 +398,46 @@ def print_stack_component_configuration(
 
     if len(component.configuration) == 0:
         declare("No configuration options are set for this component.")
+
+    else:
+        title_ = (
+            f"'{component.name}' {component.type.value.upper()} "
+            f"Component Configuration"
+        )
+
+        if active_status:
+            title_ += " (ACTIVE)"
+        rich_table = table.Table(
+            box=box.HEAVY_EDGE,
+            title=title_,
+            show_lines=True,
+        )
+        rich_table.add_column("COMPONENT_PROPERTY")
+        rich_table.add_column("VALUE", overflow="fold")
+
+        component_dict = component.dict()
+        component_dict.pop("configuration")
+        component_dict.update(component.configuration)
+
+        items = component.configuration.items()
+        for item in items:
+            elements = []
+            for idx, elem in enumerate(item):
+                if idx == 0:
+                    elements.append(f"{elem.upper()}")
+                else:
+                    elements.append(str(elem))
+            rich_table.add_row(*elements)
+
+        console.print(rich_table)
+
+    if not component.labels:
+        declare("No labels are set for this component.")
         return
 
     title_ = (
         f"'{component.name}' {component.type.value.upper()} "
-        f"Component Configuration"
+        f"Component Labels"
     )
 
     if active_status:
@@ -393,11 +450,7 @@ def print_stack_component_configuration(
     rich_table.add_column("COMPONENT_PROPERTY")
     rich_table.add_column("VALUE", overflow="fold")
 
-    component_dict = component.dict()
-    component_dict.pop("configuration")
-    component_dict.update(component.configuration)
-
-    items = component.configuration.items()
+    items = component.labels.items()
     for item in items:
         elements = []
         for idx, elem in enumerate(item):
@@ -519,7 +572,7 @@ def parse_name_and_extra_arguments(
         ('foo', {})
         >>> parse_name_and_extra_arguments(['foo', '--bar=1'])
         ('foo', {'bar': '1'})
-        >>> parse_name_and_extra_arguments('--bar=1', 'foo', '--baz=2'])
+        >>> parse_name_and_extra_arguments(['--bar=1', 'foo', '--baz=2'])
         ('foo', {'bar': '1', 'baz': '2'})
         >>> parse_name_and_extra_arguments(['--bar=1'])
         Traceback (most recent call last):
@@ -594,13 +647,26 @@ def parse_unknown_component_attributes(args: List[str]) -> List[str]:
     return p_args
 
 
-def install_packages(packages: List[str]) -> None:
+def install_packages(
+    packages: List[str],
+    upgrade: bool = False,
+) -> None:
     """Installs pypi packages into the current environment with pip.
 
     Args:
         packages: List of packages to install.
+        upgrade: Whether to upgrade the packages if they are already installed.
     """
-    command = [sys.executable, "-m", "pip", "install"] + packages
+    if upgrade:
+        command = [
+            sys.executable,
+            "-m",
+            "pip",
+            "install",
+            "--upgrade",
+        ] + packages
+    else:
+        command = [sys.executable, "-m", "pip", "install"] + packages
 
     if not IS_DEBUG_ENV:
         command += [
@@ -631,31 +697,39 @@ def uninstall_package(package: str) -> None:
 
 
 def pretty_print_secret(
-    secret: "BaseSecretSchema", hide_secret: bool = True
+    secret: "Union[BaseSecretSchema, Dict[str, str]]",
+    hide_secret: bool = True,
+    print_name: bool = False,
 ) -> None:
-    """Given a secret set, print all key-value pairs associated with the secret.
+    """Given a secret with values, print all key-value pairs associated with the secret.
 
     Args:
         secret: Secret of type BaseSecretSchema
         hide_secret: boolean that configures if the secret values are shown
             on the CLI
+        print_name: boolean that configures if the secret name is shown on the
+            CLI
     """
+    title: Optional[str] = None
+    if isinstance(secret, BaseSecretSchema):
+        if print_name:
+            title = f"Secret: {secret.name}"
+        secret = secret.content
 
     def get_secret_value(value: Any) -> str:
         if value is None:
             return ""
-        if hide_secret:
-            return "***"
-        return str(value)
+        return "***" if hide_secret else str(value)
 
     stack_dicts = [
         {
             "SECRET_KEY": key,
             "SECRET_VALUE": get_secret_value(value),
         }
-        for key, value in secret.content.items()
+        for key, value in secret.items()
     ]
-    print_table(stack_dicts)
+
+    print_table(stack_dicts, title=title)
 
 
 def print_list_items(list_items: List[str], column_title: str) -> None:
@@ -727,6 +801,96 @@ def pretty_print_model_deployer(
     )
 
 
+def pretty_print_registered_model_table(
+    registered_models: List["RegisteredModel"],
+) -> None:
+    """Given a list of registered_models, print all associated key-value pairs.
+
+    Args:
+        registered_models: list of registered models
+    """
+    registered_model_dicts = [
+        {
+            "NAME": registered_model.name,
+            "DESCRIPTION": registered_model.description,
+            "METADATA": registered_model.metadata,
+        }
+        for registered_model in registered_models
+    ]
+    print_table(
+        registered_model_dicts, UUID=table.Column(header="UUID", min_width=36)
+    )
+
+
+def pretty_print_model_version_table(
+    model_versions: List["ModelVersion"],
+) -> None:
+    """Given a list of model_versions, print all associated key-value pairs.
+
+    Args:
+        model_versions: list of model versions
+    """
+    model_version_dicts = [
+        {
+            "NAME": model_version.registered_model.name,
+            "MODEL_VERSION": model_version.version,
+            "VERSION_DESCRIPTION": model_version.description,
+            "METADATA": model_version.metadata.dict()
+            if model_version.metadata
+            else {},
+        }
+        for model_version in model_versions
+    ]
+    print_table(
+        model_version_dicts, UUID=table.Column(header="UUID", min_width=36)
+    )
+
+
+def pretty_print_model_version_details(
+    model_version: "ModelVersion",
+) -> None:
+    """Given a model_version, print all associated key-value pairs.
+
+    Args:
+        model_version: model version
+    """
+    title_ = f"Properties of model `{model_version.registered_model.name}` version `{model_version.version}`"
+
+    rich_table = table.Table(
+        box=box.HEAVY_EDGE,
+        title=title_,
+        show_lines=True,
+    )
+    rich_table.add_column("MODEL VERSION PROPERTY", overflow="fold")
+    rich_table.add_column("VALUE", overflow="fold")
+    model_version_info = {
+        "REGISTERED_MODEL_NAME": model_version.registered_model.name,
+        "VERSION": model_version.version,
+        "VERSION_DESCRIPTION": model_version.description,
+        "CREATED_AT": str(model_version.created_at)
+        if model_version.created_at
+        else "N/A",
+        "UPDATED_AT": str(model_version.last_updated_at)
+        if model_version.last_updated_at
+        else "N/A",
+        "METADATA": model_version.metadata.dict()
+        if model_version.metadata
+        else {},
+        "MODEL_SOURCE_URI": model_version.model_source_uri,
+        "STAGE": model_version.stage.value,
+    }
+
+    for item in model_version_info.items():
+        rich_table.add_row(*[str(elem) for elem in item])
+
+    # capitalize entries in first column
+    rich_table.columns[0]._cells = [
+        component.upper()  # type: ignore[union-attr]
+        for component in rich_table.columns[0]._cells
+    ]
+    console.print(rich_table)
+
+
 def print_served_model_configuration(
     model_service: "BaseService", model_deployer: "BaseModelDeployer"
 ) -> None:
@@ -755,7 +919,7 @@ def print_served_model_configuration(
         "STATUS": get_service_state_emoji(model_service.status.state),
         "STATUS_MESSAGE": model_service.status.last_error,
         "PIPELINE_NAME": model_service.config.pipeline_name,
-        "PIPELINE_RUN_ID": model_service.config.pipeline_run_id,
+        "RUN_NAME": model_service.config.run_name,
         "PIPELINE_STEP_NAME": model_service.config.pipeline_step_name,
     }
 
@@ -964,6 +1128,86 @@ def print_components_table(
     print_table(configurations)
 
 
+def _get_stack_components(
+    stack: "Stack",
+) -> "List[StackComponent]":
+    """Get a dict of all components in a stack.
+
+    Args:
+        stack: A stack
+
+    Returns:
+        A list of all components in a stack.
+    """
+    return list(stack.components.values())
+
+
+def _scrub_secret(config: StackComponentConfig) -> Dict[str, Any]:
+    """Remove secret values from a configuration.
+
+    Args:
+        config: configuration for a stack component
+
+    Returns:
+        A configuration with secret values removed.
+    """
+    config_dict = {}
+    config_fields = dict(config.__class__.__fields__)
+    for key, value in config_fields.items():
+        if secret_utils.is_secret_field(value):
+            config_dict[key] = "********"
+        else:
+            config_dict[key] = getattr(config, key)
+    return config_dict
+
+
+def print_debug_stack() -> None:
+    """Print active stack and components for debugging purposes."""
+    from zenml.client import Client
+
+    client = Client()
+    stack = client.get_stack()
+    active_stack = client.active_stack
+    components = _get_stack_components(active_stack)
+
+    declare("\nCURRENT STACK\n", bold=True)
+    console.print(f"Name: {stack.name}")
+    console.print(f"ID: {str(stack.id)}")
+    console.print(f"Shared: {'Yes' if stack.is_shared else 'No'}")
+    if stack.user and stack.user.name and stack.user.id:  # mypy check
+        console.print(f"User: {stack.user.name} / {str(stack.user.id)}")
+    console.print(
+        f"Workspace: {stack.workspace.name} / {str(stack.workspace.id)}"
+    )
+
+    for component in components:
+        component_response = client.get_stack_component(
+            name_id_or_prefix=component.id, component_type=component.type
+        )
+        declare(
+            f"\n{component.type.value.upper()}: {component.name}\n", bold=True
+        )
+        console.print(f"Name: {component.name}")
+        console.print(f"ID: {str(component.id)}")
+        console.print(f"Type: {component.type.value}")
+        console.print(f"Flavor: {component.flavor}")
+        console.print(f"Configuration: {_scrub_secret(component.config)}")
+        console.print(
+            f"Shared: {'Yes' if component_response.is_shared else 'No'}"
+        )
+        if (
+            component_response.user
+            and component_response.user.name
+            and component_response.user.id
+        ):  # mypy check
+            console.print(
+                f"User: {component_response.user.name} / {str(component_response.user.id)}"
+            )
+        console.print(
+            f"Workspace: {component_response.workspace.name} / {str(component_response.workspace.id)}"
+        )
+
+
 def _component_display_name(
     component_type: "StackComponentType", plural: bool = False
 ) -> str:
@@ -1069,7 +1313,7 @@ def print_page_info(page: Page[T]) -> None:
         page: The page to print the information for.
     """
     declare(
-        f"Page `({page.page}/{page.total_pages})`, `{page.total}` items "
+        f"Page `({page.index}/{page.total_pages})`, `{page.total}` items "
         f"found for the applied filters."
     )
 
@@ -1089,6 +1333,11 @@ def create_filter_help_text(
     Returns:
         The help text.
     """
+    if filter_model.is_sort_by_field(field):
+        return (
+            "[STRING] Example: --sort_by='desc:name' to sort by name in "
+            "descending order. "
+        )
     if filter_model.is_datetime_field(field):
         return (
             f"[DATETIME] The following datetime format is supported: "
@@ -1230,3 +1479,100 @@ def list_options(filter_model: Type[BaseFilterModel]) -> Callable[[F], F]:
         return wrapper(func)
 
     return inner_decorator
+
+
+@contextlib.contextmanager
+def temporary_active_stack(
+    stack_name_or_id: Union["UUID", str, None] = None
+) -> Iterator["Stack"]:
+    """Contextmanager to temporarily activate a stack.
+
+    Args:
+        stack_name_or_id: The name or ID of the stack to activate. If not given,
+            this contextmanager will not do anything.
+
+    Yields:
+        The active stack.
+    """
+    from zenml.client import Client
+
+    try:
+        if stack_name_or_id:
+            old_stack_id = Client().active_stack_model.id
+            Client().activate_stack(stack_name_or_id)
+        else:
+            old_stack_id = None
+        yield Client().active_stack
+    finally:
+        if old_stack_id:
+            Client().activate_stack(old_stack_id)
+
+
+def get_package_information(
+    package_names: Optional[List[str]] = None,
+) -> Dict[str, str]:
+    """Get a dictionary of installed packages.
+
+    Args:
+        package_names: Specific package names to get the information for.
+
+    Returns:
+        A dictionary of the name:version for the package names passed in or
+            all packages and their respective versions.
+    """
+    import pkg_resources
+
+    if package_names:
+        return {
+            pkg.key: pkg.version
+            for pkg in pkg_resources.working_set
+            if pkg.key in package_names
+        }
+
+    return {pkg.key: pkg.version for pkg in pkg_resources.working_set}
+
+
+def print_user_info(info: Dict[str, Any]) -> None:
+    """Print user information to the terminal.
+
+    Args:
+        info: The information to print.
+    """
+    for key, value in info.items():
+        if key in ["packages", "query_packages"] and not bool(value):
+            continue
+
+        declare(f"{key.upper()}: {value}")
+
+
+def warn_deprecated_secrets_manager() -> None:
+    """Warning for deprecating secrets managers."""
+    warning(
+        "Secrets managers are deprecated and will be removed in an upcoming "
+        "release in favor of centralized secrets management. Please consider "
+        "migrating all your secrets to the centralized secrets store by means "
+        "of the `zenml secrets-manager secret migrate` CLI command. "
+        "See the `zenml secret` CLI command and the "
+        "https://docs.zenml.io/starter-guide/production-fundamentals/secrets-management "
+        "documentation page for more information."
+    )
+
+
+def get_parsed_labels(labels: Optional[List[str]]) -> Dict[str, str]:
+    """Parse labels into a dictionary.
+
+    Args:
+        labels: The labels to parse.
+
+    Returns:
+        A dictionary of the metadata.
+    """
+    if not labels:
+        return {}
+
+    metadata_dict = {}
+    for m in labels:
+        key, value = m.split("=")
+        metadata_dict[key] = value
+
+    return metadata_dict

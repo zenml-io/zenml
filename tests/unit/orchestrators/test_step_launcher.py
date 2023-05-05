@@ -17,9 +17,9 @@ from uuid import uuid4
 
 import pytest
 
-from zenml.config.pipeline_deployment import PipelineDeployment
 from zenml.config.step_configurations import Step
 from zenml.enums import StackComponentType
+from zenml.models.pipeline_deployment_models import PipelineDeploymentBaseModel
 from zenml.orchestrators.step_launcher import (
     _get_step_name_in_pipeline,
     _get_step_operator,
@@ -32,7 +32,11 @@ def test_pipeline_step_name_extraction():
     correctly."""
     step_1 = Step.parse_obj(
         {
-            "spec": {"source": "", "upstream_steps": [], "inputs": {}},
+            "spec": {
+                "source": "module.step_class",
+                "upstream_steps": [],
+                "inputs": {},
+            },
             "config": {
                 "name": "step_1_name",
             },
@@ -40,19 +44,22 @@ def test_pipeline_step_name_extraction():
     )
     step_2 = Step.parse_obj(
         {
-            "spec": {"source": "", "upstream_steps": [], "inputs": {}},
+            "spec": {
+                "source": "module.step_class",
+                "upstream_steps": [],
+                "inputs": {},
+            },
             "config": {
                 "name": "step_2_name",
             },
         }
     )
 
-    deployment = PipelineDeployment.parse_obj(
+    deployment = PipelineDeploymentBaseModel.parse_obj(
         {
-            "run_name": "run_name",
-            "stack_id": uuid4(),
-            "pipeline": {"name": "pipeline_name"},
-            "steps": {"step_1": step_1, "step_2": step_2},
+            "run_name_template": "run_name",
+            "pipeline_configuration": {"name": "pipeline_name"},
+            "step_configurations": {"step_1": step_1, "step_2": step_2},
         }
     )
 

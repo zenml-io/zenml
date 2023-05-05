@@ -28,8 +28,8 @@ from seldon_pytorch.steps.inference_image_loader import (
     InferenceImageLoaderStepParameters,
     inference_image_loader,
 )
-from seldon_pytorch.steps.predection_service_loader import (
-    PredectionServiceLoaderStepParameters,
+from seldon_pytorch.steps.prediction_service_loader import (
+    PredictionServiceLoaderStepParameters,
     seldon_prediction_service_loader,
 )
 from seldon_pytorch.steps.predictor import seldon_predictor
@@ -122,7 +122,7 @@ def main(
     predict = config == PREDICT or config == DEPLOY_AND_PREDICT
 
     deployment_pipeline_name = "pytorch_custom_code_pipeline"
-    step_name = "seldon_custom_model_deployer_step"
+    step_name = "deployer"
     model_name = "seldon-pytorch-custom-model"
 
     model_deployer = SeldonModelDeployer.get_active_model_deployer()
@@ -158,7 +158,7 @@ def main(
                 ),
             ),
             prediction_service_loader=seldon_prediction_service_loader(
-                PredectionServiceLoaderStepParameters(
+                PredictionServiceLoaderStepParameters(
                     pipeline_name=deployment_pipeline_name,
                     step_name=step_name,
                     model_name=model_name,

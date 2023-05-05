@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Models representing roles that can be assigned to users or teams."""
 
-from typing import Set
+from typing import Optional, Set
 
 from pydantic import BaseModel, Field
 
@@ -58,7 +58,7 @@ class RoleResponseModel(RoleBaseModel, BaseResponseModel):
 class RoleFilterModel(BaseFilterModel):
     """Model to enable advanced filtering of all Users."""
 
-    name: str = Field(
+    name: Optional[str] = Field(
         default=None,
         description="Name of the role",
     )

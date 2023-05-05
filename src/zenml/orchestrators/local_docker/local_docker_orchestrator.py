@@ -20,6 +20,7 @@ import time
 from typing import TYPE_CHECKING, Any, Dict, Optional, Type, Union, cast
 from uuid import uuid4
 
+from docker.errors import ContainerError
 from pydantic import validator
 
 from zenml.client import Client
@@ -27,32 +28,30 @@ from zenml.config.base_settings import BaseSettings
 from zenml.config.global_config import GlobalConfiguration
 from zenml.constants import (
     ENV_ZENML_LOCAL_STORES_PATH,
-    ORCHESTRATOR_DOCKER_IMAGE_KEY,
 )
 from zenml.entrypoints import StepEntrypointConfiguration
 from zenml.enums import StackComponentType
 from zenml.logger import get_logger
-from zenml.orchestrators import BaseOrchestrator
-from zenml.orchestrators import utils as orchestrator_utils
-from zenml.orchestrators.base_orchestrator import (
+from zenml.orchestrators import (
     BaseOrchestratorConfig,
     BaseOrchestratorFlavor,
+    ContainerizedOrchestrator,
 )
+from zenml.orchestrators import utils as orchestrator_utils
 from zenml.stack import Stack, StackValidator
 from zenml.utils import string_utils
-from zenml.utils.pipeline_docker_image_builder import (
-    PipelineDockerImageBuilder,
-)
 
 if TYPE_CHECKING:
-    from zenml.config.pipeline_deployment import PipelineDeployment
+    from zenml.models.pipeline_deployment_models import (
+        PipelineDeploymentResponseModel,
+    )
 
 logger = get_logger(__name__)
 
 ENV_ZENML_DOCKER_ORCHESTRATOR_RUN_ID = "ZENML_DOCKER_ORCHESTRATOR_RUN_ID"
 
 
-class LocalDockerOrchestrator(BaseOrchestrator):
+class LocalDockerOrchestrator(ContainerizedOrchestrator):
     """Orchestrator responsible for running pipelines locally using Docker.
 
     This orchestrator does not allow for concurrent execution of steps and also
@@ -79,25 +78,6 @@ class LocalDockerOrchestrator(BaseOrchestrator):
             required_components={StackComponentType.IMAGE_BUILDER}
         )
 
-    def prepare_pipeline_deployment(
-        self,
-        deployment: "PipelineDeployment",
-        stack: "Stack",
-    ) -> None:
-        """Build a Docker image and (maybe) push it to the container registry.
-
-        Args:
-            deployment: The pipeline deployment configuration.
-            stack: The stack on which the pipeline will be deployed.
-        """
-        docker_image_builder = PipelineDockerImageBuilder()
-        image_name_or_digest = docker_image_builder.build_docker_image(
-            deployment=deployment, stack=stack
-        )
-        deployment.add_extra(
-            ORCHESTRATOR_DOCKER_IMAGE_KEY, image_name_or_digest
-        )
-
     def get_orchestrator_run_id(self) -> str:
         """Returns the active orchestrator run id.
 
@@ -118,14 +98,20 @@ class LocalDockerOrchestrator(BaseOrchestrator):
 
     def prepare_or_run_pipeline(
         self,
-        deployment: "PipelineDeployment",
+        deployment: "PipelineDeploymentResponseModel",
         stack: "Stack",
+        environment: Dict[str, str],
     ) -> Any:
         """Sequentially runs all pipeline steps in local Docker containers.
 
         Args:
             deployment: The pipeline deployment to prepare or run.
             stack: The stack the pipeline will run on.
+            environment: Environment variables to set in the orchestration
+                environment.
+
+        Raises:
+            RuntimeError: If a step fails.
         """
         if deployment.schedule:
             logger.warning(
@@ -137,7 +123,6 @@ class LocalDockerOrchestrator(BaseOrchestrator):
         from docker.client import DockerClient
 
         docker_client = DockerClient.from_env()
-        image_name = deployment.pipeline.extra[ORCHESTRATOR_DOCKER_IMAGE_KEY]
         entrypoint = StepEntrypointConfiguration.get_entrypoint_command()
 
         # Add the local stores path as a volume mount
@@ -150,14 +135,12 @@ class LocalDockerOrchestrator(BaseOrchestrator):
             }
         }
         orchestrator_run_id = str(uuid4())
-        environment = {
-            ENV_ZENML_DOCKER_ORCHESTRATOR_RUN_ID: orchestrator_run_id,
-            ENV_ZENML_LOCAL_STORES_PATH: local_stores_path,
-        }
+        environment[ENV_ZENML_DOCKER_ORCHESTRATOR_RUN_ID] = orchestrator_run_id
+        environment[ENV_ZENML_LOCAL_STORES_PATH] = local_stores_path
         start_time = time.time()
 
         # Run each step
-        for step_name, step in deployment.steps.items():
+        for step_name, step in deployment.step_configurations.items():
             if self.requires_resources_in_orchestration_environment(step):
                 logger.warning(
                     "Specifying step resources is not supported for the local "
@@ -167,32 +150,38 @@ class LocalDockerOrchestrator(BaseOrchestrator):
                 )
 
             arguments = StepEntrypointConfiguration.get_entrypoint_arguments(
-                step_name=step_name
+                step_name=step_name, deployment_id=deployment.id
             )
 
             settings = cast(
                 LocalDockerOrchestratorSettings,
                 self.get_settings(step),
             )
+            image = self.get_image(deployment=deployment, step_name=step_name)
 
             user = None
             if sys.platform != "win32":
                 user = os.getuid()
             logger.info("Running step `%s` in Docker:", step_name)
-            logs = docker_client.containers.run(
-                image=image_name,
-                entrypoint=entrypoint,
-                command=arguments,
-                user=user,
-                volumes=volumes,
-                environment=environment,
-                stream=True,
-                extra_hosts={"host.docker.internal": "host-gateway"},
-                **settings.run_args,
-            )
 
-            for line in logs:
-                logger.info(line.strip().decode())
+            try:
+                logs = docker_client.containers.run(
+                    image=image,
+                    entrypoint=entrypoint,
+                    command=arguments,
+                    user=user,
+                    volumes=volumes,
+                    environment=environment,
+                    stream=True,
+                    extra_hosts={"host.docker.internal": "host-gateway"},
+                    **settings.run_args,
+                )
+
+                for line in logs:
+                    logger.info(line.strip().decode())
+            except ContainerError as e:
+                error_message = e.stderr.decode()
+                raise RuntimeError(error_message)
 
         run_duration = time.time() - start_time
         run_id = orchestrator_utils.get_run_id_for_orchestrator_run_id(
@@ -288,6 +277,15 @@ class LocalDockerOrchestratorFlavor(BaseOrchestratorFlavor):
             A flavor docs url.
         """
         return self.generate_default_docs_url()
+
+    @property
+    def sdk_docs_url(self) -> Optional[str]:
+        """A url to point at SDK docs explaining this flavor.
+
+        Returns:
+            A flavor SDK docs url.
+        """
+        return self.generate_default_sdk_docs_url()
 
     @property
     def logo_url(self) -> str:

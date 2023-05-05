@@ -41,7 +41,7 @@ class StepEnvironment(BaseEnvironmentComponent):
     @step
     def my_step(...)
         env = Environment().step_environment
-        do_something_with(env.pipeline_name, env.pipeline_run_id, env.step_name)
+        do_something_with(env.pipeline_name, env.run_name, env.step_name)
     ```
     """
 
@@ -100,7 +100,7 @@ class StepEnvironment(BaseEnvironmentComponent):
         Returns:
             The name of the currently running step.
         """
-        return self._step_run_info.config.name
+        return self._step_run_info.pipeline_step_name
 
     @property
     def step_run_info(self) -> "StepRunInfo":

@@ -109,7 +109,7 @@ def bento_builder_step(
         exclude=params.exclude,
         python=params.python,
         docker=params.docker,
-        build_ctx=params.working_dir or source_utils.get_source_root_path(),
+        build_ctx=params.working_dir or source_utils.get_source_root(),
     )
 
     # Return the BentoML Bento bundle

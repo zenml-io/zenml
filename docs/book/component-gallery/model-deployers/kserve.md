@@ -3,7 +3,7 @@ description: How to deploy models to Kubernetes with KServe
 ---
 
 The KServe Model Deployer is one of the available flavors of the[Model Deployer](./model-deployers.md) 
-stack component. Provided with the MLflow and Seldon Core integration it can 
+stack component. Provided with the MLflow and Seldon Core integration, it can 
 be used to deploy and manage models on an inference server running on top of 
 a Kubernetes cluster.
 
@@ -70,8 +70,13 @@ cluster. Check out the [KServe Serverless installation Guide](https://kserve.git
 3. models deployed with KServe need to be stored in some form of
 persistent shared storage that is accessible from the Kubernetes cluster where
 KServe is installed (e.g. AWS S3, GCS, Azure Blob Storage, etc.).
-You can use one of the supported [remote storage flavors](../artifact-stores/artifact-stores.md) 
-to store your models as part of your stack
+You can use one of the supported [remote artifact store flavors](../artifact-stores/artifact-stores.md) 
+to store your models as part of your stack. For a smoother experience running
+KServe with a cloud artifact store, we also recommend configuring
+explicit credentials for the artifact store. The KServe model deployer
+knows how to automatically convert those credentials in the format needed
+by KServe model servers to authenticate to the storage back-end where
+models are stored.
 
 Since the KServe Model Deployer is interacting with the KServe model serving 
 Platform deployed on a Kubernetes cluster, you need to provide a set of 
@@ -85,9 +90,6 @@ servers are provisioned and managed by ZenML. If not specified, the namespace
 set in the current configuration is used.
 * base_url: the base URL of the Kubernetes ingress used to expose the 
 KServe deployment servers.
-* secret: the name of a ZenML secret containing the credentials used by KServe 
-storage initializers to authenticate to the Artifact Store
-
 
 {% hint style="info" %}
 Configuring KServe in a Kubernetes cluster can be a complex and error-prone 
@@ -98,66 +100,116 @@ popular combinations of MLOps tools. More information about these recipes can
 be found in the [Open Source MLOps Stack Recipes](https://github.com/zenml-io/mlops-stacks)
 {% endhint %}
 
-### Managing KServe Credentials
+### Managing KServe Authentication
 
-The KServe model servers need to access the Artifact Store in the ZenML
-stack to retrieve the model artifacts. This usually involve passing some
-credentials to the KServe model servers required to authenticate with
-the Artifact Store. In ZenML, this is done by creating a ZenML secret with the
-proper credentials and configuring the KServe Model Deployer stack component
-to use it, by passing the `--secret` argument to the CLI command used
-to register the model deployer. We've already done the latter, now all that is
-left to do is to configure the `s3-store` ZenML secret specified before as a
-KServe Model Deployer configuration attribute with the credentials needed by
-KServe to access the artifact store.
+The KServe Model Deployer requires access to the persistent storage where
+models are located. In most cases, you will use the KServe model deployer
+to serve models that are trained through ZenML pipelines and stored in the
+ZenML Artifact Store, which implies that the KServe model deployer needs
+to access the Artifact Store.
 
-There are built-in secret schemas that the KServe integration provides which
-can be used to configure credentials for the 3 main types of Artifact Stores
-supported by ZenML: S3, GCS and Azure.
+If KServe is already running in the same cloud as the Artifact Store (e.g.
+S3 and an EKS cluster for AWS, or GCS and a GKE cluster for GCP), there are ways
+of configuring cloud workloads to have implicit access to other cloud resources
+like persistent storage without requiring explicit credentials.
+However, if KServe is running in a different cloud, or on-prem, or if
+implicit in-cloud workload authentication is not enabled, then you need to
+configure explicit credentials for the Artifact Store to allow other components
+like the KServe model deployer to authenticate to it. Every cloud Artifact
+Store flavor supports some way of configuring explicit credentials and this is
+documented for each individual flavor in the [Artifact Store documentation](../artifact-stores/artifact-stores.md).
 
-you can use `kserve_s3` for AWS S3 or `kserve_gs` for GCS and `kserve_az` for 
-Azure. To read more about secrets, secret schemas and how they are used in 
-ZenML, please refer to the [Secrets Manager](../secrets-managers/secrets-managers.md).
+When explicit credentials are configured in the Artifact Store, the KServe
+Model Deployer doesn't need any additional configuration and will use those
+credentials automatically to authenticate to the same persistent storage
+service used by the Artifact Store. If the Artifact Store doesn't have
+explicit credentials configured, then KServe will default to using
+whatever implicit authentication method is available in the Kubernetes cluster
+where it is running. For example, in AWS this means using the IAM role
+attached to the EC2 or EKS worker nodes and in GCP this means using the
+service account attached to the GKE worker nodes.
 
 {% hint style="warning" %}
-The recommended way to pass the credentials to the KServe model deployer is to 
-use a file that contains the credentials. You can achieve this by adding the 
-`@` followed by the path to the file to the `--credentials` argument.
-(e.g. `--credentials @/path/to/credentials.json`)
+If the Artifact Store used in combination with the KServe Model Deployer
+in the same ZenML stack does not have explicit credentials configured, then
+the KServe Model Deployer might not be able to authenticate to the Artifact
+Store which will cause the deployed model servers to fail.
+
+To avoid this, we recommend that you use Artifact Stores with explicit
+credentials in the same stack as the KServe Model Deployer. Alternatively,
+if you're running KServe in one of the cloud providers, you should
+configure implicit authentication for the Kubernetes nodes.
 {% endhint %}
 
-The following is an example of registering an GS secret with the KServe model 
-deployer:
+If you want to use a custom persistent storage with KServe, or if you
+prefer to manually manage the authentication credentials attached to the
+KServe model servers, you can use the approach described in the next
+section.
 
-```bash
-$ zenml secrets-manager secret register -s kserve_gs kserve_secret \
-    --namespace="zenml-workloads" \
-    --credentials="@~/sa-deployment-temp.json" \
+#### Advanced: Configuring a Custom KServe Secret
 
-┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━┓
-┃             SECRET_KEY             │ SECRET_VALUE ┃
-┠────────────────────────────────────┼──────────────┨
-┃            storage_type            │ ***          ┃
-┃              namespace             │ ***          ┃
-┃             credentials            │ ***          ┃
-┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━┛
+The KServe model deployer stack component allows configuring an additional
+`secret` attribute that can be used to specify custom credentials that KServe
+should use to authenticate to the persistent storage service where models
+are located. This is useful if you want to connect KServe to a persistent
+storage service that is not supported as a ZenML Artifact Store, or if you don't
+want to configure or use the same credentials configured for your Artifact
+Store. The `secret` attribute must be set to the name of
+[a ZenML secret](../../starter-guide/production-fundamentals/secrets-management.md)
+containing credentials that will mounted as environment variables in the
+KServe model servers.
+
+{% hint style="info" %}
+This method is not recommended, because it limits the KServe model deployer
+to a single persistent storage service, whereas using the Artifact Store
+credentials gives you more flexibility in combining the KServe model
+deployer with any Artifact Store in the same ZenML stack.
+{% endhint %}
+
+KServe model servers use a proprietary format and very specific conventions
+for credentials required for the supported persistent storage services and the
+credentials that can be configured in the ZenML secret must also follow similar
+conventions. This section covers a few common use cases and provides examples
+of how to configure the ZenML secret to support them, but for more information
+on supported configuration options, you can always refer to the
+[KServe documentation for various providers](https://kserve.github.io/website/0.10/modelserving/storage/azure/azure/).
+
+<details>
+    <summary>KServe Authentication Secret Examples</summary>
+
+Example of configuring a KServe secret for AWS S3: 
+
+```shell
+zenml secret create s3-kserve-secret \
+--aws_access_key_id="<AWS-ACCESS-KEY-ID>" \ # AWS Access Key ID.
+--aws_secret_access_key="<AWS-SECRET-ACCESS-KEY>" \ # AWS Secret Access Key.
+--s3_region="<AWS_REGION>" \ # region to connect to.
+--s3_endpoint="<S3_ENDPOINT>" \ # S3 API endpoint.
+--s3_use_https="1" \ # set to 0 to disable https.
+--s3_verify_ssl="1" \ # set to 0 to disable SSL certificate verification.
 ```
 
-```bash
-$ zenml secrets-manager secret get kserve_secret
-┏━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃    SECRET_KEY    │ SECRET_VALUE              ┃
-┠──────────────────┼───────────────────────────┨
-┃   storage_type   │ GCS                       ┃
-┠──────────────────┼───────────────────────────┨
-┃    namespace     │ kserve-test               ┃
-┠──────────────────┼───────────────────────────┨
-┃   credentials    │ ~/sa-deployment-temp.json ┃
-┗━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+Example of configuring a KServe secret for GCS: 
+
+```shell
+zenml secret create gs-kserve-secret \
+--google_application_credentials=@path/to/credentials.json \ # service account credentials JSON blob.
 ```
 
-For more information and a full list of configurable attributes of the KServe 
-secret schemas, check out the [API Docs](https://apidocs.zenml.io/latest/integration_code_docs/integrations-kserve/#zenml.integrations.kserve.secret_schemas).
+Example of configuring a KServe secret for Azure Blob Storage:
+
+```shell
+zenml secret create az-kserve-secret \
+--azure_subscription_id="" \ # subscription ID of the service
+# principal to use for authentication.
+--azure_client_id="" \ # client ID of the service principal
+# to use for authentication.
+--azure_client_secret="" \ # client secret of the service
+# principal to use for authentication.
+--azure_tenant_id="" \ # tenant ID of the service principal
+# to use for authentication.
+```
+</details>
 
 ## How do you use it?
 
@@ -169,19 +221,30 @@ export INGRESS_HOST=$(kubectl -n istio-system get service istio-ingressgateway -
 # For EKS clusters, the host is the EKS cluster IP hostname.
 export INGRESS_HOST=$(kubectl -n istio-system get service istio-ingressgateway -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
 ```
+
 Now register the model deployer:
 
+>**Note**:
+> If you chose to configure your own custom credentials to authenticate to the persistent storage service where models are stored, as covered in the [Advanced: Configuring a Custom KServe Secret](#advanced-configuring-a-custom-kserve-secret) section, you will need to specify a ZenML secret reference when you configure the KServe model deployer below:
+> ```shell
+>zenml model-deployer register kserve_deployer --flavor=kserve \
+>  --kubernetes_context=<KUBERNETES-CONTEXT> \
+>  --kubernetes_namespace=<KUBERNETES-NAMESPACE> \
+>  --base_url=http://$INGRESS_HOST \
+>  --secret=<ZENML_SECRET_NAME> 
+> ```
+
 ```bash
-zenml model-deployer register kserve_gke --flavor=kserve \
-  --kubernetes_context=gke_zenml-core_us-east1-b_zenml-test-cluster \ 
-  --kubernetes_namespace=zenml-workloads \
-  --base_url=$INGRESS_HOST \
-  --secret=kserve_secret
+zenml model-deployer register kserve_deployer --flavor=kserve \
+  --kubernetes_context=<KUBERNETES-CONTEXT> \ 
+  --kubernetes_namespace=<KUBERNETES-NAMESPACE> \
+  --base_url=http://$INGRESS_HOST \
 ```
 
 We can now use the model deployer in our stack.
+
 ```
-zenml stack update kserve_stack --model-deployer=kserve_gke
+zenml stack update kserve_stack --model-deployer=kserve_deployer
 ```
 
 As the packaging and preparation of the model artifacts to the right format 

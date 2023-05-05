@@ -15,9 +15,17 @@
 
 from zenml.zen_stores.schemas.artifact_schemas import ArtifactSchema
 from zenml.zen_stores.schemas.base_schemas import BaseSchema, NamedSchema
+from zenml.zen_stores.schemas.code_repository_schemas import (
+    CodeRepositorySchema,
+    CodeReferenceSchema,
+)
+from zenml.zen_stores.schemas.pipeline_build_schemas import PipelineBuildSchema
 from zenml.zen_stores.schemas.component_schemas import StackComponentSchema
 from zenml.zen_stores.schemas.flavor_schemas import FlavorSchema
 from zenml.zen_stores.schemas.identity_schemas import IdentitySchema
+from zenml.zen_stores.schemas.pipeline_deployment_schemas import (
+    PipelineDeploymentSchema,
+)
 from zenml.zen_stores.schemas.pipeline_run_schemas import PipelineRunSchema
 from zenml.zen_stores.schemas.pipeline_schemas import PipelineSchema
 from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
@@ -29,6 +37,7 @@ from zenml.zen_stores.schemas.role_schemas import (
 )
 from zenml.zen_stores.schemas.run_metadata_schemas import RunMetadataSchema
 from zenml.zen_stores.schemas.schedule_schema import ScheduleSchema
+from zenml.zen_stores.schemas.secret_schemas import SecretSchema
 from zenml.zen_stores.schemas.stack_schemas import (
     StackCompositionSchema,
     StackSchema,
@@ -49,8 +58,12 @@ __all__ = [
     "ArtifactSchema",
     "BaseSchema",
     "NamedSchema",
+    "CodeRepositorySchema",
+    "CodeReferenceSchema",
     "FlavorSchema",
     "IdentitySchema",
+    "PipelineBuildSchema",
+    "PipelineDeploymentSchema",
     "PipelineRunSchema",
     "PipelineSchema",
     "WorkspaceSchema",
@@ -58,6 +71,7 @@ __all__ = [
     "RolePermissionSchema",
     "RunMetadataSchema",
     "ScheduleSchema",
+    "SecretSchema",
     "StackSchema",
     "StackComponentSchema",
     "StackCompositionSchema",

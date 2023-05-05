@@ -36,12 +36,16 @@ class KubernetesOrchestratorSettings(BaseSettings):
             block until all steps finished running on Kubernetes.
         timeout: How many seconds to wait for synchronous runs. `0` means
             to wait for an unlimited duration.
+        service_account_name: Name of the service account to use for the
+            orchestrator pod. If not provided, a new service account with "edit"
+            permissions will be created.
         pod_settings: Pod settings to apply.
     """
 
     synchronous: bool = False
     timeout: int = 0
 
+    service_account_name: Optional[str] = None
     pod_settings: Optional[KubernetesPodSettings] = None
 
 
@@ -146,6 +150,15 @@ class KubernetesOrchestratorFlavor(BaseOrchestratorFlavor):
             A flavor docs url.
         """
         return self.generate_default_docs_url()
+
+    @property
+    def sdk_docs_url(self) -> Optional[str]:
+        """A url to point at SDK docs explaining this flavor.
+
+        Returns:
+            A flavor SDK docs url.
+        """
+        return self.generate_default_sdk_docs_url()
 
     @property
     def logo_url(self) -> str:

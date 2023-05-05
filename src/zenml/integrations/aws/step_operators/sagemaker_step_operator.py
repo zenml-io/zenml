@@ -13,10 +13,12 @@
 #  permissions and limitations under the License.
 """Implementation of the Sagemaker Step Operator."""
 
-from typing import TYPE_CHECKING, List, Optional, Tuple, Type, cast
+from typing import TYPE_CHECKING, Dict, List, Optional, Tuple, Type, cast
 
 import sagemaker
 
+from zenml.client import Client
+from zenml.config.build_configuration import BuildConfiguration
 from zenml.enums import StackComponentType
 from zenml.integrations.aws.flavors.sagemaker_step_operator_flavor import (
     SagemakerStepOperatorConfig,
@@ -25,18 +27,18 @@ from zenml.integrations.aws.flavors.sagemaker_step_operator_flavor import (
 from zenml.logger import get_logger
 from zenml.stack import Stack, StackValidator
 from zenml.step_operators import BaseStepOperator
-from zenml.utils.pipeline_docker_image_builder import (
-    PipelineDockerImageBuilder,
-)
+from zenml.utils.string_utils import random_str
 
 if TYPE_CHECKING:
     from zenml.config.base_settings import BaseSettings
-    from zenml.config.pipeline_deployment import PipelineDeployment
     from zenml.config.step_run_info import StepRunInfo
+    from zenml.models.pipeline_deployment_models import (
+        PipelineDeploymentBaseModel,
+    )
 
 logger = get_logger(__name__)
 
-SAGEMAKER_DOCKER_IMAGE_KEY = "sagemaker_docker_image"
+SAGEMAKER_DOCKER_IMAGE_KEY = "sagemaker_step_operator"
 _ENTRYPOINT_ENV_VARIABLE = "__ZENML_ENTRYPOINT"
 
 
@@ -108,44 +110,43 @@ class SagemakerStepOperator(BaseStepOperator):
             custom_validation_function=_validate_remote_components,
         )
 
-    def prepare_pipeline_deployment(
-        self,
-        deployment: "PipelineDeployment",
-        stack: "Stack",
-    ) -> None:
-        """Build a Docker image and push it to the container registry.
+    def get_docker_builds(
+        self, deployment: "PipelineDeploymentBaseModel"
+    ) -> List["BuildConfiguration"]:
+        """Gets the Docker builds required for the component.
 
         Args:
-            deployment: The pipeline deployment configuration.
-            stack: The stack on which the pipeline will be deployed.
-        """
-        steps_to_run = [
-            step
-            for step in deployment.steps.values()
-            if step.config.step_operator == self.name
-        ]
-        if not steps_to_run:
-            return
+            deployment: The pipeline deployment for which to get the builds.
 
-        docker_image_builder = PipelineDockerImageBuilder()
-        repo_digest = docker_image_builder.build_docker_image(
-            deployment=deployment,
-            stack=stack,
-            entrypoint=f"${_ENTRYPOINT_ENV_VARIABLE}",
-        )
-        for step in steps_to_run:
-            step.config.extra[SAGEMAKER_DOCKER_IMAGE_KEY] = repo_digest
+        Returns:
+            The required Docker builds.
+        """
+        builds = []
+        for step_name, step in deployment.step_configurations.items():
+            if step.config.step_operator == self.name:
+                build = BuildConfiguration(
+                    key=SAGEMAKER_DOCKER_IMAGE_KEY,
+                    settings=step.config.docker_settings,
+                    step_name=step_name,
+                    entrypoint=f"${_ENTRYPOINT_ENV_VARIABLE}",
+                )
+                builds.append(build)
+
+        return builds
 
     def launch(
         self,
         info: "StepRunInfo",
         entrypoint_command: List[str],
+        environment: Dict[str, str],
     ) -> None:
         """Launches a step on SageMaker.
 
         Args:
             info: Information about the step run.
             entrypoint_command: Command that executes the step.
+            environment: Environment variables to set in the step operator
+                environment.
         """
         if not info.config.resource_settings.empty:
             logger.warning(
@@ -158,34 +159,63 @@ class SagemakerStepOperator(BaseStepOperator):
                 self.name,
             )
 
-        image_name = info.config.extra[SAGEMAKER_DOCKER_IMAGE_KEY]
-        environment = {_ENTRYPOINT_ENV_VARIABLE: " ".join(entrypoint_command)}
+        image_name = info.get_image(key=SAGEMAKER_DOCKER_IMAGE_KEY)
+        environment[_ENTRYPOINT_ENV_VARIABLE] = " ".join(entrypoint_command)
 
         settings = cast(SagemakerStepOperatorSettings, self.get_settings(info))
 
+        # Get and default fill SageMaker estimator arguments for full ZenML support
+        estimator_args = settings.estimator_args
         session = sagemaker.Session(default_bucket=self.config.bucket)
-        instance_type = settings.instance_type or "ml.m5.large"
-        estimator = sagemaker.estimator.Estimator(
-            image_name,
-            self.config.role,
-            environment=environment,
-            instance_count=1,
-            instance_type=instance_type,
-            sagemaker_session=session,
+
+        estimator_args.setdefault(
+            "instance_type", settings.instance_type or "ml.m5.large"
         )
 
+        estimator_args["environment"] = environment
+        estimator_args["instance_count"] = 1
+        estimator_args["sagemaker_session"] = session
+
+        # Create Estimator
+        estimator = sagemaker.estimator.Estimator(
+            image_name, self.config.role, **estimator_args
+        )
+
+        # SageMaker allows 63 characters at maximum for job name - ZenML uses 60 for safety margin.
+        step_name = Client().get_run_step(info.step_run_id).name
+        training_job_name = f"{info.pipeline.name}-{step_name}"[:55]
+        suffix = random_str(4)
+        unique_training_job_name = f"{training_job_name}-{suffix}"
+
         # Sagemaker doesn't allow any underscores in job/experiment/trial names
-        sanitized_run_name = info.run_name.replace("_", "-")
+        sanitized_training_job_name = unique_training_job_name.replace(
+            "_", "-"
+        )
+
+        # Construct training input object, if necessary
+        inputs = None
+
+        if isinstance(settings.input_data_s3_uri, str):
+            inputs = sagemaker.inputs.TrainingInput(
+                s3_data=settings.input_data_s3_uri
+            )
+        elif isinstance(settings.input_data_s3_uri, dict):
+            inputs = {}
+            for channel, s3_uri in settings.input_data_s3_uri.items():
+                inputs[channel] = sagemaker.inputs.TrainingInput(
+                    s3_data=s3_uri
+                )
 
         experiment_config = {}
         if settings.experiment_name:
             experiment_config = {
                 "ExperimentName": settings.experiment_name,
-                "TrialName": sanitized_run_name,
+                "TrialName": sanitized_training_job_name,
             }
 
         estimator.fit(
             wait=True,
+            inputs=inputs,
             experiment_config=experiment_config,
-            job_name=sanitized_run_name,
+            job_name=sanitized_training_job_name,
         )

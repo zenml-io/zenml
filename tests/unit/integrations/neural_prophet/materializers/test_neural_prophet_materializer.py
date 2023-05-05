@@ -11,7 +11,6 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from contextlib import ExitStack as does_not_raise
 
 import numpy as np
 import pandas as pd
@@ -34,11 +33,11 @@ def test_neural_prophet_booster_materializer(clean_client):
     model = NeuralProphet(epochs=2, batch_size=37)
     model.fit(sample_df)
 
-    with does_not_raise():
-        forecaster = _test_materializer(
-            step_output=model,
-            materializer_class=NeuralProphetMaterializer,
-        )
+    forecaster = _test_materializer(
+        step_output=model,
+        materializer_class=NeuralProphetMaterializer,
+        expected_metadata_size=1,
+    )
 
     assert forecaster.config_train.epochs == 2
     assert forecaster.config_train.batch_size == 37

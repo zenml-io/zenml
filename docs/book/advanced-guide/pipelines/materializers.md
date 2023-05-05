@@ -58,8 +58,11 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
         Returns:
             The data of the artifact.
         """
-        # read from self.uri
-        ...
+        # read from a location inside self.uri
+        # 
+        # Example:
+        # data_path = os.path.join(self.uri, "abc.json")
+        # return yaml_utils.read_json(data_path)
 
     def save(self, data: Any) -> None:
         """Write logic here to save the data of an artifact.
@@ -67,7 +70,11 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
         Args:
             data: The data of the artifact to save.
         """
-        # write `data` to self.uri
+        # write `data` into self.uri
+        # 
+        # Example:
+        # data_path = os.path.join(self.uri, "abc.json")
+        # yaml_utils.write_json(data_path, data)
         ...
     
     def extract_metadata(self, data: Any) -> Dict[str, "MetadataType"]:
@@ -81,8 +88,9 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
         Returns:
             A dictionary of metadata.
         """
-        # Optionally, extract some metadata from `data` for ZenML to store.
-        # E.g.:
+        # Optionally, extract metadata from `data` for ZenML to store
+        # 
+        # Example:
         # return {
         #     "some_attribute_i_want_to_track": self.some_attribute,
         #     "pi": 3.14,
@@ -142,8 +150,8 @@ that are displayed in a dedicated way in the dashboard.
 See [src.zenml.metadata.metadata_types.MetadataType](https://github.com/zenml-io/zenml/blob/main/src/zenml/metadata/metadata_types.py)
 for more details.
 
-By default, this method will extract an artifact's storage size and runtime 
-data type, but you can overwrite it to track anything you wish. E.g., the 
+By default, this method will only extract the storage size of an artifact, but
+you can overwrite it to track anything you wish. E.g., the 
 `zenml.materializers.NumpyMaterializer` overwrites this method to track the 
 `shape`, `dtype`, and some statistical properties of each `np.ndarray` that it saves.
 
@@ -266,7 +274,7 @@ error:
 `
 zenml.exceptions.StepInterfaceError: Unable to find materializer for output 'output' of 
 type <class '__main__.MyObj'> in step 'step1'. Please make sure to either explicitly set a materializer for step 
-outputs using step.with_return_materializers(...) or registering a default materializer for specific types by 
+outputs using step.configure(output_materializers=...) or registering a default materializer for specific types by 
 subclassing BaseMaterializer and setting its ASSOCIATED_TYPES class variable. 
 For more information, visit https://docs.zenml.io/advanced-guide/pipelines/materializers
 `
@@ -292,14 +300,12 @@ class MyMaterializer(BaseMaterializer):
 
     def load(self, data_type: Type[MyObj]) -> MyObj:
         """Read from artifact store"""
-        super().load(data_type)
         with fileio.open(os.path.join(self.uri, 'data.txt'), 'r') as f:
             name = f.read()
         return MyObj(name=name)
 
     def save(self, my_obj: MyObj) -> None:
         """Write to artifact store"""
-        super().save(my_obj)
         with fileio.open(os.path.join(self.uri, 'data.txt'), 'w') as f:
             f.write(my_obj.name)
 ```
@@ -369,14 +375,12 @@ class MyMaterializer(BaseMaterializer):
 
     def load(self, data_type: Type[MyObj]) -> MyObj:
         """Read from artifact store"""
-        super().load(data_type)
         with fileio.open(os.path.join(self.uri, 'data.txt'), 'r') as f:
             name = f.read()
         return MyObj(name=name)
 
     def save(self, my_obj: MyObj) -> None:
         """Write to artifact store"""
-        super().save(my_obj)
         with fileio.open(os.path.join(self.uri, 'data.txt'), 'w') as f:
             f.write(my_obj.name)
 
@@ -574,7 +578,6 @@ class PandasMaterializer(BaseMaterializer):
         Returns:
             The pandas dataframe or series.
         """
-        super().load(data_type)
         temp_dir = tempfile.mkdtemp(prefix="zenml-temp-")
         if fileio.exists(self.parquet_path):
             if self.pyarrow_exists:
@@ -629,10 +632,7 @@ class PandasMaterializer(BaseMaterializer):
         Args:
             df: The pandas dataframe or series to write.
         """
-        super().save(df)
-
         if isinstance(df, pd.Series):
-
             df = df.to_frame(name="series")
 
         # Create a temporary file to store the data

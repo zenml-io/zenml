@@ -23,3 +23,8 @@ with open(os.path.join(ROOT_DIR, "VERSION")) as version_file:
 from zenml.logger import init_logging  # noqa
 
 init_logging()
+
+# The following code is needed for `zenml.hub` subpackages to be found
+from pkgutil import extend_path
+
+__path__ = extend_path(__path__, __name__)

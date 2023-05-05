@@ -15,13 +15,13 @@ RUN pip install zenml${ZENML_VERSION:+==$ZENML_VERSION}
 
 FROM base AS server
 
-RUN pip install zenml${ZENML_VERSION:+==$ZENML_VERSION}[server]
+RUN pip install zenml${ZENML_VERSION:+==$ZENML_VERSION}[server,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp]
 
 WORKDIR /zenml
 
 ENV ZENML_CONFIG_PATH=/zenml/.zenconfig \
-    ZENML_DEBUG=true \
-    ZENML_ANALYTICS_OPT_IN=false
+    ZENML_DEBUG=false \
+    ZENML_ANALYTICS_OPT_IN=true
 
 ARG USERNAME=zenml
 ARG USER_UID=1000

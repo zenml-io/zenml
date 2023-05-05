@@ -187,7 +187,7 @@ Do this if you want to configure caching for all steps of a pipeline.
 Do this to configure caching for individual steps. This is, e.g., useful to 
 disable caching for steps that depend on external input.
 - [Dynamically configuring caching for a pipeline run](#dynamically-disabling-caching-for-a-pipeline-run):
-Do this if you want to change the caching behaviour at runtime. This is, e.g.,
+Do this if you want to change the caching behavior at runtime. This is, e.g.,
 useful to force a complete rerun of a pipeline.
 
 #### Configuring caching for the entire pipeline
@@ -219,7 +219,7 @@ def import_data_from_api(...):
 The code above turns caching off for this step only. This is very useful in
 practice since you might want to turn off caching for certain steps that take 
 external input (like fetching data from an API or File IO) without affecting the
-overall pipeline caching behaviour.
+overall pipeline caching behavior.
 
 {% hint style="info" %}
 You can get a graphical visualization of which steps were cached using

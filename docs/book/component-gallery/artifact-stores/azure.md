@@ -68,9 +68,17 @@ to match your deployment scenario.
 
 Integrating and using an Azure Artifact Store in your pipelines is not
 possible without employing some form of authentication. ZenML currently provides
-two options for configuring Azure credentials, the recommended one being to use
-a `Secrets Manager` in your stack to store the sensitive information in a secure
-location.
+two options for managing Azure authentication: one for which you don't need to
+manage credentials explicitly, the other one that requires you to generate
+Azure credentials and store them in a
+[ZenML Secret](../../starter-guide/production-fundamentals/secrets-management.md). Each
+method has advantages and disadvantages, and you should choose the one that
+best suits your use-case. If you're looking for a quick way to get started
+locally, we recommend using the *Implicit Authentication* method. However, if
+you would like to experiment with ZenML stacks that combine the Azure Artifact
+Store with other remote stack components, we recommend using the
+*Azure Credentials* method, especially if you don't have a lot of experience
+with Azure Managed Identities.
 
 You will need the following information to configure Azure credentials for
 ZenML, depending on which type of Azure credentials you want to use:
@@ -95,14 +103,18 @@ way to configure an Azure Artifact Store. You don't need to supply credentials
 explicitly when you register the Azure Artifact Store, instead you have to set
 one of the following sets of environment variables:
 
-* to use an Azure connection string, set `AZURE_STORAGE_CONNECTION_STRING` to
-your Azure Storage Key connection string
-* to use an Azure account key, set `AZURE_STORAGE_ACCOUNT_NAME` to your account
-name and one of `AZURE_STORAGE_ACCOUNT_KEY` or `AZURE_STORAGE_SAS_TOKEN` to the
-Azure key value.
-* to use Azure ServicePrincipal credentials, set `AZURE_STORAGE_ACCOUNT_NAME` to
-your account name and `AZURE_STORAGE_CLIENT_ID`, `AZURE_STORAGE_CLIENT_SECRET`
-and `AZURE_STORAGE_TENANT_ID` to the 
+* to use [an Azure storage account key](https://learn.microsoft.com/en-us/azure/storage/common/storage-account-keys-manage),
+set `AZURE_STORAGE_ACCOUNT_NAME` to your account name and one of
+`AZURE_STORAGE_ACCOUNT_KEY` or `AZURE_STORAGE_SAS_TOKEN` to the Azure key value.
+* to use [an Azure storage account key connection string](https://learn.microsoft.com/en-us/azure/storage/common/storage-account-keys-manage),
+set `AZURE_STORAGE_CONNECTION_STRING` to your Azure Storage Key connection
+string
+* to use [Azure Service Principal credentials](https://learn.microsoft.com/en-us/azure/active-directory/develop/app-objects-and-service-principals),
+[create an Azure Service Principal](https://learn.microsoft.com/en-us/azure/active-directory/develop/howto-create-service-principal-portal)
+and then set set `AZURE_STORAGE_ACCOUNT_NAME` to your account name and
+`AZURE_STORAGE_CLIENT_ID`, `AZURE_STORAGE_CLIENT_SECRET` and
+`AZURE_STORAGE_TENANT_ID` to the client ID, secret and tenant ID of your
+service principal
 
 {% hint style="warning" %}
 The implicit authentication method needs to be coordinated with other stack
@@ -125,49 +137,68 @@ your cluster to use [Azure Managed Identities](https://docs.microsoft.com/en-us/
 This mechanism allows Azure workloads like AKS pods to access other Azure
 services without requiring explicit credentials.
 
-If you have remote stack components that are not running in AKS, or if
+If you have remote stack components that are not running in Azure, or if
 you are unsure how to configure them to use Managed Identities, you should use
 one of the other authentication methods.
 {% endhint %}
 
 {% endtab %}
 
-{% tab title="Secrets Manager (Recommended)" %}
+{% tab title="Azure Credentials" %}
 
-This method requires using a [Secrets Manager](../secrets-managers/secrets-managers.md)
-in your stack to store the sensitive Azure authentication information in a secure
-location and configuring the Azure credentials using a ZenML secret.
+When you register the Azure Artifact Store, you can create a
+[ZenML Secret](../../starter-guide/production-fundamentals/secrets-management.md)
+to store a variety of Azure credentials and then reference it in the Artifact
+Store configuration:
 
-The ZenML Azure secret schema supports a variety of credentials:
+* to use [an Azure storage account key](https://learn.microsoft.com/en-us/azure/storage/common/storage-account-keys-manage),
+set `account_name` to your account name and one of `account_key` or `sas_token`
+to the Azure key or SAS token value as attributes in the ZenML secret
+* to use [an Azure storage account key connection string](https://learn.microsoft.com/en-us/azure/storage/common/storage-account-keys-manage),
+configure the `connection_string` attribute in the ZenML secret to your Azure
+Storage Key connection string
+* to use [Azure Service Principal credentials](https://learn.microsoft.com/en-us/azure/active-directory/develop/app-objects-and-service-principals),
+[create an Azure Service Principal](https://learn.microsoft.com/en-us/azure/active-directory/develop/howto-create-service-principal-portal)
+and then set `account_name` to your account name and `client_id`,
+`client_secret` and `tenant_id` to the client ID, secret and tenant ID of your
+service principal in the ZenML secret
 
-* use an Azure account name and access key or SAS token (the `account_name`,
-`account_key` and `sas_token` attributes need to be configured in the ZenML
-secret)
-* use an Azure connection string (configure the `connection_string` attribute in
-the ZenML secret)
-* use Azure ServicePrincipal credentials (which requires `account_name`,
-`tenant_id`, `client_id` and `client_secret` to be configured in the ZenML
-secret)
+This method has some advantages over the implicit authentication method:
 
-The Azure credentials are configured as a ZenML secret that is referenced in the
-Artifact Store configuration, e.g.:
+* you don't need to install and configure the Azure CLI on your host
+* you don't need to care about enabling your other stack components
+(orchestrators, step operators and model deployers) to have access to the
+artifact store through Azure Managed Identities
+* you can combine the Azure artifact store with other stack components that are
+not running in Azure
+
+Configuring Azure credentials in a ZenML secret and then referencing them in the
+Artifact Store configuration could look like this:
 
 ```shell
-# Register the Azure artifact store
+# Store the Azure storage account key in a ZenML secret
+zenml secret create az_secret \
+    --account_name='<YOUR_AZURE_ACCOUNT_NAME>' \
+    --account_key='<YOUR_AZURE_ACCOUNT_KEY>' \
+
+# or if you want to use a connection string
+zenml secret create az_secret \
+    --connection_string='<YOUR_AZURE_CONNECTION_STRING>'
+
+# or if you want to use Azure ServicePrincipal credentials
+zenml secret create az_secret \
+    --account_name='<YOUR_AZURE_ACCOUNT_NAME>' \
+    --tenant_id='<YOUR_AZURE_TENANT_ID>' \
+    --client_id='<YOUR_AZURE_CLIENT_ID>' \
+    --client_secret='<YOUR_AZURE_CLIENT_SECRET>'
+
+# Register the Azure artifact store and reference the ZenML secret
 zenml artifact-store register az_store -f azure \
     --path='az://your-container' \
     --authentication_secret=az_secret
 
-# Register a secrets manager
-zenml secrets-manager register secrets_manager \
-    --flavor=<FLAVOR_OF_YOUR_CHOICE> ...
-
-# Register and set a stack with the new artifact store and secrets manager
-zenml stack register custom_stack -a az_store -x secrets_manager ... --set
-
-# Create the secret referenced in the artifact store
-zenml secrets-manager secret register az_secret -s azure \
-    --connection_sting='your-Azure-connection-string'
+# Register and set a stack with the new artifact store
+zenml stack register custom_stack -a az_store ... --set
 ```
 
 {% endtab %}

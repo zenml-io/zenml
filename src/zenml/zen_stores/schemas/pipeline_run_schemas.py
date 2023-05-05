@@ -18,6 +18,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING, List, Optional
 from uuid import UUID
 
+from pydantic.json import pydantic_encoder
 from sqlalchemy import TEXT, Column
 from sqlmodel import Field, Relationship
 
@@ -28,6 +29,10 @@ from zenml.models import (
     PipelineRunUpdateModel,
 )
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
+from zenml.zen_stores.schemas.pipeline_build_schemas import PipelineBuildSchema
+from zenml.zen_stores.schemas.pipeline_deployment_schemas import (
+    PipelineDeploymentSchema,
+)
 from zenml.zen_stores.schemas.pipeline_schemas import PipelineSchema
 from zenml.zen_stores.schemas.schedule_schema import ScheduleSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
@@ -53,7 +58,7 @@ class PipelineRunSchema(NamedSchema, table=True):
         ondelete="SET NULL",
         nullable=True,
     )
-    stack: "StackSchema" = Relationship(back_populates="runs")
+    stack: Optional["StackSchema"] = Relationship(back_populates="runs")
 
     pipeline_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
@@ -63,7 +68,31 @@ class PipelineRunSchema(NamedSchema, table=True):
         ondelete="SET NULL",
         nullable=True,
     )
-    pipeline: "PipelineSchema" = Relationship(back_populates="runs")
+    pipeline: Optional["PipelineSchema"] = Relationship(back_populates="runs")
+
+    build_id: Optional[UUID] = build_foreign_key_field(
+        source=__tablename__,
+        target=PipelineBuildSchema.__tablename__,
+        source_column="build_id",
+        target_column="id",
+        ondelete="SET NULL",
+        nullable=True,
+    )
+    build: Optional["PipelineBuildSchema"] = Relationship(
+        back_populates="runs"
+    )
+
+    deployment_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target=PipelineDeploymentSchema.__tablename__,
+        source_column="deployment_id",
+        target_column="id",
+        ondelete="SET NULL",
+        nullable=True,
+    )
+    deployment: Optional["PipelineDeploymentSchema"] = Relationship(
+        back_populates="runs"
+    )
 
     schedule_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
@@ -73,7 +102,7 @@ class PipelineRunSchema(NamedSchema, table=True):
         ondelete="SET NULL",
         nullable=True,
     )
-    schedule: ScheduleSchema = Relationship(back_populates="runs")
+    schedule: Optional[ScheduleSchema] = Relationship(back_populates="runs")
 
     user_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
@@ -112,6 +141,7 @@ class PipelineRunSchema(NamedSchema, table=True):
     orchestrator_environment: Optional[str] = Field(
         sa_column=Column(TEXT, nullable=True)
     )
+    # This is deprecated, The warning is on the associated model class
     git_sha: Optional[str] = Field(nullable=True)
 
     run_metadata: List["RunMetadataSchema"] = Relationship(
@@ -135,7 +165,9 @@ class PipelineRunSchema(NamedSchema, table=True):
         Returns:
             The created `PipelineRunSchema`.
         """
-        configuration = json.dumps(request.pipeline_configuration)
+        configuration = json.dumps(
+            request.pipeline_configuration, default=pydantic_encoder
+        )
         client_environment = json.dumps(request.client_environment)
         orchestrator_environment = json.dumps(request.orchestrator_environment)
 
@@ -147,6 +179,8 @@ class PipelineRunSchema(NamedSchema, table=True):
             workspace_id=request.workspace,
             user_id=request.user,
             pipeline_id=request.pipeline,
+            build_id=request.build,
+            deployment_id=request.deployment,
             schedule_id=request.schedule_id,
             enable_cache=request.enable_cache,
             start_time=request.start_time,
@@ -226,6 +260,10 @@ class PipelineRunSchema(NamedSchema, table=True):
                 pipeline=(
                     self.pipeline.to_model(False) if self.pipeline else None
                 ),
+                build=self.build.to_model() if self.build else None,
+                deployment=self.deployment.to_model()
+                if self.deployment
+                else None,
                 schedule_id=self.schedule_id,
                 pipeline_configuration=json.loads(self.pipeline_configuration),
                 num_steps=self.num_steps,

@@ -31,8 +31,8 @@ text, i.e. sentiment classification, natural language inference etc. In this
 example, we will train a sentiment classification model using
 the [`imdb`](https://huggingface.co/datasets/imdb) dataset.
 
-- Load dataset: Load sequence-classification dataset in this case it is the 
-`imdb` dataset
+- Load dataset: Load sequence-classification dataset. In this case it is the 
+`imdb` dataset:
 
 ```python
 from datasets import load_dataset
@@ -51,7 +51,7 @@ This is what an example entry would look like:
 ```
 
 - Load pre-trained tokenizer: Load pre-trained tokenizer from Hugging Face 
-transformers.
+transformers:
 
 ```python
 from transformers import AutoTokenizer
@@ -61,19 +61,19 @@ tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased")
 
 - Tokenize and prepare dataset for training: Use pre-trained tokenizer to 
 tokenize and encode dataset into ids along with labels.
-- Build and Train Model: You can build model or use pre-trained models from 
-Hugging Face transformers. Use encoded dataset to train model.
+- Build and Train Model: You can build the model or use pre-trained models from 
+Hugging Face Transformers. Use the encoded dataset to train the model.
 - Evaluate: Evaluate model loss and accuracy.
 
 ## 🪙 Token Classification
 
-Token Classification is an NLP/NLU task, where we assign labels to tokens in a 
-text, i.e. Name entity recognition, Part of speech tagging etc. In this 
+Token Classification is an NLP/NLU task where we assign labels to tokens in a 
+text, i.e. Named Entity Recognition, Part of speech tagging etc. In this 
 example, we will train a NER model using the
 [`conll2003`](https://huggingface.co/datasets/conll2003) dataset.
 
-- Load dataset: Load token-classification dataset in this case it is 
-`conll2003` dataset
+- Load dataset: Load token-classification dataset. In this case it is the 
+`conll2003` dataset:
 
 ```python
 from datasets import load_dataset
@@ -98,7 +98,7 @@ print(datasets['train'][0])
 ```
 
 - Load pre-trained tokenizer: Load pre-trained tokenizer from Hugging Face 
-transformers.
+Transformers.
 
 ```python
 from transformers import AutoTokenizer
@@ -109,7 +109,7 @@ tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased")
 - Tokenize and prepare dataset for training: Use pre-trained tokenizer to 
 tokenize and encode dataset into ids along with labels.
 - Build and Train Model: You can build model or use pre-trained models from 
-huggingface transformers. Use encoded dataset to train model.
+huggingface Transformers. Use encoded dataset to train model.
 - Evaluate: Evaluate model loss and accuracy.
 
 # 🖥 Run it locally
@@ -188,7 +188,7 @@ pipeline_instance = get_pipeline(
 )
 runs = pipeline_instance.runs
 print(f"Pipeline `seq_classifier_train_eval_pipeline` has {len(runs)} run(s)")
-latest_run = runs[-1]
+latest_run = runs[0]
 trainer_step = latest_run.get_step('trainer')
 load_tokenizer_step = latest_run.get_step("load_tokenizer")
 
@@ -207,7 +207,7 @@ pipeline_instance = get_pipeline(
 )
 runs = pipeline_instance.runs
 print(f"Pipeline `token_classifier_train_eval_pipeline` has {len(runs)} run(s)")
-latest_run = runs[-1]
+latest_run = runs[0]
 trainer_step = latest_run.get_step('trainer')
 load_tokenizer_step = latest_run.get_step("load_tokenizer")
 

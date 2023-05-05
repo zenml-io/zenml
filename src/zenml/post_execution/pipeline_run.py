@@ -15,14 +15,16 @@
 
 from collections import OrderedDict
 from functools import partial
-from typing import Any, Dict, List, Optional, cast
+from typing import Any, Dict, List, Optional, Type, cast
 
 from zenml.client import Client
 from zenml.enums import ExecutionStatus
 from zenml.logger import get_apidocs_link, get_logger
 from zenml.models import PipelineRunResponseModel
+from zenml.models.base_models import BaseResponseModel
 from zenml.post_execution.base_view import BaseView
 from zenml.post_execution.step import StepView
+from zenml.utils.pagination_utils import depaginate
 
 logger = get_logger(__name__)
 
@@ -67,7 +69,10 @@ def get_unlisted_runs() -> List["PipelineRunView"]:
     """
     client = Client()
     runs = client.list_runs(
-        workspace_id=client.active_workspace.id, unlisted=True, size=50
+        workspace_id=client.active_workspace.id,
+        unlisted=True,
+        size=50,
+        sort_by="desc:created",
     )
     return [PipelineRunView(model) for model in runs.items]
 
@@ -79,14 +84,14 @@ class PipelineRunView(BaseView):
     pipeline execution.
     """
 
-    MODEL_CLASS = PipelineRunResponseModel
+    MODEL_CLASS: Type[BaseResponseModel] = PipelineRunResponseModel
     REPR_KEYS = ["id", "name"]
 
     def __init__(self, model: PipelineRunResponseModel):
         """Initializes a post-execution pipeline run object.
 
         In most cases `PipelineRunView` objects should not be created manually
-        but retrieved from a `PipelineView` object instead.
+        but retrieved from a `PipelineView` or `PipelineVersionView` instead.
 
         Args:
             model: The model to initialize this object from.
@@ -154,6 +159,23 @@ class PipelineRunView(BaseView):
         return self.model.pipeline_configuration.get(
             PARAM_ENABLE_ARTIFACT_METADATA
         )
+
+    @property
+    def commit(self) -> Optional[str]:
+        """Returns the code repository commit of the pipeline run.
+
+        Returns:
+            The code repository commit of the pipeline run.
+        """
+        deployment = self.model.deployment
+
+        if not deployment:
+            return None
+
+        if not deployment.code_reference:
+            return None
+
+        return deployment.code_reference.commit
 
     @property
     def status(self) -> ExecutionStatus:
@@ -259,7 +281,7 @@ class PipelineRunView(BaseView):
             return
 
         client = Client()
-        steps = client.depaginate(
+        steps = depaginate(
             partial(client.list_run_steps, pipeline_run_id=self.model.id)
         )
 

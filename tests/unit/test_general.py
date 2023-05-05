@@ -18,9 +18,7 @@ from typing import Any, Callable, Optional, Type
 
 from zenml.constants import ENV_ZENML_DEBUG
 from zenml.materializers.base_materializer import BaseMaterializer
-from zenml.materializers.default_materializer_registry import (
-    default_materializer_registry,
-)
+from zenml.materializers.materializer_registry import materializer_registry
 from zenml.metadata.metadata_types import MetadataTypeTuple
 
 
@@ -34,6 +32,8 @@ def _test_materializer(
     step_output_type: Optional[Type[Any]] = None,
     materializer_class: Optional[Type[BaseMaterializer]] = None,
     validation_function: Optional[Callable[[str], Any]] = None,
+    expected_metadata_size: Optional[int] = None,
+    return_metadata: bool = False,
 ) -> Any:
     """Test whether the materialization of a given step output works.
 
@@ -41,7 +41,7 @@ def _test_materializer(
     the same materializer and ensure that:
     - `materializer.save()` did write something to disk
     - `materializer.load()` did load the original data type again
-    - `materializer.extract_metadata()` returned a dict
+    - `materializer.extract_full_metadata()` returned a dict
 
     Args:
         step_output: The output artifact we want to materialize.
@@ -52,6 +52,10 @@ def _test_materializer(
         validation_function: An optional function to call on the absolute path
             to `artifact_uri`. Can be used, e.g., to check whether a certain
             file exists or a certain number of files were written.
+        expected_metadata_size: If provided, we assert that the metadata dict
+            returned by `materializer.extract_full_metadata()` has this size.
+        return_metadata: If True, we return the metadata dict returned by
+            `materializer.extract_full_metadata()`.
 
     Returns:
         The result of materializing `step_output` to disk and loading it again.
@@ -60,7 +64,7 @@ def _test_materializer(
         step_output_type = type(step_output)
 
     if materializer_class is None:
-        materializer_class = default_materializer_registry[step_output_type]
+        materializer_class = materializer_registry[step_output_type]
 
     with TemporaryDirectory() as artifact_uri:
         materializer = materializer_class(uri=artifact_uri)
@@ -72,8 +76,10 @@ def _test_materializer(
         assert len(new_files) > len(existing_files)  # something was written
 
         # Assert that metadata extraction returns a dict
-        metadata = materializer.extract_metadata(step_output)
+        metadata = materializer.extract_full_metadata(step_output)
         assert isinstance(metadata, dict)
+        if expected_metadata_size is not None:
+            assert len(metadata) == expected_metadata_size
         for key, value in metadata.items():
             assert isinstance(key, str)
             assert isinstance(value, MetadataTypeTuple)
@@ -85,6 +91,10 @@ def _test_materializer(
         # Run additional validation function if provided
         if validation_function:
             validation_function(artifact_uri)
+
+        # Return the loaded data and metadata if requested
+        if return_metadata:
+            return loaded_data, metadata
 
         # Return the loaded data
         return loaded_data

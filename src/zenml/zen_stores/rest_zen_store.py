@@ -36,10 +36,12 @@ from pydantic import BaseModel, root_validator, validator
 
 import zenml
 from zenml.config.global_config import GlobalConfiguration
+from zenml.config.secrets_store_config import SecretsStoreConfiguration
 from zenml.config.store_config import StoreConfiguration
 from zenml.constants import (
     API,
     ARTIFACTS,
+    CODE_REPOSITORIES,
     CURRENT_USER,
     DISABLE_CLIENT_SERVER_MISMATCH_WARNING,
     ENV_ZENML_DISABLE_CLIENT_SERVER_MISMATCH_WARNING,
@@ -47,6 +49,8 @@ from zenml.constants import (
     GET_OR_CREATE,
     INFO,
     LOGIN,
+    PIPELINE_BUILDS,
+    PIPELINE_DEPLOYMENTS,
     PIPELINES,
     ROLES,
     RUN_METADATA,
@@ -62,14 +66,9 @@ from zenml.constants import (
     VERSION_1,
     WORKSPACES,
 )
-from zenml.enums import StoreType
+from zenml.enums import SecretsStoreType, StoreType
 from zenml.exceptions import (
     AuthorizationException,
-    DoesNotExistException,
-    EntityExistsError,
-    IllegalOperationError,
-    StackComponentExistsError,
-    StackExistsError,
 )
 from zenml.io import fileio
 from zenml.logger import get_logger
@@ -78,6 +77,10 @@ from zenml.models import (
     ArtifactRequestModel,
     ArtifactResponseModel,
     BaseFilterModel,
+    CodeRepositoryFilterModel,
+    CodeRepositoryRequestModel,
+    CodeRepositoryResponseModel,
+    CodeRepositoryUpdateModel,
     ComponentFilterModel,
     ComponentRequestModel,
     ComponentResponseModel,
@@ -86,6 +89,12 @@ from zenml.models import (
     FlavorRequestModel,
     FlavorResponseModel,
     FlavorUpdateModel,
+    PipelineBuildFilterModel,
+    PipelineBuildRequestModel,
+    PipelineBuildResponseModel,
+    PipelineDeploymentFilterModel,
+    PipelineDeploymentRequestModel,
+    PipelineDeploymentResponseModel,
     PipelineFilterModel,
     PipelineRequestModel,
     PipelineResponseModel,
@@ -142,7 +151,11 @@ from zenml.utils.analytics_utils import AnalyticsEvent, track
 from zenml.utils.networking_utils import (
     replace_localhost_with_internal_hostname,
 )
+from zenml.zen_server.exceptions import exception_from_response
 from zenml.zen_stores.base_zen_store import BaseZenStore
+from zenml.zen_stores.secrets_stores.rest_secrets_store import (
+    RestSecretsStoreConfiguration,
+)
 
 logger = get_logger(__name__)
 
@@ -163,20 +176,53 @@ class RestZenStoreConfiguration(StoreConfiguration):
     """REST ZenML store configuration.
 
     Attributes:
+        type: The type of the store.
+        secrets_store: The configuration of the secrets store to use.
+            This defaults to a REST secrets store that extends the REST ZenML
+            store.
         username: The username to use to connect to the Zen server.
         password: The password to use to connect to the Zen server.
         verify_ssl: Either a boolean, in which case it controls whether we
             verify the server's TLS certificate, or a string, in which case it
             must be a path to a CA bundle to use or the CA bundle value itself.
         http_timeout: The timeout to use for all requests.
+
     """
 
     type: StoreType = StoreType.REST
+
+    secrets_store: Optional[SecretsStoreConfiguration] = None
+
     username: Optional[str] = None
     password: Optional[str] = None
     api_token: Optional[str] = None
     verify_ssl: Union[bool, str] = True
     http_timeout: int = DEFAULT_HTTP_TIMEOUT
+
+    @validator("secrets_store")
+    def validate_secrets_store(
+        cls, secrets_store: Optional[SecretsStoreConfiguration]
+    ) -> SecretsStoreConfiguration:
+        """Ensures that the secrets store uses an associated REST secrets store.
+
+        Args:
+            secrets_store: The secrets store config to be validated.
+
+        Returns:
+            The validated secrets store config.
+
+        Raises:
+            ValueError: If the secrets store is not of type REST.
+        """
+        if secrets_store is None:
+            secrets_store = RestSecretsStoreConfiguration()
+        elif secrets_store.type != SecretsStoreType.REST:
+            raise ValueError(
+                "The secrets store associated with a REST zen store must be "
+                f"of type REST, but is of type {secrets_store.type}."
+            )
+
+        return secrets_store
 
     @root_validator
     def validate_credentials(cls, values: Dict[str, Any]) -> Dict[str, Any]:
@@ -1244,6 +1290,140 @@ class RestZenStore(BaseZenStore):
         )
 
     # ---------
+    # Builds
+    # ---------
+
+    def create_build(
+        self,
+        build: PipelineBuildRequestModel,
+    ) -> PipelineBuildResponseModel:
+        """Creates a new build in a workspace.
+
+        Args:
+            build: The build to create.
+
+        Returns:
+            The newly created build.
+        """
+        return self._create_workspace_scoped_resource(
+            resource=build,
+            route=PIPELINE_BUILDS,
+            response_model=PipelineBuildResponseModel,
+        )
+
+    def get_build(self, build_id: UUID) -> PipelineBuildResponseModel:
+        """Get a build with a given ID.
+
+        Args:
+            build_id: ID of the build.
+
+        Returns:
+            The build.
+        """
+        return self._get_resource(
+            resource_id=build_id,
+            route=PIPELINE_BUILDS,
+            response_model=PipelineBuildResponseModel,
+        )
+
+    def list_builds(
+        self, build_filter_model: PipelineBuildFilterModel
+    ) -> Page[PipelineBuildResponseModel]:
+        """List all builds matching the given filter criteria.
+
+        Args:
+            build_filter_model: All filter parameters including pagination
+                params.
+
+        Returns:
+            A page of all builds matching the filter criteria.
+        """
+        return self._list_paginated_resources(
+            route=PIPELINE_BUILDS,
+            response_model=PipelineBuildResponseModel,
+            filter_model=build_filter_model,
+        )
+
+    def delete_build(self, build_id: UUID) -> None:
+        """Deletes a build.
+
+        Args:
+            build_id: The ID of the build to delete.
+        """
+        self._delete_resource(
+            resource_id=build_id,
+            route=PIPELINE_BUILDS,
+        )
+
+    # ----------------------
+    # Pipeline Deployments
+    # ----------------------
+
+    def create_deployment(
+        self,
+        deployment: PipelineDeploymentRequestModel,
+    ) -> PipelineDeploymentResponseModel:
+        """Creates a new deployment in a workspace.
+
+        Args:
+            deployment: The deployment to create.
+
+        Returns:
+            The newly created deployment.
+        """
+        return self._create_workspace_scoped_resource(
+            resource=deployment,
+            route=PIPELINE_DEPLOYMENTS,
+            response_model=PipelineDeploymentResponseModel,
+        )
+
+    def get_deployment(
+        self, deployment_id: UUID
+    ) -> PipelineDeploymentResponseModel:
+        """Get a deployment with a given ID.
+
+        Args:
+            deployment_id: ID of the deployment.
+
+        Returns:
+            The deployment.
+        """
+        return self._get_resource(
+            resource_id=deployment_id,
+            route=PIPELINE_DEPLOYMENTS,
+            response_model=PipelineDeploymentResponseModel,
+        )
+
+    def list_deployments(
+        self, deployment_filter_model: PipelineDeploymentFilterModel
+    ) -> Page[PipelineDeploymentResponseModel]:
+        """List all deployments matching the given filter criteria.
+
+        Args:
+            deployment_filter_model: All filter parameters including pagination
+                params.
+
+        Returns:
+            A page of all deployments matching the filter criteria.
+        """
+        return self._list_paginated_resources(
+            route=PIPELINE_DEPLOYMENTS,
+            response_model=PipelineDeploymentResponseModel,
+            filter_model=deployment_filter_model,
+        )
+
+    def delete_deployment(self, deployment_id: UUID) -> None:
+        """Deletes a deployment.
+
+        Args:
+            deployment_id: The ID of the deployment to delete.
+        """
+        self._delete_resource(
+            resource_id=deployment_id,
+            route=PIPELINE_DEPLOYMENTS,
+        )
+
+    # ---------
     # Schedules
     # ---------
 
@@ -1614,6 +1794,91 @@ class RestZenStore(BaseZenStore):
             filter_model=run_metadata_filter_model,
         )
 
+    # -----------------
+    # Code Repositories
+    # -----------------
+
+    def create_code_repository(
+        self, code_repository: CodeRepositoryRequestModel
+    ) -> CodeRepositoryResponseModel:
+        """Creates a new code repository.
+
+        Args:
+            code_repository: Code repository to be created.
+
+        Returns:
+            The newly created code repository.
+        """
+        return self._create_workspace_scoped_resource(
+            resource=code_repository,
+            response_model=CodeRepositoryResponseModel,
+            route=CODE_REPOSITORIES,
+        )
+
+    def get_code_repository(
+        self, code_repository_id: UUID
+    ) -> CodeRepositoryResponseModel:
+        """Gets a specific code repository.
+
+        Args:
+            code_repository_id: The ID of the code repository to get.
+
+        Returns:
+            The requested code repository, if it was found.
+        """
+        return self._get_resource(
+            resource_id=code_repository_id,
+            route=CODE_REPOSITORIES,
+            response_model=CodeRepositoryResponseModel,
+        )
+
+    def list_code_repositories(
+        self, filter_model: CodeRepositoryFilterModel
+    ) -> Page[CodeRepositoryResponseModel]:
+        """List all code repositories.
+
+        Args:
+            filter_model: All filter parameters including pagination
+                params.
+
+        Returns:
+            A page of all code repositories.
+        """
+        return self._list_paginated_resources(
+            route=CODE_REPOSITORIES,
+            response_model=CodeRepositoryResponseModel,
+            filter_model=filter_model,
+        )
+
+    def update_code_repository(
+        self, code_repository_id: UUID, update: CodeRepositoryUpdateModel
+    ) -> CodeRepositoryResponseModel:
+        """Updates an existing code repository.
+
+        Args:
+            code_repository_id: The ID of the code repository to update.
+            update: The update to be applied to the code repository.
+
+        Returns:
+            The updated code repository.
+        """
+        return self._update_resource(
+            resource_id=code_repository_id,
+            resource_update=update,
+            response_model=CodeRepositoryResponseModel,
+            route=CODE_REPOSITORIES,
+        )
+
+    def delete_code_repository(self, code_repository_id: UUID) -> None:
+        """Deletes a code repository.
+
+        Args:
+            code_repository_id: The ID of the code repository to delete.
+        """
+        self._delete_resource(
+            resource_id=code_repository_id, route=CODE_REPOSITORIES
+        )
+
     # =======================
     # Internal helper methods
     # =======================
@@ -1697,24 +1962,11 @@ class RestZenStore(BaseZenStore):
             The parsed response.
 
         Raises:
-            DoesNotExistException: If the response indicates that the
-                requested entity does not exist.
-            EntityExistsError: If the response indicates that the requested
-                entity already exists.
-            AuthorizationException: If the response indicates that the request
-                is not authorized.
-            IllegalOperationError: If the response indicates that the requested
-                operation is forbidden.
-            KeyError: If the response indicates that the requested entity
-                does not exist.
-            RuntimeError: If the response indicates that the requested entity
-                does not exist.
-            StackComponentExistsError: If the response indicates that the
-                requested entity already exists.
-            StackExistsError: If the response indicates that the requested
-                entity already exists.
-            ValueError: If the response indicates that the requested entity
-                does not exist.
+            ValueError: if the response is not in the right format.
+            RuntimeError: if an error response is received from the server
+                and a more specific exception cannot be determined.
+            exc: the exception converted from an error response, if one
+                is returned from the server.
         """
         if 200 <= response.status_code < 300:
             try:
@@ -1725,61 +1977,15 @@ class RestZenStore(BaseZenStore):
                     "Bad response from API. Expected json, got\n"
                     f"{response.text}"
                 )
-        elif response.status_code == 401:
-            raise AuthorizationException(
-                f"{response.status_code} Client Error: Unauthorized request to "
-                f"URL {response.url}: {response.json().get('detail')}"
-            )
-        elif response.status_code == 403:
-            msg = response.json().get("detail", response.text)
-            if isinstance(msg, list):
-                msg = msg[-1]
-            raise IllegalOperationError(msg)
-        elif response.status_code == 404:
-            if "KeyError" in response.text:
-                raise KeyError(
-                    response.json().get("detail", (response.text,))[1]
-                )
-            elif "DoesNotExistException" in response.text:
-                message = ": ".join(
-                    response.json().get("detail", (response.text,))
-                )
-                raise DoesNotExistException(message)
-            raise DoesNotExistException("Endpoint does not exist.")
-        elif response.status_code == 409:
-            if "StackComponentExistsError" in response.text:
-                raise StackComponentExistsError(
-                    message=": ".join(
-                        response.json().get("detail", (response.text,))
-                    )
-                )
-            elif "StackExistsError" in response.text:
-                raise StackExistsError(
-                    message=": ".join(
-                        response.json().get("detail", (response.text,))
-                    )
-                )
-            elif "EntityExistsError" in response.text:
-                raise EntityExistsError(
-                    message=": ".join(
-                        response.json().get("detail", (response.text,))
-                    )
-                )
+        elif response.status_code >= 400:
+            exc = exception_from_response(response)
+            if exc is not None:
+                raise exc
             else:
-                raise ValueError(
-                    ": ".join(response.json().get("detail", (response.text,)))
+                raise RuntimeError(
+                    f"{response.status_code} HTTP Error received from server: "
+                    f"{response.text}"
                 )
-        elif response.status_code == 422:
-            response_details = response.json().get("detail", (response.text,))
-            if isinstance(response_details[0], str):
-                response_msg = ": ".join(response_details)
-            else:
-                # This is an "Unprocessable Entity" error, which has a special
-                # structure in the response.
-                response_msg = response.text
-            raise RuntimeError(response_msg)
-        elif response.status_code == 500:
-            raise RuntimeError(response.text)
         else:
             raise RuntimeError(
                 "Error retrieving from API. Got response "
@@ -2138,21 +2344,23 @@ class RestZenStore(BaseZenStore):
         resource_update: BaseModel,
         response_model: Type[AnyResponseModel],
         route: str,
+        params: Optional[Dict[str, Any]] = None,
     ) -> AnyResponseModel:
         """Update an existing resource.
 
         Args:
             resource_id: The id of the resource to update.
             resource_update: The resource update.
-            route: The resource REST API route to use.
             response_model: Optional model to use to deserialize the response
                 body. If not provided, the resource class itself will be used.
+            route: The resource REST API route to use.
+            params: Optional query parameters to pass to the endpoint.
 
         Returns:
             The updated resource.
         """
         response_body = self.put(
-            f"{route}/{str(resource_id)}", body=resource_update
+            f"{route}/{str(resource_id)}", body=resource_update, params=params
         )
 
         return response_model.parse_obj(response_body)

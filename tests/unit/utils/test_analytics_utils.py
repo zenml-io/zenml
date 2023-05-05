@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 from contextlib import ExitStack as does_not_raise
 from types import TracebackType
-from typing import Dict, Optional, Type
+from typing import Any, Dict, Optional, Tuple, Type
 from unittest.mock import patch
 from uuid import UUID
 
@@ -27,7 +27,7 @@ from zenml.utils.analytics_utils import (
 )
 
 
-def event_check(
+def event_check_v1(
     user_id: str, event: AnalyticsEvent, metadata: Dict[str, str]
 ) -> None:
     """Mock function to replace the 'analytics.track' function for tests.
@@ -66,7 +66,6 @@ def event_check(
     client = Client()
 
     if event == AnalyticsEvent.REGISTERED_STACK:
-
         assert "user_id" in metadata
         assert metadata["user_id"] == str(client.active_user.id)
 
@@ -111,6 +110,88 @@ def event_check(
         )
 
 
+def event_check_v2(
+    user_id: UUID, event: AnalyticsEvent, properties: Optional[Dict[Any, Any]]
+) -> Tuple[bool, str]:
+    """Mock function to replace the 'zenml.analytics.track' function for tests.
+
+    By utilizing this mock function, we can validate the inputs given to
+    actual track function.
+
+    Args:
+        user_id: the string representation of the client id
+        event: the type of the event
+        properties: the collection of metadata describing the event
+
+    Returns:
+        Tuple (success flag, the original message).
+    """
+    # Check whether the user id corresponds to the client id
+    from zenml.client import Client
+    from zenml.config.global_config import GlobalConfiguration
+
+    gc = GlobalConfiguration()
+    client = Client()
+
+    # Check the validity of the event
+    assert event in AnalyticsEvent.__members__.values()
+
+    # Check whether common parameters are included in the metadata
+    assert "environment" in properties
+    assert "python_version" in properties
+    assert "version" in properties
+    assert "client_id" in properties
+    assert "user_id" in properties
+    assert "server_id" in properties
+    assert "deployment_type" in properties
+    assert "database_type" in properties
+
+    assert user_id == client.active_user.id
+
+    assert properties["user_id"] == str(client.active_user.id)
+    assert properties["client_id"] == str(gc.user_id)
+
+    if event == AnalyticsEvent.REGISTERED_STACK:
+        assert "workspace_id" in properties
+        assert properties["workspace_id"] == str(client.active_workspace.id)
+
+        assert "entity_id" in properties
+
+        assert StackComponentType.ARTIFACT_STORE in properties
+        assert StackComponentType.ORCHESTRATOR in properties
+        assert "is_shared" in properties
+
+    if event == AnalyticsEvent.REGISTERED_STACK_COMPONENT:
+        assert "type" in properties
+        assert properties["type"] in StackComponentType.__members__.values()
+
+        assert "flavor" in properties
+        assert "entity_id" in properties
+        assert "is_shared" in properties
+
+    if event == AnalyticsEvent.RUN_PIPELINE:
+        assert "store_type" in properties
+        assert properties["store_type"] in StoreType.__members__.values()
+
+        assert "artifact_store" in properties
+        assert (
+            properties["artifact_store"]
+            == client.active_stack_model.components[
+                StackComponentType.ARTIFACT_STORE
+            ][0].flavor
+        )
+
+        assert "orchestrator" in properties
+        assert (
+            properties["orchestrator"]
+            == client.active_stack_model.components[
+                StackComponentType.ORCHESTRATOR
+            ][0].flavor
+        )
+
+    return True, ""
+
+
 def event_context_exit(
     _,
     exc_type: Optional[Type[BaseException]],
@@ -122,7 +203,7 @@ def event_context_exit(
     Normally, the analytics context has an exit function which allows the main
     thread to continue by suppressing exceptions which occur during the event
     tracking. However, for the sake of the tests we would like to disable this
-    behaviour, so we can catch the errors which happen during this process.
+    behavior, so we can catch the errors which happen during this process.
     """
 
 
@@ -134,7 +215,7 @@ def test_analytics_event(
 ) -> None:
     """Checks whether the event sent for analytics has the right properties.
 
-    This is achieved by modifying the behaviour of several functionalities
+    This is achieved by modifying the behavior of several functionalities
     within the analytics process:
 
         1 - The environmental variables are patched to set the "ZENML_DEBUG"
@@ -158,10 +239,17 @@ def test_analytics_event(
     zenml`, `registering stacks` or `registering stack components` and check
     the validity of the corresponding event and metadata.
     """
-
-    mocker.patch("analytics.track", new=event_check)
+    # Mocking analytics version 1
+    mocker.patch("analytics.track", new=event_check_v1)
     mocker.patch(
         "zenml.utils.analytics_utils.AnalyticsContext.__exit__",
+        new=event_context_exit,
+    )
+
+    # Mocking analytics version 2
+    mocker.patch("zenml.analytics.track", new=event_check_v2)
+    mocker.patch(
+        "zenml.analytics.context.AnalyticsContext.__exit__",
         new=event_context_exit,
     )
 

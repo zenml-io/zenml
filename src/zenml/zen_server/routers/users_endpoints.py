@@ -28,7 +28,7 @@ from zenml.constants import (
     VERSION_1,
 )
 from zenml.enums import PermissionType
-from zenml.exceptions import IllegalOperationError, NotAuthorizedError
+from zenml.exceptions import AuthorizationException, IllegalOperationError
 from zenml.logger import get_logger
 from zenml.models import (
     UserFilterModel,
@@ -44,8 +44,8 @@ from zenml.zen_server.auth import (
     authenticate_credentials,
     authorize,
 )
+from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.utils import (
-    error_response,
     handle_exceptions,
     make_dependable,
     zen_store,
@@ -244,7 +244,10 @@ def deactivate_user(
     """
     user = zen_store().get_user(user_name_or_id)
 
-    user_update = UserUpdateModel(active=False)
+    user_update = UserUpdateModel(
+        name=user.name,
+        active=False,
+    )
     token = user_update.generate_activation_token()
     user = zen_store().update_user(user_id=user.id, user_update=user_update)
     # add back the original unhashed activation token
@@ -308,13 +311,14 @@ def email_opt_in_response(
         The updated user.
 
     Raises:
-        NotAuthorizedError: if the user does not have the required
+        AuthorizationException: if the user does not have the required
             permissions
     """
     user = zen_store().get_user(user_name_or_id)
 
     if str(auth_context.user.id) == str(user_name_or_id):
         user_update = UserUpdateModel(
+            name=user.name,
             email=user_response.email,
             email_opted_in=user_response.email_opted_in,
         )
@@ -323,7 +327,7 @@ def email_opt_in_response(
             user_id=user.id, user_update=user_update
         )
     else:
-        raise NotAuthorizedError(
+        raise AuthorizationException(
             "Users can not opt in on behalf of another " "user."
         )
 

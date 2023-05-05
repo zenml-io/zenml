@@ -33,8 +33,11 @@ class TaskConfiguration(BaseModel):
     zenml_step_name: str
     upstream_steps: List[str]
 
+    docker_image: str
     command: List[str]
     arguments: List[str]
+
+    environment: Dict[str, str] = {}
 
     operator_source: str
     operator_args: Dict[str, Any] = {}
@@ -44,7 +47,6 @@ class DagConfiguration(BaseModel):
     """Airflow DAG configuration."""
 
     id: str
-    docker_image: str
     tasks: List[TaskConfiguration]
 
     local_stores_path: Optional[str] = None
@@ -133,7 +135,8 @@ def get_docker_operator_init_kwargs(
     """
     mounts = []
     extra_hosts = {}
-    environment = {ENV_ZENML_AIRFLOW_RUN_ID: "{{run_id}}"}
+    environment = task_config.environment
+    environment[ENV_ZENML_AIRFLOW_RUN_ID] = "{{run_id}}"
 
     if dag_config.local_stores_path:
         from docker.types import Mount
@@ -148,7 +151,7 @@ def get_docker_operator_init_kwargs(
         ]
         extra_hosts = {"host.docker.internal": "host-gateway"}
     return {
-        "image": dag_config.docker_image,
+        "image": task_config.docker_image,
         "command": task_config.command + task_config.arguments,
         "mounts": mounts,
         "environment": environment,
@@ -170,14 +173,18 @@ def get_kubernetes_pod_operator_init_kwargs(
     """
     from kubernetes.client.models import V1EnvVar
 
+    environment = task_config.environment
+    environment[ENV_ZENML_AIRFLOW_RUN_ID] = "{{run_id}}"
+
     return {
         "name": f"{dag_config.id}_{task_config.id}",
         "namespace": "default",
-        "image": dag_config.docker_image,
+        "image": task_config.docker_image,
         "cmds": task_config.command,
         "arguments": task_config.arguments,
         "env_vars": [
-            V1EnvVar(name=ENV_ZENML_AIRFLOW_RUN_ID, value="{{run_id}}")
+            V1EnvVar(name=key, value=value)
+            for key, value in environment.items()
         ],
     }
 

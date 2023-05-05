@@ -27,11 +27,15 @@ from zenml.zen_stores.schemas.base_schemas import NamedSchema
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas import (
         ArtifactSchema,
+        CodeRepositorySchema,
         FlavorSchema,
+        PipelineBuildSchema,
+        PipelineDeploymentSchema,
         PipelineRunSchema,
         PipelineSchema,
         RunMetadataSchema,
         ScheduleSchema,
+        SecretSchema,
         StackComponentSchema,
         StackSchema,
         StepRunSchema,
@@ -83,11 +87,27 @@ class WorkspaceSchema(NamedSchema, table=True):
         back_populates="workspace",
         sa_relationship_kwargs={"cascade": "delete"},
     )
+    builds: List["PipelineBuildSchema"] = Relationship(
+        back_populates="workspace",
+        sa_relationship_kwargs={"cascade": "delete"},
+    )
     artifacts: List["ArtifactSchema"] = Relationship(
         back_populates="workspace",
         sa_relationship_kwargs={"cascade": "delete"},
     )
     run_metadata: List["RunMetadataSchema"] = Relationship(
+        back_populates="workspace",
+        sa_relationship_kwargs={"cascade": "delete"},
+    )
+    secrets: List["SecretSchema"] = Relationship(
+        back_populates="workspace",
+        sa_relationship_kwargs={"cascade": "delete"},
+    )
+    deployments: List["PipelineDeploymentSchema"] = Relationship(
+        back_populates="workspace",
+        sa_relationship_kwargs={"cascade": "delete"},
+    )
+    code_repositories: List["CodeRepositorySchema"] = Relationship(
         back_populates="workspace",
         sa_relationship_kwargs={"cascade": "delete"},
     )

@@ -11,9 +11,9 @@ interface:
 
 ```python
 from abc import ABC, abstractmethod
-from typing import Any, Type
+from typing import Any, Dict, Type 
 
-from zenml.config.pipeline_deployment import PipelineDeployment
+from zenml.models import PipelineDeploymentResponseModel
 from zenml.enums import StackComponentType
 from zenml.stack import StackComponent, StackComponentConfig, Stack, Flavor
 
@@ -28,8 +28,9 @@ class BaseOrchestrator(StackComponent, ABC):
     @abstractmethod
     def prepare_or_run_pipeline(
         self,
-        deployment: PipelineDeployment,
+        deployment: PipelineDeploymentResponseModel,
         stack: Stack,
+        environment: Dict[str, str],
     ) -> Any:
         """Prepares and runs the pipeline outright or returns an intermediate
         pipeline representation that gets deployed.
@@ -78,11 +79,35 @@ from the `BaseOrchestratorConfig` class add your configuration parameters.
 from the `BaseOrchestratorFlavor` class. Make sure that you give a `name`
 to the flavor through its abstract property.
 
-Once you are done with the implementation, you can register it through the CLI 
-as:
+Once you are done with the implementation, you can register it through the CLI.
+Please ensure you **point to the flavor class via dot notation**: 
 
 ```shell
-zenml orchestrator flavor register <THE-SOURCE-PATH-OF-YOUR-ORCHESTRATOR-FLAVOR>
+zenml orchestrator flavor register <path.to.MyOrchestratorFlavor>
+```
+
+For example, if your flavor class `MyOrchestratorFlavor` is defined in `flavors/my_flavor.py`,
+you'd register it by doing:
+
+```shell
+zenml orchestrator flavor register flavors.my_flavor.MyOrchestratorFlavor
+```
+
+{% hint style="warning" %}
+ZenML resolves the flavor class by taking the path where you initialized zenml
+(via `zenml init`) as the starting point of resolution. Therefore, please ensure
+you follow [the best practice](../../guidelines/best-practices.md) of initializing
+zenml at the root of your repository.
+
+If ZenML does not find an initialized ZenML repository in any parent directory, it
+will default to the current working directory, but usually its better to not have to
+rely on this mechanism, and initialize zenml at the root.
+{% endhint %}
+
+Afterwards, you should see the new flavor in the list of available flavors:
+
+```shell
+zenml orchestrator flavor list
 ```
 
 {% hint style="warning" %}
@@ -129,7 +154,7 @@ configuration could be added around this.
 
 ## Container-based Orchestration
 
-The `kubeflow` orchestrator is a great example of container-based orchestration.
+The `KubeflowOrchestrator` is a great example of container-based orchestration.
 In an implementation-specific method called `prepare_pipeline_deployment()`
 a Docker image containing the complete project context is built.
 
@@ -140,6 +165,12 @@ is created for each step. This ContainerOp contains the container entrypoint
 command and arguments that will make the image run just the one step.
 The ContainerOps are assembled according to their interdependencies inside a
 `dsl.Pipeline` which can then be compiled into the yaml file.
+
+Additionally, the `prepare_or_run_pipeline()` method receives a dictionary of
+environment variables that need to be set in the environment in which the steps
+will be executed. Coming back to our example of the `KubeflowOrchestrator`, we
+set these environment variables on the `dsl.ContainerOp` objects that we created
+earlier.
 
 ## Handling per-step resources
 
