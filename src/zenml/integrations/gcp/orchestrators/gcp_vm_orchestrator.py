@@ -30,7 +30,7 @@
 import os
 import re
 import sys
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from typing import TYPE_CHECKING, Any, ClassVar, Optional, Type, cast
 
 import google.cloud.logging
@@ -255,7 +255,6 @@ class GCPVMOrchestrator(BaseVMOrchestrator, GoogleCredentialsMixin):
             operation, "instance deletion"
         )
         logger.info(f"Instance {machine_name} deleted.")
-        return
 
     def get_image_from_family(
         self, project: str, family: str
@@ -480,7 +479,6 @@ class GCPVMOrchestrator(BaseVMOrchestrator, GoogleCredentialsMixin):
         Returns:
             A string URL.
         """
-        return None
 
     def stream_logs(
         self,
@@ -495,7 +493,7 @@ class GCPVMOrchestrator(BaseVMOrchestrator, GoogleCredentialsMixin):
         """
         client = self._get_logging_client()
         time_format = "%Y-%m-%dT%H:%M:%S.%fZ"
-        before = datetime.now(timezone.utc) - timedelta(seconds=seconds_before)
+        before = datetime.utcnow() - timedelta(seconds=seconds_before)
         filter_str = (
             f'logName="projects/{self.config.project_id}/logs/gcplogs-docker-driver"'
             f' AND timestamp>="{before.strftime(time_format)}"'
