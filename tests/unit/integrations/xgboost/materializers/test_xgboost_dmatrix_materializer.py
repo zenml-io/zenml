@@ -11,7 +11,6 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from contextlib import ExitStack as does_not_raise
 
 import numpy as np
 import xgboost as xgb
@@ -24,11 +23,11 @@ from zenml.integrations.xgboost.materializers.xgboost_dmatrix_materializer impor
 
 def test_xgboost_dmatrix_materializer(clean_client):
     """Tests whether the steps work for the XGBoost Booster materializer."""
-    with does_not_raise():
-        dmatrix = _test_materializer(
-            step_output=xgb.DMatrix(np.random.randn(5, 5)),
-            materializer_class=XgboostDMatrixMaterializer,
-        )
+    dmatrix = _test_materializer(
+        step_output=xgb.DMatrix(np.random.randn(5, 5)),
+        materializer_class=XgboostDMatrixMaterializer,
+        expected_metadata_size=2,
+    )
 
     assert dmatrix.num_row() == 5
     assert dmatrix.num_col() == 5

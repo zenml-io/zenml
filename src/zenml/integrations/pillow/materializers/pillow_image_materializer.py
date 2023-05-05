@@ -15,7 +15,7 @@
 
 import os
 import tempfile
-from typing import TYPE_CHECKING, Dict, Type
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, Tuple, Type
 
 from PIL import Image
 
@@ -42,8 +42,8 @@ class PillowImageMaterializer(BaseMaterializer):
     https://pillow.readthedocs.io/en/stable/handbook/image-file-formats.html.
     """
 
-    ASSOCIATED_TYPES = (Image.Image,)
-    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATA
+    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (Image.Image,)
+    ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.DATA
 
     def load(self, data_type: Type[Image.Image]) -> Image.Image:
         """Read from artifact store.
@@ -54,7 +54,6 @@ class PillowImageMaterializer(BaseMaterializer):
         Returns:
             An Image.Image object.
         """
-        super().load(data_type)
         files = io_utils.find_files(self.uri, f"{DEFAULT_IMAGE_FILENAME}.*")
         filepath = [file for file in files if not fileio.isdir(file)][0]
 
@@ -75,7 +74,6 @@ class PillowImageMaterializer(BaseMaterializer):
         Args:
             image: An Image.Image object.
         """
-        super().save(image)
         temp_dir = tempfile.TemporaryDirectory(prefix="zenml-temp-")
         file_extension = image.format or DEFAULT_IMAGE_EXTENSION
         full_filename = f"{DEFAULT_IMAGE_FILENAME}.{file_extension}"
@@ -100,7 +98,6 @@ class PillowImageMaterializer(BaseMaterializer):
         Returns:
             The extracted metadata as a dictionary.
         """
-        super().extract_metadata(image)
         return {
             "width": image.width,
             "height": image.height,

@@ -15,7 +15,7 @@
 
 import os
 import tempfile
-from typing import Any, Type, cast
+from typing import Any, ClassVar, Tuple, Type, cast
 
 from whylogs.core import DatasetProfileView  # type: ignore
 
@@ -32,8 +32,10 @@ PROFILE_FILENAME = "profile.pb"
 class WhylogsMaterializer(BaseMaterializer):
     """Materializer to read/write whylogs dataset profile views."""
 
-    ASSOCIATED_TYPES = (DatasetProfileView,)
-    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATA_ANALYSIS
+    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (DatasetProfileView,)
+    ASSOCIATED_ARTIFACT_TYPE: ClassVar[
+        ArtifactType
+    ] = ArtifactType.DATA_ANALYSIS
 
     def load(self, data_type: Type[Any]) -> DatasetProfileView:
         """Reads and returns a whylogs dataset profile view.
@@ -44,7 +46,6 @@ class WhylogsMaterializer(BaseMaterializer):
         Returns:
             A loaded whylogs dataset profile view object.
         """
-        super().load(data_type)
         filepath = os.path.join(self.uri, PROFILE_FILENAME)
 
         # Create a temporary folder
@@ -66,7 +67,6 @@ class WhylogsMaterializer(BaseMaterializer):
         Args:
             profile_view: A whylogs dataset profile view object.
         """
-        super().save(profile_view)
         filepath = os.path.join(self.uri, PROFILE_FILENAME)
 
         # Create a temporary folder

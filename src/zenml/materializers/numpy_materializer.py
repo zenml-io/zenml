@@ -15,7 +15,7 @@
 
 import os
 from collections import Counter
-from typing import TYPE_CHECKING, Any, Dict, Type, cast
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, Tuple, Type, cast
 
 import numpy as np
 
@@ -41,8 +41,8 @@ DATA_VAR = "data_var"
 class NumpyMaterializer(BaseMaterializer):
     """Materializer to read data to and from pandas."""
 
-    ASSOCIATED_TYPES = (np.ndarray,)
-    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATA
+    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (np.ndarray,)
+    ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.DATA
 
     def load(self, data_type: Type[Any]) -> "Any":
         """Reads a numpy array from a `.npy` file.
@@ -57,8 +57,6 @@ class NumpyMaterializer(BaseMaterializer):
         Returns:
             The numpy array.
         """
-        super().load(data_type)
-
         numpy_file = os.path.join(self.uri, NUMPY_FILENAME)
 
         if fileio.exists(numpy_file):
@@ -109,7 +107,6 @@ class NumpyMaterializer(BaseMaterializer):
         Args:
             arr: The numpy array to write.
         """
-        super().save(arr)
         with fileio.open(os.path.join(self.uri, NUMPY_FILENAME), "wb") as f:
             # This function is untyped for numpy versions supporting python
             # 3.7, but typed for numpy versions installed on python 3.8+.
@@ -185,12 +182,11 @@ class NumpyMaterializer(BaseMaterializer):
         Returns:
             The extracted metadata as a dictionary.
         """
-        base_metadata = super().extract_metadata(arr)
         if np.issubdtype(arr.dtype, np.number):
-            return {**base_metadata, **self.extract_numeric_metadata(arr)}
+            return self.extract_numeric_metadata(arr)
         elif np.issubdtype(arr.dtype, np.unicode_) or np.issubdtype(
             arr.dtype, np.object_
         ):
-            return {**base_metadata, **self.extract_text_metadata(arr)}
+            return self.extract_text_metadata(arr)
         else:
-            return {**base_metadata}
+            return {}
