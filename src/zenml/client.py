@@ -4165,7 +4165,7 @@ class Client(metaclass=ClientMetaClass):
         updated: Optional[datetime] = None,
         is_shared: Optional[bool] = None,
         name: Optional[str] = None,
-        type: Optional[str] = None,
+        connector_type: Optional[str] = None,
         auth_method: Optional[str] = None,
         resource_type: Optional[str] = None,
         resource_id: Optional[str] = None,
@@ -4184,7 +4184,7 @@ class Client(metaclass=ClientMetaClass):
             id: The id of the service connector to filter by.
             created: Filter service connectors by time of creation
             updated: Use the last updated date for filtering
-            type: Use the service connector type for filtering
+            connector_type: Use the service connector type for filtering
             auth_method: Use the service connector auth method for filtering
             resource_type: Filter service connectors by the resource type that
                 they can give access to.
@@ -4210,7 +4210,7 @@ class Client(metaclass=ClientMetaClass):
             user_id=user_id,
             name=name,
             is_shared=is_shared,
-            connector_type=type,
+            connector_type=connector_type,
             auth_method=auth_method,
             resource_type=resource_type,
             resource_id=resource_id,
@@ -4414,6 +4414,16 @@ class Client(metaclass=ClientMetaClass):
         if not register:
             return connector_request, connector_resources
 
+        # For resource types that don't support multi-instances, it's
+        # better to save the default resource ID in the connector, if
+        # available. Otherwise, we'll need to instantiate the connector
+        # again to get the default resource ID.
+        if connector_resources:
+            connector_request.resource_id = (
+                connector_request.resource_id
+                or connector_resources.get_default_resource_id()
+            )
+
         # Register the new model
         connector_response = self.zen_store.create_service_connector(
             service_connector=connector_request
@@ -4612,6 +4622,16 @@ class Client(metaclass=ClientMetaClass):
                 },
             }
 
+        # For resource types that don't support multi-instances, it's
+        # better to save the default resource ID in the connector, if
+        # available. Otherwise, we'll need to instantiate the connector
+        # again to get the default resource ID.
+        if connector_resources:
+            connector_update.resource_id = (
+                connector_update.resource_id
+                or connector_resources.get_default_resource_id()
+            )
+
         # Update the model
         connector_response = self.zen_store.update_service_connector(
             service_connector_id=connector_model.id,
@@ -4732,12 +4752,11 @@ class Client(metaclass=ClientMetaClass):
                 provided, the resource type from the service connector
                 configuration will be used.
             resource_id: The ID of a particular resource instance to configure
-                the local client to connect to. Use this with resource types
-                that allow multiple instances. If the connector instance is
+                the local client to connect to. If the connector instance is
                 already configured with a resource ID that is not the same or
-                equivalent to the one requested, or if the resource type does
-                not support multiple instances, a `ValueError` exception is
-                raised.
+                equivalent to the one requested, a `ValueError` exception is
+                raised. May be omitted for connectors and resource types that do
+                not support multiple resource instances.
             kwargs: Additional implementation specific keyword arguments to use
                 to configure the client.
 
@@ -4772,12 +4791,11 @@ class Client(metaclass=ClientMetaClass):
                 provided, the resource type from the service connector
                 configuration will be used.
             resource_id: The ID of a particular resource instance to configure
-                the local client to connect to. Use this with resource types
-                that allow multiple instances. If the connector instance is
+                the local client to connect to. If the connector instance is
                 already configured with a resource ID that is not the same or
-                equivalent to the one requested, or if the resource type does
-                not support multiple instances, a `ValueError` exception is
-                raised.
+                equivalent to the one requested, a `ValueError` exception is
+                raised. May be omitted for connectors and resource types that do
+                not support multiple resource instances.
 
         Returns:
             The client side of the indicated service connector instance that can

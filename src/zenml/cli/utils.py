@@ -468,8 +468,8 @@ def print_stack_component_configuration(
             "ID": str(component.connector.id),
             "NAME": component.connector.name,
             "TYPE": component.connector.type,
-            "RESOURCE_TYPE": component.connector.resource_types[0],
-            "RESOURCE_ID": component.connector_resource_id
+            "RESOURCE TYPE": component.connector.resource_types[0],
+            "RESOURCE NAME": component.connector_resource_id
             or component.connector.resource_id
             or "N/A",
         }
@@ -1326,10 +1326,7 @@ def print_service_connectors_table(
         labels = [
             f"{label}:{value}" for label, value in connector.labels.items()
         ]
-        if not connector.is_multi_type and not connector.supports_instances:
-            resource_name = "<not-applicable>"
-        else:
-            resource_name = connector.resource_id or ""
+        resource_name = connector.resource_id or "<multiple>"
 
         connector_config = {
             "ACTIVE": ":point_right:" if is_active else "",
@@ -1394,15 +1391,10 @@ def print_service_connector_resource_table(
             if resource_model.error:
                 # Error fetching resources
                 resource_ids = [f"Error: {resource_model.error}"]
-            elif not resource_model.supports_instances:
-                # Resource instances not applicable
-                resource_ids = ["<not-applicable>"]
             elif resource_model.resource_ids:
                 resource_ids = resource_model.resource_ids
-            elif not resource_model.supports_discovery:
-                resource_ids = ["<not-set>"]
             else:
-                resource_ids = ["<no-resources-listed>"]
+                resource_ids = ["<multiple>"]
 
         resource_row: Dict[str, Any] = {
             "CONNECTOR ID": str(resource_model.id),
@@ -1480,7 +1472,7 @@ def print_service_connector_configuration(
             "TYPE": connector.type,
             "AUTH METHOD": connector.auth_method,
             "RESOURCE TYPES": ", ".join(connector.resource_types),
-            "RESOURCE NAME": connector.resource_id or "",
+            "RESOURCE NAME": connector.resource_id or "<multiple>",
             "SECRET ID": connector.secret_id or "",
             "SESSION DURATION": expiration,
             "EXPIRES IN": expires_in(
@@ -1500,7 +1492,7 @@ def print_service_connector_configuration(
             "TYPE": connector.type,
             "AUTH METHOD": connector.auth_method,
             "RESOURCE TYPES": ", ".join(connector.resource_types),
-            "RESOURCE NAME": connector.resource_id or "",
+            "RESOURCE NAME": connector.resource_id or "<multiple",
             "SESSION DURATION": expiration,
             "EXPIRES IN": expires_in(
                 connector.expires_at, ":name_badge: Expired!"
@@ -1626,9 +1618,6 @@ def print_service_connector_type(
         )
         message += (
             f"**Supports resource instances**: {r.supports_instances}\n\n"
-        )
-        message += (
-            f"**Supports resource discovery**: {r.supports_discovery}\n\n"
         )
         message += f"{r.description}\n"
 

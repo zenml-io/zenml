@@ -757,19 +757,15 @@ def register_service_connector(
             # Finally, for connectors that are configured with a particular
             # resource type, prompt the user to select one of the available
             # resources that can be accessed with the connector. We don't do
-            # this for resource types that don't support instances.
+            # need to do this for resource types that don't support instances.
             resource_type_spec = connector_type_spec.resource_type_map[
                 resource_type
             ]
             if resource_type_spec.supports_instances:
-                resource_ids: List[str] = []
-                if resource_type_spec.supports_discovery:
-                    assert connector_resources.resource_ids is not None
-                    resource_ids = connector_resources.resource_ids
-
+                assert connector_resources.resource_ids is not None
                 resource_id = prompt_resource_id(
                     resource_name=resource_type_spec.name,
-                    resource_ids=resource_ids,
+                    resource_ids=connector_resources.resource_ids,
                 )
             else:
                 resource_id = None
@@ -1404,20 +1400,16 @@ def update_service_connector(
         if resource_type:
             # Finally, for connectors that are configured with a particular
             # resource type, prompt the user to select one of the available
-            # resources that can be accessed with the connector. We don't do
-            # this for resource types that don't support instances.
+            # resources that can be accessed with the connector. We don't need
+            # to do this for resource types that don't support instances.
             resource_type_spec = connector_type_spec.resource_type_map[
                 resource_type
             ]
             if resource_type_spec.supports_instances:
-                resource_ids: List[str] = []
-                if resource_type_spec.supports_discovery:
-                    assert connector_resources.resource_ids is not None
-                    resource_ids = connector_resources.resource_ids
-
+                assert connector_resources.resource_ids is not None
                 resource_id = prompt_resource_id(
                     resource_name=resource_type_spec.name,
-                    resource_ids=resource_ids,
+                    resource_ids=connector_resources.resource_ids,
                 )
             else:
                 resource_id = None

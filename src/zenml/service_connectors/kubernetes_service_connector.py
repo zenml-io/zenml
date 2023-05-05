@@ -75,7 +75,7 @@ class KubernetesBaseConfig(KubernetesServerConfig):
     """Kubernetes basic config."""
 
     cluster_name: str = Field(
-        title="Kubernetes cluster name",
+        title="Kubernetes cluster name to be used in the kubeconfig file",
     )
 
 
@@ -183,22 +183,20 @@ class KubernetesServiceConnector(ServiceConnector):
         """
         return KUBERNETES_SERVICE_CONNECTOR_TYPE_SPEC
 
-    def _canonical_resource_id(
-        self, resource_type: str, resource_id: str
-    ) -> str:
-        """Convert a resource ID to its canonical form.
+    def _get_default_resource_id(self, resource_type: str) -> str:
+        """Get the default resource ID for a resource type.
+
+        Service connector implementations must override this method and provide
+        a default resource ID for resources that do not support multiple
+        instances.
 
         Args:
-            resource_type: The resource type to canonicalize.
-            resource_id: The resource ID to canonicalize.
-
-        Raises:
-            NotImplementedError: If multiple instances are not supported.
+            resource_type: The type of the resource to get a default resource ID
+                for. Only called with resource types that do not support
+                multiple instances.
         """
-        raise NotImplementedError(
-            "A Kubernetes service connector instance can only be used to "
-            "connect to a single cluster."
-        )
+        # We use the cluster name as the default resource ID.
+        return self.config.cluster_name
 
     def _connect_to_resource(
         self,
@@ -389,22 +387,24 @@ class KubernetesServiceConnector(ServiceConnector):
         resource_type: Optional[str] = None,
         resource_id: Optional[str] = None,
     ) -> List[str]:
-        """Verify that the connector can authenticate and access resources.
+        """Verify and list all the resources that the connector can access.
 
         Args:
-            resource_type: The type of resource to verify. Must be set to the
+            resource_type: The type of resource to verify. Always set to the
                 Kubernetes resource type.
-            resource_id: The ID of the resource to connect to. Not applicable
-                to Kubernetes connectors.
+            resource_id: The ID of the resource to connect to. Always set to
+                the Kubernetes cluster name.
 
         Returns:
-            The list of resources IDs in canonical format identifying the
-            resources that the connector can access.
+            The list of canonical resource IDs that the connector can access,
+            meaning only the Kubernetes cluster name.
 
         Raises:
             AuthorizationException: If the connector cannot authenticate or
                 access the Kubernetes cluster API.
         """
+        assert resource_id is not None
+
         client = self._connect_to_resource()
         assert isinstance(client, k8s_client.ApiClient)
 
@@ -421,5 +421,4 @@ class KubernetesServiceConnector(ServiceConnector):
                 f"failed to verify Kubernetes cluster access: {err}"
             ) from err
 
-        # Resource IDs are not applicable to Kubernetes connectors
-        return []
+        return [resource_id]

@@ -18,11 +18,11 @@ The Docker Service Connector is responsible for authenticating with a Docker
 """
 import re
 import subprocess
-from typing import Any, List, Optional, Tuple
+from typing import Any, List, Optional
 
 from docker.client import DockerClient
 from docker.errors import DockerException
-from pydantic import SecretStr
+from pydantic import Field, SecretStr
 
 from zenml.exceptions import AuthorizationException
 from zenml.logger import get_logger
@@ -43,12 +43,25 @@ logger = get_logger(__name__)
 class DockerCredentials(AuthenticationConfig):
     """Docker client authentication credentials."""
 
-    username: SecretStr
-    password: SecretStr
+    username: SecretStr = Field(
+        title="Username",
+    )
+    password: SecretStr = Field(
+        title="Password",
+    )
+
+
+class DockerConfiguration(DockerCredentials):
+    """Docker client configuration."""
+
+    registry: Optional[str] = Field(
+        title="Registry server URL. Omit to use DockerHub.",
+    )
 
 
 DOCKER_CONNECTOR_TYPE = "docker"
 DOCKER_RESOURCE_TYPE = "docker-registry"
+DOCKER_REGISTRY_NAME = "docker.io"
 
 
 class DockerAuthenticationMethods(StrEnum):
@@ -75,7 +88,7 @@ The connector provides pre-authenticated python-docker clients.
 Use a username and password or access token to authenticate with a container
 registry server.
 """,
-            config_class=DockerCredentials,
+            config_class=DockerConfiguration,
         ),
     ],
     resource_types=[
@@ -83,26 +96,20 @@ registry server.
             name="Docker/OCI container registry",
             resource_type=DOCKER_RESOURCE_TYPE,
             description="""
-Allows users to access a Docker or OCI container registry as a resource.
-When used by connector consumers, they are provided a pre-authenticated
-python-docker client instance.
+Allows users to access a Docker or OCI compatible container registry as a
+resource. When used by connector consumers, they are provided a
+pre-authenticated python-docker client instance.
 
-The resource ID must identify a Docker/OCI repository using one of the following
-formats:
+The resource name identifies a Docker/OCI registry using one of the following
+formats (the repository name is optional).
             
-- repository URI: http[s]://host[:port]/<repository-name>
-- DockerHub repository name: <repository-name>
+- DockerHub: docker.io or [https://]index.docker.io/v1/[/<repository-name>]
+- generic OCI registry URI: http[s]://host[:port][/<repository-name>]
 """,
             auth_methods=DockerAuthenticationMethods.values(),
             # Request a Docker repository to be configured in the
             # connector or provided by the consumer.
-            supports_instances=True,
-            # Does not support listing all Docker repositories that can be
-            # accessed with a given set of credentials. A Docker repository
-            # must be manually configured in the connector or provided by the
-            # consumer (i.e. cannot be selected from a list of available
-            # repositories).
-            supports_discovery=False,
+            supports_instances=False,
             logo_url="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/container_registry/docker.png",
         ),
     ],
@@ -112,7 +119,7 @@ formats:
 class DockerServiceConnector(ServiceConnector):
     """Docker service connector."""
 
-    config: DockerCredentials
+    config: DockerConfiguration
 
     @classmethod
     def _get_connector_type(cls) -> ServiceConnectorTypeModel:
@@ -127,44 +134,46 @@ class DockerServiceConnector(ServiceConnector):
     def _parse_resource_id(
         cls,
         resource_id: str,
-    ) -> Tuple[str, Optional[str]]:
-        """Validate and convert a Docker resource ID into a Docker repository name and registry.
+    ) -> str:
+        """Validate and convert a Docker resource ID into a Docker registry name.
 
         Args:
             resource_id: The resource ID to convert.
 
         Returns:
-            The Docker repository name and registry. The registry is None if
-            the resource ID is a DockerHub repository name.
+            The Docker registry name.
 
         Raises:
             ValueError: If the provided resource ID is not a valid Docker
-                repository.
+                registry.
         """
-        repository_name: Optional[str] = None
         registry: Optional[str] = None
         if re.match(
-            r"^(https?://)?[a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)*(:[0-9]+)?/.+$",
+            r"^(https?://)?[a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)*(:[0-9]+)?(/.+)*$",
             resource_id,
         ):
             # The resource ID is a repository URL
-            if resource_id.startswith("https://"):
-                repository_name = resource_id.split("/", 2)[2]
+            if resource_id.startswith("https://") or resource_id.startswith(
+                "http://"
+            ):
+                registry = resource_id.split("/")[2]
             else:
-                repository_name = resource_id
-            registry = repository_name.split("/", 1)[0]
-        elif re.match(r"^[a-zA-Z0-9-]+$", resource_id):
-            # The resource ID is a DockerHub repository name
-            repository_name = resource_id
+                registry = resource_id.split("/")[0]
         else:
             raise ValueError(
                 f"Invalid resource ID for a Docker registry: {resource_id}. "
                 f"Please provide a valid repository name or URL in the "
                 f"following format:\n"
-                f"repository name/URL: [https://]host[:port]/<repository-name>\n"
-                f"DockerHub repository name: <repository-name>\n"
+                "DockerHub: docker.io or [https://]index.docker.io/v1/[/<repository-name>]"
+                "generic OCI registry URI: http[s]://host[:port][/<repository-name>]"
             )
-        return repository_name, registry
+
+        if (
+            registry == DOCKER_REGISTRY_NAME
+            or registry == f"index.{DOCKER_REGISTRY_NAME}"
+        ):
+            registry = DOCKER_REGISTRY_NAME
+        return registry
 
     def _canonical_resource_id(
         self, resource_type: str, resource_id: str
@@ -178,29 +187,41 @@ class DockerServiceConnector(ServiceConnector):
         Returns:
             The canonical resource ID.
         """
-        return self._parse_resource_id(resource_id)[0]
+        return self._parse_resource_id(resource_id)
+
+    def _get_default_resource_id(self, resource_type: str) -> str:
+        """Get the default resource ID for a resource type.
+
+        Args:
+            resource_type: The type of the resource to get a default resource ID
+                for. Only called with resource types that do not support
+                multiple instances.
+
+        Returns:
+            The default resource ID for the resource type.
+        """
+        return self._canonical_resource_id(
+            resource_type, self.config.registry or DOCKER_REGISTRY_NAME
+        )
 
     def _authorize_client(
         self,
         docker_client: DockerClient,
-        resource_id: Optional[str] = None,
+        resource_id: str,
     ) -> None:
         """Authorize a Docker client to have access to the configured Docker registry.
 
         Args:
             docker_client: The Docker client to authenticate.
-            resource_id: The resource ID to authorize the client for. If None,
-                the client is authorized for the configured resource ID.
+            resource_id: The resource ID to authorize the client for.
         """
         cfg = self.config
-        resource_id = resource_id or self.resource_id
-        assert resource_id is not None
-        _, registry = self._parse_resource_id(resource_id)
+        registry = self._parse_resource_id(resource_id)
 
         docker_client.login(
             username=cfg.username.get_secret_value(),
             password=cfg.password.get_secret_value(),
-            registry=registry,
+            registry=registry if registry != DOCKER_REGISTRY_NAME else None,
             reauth=True,
         )
 
@@ -219,8 +240,9 @@ class DockerServiceConnector(ServiceConnector):
         Returns:
             An authenticated python-docker client object.
         """
+        assert self.resource_id is not None
         docker_client = DockerClient.from_env()
-        self._authorize_client(docker_client)
+        self._authorize_client(docker_client, self.resource_id)
 
         return docker_client
 
@@ -241,7 +263,7 @@ class DockerServiceConnector(ServiceConnector):
         cfg = self.config
 
         assert self.resource_id is not None
-        _, registry = self._parse_resource_id(self.resource_id)
+        registry = self._parse_resource_id(self.resource_id)
 
         docker_login_cmd = [
             "docker",
@@ -250,7 +272,7 @@ class DockerServiceConnector(ServiceConnector):
             cfg.username.get_secret_value(),
             "--password-stdin",
         ]
-        if registry:
+        if registry != DOCKER_REGISTRY_NAME:
             docker_login_cmd.append(registry)
 
         try:
@@ -306,9 +328,7 @@ class DockerServiceConnector(ServiceConnector):
         Args:
             resource_type: The type of resource to verify. Must be set to the
                 Docker resource type.
-            resource_id: The Docker registry name or URL to connect to. If not
-                provided, this method will verify that it can connect to any
-                Docker registry.
+            resource_id: The Docker registry name or URL to connect to.
 
         Returns:
             The name of the Docker registry that this connector can access.
@@ -323,8 +343,8 @@ class DockerServiceConnector(ServiceConnector):
                 f"\nSkipping Docker connector verification."
             )
         else:
-            if resource_id:
-                self._authorize_client(docker_client, resource_id)
-                docker_client.close()
+            assert resource_id is not None
+            self._authorize_client(docker_client, resource_id)
+            docker_client.close()
 
         return [resource_id] if resource_id else []

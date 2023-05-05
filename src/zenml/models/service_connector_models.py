@@ -77,18 +77,14 @@ class ResourceTypeModel(BaseModel):
     )
     supports_instances: bool = Field(
         default=False,
-        title="Models if the connector can be used to access multiple "
-        "instances of this resource type. If set to False, the "
-        "resource ID field is ignored. If set to True, the resource ID can "
-        "be supplied either when the connector is configured or when it is "
-        "used to access the resource.",
-    )
-    supports_discovery: bool = Field(
-        default=False,
-        title="Models if the connector can be used to discover and list "
-        "instances of this resource type. If set to True, the connector "
-        "includes support to list all resource instances for this resource "
-        "type. Not applicable if supports_instances is set to False.",
+        title="Specifies if a single connector instance can be used to access "
+        "multiple instances of this resource type. If set to True, the "
+        "connector is able to provide a list of resource IDs identifying all "
+        "the resources that it can access and a resource ID needs to be "
+        "explicitly configured or supplied when access to a resource is "
+        "requested. If set to False, a connector instance is only able to "
+        "access a single resource and a resource ID is not required to access "
+        "the resource.",
     )
     logo_url: Optional[str] = Field(
         default=None,
@@ -397,7 +393,6 @@ class ServiceConnectorTypeModel(BaseModel):
         self,
         auth_method: str,
         resource_type: Optional[str] = None,
-        resource_id: Optional[str] = None,
     ) -> Tuple[AuthenticationMethodModel, Optional[ResourceTypeModel]]:
         """Find the specifications for a configurable resource.
 
@@ -408,8 +403,6 @@ class ServiceConnectorTypeModel(BaseModel):
         Args:
             auth_method: The name of the authentication method.
             resource_type: The type of resource being configured.
-            resource_id: The ID of the resource being configured. Only valid
-                for authentication methods that support resource IDs.
 
         Returns:
             The authentication method specification and resource specification
@@ -418,9 +411,6 @@ class ServiceConnectorTypeModel(BaseModel):
         Raises:
             KeyError: If the authentication method is not supported by the
                 connector for the specified resource type and ID.
-            ValueError: If a resource ID is provided for a resource type that
-                does not support multiple instances.
-
         """
         # Verify the authentication method
         auth_method_map = self.auth_method_map
@@ -446,25 +436,17 @@ class ServiceConnectorTypeModel(BaseModel):
             resource_type_spec = resource_type_map[resource_type]
         else:
             raise KeyError(
-                f"connector type '{self.connector_type}' does not support resource type "
-                f"'{resource_type}'. Supported resource types are: "
-                f"{list(resource_type_map.keys())}."
+                f"connector type '{self.connector_type}' does not support "
+                f"resource type '{resource_type}'. Supported resource types "
+                f"are: {list(resource_type_map.keys())}."
             )
 
         if auth_method not in resource_type_spec.auth_methods:
             raise KeyError(
-                f"the '{self.connector_type}' connector type does not support the "
-                f"'{auth_method}' authentication method for the "
+                f"the '{self.connector_type}' connector type does not support "
+                f"the '{auth_method}' authentication method for the "
                 f"'{resource_type}' resource type. Supported authentication "
                 f"methods are: {resource_type_spec.auth_methods}."
-            )
-
-        # Verify the resource ID
-        if resource_id and not resource_type_spec.supports_instances:
-            raise ValueError(
-                f"the '{self.connector_type}' connector type does not support "
-                f"multiple instances for the '{resource_type}' resource type "
-                f"but a resource ID value was provided: {resource_id}"
             )
 
         return auth_method_spec, resource_type_spec
@@ -503,11 +485,9 @@ class ServiceConnectorBaseModel(BaseModel):
     resource_id: Optional[str] = Field(
         default=None,
         title="Uniquely identifies a specific resource instance that the "
-        "connector instance can be used to access. Only applicable if the "
-        "connector's specification indicates that resource IDs are supported "
-        "for the configured resource type. If applicable and if omitted in the "
-        "connector configuration, a resource ID must be provided by the "
-        "connector consumer at runtime.",
+        "connector instance can be used to access. If omitted, the connector "
+        "instance can be used to access any and all resource instances that "
+        "the authentication method and resource type(s) allow.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
     supports_instances: bool = Field(
@@ -567,7 +547,7 @@ class ServiceConnectorBaseModel(BaseModel):
     def is_multi_instance(self) -> bool:
         """Checks if the connector is multi-instance.
 
-        A multi-instance connector can be used to access multiple instances
+        A multi-instance connector is configured to access multiple instances
         of the configured resource type.
 
         Returns:
@@ -575,15 +555,15 @@ class ServiceConnectorBaseModel(BaseModel):
         """
         return (
             not self.is_multi_type
-            and not self.resource_id
             and self.supports_instances
+            and not self.resource_id
         )
 
     @property
     def is_single_instance(self) -> bool:
         """Checks if the connector is single-instance.
 
-        A single-instance connector can be used to access only a single
+        A single-instance connector is configured to access only a single
         instance of the configured resource type or does not support multiple
         resource instances.
 
@@ -637,9 +617,7 @@ class ServiceConnectorBaseModel(BaseModel):
                 can be used to access. If omitted, a multi-type connector is
                 configured.
             resource_id: Uniquely identifies a specific resource instance that
-                the connector instance can be used to access. Only applicable
-                if the connector supports multiple resource instances for the
-                configured resource type.
+                the connector instance can be used to access.
             configuration: The connector configuration.
             secrets: The connector secrets.
 
@@ -665,7 +643,6 @@ class ServiceConnectorBaseModel(BaseModel):
             ) = connector_type.find_resource_specifications(
                 self.auth_method,
                 resource_type,
-                resource_id,
             )
         except (KeyError, ValueError) as e:
             raise ValueError(
@@ -674,16 +651,12 @@ class ServiceConnectorBaseModel(BaseModel):
 
         if resource_type and resource_spec:
             self.resource_types = [resource_spec.resource_type]
-
-            if resource_id:
-                self.resource_id = resource_id
-                self.supports_instances = True
-            else:
-                self.supports_instances = resource_spec.supports_instances
-
+            self.resource_id = resource_id
+            self.supports_instances = resource_spec.supports_instances
         else:
             # A multi-type connector is associated with all resource types
-            # that it supports
+            # that it supports, does not have a resource ID configured
+            # and it's unclear if it supports multiple instances or not
             self.resource_types = list(connector_type.resource_type_map.keys())
             self.supports_instances = False
 
@@ -824,29 +797,13 @@ class ServiceConnectorResourcesModel(BaseModel):
 
     resource_ids: Optional[List[str]] = Field(
         default=None,
-        title="The resource IDs of the resource instances that the service "
+        title="The resource IDs of all resource instances that the service "
         "connector instance can be used to access. Omitted (set to None) for "
-        "multi-type service connectors and for resource types that do not "
-        "support instances. Also omitted if an error occurred while listing "
-        "the resource instances or if no resources are listed due to "
-        "authorization issues or lack of permissions (in which case the "
-        "'error' field is set to an error message).",
-    )
-
-    supports_instances: bool = Field(
-        default=False,
-        title="Indicates whether the resource type supports multiple "
-        "instances or not. If False, the 'resource_ids' field will be "
-        "omitted (set to None).",
-    )
-
-    supports_discovery: bool = Field(
-        default=False,
-        title="Indicates if the connector can be used to discover and list "
-        "instances of this resource type. If set to False, the "
-        "'resource_ids' field will never have more than one resource ID "
-        "listed, even if the resource type supports multiple instances. "
-        "Not applicable if supports_instances is set to False.",
+        "multi-type service connectors. Also omitted if an error occurred "
+        "while listing the resource instances or if no resources are listed "
+        "due to authorization issues or lack of permissions (in both cases the "
+        "'error' field is set to an error message). For resource types that "
+        "do not support multiple instances, a single resource ID is listed.",
     )
 
     error: Optional[str] = Field(
@@ -866,6 +823,43 @@ class ServiceConnectorResourcesModel(BaseModel):
             return self.connector_type
         return self.connector_type.connector_type
 
+    @property
+    def supports_instances(self) -> bool:
+        """Check if the configured resource type supports multiple instances.
+
+        Returns:
+            True if the resource type is configured and supports multiple
+            instances, False otherwise.
+        """
+        if not self.resource_type:
+            return False
+
+        if isinstance(self.connector_type, str):
+            return False
+
+        resource_type_spec = self.connector_type.resource_type_map[
+            self.resource_type
+        ]
+        return resource_type_spec.supports_instances
+
+    def get_default_resource_id(self) -> Optional[str]:
+        """Get the default resource ID, if included in the resource list.
+
+        The default resource ID is a resource ID supplied by the connector
+        implementation only for resource types that do not support multiple
+        instances.
+
+        Returns:
+            The default resource ID, or None if no resource ID is set.
+        """
+        if not self.resource_ids or len(self.resource_ids) != 1:
+            return None
+
+        if self.supports_instances:
+            return None
+
+        return self.resource_ids[0]
+
     @classmethod
     def from_connector_model(
         cls,
@@ -883,18 +877,13 @@ class ServiceConnectorResourcesModel(BaseModel):
             id=connector_model.id,
             name=connector_model.name,
             connector_type=connector_model.type,
-            supports_instances=connector_model.supports_instances,
         )
 
-        if (
-            connector_model.is_single_instance
-            or connector_model.is_multi_instance
-        ):
-            resources.resource_ids = (
-                [connector_model.resource_id]
-                if connector_model.resource_id
-                else []
-            )
+        resources.resource_ids = (
+            [connector_model.resource_id]
+            if connector_model.resource_id
+            else []
+        )
 
         return resources
 

@@ -1061,17 +1061,17 @@ def prompt_select_resource_id(
     resources: ServiceConnectorResourcesModel,
     resource_name: str,
     interactive: bool = True,
-) -> Optional[str]:
+) -> str:
     """Prompts the user to select a resource ID from a list of available IDs.
 
     Args:
         resources: A list of available resource IDs.
-        resource_name: The name of the resource to select.
+        resource_name: The name of the resource type to select.
         interactive: Whether to prompt the user for input or error out if
             user input is required.
 
     Returns:
-        The selected resource ID or None if no resource ID is required.
+        The selected resource ID.
     """
     resource_ids = resources.resource_ids or []
     if len(resource_ids) == 1:
@@ -1100,34 +1100,6 @@ def prompt_select_resource_id(
 
         return cast(str, resource_id)
 
-    # No resource IDs are listed, so we have one of two cases:
-    # 1. The resource does not support multiple instances. In this case,
-    # we return None and signal to the caller that the connector can be used
-    # without a resource ID
-    # 2. The resource does support multiple instances, but doesn't support
-    # resource discovery. In this case, we prompt the user to enter a resource
-    # ID manually
-    if not resources.supports_instances:
-        return None
-
-    if not resources.supports_discovery:
-        # User needs to manually enter a resource ID
-        msg = (
-            "The selected connector doesn't support auto-discovery of "
-            f"available {resource_name} instances. You have to manually enter "
-            f"the name of a {resource_name} that you want to use"
-        )
-        if not interactive:
-            cli_utils.error(
-                f"{msg}Please use the --resource-id` command line "
-                f"argument to manually choose a {resource_name} resource."
-            )
-        resource_id = click.prompt(
-            msg,
-            type=str,
-        )
-        return cast(str, resource_id)
-
     # We should never get here, but just in case...
     cli_utils.error(
         "Could not determine which resource to use. Please select a "
@@ -1137,7 +1109,7 @@ def prompt_select_resource_id(
 
 def prompt_select_resource(
     resource_list: List[ServiceConnectorResourcesModel],
-) -> Tuple[UUID, Optional[str]]:
+) -> Tuple[UUID, str]:
     """Prompts the user to select a resource ID from a list of resources.
 
     Args:
@@ -1145,8 +1117,7 @@ def prompt_select_resource(
 
     Returns:
         The ID of a selected connector and the ID of the selected resource
-        instance, or `None` if no resource was selected or needed to be selected
-        (i.e. the resource doesn't support multiple instances).
+        instance.
     """
     if len(resource_list) == 1:
         click.echo("Only one connector has compatible resources:")
@@ -1425,30 +1396,13 @@ def generate_stack_component_connect_command(
                         "to select a resource interactively."
                     )
 
-            if not no_verify:
-                try:
-                    client.verify_service_connector(
-                        name_id_or_prefix=connector_id,
-                        resource_type=requirements.resource_type,
-                        resource_id=resource_id,
-                    )
-                except (
-                    KeyError,
-                    ValueError,
-                    IllegalOperationError,
-                    NotImplementedError,
-                    AuthorizationException,
-                ) as e:
-                    cli_utils.error(
-                        f"Access to the resource could not be verified: {e}"
-                    )
-
+        connector_resources: Optional[ServiceConnectorResourcesModel] = None
         if not no_verify:
             with console.status(
                 "Validating service connector resource configuration...\n"
             ):
                 try:
-                    client.verify_service_connector(
+                    connector_resources = client.verify_service_connector(
                         connector_id,
                         resource_type=requirements.resource_type,
                         resource_id=resource_id,
@@ -1476,6 +1430,18 @@ def generate_stack_component_connect_command(
                 )
             except (KeyError, IllegalOperationError) as err:
                 cli_utils.error(str(err))
+
+        if connector_resources is not None:
+            cli_utils.declare(
+                f"Successfully connected {display_name} `{name_id_or_prefix}` "
+                "to the following resources:"
+            )
+
+            cli_utils.print_service_connector_resource_table(
+                [connector_resources]
+            )
+
+        else:
 
             cli_utils.declare(
                 f"Successfully connected {display_name} `{name_id_or_prefix}` "

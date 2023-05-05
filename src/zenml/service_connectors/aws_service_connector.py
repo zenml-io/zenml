@@ -28,7 +28,7 @@ import base64
 import datetime
 import json
 import re
-from typing import Any, List, Optional, Tuple, cast
+from typing import Any, Dict, List, Optional, Tuple, cast
 
 import boto3
 from botocore.client import BaseClient
@@ -46,7 +46,7 @@ from zenml.models import (
 from zenml.service_connectors.docker_service_connector import (
     DOCKER_RESOURCE_TYPE,
     DockerAuthenticationMethods,
-    DockerCredentials,
+    DockerConfiguration,
     DockerServiceConnector,
 )
 from zenml.service_connectors.kubernetes_service_connector import (
@@ -400,12 +400,14 @@ Multi-purpose AWS resource type. It allows consumers to use the connector to
 connect to any AWS service. When used by connector consumers, they are provided
 a generic boto3 session instance pre-configured with AWS credentials. This
 session can then be used to create boto3 clients for any particular AWS service.
+
+The resource name represents the AWS region that the connector is authorized to
+access.
 """,
             auth_methods=AWSAuthenticationMethods.values(),
             # Don't request an AWS specific resource instance ID, given that
             # the connector provides a generic boto3 session instance.
             supports_instances=False,
-            supports_discovery=False,
             logo_url="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/container_registry/aws.png",
         ),
         ResourceTypeModel(
@@ -423,7 +425,7 @@ The configured credentials must have at least the following S3 permissions:
 - s3:DeleteObject
 - s3:ListAllMyBuckets
 
-If set, the resource ID must identify an S3 bucket using one of the following
+If set, the resource name must identify an S3 bucket using one of the following
 formats:
 
 - S3 bucket URI: s3://<bucket-name>
@@ -434,9 +436,6 @@ formats:
             # Request an S3 bucket to be configured in the
             # connector or provided by the consumer
             supports_instances=True,
-            # Supports listing all S3 buckets that can be accessed with a given
-            # set of credentials
-            supports_discovery=True,
             logo_url="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/container_registry/aws.png",
         ),
         ResourceTypeModel(
@@ -460,8 +459,8 @@ makes it more challenging to use the AWS Implicit and AWS Federation Token
 authentication method for this resource. For more information, see:
 https://docs.aws.amazon.com/eks/latest/userguide/add-user-role.html
 
-If set, the resource ID must identify an EKS cluster using one of the following
-formats:
+If set, the resource name must identify an EKS cluster using one of the
+following formats:
 
 - ECR cluster name: <cluster-name>
 - EKS cluster ARN: arn:aws:eks:<region>:<account-id>:cluster/<cluster-name>
@@ -473,20 +472,18 @@ EKS clusters in the AWS region that it is configured to use.
             # Request an EKS cluster name to be configured in the
             # connector or provided by the consumer
             supports_instances=True,
-            # Supports listing all EKS clusters that can be accessed with a
-            # given set of credentials
-            supports_discovery=True,
             logo_url="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/orchestrator/kubernetes.png",
         ),
         ResourceTypeModel(
-            name="AWS ECR container repository",
+            name="AWS ECR container registry",
             resource_type=DOCKER_RESOURCE_TYPE,
             description="""
-Allows users to access an ECR repository as a standard Docker registry resource.
-When used by connector consumers, they are provided a pre-authenticated
-python-docker client instance.
+Allows users to access one or more ECR repositories as a standard Docker
+registry resource. When used by connector consumers, they are provided a
+pre-authenticated python-docker client instance.
 
-The configured credentials must have at least the following ECR permissions:
+The configured credentials must have at least the following ECR permissions for
+one or more ECR repositories:
 
 - ecr:DescribeRegistry
 - ecr:DescribeRepositories
@@ -501,23 +498,27 @@ The configured credentials must have at least the following ECR permissions:
 - ecr:PutImage
 - ecr:GetAuthorizationToken
 
-If set, the resource ID must identify an ECR repository using one of the
-following formats:
+This resource type is not scoped to a single ECR repository. Instead,
+a connector configured with this resource type will grant access to all the
+ECR repositories that the credentials are allowed to access under the configured
+AWS region (i.e. all repositories under the Docker registry URL
+`<account-id>.dkr.ecr.<region>.amazonaws.com`).
+
+The resource name associated with this resource type uniquely identifies an ECR
+registry using one of the following formats (the repository name is ignored,
+only the registry URL/ARN is used):
             
-- ECR repository URI: [https://]<account-id>.dkr.ecr.<region>.amazonaws.com/<repository-name>
-- ECR repository ARN: arn:aws:ecr:<region>:<account-id>:repository/<repository-name>
-- ECR repository name: <repository-name>
+- ECR repository URI: https://<account-id>.dkr.ecr.<region>.amazonaws.com[/<repository-name>]
+- ECR repository ARN: arn:aws:ecr:<region>:<account-id>:repository[/<repository-name>]
 
 ECR repository names are region scoped. The connector can only be used to access
 ECR repositories in the AWS region that it is configured to use.
 """,
             auth_methods=AWSAuthenticationMethods.values(),
-            # Request an ECR repository to be configured in the
-            # connector or provided by the consumer
-            supports_instances=True,
-            # Supports listing all ECR repositories that can be accessed with a
-            # given set of credentials
-            supports_discovery=True,
+            # Does not support instances, given that the connector
+            # provides access to all permitted ECR repositories under the
+            # same ECR registry in the configured AWS region.
+            supports_instances=False,
             logo_url="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/container_registry/docker.png",
         ),
     ],
@@ -529,6 +530,12 @@ class AWSServiceConnector(ServiceConnector):
 
     config: AWSBaseConfig
 
+    _account_id: Optional[str] = None
+    _session_cache: Dict[
+        Tuple[str, Optional[str], Optional[str]],
+        Tuple[boto3.Session, Optional[datetime.datetime]],
+    ] = {}
+
     @classmethod
     def _get_connector_type(cls) -> ServiceConnectorTypeModel:
         """Get the service connector type specification.
@@ -537,6 +544,68 @@ class AWSServiceConnector(ServiceConnector):
             The service connector type specification.
         """
         return AWS_SERVICE_CONNECTOR_TYPE_SPEC
+
+    @property
+    def account_id(self) -> str:
+        """Get the AWS account ID.
+
+        Returns:
+            The AWS account ID.
+
+        Raises:
+            AuthorizationException: If the AWS account ID could not be
+                determined.
+        """
+        if self._account_id is None:
+
+            logger.debug("Getting ECR registry ID from AWS...")
+            try:
+                session, _ = self.get_boto3_session(self.auth_method)
+                sts_client = session.client("sts")
+                response = sts_client.get_caller_identity()
+            except ClientError as e:
+                raise AuthorizationException(
+                    "Failed to get the ECR registry ID from ECR repository "
+                    f"name: {e}"
+                ) from e
+
+            self._account_id = response["Account"]
+
+        return self._account_id
+
+    def get_boto3_session(
+        self,
+        auth_method: str,
+        resource_type: Optional[str] = None,
+        resource_id: Optional[str] = None,
+    ) -> Tuple[boto3.Session, Optional[datetime.datetime]]:
+        """Get a boto3 session for the specified resource.
+
+        Args:
+            auth_method: The authentication method to use.
+            resource_type: The resource type to get a boto3 session for.
+            resource_id: The resource ID to get a boto3 session for.
+
+        Returns:
+            A boto3 session for the specified resource and its expiration
+            timestamp, if applicable.
+        """
+        # We maintain a cache of all sessions to avoid re-authenticating
+        # multiple times for the same resource
+        key = (auth_method, resource_type, resource_id)
+        if key in self._session_cache:
+            return self._session_cache[key]
+
+        logger.debug(
+            f"Getting boto3 session for auth method '{auth_method}', "
+            f"resource type '{resource_type}' and resource ID "
+            f"'{resource_id}'..."
+        )
+        session, expires_at = self._authenticate(
+            auth_method, resource_type, resource_id
+        )
+        self._session_cache[key] = (session, expires_at)
+        return session, expires_at
 
     def _get_iam_policy(
         self,
@@ -605,19 +674,10 @@ class AWSServiceConnector(ServiceConnector):
             }
             return json.dumps(policy)
         elif resource_type == DOCKER_RESOURCE_TYPE:
-            if resource_id:
-                repo_name, _ = self._parse_ecr_resource_id(
-                    resource_id,
-                    need_registry_id=False,
-                )
-                resource = [
-                    f"arn:aws:ecr:{region_id}:*:repository/{repo_name}",
-                ]
-            else:
-                resource = [
-                    f"arn:aws:ecr:{region_id}:*:repository/*",
-                    f"arn:aws:ecr:{region_id}:*:repository",
-                ]
+            resource = [
+                f"arn:aws:ecr:{region_id}:*:repository/*",
+                f"arn:aws:ecr:{region_id}:*:repository",
+            ]
             policy = {
                 "Version": "2012-10-17",
                 "Statement": [
@@ -934,71 +994,48 @@ class AWSServiceConnector(ServiceConnector):
     def _parse_ecr_resource_id(
         self,
         resource_id: str,
-        need_registry_id: bool = True,
-    ) -> Tuple[str, Optional[str]]:
-        """Validate and convert an ECR resource ID to an ECR registry ID and repository name.
+    ) -> str:
+        """Validate and convert an ECR resource ID to an ECR registry ID.
 
         Args:
             resource_id: The resource ID to convert.
-            need_registry_id: Whether the registry ID is required.
 
         Returns:
-            The ECR repository name and ECR registry ID
+            The ECR registry ID (AWS account ID).
 
         Raises:
             ValueError: If the provided resource ID is not a valid ECR
-                repository ARN, URI or repository name.
-            AuthorizationException: If an ECR registry ID (AWS account ID) is
-                not included in the resource ID and cannot be retrieved from
-                AWS because the connector is not authorized.
-
+                repository ARN or URI.
         """
         # The resource ID could mean different things:
         #
         # - an ECR repository ARN
         # - an ECR repository URI
-        # - the ECR repository name
         #
-        # We need to extract the region ID, registry ID and repository name from
+        # We need to extract the region ID and registry ID from
         # the provided resource ID
         config_region_id = self.config.region
-        registry_id: Optional[str] = None
-        repository_name: str
         region_id: Optional[str] = None
         if re.match(
-            r"^arn:aws:ecr:[a-z0-9-]+:\d{12}:repository/.+$",
+            r"^arn:aws:ecr:[a-z0-9-]+:\d{12}:repository(/.+)*$",
             resource_id,
         ):
             # The resource ID is an ECR repository ARN
             registry_id = resource_id.split(":")[4]
             region_id = resource_id.split(":")[3]
-            repository_name = resource_id.split("/")[0]
         elif re.match(
-            r"^(http[s]?://)?\d{12}\.dkr\.ecr\.[a-z0-9-]+\.amazonaws\.com/.+$",
+            r"^(http[s]?://)?\d{12}\.dkr\.ecr\.[a-z0-9-]+\.amazonaws\.com(/.+)*$",
             resource_id,
         ):
             # The resource ID is an ECR repository URI
             registry_id = resource_id.split(".")[0].split("/")[-1]
             region_id = resource_id.split(".")[3]
-            if resource_id.startswith("https://") or resource_id.startswith(
-                "http://"
-            ):
-                repository_name = resource_id.split("/")[4]
-            else:
-                repository_name = resource_id.split("/")[1]
-        elif re.match(
-            r"^([a-z0-9]+([._-][a-z0-9]+)*/)*[a-z0-9]+([._-][a-z0-9]+)*$",
-            resource_id,
-        ):
-            # Assume the resource ID is an ECR repository name
-            repository_name = resource_id
         else:
             raise ValueError(
                 f"Invalid resource ID for a ECR registry: {resource_id}. "
                 f"Supported formats are:\n"
-                f"ECR repository ARN: arn:aws:ecr:<region>:<account-id>:repository/<repository-name>\n"
-                f"ECR repository URI: [https://]<account-id>.dkr.ecr.<region>.amazonaws.com/<repository-name>\n"
-                f"ECR repository name: <repository-name>"
+                f"ECR repository ARN: arn:aws:ecr:<region>:<account-id>:repository[/<repository-name>]\n"
+                f"ECR repository URI: [https://]<account-id>.dkr.ecr.<region>.amazonaws.com[/<repository-name>]"
             )
 
         # If the connector is configured with a region and the resource ID
@@ -1011,22 +1048,7 @@ class AWSServiceConnector(ServiceConnector):
                 f"the connector ({config_region_id})."
             )
 
-        if not registry_id and need_registry_id:
-            # If the registry ID is not specified in the resource ID, we need
-            # to get it from the caller identity
-            try:
-                session, _ = self._authenticate(self.auth_method)
-                sts_client = session.client("sts")
-                response = sts_client.get_caller_identity()
-            except ClientError as e:
-                raise AuthorizationException(
-                    "Failed to get ECR registry ID from ECR repository "
-                    f"name: {e}"
-                ) from e
-
-            registry_id = response["Account"]
-
-        return repository_name, registry_id
+        return registry_id
 
     def _parse_eks_resource_id(self, resource_id: str) -> str:
         """Validate and convert an EKS resource ID to an AWS region and EKS cluster name.
@@ -1103,15 +1125,41 @@ class AWSServiceConnector(ServiceConnector):
             cluster_name = self._parse_eks_resource_id(resource_id)
             return cluster_name
         elif resource_type == DOCKER_RESOURCE_TYPE:
-            repository_name, registry_id = self._parse_ecr_resource_id(
+            registry_id = self._parse_ecr_resource_id(
                 resource_id,
             )
-            return (
-                f"{registry_id}.dkr.ecr.{self.config.region}.amazonaws.com/"
-                f"{repository_name}"
-            )
+            return f"{registry_id}.dkr.ecr.{self.config.region}.amazonaws.com"
         else:
             return resource_id
+
+    def _get_default_resource_id(self, resource_type: str) -> str:
+        """Get the default resource ID for a resource type.
+
+        Args:
+            resource_type: The type of the resource to get a default resource ID
+                for. Only called with resource types that do not support
+                multiple instances.
+
+        Returns:
+            The default resource ID for the resource type.
+
+        Raises:
+            AuthorizationException: If the ECR registry ID (AWS account ID)
+                cannot be retrieved from AWS because the connector is not
+                authorized.
+        """
+        if resource_type == AWS_RESOURCE_TYPE:
+            return self.config.region
+        elif resource_type == DOCKER_RESOURCE_TYPE:
+            # we need to get the account ID (same as registry ID) from the
+            # caller identity
+            account_id = self.account_id
+
+            return f"{account_id}.dkr.ecr.{self.config.region}.amazonaws.com"
+
+        raise RuntimeError(
+            f"Default resource ID for '{resource_type}' not available."
+        )
 
     def _connect_to_resource(
         self,
@@ -1125,39 +1173,39 @@ class AWSServiceConnector(ServiceConnector):
         - initialize and return a boto3 session if the resource type
         is a generic AWS resource
         - initialize and return a boto3 client for an S3 resource type
-        - initialize and return a python-docker client if the resource type is
-        a Docker registry
-        - initialize and return a python-kubernetes client if the resource type
-        is a Kubernetes cluster
+
+        For the Docker and Kubernetes resource types, the connector does not
+        support connecting to the resource directly. Instead, the connector
+        supports generating a connector client object for the resource type
+        in question.
 
         Args:
             kwargs: Additional implementation specific keyword arguments to pass
                 to the session or client constructor.
 
         Returns:
-            A boto3 session for AWS resources, a python-docker client object for
-            Docker registries, and a python-kubernetes client object for
-            Kubernetes clusters.
+            A boto3 session for AWS generic resources and a boto3 S3 client for
+            S3 resources.
 
         Raises:
             NotImplementedError: If the connector instance does not support
-                connecting to the indicated resource type or client type.
+                directly connecting to the indicated resource type.
         """
         resource_type = self.resource_type
         resource_id = self.resource_id
 
         assert resource_type is not None
+        assert resource_id is not None
 
         # Regardless of the resource type, we must authenticate to AWS first
         # before we can connect to any AWS resource
-        session, _ = self._authenticate(
+        session, _ = self.get_boto3_session(
             self.auth_method,
             resource_type=resource_type,
             resource_id=resource_id,
         )
 
         if resource_type == S3_RESOURCE_TYPE:
-            assert resource_id is not None
 
             # Validate that the resource ID is a valid S3 bucket name
             self._parse_s3_resource_id(resource_id)
@@ -1413,37 +1461,36 @@ class AWSServiceConnector(ServiceConnector):
         resource_type: Optional[str] = None,
         resource_id: Optional[str] = None,
     ) -> List[str]:
-        """Verify that the connector can authenticate and access resources.
+        """Verify and list all the resources that the connector can access.
 
         Args:
             resource_type: The type of the resource to verify. If omitted and
                 if the connector supports multiple resource types, the
                 implementation must verify that it can authenticate and connect
-                to any of the supported resource types or raise a
-                NotImplementedError exception.
-            resource_id: The ID of the resource to connect to. Omitted if the
-                supplied resource type does not allow multiple instances or
-                if a resource type is not specified. If the supplied resource
-                type allows multiple instances, this parameter may still be
-                omitted to verify that the connector can authenticate and
-                connect to any instance of the given resource type.
+                to any and all of the supported resource types.
+            resource_id: The ID of the resource to connect to. Omitted if a
+                resource type is not specified. It has the same value as the
+                default resource ID if the supplied resource type doesn't
+                support multiple instances. If the supplied resource type does
+                allows multiple instances, this parameter may still be omitted
+                to fetch a list of resource IDs identifying all the resources
+                of the indicated type that the connector can access.
 
         Returns:
             The list of resources IDs in canonical format identifying the
-            resources that the connector can access.
+            resources that the connector can access. This list is empty only
+            if the resource type is not specified (i.e. for multi-type
+            connectors).
 
         Raises:
             AuthorizationException: If the connector cannot authenticate or
                 access the specified resource.
         """
-        # If the resource type or resource ID are not specified, treat this the
+        # If the resource type is not specified, treat this the
         # same as a generic AWS connector.
-        if resource_type is None:
-            resource_type = AWS_RESOURCE_TYPE
-
-        session, _ = self._authenticate(
+        session, _ = self.get_boto3_session(
             self.auth_method,
-            resource_type=resource_type,
+            resource_type=resource_type or AWS_RESOURCE_TYPE,
             resource_id=resource_id,
         )
 
@@ -1457,8 +1504,12 @@ class AWSServiceConnector(ServiceConnector):
             logger.debug(msg)
             raise AuthorizationException(msg) from err
 
-        if resource_type == AWS_RESOURCE_TYPE:
+        if not resource_type:
             return []
+
+        if resource_type == AWS_RESOURCE_TYPE:
+            assert resource_id is not None
+            return [resource_id]
 
         if resource_type == S3_RESOURCE_TYPE:
             s3_client = session.client(
@@ -1490,43 +1541,30 @@ class AWSServiceConnector(ServiceConnector):
                     raise AuthorizationException(msg) from e
 
         if resource_type == DOCKER_RESOURCE_TYPE:
+            assert resource_id is not None
+
             ecr_client = session.client(
                 "ecr",
                 region_name=self.config.region,
                 endpoint_url=self.config.endpoint_url,
             )
-            if not resource_id:
-                # List all ECR repositories
-                try:
-                    repositories = ecr_client.describe_repositories()
-                except ClientError as e:
-                    msg = f"failed to list ECR repositories: {e}"
-                    logger.error(msg)
-                    raise AuthorizationException(msg) from e
+            # List all ECR repositories
+            try:
+                repositories = ecr_client.describe_repositories()
+            except ClientError as e:
+                msg = f"failed to list ECR repositories: {e}"
+                logger.error(msg)
+                raise AuthorizationException(msg) from e
 
-                repo_list: List[str] = []
-                for repo in repositories["repositories"]:
-                    repo_list.append(repo["repositoryUri"].lstrip("https://"))
-                return repo_list
-            else:
-                # Check if the specified ECR repository exists
-                registry_name, registry_id = self._parse_ecr_resource_id(
-                    resource_id
+            if len(repositories["repositories"]) == 0:
+                raise AuthorizationException(
+                    "the AWS connector does not have access to any ECR "
+                    "repositories. Please adjust the AWS permissions "
+                    "associated with the authentication credentials to "
+                    "include access to at least one ECR repository."
                 )
-                try:
-                    repositories = ecr_client.describe_repositories(
-                        repositoryNames=[
-                            registry_name,
-                        ]
-                    )
-                except ClientError as e:
-                    msg = (
-                        f"Failed to fetch ECR repository {registry_name}: {e}"
-                    )
-                    logger.error(msg)
-                    raise AuthorizationException(msg) from e
 
-                return [resource_id]
+            return [resource_id]
 
         if resource_type == KUBERNETES_RESOURCE_TYPE:
             eks_client = session.client(
@@ -1561,7 +1599,7 @@ class AWSServiceConnector(ServiceConnector):
     def _get_connector_client(
         self,
         resource_type: str,
-        resource_id: Optional[str] = None,
+        resource_id: str,
     ) -> "ServiceConnector":
         """Get a connector instance that can be used to connect to a resource.
 
@@ -1601,21 +1639,24 @@ class AWSServiceConnector(ServiceConnector):
                 AWSAuthenticationMethods.SECRET_KEY,
                 AWSAuthenticationMethods.STS_TOKEN,
             ]:
+                if (
+                    self.resource_type == resource_type
+                    and self.resource_id == resource_id
+                ):
+                    # If the requested type and resource ID are the same as
+                    # those configured, we can return the current connector
+                    # instance because it's fully formed and ready to use
+                    # to connect to the specified resource
+                    return self
+
                 # The secret key and STS token authentication methods do not
                 # involve generating temporary credentials, so we can just
                 # use the current connector configuration
                 config = self.config
-
-                if resource_type == AWS_RESOURCE_TYPE or self.resource_id:
-                    # If the resource type is AWS or a specific resource ID
-                    # is specified, we can even return the current connector
-                    # instance because it's fully formed and ready to use
-                    # to connect to the specified resource
-                    return self
                 expires_at = self.expires_at
             else:
                 # Get an authenticated boto3 session
-                session, expires_at = self._authenticate(
+                session, expires_at = self.get_boto3_session(
                     self.auth_method,
                     resource_type=resource_type,
                     resource_id=resource_id,
@@ -1651,16 +1692,14 @@ class AWSServiceConnector(ServiceConnector):
             assert resource_id is not None
 
             # Get an authenticated boto3 session
-            session, expires_at = self._authenticate(
+            session, expires_at = self.get_boto3_session(
                 self.auth_method,
                 resource_type=resource_type,
                 resource_id=resource_id,
             )
             assert isinstance(session, boto3.Session)
 
-            repository_name, registry_id = self._parse_ecr_resource_id(
-                resource_id
-            )
+            registry_id = self._parse_ecr_resource_id(resource_id)
 
             ecr_client = session.client(
                 "ecr",
@@ -1697,10 +1736,10 @@ class AWSServiceConnector(ServiceConnector):
                 name=connector_name,
                 auth_method=DockerAuthenticationMethods.PASSWORD,
                 resource_type=resource_type,
-                resource_id=f"{endpoint}/{repository_name}",
-                config=DockerCredentials(
+                config=DockerConfiguration(
                     username=username,
                     password=token,
+                    registry=endpoint,
                 ),
                 expires_at=expires_at,
             )
@@ -1709,7 +1748,7 @@ class AWSServiceConnector(ServiceConnector):
             assert resource_id is not None
 
             # Get an authenticated boto3 session
-            session, expires_at = self._authenticate(
+            session, expires_at = self.get_boto3_session(
                 self.auth_method,
                 resource_type=resource_type,
                 resource_id=resource_id,
