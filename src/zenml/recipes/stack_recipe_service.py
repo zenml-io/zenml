@@ -158,7 +158,7 @@ class StackRecipe:
         metadata = yaml_utils.read_yaml(
             file_path=os.path.join(self.path_in_repo, "metadata.yaml")
         )
-        return metadata
+        return cast(Dict[str, Any], metadata)
 
 
 class StackRecipeRepo:
@@ -492,7 +492,7 @@ class StackRecipeService(TerraformService):
             Whether the local recipe exists.
         """
         local_stack_recipe = LocalStackRecipe(
-            path=self.config.directory_path, name=self.stack_recipe_name
+            path=Path(self.config.directory_path), name=self.stack_recipe_name
         )
         return local_stack_recipe.is_present()
 
@@ -748,7 +748,7 @@ class StackRecipeService(TerraformService):
         return cast(str, yaml.dump(config))
 
     @classmethod
-    def get_version(cls) -> str:
+    def get_version(cls) -> Optional[str]:
         """Get the version of the recipe."""
         handler = GitStackRecipesHandler()
         return handler.get_active_version()

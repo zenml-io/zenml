@@ -1239,8 +1239,8 @@ def generate_stack_component_destroy_command(
             )
         except KeyError:
             cli_utils.error(
-                "Could not find a stack component with name or id %s",
-                name_id_or_prefix,
+                "Could not find a stack component with name or id "
+                f"'{name_id_or_prefix}'.",
             )
 
         # if the component's labels don't have a key created_by
@@ -1251,9 +1251,8 @@ def generate_stack_component_destroy_command(
             or component.labels["created_by"] != "recipe"
         ):
             cli_utils.error(
-                "Cannot destroy stack component %s. It was not created by a "
-                "recipe.",
-                component.name,
+                f"Cannot destroy stack component {component.name}. It "
+                "was not created by a recipe.",
             )
 
         try:

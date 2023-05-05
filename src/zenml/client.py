@@ -134,7 +134,6 @@ from zenml.models.schedule_model import (
     ScheduleFilterModel,
     ScheduleResponseModel,
 )
-from zenml.stack import StackComponent
 from zenml.utils import io_utils, source_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, event_handler, track
 from zenml.utils.filesync_model import FileSyncModel
@@ -2440,7 +2439,7 @@ class Client(metaclass=ClientMetaClass):
 
     def destroy_stack_component(
         self,
-        component: StackComponent,
+        component: ComponentResponseModel,
     ) -> None:
         """Destroys a stack component.
 
@@ -2458,6 +2457,8 @@ class Client(metaclass=ClientMetaClass):
         else:
             disabled_services = [f"{component.type.value}"]
 
+        # assert that labels is not None
+        assert component.labels is not None
         # path should be fixed at a constant in the
         # global config directory
         path = Path(
