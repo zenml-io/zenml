@@ -2445,6 +2445,9 @@ class Client(metaclass=ClientMetaClass):
 
         Args:
             component: The stack component to destroy.
+
+        Returns:
+            None
         """
         STACK_COMPONENT_RECIPE_DIR = "deployed_stack_components"
 
@@ -2485,10 +2488,11 @@ class Client(metaclass=ClientMetaClass):
             stack_recipe_service = StackRecipeService.get_service(str(path))
 
             if not stack_recipe_service:
-                raise DoesNotExistException(
+                logger.error(
                     f"No deployed {component.type.value} found with "
                     f"flavor {component.flavor} and name {component.name}."
                 )
+                return None
 
             stack_recipe_service.config.disabled_services = disabled_services
 
@@ -2497,9 +2501,11 @@ class Client(metaclass=ClientMetaClass):
                 stack_recipe_service.stop()
 
             except python_terraform.TerraformCommandError as e:
-                raise StackComponentDeploymentError(
-                    f"Error destroying stack component: {e}"
+                logger.error(
+                    f"Destruction of the stack component failed or was "
+                    f"interrupted. "
                 )
+                return None
 
         logger.info(
             "Deregistering stack component %s...",

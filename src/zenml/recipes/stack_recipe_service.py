@@ -506,6 +506,9 @@ class StackRecipeService(TerraformService):
         Args:
             force: Whether to force the pull.
             git_stack_recipes_handler: The git stack recipes handler to use.
+
+        Raises:
+            DoesNotExistException: If the stack recipe does not exist locally.
         """
         if not self.local_recipe_exists():
             if self.config.skip_pull:
@@ -749,7 +752,11 @@ class StackRecipeService(TerraformService):
 
     @classmethod
     def get_version(cls) -> Optional[str]:
-        """Get the version of the recipe."""
+        """Get the version of the recipe.
+
+        Returns:
+            The version of the recipe.
+        """
         handler = GitStackRecipesHandler()
         return handler.get_active_version()
 
