@@ -191,7 +191,7 @@ def test_kubernetes_orchestrator_uses_service_account_from_settings(mocker):
 def test_kubernetes_orchestrator_uses_k8s_config_from_settings(
     mocker, incluster, kubernetes_context
 ):
-
+    """Test that the k8s config can be set from the settings."""
     _patch_k8s_clients(mocker)
     orchestrator = _get_kubernetes_orchestrator(local=True)
     settings = KubernetesOrchestratorSettings(
