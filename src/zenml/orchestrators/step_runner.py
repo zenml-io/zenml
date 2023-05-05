@@ -512,7 +512,10 @@ class StepRunner:
             # Get artifact metadata.
             if artifact_metadata_enabled:
                 try:
-                    materializer.extract_full_metadata(return_value)
+                    artifact_metadata = materializer.extract_full_metadata(
+                        return_value
+                    )
+                    output_artifact_metadata[output_name] = artifact_metadata
                 except Exception as e:
                     logger.warning(
                         f"Failed to extract metadata for output artifact "
