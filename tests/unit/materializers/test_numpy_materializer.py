@@ -38,6 +38,7 @@ def test_numpy_materializer():
         materializer_class=NumpyMaterializer,
         step_output=numeric_array,
         return_metadata=True,
+        expected_metadata_size=7,
     )
 
     # Assert that the materialized array is correct
@@ -69,6 +70,7 @@ def test_numpy_materializer():
         materializer_class=NumpyMaterializer,
         step_output=text_array,
         return_metadata=True,
+        expected_metadata_size=7,
     )
 
     # Assert that the materialized array is correct

@@ -22,7 +22,7 @@ install all integrations required by the tests with the following command:
 ```bash
 zenml integration install kubeflow s3 gcp azure vault pillow evidently \
     deepchecks great_expectations huggingface lightgbm neural_prophet pytorch \
-    tensorflow whylogs xgboost mlflow neptune
+    tensorflow whylogs xgboost mlflow neptune seldon
 ```
 
 Running unit tests is as simple as running `pytest` from the root of the

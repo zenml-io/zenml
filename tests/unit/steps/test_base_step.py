@@ -311,20 +311,6 @@ def test_call_step_with_wrong_kwarg_type(
         step_with_two_int_inputs()(input_1=1, input_2=int_step_output)
 
 
-def test_call_step_with_missing_materializer_for_type():
-    """Tests that calling a step with an output without registered materializer raises a StepInterfaceError."""
-
-    class MyTypeWithoutMaterializer:
-        pass
-
-    @step
-    def some_step() -> MyTypeWithoutMaterializer:
-        return MyTypeWithoutMaterializer()
-
-    with pytest.raises(StepInterfaceError):
-        some_step()()
-
-
 class MyType:
     pass
 
@@ -761,7 +747,6 @@ def test_step_decorator_configuration_gets_applied_during_initialization(
         "step_operator": "s",
         "extra": {"key": "value"},
         "settings": {"docker": {"target_repository": "custom_repo"}},
-        "output_artifacts": None,
         "output_materializers": None,
         "on_failure": None,
         "on_success": None,
@@ -857,7 +842,9 @@ def test_configure_step_with_invalid_materializer_key_or_source():
 
     with pytest.raises(StepInterfaceError):
         step_instance.configure(
-            output_materializers={"output": "not_a_materializer_source"}
+            output_materializers={
+                "output": "non_existent_module.materializer_class"
+            }
         )
 
     with does_not_raise():

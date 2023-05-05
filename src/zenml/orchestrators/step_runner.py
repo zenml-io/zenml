@@ -26,7 +26,6 @@ from typing import (
     Type,
 )
 
-from zenml.artifacts.base_artifact import BaseArtifact
 from zenml.client import Client
 from zenml.config.step_configurations import StepConfiguration
 from zenml.config.step_run_info import StepRunInfo
@@ -55,6 +54,7 @@ from zenml.steps.utils import (
 from zenml.utils import source_utils
 
 if TYPE_CHECKING:
+    from zenml.config.source import Source
     from zenml.config.step_configurations import Step
     from zenml.metadata.metadata_types import MetadataType
     from zenml.stack import Stack
@@ -358,23 +358,13 @@ class StepRunner:
         if data_type == UnmaterializedArtifact:
             return UnmaterializedArtifact.parse_obj(artifact)
 
-        # Skip materialization for `BaseArtifact` and its subtypes.
-        if issubclass(data_type, BaseArtifact):
-            logger.warning(
-                "Skipping materialization by specifying a subclass of "
-                "`zenml.artifacts.BaseArtifact` as input data type is "
-                "deprecated and will be removed in a future release. Please "
-                "type your input as "
-                "`zenml.materializers.UnmaterializedArtifact` instead."
-            )
-            return artifact
-
         materializer_class: Type[
             BaseMaterializer
         ] = source_utils.load_and_validate_class(
             artifact.materializer, expected_class=BaseMaterializer
         )
-        materializer = materializer_class(artifact.uri)
+        materializer: BaseMaterializer = materializer_class(artifact.uri)
+        materializer.validate_type_compatibility(data_type)
         return materializer.load(data_type=data_type)
 
     def _validate_outputs(
@@ -489,13 +479,11 @@ class StepRunner:
             ].materializer_source
             uri = output_artifact_uris[output_name]
             materializer = materializer_class(uri)
+            materializer.validate_type_compatibility(type(return_value))
             materializer.save(return_value)
             if artifact_metadata_enabled:
                 try:
-                    artifact_metadata = materializer.extract_metadata(
-                        return_value
-                    )
-                    output_artifact_metadata[output_name] = artifact_metadata
+                    materializer.extract_full_metadata(return_value)
                 except Exception as e:
                     logger.warning(
                         f"Failed to extract metadata for output artifact "
@@ -507,7 +495,7 @@ class StepRunner:
                 type=materializer_class.ASSOCIATED_ARTIFACT_TYPE,
                 uri=uri,
                 materializer=materializer_source,
-                data_type=source_utils.resolve_class(type(return_value)),
+                data_type=source_utils.resolve(type(return_value)),
                 user=active_user_id,
                 workspace=active_workspace_id,
                 artifact_store_id=artifact_store_id,
@@ -517,7 +505,7 @@ class StepRunner:
 
     def load_and_run_hook(
         self,
-        hook_source: str,
+        hook_source: "Source",
         step_exception: Optional[BaseException],
         output_artifact_uris: Dict[str, str],
         output_materializers: Dict[str, Type[BaseMaterializer]],
@@ -531,8 +519,9 @@ class StepRunner:
             output_materializers: The output materializers of the step.
         """
         try:
-            hook = source_utils.load_source_path(hook_source)
+            hook = source_utils.load(hook_source)
             hook_spec = inspect.getfullargspec(inspect.unwrap(hook))
+
             function_params = self._parse_hook_inputs(
                 args=hook_spec.args,
                 annotations=hook_spec.annotations,

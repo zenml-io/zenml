@@ -40,6 +40,7 @@ from zenml.enums import StackComponentType
 from zenml.integrations.airflow.flavors.airflow_orchestrator_flavor import (
     AirflowOrchestratorConfig,
     AirflowOrchestratorSettings,
+    OperatorType,
 )
 from zenml.io import fileio
 from zenml.logger import get_logger
@@ -50,6 +51,7 @@ from zenml.stack import StackValidator
 from zenml.utils import daemon, io_utils
 
 if TYPE_CHECKING:
+    from zenml.config import ResourceSettings
     from zenml.config.base_settings import BaseSettings
     from zenml.integrations.airflow.orchestrators.dag_generator import (
         DagConfiguration,
@@ -212,12 +214,16 @@ class AirflowOrchestrator(ContainerizedOrchestrator):
         self,
         deployment: "PipelineDeploymentResponseModel",
         stack: "Stack",
+        environment: Dict[str, str],
     ) -> Any:
         """Creates and writes an Airflow DAG zip file.
 
         Args:
             deployment: The pipeline deployment to prepare or run.
             stack: The stack the pipeline will run on.
+            environment: Environment variables to set in the orchestration
+                environment.
+
         """
         pipeline_settings = cast(
             AirflowOrchestratorSettings, self.get_settings(deployment)
@@ -238,6 +244,21 @@ class AirflowOrchestrator(ContainerizedOrchestrator):
             arguments = StepEntrypointConfiguration.get_entrypoint_arguments(
                 step_name=step_name, deployment_id=deployment.id
             )
+            operator_args = settings.operator_args.copy()
+            if self.requires_resources_in_orchestration_environment(step=step):
+                if settings.operator == OperatorType.KUBERNETES_POD.source:
+                    self._apply_resource_settings(
+                        resource_settings=step.config.resource_settings,
+                        operator_args=operator_args,
+                    )
+                else:
+                    logger.warning(
+                        "Specifying step resources is only supported when "
+                        "using KubernetesPodOperators, ignoring resource "
+                        "configuration for step %s.",
+                        step.config.name,
+                    )
+
             task = dag_generator_values.task_configuration_class(
                 id=step_name,
                 zenml_step_name=step.config.name,
@@ -245,8 +266,9 @@ class AirflowOrchestrator(ContainerizedOrchestrator):
                 docker_image=image,
                 command=command,
                 arguments=arguments,
+                environment=environment,
                 operator_source=settings.operator,
-                operator_args=settings.operator_args,
+                operator_args=operator_args,
             )
             tasks.append(task)
 
@@ -273,6 +295,43 @@ class AirflowOrchestrator(ContainerizedOrchestrator):
             dag_generator_values=dag_generator_values,
             output_dir=pipeline_settings.dag_output_dir or self.dags_directory,
         )
+
+    def _apply_resource_settings(
+        self,
+        resource_settings: "ResourceSettings",
+        operator_args: Dict[str, Any],
+    ) -> None:
+        """Adds resource settings to the operator args.
+
+        Args:
+            resource_settings: The resource settings to add.
+            operator_args: The operator args which will get modified in-place.
+        """
+        if "container_resources" in operator_args:
+            logger.warning(
+                "Received duplicate resources from ResourceSettings: `%s`"
+                "and operator_args: `%s`. Ignoring the resources defined by "
+                "the ResourceSettings.",
+                resource_settings,
+                operator_args["container_resources"],
+            )
+        else:
+            limits = {}
+
+            if resource_settings.cpu_count is not None:
+                limits["cpu"] = str(resource_settings.cpu_count)
+
+            if resource_settings.memory is not None:
+                memory_limit = resource_settings.memory[:-1]
+                limits["memory"] = memory_limit
+
+            if resource_settings.gpu_count is not None:
+                logger.warning(
+                    "Specifying GPU resources is not supported for the Airflow "
+                    "orchestrator."
+                )
+
+            operator_args["container_resources"] = {"limits": limits}
 
     def _write_dag(
         self,

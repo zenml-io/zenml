@@ -14,16 +14,27 @@
 """Abstract base class for entrypoint configurations."""
 
 import argparse
+import os
+import sys
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, NoReturn, Set
+from typing import TYPE_CHECKING, Any, Dict, List, NoReturn, Set
 from uuid import UUID
 
 from zenml.client import Client
-from zenml.models.pipeline_deployment_models import (
-    PipelineDeploymentResponseModel,
+from zenml.code_repositories import BaseCodeRepository
+from zenml.constants import (
+    ENV_ZENML_REQUIRES_CODE_DOWNLOAD,
+    handle_bool_env_var,
 )
-from zenml.utils import source_utils, uuid_utils
+from zenml.logger import get_logger
+from zenml.utils import code_repository_utils, source_utils, uuid_utils
 
+if TYPE_CHECKING:
+    from zenml.models import (
+        PipelineDeploymentResponseModel,
+    )
+
+logger = get_logger(__name__)
 DEFAULT_ENTRYPOINT_COMMAND = [
     "python",
     "-m",
@@ -118,7 +129,7 @@ class BaseEntrypointConfiguration(ABC):
 
         arguments = [
             f"--{ENTRYPOINT_CONFIG_SOURCE_OPTION}",
-            source_utils.resolve_class(cls),
+            source_utils.resolve(cls).import_path,
             f"--{DEPLOYMENT_ID_OPTION}",
             str(deployment_id),
         ]
@@ -175,6 +186,57 @@ class BaseEntrypointConfiguration(ABC):
         """
         deployment_id = UUID(self.entrypoint_args[DEPLOYMENT_ID_OPTION])
         return Client().zen_store.get_deployment(deployment_id=deployment_id)
+
+    def download_code_if_necessary(
+        self, deployment: "PipelineDeploymentResponseModel"
+    ) -> None:
+        """Downloads user code if necessary.
+
+        Args:
+            deployment: The deployment for which to download the code.
+
+        Raises:
+            RuntimeError: If the current environment requires code download
+                but the deployment does not have an associated code reference.
+        """
+        requires_code_download = handle_bool_env_var(
+            ENV_ZENML_REQUIRES_CODE_DOWNLOAD
+        )
+
+        if not requires_code_download:
+            return
+
+        code_reference = deployment.code_reference
+        if not code_reference:
+            raise RuntimeError(
+                "Code download required but no code reference provided."
+            )
+
+        logger.info(
+            "Downloading code from code repository `%s` (commit `%s`).",
+            code_reference.code_repository.name,
+            code_reference.commit,
+        )
+        model = Client().get_code_repository(code_reference.code_repository.id)
+        repo = BaseCodeRepository.from_model(model)
+        code_repo_root = os.path.abspath("code")
+        download_dir = os.path.join(
+            code_repo_root, code_reference.subdirectory
+        )
+        os.makedirs(download_dir)
+        repo.download_files(
+            commit=code_reference.commit,
+            directory=download_dir,
+            repo_sub_directory=code_reference.subdirectory,
+        )
+        source_utils.set_custom_source_root(download_dir)
+        code_repository_utils.set_custom_local_repository(
+            root=code_repo_root, commit=code_reference.commit, repo=repo
+        )
+        # Add downloaded file directory to python path
+        sys.path.insert(0, download_dir)
+
+        logger.info("Code download finished.")
 
     @abstractmethod
     def run(self) -> None:

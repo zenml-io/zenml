@@ -31,6 +31,7 @@ def test_pydantic_materializer():
         step_output_type=MyModel,
         materializer_class=PydanticMaterializer,
         step_output=model,
+        expected_metadata_size=2,
     )
     assert result.a == 2
     assert result.b == 3

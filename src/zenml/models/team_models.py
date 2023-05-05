@@ -89,7 +89,7 @@ class TeamResponseModel(TeamBaseModel, BaseResponseModel):
 class TeamFilterModel(BaseFilterModel):
     """Model to enable advanced filtering of all Teams."""
 
-    name: str = Field(
+    name: Optional[str] = Field(
         default=None,
         description="Name of the team",
     )
@@ -104,7 +104,7 @@ class TeamRequestModel(TeamBaseModel, BaseRequestModel):
     """Request model for teams."""
 
     users: Optional[List[UUID]] = Field(
-        title="The list of users within this team."
+        default=None, title="The list of users within this team."
     )
 
 

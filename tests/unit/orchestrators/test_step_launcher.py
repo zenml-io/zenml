@@ -32,7 +32,11 @@ def test_pipeline_step_name_extraction():
     correctly."""
     step_1 = Step.parse_obj(
         {
-            "spec": {"source": "", "upstream_steps": [], "inputs": {}},
+            "spec": {
+                "source": "module.step_class",
+                "upstream_steps": [],
+                "inputs": {},
+            },
             "config": {
                 "name": "step_1_name",
             },
@@ -40,7 +44,11 @@ def test_pipeline_step_name_extraction():
     )
     step_2 = Step.parse_obj(
         {
-            "spec": {"source": "", "upstream_steps": [], "inputs": {}},
+            "spec": {
+                "source": "module.step_class",
+                "upstream_steps": [],
+                "inputs": {},
+            },
             "config": {
                 "name": "step_2_name",
             },

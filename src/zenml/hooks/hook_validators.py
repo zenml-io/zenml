@@ -17,28 +17,30 @@ import inspect
 from types import FunctionType
 from typing import TYPE_CHECKING, Union
 
+from zenml.config.source import Source
 from zenml.utils import source_utils
 
 if TYPE_CHECKING:
-    HookSpecification = Union[str, FunctionType]
+
+    HookSpecification = Union[str, Source, FunctionType]
 
 
-def resolve_and_validate_hook(hook_func: "HookSpecification") -> str:
+def resolve_and_validate_hook(hook: "HookSpecification") -> Source:
     """Resolves and validates a hook callback.
 
     Args:
-        hook_func: Callable hook function.
+        hook: Hook function or source.
 
     Returns:
-        str: Resolved source path of `hook_func`.
+        Hook source.
 
     Raises:
         ValueError: If `hook_func` is not a valid callable.
     """
-    if type(hook_func) is str:
-        func = source_utils.load_source_path(hook_func)
+    if isinstance(hook, (str, Source)):
+        func = source_utils.load(hook)
     else:
-        func = hook_func
+        func = hook
 
     if not callable(func):
         raise ValueError(f"{func} is not a valid function.")
@@ -67,10 +69,6 @@ def resolve_and_validate_hook(hook_func: "HookSpecification") -> str:
                     BaseException,
                     BaseParameters,
                     StepContext,
-                    # Have to do string version for TYPE_CHECKING
-                    "BaseException",
-                    "BaseParameters",
-                    "StepContext",
                 ):
                     raise ValueError(
                         "Hook parameters must be of type `BaseException`, `BaseParameters`, "
@@ -87,4 +85,4 @@ def resolve_and_validate_hook(hook_func: "HookSpecification") -> str:
                     )
                 seen_annotations.add(annotation)
 
-    return source_utils.resolve_class(func)
+    return source_utils.resolve(func)

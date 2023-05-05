@@ -64,6 +64,17 @@ You can also access your pipelines through the CLI by executing the following co
 zenml pipeline list
 ```
 
+ZenML allows you to filter and/or sort the output of this command using a variety of flags.
+For example, you could sort the pipelines list in a reverse alphabetical order
+by passing in:
+
+```shell
+zenml pipeline list --sort_by "asc:name"
+```
+
+Please [refer to our
+documentation](https://apidocs.zenml.io/latest/cli/#zenml.cli--filtering-cli-output-when-listing)
+for full details on the available flags.
 </details>
 
 ## Runs
@@ -135,6 +146,17 @@ zenml pipeline runs list
 zenml pipeline runs list -p <MY_PIPELINE_NAME_OR_ID>
 ```
 
+ZenML allows you to filter and/or sort the output of this command using a variety of flags.
+For example, you could filter the pipelines runs list to give you only pipelines
+created after January 1st, 2021 using the following command:
+
+```shell
+zenml pipeline runs list --created "gt:2021-01-01 00:00:00"
+```
+
+Please [refer to our
+documentation](https://apidocs.zenml.io/latest/cli/#zenml.cli--filtering-cli-output-when-listing)
+for full details on the available flags.
 </details>
 
 ### Runs Configuration
@@ -324,6 +346,29 @@ pipe.run()
 step_1 = pipe.get_runs()[0].get_step(step="step_1")
 output = step_1.output.read()
 ```
+
+## Querying the Client
+
+Alternatively, you can also access ZenML objects directly from the ZenML client,
+from artifacts to pipelines to runs and more. This is useful if you don't want to use the
+CLI to access these things. It also allows you to filter and sort the results
+using our powerful syntax [as described in the CLI
+docs](https://apidocs.zenml.io/latest/cli/#zenml.cli--filtering-cli-output-when-listing).
+
+For example, you could get all pipeline runs that have been run since January
+1 2023 using the following code:
+
+```python
+from zenml.client import Client
+
+client = Client()
+client.list_runs(created="gt:2023-01-01 00:00:00")
+```
+
+The syntax that you'll need to pass into the various methods is described [in our
+documentation](https://apidocs.zenml.io/latest/cli/#zenml.cli--filtering-cli-output-when-listing)
+and you can learn more about the methods available to you [within the `Client`
+API docs here](https://apidocs.zenml.io/latest/core_code_docs/core-client/).
 
 ## Final note: Fetching older pipeline runs within a step
 

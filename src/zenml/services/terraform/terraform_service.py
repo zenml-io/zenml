@@ -112,9 +112,7 @@ class TerraformService(BaseService):
         status: service status
     """
 
-    config: TerraformServiceConfig = Field(
-        default_factory=TerraformServiceConfig
-    )
+    config: TerraformServiceConfig
     status: TerraformServiceStatus = Field(
         default_factory=TerraformServiceStatus
     )

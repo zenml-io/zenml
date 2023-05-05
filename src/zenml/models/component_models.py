@@ -67,6 +67,10 @@ class ComponentBaseModel(BaseModel):
     configuration: Dict[str, Any] = Field(
         title="The stack component configuration.",
     )
+    labels: Optional[Dict[str, Any]] = Field(
+        default=None,
+        title="The stack component labels.",
+    )
 
 
 # -------- #
@@ -103,29 +107,31 @@ class ComponentFilterModel(ShareableWorkspaceScopedFilterModel):
         "scope_type",
     ]
     scope_type: Optional[str] = Field(
-        None,
+        default=None,
         description="The type to scope this query to.",
     )
 
-    is_shared: Union[bool, str] = Field(
+    is_shared: Optional[Union[bool, str]] = Field(
         default=None, description="If the stack is shared or private"
     )
-    name: str = Field(
+    name: Optional[str] = Field(
         default=None,
         description="Name of the stack component",
     )
-    flavor: str = Field(
+    flavor: Optional[str] = Field(
         default=None,
         description="Flavor of the stack component",
     )
-    type: str = Field(
+    type: Optional[str] = Field(
         default=None,
         description="Type of the stack component",
     )
-    workspace_id: Union[UUID, str] = Field(
+    workspace_id: Optional[Union[UUID, str]] = Field(
         default=None, description="Workspace of the stack component"
     )
-    user_id: Union[UUID, str] = Field(None, description="User of the stack")
+    user_id: Optional[Union[UUID, str]] = Field(
+        default=None, description="User of the stack"
+    )
 
     def set_scope_type(self, component_type: str) -> None:
         """Set the type of component on which to perform the filtering to scope the response.

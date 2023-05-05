@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2021. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2023. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -12,250 +12,311 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-import inspect
-import os
 import pathlib
 import sys
-from collections import OrderedDict
+from collections import defaultdict
 from contextlib import ExitStack as does_not_raise
-from pathlib import Path
-from typing import Callable
+from uuid import uuid4
 
 import pytest
-from pytest_mock import MockerFixture
 
-from zenml.client import Client
-from zenml.utils import source_utils
+from tests.unit.pipelines.test_build_utils import (
+    StubLocalRepositoryContext,
+)
+from zenml.config.source import CodeRepositorySource, Source, SourceType
+from zenml.utils import code_repository_utils, source_utils
 
-
-def test_is_third_party_module(mocker: MockerFixture):
-    """Tests that third party modules get detected correctly."""
-    mocker.patch(
-        "zenml.utils.source_utils.get_source_root_path",
-        return_value=str(pathlib.Path(__file__).absolute().parent),
-    )
-    third_party_file = inspect.getfile(pytest.Cache)
-    assert source_utils.is_third_party_module(third_party_file)
-
-    assert not source_utils.is_third_party_module(__file__)
-
-    standard_lib_file = inspect.getfile(OrderedDict)
-    assert source_utils.is_third_party_module(standard_lib_file)
+CURRENT_MODULE_PARENT_DIR = str(pathlib.Path(__file__).resolve().parent)
 
 
 class EmptyClass:
+    class NestedClass:
+        pass
+
+
+empty_class_instance = EmptyClass()
+
+
+def empty_function():
     pass
 
 
-def test_resolve_class(mocker: MockerFixture):
-    """Tests that class resolving works as expected."""
-    os.getcwd()
-    parent_directory = os.path.dirname(os.path.dirname(__file__))
-    os.chdir(parent_directory)
+def test_basic_source_loading():
+    """Tests basic source loading."""
+    from zenml import client
 
-    mocker.patch(
-        "zenml.utils.source_utils.get_source_root_path",
-        return_value=str(pathlib.Path(__file__).absolute().parents[1]),
+    assert source_utils.load("zenml.client.Client") is client.Client
+    client_source = Source(
+        module="zenml.client", attribute="Client", type=SourceType.UNKNOWN
+    )
+    assert source_utils.load(client_source) is client.Client
+
+    client_module_source = Source(
+        module="zenml.client", attribute=None, type=SourceType.INTERNAL
+    )
+    assert source_utils.load(client_module_source) is client
+
+    with pytest.raises(ModuleNotFoundError):
+        source_utils.load("zenml.not_a_module.Class")
+
+    with pytest.raises(AttributeError):
+        source_utils.load("zenml.client.NotAClass")
+
+
+def test_user_source_loading_prepends_source_root(mocker, tmp_path):
+    """Tests that user source loading prepends the source root to the python
+    path before importing."""
+    mocker.patch.object(
+        source_utils,
+        "get_source_root",
+        return_value=str(tmp_path),
+    )
+    mocker.patch.object(sys, "path", [])
+
+    module_path = tmp_path / "test_module_name.py"
+    module_path.write_text("test = 1")
+
+    wrong_source = Source(
+        module="test_module_name", attribute="test", type=SourceType.BUILTIN
+    )
+    with pytest.raises(ModuleNotFoundError):
+        source_utils.load(wrong_source)
+
+    # Source of type user prepends the source root to the python path before
+    # importing
+    correct_source = Source(
+        module="test_module_name", attribute="test", type=SourceType.USER
+    )
+    assert source_utils.load(correct_source) == 1
+
+    # Source of type code repo prepends the source root to the python path
+    # before importing
+    correct_code_repo_source = CodeRepositorySource(
+        module="test_module_name",
+        attribute="test",
+        type=SourceType.CODE_REPOSITORY,
+        repository_id=uuid4(),
+        commit="",
+        subdirectory="",
+    )
+    assert source_utils.load(correct_code_repo_source) == 1
+
+
+def test_basic_source_resolving(mocker):
+    """Tests basic source resolving."""
+    assert source_utils.resolve(int) == Source(
+        module=int.__module__, attribute=int.__name__, type=SourceType.BUILTIN
+    )
+    assert source_utils.resolve(defaultdict) == Source(
+        module=defaultdict.__module__,
+        attribute=defaultdict.__name__,
+        type=SourceType.BUILTIN,
+    )
+    assert source_utils.resolve(source_utils) == Source(
+        module=source_utils.__name__,
+        attribute=None,
+        type=SourceType.INTERNAL,
+    )
+    assert source_utils.resolve(pytest) == Source(
+        module=pytest.__name__,
+        attribute=None,
+        package_name="pytest",
+        version=pytest.__version__,
+        type=SourceType.DISTRIBUTION_PACKAGE,
     )
 
-    try:
-        assert (
-            source_utils.resolve_class(EmptyClass)
-            == "utils.test_source_utils.EmptyClass"
-        )
-    finally:
-        os.chdir(parent_directory)
+    # User sources
+    mocker.patch.object(
+        source_utils,
+        "get_source_root",
+        return_value=CURRENT_MODULE_PARENT_DIR,
+    )
+
+    expected_module_name = __name__.split(".")[-1]
+
+    current_module = sys.modules[__name__]
+    assert source_utils.resolve(current_module) == Source(
+        module=expected_module_name, attribute=None, type=SourceType.USER
+    )
+    assert source_utils.resolve(EmptyClass) == Source(
+        module=expected_module_name,
+        attribute=EmptyClass.__name__,
+        type=SourceType.USER,
+    )
+    assert source_utils.resolve(empty_function) == Source(
+        module=expected_module_name,
+        attribute=empty_function.__name__,
+        type=SourceType.USER,
+    )
+
+    # Code repo sources
+    clean_local_context = StubLocalRepositoryContext(
+        root=CURRENT_MODULE_PARENT_DIR, commit="commit"
+    )
+    mocker.patch.object(
+        code_repository_utils,
+        "find_active_code_repository",
+        return_value=clean_local_context,
+    )
+
+    assert source_utils.resolve(empty_function) == CodeRepositorySource(
+        module=expected_module_name,
+        attribute=empty_function.__name__,
+        type=SourceType.CODE_REPOSITORY,
+        repository_id=clean_local_context.code_repository_id,
+        commit=clean_local_context.current_commit,
+        subdirectory=".",
+    )
+
+    dirty_local_context = StubLocalRepositoryContext(
+        root=CURRENT_MODULE_PARENT_DIR, commit="commit", has_local_changes=True
+    )
+    mocker.patch.object(
+        code_repository_utils,
+        "find_active_code_repository",
+        return_value=dirty_local_context,
+    )
+
+    assert source_utils.resolve(empty_function) == Source(
+        module=expected_module_name,
+        attribute=empty_function.__name__,
+        type=SourceType.USER,
+    )
 
 
-def test_get_source():
-    """Tests if source of objects is gotten properly."""
-    assert source_utils.get_source(pytest.Cache)
+def test_source_resolving_fails_for_non_toplevel_classes_and_functions(mocker):
+    """Tests that source resolving fails for classes and functions that are
+    not defined at the module top level."""
+    mocker.patch.object(
+        source_utils,
+        "get_source_root",
+        return_value=CURRENT_MODULE_PARENT_DIR,
+    )
+
+    def inline_function():
+        pass
+
+    with pytest.raises(RuntimeError):
+        source_utils.resolve(EmptyClass.NestedClass)
+
+    with pytest.raises(RuntimeError):
+        source_utils.resolve(inline_function)
 
 
-def test_get_hashed_source():
-    """Tests if hash of objects is computed properly."""
-    assert source_utils.get_hashed_source(pytest.Cache)
+def test_module_type_detection(mocker):
+    """Tests detecting the correct source type for a module/file."""
+    builtin_module = sys.modules[int.__module__]
+    assert source_utils.get_source_type(builtin_module) == SourceType.BUILTIN
+
+    standard_lib_module = sys.modules[defaultdict.__module__]
+    assert (
+        source_utils.get_source_type(standard_lib_module) == SourceType.BUILTIN
+    )
+    assert source_utils.is_standard_lib_file(standard_lib_module.__file__)
+
+    internal_module = sys.modules[source_utils.__name__]
+    assert source_utils.get_source_type(internal_module) == SourceType.INTERNAL
+    assert source_utils.is_internal_module(internal_module.__name__)
+
+    distribution_package_module = sys.modules[pytest.__name__]
+    assert (
+        source_utils.get_source_type(distribution_package_module)
+        == SourceType.DISTRIBUTION_PACKAGE
+    )
+    assert source_utils.is_distribution_package_file(
+        distribution_package_module.__file__,
+        module_name=distribution_package_module.__name__,
+    )
+
+    mocker.patch.object(
+        source_utils,
+        "get_source_root",
+        return_value=CURRENT_MODULE_PARENT_DIR,
+    )
+
+    user_module = sys.modules[EmptyClass.__module__]
+    assert source_utils.get_source_type(user_module) == SourceType.USER
+    assert source_utils.is_user_file(user_module.__file__)
 
 
 def test_prepend_python_path():
-    """Tests that the context manager prepends an element to the pythonpath and removes it again after the context is exited."""
-    path_element = "definitely_not_part_of_pythonpath"
+    """Tests that the context manager prepends an element to the pythonpath
+    and removes it again after the context is exited."""
+    path = "definitely_not_part_of_pythonpath"
 
-    assert path_element not in sys.path
-    with source_utils.prepend_python_path([path_element]):
-        assert sys.path[0] == path_element
+    assert path not in sys.path
+    with source_utils.prepend_python_path(path):
+        assert sys.path[0] == path
 
-    assert path_element not in sys.path
-
-
-def test_loading_class_by_path_prepends_repo_path(
-    clean_client, mocker, tmp_path
-):
-    """Tests that loading a class always prepends the active repository root to the python path."""
-    os.chdir(str(tmp_path))
-
-    Client.initialize()
-    clean_client.activate_root()
-
-    python_file = clean_client.root / "some_directory" / "python_file.py"
-    python_file.parent.mkdir()
-    python_file.write_text("test = 1")
-
-    mocker.patch.object(sys, "path", [])
-
-    with does_not_raise():
-        # the repo root should be in the python path right now, so this file
-        # can be imported
-        source_utils.load_source_path("some_directory.python_file.test")
-
-    with pytest.raises(ModuleNotFoundError):
-        # the subdirectory will not be in the python path and therefore this
-        # import should not work
-        source_utils.load_source_path("python_file.test")
-
-
-def test_import_python_file_for_first_time(
-    clean_client, mocker, files_dir: Path
-):
-    """Test that importing a python file as module works and allows for importing of module attributes even with module popped from sys path."""
-    SOME_MODULE = "some_module"
-    SOME_MODULE_FILENAME = SOME_MODULE + ".py"
-    SOME_FUNC = "some_func"
-
-    os.chdir(str(files_dir))
-    clean_client.activate_root()
-    Client.initialize()
-
-    mocker.patch.object(sys, "path", [])
-
-    module = source_utils.import_python_file(
-        SOME_MODULE_FILENAME, zen_root=str(files_dir)
-    )
-
-    # Assert that attr could be fetched from module
-    assert isinstance(getattr(module, SOME_FUNC), Callable)
-
-    # Assert that module has been loaded into sys.module
-    assert SOME_MODULE in sys.modules
-
-    # Assert that sys path is unaffected
-    assert len(sys.path) == 0
-
-    # Cleanup modules for future tests
-    del sys.modules[SOME_MODULE]
-
-
-def test_import_python_file_when_already_loaded(
-    clean_client, mocker, files_dir: Path
-):
-    """Test that importing a python file as module works even if it is already on sys path and allows for importing of module attributes."""
-    SOME_MODULE = "some_module"
-    SOME_MODULE_FILENAME = SOME_MODULE + ".py"
-    SOME_FUNC = "some_func"
-
-    os.chdir(str(files_dir))
-    clean_client.activate_root()
-    Client.initialize(root=files_dir)
-
-    mocker.patch.object(sys, "path", [])
-
-    source_utils.import_python_file(
-        str(SOME_MODULE_FILENAME), zen_root=str(files_dir)
-    )
-
-    # Assert that module has been loaded into sys.module
-    assert SOME_MODULE in sys.modules
-
-    # Load module again, to cover alternative behavior of the
-    #  import_python_file, where the module is loaded already
-    module = source_utils.import_python_file(
-        str(SOME_MODULE_FILENAME), zen_root=str(files_dir)
-    )
-
-    # Assert that attr could be fetched from the module returned by the func
-    assert isinstance(getattr(module, SOME_FUNC), Callable)
-
-    # Assert that sys path is unaffected
-    assert len(sys.path) == 0
-
-    # Cleanup modules for future tests
-    del sys.modules[SOME_MODULE]
-
-
-def test_import_python_file(clean_client, mocker, files_dir: Path):
-    """Test that importing a python file as module works even if it is already imported within the another previously loaded module."""
-    MAIN_MODULE = "main_module"
-    MAIN_MODULE_FILENAME = MAIN_MODULE + ".py"
-    SOME_MODULE = "some_module"
-    SOME_MODULE_FILENAME = SOME_MODULE + ".py"
-    OTHER_FUNC = "other_func"
-
-    os.chdir(str(files_dir))
-    clean_client.activate_root()
-    Client.initialize(root=files_dir)
-
-    main_python_file = files_dir / MAIN_MODULE_FILENAME
-    some_python_file = files_dir / SOME_MODULE_FILENAME
-
-    assert main_python_file.exists()
-    assert some_python_file.exists()
-
-    mocker.patch.object(sys, "path", [])
-
-    source_utils.import_python_file(
-        str(main_python_file), zen_root=str(files_dir)
-    )
-
-    # Assert that module has been loaded into sys.module
-    assert MAIN_MODULE in sys.modules
-
-    module = source_utils.import_python_file(
-        str(some_python_file), zen_root=str(files_dir)
-    )
-
-    # Assert that attr could be fetched from the module returned by the func
-    assert isinstance(getattr(module, OTHER_FUNC), Callable)
-
-    # Assert that sys path is unaffected
-    assert len(sys.path) == 0
-
-    # Cleanup modules for future tests
-    del sys.modules[MAIN_MODULE]
-    del sys.modules[SOME_MODULE]
-
-
-def test_class_importing_by_path():
-    """Tests importing a class by path."""
-    from zenml.client import Client
-
-    imported_class = source_utils.import_class_by_path("zenml.client.Client")
-    assert Client is imported_class
-
-    with pytest.raises(ModuleNotFoundError):
-        source_utils.import_class_by_path("zenml.not_a_module.Class")
-
-    with pytest.raises(AttributeError):
-        source_utils.import_class_by_path("zenml.client.NotAClass")
-
-
-def test_internal_pin_removal():
-    """Tests that removing the internal pin removal works."""
-    assert (
-        source_utils.remove_internal_version_pin(
-            "zenml.client.Client@zenml_0.21.0"
-        )
-        == "zenml.client.Client"
-    )
-    assert (
-        source_utils.remove_internal_version_pin("zenml.client.Client")
-        == "zenml.client.Client"
-    )
+    assert path not in sys.path
 
 
 def test_setting_a_custom_source_root():
     """Tests setting and resetting a custom source root."""
-    initial_source_root = source_utils.get_source_root_path()
+    initial_source_root = source_utils.get_source_root()
     source_utils.set_custom_source_root(source_root="custom_source_root")
-    assert source_utils.get_source_root_path() == "custom_source_root"
+    assert source_utils.get_source_root() == "custom_source_root"
     source_utils.set_custom_source_root(source_root=None)
-    assert source_utils.get_source_root_path() == initial_source_root
+    assert source_utils.get_source_root() == initial_source_root
+
+
+def test_validating_source_classes(mocker):
+    """Tests validating the class of a source."""
+    mocker.patch.object(
+        source_utils,
+        "get_source_root",
+        return_value=CURRENT_MODULE_PARENT_DIR,
+    )
+
+    instance_source = f"{__name__}.empty_class_instance"
+
+    with pytest.raises(TypeError):
+        source_utils.load_and_validate_class(
+            instance_source, expected_class=EmptyClass
+        )
+
+    assert not source_utils.validate_source_class(
+        instance_source, expected_class=EmptyClass
+    )
+
+    class_source = f"{__name__}.{EmptyClass.__name__}"
+    with pytest.raises(TypeError):
+        source_utils.load_and_validate_class(class_source, expected_class=int)
+
+    assert not source_utils.validate_source_class(
+        class_source, expected_class=int
+    )
+
+    with does_not_raise():
+        source_utils.load_and_validate_class(
+            class_source, expected_class=EmptyClass
+        )
+
+    assert source_utils.validate_source_class(
+        class_source, expected_class=EmptyClass
+    )
+
+
+def test_package_utility_functions():
+    """Tests getting package name and version."""
+    from pytest import ExitCode
+
+    assert (
+        source_utils._get_package_for_module(module_name=ExitCode.__module__)
+        == "pytest"
+    )
+    assert (
+        source_utils._get_package_version(package_name="pytest")
+        == pytest.__version__
+    )
+
+    assert (
+        source_utils._get_package_for_module(
+            module_name="non_existent_module.submodule"
+        )
+        is None
+    )
+    assert (
+        source_utils._get_package_version(package_name="non_existent_package")
+        is None
+    )

@@ -11,7 +11,7 @@ in a secure manner.
 
 {% hint style="warning" %}
 We are deprecating secrets managers in favor of the
-[centralized ZenML secrets store](../../advanced-guide/practical/secrets-management.md#centralized-secrets-store).
+[centralized ZenML secrets store](../../starter-guide/production-fundamentals/secrets-management.md#centralized-secrets-store).
 Going forward, we recommend using the secrets store instead of secrets managers
 to configure and store secrets.
 
@@ -219,7 +219,7 @@ be raised
 Secret references work with any secrets manager and allow you to securely
 specify sensitive configurations for your [stack components](../../starter-guide/stacks/registering-stacks.md).
 
-Check out the corresponding [documentation page](../../advanced-guide/practical/secrets-management.md)
+Check out the corresponding [documentation page](../../starter-guide/production-fundamentals/secrets-management.md)
 for more information.
 
 ## Secret Scopes
@@ -229,7 +229,7 @@ Examples of situations in which Secrets Manager scoping can be useful:
 * you want to control whether a secret configured in a Secrets Manager stack
 component is visible in another Secrets Manager stack component. This is useful
 when you want to share secrets without necessarily 
-[sharing stack components](../../starter-guide/collaborate/collaborate.md).
+[sharing stack components](../../starter-guide/stacks/sharing-stacks.md).
 * you want to be able to configure two or more secrets with the same name but
 with different values in different Secrets Manager stack components.
 * you want to emulate multiple virtual Secrets Manager instances on top of a

@@ -398,11 +398,46 @@ def print_stack_component_configuration(
 
     if len(component.configuration) == 0:
         declare("No configuration options are set for this component.")
+
+    else:
+        title_ = (
+            f"'{component.name}' {component.type.value.upper()} "
+            f"Component Configuration"
+        )
+
+        if active_status:
+            title_ += " (ACTIVE)"
+        rich_table = table.Table(
+            box=box.HEAVY_EDGE,
+            title=title_,
+            show_lines=True,
+        )
+        rich_table.add_column("COMPONENT_PROPERTY")
+        rich_table.add_column("VALUE", overflow="fold")
+
+        component_dict = component.dict()
+        component_dict.pop("configuration")
+        component_dict.update(component.configuration)
+
+        items = component.configuration.items()
+        for item in items:
+            elements = []
+            for idx, elem in enumerate(item):
+                if idx == 0:
+                    elements.append(f"{elem.upper()}")
+                else:
+                    elements.append(str(elem))
+            rich_table.add_row(*elements)
+
+        console.print(rich_table)
+
+    if not component.labels:
+        declare("No labels are set for this component.")
         return
 
     title_ = (
         f"'{component.name}' {component.type.value.upper()} "
-        f"Component Configuration"
+        f"Component Labels"
     )
 
     if active_status:
@@ -415,11 +450,7 @@ def print_stack_component_configuration(
     rich_table.add_column("COMPONENT_PROPERTY")
     rich_table.add_column("VALUE", overflow="fold")
 
-    component_dict = component.dict()
-    component_dict.pop("configuration")
-    component_dict.update(component.configuration)
-
-    items = component.configuration.items()
+    items = component.labels.items()
     for item in items:
         elements = []
         for idx, elem in enumerate(item):
@@ -616,13 +647,26 @@ def parse_unknown_component_attributes(args: List[str]) -> List[str]:
     return p_args
 
 
-def install_packages(packages: List[str]) -> None:
+def install_packages(
+    packages: List[str],
+    upgrade: bool = False,
+) -> None:
     """Installs pypi packages into the current environment with pip.
 
     Args:
         packages: List of packages to install.
+        upgrade: Whether to upgrade the packages if they are already installed.
     """
-    command = [sys.executable, "-m", "pip", "install"] + packages
+    if upgrade:
+        command = [
+            sys.executable,
+            "-m",
+            "pip",
+            "install",
+            "--upgrade",
+        ] + packages
+    else:
+        command = [sys.executable, "-m", "pip", "install"] + packages
 
     if not IS_DEBUG_ENV:
         command += [
@@ -875,7 +919,7 @@ def print_served_model_configuration(
         "STATUS": get_service_state_emoji(model_service.status.state),
         "STATUS_MESSAGE": model_service.status.last_error,
         "PIPELINE_NAME": model_service.config.pipeline_name,
-        "PIPELINE_RUN_ID": model_service.config.pipeline_run_id,
+        "RUN_NAME": model_service.config.run_name,
         "PIPELINE_STEP_NAME": model_service.config.pipeline_step_name,
     }
 
@@ -1509,6 +1553,26 @@ def warn_deprecated_secrets_manager() -> None:
         "migrating all your secrets to the centralized secrets store by means "
         "of the `zenml secrets-manager secret migrate` CLI command. "
         "See the `zenml secret` CLI command and the "
-        "https://docs.zenml.io/advanced-guide/practical-mlops/secrets-management "
+        "https://docs.zenml.io/starter-guide/production-fundamentals/secrets-management "
         "documentation page for more information."
     )
+
+
+def get_parsed_labels(labels: Optional[List[str]]) -> Dict[str, str]:
+    """Parse labels into a dictionary.
+
+    Args:
+        labels: The labels to parse.
+
+    Returns:
+        A dictionary of the metadata.
+    """
+    if not labels:
+        return {}
+
+    metadata_dict = {}
+    for m in labels:
+        key, value = m.split("=")
+        metadata_dict[key] = value
+
+    return metadata_dict

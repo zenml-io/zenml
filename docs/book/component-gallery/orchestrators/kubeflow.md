@@ -200,7 +200,7 @@ zenml stack update -o <NAME>
 {% hint style="info" %}
 ZenML will build a Docker image called `<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE_NAME>`
 which includes your code and use it to run your pipeline steps in Kubeflow. 
-Check out [this page](../../advanced-guide/pipelines/containerization.md)
+Check out [this page](../../starter-guide/production-fundamentals/containerization.md)
 if you want to learn more about how ZenML builds these images and how you can 
 customize them.
 {% endhint %}
@@ -380,7 +380,7 @@ kubeflow_settings = KubeflowOrchestratorSettings(
 )
 ```
 
-See full documentation of using ZenML secrets [here](../../advanced-guide/practical/secrets-management.md).
+See full documentation of using ZenML secrets [here](../../starter-guide/production-fundamentals/secrets-management.md).
 
 A concrete example of using the Kubeflow orchestrator can be found
 [here](https://github.com/zenml-io/zenml/tree/main/examples/kubeflow_pipelines_orchestration).

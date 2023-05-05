@@ -35,6 +35,7 @@ from zenml.integrations.kubernetes.orchestrators.manifest_utils import (
 )
 from zenml.logger import get_logger
 from zenml.orchestrators.dag_runner import ThreadedDagRunner
+from zenml.orchestrators.utils import get_config_environment_vars
 
 logger = get_logger(__name__)
 
@@ -61,7 +62,7 @@ def main() -> None:
     args = parse_args()
 
     # Get Kubernetes Core API for running kubectl commands later.
-    kube_utils.load_kube_config()
+    kube_utils.load_kube_config(incluster=True)
     core_api = k8s_client.CoreV1Api()
 
     orchestrator_run_id = socket.gethostname()
@@ -107,6 +108,9 @@ def main() -> None:
             step_config.settings.get("orchestrator.kubernetes", {})
         )
 
+        env = get_config_environment_vars()
+        env[ENV_ZENML_KUBERNETES_RUN_ID] = orchestrator_run_id
+
         # Define Kubernetes pod manifest.
         pod_manifest = build_pod_manifest(
             pod_name=pod_name,
@@ -115,7 +119,7 @@ def main() -> None:
             image_name=image,
             command=step_command,
             args=step_args,
-            env={ENV_ZENML_KUBERNETES_RUN_ID: orchestrator_run_id},
+            env=env,
             settings=settings,
             mount_local_stores=mount_local_stores,
         )

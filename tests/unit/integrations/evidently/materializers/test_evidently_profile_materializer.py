@@ -12,7 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Implementation of Evidently profile materializer."""
-from contextlib import ExitStack as does_not_raise
 
 from evidently.model_profile import Profile
 from evidently.model_profile.sections import DataDriftProfileSection
@@ -25,8 +24,8 @@ from zenml.integrations.evidently.materializers.evidently_profile_materializer i
 
 def test_evidently_profile_materializer(clean_client):
     """Test the Evidently profile materializer."""
-    with does_not_raise():
-        _test_materializer(
-            step_output=Profile(sections=[DataDriftProfileSection()]),
-            materializer_class=EvidentlyProfileMaterializer,
-        )
+    _test_materializer(
+        step_output=Profile(sections=[DataDriftProfileSection()]),
+        materializer_class=EvidentlyProfileMaterializer,
+        expected_metadata_size=1,
+    )

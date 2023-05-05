@@ -19,6 +19,9 @@ You should use the Sagemaker orchestrator if:
 * you're looking for a managed solution for running your pipelines.
 * you're looking for a serverless solution for running your pipelines.
 
+## How it works
+The ZenML Sagemaker orchestrator works with [Sagemaker Pipelines](https://aws.amazon.com/sagemaker/pipelines), which can be used to construct machine learning pipelines. Under the hood, for each ZenML pipeline step, it creates a SageMaker `PipelineStep`, which contains a Sagemaker Processing job. Currently, other step types are not supported.
+
 ## How to deploy it
 
 In order to use a Sagemaker AI orchestrator, you need to first deploy [ZenML to the
@@ -26,7 +29,7 @@ cloud](../../getting-started/deploying-zenml/deploying-zenml.md). It would be
 recommended to deploy ZenML in the same region as you plan on using for
 Sagemaker, but it is not necessary to do so. You must ensure that you are
 [connected to the remote ZenML
-server](../../starter-guide/collaborate/zenml-deployment.md) before using this
+server](../../starter-guide/production-fundamentals/production-fundamentals.md) before using this
 stack component.
 
 The only other thing necessary to use the ZenML Sagemaker orchestrator is
@@ -75,7 +78,7 @@ zenml stack register <STACK_NAME> -o <ORCHESTRATOR_NAME> ... --set
 {% hint style="info" %}
 ZenML will build a Docker image called `<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE_NAME>`
 which includes your code and use it to run your pipeline steps in Sagemaker. 
-Check out [this page](../../advanced-guide/pipelines/containerization.md)
+Check out [this page](../../starter-guide/production-fundamentals/containerization.md)
 if you want to learn more about how ZenML builds these images and
 how you can customize them.
 {% endhint %}
@@ -94,29 +97,105 @@ a schedule. We maintain a public roadmap for ZenML, which you can find
 want to enable scheduling for Sagemaker, please [do let us
 know](https://zenml.io/slack-invite)!
 
-### Additional configuration
+### Configuration at pipeline or step level
+When running your ZenML pipeline with the Sagemaker orchestrator, the configuration set when configuring the orchestrator as a ZenML component will be used by default. However, it is possible to provide additional configuration at the [pipeline or step level](../../advanced-guide/pipelines/settings#how-to-use-settings). This allows you to run whole pipelines or individual steps with alternative configurations. For example, this allows you to run the training process with a heavier, GPU-enabled instance type, while running other steps with lighter instances.
 
-For additional configuration of the Sagemaker orchestrator, you can pass
-`SagemakerOrchestratorSettings` which allows you to configure (among others) the following attributes:
+Additional configuration for the Sagemaker orchestrator can be passed via `SagemakerOrchestratorSettings`. Here, it is possible to configure `processor_args`, which is a dictionary of arguments for the Processor. For available arguments, see the [Sagemaker documentation](https://sagemaker.readthedocs.io/en/stable/api/training/processing.html#sagemaker.processing.Processor). Currently, it is not possible to provide custom configuration for the following attributes:
 
-* `instance_type`: The instance type to use for the Sagemaker training job.
-  (Defaults to `ml.t3.medium`.)
-* `processor_role`: The IAM role to use for the Sagemaker processing job/step.
-* `volume_size_in_gb`: The size of the volume to use for the Sagemaker training
-  job. (Defaults to 30 GB.)
-* `max_runtime_in_seconds`: The maximum runtime of the Sagemaker training job.
-  (Defaults to 1 day or 86400 seconds.)
-* `processor_tags`: Any tags you want to add to the particular step or pipeline
-  as a whole.
+* `image_uri`
+* `instance_count`
+* `sagemaker_session`
+* `entrypoint`
+* `base_job_name`
+* `env`
+
+For example, settings can be provided in the following way:
+
+```python
+sagemaker_orchestrator_settings = SagemakerOrchestratorSettings(
+    processor_args = {
+        "instance_type": "ml.t3.medium",
+        "volume_size_in_gb": 30
+    }
+)
+```
+
+They can then be applied to a step as follows:
+
+```python
+@step(settings = { "orchestrator.sagemaker": sagemaker_orchestrator_settings })
+```
+
+For example, if your ZenML component is configured to use `ml.c5.xlarge` with 400GB additional storage by default, all steps will use it except for the step above, which will use `ml.t3.medium` with 30GB additional storage.
 
 Check out the [this docs page](../..//advanced-guide/pipelines/settings.md)
-for more information on how to specify settings.
+for more information on how to specify settings in general.
 
 A concrete example of using the Sagemaker orchestrator can be found 
 [here](https://github.com/zenml-io/zenml/tree/main/examples/sagemaker_orchestration).
 
 For more information and a full list of configurable attributes of the Sagemaker 
 orchestrator, check out the [API Docs](https://apidocs.zenml.io/latest/integration_code_docs/integrations-aws/#zenml.integrations.aws.orchestrators.sagemaker_orchestrator.SagemakerOrchestrator).
+
+### S3 data access in ZenML steps
+In Sagemaker jobs, it is possible to [access data that is located in S3](https://docs.aws.amazon.com/sagemaker/latest/dg/model-access-training-data.html). Similarly, it is possible to write data from a job to a bucket. The ZenML Sagemaker orchestrator supports this via the `SagemakerOrchestratorSettings` and hence at component, pipeline and step level.
+
+#### Import: S3 -> job
+Importing data can be useful when large datasets are available in S3 for training, for which manual copying can be cumbersome. Sagemaker supports `File` (default) and `Pipe` mode, with which data is either fully copied before the job starts or piped on the fly. See the Sagemaker documentation referenced above for more information about these modes.
+
+Note that data import and export can be used jointly with `processor_args` for maximum flexibility.
+
+A simple example of importing data from S3 to the Sagemaker job is as follows:
+
+```python
+sagemaker_orchestrator_settings = SagemakerOrchestratorSettings(
+    "input_data_s3_mode": "File",
+    "input_data_s3_uri": "s3://some-bucket-name/folder" 
+)
+```
+
+In this case, data will be available at `/opt/ml/processing/input/data` within the job.
+
+It is also possible to split your input over channels. This can be useful if the dataset is already split in S3, or maybe even located in different buckets.
+
+```python
+sagemaker_orchestrator_settings = SagemakerOrchestratorSettings(
+    "input_data_s3_mode": "File",
+    "input_data_s3_uri": {
+      "train": "s3://some-bucket-name/training_data",
+      "val": "s3://some-bucket-name/validation_data",
+      "test": "s3://some-other-bucket-name/testing_data" 
+    }
+)
+```
+
+Here, the data will be available in `/opt/ml/processing/input/data/train`, `/opt/ml/processing/input/data/val` and `/opt/ml/processing/input/data/test`.
+
+In the case of using `Pipe` for `input_data_s3_mode`, a file path specifying the pipe will be available as per the description written [here](https://docs.aws.amazon.com/sagemaker/latest/dg/model-access-training-data.html#model-access-training-data-input-modes). An example of using this pipe file within a Python script can be found [here](https://github.com/aws/amazon-sagemaker-examples/blob/main/advanced_functionality/pipe_bring_your_own/train.py).
+
+#### Export: job -> S3
+Data from within the job (e.g. produced by the training process, or when preprocessing large data) can be exported as well. The structure is highly similar to that of importing data. Copying data to S3 can be configured with `output_data_s3_mode`, which supports `EndOfJob` (default) and `Continuous`.
+
+In the simple case, data in `/opt/ml/processing/output/data` will be copied to S3 at the end of a job:
+
+```python
+sagemaker_orchestrator_settings = SagemakerOrchestratorSettings(
+    "output_data_s3_mode": "EndOfJob",
+    "output_data_s3_uri": "s3://some-results-bucket-name/results"
+)
+```
+
+In a more complex case, data in `/opt/ml/processing/output/data/metadata` and `/opt/ml/processing/output/data/checkpoints` will be written away continuously:
+
+```python
+sagemaker_orchestrator_settings = SagemakerOrchestratorSettings(
+    "output_data_s3_mode": "Continuous",
+    "output_data_s3_uri": {
+      "metadata": "s3://some-results-bucket-name/metadata" ,
+      "checkpoints": "s3://some-results-bucket-name/checkpoints" 
+    }
+)
+```
 
 ### Enabling CUDA for GPU-backed hardware
 
