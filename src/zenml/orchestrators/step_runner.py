@@ -26,7 +26,6 @@ from typing import (
     Type,
 )
 
-from zenml.artifacts.base_artifact import BaseArtifact
 from zenml.client import Client
 from zenml.config.step_configurations import StepConfiguration
 from zenml.config.step_run_info import StepRunInfo
@@ -359,23 +358,13 @@ class StepRunner:
         if data_type == UnmaterializedArtifact:
             return UnmaterializedArtifact.parse_obj(artifact)
 
-        # Skip materialization for `BaseArtifact` and its subtypes.
-        if issubclass(data_type, BaseArtifact):
-            logger.warning(
-                "Skipping materialization by specifying a subclass of "
-                "`zenml.artifacts.BaseArtifact` as input data type is "
-                "deprecated and will be removed in a future release. Please "
-                "type your input as "
-                "`zenml.materializers.UnmaterializedArtifact` instead."
-            )
-            return artifact
-
         materializer_class: Type[
             BaseMaterializer
         ] = source_utils.load_and_validate_class(
             artifact.materializer, expected_class=BaseMaterializer
         )
-        materializer = materializer_class(artifact.uri)
+        materializer: BaseMaterializer = materializer_class(artifact.uri)
+        materializer.validate_type_compatibility(data_type)
         return materializer.load(data_type=data_type)
 
     def _validate_outputs(
@@ -490,13 +479,11 @@ class StepRunner:
             ].materializer_source
             uri = output_artifact_uris[output_name]
             materializer = materializer_class(uri)
+            materializer.validate_type_compatibility(type(return_value))
             materializer.save(return_value)
             if artifact_metadata_enabled:
                 try:
-                    artifact_metadata = materializer.extract_metadata(
-                        return_value
-                    )
-                    output_artifact_metadata[output_name] = artifact_metadata
+                    materializer.extract_full_metadata(return_value)
                 except Exception as e:
                     logger.warning(
                         f"Failed to extract metadata for output artifact "

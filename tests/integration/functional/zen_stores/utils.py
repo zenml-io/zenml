@@ -387,6 +387,44 @@ class SecretContext:
                 pass
 
 
+class CodeRepositoryContext:
+    def __init__(
+        self,
+        user_id: Optional[uuid.UUID] = None,
+        workspace_id: Optional[uuid.UUID] = None,
+        delete: bool = True,
+    ):
+        self.code_repo_name = sample_name("code_repo")
+        self.user_id = user_id
+        self.workspace_id = workspace_id
+        self.client = Client()
+        self.store = self.client.zen_store
+        self.delete = delete
+
+    def __enter__(self):
+        request = CodeRepositoryRequestModel(
+            name=self.code_repo_name,
+            config={},
+            source={
+                "module": "tests.unit.pipelines.test_build_utils",
+                "attribute": "StubCodeRepository",
+                "type": "user",
+            },
+            user=self.user_id or self.client.active_user.id,
+            workspace=self.workspace_id or self.client.active_workspace.id,
+        )
+
+        self.repo = self.store.create_code_repository(request)
+        return self.repo
+
+    def __exit__(self, exc_type, exc_value, exc_traceback):
+        if self.delete:
+            try:
+                self.store.delete_code_repository(self.repo.id)
+            except KeyError:
+                pass
+
+
 AnyRequestModel = TypeVar("AnyRequestModel", bound=BaseRequestModel)
 AnyResponseModel = TypeVar("AnyResponseModel", bound=BaseResponseModel)
 

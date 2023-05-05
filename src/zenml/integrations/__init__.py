@@ -48,6 +48,7 @@ from zenml.integrations.neural_prophet import NeuralProphetIntegration  # noqa
 from zenml.integrations.openai import OpenAIIntegration  # noqa
 from zenml.integrations.pillow import PillowIntegration  # noqa
 from zenml.integrations.plotly import PlotlyIntegration  # noqa
+from zenml.integrations.pycaret import PyCaretIntegration  # noqa
 from zenml.integrations.pytorch import PytorchIntegration  # noqa
 from zenml.integrations.pytorch_lightning import (  # noqa
     PytorchLightningIntegration,

@@ -267,6 +267,9 @@ class SqlZenStoreConfiguration(StoreConfiguration):
             pool.
         max_overflow: The maximum number of connections to allow in the
             SQLAlchemy pool in addition to the pool_size.
+        pool_pre_ping: Enable emitting a test statement on the SQL connection
+            at the start of each connection pool checkout, to test that the
+            database connection is still viable.
     """
 
     type: StoreType = StoreType.SQL
@@ -283,6 +286,7 @@ class SqlZenStoreConfiguration(StoreConfiguration):
     ssl_verify_server_cert: bool = False
     pool_size: int = 20
     max_overflow: int = 20
+    pool_pre_ping: bool = True
 
     @validator("secrets_store")
     def validate_secrets_store(
@@ -571,6 +575,7 @@ class SqlZenStoreConfiguration(StoreConfiguration):
             engine_args = {
                 "pool_size": self.pool_size,
                 "max_overflow": self.max_overflow,
+                "pool_pre_ping": self.pool_pre_ping,
             }
 
             sql_url = sql_url._replace(
@@ -703,11 +708,7 @@ class SqlZenStore(BaseZenStore):
             ValueError: if the filtered page number is out of bounds.
             RuntimeError: if the schema does not have a `to_model` method.
         """
-        # Filtering
-        filters = filter_model.generate_filter(table=table)
-
-        if filters is not None:
-            query = query.where(filters)
+        query = filter_model.apply_filter(query=query, table=table)
 
         # Get the total amount of items in the database for a given query
         total = session.scalar(

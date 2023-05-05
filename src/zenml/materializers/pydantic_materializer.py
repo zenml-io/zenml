@@ -14,7 +14,7 @@
 """Implementation of ZenML's pydantic materializer."""
 
 import os
-from typing import TYPE_CHECKING, Any, Dict, Type
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, Tuple, Type
 
 from pydantic import BaseModel
 
@@ -31,8 +31,8 @@ DEFAULT_FILENAME = "data.json"
 class PydanticMaterializer(BaseMaterializer):
     """Handle Pydantic BaseModel objects."""
 
-    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATA
-    ASSOCIATED_TYPES = (BaseModel,)
+    ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.DATA
+    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (BaseModel,)
 
     def load(self, data_type: Type[BaseModel]) -> Any:
         """Reads BaseModel from JSON.
@@ -43,7 +43,6 @@ class PydanticMaterializer(BaseMaterializer):
         Returns:
             The data read.
         """
-        contents = super().load(data_type)
         data_path = os.path.join(self.uri, DEFAULT_FILENAME)
         contents = yaml_utils.read_json(data_path)
         return data_type.parse_raw(contents)
@@ -54,7 +53,6 @@ class PydanticMaterializer(BaseMaterializer):
         Args:
             data: The data to store.
         """
-        super().save(data)
         data_path = os.path.join(self.uri, DEFAULT_FILENAME)
         yaml_utils.write_json(data_path, data.json())
 
@@ -67,8 +65,4 @@ class PydanticMaterializer(BaseMaterializer):
         Returns:
             The extracted metadata as a dictionary.
         """
-        base_metadata = super().extract_metadata(data)
-        container_metadata = {
-            "schema": data.schema(),
-        }
-        return {**base_metadata, **container_metadata}
+        return {"schema": data.schema()}

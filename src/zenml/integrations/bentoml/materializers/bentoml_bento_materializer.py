@@ -15,7 +15,7 @@
 
 import os
 import tempfile
-from typing import TYPE_CHECKING, Dict, Type
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, Tuple, Type
 
 import bentoml
 from bentoml._internal.bento import Bento, bento
@@ -37,8 +37,8 @@ logger = get_logger(__name__)
 class BentoMaterializer(BaseMaterializer):
     """Materializer for Bentoml Bento objects."""
 
-    ASSOCIATED_TYPES = (bento.Bento,)
-    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATA
+    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (bento.Bento,)
+    ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.DATA
 
     def load(self, data_type: Type[bento.Bento]) -> bento.Bento:
         """Read from artifact store and return a Bento object.
@@ -49,8 +49,6 @@ class BentoMaterializer(BaseMaterializer):
         Returns:
             An bento.Bento object.
         """
-        super().load(data_type)
-
         # Create a temporary directory to store the model
         temp_dir = tempfile.TemporaryDirectory()
 
@@ -75,8 +73,6 @@ class BentoMaterializer(BaseMaterializer):
         Args:
             bento: An bento.Bento object.
         """
-        super().save(bento)
-
         # Create a temporary directory to store the model
         temp_dir = tempfile.TemporaryDirectory(prefix="zenml-temp-")
         temp_bento_path = os.path.join(temp_dir.name, DEFAULT_BENTO_FILENAME)
@@ -101,11 +97,9 @@ class BentoMaterializer(BaseMaterializer):
         Returns:
             The extracted metadata as a dictionary.
         """
-        base_metadata = super().extract_metadata(bento)
-        bento_metadata = {
+        return {
             "bento_info_name": bento.info.name,
             "bento_info_version": bento.info.version,
             "bento_tag_name": bento.tag.name,
             "bentoml_version": bento.info.bentoml_version,
         }
-        return {**base_metadata, **bento_metadata}

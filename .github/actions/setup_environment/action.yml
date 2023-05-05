@@ -73,7 +73,7 @@ runs:
       if: steps.cache-virtualenv.outputs.cache-hit != 'true' && inputs.install_integrations == 'yes'
       shell: bash
       run: |
-        zenml integration export-requirements --output-file integration-requirements.txt --ignore-integration feast --ignore-integration label_studio --ignore-integration bentoml --ignore-integration seldon --ignore-integration kserve --ignore-integration langchain --ignore-integration llama_index
+        zenml integration export-requirements --output-file integration-requirements.txt --ignore-integration feast --ignore-integration label_studio --ignore-integration bentoml --ignore-integration seldon --ignore-integration kserve --ignore-integration langchain --ignore-integration llama_index --ignore-integration pycaret
         pip install -r integration-requirements.txt
         rm integration-requirements.txt
 

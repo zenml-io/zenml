@@ -23,7 +23,6 @@ description: Best practices, recommendations, and tips from the ZenML team
 │   │   ├── ...
 ├── .dockerignore 
 ├── .gitignore
-├── config.yaml
 ├── Dockerfile
 ├── README.md
 ├── requirements.txt
@@ -127,7 +126,6 @@ second_pipeline.run()
 first_pipeline.run()
 
 get_pipelines()
->>> [PipelineView('first_pipeline'), PipelineView('second_pipeline')]
 
 # This is the recommended explicit way to retrieve your specific pipeline 
 # using the pipeline class if you have it at hand

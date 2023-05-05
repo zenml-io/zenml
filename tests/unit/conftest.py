@@ -43,6 +43,7 @@ from zenml.models import (
     WorkspaceResponseModel,
 )
 from zenml.models.artifact_models import ArtifactRequestModel
+from zenml.models.hub_plugin_models import HubPluginResponseModel, PluginStatus
 from zenml.models.pipeline_run_models import PipelineRunRequestModel
 from zenml.models.step_run_models import StepRunRequestModel
 from zenml.orchestrators.base_orchestrator import BaseOrchestratorConfig
@@ -593,4 +594,21 @@ def sample_code_repo_response_model(
         name="name",
         config={},
         source={"module": "zenml", "type": "internal"},
+    )
+
+
+@pytest.fixture
+def sample_hub_plugin_response_model() -> HubPluginResponseModel:
+    return HubPluginResponseModel(
+        id=uuid4(),
+        author="AlexejPenner",
+        name="alexejs_ploogin",
+        version="3.14",
+        repository_url="https://github.com/zenml-io/zenml",
+        index_url="https://test.pypi.org/simple/",
+        package_name="ploogin",
+        status=PluginStatus.AVAILABLE,
+        created=datetime.now(),
+        updated=datetime.now(),
+        requirements=["ploogin==0.0.1", "zenml>=0.1.0"],
     )
