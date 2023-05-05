@@ -53,6 +53,11 @@ def int_plus_one_test_step(input: int) -> int:
 
 
 @step
+def int_plus_two_test_step(input: int) -> int:
+    return input + 2
+
+
+@step
 def visualizable_step() -> HTMLString:
     """A step that returns a visualizable artifact."""
     return HTMLString("<h1>Test</h1>")

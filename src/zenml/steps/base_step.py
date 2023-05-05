@@ -49,9 +49,7 @@ from zenml.constants import STEP_SOURCE_PARAMETER_NAME
 from zenml.exceptions import MissingStepParameterError, StepInterfaceError
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
-from zenml.materializers.default_materializer_registry import (
-    default_materializer_registry,
-)
+from zenml.materializers.materializer_registry import materializer_registry
 from zenml.steps.base_parameters import BaseParameters
 from zenml.steps.step_context import StepContext
 from zenml.steps.utils import (
@@ -969,11 +967,6 @@ class BaseStep(metaclass=BaseStepMeta):
 
         Returns:
             The finalized step configuration.
-
-        Raises:
-            StepInterfaceError: If an output does not have an explicit
-                materializer assigned to it and there is no default
-                materializer registered for the output type.
         """
         outputs: Dict[str, Dict[str, Source]] = defaultdict(dict)
 
@@ -983,22 +976,7 @@ class BaseStep(metaclass=BaseStepMeta):
             )
 
             if not output.materializer_source:
-                if default_materializer_registry.is_registered(output_class):
-                    materializer_class = default_materializer_registry[
-                        output_class
-                    ]
-                else:
-                    raise StepInterfaceError(
-                        f"Unable to find materializer for output "
-                        f"'{output_name}' of type `{output_class}` in step "
-                        f"'{self.name}'. Please make sure to either "
-                        f"explicitly set a materializer for step outputs "
-                        f"using `step.configure(output_materializers=...)` or "
-                        f"registering a default materializer for specific "
-                        f"types by subclassing `BaseMaterializer` and setting "
-                        f"its `ASSOCIATED_TYPES` class variable.",
-                        url="https://docs.zenml.io/advanced-guide/pipelines/materializers",
-                    )
+                materializer_class = materializer_registry[output_class]
                 outputs[output_name][
                     "materializer_source"
                 ] = source_utils.resolve(materializer_class)

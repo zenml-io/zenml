@@ -11,7 +11,6 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from contextlib import ExitStack as does_not_raise
 from datetime import datetime
 
 from whylogs.core import DatasetProfileView
@@ -24,16 +23,16 @@ from zenml.integrations.whylogs.materializers.whylogs_materializer import (
 
 def test_whylogs_materializer(clean_client):
     """Tests whether the steps work for the Whylogs materializer."""
-    with does_not_raise():
-        dataset_profile_view = _test_materializer(
-            step_output=DatasetProfileView(
-                columns={},
-                dataset_timestamp=datetime.now(),
-                creation_timestamp=datetime.now(),
-            ),
-            materializer_class=WhylogsMaterializer,
-            assert_visualization_exists=True,
-        )
+    dataset_profile_view = _test_materializer(
+        step_output=DatasetProfileView(
+            columns={},
+            dataset_timestamp=datetime.now(),
+            creation_timestamp=datetime.now(),
+        ),
+        materializer_class=WhylogsMaterializer,
+        expected_metadata_size=1,
+        assert_visualization_exists=True,
+    )
 
     assert dataset_profile_view.creation_timestamp is not None
     assert dataset_profile_view.dataset_timestamp is not None

@@ -30,6 +30,7 @@ from zenml.post_execution.lineage import (
     StepNodeDetails,
 )
 from zenml.post_execution.pipeline import (
+    PipelineVersionView,
     PipelineView,
     get_pipeline,
     get_pipelines,
@@ -42,6 +43,7 @@ from zenml.post_execution.pipeline_run import (
 from zenml.post_execution.step import StepView
 
 __all__ = [
+    "PipelineVersionView",
     "PipelineView",
     "PipelineRunView",
     "StepView",

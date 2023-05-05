@@ -15,7 +15,7 @@
 
 import os
 import tempfile
-from typing import Any, Dict, Type, cast
+from typing import Any, ClassVar, Dict, Tuple, Type, cast
 
 from whylogs.core import DatasetProfileView  # type: ignore
 from whylogs.viz import NotebookProfileVisualizer  # type: ignore
@@ -34,8 +34,10 @@ HTML_FILENAME = "profile.html"
 class WhylogsMaterializer(BaseMaterializer):
     """Materializer to read/write whylogs dataset profile views."""
 
-    ASSOCIATED_TYPES = (DatasetProfileView,)
-    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATA_ANALYSIS
+    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (DatasetProfileView,)
+    ASSOCIATED_ARTIFACT_TYPE: ClassVar[
+        ArtifactType
+    ] = ArtifactType.DATA_ANALYSIS
 
     def load(self, data_type: Type[Any]) -> DatasetProfileView:
         """Reads and returns a whylogs dataset profile view.
@@ -46,7 +48,6 @@ class WhylogsMaterializer(BaseMaterializer):
         Returns:
             A loaded whylogs dataset profile view object.
         """
-        super().load(data_type)
         filepath = os.path.join(self.uri, PROFILE_FILENAME)
 
         # Create a temporary folder
@@ -68,7 +69,6 @@ class WhylogsMaterializer(BaseMaterializer):
         Args:
             profile_view: A whylogs dataset profile view object.
         """
-        super().save(profile_view)
         filepath = os.path.join(self.uri, PROFILE_FILENAME)
 
         # Create a temporary folder
@@ -100,8 +100,6 @@ class WhylogsMaterializer(BaseMaterializer):
         Returns:
             A dictionary of visualization URIs and their types.
         """
-        visualizations = super().save_visualizations(profile_view)
-
         # currently, whylogs doesn't support visualizing a single profile, so
         # we trick it by using the same profile twice, both as reference and
         # target, in a drift report
@@ -114,9 +112,7 @@ class WhylogsMaterializer(BaseMaterializer):
         filepath = os.path.join(self.uri, HTML_FILENAME)
         with fileio.open(filepath, "w") as f:
             f.write(rendered_html.data)
-        visualizations[filepath] = VisualizationType.HTML
-
-        return visualizations
+        return {filepath: VisualizationType.HTML}
 
     def _upload_to_whylabs(self, profile_view: DatasetProfileView) -> None:
         """Uploads a whylogs dataset profile view to Whylabs.

@@ -14,7 +14,7 @@
 """Materializer for Pandas."""
 
 import os
-from typing import Any, Dict, Type, Union
+from typing import Any, ClassVar, Dict, Tuple, Type, Union
 
 import pandas as pd
 
@@ -35,8 +35,11 @@ CSV_FILENAME = "df.csv"
 class PandasMaterializer(BaseMaterializer):
     """Materializer to read data to and from pandas."""
 
-    ASSOCIATED_TYPES = (pd.DataFrame, pd.Series)
-    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATA
+    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (
+        pd.DataFrame,
+        pd.Series,
+    )
+    ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.DATA
 
     def __init__(self, uri: str):
         """Define `self.data_path`.
@@ -74,7 +77,6 @@ class PandasMaterializer(BaseMaterializer):
         Returns:
             The pandas dataframe or series.
         """
-        super().load(data_type)
         if fileio.exists(self.parquet_path):
             if self.pyarrow_exists:
                 with fileio.open(self.parquet_path, mode="rb") as f:
@@ -120,10 +122,7 @@ class PandasMaterializer(BaseMaterializer):
         Args:
             df: The pandas dataframe or series to write.
         """
-        super().save(df)
-
         if isinstance(df, pd.Series):
-
             df = df.to_frame(name="series")
 
         if self.pyarrow_exists:
@@ -144,15 +143,10 @@ class PandasMaterializer(BaseMaterializer):
         Returns:
             A dictionary of visualization URIs and their types.
         """
-        visualizations = super().save_visualizations(df)
-
-        # Save `df.describe()` as a CSV.
         describe_uri = os.path.join(self.uri, "describe.csv")
         with fileio.open(describe_uri, mode="wb") as f:
             df.describe().to_csv(f)
-        visualizations[describe_uri] = VisualizationType.CSV
-
-        return visualizations
+        return {describe_uri: VisualizationType.CSV}
 
     def extract_metadata(
         self, df: Union[pd.DataFrame, pd.Series]
@@ -165,7 +159,6 @@ class PandasMaterializer(BaseMaterializer):
         Returns:
             The extracted metadata as a dictionary.
         """
-        base_metadata = super().extract_metadata(df)
         pandas_metadata: Dict[str, "MetadataType"] = {"shape": df.shape}
 
         if isinstance(df, pd.Series):
@@ -190,4 +183,4 @@ class PandasMaterializer(BaseMaterializer):
                     for key, value in stat(numeric_only=True).to_dict().items()
                 }
 
-        return {**base_metadata, **pandas_metadata}
+        return pandas_metadata

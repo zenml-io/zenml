@@ -11,27 +11,28 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Initialization of the PyCaret integration."""
 
-from pydantic import BaseModel
-
-from tests.unit.test_general import _test_materializer
-from zenml.materializers.pydantic_materializer import PydanticMaterializer
+from zenml.integrations.constants import PYCARET
+from zenml.integrations.integration import Integration
 
 
-def test_pydantic_materializer():
-    """Test the pydantic materializer."""
+class PyCaretIntegration(Integration):
+    """Definition of PyCaret integration for ZenML."""
 
-    class MyModel(BaseModel):
-        a: int = 1
-        b: int = 2
+    NAME = PYCARET
+    REQUIREMENTS = [
+        "pycaret>=3.0.0",
+        "scikit-learn",
+        "xgboost",
+        "catboost",
+        "lightgbm",
+    ]
 
-    model = MyModel(a=2, b=3)
+    @classmethod
+    def activate(cls) -> None:
+        """Activates the integration."""
+        from zenml.integrations.pycaret import materializers  # noqa
 
-    result = _test_materializer(
-        step_output_type=MyModel,
-        materializer_class=PydanticMaterializer,
-        step_output=model,
-        expected_metadata_size=2,
-    )
-    assert result.a == 2
-    assert result.b == 3
+
+PyCaretIntegration.check_installation()

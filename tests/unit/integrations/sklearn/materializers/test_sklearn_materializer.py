@@ -11,7 +11,6 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from contextlib import ExitStack as does_not_raise
 
 from sklearn.svm import SVC
 
@@ -23,10 +22,10 @@ from zenml.integrations.sklearn.materializers.sklearn_materializer import (
 
 def test_sklearn_materializer(clean_client):
     """Tests whether the steps work for the Sklearn materializer."""
-    with does_not_raise():
-        model = _test_materializer(
-            step_output=SVC(gamma="auto"),
-            materializer_class=SklearnMaterializer,
-        )
+    model = _test_materializer(
+        step_output=SVC(gamma="auto"),
+        materializer_class=SklearnMaterializer,
+        expected_metadata_size=1,
+    )
 
     assert model.gamma == "auto"

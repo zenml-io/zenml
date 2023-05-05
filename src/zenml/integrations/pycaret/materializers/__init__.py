@@ -11,27 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Initialization for the PyCaret materializers."""
 
-from pydantic import BaseModel
-
-from tests.unit.test_general import _test_materializer
-from zenml.materializers.pydantic_materializer import PydanticMaterializer
-
-
-def test_pydantic_materializer():
-    """Test the pydantic materializer."""
-
-    class MyModel(BaseModel):
-        a: int = 1
-        b: int = 2
-
-    model = MyModel(a=2, b=3)
-
-    result = _test_materializer(
-        step_output_type=MyModel,
-        materializer_class=PydanticMaterializer,
-        step_output=model,
-        expected_metadata_size=2,
-    )
-    assert result.a == 2
-    assert result.b == 3
+from zenml.integrations.pycaret.materializers.model_materializer import (  # noqa
+    PyCaretMaterializer,
+)

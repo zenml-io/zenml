@@ -14,7 +14,7 @@
 """Implementation of the Great Expectations materializers."""
 
 import os
-from typing import TYPE_CHECKING, Any, Dict, Type, Union, cast
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, Tuple, Type, Union, cast
 
 from great_expectations.checkpoint.types.checkpoint_result import (  # type: ignore[import]
     CheckpointResult,
@@ -50,11 +50,13 @@ ARTIFACT_FILENAME = "artifact.json"
 class GreatExpectationsMaterializer(BaseMaterializer):
     """Materializer to read/write Great Expectation objects."""
 
-    ASSOCIATED_TYPES = (
+    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (
         ExpectationSuite,
         CheckpointResult,
     )
-    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATA_ANALYSIS
+    ASSOCIATED_ARTIFACT_TYPE: ClassVar[
+        ArtifactType
+    ] = ArtifactType.DATA_ANALYSIS
 
     @staticmethod
     def preprocess_checkpoint_result_dict(
@@ -102,7 +104,6 @@ class GreatExpectationsMaterializer(BaseMaterializer):
         Returns:
             A loaded Great Expectations object.
         """
-        super().load(data_type)
         filepath = os.path.join(self.uri, ARTIFACT_FILENAME)
         artifact_dict = yaml_utils.read_json(filepath)
         data_type = source_utils.load(artifact_dict.pop("data_type"))
@@ -118,7 +119,6 @@ class GreatExpectationsMaterializer(BaseMaterializer):
         Args:
             obj: A Great Expectations object.
         """
-        super().save(obj)
         filepath = os.path.join(self.uri, ARTIFACT_FILENAME)
         artifact_dict = obj.to_json_dict()
         artifact_type = type(obj)
@@ -138,7 +138,7 @@ class GreatExpectationsMaterializer(BaseMaterializer):
         Returns:
             A dictionary of visualization URIs and their types.
         """
-        visualizations = super().save_visualizations(data)
+        visualizations = {}
 
         if isinstance(data, CheckpointResult):
             result = cast(CheckpointResult, data)
@@ -168,15 +168,13 @@ class GreatExpectationsMaterializer(BaseMaterializer):
         Returns:
             The extracted metadata as a dictionary.
         """
-        base_metadata = super().extract_metadata(data)
-        ge_metadata: Dict[str, "MetadataType"] = {}
         if isinstance(data, CheckpointResult):
-            ge_metadata = {
+            return {
                 "checkpoint_result_name": data.name,
                 "checkpoint_result_passed": data.success,
             }
         elif isinstance(data, ExpectationSuite):
-            ge_metadata = {
+            return {
                 "expectation_suite_name": data.name,
             }
-        return {**base_metadata, **ge_metadata}
+        return {}

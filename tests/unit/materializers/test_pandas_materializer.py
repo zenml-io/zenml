@@ -33,6 +33,7 @@ def test_pandas_materializer():
             step_output_type=type_,
             materializer_class=PandasMaterializer,
             step_output=example,
+            expected_metadata_size=7,
             assert_visualization_exists=True,
         )
         assert example.equals(result)
@@ -48,6 +49,7 @@ def test_pandas_materializer_with_index():
         step_output_type=pandas.DataFrame,
         materializer_class=PandasMaterializer,
         step_output=df_string_indexed,
+        expected_metadata_size=7,
         assert_visualization_exists=True,
     )
     assert df_string_indexed.equals(result)
@@ -58,6 +60,7 @@ def test_pandas_materializer_with_index():
         step_output_type=pandas.Series,
         materializer_class=PandasMaterializer,
         step_output=series_string_indexed,
+        expected_metadata_size=7,
         assert_visualization_exists=True,
     )
     assert series_string_indexed.equals(result)
@@ -75,6 +78,7 @@ def test_pandas_materializer_with_index():
         step_output_type=pandas.Series,
         materializer_class=PandasMaterializer,
         step_output=series_datetime_indexed,
+        expected_metadata_size=7,
         assert_visualization_exists=True,
     )
     assert series_datetime_indexed.equals(result)
@@ -92,6 +96,7 @@ def test_pandas_materializer_with_index():
         step_output_type=pandas.DataFrame,
         materializer_class=PandasMaterializer,
         step_output=df_datetime_indexed,
+        expected_metadata_size=7,
         assert_visualization_exists=True,
     )
     assert df_datetime_indexed.equals(result)

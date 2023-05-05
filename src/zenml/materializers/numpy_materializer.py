@@ -15,7 +15,7 @@
 
 import os
 from collections import Counter
-from typing import TYPE_CHECKING, Any, Dict, Type, cast
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, Tuple, Type, cast
 
 import numpy as np
 
@@ -41,8 +41,8 @@ DATA_VAR = "data_var"
 class NumpyMaterializer(BaseMaterializer):
     """Materializer to read data to and from pandas."""
 
-    ASSOCIATED_TYPES = (np.ndarray,)
-    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATA
+    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (np.ndarray,)
+    ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.DATA
 
     def load(self, data_type: Type[Any]) -> "Any":
         """Reads a numpy array from a `.npy` file.
@@ -57,8 +57,6 @@ class NumpyMaterializer(BaseMaterializer):
         Returns:
             The numpy array.
         """
-        super().load(data_type)
-
         numpy_file = os.path.join(self.uri, NUMPY_FILENAME)
 
         if fileio.exists(numpy_file):
@@ -109,7 +107,6 @@ class NumpyMaterializer(BaseMaterializer):
         Args:
             arr: The numpy array to write.
         """
-        super().save(arr)
         with fileio.open(os.path.join(self.uri, NUMPY_FILENAME), "wb") as f:
             # This function is untyped for numpy versions supporting python
             # 3.7, but typed for numpy versions installed on python 3.8+.
@@ -132,23 +129,21 @@ class NumpyMaterializer(BaseMaterializer):
         Returns:
             A dictionary of visualization URIs and their types.
         """
-        visualizations = super().save_visualizations(arr)
-
         if not np.issubdtype(arr.dtype, np.number):
-            return visualizations
+            return {}
 
         try:
             # Save histogram for 1D arrays
             if len(arr.shape) == 1:
                 histogram_path = os.path.join(self.uri, "histogram.png")
                 self._save_histogram(histogram_path, arr)
-                visualizations[histogram_path] = VisualizationType.IMAGE
+                return {histogram_path: VisualizationType.IMAGE}
 
             # Save as image for 2D or 3D arrays with 3 or 4 channels
-            elif self._array_can_be_saved_as_image(arr):
+            if self._array_can_be_saved_as_image(arr):
                 image_path = os.path.join(self.uri, "image.png")
                 self._save_image(image_path, arr)
-                visualizations[image_path] = VisualizationType.IMAGE
+                return {image_path: VisualizationType.IMAGE}
 
         except ImportError:
             logger.info(
@@ -156,9 +151,8 @@ class NumpyMaterializer(BaseMaterializer):
                 "is not installed. To install matplotlib, run "
                 "`pip install matplotlib`."
             )
-            return visualizations
 
-        return visualizations
+        return {}
 
     def _save_histogram(self, output_path: str, arr: "NDArray[Any]") -> None:
         """Saves a histogram of a numpy array.
@@ -215,15 +209,14 @@ class NumpyMaterializer(BaseMaterializer):
         Returns:
             The extracted metadata as a dictionary.
         """
-        base_metadata = super().extract_metadata(arr)
         if np.issubdtype(arr.dtype, np.number):
-            return {**base_metadata, **self._extract_numeric_metadata(arr)}
+            return self._extract_numeric_metadata(arr)
         elif np.issubdtype(arr.dtype, np.unicode_) or np.issubdtype(
             arr.dtype, np.object_
         ):
-            return {**base_metadata, **self._extract_text_metadata(arr)}
+            return self._extract_text_metadata(arr)
         else:
-            return {**base_metadata}
+            return {}
 
     def _extract_numeric_metadata(
         self, arr: "NDArray[Any]"

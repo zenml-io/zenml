@@ -46,7 +46,6 @@ class HTMLMarkdownMaterializer(BaseMaterializer):
         Returns:
             The loaded data.
         """
-        super().load(data_type)
         with fileio.open(self._get_filepath(data_type), "r") as f:
             return data_type(f.read())
 
@@ -56,7 +55,6 @@ class HTMLMarkdownMaterializer(BaseMaterializer):
         Args:
             data: The data to save as an HTML or Markdown file.
         """
-        super().save(data)
         with fileio.open(self._get_filepath(type(data)), "w") as f:
             f.write(data)
 
@@ -71,11 +69,9 @@ class HTMLMarkdownMaterializer(BaseMaterializer):
         Returns:
             A dictionary of visualization URIs and their types.
         """
-        visualizations = super().save_visualizations(data)
         filepath = self._get_filepath(type(data))
         visualization_type = self._get_visualization_type(type(data))
-        visualizations[filepath] = visualization_type
-        return visualizations
+        return {filepath: visualization_type}
 
     def _get_filepath(self, data_type: Type[HTML_OR_MARKDOWN]) -> str:
         """Get the file path for the given data type.
