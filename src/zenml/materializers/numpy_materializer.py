@@ -14,7 +14,8 @@
 """Implementation of the ZenML NumPy materializer."""
 
 import os
-from typing import TYPE_CHECKING, Any, Dict, Type, cast
+from collections import Counter
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, Tuple, Type, cast
 
 import numpy as np
 
@@ -40,8 +41,8 @@ DATA_VAR = "data_var"
 class NumpyMaterializer(BaseMaterializer):
     """Materializer to read data to and from pandas."""
 
-    ASSOCIATED_TYPES = (np.ndarray,)
-    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATA
+    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (np.ndarray,)
+    ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.DATA
 
     def load(self, data_type: Type[Any]) -> "Any":
         """Reads a numpy array from a `.npy` file.
@@ -56,8 +57,6 @@ class NumpyMaterializer(BaseMaterializer):
         Returns:
             The numpy array.
         """
-        super().load(data_type)
-
         numpy_file = os.path.join(self.uri, NUMPY_FILENAME)
 
         if fileio.exists(numpy_file):
@@ -108,7 +107,6 @@ class NumpyMaterializer(BaseMaterializer):
         Args:
             arr: The numpy array to write.
         """
-        super().save(arr)
         with fileio.open(os.path.join(self.uri, NUMPY_FILENAME), "wb") as f:
             # This function is untyped for numpy versions supporting python
             # 3.7, but typed for numpy versions installed on python 3.8+.
@@ -117,19 +115,17 @@ class NumpyMaterializer(BaseMaterializer):
             # statement
             cast(Any, np.save)(f, arr)
 
-    def extract_metadata(
+    def extract_numeric_metadata(
         self, arr: "NDArray[Any]"
     ) -> Dict[str, "MetadataType"]:
-        """Extract metadata from the given numpy array.
+        """Extracts numeric metadata from a numpy array.
 
         Args:
             arr: The numpy array to extract metadata from.
 
         Returns:
-            The extracted metadata as a dictionary.
+            A dictionary of metadata.
         """
-        base_metadata = super().extract_metadata(arr)
-
         # These functions are untyped for numpy versions supporting python
         # 3.7, but typed for numpy versions installed on python 3.8+.
         # We need to cast them to Any here so that numpy doesn't complain
@@ -145,4 +141,52 @@ class NumpyMaterializer(BaseMaterializer):
             "min": min_val,
             "max": max_val,
         }
-        return {**base_metadata, **numpy_metadata}
+        return numpy_metadata
+
+    def extract_text_metadata(
+        self, arr: "NDArray[Any]"
+    ) -> Dict[str, "MetadataType"]:
+        """Extracts text metadata from a numpy array.
+
+        Args:
+            arr: The numpy array to extract metadata from.
+
+        Returns:
+            A dictionary of metadata.
+        """
+        text = " ".join(arr)
+        words = text.split()
+        word_counts = Counter(words)
+        unique_words = len(word_counts)
+        total_words = len(words)
+        most_common_word, most_common_count = word_counts.most_common(1)[0]
+
+        text_metadata: Dict[str, "MetadataType"] = {
+            "shape": tuple(arr.shape),
+            "dtype": DType(arr.dtype.type),
+            "unique_words": unique_words,
+            "total_words": total_words,
+            "most_common_word": most_common_word,
+            "most_common_count": most_common_count,
+        }
+        return text_metadata
+
+    def extract_metadata(
+        self, arr: "NDArray[Any]"
+    ) -> Dict[str, "MetadataType"]:
+        """Extract metadata from the given numpy array.
+
+        Args:
+            arr: The numpy array to extract metadata from.
+
+        Returns:
+            The extracted metadata as a dictionary.
+        """
+        if np.issubdtype(arr.dtype, np.number):
+            return self.extract_numeric_metadata(arr)
+        elif np.issubdtype(arr.dtype, np.unicode_) or np.issubdtype(
+            arr.dtype, np.object_
+        ):
+            return self.extract_text_metadata(arr)
+        else:
+            return {}

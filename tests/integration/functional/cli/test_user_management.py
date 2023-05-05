@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 from click.testing import CliRunner
 
-from tests.integration.functional.cli.test_utils import (
+from tests.integration.functional.cli.utils import (
     create_sample_team,
     create_sample_user,
     sample_name,

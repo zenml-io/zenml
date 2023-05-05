@@ -18,7 +18,8 @@ from typing import Optional, cast
 
 from pydantic import BaseModel, validator
 
-from zenml.constants import MODEL_METADATA_YAML_FILE_NAME
+from zenml.client import Client
+from zenml.constants import MLFLOW_MODEL_FORMAT, MODEL_METADATA_YAML_FILE_NAME
 from zenml.environment import Environment
 from zenml.exceptions import DoesNotExistException
 from zenml.integrations.seldon.constants import (
@@ -39,6 +40,7 @@ from zenml.integrations.seldon.services.seldon_deployment import (
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.materializers import UnmaterializedArtifact
+from zenml.model_registries.base_model_registry import ModelVersionStage
 from zenml.steps import (
     STEP_ENVIRONMENT_NAME,
     BaseParameters,
@@ -46,9 +48,8 @@ from zenml.steps import (
     step,
 )
 from zenml.steps.step_context import StepContext
-from zenml.utils import io_utils
+from zenml.utils import io_utils, source_utils
 from zenml.utils.materializer_utils import save_model_metadata
-from zenml.utils.source_utils import import_class_by_path
 
 logger = get_logger(__name__)
 
@@ -84,7 +85,7 @@ class CustomDeployParameters(BaseModel):
             TypeError: if predict function path is not a callable function
         """
         try:
-            predict_function = import_class_by_path(predict_func_path)
+            predict_function = source_utils.load(predict_func_path)
         except AttributeError:
             raise ValueError("Predict function can't be found.")
         if not callable(predict_function):
@@ -97,15 +98,21 @@ class SeldonDeployerStepParameters(BaseParameters):
 
     Attributes:
         service_config: Seldon Core deployment service configuration.
-        secrets: a list of ZenML secrets containing additional configuration
-            parameters for the Seldon Core deployment (e.g. credentials to
-            access the Artifact Store where the models are stored). If supplied,
-            the information fetched from these secrets is passed to the Seldon
-            Core deployment server as a list of environment variables.
+        custom_deploy_parameters: custom deployment parameters
+        registry_model_name: name of the model in the model registry
+        registry_model_version: version of the model in the model registry
+        registry_model_stage: stage of the model in the model registry
+        replace_existing: whether to replace an existing deployment of the
+            model with the same name, this is used only when the model is
+            deployed from a model registry stored model.
     """
 
     service_config: SeldonDeploymentConfig
     custom_deploy_parameters: Optional[CustomDeployParameters] = None
+    registry_model_name: Optional[str] = None
+    registry_model_version: Optional[str] = None
+    registry_model_stage: Optional[ModelVersionStage] = None
+    replace_existing: bool = True
     timeout: int = DEFAULT_SELDON_DEPLOYMENT_START_STOP_TIMEOUT
 
 
@@ -142,7 +149,7 @@ def seldon_model_deployer_step(
 
     # update the step configuration with the real pipeline runtime information
     params.service_config.pipeline_name = pipeline_name
-    params.service_config.pipeline_run_id = run_name
+    params.service_config.run_name = run_name
     params.service_config.pipeline_step_name = step_name
 
     def prepare_service_config(model_uri: str) -> SeldonDeploymentConfig:
@@ -293,7 +300,7 @@ def seldon_custom_model_deployer_step(
 
     # update the step configuration with the real pipeline runtime information
     params.service_config.pipeline_name = pipeline_name
-    params.service_config.pipeline_run_id = run_name
+    params.service_config.run_name = run_name
     params.service_config.pipeline_step_name = step_name
     params.service_config.is_custom_deployment = True
 
@@ -339,11 +346,8 @@ def seldon_custom_model_deployer_step(
             "No active stack is available. "
             "Please make sure that you have registered and set a stack."
         )
-    context.stack
 
-    docker_image = step_env.step_run_info.pipeline.extra[
-        SELDON_DOCKER_IMAGE_KEY
-    ]
+    image_name = step_env.step_run_info.get_image(key=SELDON_DOCKER_IMAGE_KEY)
 
     # copy the model files to new specific directory for the deployment
     served_model_uri = os.path.join(
@@ -367,7 +371,7 @@ def seldon_custom_model_deployer_step(
     # create the specification for the custom deployment
     service_config.spec = create_seldon_core_custom_spec(
         model_uri=service_config.model_uri,
-        custom_docker_image=docker_image,
+        custom_docker_image=image_name,
         secret_name=model_deployer.kubernetes_secret_name,
         command=entrypoint_command,
     )
@@ -382,6 +386,144 @@ def seldon_custom_model_deployer_step(
 
     logger.info(
         f"Seldon Core deployment service started and reachable at:\n"
+        f"    {service.prediction_url}\n"
+    )
+
+    return service
+
+
+@step(enable_cache=False)
+def seldon_mlflow_registry_deployer_step(
+    params: SeldonDeployerStepParameters,
+) -> SeldonDeploymentService:
+    """Seldon Core model deployer pipeline step.
+
+    This step can be used in a pipeline to implement continuous
+    deployment for a MLflow model with Seldon Core.
+
+    Args:
+        params: parameters for the deployer step
+
+    Returns:
+        Seldon Core deployment service
+
+    Raises:
+        ValueError: if registry_model_name is not provided
+        ValueError: if neither registry_model_version nor
+            registry_model_stage is provided
+        ValueError: if the MLflow experiment tracker is not available in the
+            active stack
+        LookupError: if no model version is found in the MLflow model registry.
+    """
+    # import here to avoid failing the pipeline if the step is not used
+
+    # check if the MLflow experiment tracker, MLflow model registry and
+    # Seldon Core model deployer are available
+    if not params.registry_model_name:
+        raise ValueError(
+            "registry_model_name must be provided to the MLflow"
+            "model registry deployer step."
+        )
+    elif not params.registry_model_version and not params.registry_model_stage:
+        raise ValueError(
+            "Either registry_model_version or registry_model_stage must"
+            "be provided in addition to registry_model_name to the MLflow"
+            "model registry deployer step. Since the"
+            "mlflow_model_registry_deployer_step is used in conjunction with"
+            "the mlflow_model_registry."
+        )
+    if params.service_config.implementation != "MLFLOW_SERVER":
+        raise ValueError(
+            "This step only allows MLFLOW_SERVER implementation with seldon"
+        )
+    # Get the active model deployer
+    model_deployer = cast(
+        SeldonModelDeployer, SeldonModelDeployer.get_active_model_deployer()
+    )
+
+    # fetch the MLflow model registry
+    model_registry = Client().active_stack.model_registry
+    assert model_registry is not None
+
+    # fetch the model version
+    if params.registry_model_version:
+        try:
+            model_version = model_registry.get_model_version(
+                name=params.registry_model_name,
+                version=params.registry_model_version,
+            )
+        except KeyError:
+            model_version = None
+    elif params.registry_model_stage:
+        model_version = model_registry.get_latest_model_version(
+            name=params.registry_model_name,
+            stage=params.registry_model_stage,
+        )
+    if not model_version:
+        raise LookupError(
+            f"No Model Version found for model name "
+            f"{params.registry_model_name} and version "
+            f"{params.registry_model_version} or stage "
+            f"{params.registry_model_stage}"
+        )
+    if model_version.model_format != MLFLOW_MODEL_FORMAT:
+        raise ValueError(
+            f"Model version {model_version.version} of model "
+            f"{model_version.registered_model.name} is not an MLflow model."
+            f"Only MLflow models can be deployed with Seldon Core using "
+            f"this step."
+        )
+    # Prepare the service configuration
+    service_config = params.service_config
+    service_config.extra_args["registry_model_name"] = (
+        model_version.registered_model.name,
+    )
+    service_config.extra_args["registry_model_version"] = (
+        model_version.version,
+    )
+    service_config.extra_args["registry_model_stage"] = (
+        model_version.stage.value,
+    )
+    service_config.model_uri = model_registry.get_model_uri_artifact_store(
+        model_version=model_version,
+    )
+    # fetch existing services with same pipeline name, step name and
+    # model name
+    existing_services = (
+        model_deployer.find_model_server(
+            model_name=model_version.registered_model.name,
+        )
+        if params.replace_existing
+        else []
+    )
+    # even when the deploy decision is negative, if an existing model server
+    # is not running for this pipeline/step, we still have to serve the
+    # current model, to ensure that a model server is available at all times
+    if existing_services:
+        service = cast(SeldonDeploymentService, existing_services[0])
+        # We need to start
+        # the previous model server if it is no longer running, to ensure that
+        # a model server is available at all times
+        if service.config.model_uri == service_config.model_uri:
+            if not service.is_running:
+                service.start()
+            return service
+        else:
+            # stop the existing service
+            service.stop()
+
+    # invoke the Seldon Core model deployer to create a new service
+    # or update an existing one that was previously deployed for the same
+    # model
+    service = cast(
+        SeldonDeploymentService,
+        model_deployer.deploy_model(
+            service_config, replace=True, timeout=params.timeout
+        ),
+    )
+
+    logger.info(
+        f"Seldon deployment service started and reachable at:\n"
         f"    {service.prediction_url}\n"
     )
 

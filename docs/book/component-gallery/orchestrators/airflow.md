@@ -123,7 +123,7 @@ export AIRFLOW__SCHEDULER__DAG_DIR_LIST_INTERVAL=10
 export no_proxy=*
 ```
 
-3. Run `airflow standalone` to initialise the database, create a user, and start
+3. Run `airflow standalone` to initialize the database, create a user, and start
 all components for you.
 
 {% endhint %}
@@ -154,7 +154,7 @@ ZenML pipeline. In one additional step, you need to make sure this zip file ends
 {% hint style="info" %}
 ZenML will build a Docker image called `<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE_NAME>`
 which includes your code and use it to run your pipeline steps in Airflow. 
-Check out [this page](../../advanced-guide/pipelines/containerization.md)
+Check out [this page](../../starter-guide/production-fundamentals/containerization.md)
 if you want to learn more about how ZenML builds these images and how you can 
 customize them.
 {% endhint %}

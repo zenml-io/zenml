@@ -13,10 +13,15 @@
 #  permissions and limitations under the License.
 """Step that allows you to send messages to Slack and wait for a response."""
 
-from zenml.alerter.alerter_utils import get_active_alerter
+from zenml.alerter.alerter_utils import (
+    get_active_alerter,
+    get_active_stack_name,
+)
+from zenml.environment import Environment
 from zenml.integrations.slack.alerters.slack_alerter import (
     SlackAlerter,
     SlackAlerterParameters,
+    SlackAlerterPayload,
 )
 from zenml.steps import StepContext, step
 
@@ -50,4 +55,15 @@ def slack_alerter_ask_step(
             "flavor `slack`, but the currently active alerter is of type "
             f"{type(alerter)}, which is not a subclass of `SlackAlerter`."
         )
+    if (
+        hasattr(params, "include_format_blocks")
+        and params.include_format_blocks
+    ):
+        env = Environment().step_environment
+        payload = SlackAlerterPayload(
+            pipeline_name=env.pipeline_name,
+            step_name=env.step_name,
+            stack_name=get_active_stack_name(context),
+        )
+        params.payload = payload
     return alerter.ask(message, params)

@@ -222,7 +222,7 @@ def update_user(
     """
     try:
         Client().update_user(
-            user_name_or_id=user_name_or_id,
+            name_id_or_prefix=user_name_or_id,
             updated_name=updated_name,
             updated_full_name=updated_full_name,
             updated_email=updated_email,
@@ -363,7 +363,7 @@ def update_team(
     cli_utils.print_active_config()
     try:
         team_ = Client().update_team(
-            team_name_or_id=team_name,
+            name_id_or_prefix=team_name,
             new_name=new_name,
             remove_users=remove_users,
             add_users=add_users,

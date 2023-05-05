@@ -68,8 +68,13 @@ cluster. Check out the [official Seldon Core installation instructions](https://
 3. models deployed with Seldon Core need to be stored in some form of
 persistent shared storage that is accessible from the Kubernetes cluster where
 Seldon Core is installed (e.g. AWS S3, GCS, Azure Blob Storage, etc.).
-You can use one of the supported [remote storage flavors](../artifact-stores/artifact-stores.md) 
-to store your models as part of your stack.
+You can use one of the supported [remote artifact store flavors](../artifact-stores/artifact-stores.md) 
+to store your models as part of your stack. For a smoother experience running
+Seldon Core with a cloud artifact store, we also recommend configuring
+explicit credentials for the artifact store. The Seldon Core model deployer
+knows how to automatically convert those credentials in the format needed
+by Seldon Core model servers to authenticate to the storage back-end where
+models are stored.
 
 Since the Seldon Model Deployer is interacting with the Seldon Core model 
 server deployed on a Kubernetes cluster, you need to provide a set of 
@@ -83,131 +88,144 @@ deployment servers are provisioned and managed by ZenML. If not specified,
 the namespace set in the current configuration is used.
 * base_url: the base URL of the Kubernetes ingress used to expose the Seldon 
 Core deployment servers.
-* secret: the name of a ZenML secret containing the credentials used by 
-Seldon Core storage initializers to authenticate to the Artifact Store in the
-ZenML stack. The secret must be registered using the `zenml secrets-manager
-secret register` command. The secret schema must be one of the built-in
-schemas provided by the Seldon Core integration: `seldon_s3` for AWS S3,
-`seldon_gs` for GCS, and `seldon_az` for Azure. 
-* kubernetes_secret_name: the name of the Kubernetes secret that will be
-created to store the Seldon Core credentials. If not specified, the secret name
-will be derived from the ZenML secret name.
 
-
+In addition to these parameters, the Seldon Core Model Deployer may also require
+additional configuration to be set up to allow it to authenticate to the
+remote artifact store or persistent storage service where model artifacts
+are located. This is covered in the [Managing Seldon Core Authentication](#managing-seldon-core-authentication)
+section.
 
 {% hint style="info" %}
-Configuring a Seldon Core in a Kubernetes cluster can be a complex and 
+Configuring Seldon Core in a Kubernetes cluster can be a complex and 
 error-prone process, so we have provided a set of Terraform-based recipes to 
 quickly provision popular combinations of MLOps tools. More information about 
 these recipes can be found in the [Open Source MLOps Stack Recipes](https://github.com/zenml-io/mlops-stacks).
 {% endhint %}
 
-### Managing Seldon Core Credentials
+### Managing Seldon Core Authentication
 
-#### Seldon Core Secret using ZenML Secrets Manager
+The Seldon Core Model Deployer requires access to the persistent storage where
+models are located. In most cases, you will use the Seldon Core model deployer
+to serve models that are trained through ZenML pipelines and stored in the
+ZenML Artifact Store, which implies that the Seldon Core model deployer needs
+to access the Artifact Store.
 
-The Seldon Core model servers need to retrieve model artifacts from the Artifact
-Store in the ZenML stack. This requires passing authentication credentials to 
-the Seldon Core servers. To facilitate this, a ZenML secret must be created with
-the proper credentials and specified when registering the Seldon Core Model 
-Deployer component using the --secret argument in the CLI command. To complete
-the configuration, the s3-store ZenML secret must be set as a Seldon Model
-Deployer configuration attribute.
+If Seldon Core is already running in the same cloud as the Artifact Store (e.g.
+S3 and an EKS cluster for AWS, or GCS and a GKE cluster for GCP), there are ways
+of configuring cloud workloads to have implicit access to other cloud resources
+like persistent storage without requiring explicit credentials.
+However, if Seldon Core is running in a different cloud, or on-prem, or if
+implicit in-cloud workload authentication is not enabled, then you need to
+configure explicit credentials for the Artifact Store to allow other components
+like the Seldon Core model deployer to authenticate to it. Every cloud Artifact
+Store flavor supports some way of configuring explicit credentials and this is
+documented for each individual flavor in the [Artifact Store documentation](../artifact-stores/artifact-stores.md).
 
-Built-in secret schemas are provided by the Seldon Core integration for 
-the 3 main supported Artifact Stores: S3, GCS, and Azure. The secret schemas 
-are `seldon_s3` for AWS S3, `seldon_gs` for GCS, and `seldon_az` for Azure. For
-more information on secrets, secret schemas, and their usage in ZenML, refer to 
-the [Secrets Manager](../secrets-managers/secrets-managers.md) documentation.
+When explicit credentials are configured in the Artifact Store, the Seldon Core
+Model Deployer doesn't need any additional configuration and will use those
+credentials automatically to authenticate to the same persistent storage
+service used by the Artifact Store. If the Artifact Store doesn't have
+explicit credentials configured, then Seldon Core will default to using
+whatever implicit authentication method is available in the Kubernetes cluster
+where it is running. For example, in AWS this means using the IAM role
+attached to the EC2 or EKS worker nodes and in GCP this means using the
+service account attached to the GKE worker nodes.
+
+{% hint style="warning" %}
+If the Artifact Store used in combination with the Seldon Core Model Deployer
+in the same ZenML stack does not have explicit credentials configured, then
+the Seldon Core Model Deployer might not be able to authenticate to the Artifact
+Store which will cause the deployed model servers to fail.
+
+To avoid this, we recommend that you use Artifact Stores with explicit
+credentials in the same stack as the Seldon Core Model Deployer. Alternatively,
+if you're running Seldon Core in one of the cloud providers, you should
+configure implicit authentication for the Kubernetes nodes.
+{% endhint %}
+
+If you want to use a custom persistent storage with Seldon Core, or if you
+prefer to manually manage the authentication credentials attached to the
+Seldon Core model servers, you can use the approach described in the next
+section.
+
+#### Advanced: Configuring a Custom Seldon Core Secret
+
+The Seldon Core model deployer stack component allows configuring an additional
+`secret` attribute that can be used to specify custom credentials that Seldon
+Core should use to authenticate to the persistent storage service where models
+are located. This is useful if you want to connect Seldon Core to a persistent
+storage service that is not supported as a ZenML Artifact Store, or if you don't
+want to configure or use the same credentials configured for your Artifact
+Store. The `secret` attribute must be set to the name of
+[a ZenML secret](../../starter-guide/production-fundamentals/secrets-management.md)
+containing credentials configured in the format supported by Seldon Core.
+
+{% hint style="info" %}
+This method is not recommended, because it limits the Seldon Core model deployer
+to a single persistent storage service, whereas using the Artifact Store
+credentials gives you more flexibility in combining the Seldon Core model
+deployer with any Artifact Store in the same ZenML stack.
+{% endhint %}
+
+Seldon Core model servers use [`rclone`](https://rclone.org/) to connect to
+persistent storage services and the credentials that can be configured
+in the ZenML secret must also be in the configuration format supported by
+`rclone`. This section covers a few common use cases and provides examples
+of how to configure the ZenML secret to support them, but for more information
+on supported configuration options, you can always refer to the
+[`rclone` documentation for various providers](https://rclone.org/).
 
 <details>
-    <summary>ZenML Seldon Deployer Storage Secrets </summary>
+    <summary>Seldon Core Authentication Secret Examples</summary>
+
+Example of configuring a Seldon Core secret for AWS S3: 
 
 ```shell
-# Example of a Seldon Core secret for GCS
-zenml secrets-manager secret register -s seldon_gs gs-seldon-secret \
---rclone_config_gs_client_secret="" \  #OAuth client secret. 
---rclone_config_gs_token="" \ # OAuth Access Token as a JSON blob.
---rclone_config_gs_project_number="" \ # project number.
---rclone_config_gs_service_account_credentials="" \ #service account credentials JSON blob.
---rclone_config_gs_anonymous="" \ # Access public buckets and objects without credentials. 
-# Set to True if you just want to download files and don't configure credentials.
---rclone_config_gs_auth_url="" \ # auth server URL.
-
-# Example of a Seldon Core secret for AWS S3 
-zenml secrets-manager secret register -s seldon_s3 s3-seldon-secret \
---rclone_config_s3_provider="" \ # the S3 provider (e.g. aws, ceph, minio).
---rclone_config_s3_env_auth="" \ # get AWS credentials from EC2/ECS meta data
+zenml secret create s3-seldon-secret \
+--rclone_config_s3_type="s3" \ # set to 's3' for S3 storage.
+--rclone_config_s3_provider="aws" \ # the S3 provider (e.g. aws, Ceph, Minio).
+--rclone_config_s3_env_auth=False \ # set to true to use implicit AWS authentication from EC2/ECS meta data
 # (i.e. with IAM roles configuration). Only applies if access_key_id and secret_access_key are blank.
---rclone_config_s3_access_key_id="" \ # AWS Access Key ID.
---rclone_config_s3_secret_access_key="" \ # AWS Secret Access Key.
+--rclone_config_s3_access_key_id="<AWS-ACCESS-KEY-ID>" \ # AWS Access Key ID.
+--rclone_config_s3_secret_access_key="<AWS-SECRET-ACCESS-KEY>" \ # AWS Secret Access Key.
 --rclone_config_s3_session_token="" \ # AWS Session Token.
 --rclone_config_s3_region="" \ # region to connect to.
 --rclone_config_s3_endpoint="" \ # S3 API endpoint.
+```
 
-# Example of a Seldon Core secret for Azure Blob Storage
-zenml secrets-manager secret register -s seldon_az az-seldon-secret \
---rclone_config_azureblob_account="" \ # storage Account Name. Leave blank to
+Example of configuring a Seldon Core secret for GCS: 
+
+```shell
+zenml secret create gs-seldon-secret \
+--rclone_config_gs_type="google cloud storage" \ # set to 'google cloud storage' for GCS storage.
+--rclone_config_gs_client_secret="" \  # OAuth client secret. 
+--rclone_config_gs_token="" \ # OAuth Access Token as a JSON blob.
+--rclone_config_gs_project_number="" \ # project number.
+--rclone_config_gs_service_account_credentials="" \ #service account credentials JSON blob.
+--rclone_config_gs_anonymous=False \ # Access public buckets and objects without credentials. 
+# Set to True if you just want to download files and don't configure credentials.
+--rclone_config_gs_auth_url="" \ # auth server URL.
+```
+
+Example of configuring a Seldon Core secret for Azure Blob Storage:
+
+```shell
+zenml secret create az-seldon-secret \
+--rclone_config_az_type="azureblob" \ # set to 'azureblob' for Azure Blob Storage.
+--rclone_config_az_account="" \ # storage Account Name. Leave blank to
 # use SAS URL or MSI.
---rclone_config_azureblob_key="" \ # storage Account Key. Leave blank to
+--rclone_config_az_key="" \ # storage Account Key. Leave blank to
 # use SAS URL or MSI.
---rclone_config_azureblob_sas_url="" \ # SAS URL for container level access
+--rclone_config_az_sas_url="" \ # SAS URL for container level access
 # only. Leave blank if using account/key or MSI.
---rclone_config_azureblob_use_msi="" \ # use a managed service identity to
+--rclone_config_az_use_msi="" \ # use a managed service identity to
 # authenticate (only works in Azure).
-```
-</details>
-
-#### Seldon Core Secret using Kubernetes Secrets
-
-Alternatively, you can create a Kubernetes secret containing the credentials
-required by Seldon Core to access the Artifact Store. The secret must be
-created in the same namespace where the Seldon Core model servers are deployed.
-
-Each of the supported Artifact Stores has a different set of required
-credentials. For more information on the required credentials, refer to the
-Rclone documentation for the [S3](https://rclone.org/s3/), 
-[GCS](https://rclone.org/googlecloudstorage/), 
-and [Azure](https://rclone.org/azureblob/) backends.
-
-The following example shows how to create a Kubernetes secret for Minio which
-is an S3-compatible object storage server.
-
-<details>
-    <summary>Kubernetes Secret for Seldon to Access Minio </summary>
-
-```yaml
-apiVersion: v1
-kind: Secret
-metadata:
-  name: minio-seldon-secret
-  namespace: zenml-workloads
-  labels:
-    app: "zenml"
-data:
-  RCLONE_CONFIG_S3_ACCESS_KEY_ID: "S3_ACCESS_KEY_ID"
-  RCLONE_CONFIG_S3_ENDPOINT: "http://mini-service:9000"
-  RCLONE_CONFIG_S3_PROVIDER: "Minio"
-  RCLONE_CONFIG_S3_ENV_PATH: "false"
-  RCLONE_CONFIG_S3_SECRET_ACCESS_KEY: "S3_SECRET_ACCESS_KEY"
-  RCLONE_CONFIG_S3_TYPE: "s3"
-type: Opaque
-```
-
-Once the secret is created, it can be referenced in the Seldon Core Model
-Deployer configuration using the `kubernetes_secret_name` attribute when 
-registering the deployer component.
-
-```bash
-# Create the secret
-kubectl apply -f minio-seldon-secret.yaml
-
-# Register the Seldon Core Model Deployer
-zenml model-deployer register seldon_deployer --flavor=seldon \
-  --kubernetes_context=zenml-eks \
-  --kubernetes_namespace=zenml-workloads \
-  --base_url=http://$INGRESS_HOST \
-  --kubernetes_secret_name=minio-seldon-secret 
+--rclone_config_az_client_id="" \ # client ID of the service principal
+# to use for authentication.
+--rclone_config_az_client_secret="" \ # client secret of the service
+# principal to use for authentication.
+--rclone_config_az_tenant="" \ # tenant ID of the service principal
+# to use for authentication.
 ```
 </details>
 
@@ -224,20 +242,22 @@ export INGRESS_HOST=$(kubectl -n istio-system get service istio-ingressgateway -
 
 Now register the model deployer:
 
-```bash
-# Register the Seldon Core Model Deployer with secret registred in ZenML
-zenml model-deployer register seldon_deployer --flavor=seldon \
-  --kubernetes_context=zenml-eks \
-  --kubernetes_namespace=zenml-workloads \
-  --base_url=http://$INGRESS_HOST \
-  --secret=s3-store-credentials 
+>**Note**:
+> If you chose to configure your own custom credentials to authenticate to the persistent storage service where models are stored, as covered in the [Advanced: Configuring a Custom Seldon Core Secret](#advanced-configuring-a-custom-seldon-core-secret) section, you will need to specify a ZenML secret reference when you configure the Seldon Core model deployer below:
+> ```shell
+>zenml model-deployer register seldon_deployer --flavor=seldon \
+>  --kubernetes_context=<KUBERNETES-CONTEXT> \
+>  --kubernetes_namespace=<KUBERNETES-NAMESPACE> \
+>  --base_url=http://$INGRESS_HOST \
+>  --secret=<zenml-secret-name> 
+> ```
 
-# Register the Seldon Core Model Deployer with secret created in Kubernetes
+```bash
+# Register the Seldon Core Model Deployer
 zenml model-deployer register seldon_deployer --flavor=seldon \
-    --kubernetes_context=zenml-eks \
-    --kubernetes_namespace=zenml-workloads \
-    --base_url=http://$INGRESS_HOST \
-    --kubernetes_secret_name=s3-seldon-secret
+  --kubernetes_context=<KUBERNETES-CONTEXT> \
+  --kubernetes_namespace=<KUBERNETES-NAMESPACE> \
+  --base_url=http://$INGRESS_HOST \
 ```
 
 We can now use the model deployer in our stack.
@@ -280,7 +300,7 @@ def seldon_model_deployer_step(
       implementation="TENSORFLOW_SERVER",
       secret_name="seldon-secret",
       pipeline_name = step_env.pipeline_name,
-      pipeline_run_id = step_env.pipeline_run_id,
+      run_name = step_env.run_name,
       pipeline_step_name = step_env.step_name,
   )
 
@@ -323,7 +343,7 @@ Core Model Deployer, check out the [API Docs](https://apidocs.zenml.io/latest/in
 
 When you have a custom use-case where Seldon Core pre-packaged inference 
 servers cannot cover your needs, you can leverage the language wrappers to 
-containerise your machine learning model(s) and logic.
+containerize your machine learning model(s) and logic.
 With ZenML's Seldon Core Integration, you can create your own custom model
 deployment code by creating a custom predict function that will be passed
 to a custom deployment step responsible for preparing a Docker image for the

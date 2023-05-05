@@ -15,7 +15,7 @@
 
 import os
 import tempfile
-from typing import Any, Type
+from typing import Any, ClassVar, Tuple, Type
 
 import lightgbm as lgb
 
@@ -29,8 +29,8 @@ DEFAULT_FILENAME = "model.txt"
 class LightGBMBoosterMaterializer(BaseMaterializer):
     """Materializer to read data to and from lightgbm.Booster."""
 
-    ASSOCIATED_TYPES = (lgb.Booster,)
-    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.MODEL
+    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (lgb.Booster,)
+    ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.MODEL
 
     def load(self, data_type: Type[Any]) -> lgb.Booster:
         """Reads a lightgbm Booster model from a serialized JSON file.
@@ -41,7 +41,6 @@ class LightGBMBoosterMaterializer(BaseMaterializer):
         Returns:
             A lightgbm Booster object.
         """
-        super().load(data_type)
         filepath = os.path.join(self.uri, DEFAULT_FILENAME)
 
         # Create a temporary folder
@@ -62,18 +61,9 @@ class LightGBMBoosterMaterializer(BaseMaterializer):
         Args:
             booster: A lightgbm Booster model.
         """
-        super().save(booster)
-
         filepath = os.path.join(self.uri, DEFAULT_FILENAME)
 
-        # Make a temporary phantom artifact
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".txt", delete=False
-        ) as f:
-            booster.save_model(f.name)
-            # Copy it into artifact store
-            fileio.copy(f.name, filepath)
-
-        # Close and remove the temporary file
-        f.close()
-        fileio.remove(f.name)
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tmp_path = os.path.join(tmp_dir, "model.txt")
+            booster.save_model(tmp_path)
+            fileio.copy(tmp_path, filepath)

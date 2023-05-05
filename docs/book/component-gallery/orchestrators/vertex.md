@@ -21,7 +21,7 @@ You should use the Vertex orchestrator if:
 
 ## How to deploy it
 
-In order to use a Vertex AI orchestrator, you need to first deploy [ZenML to the cloud](../../getting-started/deploying-zenml/deploying-zenml.md). It would be recommended to deploy ZenML in the same Google Cloud project as where the Vertex infrastructure is deployed, but it is not necessary to do so. You must ensure that you are [connected to the remote ZenML server](../../starter-guide/collaborate/zenml-deployment.md) before using this stack component.
+In order to use a Vertex AI orchestrator, you need to first deploy [ZenML to the cloud](../../getting-started/deploying-zenml/deploying-zenml.md). It would be recommended to deploy ZenML in the same Google Cloud project as where the Vertex infrastructure is deployed, but it is not necessary to do so. You must ensure that you are [connected to the remote ZenML server](../../starter-guide/production-fundamentals/production-fundamentals.md) before using this stack component.
 
 The only other thing necessary to use the ZenML Vertex orchestrator is enabling Vertex relevant APIs on the Google Cloud project.
 
@@ -65,7 +65,7 @@ zenml stack register <STACK_NAME> -o <ORCHESTRATOR_NAME> ... --set
 {% hint style="info" %}
 ZenML will build a Docker image called `<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE_NAME>`
 which includes your code and use it to run your pipeline steps in Vertex AI. 
-Check out [this page](../../advanced-guide/pipelines/containerization.md)
+Check out [this page](../../starter-guide/production-fundamentals/containerization.md)
 if you want to learn more about how ZenML builds these images and
 how you can customize them.
 {% endhint %}
@@ -99,7 +99,7 @@ ZenML utilizes the [Cloud Scheduler](https://cloud.google.com/scheduler) and
 on Vertex Pipelines. The following is the sequence of events that happen when running
 a pipeline on Vertex with a schedule:
 
-* Docker image is created and pushed (see above [containerization](../../advanced-guide/pipelines/containerization.md)).
+* Docker image is created and pushed (see above [containerization](../../starter-guide/production-fundamentals/containerization.md)).
 * The Vertex AI pipeline JSON file is copied to the [Artifact Store](../../component-gallery/artifact-stores/artifact-stores.md) specified in your [Stack](../../starter-guide/stacks/stacks.md)
 * Cloud Function is created that creates the Vertex Pipeline job when triggered.
 * Cloud Scheduler job is created that triggers the Cloud Function on the defined schedule.
@@ -147,7 +147,7 @@ For additional configuration of the Vertex orchestrator, you can pass
 `VertexOrchestratorSettings` which allows you to configure (among others) the following attributes:
 
 * `pod_settings`: Node selectors, affinity and tolerations to apply to the Kubernetes Pods running
-your pipline. These can be either specified using the Kubernetes model objects or as dictionaries.
+your pipeline. These can be either specified using the Kubernetes model objects or as dictionaries.
 
 ```python
 from zenml.integrations.gcp.flavors.vertex_orchestrator_flavor import VertexOrchestratorSettings

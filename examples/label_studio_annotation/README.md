@@ -18,20 +18,6 @@ show how to run the various pipelines, in what order, all using an AWS stack.
 
 # 🖥 Run the example
 
-You will need to obtain your Label Studio API key. This will give you access to
-the web annotation interface.
-
-```shell
-# start a temporary / one-off label-studio instance to get your API key
-label-studio start -p 8094
-```
-
-First order of business is to sign up if you haven't done so already, using an
-email and a password. Then visit http://localhost:8094/ to log in, and then
-visit http://localhost:8094/user/account and get your Label Studio API key (from
-the upper right hand corner). You will need it for later. Ctrl-c out of the
-Label Studio server that is running on the terminal.
-
 In order to run this example, you need to install and initialize ZenML and Label
 Studio.
 
@@ -48,6 +34,25 @@ zenml init
 # Start the ZenServer to enable dashboard access
 zenml up
 ```
+
+You will need to install and start Label Studio locally:
+
+```shell
+zenml integration install label_studio
+
+# start label-studio locally
+label-studio start -p 8093
+```
+
+To connect ZenML to your local Label Studio server, you also need an API key.
+This will give you access to the web annotation interface.
+
+First order of business is to sign up if you haven't done so already, using an
+email and a password. Then visit [http://localhost:8093/](http://localhost:8093/) to log in, and then
+visit [http://localhost:8093/user/account](http://localhost:8093/user/account) and get your Label Studio API key (from
+the upper right hand corner). You will need it for later. Keep the
+Label Studio server running, because the ZenML Label Studio annotator will use
+it as the backend.
 
 ## 👣 Step-by-Step Infrastructure Setup
 
@@ -70,37 +75,25 @@ run:
 pip install "torchvision==0.13.1"
 ```
 
-Some setup for your stack is required. This assumes you have a cloud secrets
-manager setup and installed. (See
-[here](https://docs.zenml.io/component-gallery/secrets-managers/secrets-managers) 
-for more on how to do that.)
+Some setup for your stack is required.
 
 ```shell
 zenml stack copy default <ANNOTATION_STACK_NAME>
 
 zenml stack set <ANNOTATION_STACK_NAME>
 
-zenml secrets-manager register <YOUR_SECRETS_MANAGER> --key_vault_name=<YOUR_KEY_VAULT_NAME> -f azure
+zenml secret create <YOUR_AZURE_AUTH_SECRET_NAME> --account_name="<YOUR_AZURE_ACCOUNT_NAME>" --account_key="<YOUR_AZURE_ACCOUNT_KEY>"
 
-zenml stack update <ANNOTATION_STACK_NAME> -x <YOUR_SECRETS_MANAGER>
-
-zenml secrets-manager secret register <YOUR_AZURE_AUTH_SECRET_NAME> --schema=azure --account_name="<YOUR_AZURE_ACCOUNT_NAME>" --account_key="<YOUR_AZURE_ACCOUNT_KEY>"
-
-zenml artifact-store register azure_artifact_store -f=azure --path="az://<NAME_OF_ARTIFACT_STORE_OR_BLOB_IN_AZURE>" --authentication_secret="<YOUR_AZURE_AUTH_SECRET_NAME>"
+zenml artifact-store register azure_artifact_store -f azure --path="az://<NAME_OF_ARTIFACT_STORE_OR_BLOB_IN_AZURE>" --authentication_secret="<YOUR_AZURE_AUTH_SECRET_NAME>"
 
 zenml stack update <ANNOTATION_STACK_NAME> -a <YOUR_CLOUD_ARTIFACT_STORE>
 
-zenml secrets-manager secret register <LABEL_STUDIO_SECRET_NAME> --api_key="<YOUR_API_KEY>"
+zenml secret create <LABEL_STUDIO_SECRET_NAME> --api_key="<YOUR_API_KEY>"
 
 zenml annotator register <YOUR_LABEL_STUDIO_ANNOTATOR> --flavor label_studio --authentication_secret="<LABEL_STUDIO_SECRET_NAME>"
 
 zenml stack update <ANNOTATION_STACK_NAME> -an <YOUR_LABEL_STUDIO_ANNOTATOR>
-
-zenml stack up
 ```
-
-This will initialize the daemon server which Label Studio requires, albeit
-running on a default port of 8093.
 
 ### 🥞 Set up your stack for GCP
 
@@ -138,27 +131,18 @@ zenml stack copy default <YOUR_ANNOTATION_STACK_NAME>
 
 zenml stack set <YOUR_ANNOTATION_STACK_NAME>
 
-zenml secrets-manager register <YOUR_SECRETS_MANAGER> -f gcp --project_id="<YOUR_GCP_PROJECT_NAME>"
+zenml secret create <YOUR_GCP_AUTH_SECRETS_NAME> --token="@PATH/TO/JSON/FILE/CREATED/ABOVE"
 
-zenml stack update <YOUR_ANNOTATION_STACK_NAME> -x <YOUR_SECRETS_MANAGER>
-
-zenml secrets-manager secret register <YOUR_GCP_AUTH_SECRETS_NAME> --schema=gcp --token="@PATH/TO/JSON/FILE/CREATED/ABOVE"
-
-zenml artifact-store register gcp_artifact_store -f=gcp --path="gs://<YOUR_BUCKET_NAME>" --authentication_secret="<YOUR_GCP_AUTH_SECRETS_NAME>"
+zenml artifact-store register gcp_artifact_store -f gcp --path="gs://<YOUR_BUCKET_NAME>" --authentication_secret="<YOUR_GCP_AUTH_SECRETS_NAME>"
 
 zenml stack update <YOUR_ANNOTATION_STACK_NAME> -a <YOUR_CLOUD_ARTIFACT_STORE>
 
-zenml secrets-manager secret register <LABEL_STUDIO_SECRET_NAME> --api_key="<YOUR_API_KEY>"
+zenml secret create <LABEL_STUDIO_SECRET_NAME> --api_key="<YOUR_API_KEY>"
 
 zenml annotator register <YOUR_LABEL_STUDIO_ANNOTATOR> --flavor label_studio --authentication_secret="<LABEL_STUDIO_SECRET_NAME>"
 
 zenml stack update <YOUR_ANNOTATION_STACK_NAME> -an <YOUR_LABEL_STUDIO_ANNOTATOR>
-
-zenml stack up
 ```
-
-This will initialize the daemon server which Label Studio requires, albeit
-running on a default port of 8093.
 
 ### 🥞 Set up your stack for AWS
 
@@ -177,52 +161,14 @@ S3_BUCKET_NAME=<YOUR_DESIRED_S3_BUCKET_NAME>
 aws s3api create-bucket --bucket=$S3_BUCKET_NAME --region=$REGION --create-bucket-configuration=LocationConstraint=$REGION
 ```
 
-Create a `.json` file on your local hard drive containing the following data,
-making sure to replace `<YOUR_BUCKET_NAME>` with the actual value you used
-above:
-
-```json
-{
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Sid": "VisualEditor1",
-            "Effect": "Allow",
-            "Action": [
-                "s3:ListBucket",
-                "s3:GetObject",
-                "s3:PutObject",
-                "s3:DeleteObject"
-            ],
-            "Resource": [
-                "arn:aws:s3:::<YOUR_BUCKET_NAME>",
-                "arn:aws:s3:::<YOUR_BUCKET_NAME>/*"
-            ]
-        }
-    ]
-}
-```
-
-Create a policy using [the `create-policy` CLI
-command](https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies_create-cli.html)
-for IAM to manage the Label Studio access to the S3 bucket. This assumes you are
-running the command from the same directory in which you saved the policy file.
-
-```shell
-# this token duration is the maximum possible, but you will have to check if your bucket allows this
-aws iam create-policy --policy-name <YOUR_POLICY_NAME> --policy-document file://<YOUR_POLICY_FILE_NAME> --duration_seconds=43200
-```
-
-Set up cross-origin resource sharing (CORS) access to your bucket, using a
-policy that allows `GET` access from the same host name as your Label Studio
-deployment. You can use the CORS file we have pre-populated for you inside the
-examples repo as follows:
+Label Studio also needs you to set up cross-origin resource sharing (CORS)
+access to your bucket, using a policy that allows `GET` access from the same
+host name as your Label Studio deployment. You can use the CORS file we have
+pre-populated for you inside the examples repo as follows:
 
 ```shell
 cd cloud_config/aws
-
 aws s3api put-bucket-cors --bucket $S3_BUCKET_NAME --cors-configuration file://cors.json
-
 cd ../..
 ```
 
@@ -234,49 +180,26 @@ zenml stack copy default <YOUR_AWS_ZENML_STACK_NAME>
 
 zenml stack set <YOUR_AWS_ZENML_STACK_NAME>
 
-zenml secrets-manager register <YOUR_SECRETS_MANAGER> --flavor=aws --region_name=<AWS_REGION_NAME>
-
-zenml stack update <YOUR_AWS_ZENML_STACK_NAME> -x <YOUR_SECRETS_MANAGER>
-
-# copy down the credentials output from this command
-aws sts get-session-token --profile=<YOUR_AWS_CONFIG_PROFILE_NAME>
-```
-
-Use the credentials output from the command to get your
-`<LABEL_STUDIO_ACCESS_KEY_ID>`, `<LABEL_STUDIO_SECRET_ACCESS_KEY>`, and
-`<LABEL_STUDIO_AWS_SESSION_TOKEN>` which we will use to register a secret.
-
-```shell
-# this secret must be named 'aws_label_studio'
-zenml secrets-manager secret register aws_label_studio --schema=aws --aws_access_key_id="<LABEL_STUDIO_ACCESS_KEY_ID>" --aws_secret_access_key="<LABEL_STUDIO_SECRET_ACCESS_KEY>" --aws_session_token="<LABEL_STUDIO_AWS_SESSION_TOKEN>"
-
 # use your standard access key id and secret access key from ~/.aws/credentials here
-zenml secrets-manager secret register <YOUR_AWS_SECRET_NAME> --schema=aws --aws_access_key_id="<YOUR_ACCESS_KEY_ID>" --aws_secret_access_key="<YOUR_SECRET_ACCESS_KEY>"
+zenml secret create <YOUR_AWS_SECRET_NAME> --aws_access_key_id="<YOUR_ACCESS_KEY_ID>" --aws_secret_access_key="<YOUR_SECRET_ACCESS_KEY>"
 
 zenml artifact-store register <YOUR_CLOUD_ARTIFACT_STORE> --flavor=s3 --path=s3://<YOUR_S3_BUCKET_NAME> --authentication_secret="<YOUR_AWS_SECRET_NAME>"
 
 zenml stack update <YOUR_AWS_ZENML_STACK_NAME> -a <YOUR_CLOUD_ARTIFACT_STORE>
 
-zenml secrets-manager secret register <LABEL_STUDIO_SECRET_NAME> --api_key="<YOUR_API_KEY>"
+zenml secret create <LABEL_STUDIO_SECRET_NAME> --api_key="<YOUR_API_KEY>"
 
 zenml annotator register <YOUR_LABEL_STUDIO_ANNOTATOR> --flavor label_studio --authentication_secret="<LABEL_STUDIO_SECRET_NAME>"
 
 zenml stack update <YOUR_AWS_ZENML_STACK_NAME> -an <YOUR_LABEL_STUDIO_ANNOTATOR>
-
-zenml stack up
 ```
-
-This will initialize the daemon server which Label Studio requires, albeit
-running on a default port of 8093.
-
 
 ### ▶️ Run the Code
 
-There are several parts to running the pipeline. Start with (remembering to
-substitute `azure` or `gcp` if you're not running this on an AWS stack):
+There are several parts to running the pipeline. Start with:
 
 ```shell
-python run.py aws --train
+python run.py --train
 ```
 
 On the first time you run this, this will fetch a pretrained model and amend the
@@ -296,7 +219,7 @@ Then you can use this model to perform inference on some images (located in
 Studio.
 
 ```shell
-python run.py aws --inference
+python run.py --inference
 ```
 
 At this point you should do some annotation using the Label Studio web
@@ -323,14 +246,14 @@ previously-downloaded pretrained model using the ten annotations we just made.
 This will improve our model's performance (a bit).
 
 ```shell
-python run.py aws --train --rerun
+python run.py --train --rerun
 ```
 
 Now we can rerun the inference step, though using a different set of data
 (`data/batch_2`).
 
 ```shell
-python run.py aws --inference --rerun
+python run.py --inference --rerun
 ```
 
 Once we've rerun this step, we can inspect the predictions our newly fine-tuned

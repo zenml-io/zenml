@@ -13,11 +13,12 @@
 #  permissions and limitations under the License.
 """Implementation of a post-execution step class."""
 
-from typing import TYPE_CHECKING, Any, Dict, Optional, cast
+from typing import TYPE_CHECKING, Any, Dict, Optional, Type, cast
 
 from zenml.client import Client
 from zenml.enums import ExecutionStatus
 from zenml.models import StepRunResponseModel
+from zenml.models.base_models import BaseResponseModel
 from zenml.post_execution.artifact import ArtifactView
 from zenml.post_execution.base_view import BaseView
 
@@ -32,7 +33,7 @@ class StepView(BaseView):
     This can be used to query artifact information associated with a pipeline step.
     """
 
-    MODEL_CLASS = StepRunResponseModel
+    MODEL_CLASS: Type[BaseResponseModel] = StepRunResponseModel
     REPR_KEYS = ["id", "name", "entrypoint_name"]
 
     def __init__(self, model: StepRunResponseModel):

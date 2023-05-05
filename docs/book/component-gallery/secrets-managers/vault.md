@@ -6,6 +6,29 @@ The HashiCorp Vault secrets manager is a [secrets manager](./secrets-managers.md
 flavor provided with the ZenML `vault` integration that uses [HashiCorp Vault](https://www.vaultproject.io/)
 to store secrets.
 
+{% hint style="warning" %}
+We are deprecating secrets managers in favor of the
+[centralized ZenML secrets store](../../starter-guide/production-fundamentals/secrets-management.md#centralized-secrets-store).
+Going forward, we recommend using the secrets store instead of secrets managers
+to configure and store secrets.
+
+If you already use secrets managers to manage your secrets, please use the
+provided `zenml secrets-manager secrets migrate` CLI command to migrate your
+secrets to the centralized secrets store.
+
+To continue using HashiCorp Vault as the service of choice for managing your
+secrets in the cloud,
+[configure your ZenML server to connect to and use the HashiCorp Vault service](../../getting-started/deploying-zenml/deploying-zenml.md)
+directly as a back-end for the centralized secrets store and
+then use `zenml secret` CLI commands to manage your secrets instead of
+`zenml secrets-manager secret` CLI commands. You no longer need to register
+the HashiCorp Vault secrets manager or add it to your active stack.
+
+Alternatively, you may use any of the other secrets store back-ends that the
+ZenML server supports, such as Google Secret Manager, Azure Key Vault, AWS
+Secrets Manager, or even the ZenML SQL database.
+{% endhint %}
+
 ## When to use it
 
 You should use the HashiCorp Vault secrets manager if:

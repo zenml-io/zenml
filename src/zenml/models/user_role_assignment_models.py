@@ -51,7 +51,9 @@ class UserRoleAssignmentResponseModel(
     user: Optional["UserResponseModel"] = Field(
         title="The user the role is assigned to.", default=None
     )
-    role: "RoleResponseModel" = Field(title="The assigned role.", default=None)
+    role: Optional["RoleResponseModel"] = Field(
+        title="The assigned role.", default=None
+    )
 
 
 # ------ #
@@ -62,13 +64,13 @@ class UserRoleAssignmentResponseModel(
 class UserRoleAssignmentFilterModel(BaseFilterModel):
     """Model to enable advanced filtering of all Role Assignments."""
 
-    workspace_id: Union[UUID, str] = Field(
+    workspace_id: Optional[Union[UUID, str]] = Field(
         default=None, description="Workspace of the RoleAssignment"
     )
-    user_id: Union[UUID, str] = Field(
+    user_id: Optional[Union[UUID, str]] = Field(
         default=None, description="User in the RoleAssignment"
     )
-    role_id: Union[UUID, str] = Field(
+    role_id: Optional[Union[UUID, str]] = Field(
         default=None, description="Role in the RoleAssignment"
     )
 
@@ -84,8 +86,9 @@ class UserRoleAssignmentRequestModel(
     """Request model for role assignments using UUIDs for all entities."""
 
     workspace: Optional[UUID] = Field(
-        None, title="The workspace that the role is limited to."
+        default=None,
+        title="The workspace that the role is limited to.",
     )
-    user: UUID = Field(None, title="The user that the role is assigned to.")
+    user: UUID = Field(title="The user that the role is assigned to.")
 
     role: UUID = Field(title="The role.")

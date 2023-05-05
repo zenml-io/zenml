@@ -32,7 +32,11 @@ def test_resource_required(step_operator, settings, resources_required):
     expected."""
     step = Step.parse_obj(
         {
-            "spec": {"source": "", "upstream_steps": [], "inputs": {}},
+            "spec": {
+                "source": "module.step_class",
+                "upstream_steps": [],
+                "inputs": {},
+            },
             "config": {
                 "name": "step_name",
                 "enable_cache": True,

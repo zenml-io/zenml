@@ -312,6 +312,7 @@ class GitStackRecipesHandler(object):
                 and not name == "LICENSE"
                 and not name.endswith(".md")
                 and not name.endswith(".sh")
+                and not name == "modules"
             )
         ]
 
@@ -488,20 +489,32 @@ def list_stack_recipes(
     default="zenml_stack_recipes",
     help="Relative path at which you want to clean the stack_recipe(s)",
 )
+@click.option(
+    "--yes",
+    "-y",
+    is_flag=True,
+    help="Whether to skip the confirmation prompt.",
+)
 @pass_git_stack_recipes_handler
 def clean(
-    git_stack_recipes_handler: GitStackRecipesHandler, path: str
+    git_stack_recipes_handler: GitStackRecipesHandler,
+    path: str,
+    yes: bool,
 ) -> None:
     """Deletes the stack recipes directory from your working directory.
 
     Args:
         git_stack_recipes_handler: The GitStackRecipesHandler instance.
         path: The path at which you want to clean the stack_recipe(s).
+        yes: Whether to skip the confirmation prompt.
     """
     stack_recipes_directory = os.path.join(os.getcwd(), path)
-    if fileio.isdir(stack_recipes_directory) and cli_utils.confirmation(
-        "Do you wish to delete the stack recipes directory? \n"
-        f"{stack_recipes_directory}"
+    if fileio.isdir(stack_recipes_directory) and (
+        yes
+        or cli_utils.confirmation(
+            "Do you wish to delete the stack recipes directory? \n"
+            f"{stack_recipes_directory}"
+        )
     ):
         git_stack_recipes_handler.clean_current_stack_recipes()
         cli_utils.declare(
@@ -768,6 +781,10 @@ def pull(
     "-i",
     "enabled_services",
     multiple=True,
+    help="Install the specified service(s) in the stack recipe. This is useful if you "
+    "want to install a service that is not enabled by default in the recipe. "
+    "You can specify multiple services by passing the flag multiple times. "
+    "Example: `zenml stack recipe deploy my_stack_recipe --install kubeflow --install mlflow`",
 )
 @pass_git_stack_recipes_handler
 @click.pass_context
@@ -801,8 +818,8 @@ def deploy(
         import_stack_flag: Import the stack automatically after the recipe is
             deployed. The stack configuration file is always generated and
             can be imported manually otherwise.
-        log_level: Choose one of TRACE, DEBUG, INFO, WARN or ERROR (case
-            insensitive) as log level for the `deploy` operation.
+        log_level: Choose one of TRACE, DEBUG, INFO, WARN or ERROR
+            (case-insensitive) as log level for the `deploy` operation.
         skip_check: Skip the checking of locals.tf file before executing the
             recipe.
         no_server: Don't deploy ZenML even if there's no active cloud
@@ -815,8 +832,8 @@ def deploy(
     with event_handler(
         event=AnalyticsEvent.RUN_STACK_RECIPE,
         metadata={"stack_recipe_name": stack_recipe_name},
+        v2=True,
     ):
-
         import python_terraform
 
         cli_utils.warning(ALPHA_MESSAGE)

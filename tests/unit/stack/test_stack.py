@@ -16,9 +16,10 @@ from uuid import uuid4
 
 import pytest
 
+from zenml.config import DockerSettings
+from zenml.config.build_configuration import BuildConfiguration
 from zenml.config.compiler import Compiler
-from zenml.config.pipeline_configurations import PipelineRunConfiguration
-from zenml.config.pipeline_deployment import PipelineDeployment
+from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
 from zenml.enums import StackComponentType
 from zenml.exceptions import ProvisioningError, StackValidationError
 from zenml.stack import Stack
@@ -138,18 +139,13 @@ def test_stack_validation_succeeds_if_no_component_validator_fails(
         stack_with_mock_components.validate()
 
 
-def test_stack_prepare_pipeline_run(
-    stack_with_mock_components, one_step_pipeline, empty_step
+def test_stack_prepare_pipeline_deployment(
+    stack_with_mock_components, sample_deployment_response_model
 ):
     """Tests that the stack prepares a pipeline run by calling the prepare methods of all its components."""
-    pipeline = one_step_pipeline(empty_step())
-    run_name = "some_unique_pipeline_run_name"
-    deployment = PipelineDeployment(
-        run_name=run_name,
-        stack_id=uuid4(),
-        pipeline=pipeline.configuration,
+    stack_with_mock_components.prepare_pipeline_deployment(
+        sample_deployment_response_model
     )
-    stack_with_mock_components.prepare_pipeline_deployment(deployment)
     for component in stack_with_mock_components.components.values():
         component.prepare_pipeline_deployment.assert_called_once()
 
@@ -406,13 +402,10 @@ def test_requires_remote_server(stack_with_mock_components, mocker):
     assert stack_with_mock_components.requires_remote_server is True
 
 
-def test_deployment_server_validation(mocker, stack_with_mock_components):
+def test_deployment_server_validation(
+    mocker, stack_with_mock_components, sample_deployment_response_model
+):
     """Tests that the deployment validation fails when the stack requires a remote server but the store is local."""
-    deployment = PipelineDeployment(
-        run_name="",
-        stack_id=uuid4(),
-        pipeline={"name": "", "enable_cache": True},
-    )
 
     ######### Remote server #########
     mocker.patch(
@@ -425,7 +418,9 @@ def test_deployment_server_validation(mocker, stack_with_mock_components):
         new_callable=mocker.PropertyMock,
     )
     with does_not_raise():
-        stack_with_mock_components.prepare_pipeline_deployment(deployment)
+        stack_with_mock_components.prepare_pipeline_deployment(
+            sample_deployment_response_model
+        )
 
     mocker.patch(
         "zenml.stack.Stack.requires_remote_server",
@@ -433,7 +428,9 @@ def test_deployment_server_validation(mocker, stack_with_mock_components):
         new_callable=mocker.PropertyMock,
     )
     with does_not_raise():
-        stack_with_mock_components.prepare_pipeline_deployment(deployment)
+        stack_with_mock_components.prepare_pipeline_deployment(
+            sample_deployment_response_model
+        )
 
     ######### Local server #########
     mocker.patch(
@@ -447,7 +444,9 @@ def test_deployment_server_validation(mocker, stack_with_mock_components):
         new_callable=mocker.PropertyMock,
     )
     with does_not_raise():
-        stack_with_mock_components.prepare_pipeline_deployment(deployment)
+        stack_with_mock_components.prepare_pipeline_deployment(
+            sample_deployment_response_model
+        )
 
     mocker.patch(
         "zenml.stack.Stack.requires_remote_server",
@@ -455,7 +454,9 @@ def test_deployment_server_validation(mocker, stack_with_mock_components):
         new_callable=mocker.PropertyMock,
     )
     with pytest.raises(RuntimeError):
-        stack_with_mock_components.prepare_pipeline_deployment(deployment)
+        stack_with_mock_components.prepare_pipeline_deployment(
+            sample_deployment_response_model
+        )
 
 
 def test_get_pipeline_run_metadata(
@@ -598,3 +599,40 @@ def test_get_step_run_metadata_never_raises_errors(
     assert len(run_metadata) == 0
     assert orchestrator_get_step_run_mock.call_count == 1
     assert artifact_store_get_step_run_mock.call_count == 1
+
+
+def test_docker_builds_collection(
+    stack_with_mock_components, sample_deployment_response_model
+):
+    """Tests that the stack collects the required Docker builds from all its
+    components."""
+    first_orchestrator_build = BuildConfiguration(
+        key="orchestrator", settings=DockerSettings()
+    )
+    second_orchestrator_build = BuildConfiguration(
+        key="orchestrator",
+        step_name="step_1",
+        settings=DockerSettings(target_repository="custom_repo"),
+    )
+    artifact_store_build = BuildConfiguration(
+        key="artifact_store",
+        settings=DockerSettings(
+            requirements="artifact_store_requirements.txt"
+        ),
+    )
+    stack_with_mock_components.orchestrator.get_docker_builds.return_value = [
+        first_orchestrator_build,
+        second_orchestrator_build,
+    ]
+    stack_with_mock_components.artifact_store.get_docker_builds.return_value = [
+        artifact_store_build
+    ]
+
+    stack_builds = stack_with_mock_components.get_docker_builds(
+        deployment=sample_deployment_response_model
+    )
+
+    assert len(stack_builds) == 3
+    assert first_orchestrator_build in stack_builds
+    assert second_orchestrator_build in stack_builds
+    assert artifact_store_build in stack_builds

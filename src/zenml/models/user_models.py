@@ -173,9 +173,16 @@ class UserBaseModel(BaseModel):
     )
 
     email_opted_in: Optional[bool] = Field(
+        default=None,
         title="Whether the user agreed to share their email.",
         description="`null` if not answered, `true` if agreed, "
         "`false` if skipped.",
+    )
+
+    hub_token: Optional[str] = Field(
+        default=None,
+        title="JWT Token for the connected Hub account.",
+        max_length=STR_FIELD_MAX_LENGTH,
     )
 
     active: bool = Field(default=False, title="Active account.")
@@ -217,10 +224,10 @@ class UserResponseModel(UserBaseModel, BaseResponseModel):
         default=None, max_length=STR_FIELD_MAX_LENGTH
     )
     teams: Optional[List["TeamResponseModel"]] = Field(
-        title="The list of teams for this user."
+        default=None, title="The list of teams for this user."
     )
     roles: Optional[List["RoleResponseModel"]] = Field(
-        title="The list of roles for this user."
+        default=None, title="The list of roles for this user."
     )
     email: Optional[str] = Field(
         default="",
@@ -258,7 +265,7 @@ class UserAuthModel(UserBaseModel, BaseResponseModel):
     activation_token: Optional[SecretStr] = Field(default=None, exclude=True)
     password: Optional[SecretStr] = Field(default=None, exclude=True)
     teams: Optional[List["TeamResponseModel"]] = Field(
-        title="The list of teams for this user."
+        default=None, title="The list of teams for this user."
     )
 
     def generate_access_token(self, permissions: List[str]) -> str:
@@ -428,23 +435,23 @@ class UserAuthModel(UserBaseModel, BaseResponseModel):
 class UserFilterModel(BaseFilterModel):
     """Model to enable advanced filtering of all Users."""
 
-    name: str = Field(
+    name: Optional[str] = Field(
         default=None,
         description="Name of the user",
     )
-    full_name: str = Field(
+    full_name: Optional[str] = Field(
         default=None,
         description="Full Name of the user",
     )
-    email: str = Field(
+    email: Optional[str] = Field(
         default=None,
         description="Full Name of the user",
     )
-    active: Union[bool, str] = Field(
+    active: Optional[Union[bool, str]] = Field(
         default=None,
         description="Full Name of the user",
     )
-    email_opted_in: Union[bool, str] = Field(
+    email_opted_in: Optional[Union[bool, str]] = Field(
         default=None,
         description="Full Name of the user",
     )

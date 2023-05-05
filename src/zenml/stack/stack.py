@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Implementation of the ZenML Stack class."""
 
+import itertools
 import os
 from typing import (
     TYPE_CHECKING,
@@ -28,6 +29,7 @@ from typing import (
 from uuid import UUID
 
 from zenml.client import Client
+from zenml.config.build_configuration import BuildConfiguration
 from zenml.constants import (
     ENV_ZENML_SECRET_VALIDATION_LEVEL,
     ENV_ZENML_SKIP_IMAGE_BUILDER_DEFAULT,
@@ -45,7 +47,6 @@ if TYPE_CHECKING:
     from zenml.annotators import BaseAnnotator
     from zenml.artifact_stores import BaseArtifactStore
     from zenml.config.base_settings import BaseSettings
-    from zenml.config.pipeline_deployment import PipelineDeployment
     from zenml.config.step_configurations import StepConfiguration
     from zenml.config.step_run_info import StepRunInfo
     from zenml.container_registries import BaseContainerRegistry
@@ -56,6 +57,11 @@ if TYPE_CHECKING:
     from zenml.feature_stores import BaseFeatureStore
     from zenml.image_builders import BaseImageBuilder
     from zenml.model_deployers import BaseModelDeployer
+    from zenml.model_registries import BaseModelRegistry
+    from zenml.models.pipeline_deployment_models import (
+        PipelineDeploymentBaseModel,
+        PipelineDeploymentResponseModel,
+    )
     from zenml.orchestrators import BaseOrchestrator
     from zenml.secrets_managers import BaseSecretsManager
     from zenml.stack import StackComponent
@@ -93,6 +99,7 @@ class Stack:
         annotator: Optional["BaseAnnotator"] = None,
         data_validator: Optional["BaseDataValidator"] = None,
         image_builder: Optional["BaseImageBuilder"] = None,
+        model_registry: Optional["BaseModelRegistry"] = None,
     ):
         """Initializes and validates a stack instance.
 
@@ -111,6 +118,7 @@ class Stack:
             annotator: Annotator component of the stack.
             data_validator: Data validator component of the stack.
             image_builder: Image builder component of the stack.
+            model_registry: Model registry component of the stack.
         """
         self._id = id
         self._name = name
@@ -125,6 +133,7 @@ class Stack:
         self._alerter = alerter
         self._annotator = annotator
         self._data_validator = data_validator
+        self._model_registry = model_registry
 
         requires_image_builder = (
             orchestrator.flavor != "local"
@@ -175,7 +184,7 @@ class Stack:
                 "future versions of ZenML. Please add an image builder to this "
                 "stack:\n"
                 "`zenml image-builder register <NAME> ...\n"
-                "zenml stack update %s -i <NAME>",
+                "zenml stack update %s -i <NAME>`",
                 name,
                 id,
             )
@@ -236,6 +245,7 @@ class Stack:
         from zenml.feature_stores import BaseFeatureStore
         from zenml.image_builders import BaseImageBuilder
         from zenml.model_deployers import BaseModelDeployer
+        from zenml.model_registries import BaseModelRegistry
         from zenml.orchestrators import BaseOrchestrator
         from zenml.secrets_managers import BaseSecretsManager
         from zenml.step_operators import BaseStepOperator
@@ -326,6 +336,12 @@ class Stack:
         ):
             _raise_type_error(image_builder, BaseImageBuilder)
 
+        model_registry = components.get(StackComponentType.MODEL_REGISTRY)
+        if model_registry is not None and not isinstance(
+            model_registry, BaseModelRegistry
+        ):
+            _raise_type_error(model_registry, BaseModelRegistry)
+
         return Stack(
             id=id,
             name=name,
@@ -341,6 +357,7 @@ class Stack:
             annotator=annotator,
             data_validator=data_validator,
             image_builder=image_builder,
+            model_registry=model_registry,
         )
 
     @property
@@ -365,6 +382,7 @@ class Stack:
                 self.annotator,
                 self.data_validator,
                 self.image_builder,
+                self.model_registry,
             ]
             if component is not None
         }
@@ -495,6 +513,15 @@ class Stack:
             The image builder of the stack.
         """
         return self._image_builder
+
+    @property
+    def model_registry(self) -> Optional["BaseModelRegistry"]:
+        """The model registry of the stack.
+
+        Returns:
+            The model registry of the stack.
+        """
+        return self._model_registry
 
     def dict(self) -> Dict[str, str]:
         """Converts the stack into a dictionary.
@@ -667,6 +694,30 @@ class Stack:
                     )
                     logger.warning(message)
 
+            missing = []
+
+            client = Client()
+
+            # First, attempt to resolve secrets through the secrets store
+            for secret_ref in required_secrets.copy():
+                try:
+                    store_secret = client.get_secret(secret_ref.name)
+                    if (
+                        secret_validation_level
+                        == SecretValidationLevel.SECRET_AND_KEY_EXISTS
+                    ):
+                        _ = store_secret.values[secret_ref.key]
+                except (KeyError, NotImplementedError):
+                    pass
+                else:
+                    # Drop this secret from the list of required secrets
+                    required_secrets.remove(secret_ref)
+
+            # If there are still required secrets, continue with the secrets
+            # manager
+            if not required_secrets:
+                return
+
             if not self.secrets_manager:
                 _handle_error(
                     f"Some component in stack `{self.name}` reference secret "
@@ -674,7 +725,6 @@ class Stack:
                 )
                 return
 
-            missing = []
             existing_secrets = set(self.secrets_manager.get_all_secret_keys())
             for secret_ref in required_secrets:
                 if (
@@ -730,7 +780,7 @@ class Stack:
         self._validate_secrets(raise_exception=fail_if_secrets_missing)
 
     def prepare_pipeline_deployment(
-        self, deployment: "PipelineDeployment"
+        self, deployment: "PipelineDeploymentResponseModel"
     ) -> None:
         """Prepares the stack for a pipeline deployment.
 
@@ -781,7 +831,28 @@ class Stack:
                 deployment=deployment, stack=self
             )
 
-    def deploy_pipeline(self, deployment: "PipelineDeployment") -> Any:
+    def get_docker_builds(
+        self, deployment: "PipelineDeploymentBaseModel"
+    ) -> List["BuildConfiguration"]:
+        """Gets the Docker builds required for the stack.
+
+        Args:
+            deployment: The pipeline deployment for which to get the builds.
+
+        Returns:
+            The required Docker builds.
+        """
+        return list(
+            itertools.chain.from_iterable(
+                component.get_docker_builds(deployment=deployment)
+                for component in self.components.values()
+            )
+        )
+
+    def deploy_pipeline(
+        self,
+        deployment: "PipelineDeploymentResponseModel",
+    ) -> Any:
         """Deploys a pipeline on this stack.
 
         Args:

@@ -124,7 +124,7 @@ for storing artifacts, the Minio server is deployed as a Kubernetes pod.
 docker **Container Registry**.
 * The **Kubeflow Orchestrator** is responsible for running your ZenML pipeline
 in Kubeflow Pipelines.
-* The **MLFlow Expirement Tracker** is used to track the experiments and
+* The **MLFlow Experiment Tracker** is used to track the experiments and
 metrics of your pipeline runs. The MLFlow server is deployed as a Kubernetes
 pod.
 
@@ -150,7 +150,7 @@ zenml stack recipe pull k3d-modular
 3. Deploy the stack using the ZenML CLI:
 
 ```shell
-zenml stack recipe deploy k3d-modular --no-server
+zenml stack recipe deploy k3d-modular -i kubeflow -i minio --no-server
 ```
 
 > **Note**
@@ -270,7 +270,9 @@ in Kubeflow Pipelines. We need to configure it with the right kubernetes
 * context so ZenML can run pipelines in your GCP cluster.
 * Kubectl can [access](https://cloud.google.com/kubernetes-engine/docs/how-to/cluster-access-for-kubectl) 
 your GCP Kubernetes cluster.
-
+* An ***Image Builder** component that is responsible for building Docker images
+for your pipeline steps. We need to configure it with the right container
+registry so ZenML can push the images to your GCP container registry.
 
 ### Manually setting up the stack
 
@@ -289,10 +291,12 @@ zenml integration install gcp
 zenml container-registry register gcr_registry --flavor=gcp --uri=<PATH_TO_YOUR_CONTAINER_REGISTRY>
 zenml artifact-store register gcp_artifact_store --flavor=gcp --path=<PATH_TO_YOUR_GCP_BUCKET>
 zenml orchestrator register gcp_kubeflow_orchestrator --flavor=kubeflow --kubernetes_context=<NAME_OF_GCP_KUBERNETES_CONTEXT>
+zenml image-builder register local_builder --flavor=local
 zenml stack register gcp_kubeflow_stack \
     -a gcp_artifact_store \
     -o gcp_kubeflow_orchestrator \
     -c gcr_registry \
+    -i local_builder \
     --set
 
 ```

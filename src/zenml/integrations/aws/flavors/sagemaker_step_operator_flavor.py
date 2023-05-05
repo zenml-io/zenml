@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Amazon SageMaker step operator flavor."""
 
-from typing import TYPE_CHECKING, Optional, Type
+from typing import TYPE_CHECKING, Any, Dict, Optional, Type, Union
 
 from zenml.config.base_settings import BaseSettings
 from zenml.integrations.aws import AWS_SAGEMAKER_STEP_OPERATOR_FLAVOR
@@ -21,6 +21,7 @@ from zenml.step_operators.base_step_operator import (
     BaseStepOperatorConfig,
     BaseStepOperatorFlavor,
 )
+from zenml.utils import deprecation_utils
 
 if TYPE_CHECKING:
     from zenml.integrations.aws.step_operators import SagemakerStepOperator
@@ -30,16 +31,35 @@ class SagemakerStepOperatorSettings(BaseSettings):
     """Settings for the Sagemaker step operator.
 
     Attributes:
-        instance_type: The type of the compute instance where jobs will run.
-            Check https://docs.aws.amazon.com/sagemaker/latest/dg/notebooks-available-instance-types.html
-            for a list of available instance types.
         experiment_name: The name for the experiment to which the job
             will be associated. If not provided, the job runs would be
             independent.
+        input_data_s3_uri: S3 URI where training data is located if not locally,
+            e.g. s3://my-bucket/my-data/train. How data will be made available
+            to the container is configured with estimator_args.input_mode. Two possible
+            input types:
+                - str: S3 location where training data is saved.
+                - Dict[str, str]: (ChannelName, S3Location) which represent
+                    channels (e.g. training, validation, testing) where
+                    specific parts of the data are saved in S3.
+        estimator_args: Arguments that are directly passed to the SageMaker
+            Estimator. See
+            https://sagemaker.readthedocs.io/en/stable/api/training/estimators.html#sagemaker.estimator.Estimator
+            for a full list of arguments.
+            For estimator_args.instance_type, check
+            https://docs.aws.amazon.com/sagemaker/latest/dg/notebooks-available-instance-types.html
+            for a list of available instance types.
+
     """
 
     instance_type: Optional[str] = None
     experiment_name: Optional[str] = None
+    input_data_s3_uri: Optional[Union[str, Dict[str, str]]] = None
+    estimator_args: Dict[str, Any] = {}
+
+    _deprecation_validator = deprecation_utils.deprecate_pydantic_attributes(
+        "instance_type"
+    )
 
 
 class SagemakerStepOperatorConfig(  # type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173
@@ -92,6 +112,15 @@ class SagemakerStepOperatorFlavor(BaseStepOperatorFlavor):
             A flavor docs url.
         """
         return self.generate_default_docs_url()
+
+    @property
+    def sdk_docs_url(self) -> Optional[str]:
+        """A url to point at SDK docs explaining this flavor.
+
+        Returns:
+            A flavor SDK docs url.
+        """
+        return self.generate_default_sdk_docs_url()
 
     @property
     def logo_url(self) -> str:

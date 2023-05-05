@@ -12,15 +12,13 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Pipeline configuration classes."""
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, Optional
 
 from pydantic import validator
 
 from zenml.config.constants import DOCKER_SETTINGS_KEY
-from zenml.config.schedule import Schedule
-from zenml.config.step_configurations import StepConfigurationUpdate, StepSpec
+from zenml.config.source import Source, convert_source_validator
 from zenml.config.strict_base_model import StrictBaseModel
-from zenml.utils import pydantic_utils
 
 if TYPE_CHECKING:
     from zenml.config import DockerSettings
@@ -37,6 +35,12 @@ class PipelineConfigurationUpdate(StrictBaseModel):
     enable_artifact_metadata: Optional[bool] = None
     settings: Dict[str, BaseSettings] = {}
     extra: Dict[str, Any] = {}
+    failure_hook_source: Optional[Source] = None
+    success_hook_source: Optional[Source] = None
+
+    _convert_source = convert_source_validator(
+        "failure_hook_source", "success_hook_source"
+    )
 
 
 class PipelineConfiguration(PipelineConfigurationUpdate):
@@ -77,37 +81,3 @@ class PipelineConfiguration(PipelineConfigurationUpdate):
             DOCKER_SETTINGS_KEY, {}
         )
         return DockerSettings.parse_obj(model_or_dict)
-
-
-class PipelineRunConfiguration(
-    StrictBaseModel, pydantic_utils.YAMLSerializationMixin
-):
-    """Class for pipeline run configurations."""
-
-    run_name: Optional[str] = None
-    enable_cache: Optional[bool] = None
-    enable_artifact_metadata: Optional[bool] = None
-    schedule: Optional[Schedule] = None
-    steps: Dict[str, StepConfigurationUpdate] = {}
-    settings: Dict[str, BaseSettings] = {}
-    extra: Dict[str, Any] = {}
-
-
-class PipelineSpec(StrictBaseModel):
-    """Specification of a pipeline."""
-
-    version: str = "0.1"
-    steps: List[StepSpec]
-
-    def __eq__(self, other: Any) -> bool:
-        """Returns whether the other object is referring to the same pipeline.
-
-        Args:
-            other: The other object to compare to.
-
-        Returns:
-            True if the other object is referring to the same pipeline.
-        """
-        if isinstance(other, PipelineSpec):
-            return self.steps == other.steps
-        return NotImplemented

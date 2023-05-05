@@ -17,6 +17,8 @@ from asyncio.log import logger
 from typing import Any, List
 
 from fastapi import FastAPI, HTTPException, Request
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import ORJSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from genericpath import isfile
@@ -25,16 +27,21 @@ from starlette.responses import FileResponse
 
 import zenml
 from zenml.constants import API, HEALTH
+from zenml.zen_server.exceptions import error_detail
 from zenml.zen_server.routers import (
     artifacts_endpoints,
     auth_endpoints,
+    code_repositories_endpoints,
     flavors_endpoints,
+    pipeline_builds_endpoints,
+    pipeline_deployments_endpoints,
     pipelines_endpoints,
     role_assignments_endpoints,
     roles_endpoints,
     run_metadata_endpoints,
     runs_endpoints,
     schedule_endpoints,
+    secrets_endpoints,
     server_endpoints,
     stack_components_endpoints,
     stacks_endpoints,
@@ -65,7 +72,26 @@ app = FastAPI(
     title="ZenML",
     version=zenml.__version__,
     root_path=ROOT_URL_PATH,
+    default_response_class=ORJSONResponse,
 )
+
+# Customize the default request validation handler that comes with FastAPI
+# to return a JSON response that matches the ZenML API spec.
+@app.exception_handler(RequestValidationError)
+def validation_exception_handler(
+    request: Any, exc: Exception
+) -> ORJSONResponse:
+    """Custom validation exception handler.
+
+    Args:
+        request: The request.
+        exc: The exception.
+
+    Returns:
+        The error response formatted using the ZenML API conventions.
+    """
+    return ORJSONResponse(error_detail(exc, ValueError), status_code=422)
+
 
 app.add_middleware(
     CORSMiddleware,
@@ -142,6 +168,7 @@ app.include_router(team_role_assignments_endpoints.router)
 app.include_router(runs_endpoints.router)
 app.include_router(run_metadata_endpoints.router)
 app.include_router(schedule_endpoints.router)
+app.include_router(secrets_endpoints.router)
 app.include_router(server_endpoints.router)
 app.include_router(stacks_endpoints.router)
 app.include_router(stack_components_endpoints.router)
@@ -152,6 +179,9 @@ app.include_router(teams_endpoints.router)
 app.include_router(users_endpoints.router)
 app.include_router(users_endpoints.current_user_router)
 app.include_router(users_endpoints.activation_router)
+app.include_router(pipeline_builds_endpoints.router)
+app.include_router(pipeline_deployments_endpoints.router)
+app.include_router(code_repositories_endpoints.router)
 
 
 def get_root_static_files() -> List[str]:

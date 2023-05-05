@@ -145,7 +145,7 @@ To deploy the stack, run the following commands:
 # Pull the `k3d-modular` recipe to your local system
 zenml stack recipe pull k3d-modular
 # Deploy the stack using the ZenML CLI:
-zenml stack recipe deploy k3d-modular
+zenml stack recipe deploy k3d-modular -i kubeflow -i minio --no-server
 # run the following command to import the resources as a ZenML stack, manually
 zenml stack import <STACK_NAME> -f <PATH_TO_THE_CREATED_STACK_CONFIG_YAML>
 # set the imported stack as the active stack
@@ -200,7 +200,7 @@ zenml stack update -o <NAME>
 {% hint style="info" %}
 ZenML will build a Docker image called `<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE_NAME>`
 which includes your code and use it to run your pipeline steps in Kubeflow. 
-Check out [this page](../../advanced-guide/pipelines/containerization.md)
+Check out [this page](../../starter-guide/production-fundamentals/containerization.md)
 if you want to learn more about how ZenML builds these images and how you can 
 customize them.
 {% endhint %}
@@ -232,7 +232,7 @@ For additional configuration of the Kubeflow orchestrator, you can pass
 * `client_args`: Arguments to pass when initializing the KFP client.
 * `user_namespace`: The user namespace to use when creating experiments and runs.
 * `pod_settings`: Node selectors, affinity and tolerations to apply to the Kubernetes Pods running
-your pipline. These can be either specified using the Kubernetes model objects or as dictionaries.
+your pipeline. These can be either specified using the Kubernetes model objects or as dictionaries.
 
 ```python
 from zenml.integrations.kubeflow.flavors.kubeflow_orchestrator_flavor import KubeflowOrchestratorSettings
@@ -364,7 +364,7 @@ versions, so there might be further bugs with older Kubeflow versions. In this c
 The above example encoded the username and password in plain-text as settings. You can also set them as secrets.
 
 ```shell
-zenml secrets-manager secret register kubeflow_secret \
+zenml secret create kubeflow_secret \
     --username=admin \
     --password=abc123
 ```
@@ -380,7 +380,7 @@ kubeflow_settings = KubeflowOrchestratorSettings(
 )
 ```
 
-See full documentation of using secrets within ZenML [here](../../advanced-guide/practical/secrets-management.md).
+See full documentation of using ZenML secrets [here](../../starter-guide/production-fundamentals/secrets-management.md).
 
 A concrete example of using the Kubeflow orchestrator can be found
 [here](https://github.com/zenml-io/zenml/tree/main/examples/kubeflow_pipelines_orchestration).

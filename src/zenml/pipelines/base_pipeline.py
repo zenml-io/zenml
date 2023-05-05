@@ -12,65 +12,89 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Abstract base class for all ZenML pipelines."""
-
+import hashlib
 import inspect
 from abc import abstractmethod
 from datetime import datetime
+from pathlib import Path
+from types import FunctionType
 from typing import (
     TYPE_CHECKING,
     Any,
+    Callable,
     ClassVar,
     Dict,
     List,
     Mapping,
     Optional,
+    Set,
     Tuple,
     Type,
     TypeVar,
     Union,
     cast,
 )
+from uuid import UUID
 
 import yaml
+from packaging import version
 
 from zenml import constants
 from zenml.client import Client
-from zenml.config.config_keys import (
-    PipelineConfigurationKeys,
-    StepConfigurationKeys,
-)
+from zenml.config.compiler import Compiler
 from zenml.config.pipeline_configurations import (
     PipelineConfiguration,
     PipelineConfigurationUpdate,
-    PipelineRunConfiguration,
-    PipelineSpec,
 )
-from zenml.config.pipeline_deployment import PipelineDeployment
+from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
+from zenml.config.pipeline_spec import PipelineSpec
 from zenml.config.schedule import Schedule
 from zenml.config.step_configurations import StepConfigurationUpdate
 from zenml.enums import StackComponentType
-from zenml.exceptions import PipelineConfigurationError, PipelineInterfaceError
+from zenml.exceptions import PipelineInterfaceError
+from zenml.hooks.hook_validators import resolve_and_validate_hook
 from zenml.logger import get_logger
-from zenml.models.schedule_model import ScheduleRequestModel
+from zenml.models import (
+    CodeReferenceRequestModel,
+    PipelineBuildResponseModel,
+    PipelineDeploymentRequestModel,
+    PipelineDeploymentResponseModel,
+    PipelineRequestModel,
+    PipelineResponseModel,
+    ScheduleRequestModel,
+)
+from zenml.models.pipeline_build_models import (
+    PipelineBuildBaseModel,
+)
+from zenml.models.pipeline_deployment_models import PipelineDeploymentBaseModel
+from zenml.pipelines import build_utils
 from zenml.stack import Stack
 from zenml.steps import BaseStep
 from zenml.steps.base_step import BaseStepMeta
 from zenml.utils import (
+    code_repository_utils,
     dashboard_utils,
     dict_utils,
     pydantic_utils,
     settings_utils,
+    source_utils,
     yaml_utils,
 )
 from zenml.utils.analytics_utils import AnalyticsEvent, event_handler
 
 if TYPE_CHECKING:
     from zenml.config.base_settings import SettingsOrDict
-    from zenml.post_execution import PipelineRunView
+    from zenml.config.source import Source
+    from zenml.post_execution import (
+        PipelineRunView,
+        PipelineVersionView,
+        PipelineView,
+    )
 
     StepConfigurationUpdateOrDict = Union[
         Dict[str, Any], StepConfigurationUpdate
     ]
+    HookSpecification = Union[str, "Source", FunctionType]
 
 logger = get_logger(__name__)
 PIPELINE_INNER_FUNC_NAME = "connect"
@@ -79,6 +103,8 @@ PARAM_ENABLE_ARTIFACT_METADATA = "enable_artifact_metadata"
 INSTANCE_CONFIGURATION = "INSTANCE_CONFIGURATION"
 PARAM_SETTINGS = "settings"
 PARAM_EXTRA_OPTIONS = "extra"
+PARAM_ON_FAILURE = "on_failure"
+PARAM_ON_SUCCESS = "on_success"
 
 
 class BasePipelineMeta(type):
@@ -119,6 +145,45 @@ class BasePipelineMeta(type):
 
 
 T = TypeVar("T", bound="BasePipeline")
+
+
+class GetRunsDescriptor:
+    """Descriptor to define the `BasePipeline.get_runs`.
+
+    Descriptors (https://docs.python.org/3/reference/datamodel.html#implementing-descriptors)
+    allow us to define different behaviors for pipeline classes and instances.
+    """
+
+    def __get__(
+        self, instance: Optional["BasePipeline"], cls: Type["BasePipeline"]
+    ) -> Callable[[], List["PipelineRunView"]]:
+        """Get all runs of this pipeline instance or class.
+
+        Args:
+            instance: The pipeline instance if called on an instance else None.
+            cls: The pipeline class.
+
+        Returns:
+            A list of all runs of this pipeline instance or class.
+
+        Raises:
+            RuntimeError: If the method is called on a pipeline instance that
+                has not been run yet.
+        """
+        from zenml.post_execution import get_pipeline
+
+        pipeline_view: Union["PipelineVersionView", "PipelineView"]
+        if instance is None:
+            pipeline_view = get_pipeline(cls)
+        else:
+            pipeline_view = get_pipeline(instance)
+
+        if pipeline_view:
+            return lambda: pipeline_view.runs
+        raise RuntimeError(
+            "The pipeline view for this pipeline was not found. Please check "
+            "that the pipeline has been run already."
+        )
 
 
 class BasePipeline(metaclass=BasePipelineMeta):
@@ -193,6 +258,53 @@ class BasePipeline(metaclass=BasePipelineMeta):
         """
         return self.__steps
 
+    @classmethod
+    def from_model(cls: Type[T], model: "PipelineResponseModel") -> T:
+        """Creates a pipeline instance from a model.
+
+        Args:
+            model: The model to load the pipeline instance from.
+
+        Returns:
+            The pipeline instance.
+
+        Raises:
+            ValueError: If the spec version of the given model is <0.2
+        """
+        if version.parse(model.spec.version) < version.parse("0.2"):
+            raise ValueError(
+                "Loading a pipeline is only possible for pipeline specs with "
+                "version 0.2 or higher."
+            )
+
+        steps = cls._load_and_verify_steps(pipeline_spec=model.spec)
+        connect_method = cls._generate_connect_method(model=model)
+
+        pipeline_class: Type[T] = type(
+            model.name,
+            (cls,),
+            {
+                PIPELINE_INNER_FUNC_NAME: staticmethod(connect_method),
+                "__doc__": model.docstring,
+            },
+        )
+
+        pipeline_instance = pipeline_class(**steps)
+
+        version_hash = pipeline_instance._compute_unique_identifier(
+            pipeline_spec=model.spec
+        )
+        if version_hash != model.version_hash:
+            logger.warning(
+                "Trying to load pipeline version `%s`, but the local step code "
+                "changed since this pipeline version was registered. Using "
+                "this pipeline instance will result in a different pipeline "
+                "version being registered or reused.",
+                model.version,
+            )
+
+        return pipeline_instance
+
     def configure(
         self: T,
         enable_cache: Optional[bool] = None,
@@ -200,6 +312,8 @@ class BasePipeline(metaclass=BasePipelineMeta):
         settings: Optional[Mapping[str, "SettingsOrDict"]] = None,
         extra: Optional[Dict[str, Any]] = None,
         merge: bool = True,
+        on_failure: Optional["HookSpecification"] = None,
+        on_success: Optional["HookSpecification"] = None,
     ) -> T:
         """Configures the pipeline.
 
@@ -224,21 +338,378 @@ class BasePipeline(metaclass=BasePipelineMeta):
                 configurations. If `False` the given configurations will
                 overwrite all existing ones. See the general description of this
                 method for an example.
+            on_failure: Callback function in event of failure of the step. Can be
+                a function with three possible parameters, `StepContext`,
+                `BaseParameters`, and `BaseException`, or a source path to a
+                function of the same specifications (e.g. `module.my_function`)
+            on_success: Callback function in event of failure of the step. Can be
+                a function with two possible parameters, `StepContext` and
+                `BaseParameters, or a source path to a function of the same
+                specifications (e.g. `module.my_function`).
 
         Returns:
             The pipeline instance that this method was called on.
         """
+        failure_hook_source = None
+        if on_failure:
+            # string of on_failure hook function to be used for this pipeline
+            failure_hook_source = resolve_and_validate_hook(on_failure)
+
+        success_hook_source = None
+        if on_success:
+            # string of on_success hook function to be used for this pipeline
+            success_hook_source = resolve_and_validate_hook(on_success)
+
         values = dict_utils.remove_none_values(
             {
                 "enable_cache": enable_cache,
                 "enable_artifact_metadata": enable_artifact_metadata,
                 "settings": settings,
                 "extra": extra,
+                "failure_hook_source": failure_hook_source,
+                "success_hook_source": success_hook_source,
             }
         )
         config = PipelineConfigurationUpdate(**values)
         self._apply_configuration(config, merge=merge)
         return self
+
+    @abstractmethod
+    def connect(self, *args: BaseStep, **kwargs: BaseStep) -> None:
+        """Function that connects inputs and outputs of the pipeline steps.
+
+        Args:
+            *args: The positional arguments passed to the pipeline.
+            **kwargs: The keyword arguments passed to the pipeline.
+
+        Raises:
+            NotImplementedError: Always.
+        """
+        raise NotImplementedError
+
+    def register(self) -> "PipelineResponseModel":
+        """Register the pipeline in the server.
+
+        Returns:
+            The registered pipeline model.
+        """
+        # Activating the built-in integrations to load all materializers
+        from zenml.integrations.registry import integration_registry
+
+        integration_registry.activate_integrations()
+
+        custom_configurations = self.configuration.dict(
+            exclude_defaults=True, exclude={"name"}
+        )
+        if custom_configurations:
+            logger.warning(
+                f"The pipeline `{self.name}` that you're registering has "
+                "custom configurations applied to it. These will not be "
+                "registered with the pipeline and won't be set when you build "
+                "images or run the pipeline from the CLI. To provide these "
+                "configurations, use the `--config` option of the `zenml "
+                "pipeline build/run` commands."
+            )
+
+        pipeline_spec = Compiler().compile_spec(self)
+        return self._register(pipeline_spec=pipeline_spec)
+
+    def build(
+        self,
+        *,
+        settings: Optional[Mapping[str, "SettingsOrDict"]] = None,
+        step_configurations: Optional[
+            Mapping[str, "StepConfigurationUpdateOrDict"]
+        ] = None,
+        config_path: Optional[str] = None,
+    ) -> Optional["PipelineBuildResponseModel"]:
+        """Builds Docker images for the pipeline.
+
+        Args:
+            settings: Settings for the pipeline.
+            step_configurations: Configurations for steps of the pipeline.
+            config_path: Path to a yaml configuration file. This file will
+                be parsed as a
+                `zenml.config.pipeline_configurations.PipelineRunConfiguration`
+                object. Options provided in this file will be overwritten by
+                options provided in code using the other arguments of this
+                method.
+
+        Returns:
+            The build output.
+        """
+        with event_handler(event=AnalyticsEvent.BUILD_PIPELINE, v2=True):
+            deployment, pipeline_spec, _, _ = self._compile(
+                config_path=config_path,
+                steps=step_configurations,
+                settings=settings,
+            )
+            pipeline_id = self._register(pipeline_spec=pipeline_spec).id
+
+            local_repo = code_repository_utils.find_active_code_repository()
+            code_repository = build_utils.verify_local_repository_context(
+                deployment=deployment, local_repo_context=local_repo
+            )
+
+            return build_utils.create_pipeline_build(
+                deployment=deployment,
+                pipeline_id=pipeline_id,
+                code_repository=code_repository,
+            )
+
+    def run(
+        self,
+        *,
+        run_name: Optional[str] = None,
+        enable_cache: Optional[bool] = None,
+        enable_artifact_metadata: Optional[bool] = None,
+        schedule: Optional[Schedule] = None,
+        build: Union[str, "UUID", "PipelineBuildBaseModel", None] = None,
+        settings: Optional[Mapping[str, "SettingsOrDict"]] = None,
+        step_configurations: Optional[
+            Mapping[str, "StepConfigurationUpdateOrDict"]
+        ] = None,
+        extra: Optional[Dict[str, Any]] = None,
+        config_path: Optional[str] = None,
+        unlisted: bool = False,
+        prevent_build_reuse: bool = False,
+    ) -> None:
+        """Runs the pipeline on the active stack of the current repository.
+
+        Args:
+            run_name: Name of the pipeline run.
+            enable_cache: If caching should be enabled for this pipeline run.
+            enable_artifact_metadata: If artifact metadata should be enabled
+                for this pipeline run.
+            schedule: Optional schedule to use for the run.
+            build: Optional build to use for the run.
+            settings: Settings for this pipeline run.
+            step_configurations: Configurations for steps of the pipeline.
+            extra: Extra configurations for this pipeline run.
+            config_path: Path to a yaml configuration file. This file will
+                be parsed as a
+                `zenml.config.pipeline_configurations.PipelineRunConfiguration`
+                object. Options provided in this file will be overwritten by
+                options provided in code using the other arguments of this
+                method.
+            unlisted: Whether the pipeline run should be unlisted (not assigned
+                to any pipeline).
+            prevent_build_reuse: Whether to prevent the reuse of a build.
+        """
+        if constants.SHOULD_PREVENT_PIPELINE_EXECUTION:
+            # An environment variable was set to stop the execution of
+            # pipelines. This is done to prevent execution of module-level
+            # pipeline.run() calls inside docker containers which should only
+            # run a single step.
+            logger.info(
+                "Preventing execution of pipeline '%s'. If this is not "
+                "intended behavior, make sure to unset the environment "
+                "variable '%s'.",
+                self.name,
+                constants.ENV_ZENML_PREVENT_PIPELINE_EXECUTION,
+            )
+            return
+
+        with event_handler(
+            event=AnalyticsEvent.RUN_PIPELINE, v2=True
+        ) as analytics_handler:
+            deployment, pipeline_spec, schedule, build = self._compile(
+                config_path=config_path,
+                run_name=run_name,
+                enable_cache=enable_cache,
+                enable_artifact_metadata=enable_artifact_metadata,
+                steps=step_configurations,
+                settings=settings,
+                schedule=schedule,
+                build=build,
+                extra=extra,
+            )
+
+            skip_pipeline_registration = constants.handle_bool_env_var(
+                constants.ENV_ZENML_SKIP_PIPELINE_REGISTRATION,
+                default=False,
+            )
+
+            register_pipeline = not (skip_pipeline_registration or unlisted)
+
+            pipeline_id = None
+            if register_pipeline:
+                pipeline_id = self._register(pipeline_spec=pipeline_spec).id
+
+            # TODO: check whether orchestrator even support scheduling before
+            # registering the schedule
+            schedule_id = None
+            if schedule:
+                if schedule.name:
+                    schedule_name = schedule.name
+                else:
+                    date = datetime.utcnow().strftime("%Y_%m_%d")
+                    time = datetime.utcnow().strftime("%H_%M_%S_%f")
+                    schedule_name = deployment.run_name_template.format(
+                        date=date, time=time
+                    )
+                components = Client().active_stack_model.components
+                orchestrator = components[StackComponentType.ORCHESTRATOR][0]
+                schedule_model = ScheduleRequestModel(
+                    workspace=Client().active_workspace.id,
+                    user=Client().active_user.id,
+                    pipeline_id=pipeline_id,
+                    orchestrator_id=orchestrator.id,
+                    name=schedule_name,
+                    active=True,
+                    cron_expression=schedule.cron_expression,
+                    start_time=schedule.start_time,
+                    end_time=schedule.end_time,
+                    interval_second=schedule.interval_second,
+                    catchup=schedule.catchup,
+                )
+                schedule_id = (
+                    Client().zen_store.create_schedule(schedule_model).id
+                )
+                logger.info(
+                    f"Created schedule `{schedule_name}` for pipeline "
+                    f"`{deployment.pipeline_configuration.name}`."
+                )
+
+            stack = Client().active_stack
+
+            local_repo_context = (
+                code_repository_utils.find_active_code_repository()
+            )
+            code_repository = build_utils.verify_local_repository_context(
+                deployment=deployment, local_repo_context=local_repo_context
+            )
+
+            build_model = build_utils.reuse_or_create_pipeline_build(
+                deployment=deployment,
+                pipeline_id=pipeline_id,
+                allow_build_reuse=not prevent_build_reuse,
+                build=build,
+                code_repository=code_repository,
+            )
+            build_id = build_model.id if build_model else None
+
+            code_reference = None
+            if local_repo_context and not local_repo_context.is_dirty:
+                source_root = source_utils.get_source_root()
+                subdirectory = (
+                    Path(source_root)
+                    .resolve()
+                    .relative_to(local_repo_context.root)
+                )
+
+                code_reference = CodeReferenceRequestModel(
+                    commit=local_repo_context.current_commit,
+                    subdirectory=subdirectory.as_posix(),
+                    code_repository=local_repo_context.code_repository_id,
+                )
+
+            deployment_request = PipelineDeploymentRequestModel(
+                user=Client().active_user.id,
+                workspace=Client().active_workspace.id,
+                stack=stack.id,
+                pipeline=pipeline_id,
+                build=build_id,
+                schedule=schedule_id,
+                code_reference=code_reference,
+                **deployment.dict(),
+            )
+            deployment_model = Client().zen_store.create_deployment(
+                deployment=deployment_request
+            )
+
+            analytics_handler.metadata = self._get_pipeline_analytics_metadata(
+                deployment=deployment_model, stack=stack
+            )
+            caching_status = (
+                "enabled"
+                if deployment.pipeline_configuration.enable_cache is not False
+                else "disabled"
+            )
+            logger.info(
+                "%s %s on stack `%s` (caching %s)",
+                "Scheduling" if deployment_model.schedule else "Running",
+                f"pipeline `{deployment_model.pipeline_configuration.name}`"
+                if register_pipeline
+                else "unlisted pipeline",
+                stack.name,
+                caching_status,
+            )
+
+            stack.prepare_pipeline_deployment(deployment=deployment_model)
+
+            # Prevent execution of nested pipelines which might lead to
+            # unexpected behavior
+            constants.SHOULD_PREVENT_PIPELINE_EXECUTION = True
+            try:
+                stack.deploy_pipeline(deployment=deployment_model)
+            finally:
+                constants.SHOULD_PREVENT_PIPELINE_EXECUTION = False
+
+            # Log the dashboard URL
+            dashboard_utils.print_run_url(
+                run_name=deployment.run_name_template,
+                pipeline_id=pipeline_id,
+            )
+
+    get_runs = GetRunsDescriptor()
+
+    def write_run_configuration_template(
+        self, path: str, stack: Optional["Stack"] = None
+    ) -> None:
+        """Writes a run configuration yaml template.
+
+        Args:
+            path: The path where the template will be written.
+            stack: The stack for which the template should be generated. If
+                not given, the active stack will be used.
+        """
+        from zenml.config.base_settings import ConfigurationLevel
+        from zenml.config.step_configurations import (
+            PartialArtifactConfiguration,
+        )
+
+        stack = stack or Client().active_stack
+
+        setting_classes = stack.setting_classes
+        setting_classes.update(settings_utils.get_general_settings())
+
+        pipeline_settings = {}
+        step_settings = {}
+        for key, setting_class in setting_classes.items():
+            fields = pydantic_utils.TemplateGenerator(setting_class).run()
+            if ConfigurationLevel.PIPELINE in setting_class.LEVEL:
+                pipeline_settings[key] = fields
+            if ConfigurationLevel.STEP in setting_class.LEVEL:
+                step_settings[key] = fields
+
+        steps = {}
+        for step_name, step in self.steps.items():
+            parameters = (
+                pydantic_utils.TemplateGenerator(step.PARAMETERS_CLASS).run()
+                if step.PARAMETERS_CLASS
+                else {}
+            )
+            outputs = {
+                name: PartialArtifactConfiguration()
+                for name in step.OUTPUT_SIGNATURE
+            }
+            step_template = StepConfigurationUpdate(
+                parameters=parameters,
+                settings=step_settings,
+                outputs=outputs,
+            )
+            steps[step_name] = step_template
+
+        run_config = PipelineRunConfiguration(
+            settings=pipeline_settings, steps=steps
+        )
+        template = pydantic_utils.TemplateGenerator(run_config).run()
+        yaml_string = yaml.dump(template)
+        yaml_string = yaml_utils.comment_out_yaml(yaml_string)
+
+        with open(path, "w") as f:
+            f.write(yaml_string)
 
     def _apply_class_configuration(self, options: Dict[str, Any]) -> None:
         """Applies the configurations specified on the pipeline class.
@@ -248,7 +719,43 @@ class BasePipeline(metaclass=BasePipelineMeta):
         """
         settings = options.pop(PARAM_SETTINGS, None)
         extra = options.pop(PARAM_EXTRA_OPTIONS, None)
-        self.configure(settings=settings, extra=extra)
+        on_failure = options.pop(PARAM_ON_FAILURE, None)
+        on_success = options.pop(PARAM_ON_SUCCESS, None)
+        self.configure(
+            settings=settings,
+            extra=extra,
+            on_failure=on_failure,
+            on_success=on_success,
+        )
+
+    def _apply_configuration(
+        self,
+        config: PipelineConfigurationUpdate,
+        merge: bool = True,
+    ) -> None:
+        """Applies an update to the pipeline configuration.
+
+        Args:
+            config: The configuration update.
+            merge: Whether to merge the updates with the existing configuration
+                or not. See the `BasePipeline.configure(...)` method for a
+                detailed explanation.
+        """
+        self._validate_configuration(config)
+        self._configuration = pydantic_utils.update_model(
+            self._configuration, update=config, recursive=merge
+        )
+        logger.debug("Updated pipeline configuration:")
+        logger.debug(self._configuration)
+
+    @staticmethod
+    def _validate_configuration(config: PipelineConfigurationUpdate) -> None:
+        """Validates a configuration update.
+
+        Args:
+            config: The configuration update to validate.
+        """
+        settings_utils.validate_setting_keys(list(config.settings))
 
     def _verify_steps(self, *steps: BaseStep, **kw_steps: Any) -> None:
         """Verifies the initialization args and kwargs of this pipeline.
@@ -322,7 +829,6 @@ class BasePipeline(metaclass=BasePipelineMeta):
                     "`second_instance = step_class(name='s2')`."
                 )
 
-            step.pipeline_parameter_name = key
             step_ids[id(step)] = key
             combined_steps[key] = step
 
@@ -364,22 +870,9 @@ class BasePipeline(metaclass=BasePipelineMeta):
 
         self.__steps = combined_steps
 
-    @abstractmethod
-    def connect(self, *args: BaseStep, **kwargs: BaseStep) -> None:
-        """Function that connects inputs and outputs of the pipeline steps.
-
-        Args:
-            *args: The positional arguments passed to the pipeline.
-            **kwargs: The keyword arguments passed to the pipeline.
-
-        Raises:
-            NotImplementedError: Always.
-        """
-        raise NotImplementedError
-
     def _get_pipeline_analytics_metadata(
         self,
-        deployment: "PipelineDeployment",
+        deployment: "PipelineDeploymentResponseModel",
         stack: "Stack",
     ) -> Dict[str, Any]:
         """Returns the pipeline deployment metadata.
@@ -392,9 +885,9 @@ class BasePipeline(metaclass=BasePipelineMeta):
             the metadata about the pipeline deployment
         """
         custom_materializer = False
-        for step in deployment.steps.values():
+        for step in deployment.step_configurations.values():
             for output in step.config.outputs.values():
-                if not output.materializer_source.startswith("zenml."):
+                if not output.materializer_source.is_internal:
                     custom_materializer = True
 
         stack_creator = Client().get_stack(stack.id).user
@@ -414,363 +907,269 @@ class BasePipeline(metaclass=BasePipelineMeta):
             "own_stack": own_stack,
         }
 
-    def run(
-        self,
-        *,
-        run_name: Optional[str] = None,
-        enable_cache: Optional[bool] = None,
-        enable_artifact_metadata: Optional[bool] = None,
-        schedule: Optional[Schedule] = None,
-        settings: Optional[Mapping[str, "SettingsOrDict"]] = None,
-        step_configurations: Optional[
-            Mapping[str, "StepConfigurationUpdateOrDict"]
-        ] = None,
-        extra: Optional[Dict[str, Any]] = None,
-        config_path: Optional[str] = None,
-        unlisted: bool = False,
-    ) -> Any:
-        """Runs the pipeline on the active stack of the current repository.
+    @staticmethod
+    def _load_and_verify_steps(
+        pipeline_spec: "PipelineSpec",
+    ) -> Dict[str, BaseStep]:
+        """Loads steps and verifies their names and inputs/outputs names.
 
         Args:
-            run_name: Name of the pipeline run.
-            enable_cache: If caching should be enabled for this pipeline run.
-            enable_artifact_metadata: If artifact metadata should be enabled
-                for this pipeline run.
-            schedule: Optional schedule of the pipeline.
-            settings: settings for this pipeline run.
-            step_configurations: Configurations for steps of the pipeline.
-            extra: Extra configurations for this pipeline run.
-            config_path: Path to a yaml configuration file. This file will
-                be parsed as a `zenml.config.pipeline_configurations.PipelineRunConfiguration`
-                object. Options provided in this file will be overwritten by
-                options provided in code using the other arguments of this
-                method.
-            unlisted: Whether the pipeline run should be unlisted (not assigned
-                to any pipeline).
+            pipeline_spec: The pipeline spec from which to load the steps.
+
+        Raises:
+            RuntimeError: If the step names or input/output names of the
+                loaded steps don't match with the names defined in the spec.
 
         Returns:
-            The result of the pipeline.
+            The loaded steps.
         """
-        if constants.SHOULD_PREVENT_PIPELINE_EXECUTION:
-            # An environment variable was set to stop the execution of
-            # pipelines. This is done to prevent execution of module-level
-            # pipeline.run() calls inside docker containers which should only
-            # run a single step.
-            logger.info(
-                "Preventing execution of pipeline '%s'. If this is not "
-                "intended behavior, make sure to unset the environment "
-                "variable '%s'.",
-                self.name,
-                constants.ENV_ZENML_PREVENT_PIPELINE_EXECUTION,
-            )
-            return
+        steps = {}
+        available_outputs: Dict[str, Set[str]] = {}
 
-        with event_handler(AnalyticsEvent.RUN_PIPELINE) as analytics_handler:
-            stack = Client().active_stack
-
-            # Activating the built-in integrations through lazy loading
-            from zenml.integrations.registry import integration_registry
-
-            integration_registry.activate_integrations()
-
-            if config_path:
-                run_config = PipelineRunConfiguration.from_yaml(config_path)
-            else:
-                run_config = PipelineRunConfiguration()
-
-            new_values = dict_utils.remove_none_values(
-                {
-                    "run_name": run_name,
-                    "enable_cache": enable_cache,
-                    "enable_artifact_metadata": enable_artifact_metadata,
-                    "steps": step_configurations,
-                    "settings": settings,
-                    "schedule": schedule,
-                    "extra": extra,
-                }
-            )
-
-            # Update with the values in code so they take precedence
-            run_config = pydantic_utils.update_model(
-                run_config, update=new_values
-            )
-            from zenml.config.compiler import Compiler
-
-            pipeline_deployment = Compiler().compile(
-                pipeline=self, stack=stack, run_configuration=run_config
-            )
-
-            skip_pipeline_registration = constants.handle_bool_env_var(
-                constants.ENV_ZENML_SKIP_PIPELINE_REGISTRATION, default=False
-            )
-
-            register_pipeline = not (skip_pipeline_registration or unlisted)
-
-            pipeline_id = None
-            if register_pipeline:
-                step_specs = [
-                    step.spec for step in pipeline_deployment.steps.values()
-                ]
-                pipeline_spec = PipelineSpec(steps=step_specs)
-
-                pipeline_id = Client().create_pipeline(
-                    pipeline_name=pipeline_deployment.pipeline.name,
-                    pipeline_spec=pipeline_spec,
-                    pipeline_docstring=self.__doc__,
-                )
-                pipeline_deployment = pipeline_deployment.copy(
-                    update={"pipeline_id": pipeline_id}
-                )
-
-            # TODO: check whether orchestrator even support scheduling before
-            # registering the schedule
-            if schedule:
-                if not schedule.name:
-                    date = datetime.utcnow().strftime("%Y_%m_%d")
-                    time = datetime.utcnow().strftime("%H_%M_%S_%f")
-                    schedule.name = pipeline_deployment.run_name.format(
-                        date=date, time=time
+        for step_spec in pipeline_spec.steps:
+            for upstream_step in step_spec.upstream_steps:
+                if upstream_step not in available_outputs:
+                    raise RuntimeError(
+                        f"Unable to find upstream step `{upstream_step}`. "
+                        "This is probably because the step was renamed in code."
                     )
-                    pipeline_deployment = pipeline_deployment.copy(
-                        update={"schedule": schedule}
+
+            for input_spec in step_spec.inputs.values():
+                if (
+                    input_spec.output_name
+                    not in available_outputs[input_spec.step_name]
+                ):
+                    raise RuntimeError(
+                        f"Missing output `{input_spec.output_name}` for step "
+                        f"`{input_spec.step_name}`. This is probably because "
+                        "the output of the step was renamed."
                     )
-                components = Client().active_stack_model.components
-                orchestrator = components[StackComponentType.ORCHESTRATOR][0]
-                schedule_model = ScheduleRequestModel(
-                    workspace=Client().active_workspace.id,
-                    user=Client().active_user.id,
-                    pipeline_id=pipeline_id,
-                    orchestrator_id=orchestrator.id,
-                    name=schedule.name,
-                    active=True,
-                    cron_expression=schedule.cron_expression,
-                    start_time=schedule.start_time,
-                    end_time=schedule.end_time,
-                    interval_second=schedule.interval_second,
-                    catchup=schedule.catchup,
-                )
-                schedule_id = (
-                    Client().zen_store.create_schedule(schedule_model).id
-                )
-                logger.info(
-                    f"Created schedule '{schedule.name}' for pipeline "
-                    f"{pipeline_deployment.pipeline.name}."
-                )
-                pipeline_deployment = pipeline_deployment.copy(
-                    update={"schedule_id": schedule_id}
+
+            step = BaseStep.load_from_source(step_spec.source)
+            input_names = set(step.INPUT_SIGNATURE)
+            spec_input_names = set(step_spec.inputs)
+
+            if input_names != spec_input_names:
+                raise RuntimeError(
+                    f"Input names of step {step_spec.source} and the spec "
+                    f"from the database don't match. Step inputs: "
+                    f"`{input_names}`, spec inputs: `{spec_input_names}`."
                 )
 
-            analytics_handler.metadata = self._get_pipeline_analytics_metadata(
-                deployment=pipeline_deployment, stack=stack
-            )
-            caching_status = (
-                "enabled"
-                if pipeline_deployment.pipeline.enable_cache is not False
-                else "disabled"
-            )
-            logger.info(
-                "%s %s on stack `%s` (caching %s)",
-                "Scheduling" if pipeline_deployment.schedule else "Running",
-                f"pipeline `{pipeline_deployment.pipeline.name}`"
-                if register_pipeline
-                else "unlisted pipeline",
-                stack.name,
-                caching_status,
-            )
-            stack.prepare_pipeline_deployment(deployment=pipeline_deployment)
+            steps[step_spec.pipeline_parameter_name] = step
+            available_outputs[step.name] = set(step.OUTPUT_SIGNATURE.keys())
 
-            # Prevent execution of nested pipelines which might lead to
-            # unexpected behavior
-            constants.SHOULD_PREVENT_PIPELINE_EXECUTION = True
-            try:
-                return_value = stack.deploy_pipeline(pipeline_deployment)
-            finally:
-                constants.SHOULD_PREVENT_PIPELINE_EXECUTION = False
-
-            # Log the dashboard URL
-            dashboard_utils.print_run_url(
-                run_name=pipeline_deployment.run_name, pipeline_id=pipeline_id
-            )
-
-            return return_value
-
-    def _apply_configuration(
-        self,
-        config: PipelineConfigurationUpdate,
-        merge: bool = True,
-    ) -> None:
-        """Applies an update to the pipeline configuration.
-
-        Args:
-            config: The configuration update.
-            merge: Whether to merge the updates with the existing configuration
-                or not. See the `BasePipeline.configure(...)` method for a
-                detailed explanation.
-        """
-        self._validate_configuration(config)
-        self._configuration = pydantic_utils.update_model(
-            self._configuration, update=config, recursive=merge
-        )
-        logger.debug("Updated pipeline configuration:")
-        logger.debug(self._configuration)
+        return steps
 
     @staticmethod
-    def _validate_configuration(config: PipelineConfigurationUpdate) -> None:
-        """Validates a configuration update.
+    def _generate_connect_method(
+        model: "PipelineResponseModel",
+    ) -> Callable[..., None]:
+        """Dynamically generates a connect method for a pipeline model.
 
         Args:
-            config: The configuration update to validate.
-        """
-        settings_utils.validate_setting_keys(list(config.settings))
-
-    def with_config(
-        self: T, config_file: str, overwrite_step_parameters: bool = False
-    ) -> T:
-        """DEPRECATED: Configures this pipeline using a yaml file.
-
-        Args:
-            config_file: Path to a yaml file which contains configuration
-                options for running this pipeline. See
-                https://docs.zenml.io/advanced-guide/pipelines/settings
-                for details regarding the specification of this file.
-            overwrite_step_parameters: If set to `True`, values from the
-                configuration file will overwrite configuration parameters
-                passed in code.
+            model: The model for which to generate the method.
 
         Returns:
-            The pipeline object that this method was called on.
+            The generated connect method.
         """
-        logger.warning(
-            "The `with_config(...)` method is deprecated. Use "
-            "`pipeline.configure(...)` or `pipeline.run(config_path=...)` "
-            "instead."
-        )
 
-        config_yaml = yaml_utils.read_yaml(config_file)
+        def connect(**steps: BaseStep) -> None:
+            # Bind **steps to the connect signature assigned to this method
+            # below. This ensures that the method inputs get verified and only
+            # the arguments defined in the signature are allowed
+            inspect.signature(connect).bind(**steps)
 
-        if PipelineConfigurationKeys.STEPS in config_yaml:
-            self._read_config_steps(
-                config_yaml[PipelineConfigurationKeys.STEPS],
-                overwrite=overwrite_step_parameters,
+            step_outputs: Dict[str, Dict[str, BaseStep._OutputArtifact]] = {}
+            for step_spec in model.spec.steps:
+                step = steps[step_spec.pipeline_parameter_name]
+
+                step_inputs = {}
+                for input_name, input_ in step_spec.inputs.items():
+                    try:
+                        upstream_step = step_outputs[input_.step_name]
+                        step_input = upstream_step[input_.output_name]
+                        step_inputs[input_name] = step_input
+                    except KeyError:
+                        raise RuntimeError(
+                            f"Unable to find upstream step "
+                            f"`{input_.step_name}` in pipeline `{model.name}`. "
+                            "This is probably due to configuring a new step "
+                            "name after loading a pipeline using "
+                            "`BasePipeline.from_model`."
+                        )
+
+                step_output = step(**step_inputs)
+                output_keys = list(step.OUTPUT_SIGNATURE.keys())
+
+                if isinstance(step_output, BaseStep._OutputArtifact):
+                    step_output = [step_output]
+
+                step_outputs[step.name] = {
+                    key: step_output[i] for i, key in enumerate(output_keys)
+                }
+
+        # Create the connect method signature based on the expected steps
+        parameters = [
+            inspect.Parameter(
+                name=step_spec.pipeline_parameter_name,
+                kind=inspect.Parameter.POSITIONAL_OR_KEYWORD,
             )
+            for step_spec in model.spec.steps
+        ]
+        signature = inspect.Signature(parameters=parameters)
+        connect.__signature__ = signature  # type: ignore[attr-defined]
 
-        return self
+        return connect
 
-    def _read_config_steps(
-        self, steps: Dict[str, Dict[str, Any]], overwrite: bool = False
-    ) -> None:
-        """Reads and sets step parameters from a config file.
+    def _compile(
+        self, config_path: Optional[str] = None, **run_configuration_args: Any
+    ) -> Tuple[
+        "PipelineDeploymentBaseModel",
+        "PipelineSpec",
+        Optional["Schedule"],
+        Union["PipelineBuildBaseModel", UUID, None],
+    ]:
+        """Compiles the pipeline.
 
         Args:
-            steps: Maps step names to dicts of parameter names and values.
-            overwrite: If `True`, overwrite previously set step parameters.
-
-        Raises:
-            PipelineConfigurationError: If the configuration file contains
-                invalid data.
-        """
-        for step_name, step_dict in steps.items():
-            StepConfigurationKeys.key_check(step_dict)
-
-            if step_name not in self.__steps:
-                raise PipelineConfigurationError(
-                    f"Found '{step_name}' step in configuration yaml but it "
-                    f"doesn't exist in the pipeline steps "
-                    f"{list(self.__steps.keys())}."
-                )
-
-            step = self.__steps[step_name]
-            parameters = step_dict.get(StepConfigurationKeys.PARAMETERS_, {})
-            enable_cache = parameters.pop(PARAM_ENABLE_CACHE, None)
-            enable_artifact_metadata = parameters.pop(
-                PARAM_ENABLE_ARTIFACT_METADATA, None
-            )
-
-            if not overwrite:
-                parameters.update(step.configuration.parameters)
-
-            step.configure(
-                enable_cache=enable_cache,
-                enable_artifact_metadata=enable_artifact_metadata,
-                parameters=parameters,
-            )
-
-    @classmethod
-    def get_runs(cls) -> Optional[List["PipelineRunView"]]:
-        """Get all past runs from the associated PipelineView.
+            config_path: Path to a config file.
+            **run_configuration_args: Configurations for the pipeline run.
 
         Returns:
-            A list of all past PipelineRunViews.
-
-        Raises:
-            RuntimeError: In case the repository does not contain the view
-                of the current pipeline.
+            A tuple containing the deployment, spec, schedule and build of
+            the compiled pipeline.
         """
-        from zenml.post_execution import get_pipeline
+        # Activating the built-in integrations to load all materializers
+        from zenml.integrations.registry import integration_registry
 
-        pipeline_view = get_pipeline(cls)
-        if pipeline_view:
-            return pipeline_view.runs  # type: ignore[no-any-return]
+        integration_registry.activate_integrations()
+
+        if config_path:
+            run_config = PipelineRunConfiguration.from_yaml(config_path)
         else:
-            raise RuntimeError(
-                f"The PipelineView for `{cls.__name__}` could "
-                f"not be found. Are you sure this pipeline has "
-                f"been run already?"
-            )
+            run_config = PipelineRunConfiguration()
 
-    def write_run_configuration_template(
-        self, path: str, stack: Optional["Stack"] = None
-    ) -> None:
-        """Writes a run configuration yaml template.
+        new_values = dict_utils.remove_none_values(run_configuration_args)
+        update = PipelineRunConfiguration.parse_obj(new_values)
+
+        # Update with the values in code so they take precedence
+        run_config = pydantic_utils.update_model(run_config, update=update)
+
+        deployment, pipeline_spec = Compiler().compile(
+            pipeline=self,
+            stack=Client().active_stack,
+            run_configuration=run_config,
+        )
+
+        return deployment, pipeline_spec, run_config.schedule, run_config.build
+
+    def _register(
+        self, pipeline_spec: "PipelineSpec"
+    ) -> "PipelineResponseModel":
+        """Register the pipeline in the server.
 
         Args:
-            path: The path where the template will be written.
-            stack: The stack for which the template should be generated. If
-                not given, the active stack will be used.
+            pipeline_spec: The pipeline spec to register.
+
+        Returns:
+            The registered pipeline model.
         """
-        from zenml.config.base_settings import ConfigurationLevel
-        from zenml.config.step_configurations import (
-            PartialArtifactConfiguration,
+        version_hash = self._compute_unique_identifier(
+            pipeline_spec=pipeline_spec
         )
 
-        stack = stack or Client().active_stack
-
-        setting_classes = stack.setting_classes
-        setting_classes.update(settings_utils.get_general_settings())
-
-        pipeline_settings = {}
-        step_settings = {}
-        for key, setting_class in setting_classes.items():
-            fields = pydantic_utils.TemplateGenerator(setting_class).run()
-            if ConfigurationLevel.PIPELINE in setting_class.LEVEL:
-                pipeline_settings[key] = fields
-            if ConfigurationLevel.STEP in setting_class.LEVEL:
-                step_settings[key] = fields
-
-        steps = {}
-        for step_name, step in self.steps.items():
-            parameters = (
-                pydantic_utils.TemplateGenerator(step.PARAMETERS_CLASS).run()
-                if step.PARAMETERS_CLASS
-                else {}
-            )
-            outputs = {
-                name: PartialArtifactConfiguration()
-                for name in step.OUTPUT_SIGNATURE
-            }
-            step_template = StepConfigurationUpdate(
-                parameters=parameters,
-                settings=step_settings,
-                outputs=outputs,
-            )
-            steps[step_name] = step_template
-
-        run_config = PipelineRunConfiguration(
-            settings=pipeline_settings, steps=steps
+        client = Client()
+        matching_pipelines = client.list_pipelines(
+            name=self.name,
+            version_hash=version_hash,
+            size=1,
+            sort_by="desc:created",
         )
-        template = pydantic_utils.TemplateGenerator(run_config).run()
-        yaml_string = yaml.dump(template)
-        yaml_string = yaml_utils.comment_out_yaml(yaml_string)
+        if matching_pipelines.total:
+            registered_pipeline = matching_pipelines.items[0]
+            logger.info(
+                "Reusing registered pipeline `%s` (version: %s).",
+                registered_pipeline.name,
+                registered_pipeline.version,
+            )
+            return registered_pipeline
 
-        with open(path, "w") as f:
-            f.write(yaml_string)
+        latest_version = self._get_latest_version() or 0
+        version = str(latest_version + 1)
+
+        request = PipelineRequestModel(
+            workspace=client.active_workspace.id,
+            user=client.active_user.id,
+            name=self.name,
+            version=version,
+            version_hash=version_hash,
+            spec=pipeline_spec,
+            docstring=self.__doc__,
+        )
+
+        registered_pipeline = client.zen_store.create_pipeline(
+            pipeline=request
+        )
+        logger.info(
+            "Registered pipeline `%s` (version %s).",
+            registered_pipeline.name,
+            registered_pipeline.version,
+        )
+        return registered_pipeline
+
+    def _compute_unique_identifier(self, pipeline_spec: PipelineSpec) -> str:
+        """Computes a unique identifier from the pipeline spec and steps.
+
+        Args:
+            pipeline_spec: Compiled spec of the pipeline.
+
+        Returns:
+            The unique identifier of the pipeline.
+        """
+        hash_ = hashlib.md5()
+        hash_.update(pipeline_spec.json_with_string_sources.encode())
+
+        for step_spec in pipeline_spec.steps:
+            step_source = self.steps[
+                step_spec.pipeline_parameter_name
+            ].source_code
+            hash_.update(step_source.encode())
+
+        return hash_.hexdigest()
+
+    def _get_latest_version(self) -> Optional[int]:
+        """Gets the latest version of this pipeline.
+
+        Returns:
+            The latest version or `None` if no version exists.
+        """
+        all_pipelines = Client().list_pipelines(
+            name=self.name, sort_by="desc:created", size=1
+        )
+        if all_pipelines.total:
+            pipeline = all_pipelines.items[0]
+            if pipeline.version == "UNVERSIONED":
+                return None
+            return int(all_pipelines.items[0].version)
+        else:
+            return None
+
+    def _get_registered_model(self) -> Optional[PipelineResponseModel]:
+        """Gets the registered pipeline model for this instance.
+
+        Returns:
+            The registered pipeline model or None if no model is registered yet.
+        """
+        pipeline_spec = Compiler().compile_spec(self)
+        version_hash = self._compute_unique_identifier(
+            pipeline_spec=pipeline_spec
+        )
+
+        pipelines = Client().list_pipelines(
+            name=self.name, version_hash=version_hash
+        )
+        if len(pipelines) == 1:
+            return pipelines.items[0]
+
+        return None

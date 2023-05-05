@@ -56,11 +56,18 @@ class FlavorBaseModel(BaseModel):
         max_length=STR_FIELD_MAX_LENGTH,
     )
     logo_url: Optional[str] = Field(
+        default=None,
         title="Optionally, a url pointing to a png,"
-        "svg or jpg can be attached."
+        "svg or jpg can be attached.",
     )
     docs_url: Optional[str] = Field(
-        title="Optionally, a url pointing to docs," "within docs.zenml.io."
+        default=None,
+        title="Optionally, a url pointing to docs, within docs.zenml.io.",
+    )
+    sdk_docs_url: Optional[str] = Field(
+        default=None,
+        title="Optionally, a url pointing to SDK docs,"
+        "within apidocs.zenml.io.",
     )
     is_custom: bool = Field(
         title="Whether or not this flavor is a custom, user created flavor.",
@@ -99,22 +106,24 @@ class FlavorResponseModel(FlavorBaseModel, BaseResponseModel):
 class FlavorFilterModel(WorkspaceScopedFilterModel):
     """Model to enable advanced filtering of all Flavors."""
 
-    name: str = Field(
+    name: Optional[str] = Field(
         default=None,
         description="Name of the flavor",
     )
-    type: str = Field(
+    type: Optional[str] = Field(
         default=None,
         description="Stack Component Type of the stack flavor",
     )
-    integration: str = Field(
+    integration: Optional[str] = Field(
         default=None,
         description="Integration associated with the flavor",
     )
-    workspace_id: Union[UUID, str] = Field(
+    workspace_id: Optional[Union[UUID, str]] = Field(
         default=None, description="Workspace of the stack"
     )
-    user_id: Union[UUID, str] = Field(None, description="User of the stack")
+    user_id: Optional[Union[UUID, str]] = Field(
+        default=None, description="User of the stack"
+    )
 
 
 # ------- #
@@ -131,11 +140,11 @@ class FlavorRequestModel(FlavorBaseModel, BaseRequestModel):
     ]
 
     user: Optional[UUID] = Field(
-        title="The id of the user that created this resource."
+        default=None, title="The id of the user that created this resource."
     )
 
     workspace: Optional[UUID] = Field(
-        title="The workspace to which this resource belongs."
+        default=None, title="The workspace to which this resource belongs."
     )
 
 

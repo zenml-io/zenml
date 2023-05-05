@@ -55,33 +55,64 @@ zenml stack register custom_stack -dv whylogs_data_validator ... --set
 ```
 
 Adding WhyLabs logging capabilities to your whylogs Data Validator is just
-slightly more complicated, as you also require a [Secrets Manager](../secrets-managers/secrets-managers.md)
-in your stack to store the sensitive WhyLabs authentication information in a
-secure location. The WhyLabs credentials are configured as a ZenML secret that
-is referenced in the Data Validator configuration, e.g.:
+slightly more complicated, as you also need to create a
+[ZenML Secret](../../starter-guide/production-fundamentals/secrets-management.md)
+to store the sensitive WhyLabs authentication information in a
+secure location and then reference the secret in the Data Validator
+configuration. To generate a WhyLabs access token, you can follow
+[the official WhyLabs instructions documented here](https://docs.whylabs.ai/docs/whylabs-api/#creating-an-api-token).
+
+Then, you can register the whylogs Data Validator with WhyLabs logging
+capabilities as follows:
 
 ```shell
+# Create the secret referenced in the data validator
+zenml secret create whylabs_secret \
+    --whylabs_default_org_id=<YOUR-WHYLOGS-ORGANIZATION-ID> \
+    --whylabs_api_key=<YOUR-WHYLOGS-API-KEY>
+
 # Register the whylogs data validator
 zenml data-validator register whylogs_data_validator --flavor=whylogs \
     --authentication_secret=whylabs_secret
-
-# Register a secrets manager
-zenml secrets-manager register secrets_manager \
-    --flavor=<FLAVOR_OF_YOUR_CHOICE> ...
-
-# Register and set a stack with the new data validator and secrets manager
-zenml stack register custom_stack -dv whylogs_data_validator -x secrets_manager ... --set
-
-# Create the secret referenced in the data validator
-zenml secrets-manager secret register whylabs_secret -s whylogs \
-    --whylabs_default_org_id=<YOUR-WHYLOGS-ORGANIZATION-ID> \
-    --whylabs_api_key=<YOUR-WHYLOGS-API-KEY>
 ```
 
 You'll also need to enable whylabs logging for your custom pipeline steps if
 you want to upload the whylogs data profiles that they return as artifacts
 to the WhyLabs platform. This is enabled by default for the standard whylogs 
-step.
+step. For custom steps, you can enable WhyLabs logging by setting the
+`upload_to_whylabs` parameter to `True` in the step configuration, e.g.:
+
+```python
+import pandas as pd
+import whylogs as why
+from sklearn import datasets
+from whylogs.core import DatasetProfileView
+
+from zenml.integrations.whylogs.flavors.whylogs_data_validator_flavor import (
+    WhylogsDataValidatorSettings,
+)
+from zenml.steps import Output, step
+
+@step(
+    settings={
+        "data_validator.whylogs": WhylogsDataValidatorSettings(
+            enable_whylabs=True, dataset_id="model-1"
+        )
+    }
+)
+def data_loader() -> Output(
+    data=pd.DataFrame,
+    profile=DatasetProfileView,
+):
+    """Load the diabetes dataset."""
+    X, y = datasets.load_diabetes(return_X_y=True, as_frame=True)
+
+    # merge X and y together
+    df = pd.merge(X, y, left_index=True, right_index=True)
+
+    profile = why.log(pandas=df).profile().view()
+    return df, profile
+```
 
 ## How do you use it?
 
@@ -129,11 +160,13 @@ train_data_profiler = whylogs_profiler_step(
     step_name="train_data_profiler",
     params=WhylogsProfilerParameters(),
     dataset_id="model-2",
+    enable_whylogs=True,
 )
 test_data_profiler = whylogs_profiler_step(
     step_name="test_data_profiler",
     params=WhylogsProfilerParameters(),
     dataset_id="model-3",
+    enable_whylogs=True,
 )
 ```
 
@@ -325,10 +358,10 @@ def visualize_statistics(
             profiles are required.
     """
     pipe = get_pipeline(pipeline="data_profiling_pipeline")
-    whylogs_step = pipe.runs[-1].get_step(step=step_name)
+    whylogs_step = pipe.runs[0].get_step(step=step_name)
     whylogs_reference_step = None
     if reference_step_name:
-        whylogs_reference_step = pipe.runs[-1].get_step(
+        whylogs_reference_step = pipe.runs[0].get_step(
             name=reference_step_name
         )
 

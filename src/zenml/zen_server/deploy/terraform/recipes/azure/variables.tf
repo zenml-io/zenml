@@ -1,3 +1,9 @@
+resource "random_string" "unique" {
+  length  = 5
+  special = false
+  upper   = false
+}
+
 variable "username" {
   description = "Username for the default ZenML server account"
   default     = "default"
@@ -45,6 +51,12 @@ variable "kubectl_config_path" {
   type        = string
 }
 
+variable "analytics_opt_in" {
+  description = "The flag to enable/disable analytics"
+  default     = true
+  type        = bool
+}
+
 # If you want a new Flexible Server, choose a name and a password. If you already
 # have an instance, provide the name and the password here too.
 variable "database_username" {
@@ -56,6 +68,11 @@ variable "database_password" {
   description = "The password for the CloudSQL store"
   default     = ""
   type        = string
+}
+
+variable "key_vault_name" {
+  description = "The name of the Key Vault to use as secret store"
+  default     = "zenml-key-vault"
 }
 
 # if you enable the deploy_db option, the recipe will
@@ -130,7 +147,7 @@ variable "ingress_path" {
 # set to true if you don't already have an nginx ingress
 # controller in your cluster
 variable "create_ingress_controller" {
-  description = "set to true  if you want the recipe to create an ingress controller in your cluster"  
+  description = "set to true  if you want the recipe to create an ingress controller in your cluster"
   default     = false
   type        = bool
 }
@@ -157,10 +174,15 @@ variable "ingress_tls_secret_name" {
   type        = string
 }
 
+variable "zenmlserver_image_repo" {
+  description = "The repository to use for the zenmlserver docker image."
+  default     = "zenmldocker/zenml-server"
+  type        = string
+}
 variable "zenmlserver_image_tag" {
   description = "The tag to use for the zenmlserver docker image."
   default     = "latest"
-  type        = string   
+  type        = string
 }
 
 # variables for creating a ZenML stack configuration file

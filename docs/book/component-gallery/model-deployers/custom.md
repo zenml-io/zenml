@@ -91,7 +91,7 @@ class BaseModelDeployer(StackComponent, ABC):
         running: bool = False,
         service_uuid: Optional[UUID] = None,
         pipeline_name: Optional[str] = None,
-        pipeline_run_id: Optional[str] = None,
+        run_name: Optional[str] = None,
         pipeline_step_name: Optional[str] = None,
         model_name: Optional[str] = None,
         model_uri: Optional[str] = None,
@@ -178,11 +178,35 @@ from the `BaseModelDeployerConfig` class add your configuration parameters.
 from the `BaseModelDeployerFlavor` class. Make sure that you give a `name`
 to the flavor through its abstract property.
 
-Once you are done with the implementation, you can register it through the CLI 
-as:
+Once you are done with the implementation, you can register it through the CLI.
+Please ensure you **point to the flavor class via dot notation**: 
 
 ```shell
-zenml model-deployer flavor register <THE-SOURCE-PATH-OF-YOUR-MODEL_DEPLOYER-FLAVOR>
+zenml model-deployer flavor register <path.to.MyModelDeployerFlavor>
+```
+
+For example, if your flavor class `MyModelDeployerFlavor` is defined in `flavors/my_flavor.py`,
+you'd register it by doing:
+
+```shell
+zenml model-deployer flavor register flavors.my_flavor.MyModelDeployerFlavor
+```
+
+{% hint style="warning" %}
+ZenML resolves the flavor class by taking the path where you initialized zenml
+(via `zenml init`) as the starting point of resolution. Therefore, please ensure
+you follow [the best practice](../../guidelines/best-practices.md) of initializing
+zenml at the root of your repository.
+
+If ZenML does not find an initialized ZenML repository in any parent directory, it
+will default to the current working directory, but usually its better to not have to
+rely on this mechanism, and initialize zenml at the root.
+{% endhint %}
+
+Afterwards, you should see the new flavor in the list of available flavors:
+
+```shell
+zenml model-deployer flavor list
 ```
 
 {% hint style="warning" %}

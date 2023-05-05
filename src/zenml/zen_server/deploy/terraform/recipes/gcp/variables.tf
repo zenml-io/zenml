@@ -45,6 +45,12 @@ variable "kubectl_config_path" {
   type        = string
 }
 
+variable "analytics_opt_in" {
+  description = "The flag to enable/disable analytics"
+  default     = true
+  type        = bool
+}
+
 # If you want a new CloudSQL, choose a name and a password. If you already
 # have an instance, provide the name and the password here too.
 variable "database_username" {
@@ -128,7 +134,7 @@ variable "ingress_path" {
 # set to true if you don't already have an nginx ingress
 # controller in your cluster
 variable "create_ingress_controller" {
-  description = "set to true  if you want the recipe to create an ingress controller in your cluster"  
+  description = "set to true  if you want the recipe to create an ingress controller in your cluster"
   default     = false
   type        = bool
 }
@@ -155,10 +161,15 @@ variable "ingress_tls_secret_name" {
   type        = string
 }
 
+variable "zenmlserver_image_repo" {
+  description = "The repository to use for the zenmlserver docker image."
+  default     = "zenmldocker/zenml-server"
+  type        = string
+}
 variable "zenmlserver_image_tag" {
   description = "The tag to use for the zenmlserver docker image."
   default     = "latest"
-  type        = string   
+  type        = string
 }
 
 # variables for creating a ZenML stack configuration file

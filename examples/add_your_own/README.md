@@ -45,14 +45,12 @@ class MyMaterializer(BaseMaterializer):
 
     def load(self, data_type: Type[MyObj]) -> MyObj:
         """Read from artifact store"""
-        super().load(data_type)
         with fileio.open(os.path.join(self.uri, "data.txt"), "r") as f:
             name = f.read()
         return MyObj(name=name)
 
     def save(self, my_obj: MyObj) -> None:
         """Write to artifact store"""
-        super().save(my_obj)
         with fileio.open(os.path.join(self.uri, "data.txt"), "w") as f:
             f.write(my_obj.name)
 
@@ -74,7 +72,7 @@ def pipe(step1, step2):
 
 if __name__ == "__main__":
     pipe(
-        step1=step1().with_return_materializers(MyMaterializer), step2=step2()
+        step1=step1().configure(output_materializers=MyMaterializer), step2=step2()
     ).run()
 ```
 

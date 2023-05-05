@@ -1,7 +1,7 @@
 module "metadata_store" {
   source  = "GoogleCloudPlatform/sql-db/google//modules/mysql"
   version = "11.0.0"
-  count   = var.deploy_db? 1 : 0
+  count   = var.deploy_db ? 1 : 0
 
   project_id       = var.project_id
   name             = "${var.name}-${var.cloudsql_name}"
@@ -24,29 +24,33 @@ module "metadata_store" {
         value = "0.0.0.0/0"
       }
     ]
-    ipv4_enabled        = true
-    private_network     = null
-    require_ssl         = false
-    allocated_ip_range  = null
+    ipv4_enabled       = true
+    private_network    = null
+    require_ssl        = false
+    allocated_ip_range = null
   }
 }
 
 # create the client certificate for CloudSQL
 resource "google_sql_ssl_cert" "client_cert" {
+  count       = var.deploy_db ? 1 : 0
   common_name = "sql-cert"
   instance    = module.metadata_store[0].instance_name
 }
 
 # create the certificate files
 resource "local_file" "server-ca" {
-  content  = google_sql_ssl_cert.client_cert.server_ca_cert
+  count    = var.deploy_db ? 1 : 0
+  content  = google_sql_ssl_cert.client_cert[0].server_ca_cert
   filename = "./server-ca.pem"
 }
 resource "local_file" "client-cert" {
-  content  = google_sql_ssl_cert.client_cert.cert
+  count    = var.deploy_db ? 1 : 0
+  content  = google_sql_ssl_cert.client_cert[0].cert
   filename = "./client-cert.pem"
 }
 resource "local_file" "client-key" {
-  content  = google_sql_ssl_cert.client_cert.private_key
+  count    = var.deploy_db ? 1 : 0
+  content  = google_sql_ssl_cert.client_cert[0].private_key
   filename = "./client-key.pem"
 }

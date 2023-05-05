@@ -16,10 +16,13 @@ import pytest
 from zenml.config import ResourceSettings
 from zenml.config.base_settings import BaseSettings
 from zenml.config.compiler import Compiler
-from zenml.config.pipeline_configurations import PipelineRunConfiguration
+from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
+from zenml.config.pipeline_spec import PipelineSpec
 from zenml.config.step_configurations import StepConfigurationUpdate
 from zenml.exceptions import PipelineInterfaceError, StackValidationError
+from zenml.hooks.hook_validators import resolve_and_validate_hook
 from zenml.pipelines import pipeline
+from zenml.steps import step
 
 
 def test_compiling_pipeline_with_duplicate_step_names_fails(
@@ -138,12 +141,12 @@ def test_step_sorting(empty_step, local_stack):
     pipeline_instance = sequential_pipeline(
         step_2=empty_step(name="step_2"), step_1=empty_step(name="step_1")
     )
-    deployment = Compiler().compile(
+    deployment, _ = Compiler().compile(
         pipeline=pipeline_instance,
         stack=local_stack,
         run_configuration=PipelineRunConfiguration(),
     )
-    assert list(deployment.steps.keys()) == ["step_1", "step_2"]
+    assert list(deployment.step_configurations.keys()) == ["step_1", "step_2"]
 
 
 def test_stack_component_settings_merging(
@@ -193,21 +196,23 @@ def test_stack_component_settings_merging(
         },
     )
 
-    deployment = Compiler().compile(
+    deployment, _ = Compiler().compile(
         pipeline=pipeline_instance,
         stack=local_stack,
         run_configuration=run_config,
     )
 
     compiled_pipeline_settings = StubSettings.parse_obj(
-        deployment.pipeline.settings["orchestrator.default"]
+        deployment.pipeline_configuration.settings["orchestrator.default"]
     )
     assert compiled_pipeline_settings.component_value == 1
     assert compiled_pipeline_settings.pipeline_value == 2
     assert compiled_pipeline_settings.step_value == 0
 
     compiled_step_settings = StubSettings.parse_obj(
-        deployment.steps["step_"].config.settings["orchestrator.default"]
+        deployment.step_configurations["step_"].config.settings[
+            "orchestrator.default"
+        ]
     )
     assert compiled_pipeline_settings.component_value == 1
     assert compiled_step_settings.pipeline_value == 2
@@ -236,14 +241,14 @@ def test_general_settings_merging(one_step_pipeline, empty_step, local_stack):
         },
     )
 
-    deployment = Compiler().compile(
+    deployment, _ = Compiler().compile(
         pipeline=pipeline_instance,
         stack=local_stack,
         run_configuration=run_config,
     )
 
     compiled_pipeline_settings = ResourceSettings.parse_obj(
-        deployment.pipeline.settings["resources"]
+        deployment.pipeline_configuration.settings["resources"]
     )
 
     assert compiled_pipeline_settings.cpu_count == 100
@@ -251,7 +256,7 @@ def test_general_settings_merging(one_step_pipeline, empty_step, local_stack):
     assert compiled_pipeline_settings.memory == "1KB"
 
     compiled_step_settings = ResourceSettings.parse_obj(
-        deployment.steps["step_"].config.settings["resources"]
+        deployment.step_configurations["step_"].config.settings["resources"]
     )
 
     assert compiled_step_settings.cpu_count == 100
@@ -277,16 +282,16 @@ def test_extra_merging(one_step_pipeline, empty_step, local_stack):
         steps={"step_": StepConfigurationUpdate(extra=run_step_extra)},
     )
 
-    deployment = Compiler().compile(
+    deployment, _ = Compiler().compile(
         pipeline=pipeline_instance,
         stack=local_stack,
         run_configuration=run_config,
     )
 
-    compiled_pipeline_extra = deployment.pipeline.extra
+    compiled_pipeline_extra = deployment.pipeline_configuration.extra
     assert compiled_pipeline_extra == {"p1": 0, "p2": 1, "p3": 0, "p4": 0}
 
-    compiled_step_extra = deployment.steps["step_"].config.extra
+    compiled_step_extra = deployment.step_configurations["step_"].config.extra
     assert compiled_step_extra == {
         "p1": 0,
         "p2": 1,
@@ -295,6 +300,116 @@ def test_extra_merging(one_step_pipeline, empty_step, local_stack):
         "s1": 0,
         "s2": 1,
     }
+
+
+def pipeline_hook() -> None:
+    """Simple hook"""
+    pass
+
+
+def step_hook() -> None:
+    """Simple hook"""
+    pass
+
+
+def test_success_hook_merging(
+    unconnected_two_step_pipeline, empty_step, local_stack
+):
+    """Tests the merging of hooks defined on steps, pipelines and the
+    run configuration."""
+    step_instance_1 = empty_step()
+    step_instance_2 = empty_step()
+    pipeline_instance = unconnected_two_step_pipeline(
+        step_1=step_instance_1,
+        step_2=step_instance_2,
+    )
+
+    pipeline_instance.configure(on_success=pipeline_hook)
+    step_instance_1.configure(on_success=step_hook, name="step_1")
+    step_instance_2.configure(name="step_2")
+
+    run_config = PipelineRunConfiguration(
+        steps={
+            "step_1": StepConfigurationUpdate(
+                success_hook_source=resolve_and_validate_hook(step_hook)
+            )
+        },
+    )
+
+    deployment, _ = Compiler().compile(
+        pipeline=pipeline_instance,
+        stack=local_stack,
+        run_configuration=run_config,
+    )
+
+    compiled_pipeline_success_hook = (
+        deployment.pipeline_configuration.success_hook_source
+    )
+    assert compiled_pipeline_success_hook == resolve_and_validate_hook(
+        pipeline_hook
+    )
+
+    compiled_step_1_success_hook = deployment.step_configurations[
+        "step_1"
+    ].config.success_hook_source
+    assert compiled_step_1_success_hook == resolve_and_validate_hook(step_hook)
+
+    compiled_step_2_success_hook = deployment.step_configurations[
+        "step_2"
+    ].config.success_hook_source
+    assert compiled_step_2_success_hook == resolve_and_validate_hook(
+        pipeline_hook
+    )
+
+
+def test_failure_hook_merging(
+    unconnected_two_step_pipeline, empty_step, local_stack
+):
+    """Tests the merging of failure hooks defined on steps, pipelines and the
+    run configuration."""
+    step_instance_1 = empty_step()
+    step_instance_2 = empty_step()
+    pipeline_instance = unconnected_two_step_pipeline(
+        step_1=step_instance_1,
+        step_2=step_instance_2,
+    )
+
+    pipeline_instance.configure(on_failure=pipeline_hook)
+    step_instance_1.configure(on_failure=step_hook, name="step_1")
+    step_instance_2.configure(name="step_2")
+
+    run_config = PipelineRunConfiguration(
+        steps={
+            "step_1": StepConfigurationUpdate(
+                failure_hook_source=resolve_and_validate_hook(step_hook)
+            )
+        },
+    )
+
+    deployment, _ = Compiler().compile(
+        pipeline=pipeline_instance,
+        stack=local_stack,
+        run_configuration=run_config,
+    )
+
+    compiled_pipeline_failure_hook = (
+        deployment.pipeline_configuration.failure_hook_source
+    )
+    assert compiled_pipeline_failure_hook == resolve_and_validate_hook(
+        pipeline_hook
+    )
+
+    compiled_step_1_failure_hook = deployment.step_configurations[
+        "step_1"
+    ].config.failure_hook_source
+    assert compiled_step_1_failure_hook == resolve_and_validate_hook(step_hook)
+
+    compiled_step_2_failure_hook = deployment.step_configurations[
+        "step_2"
+    ].config.failure_hook_source
+    assert compiled_step_2_failure_hook == resolve_and_validate_hook(
+        pipeline_hook
+    )
 
 
 def test_stack_component_settings_for_missing_component_are_ignored(
@@ -314,14 +429,70 @@ def test_stack_component_settings_for_missing_component_are_ignored(
         steps={"step_": StepConfigurationUpdate(settings=settings)},
     )
 
-    deployment = Compiler().compile(
+    deployment, _ = Compiler().compile(
         pipeline=pipeline_instance,
         stack=local_stack,
         run_configuration=run_config,
     )
 
-    assert "orchestrator.not_a_flavor" not in deployment.pipeline.settings
     assert (
         "orchestrator.not_a_flavor"
-        not in deployment.steps["step_"].config.settings
+        not in deployment.pipeline_configuration.settings
     )
+    assert (
+        "orchestrator.not_a_flavor"
+        not in deployment.step_configurations["step_"].config.settings
+    )
+
+
+@step
+def s1() -> int:
+    return 1
+
+
+@step
+def s2(input: int) -> int:
+    return input + 1
+
+
+def test_spec_compilation(local_stack):
+    """Tests the compilation of the pipeline spec."""
+
+    @pipeline
+    def p(step_1, step_2):
+        step_2(step_1())
+
+    pipeline_instance = p(step_1=s1(), step_2=s2())
+
+    _, spec = Compiler().compile(
+        pipeline=pipeline_instance,
+        stack=local_stack,
+        run_configuration=PipelineRunConfiguration(),
+    )
+    other_spec = Compiler().compile_spec(pipeline=pipeline_instance)
+
+    expected_spec = PipelineSpec.parse_obj(
+        {
+            "steps": [
+                {
+                    "source": "tests.unit.config.test_compiler.s1",
+                    "upstream_steps": [],
+                    "pipeline_parameter_name": "step_1",
+                },
+                {
+                    "source": "tests.unit.config.test_compiler.s2",
+                    "upstream_steps": ["s1"],
+                    "inputs": {
+                        "input": {
+                            "step_name": "s1",
+                            "output_name": "output",
+                        }
+                    },
+                    "pipeline_parameter_name": "step_2",
+                },
+            ]
+        }
+    )
+
+    assert spec == expected_spec
+    assert other_spec == expected_spec

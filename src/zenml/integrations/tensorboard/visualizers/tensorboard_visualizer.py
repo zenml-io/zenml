@@ -197,7 +197,7 @@ def get_step(pipeline_name: str, step_name: str) -> StepView:
             f"No pipeline with name `{pipeline_name}` was found"
         )
 
-    last_run = pipeline.runs[-1]
+    last_run = pipeline.runs[0]
     step = last_run.get_step(step=step_name)
     if step is None:
         raise RuntimeError(

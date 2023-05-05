@@ -14,8 +14,7 @@
 """Implementation of the whylogs data validator."""
 
 import datetime
-import os
-from typing import TYPE_CHECKING, Any, ClassVar, Optional, Sequence, Type, cast
+from typing import Any, ClassVar, Optional, Sequence, Type, cast
 
 import pandas as pd
 import whylogs as why  # type: ignore
@@ -25,10 +24,6 @@ from whylogs.core import DatasetProfileView  # type: ignore
 from zenml.config.base_settings import BaseSettings
 from zenml.data_validators import BaseDataValidator, BaseDataValidatorFlavor
 from zenml.environment import Environment
-from zenml.integrations.whylogs.constants import (
-    WHYLABS_DATASET_ID_ENV,
-    WHYLABS_LOGGING_ENABLED_ENV,
-)
 from zenml.integrations.whylogs.flavors.whylogs_data_validator_flavor import (
     WhylogsDataValidatorConfig,
     WhylogsDataValidatorFlavor,
@@ -40,9 +35,6 @@ from zenml.integrations.whylogs.secret_schemas.whylabs_secret_schema import (
 from zenml.logger import get_logger
 from zenml.stack.authentication_mixin import AuthenticationMixin
 from zenml.steps import STEP_ENVIRONMENT_NAME, StepEnvironment
-
-if TYPE_CHECKING:
-    from zenml.config.step_run_info import StepRunInfo
 
 logger = get_logger(__name__)
 
@@ -79,31 +71,6 @@ class WhylogsDataValidator(BaseDataValidator, AuthenticationMixin):
             The settings class.
         """
         return WhylogsDataValidatorSettings
-
-    def prepare_step_run(self, info: "StepRunInfo") -> None:
-        """Configures Whylabs logging.
-
-        Args:
-            info: Info about the step that will be executed.
-        """
-        settings = cast(WhylogsDataValidatorSettings, self.get_settings(info))
-        if settings.enable_whylabs:
-            os.environ[WHYLABS_LOGGING_ENABLED_ENV] = "true"
-        if settings.dataset_id:
-            os.environ[WHYLABS_DATASET_ID_ENV] = settings.dataset_id
-
-    def cleanup_step_run(self, info: "StepRunInfo", step_failed: bool) -> None:
-        """Resets Whylabs configuration.
-
-        Args:
-            info: Info about the step that was executed.
-            step_failed: Whether the step failed.
-        """
-        settings = cast(WhylogsDataValidatorSettings, self.get_settings(info))
-        if settings.enable_whylabs:
-            del os.environ[WHYLABS_LOGGING_ENABLED_ENV]
-        if settings.dataset_id:
-            del os.environ[WHYLABS_DATASET_ID_ENV]
 
     def data_profiling(
         self,
@@ -188,3 +155,7 @@ class WhylogsDataValidator(BaseDataValidator, AuthenticationMixin):
 
         # pass a profile view to the writer's write method
         writer.write(profile=profile_view)
+
+        logger.info(
+            f"Uploaded data profile for dataset {dataset_id} to Whylabs."
+        )

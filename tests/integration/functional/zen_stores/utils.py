@@ -18,17 +18,30 @@ from pydantic import BaseModel
 from tests.integration.functional.utils import sample_name
 from zenml.client import Client
 from zenml.config.global_config import GlobalConfiguration
-from zenml.config.pipeline_configurations import PipelineSpec
-from zenml.enums import ArtifactType, ExecutionStatus, StackComponentType
+from zenml.config.pipeline_spec import PipelineSpec
+from zenml.config.store_config import StoreConfiguration
+from zenml.enums import (
+    ArtifactType,
+    ExecutionStatus,
+    SecretScope,
+    StackComponentType,
+)
 from zenml.models import (
     ArtifactFilterModel,
     ArtifactRequestModel,
     BaseFilterModel,
+    CodeRepositoryFilterModel,
+    CodeRepositoryRequestModel,
+    CodeRepositoryUpdateModel,
     ComponentFilterModel,
     ComponentRequestModel,
     ComponentUpdateModel,
     FlavorFilterModel,
     FlavorRequestModel,
+    PipelineBuildFilterModel,
+    PipelineBuildRequestModel,
+    PipelineDeploymentFilterModel,
+    PipelineDeploymentRequestModel,
     PipelineFilterModel,
     PipelineRequestModel,
     PipelineRunFilterModel,
@@ -38,6 +51,8 @@ from zenml.models import (
     RoleFilterModel,
     RoleRequestModel,
     RoleUpdateModel,
+    SecretFilterModel,
+    SecretRequestModel,
     StackRequestModel,
     StepRunFilterModel,
     TeamFilterModel,
@@ -54,7 +69,7 @@ from zenml.models.base_models import BaseRequestModel, BaseResponseModel
 from zenml.models.page_model import Page
 from zenml.pipelines import pipeline
 from zenml.steps import step
-from zenml.zen_stores.base_zen_store import BaseZenStore
+from zenml.utils.string_utils import random_str
 
 
 @step
@@ -125,51 +140,66 @@ class PipelineRunContext:
 
 
 class UserContext:
-    def __init__(self, user_name: str = "aria", login: bool = False):
-        self.user_name = sample_name(user_name)
+    def __init__(
+        self,
+        user_name: Optional[str] = "aria",
+        password: Optional[str] = None,
+        login: bool = False,
+        existing_user: bool = False,
+        delete: bool = True,
+    ):
+        if existing_user:
+            self.user_name = user_name
+        else:
+            self.user_name = sample_name(user_name)
         self.client = Client()
         self.store = self.client.zen_store
         self.login = login
+        self.password = password or random_str(32)
+        self.existing_user = existing_user
+        self.delete = delete
 
     def __enter__(self):
-        new_user = UserRequestModel(name=self.user_name, password="abcd")
-        self.created_user = self.store.create_user(new_user)
-
-        if self.login:
-            self.client.create_user_role_assignment(
-                role_name_or_id="admin", user_name_or_id=self.created_user.id
+        if not self.existing_user:
+            new_user = UserRequestModel(
+                name=self.user_name, password=self.password
             )
+            self.created_user = self.store.create_user(new_user)
+        else:
+            self.created_user = self.store.get_user(self.user_name)
+
+        if self.login or self.existing_user:
+            if not self.existing_user:
+                self.client.create_user_role_assignment(
+                    role_name_or_id="admin",
+                    user_name_or_id=self.created_user.id,
+                )
             self.original_config = GlobalConfiguration.get_instance()
             self.original_client = Client.get_instance()
 
             GlobalConfiguration._reset_instance()
             Client._reset_instance()
             self.client = Client()
-
-            url = self.original_config.zen_store.url
-            store_type = self.original_config.zen_store.type
-            store_dict = {
-                "url": url,
-                "username": self.user_name,
-                "password": "abcd",
-            }
-            store_config_class = BaseZenStore.get_store_config_class(
-                store_type
+            store_config = StoreConfiguration(
+                url=self.original_config.store.url,
+                type=self.original_config.store.type,
+                username=self.user_name,
+                password=self.password,
+                secrets_store=self.original_config.store.secrets_store,
             )
-            store_config = store_config_class.parse_obj(store_dict)
-            GlobalConfiguration().set_store(store_config)
-
+            GlobalConfiguration().set_store(config=store_config)
         return self.created_user
 
     def __exit__(self, exc_type, exc_value, exc_traceback):
-        if self.login:
+        if self.login or self.existing_user:
             GlobalConfiguration._reset_instance(self.original_config)
             Client._reset_instance(self.original_client)
             _ = Client().zen_store
-        try:
-            self.store.delete_user(self.created_user.id)
-        except KeyError:
-            pass
+        if not self.existing_user and self.delete:
+            try:
+                self.store.delete_user(self.created_user.id)
+            except KeyError:
+                pass
 
 
 class StackContext:
@@ -276,16 +306,131 @@ class RoleContext:
             pass
 
 
+class WorkspaceContext:
+    def __init__(
+        self,
+        workspace_name: str = "super_axl",
+        create: bool = True,
+        activate: bool = False,
+    ):
+        self.workspace_name = (
+            sample_name(workspace_name) if create else workspace_name
+        )
+        self.client = Client()
+        self.store = self.client.zen_store
+        self.create = create
+        self.activate = activate
+
+    def __enter__(self):
+        if self.create:
+            new_workspace = WorkspaceRequestModel(name=self.workspace_name)
+            self.workspace = self.store.create_workspace(new_workspace)
+        else:
+            self.workspace = self.store.get_workspace(self.workspace_name)
+
+        if self.activate:
+            self.original_workspace = self.client.active_workspace
+            self.client.set_active_workspace(self.workspace.id)
+        return self.workspace
+
+    def __exit__(self, exc_type, exc_value, exc_traceback):
+        if self.activate:
+            self.client.set_active_workspace(self.original_workspace.id)
+        if self.create:
+            try:
+                self.store.delete_workspace(self.workspace.id)
+            except KeyError:
+                pass
+
+
+class SecretContext:
+    def __init__(
+        self,
+        secret_name: Optional[str] = None,
+        scope: SecretScope = SecretScope.WORKSPACE,
+        values: Dict[str, str] = {
+            "sleep": "yes",
+            "food": "hell yeah",
+            "bath": "NO!",
+        },
+        user_id: Optional[uuid.UUID] = None,
+        workspace_id: Optional[uuid.UUID] = None,
+        delete: bool = True,
+    ):
+        self.secret_name = (
+            sample_name("axls-secrets") if not secret_name else secret_name
+        )
+        self.scope = scope
+        self.values = values
+        self.user_id = user_id
+        self.workspace_id = workspace_id
+        self.client = Client()
+        self.store = self.client.zen_store
+        self.delete = delete
+
+    def __enter__(self):
+        new_secret = SecretRequestModel(
+            name=self.secret_name,
+            scope=self.scope,
+            values=self.values,
+            user=self.user_id or self.client.active_user.id,
+            workspace=self.workspace_id or self.client.active_workspace.id,
+        )
+        self.created_secret = self.store.create_secret(new_secret)
+        return self.created_secret
+
+    def __exit__(self, exc_type, exc_value, exc_traceback):
+        if self.delete:
+            try:
+                self.store.delete_secret(self.created_secret.id)
+            except KeyError:
+                pass
+
+
+class CodeRepositoryContext:
+    def __init__(
+        self,
+        user_id: Optional[uuid.UUID] = None,
+        workspace_id: Optional[uuid.UUID] = None,
+        delete: bool = True,
+    ):
+        self.code_repo_name = sample_name("code_repo")
+        self.user_id = user_id
+        self.workspace_id = workspace_id
+        self.client = Client()
+        self.store = self.client.zen_store
+        self.delete = delete
+
+    def __enter__(self):
+        request = CodeRepositoryRequestModel(
+            name=self.code_repo_name,
+            config={},
+            source={
+                "module": "tests.unit.pipelines.test_build_utils",
+                "attribute": "StubCodeRepository",
+                "type": "user",
+            },
+            user=self.user_id or self.client.active_user.id,
+            workspace=self.workspace_id or self.client.active_workspace.id,
+        )
+
+        self.repo = self.store.create_code_repository(request)
+        return self.repo
+
+    def __exit__(self, exc_type, exc_value, exc_traceback):
+        if self.delete:
+            try:
+                self.store.delete_code_repository(self.repo.id)
+            except KeyError:
+                pass
+
+
 AnyRequestModel = TypeVar("AnyRequestModel", bound=BaseRequestModel)
 AnyResponseModel = TypeVar("AnyResponseModel", bound=BaseResponseModel)
 
 
 class CrudTestConfig(BaseModel):
-    """Model to collect all methods pertaining to a given entity.
-
-    Please Note: This implementation will only work for named entities,
-    (entities with a `name` field)
-    """
+    """Model to collect all methods pertaining to a given entity."""
 
     create_model: "BaseRequestModel"
     update_model: Optional["BaseModel"]
@@ -297,7 +442,11 @@ class CrudTestConfig(BaseModel):
         self,
     ) -> Callable[[BaseFilterModel], Page[AnyResponseModel]]:
         store = Client().zen_store
-        return getattr(store, f"list_{self.entity_name}s")
+        if self.entity_name.endswith("y"):
+            method_name = f"list_{self.entity_name[:-1]}ies"
+        else:
+            method_name = f"list_{self.entity_name}s"
+        return getattr(store, method_name)
 
     @property
     def get_method(self) -> Callable[[uuid.UUID], AnyResponseModel]:
@@ -383,6 +532,8 @@ pipeline_crud_test_config = CrudTestConfig(
         spec=PipelineSpec(steps=[]),
         user=uuid.uuid4(),
         workspace=uuid.uuid4(),
+        version="1",
+        version_hash="abc123",
     ),
     update_model=PipelineUpdateModel(
         name=sample_name("updated_sample_pipeline")
@@ -406,8 +557,8 @@ pipeline_run_crud_test_config = CrudTestConfig(
 artifact_crud_test_config = CrudTestConfig(
     create_model=ArtifactRequestModel(
         name=sample_name("sample_artifact"),
-        data_type="",
-        materializer="",
+        data_type="module.class",
+        materializer="module.class",
         type=ArtifactType.DATA,
         uri="",
         user=uuid.uuid4(),
@@ -415,6 +566,52 @@ artifact_crud_test_config = CrudTestConfig(
     ),
     filter_model=ArtifactFilterModel,
     entity_name="artifact",
+)
+secret_crud_test_config = CrudTestConfig(
+    create_model=SecretRequestModel(
+        name=sample_name("sample_secret"),
+        values={"key": "value"},
+        user=uuid.uuid4(),
+        workspace=uuid.uuid4(),
+    ),
+    filter_model=SecretFilterModel,
+    entity_name="secret",
+)
+build_crud_test_config = CrudTestConfig(
+    create_model=PipelineBuildRequestModel(
+        user=uuid.uuid4(),
+        workspace=uuid.uuid4(),
+        images={},
+        is_local=False,
+        contains_code=True,
+    ),
+    filter_model=PipelineBuildFilterModel,
+    entity_name="build",
+)
+deployment_crud_test_config = CrudTestConfig(
+    create_model=PipelineDeploymentRequestModel(
+        user=uuid.uuid4(),
+        workspace=uuid.uuid4(),
+        stack=uuid.uuid4(),
+        run_name_template="template",
+        pipeline_configuration={"name": "pipeline_name"},
+    ),
+    filter_model=PipelineDeploymentFilterModel,
+    entity_name="deployment",
+)
+code_repository_crud_test_config = CrudTestConfig(
+    create_model=CodeRepositoryRequestModel(
+        user=uuid.uuid4(),
+        workspace=uuid.uuid4(),
+        name=sample_name("sample_code_repository"),
+        config={},
+        source={"module": "module", "type": "user"},
+    ),
+    update_model=CodeRepositoryUpdateModel(
+        name=sample_name("updated_sample_code_repository")
+    ),
+    filter_model=CodeRepositoryFilterModel,
+    entity_name="code_repository",
 )
 
 # step_run_crud_test_config = CrudTestConfig(
@@ -446,4 +643,8 @@ list_of_entities = [
     # step_run_crud_test_config,
     pipeline_run_crud_test_config,
     artifact_crud_test_config,
+    secret_crud_test_config,
+    build_crud_test_config,
+    deployment_crud_test_config,
+    code_repository_crud_test_config,
 ]

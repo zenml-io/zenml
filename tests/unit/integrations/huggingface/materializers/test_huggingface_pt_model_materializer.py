@@ -11,7 +11,6 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from contextlib import ExitStack as does_not_raise
 
 from transformers import RobertaConfig, RobertaModel
 
@@ -23,10 +22,10 @@ from zenml.integrations.huggingface.materializers.huggingface_pt_model_materiali
 
 def test_huggingface_pretrained_model_materializer(clean_client):
     """Tests whether the steps work for the Huggingface Pretrained Model materializer."""
-    with does_not_raise():
-        model = _test_materializer(
-            step_output=RobertaModel(RobertaConfig()),
-            materializer_class=HFPTModelMaterializer,
-        )
+    model = _test_materializer(
+        step_output=RobertaModel(RobertaConfig()),
+        materializer_class=HFPTModelMaterializer,
+        expected_metadata_size=5,
+    )
 
     assert model.config.model_type == "roberta"

@@ -54,7 +54,7 @@ alternatively this can also be done during user creation
 
 {% hint style="info" %}
 By default, user creation through the UI will grant the user `admin` rights. 
-This default behaviour will change in the next iteration of the Dashboard as 
+This default behavior will change in the next iteration of the Dashboard as 
 the role will be selectable during user creation and in the User settings menu.
 {% endhint %}
 

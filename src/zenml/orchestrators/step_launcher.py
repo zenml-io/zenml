@@ -44,15 +44,17 @@ from zenml.stack import Stack
 from zenml.utils import string_utils
 
 if TYPE_CHECKING:
-    from zenml.config.pipeline_deployment import PipelineDeployment
     from zenml.models.artifact_models import ArtifactResponseModel
+    from zenml.models.pipeline_deployment_models import (
+        PipelineDeploymentResponseModel,
+    )
     from zenml.step_operators import BaseStepOperator
 
 logger = get_logger(__name__)
 
 
 def _get_step_name_in_pipeline(
-    step: "Step", deployment: "PipelineDeployment"
+    step: "Step", deployment: "PipelineDeploymentResponseModel"
 ) -> str:
     """Gets the step name of a step inside a pipeline.
 
@@ -64,7 +66,8 @@ def _get_step_name_in_pipeline(
         The name of the step inside the pipeline.
     """
     step_name_mapping = {
-        step_.config.name: key for key, step_ in deployment.steps.items()
+        step_.config.name: key
+        for key, step_ in deployment.step_configurations.items()
     }
     return step_name_mapping[step.config.name]
 
@@ -121,7 +124,7 @@ class StepLauncher:
 
     def __init__(
         self,
-        deployment: "PipelineDeployment",
+        deployment: "PipelineDeploymentResponseModel",
         step: Step,
         orchestrator_run_id: str,
     ):
@@ -131,12 +134,21 @@ class StepLauncher:
             deployment: The pipeline deployment.
             step: The step to launch.
             orchestrator_run_id: The orchestrator pipeline run id.
+
+        Raises:
+            RuntimeError: If the deployment has no associated stack.
         """
         self._deployment = deployment
         self._step = step
         self._orchestrator_run_id = orchestrator_run_id
-        stack_model = Client().get_stack(deployment.stack_id)
-        self._stack = Stack.from_model(stack_model)
+
+        if not deployment.stack:
+            raise RuntimeError(
+                f"Missing stack for deployment {deployment.id}. This is "
+                "probably because the stack was manually deleted."
+            )
+
+        self._stack = Stack.from_model(deployment.stack)
         self._step_name = _get_step_name_in_pipeline(
             step=step, deployment=deployment
         )
@@ -234,7 +246,9 @@ class StepLauncher:
 
         date = datetime.utcnow().strftime("%Y_%m_%d")
         time = datetime.utcnow().strftime("%H_%M_%S_%f")
-        run_name = self._deployment.run_name.format(date=date, time=time)
+        run_name = self._deployment.run_name_template.format(
+            date=date, time=time
+        )
 
         logger.debug(
             "Creating pipeline run with ID: %s, name: %s", run_id, run_name
@@ -247,14 +261,24 @@ class StepLauncher:
             orchestrator_run_id=self._orchestrator_run_id,
             user=client.active_user.id,
             workspace=client.active_workspace.id,
-            stack=self._deployment.stack_id,
-            pipeline=self._deployment.pipeline_id,
-            schedule_id=self._deployment.schedule_id,
-            enable_cache=self._deployment.pipeline.enable_cache,
-            enable_artifact_metadata=self._deployment.pipeline.enable_artifact_metadata,
+            stack=self._deployment.stack.id
+            if self._deployment.stack
+            else None,
+            pipeline=self._deployment.pipeline.id
+            if self._deployment.pipeline
+            else None,
+            build=self._deployment.build.id
+            if self._deployment.build
+            else None,
+            deployment=self._deployment.id,
+            schedule_id=self._deployment.schedule.id
+            if self._deployment.schedule
+            else None,
+            enable_cache=self._deployment.pipeline_configuration.enable_cache,
+            enable_artifact_metadata=self._deployment.pipeline_configuration.enable_artifact_metadata,
             status=ExecutionStatus.RUNNING,
-            pipeline_configuration=self._deployment.pipeline.dict(),
-            num_steps=len(self._deployment.steps),
+            pipeline_configuration=self._deployment.pipeline_configuration.dict(),
+            num_steps=len(self._deployment.step_configurations),
             client_environment=self._deployment.client_environment,
             orchestrator_environment=get_run_environment_dict(),
             server_version=client.zen_store.get_store_info().version,
@@ -295,7 +319,7 @@ class StepLauncher:
 
         cache_enabled = is_setting_enabled(
             is_enabled_on_step=self._step.config.enable_cache,
-            is_enabled_on_pipeline=self._deployment.pipeline.enable_cache,
+            is_enabled_on_pipeline=self._deployment.pipeline_configuration.enable_cache,
         )
 
         execution_needed = True
@@ -333,8 +357,9 @@ class StepLauncher:
         # Prepare step run information.
         step_run_info = StepRunInfo(
             config=self._step.config,
-            pipeline=self._deployment.pipeline,
+            pipeline=self._deployment.pipeline_configuration,
             run_name=pipeline_run.name,
+            pipeline_step_name=self._step_name,
             run_id=pipeline_run.id,
             step_run_id=step_run.id,
         )
@@ -392,9 +417,11 @@ class StepLauncher:
             StepOperatorEntrypointConfiguration.get_entrypoint_command()
             + StepOperatorEntrypointConfiguration.get_entrypoint_arguments(
                 step_name=self._step_name,
+                deployment_id=self._deployment.id,
                 step_run_id=str(step_run_info.step_run_id),
             )
         )
+        environment = orchestrator_utils.get_config_environment_vars()
         logger.info(
             "Using step operator `%s` to run step `%s`.",
             step_operator.name,
@@ -403,6 +430,7 @@ class StepLauncher:
         step_operator.launch(
             info=step_run_info,
             entrypoint_command=entrypoint_command,
+            environment=environment,
         )
 
     def _run_step_without_step_operator(

@@ -46,18 +46,6 @@ tests:
       - capabilities:
           server: true
 
-  - module: tests.integration.functional.secrets_manager
-    requirements:
-      - stacks:
-          - type: secrets_manager
-      - capabilities:
-          secrets-scoping: true
-
-  - module: tests.integration.examples.test_cloud_secrets_manager
-    requirements:
-      - stacks:
-          - type: secrets_manager
-
   - module: tests.integration.examples.test_deepchecks_data_validation
     requirements:
       - integrations:
@@ -68,21 +56,15 @@ tests:
       - capabilities:
           synchronized: true
 
-  - module: tests.integration.examples.test_evidently_drift_detection
+  - module: tests.integration.examples.test_evidently_data_validation
     requirements:
       - integrations:
           - sklearn
+        packages:
+          - pyarrow
         stacks:
           - type: data_validator
             flavor: evidently
-      - capabilities:
-          synchronized: true
-
-  - module: tests.integration.examples.test_facets_visualize_statistics
-    requirements:
-      - integrations:
-          - facets
-          - tensorflow
       - capabilities:
           synchronized: true
 
@@ -111,19 +93,26 @@ tests:
       - capabilities:
           synchronized: true
 
-  - module: tests.integration.examples.test_lightgbm
-    requirements:
-      - integrations:
-          - lightgbm
-      - capabilities:
-          synchronized: true
-
   - module: tests.integration.examples.test_mlflow_tracking
     requirements:
       - integrations:
           - tensorflow
         stacks:
           - type: experiment_tracker
+            flavor: mlflow
+      - capabilities:
+          synchronized: true
+
+  - module: tests.integration.examples.test_mlflow_registry
+    requirements:
+      - integrations:
+          - tensorflow
+        stacks:
+          - type: experiment_tracker
+            flavor: mlflow
+          - type: model_registry
+            flavor: mlflow
+          - type: model_deployer
             flavor: mlflow
       - capabilities:
           synchronized: true
@@ -176,5 +165,131 @@ tests:
           - torchvision
         stacks:
           - type: step_operator
+      - capabilities:
+          synchronized: true
+
+  - module: tests.integration.examples.test_quickstart
+    requirements:
+      - integrations:
+          - sklearn
+          - mlflow
+          - evidently
+        stacks:
+          - type: experiment_tracker
+            flavor: mlflow
+          - type: model_deployer
+            flavor: mlflow
+          - type: model_registry
+            flavor: mlflow
+          - type: data_validator
+            flavor: evidently
+      - capabilities:
+          synchronized: true
+
+  - module: tests.integration.examples.test_quickstart_py37
+    requirements:
+      - integrations:
+          - sklearn
+          - mlflow
+          - evidently
+        stacks:
+          - type: experiment_tracker
+            flavor: mlflow
+          - type: model_deployer
+            flavor: mlflow
+          - type: data_validator
+            flavor: evidently
+      - capabilities:
+          synchronized: true
+
+  - module: tests.integration.examples.test_huggingface
+    requirements:
+      - integrations:
+          - huggingface
+          - tensorflow
+      - capabilities:
+          synchronized: true
+
+  - module: tests.integration.examples.test_lightgbm
+    requirements:
+      - integrations:
+          - lightgbm
+      - capabilities:
+          synchronized: true
+
+  - module: tests.integration.examples.test_scipy
+    requirements:
+      - integrations:
+          - sklearn
+      - capabilities:
+          synchronized: true
+
+  - module: tests.integration.examples.test_facets_visualize_statistics
+    requirements:
+      - integrations:
+          - facets
+          - tensorflow
+      - capabilities:
+          synchronized: true
+
+  - module: tests.integration.examples.test_mlflow_deployment
+    requirements:
+      - integrations:
+          - tensorflow
+          - mlflow
+        stacks:
+          - type: experiment_tracker
+            flavor: mlflow
+          - type: model_deployer
+            flavor: mlflow
+      - capabilities:
+          synchronized: true
+
+  - module: tests.integration.examples.test_slack_alert
+    requirements:
+      - integrations:
+          - sklearn
+          - mlflow
+          - slack
+        stacks:
+          - type: experiment_tracker
+            flavor: mlflow
+          - type: model_deployer
+            flavor: mlflow
+          - type: alerter
+            flavor: slack
+      - capabilities:
+          synchronized: true
+
+  - module: tests.integration.examples.test_wandb_tracking
+    requirements:
+      - integrations:
+          - tensorflow
+          - wandb
+        stacks:
+          - type: experiment_tracker
+            flavor: wandb
+      - capabilities:
+          synchronized: true
+
+  - module: tests.integration.examples.test_neptune_tracking
+    requirements:
+      - integrations:
+          - tensorflow
+          - neptune
+        stacks:
+          - type: experiment_tracker
+            flavor: neptune
+      - capabilities:
+          synchronized: true
+
+  - module: tests.integration.examples.test_seldon_deployment
+    requirements:
+      - integrations:
+          - sklearn
+          - tensorflow
+        stacks:
+          - type: model_deployer
+            flavor: seldon
       - capabilities:
           synchronized: true

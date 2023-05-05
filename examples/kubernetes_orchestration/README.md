@@ -128,6 +128,16 @@ zenml artifact-store register s3_store
     --path=<REMOTE_ARTIFACT_STORE_PATH>
 ```
 
+#### Setup Image Builder
+
+In order to build the Docker images for the Kubernetes pods, we will use the
+`local` image builder.
+
+```bash
+zenml image-builder register local_builder 
+    --flavor=local
+```
+
 #### Register and Spin Up Stack
 
 Finally, let us bring everything together and register our stack:
@@ -137,6 +147,7 @@ zenml stack register k8s_stack
     -a s3_store 
     -o k8s_orchestrator 
     -c ecr_registry
+    -i local_builder
 ```
 
 Let's set this stack as active, so we use it by default for the remainder of

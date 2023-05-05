@@ -15,7 +15,7 @@
 """Implementation of Deepchecks suite results materializer."""
 
 import os
-from typing import TYPE_CHECKING, Any, Dict, Type, Union
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, Tuple, Type, Union
 
 from deepchecks.core.check_result import CheckResult
 from deepchecks.core.suite import SuiteResult
@@ -33,11 +33,13 @@ RESULTS_FILENAME = "results.json"
 class DeepchecksResultMaterializer(BaseMaterializer):
     """Materializer to read data to and from CheckResult and SuiteResult objects."""
 
-    ASSOCIATED_TYPES = (
+    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (
         CheckResult,
         SuiteResult,
     )
-    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATA_ANALYSIS
+    ASSOCIATED_ARTIFACT_TYPE: ClassVar[
+        ArtifactType
+    ] = ArtifactType.DATA_ANALYSIS
 
     def load(self, data_type: Type[Any]) -> Union[CheckResult, SuiteResult]:
         """Reads a Deepchecks check or suite result from a serialized JSON file.
@@ -51,7 +53,6 @@ class DeepchecksResultMaterializer(BaseMaterializer):
         Raises:
             RuntimeError: if the input data type is not supported.
         """
-        super().load(data_type)
         filepath = os.path.join(self.uri, RESULTS_FILENAME)
 
         json_res = io_utils.read_file_contents_as_string(filepath)
@@ -69,10 +70,7 @@ class DeepchecksResultMaterializer(BaseMaterializer):
         Args:
             result: A Deepchecks CheckResult or SuiteResult.
         """
-        super().save(result)
-
         filepath = os.path.join(self.uri, RESULTS_FILENAME)
-
         serialized_json = result.to_json(True)
         io_utils.write_file_contents_as_string(filepath, serialized_json)
 
@@ -87,16 +85,14 @@ class DeepchecksResultMaterializer(BaseMaterializer):
         Returns:
             The extracted metadata as a dictionary.
         """
-        base_metadata = super().extract_metadata(result)
-        deepchecks_metadata: Dict[str, "MetadataType"] = {}
         if isinstance(result, CheckResult):
-            deepchecks_metadata = {
+            return {
                 "deepchecks_check_name": result.get_header(),
                 "deepchecks_check_passed": result.passed_conditions(),
             }
         elif isinstance(result, SuiteResult):
-            deepchecks_metadata = {
+            return {
                 "deepchecks_suite_name": result.name,
                 "deepchecks_suite_passed": result.passed(),
             }
-        return {**base_metadata, **deepchecks_metadata}
+        return {}

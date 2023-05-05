@@ -14,7 +14,8 @@
 """Authentication module for ZenML server."""
 
 import os
-from typing import Callable, Optional, Union
+from contextvars import ContextVar
+from typing import Callable, List, Optional, Set, Union
 from uuid import UUID
 
 from fastapi import Depends, HTTPException, status
@@ -27,6 +28,7 @@ from fastapi.security import (
 from pydantic import BaseModel
 
 from zenml.constants import API, ENV_ZENML_AUTH_TYPE, LOGIN, VERSION_1
+from zenml.enums import PermissionType
 from zenml.exceptions import AuthorizationException
 from zenml.logger import get_logger
 from zenml.models import UserResponseModel
@@ -36,6 +38,34 @@ from zenml.zen_server.utils import ROOT_URL_PATH, zen_store
 from zenml.zen_stores.base_zen_store import DEFAULT_USERNAME
 
 logger = get_logger(__name__)
+
+# create a context variable to store the authentication context
+_auth_context: ContextVar[Optional["AuthContext"]] = ContextVar(
+    "auth_context", default=None
+)
+
+
+def get_auth_context() -> Optional["AuthContext"]:
+    """Returns the current authentication context.
+
+    Returns:
+        The authentication context.
+    """
+    auth_context = _auth_context.get()
+    return auth_context
+
+
+def set_auth_context(auth_context: "AuthContext") -> "AuthContext":
+    """Sets the current authentication context.
+
+    Args:
+        auth_context: The authentication context.
+
+    Returns:
+        The authentication context.
+    """
+    _auth_context.set(auth_context)
+    return auth_context
 
 
 class AuthScheme(StrEnum):
@@ -50,6 +80,24 @@ class AuthContext(BaseModel):
     """The authentication context."""
 
     user: UserResponseModel
+
+    @property
+    def permissions(self) -> Set[PermissionType]:
+        """Returns the permissions of the user.
+
+        Returns:
+            The permissions of the user.
+        """
+        if self.user.roles:
+            # Merge permissions from all roles
+            permissions: List[PermissionType] = []
+            for role in self.user.roles:
+                permissions.extend(role.permissions)
+
+            # Remove duplicates
+            return set(permissions)
+
+        return set()
 
 
 def authentication_scheme() -> AuthScheme:

@@ -11,7 +11,6 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from contextlib import ExitStack as does_not_raise
 
 import pandas as pd
 from datasets import Dataset
@@ -26,11 +25,11 @@ def test_huggingface_datasets_materializer(clean_client):
     """Tests whether the steps work for the Huggingface Datasets materializer."""
     sample_dataframe = pd.DataFrame([1, 2, 3])
     dataset = Dataset.from_pandas(sample_dataframe)
-    with does_not_raise():
-        dataset = _test_materializer(
-            step_output=dataset,
-            materializer_class=HFDatasetMaterializer,
-        )
+    dataset = _test_materializer(
+        step_output=dataset,
+        materializer_class=HFDatasetMaterializer,
+        expected_metadata_size=7,
+    )
 
     assert dataset.data.shape == (3, 1)
     data = dataset.data.to_pydict()

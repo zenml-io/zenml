@@ -24,6 +24,7 @@ from zenml.client import Client
 from zenml.enums import CliCategories
 from zenml.logger import get_logger
 from zenml.models.artifact_models import ArtifactFilterModel
+from zenml.utils.pagination_utils import depaginate
 
 logger = get_logger(__name__)
 
@@ -148,7 +149,7 @@ def prune_artifacts(
     cli_utils.print_active_config()
 
     client = Client()
-    unused_artifacts = client.depaginate(
+    unused_artifacts = depaginate(
         partial(client.list_artifacts, only_unused=True)
     )
 

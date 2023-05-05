@@ -14,16 +14,20 @@
 """Implementation of the SageMaker orchestrator."""
 
 import os
+import re
 from typing import TYPE_CHECKING, Dict, Optional, Tuple, Type, cast
 from uuid import UUID
 
 import sagemaker
+from sagemaker.processing import ProcessingInput, ProcessingOutput
 from sagemaker.workflow.execution_variables import ExecutionVariables
 from sagemaker.workflow.pipeline import Pipeline
 from sagemaker.workflow.steps import ProcessingStep
 
 from zenml.config.base_settings import BaseSettings
-from zenml.constants import ORCHESTRATOR_DOCKER_IMAGE_KEY
+from zenml.constants import (
+    METADATA_ORCHESTRATOR_URL,
+)
 from zenml.entrypoints import StepEntrypointConfiguration
 from zenml.enums import StackComponentType
 from zenml.integrations.aws.flavors.sagemaker_orchestrator_flavor import (
@@ -31,18 +35,16 @@ from zenml.integrations.aws.flavors.sagemaker_orchestrator_flavor import (
     SagemakerOrchestratorSettings,
 )
 from zenml.logger import get_logger
-from zenml.metadata.metadata_types import MetadataType
-from zenml.orchestrators.base_orchestrator import BaseOrchestrator
+from zenml.metadata.metadata_types import MetadataType, Uri
+from zenml.orchestrators import ContainerizedOrchestrator
 from zenml.orchestrators.utils import get_orchestrator_run_name
 from zenml.stack import StackValidator
-from zenml.utils.pipeline_docker_image_builder import (
-    PipelineDockerImageBuilder,
-)
 
 if TYPE_CHECKING:
-    from zenml.config.pipeline_deployment import PipelineDeployment
+    from zenml.models.pipeline_deployment_models import (
+        PipelineDeploymentResponseModel,
+    )
     from zenml.stack import Stack
-
 
 ENV_ZENML_SAGEMAKER_RUN_ID = "ZENML_SAGEMAKER_RUN_ID"
 MAX_POLLING_ATTEMPTS = 100
@@ -51,7 +53,7 @@ POLLING_DELAY = 30
 logger = get_logger(__name__)
 
 
-class SagemakerOrchestrator(BaseOrchestrator):
+class SagemakerOrchestrator(ContainerizedOrchestrator):
     """Orchestrator responsible for running pipelines on Sagemaker."""
 
     @property
@@ -120,21 +122,6 @@ class SagemakerOrchestrator(BaseOrchestrator):
                 f"{ENV_ZENML_SAGEMAKER_RUN_ID}."
             )
 
-    def prepare_pipeline_deployment(
-        self, deployment: "PipelineDeployment", stack: "Stack"
-    ) -> None:
-        """Build a Docker image and push it to the container registry.
-
-        Args:
-            deployment: The pipeline deployment configuration.
-            stack: The stack on which the pipeline will be deployed.
-        """
-        docker_image_builder = PipelineDockerImageBuilder()
-        repo_digest = docker_image_builder.build_docker_image(
-            deployment=deployment, stack=stack
-        )
-        deployment.add_extra(ORCHESTRATOR_DOCKER_IMAGE_KEY, repo_digest)
-
     @property
     def settings_class(self) -> Optional[Type["BaseSettings"]]:
         """Settings class for the Sagemaker orchestrator.
@@ -145,13 +132,19 @@ class SagemakerOrchestrator(BaseOrchestrator):
         return SagemakerOrchestratorSettings
 
     def prepare_or_run_pipeline(
-        self, deployment: "PipelineDeployment", stack: "Stack"
+        self,
+        deployment: "PipelineDeploymentResponseModel",
+        stack: "Stack",
+        environment: Dict[str, str],
     ) -> None:
         """Prepares or runs a pipeline on Sagemaker.
 
         Args:
             deployment: The deployment to prepare or run.
             stack: The stack to run on.
+            environment: Environment variables to set in the orchestration
+                environment.
+
         """
         if deployment.schedule:
             logger.warning(
@@ -160,54 +153,128 @@ class SagemakerOrchestrator(BaseOrchestrator):
                 "and the pipeline will be run immediately."
             )
 
-        orchestrator_run_name = get_orchestrator_run_name(
-            pipeline_name=deployment.pipeline.name
-        ).replace("_", "-")
+        # sagemaker requires pipelineName to use alphanum and hyphens only
+        unsanitized_orchestrator_run_name = get_orchestrator_run_name(
+            pipeline_name=deployment.pipeline_configuration.name
+        )
+        # replace all non-alphanum and non-hyphens with hyphens
+        orchestrator_run_name = re.sub(
+            r"[^a-zA-Z0-9\-]", "-", unsanitized_orchestrator_run_name
+        )
 
         session = sagemaker.Session(default_bucket=self.config.bucket)
-        image_name = deployment.pipeline.extra[ORCHESTRATOR_DOCKER_IMAGE_KEY]
 
         sagemaker_steps = []
-        for step_name, step in deployment.steps.items():
+        for step_name, step in deployment.step_configurations.items():
+            image = self.get_image(deployment=deployment, step_name=step_name)
             command = StepEntrypointConfiguration.get_entrypoint_command()
             arguments = StepEntrypointConfiguration.get_entrypoint_arguments(
-                step_name=step_name
+                step_name=step_name, deployment_id=deployment.id
             )
             entrypoint = command + arguments
 
             step_settings = cast(
                 SagemakerOrchestratorSettings, self.get_settings(step)
             )
-            processor_role = (
-                step_settings.processor_role or self.config.execution_role
-            )
 
-            kwargs = (
-                {"tags": [step_settings.processor_tags]}
+            environment[
+                ENV_ZENML_SAGEMAKER_RUN_ID
+            ] = ExecutionVariables.PIPELINE_EXECUTION_ARN
+
+            # Retrieve Processor arguments provided in the Step settings.
+            processor_args_for_step = step_settings.processor_args or {}
+
+            # Set default values from configured orchestrator Component to arguments
+            # to be used when they are not present in processor_args.
+            processor_args_for_step.setdefault(
+                "instance_type", step_settings.instance_type
+            )
+            processor_args_for_step.setdefault(
+                "role",
+                step_settings.processor_role or self.config.execution_role,
+            )
+            processor_args_for_step.setdefault(
+                "volume_size_in_gb", step_settings.volume_size_in_gb
+            )
+            processor_args_for_step.setdefault(
+                "max_runtime_in_seconds", step_settings.max_runtime_in_seconds
+            )
+            processor_args_for_step.setdefault(
+                "tags",
+                [step_settings.processor_tags]
                 if step_settings.processor_tags
-                else {}
+                else None,
             )
 
+            # Set values that cannot be overwritten
+            processor_args_for_step["image_uri"] = image
+            processor_args_for_step["instance_count"] = 1
+            processor_args_for_step["sagemaker_session"] = session
+            processor_args_for_step["entrypoint"] = entrypoint
+            processor_args_for_step["base_job_name"] = orchestrator_run_name
+            processor_args_for_step["env"] = environment
+
+            # Construct S3 inputs to container for step
+            inputs = None
+
+            if step_settings.input_data_s3_uri is None:
+                pass
+            elif isinstance(step_settings.input_data_s3_uri, str):
+                inputs = [
+                    ProcessingInput(
+                        source=step_settings.input_data_s3_uri,
+                        destination="/opt/ml/processing/input/data",
+                        s3_input_mode=step_settings.input_data_s3_mode,
+                    )
+                ]
+            elif isinstance(step_settings.input_data_s3_uri, dict):
+                inputs = []
+                for channel, s3_uri in step_settings.input_data_s3_uri.items():
+                    inputs.append(
+                        ProcessingInput(
+                            source=s3_uri,
+                            destination=f"/opt/ml/processing/input/data/{channel}",
+                            s3_input_mode=step_settings.input_data_s3_mode,
+                        )
+                    )
+
+            # Construct S3 outputs from container for step
+            outputs = None
+
+            if step_settings.output_data_s3_uri is None:
+                pass
+            elif isinstance(step_settings.output_data_s3_uri, str):
+                outputs = [
+                    ProcessingOutput(
+                        source="/opt/ml/processing/output/data",
+                        destination=step_settings.output_data_s3_uri,
+                        s3_upload_mode=step_settings.output_data_s3_mode,
+                    )
+                ]
+            elif isinstance(step_settings.output_data_s3_uri, dict):
+                outputs = []
+                for (
+                    channel,
+                    s3_uri,
+                ) in step_settings.output_data_s3_uri.items():
+                    outputs.append(
+                        ProcessingOutput(
+                            source=f"/opt/ml/processing/output/data/{channel}",
+                            destination=s3_uri,
+                            s3_upload_mode=step_settings.output_data_s3_mode,
+                        )
+                    )
+
+            # Create Processor and ProcessingStep
             processor = sagemaker.processing.Processor(
-                role=processor_role,
-                image_uri=image_name,
-                instance_count=1,
-                sagemaker_session=session,
-                instance_type=step_settings.instance_type,
-                entrypoint=entrypoint,
-                base_job_name=orchestrator_run_name,
-                env={
-                    ENV_ZENML_SAGEMAKER_RUN_ID: ExecutionVariables.PIPELINE_EXECUTION_ARN,
-                },
-                volume_size_in_gb=step_settings.volume_size_in_gb,
-                max_runtime_in_seconds=step_settings.max_runtime_in_seconds,
-                **kwargs,
+                **processor_args_for_step
             )
-
             sagemaker_step = ProcessingStep(
                 name=step.config.name,
                 processor=processor,
                 depends_on=step.spec.upstream_steps,
+                inputs=inputs,
+                outputs=outputs,
             )
             sagemaker_steps.append(sagemaker_step)
 
@@ -231,6 +298,23 @@ class SagemakerOrchestrator(BaseOrchestrator):
             )
             logger.info("Pipeline completed successfully.")
 
+    def _get_region_name(self) -> str:
+        """Returns the AWS region name.
+
+        Returns:
+            The region name.
+
+        Raises:
+            RuntimeError: If the region name cannot be retrieved.
+        """
+        try:
+            return cast(str, sagemaker.Session().boto_region_name)
+        except Exception as e:
+            raise RuntimeError(
+                "Unable to get region name. Please ensure that you have "
+                "configured your AWS credentials correctly."
+            ) from e
+
     def get_pipeline_run_metadata(
         self, run_id: UUID
     ) -> Dict[str, "MetadataType"]:
@@ -242,11 +326,21 @@ class SagemakerOrchestrator(BaseOrchestrator):
         Returns:
             A dictionary of metadata.
         """
-        # TODO: Add this once we can get the region
-        # run_url = (
-        #     f"https://{region}.console.aws.amazon.com/sagemaker/"
-        #     f"home?region={region}"
-        # )
-        return {
-            "pipeline_execution_arn": os.environ[ENV_ZENML_SAGEMAKER_RUN_ID]
+        run_metadata: Dict[str, "MetadataType"] = {
+            "pipeline_execution_arn": os.environ[ENV_ZENML_SAGEMAKER_RUN_ID],
         }
+        try:
+            region_name = self._get_region_name()
+        except RuntimeError:
+            logger.warning("Unable to get region name from AWS Sagemaker.")
+            return run_metadata
+
+        aws_run_id = os.environ[ENV_ZENML_SAGEMAKER_RUN_ID].split("/")[-1]
+        orchestrator_logs_url = (
+            f"https://{region_name}.console.aws.amazon.com/"
+            f"cloudwatch/home?region={region_name}#logsV2:log-groups/log-group"
+            f"/$252Faws$252Fsagemaker$252FProcessingJobs$3FlogStreamNameFilter"
+            f"$3Dpipelines-{aws_run_id}-"
+        )
+        run_metadata[METADATA_ORCHESTRATOR_URL] = Uri(orchestrator_logs_url)
+        return run_metadata

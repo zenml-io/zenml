@@ -17,6 +17,7 @@ The ZenML integrations module contains sub-modules for each integration that we
 support. This includes orchestrators like Apache Airflow, visualization tools
 like the ``facets`` library, as well as deep learning libraries like PyTorch.
 """
+import sys
 
 from zenml.integrations.airflow import AirflowIntegration  # noqa
 from zenml.integrations.aws import AWSIntegration  # noqa
@@ -29,6 +30,7 @@ from zenml.integrations.facets import FacetsIntegration  # noqa
 from zenml.integrations.feast import FeastIntegration  # noqa
 from zenml.integrations.gcp import GcpIntegration  # noqa
 from zenml.integrations.github import GitHubIntegration  # noqa
+from zenml.integrations.gitlab import GitLabIntegration  # noqa
 from zenml.integrations.graphviz import GraphvizIntegration  # noqa
 from zenml.integrations.great_expectations import (  # noqa
     GreatExpectationsIntegration,
@@ -44,8 +46,10 @@ from zenml.integrations.modin import ModinIntegration  # noqa
 from zenml.integrations.mlflow import MlflowIntegration  # noqa
 from zenml.integrations.neptune import NeptuneIntegration  # noqa
 from zenml.integrations.neural_prophet import NeuralProphetIntegration  # noqa
+from zenml.integrations.openai import OpenAIIntegration  # noqa
 from zenml.integrations.pillow import PillowIntegration  # noqa
 from zenml.integrations.plotly import PlotlyIntegration  # noqa
+from zenml.integrations.pycaret import PyCaretIntegration  # noqa
 from zenml.integrations.pytorch import PytorchIntegration  # noqa
 from zenml.integrations.pytorch_lightning import (  # noqa
     PytorchLightningIntegration,
@@ -63,3 +67,7 @@ from zenml.integrations.vault import VaultSecretsManagerIntegration  # noqa
 from zenml.integrations.wandb import WandbIntegration  # noqa
 from zenml.integrations.whylogs import WhylogsIntegration  # noqa
 from zenml.integrations.xgboost import XgboostIntegration  # noqa
+
+if sys.version_info > (3, 7):
+    from zenml.integrations.llama_index import LlamaIndexIntegration  # noqa
+    from zenml.integrations.langchain import LangchainIntegration  # noqa

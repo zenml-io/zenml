@@ -17,7 +17,6 @@ import os
 from pathlib import Path
 from typing import TYPE_CHECKING, Dict, List, Optional, Type, cast
 
-from zenml.cli.utils import error
 from zenml.config.global_config import GlobalConfiguration
 from zenml.constants import LOCAL_SECRETS_FILENAME
 from zenml.exceptions import SecretExistsError
@@ -240,8 +239,8 @@ class LocalSecretsManager(BaseSecretsManager):
         try:
             secrets_store_items.pop(secret_name)
             yaml_utils.write_yaml(self.secrets_file, secrets_store_items)
-        except KeyError:
-            error(f"Secret {secret_name} does not exist.")
+        except KeyError as e:
+            raise KeyError(f"Secret {secret_name} does not exist.") from e
 
     def delete_all_secrets(self) -> None:
         """Delete all existing secrets."""
@@ -269,6 +268,15 @@ class LocalSecretsManagerFlavor(BaseSecretsManagerFlavor):
             A flavor docs url.
         """
         return self.generate_default_docs_url()
+
+    @property
+    def sdk_docs_url(self) -> Optional[str]:
+        """A url to point at SDK docs explaining this flavor.
+
+        Returns:
+            A flavor SDK docs url.
+        """
+        return self.generate_default_sdk_docs_url()
 
     @property
     def logo_url(self) -> str:

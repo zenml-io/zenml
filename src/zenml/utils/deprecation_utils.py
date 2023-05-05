@@ -21,7 +21,7 @@ from pydantic import BaseModel, root_validator
 from zenml.logger import get_logger
 
 if TYPE_CHECKING:
-    AnyClassMethod = classmethod[Any]
+    AnyClassMethod = classmethod[Any]  # type: ignore[type-arg]
 
 logger = get_logger(__name__)
 

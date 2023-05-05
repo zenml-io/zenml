@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Step decorator function."""
 
+from types import FunctionType
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -34,7 +35,8 @@ from zenml.steps.utils import (
     PARAM_ENABLE_CACHE,
     PARAM_EXPERIMENT_TRACKER,
     PARAM_EXTRA_OPTIONS,
-    PARAM_OUTPUT_ARTIFACTS,
+    PARAM_ON_FAILURE,
+    PARAM_ON_SUCCESS,
     PARAM_OUTPUT_MATERIALIZERS,
     PARAM_SETTINGS,
     PARAM_STEP_NAME,
@@ -43,17 +45,14 @@ from zenml.steps.utils import (
 )
 
 if TYPE_CHECKING:
-    from zenml.artifacts.base_artifact import BaseArtifact
     from zenml.config.base_settings import SettingsOrDict
+    from zenml.config.source import Source
     from zenml.materializers.base_materializer import BaseMaterializer
 
-    ArtifactClassOrStr = Union[str, Type["BaseArtifact"]]
-    MaterializerClassOrStr = Union[str, Type["BaseMaterializer"]]
-    OutputArtifactsSpecification = Union[
-        "ArtifactClassOrStr", Mapping[str, "ArtifactClassOrStr"]
-    ]
+    MaterializerClassOrSource = Union[str, "Source", Type["BaseMaterializer"]]
+    HookSpecification = Union[str, "Source", FunctionType]
     OutputMaterializersSpecification = Union[
-        "MaterializerClassOrStr", Mapping[str, "MaterializerClassOrStr"]
+        "MaterializerClassOrSource", Mapping[str, "MaterializerClassOrSource"]
     ]
 
 F = TypeVar("F", bound=Callable[..., Any])
@@ -72,10 +71,11 @@ def step(
     enable_artifact_metadata: Optional[bool] = None,
     experiment_tracker: Optional[str] = None,
     step_operator: Optional[str] = None,
-    output_artifacts: Optional["OutputArtifactsSpecification"] = None,
     output_materializers: Optional["OutputMaterializersSpecification"] = None,
     settings: Optional[Dict[str, "SettingsOrDict"]] = None,
     extra: Optional[Dict[str, Any]] = None,
+    on_failure: Optional["HookSpecification"] = None,
+    on_success: Optional["HookSpecification"] = None,
 ) -> Callable[[F], Type[BaseStep]]:
     ...
 
@@ -88,10 +88,11 @@ def step(
     enable_artifact_metadata: Optional[bool] = None,
     experiment_tracker: Optional[str] = None,
     step_operator: Optional[str] = None,
-    output_artifacts: Optional["OutputArtifactsSpecification"] = None,
     output_materializers: Optional["OutputMaterializersSpecification"] = None,
     settings: Optional[Dict[str, "SettingsOrDict"]] = None,
     extra: Optional[Dict[str, Any]] = None,
+    on_failure: Optional["HookSpecification"] = None,
+    on_success: Optional["HookSpecification"] = None,
 ) -> Union[Type[BaseStep], Callable[[F], Type[BaseStep]]]:
     """Outer decorator function for the creation of a ZenML step.
 
@@ -114,15 +115,20 @@ def step(
             given as a dict, the keys must be a subset of the output names
             of this step. If a single value (type or string) is given, the
             materializer will be used for all outputs.
-        output_artifacts: Output artifacts for this step. If
-            given as a dict, the keys must be a subset of the output names
-            of this step. If a single value (type or string) is given, the
-            artifact class will be used for all outputs.
         settings: Settings for this step.
         extra: Extra configurations for this step.
+        on_failure: Callback function in event of failure of the step. Can be
+            a function with three possible parameters,
+            `StepContext`, `BaseParameters`, and `BaseException`,
+            or a source path to a function of the same specifications
+            (e.g. `module.my_function`).
+        on_success: Callback function in event of failure of the step. Can be
+            a function with two possible parameters, `StepContext` and
+            `BaseParameters, or a source path to a function of the same specifications
+            (e.g. `module.my_function`).
 
     Returns:
-        the inner decorator which creates the step class based on the
+        The inner decorator which creates the step class based on the
         ZenML BaseStep
     """
 
@@ -148,10 +154,11 @@ def step(
                     PARAM_ENABLE_ARTIFACT_METADATA: enable_artifact_metadata,
                     PARAM_EXPERIMENT_TRACKER: experiment_tracker,
                     PARAM_STEP_OPERATOR: step_operator,
-                    PARAM_OUTPUT_ARTIFACTS: output_artifacts,
                     PARAM_OUTPUT_MATERIALIZERS: output_materializers,
                     PARAM_SETTINGS: settings,
                     PARAM_EXTRA_OPTIONS: extra,
+                    PARAM_ON_FAILURE: on_failure,
+                    PARAM_ON_SUCCESS: on_success,
                 },
                 "__module__": func.__module__,
                 "__doc__": func.__doc__,

@@ -20,6 +20,12 @@ AWS or Azure). A MySQL server version of 8.0 or higher is required.
 - the [Kubernetes client](https://kubernetes.io/docs/tasks/tools/#kubectl)
 already installed on your machine and configured to access your cluster.
 - [Helm](https://helm.sh/docs/intro/install/) installed on your machine.
+- Optional: an external Secrets Manager service (e.g. one of
+the managed secrets management services offered by Google Cloud,
+AWS, Azure or HashiCorp Vault). By default, ZenML stores secrets inside the
+SQL database that it's connected to, but you also have the option of using an
+external cloud Secrets Manager service if you already happen to use one of those
+cloud or service providers.
 
 To gain access to the ZenML Helm chart, you'll need to clone the ZenML
 repository and checkout the `main` branch, or one of the release tags:
@@ -38,6 +44,7 @@ ZenML deployment.
 
 In addition to tools and infrastructure, you will also need to collect and
 [prepare information related to your database](#collect-information-from-your-sql-database-service)
+and [information related to your external secrets management service](#collect-information-from-your-secrets-management-service)
 to be used for the Helm chart configuration and you may
 also want to install additional [optional services in your cluster](#optional-cluster-services).
 
@@ -80,6 +87,50 @@ also need to prepare additional SSL certificates and keys:
   - the TLS client certificate and key. This is only needed if you decide to use
     client certificates for your DB connection (some managed DB services support
     this, CloudSQL is an example).
+
+### Collect information from your secrets management service
+
+Using an external managed secrets management service like those offered by
+Google Cloud, AWS, Azure or HashiCorp Vault is optional, but is recommended if
+you are already using those cloud service providers. If omitted, ZenML will
+default to using the SQL database to store secrets.
+
+If you decide to use an external secrets management service, you will
+need to collect and prepare the following information for the Helm chart
+configuration (for supported back-ends only):
+
+For the AWS secrets manager:
+
+- the AWS region that you want to use to store your secrets
+- an AWS access key ID and secret access key that have provide full access to
+the AWS secrets manager service. You can create a dedicated IAM user for
+this purpose, or use an existing user with the necessary permissions. If you
+deploy the ZenML server in an EKS Kubernetes cluster that is already configured
+to use implicit authorization with an IAM role for service accounts, you can
+omit this step.
+
+For the Google Cloud secrets manager:
+
+- the Google Cloud project ID that you want to use to store your secrets
+- a Google Cloud service account that has access to the secrets manager
+service. You can create a dedicated service account for this purpose, or use
+an existing service account with the necessary permissions.
+
+For the Azure Key Vault:
+
+- the name of the Azure Key Vault that you want to use to store your secrets
+- the Azure tenant ID, client ID and client secret associated with the Azure
+service principal that will be used to access the Azure Key Vault.
+You can create a dedicated application service principal for this purpose, or
+use an existing service principal with the necessary permissions. If you deploy
+the ZenML server in an AKS Kubernetes cluster that is already configured to use
+implicit authorization through the Azure managed identity service, you can omit
+this step.
+
+For the HashiCorp Vault:
+
+- the URL of the HashiCorp Vault server
+- the token that will be used to access the HashiCorp Vault server.
 
 ### Optional cluster services
 
@@ -389,6 +440,210 @@ Cloud DNS to map a different hostname to the Ingress controller. For example,
 you can map the hostname `zenml.<subdomain>` to the Ingress controller's IP
 address or hostname. Then, simply use the new hostname to expose ZenML at the
 root URL path.
+
+### Using the AWS Secrets Manager as a secrets store backend
+
+Unless explicitly disabled or configured otherwise, the ZenML server will use
+the SQL database as a secrets store backend. If you want to use the AWS Secrets
+Manager instead, you need to configure it in the Helm values. Depending on where
+you deploy your ZenML server and how your Kubernetes cluster is configured, you
+may also need to provide AWS credentials needed to access the AWS Secrets
+Manager API:
+
+```yaml
+ zenml:
+
+  # ...
+
+  # Secrets store settings. This is used to store centralized secrets.
+  secretsStore:
+
+    # Set to false to disable the secrets store.
+    enabled: true
+
+    # The type of the secrets store
+    type: aws
+
+    # Configuration for the AWS Secrets Manager secrets store
+    aws:
+
+      # The AWS region to use. This must be set to the region where the AWS
+      # Secrets Manager service that you want to use is located.
+      region_name: us-east-1
+
+      # The AWS credentials to use to authenticate with the AWS Secrets
+      # Manager instance. You can omit these if you are running the ZenML server
+      # in an AWS EKS cluster that has an IAM role attached to it that has
+      # permissions to access the AWS Secrets Manager instance.
+      aws_access_key_id: <your AWS access key ID>
+      aws_secret_access_key: <your AWS secret access key>
+      aws_session_token: <your AWS session token>
+```
+
+### Using the GCP Secrets Manager as a secrets store backend
+
+Unless explicitly disabled or configured otherwise, the ZenML server will use
+the SQL database as a secrets store backend. If you want to use the GCP Secrets
+Manager instead, you need to configure it in the Helm values. Depending on where
+you deploy your ZenML server and how your Kubernetes cluster is configured, you
+may also need to provide GCP credentials needed to access the GCP Secrets
+Manager API:
+
+```yaml
+ zenml:
+
+  # ...
+
+  # Secrets store settings. This is used to store centralized secrets.
+  secretsStore:
+
+    # Set to false to disable the secrets store.
+    enabled: true
+
+    # The type of the secrets store
+    type: gcp
+
+    # Configuration for the GCP Secrets Manager secrets store
+    gcp:
+
+      # The GCP project ID to use. This must be set to the project ID where the
+      # GCP Secrets Manager service that you want to use is located.
+      project_id: my-gcp-project
+
+      # Path to the GCP credentials file to use to authenticate with the GCP Secrets
+      # Manager instance. You can omit this if you are running the ZenML server
+      # in a GCP GKE cluster that uses workload identity to authenticate with
+      # GCP services without the need for credentials.
+      # NOTE: the credentials file needs to be copied in the helm chart folder
+      # and the path configured here needs to be relative to the root of the
+      # helm chart.
+      google_application_credentials: cloud-credentials.json
+
+serviceAccount:
+
+  # If you're using workload identity, you need to annotate the service
+  # account with the GCP service account name (see https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity)
+  annotations:
+    iam.gke.io/gcp-service-account: <SERVICE_ACCOUNT_NAME>@<PROJECT_NAME>.iam.gserviceaccount.com
+
+```
+
+### Using the Azure Key Vault as a secrets store backend
+
+Unless explicitly disabled or configured otherwise, the ZenML server will use
+the SQL database as a secrets store backend. If you want to use the Azure Key
+Vault service instead, you need to configure it in the Helm values. Depending on
+where you deploy your ZenML server and how your Kubernetes cluster is
+configured, you may also need to provide Azure credentials needed to access the
+Azure Key Vault API:
+
+```yaml
+ zenml:
+
+  # ...
+
+  # Secrets store settings. This is used to store centralized secrets.
+  secretsStore:
+
+    # Set to false to disable the secrets store.
+    enabled: true
+
+    # The type of the secrets store
+    type: azure
+
+    # Configuration for the Azure Key Vault secrets store
+    azure:
+
+      # The name of the Azure Key Vault. This must be set to point to the Azure
+      # Key Vault instance that you want to use.
+      key_vault_name:
+
+      # The Azure application service principal credentials to use to
+      # authenticate with the Azure Key Vault API. You can omit these if you are
+      # running the ZenML server hosted in Azure and are using a managed
+      # identity to access the Azure Key Vault service.
+      azure_client_id: <your Azure client ID>
+      azure_client_secret: <your Azure client secret>
+      azure_tenant_id: <your Azure tenant ID>
+```
+
+### Using the HashiCorp Vault as a secrets store backend
+
+Unless explicitly disabled or configured otherwise, the ZenML server will use
+the SQL database as a secrets store backend. If you want to use the HashiCorp
+Vault service instead, you need to configure it in the Helm values:
+
+```yaml
+ zenml:
+
+  # ...
+
+  # Secrets store settings. This is used to store centralized secrets.
+  secretsStore:
+
+    # Set to false to disable the secrets store.
+    enabled: true
+
+    # The type of the secrets store
+    type: hashicorp
+
+    # Configuration for the HashiCorp Vault secrets store
+    hashicorp:
+
+      # The url of the HashiCorp Vault server to use
+      vault_addr: https://vault.example.com
+      # The token used to authenticate with the Vault server
+      vault_token: <your Vault token>
+      # The Vault Enterprise namespace. Not required for Vault OSS.
+      vault_namespace: <your Vault namespace>
+```
+
+### Using a custom secrets store backend implementation
+
+You have the option of using
+[a custom implementation of the secrets store API](../../starter-guide/production-fundamentals/secrets-management.md#build-your-own-custom-secrets-manager) as your secrets store back-end.
+This must come in the form of a class derived from
+`zenml.zen_stores.secrets_stores.base_secrets_store.BaseSecretsStore`. This
+class must be importable from within the ZenML server container, which means
+you most likely need to build a custom container image that contains the class.
+Then, you can configure the Helm values to use your custom secrets store
+as follows:
+
+```yaml
+ zenml:
+
+  # ...
+
+  # Secrets store settings. This is used to store centralized secrets.
+  secretsStore:
+
+    # Set to false to disable the secrets store.
+    enabled: true
+
+    # The type of the secrets store
+    type: custom
+
+    # Configuration for the HashiCorp Vault secrets store
+    custom:
+
+      # The class path of the custom secrets store implementation. This should
+      # point to a full Python class that extends the
+      # `zenml.zen_stores.secrets_stores.base_secrets_store.BaseSecretsStore`
+      # base class. The class should be importable from the container image
+      # that you are using for the ZenML server.
+      class_path: my.custom.secrets.store.MyCustomSecretsStore
+
+  # Extra environment variables used to configure the custom secrets store.
+  environment:
+    ZENML_SECRETS_STORE_OPTION_1: value1
+    ZENML_SECRETS_STORE_OPTION_2: value2
+
+  # Extra environment variables to set in the ZenML server container that
+  # should be kept secret and are used to configure the custom secrets store.
+  secretEnvironment:
+    ZENML_SECRETS_STORE_SECRET_OPTION_3: value3
+    ZENML_SECRETS_STORE_SECRET_OPTION_4: value4
+```
 
 ## Upgrading your ZenML server
 

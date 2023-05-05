@@ -81,6 +81,14 @@ def stack() -> None:
     required=False,
 )
 @click.option(
+    "-r",
+    "--model_registry",
+    "model_registry",
+    help="Name of the model registry for this stack.",
+    type=str,
+    required=False,
+)
+@click.option(
     "-x",
     "--secrets_manager",
     "secrets_manager",
@@ -171,6 +179,7 @@ def register_stack(
     artifact_store: str,
     orchestrator: str,
     container_registry: Optional[str] = None,
+    model_registry: Optional[str] = None,
     secrets_manager: Optional[str] = None,
     step_operator: Optional[str] = None,
     feature_store: Optional[str] = None,
@@ -190,6 +199,7 @@ def register_stack(
         artifact_store: Name of the artifact store for this stack.
         orchestrator: Name of the orchestrator for this stack.
         container_registry: Name of the container registry for this stack.
+        model_registry: Name of the model registry for this stack.
         secrets_manager: Name of the secrets manager for this stack.
         step_operator: Name of the step operator for this stack.
         feature_store: Name of the feature store for this stack.
@@ -222,6 +232,8 @@ def register_stack(
             components[StackComponentType.IMAGE_BUILDER] = image_builder
         if model_deployer:
             components[StackComponentType.MODEL_DEPLOYER] = model_deployer
+        if model_registry:
+            components[StackComponentType.MODEL_REGISTRY] = model_registry
         if secrets_manager:
             components[StackComponentType.SECRETS_MANAGER] = secrets_manager
         if step_operator:
@@ -288,6 +300,14 @@ def register_stack(
     "--container_registry",
     "container_registry",
     help="Name of the new container registry for this stack.",
+    type=str,
+    required=False,
+)
+@click.option(
+    "-r",
+    "--model_registry",
+    "model_registry",
+    help="Name of the model registry for this stack.",
     type=str,
     required=False,
 )
@@ -377,6 +397,7 @@ def update_stack(
     annotator: Optional[str] = None,
     data_validator: Optional[str] = None,
     image_builder: Optional[str] = None,
+    model_registry: Optional[str] = None,
 ) -> None:
     """Update a stack.
 
@@ -395,6 +416,7 @@ def update_stack(
         annotator: Name of the new annotator for this stack.
         data_validator: Name of the new data validator for this stack.
         image_builder: Name of the new image builder for this stack.
+        model_registry: Name of the new model registry for this stack.
     """
     client = Client()
 
@@ -419,6 +441,8 @@ def update_stack(
             ]
         if feature_store:
             updates[StackComponentType.FEATURE_STORE] = [feature_store]
+        if model_registry:
+            updates[StackComponentType.MODEL_REGISTRY] = [model_registry]
         if image_builder:
             updates[StackComponentType.IMAGE_BUILDER] = [image_builder]
         if model_deployer:
@@ -513,6 +537,14 @@ def share_stack(
     required=False,
 )
 @click.option(
+    "-r",
+    "--model_registry",
+    "model_registry_flag",
+    help="Include this to remove the the model registry from this stack.",
+    is_flag=True,
+    required=False,
+)
+@click.option(
     "-x",
     "--secrets_manager",
     "secrets_manager_flag",
@@ -588,6 +620,7 @@ def remove_stack_component(
     annotator_flag: Optional[bool] = False,
     data_validator_flag: Optional[bool] = False,
     image_builder_flag: Optional[bool] = False,
+    model_registry_flag: Optional[str] = None,
 ) -> None:
     """Remove stack components from a stack.
 
@@ -605,6 +638,7 @@ def remove_stack_component(
         annotator_flag: To remove the annotator from this stack.
         data_validator_flag: To remove the data validator from this stack.
         image_builder_flag: To remove the image builder from this stack.
+        model_registry_flag: To remove the model registry from this stack.
     """
     client = Client()
 
@@ -631,6 +665,9 @@ def remove_stack_component(
 
         if alerter_flag:
             stack_component_update[StackComponentType.ALERTER] = []
+
+        if model_registry_flag:
+            stack_component_update[StackComponentType.MODEL_REGISTRY] = []
 
         if annotator_flag:
             stack_component_update[StackComponentType.ANNOTATOR] = []
@@ -733,17 +770,41 @@ def describe_stack(stack_name_or_id: Optional[str] = None) -> None:
 @stack.command("delete", help="Delete a stack given its name.")
 @click.argument("stack_name_or_id", type=str)
 @click.option("--yes", "-y", is_flag=True, required=False)
-def delete_stack(stack_name_or_id: str, yes: bool = False) -> None:
+@click.option(
+    "--recursive",
+    "-r",
+    is_flag=True,
+    help="Recursively delete all stack components",
+)
+def delete_stack(
+    stack_name_or_id: str, yes: bool = False, recursive: bool = False
+) -> None:
     """Delete a stack.
 
     Args:
         stack_name_or_id: Name or id of the stack to delete.
         yes: Stack will be deleted without prompting for
             confirmation.
+        recursive: The stack will be deleted along with the corresponding stack associated with it.
     """
-    confirmation = yes or cli_utils.confirmation(
-        f"This will delete stack '{stack_name_or_id}'. \n"
-        "Are you sure you want to proceed?"
+    recursive_confirmation = False
+    if recursive:
+        recursive_confirmation = yes or cli_utils.confirmation(
+            "If there are stack components present in another stack, those stack components will be ignored for removal \n"
+            "Do you want to continue ?"
+        )
+
+        if not recursive_confirmation:
+            cli_utils.declare("Stack deletion canceled.")
+            return
+
+    confirmation = (
+        recursive_confirmation
+        or yes
+        or cli_utils.confirmation(
+            f"This will delete stack '{stack_name_or_id}'. \n"
+            "Are you sure you want to proceed?"
+        )
     )
 
     if not confirmation:
@@ -752,6 +813,12 @@ def delete_stack(stack_name_or_id: str, yes: bool = False) -> None:
 
     with console.status(f"Deleting stack '{stack_name_or_id}'...\n"):
         client = Client()
+
+        if recursive and recursive_confirmation:
+
+            client.delete_stack(stack_name_or_id, recursive=True)
+            return
+
         try:
             client.delete_stack(stack_name_or_id)
         except (KeyError, ValueError, IllegalOperationError) as err:
