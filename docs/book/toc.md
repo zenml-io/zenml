@@ -3,7 +3,7 @@
 ## Getting Started
 
 * [⭐ Introduction](introduction.md)
-* [🧙♂ Installation](getting-started/installation.md)
+* [🧙 Installation](getting-started/installation.md)
 * [🪄 Core Concepts](getting-started/core-concepts.md)
 
 ## User Guide
