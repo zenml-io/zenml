@@ -11,6 +11,7 @@
 * [🐣 Starter Guide](user-guide/starter-guide/README.md)
   * [Start with the Basics](user-guide/starter-guide/create-your-first-ml-pipeline.md)
   * [Create an ML Pipeline](user-guide/starter-guide/configure-and-interact-with-pipelines.md)
+  * [Iterate on your code](user-guide/starter-guide/iterate-on-your-code.md)
   * [Understand the default stack](user-guide/starter-guide/using-and-switching-stacks.md)
   * [Connect to a deployed ZenML](user-guide/starter-guide/transition-to-the-cloud.md)
   * [Switch to a remote stack](user-guide/starter-guide/switch-to-a-remote-stack.md)
