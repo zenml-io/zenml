@@ -5,23 +5,23 @@ description: Configuring pipelines, steps, and stack components in ZenML.
 # Configure steps/pipelines
 
 * [ ] Add the step order to the configuration.
-
+* [ ] We probably need to have a section for BaseParameters as well.
 
 ## Settings in ZenML
 
-As discussed in a [previous chapter](broken-reference), there are two ways to configure anything in ZenML:
+As discussed in a [previous chapter](broken-reference/), there are two ways to configure anything in ZenML:
 
 * `BaseParameters`: Runtime configuration passed down as a parameter to step functions.
 * `BaseSettings`: Runtime settings passed down to stack components and pipelines.
 
-We have [already discussed `BaseParameters`](broken-reference) and now is the time to talk about its brother, `BaseSettings`.
+We have [already discussed `BaseParameters`](broken-reference/) and now is the time to talk about its brother, `BaseSettings`.
 
 ### What can be configured?
 
 Looked at one way, `BaseParameters` configure steps within a pipeline to behave in a different way during runtime. But what other things can be configured at runtime? Here is a list:
 
-* The [resources](broken-reference) of a step.
-* Configuring the [containerization](broken-reference) process of a pipeline (e.g. What requirements get installed in the Docker image).
+* The [resources](broken-reference/) of a step.
+* Configuring the [containerization](broken-reference/) process of a pipeline (e.g. What requirements get installed in the Docker image).
 * Stack component specific configuration, e.g., if you have an experiment tracker passing in the name of the experiment at runtime.
 
 You will learn about all of the above in more detail later, but for now, let's try to understand that all of this configuration flows through one central concept, called `BaseSettings` (From here on, we use `settings` and `BaseSettings` as analogous in this guide).
@@ -31,17 +31,17 @@ You will learn about all of the above in more detail later, but for now, let's t
 Settings are categorized into two types:
 
 * **General settings** that can be used on all ZenML pipelines. Examples of these are:
-  * [`DockerSettings`](broken-reference) to specify docker settings.
-  * [`ResourceSettings`](broken-reference) to specify resource settings.
+  * [`DockerSettings`](broken-reference/) to specify docker settings.
+  * [`ResourceSettings`](broken-reference/) to specify resource settings.
 * **Stack component specific settings**: These can be used to supply runtime configurations to certain stack components (key= \<COMPONENT\_CATEGORY>.\<COMPONENT\_FLAVOR>). Settings for components not in the active stack will be ignored. Examples of these are:
-  * [`KubeflowOrchestratorSettings`](broken-reference) to specify Kubeflow settings.
-  * [`MLflowExperimentTrackerSettings`](broken-reference) to specify MLflow settings.
-  * [`WandbExperimentTrackerSettings`](broken-reference) to specify W\&B settings.
-  * [`WhylogsDataValidatorSettings`](broken-reference) to specify Whylogs settings.
+  * [`KubeflowOrchestratorSettings`](broken-reference/) to specify Kubeflow settings.
+  * [`MLflowExperimentTrackerSettings`](broken-reference/) to specify MLflow settings.
+  * [`WandbExperimentTrackerSettings`](broken-reference/) to specify W\&B settings.
+  * [`WhylogsDataValidatorSettings`](broken-reference/) to specify Whylogs settings.
 
 For stack component specific settings, you might be wondering what the difference is between these and the configuration passed in while doing `zenml stack-component register <NAME> --config1=configvalue --config2=configvalue` etc. The answer is that the configuration passed in at registration time is static and fixed throughout all pipeline runs, while the settings can change.
 
-A good example of this is the [`MLflow Experiment Tracker`](broken-reference), where configuration which remains static such as the `tracking_url` is sent through at registration time, while runtime configuration such as the `experiment_name` (which might change every pipeline run) is sent through as runtime settings.
+A good example of this is the [`MLflow Experiment Tracker`](broken-reference/), where configuration which remains static such as the `tracking_url` is sent through at registration time, while runtime configuration such as the `experiment_name` (which might change every pipeline run) is sent through as runtime settings.
 
 Even though settings can be overridden at runtime, you can also specify _default_ values for settings while configuring a stack component. For example, you could set a default value for the `nested` setting of your MLflow experiment tracker: `zenml experiment-tracker register <NAME> --flavor=mlflow --nested=True`
 
@@ -262,7 +262,7 @@ An example of this is if I want to tag a pipeline, I can do the following:
   ...
 ```
 
-This tag is now associated and tracked with all pipeline runs, and can be fetched later with the [post-execution workflow](broken-reference):
+This tag is now associated and tracked with all pipeline runs, and can be fetched later with the [post-execution workflow](broken-reference/):
 
 ```python
 from zenml.post_execution import get_pipeline

@@ -1,2 +1,2 @@
-# Data Versioning
+# Version your data
 

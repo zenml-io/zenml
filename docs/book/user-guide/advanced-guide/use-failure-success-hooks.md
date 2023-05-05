@@ -4,12 +4,12 @@ description: Running failure and success hooks after step execution.
 
 # Use failure/success hooks
 
-Hooks are a way to perform an action after a step has completed execution. They can be useful in a variety of scenarios, such as sending notifications, logging, or cleaning up resources after a step has completed.
+Hooks are a way to perform an action after a step has completed execution. They can be useful in a variety of scenarios, such as sending notifications, logging, or cleaning up resources after a step has been completed.
 
 A hook executes right after step execution, within the same environment as the step, therefore it has access to all the dependencies that a step has. Currently, there are two sorts of hooks that can be defined: `on_failure` and `on_success`.
 
-* `on_failure`: This hook triggers in event of a step failing.
-* `on_success`: This hook triggers in event of a step succeeding.
+* `on_failure`: This hook triggers in the event of a step failing.
+* `on_success`: This hook triggers in the event of a step succeeding.
 
 Here is a short demo for hooks in ZenML:
 
@@ -61,11 +61,11 @@ Note, that **step-level** defined hooks take **precedence** over **pipeline-leve
 
 A hook function signature can optionally take three type annotated arguments of the following types:
 
-* `StepContext`: You can pass an object inside a hook of type `StepContext` to get access to information such as pipeline name, run name, step name etc
+* `StepContext`: You can pass an object inside a hook of type `StepContext` to get access to information such as pipeline name, run name, step name, etc
 * `BaseParameters`: You can pass a `BaseParameters` inside the step
 * `BaseException`: In case of failure hooks, if you add an `BaseException` argument to the hook, then ZenML passes the BaseException that caused your step to fail.
 
-Please note that in case of `BaseParameters` and `BaseException` the concrete class defined by the step will be passed. For example, if a step's parameters class is called `MyParameters`, that will be the object that is passed into the hook. Also, if a `ValueError` is raised inside a step, the exception would also be of type `BaseException`.
+Please note that in the case of `BaseParameters` and `BaseException` the concrete class defined by the step will be passed. For example, if a step's parameters class is called `MyParameters`, that will be the object that is passed into the hook. Also, if a `ValueError` is raised inside a step, the exception would also be of type `BaseException`.
 
 ```python
 from zenml.steps import BaseParameters, StepContext, step
@@ -88,7 +88,7 @@ def my_step(params: MyParameters)
 
 ## Linking to the `Alerter` Stack component
 
-A common use-case is to use the [Alerter](broken-reference) component inside the failure or success hooks to notify relevant people. It is quite easy to do this:
+A common use case is to use the [Alerter](broken-reference) component inside the failure or success hooks to notify relevant people. It is quite easy to do this:
 
 ```python
 def on_failure(context: StepContext):
@@ -115,7 +115,7 @@ The OpenAI ChatGPT failure hook is a hook that uses the OpenAI integration to ge
 Note that using this integration will incur charges on your OpenAI account.
 {% endhint %}
 
-First ensure that you have the OpenAI integration installed and have stored your API key within a ZenML secret:
+First, ensure that you have the OpenAI integration installed and have stored your API key within a ZenML secret:
 
 ```shell
 zenml integration install openai
