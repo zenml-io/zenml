@@ -80,7 +80,6 @@ class KubernetesOrchestratorConfig(  # type: ignore[misc] # https://github.com/p
     kubernetes_context: str
     kubernetes_namespace: str = "zenml"
     local: bool = False
-    incluster: bool = False
     skip_local_validations: bool = False
 
     @root_validator(pre=True)
