@@ -762,12 +762,6 @@ def zen_server_exists() -> bool:
     "If not specified, no experiment tracker will be destroyed.",
 )
 @click.option(
-    "--secrets-manager",
-    "-x",
-    help="The flavor of secrets manager to destroy. "
-    "If not specified, no secrets manager will be destroyed.",
-)
-@click.option(
     "--step-operator",
     "-s",
     help="The flavor of step operator to destroy. "
@@ -783,7 +777,6 @@ def destroy(
     container_registry: Optional[str],
     model_deployer: Optional[str],
     experiment_tracker: Optional[str],
-    secrets_manager: Optional[str],
     step_operator: Optional[str],
 ) -> None:
     """Destroy all resources from the stack_recipe at the specified relative path.
@@ -808,9 +801,6 @@ def destroy(
             destroyed.
         model_deployer: The flavor of the model deployer to destroy.
         experiment_tracker: The flavor of the experiment tracker to destroy.
-        secrets_manager: The flavor of the secrets manager to destroy. In the case
-            of the secrets manager, it doesn't matter what you specify here, as
-            there's only one flavor per cloud provider and that will be destroyed.
         step_operator: The flavor of the step operator to destroy.
 
     Raises:
@@ -830,7 +820,6 @@ def destroy(
             "container_registry": container_registry,
             "model_deployer": model_deployer,
             "experiment_tracker": experiment_tracker,
-            "secrets_manager": secrets_manager,
             "step_operator": step_operator,
         }
 
@@ -849,7 +838,6 @@ def destroy(
             not in [
                 "artifact_store",
                 "container_registry",
-                "secrets_manager",
             ]
         ]
         # if artifact store, container registry or secrets manager
@@ -861,7 +849,6 @@ def destroy(
             in [
                 "artifact_store",
                 "container_registry",
-                "secrets_manager",
             ]
         ]
 

@@ -1089,9 +1089,7 @@ def generate_stack_component_deploy_command(
         help="The cloud provider to use to deploy the stack component.",
     )
     @click.argument("args", nargs=-1, type=click.UNPROCESSED)
-    @click.pass_context
     def deploy_stack_component_command(
-        ctx: click.Context,
         name: str,
         flavor: str,
         cloud: str,
@@ -1102,7 +1100,6 @@ def generate_stack_component_deploy_command(
         This function also registers the newly-deployed component.
 
         Args:
-            ctx: Click context.
             name: Name of the component to register.
             flavor: Flavor of the component to register.
             cloud: Cloud provider to use to deploy the stack component.
@@ -1121,7 +1118,6 @@ def generate_stack_component_deploy_command(
             "container_registry": ["gcp", "aws"],
             "orchestrator": ["kubernetes", "kubeflow", "tekton", "sagemaker"],
             "step_operator": ["sagemaker"],
-            "secrets_manager": ["aws", "gcp"],
         }
 
         # if the flavor is not allowed for the given component type
@@ -1217,9 +1213,7 @@ def generate_stack_component_destroy_command(
         type=str,
         required=True,
     )
-    @click.pass_context
     def destroy_stack_component_command(
-        ctx: click.Context,
         name_id_or_prefix: str,
     ) -> None:
         """Destroy a stack component.
