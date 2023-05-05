@@ -1155,15 +1155,46 @@ def generate_stack_component_deploy_command(
             list(args) + [name], expand_args=True
         )
 
-        client.deploy_stack_component(
-            ctx=ctx,
-            name=name,
-            flavor=flavor,
-            cloud=cloud,
-            configuration=parsed_args,
-            component_type=component_type,
-            labels={"cloud": cloud, "created_by": "recipe"},
-        )
+        # if the cloud is gcp, project_id is required for the first time
+        if cloud == "gcp":
+            breakpoint()
+            if "project_id" not in parsed_args:
+                cli_utils.warning(
+                    "You should pass your GCP project ID to the deploy command, "
+                    "using the `--project_id` flag, if this is the first time that "
+                    "you are deploying a component to GCP. Ignore if you "
+                    "have already done so."
+                )
+
+        from zenml.recipes import GitStackRecipesHandler
+
+        try:
+            stack_recipe = GitStackRecipesHandler().get_stack_recipes(
+                f"{cloud}-modular"
+            )[0]
+        except KeyError as e:
+            cli_utils.error(str(e))
+        else:
+            # warn that prerequisites should be met
+            metadata = stack_recipe.metadata
+            if not cli_utils.confirmation(
+                "\nPrerequisites for running this recipe are as follows.\n"
+                f"{metadata['Prerequisites']}"
+                "\n\n Are all of these conditions met?"
+            ):
+                cli_utils.error(
+                    "Prerequisites are not installed. Please make sure "
+                    "they are met and run deploy again."
+                )
+
+            client.deploy_stack_component(
+                name=name,
+                flavor=flavor,
+                cloud=cloud,
+                configuration=parsed_args,
+                component_type=component_type,
+                labels={"cloud": cloud, "created_by": "recipe"},
+            )
 
     return deploy_stack_component_command
 
@@ -1198,11 +1229,46 @@ def generate_stack_component_destroy_command(
             name_id_or_prefix: Name, ID or prefix of the component to destroy.
         """
         client = Client()
+        from zenml.recipes import GitStackRecipesHandler
+
         try:
-            client.destroy_stack_component(
-                ctx=ctx,
+            component = client.get_stack_component(
                 name_id_or_prefix=name_id_or_prefix,
                 component_type=component_type,
+                allow_name_prefix_match=False,
+            )
+        except KeyError:
+            cli_utils.error(
+                "Could not find a stack component with name or id %s",
+                name_id_or_prefix,
+            )
+
+        # if the component's labels don't have a key created_by
+        # equal to 'recipe', then destroy cannot be called on it
+        if (
+            not component.labels
+            or "created_by" not in component.labels
+            or component.labels["created_by"] != "recipe"
+        ):
+            cli_utils.error(
+                "Cannot destroy stack component %s. It was not created by a "
+                "recipe.",
+                component.name,
+            )
+
+        try:
+            GitStackRecipesHandler().get_stack_recipes(
+                f"{component.labels['cloud']}-modular"
+            )[0]
+        except KeyError:
+            cli_utils.error(
+                "The backing recipe for this component is missing. "
+                "Please run `zenml stack recipe pull` to fix this."
+            )
+
+        try:
+            client.destroy_stack_component(
+                component=component,
             )
         except (KeyError, IllegalOperationError) as err:
             cli_utils.error(str(err))

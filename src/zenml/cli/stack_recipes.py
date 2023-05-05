@@ -14,11 +14,9 @@
 """Functionality to handle downloading ZenML stacks via the CLI."""
 
 import os
-import shutil
 import subprocess
-import sys
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union, cast
+from typing import Any, Dict, Optional, Union, cast
 
 import click
 from rich.text import Text
@@ -27,14 +25,13 @@ import zenml
 from zenml.cli import utils as cli_utils
 from zenml.cli.stack import import_stack, stack
 from zenml.config.global_config import GlobalConfiguration
-from zenml.exceptions import GitNotFoundError
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.recipes.stack_recipe_service import (
     STACK_RECIPES_GITHUB_REPO,
     LocalStackRecipe,
 )
-from zenml.utils import io_utils, yaml_utils
+from zenml.utils import yaml_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, event_handler
 
 logger = get_logger(__name__)
@@ -496,8 +493,8 @@ def deploy(
 
         handler.metadata.update(stack_component_options)
 
-        import yaml
         import python_terraform
+        import yaml
 
         # get input variables
         variables_dict: Dict[str, Any] = {}
@@ -560,7 +557,7 @@ def deploy(
 
             local_recipe_dir = Path(os.getcwd()) / path / stack_recipe_name
 
-            # get or create the stack recipe service.
+            # create the stack recipe service.
             stack_recipe_service_config = StackRecipeServiceConfig(
                 directory_path=str(local_recipe_dir),
                 skip_pull=skip_pull,
@@ -875,10 +872,11 @@ def destroy(
         except KeyError as e:
             cli_utils.error(str(e))
         else:
+            import python_terraform
+
             from zenml.recipes import (
                 StackRecipeService,
             )
-            import python_terraform
 
             local_recipe_dir = Path(os.getcwd()) / path / stack_recipe_name
 

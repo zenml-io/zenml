@@ -34,7 +34,6 @@ from typing import (
 )
 from uuid import UUID, uuid4
 
-import click
 from pydantic import SecretStr
 
 from zenml.config.global_config import GlobalConfiguration
@@ -58,9 +57,11 @@ from zenml.enums import (
     StoreType,
 )
 from zenml.exceptions import (
+    DoesNotExistException,
     EntityExistsError,
     IllegalOperationError,
     InitializationException,
+    StackComponentDeploymentError,
     ValidationError,
     ZenKeyError,
 )
@@ -133,6 +134,7 @@ from zenml.models.schedule_model import (
     ScheduleFilterModel,
     ScheduleResponseModel,
 )
+from zenml.stack import StackComponent
 from zenml.utils import io_utils, source_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, event_handler, track
 from zenml.utils.filesync_model import FileSyncModel
@@ -2278,18 +2280,16 @@ class Client(metaclass=ClientMetaClass):
 
     def deploy_stack_component(
         self,
-        ctx: click.Context,
         name: str,
         flavor: str,
         cloud: str,
         component_type: StackComponentType,
-        configuration: Optional[Dict[str, Any]] = None,
+        configuration: Optional[Dict[str, Any]] = {},
         labels: Optional[Dict[str, Any]] = None,
     ) -> Optional["ComponentResponseModel"]:
         """Deploys a stack component.
 
         Args:
-            ctx: The click context.
             name: The name of the deployed stack component.
             flavor: The flavor of the deployed stack component.
             cloud: The cloud of the deployed stack component.
@@ -2300,20 +2300,16 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             The deployed stack component.
         """
-        from zenml.cli.stack_recipes import (
-            deploy,
-            get_outputs,
-        )
-
         STACK_COMPONENT_RECIPE_DIR = "deployed_stack_components"
 
-        config = None
-        if configuration:
-            # convert configuration dict to a json object
-            config = json.dumps(configuration)
-
-        # set the stack component and flavor
-        component = {component_type.value: flavor}
+        if component_type.value not in [
+            "artifact_store",
+            "container_registry",
+            "secrets_manager",
+        ]:
+            enabled_services = [f"{component_type.value}_{flavor}"]
+        else:
+            enabled_services = [f"{component_type.value}"]
 
         # path should be fixed at a constant in the
         # global config directory
@@ -2321,143 +2317,146 @@ class Client(metaclass=ClientMetaClass):
             os.path.join(
                 io_utils.get_global_config_directory(),
                 STACK_COMPONENT_RECIPE_DIR,
+                f"{cloud}-modular",
             )
         )
 
-        try:
-            # Create the new component model
-            ctx.invoke(
-                deploy,
-                path=path,
-                stack_recipe_name=f"{cloud}-modular",
-                config=config,
-                no_server=True,
-                **component,
+        with event_handler(
+            event=AnalyticsEvent.DEPLOY_STACK_COMPONENT,
+            v2=True,
+        ) as handler:
+
+            handler.metadata.update({component_type.value: flavor})
+
+            import python_terraform
+
+            from zenml.recipes import (
+                StackRecipeService,
+                StackRecipeServiceConfig,
             )
-        except ModuleNotFoundError:
-            logger.error(
-                "It looks like you are trying to deploy a stack component "
-                "that might not exist. Please raise an issue on our GitHub "
-                "page if you see this."
+
+            # create the stack recipe service.
+            stack_recipe_service_config = StackRecipeServiceConfig(
+                directory_path=str(path),
+                enabled_services=enabled_services,
+                input_variables=configuration,
             )
-            return None
 
-        # get the outputs from the deployed recipe
-        outputs = ctx.invoke(
-            get_outputs,
-            path=path,
-            stack_recipe_name=f"{cloud}-modular",
-        )
+            stack_recipe_service = StackRecipeService.get_service(str(path))
 
-        # get all outputs that start with the component type into a map
-        comp_outputs = {
-            k: v
-            for k, v in outputs.items()
-            if k.startswith(component_type.value)
-        }
-
-        logger.info(
-            "Registering a new stack component of type %s with name '%s'.",
-            component_type,
-            name or comp_outputs[f"{component_type.value}_name"],
-        )
-
-        # call the register stack component function using the values of the outputs
-        # truncate the component type from the output
-        stack_comp = self.create_stack_component(
-            name=name or comp_outputs[f"{component_type.value}_name"],
-            flavor=comp_outputs[f"{component_type.value}_flavor"],
-            component_type=component_type,
-            configuration=eval(
-                comp_outputs[f"{component_type.value}_configuration"]
-            ),
-            labels=labels,
-        )
-
-        # if the component is an experiment tracker of flavor mlflow, then
-        # output the name of the mlflow bucket if it exists
-        if (
-            component_type == StackComponentType.EXPERIMENT_TRACKER
-            and flavor == "mlflow"
-        ):
-            mlflow_bucket = outputs.get("mlflow-bucket")
-            if mlflow_bucket:
+            if stack_recipe_service:
                 logger.info(
-                    "The bucket used for MLflow is: %s "
-                    "You can use this bucket as an artifact store to "
-                    "avoid having to create a new one.",
-                    mlflow_bucket,
+                    "An existing deployment of the recipe found. "
+                    f"with path {path}. "
+                    "Proceeding to update or create resources. "
+                )
+            else:
+                breakpoint()
+                stack_recipe_service = StackRecipeService(
+                    config=stack_recipe_service_config,
+                    stack_recipe_name=f"{cloud}-modular",
                 )
 
-        # if the cloud is k3d, then check the container registry
-        # outputs. If they are set, then create one.
-        if cloud == "k3d":
-            container_registry_outputs = {
+            try:
+                # start the service (the init and apply operation)
+                stack_recipe_service.start()
+
+            except python_terraform.TerraformCommandError:
+                logger.error(
+                    f"Deployment of the stack component failed or was "
+                    f"interrupted. "
+                )
+                return None
+
+            # get the outputs from the deployed recipe
+            outputs = stack_recipe_service.get_outputs()
+            outputs = {k: v for k, v in outputs.items() if v != ""}
+
+            # get all outputs that start with the component type into a map
+            comp_outputs = {
                 k: v
                 for k, v in outputs.items()
-                if k.startswith("container_registry")
+                if k.startswith(component_type.value)
             }
-            if container_registry_outputs:
-                self.create_stack_component(
-                    name=container_registry_outputs["container_registry_name"],
-                    flavor=container_registry_outputs[
-                        "container_registry_flavor"
-                    ],
-                    component_type=StackComponentType.CONTAINER_REGISTRY,
-                    configuration=eval(
-                        container_registry_outputs[
-                            "container_registry_configuration"
-                        ]
-                    ),
-                )
+
+            logger.info(
+                "Registering a new stack component of type %s with name '%s'.",
+                component_type,
+                name or comp_outputs[f"{component_type.value}_name"],
+            )
+
+            # call the register stack component function using the values of the outputs
+            # truncate the component type from the output
+            stack_comp = self.create_stack_component(
+                name=name or comp_outputs[f"{component_type.value}_name"],
+                flavor=comp_outputs[f"{component_type.value}_flavor"],
+                component_type=component_type,
+                configuration=eval(
+                    comp_outputs[f"{component_type.value}_configuration"]
+                ),
+                labels=labels,
+            )
+
+            # if the component is an experiment tracker of flavor mlflow, then
+            # output the name of the mlflow bucket if it exists
+            if (
+                component_type == StackComponentType.EXPERIMENT_TRACKER
+                and flavor == "mlflow"
+            ):
+                mlflow_bucket = outputs.get("mlflow-bucket")
+                if mlflow_bucket:
+                    logger.info(
+                        "The bucket used for MLflow is: %s "
+                        "You can use this bucket as an artifact store to "
+                        "avoid having to create a new one.",
+                        mlflow_bucket,
+                    )
+
+            # if the cloud is k3d, then check the container registry
+            # outputs. If they are set, then create one.
+            if cloud == "k3d":
+                container_registry_outputs = {
+                    k: v
+                    for k, v in outputs.items()
+                    if k.startswith("container_registry")
+                }
+                if container_registry_outputs:
+                    self.create_stack_component(
+                        name=container_registry_outputs[
+                            "container_registry_name"
+                        ],
+                        flavor=container_registry_outputs[
+                            "container_registry_flavor"
+                        ],
+                        component_type=StackComponentType.CONTAINER_REGISTRY,
+                        configuration=eval(
+                            container_registry_outputs[
+                                "container_registry_configuration"
+                            ]
+                        ),
+                    )
 
         return stack_comp
 
     def destroy_stack_component(
         self,
-        ctx: click.Context,
-        name_id_or_prefix: Union[str, UUID],
-        component_type: StackComponentType,
+        component: StackComponent,
     ) -> None:
         """Destroys a stack component.
 
         Args:
-            ctx: The click context.
-            name_id_or_prefix: The model of the component to destroy.
-            component_type: The type of the stack component to destroy.
+            component: The stack component to destroy.
         """
-        try:
-            component = self.get_stack_component(
-                name_id_or_prefix=name_id_or_prefix,
-                component_type=component_type,
-                allow_name_prefix_match=False,
-            )
-        except KeyError:
-            logger.info(
-                "Could not find a stack component with name or id %s",
-                name_id_or_prefix,
-            )
-            return
-
-        # if the component's labels don't have a key created_by
-        # equal to 'recipe', then destroy cannot be called on it
-        if (
-            not component.labels
-            or "created_by" not in component.labels
-            or component.labels["created_by"] != "recipe"
-        ):
-            logger.error(
-                "Cannot destroy stack component %s. It was not created by a "
-                "recipe.",
-                component.name,
-            )
-            return
-
-        from zenml.cli.stack_recipes import (
-            destroy,
-        )
-
         STACK_COMPONENT_RECIPE_DIR = "deployed_stack_components"
+
+        if component.type.value not in [
+            "artifact_store",
+            "container_registry",
+            "secrets_manager",
+        ]:
+            disabled_services = [f"{component.type.value}_{component.flavor}"]
+        else:
+            disabled_services = [f"{component.type.value}"]
 
         # path should be fixed at a constant in the
         # global config directory
@@ -2465,26 +2464,41 @@ class Client(metaclass=ClientMetaClass):
             os.path.join(
                 io_utils.get_global_config_directory(),
                 STACK_COMPONENT_RECIPE_DIR,
+                f"{component.labels['cloud']}-modular",
             )
         )
 
-        # set the stack component and flavor
-        component_flavor = {component_type.value: component.flavor}
+        with event_handler(
+            event=AnalyticsEvent.DESTROY_STACK_COMPONENT,
+            v2=True,
+        ) as handler:
 
-        try:
-            # Invoke the destroy command
-            ctx.invoke(
-                destroy,
-                path=path,
-                stack_recipe_name=f"{component.labels['cloud']}-modular",
-                **component_flavor,
+            handler.metadata.update({component.type.value: component.flavor})
+
+            import python_terraform
+
+            from zenml.recipes import (
+                StackRecipeService,
             )
-        except ModuleNotFoundError:
-            logger.error(
-                "It looks like you have not deployed this stack component "
-                "before and therefore cannot destroy it."
-            )
-            return
+
+            stack_recipe_service = StackRecipeService.get_service(str(path))
+
+            if not stack_recipe_service:
+                raise DoesNotExistException(
+                    f"No deployed {component.type.value} found with "
+                    f"flavor {component.flavor} and name {component.name}."
+                )
+
+            stack_recipe_service.config.disabled_services = disabled_services
+
+            try:
+                # start the service (the init and apply operation)
+                stack_recipe_service.stop()
+
+            except python_terraform.TerraformCommandError as e:
+                raise StackComponentDeploymentError(
+                    f"Error destroying stack component: {e}"
+                )
 
         logger.info(
             "Deregistering stack component %s...",
@@ -2494,7 +2508,7 @@ class Client(metaclass=ClientMetaClass):
         # call the delete stack component function
         self.delete_stack_component(
             name_id_or_prefix=component.name,
-            component_type=component_type,
+            component_type=component.type,
         )
 
     def _validate_stack_component_configuration(

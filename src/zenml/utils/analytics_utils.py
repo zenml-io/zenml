@@ -130,6 +130,10 @@ class AnalyticsEvent(str, Enum):
     DESTROY_STACK_RECIPE = "Stack recipe destroyed"
     GET_STACK_RECIPE_OUTPUTS = "Stack recipe outputs fetched"
 
+    # Stack component deploy
+    DEPLOY_STACK_COMPONENT = "Stack component deployed"
+    DESTROY_STACK_COMPONENT = "Stack component destroyed"
+
     # ZenML server events
     ZENML_SERVER_STARTED = "ZenML server started"
     ZENML_SERVER_STOPPED = "ZenML server stopped"

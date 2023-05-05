@@ -22,7 +22,7 @@ from typing import Any, ClassVar, Dict, List, Optional, cast
 import yaml
 
 import zenml
-from zenml.exceptions import GitNotFoundError, DoesNotExistException
+from zenml.exceptions import DoesNotExistException, GitNotFoundError
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.services import ServiceType
@@ -384,7 +384,7 @@ class GitStackRecipesHandler(object):
 
     def pull(
         self,
-        branch: str = "main",
+        branch: str = "develop",
         force: bool = False,
     ) -> None:
         """Pulls the stack recipes from the main git stack recipes repository.
