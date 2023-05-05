@@ -94,7 +94,7 @@ class FlavorBaseModel(BaseModel):
         Returns:
             The connector requirements for the flavor.
         """
-        if not self.connector_type and not self.connector_resource_type:
+        if not self.connector_resource_type:
             return None
 
         return ServiceConnectorRequirements(

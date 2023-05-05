@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Service connector CLI commands."""
 
+from datetime import datetime
 from typing import Any, Dict, List, Optional, cast
 from uuid import UUID
 
@@ -180,7 +181,7 @@ def prompt_resource_id(
             "The connector configuration can be used to access "
             f"multiple {resource_name} instances. If you "
             "would like to limit the scope of the connector to one "
-            "instance, please enter the ID of a particular "
+            "instance, please enter the name of a particular "
             f"{resource_name} instance. Or leave it "
             "empty to create a multi-instance connector that can "
             f"be used to access any {resource_name}"
@@ -268,9 +269,12 @@ def prompt_expiration_time(
 @service_connector.command(
     "register",
     context_settings={"ignore_unknown_options": True},
-    help="""Configure, validate and register a ZenML service connector.
+    help="""Configure, validate and register a service connector.
 
-This command can be used to configure and register a ZenML service connector.
+This command can be used to configure and register a ZenML service connector and
+to optionally verify that the service connector configuration and credentials
+are valid and can be used to access the specified resource(s).
+
 If the `-i|--interactive` flag is set, it will prompt the user for all the
 information required to configure a service connector in a wizard-like fashion:
 
@@ -484,6 +488,8 @@ def register_service_connector(
     # Parse the given labels
     parsed_labels = cast(Dict[str, str], cli_utils.get_parsed_labels(labels))
 
+    expires_at: Optional[datetime] = None
+
     if interactive:
         # Get the list of available service connector types
         connector_types = client.list_service_connector_types(
@@ -617,6 +623,7 @@ def register_service_connector(
             else:
                 auth_method = connector_model.auth_method
                 expiration_seconds = connector_model.expiration_seconds
+                expires_at = connector_model.expires_at
                 cli_utils.declare(
                     "Service connector auto-configured successfully with the "
                     "following configuration:"
@@ -641,6 +648,7 @@ def register_service_connector(
                     # manual configuration kick in in the next step
                     connector_model = None
                     connector_resources = None
+                    expires_at = None
 
         if connector_model is not None and connector_resources is not None:
             assert auth_method is not None
@@ -792,7 +800,10 @@ def register_service_connector(
         try:
             # Create a new service connector
             assert name is not None
-            client.create_service_connector(
+            (
+                connector_model,
+                connector_resources,
+            ) = client.create_service_connector(
                 name=name,
                 connector_type=connector_type,
                 auth_method=auth_method,
@@ -801,6 +812,7 @@ def register_service_connector(
                 resource_id=resource_id,
                 description=description or "",
                 expiration_seconds=expiration_seconds,
+                expires_at=expires_at,
                 is_shared=share,
                 labels=parsed_labels,
                 verify=not no_verify,
@@ -816,6 +828,15 @@ def register_service_connector(
         ) as e:
             cli_utils.error(f"Failed to register service connector: {e}")
 
+    if connector_resources is not None:
+        cli_utils.declare(
+            f"Successfully registered service connector `{name}` with access "
+            "to the following resources:"
+        )
+
+        cli_utils.print_service_connector_resource_table([connector_resources])
+
+    else:
         cli_utils.declare(
             f"Successfully registered service connector `{name}`."
         )
@@ -865,16 +886,25 @@ def list_service_connectors(
 
 @service_connector.command(
     "describe",
-    help="""Show detailed information about a service connector or a service
-connector client.
+    help="""Show detailed information about a service connector.
 
-Connector clients are the connector configurations generated from the original
-connectors that are actually used to access a specific target resource (e.g. an
-AWS connector generates a Kubernetes connector client to access a specific EKS
-Kubernetes cluster). Connector clients have a limited lifetime and may contain
-temporary credentials to access the target resource (e.g. an AWS connector
-configured with an AWS secret key and IAM role generates a connector client
-containing temporary STS credentials).
+Display detailed information about a service connector configuration, or about
+a service connector client generated from it to access a specific resource
+(explained below).
+
+Service connector clients are connector configurations generated from the
+original service connectors that are actually used by clients to access a
+specific target resource (e.g. an AWS connector generates a Kubernetes connector
+client to access a specific EKS Kubernetes cluster). Unlike main service
+connectors, connector clients are not persisted in the database. They have a
+limited lifetime and may contain temporary credentials to access the target
+resource (e.g. an AWS connector configured with an AWS secret key and IAM role
+generates a connector client containing temporary STS credentials).
+
+Asking to see service connector client details is equivalent to asking to see
+the final configuration that the client sees, as opposed to the configuration
+that was configured by the user. In some cases, they are the same, in others
+they are completely different.
 
 To show the details of a service connector client instead of the base connector
 use the `--client` flag. If the service connector is configured to provide
@@ -947,6 +977,9 @@ def describe_service_connector(
     """
     client = Client()
 
+    if resource_type or resource_id:
+        describe_client = True
+
     if describe_client:
         try:
             connector_client = client.get_service_connector_client(
@@ -1004,9 +1037,12 @@ def describe_service_connector(
 @service_connector.command(
     "update",
     context_settings={"ignore_unknown_options": True},
-    help="""Update and verify a ZenML service connector.
+    help="""Update and verify an existing service connector.
 
-This command can be used to update and verify a ZenML service connector.
+This command can be used to update an existing ZenML service connector and
+to optionally verify that the updated service connector configuration and
+credentials are still valid and can be used to access the specified resource(s).
+
 If the `-i|--interactive` flag is set, it will prompt the user for all the
 information required to update the service connector configuration:
 
@@ -1044,6 +1080,8 @@ values and deleting others:
     $ zenml service-connector update gcp-eu-multi \\                          
 --label foo=bar --label baz
 
+All service connectors updates are validated before being applied. To skip
+validation, pass the `--no-verify` flag.
 """,
 )
 @click.argument(
@@ -1207,9 +1245,16 @@ def update_service_connector(
         # Fetch the connector type specification if not already embedded
         # into the connector model
         if isinstance(connector.connector_type, str):
-            connector_type_spec = client.get_service_connector_type(
-                connector.connector_type
-            )
+            try:
+                connector_type_spec = client.get_service_connector_type(
+                    connector.connector_type
+                )
+            except KeyError as e:
+                cli_utils.error(
+                    "Could not find the connector type "
+                    f"'{connector.connector_type}' associated with the "
+                    f"'{connector.name}' connector: {e}."
+                )
         else:
             connector_type_spec = connector.connector_type
 
@@ -1418,7 +1463,10 @@ def update_service_connector(
         f"Updating service connector {name_id_or_prefix}...\n"
     ):
         try:
-            client.update_service_connector(
+            (
+                connector_model,
+                connector_resources,
+            ) = client.update_service_connector(
                 name_id_or_prefix=connector.id,
                 name=name,
                 auth_method=auth_method,
@@ -1446,6 +1494,15 @@ def update_service_connector(
         ) as e:
             cli_utils.error(f"Failed to update service connector: {e}")
 
+    if connector_resources is not None:
+        cli_utils.declare(
+            f"Successfully updated service connector `{connector.name}`. It "
+            "can now be used to access the following resources:"
+        )
+
+        cli_utils.print_service_connector_resource_table([connector_resources])
+
+    else:
         cli_utils.declare(
             f"Successfully updated service connector `{connector.name}` "
         )
@@ -1478,6 +1535,7 @@ def share_service_connector_command(
             client.update_service_connector(
                 name_id_or_prefix=name_id_or_prefix,
                 is_shared=True,
+                verify=False,
             )
         except (KeyError, IllegalOperationError) as err:
             cli_utils.error(str(err))
@@ -1515,7 +1573,49 @@ def delete_service_connector(name_id_or_prefix: str) -> None:
 
 @service_connector.command(
     "verify",
-    help="""Verifies if a service connector has access to one or more resources.
+    help="""Verify and list resources for a service connector.
+
+Use this command to check if a registered ZenML service connector is correctly
+configured with valid credentials and is able to actively access one or more
+resources.
+
+This command has a double purpose:
+
+1. first, it can be used to check if a service connector is correctly configured
+and has valid credentials, by actively exercising its credentials and trying to
+gain access to the remote service or resource it is configured for.
+
+2. second, it is used to fetch the list of resources that a service connector
+has access to. This is useful when the service connector is configured to access
+multiple resources, and you want to know which ones it has access to, or even
+as a confirmation that it has access to the single resource that it is
+configured for. 
+
+You can use this command to answer questions like:
+
+- is this connector valid and correctly configured?
+- have I configured this connector to access the correct resource?
+- which resources can this connector give me access to?
+
+For connectors that are configured to access multiple types of resources, a
+list of resources is not fetched, because it would be too expensive to list
+all resources of all types that the connector has access to. In this case,
+you can use the `--resource-type` argument to scope down the verification to
+a particular resource type.
+
+Examples:
+
+- check if a Kubernetes service connector has access to the cluster it is
+configured for:
+
+    $ zenml service-connector verify my-k8s-connector
+
+- check if a generic, multi-type, multi-instance AWS service connector has
+access to a particular S3 bucket:
+
+    $ zenml service-connector verify my-generic-aws-connector \\               
+--resource-type s3-bucket --resource-id my-bucket
+
 """,
 )
 @click.option(
@@ -1570,15 +1670,49 @@ def verify_service_connector(
                 f"{e}"
             )
 
-        cli_utils.print_service_connector_resource_table(
-            resources=[resources],
+    click.echo(
+        f"Service connector '{name_id_or_prefix}' is correctly configured "
+        f"with valid credentials and has access to the following resources:"
+    )
+
+    cli_utils.print_service_connector_resource_table(
+        resources=[resources],
+    )
+
+    if not resources.resource_type:
+        click.echo(
+            f"Service connector '{name_id_or_prefix}' is configured to "
+            f"access multiple types of resources and a list of resources "
+            "is not included. You can use the `--resource-type` argument "
+            "to show a full list of resources it can access for a "
+            "particular resource type."
         )
 
 
 @service_connector.command(
     "login",
-    help="""Configure the local client/SDK with credentials extracted from
-the service connector.
+    help="""Configure the local client/SDK with credentials.
+
+Some service connectors have the ability to configure clients or SDKs installed
+on your local machine with credentials extracted from or generated by the
+service connector. This command can be used to do that.
+
+For connectors that are configured to access multiple types of resources or 
+multiple resource instances, the resource type and resource ID must be
+specified to indicate which resource is targeted by this command.
+
+Examples:
+
+- configure the local Kubernetes (kubectl) CLI with credentials generated from
+a generic, multi-type, multi-instance AWS service connector:
+
+    $ zenml service-connector login my-generic-aws-connector \\             
+--resource-type kubernetes-cluster --resource-id my-eks-cluster
+
+- configure the local Docker CLI with credentials configured in a Docker
+service connector:
+
+    $ zenml service-connector login my-docker-connector
 """,
 )
 @click.option(
@@ -1646,7 +1780,34 @@ def login_service_connector(
 
 @service_connector.command(
     "list-resources",
-    help="""List all resources that can be accessed by service connectors.
+    help="""List all resources accessible by service connectors.
+
+This command can be used to list all resources that can be accessed by service
+connectors configured in your workspace. You can filter the list by connector
+type and/or resource type.
+
+Use this command to answer questions like:
+
+- show a list of all Kubernetes clusters that can be accessed by way of service
+connectors configured in my workspace
+- show a list of all connectors configured for my workspace along with all the
+resources they can access or the error state they are in, if any
+
+NOTE: since this command exercises all service connectors in your workspace, it
+may take a while to complete.
+
+Examples:
+
+- show a list of all S3 buckets that can be accessed by service connectors
+configured in your workspace:
+
+    $ zenml service-connector list-resources --resource-type s3-bucket
+
+- show a list of all resources that the AWS connectors in your workspace can
+access:
+
+    $ zenml service-connector list-resources --connector-type aws
+    
 """,
 )
 @click.option(
@@ -1665,19 +1826,32 @@ def login_service_connector(
     required=False,
     type=str,
 )
+@click.option(
+    "--exclude-errors",
+    "-e",
+    "exclude_errors",
+    help="Exclude resources that cannot be accessed due to errors.",
+    required=False,
+    is_flag=True,
+)
 def list_service_connector_resources(
     connector_type: Optional[str] = None,
     resource_type: Optional[str] = None,
+    exclude_errors: bool = False,
 ) -> None:
     """List resources that can be accessed by service connectors.
 
     Args:
         connector_type: The type of service connector to filter by.
         resource_type: The type of resource to filter by.
+        exclude_errors: Exclude resources that cannot be accessed due to
+            errors.
     """
     client = Client()
 
-    with console.status("Fetching service connector resources...\n"):
+    with console.status(
+        "Fetching all service connector resources (this could take a while)...\n"
+    ):
         try:
             resource_list = client.list_service_connector_resources(
                 connector_type=connector_type,
@@ -1694,15 +1868,30 @@ def list_service_connector_resources(
                 f"Could not fetch service connector resources: {e}"
             )
 
+        if exclude_errors:
+            resource_list = [r for r in resource_list if r.error is None]
+
         if not resource_list:
             cli_utils.declare(
-                "No service connector resources found for the given filters."
+                "No service connector resources match the given filters."
             )
             return
 
-        cli_utils.print_service_connector_resource_table(
-            resources=resource_list,
-        )
+    resource_str = ""
+    if resource_type:
+        resource_str = f" '{resource_type}'"
+    connector_str = ""
+    if connector_type:
+        connector_str = f" '{connector_type}'"
+
+    click.echo(
+        f"The following{resource_str} resources can be accessed by"
+        f"{connector_str} service connectors configured in your workspace:"
+    )
+
+    cli_utils.print_service_connector_resource_table(
+        resources=resource_list,
+    )
 
 
 @service_connector.command(
@@ -1738,7 +1927,7 @@ def list_service_connector_resources(
     "--detailed",
     "-d",
     "detailed",
-    help="Show detailed information about the service connectors.",
+    help="Show detailed information about the service connector types.",
     required=False,
     is_flag=True,
 )
@@ -1765,7 +1954,9 @@ def list_service_connector_types(
     )
 
     if not service_connector_types:
-        cli_utils.error("No service connectors found matching the criteria.")
+        cli_utils.error(
+            "No service connector types found matching the criteria."
+        )
 
     if detailed:
         for connector_type in service_connector_types:
@@ -1777,7 +1968,7 @@ def list_service_connector_types(
 
 
 @service_connector.command(
-    "get-type",
+    "describe-type",
     help="""Describe a service connector type.
 """,
 )

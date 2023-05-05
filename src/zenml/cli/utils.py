@@ -1326,19 +1326,22 @@ def print_service_connectors_table(
         labels = [
             f"{label}:{value}" for label, value in connector.labels.items()
         ]
+        if not connector.is_multi_type and not connector.supports_instances:
+            resource_name = "<not-applicable>"
+        else:
+            resource_name = connector.resource_id or ""
+
         connector_config = {
             "ACTIVE": ":point_right:" if is_active else "",
             "NAME": connector.name,
             "ID": connector.id,
             "TYPE": connector.type,
             "RESOURCE TYPES": "\n".join(connector.resource_types),
-            "RESOURCE ID": connector.resource_id
-            if connector.resource_id
-            else "",
+            "RESOURCE NAME": resource_name,
             "SHARED": get_shared_emoji(connector.is_shared),
             "OWNER": f"{connector.user.name if connector.user else 'DELETED!'}",
             "EXPIRES IN": expires_in(
-                connector.expires_at, ":warning: Expired!"
+                connector.expires_at, ":name_badge: Expired!"
             )
             if connector.expires_at
             else "",
@@ -1375,11 +1378,11 @@ def print_service_connector_resource_table(
                     ]
                 )
             else:
-                resource_type = "*"
+                resource_type = "<multiple>"
             if resource_model.error:
                 resource_ids = [f"Error: {resource_model.error}"]
             else:
-                resource_ids = ["*"]
+                resource_ids = ["<multiple>"]
         else:
             resource_type = resource_model.resource_type
             if connector_type:
@@ -1388,23 +1391,24 @@ def print_service_connector_resource_table(
                 ]
                 resource_type = f"{resource_type_spec.name} ({resource_type})"
 
-                if not resource_type_spec.supports_instances:
-                    resource_ids = ["<not-applicable>"]
-                elif resource_model.resource_ids:
-                    resource_ids = resource_model.resource_ids
-                elif not resource_type_spec.supports_discovery:
-                    resource_ids = ["*"]
-                else:
-                    resource_ids = ["<no-resources-listed>"]
-            else:
-                resource_ids = resource_model.resource_ids or []
             if resource_model.error:
+                # Error fetching resources
                 resource_ids = [f"Error: {resource_model.error}"]
+            elif not resource_model.supports_instances:
+                # Resource instances not applicable
+                resource_ids = ["<not-applicable>"]
+            elif resource_model.resource_ids:
+                resource_ids = resource_model.resource_ids
+            elif not resource_model.supports_discovery:
+                resource_ids = ["<not-set>"]
+            else:
+                resource_ids = ["<no-resources-listed>"]
+
         resource_row: Dict[str, Any] = {
             "CONNECTOR ID": str(resource_model.id),
             "CONNECTOR NAME": resource_model.name,
             "RESOURCE TYPE": resource_type,
-            "RESOURCES": "\n".join(resource_ids),
+            "RESOURCE NAMES": "\n".join(resource_ids),
         }
         resource_table.append(resource_row)
     print_table(resource_table)
@@ -1476,11 +1480,11 @@ def print_service_connector_configuration(
             "TYPE": connector.type,
             "AUTH METHOD": connector.auth_method,
             "RESOURCE TYPES": ", ".join(connector.resource_types),
-            "RESOURCE ID": connector.resource_id or "",
+            "RESOURCE NAME": connector.resource_id or "",
             "SECRET ID": connector.secret_id or "",
             "SESSION DURATION": expiration,
             "EXPIRES IN": expires_in(
-                connector.expires_at, ":warning: Expired!"
+                connector.expires_at, ":name_badge: Expired!"
             )
             if connector.expires_at
             else "N/A",
@@ -1496,10 +1500,10 @@ def print_service_connector_configuration(
             "TYPE": connector.type,
             "AUTH METHOD": connector.auth_method,
             "RESOURCE TYPES": ", ".join(connector.resource_types),
-            "RESOURCE ID": connector.resource_id or "",
+            "RESOURCE NAME": connector.resource_id or "",
             "SESSION DURATION": expiration,
             "EXPIRES IN": expires_in(
-                connector.expires_at, ":warning: Expired!"
+                connector.expires_at, ":name_badge: Expired!"
             )
             if connector.expires_at
             else "N/A",
@@ -1582,8 +1586,8 @@ def print_service_connector_types_table(
         connector_type_config = {
             "NAME": connector_type.name,
             "TYPE": connector_type.connector_type,
-            "RESOURCE_TYPES": "\n".join(supported_resource_types),
-            "AUTH_METHODS": "\n".join(supported_auth_methods),
+            "RESOURCE TYPES": "\n".join(supported_resource_types),
+            "AUTH METHODS": "\n".join(supported_auth_methods),
             "LOCAL": get_shared_emoji(connector_type.local),
             "REMOTE": get_shared_emoji(connector_type.remote),
         }

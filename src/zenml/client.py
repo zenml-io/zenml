@@ -4210,7 +4210,7 @@ class Client(metaclass=ClientMetaClass):
             user_id=user_id,
             name=name,
             is_shared=is_shared,
-            type=type,
+            connector_type=type,
             auth_method=auth_method,
             resource_type=resource_type,
             resource_id=resource_id,
@@ -4235,6 +4235,7 @@ class Client(metaclass=ClientMetaClass):
         resource_id: Optional[str] = None,
         description: str = "",
         expiration_seconds: Optional[int] = None,
+        expires_at: Optional[datetime] = None,
         is_shared: bool = False,
         labels: Optional[Dict[str, str]] = None,
         auto_configure: bool = False,
@@ -4261,6 +4262,8 @@ class Client(metaclass=ClientMetaClass):
             resource_id: The resource id of the service connector.
             description: The description of the service connector.
             expiration_seconds: The expiration time of the service connector.
+            expires_at: The expiration time of the service connector
+                credentials.
             is_shared: Whether the service connector is shared or not.
             labels: The labels of the service connector.
             auto_configure: Whether to automatically configure the service
@@ -4371,6 +4374,7 @@ class Client(metaclass=ClientMetaClass):
                 description=description,
                 auth_method=auth_method,
                 expiration_seconds=expiration_seconds,
+                expires_at=expires_at,
                 is_shared=is_shared,
                 user=self.active_user.id,
                 workspace=self.active_workspace.id,
@@ -4411,12 +4415,18 @@ class Client(metaclass=ClientMetaClass):
             return connector_request, connector_resources
 
         # Register the new model
-        return (
-            self.zen_store.create_service_connector(
-                service_connector=connector_request
-            ),
-            connector_resources,
+        connector_response = self.zen_store.create_service_connector(
+            service_connector=connector_request
         )
+
+        if connector_resources:
+            connector_resources.id = connector_response.id
+            connector_resources.name = connector_response.name
+            connector_resources.connector_type = (
+                connector_response.connector_type
+            )
+
+        return connector_response, connector_resources
 
     def update_service_connector(
         self,
@@ -4603,13 +4613,19 @@ class Client(metaclass=ClientMetaClass):
             }
 
         # Update the model
-        return (
-            self.zen_store.update_service_connector(
-                service_connector_id=connector_model.id,
-                update=connector_update,
-            ),
-            connector_resources,
+        connector_response = self.zen_store.update_service_connector(
+            service_connector_id=connector_model.id,
+            update=connector_update,
         )
+
+        if connector_resources:
+            connector_resources.id = connector_response.id
+            connector_resources.name = connector_response.name
+            connector_resources.connector_type = (
+                connector_response.connector_type
+            )
+
+        return connector_response, connector_resources
 
     def delete_service_connector(
         self,

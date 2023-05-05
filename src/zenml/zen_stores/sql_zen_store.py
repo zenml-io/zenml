@@ -4923,7 +4923,7 @@ class SqlZenStore(BaseZenStore):
         user = self.get_user(user_name_or_id)
         workspace = self.get_workspace(workspace_name_or_id)
         connector_filter_model = ServiceConnectorFilterModel(
-            type=connector_type,
+            connector_type=connector_type,
             resource_type=resource_type,
             user_id=user.id,
             workspace_id=workspace.id,

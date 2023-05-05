@@ -677,7 +677,7 @@ class ServiceConnectorBaseModel(BaseModel):
 
             if resource_id:
                 self.resource_id = resource_id
-                self.supports_instances = False
+                self.supports_instances = True
             else:
                 self.supports_instances = resource_spec.supports_instances
 
@@ -758,7 +758,7 @@ class ServiceConnectorRequirements(BaseModel):
     """
 
     connector_type: Optional[str] = None
-    resource_type: Optional[str] = None
+    resource_type: str
 
     def is_satisfied_by(
         self, connector: "ServiceConnectorBaseModel"
@@ -777,16 +777,13 @@ class ServiceConnectorRequirements(BaseModel):
                 False,
                 f"connector type '{connector.type}' does not match the "
                 f"'{self.connector_type}' connector type specified in the "
-                "requirements",
+                "stack component requirements",
             )
-        if (
-            self.resource_type
-            and self.resource_type not in connector.resource_types
-        ):
+        if self.resource_type not in connector.resource_types:
             return False, (
                 f"connector does not provide the '{self.resource_type}' "
-                "resource type specified in the requirements. Only the "
-                "following resource types are supported: "
+                "resource type specified in the stack component requirements. "
+                "Only the following resource types are supported: "
                 f"{', '.join(connector.resource_types)}"
             )
 
@@ -802,12 +799,14 @@ class ServiceConnectorResourcesModel(BaseModel):
 
     id: Optional[UUID] = Field(
         default=None,
-        title="The connector ID.",
+        title="The ID of the service connector instance providing this "
+        "resource.",
     )
 
     name: Optional[str] = Field(
         default=None,
-        title="The connector instance name.",
+        title="The name of the service connector instance providing this "
+        "resource.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
 
@@ -826,9 +825,28 @@ class ServiceConnectorResourcesModel(BaseModel):
     resource_ids: Optional[List[str]] = Field(
         default=None,
         title="The resource IDs of the resource instances that the service "
-        "connector instance can be used to access. Omitted for multi-type "
-        "service connectors and for resource types that do not support "
-        "instances.",
+        "connector instance can be used to access. Omitted (set to None) for "
+        "multi-type service connectors and for resource types that do not "
+        "support instances. Also omitted if an error occurred while listing "
+        "the resource instances or if no resources are listed due to "
+        "authorization issues or lack of permissions (in which case the "
+        "'error' field is set to an error message).",
+    )
+
+    supports_instances: bool = Field(
+        default=False,
+        title="Indicates whether the resource type supports multiple "
+        "instances or not. If False, the 'resource_ids' field will be "
+        "omitted (set to None).",
+    )
+
+    supports_discovery: bool = Field(
+        default=False,
+        title="Indicates if the connector can be used to discover and list "
+        "instances of this resource type. If set to False, the "
+        "'resource_ids' field will never have more than one resource ID "
+        "listed, even if the resource type supports multiple instances. "
+        "Not applicable if supports_instances is set to False.",
     )
 
     error: Optional[str] = Field(
@@ -865,6 +883,7 @@ class ServiceConnectorResourcesModel(BaseModel):
             id=connector_model.id,
             name=connector_model.name,
             connector_type=connector_model.type,
+            supports_instances=connector_model.supports_instances,
         )
 
         if (
@@ -950,7 +969,7 @@ class ServiceConnectorFilterModel(ShareableWorkspaceScopedFilterModel):
         default=None,
         description="The name to filter by",
     )
-    type: Optional[str] = Field(
+    connector_type: Optional[str] = Field(
         default=None,
         description="The type of service connector to filter by",
     )

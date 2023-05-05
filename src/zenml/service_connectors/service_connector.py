@@ -662,7 +662,9 @@ class ServiceConnector(BaseModel):
         if not self.expires_at:
             return False
 
-        return self.expires_at < datetime.now(timezone.utc)
+        return self.expires_at.astimezone(timezone.utc) < datetime.now(
+            timezone.utc
+        )
 
     def validate_runtime_args(
         self,
@@ -1022,7 +1024,9 @@ class ServiceConnector(BaseModel):
             logger.exception(
                 f"connector verification failed with unexpected error: {exc}"
             )
-            resources.error = "unexpected error"
+            resources.error = (
+                "an unexpected error occurred while verifying the connector."
+            )
             return resources
 
         if not resource_type:
@@ -1031,12 +1035,16 @@ class ServiceConnector(BaseModel):
             return resources
 
         resource_type_spec = spec.resource_type_map[resource_type]
+        resources.supports_instances = resource_type_spec.supports_instances
+        resources.supports_discovery = resource_type_spec.supports_discovery
 
         if not resource_type_spec.supports_instances:
             # For resource types that don't support multiple instances,
             # it doesn't make sense to list resources
-            resources.resource_ids = []
+            resources.resource_ids = None
         elif resource_id:
+            # A single resource was requested, so we expect a single resource
+            # to be listed
             if [resource_id] != resource_ids:
                 logger.error(
                     f"a different resource ID was returned than the one "
@@ -1044,11 +1052,11 @@ class ServiceConnector(BaseModel):
                     "connector implementation."
                 )
             resources.resource_ids = [resource_id]
-        elif not resource_type_spec.supports_discovery:
-            # For resource types that don't support instance discovery,
-            # no resources should be listed
-            resources.resource_ids = []
-        elif not resource_ids:
+        elif not resource_ids and resource_type_spec.supports_discovery:
+            # For resource types that support instance discovery,
+            # some resources should be listed. If no resources were listed,
+            # signal this as an error that the connector cannot access any
+            # resources.
             resources.error = (
                 f"The connector didn't list any resources of type "
                 f"'{resource_type}'. This is likely caused by the connector "
