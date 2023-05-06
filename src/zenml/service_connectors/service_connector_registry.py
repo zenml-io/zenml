@@ -13,11 +13,13 @@
 #  permissions and limitations under the License.
 """Implementation of a service connector registry."""
 
-from typing import Dict, List, Optional, Type
+from typing import TYPE_CHECKING, Dict, List, Optional
 
 from zenml.logger import get_logger
 from zenml.models import ServiceConnectorBaseModel, ServiceConnectorTypeModel
-from zenml.service_connectors.service_connector import ServiceConnector
+
+if TYPE_CHECKING:
+    from zenml.service_connectors.service_connector import ServiceConnector
 
 logger = get_logger(__name__)
 
@@ -28,7 +30,7 @@ class ServiceConnectorRegistry:
     def __init__(self) -> None:
         """Initialize the service connector registry."""
         self.service_connector_types: Dict[str, ServiceConnectorTypeModel] = {}
-        self.register_builtin_service_connectors()
+        self.initialized = False
 
     def register_service_connector_type(
         self,
@@ -76,6 +78,8 @@ class ServiceConnectorRegistry:
             KeyError: If no service connector was registered for the given type
                 identifier.
         """
+        self.register_builtin_service_connectors()
+
         if connector_type not in self.service_connector_types:
             raise KeyError(
                 f"Service connector type {connector_type} is not available. "
@@ -106,6 +110,7 @@ class ServiceConnectorRegistry:
             True if a service connector is registered for the given type
             identifier, False otherwise.
         """
+        self.register_builtin_service_connectors()
         return connector_type in self.service_connector_types
 
     def list_service_connector_types(
@@ -127,6 +132,8 @@ class ServiceConnectorRegistry:
             A list of service connector type models that match the given
             criteria.
         """
+        self.register_builtin_service_connectors()
+
         matches: List[ServiceConnectorTypeModel] = []
         for service_connector_type in self.service_connector_types.values():
             if (
@@ -151,7 +158,7 @@ class ServiceConnectorRegistry:
     def instantiate_connector(
         self,
         model: ServiceConnectorBaseModel,
-    ) -> ServiceConnector:
+    ) -> "ServiceConnector":
         """Validate a service connector model and create an instance from it.
 
         Args:
@@ -185,52 +192,30 @@ class ServiceConnectorRegistry:
                 f"The service connector configuration is not valid: {e}"
             )
 
-    @property
-    def builtin_connectors(self) -> List[Type[ServiceConnector]]:
-        """A list of all default in-built importable connectors.
+    def register_builtin_service_connectors(self) -> None:
+        """Registers the default built-in service connectors."""
+        # Only register built-in service connectors once
+        if self.initialized:
+            return
 
-        Returns:
-            A list of builtin importable connectors.
-        """
-        builtin_connectors: List[Type[ServiceConnector]] = []
+        self.initialized = True
+
         try:
-            from zenml.service_connectors.aws_service_connector import (
-                AWSServiceConnector,
-            )
-
-            builtin_connectors.append(AWSServiceConnector)
+            pass
         except ImportError as e:
             logger.warning(f"Could not import AWS service connector: {e}.")
 
         try:
-            from zenml.service_connectors.kubernetes_service_connector import (
-                KubernetesServiceConnector,
-            )
-
-            builtin_connectors.append(KubernetesServiceConnector)
+            pass
         except ImportError as e:
             logger.warning(
                 f"Could not import Kubernetes service connector: {e}."
             )
 
         try:
-            from zenml.service_connectors.docker_service_connector import (
-                DockerServiceConnector,
-            )
-
-            builtin_connectors.append(DockerServiceConnector)
+            pass
         except ImportError as e:
             logger.warning(f"Could not import Docker service connector: {e}.")
-
-        return builtin_connectors
-
-    def register_builtin_service_connectors(self) -> None:
-        """Registers the default built-in service connectors."""
-        for connector in self.builtin_connectors:
-            self.register_service_connector_type(
-                connector.get_type(),
-                overwrite=True,
-            )
 
 
 service_connector_registry = ServiceConnectorRegistry()

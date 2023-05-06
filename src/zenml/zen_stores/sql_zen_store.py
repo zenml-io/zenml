@@ -4948,10 +4948,10 @@ class SqlZenStore(BaseZenStore):
                 # have access to and we only return single-instance connectors.
                 resources = (
                     ServiceConnectorResourcesModel.from_connector_model(
-                        connector
+                        connector,
+                        resource_type=resource_type,
                     )
                 )
-                resource_list.append(resources)
 
             else:
                 connector_instance = (

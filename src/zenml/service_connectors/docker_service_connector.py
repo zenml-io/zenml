@@ -80,6 +80,7 @@ container registry and managing Docker clients for the registry.
 The connector provides pre-authenticated python-docker clients.
 """,
     logo_url="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/container_registry/docker.png",
+    emoji=":whale:",
     auth_methods=[
         AuthenticationMethodModel(
             name="Docker username and password/token",
@@ -111,6 +112,7 @@ formats (the repository name is optional).
             # connector or provided by the consumer.
             supports_instances=False,
             logo_url="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/container_registry/docker.png",
+            emoji=":whale:",
         ),
     ],
 )
@@ -214,16 +216,26 @@ class DockerServiceConnector(ServiceConnector):
         Args:
             docker_client: The Docker client to authenticate.
             resource_id: The resource ID to authorize the client for.
+
+        Raises:
+            AuthorizationException: If the client could not be authenticated.
         """
         cfg = self.config
         registry = self._parse_resource_id(resource_id)
 
-        docker_client.login(
-            username=cfg.username.get_secret_value(),
-            password=cfg.password.get_secret_value(),
-            registry=registry if registry != DOCKER_REGISTRY_NAME else None,
-            reauth=True,
-        )
+        try:
+            docker_client.login(
+                username=cfg.username.get_secret_value(),
+                password=cfg.password.get_secret_value(),
+                registry=registry
+                if registry != DOCKER_REGISTRY_NAME
+                else None,
+                reauth=True,
+            )
+        except DockerException as e:
+            raise AuthorizationException(
+                f"failed to authenticate with Docker registry {registry}: {e}"
+            )
 
     def _connect_to_resource(
         self,

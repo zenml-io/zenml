@@ -91,6 +91,21 @@ class ResourceTypeModel(BaseModel):
         title="Optionally, a URL pointing to a png,"
         "svg or jpg file can be attached.",
     )
+    emoji: Optional[str] = Field(
+        default=None,
+        title="Optionally, a python-rich emoji can be attached.",
+    )
+
+    @property
+    def emojified_resource_type(self) -> str:
+        """Get the emojified resource type.
+
+        Returns:
+            The emojified resource type.
+        """
+        if not self.emoji:
+            return self.resource_type
+        return f"{self.emoji} {self.resource_type}"
 
 
 class AuthenticationMethodModel(BaseModel):
@@ -274,6 +289,10 @@ class ServiceConnectorTypeModel(BaseModel):
         title="Optionally, a URL pointing to a png,"
         "svg or jpg can be attached.",
     )
+    emoji: Optional[str] = Field(
+        default=None,
+        title="Optionally, a python-rich emoji can be attached.",
+    )
     docs_url: Optional[str] = Field(
         default=None,
         title="Optionally, a URL pointing to docs, within docs.zenml.io.",
@@ -301,6 +320,29 @@ class ServiceConnectorTypeModel(BaseModel):
             The service connector class.
         """
         return self._connector_class
+
+    @property
+    def emojified_connector_type(self) -> str:
+        """Get the emojified connector type.
+
+        Returns:
+            The emojified connector type.
+        """
+        if not self.emoji:
+            return self.connector_type
+        return f"{self.emoji} {self.connector_type}"
+
+    @property
+    def emojified_resource_types(self) -> List[str]:
+        """Get the emojified connector types.
+
+        Returns:
+            The emojified connector types.
+        """
+        return [
+            resource_type.emojified_resource_type
+            for resource_type in self.resource_types
+        ]
 
     def set_connector_class(
         self, connector_class: Type["ServiceConnector"]
@@ -530,6 +572,35 @@ class ServiceConnectorBaseModel(BaseModel):
         if isinstance(self.connector_type, str):
             return self.connector_type
         return self.connector_type.connector_type
+
+    @property
+    def emojified_connector_type(self) -> str:
+        """Get the emojified connector type.
+
+        Returns:
+            The emojified connector type.
+        """
+        if not isinstance(self.connector_type, str):
+            return self.connector_type.emojified_connector_type
+
+        return self.connector_type
+
+    @property
+    def emojified_resource_types(self) -> List[str]:
+        """Get the emojified connector type.
+
+        Returns:
+            The emojified connector type.
+        """
+        if not isinstance(self.connector_type, str):
+            return [
+                self.connector_type.resource_type_map[
+                    resource_type
+                ].emojified_resource_type
+                for resource_type in self.resource_types
+            ]
+
+        return self.resource_types
 
     @property
     def is_multi_type(self) -> bool:
@@ -824,6 +895,40 @@ class ServiceConnectorResourcesModel(BaseModel):
         return self.connector_type.connector_type
 
     @property
+    def emojified_connector_type(self) -> str:
+        """Get the emojified connector type.
+
+        Returns:
+            The emojified connector type.
+        """
+        if not isinstance(self.connector_type, str):
+            return self.connector_type.emojified_connector_type
+
+        return self.connector_type
+
+    @property
+    def emojified_resource_types(self) -> Optional[List[str]]:
+        """Get the emojified resource types.
+
+        Returns:
+            The emojified resource types.
+        """
+        if not isinstance(self.connector_type, str):
+            if self.resource_type:
+                return [
+                    self.connector_type.resource_type_map[
+                        self.resource_type
+                    ].emojified_resource_type
+                ]
+            else:
+                return [
+                    resource_type_spec.emojified_resource_type
+                    for resource_type_spec in self.connector_type.resource_type_map.values()
+                ]
+
+        return [self.resource_type] if self.resource_type else None
+
+    @property
     def supports_instances(self) -> bool:
         """Check if the configured resource type supports multiple instances.
 
@@ -864,11 +969,15 @@ class ServiceConnectorResourcesModel(BaseModel):
     def from_connector_model(
         cls,
         connector_model: "ServiceConnectorResponseModel",
+        resource_type: Optional[str] = None,
     ) -> "ServiceConnectorResourcesModel":
         """Initialize a resource model from a connector model.
 
         Args:
             connector_model: The connector model.
+            resource_type: The resource type to set on the resource model. If
+                omitted, the resource type is set according to the connector
+                model.
 
         Returns:
             A resource list model instance.
@@ -879,9 +988,20 @@ class ServiceConnectorResourcesModel(BaseModel):
             connector_type=connector_model.type,
         )
 
+        if resource_type:
+            resources.resource_type = resource_type
+        else:
+            # Multi-type resources do not have a resource type set
+            resources.resource_type = (
+                connector_model.resource_types[0]
+                if len(connector_model.resource_types) == 1
+                else None
+            )
+
+        # Multi-type and multi-instance resources do not have resource IDs set
         resources.resource_ids = (
             [connector_model.resource_id]
-            if connector_model.resource_id
+            if connector_model.resource_id and resources.resource_type
             else []
         )
 

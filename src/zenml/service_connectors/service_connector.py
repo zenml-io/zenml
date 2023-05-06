@@ -15,7 +15,7 @@
 
 from abc import abstractmethod
 from datetime import datetime, timezone
-from typing import Any, ClassVar, Dict, List, Optional, Tuple
+from typing import Any, ClassVar, Dict, List, Optional, Tuple, Type, cast
 from uuid import UUID
 
 from pydantic import (
@@ -23,6 +23,7 @@ from pydantic import (
     SecretStr,
     ValidationError,
 )
+from pydantic.main import ModelMetaclass
 
 from zenml.client import Client
 from zenml.exceptions import AuthorizationException
@@ -79,7 +80,44 @@ class AuthenticationConfig(BaseModel):
         return self.dict(exclude_none=True)
 
 
-class ServiceConnector(BaseModel):
+class ServiceConnectorMeta(ModelMetaclass):
+    """Metaclass responsible for automatically registering ServiceConnector classes."""
+
+    def __new__(
+        mcs, name: str, bases: Tuple[Type[Any], ...], dct: Dict[str, Any]
+    ) -> "ServiceConnectorMeta":
+        """Creates a new ServiceConnector class and registers it.
+
+        Args:
+            name: The name of the class.
+            bases: The base classes of the class.
+            dct: The dictionary of the class.
+
+        Returns:
+            The ServiceConnectorMeta class.
+        """
+        cls = cast(
+            Type["ServiceConnector"], super().__new__(mcs, name, bases, dct)
+        )
+
+        # Skip the following validation and registration for the base class.
+        if name == "ServiceConnector":
+            return cls
+
+        else:
+            from zenml.service_connectors.service_connector_registry import (
+                service_connector_registry,
+            )
+
+            # Register the service connector.
+            service_connector_registry.register_service_connector_type(
+                cls.get_type()
+            )
+
+        return cls
+
+
+class ServiceConnector(BaseModel, metaclass=ServiceConnectorMeta):
     """Base service connector class.
 
     Service connectors are standalone components that can be used to link ZenML
@@ -194,6 +232,9 @@ class ServiceConnector(BaseModel):
             resource_type: The type of the resource to get a default resource ID
                 for. Only called with resource types that do not support
                 multiple instances.
+
+        Returns:
+            The default resource ID for the resource type.
         """
         # If a resource type does not support multiple instances, raise an
         # exception; the connector implementation must override this method and
@@ -958,11 +999,15 @@ class ServiceConnector(BaseModel):
 
         if auth_method and auth_method not in spec.auth_method_map:
             raise ValueError(
-                f"unsupported authentication method: '{auth_method}'"
+                f"connector type {spec.name} does not support authentication "
+                f"method: '{auth_method}'"
             )
 
         if resource_type and resource_type not in spec.resource_type_map:
-            raise ValueError(f"unsupported resource type: '{resource_type}'")
+            raise ValueError(
+                f"connector type {spec.name} does not support resource type: "
+                f"'{resource_type}'"
+            )
 
         connector = cls._auto_configure(
             auth_method=auth_method,

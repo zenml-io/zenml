@@ -1316,15 +1316,13 @@ def generate_stack_component_connect_command(
                 )
 
             resource_list = [
-                resource
-                for resource in resource_list
-                if resource.error is None
+                resource for resource in resource_list if resource.resource_ids
             ]
 
             error_resource_list = [
                 resource
                 for resource in resource_list
-                if resource.error is not None
+                if not resource.resource_ids
             ]
 
             if not resource_list:
@@ -1336,7 +1334,7 @@ def generate_stack_component_connect_command(
                         f"{len(error_resource_list)} connectors can be used "
                         f"to gain access to {resource_type} resources required "
                         "for the stack component, but they are in an error "
-                        "state. "
+                        "state or they didn't list any resources. "
                     )
                 command_args = ""
                 if requirements.connector_type:

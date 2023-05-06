@@ -37,6 +37,8 @@ from typing import (
 import click
 from pydantic import SecretStr
 from rich import box, table
+from rich.emoji import Emoji
+from rich.markdown import Markdown
 from rich.markup import escape
 from rich.prompt import Confirm
 from rich.style import Style
@@ -78,9 +80,11 @@ if TYPE_CHECKING:
     from zenml.integrations.integration import Integration
     from zenml.model_deployers import BaseModelDeployer
     from zenml.models import (
+        AuthenticationMethodModel,
         ComponentResponseModel,
         FlavorResponseModel,
         PipelineRunResponseModel,
+        ResourceTypeModel,
         ServiceConnectorRequestModel,
         ServiceConnectorResourcesModel,
         ServiceConnectorResponseModel,
@@ -693,10 +697,12 @@ def prompt_configuration(
     config_dict = {}
     for attr_name, attr_schema in config_schema.get("properties", {}).items():
         title = attr_schema.get("title", attr_name)
+        attr_type = attr_schema.get("type", "string")
         title = f"[{attr_name}] {title}"
         required = attr_name in config_schema.get("required", [])
         hidden = attr_schema.get("format", "") == "password"
         subtitles: List[str] = []
+        subtitles.append(attr_type)
         if hidden:
             subtitles.append("secret")
         if required:
@@ -1322,6 +1328,7 @@ def print_service_connectors_table(
 
     configurations = []
     for connector in connectors:
+
         is_active = connector.id in active_connector_ids
         labels = [
             f"{label}:{value}" for label, value in connector.labels.items()
@@ -1332,8 +1339,8 @@ def print_service_connectors_table(
             "ACTIVE": ":point_right:" if is_active else "",
             "NAME": connector.name,
             "ID": connector.id,
-            "TYPE": connector.type,
-            "RESOURCE TYPES": "\n".join(connector.resource_types),
+            "TYPE": connector.emojified_connector_type,
+            "RESOURCE TYPES": "\n".join(connector.emojified_resource_types),
             "RESOURCE NAME": resource_name,
             "SHARED": get_shared_emoji(connector.is_shared),
             "OWNER": f"{connector.user.name if connector.user else 'DELETED!'}",
@@ -1359,46 +1366,36 @@ def print_service_connector_resource_table(
     resource_table = []
     for resource_model in resources:
 
-        connector_type = (
-            resource_model.connector_type
-            if not isinstance(resource_model.connector_type, str)
-            else None
-        )
-
+        resource_types = resource_model.emojified_resource_types
         if not resource_model.resource_type:
             # Multi-type connector
-            if connector_type:
-                resource_type = "\n".join(
-                    [
-                        f"{r.name} ({r.resource_type})"
-                        for r in connector_type.resource_types
-                    ]
-                )
+            if resource_types:
+                resource_type = "\n".join(resource_types)
             else:
                 resource_type = "<multiple>"
             if resource_model.error:
-                resource_ids = [f"Error: {resource_model.error}"]
-            else:
-                resource_ids = ["<multiple>"]
-        else:
-            resource_type = resource_model.resource_type
-            if connector_type:
-                resource_type_spec = connector_type.resource_type_map[
-                    resource_type
-                ]
-                resource_type = f"{resource_type_spec.name} ({resource_type})"
-
-            if resource_model.error:
-                # Error fetching resources
-                resource_ids = [f"Error: {resource_model.error}"]
+                resource_ids = [f":collision: error: {resource_model.error}"]
             elif resource_model.resource_ids:
                 resource_ids = resource_model.resource_ids
             else:
-                resource_ids = ["<multiple>"]
+                resource_ids = [":person_shrugging: none listed"]
+        else:
+            # Single-type connector
+            assert resource_types
+            resource_type = resource_types[0]
+
+            if resource_model.error:
+                # Error fetching resources
+                resource_ids = [f":collision: error: {resource_model.error}"]
+            elif resource_model.resource_ids:
+                resource_ids = resource_model.resource_ids
+            else:
+                resource_ids = [":person_shrugging: none listed"]
 
         resource_row: Dict[str, Any] = {
             "CONNECTOR ID": str(resource_model.id),
             "CONNECTOR NAME": resource_model.name,
+            "CONNECTOR TYPE": resource_model.emojified_connector_type,
             "RESOURCE TYPE": resource_type,
             "RESOURCE NAMES": "\n".join(resource_ids),
         }
@@ -1469,9 +1466,9 @@ def print_service_connector_configuration(
         properties = {
             "ID": connector.id,
             "NAME": connector.name,
-            "TYPE": connector.type,
+            "TYPE": connector.emojified_connector_type,
             "AUTH METHOD": connector.auth_method,
-            "RESOURCE TYPES": ", ".join(connector.resource_types),
+            "RESOURCE TYPES": ", ".join(connector.emojified_resource_types),
             "RESOURCE NAME": connector.resource_id or "<multiple>",
             "SECRET ID": connector.secret_id or "",
             "SESSION DURATION": expiration,
@@ -1489,9 +1486,9 @@ def print_service_connector_configuration(
     else:
         properties = {
             "NAME": connector.name,
-            "TYPE": connector.type,
+            "TYPE": connector.emojified_connector_type,
             "AUTH METHOD": connector.auth_method,
-            "RESOURCE TYPES": ", ".join(connector.resource_types),
+            "RESOURCE TYPES": ", ".join(connector.emojified_resource_types),
             "RESOURCE NAME": connector.resource_id or "<multiple",
             "SESSION DURATION": expiration,
             "EXPIRES IN": expires_in(
@@ -1571,14 +1568,13 @@ def print_service_connector_types_table(
     configurations = []
     for connector_type in connector_types:
         supported_auth_methods = list(connector_type.auth_method_map.keys())
-        supported_resource_types = list(
-            connector_type.resource_type_map.keys()
-        )
 
         connector_type_config = {
             "NAME": connector_type.name,
-            "TYPE": connector_type.connector_type,
-            "RESOURCE TYPES": "\n".join(supported_resource_types),
+            "TYPE": connector_type.emojified_connector_type,
+            "RESOURCE TYPES": "\n".join(
+                connector_type.emojified_resource_types
+            ),
             "AUTH METHODS": "\n".join(supported_auth_methods),
             "LOCAL": get_shared_emoji(connector_type.local),
             "REMOTE": get_shared_emoji(connector_type.remote),
@@ -1587,46 +1583,176 @@ def print_service_connector_types_table(
     print_table(configurations)
 
 
+def print_service_connector_resource_type(
+    resource_type: "ResourceTypeModel",
+    title: str = "",
+    heading: str = "#",
+    footer: str = "---",
+    print: bool = True,
+) -> str:
+    """Prints details for a service connector resource type.
+
+    Args:
+        resource_type: Service connector resource type to print.
+        title: Markdown title to use for the resource type details.
+        heading: Markdown heading to use for the resource type title.
+        footer: Markdown footer to use for the resource type description.
+        print: Whether to print the resource type details to the console or
+            just return the message as a string.
+
+    Returns:
+        The MarkDown resource type details as a string.
+    """
+    message = f"{title}\n" if title else ""
+    emoji = (
+        Emoji(resource_type.emoji.strip(":")) if resource_type.emoji else ""
+    )
+    message += (
+        f"{heading} {emoji} {resource_type.name} "
+        f"(resource type: {resource_type.resource_type})\n"
+    )
+    message += (
+        f"**Authentication methods**: "
+        f"{', '.join(resource_type.auth_methods)}\n\n"
+    )
+    message += (
+        f"**Supports resource instances**: "
+        f"{resource_type.supports_instances}\n\n"
+    )
+    message += f"{resource_type.description}\n"
+
+    message += footer
+
+    if print:
+        console.print(Markdown(message), justify="left", width=80)
+
+    return message
+
+
+def print_service_connector_auth_method(
+    auth_method: "AuthenticationMethodModel",
+    title: str = "",
+    heading: str = "#",
+    footer: str = "---",
+    print: bool = True,
+) -> str:
+    """Prints details for a service connector authentication method.
+
+    Args:
+        auth_method: Service connector authentication method to print.
+        title: Markdown title to use for the authentication method details.
+        heading: Markdown heading to use for the authentication method title.
+        footer: Markdown footer to use for the authentication method description.
+        print: Whether to print the authentication method details to the console
+            or just return the message as a string.
+
+    Returns:
+        The MarkDown authentication method details as a string.
+    """
+    message = f"{title}\n" if title else ""
+    emoji = Emoji("lock")
+    message += (
+        f"{heading} {emoji} {auth_method.name} "
+        f"(auth method: {auth_method.auth_method})\n"
+    )
+    message += (
+        f"**Supports issuing temporary credentials**: "
+        f"{auth_method.supports_temporary_credentials()}\n\n"
+    )
+    message += f"{auth_method.description}\n"
+    message += footer
+
+    if print:
+        console.print(Markdown(message), justify="left", width=80)
+
+    return message
+
+
 def print_service_connector_type(
     connector_type: "ServiceConnectorTypeModel",
-) -> None:
+    title: str = "",
+    heading: str = "#",
+    footer: str = "---",
+    include_resource_types: bool = True,
+    include_auth_methods: bool = True,
+    print: bool = True,
+) -> str:
     """Prints details for a service connector type.
 
     Args:
         connector_type: Service connector type to print.
+        title: Markdown title to use for the service connector type details.
+        heading: Markdown heading to use for the service connector type title.
+        footer: Markdown footer to use for the service connector type
+            description.
+        include_resource_types: Whether to include the resource types for the
+            service connector type.
+        include_auth_methods: Whether to include the authentication methods for
+            the service connector type.
+        print: Whether to print the service connector type details to the
+            console or just return the message as a string.
+
+    Returns:
+        The MarkDown service connector type details as a string.
     """
-    from rich.markdown import Markdown
-
-    message = ""
+    message = f"{title}\n" if title else ""
     supported_auth_methods = list(connector_type.auth_method_map.keys())
-    supported_resource_types = list(connector_type.resource_type_map.keys())
+    supported_resource_types = [
+        f'{Emoji(r.emoji.strip(":"))} {r.resource_type}'
+        if r.emoji
+        else r.resource_type
+        for r in connector_type.resource_types
+    ]
 
-    message += f"# {connector_type.name} (connector type: {connector_type.connector_type})\n"
-    message += (
-        f"**Authentication methods**: {', '.join(supported_auth_methods)}\n\n"
+    emoji = (
+        Emoji(connector_type.emoji.strip(":")) if connector_type.emoji else ""
     )
-    message += f"**Resource types**: {', '.join(supported_resource_types)}\n\n"
-    message += f"**Supports auto-configuration**: {connector_type.supports_auto_configuration}\n\n"
+
+    message += (
+        f"{heading} {emoji} {connector_type.name} "
+        f"(connector type: {connector_type.connector_type})\n"
+    )
+    message += (
+        f"**Authentication methods**: "
+        f"{', '.join(supported_auth_methods)}\n\n"
+    )
+    message += (
+        "**Resource types**:\n\n- "
+        + "\n- ".join(supported_resource_types)
+        + "\n\n"
+    )
+    message += (
+        f"**Supports auto-configuration**: "
+        f"{connector_type.supports_auto_configuration}\n\n"
+    )
     message += f"**Available locally**: {connector_type.local}\n\n"
     message += f"**Available remotely**: {connector_type.remote}\n\n"
     message += f"{connector_type.description}\n"
 
-    for r in connector_type.resource_types:
-        message += f"## {r.name} (resource type: {r.resource_type})\n"
-        message += (
-            f"**Authentication methods**: {', '.join(r.auth_methods)}\n\n"
-        )
-        message += (
-            f"**Supports resource instances**: {r.supports_instances}\n\n"
-        )
-        message += f"{r.description}\n"
+    if include_resource_types:
+        for r in connector_type.resource_types:
+            message += print_service_connector_resource_type(
+                r,
+                heading=heading + "#",
+                footer="",
+                print=False,
+            )
 
-    for a in connector_type.auth_methods:
-        message += f"## {a.name} (auth method: {a.auth_method})\n"
-        message += f"**Supports issuing temporary credentials**: {a.supports_temporary_credentials()}\n\n"
-        message += f"{a.description}\n"
+    if include_auth_methods:
+        for a in connector_type.auth_methods:
+            message += print_service_connector_auth_method(
+                a,
+                heading=heading + "#",
+                footer="",
+                print=False,
+            )
 
-    console.print(Markdown(f"{message}---"), justify="left", width=80)
+    message += footer
+
+    if print:
+        console.print(Markdown(message), justify="left", width=80)
+
+    return message
 
 
 def _get_stack_components(

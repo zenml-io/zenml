@@ -527,12 +527,17 @@ def register_service_connector(
 
         # Print the name, type and description of all available service
         # connectors
-        message = "# Available service connector types\n"
-        for spec in connector_types:
-            message += f"## {spec.name} ({spec.connector_type})\n"
-            message += f"{spec.description}\n"
-
         if not no_docs:
+            message = "# Available service connector types\n"
+            for spec in connector_types:
+                message += cli_utils.print_service_connector_type(
+                    connector_type=spec,
+                    heading="##",
+                    footer="",
+                    include_auth_methods=False,
+                    include_resource_types=False,
+                    print=False,
+                )
             console.print(Markdown(f"{message}---"), justify="left", width=80)
 
         # Ask the user to select a service connector type
@@ -549,15 +554,20 @@ def register_service_connector(
             t.resource_type for t in connector_type_spec.resource_types
         ]
 
-        # Print the name, resource type identifiers and description of all
-        # available resource types
-        message = "# Available resource types\n"
-        for r in connector_type_spec.resource_types:
-            message += f"## {r.name} ({r.resource_type})\n"
-            message += f"{r.description}\n"
-
         if not no_docs:
-            console.print(Markdown(f"{message}---"), justify="left", width=80)
+            # Print the name, resource type identifiers and description of all
+            # available resource types
+            message = "# Available resource types\n"
+            for r in connector_type_spec.resource_types:
+                message += cli_utils.print_service_connector_resource_type(
+                    resource_type=r,
+                    heading="##",
+                    footer="",
+                    print=False,
+                )
+                console.print(
+                    Markdown(f"{message}---"), justify="left", width=80
+                )
 
         # Ask the user to select a resource type
         resource_type = prompt_resource_type(
@@ -661,18 +671,20 @@ def register_service_connector(
 
             auth_methods = list(connector_type_spec.auth_method_map.keys())
 
-            # Print the name, identifier and description of all available auth
-            # methods
-            message = "# Available authentication methods\n"
-            for a in auth_methods:
-                auth_method_spec = connector_type_spec.auth_method_map[a]
-                message += f"## {auth_method_spec.name} ({a})\n"
-                message += f"{auth_method_spec.description}\n"
-
             if not no_docs:
-                console.print(
-                    Markdown(f"{message}---"), justify="left", width=80
-                )
+                # Print the name, identifier and description of all available auth
+                # methods
+                message = "# Available authentication methods\n"
+                for a in auth_methods:
+                    message += cli_utils.print_service_connector_auth_method(
+                        auth_method=connector_type_spec.auth_method_map[a],
+                        heading="##",
+                        footer="",
+                        print=False,
+                    )
+                    console.print(
+                        Markdown(f"{message}---"), justify="left", width=80
+                    )
 
             if len(auth_methods) == 1:
                 # Default to the first auth method if only one method is
@@ -1969,11 +1981,33 @@ def list_service_connector_types(
     type=str,
     required=True,
 )
-def describe_service_connector_type(type: str) -> None:
+@click.option(
+    "--resource-type",
+    "-r",
+    "resource_type",
+    help="Resource type to describe.",
+    required=False,
+    type=str,
+)
+@click.option(
+    "--auth-method",
+    "-a",
+    "auth_method",
+    help="Authentication method to describe.",
+    required=False,
+    type=str,
+)
+def describe_service_connector_type(
+    type: str,
+    resource_type: Optional[str] = None,
+    auth_method: Optional[str] = None,
+) -> None:
     """Describes a service connector type.
 
     Args:
         type: The connector type to describe.
+        resource_type: The resource type to describe.
+        auth_method: The authentication method to describe.
     """
     client = Client()
 
@@ -1982,4 +2016,27 @@ def describe_service_connector_type(type: str) -> None:
     except KeyError:
         cli_utils.error(f"Service connector type '{type}' not found.")
 
-    cli_utils.print_service_connector_type(connector_type)
+    if resource_type:
+        if resource_type not in connector_type.resource_type_map:
+            cli_utils.error(
+                f"Resource type '{resource_type}' not found for service "
+                f"connector type '{type}'."
+            )
+        cli_utils.print_service_connector_resource_type(
+            connector_type.resource_type_map[resource_type]
+        )
+    elif auth_method:
+        if auth_method not in connector_type.auth_method_map:
+            cli_utils.error(
+                f"Authentication method '{auth_method}' not found for service"
+                f" connector type '{type}'."
+            )
+        cli_utils.print_service_connector_auth_method(
+            connector_type.auth_method_map[auth_method]
+        )
+    else:
+        cli_utils.print_service_connector_type(
+            connector_type,
+            include_resource_types=False,
+            include_auth_methods=False,
+        )
