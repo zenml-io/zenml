@@ -201,19 +201,25 @@ class ServiceConnectorRegistry:
         self.initialized = True
 
         try:
-            pass
+            from zenml.integrations.aws.service_connectors.aws_service_connector import (  # noqa
+                AWSServiceConnector,
+            )
         except ImportError as e:
             logger.warning(f"Could not import AWS service connector: {e}.")
 
         try:
-            pass
+            from zenml.integrations.kubernetes.service_connectors.kubernetes_service_connector import (  # noqa
+                KubernetesServiceConnector,
+            )
         except ImportError as e:
             logger.warning(
                 f"Could not import Kubernetes service connector: {e}."
             )
 
         try:
-            pass
+            from zenml.service_connectors.docker_service_connector import (  # noqa
+                DockerServiceConnector,
+            )
         except ImportError as e:
             logger.warning(f"Could not import Docker service connector: {e}.")
 
