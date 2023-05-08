@@ -31,6 +31,7 @@ def test_whylogs_materializer(clean_client):
         ),
         materializer_class=WhylogsMaterializer,
         expected_metadata_size=1,
+        assert_visualization_exists=True,
     )
 
     assert dataset_profile_view.creation_timestamp is not None

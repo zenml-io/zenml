@@ -193,6 +193,10 @@ def add_pod_settings(
     if settings.tolerations:
         pod_spec.tolerations = settings.tolerations
 
+    for container in pod_spec.containers:
+        assert isinstance(container, k8s_client.V1Container)
+        container._resources = settings.resources
+
 
 def build_cron_job_manifest(
     cron_expression: str,

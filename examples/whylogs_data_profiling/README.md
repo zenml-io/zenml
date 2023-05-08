@@ -13,16 +13,12 @@ profiling features. Changes to the user code are minimal while ZenML takes
 care of all aspects related to whylogs serialization, versioning and persistence
 and even uploading generated profiles to WhyLabs.
 
-The ZenML whylogs integration includes the following features showcased in this
-example:
-
-* a predefined `WhylogsProfilerStep` ZenML step class that can be
+The ZenML whylogs integration includes a predefined `WhylogsProfilerStep` ZenML 
+step class that can be
 instantiated and inserted into any pipeline to generate a whylogs profile
 out of a Pandas DataFrame and return the profile as a step output artifact.
 Instantiating this type of step is simplified even further through the
 use of the `whylogs_profiler_step` utility function.
-* a `WhylogsVisualizer` ZenML visualizer that can be used to display whylogs
-profile artifacts produced during the execution of pipelines.
 
 ## 🧰 How the example is implemented
 The ZenML pipeline in this example is rather simple, consisting of a couple
@@ -113,54 +109,12 @@ test_data_profiler = whylogs_profiler_step(
 )
 ```
 
-### 🕵️ Post execution analysis
-
-The ZenML `WhylogsVisualizer` can be used to visualize the whylogs
-profiles persisted in the Artifact Store locally. It can take in a single
-step view, or two, in which case a data drift report is created out of two
-dataset profiles generated in two different steps:
-
-```python
-from zenml.integrations.whylogs.visualizers import WhylogsVisualizer
-from zenml.post_execution import get_pipeline
-
-def visualize_statistics(
-    step_name: str, reference_step_name: str = None
-) -> None:
-    """Helper function to visualize whylogs statistics from step artifacts.
-
-    Args:
-        step_name: step that generated and returned a whylogs profile
-        reference_step_name: an optional second step that generated a whylogs
-            profile to use for data drift visualization where two whylogs
-            profiles are required.
-    """
-    pipe = get_pipeline(pipeline="data_profiling_pipeline")
-    whylogs_step = pipe.runs[0].get_step(step=step_name)
-    whylogs_reference_step = None
-    if reference_step_name:
-        whylogs_reference_step = pipe.runs[0].get_step(
-            name=reference_step_name
-        )
-
-    WhylogsVisualizer().visualize(
-        step_view=whylogs_step,
-        reference_step_view=whylogs_reference_step,
-    )
-
-visualize_statistics("data_loader")
-visualize_statistics("train_data_profiler", "test_data_profiler")
-```
-
-![whylogs visualizer](assets/whylogs-visualizer.png)
-
-Furthermore, all the generated profiles are uploaded to WhyLabs automatically
-for steps with Whylabs logging enabled if the Whylabs credentials have been 
-configured in the whylogs Data Validator stack component:
-
+All the generated profiles are uploaded to WhyLabs automatically for steps with 
+Whylabs logging enabled if the Whylabs credentials have been configured in the 
+whylogs Data Validator stack component.
 
 The `dataset_id` tags set for the profiles are used to associate
-the datasets models with the models in the WhyLabs platform. 
+the datasets models with the models in the WhyLabs platform.
 
 ![WhyLabs UI image 1](assets/whylabs-ui-01.png)
 ![WhyLabs UI image 2](assets/whylabs-ui-02.png)

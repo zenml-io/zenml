@@ -17,7 +17,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, Security
 
-from zenml.constants import API, ARTIFACTS, VERSION_1
+from zenml.constants import API, ARTIFACTS, VERSION_1, VISUALIZE
 from zenml.enums import PermissionType
 from zenml.models import (
     ArtifactFilterModel,
@@ -25,6 +25,10 @@ from zenml.models import (
     ArtifactResponseModel,
 )
 from zenml.models.page_model import Page
+from zenml.models.visualization_models import (
+    LoadedVisualizationModel,
+)
+from zenml.utils.materializer_utils import load_artifact_visualization
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.utils import (
@@ -123,3 +127,30 @@ def delete_artifact(
         artifact_id: The ID of the artifact to delete.
     """
     zen_store().delete_artifact(artifact_id)
+
+
+@router.get(
+    "/{artifact_id}" + VISUALIZE,
+    response_model=LoadedVisualizationModel,
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@handle_exceptions
+def get_artifact_visualization(
+    artifact_id: UUID,
+    index: int = 0,
+    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+) -> LoadedVisualizationModel:
+    """Get the visualization of an artifact.
+
+    Args:
+        artifact_id: ID of the artifact for which to get the visualization.
+        index: Index of the visualization to get (if there are multiple).
+
+    Returns:
+        The visualization of the artifact.
+    """
+    store = zen_store()
+    artifact = store.get_artifact(artifact_id)
+    return load_artifact_visualization(
+        artifact=artifact, index=index, zen_store=store, encode_image=True
+    )

@@ -14,7 +14,7 @@
 """Implementation of the Great Expectations materializers."""
 
 import os
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, Tuple, Type, Union
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, Tuple, Type, Union, cast
 
 from great_expectations.checkpoint.types.checkpoint_result import (  # type: ignore[import]
     CheckpointResult,
@@ -26,14 +26,18 @@ from great_expectations.core.expectation_validation_result import (  # type: ign
 from great_expectations.data_context.types.base import (  # type: ignore[import]
     CheckpointConfig,
 )
-from great_expectations.data_context.types.resource_identifiers import (  # type: ignore[import]
+from great_expectations.data_context.types.resource_identifiers import (  # type: ignore[import]  # type: ignore[import]
+    ExpectationSuiteIdentifier,
     ValidationResultIdentifier,
 )
 from great_expectations.types import (  # type: ignore[import]
     SerializableDictDot,
 )
 
-from zenml.enums import ArtifactType
+from zenml.enums import ArtifactType, VisualizationType
+from zenml.integrations.great_expectations.data_validators.ge_data_validator import (
+    GreatExpectationsDataValidator,
+)
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.utils import source_utils, yaml_utils
 
@@ -122,6 +126,36 @@ class GreatExpectationsMaterializer(BaseMaterializer):
             "data_type"
         ] = f"{artifact_type.__module__}.{artifact_type.__name__}"
         yaml_utils.write_json(filepath, artifact_dict)
+
+    def save_visualizations(
+        self, data: Union[ExpectationSuite, CheckpointResult]
+    ) -> Dict[str, VisualizationType]:
+        """Saves visualizations for the given Great Expectations object.
+
+        Args:
+            data: The Great Expectations object to save visualizations for.
+
+        Returns:
+            A dictionary of visualization URIs and their types.
+        """
+        visualizations = {}
+
+        if isinstance(data, CheckpointResult):
+            result = cast(CheckpointResult, data)
+            identifier = next(iter(result.run_results.keys()))
+        else:
+            suite = cast(ExpectationSuite, data)
+            identifier = ExpectationSuiteIdentifier(
+                suite.expectation_suite_name
+            )
+
+        context = GreatExpectationsDataValidator.get_data_context()
+        sites = context.get_docs_sites_urls(identifier)
+        for site in sites:
+            url = site["site_url"]
+            visualizations[url] = VisualizationType.HTML
+
+        return visualizations
 
     def extract_metadata(
         self, data: Union[ExpectationSuite, CheckpointResult]

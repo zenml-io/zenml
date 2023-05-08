@@ -34,6 +34,12 @@ class KubernetesOrchestratorSettings(BaseSettings):
     Attributes:
         synchronous: If `True`, running a pipeline using this orchestrator will
             block until all steps finished running on Kubernetes.
+        incluster: If `True`, the orchestrator will be run inside the cluster
+            in which it is started. This requires the client to run in a
+            Kubernetes pod itself. If set, the `kubernetes_context` config
+            option and setting will both be ignored.
+        kubernetes_context: Name of a Kubernetes context to run pipelines in.
+            If set, overrides the `kubernetes_context` config option.
         timeout: How many seconds to wait for synchronous runs. `0` means
             to wait for an unlimited duration.
         service_account_name: Name of the service account to use for the
@@ -43,8 +49,9 @@ class KubernetesOrchestratorSettings(BaseSettings):
     """
 
     synchronous: bool = False
+    incluster: bool = False
+    kubernetes_context: Optional[str] = None
     timeout: int = 0
-
     service_account_name: Optional[str] = None
     pod_settings: Optional[KubernetesPodSettings] = None
 
@@ -55,7 +62,9 @@ class KubernetesOrchestratorConfig(  # type: ignore[misc] # https://github.com/p
     """Configuration for the Kubernetes orchestrator.
 
     Attributes:
-        kubernetes_context: Name of a Kubernetes context to run pipelines in.
+        kubernetes_context: Name of a default Kubernetes context to run
+            pipelines in. Can be overridden at run time using the
+            `kubernetes_context` setting.
         kubernetes_namespace: Name of the Kubernetes namespace to be used.
             If not provided, `zenml` namespace will be used.
         local: If `True`, the orchestrator will assume it is connected to a
@@ -68,7 +77,7 @@ class KubernetesOrchestratorConfig(  # type: ignore[misc] # https://github.com/p
             skipped.
     """
 
-    kubernetes_context: str  # TODO: Potential setting
+    kubernetes_context: str
     kubernetes_namespace: str = "zenml"
     local: bool = False
     skip_local_validations: bool = False

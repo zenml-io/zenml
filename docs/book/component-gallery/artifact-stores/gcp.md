@@ -92,7 +92,12 @@ machine. However, you will need to install and set up the Google Cloud CLI on
 your machine as a prerequisite, as covered in [the Google Cloud documentation](https://cloud.google.com/sdk/docs/install-sdk), before you register the GCS Artifact Store.
 
 {% hint style="warning" %}
-The implicit authentication method needs to be coordinated with other stack
+Certain dashboard functionality, such as visualizing or deleting artifacts, is
+not available when using an implicitly authenticated artifact store together 
+with a deployed ZenML server because the ZenML server will not have permissions
+to access the filesystem.
+
+The implicit authentication method also needs to be coordinated with other stack
 components that are highly dependent on the Artifact Store and need to interact
 with it directly to function. If these components are not running on your
 machine, they do not have access to the local Google Cloud CLI configuration and
