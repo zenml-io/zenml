@@ -139,6 +139,7 @@ from sklearn.svm import SVC
 from zenml.pipelines.new import pipeline
 from zenml.steps import Output, step
 
+
 @step
 def digits_data_loader() -> Output(
     X_train=np.ndarray, X_test=np.ndarray, y_train=np.ndarray, y_test=np.ndarray
@@ -153,25 +154,28 @@ def digits_data_loader() -> Output(
         data, digits.target, test_size=0.2, shuffle=False
     )
     return X_train, X_test, y_train, y_test
-    
+
+
 @step
 def svc_trainer(
-    gamma: float = 0.001,
-    X_train: np.ndarray,
-    y_train: np.ndarray,
+        X_train: np.ndarray,
+        y_train: np.ndarray,
+        gamma: float = 0.001,
 ) -> ClassifierMixin:
     """Train a sklearn SVC classifier."""
-    
-    # instantiate a support vector machine model    
+
+    # instantiate a support vector machine model
     model = SVC(gamma=gamma)
     # Train on the train dataset
     model.fit(X_train, y_train)
     return model
 
+
 @pipeline
 def first_pipeline(gamma: float = 0.002):
-    X_train, X_test, y_train, y_test = step_1()
-    step_2(gamma=gamma, X_train, y_train)
+    X_train, X_test, y_train, y_test = digits_data_loader()
+    svc_trainer(gamma=gamma, X_train=X_train, y_train=y_train)
+
 
 # The pipeline is executed for the first time, so all steps are run.
 first_pipeline()

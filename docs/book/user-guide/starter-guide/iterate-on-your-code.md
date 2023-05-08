@@ -43,13 +43,13 @@ if __name__ == "__main__":
 
 This will create _yet another_ `run` for `version 1` of the pipeline called `first_pipeline`. So now the same pipeline has two runs. You can also verify this in the dashboard.
 
-However, now let's change the pipeline configuration itself. You can do this by either modifying the step connections within the `@pipeline` function or replace a concrete step with another one. For example lets try using the test set to train rather than the train data.
+However, now let's change the pipeline configuration itself. You can do this by either modifying the step connections within the `@pipeline` function or by replacing a concrete step with another one. For example lets create an alternative trainer step called `custom_trainer`.
 
 ```python
 @pipeline
 def first_pipeline(gamma: float = 0.002):
     X_train, X_test, y_train, y_test = digits_data_loader()
-    svc_trainer(gamma=gamma, X_train=X_test, y_train=y_test)
+    custom_trainer(gamma=gamma, X_train=X_test, y_train=y_test)
     
 if __name__ == "__main__":
     first_pipeline(gamma=0.0016)
