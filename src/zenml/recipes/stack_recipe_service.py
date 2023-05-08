@@ -151,9 +151,6 @@ class StackRecipe:
 
         Returns:
             The metadata associated with a particular recipe.
-
-        Raises:
-            FileNotFoundError: If the metadata file is not one of the options.
         """
         metadata = yaml_utils.read_yaml(
             file_path=os.path.join(self.path_in_repo, "metadata.yaml")
@@ -324,6 +321,7 @@ class GitStackRecipesHandler(object):
                 and not name == "LICENSE"
                 and not name.endswith(".md")
                 and not name.endswith(".sh")
+                and not name == "modules"
             )
         ]
 

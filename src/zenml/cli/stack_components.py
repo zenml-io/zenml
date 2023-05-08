@@ -1219,7 +1219,6 @@ def generate_stack_component_destroy_command(
         """Destroy a stack component.
 
         Args:
-            ctx: Click context.
             name_id_or_prefix: Name, ID or prefix of the component to destroy.
         """
         client = Client()

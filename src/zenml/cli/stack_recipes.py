@@ -257,46 +257,51 @@ def pull(
     )
 
     try:
-        _ = git_stack_recipes_handler.get_stack_recipes(stack_recipe_name)[0]
+        stack_recipes  = git_stack_recipes_handler.get_stack_recipes(stack_recipe_name)
     except KeyError as e:
         cli_utils.error(str(e))
 
     else:
-        stack_recipe_service = StackRecipeService(
-            stack_recipe_name=stack_recipe_name,
-            config=StackRecipeServiceConfig(
-                force=force,
-                directory_path=str(
-                    Path(os.getcwd()) / path / stack_recipe_name
+        for stack_recipe in stack_recipes:
+            stack_recipe_service = StackRecipeService(
+                stack_recipe_name=stack_recipe.name,
+                config=StackRecipeServiceConfig(
+                    force=force,
+                    directory_path=str(
+                        os.path.join(
+                            Path(os.getcwd()),
+                            path,
+                            stack_recipe.name,
+                        )
+                    ),
                 ),
-            ),
-        )
-        if stack_recipe_service.local_recipe_exists():
-            if force or cli_utils.confirmation(
-                f"Stack recipe {stack_recipe_name} is already "
-                f"pulled at {stack_recipe_service.config.directory_path}.\n"
-                "Overwriting this directory will delete all terraform "
-                "state files and the local configuration. We recommend "
-                "that you do this only once the remote resources have been "
-                "destroyed. Do you wish to proceed with overwriting?"
-            ):
+            )
+            if stack_recipe_service.local_recipe_exists():
+                if force or cli_utils.confirmation(
+                    f"Stack recipe {stack_recipe.name} is already "
+                    f"pulled at {stack_recipe_service.config.directory_path}.\n"
+                    "Overwriting this directory will delete all terraform "
+                    "state files and the local configuration. We recommend "
+                    "that you do this only once the remote resources have been "
+                    "destroyed. Do you wish to proceed with overwriting?"
+                ):
+                    stack_recipe_service.pull(
+                        force=True,
+                        git_stack_recipes_handler=git_stack_recipes_handler,
+                    )
+                    cli_utils.declare(
+                        f"Stack recipe {stack_recipe.name} successfully "
+                        f"overwritten at {stack_recipe_service.config.directory_path}."
+                    )
+            else:
                 stack_recipe_service.pull(
-                    force=True,
+                    force=force,
                     git_stack_recipes_handler=git_stack_recipes_handler,
                 )
                 cli_utils.declare(
-                    f"Stack recipe {stack_recipe_name} successfully "
-                    f"overwritten at {stack_recipe_service.config.directory_path}."
+                    f"Stack recipe {stack_recipe.name} successfully "
+                    f"pulled at {stack_recipe_service.config.directory_path}."
                 )
-        else:
-            stack_recipe_service.pull(
-                force=force,
-                git_stack_recipes_handler=git_stack_recipes_handler,
-            )
-            cli_utils.declare(
-                f"Stack recipe {stack_recipe_name} successfully "
-                f"pulled at {stack_recipe_service.config.directory_path}."
-            )
 
 
 @stack_recipe.command(
