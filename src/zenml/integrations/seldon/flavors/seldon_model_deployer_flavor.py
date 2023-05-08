@@ -35,6 +35,8 @@ class SeldonModelDeployerConfig(BaseModelDeployerConfig):
             configuration is used. Depending on where the Seldon model deployer
             is being used, this can be either a locally active context or an
             in-cluster Kubernetes configuration (if running inside a pod).
+            If the model deployer stack component is linked to a Kubernetes
+            service connector, this field is ignored.
         kubernetes_namespace: the Kubernetes namespace where the Seldon Core
             deployment servers are provisioned and managed by ZenML. If not
             specified, the namespace set in the current configuration is used.
@@ -42,6 +44,8 @@ class SeldonModelDeployerConfig(BaseModelDeployerConfig):
             be either the current namespace configured in the locally active
             context or the namespace in the context of which the pod is running
             (if running inside a pod).
+            If the model deployer stack component is linked to a Kubernetes
+            service connector, this field is mandatory.
         base_url: the base URL of the Kubernetes ingress used to expose the
             Seldon Core deployment servers.
         secret: the name of a ZenML secret containing the credentials used by
@@ -55,8 +59,8 @@ class SeldonModelDeployerConfig(BaseModelDeployerConfig):
             ZenML and is already present in the Kubernetes cluster.
     """
 
-    kubernetes_context: Optional[str]  # TODO: Potential setting
-    kubernetes_namespace: Optional[str]
+    kubernetes_context: Optional[str] = None
+    kubernetes_namespace: Optional[str] = None
     base_url: str  # TODO: unused?
     secret: Optional[str]
     kubernetes_secret_name: Optional[

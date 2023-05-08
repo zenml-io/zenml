@@ -14,11 +14,12 @@
 """Implementation of a base container registry class."""
 
 import re
-from typing import Optional, Tuple, Type, cast
+from typing import TYPE_CHECKING, Optional, Tuple, Type, cast
 
 from pydantic import validator
 
 from zenml.enums import StackComponentType
+from zenml.models.service_connector_models import ServiceConnectorRequirements
 from zenml.secret.schemas import BasicAuthSecretSchema
 from zenml.stack.authentication_mixin import (
     AuthenticationConfigMixin,
@@ -26,6 +27,9 @@ from zenml.stack.authentication_mixin import (
 )
 from zenml.stack.flavor import Flavor
 from zenml.utils import docker_utils
+
+if TYPE_CHECKING:
+    from docker.client import DockerClient
 
 
 class BaseContainerRegistryConfig(AuthenticationConfigMixin):
@@ -65,6 +69,8 @@ class BaseContainerRegistryConfig(AuthenticationConfigMixin):
 class BaseContainerRegistry(AuthenticationMixin):
     """Base class for all ZenML container registries."""
 
+    _docker_client: Optional["DockerClient"] = None
+
     @property
     def config(self) -> BaseContainerRegistryConfig:
         """Returns the `BaseContainerRegistryConfig` config.
@@ -100,6 +106,33 @@ class BaseContainerRegistry(AuthenticationMixin):
 
         return None
 
+    @property
+    def docker_client(self) -> "DockerClient":
+        """Returns a Docker client for this container registry.
+
+        Returns:
+            The Docker client.
+        """
+        from docker.client import DockerClient
+
+        # Refresh the client also if the connector has expired
+        if self._docker_client and not self.connector_has_expired():
+            return self._docker_client
+
+        connector = self.get_connector()
+        if connector:
+            client = connector.connect()
+            if not isinstance(client, DockerClient):
+                raise RuntimeError(
+                    f"Expected a DockerClient while trying to use the "
+                    f"linked connector, but got {type(client)}."
+                )
+            self._docker_client = client
+        else:
+            self._docker_client = DockerClient.from_env()
+
+        return self._docker_client
+
     def prepare_image_push(self, image_name: str) -> None:
         """Preparation before an image gets pushed.
 
@@ -130,7 +163,9 @@ class BaseContainerRegistry(AuthenticationMixin):
             )
 
         self.prepare_image_push(image_name)
-        return docker_utils.push_image(image_name)
+        return docker_utils.push_image(
+            image_name, docker_client=self.docker_client
+        )
 
 
 class BaseContainerRegistryFlavor(Flavor):
@@ -144,6 +179,23 @@ class BaseContainerRegistryFlavor(Flavor):
             The flavor type.
         """
         return StackComponentType.CONTAINER_REGISTRY
+
+    @property
+    def service_connector_requirements(
+        self,
+    ) -> Optional[ServiceConnectorRequirements]:
+        """Service connector resource requirements for service connectors.
+
+        Specifies resource requirements that are used to filter the available
+        service connector types that are compatible with this flavor.
+
+        Returns:
+            Requirements for compatible service connectors, if a service
+            connector is required for this flavor.
+        """
+        return ServiceConnectorRequirements(
+            resource_type="docker-registry",
+        )
 
     @property
     def config_class(self) -> Type[BaseContainerRegistryConfig]:

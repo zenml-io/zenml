@@ -158,11 +158,15 @@ class KubeflowOrchestratorConfig(  # type: ignore[misc] # https://github.com/pyd
     Attributes:
         kubeflow_hostname: The hostname to use to talk to the Kubeflow Pipelines
             API. If not set, the hostname will be derived from the Kubernetes
-            API proxy.
+            API proxy. Mandatory when connecting to a multi-tenant Kubeflow
+            Pipelines deployment.
         kubeflow_namespace: The Kubernetes namespace in which Kubeflow
             Pipelines is deployed. Defaults to `kubeflow`.
-        kubernetes_context: Optional name of a kubernetes context to run
-            pipelines in. If not set, will try to spin up a local K3d cluster.
+        kubernetes_context: Name of a kubernetes context to run
+            pipelines in. Not applicable when connecting to a multi-tenant
+            Kubeflow Pipelines deployment (i.e. when `kubeflow_hostname` is
+            set) or if the stack component is linked to a Kubernetes service
+            connector.
         local: If `True`, the orchestrator will assume it is connected to a
             local kubernetes cluster and will perform additional validations and
             operations to allow using the orchestrator in combination with other

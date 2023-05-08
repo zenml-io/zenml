@@ -185,6 +185,7 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
         Returns:
             A `StackValidator` instance.
         """
+        msg = f"'{self.name}' Kubeflow orchestrator error: "
 
         def _validate_kube_context(
             kubernetes_context: str,
@@ -195,7 +196,7 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
             if kubernetes_context and kubernetes_context not in contexts:
                 if not self.config.is_local:
                     return False, (
-                        f"Could not find a Kubernetes context named "
+                        f"{msg}could not find a Kubernetes context named "
                         f"'{kubernetes_context}' in the local Kubernetes "
                         f"configuration. Please make sure that the Kubernetes "
                         f"cluster is running and that the kubeconfig file is "
@@ -209,7 +210,7 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
                 and kubernetes_context != active_context
             ):
                 logger.warning(
-                    f"The Kubernetes context '{kubernetes_context}' "
+                    f"{msg}the Kubernetes context '{kubernetes_context}' "
                     f"configured for the Kubeflow orchestrator is not the "
                     f"same as the active context in the local Kubernetes "
                     f"configuration. If this is not deliberate, you should "
@@ -246,16 +247,17 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
                     and not self.config.kubeflow_hostname
                 ):
                     return False, (
-                        "The Kubeflow orchestrator is incompletely configured. "
-                        "For a multi-tenant Kubeflow deployment, you must "
-                        "set the `kubeflow_hostname` attribute in the "
+                        f"{msg}the Kubeflow orchestrator is incompletely "
+                        "configured. For a multi-tenant Kubeflow deployment, "
+                        "you must set the `kubeflow_hostname` attribute in the "
                         "orchestrator configuration. For a single-tenant "
                         "deployment, you must either set the "
                         "`kubernetes_context` attribute in the orchestrator "
                         "configuration to the name of the Kubernetes config "
                         "context pointing to the cluster where you would like "
                         "to run pipelines or link this stack component to a "
-                        "Kubernetes cluster via a service connector."
+                        "Kubernetes cluster via a service connector (see the "
+                        "'zenml orchestrator connect' CLI command)."
                     )
 
                 if kubernetes_context:
@@ -291,7 +293,7 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
                     if not local_path:
                         continue
                     return False, (
-                        f"The Kubeflow orchestrator is configured to run "
+                        f"{msg}the Kubeflow orchestrator is configured to run "
                         f"pipelines in a remote Kubernetes cluster but the "
                         f"'{stack_comp.name}' {stack_comp.type.value} is a "
                         "local stack component and will not be available in "
@@ -309,7 +311,7 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
                 # also be remote.
                 if container_registry.config.is_local:
                     return False, (
-                        f"The Kubeflow orchestrator is configured to run "
+                        f"{msg}the Kubeflow orchestrator is configured to run "
                         f"pipelines in a remote Kubernetes cluster, but the "
                         f"'{container_registry.name}' container registry URI "
                         f"'{container_registry.config.uri}' "

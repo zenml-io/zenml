@@ -1431,8 +1431,8 @@ def generate_stack_component_connect_command(
 
         if connector_resources is not None:
             cli_utils.declare(
-                f"Successfully connected {display_name} `{name_id_or_prefix}` "
-                "to the following resources:"
+                f"Successfully connected {display_name} "
+                f"`{component_model.name}` to the following resources:"
             )
 
             cli_utils.print_service_connector_resource_table(
@@ -1442,8 +1442,8 @@ def generate_stack_component_connect_command(
         else:
 
             cli_utils.declare(
-                f"Successfully connected {display_name} `{name_id_or_prefix}` "
-                "to resource."
+                f"Successfully connected {display_name} "
+                f"`{component_model.name}` to resource."
             )
 
     return connect_stack_component_command

@@ -192,33 +192,35 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             assert container_registry is not None
 
             connector = self.get_connector()
+            kubernetes_context = self.config.kubernetes_context
+            msg = f"'{self.name}' Kubernetes orchestrator error: "
 
             if not connector:
-                if not self.config.kubernetes_context:
+                if not kubernetes_context:
                     return False, (
-                        "To avoid unpredictable behavior you must either link "
-                        "this stack component to a connector or explicitly set "
+                        f"{msg}you must either link this stack component to a "
+                        "Kubernetes service connector (see the 'zenml "
+                        "orchestrator connect' CLI command) or explicitly set "
                         "the `kubernetes_context` attribute to the name of the "
-                        "Kubernetes config context pointing to the cluster where "
-                        "you would like to run pipelines."
+                        "Kubernetes config context pointing to the cluster "
+                        "where you would like to run pipelines."
                     )
 
                 contexts, active_context = self.get_kubernetes_contexts()
-                cfg_context = self.config.kubernetes_context
 
-                if cfg_context not in contexts:
+                if kubernetes_context not in contexts:
                     return False, (
-                        f"Could not find a Kubernetes context named "
-                        f"'{cfg_context}' in the local "
+                        f"{msg}could not find a Kubernetes context named "
+                        f"'{kubernetes_context}' in the local "
                         "Kubernetes configuration. Please make sure that the "
                         "Kubernetes cluster is running and that the kubeconfig "
                         "file is configured correctly. To list all configured "
                         "contexts, run:\n\n"
                         "  `kubectl config get-contexts`\n"
                     )
-                if cfg_context != active_context:
+                if kubernetes_context != active_context:
                     logger.warning(
-                        f"The Kubernetes context '{cfg_context}' "
+                        f"{msg}the Kubernetes context '{kubernetes_context}' "
                         f"configured for the Kubernetes orchestrator is not "
                         f"the same as the active context in the local "
                         f"Kubernetes configuration. If this is not deliberate,"
@@ -232,7 +234,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                         f"configured in the Kubernetes orchestrator and "
                         f"silence this warning, run:\n\n"
                         f"  `kubectl config use-context "
-                        f"{cfg_context}`\n"
+                        f"{kubernetes_context}`\n"
                     )
 
             silence_local_validations_msg = (
@@ -262,8 +264,8 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                     if stack_comp.local_path is None:
                         continue
                     return False, (
-                        f"The Kubernetes orchestrator is configured to run "
-                        f"pipelines in a remote Kubernetes cluster but the "
+                        f"{msg}the Kubernetes orchestrator is configured to "
+                        f"run pipelines in a remote Kubernetes cluster but the "
                         f"'{stack_comp.name}' {stack_comp.type.value} "
                         f"is a local stack component "
                         f"and will not be available in the Kubernetes pipeline "
@@ -280,8 +282,8 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                 # also be remote.
                 if container_registry.config.is_local:
                     return False, (
-                        f"The Kubernetes orchestrator is configured to run "
-                        f"pipelines in a remote Kubernetes cluster but the "
+                        f"{msg}the Kubernetes orchestrator is configured to "
+                        "run pipelines in a remote Kubernetes cluster but the "
                         f"'{container_registry.name}' container registry URI "
                         f"'{container_registry.config.uri}' "
                         f"points to a local container registry. Please ensure "

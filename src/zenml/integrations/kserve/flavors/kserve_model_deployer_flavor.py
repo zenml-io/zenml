@@ -35,6 +35,8 @@ class KServeModelDeployerConfig(BaseModelDeployerConfig):
             configuration is used. Depending on where the KServe model deployer
             is being used, this can be either a locally active context or an
             in-cluster Kubernetes configuration (if running inside a pod).
+            If the model deployer stack component is linked to a Kubernetes
+            service connector, this field is ignored.
         kubernetes_namespace: the Kubernetes namespace where the KServe
             inference service CRDs are provisioned and managed by ZenML. If not
             specified, the namespace set in the current configuration is used.
@@ -48,8 +50,8 @@ class KServeModelDeployerConfig(BaseModelDeployerConfig):
             KServe inference services.
     """
 
-    kubernetes_context: Optional[str]  # TODO: Potential setting
-    kubernetes_namespace: Optional[str]
+    kubernetes_context: Optional[str] = None
+    kubernetes_namespace: Optional[str] = None
     base_url: str  # TODO: unused?
     secret: Optional[str]
     custom_domain: Optional[str]  # TODO: unused?

@@ -154,6 +154,12 @@ class KServeModelDeployer(BaseModelDeployer):
 
         connector = self.get_connector()
         if connector:
+            if not self.config.kubernetes_namespace:
+                raise RuntimeError(
+                    "The Kubernetes namespace must be explicitly configured in "
+                    "the stack component when using a service connector to "
+                    "deploy models with KServe."
+                )
             client = connector.connect()
             if not isinstance(client, k8s_client.ApiClient):
                 raise RuntimeError(

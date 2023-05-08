@@ -55,6 +55,8 @@ class KubernetesOrchestratorConfig(  # type: ignore[misc] # https://github.com/p
 
     Attributes:
         kubernetes_context: Name of a Kubernetes context to run pipelines in.
+            If the stack component is linked to a Kubernetes service connector,
+            this field is ignored. Otherwise, it is mandatory.
         kubernetes_namespace: Name of the Kubernetes namespace to be used.
             If not provided, `zenml` namespace will be used.
         local: If `True`, the orchestrator will assume it is connected to a
@@ -67,7 +69,7 @@ class KubernetesOrchestratorConfig(  # type: ignore[misc] # https://github.com/p
             skipped.
     """
 
-    kubernetes_context: Optional[str] = None  # TODO: Potential setting
+    kubernetes_context: Optional[str] = None
     kubernetes_namespace: str = "zenml"
     local: bool = False
     skip_local_validations: bool = False

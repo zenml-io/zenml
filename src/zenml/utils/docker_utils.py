@@ -240,11 +240,16 @@ def build_image(
     logger.info("Finished building Docker image `%s`.", image_name)
 
 
-def push_image(image_name: str) -> str:
+def push_image(
+    image_name: str, docker_client: Optional[DockerClient] = None
+) -> str:
     """Pushes an image to a container registry.
 
     Args:
         image_name: The full name (including a tag) of the image to push.
+        docker_client: Optional Docker client to use for pushing the image. If
+            no client is given, a new client will be created using the default
+            Docker environment.
 
     Returns:
         The Docker repository digest of the pushed image.
@@ -253,7 +258,7 @@ def push_image(image_name: str) -> str:
         RuntimeError: If fetching the repository digest of the image failed.
     """
     logger.info("Pushing Docker image `%s`.", image_name)
-    docker_client = DockerClient.from_env()
+    docker_client = docker_client or DockerClient.from_env()
     output_stream = docker_client.images.push(image_name, stream=True)
     aux_info = _process_stream(output_stream)
     logger.info("Finished pushing Docker image.")
