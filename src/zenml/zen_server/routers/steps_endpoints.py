@@ -18,7 +18,14 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, Security
 
-from zenml.constants import API, STATUS, STEP_CONFIGURATION, STEPS, VERSION_1
+from zenml.constants import (
+    API,
+    LOGS,
+    STATUS,
+    STEP_CONFIGURATION,
+    STEPS,
+    VERSION_1,
+)
 from zenml.enums import ExecutionStatus, PermissionType
 from zenml.models import (
     StepRunFilterModel,

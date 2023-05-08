@@ -13,10 +13,14 @@
 #  permissions and limitations under the License.
 """Class to launch (run directly or using a step operator) steps."""
 
+import logging
 import time
 from datetime import datetime
 from typing import TYPE_CHECKING, Dict, Optional, Tuple
 
+from zenml.artifact_stores.base_artifact_store_logging_handler import (
+    ArtifactStoreLoggingHandler,
+)
 from zenml.client import Client
 from zenml.config.step_configurations import Step
 from zenml.config.step_run_info import StepRunInfo
@@ -159,6 +163,16 @@ class StepLauncher:
 
         pipeline_run, run_was_created = self._create_or_reuse_run()
         try:
+            log_key = "app.log"
+            zenml_handler = ArtifactStoreLoggingHandler(
+                self._stack.artifact_store, log_key
+            )
+            logging.basicConfig(
+                handlers=[zenml_handler],
+                format="%(asctime)s - %(levelname)s - %(message)s",
+                level=logging.INFO,
+            )
+
             if run_was_created:
                 pipeline_run_metadata = self._stack.get_pipeline_run_metadata(
                     run_id=pipeline_run.id
