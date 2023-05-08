@@ -20,6 +20,7 @@ from zenml.model_deployers.base_model_deployer import (
     BaseModelDeployerConfig,
     BaseModelDeployerFlavor,
 )
+from zenml.models.service_connector_models import ServiceConnectorRequirements
 
 if TYPE_CHECKING:
     from zenml.integrations.kserve.model_deployers import KServeModelDeployer
@@ -65,6 +66,23 @@ class KServeModelDeployerFlavor(BaseModelDeployerFlavor):
             Name of the flavor.
         """
         return KSERVE_MODEL_DEPLOYER_FLAVOR
+
+    @property
+    def service_connector_requirements(
+        self,
+    ) -> Optional[ServiceConnectorRequirements]:
+        """Service connector resource requirements for service connectors.
+
+        Specifies resource requirements that are used to filter the available
+        service connector types that are compatible with this flavor.
+
+        Returns:
+            Requirements for compatible service connectors, if a service
+            connector is required for this flavor.
+        """
+        return ServiceConnectorRequirements(
+            resource_type="kubernetes-cluster",
+        )
 
     @property
     def docs_url(self) -> Optional[str]:

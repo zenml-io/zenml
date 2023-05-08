@@ -124,7 +124,22 @@ class KServeModelDeployer(BaseModelDeployer):
         Returns:
             The KServeclient.
         """
-        if not self._client:
+        # Refresh the client also if the connector has expired
+        if self._client and not self.connector_has_expired():
+            return self._client
+
+        connector = self.get_connector()
+        if connector:
+            client = connector.connect()
+            if not isinstance(client, k8s_client.ApiClient):
+                raise RuntimeError(
+                    f"Expected a k8s_client.ApiClient while trying to use the "
+                    f"linked connector, but got {type(client)}."
+                )
+            self._client = KServeClient(
+                context=self.config.kubernetes_context,
+            )
+        else:
             self._client = KServeClient(
                 context=self.config.kubernetes_context,
             )
