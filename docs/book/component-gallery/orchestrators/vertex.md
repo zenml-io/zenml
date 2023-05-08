@@ -111,7 +111,6 @@ and to create a Google Cloud Scheduler (e.g. with the
 Additionally, it needs
 the [Storage Object Creator Role](https://cloud.google.com/storage/docs/access-control/iam-roles)
 to be able to write the pipeline JSON file to the artifact store directly.
-If running with a specified workload service account in the Vertex Pipelines orchestrator config, the later should have the rights to impersonate to itself (`roles/iam.serviceAccountUser` and `roles/iam.serviceAccountTokenCreator`) since the Google Cloud Function will run with this service account.
 
 Once your have these permissions set in your local GCP CLI, here is how to create a scheduled
 Vertex pipeline in ZenML:

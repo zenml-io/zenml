@@ -149,7 +149,9 @@ def create_cloud_function(
                 ),
                 service_config=ServiceConfig(
                     service_account_email=function_service_account_email
-                ),
+                )
+                if function_service_account_email
+                else None,
             ),
         )
     )
