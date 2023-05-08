@@ -99,7 +99,7 @@ The inputs and outputs of a step are called _artifacts._ They are automatically 
 
 ### Pipeline
 
-```python
+```
 @pipeline
 def my_pipeline():
   output_step_one = step_1()
@@ -110,15 +110,9 @@ Pipelines are also functions. However you are only allowed to call steps within 
 
 ### Executing the Code
 
-```python
+```
 if __name__ == "__main__":
   my_pipeline()
 ```
 
 Executing the Pipeline is as easy as just calling the function.
-
-
-
-## Whats next?
-
-...

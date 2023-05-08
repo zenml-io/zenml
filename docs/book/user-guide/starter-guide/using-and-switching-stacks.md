@@ -4,17 +4,7 @@ description: How to use MLOps tools and infrastructure with stacks
 
 # Understand the default stack
 
-<details>
-
-<summary>Notes</summary>
-
-* Shorter introduction?
-* Link to all the different types of stack components here?
-* I Propose the following flow -> Point to the line in the logs that mentions the default stack when running a pipeline -> explain what stacks are -> show where they live in the cli and on the dashboard ->&#x20;
-
-</details>
-
-### Stack
+## Stack
 
 In the previous section you might have already noticed the term `stack` in the logs and on the dashboard.
 
@@ -63,9 +53,9 @@ You can explore all your stacks in the dashboard. When you click on a specific o
 {% endtab %}
 {% endtabs %}
 
-### Components of the Stack
+## Components of the Stack
 
-As you can see in the section above, a stack consists of multiple components. All stacks have at minimum an **orchestrator** and an **artifact store**.&#x20;
+As you can see in the section above, a stack consists of multiple components. All stacks have at minimum an **orchestrator** and an **artifact store**.
 
 #### Orchestrator
 
@@ -82,10 +72,6 @@ The **orchestrator** is responsible for executing the pipeline code. In the simp
 ┃   👉   │ default │ ...          │ local  │ ➖     │ default ┃
 ┗━━━━━━━━┷━━━━━━━━━┷━━━━━━━━━━━━━━┷━━━━━━━━┷━━━━━━━━┷━━━━━━━━━┛
 ```
-{% endtab %}
-
-{% tab title="Dashboard" %}
-
 {% endtab %}
 {% endtabs %}
 
@@ -105,20 +91,30 @@ The **artifact store** is responsible for persisting the step outputs. As we lea
 ┗━━━━━━━━┷━━━━━━━━━┷━━━━━━━━━━━━━━┷━━━━━━━━┷━━━━━━━━┷━━━━━━━━━┛
 ```
 {% endtab %}
-
-{% tab title="Dashboard" %}
-
-{% endtab %}
 {% endtabs %}
 
 There are many more components that you can add to your stacks, like experiment trackers, model deployers. You can see all supported stack component types in a single table view [here](broken-reference/)
 
-### Separating Code from Configuration and Infrastructure
+## Separating Code from Configuration and Infrastructure
 
-When you want to proceed into a production setting, all you need to do is set up a production stack with the necessary tools and infrastructure. The stack will act as the backend that your code runs on.
+<figure><img src="../../.gitbook/assets/02_pipeline_local_stack.png" alt=""><figcaption><p>ZenML is the translation layer that allows your code to run on any of your stacks</p></figcaption></figure>
 
-![Running your pipeline in the cloud](../../.gitbook/assets/03\_multi\_stack.png)
+As visualized in the diagram above, There are two domains that are combined through ZenML. The right side shows the code domain. The users python code is turned into a ZenML pipeline. On the left side you can see the infrastructure domain, in this case the default stack that you learned about above. By keeping these two domains separate, it is now easy to switch what stack your pipeline runs on without making any changes in the code.
 
-But before proceeding to that part, find out more about the ZenML server in the next section.
+## Create your first stack
+
+### Create a different Artifact Store
+
+As a starting point you can simply use the default artifact store like so:
+
+```bash
+zenml artifact-store 
+```
+
+
+
+
+
+Before we can move on to using a cloud stack, we need to find out more about the ZenML server in the next section.
 
 ###
