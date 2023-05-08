@@ -175,7 +175,7 @@ class KubeflowOrchestratorConfig(  # type: ignore[misc] # https://github.com/pyd
 
     kubeflow_hostname: Optional[str] = None
     kubeflow_namespace: str = "kubeflow"
-    kubernetes_context: str  # TODO: Potential setting
+    kubernetes_context: Optional[str]  # TODO: Potential setting
     local: bool = False
     skip_local_validations: bool = False
 
@@ -204,57 +204,10 @@ class KubeflowOrchestratorConfig(  # type: ignore[misc] # https://github.com/pyd
             "kubeflow_pipelines_ui_port",
         ]
 
-        provisioning_attrs_used = [
-            attr for attr in provisioning_attrs if attr in values
-        ]
-
-        msg_header = (
-            "The ability to automatically provision and manage a Kubeflow "
-            "instance with  `zenml stack up` on top of a local K3D cluster "
-            "is no longer available in the current version of ZenML "
-            "client. Please use the `k3d-modular` ZenML stack recipe to "
-            "achieve the same results (and more). Automatically exposing the "
-            "Kubeflow UI TCP port locally as part of the stack provisioning "
-            "has also been removed in favor of methods better suited for this "
-            "purpose, such as using an Ingress controller in the remote "
-            "cluster. \n"
-            "As a result, the `kubernetes_context` attribute is no longer "
-            "optional and the following Kubeflow orchestrator configuration "
-            "attributes have been deprecated: "
-            f"{provisioning_attrs}.\n"
-        )
-
-        if provisioning_attrs_used:
-            logger.warning(
-                msg_header
-                + "To get rid of this warning, you should remove the deprecated "
-                "attributes from your orchestrator configuration (e.g. by "
-                "using the `zenml orchestrator remove-attribute <attr-name>` "
-                "CLI command)."
-            )
-            # remove deprecated attributes from values dict
-            for attr in provisioning_attrs_used:
+        # remove deprecated attributes from values dict
+        for attr in provisioning_attrs:
+            if attr in values:
                 del values[attr]
-
-        context = values.get("kubernetes_context")
-        if not context:
-            raise ValueError(
-                msg_header
-                + "Please set the `kubernetes_context` attribute to the name "
-                "of the Kubernetes config context pointing to the cluster "
-                "where Kubeflow is installed (e.g. the K3D cluster provisioned "
-                "by the `k3d-modular` ZenML stack recipe) and also set the "
-                "`local` configuration flag."
-            )
-
-        # TODO: remove this in a future release. kept here for backwards
-        # compatibility with old stack configs
-        elif (
-            isinstance(context, str)
-            and context.startswith("k3d-zenml-kubeflow-")
-            and "local" not in values
-        ):
-            values["local"] = True
 
         return values
 

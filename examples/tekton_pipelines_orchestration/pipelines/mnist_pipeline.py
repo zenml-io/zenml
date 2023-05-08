@@ -16,9 +16,7 @@ from zenml.config import DockerSettings
 from zenml.integrations.constants import TENSORFLOW
 from zenml.pipelines import pipeline
 
-docker_settings = DockerSettings(
-    required_integrations=[TENSORFLOW], requirements=["boto3==1.26.76"]
-)
+docker_settings = DockerSettings(required_integrations=[TENSORFLOW])
 
 
 @pipeline(enable_cache=True, settings={"docker": docker_settings})

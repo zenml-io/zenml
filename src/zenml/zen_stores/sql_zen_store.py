@@ -4952,6 +4952,11 @@ class SqlZenStore(BaseZenStore):
                         resource_type=resource_type,
                     )
                 )
+                if resources.resource_type and not resources.resource_ids:
+                    resources.error = (
+                        f"The service '{connector.type}' connector type is not "
+                        f"available."
+                    )
 
             else:
                 connector_instance = (
