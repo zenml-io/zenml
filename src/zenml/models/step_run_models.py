@@ -66,6 +66,11 @@ class StepRunBaseModel(BaseModel):
     )
     start_time: Optional[datetime] = None
     end_time: Optional[datetime] = None
+    logs_uri: Optional[str] = Field(
+        title="The URI of the logs of the step run.",
+        default=None,
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
 
 
 # -------- #

@@ -34,7 +34,7 @@ class ArtifactStoreLoggingHandler(TimedRotatingFileHandler):
         self,
         artifact_store: "BaseArtifactStore",
         log_key: str,
-        max_messages: int = 100,
+        max_messages: int = 1,
         *args,
         **kwargs
     ):
@@ -45,7 +45,7 @@ class ArtifactStoreLoggingHandler(TimedRotatingFileHandler):
         self.buffer = io.StringIO()
         self.message_count = 0
         self.last_upload_time = time.time()
-        super().__init__(*args, **kwargs)
+        super().__init__(self.log_key, *args, **kwargs)
 
     def emit(self, record: LogRecord):
         """Emits the log record.

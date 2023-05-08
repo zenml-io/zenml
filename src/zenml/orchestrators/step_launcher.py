@@ -14,6 +14,7 @@
 """Class to launch (run directly or using a step operator) steps."""
 
 import logging
+import os
 import time
 from datetime import datetime
 from typing import TYPE_CHECKING, Dict, Optional, Tuple
@@ -162,16 +163,26 @@ class StepLauncher:
         logger.info(f"Step `{self._step_name}` has started.")
 
         pipeline_run, run_was_created = self._create_or_reuse_run()
+
+        # Set up logging
+        logs_uri = os.path.join(
+            self._stack.artifact_store.path,
+            str(pipeline_run.id),
+            self._step_name,
+            "logs",
+        )
+
+        zenml_handler = ArtifactStoreLoggingHandler(
+            self._stack.artifact_store,
+            logs_uri,
+            when="s",
+            interval=1,
+            backupCount=0,
+        )
+
         try:
-            log_key = "app.log"
-            zenml_handler = ArtifactStoreLoggingHandler(
-                self._stack.artifact_store, log_key
-            )
-            logging.basicConfig(
-                handlers=[zenml_handler],
-                format="%(asctime)s - %(levelname)s - %(message)s",
-                level=logging.INFO,
-            )
+            root_logger = logging.getLogger()
+            root_logger.addHandler(zenml_handler)
 
             if run_was_created:
                 pipeline_run_metadata = self._stack.get_pipeline_run_metadata(
@@ -193,6 +204,7 @@ class StepLauncher:
                 start_time=datetime.utcnow(),
                 user=client.active_user.id,
                 workspace=client.active_workspace.id,
+                logs_uri=logs_uri,
             )
             try:
                 execution_needed, step_run_response = self._prepare(
@@ -223,6 +235,10 @@ class StepLauncher:
             logger.error(f"Pipeline run `{pipeline_run.name}` failed.")
             publish_utils.publish_failed_pipeline_run(pipeline_run.id)
             raise
+        finally:
+            # Still write the logs to the artifact store regardless if we fail or not
+            zenml_handler.flush()
+            root_logger.removeHandler(zenml_handler)
 
     def _get_step_docstring_and_source_code(self) -> Tuple[Optional[str], str]:
         """Gets the docstring and source code of the step.
