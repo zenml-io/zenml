@@ -331,7 +331,7 @@ def _load_uri_from_artifact_store(
     except Exception:
         link = "https://docs.zenml.io/component-gallery/artifact-stores/custom#enabling-artifact-visualizations-with-custom-artifact-stores"
         raise NotImplementedError(
-            f"File '{uri}' could not be loaded because the underlying artifact"
+            f"File '{uri}' could not be loaded because the underlying artifact "
             f"store '{artifact_store.name}' could not open the file. This is "
             f"likely because the authentication credentials are not configured "
             f"in the artifact store itself. For more information, see {link}."
