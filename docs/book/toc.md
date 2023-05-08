@@ -127,7 +127,7 @@
 ## Reference
 
 * [🤷 CLI & API reference](https://apidocs.zenml.io/)
-* [💜 Community & Contents](reference/community-and-content.md)
+* [💜 Community & Content](reference/community-and-content.md)
 * [🙋 FAQ](learning/faq.md)
 
 ## Doc Orphanage
