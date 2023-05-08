@@ -33,11 +33,8 @@ from zenml.utils import source_utils
 from zenml.utils.yaml_utils import read_yaml, write_yaml
 
 if TYPE_CHECKING:
-    from uuid import UUID
-
     from zenml.models import ArtifactResponseModel
     from zenml.zen_stores.base_zen_store import BaseZenStore
-
 
 logger = get_logger(__name__)
 
@@ -232,13 +229,8 @@ def load_artifact_visualization(
     visualization = artifact.visualizations[index]
 
     # Load the visualization from the artifact's artifact store
-    if not artifact.artifact_store_id:
-        raise DoesNotExistException(
-            f"Artifact '{artifact.id}' cannot be visualized because the "
-            "underlying artifact store was deleted."
-        )
-    artifact_store = _load_artifact_store(
-        artifact_store_id=artifact.artifact_store_id, zen_store=zen_store
+    artifact_store = _load_artifact_store_of_artifact(
+        artifact=artifact, zen_store=zen_store
     )
     mode = "rb" if visualization.type == VisualizationType.IMAGE else "r"
     value = _load_uri_from_artifact_store(
@@ -254,38 +246,36 @@ def load_artifact_visualization(
     return LoadedVisualizationModel(type=visualization.type, value=value)
 
 
-def _load_artifact_store(
-    artifact_store_id: "UUID", zen_store: Optional["BaseZenStore"] = None
+def _load_artifact_store_of_artifact(
+    artifact: "ArtifactResponseModel",
+    zen_store: Optional["BaseZenStore"] = None,
 ) -> BaseArtifactStore:
-    """Load the artifact store with the given id.
+    """Load the artifact store of the given artifact.
 
     Args:
-        artifact_store_id: The id of the artifact store to load.
+        artifact: The artifact to load the artifact store of.
         zen_store: The ZenStore to use for finding the artifact store. If not
             provided, the ZenStore of the client will be used.
 
     Returns:
-        The loaded artifact store.
+        The artifact store of the given artifact.
 
     Raises:
-        DoesNotExistException: If the artifact store could not be found.
+        DoesNotExistException: If the artifact does not have an artifact store.
         NotImplementedError: If the artifact store could not be loaded.
     """
+    if not artifact.artifact_store_id:
+        raise DoesNotExistException(
+            f"Artifact '{artifact.id}' cannot be loaded because the underlying "
+            "artifact store was deleted."
+        )
+
     if zen_store is None:
         zen_store = Client().zen_store
 
-    try:
-        artifact_store_model = zen_store.get_stack_component(artifact_store_id)
-    except KeyError:
-        raise DoesNotExistException(
-            f"Artifact store with id '{artifact_store_id}' does not exist."
-        )
-
-    if not artifact_store_model.type == StackComponentType.ARTIFACT_STORE:
-        raise DoesNotExistException(
-            f"Stack component with id '{artifact_store_id}' is not an "
-            f"artifact store."
-        )
+    artifact_store_model = zen_store.get_stack_component(
+        artifact.artifact_store_id
+    )
 
     try:
         artifact_store = cast(
@@ -294,9 +284,11 @@ def _load_artifact_store(
     except ImportError:
         link = "https://docs.zenml.io/component-gallery/artifact-stores/custom#enabling-artifact-visualizations-with-custom-artifact-stores"
         raise NotImplementedError(
-            f"Artifact store '{artifact_store_model.name}' could not be "
-            f"instantiated. This is likely because the artifact store's "
-            f"dependencies are not installed. For more information, see {link}."
+            f"Artifact '{artifact.id}' could not be loaded because the "
+            f"underlying artifact store '{artifact_store_model.name}' "
+            f"could not be instantiated. This is likely because the "
+            f"artifact store's dependencies are not installed. For more "
+            f"information, see {link}."
         )
     return artifact_store
 
