@@ -57,11 +57,9 @@ from zenml.enums import (
     StoreType,
 )
 from zenml.exceptions import (
-    DoesNotExistException,
     EntityExistsError,
     IllegalOperationError,
     InitializationException,
-    StackComponentDeploymentError,
     ValidationError,
     ZenKeyError,
 )

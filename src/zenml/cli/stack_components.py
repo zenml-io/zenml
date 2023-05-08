@@ -1058,7 +1058,7 @@ def generate_stack_component_flavor_delete_command(
 
 def generate_stack_component_deploy_command(
     component_type: StackComponentType,
-) -> Callable[[click.Context, str, str, str, List[str]], None]:
+) -> Callable[[str, str, str, List[str]], None]:
     """Generates a `deploy` command for the stack component type.
 
     Args:
@@ -1197,7 +1197,7 @@ def generate_stack_component_deploy_command(
 
 def generate_stack_component_destroy_command(
     component_type: StackComponentType,
-) -> Callable[[click.Context, str], None]:
+) -> Callable[[str], None]:
     """Generates a `destroy` command for the stack component type.
 
     Args:
