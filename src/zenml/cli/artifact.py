@@ -57,6 +57,8 @@ def list_artifacts(**kwargs: Any) -> None:
             "user",
             "workspace",
             "producer_step_run_id",
+            "metadata",
+            "artifact_store_id",
         ],
     )
 

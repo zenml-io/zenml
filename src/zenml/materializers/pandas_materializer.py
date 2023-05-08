@@ -18,7 +18,7 @@ from typing import Any, ClassVar, Dict, Tuple, Type, Union
 
 import pandas as pd
 
-from zenml.enums import ArtifactType
+from zenml.enums import ArtifactType, VisualizationType
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
@@ -131,6 +131,22 @@ class PandasMaterializer(BaseMaterializer):
         else:
             with fileio.open(self.csv_path, mode="wb") as f:
                 df.to_csv(f, index=True)
+
+    def save_visualizations(
+        self, df: Union[pd.DataFrame, pd.Series]
+    ) -> Dict[str, VisualizationType]:
+        """Save visualizations of the given pandas dataframe or series.
+
+        Args:
+            df: The pandas dataframe or series to visualize.
+
+        Returns:
+            A dictionary of visualization URIs and their types.
+        """
+        describe_uri = os.path.join(self.uri, "describe.csv")
+        with fileio.open(describe_uri, mode="wb") as f:
+            df.describe().to_csv(f)
+        return {describe_uri: VisualizationType.CSV}
 
     def extract_metadata(
         self, df: Union[pd.DataFrame, pd.Series]
