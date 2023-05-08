@@ -11,30 +11,31 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Util functions for models and materializers."""
+"""Util functions for artifact handling."""
 
 import base64
 import os
 import tempfile
 from typing import TYPE_CHECKING, Any, Optional, Union, cast
 
-from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
 from zenml.client import Client
-from zenml.config.source import Source
 from zenml.constants import MODEL_METADATA_YAML_FILE_NAME
 from zenml.enums import StackComponentType, VisualizationType
 from zenml.exceptions import DoesNotExistException
 from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.models.visualization_models import LoadedVisualizationModel
 from zenml.stack import StackComponent
 from zenml.utils import source_utils
 from zenml.utils.yaml_utils import read_yaml, write_yaml
 
 if TYPE_CHECKING:
+    from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
+    from zenml.config.source import Source
+    from zenml.materializers.base_materializer import BaseMaterializer
     from zenml.models import ArtifactResponseModel
     from zenml.zen_stores.base_zen_store import BaseZenStore
+
 
 logger = get_logger(__name__)
 
@@ -142,8 +143,8 @@ def load_artifact(artifact: "ArtifactResponseModel") -> Any:
 
 
 def _load_artifact(
-    materializer: Union[Source, str],
-    data_type: Union[Source, str],
+    materializer: Union["Source", str],
+    data_type: Union["Source", str],
     uri: str,
 ) -> Any:
     """Load an artifact using the given materializer.
@@ -249,7 +250,7 @@ def load_artifact_visualization(
 def _load_artifact_store_of_artifact(
     artifact: "ArtifactResponseModel",
     zen_store: Optional["BaseZenStore"] = None,
-) -> BaseArtifactStore:
+) -> "BaseArtifactStore":
     """Load the artifact store of the given artifact.
 
     Args:
@@ -279,7 +280,8 @@ def _load_artifact_store_of_artifact(
 
     try:
         artifact_store = cast(
-            BaseArtifactStore, StackComponent.from_model(artifact_store_model)
+            "BaseArtifactStore",
+            StackComponent.from_model(artifact_store_model),
         )
     except ImportError:
         link = "https://docs.zenml.io/component-gallery/artifact-stores/custom#enabling-artifact-visualizations-with-custom-artifact-stores"
@@ -295,7 +297,7 @@ def _load_artifact_store_of_artifact(
 
 def _load_uri_from_artifact_store(
     uri: str,
-    artifact_store: BaseArtifactStore,
+    artifact_store: "BaseArtifactStore",
     mode: str = "rb",
 ) -> Any:
     """Load the given uri from the given artifact store.
