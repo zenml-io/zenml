@@ -83,7 +83,7 @@ KFP_POD_LABELS = {
 ENV_KFP_RUN_ID = "KFP_RUN_ID"
 
 
-class KubeClientKFPClient(kfp.Client):
+class KubeClientKFPClient(kfp.Client):  # type: ignore[misc]
     """KFP client initialized from a Kubernetes client.
 
     This is a workaround for the fact that the native KFP client does not

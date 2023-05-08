@@ -67,6 +67,30 @@ logger = get_logger(__name__)
 DEFAULT_KSERVE_DEPLOYMENT_START_STOP_TIMEOUT = 300
 
 
+class KubeClientKServeClient(KServeClient):  # type: ignore[misc]
+    """KServe client initialized from a Kubernetes client.
+
+    This is a workaround for the fact that the native KServe client does not
+    support initialization from an existing Kubernetes client.
+    """
+
+    def __init__(
+        self, kube_client: k8s_client.ApiClient, *args: Any, **kwargs: Any
+    ) -> None:
+        """Initializes the KServe client from a Kubernetes client.
+
+        Args:
+            kube_client: pre-configured Kubernetes client.
+            *args: standard KServe client positional arguments.
+            **kwargs: standard KServe client keyword arguments.
+        """
+        from kubernetes import client
+
+        self.core_api = client.CoreV1Api(kube_client)
+        self.app_api = client.AppsV1Api(kube_client)
+        self.api_instance = client.CustomObjectsApi(kube_client)
+
+
 class KServeModelDeployer(BaseModelDeployer):
     """KServe model deployer stack component implementation."""
 
@@ -136,8 +160,8 @@ class KServeModelDeployer(BaseModelDeployer):
                     f"Expected a k8s_client.ApiClient while trying to use the "
                     f"linked connector, but got {type(client)}."
                 )
-            self._client = KServeClient(
-                context=self.config.kubernetes_context,
+            self._client = KubeClientKServeClient(
+                kube_client=client,
             )
         else:
             self._client = KServeClient(

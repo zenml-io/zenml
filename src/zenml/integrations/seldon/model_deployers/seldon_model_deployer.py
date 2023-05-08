@@ -113,11 +113,34 @@ class SeldonModelDeployer(BaseModelDeployer):
         Returns:
             The Seldon Core client.
         """
-        if not self._client:
-            self._client = SeldonClient(
-                context=self.config.kubernetes_context,
-                namespace=self.config.kubernetes_namespace,
-            )
+        from kubernetes import client as k8s_client
+
+        # Refresh the client also if the connector has expired
+        if self._client and not self.connector_has_expired():
+            return self._client
+
+        connector = self.get_connector()
+        kube_client: Optional[k8s_client.ApiClient] = None
+        if connector:
+            if not self.config.kubernetes_namespace:
+                raise RuntimeError(
+                    "The Kubernetes namespace must be explicitly configured in "
+                    "the stack component when using a service connector to "
+                    "deploy models with Seldon Core."
+                )
+            kube_client = connector.connect()
+            if not isinstance(kube_client, k8s_client.ApiClient):
+                raise RuntimeError(
+                    f"Expected a k8s_client.ApiClient while trying to use the "
+                    f"linked connector, but got {type(kube_client)}."
+                )
+
+        self._client = SeldonClient(
+            context=self.config.kubernetes_context,
+            namespace=self.config.kubernetes_namespace,
+            kube_client=kube_client,
+        )
+
         return self._client
 
     @property

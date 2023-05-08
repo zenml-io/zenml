@@ -72,18 +72,6 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
 
     _k8s_client: Optional[k8s_client.ApiClient] = None
 
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        """Initialize the class and the Kubernetes clients.
-
-        Args:
-            *args: The positional arguments to pass to the Pydantic object.
-            **kwargs: The keyword arguments to pass to the Pydantic object.
-        """
-        super().__init__(*args, **kwargs)
-
-        # Initialize the Kubernetes client
-        _ = self.kube_client
-
     @property
     def kube_client(self) -> k8s_client.ApiClient:
         """Getter for the Kubernetes API client.
