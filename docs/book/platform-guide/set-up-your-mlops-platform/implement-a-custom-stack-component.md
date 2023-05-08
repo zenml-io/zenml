@@ -240,16 +240,16 @@ Describe MLOps Stack Component Flavors
 
 If you would like to learn more about how to build a custom stack component flavor for a specific stack component, please check the links below:
 
-| **Type of Stack Component**                                                           | **Description**                                                   |
-| ------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
-| [Orchestrator](../../learning/component-gallery/orchestrators/custom.md)              | Orchestrating the runs of your pipeline                           |
-| [Artifact Store](../../learning/component-gallery/artifact-stores/custom.md)          | Storage for the artifacts created by your pipelines               |
-| [Container Registry](../../learning/component-gallery/container-registries/custom.md) | Store for your containers                                         |
-| [Secrets Manager](../../component-gallery/secrets-managers/custom.md)                 | Centralized location for the storage of your secrets              |
-| [Step Operator](../../learning/component-gallery/step-operators/custom.md)            | Execution of individual steps in specialized runtime environments |
-| [Model Deployer](../../learning/component-gallery/model-deployers/custom.md)          | Services/platforms responsible for online model serving           |
-| [Feature Store](../../learning/component-gallery/feature-stores/custom.md)            | Management of your data/features                                  |
-| [Experiment Tracker](../../learning/component-gallery/experiment-trackers/custom.md)  | Tracking your ML experiments                                      |
-| [Alerter](../../learning/component-gallery/alerters/custom.md)                        | Sending alerts through specified channels                         |
-| [Annotator](../../learning/component-gallery/annotators/custom.md)                    | Annotating and labeling data                                      |
-| [Data Validator](../../learning/component-gallery/data-validators/custom.md)          | Validating and monitoring your data                               |
+| **Type of Stack Component**                                                            | **Description**                                                   |
+| -------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| [Orchestrator](../../user-guide/component-galery/orchestrators/custom.md)              | Orchestrating the runs of your pipeline                           |
+| [Artifact Store](../../user-guide/component-galery/artifact-stores/custom.md)          | Storage for the artifacts created by your pipelines               |
+| [Container Registry](../../user-guide/component-galery/container-registries/custom.md) | Store for your containers                                         |
+| [Secrets Manager](../../component-gallery/secrets-managers/custom.md)                  | Centralized location for the storage of your secrets              |
+| [Step Operator](../../user-guide/component-galery/step-operators/custom.md)            | Execution of individual steps in specialized runtime environments |
+| [Model Deployer](../../user-guide/component-galery/model-deployers/custom.md)          | Services/platforms responsible for online model serving           |
+| [Feature Store](../../user-guide/component-galery/feature-stores/custom.md)            | Management of your data/features                                  |
+| [Experiment Tracker](../../user-guide/component-galery/experiment-trackers/custom.md)  | Tracking your ML experiments                                      |
+| [Alerter](../../user-guide/component-galery/alerters/custom.md)                        | Sending alerts through specified channels                         |
+| [Annotator](../../user-guide/component-galery/annotators/custom.md)                    | Annotating and labeling data                                      |
+| [Data Validator](../../learning/component-gallery/data-validators/custom.md)           | Validating and monitoring your data                               |
