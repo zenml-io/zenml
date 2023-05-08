@@ -11,7 +11,6 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from contextlib import ExitStack as does_not_raise
 
 from great_expectations.core import ExpectationSuite
 
@@ -23,11 +22,10 @@ from zenml.integrations.great_expectations.materializers.ge_materializer import 
 
 def test_great_expectations_materializer(clean_client):
     """Tests whether the steps work for the Great Expectations materializer."""
-    with does_not_raise():
-        expectation_suite = _test_materializer(
-            step_output=ExpectationSuite("arias_suite"),
-            materializer_class=GreatExpectationsMaterializer,
-        )
-
+    expectation_suite = _test_materializer(
+        step_output=ExpectationSuite("arias_suite"),
+        materializer_class=GreatExpectationsMaterializer,
+        expected_metadata_size=2,
+    )
     assert expectation_suite.expectation_suite_name == "arias_suite"
     assert len(expectation_suite.expectations) == 0
