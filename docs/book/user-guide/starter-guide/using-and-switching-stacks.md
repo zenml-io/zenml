@@ -2,17 +2,27 @@
 description: Learn how to switch the infrastructure backend of your code.
 ---
 
-# Switch stacks locally
+# Understand stacks
 
 ## Stack
 
-In the previous section you might have already noticed the term `stack` in the logs and on the dashboard.
+In the previous section you might have already noticed the term `stack` in the logs and on the dashboard.&#x20;
 
-A `stack` is the combination of tools and infrastructure that your pipelines can run on. When you get started with ZenML this will be the default stack. Let's explore what this is.
+#### What is a Stack?
+
+A `stack` is the combination of tools and infrastructure that your pipelines can run on. When you run zenml code without configuring a stack, the pipeline will run on the so called `default` stack.&#x20;
+
+#### Why separate Code from Configuration and Infrastructure?
+
+<figure><img src="../../.gitbook/assets/02_pipeline_local_stack.png" alt=""><figcaption><p>ZenML is the translation layer that allows your code to run on any of your stacks</p></figcaption></figure>
+
+As visualized in the diagram above, there are two separate domains that are connected through ZenML. The right side shows the code domain. The users python code is translated into a ZenML pipeline. On the left side you can see the infrastructure domain, in this case an instance of the default stack that you learned about above. By separating these two domains, it is easy to switch the environment that the pipeline runs on without making any changes in the code. It also allows domain experts to write code/configure infrastructure without worrying about the other domain.&#x20;
+
+### The Default Stack
 
 {% tabs %}
 {% tab title="CLI" %}
-`zenml stack describe` lets you find out details about your active stack:
+`zenml stack describe` lets you find out details about your active stack.:
 
 ```bash
 ...
@@ -42,7 +52,7 @@ Stack 'default' with id '...' is owned by user default and is 'private'.
 ```
 
 {% hint style="info" %}
-As you can see a stack can be active on your client. This simply means that any pipeline you run, will be using the active stack as its environment.
+As you can see a stack can be **active** on your **client**. This simply means that any pipeline you run, will be using the **active stack** as its environment.
 {% endhint %}
 {% endtab %}
 
@@ -73,6 +83,10 @@ The **orchestrator** is responsible for executing the pipeline code. In the simp
 ┗━━━━━━━━┷━━━━━━━━━┷━━━━━━━━━━━━━━┷━━━━━━━━┷━━━━━━━━┷━━━━━━━━━┛
 ```
 {% endtab %}
+
+{% tab title="Dashboard" %}
+
+{% endtab %}
 {% endtabs %}
 
 #### Artifact Store
@@ -91,19 +105,21 @@ The **artifact store** is responsible for persisting the step outputs. As we lea
 ┗━━━━━━━━┷━━━━━━━━━┷━━━━━━━━━━━━━━┷━━━━━━━━┷━━━━━━━━┷━━━━━━━━━┛
 ```
 {% endtab %}
+
+{% tab title="Dashboard" %}
+
+{% endtab %}
 {% endtabs %}
 
-There are many more components that you can add to your stacks, like experiment trackers, model deployers. You can see all supported stack component types in a single table view [here](broken-reference/)
-
-## Separating Code from Configuration and Infrastructure
-
-<figure><img src="../../.gitbook/assets/02_pipeline_local_stack.png" alt=""><figcaption><p>ZenML is the translation layer that allows your code to run on any of your stacks</p></figcaption></figure>
-
-As visualized in the diagram above, There are two domains that are combined through ZenML. The right side shows the code domain. The users python code is turned into a ZenML pipeline. On the left side you can see the infrastructure domain, in this case the default stack that you learned about above. By keeping these two domains separate, it is now easy to switch what stack your pipeline runs on without making any changes in the code.
+{% hint style="info" %}
+There are many more components that you can add to your stacks, like experiment trackers, model deployers and more. You can see all supported stack component types in a single table view [here](broken-reference/)
+{% endhint %}
 
 ## Create your first stack
 
-### Create a different Artifact Store
+Before we create a new stack, we need to have a non-default component to use for it.
+
+### Create another Artifact Store
 
 {% tabs %}
 {% tab title="CLI" %}
@@ -113,18 +129,33 @@ zenml artifact-store register --flavor=local my_artifact_store
 
 Let'd decompose the command:
 
-* `artifact-store` this describes the top level group, to find other stack components simply run `zenml --help`&#x20;
-* `register` here we want to register a new component, instead we could also `update` , `delete`&#x20;
+* `artifact-store` :  This describes the top level group, to find other stack components simply run `zenml --help`&#x20;
+* `register` : Here we want to register a new component, instead we could also `update` , `delete` and more `zenml artifact-store --help` will give you all possibilities
+* `--flavor=local`: A flavor is a possible implementation for a stack component. So in the case of an artifact-store this could be an s3-bucket or a local filesystem. You can find out all possibilities with `zenml artifact-store flavor --list`
+* `my_artifact_store` : This is the unique name that the stack component will have.
+
+This will be the output that you can expect from the command above.
+
+```bash
+Using the default local database.
+Running with active workspace: 'default' (global)
+Running with active stack: 'default' (global)
+Successfully registered artifact_store `my_artifact_store`.
+```
+
+To see the new artifact store that you just registered, just run:
+
+```bash
+zenml artifact-store describe my_artifact_store
+```
 {% endtab %}
 
-{% tab title="Second Tab" %}
+{% tab title="Dashboard" %}
 
 {% endtab %}
 {% endtabs %}
 
-
-
-
+### Create another local stack
 
 Before we can move on to using a cloud stack, we need to find out more about the ZenML server in the next section.
 
