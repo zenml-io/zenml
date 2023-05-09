@@ -232,7 +232,7 @@ class StepRunSchema(NamedSchema, table=True):
             input_artifacts=input_artifacts,
             output_artifacts=output_artifacts,
             metadata=metadata,
-            step_logs=self.step_logs.to_model(),
+            step_logs=self.step_logs.to_model() if self.step_logs,
         )
 
     def update(self, step_update: StepRunUpdateModel) -> "StepRunSchema":
