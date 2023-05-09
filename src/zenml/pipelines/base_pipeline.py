@@ -40,7 +40,6 @@ import yaml
 from packaging import version
 
 from zenml import constants
-from zenml.cli import utils as cli_utils
 from zenml.client import Client
 from zenml.config.compiler import Compiler
 from zenml.config.pipeline_configurations import (
@@ -664,7 +663,9 @@ class BasePipeline(metaclass=BasePipelineMeta):
             # TODO: check for better filtering options
             breakpoint()
 
-            runs = Client().list_runs(deployment_id=deployment_model.id) # TODO: add filtering here
+            runs = Client().list_runs(
+                deployment_id=deployment_model.id
+            )  # TODO: add filtering here
 
             if runs.items:
                 # Log the dashboard URL
