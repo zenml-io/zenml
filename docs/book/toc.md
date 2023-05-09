@@ -107,7 +107,7 @@
     * [Deploy with Helm](platform-guide/set-up-your-mlops-platform/deploy-zenml/deploy-with-helm.md)
   * [Connect to your cloud provider](platform-guide/set-up-your-mlops-platform/connect-to-your-cloud-provider.md)
   * [Deploy and set up a cloud stack](platform-guide/set-up-your-mlops-platform/deploy-and-set-up-a-cloud-stack.md)
-  * [Productionalize with CI/CD/CT](platform-guide/set-up-your-mlops-platform/productionalize-with-ci-cd-ct.md)
+  * [Manage secrets](platform-guide/set-up-your-mlops-platform/secrets-management.md)
   * [Implement a custom stack component](platform-guide/set-up-your-mlops-platform/implement-a-custom-stack-component.md)
 * [🔧 Manage the Deployed Services](platform-guide/manage-the-deployed-services/README.md)
   * [Upgrade the ZenML Version of your server](platform-guide/manage-the-deployed-services/upgrading-the-zenml-version.md)
