@@ -21,7 +21,7 @@
   * [Containerize your pipeline](user-guide/advanced-guide/containerize-your-pipeline.md)
   * [Schedule pipeline runs](user-guide/advanced-guide/schedule-pipeline-runs.md)
   * [Handle custom data types](user-guide/advanced-guide/handle-custom-data-types.md)
-  * [Link your own repository](user-guide/advanced-guide/link-your-own-repository.md)
+  * [Connect your git repository](user-guide/advanced-guide/connect-your-git-repository.md)
   * [Use failure/success hooks](user-guide/advanced-guide/use-failure-success-hooks.md)
   * [Access metadata within steps](user-guide/advanced-guide/access-metadata-within-steps.md)
   * [Enable GPU-backed hardware](user-guide/advanced-guide/enable-gpu-backed-hardware.md)

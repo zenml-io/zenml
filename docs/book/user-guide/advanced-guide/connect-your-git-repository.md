@@ -26,7 +26,7 @@ Code repositories can be registered using the CLI:
 zenml code-repository register <NAME> --type=<TYPE> [--CODE_REPOSITORY_OPTIONS]
 ```
 
-For concrete options, check out the section on the [`GitHubCodeRepository`](link-your-own-repository.md#github), the [`GitLabCodeRepository`](link-your-own-repository.md#gitlab) or how to develop and register a [custom code repository implementation](link-your-own-repository.md#developing-a-custom-code-repository).
+For concrete options, check out the section on the [`GitHubCodeRepository`](connect-your-git-repository.md#github), the [`GitLabCodeRepository`](connect-your-git-repository.md#gitlab) or how to develop and register a [custom code repository implementation](connect-your-git-repository.md#developing-a-custom-code-repository).
 
 #### Detecting local code repository checkouts
 
@@ -37,11 +37,11 @@ Once you have registered one or more code repositories, ZenML will check whether
 
 #### Tracking code version for pipeline runs
 
-If a [local code repository checkout](link-your-own-repository.md#detecting-local-code-repository-checkouts) is detected when running a pipeline, ZenML will store a reference to the current commit for the pipeline run so you'll be able to know exactly which code was used. Note that this reference is only tracked if your local checkout is clean (i.e. it does not contain any untracked or uncommitted files). This is to ensure that your pipeline is actually running with the exact code stored at the specific code repository commit.
+If a [local code repository checkout](connect-your-git-repository.md#detecting-local-code-repository-checkouts) is detected when running a pipeline, ZenML will store a reference to the current commit for the pipeline run so you'll be able to know exactly which code was used. Note that this reference is only tracked if your local checkout is clean (i.e. it does not contain any untracked or uncommitted files). This is to ensure that your pipeline is actually running with the exact code stored at the specific code repository commit.
 
 #### Speeding up Docker builds for containerized components
 
-When using containerized components in your stack, ZenML needs to build Docker images to remotely execute your code. If you're not using a code repository, this code will be included in the Docker images that ZenML builds. This, however, means that new Docker images will be built and pushed whenever you make changes to any of your source files. When running a pipeline that is part of a [local code repository checkout](link-your-own-repository.md#detecting-local-code-repository-checkouts), ZenML can instead build the Docker images without including any of your source files, and download the files inside the container before running your code. This greatly speeds up the building process and also allows you to reuse images that one of your colleagues might have built for the same stack.
+When using containerized components in your stack, ZenML needs to build Docker images to remotely execute your code. If you're not using a code repository, this code will be included in the Docker images that ZenML builds. This, however, means that new Docker images will be built and pushed whenever you make changes to any of your source files. When running a pipeline that is part of a [local code repository checkout](connect-your-git-repository.md#detecting-local-code-repository-checkouts), ZenML can instead build the Docker images without including any of your source files, and download the files inside the container before running your code. This greatly speeds up the building process and also allows you to reuse images that one of your colleagues might have built for the same stack.
 
 Some additional points:
 
@@ -50,7 +50,7 @@ Some additional points:
 
 ### Available code repository implementation
 
-ZenML comes with builtin implementations of the code repository abstraction for the `GitHub` and `GitLab` platforms, but it's also possible to use a [custom code repository implementation](link-your-own-repository.md#developing-a-custom-code-repository).
+ZenML comes with builtin implementations of the code repository abstraction for the `GitHub` and `GitLab` platforms, but it's also possible to use a [custom code repository implementation](connect-your-git-repository.md#developing-a-custom-code-repository).
 
 #### GitHub
 
