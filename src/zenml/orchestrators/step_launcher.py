@@ -181,17 +181,16 @@ class StepLauncher:
                 workspace=client.active_workspace.id,
             )
             try:
-                execution_needed, step_run_response = self._prepare(
-                    step_run=step_run
-                )
+                execution_needed, step_run = self._prepare(step_run=step_run)
             except:  # noqa: E722
-                logger.error(
-                    f"Failed during preparation to run step `{self._step_name}`."
-                )
+                logger.error(f"Failed preparing run step `{self._step_name}`.")
                 step_run.status = ExecutionStatus.FAILED
                 step_run.end_time = datetime.utcnow()
-                Client().zen_store.create_run_step(step_run)
                 raise
+            finally:
+                step_run_response = Client().zen_store.create_run_step(
+                    step_run
+                )
 
             if execution_needed:
                 try:
@@ -286,7 +285,7 @@ class StepLauncher:
 
     def _prepare(
         self, step_run: StepRunRequestModel
-    ) -> Tuple[bool, StepRunResponseModel]:
+    ) -> Tuple[bool, StepRunRequestModel]:
         """Prepares running the step.
 
         Args:
@@ -337,9 +336,7 @@ class StepLauncher:
                 step_run.status = ExecutionStatus.CACHED
                 step_run.end_time = step_run.start_time
 
-        step_run_response = Client().zen_store.create_run_step(step_run)
-
-        return execution_needed, step_run_response
+        return execution_needed, step_run
 
     def _run_step(
         self,
