@@ -257,7 +257,9 @@ def pull(
     )
 
     try:
-        stack_recipes  = git_stack_recipes_handler.get_stack_recipes(stack_recipe_name)
+        stack_recipes = git_stack_recipes_handler.get_stack_recipes(
+            stack_recipe_name
+        )
     except KeyError as e:
         cli_utils.error(str(e))
 
