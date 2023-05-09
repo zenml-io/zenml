@@ -18,10 +18,10 @@ from datetime import datetime
 from typing import TYPE_CHECKING, List, Optional
 from uuid import UUID
 
-from pydantic.json import pydantic_encoder
 from sqlalchemy import TEXT, Column
 from sqlmodel import Field, Relationship
 
+from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.enums import ExecutionStatus
 from zenml.models import (
     PipelineRunRequestModel,
@@ -165,9 +165,7 @@ class PipelineRunSchema(NamedSchema, table=True):
         Returns:
             The created `PipelineRunSchema`.
         """
-        configuration = json.dumps(
-            request.pipeline_configuration, default=pydantic_encoder
-        )
+        config = request.pipeline_configuration
         client_environment = json.dumps(request.client_environment)
         orchestrator_environment = json.dumps(request.orchestrator_environment)
 
@@ -182,10 +180,11 @@ class PipelineRunSchema(NamedSchema, table=True):
             build_id=request.build,
             deployment_id=request.deployment,
             schedule_id=request.schedule_id,
-            enable_cache=request.enable_cache,
+            enable_cache=config.enable_cache,
+            enable_artifact_metadata=config.enable_artifact_metadata,
             start_time=request.start_time,
             status=request.status,
-            pipeline_configuration=configuration,
+            pipeline_configuration=config.json(sort_keys=True),
             num_steps=request.num_steps,
             git_sha=request.git_sha,
             client_version=request.client_version,
@@ -219,6 +218,7 @@ class PipelineRunSchema(NamedSchema, table=True):
             metadata_schema.key: metadata_schema.to_model()
             for metadata_schema in self.run_metadata
         }
+        config = PipelineConfiguration.parse_raw(self.pipeline_configuration)
 
         if _block_recursion:
             return PipelineRunResponseModel(
@@ -228,12 +228,10 @@ class PipelineRunSchema(NamedSchema, table=True):
                 user=self.user.to_model(True) if self.user else None,
                 schedule_id=self.schedule_id,
                 orchestrator_run_id=self.orchestrator_run_id,
-                enable_cache=self.enable_cache,
-                enable_artifact_metadata=self.enable_artifact_metadata,
                 start_time=self.start_time,
                 end_time=self.end_time,
                 status=self.status,
-                pipeline_configuration=json.loads(self.pipeline_configuration),
+                pipeline_configuration=config,
                 num_steps=self.num_steps,
                 git_sha=self.git_sha,
                 client_version=self.client_version,
@@ -252,8 +250,6 @@ class PipelineRunSchema(NamedSchema, table=True):
                 workspace=self.workspace.to_model(),
                 user=self.user.to_model(True) if self.user else None,
                 orchestrator_run_id=self.orchestrator_run_id,
-                enable_cache=self.enable_cache,
-                enable_artifact_metadata=self.enable_artifact_metadata,
                 start_time=self.start_time,
                 end_time=self.end_time,
                 status=self.status,
@@ -265,7 +261,7 @@ class PipelineRunSchema(NamedSchema, table=True):
                 if self.deployment
                 else None,
                 schedule_id=self.schedule_id,
-                pipeline_configuration=json.loads(self.pipeline_configuration),
+                pipeline_configuration=config,
                 num_steps=self.num_steps,
                 git_sha=self.git_sha,
                 client_version=self.client_version,

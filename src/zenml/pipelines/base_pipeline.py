@@ -86,7 +86,11 @@ from zenml.utils.analytics_utils import AnalyticsEvent, event_handler
 if TYPE_CHECKING:
     from zenml.config.base_settings import SettingsOrDict
     from zenml.config.source import Source
-    from zenml.post_execution import PipelineRunView
+    from zenml.post_execution import (
+        PipelineRunView,
+        PipelineVersionView,
+        PipelineView,
+    )
 
     StepConfigurationUpdateOrDict = Union[
         Dict[str, Any], StepConfigurationUpdate
@@ -97,6 +101,7 @@ logger = get_logger(__name__)
 PIPELINE_INNER_FUNC_NAME = "connect"
 PARAM_ENABLE_CACHE = "enable_cache"
 PARAM_ENABLE_ARTIFACT_METADATA = "enable_artifact_metadata"
+PARAM_ENABLE_ARTIFACT_VISUALIZATION = "enable_artifact_visualization"
 INSTANCE_CONFIGURATION = "INSTANCE_CONFIGURATION"
 PARAM_SETTINGS = "settings"
 PARAM_EXTRA_OPTIONS = "extra"
@@ -144,6 +149,45 @@ class BasePipelineMeta(type):
 T = TypeVar("T", bound="BasePipeline")
 
 
+class GetRunsDescriptor:
+    """Descriptor to define the `BasePipeline.get_runs`.
+
+    Descriptors (https://docs.python.org/3/reference/datamodel.html#implementing-descriptors)
+    allow us to define different behaviors for pipeline classes and instances.
+    """
+
+    def __get__(
+        self, instance: Optional["BasePipeline"], cls: Type["BasePipeline"]
+    ) -> Callable[[], List["PipelineRunView"]]:
+        """Get all runs of this pipeline instance or class.
+
+        Args:
+            instance: The pipeline instance if called on an instance else None.
+            cls: The pipeline class.
+
+        Returns:
+            A list of all runs of this pipeline instance or class.
+
+        Raises:
+            RuntimeError: If the method is called on a pipeline instance that
+                has not been run yet.
+        """
+        from zenml.post_execution import get_pipeline
+
+        pipeline_view: Union["PipelineVersionView", "PipelineView"]
+        if instance is None:
+            pipeline_view = get_pipeline(cls)
+        else:
+            pipeline_view = get_pipeline(instance)
+
+        if pipeline_view:
+            return lambda: pipeline_view.runs
+        raise RuntimeError(
+            "The pipeline view for this pipeline was not found. Please check "
+            "that the pipeline has been run already."
+        )
+
+
 class BasePipeline(metaclass=BasePipelineMeta):
     """Abstract base class for all ZenML pipelines.
 
@@ -153,6 +197,8 @@ class BasePipeline(metaclass=BasePipelineMeta):
             pipeline.
         enable_artifact_metadata: A boolean indicating if artifact metadata
             is enabled for this pipeline.
+        enable_artifact_visualization: A boolean indicating if artifact
+            visualization is enabled for this pipeline.
     """
 
     STEP_SPEC: ClassVar[Dict[str, Any]] = None  # type: ignore[assignment]
@@ -173,6 +219,9 @@ class BasePipeline(metaclass=BasePipelineMeta):
             enable_cache=kwargs.pop(PARAM_ENABLE_CACHE, None),
             enable_artifact_metadata=kwargs.pop(
                 PARAM_ENABLE_ARTIFACT_METADATA, None
+            ),
+            enable_artifact_visualization=kwargs.pop(
+                PARAM_ENABLE_ARTIFACT_VISUALIZATION, None
             ),
         )
         self._apply_class_configuration(kwargs)
@@ -267,6 +316,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
         self: T,
         enable_cache: Optional[bool] = None,
         enable_artifact_metadata: Optional[bool] = None,
+        enable_artifact_visualization: Optional[bool] = None,
         settings: Optional[Mapping[str, "SettingsOrDict"]] = None,
         extra: Optional[Dict[str, Any]] = None,
         merge: bool = True,
@@ -289,6 +339,8 @@ class BasePipeline(metaclass=BasePipelineMeta):
             enable_cache: If caching should be enabled for this pipeline.
             enable_artifact_metadata: If artifact metadata should be enabled for
                 this pipeline.
+            enable_artifact_visualization: If artifact visualization should be
+                enabled for this pipeline.
             settings: settings for this pipeline.
             extra: Extra configurations for this pipeline.
             merge: If `True`, will merge the given dictionary configurations
@@ -322,6 +374,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
             {
                 "enable_cache": enable_cache,
                 "enable_artifact_metadata": enable_artifact_metadata,
+                "enable_artifact_visualization": enable_artifact_visualization,
                 "settings": settings,
                 "extra": extra,
                 "failure_hook_source": failure_hook_source,
@@ -421,6 +474,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
         run_name: Optional[str] = None,
         enable_cache: Optional[bool] = None,
         enable_artifact_metadata: Optional[bool] = None,
+        enable_artifact_visualization: Optional[bool] = None,
         schedule: Optional[Schedule] = None,
         build: Union[str, "UUID", "PipelineBuildBaseModel", None] = None,
         settings: Optional[Mapping[str, "SettingsOrDict"]] = None,
@@ -439,6 +493,8 @@ class BasePipeline(metaclass=BasePipelineMeta):
             enable_cache: If caching should be enabled for this pipeline run.
             enable_artifact_metadata: If artifact metadata should be enabled
                 for this pipeline run.
+            enable_artifact_visualization: If artifact visualization should be
+                enabled for this pipeline run.
             schedule: Optional schedule to use for the run.
             build: Optional build to use for the run.
             settings: Settings for this pipeline run.
@@ -476,6 +532,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
                 run_name=run_name,
                 enable_cache=enable_cache,
                 enable_artifact_metadata=enable_artifact_metadata,
+                enable_artifact_visualization=enable_artifact_visualization,
                 steps=step_configurations,
                 settings=settings,
                 schedule=schedule,
@@ -625,28 +682,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
                     f"minutes.",
                 )
 
-    @classmethod
-    def get_runs(cls) -> Optional[List["PipelineRunView"]]:
-        """Get all past runs from the associated PipelineView.
-
-        Returns:
-            A list of all past PipelineRunViews.
-
-        Raises:
-            RuntimeError: In case the repository does not contain the view
-                of the current pipeline.
-        """
-        from zenml.post_execution import get_pipeline
-
-        pipeline_view = get_pipeline(cls)
-        if pipeline_view:
-            return pipeline_view.runs  # type: ignore[no-any-return]
-        else:
-            raise RuntimeError(
-                f"The PipelineView for `{cls.__name__}` could "
-                f"not be found. Are you sure this pipeline has "
-                f"been run already?"
-            )
+    get_runs = GetRunsDescriptor()
 
     def write_run_configuration_template(
         self, path: str, stack: Optional["Stack"] = None

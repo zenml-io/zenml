@@ -24,6 +24,7 @@ from zenml.integrations.evidently.metrics import EvidentlyMetricConfig
 from zenml.steps import Output
 from zenml.steps.base_parameters import BaseParameters
 from zenml.steps.base_step import BaseStep
+from zenml.types import HTMLString
 
 
 class EvidentlyReportParameters(BaseParameters):
@@ -83,7 +84,7 @@ class EvidentlyReportBaseStep:
         comparison_dataset: Optional[pd.DataFrame],
         params: EvidentlyReportParameters,
     ) -> Output(  # type:ignore[valid-type]
-        report_json=str, report_html=str
+        report_json=str, report_html=HTMLString
     ):
         """Evidently report step for one or two datasets.
 
@@ -147,7 +148,7 @@ class EvidentlyReportBaseStep:
             report_options=params.report_options,
             download_nltk_data=params.download_nltk_data,
         )
-        return [report.json(), report.show(mode="inline").data]
+        return [report.json(), HTMLString(report.show(mode="inline").data)]
 
 
 class EvidentlyReportStep(BaseStep, EvidentlyReportBaseStep):
@@ -159,7 +160,7 @@ class EvidentlyReportStep(BaseStep, EvidentlyReportBaseStep):
         comparison_dataset: pd.DataFrame,
         params: EvidentlyReportParameters,
     ) -> Output(  # type:ignore[valid-type]
-        report_json=str, report_html=str
+        report_json=str, report_html=HTMLString
     ):
         """Evidently report step for two datasets.
 
@@ -188,7 +189,7 @@ class EvidentlySingleDatasetReportStep(BaseStep, EvidentlyReportBaseStep):
         dataset: pd.DataFrame,
         params: EvidentlyReportParameters,
     ) -> Output(  # type:ignore[valid-type]
-        report_json=str, report_html=str
+        report_json=str, report_html=HTMLString
     ):
         """Evidently report step for a single dataset.
 

@@ -14,7 +14,6 @@
 """Utility functions for networking."""
 
 import socket
-import sys
 from typing import Optional, cast
 from urllib.parse import urlparse
 
@@ -40,7 +39,7 @@ def port_available(port: int, address: str = "127.0.0.1") -> bool:
     try:
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-            if sys.platform != "win32":
+            if hasattr(socket, "SO_REUSEPORT"):
                 s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
             else:
                 # The SO_REUSEPORT socket option is not supported on Windows.

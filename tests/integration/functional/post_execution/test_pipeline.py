@@ -13,13 +13,18 @@
 #  permissions and limitations under the License.
 """Integration tests for pipeline post-execution functionality."""
 
+from uuid import uuid4
+
 import pytest
 
 from tests.integration.functional.conftest import (
     constant_int_output_test_step,
     int_plus_one_test_step,
+    int_plus_two_test_step,
 )
+from zenml.pipelines.base_pipeline import BasePipeline
 from zenml.post_execution.pipeline import (
+    PipelineVersionView,
     PipelineView,
     get_pipeline,
     get_pipelines,
@@ -64,7 +69,8 @@ def test_get_pipeline(clean_client, connected_two_step_pipeline):
 
     # Test getting existing pipeline by instance
     pipeline3 = get_pipeline(pipeline_instance)
-    assert pipeline3 == pipeline1
+    assert isinstance(pipeline3, PipelineVersionView)
+    assert pipeline3.name == "connected_two_step_pipeline"
 
 
 class NotAPipeline:
@@ -87,3 +93,98 @@ def test_get_pipeline_fails_for_wrong_type(clean_client, wrong_pipeline_type):
     """Test that `get_pipeline` fails for wrong input types."""
     with pytest.raises(RuntimeError):
         get_pipeline(wrong_pipeline_type)
+
+
+def test_get_runs(clean_client, connected_two_step_pipeline):
+    """Unit test for `pipeline.get_runs()`.
+
+    Tests that:
+    - `pipeline_class.get_runs()` returns all runs of this pipeline name/class
+        and `runs[0]` is the most recent run of any version of this pipeline
+    - `pipeline_instance.get_runs()` returns all runs of this pipeline instance
+        and `runs[0]` is the most recent run of this pipeline instance
+
+    When calling `pipeline_instance.get_runs()`, only the runs for this
+    pipeline instance should be included. However, when calling
+    `get_pipeline(...).runs`, all runs of all versions should be included.
+
+    To test this, we create two different pipeline versions, A and B. We then
+    run them in the following order: A -> A -> B -> B -> A -> B.
+    """
+
+    with pytest.raises(RuntimeError):
+        connected_two_step_pipeline.get_runs()
+
+    pipeline_instance_a: BasePipeline = connected_two_step_pipeline(
+        step_1=constant_int_output_test_step(),
+        step_2=int_plus_one_test_step(),
+    )
+    with pytest.raises(RuntimeError):
+        pipeline_instance_a.get_runs()
+
+    pipeline_instance_b: BasePipeline = connected_two_step_pipeline(
+        step_1=constant_int_output_test_step(),
+        step_2=int_plus_two_test_step(),
+    )
+    with pytest.raises(RuntimeError):
+        pipeline_instance_b.get_runs()
+
+    # A
+    run_name_a = str(uuid4())
+    pipeline_instance_a.run(run_name=run_name_a)
+    assert len(connected_two_step_pipeline.get_runs()) == 1
+    assert len(pipeline_instance_a.get_runs()) == 1
+    assert connected_two_step_pipeline.get_runs()[0].name == run_name_a
+    assert pipeline_instance_a.get_runs()[0].name == run_name_a
+    with pytest.raises(RuntimeError):
+        pipeline_instance_b.get_runs()
+
+    # A -> A
+    run_name_a = str(uuid4())
+    pipeline_instance_a.run(run_name=run_name_a)
+    assert len(connected_two_step_pipeline.get_runs()) == 2
+    assert len(pipeline_instance_a.get_runs()) == 2
+    assert connected_two_step_pipeline.get_runs()[0].name == run_name_a
+    assert pipeline_instance_a.get_runs()[0].name == run_name_a
+    with pytest.raises(RuntimeError):
+        pipeline_instance_b.get_runs()
+
+    # A -> A -> B
+    run_name_b = str(uuid4())
+    pipeline_instance_b.run(run_name=run_name_b)
+    assert len(connected_two_step_pipeline.get_runs()) == 3
+    assert len(pipeline_instance_a.get_runs()) == 2
+    assert len(pipeline_instance_b.get_runs()) == 1
+    assert connected_two_step_pipeline.get_runs()[0].name == run_name_b
+    assert pipeline_instance_a.get_runs()[0].name == run_name_a
+    assert pipeline_instance_b.get_runs()[0].name == run_name_b
+
+    # A -> A -> B -> B
+    run_name_b = str(uuid4())
+    pipeline_instance_b.run(run_name=run_name_b)
+    assert len(connected_two_step_pipeline.get_runs()) == 4
+    assert len(pipeline_instance_a.get_runs()) == 2
+    assert len(pipeline_instance_b.get_runs()) == 2
+    assert connected_two_step_pipeline.get_runs()[0].name == run_name_b
+    assert pipeline_instance_a.get_runs()[0].name == run_name_a
+    assert pipeline_instance_b.get_runs()[0].name == run_name_b
+
+    # A -> A -> B -> B -> A
+    run_name_a = str(uuid4())
+    pipeline_instance_a.run(run_name=run_name_a)
+    assert len(connected_two_step_pipeline.get_runs()) == 5
+    assert len(pipeline_instance_a.get_runs()) == 3
+    assert len(pipeline_instance_b.get_runs()) == 2
+    assert connected_two_step_pipeline.get_runs()[0].name == run_name_a
+    assert pipeline_instance_a.get_runs()[0].name == run_name_a
+    assert pipeline_instance_b.get_runs()[0].name == run_name_b
+
+    # A -> A -> B -> B -> A -> B
+    run_name_b = str(uuid4())
+    pipeline_instance_b.run(run_name=run_name_b)
+    assert len(connected_two_step_pipeline.get_runs()) == 6
+    assert len(pipeline_instance_a.get_runs()) == 3
+    assert len(pipeline_instance_b.get_runs()) == 3
+    assert connected_two_step_pipeline.get_runs()[0].name == run_name_b
+    assert pipeline_instance_a.get_runs()[0].name == run_name_a
+    assert pipeline_instance_b.get_runs()[0].name == run_name_b

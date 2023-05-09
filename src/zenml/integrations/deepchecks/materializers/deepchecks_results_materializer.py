@@ -15,12 +15,13 @@
 """Implementation of Deepchecks suite results materializer."""
 
 import os
-from typing import TYPE_CHECKING, Any, Dict, Type, Union
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, Tuple, Type, Union
 
 from deepchecks.core.check_result import CheckResult
 from deepchecks.core.suite import SuiteResult
 
-from zenml.enums import ArtifactType
+from zenml.enums import ArtifactType, VisualizationType
+from zenml.io import fileio
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.utils import io_utils
 
@@ -28,16 +29,19 @@ if TYPE_CHECKING:
     from zenml.metadata.metadata_types import MetadataType
 
 RESULTS_FILENAME = "results.json"
+HTML_FILENAME = "results.html"
 
 
 class DeepchecksResultMaterializer(BaseMaterializer):
     """Materializer to read data to and from CheckResult and SuiteResult objects."""
 
-    ASSOCIATED_TYPES = (
+    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (
         CheckResult,
         SuiteResult,
     )
-    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATA_ANALYSIS
+    ASSOCIATED_ARTIFACT_TYPE: ClassVar[
+        ArtifactType
+    ] = ArtifactType.DATA_ANALYSIS
 
     def load(self, data_type: Type[Any]) -> Union[CheckResult, SuiteResult]:
         """Reads a Deepchecks check or suite result from a serialized JSON file.
@@ -51,7 +55,6 @@ class DeepchecksResultMaterializer(BaseMaterializer):
         Raises:
             RuntimeError: if the input data type is not supported.
         """
-        super().load(data_type)
         filepath = os.path.join(self.uri, RESULTS_FILENAME)
 
         json_res = io_utils.read_file_contents_as_string(filepath)
@@ -69,12 +72,25 @@ class DeepchecksResultMaterializer(BaseMaterializer):
         Args:
             result: A Deepchecks CheckResult or SuiteResult.
         """
-        super().save(result)
-
         filepath = os.path.join(self.uri, RESULTS_FILENAME)
-
         serialized_json = result.to_json(True)
         io_utils.write_file_contents_as_string(filepath, serialized_json)
+
+    def save_visualizations(
+        self, result: Union[CheckResult, SuiteResult]
+    ) -> Dict[str, VisualizationType]:
+        """Saves visualizations for the given Deepchecks result.
+
+        Args:
+            result: The Deepchecks result to save visualizations for.
+
+        Returns:
+            A dictionary of visualization URIs and their types.
+        """
+        visualization_path = os.path.join(self.uri, HTML_FILENAME)
+        with fileio.open(visualization_path, "w") as f:
+            result.save_as_html(f)
+        return {visualization_path: VisualizationType.HTML}
 
     def extract_metadata(
         self, result: Union[CheckResult, SuiteResult]
@@ -87,16 +103,14 @@ class DeepchecksResultMaterializer(BaseMaterializer):
         Returns:
             The extracted metadata as a dictionary.
         """
-        base_metadata = super().extract_metadata(result)
-        deepchecks_metadata: Dict[str, "MetadataType"] = {}
         if isinstance(result, CheckResult):
-            deepchecks_metadata = {
+            return {
                 "deepchecks_check_name": result.get_header(),
                 "deepchecks_check_passed": result.passed_conditions(),
             }
         elif isinstance(result, SuiteResult):
-            deepchecks_metadata = {
+            return {
                 "deepchecks_suite_name": result.name,
                 "deepchecks_suite_passed": result.passed(),
             }
-        return {**base_metadata, **deepchecks_metadata}
+        return {}

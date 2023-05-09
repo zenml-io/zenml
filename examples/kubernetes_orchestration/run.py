@@ -15,10 +15,6 @@
 from pipelines.kubernetes_example_pipeline import kubernetes_example_pipeline
 from steps import digits_data_loader, evaluator, skew_comparison, svc_trainer
 
-from zenml.integrations.facets.visualizers.facet_statistics_visualizer import (
-    FacetStatisticsVisualizer,
-)
-
 if __name__ == "__main__":
     pipeline_instance = kubernetes_example_pipeline(
         importer=digits_data_loader(),
@@ -27,10 +23,6 @@ if __name__ == "__main__":
         skew_comparison=skew_comparison(),
     )
     pipeline_instance.run()
-
-    last_run = pipeline_instance.get_runs()[0]
-    train_test_skew_step = last_run.get_step(step="skew_comparison")
-    FacetStatisticsVisualizer().visualize(train_test_skew_step)
 
     # In case you want to run the pipeline on a schedule, run the following:
     #

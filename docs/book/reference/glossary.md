@@ -223,10 +223,6 @@ pipeline steps in specialized runtime environments that are optimized for
 certain workloads. These specialized environments can give your steps access 
 to resources like GPUs or distributed processing frameworks like Spark.
 
-## Visualizer
-
-A visualizer contains logic to create visualizations within the ZenML ecosystem.
-
 ## Source root
 
 The source root refers to the root directory of your source files when running a pipeline.

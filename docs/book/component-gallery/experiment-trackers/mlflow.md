@@ -42,9 +42,11 @@ zenml integration install mlflow -y
 ```
 
 The MLflow Experiment Tracker can be configured to accommodate the following
-[MLflow deployment scenarios](https://mlflow.org/docs/latest/tracking.html#how-runs-and-artifacts-are-recorded):
+[MLflow deployment
+scenarios](https://mlflow.org/docs/latest/tracking.html#how-runs-and-artifacts-are-recorded)
+as specified in the MLflow documentation:
 
-* [Scenario 1](https://mlflow.org/docs/latest/tracking.html#scenario-1-mlflow-on-localhost):
+* ['Scenario 1'](https://mlflow.org/docs/latest/tracking.html#scenario-1-mlflow-on-localhost):
 This scenario requires that you use a [local Artifact Store](../artifact-stores/local.md)
 alongside the MLflow Experiment Tracker in your ZenML stack. The local Artifact
 Store comes with limitations regarding what other types of components you can
@@ -60,7 +62,7 @@ zenml experiment-tracker register mlflow_experiment_tracker --flavor=mlflow
 zenml stack register custom_stack -e mlflow_experiment_tracker ... --set
 ```
 
-* [Scenario 5](https://mlflow.org/docs/latest/tracking.html#scenario-5-mlflow-tracking-server-enabled-with-proxied-artifact-storage-access):
+* ['Scenario 5'](https://mlflow.org/docs/latest/tracking.html#scenario-5-mlflow-tracking-server-enabled-with-proxied-artifact-storage-access):
 This scenario assumes that you have already deployed an MLflow Tracking Server
 enabled with proxied artifact storage access. There is no restriction regarding
 what other types of components it can be combined with. This option requires
@@ -77,6 +79,21 @@ This scenario assumes that you have a Databricks workspace, and you want to
 use the managed MLflow Tracking server it provides. This option requires
 [authentication related parameters](#authentication-methods) to be configured
 for the MLflow Experiment Tracker.
+
+### Infrastructure Deployment
+
+The MLflow Experiment Tracker can be deployed directly from the ZenML CLI:
+
+```shell
+# optionally assigning an existing bucket to the MLflow Experiment Tracker
+zenml experiment-tracker deploy mlflow_tracker --flavor=mlflow --mlflow_bucket=gs://my_bucket
+```
+
+You can pass other configuration specific to the stack components as key-value
+arguments. If you don't provide a name, a random one is generated for you. For
+more information about how to work use the CLI for this, please refer to [the
+dedicated documentation
+section](../../advanced-guide/practical/stack-recipes.md#deploying-stack-components-directly).
 
 ### Authentication Methods
 

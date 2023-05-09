@@ -34,7 +34,6 @@ class WhylogsIntegration(Integration):
         """Activates the integration."""
         from zenml.integrations.whylogs import materializers  # noqa
         from zenml.integrations.whylogs import secret_schemas  # noqa
-        from zenml.integrations.whylogs import visualizers  # noqa
 
     @classmethod
     def flavors(cls) -> List[Type[Flavor]]:
