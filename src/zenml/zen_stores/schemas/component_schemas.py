@@ -82,9 +82,9 @@ class StackComponentSchema(ShareableSchema, table=True):
         back_populates="stack_component",
     )
 
-    run_or_step_logs: "LogsSchema" = Relationship(
+    run_or_step_logs: Optional["LogsSchema"] = Relationship(
         back_populates="artifact_store",
-        sa_relationship_kwargs={"cascade": "delete"},
+        sa_relationship_kwargs={"cascade": "delete", "uselist": False},
     )
 
     def update(

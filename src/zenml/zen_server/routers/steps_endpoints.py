@@ -34,6 +34,10 @@ from zenml.models import (
     StepRunUpdateModel,
 )
 from zenml.models.page_model import Page
+from zenml.utils.artifact_utils import (
+    _load_artifact_store,
+    _load_file_from_artifact_store,
+)
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.utils import (
@@ -205,6 +209,9 @@ def get_step_logs(
     Returns:
         The logs of the step.
     """
-    step_logs: "LogsSchema" = zen_store().get_run_step(step_id).step_logs
-    step_logs.artifact_store_id
-    step_logs.uri
+    store = zen_store()
+    step_logs: "LogsSchema" = store.get_run_step(step_id).step_logs
+    artifact_store = _load_artifact_store(step_logs.artifact_store_id, store)
+    return _load_file_from_artifact_store(
+        step_logs.uri, artifact_store=artifact_store
+    )

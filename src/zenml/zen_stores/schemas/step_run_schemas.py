@@ -130,8 +130,9 @@ class StepRunSchema(NamedSchema, table=True):
     output_artifacts: List["StepRunOutputArtifactSchema"] = Relationship(
         back_populates="step_run", sa_relationship_kwargs={"cascade": "delete"}
     )
-    step_logs: "LogsSchema" = Relationship(
-        back_populates="step_run", sa_relationship_kwargs={"cascade": "delete"}
+    step_logs: Optional["LogsSchema"] = Relationship(
+        back_populates="step_run",
+        sa_relationship_kwargs={"cascade": "delete", "uselist": False},
     )
     parents: List["StepRunParentsSchema"] = Relationship(
         back_populates="child",

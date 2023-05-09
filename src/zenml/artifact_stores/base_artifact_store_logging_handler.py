@@ -33,19 +33,19 @@ class ArtifactStoreLoggingHandler(TimedRotatingFileHandler):
     def __init__(
         self,
         artifact_store: "BaseArtifactStore",
-        log_key: str,
+        logs_uri: str,
         max_messages: int = 1,
         *args,
         **kwargs
     ):
         """Initializes the handler"""
         self.artifact_store = artifact_store
-        self.log_key = log_key
+        self.logs_uri = logs_uri
         self.max_messages = max_messages
         self.buffer = io.StringIO()
         self.message_count = 0
         self.last_upload_time = time.time()
-        super().__init__(self.log_key, *args, **kwargs)
+        super().__init__(self.logs_uri, *args, **kwargs)
 
     def emit(self, record: LogRecord):
         """Emits the log record.
@@ -68,7 +68,7 @@ class ArtifactStoreLoggingHandler(TimedRotatingFileHandler):
 
     def flush(self):
         """Flushes the buffer to the artifact store"""
-        with self.artifact_store.open(self.log_key, mode="a") as log_file:
+        with self.artifact_store.open(self.logs_uri, mode="a") as log_file:
             log_file.write(self.buffer.getvalue())
         self.buffer.close()
         self.buffer = io.StringIO()

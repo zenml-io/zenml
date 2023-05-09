@@ -13,9 +13,10 @@
 #  permissions and limitations under the License.
 """Utilities for step logs."""
 
+import logging
 import os
 from typing import TYPE_CHECKING, Optional
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 from zenml.artifact_stores.base_artifact_store_logging_handler import (
     ArtifactStoreLoggingHandler,
@@ -32,9 +33,9 @@ logger = get_logger(__name__)
 
 def prepare_logs_uri(
     artifact_store: "BaseArtifactStore",
-    pipeline_run_id: str,
+    pipeline_run_id: UUID,
     step_name: str,
-    log_key: Optional[str] = str(uuid4()),
+    log_key: Optional[str] = None,
 ) -> str:
     """Generates and prepares a URI for the log file for a step.
 
@@ -42,22 +43,28 @@ def prepare_logs_uri(
         artifact_store: The artifact store on which the artifact will be stored.
         pipeline_run_id: The id of the pipeline run.
         step_name: Name of the step.
-        log_key: The name of the output in the step run for this artifact.
+        log_key: The unique identification key of the log file.
 
     Returns:
         The URI of the output artifact.
     """
-    logs_uri = os.path.join(
+    if log_key is None:
+        log_key = str(uuid4())
+
+    logs_base_uri = os.path.join(
         artifact_store.path,
-        pipeline_run_id,
+        str(pipeline_run_id),
         step_name,
-        f"logs-{log_key}",
     )
 
-    # Create the file, it should not exist at this point
+    # Create the dir
+    if not fileio.exists(logs_base_uri):
+        fileio.makedirs(logs_base_uri)
+
+    # Check if the file already exists, if so, raise an error
+    logs_uri = os.path.join(logs_base_uri, f"{log_key}.log")
     if fileio.exists(logs_uri):
-        raise RuntimeError("Logs file already exists")
-    fileio.makedirs(logs_uri)
+        raise RuntimeError(f"Logs file {logs_uri} already exists!")
     return logs_uri
 
 
@@ -80,10 +87,16 @@ def get_step_logging_handler(
     Returns:
         The logging handler.
     """
-    return ArtifactStoreLoggingHandler(
+    log_format = "%(asctime)s - %(message)s"
+    date_format = "%Y-%m-%dT%H:%M:%S"  # ISO 8601 format
+    formatter = logging.Formatter(log_format, datefmt=date_format)
+
+    handler = ArtifactStoreLoggingHandler(
         artifact_store,
         logs_uri,
         when="s",
-        interval=1,
+        interval=2,
         backupCount=0,
     )
+    handler.setFormatter(formatter)
+    return handler
