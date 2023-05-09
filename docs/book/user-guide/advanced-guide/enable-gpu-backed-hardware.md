@@ -2,15 +2,15 @@
 description: Ensuring your pipelines or steps run on GPU-backed hardware.
 ---
 
-# Enable GPU-backed hardware
+# Scale compute to the cloud
 
-ZenML allows for multiple ways to configure the hardware on which your steps run, from [step operator stack components](broken-reference) to [custom per-step or per-pipeline requirements](broken-reference). For steps or pipelines that are required to run on GPUs, it is essential to ensure that the environment has the required CUDA tools installed. The following section describes what you need to do to ensure that you will actually get the performance boost that running your training on a GPU will give you.
+ZenML allows for multiple ways to configure the hardware on which your steps run, from [step operator stack components](broken-reference/) to [custom per-step or per-pipeline requirements](broken-reference/). For steps or pipelines that are required to run on GPUs, it is essential to ensure that the environment has the required CUDA tools installed. The following section describes what you need to do to ensure that you will actually get the performance boost that running your training on a GPU will give you.
 
-The steps that will run on GPU-backed hardware will all be running from a containerized environment, whether you're using our local Docker orchestrator or on a cloud instance of Kubeflow. (Please see [the section on the configuration of the Docker environment](broken-reference) for general context on this and what follows.) For this reason, you will need to make two amendments to your Docker settings for the relevant steps as follows:
+The steps that will run on GPU-backed hardware will all be running from a containerized environment, whether you're using our local Docker orchestrator or on a cloud instance of Kubeflow. (Please see [the section on the configuration of the Docker environment](broken-reference/) for general context on this and what follows.) For this reason, you will need to make two amendments to your Docker settings for the relevant steps as follows:
 
 1. Specify a CUDA-enabled parent image in your `DockerSettings`
 
-For full details, see the whole section where we explain how to do this [on the containerization page](broken-reference). As an example, if you wanted to use the latest CUDA-enabled official PyTorch image for your entire pipeline run, you could include the following code:
+For full details, see the whole section where we explain how to do this [on the containerization page](broken-reference/). As an example, if you wanted to use the latest CUDA-enabled official PyTorch image for your entire pipeline run, you could include the following code:
 
 ```python
 docker_settings = DockerSettings(parent_image="pytorch/pytorch:1.12.1-cuda11.3-cudnn8-runtime")
