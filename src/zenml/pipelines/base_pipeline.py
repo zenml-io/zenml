@@ -650,9 +650,6 @@ class BasePipeline(metaclass=BasePipelineMeta):
                 caching_status,
             )
 
-            # TODO: check for better filtering options
-            breakpoint()
-
             stack.prepare_pipeline_deployment(deployment=deployment_model)
 
             # Prevent execution of nested pipelines which might lead to
@@ -664,8 +661,11 @@ class BasePipeline(metaclass=BasePipelineMeta):
                 constants.SHOULD_PREVENT_PIPELINE_EXECUTION = False
 
             runs = Client().list_runs(
-                deployment_id=deployment_model.id
-            )  # TODO: add filtering here
+                deployment_id=deployment_model.id,
+                workspace_id=deployment_model.workspace.id,
+                pipeline_id=deployment_model.pipeline.id,
+                stack_id=deployment_model.stack.id,
+            )
 
             if runs.items:
                 # Log the dashboard URL
@@ -679,8 +679,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
                     f"running remotely. Note that the pipeline run will "
                     f"only show up on the ZenML dashboard once the first "
                     f"step has started executing on the remote "
-                    f"infrastructure. This could take up to twenty "
-                    f"minutes.",
+                    f"infrastructure.",
                 )
 
     get_runs = GetRunsDescriptor()
