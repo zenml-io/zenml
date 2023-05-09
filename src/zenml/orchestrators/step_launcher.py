@@ -22,7 +22,6 @@ from zenml.config.step_configurations import Step
 from zenml.config.step_run_info import StepRunInfo
 from zenml.enums import ExecutionStatus
 from zenml.environment import get_run_environment_dict
-from zenml.exceptions import EntityExistsError
 from zenml.logger import get_logger
 from zenml.models.pipeline_run_models import (
     PipelineRunRequestModel,

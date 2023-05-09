@@ -16,6 +16,8 @@
 import argparse
 import socket
 
+from kubernetes import client as k8s_client
+
 from zenml.client import Client
 from zenml.entrypoints.step_entrypoint_configuration import (
     StepEntrypointConfiguration,
@@ -77,10 +79,13 @@ def main() -> None:
     active_stack = Client().active_stack
     mount_local_stores = active_stack.orchestrator.config.is_local
 
-    # Patch the Kubernetes orchestrator to think it's running in-cluster.
+    # Get a Kubernetes client from the active Kubernetes orchestrator, but
+    # override the `incluster` setting to `True` since we are running inside
+    # the Kubernetes cluster.
     orchestrator = active_stack.orchestrator
     assert isinstance(orchestrator, KubernetesOrchestrator)
-    orchestrator.config.incluster = True
+    kube_client = orchestrator.get_kube_client(incluster=True)
+    core_api = k8s_client.CoreV1Api(kube_client)
 
     def run_step_on_kubernetes(step_name: str) -> None:
         """Run a pipeline step in a separate Kubernetes pod.
@@ -122,9 +127,6 @@ def main() -> None:
             settings=settings,
             mount_local_stores=mount_local_stores,
         )
-
-        # Get the Kubernetes client from the active Kubernetes orchestrator.
-        core_api = orchestrator._k8s_core_api
 
         # Create and run pod.
         core_api.create_namespaced_pod(

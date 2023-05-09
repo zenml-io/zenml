@@ -72,9 +72,14 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
 
     _k8s_client: Optional[k8s_client.ApiClient] = None
 
-    @property
-    def kube_client(self) -> k8s_client.ApiClient:
+    def get_kube_client(
+        self, incluster: Optional[bool] = None
+    ) -> k8s_client.ApiClient:
         """Getter for the Kubernetes API client.
+
+        Args:
+            incluster: Whether to use the in-cluster config or not. Overrides
+                the `incluster` setting in the config.
 
         Returns:
             The Kubernetes API client.
@@ -82,6 +87,9 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         Raises:
             RuntimeError: if the Kubernetes connector behaves unexpectedly.
         """
+        if incluster is None:
+            incluster = self.config.incluster
+
         # Refresh the client also if the connector has expired
         if self._k8s_client and not self.connector_has_expired():
             return self._k8s_client
@@ -97,7 +105,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             self._k8s_client = client
         else:
             kube_utils.load_kube_config(
-                incluster=self.config.incluster,
+                incluster=incluster,
                 context=self.config.kubernetes_context,
             )
             self._k8s_client = k8s_client.ApiClient()
@@ -111,7 +119,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         Returns:
             The Kubernetes Core API client.
         """
-        return k8s_client.CoreV1Api(self.kube_client)
+        return k8s_client.CoreV1Api(self.get_kube_client())
 
     @property
     def _k8s_batch_api(self) -> k8s_client.BatchV1Api:
@@ -120,7 +128,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         Returns:
             The Kubernetes Batch API client.
         """
-        return k8s_client.BatchV1Api(self.kube_client)
+        return k8s_client.BatchV1Api(self.get_kube_client())
 
     @property
     def _k8s_rbac_api(self) -> k8s_client.RbacAuthorizationV1Api:
@@ -129,7 +137,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         Returns:
             The Kubernetes RBAC API client.
         """
-        return k8s_client.RbacAuthorizationV1Api(self.kube_client)
+        return k8s_client.RbacAuthorizationV1Api(self.get_kube_client())
 
     @property
     def config(self) -> KubernetesOrchestratorConfig:
