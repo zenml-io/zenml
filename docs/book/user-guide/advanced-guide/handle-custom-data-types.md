@@ -6,17 +6,15 @@ description: Using materializers to pass custom data types through steps.
 
 A ZenML pipeline is built in a data-centric way. The outputs and inputs of steps define how steps are connected and the order in which they are executed. Each step should be considered as its very own process that reads and writes its inputs and outputs from and to the [Artifact Store](broken-reference/). This is where **Materializers** come into play.
 
-A materializer dictates how a given artifact can be written to and retrieved from the artifact store and also contains all serialization and deserialization logic.
+A materializer dictates how a given artifact can be written to and retrieved from the artifact store and also contains all serialization and deserialization logic. Whenever you pass artifacts as outputs from one pipeline step to other steps as inputs, the corresponding materializer for the respective data type defines how this artifact is first serialized and written to the artifact store, and then deserialized and read in the next step.
 
-Whenever you pass artifacts as outputs from one pipeline step to other steps as inputs, the corresponding materializer for the respective data type defines how this artifact is first serialized and written to the artifact store, and then deserialized and read in the next step.
+{% hint style="info" %}
+For most data types, ZenML already includes built-in a materializer that automatically handles the serialization/deserialization logic. However, if you want to pass custom objects between pipeline steps, then you need to define a custom Materializer to tell ZenML how to handle this process for that specific data type.
+{% endhint %}
 
-For most data types, ZenML already includes built-in materializers that automatically handle artifacts of those data types. For instance, all of the examples from the [Steps and Pipelines](broken-reference/) section were using built-in materializers under the hood to store and load artifacts correctly.
+## Building a Custom Materializer
 
-However, if you want to pass custom objects between pipeline steps, such as a PyTorch model that does not inherit from `torch.nn.Module`, then you need to define a custom Materializer to tell ZenML how to handle this specific data type.
-
-### Building a Custom Materializer
-
-#### Base Implementation
+### Base Implementation
 
 Before we dive into how custom materializers can be built, let us briefly discuss how materializers in general are implemented. In the following, you can see the implementation of the abstract base class `BaseMaterializer`, which defines the interface of all materializers:
 
@@ -72,21 +70,21 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
         ...
 ```
 
-#### Which Data Type to Handle?
+### Which Data Type to Handle?
 
 Each materializer has an `ASSOCIATED_TYPES` attribute that contains a list of data types that this materializer can handle. ZenML uses this information to call the right materializer at the right time. I.e., if a ZenML step returns a `pd.DataFrame`, ZenML will try to find any materializer that has `pd.DataFrame` in its `ASSOCIATED_TYPES`. List the data type of your custom object here to link the materializer to that data type.
 
-#### What Type of Artifact to Generate
+### What Type of Artifact to Generate
 
 Each materializer also has an `ASSOCIATED_ARTIFACT_TYPE` attribute, which defines what `zenml.enums.ArtifactType` is assigned to this data.
 
 In most cases, you should choose either `ArtifactType.DATA` or `ArtifactType.MODEL` here. If you are unsure, just use `ArtifactType.DATA`. The exact choice is not too important, as the artifact type is only used as a tag in some of ZenML's visualizations.
 
-#### Where to Store the Artifact
+### Where to Store the Artifact
 
 Each materializer has a `uri` attribute, which is automatically created by ZenML whenever you run a pipeline and points to the directory of a file system where the respective artifact is stored (some location in the artifact store).
 
-#### How to Store and Retrieve the Artifact
+### How to Store and Retrieve the Artifact
 
 The `load()` and `save()` methods define the serialization and deserialization of artifacts.
 
@@ -95,7 +93,7 @@ The `load()` and `save()` methods define the serialization and deserialization o
 
 You will need to overwrite these methods according to how you plan to serialize your objects. E.g., if you have custom PyTorch classes as `ASSOCIATED_TYPES`, then you might want to use `torch.save()` and `torch.load()` here.
 
-#### (Optional) Which Metadata to Extract for the Artifact
+### (Optional) Which Metadata to Extract for the Artifact
 
 Optionally, you can overwrite the `extract_metadata()` method to track custom metadata for all artifacts saved by your materializer. Anything you extract here will be displayed in the dashboard next to your artifacts.
 
@@ -107,7 +105,7 @@ By default, this method will only extract the storage size of an artifact, but y
 If you would like to disable artifact metadata extraction altogether, you can set `enable_artifact_metadata` at either pipeline, step, or run level via `@pipeline(enable_artifact_metadata=False)` or `@step(enable_artifact_metadata=False)` or `my_pipeline(...).run(enable_artifact_metadata=False)`.
 {% endhint %}
 
-### Using a Custom Materializer
+## Using a Custom Materializer
 
 ZenML automatically scans your source code for definitions of materializers and registers them for the corresponding data type, so just having a custom materializer definition in your code is enough to enable the respective data type to be used in your pipelines.
 
@@ -134,7 +132,7 @@ When there are multiple outputs, a dictionary of type `{<OUTPUT_NAME>:<MATERIALI
 Note that `.configure(output_materializers=...)` only needs to be called for the output of the first step that produced an artifact of a given data type, all downstream steps will use the same materializer by default.
 {% endhint %}
 
-#### Configuring Materializers at Runtime
+### Configuring Materializers at Runtime
 
 As briefly outlined in the [Runtime Configuration](broken-reference/) section, which materializer to use for the output of what step can also be configured within YAML config files.
 
@@ -154,7 +152,7 @@ The name of the output can be found in the function declaration, e.g. `my_step()
 
 Similar to other configuration entries, the materializer `name` refers to the class name of your materializer, and the `file` should contain a path to the module where the materializer is defined.
 
-### Basic Example
+## Basic Example
 
 Let's see how materialization works with a basic example. Let's say you have a custom class called `MyObject` that flows between two steps in a pipeline:
 
@@ -328,7 +326,7 @@ first_pipeline(
 
 </details>
 
-### Skipping Materialization
+## Skipping Materialization
 
 {% hint style="warning" %}
 Skipping materialization might have unintended consequences for downstream tasks that rely on materialized artifacts. Only skip materialization if there is no other way to do what you want to do.
@@ -401,7 +399,7 @@ def example_pipeline(step_1, step_2, step_3, step_4):
 example_pipeline(step_1(), step_2(), step_3(), step_4()).run()
 ```
 
-### Note on using Materializers for Custom Artifact Stores
+## Materializers for Custom Artifact Stores
 
 When creating a custom Artifact Store, you may encounter a situation where the default materializers do not function properly. Specifically, the `fileio.open` method used in these materializers may not be compatible with your custom store due to not being implemented properly.
 

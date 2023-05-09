@@ -10,7 +10,9 @@ A code repository in ZenML refers to a remote storage location for your code. So
 
 Code repositories enable ZenML to keep track of the code version that you use for your pipeline runs. Additionally, running a pipeline that is tracked in a registered code repository can speed up the Docker image building for containerized stack components.
 
-Check out [this diagram](broken-reference) for a visual representation of how the code repository fits into the general ZenML architecture.
+Check out the diagram below for a visual representation of how the code repository fits into the general ZenML architecture.
+
+<figure><img src="../../.gitbook/assets/spaces_WR79yGcpjr5idcfEkXdY_uploads_git-blob-23e202b4590861888a142db7fe5f5b8db8e27ca1_Remote_with_code_repository.png" alt=""><figcaption></figcaption></figure>
 
 {% hint style="info" %}
 Check out our [code repository example](https://github.com/zenml-io/zenml/tree/main/examples/code\_repository) for a practical tutorial on how to use a ZenML code repository.
@@ -30,7 +32,7 @@ For concrete options, check out the section on the [`GitHubCodeRepository`](link
 
 Once you have registered one or more code repositories, ZenML will check whether the files you use when running a pipeline are tracked inside one of those code repositories. This happens as follows:
 
-* First, the [source root](broken-reference) is computed
+* First, the [source root](broken-reference/) is computed
 * Next, ZenML checks whether this source root directory is included in a local checkout of one of the registered code repositories
 
 #### Tracking code version for pipeline runs
@@ -44,7 +46,7 @@ When using containerized components in your stack, ZenML needs to build Docker i
 Some additional points:
 
 * The file download is only possible if the local checkout is clean (i.e. it does not contain any untracked or uncommitted files) and the latest commit has been pushed to the remote repository. This is necessary as otherwise, the file download inside the Docker container will fail.
-* If you want to disable or enforce the downloading of files, check out [this docs page](broken-reference) for the available options.
+* If you want to disable or enforce the downloading of files, check out [this docs page](broken-reference/) for the available options.
 
 ### Available code repository implementation
 

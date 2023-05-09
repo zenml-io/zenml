@@ -36,23 +36,6 @@ Check out our [ZenBytes](https://github.com/zenml-io/zenbytes) repository and co
 * [Full Stack Deep Learning](https://fullstackdeeplearning.com/)
 * [CS 329S: Machine Learning Systems Design](https://stanford-cs329s.github.io/)
 
-#### Why should I use ZenML?
-
-ZenML pipelines are designed to be written early on in the development lifecycle. Data scientists can explore their pipelines as they develop toward production, switching stacks from local to cloud deployments with ease. You can read more about why we started building ZenML [on our blog](https://blog.zenml.io/). By using ZenML in the early stages of your project, you get the following benefits:
-
-* Extensible so you can build out the framework to suit your specific needs
-* Reproducibility of training and inference workflows
-* A simple and clear way to represent the steps of your pipeline in code
-* Batteries-included integrations: bring all your favorite tools together
-* Easy switch between local and cloud stacks
-* Painless deployment and configuration of infrastructure
-
-#### How can I be sure you'll stick around as a tool?
-
-The [team behind ZenML](https://zenml.io/company#CompanyTeam) has a shared vision of making MLOps simple and accessible to accelerate problem-solving in the world. We recently raised our [seed round](https://venturebeat.com/2021/12/14/open-source-mlops-framework-zenml-raises-2-7m/) to fulfill this vision, and you can be sure we're here to stay!
-
-Plus, ZenML is and always will be an open-source effort, which lowers the risk of it just going away any time soon.
-
 #### How can I speak with the community?
 
 The first point of the call should be [our Slack group](https://zenml.io/slack-invite/). Ask your questions about bugs or specific use cases and someone from the core team will respond.

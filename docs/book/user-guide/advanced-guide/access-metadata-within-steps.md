@@ -4,6 +4,10 @@ description: Using step fixtures to access the active ZenML stack from within a 
 
 # Access metadata within steps
 
+{% hint style="warning" %}
+The feature of accessing metadata within steps is currently under development and is expected to undergo significant changes in the upcoming releases. While it is functional at the moment, the development team is working hard to enhance its capabilities and make it more user-friendly. To stay up-to-date with the latest changes, keep in touch with us through our [Slack](https://zenml.io/slack-invite) channel and our [release notes on GitHub](https://github.com/zenml-io/zenml/releases).&#x20;
+{% endhint %}
+
 Aside from artifacts and step parameters, you can also pass a parameter with the type `StepContext` to the input signature of your step. This object will provide additional context inside your step function, and it will give you access to the related artifacts, materializers, and stack components directly from within the step.
 
 ```python
