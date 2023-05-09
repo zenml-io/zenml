@@ -496,8 +496,8 @@ class StackRecipeService(TerraformService):
 
     def pull(
         self,
+        git_stack_recipes_handler: GitStackRecipesHandler,
         force: bool = False,
-        git_stack_recipes_handler: GitStackRecipesHandler = GitStackRecipesHandler(),
     ) -> None:
         """Pulls the stack recipes from the main git stack recipes repository.
 
@@ -760,7 +760,7 @@ class StackRecipeService(TerraformService):
 
     def provision(self) -> None:
         """Provision the service."""
-        self.pull()
+        self.pull(git_stack_recipes_handler=GitStackRecipesHandler())
         super().provision()
         self.config.enabled_services = []
         self._update_service_config()
