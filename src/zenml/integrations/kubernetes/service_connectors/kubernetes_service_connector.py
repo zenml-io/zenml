@@ -22,6 +22,7 @@ import tempfile
 from typing import Any, List, Optional
 
 from kubernetes import client as k8s_client
+from kubernetes import config as k8s_config
 from pydantic import Field, SecretStr
 
 from zenml.exceptions import AuthorizationException
@@ -43,7 +44,8 @@ logger = get_logger(__name__)
 class KubernetesServerCredentials(AuthenticationConfig):
     """Kubernetes server authentication config."""
 
-    certificate_authority: SecretStr = Field(
+    certificate_authority: Optional[SecretStr] = Field(
+        default=None,
         title="Kubernetes CA Certificate (base64 encoded)",
     )
 
@@ -128,6 +130,7 @@ The connector can be used to access to any generic Kubernetes cluster by
 providing pre-authenticated Kubernetes python clients and also
 allows configuration of local Kubernetes clients.
 """,
+    supports_auto_configuration=True,
     logo_url="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/orchestrator/kubernetes.png",
     emoji=":cyclone:",
     auth_methods=[
@@ -237,14 +240,13 @@ class KubernetesServiceConnector(ServiceConnector):
 
         k8s_conf.host = cfg.server
 
-        ssl_ca_cert = cfg.certificate_authority.get_secret_value()
-        cert_bs = base64.urlsafe_b64decode(ssl_ca_cert.encode("utf-8"))
+        if cfg.certificate_authority is not None:
+            ssl_ca_cert = cfg.certificate_authority.get_secret_value()
+            cert_bs = base64.urlsafe_b64decode(ssl_ca_cert.encode("utf-8"))
 
-        # TODO: choose a more secure location for the temporary file
-        # and use the right permissions
-        with tempfile.NamedTemporaryFile(delete=False) as fp:
-            fp.write(cert_bs)
-            k8s_conf.ssl_ca_cert = fp.name
+            with tempfile.NamedTemporaryFile(delete=False) as fp:
+                fp.write(cert_bs)
+                k8s_conf.ssl_ca_cert = fp.name
 
         return k8s_client.ApiClient(k8s_conf)
 
@@ -302,62 +304,64 @@ class KubernetesServiceConnector(ServiceConnector):
 
             # TODO: client cert/key support
 
-        ssl_ca_cert = cfg.certificate_authority.get_secret_value()
-        cert_bs = base64.urlsafe_b64decode(ssl_ca_cert.encode("utf-8"))
+        # add the cluster config to the default kubeconfig
+        add_cluster_cmd = [
+            "kubectl",
+            "config",
+            "set-cluster",
+            cluster_name,
+            "--server",
+            cfg.server,
+        ]
 
-        with tempfile.NamedTemporaryFile(delete=False) as fp:
-            ca_filename = fp.name
-            fp.write(cert_bs)
-            fp.close()
+        if cfg.certificate_authority:
+            ssl_ca_cert = cfg.certificate_authority.get_secret_value()
+            cert_bs = base64.urlsafe_b64decode(ssl_ca_cert.encode("utf-8"))
 
-            # add the cluster config to the default kubeconfig
-            add_cluster_cmd = [
-                "kubectl",
-                "config",
-                "set-cluster",
-                cluster_name,
-                "--embed-certs",
-                "--certificate-authority",
-                ca_filename,
-                "--server",
-                cfg.server,
-            ]
-            add_context_cmd = [
-                "kubectl",
-                "config",
-                "set-context",
-                cluster_name,
-                "--cluster",
-                cluster_name,
-                "--user",
-                cluster_name,
-            ]
-            set_context_cmd = [
-                "kubectl",
-                "config",
-                "use-context",
-                cluster_name,
-            ]
-            try:
-                for cmd in [
-                    add_cluster_cmd,
-                    add_user_cmd,
-                    add_context_cmd,
-                    set_context_cmd,
-                ]:
-                    subprocess.run(
-                        cmd,
-                        check=True,
-                    )
-            except subprocess.CalledProcessError as e:
-                raise AuthorizationException(
-                    f"Failed to update local kubeconfig with the "
-                    f"cluster configuration: {e}"
-                ) from e
-            logger.info(
-                f"Updated local kubeconfig with the cluster details. "
-                f"The current kubectl context was set to '{cluster_name}'."
-            )
+            with tempfile.NamedTemporaryFile(delete=False) as fp:
+                fp.write(cert_bs)
+                add_cluster_cmd += [
+                    "--embed-certs",
+                    "--certificate-authority",
+                    fp.name,
+                ]
+
+        add_context_cmd = [
+            "kubectl",
+            "config",
+            "set-context",
+            cluster_name,
+            "--cluster",
+            cluster_name,
+            "--user",
+            cluster_name,
+        ]
+        set_context_cmd = [
+            "kubectl",
+            "config",
+            "use-context",
+            cluster_name,
+        ]
+        try:
+            for cmd in [
+                add_cluster_cmd,
+                add_user_cmd,
+                add_context_cmd,
+                set_context_cmd,
+            ]:
+                subprocess.run(
+                    cmd,
+                    check=True,
+                )
+        except subprocess.CalledProcessError as e:
+            raise AuthorizationException(
+                f"Failed to update local kubeconfig with the "
+                f"cluster configuration: {e}"
+            ) from e
+        logger.info(
+            f"Updated local kubeconfig with the cluster details. "
+            f"The current kubectl context was set to '{cluster_name}'."
+        )
 
     @classmethod
     def _auto_configure(
@@ -365,6 +369,7 @@ class KubernetesServiceConnector(ServiceConnector):
         auth_method: Optional[str] = None,
         resource_type: Optional[str] = None,
         resource_id: Optional[str] = None,
+        kubernetes_context: Optional[str] = None,
         **kwargs: Any,
     ) -> "KubernetesServiceConnector":
         """Auto-configure the connector.
@@ -378,13 +383,63 @@ class KubernetesServiceConnector(ServiceConnector):
                 implementation may choose to either require or ignore this
                 parameter if it does not support or detect an resource type that
                 supports multiple instances.
+            kubernetes_context: The name of the Kubernetes context to use. If
+                not specified, the active context will be used.
             kwargs: Additional implementation specific keyword arguments to use.
-
-        Raises:
-            NotImplementedError: If auto-configuration is not supported.
         """
-        raise NotImplementedError(
-            "Auto-configuration of Kubernetes connectors is not supported."
+        kube_config = k8s_client.Configuration()
+        k8s_config.load_kube_config(
+            context=kubernetes_context,
+            client_configuration=kube_config,
+        )
+
+        auth_config: KubernetesBaseConfig
+        if kube_config.username and kube_config.password:
+            auth_method = KubernetesAuthenticationMethods.PASSWORD
+            auth_config = KubernetesUserPasswordConfig(
+                username=kube_config.username,
+                password=kube_config.password,
+                server=kube_config.host,
+                certificate_authority=base64.urlsafe_b64encode(
+                    open(kube_config.ssl_ca_cert, "rb").read()
+                ).decode("utf-8")
+                if kube_config.ssl_ca_cert
+                else None,
+                cluster_name=kube_config.host.strip("https://").split(":")[0],
+                insecure=kube_config.verify_ssl is False,
+            )
+        elif kube_config.api_key:
+            auth_method = KubernetesAuthenticationMethods.TOKEN
+            auth_config = KubernetesTokenConfig(
+                token=kube_config.api_key["authorization"].strip("Bearer "),
+                server=kube_config.host,
+                certificate_authority=base64.urlsafe_b64encode(
+                    open(kube_config.ssl_ca_cert, "rb").read()
+                ).decode("utf-8"),
+                client_certificate=base64.urlsafe_b64encode(
+                    open(kube_config.cert_file, "rb").read()
+                ).decode("utf-8")
+                if kube_config.cert_file
+                else None,
+                client_key=base64.urlsafe_b64encode(
+                    open(kube_config.key_file, "rb").read()
+                ).decode("utf-8")
+                if kube_config.key_file
+                else None,
+                cluster_name=kube_config.host.strip("https://").split(":")[0],
+                insecure=kube_config.verify_ssl is False,
+            )
+
+        else:
+            raise AuthorizationException(
+                "Failed to auto-configure the Kubernetes connector. "
+                "The Kubernetes configuration is not supported."
+            )
+
+        return cls(
+            auth_method=auth_method,
+            resource_type=KUBERNETES_RESOURCE_TYPE,
+            config=auth_config,
         )
 
     def _verify(

@@ -4308,6 +4308,7 @@ class SqlZenStore(BaseZenStore):
                 )
             )
 
+    @track(AnalyticsEvent.CREATED_SERVICE_CONNECTOR, v1=False, v2=True)
     def create_service_connector(
         self, service_connector: ServiceConnectorRequestModel
     ) -> ServiceConnectorResponseModel:

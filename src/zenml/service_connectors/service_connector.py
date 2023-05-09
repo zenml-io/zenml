@@ -1026,9 +1026,9 @@ class ServiceConnector(BaseModel, metaclass=ServiceConnectorMeta):
                 "have expired."
             )
 
-        connector.verify(
-            resource_type=resource_type,
-            resource_id=resource_id,
+        connector._verify(
+            resource_type=connector.resource_type,
+            resource_id=connector.resource_id,
         )
         return connector
 

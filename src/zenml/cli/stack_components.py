@@ -1452,6 +1452,7 @@ def generate_stack_component_connect_command(
         help="Skip verification of the connector resource.",
         type=click.BOOL,
     )
+    @track(AnalyticsEvent.CONNECTED_STACK_COMPONENT)
     def connect_stack_component_command(
         name_id_or_prefix: Optional[str],
         connector: Optional[str] = None,
