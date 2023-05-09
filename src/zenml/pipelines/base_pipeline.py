@@ -650,6 +650,9 @@ class BasePipeline(metaclass=BasePipelineMeta):
                 caching_status,
             )
 
+            # TODO: check for better filtering options
+            breakpoint()
+
             stack.prepare_pipeline_deployment(deployment=deployment_model)
 
             # Prevent execution of nested pipelines which might lead to
@@ -659,9 +662,6 @@ class BasePipeline(metaclass=BasePipelineMeta):
                 stack.deploy_pipeline(deployment=deployment_model)
             finally:
                 constants.SHOULD_PREVENT_PIPELINE_EXECUTION = False
-
-            # TODO: check for better filtering options
-            breakpoint()
 
             runs = Client().list_runs(
                 deployment_id=deployment_model.id
