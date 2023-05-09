@@ -510,7 +510,7 @@ class PipelineDockerImageBuilder:
                 hub_internal_requirements.items()
             ):
                 file_name = f".zenml_hub_internal_requirements_{i}"
-                file_lines = [f"-i {index}", *packages]
+                file_lines = [f"-i {index}", "--no-deps", *packages]
                 file_contents = "\n".join(file_lines)
                 requirements_files.append((file_name, file_contents))
                 if log:
