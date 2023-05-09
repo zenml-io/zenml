@@ -9,19 +9,19 @@
 ## User Guide
 
 * [🐣 Starter Guide](user-guide/starter-guide/README.md)
-  * [Create an ML Pipeline](user-guide/starter-guide/configure-and-interact-with-pipelines.md)
-  * [Iterate on your code](user-guide/starter-guide/iterate-on-your-code.md)
+  * [Create an ML Pipeline](user-guide/starter-guide/pipelines.md)
+  * [Iterate on your code](user-guide/starter-guide/iterate.md)
   * [Understand stacks](user-guide/starter-guide/using-and-switching-stacks.md)
   * [Connect to a deployed ZenML](user-guide/starter-guide/transition-to-the-cloud.md)
   * [Switch to a remote stack](user-guide/starter-guide/switch-to-a-remote-stack.md)
-  * [Join forces with other users](user-guide/starter-guide/collaborate-with-your-team.md)
+  * [Fetch runs after execution](user-guide/starter-guide/fetch-runs-after-execution.md)
+  * [Collaborate wtih your team](user-guide/starter-guide/collaborate-with-your-team.md)
 * [🐔 Advanced Guide](user-guide/advanced-guide/README.md)
   * [Configure steps/pipelines](user-guide/advanced-guide/configure-steps-and-pipelines.md)
   * [Containerize your pipeline](user-guide/advanced-guide/containerize-your-pipeline.md)
   * [Schedule pipeline runs](user-guide/advanced-guide/schedule-pipeline-runs.md)
-  * [Fetch runs after execution](user-guide/advanced-guide/fetch-runs-after-execution.md)
   * [Handle custom data types](user-guide/advanced-guide/handle-custom-data-types.md)
-  * [Link your own repository](user-guide/advanced-guide/link-your-own-repository.md)
+  * [Connect your git repository](user-guide/advanced-guide/connect-your-git-repository.md)
   * [Use failure/success hooks](user-guide/advanced-guide/use-failure-success-hooks.md)
   * [Access metadata within steps](user-guide/advanced-guide/access-metadata-within-steps.md)
   * [Enable GPU-backed hardware](user-guide/advanced-guide/enable-gpu-backed-hardware.md)
@@ -107,7 +107,7 @@
     * [Deploy with Helm](platform-guide/set-up-your-mlops-platform/deploy-zenml/deploy-with-helm.md)
   * [Connect to your cloud provider](platform-guide/set-up-your-mlops-platform/connect-to-your-cloud-provider.md)
   * [Deploy and set up a cloud stack](platform-guide/set-up-your-mlops-platform/deploy-and-set-up-a-cloud-stack.md)
-  * [Productionalize with CI/CD/CT](platform-guide/set-up-your-mlops-platform/productionalize-with-ci-cd-ct.md)
+  * [Manage secrets](platform-guide/set-up-your-mlops-platform/secrets-management.md)
   * [Implement a custom stack component](platform-guide/set-up-your-mlops-platform/implement-a-custom-stack-component.md)
 * [🔧 Manage the Deployed Services](platform-guide/manage-the-deployed-services/README.md)
   * [Upgrade the ZenML Version of your server](platform-guide/manage-the-deployed-services/upgrading-the-zenml-version.md)
@@ -119,9 +119,12 @@
 
 * [🚀 Quickstart](https://github.com/zenml-io/zenml/blob/cb1bcbda58df06e057fd0a152b4ba3facf9c2d59/examples/quickstart/README.md)
 * [🧩 Examples](learning/examples/README.md)
+  * [Using ZenML with LLMs to Analyze and Version Data from Databases](https://github.com/zenml-io/zenml-projects/tree/main/supabase-openai-summary)
   * [Build a LLM-powered Community Slack Bot](https://github.com/zenml-io/zenml-projects/tree/main/langchain-llamaindex-slackbot)
   * [Summarize news articles with NLP](https://github.com/zenml-io/zenml-projects/tree/main/zen-news-summarization)
-  * [Automated hyper-parameter tuning with CI/CD](https://github.com/zenml-io/zenml-gitflow)
+  * [Use ZenML seamlessly with GitHub](https://github.com/zenml-io/zenml-gitflow)
+  * [Detect Sign Language alphabet in real-time images using Yolov5](https://github.com/zenml-io/zenml-projects/tree/main/sign-language-detection-yolov5)
+  * [Time-series forecasting](https://github.com/zenml-io/zenml-projects/tree/main/time-series-forecast)
 
 ## Reference
 

@@ -4,7 +4,7 @@ description: Iteration is native to ZenML with fast caching.
 
 # Iterate on your code
 
-ZenML tries its best to get out of the way as you run your ML experiments. For this, it has built in pipeline versioning and caching support to help your local work be as fast as possible.
+ZenML tries its best to get out of the way as you run your ML pipelines. For this, it has built in pipeline versioning and caching support to help your local work be as fast as possible.
 
 ## Versioning Pipelines
 
@@ -66,7 +66,7 @@ This will now create a single `run` for `version 2` of the pipeline called `firs
 
 You might also notice that running the above pipelines in that order actually got faster as you went through them. Which brings us to...
 
-### Caching in ZenML
+## Caching in ZenML
 
 You might have noticed at this point that rerunning the pipeline a second time will use caching:
 
@@ -87,7 +87,7 @@ Using cached version of step_2.
 
 This is because ZenML understands that nothing has changed between subsequent runs, so it re-uses the output of the last run (the outputs are persisted in the [artifact store](broken-reference/). This behavior is known as **caching**.
 
-ZenML comes with caching enabled by default. Since ZenML automatically tracks and versions all inputs, outputs, and parameters of steps and pipelines, ZenML will not re-execute steps within the same pipeline on subsequent pipeline runs as long as there is no change in these three.
+ZenML comes with caching enabled by default. Since ZenML automatically tracks and versions all inputs, outputs, and parameters of steps and pipelines, ZenML will not re-execute steps within the same pipeline on subsequent pipeline runs as long as there is no change in these three. To learn more about how ZenMLs versions and keeps track of lineage of your artifacts, read the [advanced guide](../advanced-guide/data-versioning-and-lineage.md).
 
 {% hint style="warning" %}
 Currently, the caching does not automatically detect changes within the file system or on external APIs. Make sure to set caching to `False` on steps that depend on external inputs or if the step should run regardless of caching.
