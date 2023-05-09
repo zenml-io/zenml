@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for steps (and artifacts) of pipeline runs."""
 
-from typing import Any, Dict
+from typing import TYPE_CHECKING, Any, Dict
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Security
@@ -41,6 +41,9 @@ from zenml.zen_server.utils import (
     make_dependable,
     zen_store,
 )
+
+if TYPE_CHECKING:
+    from zenml.zen_stores.schemas.logs_schemas import LogsSchema
 
 router = APIRouter(
     prefix=API + VERSION_1 + STEPS,
@@ -202,13 +205,5 @@ def get_step_logs(
     Returns:
         The logs of the step.
     """
-    return """
-Registered pipeline first_pipeline (version 1).
-Running pipeline first_pipeline on stack default (caching disabled)
-Step step_1 has started.
-Step step_1 has finished in 0.199s.
-Step step_2 has started.
-Step step_2 has finished in 0.086s.
-Pipeline run first_pipeline-2023_03_20-14_30_18_890138 has finished in 0.623s.
-Pipeline visualization can be seen in the ZenML Dashboard. Run zenml up to see your pipeline!
-    """
+    step_logs: "LogsSchema" = zen_store().get_run_step(step_id).step_logs
+    step_logs.artifact_store

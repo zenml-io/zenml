@@ -41,6 +41,7 @@ from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
 
 if TYPE_CHECKING:
     from zenml.models import ArtifactResponseModel
+    from zenml.zen_stores.schemas.logs_schemas import LogsSchema
     from zenml.zen_stores.schemas.run_metadata_schemas import RunMetadataSchema
 
 
@@ -128,6 +129,9 @@ class StepRunSchema(NamedSchema, table=True):
         back_populates="step_run", sa_relationship_kwargs={"cascade": "delete"}
     )
     output_artifacts: List["StepRunOutputArtifactSchema"] = Relationship(
+        back_populates="step_run", sa_relationship_kwargs={"cascade": "delete"}
+    )
+    step_logs: "LogsSchema" = Relationship(
         back_populates="step_run", sa_relationship_kwargs={"cascade": "delete"}
     )
     parents: List["StepRunParentsSchema"] = Relationship(

@@ -14,14 +14,11 @@
 """Class to launch (run directly or using a step operator) steps."""
 
 import logging
-import os
 import time
 from datetime import datetime
 from typing import TYPE_CHECKING, Dict, Optional, Tuple
 
-from zenml.artifact_stores.base_artifact_store_logging_handler import (
-    ArtifactStoreLoggingHandler,
-)
+from zenml.artifact_stores import step_logging_utils
 from zenml.client import Client
 from zenml.config.step_configurations import Step
 from zenml.config.step_run_info import StepRunInfo
@@ -165,19 +162,14 @@ class StepLauncher:
         pipeline_run, run_was_created = self._create_or_reuse_run()
 
         # Set up logging
-        logs_uri = os.path.join(
-            self._stack.artifact_store.path,
-            str(pipeline_run.id),
-            self._step_name,
-            "logs",
+        logs_uri = step_logging_utils.prepare_logs_uri(
+            self._stack.artifact_store,
+            pipeline_run.id,
+            self._step.config.name,
         )
 
-        zenml_handler = ArtifactStoreLoggingHandler(
-            self._stack.artifact_store,
-            logs_uri,
-            when="s",
-            interval=1,
-            backupCount=0,
+        zenml_handler = step_logging_utils.get_step_logging_handler(
+            self._stack.artifact_store, logs_uri
         )
 
         try:

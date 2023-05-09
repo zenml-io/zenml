@@ -53,6 +53,7 @@ from zenml.zen_stores.schemas.team_schemas import (
     TeamSchema,
 )
 from zenml.zen_stores.schemas.user_schemas import UserSchema
+from zenml.zen_stores.schemas.logs_schemas import LogsSchema
 
 __all__ = [
     "ArtifactSchema",
@@ -84,4 +85,5 @@ __all__ = [
     "TeamAssignmentSchema",
     "UserRoleAssignmentSchema",
     "UserSchema",
+    "LogsSchema",
 ]

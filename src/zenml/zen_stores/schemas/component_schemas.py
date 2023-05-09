@@ -34,6 +34,7 @@ from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
 
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas import StackSchema
+    from zenml.zen_stores.schemas.logs_schemas import LogsSchema
     from zenml.zen_stores.schemas.run_metadata_schemas import RunMetadataSchema
 
 if TYPE_CHECKING:
@@ -79,6 +80,11 @@ class StackComponentSchema(ShareableSchema, table=True):
 
     run_metadata: List["RunMetadataSchema"] = Relationship(
         back_populates="stack_component",
+    )
+
+    run_or_step_logs: "LogsSchema" = Relationship(
+        back_populates="artifact_store",
+        sa_relationship_kwargs={"cascade": "delete"},
     )
 
     def update(
