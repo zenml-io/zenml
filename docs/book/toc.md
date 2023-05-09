@@ -132,11 +132,7 @@
 ## Doc Orphanage
 
 * [Best Practices](doc-orphanage/best-practices.md)
-* [Version your data](user-guide/advanced-guide/data-versioning.md)
-* [Use hyperparameter tuning](user-guide/advanced-guide/implement-hyper-parameter-tuning.md)
 * [Global Config](doc-orphanage/global-config.md)
 * [System Environmental Variables](doc-orphanage/system-environmental-variables.md)
 * [Usage Analytics](doc-orphanage/usage-analytics.md)
-* [Discover the dashboard](doc-orphanage/discover-the-dashboard.md)
-* [📋 Glossary](learning/glossary.md)
 * [Deploy using HuggingFace Spaces](doc-orphanage/deploy-using-huggingface-spaces.md)
