@@ -16,8 +16,6 @@
 import argparse
 import socket
 
-from kubernetes import client as k8s_client
-
 from zenml.client import Client
 from zenml.entrypoints.step_entrypoint_configuration import (
     StepEntrypointConfiguration,

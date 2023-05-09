@@ -98,7 +98,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         else:
             kube_utils.load_kube_config(
                 incluster=self.config.incluster,
-                context=self.config.kubernetes_context
+                context=self.config.kubernetes_context,
             )
             self._k8s_client = k8s_client.ApiClient()
 
