@@ -386,7 +386,7 @@ class PipelineDockerImageBuilder:
             - User-defined requirements
             - Requirements defined by user-defined and/or stack integrations
         """
-        requirements_files = []
+        requirements_files: List[Tuple[str, str, List[str]]] = []
 
         # Generate requirements file for the local environment if configured
         if docker_settings.replicate_local_python_environment:
