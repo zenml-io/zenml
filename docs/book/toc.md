@@ -119,9 +119,12 @@
 
 * [🚀 Quickstart](https://github.com/zenml-io/zenml/blob/cb1bcbda58df06e057fd0a152b4ba3facf9c2d59/examples/quickstart/README.md)
 * [🧩 Examples](learning/examples/README.md)
+  * [Using ZenML with LLMs to Analyze and Version Data from Databases](https://github.com/zenml-io/zenml-projects/tree/main/supabase-openai-summary)
   * [Build a LLM-powered Community Slack Bot](https://github.com/zenml-io/zenml-projects/tree/main/langchain-llamaindex-slackbot)
   * [Summarize news articles with NLP](https://github.com/zenml-io/zenml-projects/tree/main/zen-news-summarization)
-  * [Automated hyper-parameter tuning with CI/CD](https://github.com/zenml-io/zenml-gitflow)
+  * [Use ZenML seamlessly with GitHub](https://github.com/zenml-io/zenml-gitflow)
+  * [Detect Sign Language alphabet in real-time images using Yolov5](https://github.com/zenml-io/zenml-projects/tree/main/sign-language-detection-yolov5)
+  * [Time-series forecasting](https://github.com/zenml-io/zenml-projects/tree/main/time-series-forecast)
 
 ## Reference
 
