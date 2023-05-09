@@ -234,7 +234,7 @@ def load_artifact_visualization(
         artifact=artifact, zen_store=zen_store
     )
     mode = "rb" if visualization.type == VisualizationType.IMAGE else "r"
-    value = _load_uri_from_artifact_store(
+    value = _load_file_from_artifact_store(
         uri=visualization.uri,
         artifact_store=artifact_store,
         mode=mode,
@@ -254,9 +254,9 @@ def _load_artifact_store_of_artifact(
     """Load the artifact store of the given artifact.
 
     Args:
-        artifact: The artifact to load the artifact store of.
+        artifact: The artifact for which to load the artifact store.
         zen_store: The ZenStore to use for finding the artifact store. If not
-            provided, the ZenStore of the client will be used.
+            provided, the client's ZenStore will be used.
 
     Returns:
         The artifact store of the given artifact.
@@ -295,7 +295,7 @@ def _load_artifact_store_of_artifact(
     return artifact_store
 
 
-def _load_uri_from_artifact_store(
+def _load_file_from_artifact_store(
     uri: str,
     artifact_store: "BaseArtifactStore",
     mode: str = "rb",
@@ -304,8 +304,8 @@ def _load_uri_from_artifact_store(
 
     Args:
         uri: The uri of the file to load.
-        artifact_store: The artifact store to load the file from.
-        mode: The mode to open the file in.
+        artifact_store: The artifact store from which to load the file.
+        mode: The mode in which to open the file.
 
     Returns:
         The loaded file.
@@ -322,7 +322,8 @@ def _load_uri_from_artifact_store(
             f"File '{uri}' does not exist in artifact store "
             f"'{artifact_store.name}'."
         )
-    except Exception:
+    except Exception as e:
+        logger.exception(e)
         link = "https://docs.zenml.io/component-gallery/artifact-stores/custom#enabling-artifact-visualizations-with-custom-artifact-stores"
         raise NotImplementedError(
             f"File '{uri}' could not be loaded because the underlying artifact "
