@@ -1,5 +1,79 @@
 <!-- markdown-link-check-disable -->
 
+# 0.39.0
+
+ZenML release 0.39.0 introduces several big new features:
+- The `zenml stack recipe` CLI commands now support fine-grained handling of
+individual stack components.
+- Artifacts are now automatically visualized in the dashboard.
+- Materializers received an overhaul: a new `cloudpickle` default materializer
+was added that works for arbitrary objects, and a `pycaret` materializer
+that can handle various modeling frameworks in a unified format.
+
+The release also contains many bug fixes and quality-of-life improvements, such 
+as new settings options for the SageMaker and Kubernetes orchestrators.
+
+## Individual Stack Component Deployment
+
+In this release, we've enhanced the ZenML stack recipe CLI to support 
+conditional deployment, destruction, and configuration of individual stack 
+components. Users can now quickly deploy and destroy components with options for 
+each flavor, and pass a config file for custom variables. The new `output` CLI 
+command allows users to retrieve outputs from their recipes. Overall, this 
+update streamlines deploying and managing stack components by providing a more 
+efficient and user-friendly experience.
+
+## Artifact Visualization
+
+Artifact visualizations are now automatically extracted by ZenML and embedded in
+the ZenML dashboard. Visualizations can now be defined by overriding the 
+`save_visualizations` method of the materializer that handles an artifact. 
+These visualizations are then automatically shown in the dashboard and can also 
+be displayed in Jupyter notebooks using the new `visualize` post-execution 
+method.
+
+## Default Cloudpickle Materializer
+
+ZenML now uses `cloudpickle` under the hood to save/load artifacts that other 
+materializers cannot handle. This makes it even easier to get started with 
+ZenML since you no longer need to define custom materializers if you just
+want to experiment with some new data types.
+
+## What's Changed
+* Docs/zenml hub documentation by @bcdurak in https://github.com/zenml-io/zenml/pull/1490
+* Sort integration list before display by @strickvl in https://github.com/zenml-io/zenml/pull/1494
+* Update docs to surface CLI filtering syntax by @strickvl in https://github.com/zenml-io/zenml/pull/1496
+* ZenML Hub Tests & CLI Improvements by @fa9r in https://github.com/zenml-io/zenml/pull/1495
+* Delete Legacy Docs  by @fa9r in https://github.com/zenml-io/zenml/pull/1497
+* Improve the REST API error handling by @stefannica in https://github.com/zenml-io/zenml/pull/1451
+* Fix circular import of PipelineRunConfiguration by @schustmi in https://github.com/zenml-io/zenml/pull/1501
+* Delete Deprecated Artifacts and Materializer Code by @fa9r in https://github.com/zenml-io/zenml/pull/1498
+* Allow filtering runs by code repo id by @schustmi in https://github.com/zenml-io/zenml/pull/1499
+* Add example to docs for passing stack component specific settings by @christianversloot in https://github.com/zenml-io/zenml/pull/1506
+* Increase step run field lengths by @schustmi in https://github.com/zenml-io/zenml/pull/1503
+* Fix Sagemaker orchestrator pipeline name bug by @strickvl in https://github.com/zenml-io/zenml/pull/1508
+* Generate unique SageMaker training job name based on pipeline and ste… by @christianversloot in https://github.com/zenml-io/zenml/pull/1505
+* [CI Fix] Pin Llama Index Version by @fa9r in https://github.com/zenml-io/zenml/pull/1516
+* Basic PyCaret integration and materializer by @christianversloot in https://github.com/zenml-io/zenml/pull/1512
+* Specify line endings for different operating systems by @strickvl in https://github.com/zenml-io/zenml/pull/1513
+* Extend SageMakerOrchestratorSettings with processor_args enabling step level configuration by @christianversloot in https://github.com/zenml-io/zenml/pull/1509
+* Fix post execution `get_pipeline()` and `pipeline.get_runs()` by @fa9r in https://github.com/zenml-io/zenml/pull/1510
+* Default `cloudpickle` Materializer & Materializer Inheritance by @fa9r in https://github.com/zenml-io/zenml/pull/1507
+* Artifact Visualization by @fa9r in https://github.com/zenml-io/zenml/pull/1472
+* Add Kubernetes Orchestrator Settings by @fa9r in https://github.com/zenml-io/zenml/pull/1518
+* Bump `ruff` to 0.0.265 by @strickvl in https://github.com/zenml-io/zenml/pull/1520
+* feat: Set cloud function service account to the one defined in Vertex… by @francoisserra in https://github.com/zenml-io/zenml/pull/1519
+* Fix Kubernetes Orchestrator Config Loading by @fa9r in https://github.com/zenml-io/zenml/pull/1523
+* Resolve path during module resolving by @schustmi in https://github.com/zenml-io/zenml/pull/1521
+* Fix `SO_REUSEPORT` issue by @fa9r in https://github.com/zenml-io/zenml/pull/1524
+* Add individual stack component deployment through recipes by @wjayesh in https://github.com/zenml-io/zenml/pull/1328
+* Raise 501 for Unauthenticated Artifact Stores by @fa9r in https://github.com/zenml-io/zenml/pull/1522
+* Fix Duplicate Step Error by @fa9r in https://github.com/zenml-io/zenml/pull/1527
+* Fix pulling of stack recipes on `zenml init` by @wjayesh in https://github.com/zenml-io/zenml/pull/1528
+* Store dockerfile and requirements for builds by @schustmi in https://github.com/zenml-io/zenml/pull/1525
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.38.0...0.39.0
+
 # 0.38.0
 
 The 0.38.0 ZenML release is a major milestone for the ZenML project. It marks

@@ -879,7 +879,7 @@ def create_pipeline_run(
 
 @router.post(
     WORKSPACES + "/{workspace_name_or_id}" + RUNS + GET_OR_CREATE,
-    response_model=Tuple[PipelineRunResponseModel, bool],
+    response_model=Tuple[PipelineRunResponseModel, bool],  # type: ignore[arg-type]
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
