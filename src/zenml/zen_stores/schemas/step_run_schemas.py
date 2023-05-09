@@ -120,7 +120,6 @@ class StepRunSchema(NamedSchema, table=True):
     docstring: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
     source_code: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
     num_outputs: Optional[int]
-    logs_uri: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
 
     run_metadata: List["RunMetadataSchema"] = Relationship(
         back_populates="step_run", sa_relationship_kwargs={"cascade": "delete"}
@@ -190,7 +189,6 @@ class StepRunSchema(NamedSchema, table=True):
             source_code=request.source_code,
             num_outputs=len(step_config.outputs),
             status=request.status,
-            logs_uri=request.logs_uri,
         )
 
     def to_model(
@@ -233,7 +231,7 @@ class StepRunSchema(NamedSchema, table=True):
             input_artifacts=input_artifacts,
             output_artifacts=output_artifacts,
             metadata=metadata,
-            logs_uri=self.logs_uri,
+            step_logs=self.step_logs.to_model(),
         )
 
     def update(self, step_update: StepRunUpdateModel) -> "StepRunSchema":

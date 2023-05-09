@@ -25,6 +25,7 @@ from zenml.config.step_run_info import StepRunInfo
 from zenml.enums import ExecutionStatus
 from zenml.environment import get_run_environment_dict
 from zenml.logger import get_logger
+from zenml.models.logs_models import LogsRequestModel
 from zenml.models.pipeline_run_models import (
     PipelineRunRequestModel,
     PipelineRunResponseModel,
@@ -196,12 +197,16 @@ class StepLauncher:
                 start_time=datetime.utcnow(),
                 user=client.active_user.id,
                 workspace=client.active_workspace.id,
-                logs_uri=logs_uri,
+                step_logs=LogsRequestModel(
+                    uri=logs_uri,
+                    artifact_store_id=self._stack.artifact_store.id,
+                ),
             )
             try:
                 execution_needed, step_run_response = self._prepare(
                     step_run=step_run
                 )
+
             except:  # noqa: E722
                 logger.error(
                     f"Failed during preparation to run step `{self._step_name}`."

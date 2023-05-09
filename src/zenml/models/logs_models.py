@@ -33,9 +33,7 @@ class LogsBaseModel(BaseModel):
         title="The uri of the logs file",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    pipeline_run_id: Optional[Union[str, UUID]] = None
-    step_run_id: Optional[Union[str, UUID]] = None
-    artifact_store_id: Optional[Union[str, UUID]] = None
+    artifact_store_id: Union[str, UUID] = None
 
 
 # -------- #
@@ -45,6 +43,9 @@ class LogsBaseModel(BaseModel):
 
 class LogsResponseModel(LogsBaseModel, BaseResponseModel):
     """Response model for logs."""
+
+    step_run_id: Optional[Union[str, UUID]] = None
+    pipeline_run_id: Optional[Union[str, UUID]] = None
 
 
 # ------- #

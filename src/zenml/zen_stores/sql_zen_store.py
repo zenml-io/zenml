@@ -198,6 +198,7 @@ from zenml.zen_stores.schemas import (
 from zenml.zen_stores.schemas.artifact_schemas import (
     ArtifactVisualizationSchema,
 )
+from zenml.zen_stores.schemas.logs_schemas import LogsSchema
 from zenml.zen_stores.secrets_stores.sql_secrets_store import (
     SqlSecretsStoreConfiguration,
 )
@@ -3386,6 +3387,15 @@ class SqlZenStore(BaseZenStore):
             # Create the step
             step_schema = StepRunSchema.from_request(step_run)
             session.add(step_schema)
+
+            # Add logs entry for the step if exists
+            if step_run.step_logs is not None:
+                log_entry = LogsSchema(
+                    uri=step_run.step_logs.uri,
+                    step_run_id=step_schema.id,
+                    artifact_store_id=step_run.step_logs.artifact_store_id,
+                )
+                session.add(log_entry)
 
             # Save parent step IDs into the database.
             for parent_step_id in step_run.parent_step_ids:

@@ -206,4 +206,5 @@ def get_step_logs(
         The logs of the step.
     """
     step_logs: "LogsSchema" = zen_store().get_run_step(step_id).step_logs
-    step_logs.artifact_store
+    step_logs.artifact_store_id
+    step_logs.uri

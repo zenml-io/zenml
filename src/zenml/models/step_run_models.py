@@ -27,6 +27,7 @@ from zenml.models.base_models import (
 )
 from zenml.models.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.models.filter_models import WorkspaceScopedFilterModel
+from zenml.models.logs_models import LogsRequestModel, LogsResponseModel
 
 if TYPE_CHECKING:
     from zenml.models import ArtifactResponseModel, RunMetadataResponseModel
@@ -87,6 +88,7 @@ class StepRunResponseModel(StepRunBaseModel, WorkspaceScopedResponseModel):
         default={},
         title="Metadata associated with this step run.",
     )
+    step_logs: Optional["LogsResponseModel"] = None
 
 
 # ------ #
@@ -151,6 +153,7 @@ class StepRunRequestModel(StepRunBaseModel, WorkspaceScopedRequestModel):
 
     input_artifacts: Dict[str, UUID] = {}
     output_artifacts: Dict[str, UUID] = {}
+    step_logs: Optional["LogsRequestModel"] = None
 
 
 # ------ #

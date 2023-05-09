@@ -20,7 +20,7 @@ from uuid import UUID
 from sqlalchemy import TEXT, Column
 from sqlmodel import Field, Relationship
 
-from zenml.models.logs_models import LogsRequestModel, LogsResponseModel
+from zenml.models.logs_models import LogsResponseModel
 from zenml.zen_stores.schemas.base_schemas import BaseSchema
 from zenml.zen_stores.schemas.component_schemas import StackComponentSchema
 from zenml.zen_stores.schemas.pipeline_run_schemas import PipelineRunSchema
@@ -85,21 +85,4 @@ class LogsSchema(BaseSchema, table=True):
             uri=self.uri,
             created=self.created,
             updated=self.updated,
-        )
-
-    @classmethod
-    def from_request(cls, request: "LogsRequestModel") -> "LogsSchema":
-        """Create a `LogsSchema` from a `LogsRequestModel`.
-
-        Args:
-            request: The request model to create the schema from.
-
-        Returns:
-            The created `LogsSchema`.
-        """
-        return cls(
-            pipeline_run_id=request.pipeline_run_id,
-            step_run_id=request.step_run_id,
-            artifact_store_id=request.artifact_store_id,
-            uri=request.uri,
         )
