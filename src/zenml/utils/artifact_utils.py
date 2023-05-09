@@ -322,7 +322,8 @@ def _load_uri_from_artifact_store(
             f"File '{uri}' does not exist in artifact store "
             f"'{artifact_store.name}'."
         )
-    except Exception:
+    except Exception as e:
+        logger.exception(e)
         link = "https://docs.zenml.io/component-gallery/artifact-stores/custom#enabling-artifact-visualizations-with-custom-artifact-stores"
         raise NotImplementedError(
             f"File '{uri}' could not be loaded because the underlying artifact "
