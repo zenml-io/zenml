@@ -19,10 +19,9 @@ In this release, we've enhanced the ZenML stack recipe CLI to support
 conditional deployment, destruction, and configuration of individual stack 
 components. Users can now quickly deploy and destroy components with options for 
 each flavor, and pass a config file for custom variables. The new `output` CLI 
-command allows users to retrieve outputs from their recipes, and all Terraform 
-commands now execute with `refresh=False` by default. This update streamlines 
-deploying and managing stack components by providing a more efficient and 
-user-friendly experience.
+command allows users to retrieve outputs from their recipes. Overall, this 
+update streamlines deploying and managing stack components by providing a more 
+efficient and user-friendly experience.
 
 ## Artifact Visualization
 
