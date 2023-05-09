@@ -12,15 +12,15 @@ If you are the one setting up ZenML for your organization, head on over to the [
 
 When you first get started with ZenML it is based on the following architecture on your machine.
 
-<figure><img src="../../.gitbook/assets/Scenario1.png" alt="" width="375"><figcaption><p>Scenario 1: ZenML default local configuration</p></figcaption></figure>
+<figure><img src="../../.gitbook/assets/Scenario1.png" alt="" width="563"><figcaption><p>Scenario 1: ZenML default local configuration</p></figcaption></figure>
 
 The SQLite **Database** that you can see in this diagram is used to store information about pipelines, pipeline runs, stacks and other configurations. In the previous pages we have used the `zenml up` command to spin up a local rest server to serve the dashboard as well. The diagram for this will look as follows:
 
-<figure><img src="../../.gitbook/assets/Scenario2.png" alt="" width="375"><figcaption><p>Scenario 2: ZenML with a local REST Server</p></figcaption></figure>
+<figure><img src="../../.gitbook/assets/Scenario2.png" alt="" width="563"><figcaption><p>Scenario 2: ZenML with a local REST Server</p></figcaption></figure>
 
 In order to move into production, you will need to deploy this server somewhere centrally so that the different cloud stack components can read from and write to the server. Additionally, this also allows all you team member to connect to it and share stacks and pipelines.
 
-<figure><img src="../../.gitbook/assets/Scenario3.png" alt="" width="375"><figcaption><p>Scenario 3: Deployed ZenML Server</p></figcaption></figure>
+<figure><img src="../../.gitbook/assets/Scenario3.png" alt="" width="563"><figcaption><p>Scenario 3: Deployed ZenML Server</p></figcaption></figure>
 
 ### Connect your client to the server
 
@@ -47,3 +47,7 @@ The current user is: 'zenml'
 The active workspace is: 'default' (global)
 The active stack is: 'default' (global)
 ```
+
+{% hint style="info" %}
+You can always **disconnect** from a server using `zenml disconnect`
+{% endhint %}

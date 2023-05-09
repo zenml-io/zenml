@@ -1,8 +1,8 @@
 ---
-description: How to use MLOps tools and infrastructure with stacks
+description: Learn how to switch the infrastructure backend of your code.
 ---
 
-# Understand the default stack
+# Switch stacks locally
 
 ## Stack
 
@@ -105,11 +105,22 @@ As visualized in the diagram above, There are two domains that are combined thro
 
 ### Create a different Artifact Store
 
-As a starting point you can simply use the default artifact store like so:
-
+{% tabs %}
+{% tab title="CLI" %}
 ```bash
-zenml artifact-store 
+zenml artifact-store register --flavor=local my_artifact_store
 ```
+
+Let'd decompose the command:
+
+* `artifact-store` this describes the top level group, to find other stack components simply run `zenml --help`&#x20;
+* `register` here we want to register a new component, instead we could also `update` , `delete`&#x20;
+{% endtab %}
+
+{% tab title="Second Tab" %}
+
+{% endtab %}
+{% endtabs %}
 
 
 
