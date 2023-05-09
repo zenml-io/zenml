@@ -64,7 +64,10 @@ def prepare_logs_uri(
     # Check if the file already exists, if so, raise an error
     logs_uri = os.path.join(logs_base_uri, f"{log_key}.log")
     if fileio.exists(logs_uri):
-        raise RuntimeError(f"Logs file {logs_uri} already exists!")
+        logger.warning(
+            f"Logs file {logs_uri} already exists! Removing old log file..."
+        )
+        fileio.remove(logs_uri)
     return logs_uri
 
 
