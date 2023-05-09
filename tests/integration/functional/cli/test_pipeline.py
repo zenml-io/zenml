@@ -200,7 +200,7 @@ def test_pipeline_build_writes_output_file(clean_workspace, mocker, tmp_path):
     mocker.patch.object(
         PipelineDockerImageBuilder,
         "build_docker_image",
-        return_value="image_name",
+        return_value=("image_name", "", ""),
     )
 
     runner = CliRunner()
@@ -280,7 +280,7 @@ def test_pipeline_build_with_different_stack(clean_workspace, mocker):
     mocker.patch.object(
         PipelineDockerImageBuilder,
         "build_docker_image",
-        return_value="image_name",
+        return_value=("image_name", "", ""),
     )
 
     components = {
