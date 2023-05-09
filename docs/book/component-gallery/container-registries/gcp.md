@@ -33,6 +33,20 @@ When using the Google Artifact Registry, you need to:
 {% endtab %}
 {% endtabs %}
 
+### Infrastructure Deployment
+
+A GCP Container Registry can be deployed directly from the ZenML CLI:
+
+```shell
+zenml container-registry deploy gcp_container_registry --flavor=gcp ...
+```
+
+You can pass other configuration specific to the stack components as key-value
+arguments. If you don't provide a name, a random one is generated for you. For
+more information about how to work use the CLI for this, please refer to [the
+dedicated documentation
+section](../../advanced-guide/practical/stack-recipes.md#deploying-stack-components-directly).
+
 ## How to find the registry URI
 
 {% tabs %}
