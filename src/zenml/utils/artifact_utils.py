@@ -30,6 +30,8 @@ from zenml.utils import source_utils
 from zenml.utils.yaml_utils import read_yaml, write_yaml
 
 if TYPE_CHECKING:
+    from uuid import UUID
+
     from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
     from zenml.config.source import Source
     from zenml.materializers.base_materializer import BaseMaterializer
@@ -206,7 +208,7 @@ def load_artifact_visualization(
         artifact: The artifact to visualize.
         index: The index of the visualization to load.
         zen_store: The ZenStore to use for finding the artifact store. If not
-            provided, the ZenStore of the client will be used.
+            provided, the client's ZenStore will be used.
         encode_image: Whether to base64 encode image visualizations.
 
     Returns:
@@ -230,8 +232,13 @@ def load_artifact_visualization(
     visualization = artifact.visualizations[index]
 
     # Load the visualization from the artifact's artifact store
-    artifact_store = _load_artifact_store_of_artifact(
-        artifact=artifact, zen_store=zen_store
+    if not artifact.artifact_store_id:
+        raise DoesNotExistException(
+            f"Artifact '{artifact.id}' cannot be visualized because the "
+            "underlying artifact store was deleted."
+        )
+    artifact_store = _load_artifact_store(
+        artifact_store_id=artifact.artifact_store_id, zen_store=zen_store
     )
     mode = "rb" if visualization.type == VisualizationType.IMAGE else "r"
     value = _load_file_from_artifact_store(
@@ -247,36 +254,39 @@ def load_artifact_visualization(
     return LoadedVisualizationModel(type=visualization.type, value=value)
 
 
-def _load_artifact_store_of_artifact(
-    artifact: "ArtifactResponseModel",
+def _load_artifact_store(
+    artifact_store_id: "UUID",
     zen_store: Optional["BaseZenStore"] = None,
 ) -> "BaseArtifactStore":
-    """Load the artifact store of the given artifact.
+    """Load an artifact store (potentially inside the server).
 
     Args:
-        artifact: The artifact for which to load the artifact store.
+        artifact_store_id: The id of the artifact store to load.
         zen_store: The ZenStore to use for finding the artifact store. If not
             provided, the client's ZenStore will be used.
 
     Returns:
-        The artifact store of the given artifact.
+        The loaded artifact store.
 
     Raises:
-        DoesNotExistException: If the artifact does not have an artifact store.
+        DoesNotExistException: If the artifact store does not exist or is not
+            an artifact store.
         NotImplementedError: If the artifact store could not be loaded.
     """
-    if not artifact.artifact_store_id:
-        raise DoesNotExistException(
-            f"Artifact '{artifact.id}' cannot be loaded because the underlying "
-            "artifact store was deleted."
-        )
-
     if zen_store is None:
         zen_store = Client().zen_store
 
-    artifact_store_model = zen_store.get_stack_component(
-        artifact.artifact_store_id
-    )
+    try:
+        artifact_store_model = zen_store.get_stack_component(artifact_store_id)
+    except KeyError:
+        raise DoesNotExistException(
+            f"Artifact store '{artifact_store_id}' does not exist."
+        )
+
+    if not artifact_store_model.type == StackComponentType.ARTIFACT_STORE:
+        raise DoesNotExistException(
+            f"Stack component '{artifact_store_id}' is not an artifact store."
+        )
 
     try:
         artifact_store = cast(
@@ -286,12 +296,11 @@ def _load_artifact_store_of_artifact(
     except ImportError:
         link = "https://docs.zenml.io/component-gallery/artifact-stores/custom#enabling-artifact-visualizations-with-custom-artifact-stores"
         raise NotImplementedError(
-            f"Artifact '{artifact.id}' could not be loaded because the "
-            f"underlying artifact store '{artifact_store_model.name}' "
-            f"could not be instantiated. This is likely because the "
-            f"artifact store's dependencies are not installed. For more "
-            f"information, see {link}."
+            f"Artifact store '{artifact_store_model.name}' could not be "
+            f"instantiated. This is likely because the artifact store's "
+            f"dependencies are not installed. For more information, see {link}."
         )
+
     return artifact_store
 
 
