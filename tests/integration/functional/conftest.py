@@ -16,6 +16,18 @@ import pytest
 
 from zenml.pipelines import pipeline
 from zenml.steps import step
+from zenml.types import HTMLString
+
+
+@pytest.fixture
+def one_step_pipeline():
+    """Pytest fixture that returns a pipeline which takes a single step named `step_`."""
+
+    @pipeline
+    def _pipeline(step_):
+        step_()
+
+    return _pipeline
 
 
 @pytest.fixture
@@ -43,6 +55,12 @@ def int_plus_one_test_step(input: int) -> int:
 @step
 def int_plus_two_test_step(input: int) -> int:
     return input + 2
+
+
+@step
+def visualizable_step() -> HTMLString:
+    """A step that returns a visualizable artifact."""
+    return HTMLString("<h1>Test</h1>")
 
 
 @pytest.fixture

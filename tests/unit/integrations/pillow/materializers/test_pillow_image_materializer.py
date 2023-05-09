@@ -26,4 +26,5 @@ def test_materializer_works_for_pillow_image_objects(clean_client):
         step_output=Image.new("RGB", (10, 10), color="red"),
         materializer_class=PillowImageMaterializer,
         expected_metadata_size=4,
+        assert_visualization_exists=True,
     )

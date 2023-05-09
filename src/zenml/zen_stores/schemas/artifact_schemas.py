@@ -22,9 +22,10 @@ from sqlalchemy import TEXT, Column
 from sqlmodel import Field, Relationship
 
 from zenml.config.source import Source
-from zenml.enums import ArtifactType
+from zenml.enums import ArtifactType, VisualizationType
 from zenml.models import ArtifactRequestModel, ArtifactResponseModel
-from zenml.zen_stores.schemas.base_schemas import NamedSchema
+from zenml.models.visualization_models import VisualizationModel
+from zenml.zen_stores.schemas.base_schemas import BaseSchema, NamedSchema
 from zenml.zen_stores.schemas.component_schemas import StackComponentSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.user_schemas import UserSchema
@@ -39,7 +40,7 @@ if TYPE_CHECKING:
 
 
 class ArtifactSchema(NamedSchema, table=True):
-    """SQL Model for artifacts of steps."""
+    """SQL Model for artifacts."""
 
     __tablename__ = "artifact"
 
@@ -73,7 +74,7 @@ class ArtifactSchema(NamedSchema, table=True):
     workspace: "WorkspaceSchema" = Relationship(back_populates="artifacts")
 
     type: ArtifactType
-    uri: str
+    uri: str = Field(sa_column=Column(TEXT, nullable=False))
     materializer: str = Field(sa_column=Column(TEXT, nullable=False))
     data_type: str = Field(sa_column=Column(TEXT, nullable=False))
 
@@ -86,6 +87,10 @@ class ArtifactSchema(NamedSchema, table=True):
         sa_relationship_kwargs={"cascade": "delete"},
     )
     output_of_step_runs: List["StepRunOutputArtifactSchema"] = Relationship(
+        back_populates="artifact",
+        sa_relationship_kwargs={"cascade": "delete"},
+    )
+    visualizations: List["ArtifactVisualizationSchema"] = Relationship(
         back_populates="artifact",
         sa_relationship_kwargs={"cascade": "delete"},
     )
@@ -156,4 +161,51 @@ class ArtifactSchema(NamedSchema, table=True):
             updated=self.updated,
             producer_step_run_id=producer_step_run_id,
             metadata=metadata,
+            visualizations=[vis.to_model() for vis in self.visualizations],
         )
+
+
+class ArtifactVisualizationSchema(BaseSchema, table=True):
+    """SQL Model for visualizations of artifacts."""
+
+    __tablename__ = "artifact_visualization"
+
+    type: VisualizationType
+    uri: str = Field(sa_column=Column(TEXT, nullable=False))
+
+    artifact_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target=ArtifactSchema.__tablename__,
+        source_column="artifact_id",
+        target_column="id",
+        ondelete="CASCADE",
+        nullable=False,
+    )
+    artifact: ArtifactSchema = Relationship(back_populates="visualizations")
+
+    @classmethod
+    def from_model(
+        cls, visualization: VisualizationModel, artifact_id: UUID
+    ) -> "ArtifactVisualizationSchema":
+        """Convert a `Visualization` to a `ArtifactVisualizationSchema`.
+
+        Args:
+            visualization: The visualization.
+            artifact_id: The ID of the artifact this visualization belongs to.
+
+        Returns:
+            The `ArtifactVisualizationSchema`.
+        """
+        return cls(
+            type=visualization.type,
+            uri=visualization.uri,
+            artifact_id=artifact_id,
+        )
+
+    def to_model(self) -> VisualizationModel:
+        """Convert an `ArtifactVisualizationSchema` to a `Visualization`.
+
+        Returns:
+            The `Visualization`.
+        """
+        return VisualizationModel(type=self.type, uri=self.uri)

@@ -26,6 +26,7 @@ from zenml.integrations.evidently.tests import EvidentlyTestConfig
 from zenml.steps import Output
 from zenml.steps.base_parameters import BaseParameters
 from zenml.steps.base_step import BaseStep
+from zenml.types import HTMLString
 
 
 class EvidentlyTestParameters(BaseParameters):
@@ -84,7 +85,7 @@ class EvidentlyBaseTestStep:
         comparison_dataset: Optional[pd.DataFrame],
         params: EvidentlyTestParameters,
     ) -> Output(  # type:ignore[valid-type]
-        test_json=str, test_html=str
+        test_json=str, test_html=HTMLString
     ):
         """Evidently test step for one or two datasets.
 
@@ -147,7 +148,10 @@ class EvidentlyBaseTestStep:
             test_options=params.test_options,
             download_nltk_data=params.download_nltk_data,
         )
-        return [test_suite.json(), test_suite.show(mode="inline").data]
+        return [
+            test_suite.json(),
+            HTMLString(test_suite.show(mode="inline").data),
+        ]
 
 
 class EvidentlyTestStep(BaseStep, EvidentlyBaseTestStep):
@@ -159,7 +163,7 @@ class EvidentlyTestStep(BaseStep, EvidentlyBaseTestStep):
         comparison_dataset: pd.DataFrame,
         params: EvidentlyTestParameters,
     ) -> Output(  # type:ignore[valid-type]
-        test_json=str, test_html=str
+        test_json=str, test_html=HTMLString
     ):
         """Evidently test step for two datasets.
 
@@ -187,7 +191,7 @@ class EvidentlySingleDatasetTestStep(BaseStep, EvidentlyBaseTestStep):
         dataset: pd.DataFrame,
         params: EvidentlyTestParameters,
     ) -> Output(  # type:ignore[valid-type]
-        test_json=str, test_html=str
+        test_json=str, test_html=HTMLString
     ):
         """Evidently test step for a single dataset.
 
