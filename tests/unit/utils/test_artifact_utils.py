@@ -22,7 +22,7 @@ import pytest
 from zenml.constants import MODEL_METADATA_YAML_FILE_NAME
 from zenml.materializers.numpy_materializer import NUMPY_FILENAME
 from zenml.models import ArtifactResponseModel
-from zenml.utils.materializer_utils import (
+from zenml.utils.artifact_utils import (
     METADATA_DATATYPE,
     METADATA_MATERIALIZER,
     _load_artifact,
@@ -89,7 +89,7 @@ def test_load_model_from_metadata(mocker, model_metadata_dir):
 
     # Mock the _load_artifact function
     mocker_load_artifact = mocker.patch(
-        "zenml.utils.materializer_utils._load_artifact",
+        "zenml.utils.artifact_utils._load_artifact",
         return_value=mocked_model,
     )
 
@@ -110,7 +110,7 @@ def test_load_artifact(mocker, model_artifact):
 
     # Mock the _load_artifact function
     mocker_load_artifact = mocker.patch(
-        "zenml.utils.materializer_utils._load_artifact", return_value=model
+        "zenml.utils.artifact_utils._load_artifact", return_value=model
     )
 
     load_artifact(model_artifact)

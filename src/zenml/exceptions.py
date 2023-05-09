@@ -121,6 +121,10 @@ class StackComponentInterfaceError(ZenMLBaseException):
     """Raises exception when interacting with the stack components in an unsupported way."""
 
 
+class StackComponentDeploymentError(ZenMLBaseException):
+    """Raises exception when deploying a stack component fails."""
+
+
 class ArtifactStoreInterfaceError(ZenMLBaseException):
     """Raises exception when interacting with the Artifact Store interface in an unsupported way."""
 

@@ -188,6 +188,15 @@ zenml artifact-store register gcs_store -f gcp \
     --authentication_secret=gcp_secret
 ```
 
+Note that you can deploy your GCS Store using the ZenML CLI as well, using the
+`zenml artifact-store deploy` command. This is how you would do it:
+
+```shell
+zenml artifact-store deploy gcs_store --flavor=gcp --project_id=my_project ...
+```
+
+For more information on this `deploy` subcommand, please refer to the 
+[documentation](https://docs.zenml.io/advanced-guide/practical-mlops/stack-recipes#deploying-stack-components-directly).
 
 ## 📦 KServe Custom Code Deployment
 
@@ -273,6 +282,11 @@ zenml stack register local_gcp_kserve_stack -a gcp_artifact_store -o default -d 
 > zenml artifact-store register gcp_artifact_store --flavor=gcp --path gs://my-bucket \
 >   --authentication_secret=gcp_secret
 > ```
+
+Note that the KServe model deployer, the GCP artifact store and the GCP
+container registry can be deployed using the ZenML CLI as well, using the
+`zenml <STACK_COMPONENT> deploy` command. For more information on this `deploy` subcommand, please refer to the 
+[documentation](https://docs.zenml.io/advanced-guide/practical-mlops/stack-recipes#deploying-stack-components-directly).
 
 ### 🔦 Run The pipelines
 
@@ -460,6 +474,11 @@ zenml stack register local_gcp_seldon_stack -a gcp_artifact_store -o default -d 
 >   --authentication_secret=gcp_secret
 > ```
 
+Note that the Seldon model deployer, the GCP artifact store and the GCP
+container registry can be deployed using the ZenML CLI as well, using the
+`zenml <STACK_COMPONENT> deploy` command. For more information on this `deploy` subcommand, please refer to the 
+[documentation](https://docs.zenml.io/advanced-guide/practical-mlops/stack-recipes#deploying-stack-components-directly).
+
 ### 🔦 Run The pipelines
 
 The Training/Deployment pipeline consists of the following steps:
@@ -644,7 +663,16 @@ To stop any prediction servers running in the background, use the
 zenml model-deployer models delete eaa6fc48-cda7-4c4e-8785-dc5b85cf0a31
 ```
 
-Then delete the remaining ZenML references.
+To destroy any resources deployed using the ZenML `deploy` subcommand, use the
+`destroy` subcommand to delete each individual stack component, as in the
+following example:
+
+```shell
+# replace with the name of the component you want to destroy
+zenml artifact-store destroy s3_artifact_store
+```
+
+Then delete the remaining ZenML references:
 
 ```shell
 rm -rf zenml_examples

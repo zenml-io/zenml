@@ -21,7 +21,7 @@ from zenml.models.visualization_models import VisualizationModel
 from zenml.pipelines.base_pipeline import BasePipeline
 from zenml.post_execution.artifact import ArtifactView
 from zenml.post_execution.pipeline_run import get_unlisted_runs
-from zenml.utils.materializer_utils import load_artifact_visualization
+from zenml.utils.artifact_utils import load_artifact_visualization
 
 
 def test_disabling_artifact_visualization(clean_client, one_step_pipeline):

@@ -93,6 +93,20 @@ zenml image-builder register local_builder --flavor=local
 zenml stack register sagemaker_stack -a aws_artifact_store -o sagemaker_orchestrator -c aws_registry -i local_builder --set
 ```
 
+Note that if you want an easy way to deploy the required cloud resources for
+this example via the ZenML CLI, you can do so using the `zenml <STACK_COMPONENT>
+deploy` command. For example, to deploy the S3 artifact store, you can
+run:
+
+```shell
+zenml artifact-store deploy aws_artifact_store --flavor=s3
+```
+
+You could also deploy the Sagemaker orchestrator itself as well as the ECR
+container registry. For more information on this `deploy` subcommand, please
+refer to the
+[documentation](https://docs.zenml.io/advanced-guide/practical-mlops/stack-recipes#deploying-stack-components-directly).
+
 ### ▶️ Run the pipeline
 
 Once your stack is fully set up, you should be good to go. 
@@ -144,6 +158,15 @@ rm -rf zenml_examples
 
 Additionally, you might have to clean up your cloud resources to avoid running 
 costs for storage of artifacts or containers.
+
+To destroy any resources deployed using the ZenML `deploy` subcommand, use the
+`destroy` subcommand to delete each individual stack component, as in the
+following example:
+
+```shell
+# replace with the name of the component you want to destroy
+zenml artifact-store destroy s3_artifact_store
+```
 
 # 📜 Learn more
 

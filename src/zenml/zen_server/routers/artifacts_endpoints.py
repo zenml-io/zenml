@@ -28,7 +28,7 @@ from zenml.models.page_model import Page
 from zenml.models.visualization_models import (
     LoadedVisualizationModel,
 )
-from zenml.utils.materializer_utils import load_artifact_visualization
+from zenml.utils.artifact_utils import load_artifact_visualization
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.utils import (
