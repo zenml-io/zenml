@@ -195,9 +195,13 @@ ZenML Server, even though this is not enforced by the system.
 * stacks made up of non-local stack components are only functional if they
 are shared through a remotely deployed ZenML Server.
 
-
 ![Running your pipeline in the cloud](../../assets/core_concepts/03_multi_stack.png)
 
+It is also possible to deploy Stack Components directly from the CLI using the
+`zenml <STACK_COMPONENT> deploy` command. For more information on how to use
+this and other MLOps Stack Recipes as part of your stack management, please
+read the [MLOps Stack Recipes](../../advanced-guide/practical/stack-recipes.md)
+documentation.
 
 ### Viewing the dashboard
 

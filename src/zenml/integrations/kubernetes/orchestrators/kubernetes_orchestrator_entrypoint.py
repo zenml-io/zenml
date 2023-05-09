@@ -61,10 +61,6 @@ def main() -> None:
     # Parse / extract args.
     args = parse_args()
 
-    # Get Kubernetes Core API for running kubectl commands later.
-    kube_utils.load_kube_config(incluster=True)
-    core_api = k8s_client.CoreV1Api()
-
     orchestrator_run_id = socket.gethostname()
 
     deployment_config = Client().get_deployment(args.deployment_id)
@@ -82,6 +78,11 @@ def main() -> None:
 
     active_stack = Client().active_stack
     mount_local_stores = active_stack.orchestrator.config.is_local
+
+    # Patch the Kubernetes orchestrator to think it's running in-cluster.
+    orchestrator = active_stack.orchestrator
+    assert isinstance(orchestrator, KubernetesOrchestrator)
+    orchestrator.config.incluster = True
 
     def run_step_on_kubernetes(step_name: str) -> None:
         """Run a pipeline step in a separate Kubernetes pod.
@@ -123,6 +124,9 @@ def main() -> None:
             settings=settings,
             mount_local_stores=mount_local_stores,
         )
+
+        # Get the Kubernetes client from the active Kubernetes orchestrator.
+        core_api = orchestrator._k8s_core_api
 
         # Create and run pod.
         core_api.create_namespaced_pod(

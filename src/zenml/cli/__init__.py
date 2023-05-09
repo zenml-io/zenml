@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2020. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2023. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -239,9 +239,10 @@ zenml orchestrator list --is_shared="True"
 
 Finally, for fields marked as being of type `DATETIME`, you can pass in datetime
 values in the `%Y-%m-%d %H:%M:%S` format. These can be combined with the `gte`,
-`lte`, `gt` and `lt` keywords to specify the range of the filter. For example,
-if I wanted to find all orchestrators that were created after the 1st of January
-2021, I would type:
+`lte`, `gt` and `lt` keywords (greater than or equal, less than or equal,
+greater than and less than respectively) to specify the range of the filter. For
+example, if I wanted to find all orchestrators that were created after the 1st
+of January 2021, I would type:
 
 ```shell
 zenml orchestrator list --created "gt:2021-01-01 00:00:00"
@@ -458,6 +459,20 @@ command:
 ```bash
 zenml step-operator delete STEP_OPERATOR_NAME
 ```
+
+Deploying Stack Components
+--------------------------
+
+Stack components can be deployed directly via the CLI. You can use the `deploy`
+subcommand for this. For example, you could deploy an S3 artifact store using
+the following command:
+
+```shell
+zenml artifact-store deploy s3_artifact_store --flavor=s3
+```
+
+For full documentation on this functionality, please refer to [the dedicated
+documentation on stack component deploy](https://docs.zenml.io/advanced-guide/practical-mlops/stack-recipes#deploying-stack-components-directly).
 
 Secrets Management
 ------------------

@@ -133,8 +133,6 @@ class PyCaretMaterializer(BaseMaterializer):
         Returns:
             A PyCaret model.
         """
-        super().load(data_type)
-
         # Create a temporary directory to store the model
         temp_dir = tempfile.TemporaryDirectory()
 
@@ -155,8 +153,6 @@ class PyCaretMaterializer(BaseMaterializer):
         Args:
             model: Any of the supported models.
         """
-        super().save(model)
-
         # Create a temporary directory to store the model
         temp_dir = tempfile.TemporaryDirectory()
         save_model(model, temp_dir.name)

@@ -20,7 +20,8 @@ from typing import TYPE_CHECKING, Any, ClassVar, Dict, Tuple, Type, Union
 from deepchecks.core.check_result import CheckResult
 from deepchecks.core.suite import SuiteResult
 
-from zenml.enums import ArtifactType
+from zenml.enums import ArtifactType, VisualizationType
+from zenml.io import fileio
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.utils import io_utils
 
@@ -28,6 +29,7 @@ if TYPE_CHECKING:
     from zenml.metadata.metadata_types import MetadataType
 
 RESULTS_FILENAME = "results.json"
+HTML_FILENAME = "results.html"
 
 
 class DeepchecksResultMaterializer(BaseMaterializer):
@@ -73,6 +75,22 @@ class DeepchecksResultMaterializer(BaseMaterializer):
         filepath = os.path.join(self.uri, RESULTS_FILENAME)
         serialized_json = result.to_json(True)
         io_utils.write_file_contents_as_string(filepath, serialized_json)
+
+    def save_visualizations(
+        self, result: Union[CheckResult, SuiteResult]
+    ) -> Dict[str, VisualizationType]:
+        """Saves visualizations for the given Deepchecks result.
+
+        Args:
+            result: The Deepchecks result to save visualizations for.
+
+        Returns:
+            A dictionary of visualization URIs and their types.
+        """
+        visualization_path = os.path.join(self.uri, HTML_FILENAME)
+        with fileio.open(visualization_path, "w") as f:
+            result.save_as_html(f)
+        return {visualization_path: VisualizationType.HTML}
 
     def extract_metadata(
         self, result: Union[CheckResult, SuiteResult]

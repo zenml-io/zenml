@@ -100,6 +100,7 @@ logger = get_logger(__name__)
 PIPELINE_INNER_FUNC_NAME = "connect"
 PARAM_ENABLE_CACHE = "enable_cache"
 PARAM_ENABLE_ARTIFACT_METADATA = "enable_artifact_metadata"
+PARAM_ENABLE_ARTIFACT_VISUALIZATION = "enable_artifact_visualization"
 INSTANCE_CONFIGURATION = "INSTANCE_CONFIGURATION"
 PARAM_SETTINGS = "settings"
 PARAM_EXTRA_OPTIONS = "extra"
@@ -195,6 +196,8 @@ class BasePipeline(metaclass=BasePipelineMeta):
             pipeline.
         enable_artifact_metadata: A boolean indicating if artifact metadata
             is enabled for this pipeline.
+        enable_artifact_visualization: A boolean indicating if artifact
+            visualization is enabled for this pipeline.
     """
 
     STEP_SPEC: ClassVar[Dict[str, Any]] = None  # type: ignore[assignment]
@@ -215,6 +218,9 @@ class BasePipeline(metaclass=BasePipelineMeta):
             enable_cache=kwargs.pop(PARAM_ENABLE_CACHE, None),
             enable_artifact_metadata=kwargs.pop(
                 PARAM_ENABLE_ARTIFACT_METADATA, None
+            ),
+            enable_artifact_visualization=kwargs.pop(
+                PARAM_ENABLE_ARTIFACT_VISUALIZATION, None
             ),
         )
         self._apply_class_configuration(kwargs)
@@ -309,6 +315,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
         self: T,
         enable_cache: Optional[bool] = None,
         enable_artifact_metadata: Optional[bool] = None,
+        enable_artifact_visualization: Optional[bool] = None,
         settings: Optional[Mapping[str, "SettingsOrDict"]] = None,
         extra: Optional[Dict[str, Any]] = None,
         merge: bool = True,
@@ -331,6 +338,8 @@ class BasePipeline(metaclass=BasePipelineMeta):
             enable_cache: If caching should be enabled for this pipeline.
             enable_artifact_metadata: If artifact metadata should be enabled for
                 this pipeline.
+            enable_artifact_visualization: If artifact visualization should be
+                enabled for this pipeline.
             settings: settings for this pipeline.
             extra: Extra configurations for this pipeline.
             merge: If `True`, will merge the given dictionary configurations
@@ -364,6 +373,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
             {
                 "enable_cache": enable_cache,
                 "enable_artifact_metadata": enable_artifact_metadata,
+                "enable_artifact_visualization": enable_artifact_visualization,
                 "settings": settings,
                 "extra": extra,
                 "failure_hook_source": failure_hook_source,
@@ -463,6 +473,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
         run_name: Optional[str] = None,
         enable_cache: Optional[bool] = None,
         enable_artifact_metadata: Optional[bool] = None,
+        enable_artifact_visualization: Optional[bool] = None,
         schedule: Optional[Schedule] = None,
         build: Union[str, "UUID", "PipelineBuildBaseModel", None] = None,
         settings: Optional[Mapping[str, "SettingsOrDict"]] = None,
@@ -481,6 +492,8 @@ class BasePipeline(metaclass=BasePipelineMeta):
             enable_cache: If caching should be enabled for this pipeline run.
             enable_artifact_metadata: If artifact metadata should be enabled
                 for this pipeline run.
+            enable_artifact_visualization: If artifact visualization should be
+                enabled for this pipeline run.
             schedule: Optional schedule to use for the run.
             build: Optional build to use for the run.
             settings: Settings for this pipeline run.
@@ -518,6 +531,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
                 run_name=run_name,
                 enable_cache=enable_cache,
                 enable_artifact_metadata=enable_artifact_metadata,
+                enable_artifact_visualization=enable_artifact_visualization,
                 steps=step_configurations,
                 settings=settings,
                 schedule=schedule,

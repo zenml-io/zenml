@@ -22,6 +22,20 @@ to assume. This role should at least have the `AmazonS3FullAccess` and
 `AmazonSageMakerFullAccess` policies applied. Check [here](https://docs.aws.amazon.com/sagemaker/latest/dg/sagemaker-roles.html#sagemaker-roles-create-execution-role) 
 for a guide on how to set up this role.
 
+### Infrastructure Deployment
+
+A Sagemaker step operator can be deployed directly from the ZenML CLI:
+
+```shell
+zenml orchestrator deploy sagemaker_step_operator --flavor=sagemaker ...
+```
+
+You can pass other configuration specific to the stack components as key-value
+arguments. If you don't provide a name, a random one is generated for you. For
+more information about how to work use the CLI for this, please refer to [the
+dedicated documentation
+section](../../advanced-guide/practical/stack-recipes.md#deploying-stack-components-directly).
+
 ## How to use it
 
 To use the SageMaker step operator, we need:
@@ -51,6 +65,7 @@ Check [this guide](https://docs.aws.amazon.com/sagemaker/latest/dg/experiments-c
 to see how to create an experiment.
 
 We can then register the step operator and use it in our active stack:
+
 ```shell
 zenml step-operator register <NAME> \
     --flavor=sagemaker \

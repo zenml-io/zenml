@@ -31,6 +31,7 @@ class PipelineRunConfiguration(
     run_name: Optional[str] = None
     enable_cache: Optional[bool] = None
     enable_artifact_metadata: Optional[bool] = None
+    enable_artifact_visualization: Optional[bool] = None
     schedule: Optional[Schedule] = None
     build: Union[PipelineBuildBaseModel, UUID, None] = None
     steps: Dict[str, StepConfigurationUpdate] = {}

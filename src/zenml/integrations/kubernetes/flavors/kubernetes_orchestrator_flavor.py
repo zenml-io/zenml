@@ -43,7 +43,6 @@ class KubernetesOrchestratorSettings(BaseSettings):
 
     synchronous: bool = False
     timeout: int = 0
-
     service_account_name: Optional[str] = None
     pod_settings: Optional[KubernetesPodSettings] = None
 
@@ -54,6 +53,11 @@ class KubernetesOrchestratorConfig(  # type: ignore[misc] # https://github.com/p
     """Configuration for the Kubernetes orchestrator.
 
     Attributes:
+        incluster: If `True`, the orchestrator will run the pipeline inside the
+            same cluster in which it itself is running. This requires the client
+            to run in a Kubernetes pod itself. If set, the `kubernetes_context`
+            config option is ignored. If the stack component is linked to a
+            Kubernetes service connector, this field is ignored.
         kubernetes_context: Name of a Kubernetes context to run pipelines in.
             If the stack component is linked to a Kubernetes service connector,
             this field is ignored. Otherwise, it is mandatory.
@@ -69,6 +73,7 @@ class KubernetesOrchestratorConfig(  # type: ignore[misc] # https://github.com/p
             skipped.
     """
 
+    incluster: bool = False
     kubernetes_context: Optional[str] = None
     kubernetes_namespace: str = "zenml"
     local: bool = False

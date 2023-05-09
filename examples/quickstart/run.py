@@ -23,7 +23,6 @@ from steps import (
     training_data_loader,
 )
 
-from zenml.integrations.evidently.visualizers import EvidentlyVisualizer
 from zenml.integrations.mlflow.mlflow_utils import get_tracking_uri
 from zenml.integrations.mlflow.steps.mlflow_deployer import (
     MLFlowDeployerParameters,
@@ -71,11 +70,6 @@ def main():
         drift_detector=drift_detector,
     )
     inference_pipeline_instance.run()
-
-    # visualize the data drift
-    inf_run = inference_pipeline_instance.get_runs()[0]
-    drift_detection_step = inf_run.get_step(step="drift_detector")
-    EvidentlyVisualizer().visualize(drift_detection_step)
 
     print(
         "You can run:\n "

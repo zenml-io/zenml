@@ -26,7 +26,23 @@ There are many ways to deploy a Kubernetes cluster using different cloud provide
 or on your custom infrastructure, and we can't possibly cover all of them, 
 but you can check out our cloud guide 
 
-If the above Kubernetes cluster is deployed remotely on the cloud, then another pre-requisite to use this orchestrator would be to deploy and connect to a [remote ZenML server](../../getting-started/deploying-zenml/deploying-zenml.md).
+If the above Kubernetes cluster is deployed remotely on the cloud, then another
+pre-requisite to use this orchestrator would be to deploy and connect to a
+[remote ZenML server](../../getting-started/deploying-zenml/deploying-zenml.md).
+
+### Infrastructure Deployment
+
+A Kubernetes orchestrator can be deployed directly from the ZenML CLI:
+
+```shell
+zenml orchestrator deploy k8s_orchestrator --flavor=kubernetes ...
+```
+
+You can pass other configuration specific to the stack components as key-value
+arguments. If you don't provide a name, a random one is generated for you. For
+more information about how to work use the CLI for this, please refer to [the
+dedicated documentation
+section](../../advanced-guide/practical/stack-recipes.md#deploying-stack-components-directly).
 
 ## How to use it
 

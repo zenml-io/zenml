@@ -17,6 +17,7 @@ from tempfile import TemporaryDirectory
 from typing import Any, Callable, Optional, Type
 
 from zenml.constants import ENV_ZENML_DEBUG
+from zenml.enums import VisualizationType
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.materializers.materializer_registry import materializer_registry
 from zenml.metadata.metadata_types import MetadataTypeTuple
@@ -34,6 +35,9 @@ def _test_materializer(
     validation_function: Optional[Callable[[str], Any]] = None,
     expected_metadata_size: Optional[int] = None,
     return_metadata: bool = False,
+    assert_data_exists: bool = True,
+    assert_data_type: bool = True,
+    assert_visualization_exists: bool = False,
 ) -> Any:
     """Test whether the materialization of a given step output works.
 
@@ -56,6 +60,12 @@ def _test_materializer(
             returned by `materializer.extract_full_metadata()` has this size.
         return_metadata: If True, we return the metadata dict returned by
             `materializer.extract_full_metadata()`.
+        assert_data_exists: If `True`, we also assert that `materializer.save()`
+            wrote something to disk.
+        assert_data_type: If `True`, we also assert that `materializer.load()`
+            returns an object of the same type as `step_output`.
+        assert_visualization_exists: If `True`, we also assert that the result
+            of `materializer.save_visualizations()` is not empty.
 
     Returns:
         The result of materializing `step_output` to disk and loading it again.
@@ -72,8 +82,19 @@ def _test_materializer(
 
         # Assert that materializer saves something to disk
         materializer.save(step_output)
-        new_files = os.listdir(artifact_uri)
-        assert len(new_files) > len(existing_files)  # something was written
+        if assert_data_exists:
+            new_files = os.listdir(artifact_uri)
+            assert len(new_files) > len(existing_files)
+
+        # Assert that visualization extraction returns a dict
+        visualizations = materializer.save_visualizations(step_output)
+        assert isinstance(visualizations, dict)
+        if assert_visualization_exists:
+            assert len(visualizations) > 0
+        for uri, value in visualizations.items():
+            assert isinstance(uri, str)
+            assert isinstance(value, VisualizationType)
+            assert os.path.exists(uri)
 
         # Assert that metadata extraction returns a dict
         metadata = materializer.extract_full_metadata(step_output)
@@ -86,7 +107,8 @@ def _test_materializer(
 
         # Assert that materializer loads the data with the correct type
         loaded_data = materializer.load(step_output_type)
-        assert isinstance(loaded_data, step_output_type)  # correct type
+        if assert_data_type:
+            assert isinstance(loaded_data, step_output_type)  # correct type
 
         # Run additional validation function if provided
         if validation_function:

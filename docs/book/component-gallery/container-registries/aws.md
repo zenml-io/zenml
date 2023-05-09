@@ -45,6 +45,20 @@ Make sure to choose a nearby region for faster access.
 `<ACCOUNT_ID>.dkr.ecr.<REGION>.amazonaws.com` to get your container registry 
 URI.
 
+### Infrastructure Deployment
+
+An AWS ECR Container Registry can be deployed directly from the ZenML CLI:
+
+```shell
+zenml container-registry deploy ecr_container_registry --flavor=aws ...
+```
+
+You can pass other configuration specific to the stack components as key-value
+arguments. If you don't provide a name, a random one is generated for you. For
+more information about how to work use the CLI for this, please refer to [the
+dedicated documentation
+section](../../advanced-guide/practical/stack-recipes.md#deploying-stack-components-directly).
+
 ## How to use it
 
 To use the AWS container registry, we need:
