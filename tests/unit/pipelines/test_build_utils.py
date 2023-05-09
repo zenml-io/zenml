@@ -98,7 +98,7 @@ def test_build_is_skipped_when_not_required(mocker):
     mock_build_docker_image = mocker.patch.object(
         PipelineDockerImageBuilder,
         "build_docker_image",
-        return_value="image_name",
+        return_value=("image_name", "", ""),
     )
 
     deployment = PipelineDeploymentBaseModel(
@@ -130,7 +130,7 @@ def test_stack_with_container_registry_creates_non_local_build(
     mocker.patch.object(
         PipelineDockerImageBuilder,
         "build_docker_image",
-        return_value="image_name",
+        return_value=("image_name", "", ""),
     )
 
     deployment = PipelineDeploymentBaseModel(
@@ -158,7 +158,7 @@ def test_build_uses_correct_settings(clean_client, mocker, empty_pipeline):
     mock_build_docker_image = mocker.patch.object(
         PipelineDockerImageBuilder,
         "build_docker_image",
-        return_value="image_name",
+        return_value=("image_name", "", ""),
     )
 
     deployment = PipelineDeploymentBaseModel(
@@ -207,7 +207,7 @@ def test_building_with_identical_keys_and_settings(clean_client, mocker):
     mock_build_docker_image = mocker.patch.object(
         PipelineDockerImageBuilder,
         "build_docker_image",
-        return_value="image_name",
+        return_value=("image_name", "", ""),
     )
 
     deployment = PipelineDeploymentBaseModel(
@@ -241,7 +241,7 @@ def test_building_with_identical_keys_and_different_settings(
     mocker.patch.object(
         PipelineDockerImageBuilder,
         "build_docker_image",
-        return_value="image_name",
+        return_value=("image_name", "", ""),
     )
 
     deployment = PipelineDeploymentBaseModel(
@@ -270,7 +270,7 @@ def test_building_with_different_keys_and_identical_settings(
     mock_build_docker_image = mocker.patch.object(
         PipelineDockerImageBuilder,
         "build_docker_image",
-        return_value="image_name",
+        return_value=("image_name", "", ""),
     )
 
     deployment = PipelineDeploymentBaseModel(
