@@ -517,12 +517,21 @@ class StackComponent:
                 "again."
             )
 
+        if self.connector_requirements.resource_id_attr is not None:
+            # Check if an attribute is set in the component configuration
+            resource_id = getattr(
+                self.config, self.connector_requirements.resource_id_attr
+            )
+        else:
+            # Otherwise, use the resource ID configured in the component
+            resource_id = self.connector_resource_id
+
         client = Client()
         try:
             self._connector_instance = client.get_service_connector_client(
                 name_id_or_prefix=self.connector,
                 resource_type=self.connector_requirements.resource_type,
-                resource_id=self.connector_resource_id,
+                resource_id=resource_id,
             )
         except KeyError:
             raise RuntimeError(

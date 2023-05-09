@@ -1227,6 +1227,7 @@ def list_service_connector_resources(
     workspace_name_or_id: Union[str, UUID],
     connector_type: Optional[str] = None,
     resource_type: Optional[str] = None,
+    resource_id: Optional[str] = None,
     auth_context: AuthContext = Security(
         authorize, scopes=[PermissionType.READ]
     ),
@@ -1237,6 +1238,7 @@ def list_service_connector_resources(
         workspace_name_or_id: Name or ID of the workspace.
         connector_type: the service connector type identifier to filter by.
         resource_type: the resource type identifier to filter by.
+        resource_id: the resource identifier to filter by.
         auth_context: Authentication context.
 
     Returns:
@@ -1248,4 +1250,5 @@ def list_service_connector_resources(
         workspace_name_or_id=workspace_name_or_id,
         connector_type=connector_type,
         resource_type=resource_type,
+        resource_id=resource_id,
     )

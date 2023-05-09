@@ -45,6 +45,7 @@ from zenml.models.constants import STR_FIELD_MAX_LENGTH
 from zenml.models.filter_models import ShareableWorkspaceScopedFilterModel
 
 if TYPE_CHECKING:
+    from zenml.models.component_models import ComponentBaseModel
     from zenml.service_connectors.service_connector import ServiceConnector
 
 logger = get_logger(__name__)
@@ -799,18 +800,26 @@ class ServiceConnectorRequirements(BaseModel):
         resource_type: The type of resource that the service connector instance
             must be able to access. If omitted, any resource type can be
             accessed.
+        resource_id_attr: The name of an attribute in the stack component
+            configuration that contains the resource ID of the resource that
+            the service connector instance must be able to access.
     """
 
     connector_type: Optional[str] = None
     resource_type: str
+    resource_id_attr: Optional[str] = None
 
     def is_satisfied_by(
-        self, connector: "ServiceConnectorBaseModel"
+        self,
+        connector: "ServiceConnectorBaseModel",
+        component: "ComponentBaseModel",
     ) -> Tuple[bool, str]:
         """Check if the requirements are satisfied by a connector.
 
         Args:
             connector: The connector to check.
+            component: The stack component that the connector is associated
+                with.
 
         Returns:
             True if the requirements are satisfied, False otherwise, and a
@@ -830,6 +839,18 @@ class ServiceConnectorRequirements(BaseModel):
                 "Only the following resource types are supported: "
                 f"{', '.join(connector.resource_types)}"
             )
+        if self.resource_id_attr:
+            resource_id = component.configuration.get(self.resource_id_attr)
+            if not resource_id:
+                return (
+                    False,
+                    f"the '{self.resource_id_attr}' stack component "
+                    f"configuration attribute plays the role of resource "
+                    f"identifier, but the stack component does not contain a "
+                    f"'{self.resource_id_attr}' attribute. Please add the "
+                    f"'{self.resource_id_attr}' attribute to the stack "
+                    "component configuration and try again.",
+                )
 
         return True, ""
 

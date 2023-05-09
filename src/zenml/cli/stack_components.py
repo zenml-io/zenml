@@ -1301,7 +1301,13 @@ def generate_stack_component_connect_command(
                 "does not support using a service connector to connect to "
                 "resources."
             )
+
         resource_type = requirements.resource_type
+        if requirements.resource_id_attr is not None:
+            # Check if an attribute is set in the component configuration
+            resource_id = component_model.configuration.get(
+                requirements.resource_id_attr
+            )
 
         if interactive:
             # Fetch the list of connectors that have resources compatible with
@@ -1313,6 +1319,7 @@ def generate_stack_component_connect_command(
                 resource_list = client.list_service_connector_resources(
                     connector_type=requirements.connector_type,
                     resource_type=resource_type,
+                    resource_id=resource_id,
                 )
 
             resource_list = [
@@ -1334,7 +1341,7 @@ def generate_stack_component_connect_command(
                         f"{len(error_resource_list)} connectors can be used "
                         f"to gain access to {resource_type} resources required "
                         "for the stack component, but they are in an error "
-                        "state or they didn't list any resources. "
+                        "state or they didn't list any matching resources. "
                     )
                 command_args = ""
                 if requirements.connector_type:
@@ -1344,6 +1351,9 @@ def generate_stack_component_connect_command(
                 command_args += (
                     f" --resource-type {requirements.resource_type}"
                 )
+                if resource_id:
+                    command_args += f" --resource-id {resource_id}"
+
                 cli_utils.error(
                     f"No compatible valid resources were found for the "
                     f"'{component_model.name}' {display_name} in your "
@@ -1372,7 +1382,9 @@ def generate_stack_component_connect_command(
 
             connector_id = connector_model.id
 
-            satisfied, msg = requirements.is_satisfied_by(connector_model)
+            satisfied, msg = requirements.is_satisfied_by(
+                connector_model, component_model
+            )
             if not satisfied:
                 cli_utils.error(
                     f"The connector with ID {connector_id} does not match the "

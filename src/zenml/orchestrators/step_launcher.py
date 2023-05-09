@@ -22,6 +22,7 @@ from zenml.config.step_configurations import Step
 from zenml.config.step_run_info import StepRunInfo
 from zenml.enums import ExecutionStatus
 from zenml.environment import get_run_environment_dict
+from zenml.exceptions import EntityExistsError
 from zenml.logger import get_logger
 from zenml.models.pipeline_run_models import (
     PipelineRunRequestModel,
@@ -190,7 +191,12 @@ class StepLauncher:
                 )
                 step_run.status = ExecutionStatus.FAILED
                 step_run.end_time = datetime.utcnow()
-                Client().zen_store.create_run_step(step_run)
+                try:
+                    Client().zen_store.create_run_step(step_run)
+                except EntityExistsError:
+                    # Step is already created, so we can ignore this error
+                    pass
+
                 raise
 
             if execution_needed:

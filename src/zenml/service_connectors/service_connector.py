@@ -233,8 +233,10 @@ class ServiceConnector(BaseModel, metaclass=ServiceConnectorMeta):
                 for. Only called with resource types that do not support
                 multiple instances.
 
-        Returns:
-            The default resource ID for the resource type.
+        Raises:
+            RuntimeError: If the resource type does not support multiple
+                instances and the connector implementation did not provide a
+                default resource ID.
         """
         # If a resource type does not support multiple instances, raise an
         # exception; the connector implementation must override this method and
@@ -478,7 +480,8 @@ class ServiceConnector(BaseModel, metaclass=ServiceConnectorMeta):
             type supports multiple instances and one was not supplied.
 
         Raises:
-            ValueError: If the resource ID is invalid.
+            AuthorizationException: If the connector is not authorized to
+                access the provided resource ID.
         """
         # Fetch the resource type specification
         resource_type_spec = self.type.resource_type_map[resource_type]
@@ -499,10 +502,11 @@ class ServiceConnector(BaseModel, metaclass=ServiceConnectorMeta):
 
         resource_id = self._canonical_resource_id(resource_type, resource_id)
         if resource_id != default_resource_id:
-            raise ValueError(
-                f"The provided '{resource_id}' {resource_type_spec.name} "
-                "resource name does not match the name of the resource that "
-                f"the connector can access: '{default_resource_id}'."
+            raise AuthorizationException(
+                f"The connector does not allow access to the provided "
+                f"'{resource_id}' {resource_type_spec.name} resource. It "
+                f"only allows access to the following resource: "
+                f"'{default_resource_id}'."
             )
 
         return resource_id

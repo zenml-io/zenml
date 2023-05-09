@@ -171,6 +171,7 @@ class S3ArtifactStoreFlavor(BaseArtifactStoreFlavor):
         """
         return ServiceConnectorRequirements(
             resource_type="s3-bucket",
+            resource_id_attr="path",
         )
 
     @property

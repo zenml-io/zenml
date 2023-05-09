@@ -1831,6 +1831,14 @@ access:
     type=str,
 )
 @click.option(
+    "--resource-id",
+    "-ri",
+    "resource_id",
+    help="The name of a resource to filter by.",
+    required=False,
+    type=str,
+)
+@click.option(
     "--exclude-errors",
     "-e",
     "exclude_errors",
@@ -1841,6 +1849,7 @@ access:
 def list_service_connector_resources(
     connector_type: Optional[str] = None,
     resource_type: Optional[str] = None,
+    resource_id: Optional[str] = None,
     exclude_errors: bool = False,
 ) -> None:
     """List resources that can be accessed by service connectors.
@@ -1848,6 +1857,7 @@ def list_service_connector_resources(
     Args:
         connector_type: The type of service connector to filter by.
         resource_type: The type of resource to filter by.
+        resource_id: The name of a resource to filter by.
         exclude_errors: Exclude resources that cannot be accessed due to
             errors.
     """
@@ -1860,6 +1870,7 @@ def list_service_connector_resources(
             resource_list = client.list_service_connector_resources(
                 connector_type=connector_type,
                 resource_type=resource_type,
+                resource_id=resource_id,
             )
         except (
             KeyError,
@@ -1887,9 +1898,13 @@ def list_service_connector_resources(
     connector_str = ""
     if connector_type:
         connector_str = f" '{connector_type}'"
+    if resource_id:
+        resource_str = f"{resource_str} resource with name '{resource_id}'"
+    else:
+        resource_str = f"following{resource_str} resources"
 
     click.echo(
-        f"The following{resource_str} resources can be accessed by"
+        f"The {resource_str} can be accessed by"
         f"{connector_str} service connectors configured in your workspace:"
     )
 

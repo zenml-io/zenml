@@ -1623,6 +1623,7 @@ class ZenStoreInterface(ABC):
         workspace_name_or_id: Union[str, UUID],
         connector_type: Optional[str] = None,
         resource_type: Optional[str] = None,
+        resource_id: Optional[str] = None,
     ) -> List[ServiceConnectorResourcesModel]:
         """List resources that can be accessed by service connectors.
 
@@ -1631,6 +1632,7 @@ class ZenStoreInterface(ABC):
             workspace_name_or_id: The name or ID of the workspace to scope to.
             connector_type: The type of service connector to scope to.
             resource_type: The type of resource to scope to.
+            resource_id: The ID of the resource to scope to.
 
         Returns:
             The matching list of resources that available service

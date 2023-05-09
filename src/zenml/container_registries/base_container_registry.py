@@ -131,6 +131,16 @@ class BaseContainerRegistry(AuthenticationMixin):
         else:
             self._docker_client = DockerClient.from_env()
 
+            credentials = self.credentials
+            if credentials:
+                username, password = credentials
+                self._docker_client.login(
+                    username=username,
+                    password=password,
+                    registry=self.config.uri,
+                    reauth=True,
+                )
+
         return self._docker_client
 
     def prepare_image_push(self, image_name: str) -> None:
@@ -195,6 +205,7 @@ class BaseContainerRegistryFlavor(Flavor):
         """
         return ServiceConnectorRequirements(
             resource_type="docker-registry",
+            resource_id_attr="uri",
         )
 
     @property

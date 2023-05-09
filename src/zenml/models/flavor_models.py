@@ -60,6 +60,12 @@ class FlavorBaseModel(BaseModel):
         title="The resource type of the connector that this flavor uses.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
+    connector_resource_id_attr: Optional[str] = Field(
+        default=None,
+        title="The name of an attribute in the stack component configuration "
+        "that plays the role of resource ID when linked to a service connector.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
     source: str = Field(
         title="The path to the module which contains this Flavor.",
         max_length=STR_FIELD_MAX_LENGTH,
@@ -100,6 +106,7 @@ class FlavorBaseModel(BaseModel):
         return ServiceConnectorRequirements(
             connector_type=self.connector_type,
             resource_type=self.connector_resource_type,
+            resource_id_attr=self.connector_resource_id_attr,
         )
 
 

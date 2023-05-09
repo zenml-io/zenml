@@ -4855,12 +4855,14 @@ class Client(metaclass=ClientMetaClass):
         self,
         connector_type: Optional[str] = None,
         resource_type: Optional[str] = None,
+        resource_id: Optional[str] = None,
     ) -> List[ServiceConnectorResourcesModel]:
         """List resources that can be accessed by service connectors.
 
         Args:
             connector_type: The type of service connector to filter by.
             resource_type: The type of resource to filter by.
+            resource_id: The ID of a particular resource instance to filter by.
 
         Returns:
             The matching list of resources that available service
@@ -4871,6 +4873,7 @@ class Client(metaclass=ClientMetaClass):
             workspace_name_or_id=self.active_workspace.id,
             connector_type=connector_type,
             resource_type=resource_type,
+            resource_id=resource_id,
         )
 
     def list_service_connector_types(

@@ -1694,6 +1694,7 @@ class SqlZenStore(BaseZenStore):
                     integration=flavor.integration,
                     connector_type=flavor.connector_type,
                     connector_resource_type=flavor.connector_resource_type,
+                    connector_resource_id_attr=flavor.connector_resource_id_attr,
                     workspace_id=flavor.workspace,
                     user_id=flavor.user,
                     logo_url=flavor.logo_url,
@@ -4907,6 +4908,7 @@ class SqlZenStore(BaseZenStore):
         workspace_name_or_id: Union[str, UUID],
         connector_type: Optional[str] = None,
         resource_type: Optional[str] = None,
+        resource_id: Optional[str] = None,
     ) -> List[ServiceConnectorResourcesModel]:
         """List resources that can be accessed by service connectors.
 
@@ -4915,6 +4917,7 @@ class SqlZenStore(BaseZenStore):
             workspace_name_or_id: The name or ID of the workspace to scope to.
             connector_type: The type of service connector to scope to.
             resource_type: The type of resource to scope to.
+            resource_id: The ID of the resource to scope to.
 
         Returns:
             The matching list of resources that available service
@@ -4945,7 +4948,7 @@ class SqlZenStore(BaseZenStore):
                 # For those that are not locally available, we only return
                 # rudimentary information extracted from the connector model
                 # without actively trying to discover the resources that they
-                # have access to and we only return single-instance connectors.
+                # have access to.
                 resources = (
                     ServiceConnectorResourcesModel.from_connector_model(
                         connector,
@@ -4958,6 +4961,15 @@ class SqlZenStore(BaseZenStore):
                         f"available."
                     )
 
+                if resource_id:
+                    # If an explicit resource ID is required, the connector
+                    # has to be configured with it.
+                    if (
+                        not resources.resource_ids
+                        or resource_id not in resources.resource_ids
+                    ):
+                        continue
+
             else:
                 connector_instance = (
                     service_connector_registry.instantiate_connector(
@@ -4968,6 +4980,7 @@ class SqlZenStore(BaseZenStore):
                 try:
                     resources = connector_instance.verify(
                         resource_type=resource_type,
+                        resource_id=resource_id,
                     )
                 except AuthorizationException as e:
                     logger.error(

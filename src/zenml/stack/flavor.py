@@ -164,6 +164,11 @@ class Flavor:
             if connector_requirements
             else None
         )
+        resource_id_attr = (
+            connector_requirements.resource_id_attr
+            if connector_requirements
+            else None
+        )
         model = FlavorRequestModel(
             user=client.active_user.id if is_custom else None,
             workspace=client.active_workspace.id if is_custom else None,
@@ -173,6 +178,7 @@ class Flavor:
             config_schema=self.config_schema,
             connector_type=connector_type,
             connector_resource_type=resource_type,
+            connector_resource_id_attr=resource_id_attr,
             integration=integration,
             logo_url=self.logo_url,
             docs_url=self.docs_url,
