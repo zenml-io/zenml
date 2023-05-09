@@ -11,30 +11,31 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Util functions for models and materializers."""
+"""Util functions for artifact handling."""
 
 import base64
 import os
 import tempfile
 from typing import TYPE_CHECKING, Any, Optional, Union, cast
 
-from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
 from zenml.client import Client
-from zenml.config.source import Source
 from zenml.constants import MODEL_METADATA_YAML_FILE_NAME
 from zenml.enums import StackComponentType, VisualizationType
 from zenml.exceptions import DoesNotExistException
 from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.models.visualization_models import LoadedVisualizationModel
 from zenml.stack import StackComponent
 from zenml.utils import source_utils
 from zenml.utils.yaml_utils import read_yaml, write_yaml
 
 if TYPE_CHECKING:
+    from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
+    from zenml.config.source import Source
+    from zenml.materializers.base_materializer import BaseMaterializer
     from zenml.models import ArtifactResponseModel
     from zenml.zen_stores.base_zen_store import BaseZenStore
+
 
 logger = get_logger(__name__)
 
@@ -142,8 +143,8 @@ def load_artifact(artifact: "ArtifactResponseModel") -> Any:
 
 
 def _load_artifact(
-    materializer: Union[Source, str],
-    data_type: Union[Source, str],
+    materializer: Union["Source", str],
+    data_type: Union["Source", str],
     uri: str,
 ) -> Any:
     """Load an artifact using the given materializer.
@@ -215,23 +216,59 @@ def load_artifact_visualization(
         DoesNotExistException: If the artifact does not have the requested
             visualization or if the visualization was not found in the artifact
             store.
-        NotImplementedError: If the artifact store cannot be loaded.
     """
-    if not artifact.artifact_store_id:
-        raise DoesNotExistException(
-            f"Artifact '{artifact.id}' cannot be visualized because the "
-            f"underlying artifact store was deleted."
-        )
-
+    # Get the visualization to load
     if not artifact.visualizations:
         raise DoesNotExistException(
             f"Artifact '{artifact.id}' has no visualizations."
         )
-
     if index < 0 or index >= len(artifact.visualizations):
         raise DoesNotExistException(
             f"Artifact '{artifact.id}' only has {len(artifact.visualizations)} "
             f"visualizations, but index {index} was requested."
+        )
+    visualization = artifact.visualizations[index]
+
+    # Load the visualization from the artifact's artifact store
+    artifact_store = _load_artifact_store_of_artifact(
+        artifact=artifact, zen_store=zen_store
+    )
+    mode = "rb" if visualization.type == VisualizationType.IMAGE else "r"
+    value = _load_file_from_artifact_store(
+        uri=visualization.uri,
+        artifact_store=artifact_store,
+        mode=mode,
+    )
+
+    # Encode image visualizations if requested
+    if visualization.type == VisualizationType.IMAGE and encode_image:
+        value = base64.b64encode(bytes(value))
+
+    return LoadedVisualizationModel(type=visualization.type, value=value)
+
+
+def _load_artifact_store_of_artifact(
+    artifact: "ArtifactResponseModel",
+    zen_store: Optional["BaseZenStore"] = None,
+) -> "BaseArtifactStore":
+    """Load the artifact store of the given artifact.
+
+    Args:
+        artifact: The artifact for which to load the artifact store.
+        zen_store: The ZenStore to use for finding the artifact store. If not
+            provided, the client's ZenStore will be used.
+
+    Returns:
+        The artifact store of the given artifact.
+
+    Raises:
+        DoesNotExistException: If the artifact does not have an artifact store.
+        NotImplementedError: If the artifact store could not be loaded.
+    """
+    if not artifact.artifact_store_id:
+        raise DoesNotExistException(
+            f"Artifact '{artifact.id}' cannot be loaded because the underlying "
+            "artifact store was deleted."
         )
 
     if zen_store is None:
@@ -243,30 +280,54 @@ def load_artifact_visualization(
 
     try:
         artifact_store = cast(
-            BaseArtifactStore, StackComponent.from_model(artifact_store_model)
+            "BaseArtifactStore",
+            StackComponent.from_model(artifact_store_model),
         )
     except ImportError:
         link = "https://docs.zenml.io/component-gallery/artifact-stores/custom#enabling-artifact-visualizations-with-custom-artifact-stores"
         raise NotImplementedError(
-            f"Artifact '{artifact.id}' could not be visualized because the "
+            f"Artifact '{artifact.id}' could not be loaded because the "
             f"underlying artifact store '{artifact_store_model.name}' "
             f"could not be instantiated. This is likely because the "
             f"artifact store's dependencies are not installed. For more "
             f"information, see {link}."
         )
+    return artifact_store
 
-    visualization = artifact.visualizations[index]
-    mode = "rb" if visualization.type == VisualizationType.IMAGE else "r"
+
+def _load_file_from_artifact_store(
+    uri: str,
+    artifact_store: "BaseArtifactStore",
+    mode: str = "rb",
+) -> Any:
+    """Load the given uri from the given artifact store.
+
+    Args:
+        uri: The uri of the file to load.
+        artifact_store: The artifact store from which to load the file.
+        mode: The mode in which to open the file.
+
+    Returns:
+        The loaded file.
+
+    Raises:
+        DoesNotExistException: If the file does not exist in the artifact store.
+        NotImplementedError: If the artifact store cannot open the file.
+    """
     try:
-        with artifact_store.open(visualization.uri, mode) as text_file:
-            value = text_file.read()
+        with artifact_store.open(uri, mode) as text_file:
+            return text_file.read()
     except FileNotFoundError:
         raise DoesNotExistException(
-            f"Artifact '{artifact.id}' could not be visualized because the "
-            f"visualization file '{visualization.uri}' was not be found in "
-            f"the underlying artifact store '{artifact_store_model.name}'."
+            f"File '{uri}' does not exist in artifact store "
+            f"'{artifact_store.name}'."
         )
-
-    if visualization.type == VisualizationType.IMAGE and encode_image:
-        value = base64.b64encode(bytes(value))
-    return LoadedVisualizationModel(type=visualization.type, value=value)
+    except Exception as e:
+        logger.exception(e)
+        link = "https://docs.zenml.io/component-gallery/artifact-stores/custom#enabling-artifact-visualizations-with-custom-artifact-stores"
+        raise NotImplementedError(
+            f"File '{uri}' could not be loaded because the underlying artifact "
+            f"store '{artifact_store.name}' could not open the file. This is "
+            f"likely because the authentication credentials are not configured "
+            f"in the artifact store itself. For more information, see {link}."
+        )
