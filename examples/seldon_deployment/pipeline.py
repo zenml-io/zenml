@@ -259,7 +259,8 @@ def predictor(
 
 
 docker_settings = DockerSettings(
-    required_integrations=[SELDON, TENSORFLOW, SKLEARN]
+    required_integrations=[SELDON, TENSORFLOW, SKLEARN],
+    requirements=["boto3==1.26.76"],
 )
 
 

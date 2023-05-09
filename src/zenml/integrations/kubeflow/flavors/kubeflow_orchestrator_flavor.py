@@ -198,9 +198,6 @@ class KubeflowOrchestratorConfig(  # type: ignore[misc] # https://github.com/pyd
 
         Returns:
             Values passed to the object constructor
-
-        Raises:
-            ValueError: If the attributes or their values are not valid.
         """
         provisioning_attrs = [
             "skip_cluster_provisioning",

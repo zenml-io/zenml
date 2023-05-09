@@ -112,6 +112,9 @@ class BaseContainerRegistry(AuthenticationMixin):
 
         Returns:
             The Docker client.
+
+        Raises:
+            RuntimeError: If the connector does not return a Docker client.
         """
         from docker.client import DockerClient
 

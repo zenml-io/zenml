@@ -97,8 +97,8 @@ class KubeClientKFPClient(kfp.Client):  # type: ignore[misc]
 
         Args:
             client: pre-configured Kubernetes client.
-            *args: standard KFP client positional arguments.
-            **kwargs: standard KFP client keyword arguments.
+            args: standard KFP client positional arguments.
+            kwargs: standard KFP client keyword arguments.
         """
         self._k8s_client = client
         super().__init__(*args, **kwargs)
@@ -107,6 +107,10 @@ class KubeClientKFPClient(kfp.Client):  # type: ignore[misc]
         """Loads the KFP configuration.
 
         Initializes the KFP configuration from the Kubernetes client.
+
+        Args:
+            args: standard KFP client positional arguments.
+            kwargs: standard KFP client keyword arguments.
 
         Returns:
             The KFP configuration.

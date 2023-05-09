@@ -112,6 +112,10 @@ class SeldonModelDeployer(BaseModelDeployer):
 
         Returns:
             The Seldon Core client.
+
+        Raises:
+            RuntimeError: If the Kubernetes namespace is not configured when
+                using a service connector to deploy models with Seldon Core.
         """
         from kubernetes import client as k8s_client
 

@@ -147,6 +147,11 @@ class KServeModelDeployer(BaseModelDeployer):
 
         Returns:
             The KServeclient.
+
+        Raises:
+            RuntimeError: If the Kubernetes namespace is not configured in the
+                stack component when using a service connector to deploy models
+                with KServe.
         """
         # Refresh the client also if the connector has expired
         if self._client and not self.connector_has_expired():

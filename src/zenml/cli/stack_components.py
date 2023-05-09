@@ -1199,7 +1199,14 @@ def generate_stack_component_deploy_command(
 def generate_stack_component_destroy_command(
     component_type: StackComponentType,
 ) -> Callable[[str], None]:
-    """Generates a `destroy` command for the stack component type."""
+    """Generates a `destroy` command for the stack component type.
+
+    Args:
+        component_type: Type of the component to generate the command for.
+
+    Returns:
+        A function that can be used as a `click` command.
+    """
     _component_display_name(component_type)
 
     @click.argument(
