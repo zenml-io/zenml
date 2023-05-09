@@ -175,6 +175,20 @@ kubectl get ingress -A  -o jsonpath='{.items[*].spec.rules[*].host}'
 kubeflow.<EXTERNAL-IP>.nip.io mlflow.<EXTERNAL-IP>.nip.io minio-console.<EXTERNAL-IP>.nip.io
 ```
 
+#### ⛽️ Deploy individual stack components using ZenML CLI
+
+As an alternative to deploying the entire stack, you can also deploy individual
+components using the `zenml <STACK_COMPONENT> deploy` command. As an
+illustration, the Kubeflow orchestrator could be deployed in the following way:
+
+```shell
+zenml orchestrator deploy kubeflow --flavor kubeflow ...
+```
+
+For more information on this `deploy`
+subcommand, please refer to the
+[documentation](https://docs.zenml.io/advanced-guide/practical-mlops/stack-recipes#deploying-stack-components-directly).
+
 ### ▶️ Run the pipeline
 We can now run the pipeline by simply executing the python script:
 
@@ -373,6 +387,15 @@ If you have created the GCP Kubeflow stack using the recipe, you can delete it u
 
 ```bash
 zenml stack recipe destroy gcp_kubeflow_stack
+```
+
+To destroy any resources deployed using the ZenML `deploy` subcommand, use the
+`destroy` subcommand to delete each individual stack component, as in the
+following example:
+
+```shell
+# replace with the name of the component you want to destroy
+zenml artifact-store destroy s3_artifact_store
 ```
 
 # ⚠️ Important note for multi-tenant Kubeflow deployments

@@ -40,6 +40,20 @@ this integration, we will soon provide a Sagemaker stack
 recipe via [our `mlops-stacks` recipe repository](https://github.com/zenml-io/mlops-stacks), which
 will help you set up the infrastructure with one click.
 
+### Infrastructure Deployment
+
+A Sagemaker orchestrator can be deployed directly from the ZenML CLI:
+
+```shell
+zenml orchestrator deploy sagemaker_orchestrator --flavor=sagemaker ...
+```
+
+You can pass other configuration specific to the stack components as key-value
+arguments. If you don't provide a name, a random one is generated for you. For
+more information about how to work use the CLI for this, please refer to [the
+dedicated documentation
+section](../../advanced-guide/practical/stack-recipes.md#deploying-stack-components-directly).
+
 ## How to use it
 
 To use the Sagemaker orchestrator, we need:

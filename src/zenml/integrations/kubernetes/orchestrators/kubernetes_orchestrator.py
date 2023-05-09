@@ -74,16 +74,6 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
     _k8s_batch_api: k8s_client.BatchV1beta1Api = None
     _k8s_rbac_api: k8s_client.RbacAuthorizationV1Api = None
 
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        """Initialize the class and the Kubernetes clients.
-
-        Args:
-            *args: The positional arguments to pass to the Pydantic object.
-            **kwargs: The keyword arguments to pass to the Pydantic object.
-        """
-        super().__init__(*args, **kwargs)
-        self._initialize_k8s_clients()
-
     def _initialize_k8s_clients(
         self, incluster: bool = False, context: Optional[str] = None
     ) -> None:
