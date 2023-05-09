@@ -585,8 +585,11 @@ class PipelineDockerImageBuilder:
             parent_image: The image to use as parent for the Dockerfile.
             docker_settings: Docker settings for this image build.
             download_files: Whether to download files in the build context.
-            requirements_files: List of tuples
-                (filename, file_content, pip_options).
+            requirements_files: List of tuples that contain three items:
+                - the name of a requirements file,
+                - the content of that file,
+                - options that should be passed to pip when installing the
+                    requirements file.
             apt_packages: APT packages to install.
             entrypoint: The default entrypoint command that gets executed when
                 running a container of an image created by this Dockerfile.
@@ -607,7 +610,7 @@ class PipelineDockerImageBuilder:
         for file, _, options in requirements_files:
             lines.append(f"COPY {file} .")
 
-            option_string = "".join(options)
+            option_string = " ".join(options)
             lines.append(
                 f"RUN pip install --default-timeout=60 --no-cache-dir "
                 f"{option_string} -r {file}"
