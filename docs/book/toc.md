@@ -24,6 +24,8 @@
   * [Connect your git repository](user-guide/advanced-guide/connect-your-git-repository.md)
   * [Use failure/success hooks](user-guide/advanced-guide/use-failure-success-hooks.md)
   * [Access metadata within steps](user-guide/advanced-guide/access-metadata-within-steps.md)
+  * [Dynamic pipelines](user-guide/advanced-guide/dynamic-pipelines.md)
+  * [Data versioning and lineage](user-guide/advanced-guide/data-versioning-and-lineage.md)
   * [Scale compute to the cloud](user-guide/advanced-guide/enable-gpu-backed-hardware.md)
 * [📜 Component Guide](user-guide/component-galery/README.md)
   * [Integration Overview](learning/component-gallery/integrations.md)
