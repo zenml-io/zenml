@@ -73,7 +73,7 @@ class PipelineDockerImageBuilder:
         entrypoint: Optional[str] = None,
         extra_files: Optional[Dict[str, str]] = None,
         code_repository: Optional["BaseCodeRepository"] = None,
-    ) -> str:
+    ) -> Tuple[str, Optional[str], Optional[str]]:
         """Builds (and optionally pushes) a Docker image to run a pipeline.
 
         Use the image name returned by this method whenever you need to uniquely
@@ -94,8 +94,12 @@ class PipelineDockerImageBuilder:
                 downloaded.
 
         Returns:
-            The Docker image repo digest or local name, depending on whether
+            A tuple (image_digest, dockerfile, requirements):
+            - The Docker image repo digest or local name, depending on whether
             the image was pushed or is just stored locally.
+            - Dockerfile will contain the contents of the Dockerfile used to
+            build the image.
+            - Requirements is a string with a single pip requirement per line.
 
         Raises:
             RuntimeError: If the stack does not contain an image builder.
@@ -103,6 +107,9 @@ class PipelineDockerImageBuilder:
                 specified and the Docker configuration doesn't require an
                 image build.
         """
+        requirements: Optional[str] = None
+        dockerfile: Optional[str] = None
+
         if docker_settings.skip_build:
             assert (
                 docker_settings.parent_image
@@ -111,7 +118,7 @@ class PipelineDockerImageBuilder:
             # Should we tag this here and push it to the container registry of
             # the stack to make sure it's always accessible when running the
             # pipeline?
-            return docker_settings.parent_image
+            return docker_settings.parent_image, dockerfile, requirements
 
         image_builder = stack.image_builder
         if not image_builder:
@@ -226,7 +233,10 @@ class PipelineDockerImageBuilder:
                 dockerignore_file=docker_settings.dockerignore,
             )
 
-            requirements_file_names = self._add_requirements_files(
+            (
+                requirements_file_names,
+                requirements,
+            ) = self._add_requirements_files(
                 docker_settings=docker_settings,
                 build_context=build_context,
                 stack=stack,
@@ -289,7 +299,7 @@ class PipelineDockerImageBuilder:
                 container_registry=container_registry,
             )
 
-        return image_name_or_digest
+        return image_name_or_digest, dockerfile, requirements
 
     @staticmethod
     def _get_target_image_name(
@@ -326,7 +336,7 @@ class PipelineDockerImageBuilder:
         build_context: "BuildContext",
         stack: "Stack",
         code_repository: Optional["BaseCodeRepository"] = None,
-    ) -> List[str]:
+    ) -> Tuple[List[str], Optional[str]]:
         """Adds requirements files to the build context.
 
         Args:
@@ -338,11 +348,12 @@ class PipelineDockerImageBuilder:
                 downloaded.
 
         Returns:
-            Name of the requirements files in the build context.
-            The files will be in the following order:
-            - Packages installed in the local Python environment
-            - User-defined requirements
-            - Requirements defined by user-defined and/or stack integrations
+            A tuple (file_names, requirements):
+            - The file names will be in the following order:
+                * Packages installed in the local Python environment
+                * User-defined requirements
+                * Requirements defined by user-defined and/or stack integrations
+            - Requirements is a string with a single requirement per line.
         """
         requirements_file_names: List[str] = []
 
@@ -356,7 +367,10 @@ class PipelineDockerImageBuilder:
             build_context.add_file(source=file_content, destination=filename)
             requirements_file_names.append(filename)
 
-        return requirements_file_names
+        all_requirements = "\n".join(
+            file_content for _, file_content in requirements_files
+        )
+        return requirements_file_names, all_requirements or None
 
     @staticmethod
     def gather_requirements_files(
