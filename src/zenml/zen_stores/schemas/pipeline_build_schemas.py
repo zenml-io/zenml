@@ -19,10 +19,12 @@ from typing import TYPE_CHECKING, List, Optional
 from uuid import UUID
 
 from pydantic.json import pydantic_encoder
-from sqlalchemy import TEXT, Column
+from sqlalchemy import Column, String
+from sqlalchemy.dialects.mysql import MEDIUMTEXT
 from sqlmodel import Field, Relationship
 
 from zenml.models import PipelineBuildRequestModel, PipelineBuildResponseModel
+from zenml.models.constants import MEDIUMTEXT_MAX_LENGTH
 from zenml.zen_stores.schemas.base_schemas import BaseSchema
 from zenml.zen_stores.schemas.pipeline_schemas import PipelineSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
@@ -89,7 +91,14 @@ class PipelineBuildSchema(BaseSchema, table=True):
         back_populates="build",
     )
 
-    images: str = Field(sa_column=Column(TEXT, nullable=False))
+    images: str = Field(
+        sa_column=Column(
+            String(length=MEDIUMTEXT_MAX_LENGTH).with_variant(
+                MEDIUMTEXT, "mysql"
+            ),
+            nullable=False,
+        )
+    )
 
     is_local: bool
     contains_code: bool
