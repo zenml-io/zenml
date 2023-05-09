@@ -50,7 +50,7 @@ class ArtifactView(BaseView):
         Returns:
             The materialized data.
         """
-        from zenml.utils.materializer_utils import load_artifact
+        from zenml.utils.artifact_utils import load_artifact
 
         return load_artifact(self.model)
 
@@ -66,7 +66,7 @@ class ArtifactView(BaseView):
         from IPython.core.display import HTML, Image, Markdown, display
 
         from zenml.environment import Environment
-        from zenml.utils.materializer_utils import load_artifact_visualization
+        from zenml.utils.artifact_utils import load_artifact_visualization
 
         if not Environment.in_notebook() and not Environment.in_google_colab():
             raise RuntimeError(
