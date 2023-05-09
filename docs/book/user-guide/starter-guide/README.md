@@ -115,4 +115,10 @@ if __name__ == "__main__":
   my_pipeline()
 ```
 
-Executing the Pipeline is as easy as just calling the function.
+Executing the Pipeline is as easy as just calling the function that you decorated with the `@pipeline()` decorator.
+
+
+
+In the following sections you will learn more about&#x20;
+
+<table data-view="cards"><thead><tr><th></th><th></th><th></th></tr></thead><tbody><tr><td><mark style="color:purple;"><strong>Create an ML Pipeline</strong></mark></td><td>Learn how to setup and configure your pipeline.</td><td></td></tr><tr><td><mark style="color:purple;"><strong>Speed up with Caching</strong></mark></td><td>When running pipelines multiple times, caching speeds you up. Learn how to leverage this.</td><td></td></tr><tr><td><mark style="color:purple;"><strong>Version Pipelines</strong></mark></td><td></td><td></td></tr><tr><td><mark style="color:purple;"><strong>Understand stacks</strong></mark></td><td></td><td></td></tr><tr><td><mark style="color:purple;"><strong>Connect to a deployed ZenML</strong></mark></td><td></td><td></td></tr><tr><td><mark style="color:purple;"><strong>Switch  to a remote stack</strong></mark></td><td></td><td></td></tr><tr><td><mark style="color:purple;"><strong>Join forces with other users</strong></mark></td><td></td><td></td></tr></tbody></table>

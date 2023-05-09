@@ -67,7 +67,7 @@ svc_trainer.entrypoint(X_train=..., y_train=...)
 
 ### Pipeline
 
-Next, we will combine our two steps into a pipeline and run it. As you can see here, the parameter gamma is configurable as a pipeline input.&#x20;
+Next, we will combine our two steps into a pipeline and run it. As you can see here, the parameter gamma is configurable as a pipeline input.
 
 ```python
 @pipeline
@@ -176,62 +176,11 @@ def first_pipeline(gamma: float = 0.002):
     X_train, X_test, y_train, y_test = digits_data_loader()
     svc_trainer(gamma=gamma, X_train=X_train, y_train=y_train)
 
+if __name__ == "__main__":
+    first_pipeline()
 
-# The pipeline is executed for the first time, so all steps are run.
-first_pipeline()
-
-# Step one will use cache, step two will rerun due to the decorator config
-first_pipeline()
-
-# Explicitely set caching to false
-first_pipeline.with_option(enable_cache=False)()  # Explicitely disable the cache
-
+    # Step one will use cache, step two will rerun due to the decorator config
+    first_pipeline()
 ```
-
-**Expected Output Run 1:**
-
-{% code overflow="wrap" %}
-```bash
-Registered pipeline first_pipeline (version 1).
-Running pipeline first_pipeline on stack default (caching enabled)
-Step digits_data_loader has started.
-Step digits_data_loader has finished in 0.721s.
-Step svc_trainer has started.
-Step svc_trainer has finished in 0.172s.
-Pipeline run first_pipeline-2023_04_29-10_13_02_708462 has finished in 1.717s.
-Dashboard URL: http://127.0.0.1:8237/workspaces/default/pipelines/43ddd41b-aedc-4893-856d-f51eaf9a8699/runs
-
-```
-{% endcode %}
-
-**Expected Output Run 2:**
-
-{% code overflow="wrap" %}
-```bash
-Reusing registered pipeline first_pipeline (version: 1).
-Running pipeline first_pipeline on stack default (caching enabled)
-Step digits_data_loader has started.
-Using cached version of digits_data_loader.
-Step svc_trainer has started.
-Using cached version of svc_trainer.
-Pipeline run first_pipeline-2023_04_29-10_13_05_400797 has finished in 0.609s.
-Dashboard URL: http://127.0.0.1:8237/workspaces/default/pipelines/43ddd41b-aedc-4893-856d-f51eaf9a8699/runs
-```
-{% endcode %}
-
-**Expected Output Run 3:**
-
-{% code overflow="wrap" %}
-```bash
-Reusing registered pipeline first_pipeline (version: 1).
-Running pipeline first_pipeline on stack default (caching disabled)
-Step digits_data_loader has started.
-Step digits_data_loader has finished in 0.721s.
-Step svc_trainer has started.
-Step svc_trainer has finished in 0.226s.
-Pipeline run first_pipeline-2023_04_29-10_13_06_840942 has finished in 0.942s.
-Dashboard URL: http://127.0.0.1:8237/workspaces/default/pipelines/43ddd41b-aedc-4893-856d-f51eaf9a8699/runs
-```
-{% endcode %}
 
 </details>

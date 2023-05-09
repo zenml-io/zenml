@@ -115,24 +115,24 @@ The **artifact store** is responsible for persisting the step outputs. As we lea
 There are many more components that you can add to your stacks, like experiment trackers, model deployers and more. You can see all supported stack component types in a single table view [here](broken-reference/)
 {% endhint %}
 
-## Create your first stack
+## Register a stack
 
-Before we create a new stack, we need to have a non-default component to use for it.
+Just to illustrate how to interact with stacks, lets create an alternate local stack. We start by first creating a local artifact store.
 
-### Create another Artifact Store
+### Create an Artifact Store
 
 {% tabs %}
 {% tab title="CLI" %}
 ```bash
-zenml artifact-store register --flavor=local my_artifact_store
+zenml artifact-store register my_artifact_store --flavor=local 
 ```
 
-Let'd decompose the command:
+Let's understand the individual parts of this command:
 
 * `artifact-store` :  This describes the top level group, to find other stack components simply run `zenml --help`&#x20;
 * `register` : Here we want to register a new component, instead we could also `update` , `delete` and more `zenml artifact-store --help` will give you all possibilities
-* `--flavor=local`: A flavor is a possible implementation for a stack component. So in the case of an artifact-store this could be an s3-bucket or a local filesystem. You can find out all possibilities with `zenml artifact-store flavor --list`
 * `my_artifact_store` : This is the unique name that the stack component will have.
+* `--flavor=local`: A flavor is a possible implementation for a stack component. So in the case of an artifact-store this could be an s3-bucket or a local filesystem. You can find out all possibilities with `zenml artifact-store flavor --list`
 
 This will be the output that you can expect from the command above.
 
@@ -140,7 +140,7 @@ This will be the output that you can expect from the command above.
 Using the default local database.
 Running with active workspace: 'default' (global)
 Running with active stack: 'default' (global)
-Successfully registered artifact_store `my_artifact_store`.
+Successfully registered artifact_store `my_artifact_store`.bash
 ```
 
 To see the new artifact store that you just registered, just run:
@@ -155,7 +155,70 @@ zenml artifact-store describe my_artifact_store
 {% endtab %}
 {% endtabs %}
 
-### Create another local stack
+### Create a local stack
+
+With the artifact store created, we can now create a new stack with this artifact store.
+
+{% tabs %}
+{% tab title="First Tab" %}
+```bash
+zenml stack register my_stack --orchestrator default --artifact-store my_artifact_store
+```
+
+* `stack` :  This is the cli group that enables interactions with the stacks
+* `register`: Here we want to register a new stack.  Explore other operations with`zenml stack --help`.
+* `my_stack` : This is the unique name that the stack will have.
+* `--orchestrator` or `-o` are used to specify which orchestrator to use for the stack
+* `--artifact-store` or `-a` are used to specify which artifact store to use for the stack
+
+The ouput for the command should look something like this:
+
+```bash
+Using the default local database.
+Running with active workspace: 'default' (repository)
+Stack 'my_stack' successfully registered!
+```
+
+You can inspect the stack with the following command:
+
+```bash
+ zenml stack describe my_stack
+```
+
+Which will give you an output like this:
+
+```bash
+         Stack Configuration          
+┏━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━┓
+┃ COMPONENT_TYPE │ COMPONENT_NAME    ┃
+┠────────────────┼───────────────────┨
+┃ ORCHESTRATOR   │ default           ┃
+┠────────────────┼───────────────────┨
+┃ ARTIFACT_STORE │ my_artifact_store ┃
+┗━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━┛
+           'my_stack' stack           
+Stack 'my_stack' with id '...' is owned by user default and is 'private'.
+```
+{% endtab %}
+{% endtabs %}
+
+To run a pipeline using the new stack:
+
+1\) Set the stack as active on your client
+
+```bash
+zenml stack set my_stack
+```
+
+2\) Run you pipeline code (you can use the code from the [previous section](configure-and-interact-with-pipelines.md#code-example-of-this-section))
+
+```bash
+python main.py
+```
+
+```
+//PLACEHOLDER Dashboard Screenshot
+```
 
 Before we can move on to using a cloud stack, we need to find out more about the ZenML server in the next section.
 

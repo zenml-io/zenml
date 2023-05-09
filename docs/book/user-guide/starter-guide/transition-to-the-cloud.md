@@ -49,5 +49,5 @@ The active stack is: 'default' (global)
 ```
 
 {% hint style="info" %}
-You can always **disconnect** from a server using `zenml disconnect`
+You can **disconnect** from a server using `zenml disconnect`
 {% endhint %}

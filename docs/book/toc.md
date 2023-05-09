@@ -9,12 +9,14 @@
 ## User Guide
 
 * [🐣 Starter Guide](user-guide/starter-guide/README.md)
-  * [Create an ML Pipeline](user-guide/starter-guide/pipelines.md)
+  * [Create an ML Pipeline](user-guide/starter-guide/configure-and-interact-with-pipelines.md)
+  * [Speed up with Caching](user-guide/starter-guide/iterate-on-your-code.md)
   * [Iterate on your code](user-guide/starter-guide/iterate.md)
+  * [Version Pipelines](user-guide/starter-guide/version-pipelines.md)
   * [Understand stacks](user-guide/starter-guide/using-and-switching-stacks.md)
   * [Connect to a deployed ZenML](user-guide/starter-guide/transition-to-the-cloud.md)
   * [Switch to a remote stack](user-guide/starter-guide/switch-to-a-remote-stack.md)
-  * [Fetch runs after execution](user-guide/starter-guide/fetch-runs-after-execution.md)
+  * [Fetch runs after execution](user-guide/advanced-guide/fetch-runs-after-execution.md)
   * [Leverage community contributed plugins](user-guide/starter-guide/zenml-hub.md)
 * [🐔 Advanced Guide](user-guide/advanced-guide/README.md)
   * [Configure steps/pipelines](user-guide/advanced-guide/configure-steps-and-pipelines.md)

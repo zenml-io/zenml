@@ -149,7 +149,7 @@ status = run.status
 
 #### Configuration
 
-The `pipeline_configuration` is an object that contains all configuration of the pipeline and pipeline run, including [pipeline-level `BaseSettings`](../advanced-guide/broken-reference/), which we will learn more about later. You can also access the settings directly via the `settings` variable.
+The `pipeline_configuration` is an object that contains all configuration of the pipeline and pipeline run, including [pipeline-level `BaseSettings`](broken-reference/), which we will learn more about later. You can also access the settings directly via the `settings` variable.
 
 ```python
 pipeline_config = run.pipeline_configuration
@@ -211,13 +211,13 @@ pipe.get_runs()[0].get_step(step="step_1")
 ```
 
 {% hint style="info" %}
-The steps are ordered by time of execution. Depending on the [orchestrator](../advanced-guide/broken-reference/), steps can be run in parallel. Thus, accessing steps by index can be unreliable across different runs, and it is recommended to access steps by the step class, an instance of the class or even the name of the step as a string: `get_step(step=...)` instead.
+The steps are ordered by time of execution. Depending on the [orchestrator](broken-reference/), steps can be run in parallel. Thus, accessing steps by index can be unreliable across different runs, and it is recommended to access steps by the step class, an instance of the class or even the name of the step as a string: `get_step(step=...)` instead.
 {% endhint %}
 
 Similar to the run, for reproducibility, you can use the `step` object to access:
 
-* The [`BaseParameters`](../advanced-guide/broken-reference/) used to run the step via `step.parameters`,
-* [Step-level `BaseSettings`](../advanced-guide/broken-reference/) via `step.step_configuration`,
+* The [`BaseParameters`](broken-reference/) used to run the step via `step.parameters`,
+* [Step-level `BaseSettings`](broken-reference/) via `step.step_configuration`,
 * Component-specific step metadata, such as the URL of an experiment tracker or model deployer, via `step.metadata`,
 * Input and output artifacts.
 
@@ -314,4 +314,4 @@ def my_step():
     ...
 ```
 
-You can get a lot more metadata within a step as well, something we'll learn in more detail in the [advanced docs](../advanced-guide/broken-reference/).
+You can get a lot more metadata within a step as well, something we'll learn in more detail in the [advanced docs](broken-reference/).
