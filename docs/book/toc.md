@@ -9,7 +9,7 @@
 ## User Guide
 
 * [🐣 Starter Guide](user-guide/starter-guide/README.md)
-  * [Create a ML Pipeline](user-guide/starter-guide/pipelines.md)
+  * [Create an ML Pipeline](user-guide/starter-guide/pipelines.md)
   * [Iterate on your code](user-guide/starter-guide/iterate.md)
   * [Switch stacks locally](user-guide/starter-guide/using-and-switching-stacks.md)
   * [Connect to a deployed ZenML](user-guide/starter-guide/transition-to-the-cloud.md)
