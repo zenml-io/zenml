@@ -12,7 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 import sys
-from contextlib import ExitStack as does_not_raise
 
 import pytest
 
@@ -36,11 +35,11 @@ def test_llama_index_document_materializer(clean_client):
     page_content = (
         "Axl, Aria and Blupus were very cold during the winter months."
     )
-    with does_not_raise():
-        langchain_document = _test_materializer(
-            step_output=Document(text=page_content),
-            materializer_class=LlamaIndexDocumentMaterializer,
-        )
+    langchain_document = _test_materializer(
+        step_output=Document(text=page_content),
+        materializer_class=LlamaIndexDocumentMaterializer,
+        expected_metadata_size=2,
+    )
 
     assert langchain_document.get_type() == "Document"
     assert langchain_document.text == page_content

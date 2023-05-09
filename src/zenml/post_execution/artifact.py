@@ -13,16 +13,14 @@
 #  permissions and limitations under the License.
 """Initialization for the post-execution artifact class."""
 
-from typing import TYPE_CHECKING, Any, Optional, Type, cast
+from typing import Any, Optional, Type, cast
 
+from zenml.enums import VisualizationType
 from zenml.logger import get_logger
 from zenml.models.artifact_models import ArtifactResponseModel
 from zenml.models.base_models import BaseResponseModel
 from zenml.post_execution.base_view import BaseView
-
-if TYPE_CHECKING:
-    from zenml.materializers.base_materializer import BaseMaterializer
-
+from zenml.utils.visualization_utils import format_csv_visualization_as_html
 
 logger = get_logger(__name__)
 
@@ -46,31 +44,55 @@ class ArtifactView(BaseView):
         """
         return cast(ArtifactResponseModel, self._model)
 
-    def read(
-        self,
-        output_data_type: Optional[Type[Any]] = None,
-        materializer_class: Optional[Type["BaseMaterializer"]] = None,
-    ) -> Any:
-        """Materializes the data stored in this artifact.
-
-        Args:
-            output_data_type: Deprecated; will be ignored.
-            materializer_class: Deprecated; will be ignored.
+    def read(self) -> Any:
+        """Materializes (loads) the data stored in this artifact.
 
         Returns:
             The materialized data.
         """
-        if output_data_type is not None:
-            logger.warning(
-                "The `output_data_type` argument is deprecated and will be "
-                "removed in a future release."
-            )
-        if materializer_class is not None:
-            logger.warning(
-                "The `materializer_class` argument is deprecated and will be "
-                "removed in a future release."
-            )
-
-        from zenml.utils.materializer_utils import load_artifact
+        from zenml.utils.artifact_utils import load_artifact
 
         return load_artifact(self.model)
+
+    def visualize(self, title: Optional[str] = None) -> None:
+        """Visualize the artifact in notebook environments.
+
+        Args:
+            title: Optional title to show before the visualizations.
+
+        Raises:
+            RuntimeError: If not in a notebook environment.
+        """
+        from IPython.core.display import HTML, Image, Markdown, display
+
+        from zenml.environment import Environment
+        from zenml.utils.artifact_utils import load_artifact_visualization
+
+        if not Environment.in_notebook() and not Environment.in_google_colab():
+            raise RuntimeError(
+                "The `output.visualize()` method is only available in Jupyter "
+                "notebooks. In all other runtime environments, please open "
+                "your ZenML dashboard using `zenml up` and view the "
+                "visualizations by clicking on the respective artifacts in the "
+                "pipeline run DAG instead."
+            )
+
+        if not self.model.visualizations:
+            return
+
+        if title:
+            display(Markdown(f"### {title}"))
+        for i in range(len(self.model.visualizations)):
+            visualization = load_artifact_visualization(self.model, index=i)
+            if visualization.type == VisualizationType.IMAGE:
+                display(Image(visualization.value))
+            elif visualization.type == VisualizationType.HTML:
+                display(HTML(visualization.value))
+            elif visualization.type == VisualizationType.MARKDOWN:
+                display(Markdown(visualization.value))
+            elif visualization.type == VisualizationType.CSV:
+                assert isinstance(visualization.value, str)
+                table = format_csv_visualization_as_html(visualization.value)
+                display(HTML(table))
+            else:
+                display(visualization.value)

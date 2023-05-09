@@ -18,7 +18,7 @@ import pytest
 from click.testing import CliRunner
 
 from zenml.cli.cli import cli
-from zenml.cli.stack_recipes import STACK_RECIPES_REPO_DIR
+from zenml.recipes.stack_recipe_service import STACK_RECIPES_REPO_DIR
 from zenml.utils import io_utils
 
 SERVER_START_STOP_TIMEOUT = 30

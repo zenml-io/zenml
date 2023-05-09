@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2020. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2023. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -204,7 +204,9 @@ stack components allow you to pass custom parameters to the `list` command that
 will filter the output. To learn more about the available filters, a good quick
 reference is to use the `--help` command, as in the following example:
 
-```shell zenml orchestrator list --help ```
+```shell
+zenml orchestrator list --help
+```
 
 You will see a list of all the available filters for the `list` command along
 with examples of how to use them.
@@ -214,28 +216,37 @@ takes an `asc` or `desc` argument to specify the order. For example, to sort the
 output of the `list` command by the `name` field in ascending order, you would
 type:
 
-```shell zenml orchestrator list --sort_by "asc:name" ```
+```shell
+zenml orchestrator list --sort_by "asc:name"
+```
 
 For fields marked as being of type `TEXT` or `UUID`, you can use the `contains`,
 `startswith` and `endswith` keywords along with their particular identifier. For
 example, for the orchestrator `list` command, you can use the following filter
 to find all orchestrators that contain the string `sagemaker` in their name:
 
-```shell zenml orchestrator list --name "contains:sagemaker" ```
+```shell
+zenml orchestrator list --name "contains:sagemaker"
+```
 
 For fields marked as being of type `BOOL`, you can use the 'True' or 'False'
 values to filter the output. For example, to find all orchestrators that are
 currently shared, you would type:
 
-```shell zenml orchestrator list --is_shared="True" ```
+```shell
+zenml orchestrator list --is_shared="True"
+```
 
 Finally, for fields marked as being of type `DATETIME`, you can pass in datetime
 values in the `%Y-%m-%d %H:%M:%S` format. These can be combined with the `gte`,
-`lte`, `gt` and `lt` keywords to specify the range of the filter. For example,
-if I wanted to find all orchestrators that were created after the 1st of January
-2021, I would type:
+`lte`, `gt` and `lt` keywords (greater than or equal, less than or equal,
+greater than and less than respectively) to specify the range of the filter. For
+example, if I wanted to find all orchestrators that were created after the 1st
+of January 2021, I would type:
 
-```shell zenml orchestrator list --created "gt:2021-01-01 00:00:00" ```
+```shell
+zenml orchestrator list --created "gt:2021-01-01 00:00:00"
+```
 
 This syntax can also be combined to create more complex filters using the `or`
 and `and` keywords.
@@ -448,6 +459,20 @@ command:
 ```bash
 zenml step-operator delete STEP_OPERATOR_NAME
 ```
+
+Deploying Stack Components
+--------------------------
+
+Stack components can be deployed directly via the CLI. You can use the `deploy`
+subcommand for this. For example, you could deploy an S3 artifact store using
+the following command:
+
+```shell
+zenml artifact-store deploy s3_artifact_store --flavor=s3
+```
+
+For full documentation on this functionality, please refer to [the dedicated
+documentation on stack component deploy](https://docs.zenml.io/advanced-guide/practical-mlops/stack-recipes#deploying-stack-components-directly).
 
 Secrets Management
 ------------------
@@ -1507,7 +1532,7 @@ zenml hub clone
 This is useful, e.g., for extending an existing plugin or for getting the 
 examples of a plugin.
 
-Submitting/contributing a plugin to the Hub (requires login, see below):
+- Submitting/contributing a plugin to the Hub (requires login, see below):
 ```bash
 zenml hub submit
 ```

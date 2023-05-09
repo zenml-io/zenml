@@ -32,12 +32,12 @@ from zenml.steps.utils import (
     INSTANCE_CONFIGURATION,
     PARAM_CREATED_BY_FUNCTIONAL_API,
     PARAM_ENABLE_ARTIFACT_METADATA,
+    PARAM_ENABLE_ARTIFACT_VISUALIZATION,
     PARAM_ENABLE_CACHE,
     PARAM_EXPERIMENT_TRACKER,
     PARAM_EXTRA_OPTIONS,
     PARAM_ON_FAILURE,
     PARAM_ON_SUCCESS,
-    PARAM_OUTPUT_ARTIFACTS,
     PARAM_OUTPUT_MATERIALIZERS,
     PARAM_SETTINGS,
     PARAM_STEP_NAME,
@@ -46,17 +46,12 @@ from zenml.steps.utils import (
 )
 
 if TYPE_CHECKING:
-    from zenml.artifacts.base_artifact import BaseArtifact
     from zenml.config.base_settings import SettingsOrDict
     from zenml.config.source import Source
     from zenml.materializers.base_materializer import BaseMaterializer
 
-    ArtifactClassOrStr = Union[str, Type["BaseArtifact"]]
     MaterializerClassOrSource = Union[str, "Source", Type["BaseMaterializer"]]
     HookSpecification = Union[str, "Source", FunctionType]
-    OutputArtifactsSpecification = Union[
-        "ArtifactClassOrStr", Mapping[str, "ArtifactClassOrStr"]
-    ]
     OutputMaterializersSpecification = Union[
         "MaterializerClassOrSource", Mapping[str, "MaterializerClassOrSource"]
     ]
@@ -75,9 +70,9 @@ def step(
     name: Optional[str] = None,
     enable_cache: Optional[bool] = None,
     enable_artifact_metadata: Optional[bool] = None,
+    enable_artifact_visualization: Optional[bool] = None,
     experiment_tracker: Optional[str] = None,
     step_operator: Optional[str] = None,
-    output_artifacts: Optional["OutputArtifactsSpecification"] = None,
     output_materializers: Optional["OutputMaterializersSpecification"] = None,
     settings: Optional[Dict[str, "SettingsOrDict"]] = None,
     extra: Optional[Dict[str, Any]] = None,
@@ -93,9 +88,9 @@ def step(
     name: Optional[str] = None,
     enable_cache: Optional[bool] = None,
     enable_artifact_metadata: Optional[bool] = None,
+    enable_artifact_visualization: Optional[bool] = None,
     experiment_tracker: Optional[str] = None,
     step_operator: Optional[str] = None,
-    output_artifacts: Optional["OutputArtifactsSpecification"] = None,
     output_materializers: Optional["OutputMaterializersSpecification"] = None,
     settings: Optional[Dict[str, "SettingsOrDict"]] = None,
     extra: Optional[Dict[str, Any]] = None,
@@ -117,16 +112,15 @@ def step(
             `zenml.steps.step_context.StepContext` for more information).
         enable_artifact_metadata: Specify whether metadata is enabled for this
             step. If no value is passed, metadata is enabled by default.
+        enable_artifact_visualization: Specify whether visualization is enabled
+            for this step. If no value is passed, visualization is enabled by
+            default.
         experiment_tracker: The experiment tracker to use for this step.
         step_operator: The step operator to use for this step.
         output_materializers: Output materializers for this step. If
             given as a dict, the keys must be a subset of the output names
             of this step. If a single value (type or string) is given, the
             materializer will be used for all outputs.
-        output_artifacts: Output artifacts for this step. If
-            given as a dict, the keys must be a subset of the output names
-            of this step. If a single value (type or string) is given, the
-            artifact class will be used for all outputs.
         settings: Settings for this step.
         extra: Extra configurations for this step.
         on_failure: Callback function in event of failure of the step. Can be
@@ -164,9 +158,9 @@ def step(
                     PARAM_CREATED_BY_FUNCTIONAL_API: True,
                     PARAM_ENABLE_CACHE: enable_cache,
                     PARAM_ENABLE_ARTIFACT_METADATA: enable_artifact_metadata,
+                    PARAM_ENABLE_ARTIFACT_VISUALIZATION: enable_artifact_visualization,
                     PARAM_EXPERIMENT_TRACKER: experiment_tracker,
                     PARAM_STEP_OPERATOR: step_operator,
-                    PARAM_OUTPUT_ARTIFACTS: output_artifacts,
                     PARAM_OUTPUT_MATERIALIZERS: output_materializers,
                     PARAM_SETTINGS: settings,
                     PARAM_EXTRA_OPTIONS: extra,

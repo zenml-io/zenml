@@ -22,7 +22,7 @@ from zenml.cli.integration import integration
 from zenml.integrations.registry import integration_registry
 
 NOT_AN_INTEGRATION = ["zenflow", "Anti-Tensorflow", "123"]
-INTEGRATIONS = ["airflow", "plotly", "tensorflow"]
+INTEGRATIONS = ["airflow", "sklearn", "tensorflow"]
 
 
 def test_integration_list() -> None:

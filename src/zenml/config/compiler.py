@@ -17,9 +17,7 @@ import string
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence, Tuple
 
 from zenml.config.base_settings import BaseSettings, ConfigurationLevel
-from zenml.config.pipeline_configurations import (
-    PipelineRunConfiguration,
-)
+from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
 from zenml.config.pipeline_spec import PipelineSpec
 from zenml.config.settings_resolver import SettingsResolver
 from zenml.config.step_configurations import (
@@ -175,6 +173,7 @@ class Compiler:
         pipeline.configure(
             enable_cache=config.enable_cache,
             enable_artifact_metadata=config.enable_artifact_metadata,
+            enable_artifact_visualization=config.enable_artifact_visualization,
             settings=config.settings,
             extra=config.extra,
         )
@@ -194,6 +193,13 @@ class Compiler:
             for step_ in pipeline.steps.values():
                 step_.configure(
                     enable_artifact_metadata=config.enable_artifact_metadata
+                )
+
+        # Override `enable_artifact_visualization` if set at run level
+        if config.enable_artifact_visualization is not None:
+            for step_ in pipeline.steps.values():
+                step_.configure(
+                    enable_artifact_visualization=config.enable_artifact_visualization
                 )
 
     def _apply_stack_default_settings(

@@ -102,6 +102,20 @@ quickly provision popular combinations of MLOps tools. More information about
 these recipes can be found in the [Open Source MLOps Stack Recipes](https://github.com/zenml-io/mlops-stacks).
 {% endhint %}
 
+### Infrastructure Deployment
+
+The Seldon Model Deployer can be deployed directly from the ZenML CLI:
+
+```shell
+zenml model-deployer deploy seldon_deployer --flavor=seldon ...
+```
+
+You can pass other configuration specific to the stack components as key-value
+arguments. If you don't provide a name, a random one is generated for you. For
+more information about how to work use the CLI for this, please refer to [the
+dedicated documentation
+section](../../advanced-guide/practical/stack-recipes.md#deploying-stack-components-directly).
+
 ### Managing Seldon Core Authentication
 
 The Seldon Core Model Deployer requires access to the persistent storage where

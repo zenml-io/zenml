@@ -14,10 +14,12 @@
 """Implementation of the SageMaker orchestrator."""
 
 import os
+import re
 from typing import TYPE_CHECKING, Dict, Optional, Tuple, Type, cast
 from uuid import UUID
 
 import sagemaker
+from sagemaker.processing import ProcessingInput, ProcessingOutput
 from sagemaker.workflow.execution_variables import ExecutionVariables
 from sagemaker.workflow.pipeline import Pipeline
 from sagemaker.workflow.steps import ProcessingStep
@@ -151,9 +153,14 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                 "and the pipeline will be run immediately."
             )
 
-        orchestrator_run_name = get_orchestrator_run_name(
+        # sagemaker requires pipelineName to use alphanum and hyphens only
+        unsanitized_orchestrator_run_name = get_orchestrator_run_name(
             pipeline_name=deployment.pipeline_configuration.name
-        ).replace("_", "-")
+        )
+        # replace all non-alphanum and non-hyphens with hyphens
+        orchestrator_run_name = re.sub(
+            r"[^a-zA-Z0-9\-]", "-", unsanitized_orchestrator_run_name
+        )
 
         session = sagemaker.Session(default_bucket=self.config.bucket)
 
@@ -169,38 +176,105 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
             step_settings = cast(
                 SagemakerOrchestratorSettings, self.get_settings(step)
             )
-            processor_role = (
-                step_settings.processor_role or self.config.execution_role
-            )
-
-            kwargs = (
-                {"tags": [step_settings.processor_tags]}
-                if step_settings.processor_tags
-                else {}
-            )
 
             environment[
                 ENV_ZENML_SAGEMAKER_RUN_ID
             ] = ExecutionVariables.PIPELINE_EXECUTION_ARN
 
-            processor = sagemaker.processing.Processor(
-                role=processor_role,
-                image_uri=image,
-                instance_count=1,
-                sagemaker_session=session,
-                instance_type=step_settings.instance_type,
-                entrypoint=entrypoint,
-                base_job_name=orchestrator_run_name,
-                env=environment,
-                volume_size_in_gb=step_settings.volume_size_in_gb,
-                max_runtime_in_seconds=step_settings.max_runtime_in_seconds,
-                **kwargs,
+            # Retrieve Processor arguments provided in the Step settings.
+            processor_args_for_step = step_settings.processor_args or {}
+
+            # Set default values from configured orchestrator Component to arguments
+            # to be used when they are not present in processor_args.
+            processor_args_for_step.setdefault(
+                "instance_type", step_settings.instance_type
+            )
+            processor_args_for_step.setdefault(
+                "role",
+                step_settings.processor_role or self.config.execution_role,
+            )
+            processor_args_for_step.setdefault(
+                "volume_size_in_gb", step_settings.volume_size_in_gb
+            )
+            processor_args_for_step.setdefault(
+                "max_runtime_in_seconds", step_settings.max_runtime_in_seconds
+            )
+            processor_args_for_step.setdefault(
+                "tags",
+                [step_settings.processor_tags]
+                if step_settings.processor_tags
+                else None,
             )
 
+            # Set values that cannot be overwritten
+            processor_args_for_step["image_uri"] = image
+            processor_args_for_step["instance_count"] = 1
+            processor_args_for_step["sagemaker_session"] = session
+            processor_args_for_step["entrypoint"] = entrypoint
+            processor_args_for_step["base_job_name"] = orchestrator_run_name
+            processor_args_for_step["env"] = environment
+
+            # Construct S3 inputs to container for step
+            inputs = None
+
+            if step_settings.input_data_s3_uri is None:
+                pass
+            elif isinstance(step_settings.input_data_s3_uri, str):
+                inputs = [
+                    ProcessingInput(
+                        source=step_settings.input_data_s3_uri,
+                        destination="/opt/ml/processing/input/data",
+                        s3_input_mode=step_settings.input_data_s3_mode,
+                    )
+                ]
+            elif isinstance(step_settings.input_data_s3_uri, dict):
+                inputs = []
+                for channel, s3_uri in step_settings.input_data_s3_uri.items():
+                    inputs.append(
+                        ProcessingInput(
+                            source=s3_uri,
+                            destination=f"/opt/ml/processing/input/data/{channel}",
+                            s3_input_mode=step_settings.input_data_s3_mode,
+                        )
+                    )
+
+            # Construct S3 outputs from container for step
+            outputs = None
+
+            if step_settings.output_data_s3_uri is None:
+                pass
+            elif isinstance(step_settings.output_data_s3_uri, str):
+                outputs = [
+                    ProcessingOutput(
+                        source="/opt/ml/processing/output/data",
+                        destination=step_settings.output_data_s3_uri,
+                        s3_upload_mode=step_settings.output_data_s3_mode,
+                    )
+                ]
+            elif isinstance(step_settings.output_data_s3_uri, dict):
+                outputs = []
+                for (
+                    channel,
+                    s3_uri,
+                ) in step_settings.output_data_s3_uri.items():
+                    outputs.append(
+                        ProcessingOutput(
+                            source=f"/opt/ml/processing/output/data/{channel}",
+                            destination=s3_uri,
+                            s3_upload_mode=step_settings.output_data_s3_mode,
+                        )
+                    )
+
+            # Create Processor and ProcessingStep
+            processor = sagemaker.processing.Processor(
+                **processor_args_for_step
+            )
             sagemaker_step = ProcessingStep(
                 name=step.config.name,
                 processor=processor,
                 depends_on=step.spec.upstream_steps,
+                inputs=inputs,
+                outputs=outputs,
             )
             sagemaker_steps.append(sagemaker_step)
 

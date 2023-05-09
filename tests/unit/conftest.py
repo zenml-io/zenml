@@ -23,6 +23,7 @@ from zenml.artifact_stores.local_artifact_store import (
     LocalArtifactStoreConfig,
 )
 from zenml.client import Client
+from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.pipeline_spec import PipelineSpec
 from zenml.config.step_configurations import Step
 from zenml.container_registries.base_container_registry import (
@@ -43,6 +44,7 @@ from zenml.models import (
     WorkspaceResponseModel,
 )
 from zenml.models.artifact_models import ArtifactRequestModel
+from zenml.models.hub_plugin_models import HubPluginResponseModel, PluginStatus
 from zenml.models.pipeline_run_models import PipelineRunRequestModel
 from zenml.models.step_run_models import StepRunRequestModel
 from zenml.orchestrators.base_orchestrator import BaseOrchestratorConfig
@@ -401,7 +403,7 @@ def sample_pipeline_run_model(
     return PipelineRunResponseModel(
         id=uuid4(),
         name="sample_run_name",
-        pipeline_configuration={},
+        pipeline_configuration=PipelineConfiguration(name="aria_pipeline"),
         num_steps=1,
         status=ExecutionStatus.COMPLETED,
         created=datetime.now(),
@@ -417,7 +419,7 @@ def sample_pipeline_run_request_model() -> PipelineRunRequestModel:
     return PipelineRunRequestModel(
         id=uuid4(),
         name="sample_run_name",
-        pipeline_configuration={},
+        pipeline_configuration=PipelineConfiguration(name="aria_pipeline"),
         num_steps=1,
         status=ExecutionStatus.COMPLETED,
         user=uuid4(),
@@ -593,4 +595,21 @@ def sample_code_repo_response_model(
         name="name",
         config={},
         source={"module": "zenml", "type": "internal"},
+    )
+
+
+@pytest.fixture
+def sample_hub_plugin_response_model() -> HubPluginResponseModel:
+    return HubPluginResponseModel(
+        id=uuid4(),
+        author="AlexejPenner",
+        name="alexejs_ploogin",
+        version="3.14",
+        repository_url="https://github.com/zenml-io/zenml",
+        index_url="https://test.pypi.org/simple/",
+        package_name="ploogin",
+        status=PluginStatus.AVAILABLE,
+        created=datetime.now(),
+        updated=datetime.now(),
+        requirements=["ploogin==0.0.1", "zenml>=0.1.0"],
     )

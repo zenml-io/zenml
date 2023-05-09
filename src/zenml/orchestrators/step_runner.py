@@ -26,7 +26,6 @@ from typing import (
     Type,
 )
 
-from zenml.artifacts.base_artifact import BaseArtifact
 from zenml.client import Client
 from zenml.config.step_configurations import StepConfiguration
 from zenml.config.step_run_info import StepRunInfo
@@ -39,6 +38,7 @@ from zenml.models.artifact_models import (
     ArtifactRequestModel,
     ArtifactResponseModel,
 )
+from zenml.models.visualization_models import VisualizationModel
 from zenml.orchestrators.publish_utils import (
     publish_output_artifact_metadata,
     publish_output_artifacts,
@@ -178,11 +178,16 @@ class StepRunner:
                 is_enabled_on_step=step_run_info.config.enable_artifact_metadata,
                 is_enabled_on_pipeline=step_run_info.pipeline.enable_artifact_metadata,
             )
+            artifact_visualization_enabled = is_setting_enabled(
+                is_enabled_on_step=step_run_info.config.enable_artifact_visualization,
+                is_enabled_on_pipeline=step_run_info.pipeline.enable_artifact_visualization,
+            )
             output_artifacts, artifact_metadata = self._store_output_artifacts(
                 output_data=output_data,
                 output_artifact_uris=output_artifact_uris,
                 output_materializers=output_materializers,
                 artifact_metadata_enabled=artifact_metadata_enabled,
+                artifact_visualization_enabled=artifact_visualization_enabled,
             )
 
         output_artifact_ids = publish_output_artifacts(
@@ -359,23 +364,13 @@ class StepRunner:
         if data_type == UnmaterializedArtifact:
             return UnmaterializedArtifact.parse_obj(artifact)
 
-        # Skip materialization for `BaseArtifact` and its subtypes.
-        if issubclass(data_type, BaseArtifact):
-            logger.warning(
-                "Skipping materialization by specifying a subclass of "
-                "`zenml.artifacts.BaseArtifact` as input data type is "
-                "deprecated and will be removed in a future release. Please "
-                "type your input as "
-                "`zenml.materializers.UnmaterializedArtifact` instead."
-            )
-            return artifact
-
         materializer_class: Type[
             BaseMaterializer
         ] = source_utils.load_and_validate_class(
             artifact.materializer, expected_class=BaseMaterializer
         )
-        materializer = materializer_class(artifact.uri)
+        materializer: BaseMaterializer = materializer_class(artifact.uri)
+        materializer.validate_type_compatibility(data_type)
         return materializer.load(data_type=data_type)
 
     def _validate_outputs(
@@ -456,6 +451,7 @@ class StepRunner:
         output_materializers: Dict[str, Type[BaseMaterializer]],
         output_artifact_uris: Dict[str, str],
         artifact_metadata_enabled: bool,
+        artifact_visualization_enabled: bool,
     ) -> Tuple[
         Dict[str, ArtifactRequestModel], Dict[str, Dict[str, "MetadataType"]]
     ]:
@@ -467,6 +463,8 @@ class StepRunner:
             output_materializers: The output materializers of the step.
             output_artifact_uris: The output artifact URIs of the step.
             artifact_metadata_enabled: Whether artifact metadata collection is
+                enabled.
+            artifact_visualization_enabled: Whether artifact visualization is
                 enabled.
 
         Returns:
@@ -490,10 +488,31 @@ class StepRunner:
             ].materializer_source
             uri = output_artifact_uris[output_name]
             materializer = materializer_class(uri)
+            materializer.validate_type_compatibility(type(return_value))
             materializer.save(return_value)
+
+            # Save artifact visualizations.
+            visualizations: List[VisualizationModel] = []
+            if artifact_visualization_enabled:
+                try:
+                    vis_data = materializer.save_visualizations(return_value)
+                    for vis_uri, vis_type in vis_data.items():
+                        vis_model = VisualizationModel(
+                            type=vis_type,
+                            uri=vis_uri,
+                        )
+                        visualizations.append(vis_model)
+                except Exception as e:
+                    logger.warning(
+                        f"Failed to save visualization for output artifact "
+                        f"'{output_name}' of step '{self.configuration.name}': "
+                        f"{e}"
+                    )
+
+            # Get artifact metadata.
             if artifact_metadata_enabled:
                 try:
-                    artifact_metadata = materializer.extract_metadata(
+                    artifact_metadata = materializer.extract_full_metadata(
                         return_value
                     )
                     output_artifact_metadata[output_name] = artifact_metadata
@@ -512,6 +531,7 @@ class StepRunner:
                 user=active_user_id,
                 workspace=active_workspace_id,
                 artifact_store_id=artifact_store_id,
+                visualizations=visualizations,
             )
             output_artifacts[output_name] = output_artifact
         return output_artifacts, output_artifact_metadata

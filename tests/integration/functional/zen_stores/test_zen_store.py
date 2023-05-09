@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+import os
 import uuid
 from contextlib import ExitStack as does_not_raise
 
@@ -18,6 +19,7 @@ import pytest
 
 from tests.integration.functional.utils import sample_name
 from tests.integration.functional.zen_stores.utils import (
+    CodeRepositoryContext,
     ComponentContext,
     CrudTestConfig,
     PipelineRunContext,
@@ -26,6 +28,9 @@ from tests.integration.functional.zen_stores.utils import (
     TeamContext,
     UserContext,
     list_of_entities,
+)
+from tests.unit.pipelines.test_build_utils import (
+    StubLocalRepositoryContext,
 )
 from zenml.client import Client
 from zenml.enums import StackComponentType, StoreType
@@ -57,6 +62,7 @@ from zenml.models.base_models import (
     WorkspaceScopedRequestModel,
 )
 from zenml.models.flavor_models import FlavorBaseModel
+from zenml.utils import code_repository_utils, source_utils
 from zenml.zen_stores.base_zen_store import (
     DEFAULT_ADMIN_ROLE,
     DEFAULT_GUEST_ROLE,
@@ -999,6 +1005,33 @@ def test_list_runs_is_ordered():
             pipelines[i].created <= pipelines[i + 1].created
             for i in range(len(pipelines) - 1)
         )
+
+
+def test_filter_runs_by_code_repo(mocker):
+    """Tests filtering runs by code repository id."""
+    mocker.patch.object(
+        source_utils, "get_source_root", return_value=os.getcwd()
+    )
+    store = Client().zen_store
+
+    with CodeRepositoryContext() as repo:
+        clean_local_context = StubLocalRepositoryContext(
+            code_repository_id=repo.id, root=os.getcwd(), commit="commit"
+        )
+        mocker.patch.object(
+            code_repository_utils,
+            "find_active_code_repository",
+            return_value=clean_local_context,
+        )
+
+        with PipelineRunContext(1):
+            filter_model = PipelineRunFilterModel(
+                code_repository_id=uuid.uuid4()
+            )
+            assert store.list_runs(filter_model).total == 0
+
+            filter_model = PipelineRunFilterModel(code_repository_id=repo.id)
+            assert store.list_runs(filter_model).total == 1
 
 
 def test_deleting_run_deletes_steps():

@@ -21,9 +21,7 @@ from pytest_mock import MockFixture
 
 from zenml.client import Client
 from zenml.config.compiler import Compiler
-from zenml.config.pipeline_configurations import (
-    PipelineRunConfiguration,
-)
+from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
 from zenml.config.pipeline_spec import PipelineSpec
 from zenml.exceptions import (
     PipelineInterfaceError,

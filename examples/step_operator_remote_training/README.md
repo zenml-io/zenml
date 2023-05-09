@@ -70,6 +70,12 @@ The stack will consist of:
 * An **Image Builder** which will be used to build the Docker image that will
   be used to run the training step.
 
+Note that the S3 artifact store and the Sagemaker step operator can both (i.e.
+as individual stack components) be deployed using the ZenML CLI as well, using
+the `zenml <STACK_COMPONENT> deploy` command. For more information on this
+`deploy` subcommand, please refer to the
+[documentation](https://docs.zenml.io/advanced-guide/practical-mlops/stack-recipes#deploying-stack-components-directly).
+
 To configure resources for the step operators, please
 follow [this guide](https://docs.zenml.io/component-gallery/step-operators/amazon-sagemaker)
 and then proceed with the following steps:
@@ -211,7 +217,16 @@ python run.py
 
 ### 🧽 Clean up
 
-In order to clean up, delete the remaining ZenML references.
+To destroy any resources deployed using the ZenML `deploy` subcommand, use the
+`destroy` subcommand to delete each individual stack component, as in the
+following example:
+
+```shell
+# replace with the name of the component you want to destroy
+zenml artifact-store destroy s3_artifact_store
+```
+
+Then delete the remaining ZenML references:
 
 ```shell
 rm -rf zenml_examples

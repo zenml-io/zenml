@@ -195,6 +195,9 @@ from zenml.zen_stores.schemas import (
     UserSchema,
     WorkspaceSchema,
 )
+from zenml.zen_stores.schemas.artifact_schemas import (
+    ArtifactVisualizationSchema,
+)
 from zenml.zen_stores.secrets_stores.sql_secrets_store import (
     SqlSecretsStoreConfiguration,
 )
@@ -708,11 +711,7 @@ class SqlZenStore(BaseZenStore):
             ValueError: if the filtered page number is out of bounds.
             RuntimeError: if the schema does not have a `to_model` method.
         """
-        # Filtering
-        filters = filter_model.generate_filter(table=table)
-
-        if filters is not None:
-            query = query.where(filters)
+        query = filter_model.apply_filter(query=query, table=table)
 
         # Get the total amount of items in the database for a given query
         total = session.scalar(
@@ -3743,8 +3742,19 @@ class SqlZenStore(BaseZenStore):
             The created artifact.
         """
         with Session(self.engine) as session:
+
+            # Save artifact.
             artifact_schema = ArtifactSchema.from_request(artifact)
             session.add(artifact_schema)
+
+            # Save visualizations of the artifact.
+            if artifact.visualizations:
+                for vis in artifact.visualizations:
+                    vis_schema = ArtifactVisualizationSchema.from_model(
+                        visualization=vis, artifact_id=artifact_schema.id
+                    )
+                    session.add(vis_schema)
+
             session.commit()
             return self._artifact_schema_to_model(artifact_schema)
 

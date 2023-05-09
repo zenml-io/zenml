@@ -11,7 +11,6 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from contextlib import ExitStack as does_not_raise
 
 from transformers import AutoTokenizer
 
@@ -23,10 +22,10 @@ from zenml.integrations.huggingface.materializers.huggingface_tokenizer_material
 
 def test_huggingface_tokenizer_materializer(clean_client):
     """Tests whether the steps work for the Huggingface Tokenizer materializer."""
-    with does_not_raise():
-        tokenizer = _test_materializer(
-            step_output=AutoTokenizer.from_pretrained("bert-base-cased"),
-            materializer_class=HFTokenizerMaterializer,
-        )
+    tokenizer = _test_materializer(
+        step_output=AutoTokenizer.from_pretrained("bert-base-cased"),
+        materializer_class=HFTokenizerMaterializer,
+        expected_metadata_size=1,
+    )
 
     assert tokenizer.model_max_length == 512
