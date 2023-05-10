@@ -62,7 +62,7 @@ class LogsSchema(BaseSchema, table=True):
         target=StackComponentSchema.__tablename__,
         source_column="stack_component_id",
         target_column="id",
-        ondelete="SET NULL",
+        ondelete="CASCADE",
         nullable=True,
     )
     artifact_store: Optional["StackComponentSchema"] = Relationship(
