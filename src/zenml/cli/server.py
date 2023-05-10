@@ -22,6 +22,7 @@ import click
 import yaml
 from rich.errors import MarkupError
 
+import zenml
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import cli
 from zenml.client import Client
@@ -32,12 +33,7 @@ from zenml.exceptions import IllegalOperationError
 from zenml.logger import get_logger
 from zenml.utils import yaml_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, event_handler
-from zenml.utils.dashboard_utils import show_dashboard
-from zenml.utils.networking_utils import get_or_create_ngrok_tunnel
-from zenml.zen_server.deploy.local.local_zen_server import (
-    LocalServerDeploymentConfig,
-)
-from zenml.zen_server.utils import get_active_deployment, get_server_url
+from zenml.zen_server.utils import get_active_deployment
 
 logger = get_logger(__name__)
 
@@ -117,8 +113,8 @@ def up(
             connected to a remote ZenML server.
         image: A custom Docker image to use for the server, when the
             `--docker` flag is set.
-        ngrok: An ngrok auth token to use for exposing the ZenML server. Can
-            only be used with non-blocking local deployments.
+        ngrok: An ngrok auth token to use for exposing the ZenML dashboard on a
+            public domain. Primarily used for accessing the dashboard in Colab.
     """
     with event_handler(
         AnalyticsEvent.ZENML_SERVER_STARTED
@@ -229,32 +225,24 @@ def up(
                     DEFAULT_PASSWORD,
                 )
 
-            url: Optional[str] = None
-            if ngrok and isinstance(
-                server.config, LocalServerDeploymentConfig
-            ):
-                try:
-                    url = get_or_create_ngrok_tunnel(
-                        ngrok_token=ngrok, port=server.config.port
-                    )
-                except ImportError as e:
-                    cli_utils.error(str(e))
-                logger.info(f"Exposing ZenML dashboard at {url}.")
-
-            if not url and server.status and server.status.url:
-                url = server.status.url
-            if url:
-                show_dashboard(url)
+            zenml.show()
 
 
+@click.option(
+    "--ngrok",
+    type=str,
+    default=None,
+    help="Specify an ngrok auth token to use for exposing the ZenML server.",
+)
 @cli.command("show", help="Show the ZenML dashboard.")
-def show() -> None:
-    """Show the ZenML dashboard."""
-    try:
-        url = get_server_url()
-    except RuntimeError as e:
-        cli_utils.error(str(e))
-    show_dashboard(url)
+def show(ngrok: Optional[str] = None) -> None:
+    """Show the ZenML dashboard.
+
+    Args:
+        ngrok: An ngrok auth token to use for exposing the ZenML dashboard on a
+            public domain. Primarily used for accessing the dashboard in Colab.
+    """
+    zenml.show(ngrok=ngrok)
 
 
 @cli.command("down", help="Shut down the local ZenML dashboard.")

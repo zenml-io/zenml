@@ -18,9 +18,28 @@ slow down the CLI.
 """
 
 
-def show() -> None:
-    """Show the ZenML dashboard."""
-    from zenml.utils.dashboard_utils import show_dashboard
-    from zenml.zen_server.utils import get_server_url
+from typing import Optional
 
-    show_dashboard(get_server_url())
+from zenml.logger import get_logger
+
+logger = get_logger(__name__)
+
+
+def show(ngrok: Optional[str] = None) -> None:
+    """Show the ZenML dashboard.
+
+    Args:
+        ngrok: An ngrok auth token to use for exposing the ZenML dashboard on a
+            public domain. Primarily used for accessing the dashboard in Colab.
+    """
+    from zenml.utils.dashboard_utils import show_dashboard
+    from zenml.utils.networking_utils import get_or_create_ngrok_tunnel
+    from zenml.zen_server.utils import get_active_server_details
+
+    url, port = get_active_server_details()
+
+    if ngrok and port:
+        url = get_or_create_ngrok_tunnel(ngrok_token=ngrok, port=port)
+        logger.info(f"Exposing ZenML dashboard at {url}.")
+
+    show_dashboard(url)

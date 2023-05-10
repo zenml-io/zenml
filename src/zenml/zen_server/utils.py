@@ -16,7 +16,7 @@
 import inspect
 import os
 from functools import wraps
-from typing import Any, Callable, Optional, Type, TypeVar, cast
+from typing import Any, Callable, Optional, Tuple, Type, TypeVar, cast
 
 from fastapi import HTTPException
 from pydantic import BaseModel, ValidationError
@@ -29,6 +29,9 @@ from zenml.constants import (
 from zenml.enums import ServerProviderType, StoreType
 from zenml.logger import get_logger
 from zenml.zen_server.deploy.deployment import ServerDeployment
+from zenml.zen_server.deploy.local.local_zen_server import (
+    LocalServerDeploymentConfig,
+)
 from zenml.zen_server.exceptions import http_exception_from_error
 from zenml.zen_stores.base_zen_store import BaseZenStore
 
@@ -123,7 +126,7 @@ def get_active_deployment(local: bool = False) -> Optional["ServerDeployment"]:
     return None
 
 
-def get_server_url() -> str:
+def get_active_server_details() -> Tuple[str, Optional[int]]:
     """Get the URL of the current ZenML Server.
 
     When multiple servers are present, the following precedence is used to
@@ -133,7 +136,7 @@ def get_server_url() -> str:
         precedence over a server that was deployed locally.
 
     Returns:
-        The URL of the currently active server.
+        The URL and port of the currently active server.
 
     Raises:
         RuntimeError: If no server is active.
@@ -142,7 +145,7 @@ def get_server_url() -> str:
     gc = GlobalConfiguration()
     if not gc.uses_default_store() and gc.store is not None:
         logger.debug("Getting URL of connected server.")
-        return gc.store.url
+        return gc.store.url, None
 
     # Else, check for deployed servers
     server = get_active_deployment(local=False)
@@ -153,7 +156,9 @@ def get_server_url() -> str:
         logger.debug("Getting URL of local server.")
 
     if server and server.status and server.status.url:
-        return server.status.url
+        if isinstance(server.config, LocalServerDeploymentConfig):
+            return server.status.url, server.config.port
+        return server.status.url, None
 
     raise RuntimeError(
         "ZenML is not connected to any server right now. Please use "
