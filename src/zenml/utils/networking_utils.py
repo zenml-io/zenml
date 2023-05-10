@@ -230,7 +230,10 @@ def get_or_create_ngrok_tunnel(ngrok_token: str, port: int) -> str:
     # Check if ngrok is already tunneling the port
     tunnels = ngrok_client.get_tunnels()
     for tunnel in tunnels:
-        if tunnel.config.proto == "http" and tunnel.config.addr == port:
+        if tunnel.config and isinstance(tunnel.config, dict):
+            tunnel_protocol = tunnel.config.get("proto")
+            tunnel_port = tunnel.config.get("addr")
+        if tunnel_protocol == "http" and tunnel_port == port:
             return str(tunnel.public_url)
 
     # Create new tunnel

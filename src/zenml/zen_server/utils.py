@@ -17,6 +17,7 @@ import inspect
 import os
 from functools import wraps
 from typing import Any, Callable, Optional, Tuple, Type, TypeVar, cast
+from urllib.parse import urlparse
 
 from fastapi import HTTPException
 from pydantic import BaseModel, ValidationError
@@ -145,8 +146,8 @@ def get_active_server_details() -> Tuple[str, Optional[int]]:
     gc = GlobalConfiguration()
     if not gc.uses_default_store() and gc.store is not None:
         logger.debug("Getting URL of connected server.")
-        return gc.store.url, None
-
+        parsed_url = urlparse(gc.store.url)
+        return f"{parsed_url.scheme}://{parsed_url.hostname}", parsed_url.port
     # Else, check for deployed servers
     server = get_active_deployment(local=False)
     if server:
