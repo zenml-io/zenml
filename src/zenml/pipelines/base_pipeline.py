@@ -660,27 +660,28 @@ class BasePipeline(metaclass=BasePipelineMeta):
             finally:
                 constants.SHOULD_PREVENT_PIPELINE_EXECUTION = False
 
-            runs = Client().list_runs(
-                deployment_id=deployment_model.id,
-                workspace_id=deployment_model.workspace.id,
-                pipeline_id=deployment_model.pipeline.id,
-                stack_id=deployment_model.stack.id,
-            )
+            if deployment_model:
+                runs = Client().list_runs(
+                    deployment_id=deployment_model.id,
+                    workspace_id=deployment_model.workspace.id,
+                    pipeline_id=deployment_model.pipeline.id,
+                    stack_id=deployment_model.stack.id,
+                )
 
-            if runs.items:
-                # Log the dashboard URL
-                dashboard_utils.print_run_url(
-                    run_name=deployment.run_name_template,
-                    pipeline_id=runs[0].id,
-                )
-            else:
-                logger.warning(
-                    f"Your orchestrator '{stack.orchestrator.name}' is "
-                    f"running remotely. Note that the pipeline run will "
-                    f"only show up on the ZenML dashboard once the first "
-                    f"step has started executing on the remote "
-                    f"infrastructure.",
-                )
+                if runs.items:
+                    # Log the dashboard URL
+                    dashboard_utils.print_run_url(
+                        run_name=deployment.run_name_template,
+                        pipeline_id=runs[0].id,
+                    )
+                else:
+                    logger.warning(
+                        f"Your orchestrator '{stack.orchestrator.name}' is "
+                        f"running remotely. Note that the pipeline run will "
+                        f"only show up on the ZenML dashboard once the first "
+                        f"step has started executing on the remote "
+                        f"infrastructure.",
+                    )
 
     get_runs = GetRunsDescriptor()
 
