@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "zenml"
-version = "0.39.0"
+version = "0.39.1"
 packages = [
     { include = "zenml", from = "src" },
 ]
