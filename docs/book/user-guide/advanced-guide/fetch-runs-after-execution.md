@@ -32,7 +32,7 @@ zenml pipeline list
 
 Or directly from code
 
-```
+```python
 from zenml.post_execution import get_pipelines
 
 pipelines = get_pipelines()
@@ -145,9 +145,7 @@ run = get_run(run_name="my_run_name")
 run = get_unlisted_runs()[0]  # Get last unlisted run
 ```
 
-<details>
-
-<summary>Using the CLI</summary>
+#### Use the CLI
 
 You can also access your runs through the CLI by executing the following command on the terminal:
 
@@ -155,8 +153,6 @@ You can also access your runs through the CLI by executing the following command
 zenml pipeline runs list
 zenml pipeline runs list -p <MY_PIPELINE_NAME_OR_ID>
 ```
-
-</details>
 
 ### Runs Configuration
 
@@ -220,35 +216,18 @@ first_step = steps[0]
 step = run.get_step(step="first_step")
 ```
 
-{% hint style="warning" %}
-The step `name` refers to the pipeline attribute and not the class name of the steps that implement the step for a pipeline instance.
+{% hint style="info" %}
+The step `name` refers to the pipeline attribute which might differ from the actual step implementation name.
 {% endhint %}
 
-```python
-# Definition of pipeline
-@pipeline
-def example_pipeline(step_1, step_2):
-    ...
-
-# Initialize a new pipeline run
-pipe = example_pipeline(step_1=first_step(), step_2=second_step())
-pipe.run()
-
-# Get the first step
-pipe.get_runs()[0].get_step(step="step_1")
-
-# This won't work:
-# pipe.get_runs()[0].get_step(step="first_step")
-```
-
-{% hint style="info" %}
-The steps are ordered by time of execution. Depending on the [orchestrator](broken-reference/), steps can be run in parallel. Thus, accessing steps by index can be unreliable across different runs, and it is recommended to access steps by the step class, an instance of the class or even the name of the step as a string: `get_step(step=...)` instead.
+{% hint style="warning" %}
+The steps are ordered by time of execution. Depending on the [orchestrator](broken-reference/), steps can be run in parallel. Thus, accessing steps by index is **unreliable** across different runs. You should access steps by the step class, an instance of the class or even the name of the step as a string: `get_step(step=...)`instead.
 {% endhint %}
 
 Similar to the run, for reproducibility, you can use the `step` object to access:
 
-* The [`BaseParameters`](broken-reference/) used to run the step via `step.parameters`,
-* [Step-level `BaseSettings`](broken-reference/) via `step.step_configuration`,
+* The parameters used to run the step via `step.parameters`,
+* The step level settings via `step.step_configuration`,
 * Component-specific step metadata, such as the URL of an experiment tracker or model deployer, via `step.metadata`,
 * Input and output artifacts.
 
