@@ -4,75 +4,106 @@ description: Inspecting a finished pipeline run and its outputs.
 
 # Fetch runs after execution
 
-Once a pipeline run has completed, we can access it using the post-execution utilities.
+Once a pipeline run has completed, we can interact with it from code using the post-execution utilities. The Hierarchy is as follows:
 
-Each pipeline can have multiple runs associated with it, and for each run there might be several outputs for each step. Thus, to inspect a specific output, we first need to access the respective pipeline, then fetch the respective run, and then choose the step output of that specific run.
-
-The overall hierarchy looks like this:
-
-```shell
-pipelines -> runs -> steps -> outputs
-
-# where -> implies a 1-many relationship.
+```mermaid
+flowchart LR
+    pipelines -->|1:N| versions
+    versions -->|1:N| runs
+    runs -->|1:N| steps
+    steps -->|1:N| outputs
 ```
+
+As you can see from the diagram, there are many layers of 1-to-N relationships. To get a specific output you need to know exactly which step in which run of which specific pipeline version to use.
 
 Let us investigate how to traverse this hierarchy level by level:
 
 ## Pipelines
 
-ZenML keeps a collection of all created pipelines with at least one run sorted by the time of their first run from from newest to oldest.
+ZenML keeps a collection of all created pipelines. With `get_pipeline()` you can get a specific pipeline.
 
-You can either access this collection via the `get_pipelines()` method or query a specific pipeline by name using `get_pipeline(pipeline=...)`:
+#### List all pipeline
 
-```python
-from zenml.post_execution import get_pipelines, get_pipeline
-
-# get all pipelines from all stacks
-pipelines = get_pipelines()
-
-# now you can get pipelines by index; pipelines are sorted in descending order
-# of their first run time (most recent first)
-pipeline_with_latest_initial_run_time = pipelines[0]
-
-# or get one pipeline by name
-pipeline_x = get_pipeline(pipeline="example_pipeline")
-
-# or even use the pipeline class
-pipeline_x = get_pipeline(pipeline=example_pipeline)
-```
-
-{% hint style="info" %}
-Be careful when accessing pipelines by index. Even if you just ran a pipeline it might not be at index `-1`, due to the fact that the pipelines are sorted by time of _first_ run. Instead, it is recommended to access the pipeline using the pipeline class, an instance of the class or even the name of the pipeline as a string: `get_pipeline(pipeline=...)`.
-{% endhint %}
-
-<details>
-
-<summary>Using the CLI</summary>
-
-You can also access your pipelines through the CLI by executing the following command on the terminal:
+You can also access a list of all your pipelines through the CLI by executing the following command on the terminal:
 
 ```shell
 zenml pipeline list
 ```
 
-</details>
+Or directly from code
+
+```
+from zenml.post_execution import get_pipelines
+
+pipelines = get_pipelines()
+```
+
+{% hint style="warning" %}
+Pipelines are sorted from oldest to newest. For this sorting it matters which pipeline had the first **initial** run.
+{% endhint %}
+
+#### Get a pipeline
+
+```python
+from zenml.post_execution import get_pipeline
+
+# This way you can get a pipeline by name
+pipeline_x = get_pipeline(pipeline="first_pipeline")
+```
+
+{% hint style="info" %}
+Instead of passing the name of the pipeline in, you can also directly use the pipeline instance `get_pipeline(pipeline=first_pipeline)`.
+{% endhint %}
+
+## Versions
+
+Each pipeline can have many versions. Let's print out the contents of the PipelineView:
+
+```python
+print(pipeline_x.versions)
+```
+
+This should return the following:
+
+<pre class="language-bash"><code class="lang-bash"><strong>[PipelineVersionView(id=..., name=first_pipeline, version=2),
+</strong> PipelineVersionView(id=..., name=first_pipeline, version=1)]
+</code></pre>
+
+This is how we'll access one specific version:
+
+```python
+latest_version = pipeline_x.versions[0]
+```
+
+{% hint style="info" %}
+The sorting of **versions** on a PipelineView is from **newest** to **oldest** with the most recent versions at the beginning of the list.
+{% endhint %}
 
 ## Runs
 
-### Getting runs from a fetched pipeline
+### Getting runs from a fetched pipeline version
 
-Each pipeline can be executed many times. You can get a list of all runs using the `runs` attribute of a pipeline.
+Each pipeline version can be executed many times. You can get a list of all runs using the `runs` attribute of a PiplineVersionView:
 
 ```python
-# get all runs of a pipeline chronologically ordered
-runs = pipeline_x.runs 
-
-# get the last run by index, runs are ordered by execution time in ascending order
-last_run = runs[0]
-
-# or get a specific run by name
-run = pipeline_x.get_run(run_name="my_run_name")
+print(latest_version.runs)
 ```
+
+This should return the following:
+
+<pre class="language-bash"><code class="lang-bash">[PipelineRunView(id=..., name=scipy_example_pipeline-...),
+<strong> PipelineRunView(id=..., name=scipy_example_pipeline-...)] ]
+</strong></code></pre>
+
+And this is how we access the most recent run
+
+```
+last_run = latest_version.runs[0]
+```
+
+{% hint style="info" %}
+The sorting of **runs** on a PipelineVersionView is from **newest** to **oldest** with the most recent runs at the beginning of the list.
+{% endhint %}
 
 ### Getting runs from a pipeline instance:
 
