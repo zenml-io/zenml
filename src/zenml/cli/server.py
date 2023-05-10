@@ -226,12 +226,12 @@ def up(
                 )
 
             if server.status and server.status.url:
-                logger.info(
-                    f"The ZenML dashboard is available at "
+                cli_utils.declare(
+                    f"The local ZenML dashboard is available at "
                     f"'{server.status.url}'. You can connect to it using the "
                     f"'{DEFAULT_USERNAME}' username and an empty password. "
                 )
-                zenml.show()
+                zenml.show(ngrok=ngrok)
 
 
 @click.option(
