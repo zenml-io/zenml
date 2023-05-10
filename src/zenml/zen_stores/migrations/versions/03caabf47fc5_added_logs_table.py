@@ -1,7 +1,7 @@
 """Added logs table [03caabf47fc5].
 
 Revision ID: 03caabf47fc5
-Revises: 9971237fa937
+Revises: 0.39.1
 Create Date: 2023-05-09 11:54:47.159350
 
 """
