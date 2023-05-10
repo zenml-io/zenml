@@ -660,7 +660,11 @@ class BasePipeline(metaclass=BasePipelineMeta):
             finally:
                 constants.SHOULD_PREVENT_PIPELINE_EXECUTION = False
 
-            if deployment_model:
+            if (
+                deployment_model
+                and deployment_model.pipeline
+                and deployment_model.stack
+            ):
                 runs = Client().list_runs(
                     deployment_id=deployment_model.id,
                     workspace_id=deployment_model.workspace.id,
