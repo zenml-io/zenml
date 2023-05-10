@@ -1175,3 +1175,21 @@ class ServiceConnectorRequestModel(
 @update_model
 class ServiceConnectorUpdateModel(ServiceConnectorRequestModel):
     """Model used for service connector updates."""
+
+    resource_types: Optional[List[str]] = Field(  # type: ignore[assignment]
+        default=None,
+        title="The type(s) of resource that the connector instance can be used "
+        "to gain access to.",
+    )
+    configuration: Optional[Dict[str, Any]] = Field(  # type: ignore[assignment]
+        default=None,
+        title="The service connector configuration, not including secrets.",
+    )
+    secrets: Optional[Dict[str, Optional[SecretStr]]] = Field(  # type: ignore[assignment]
+        default=None,
+        title="The service connector secrets.",
+    )
+    labels: Optional[Dict[str, str]] = Field(  # type: ignore[assignment]
+        default=None,
+        title="Service connector labels.",
+    )

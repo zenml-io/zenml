@@ -386,12 +386,23 @@ class KubernetesServiceConnector(ServiceConnector):
             kubernetes_context: The name of the Kubernetes context to use. If
                 not specified, the active context will be used.
             kwargs: Additional implementation specific keyword arguments to use.
+
+        Returns:
+            A configured Kubernetes connector instance.
+
+        Raises:
+            AuthorizationException: If the connector could not be configured.
         """
         kube_config = k8s_client.Configuration()
-        k8s_config.load_kube_config(
-            context=kubernetes_context,
-            client_configuration=kube_config,
-        )
+        try:
+            k8s_config.load_kube_config(
+                context=kubernetes_context,
+                client_configuration=kube_config,
+            )
+        except k8s_config.ConfigException as e:
+            raise AuthorizationException(
+                f"Failed to load the Kubernetes configuration: {e}"
+            ) from e
 
         auth_config: KubernetesBaseConfig
         if kube_config.username and kube_config.password:

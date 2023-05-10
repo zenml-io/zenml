@@ -13,7 +13,7 @@
 import uuid
 from typing import Any, Callable, Dict, List, Optional, Type, TypeVar
 
-from pydantic import BaseModel
+from pydantic import BaseModel, SecretStr
 
 from tests.integration.functional.utils import sample_name
 from zenml.client import Client
@@ -54,6 +54,9 @@ from zenml.models import (
     RoleUpdateModel,
     SecretFilterModel,
     SecretRequestModel,
+    ServiceConnectorFilterModel,
+    ServiceConnectorRequestModel,
+    ServiceConnectorUpdateModel,
     StackRequestModel,
     StepRunFilterModel,
     TeamFilterModel,
@@ -426,6 +429,60 @@ class CodeRepositoryContext:
                 pass
 
 
+class ServiceConnectorContext:
+    def __init__(
+        self,
+        connector_type: str = "docker",
+        auth_method: str = "password",
+        resource_types: List[str] = ["docker-registry"],
+        resource_id: Optional[str] = None,
+        configuration: Dict[str, str] = {},
+        secrets: Dict[str, Optional[SecretStr]] = dict(
+            username=SecretStr("admin"), password=SecretStr("password")
+        ),
+        user_id: Optional[uuid.UUID] = None,
+        workspace_id: Optional[uuid.UUID] = None,
+        is_shared: bool = False,
+        delete: bool = True,
+    ):
+        self.name = sample_name("service_connector")
+        self.connector_type = connector_type
+        self.auth_method = auth_method
+        self.resource_types = resource_types
+        self.resource_id = resource_id
+        self.configuration = configuration
+        self.secrets = secrets
+        self.user_id = user_id
+        self.workspace_id = workspace_id
+        self.is_shared = is_shared
+        self.client = Client()
+        self.store = self.client.zen_store
+        self.delete = delete
+
+    def __enter__(self):
+        request = ServiceConnectorRequestModel(
+            name=self.name,
+            connector_type=self.connector_type,
+            auth_method=self.auth_method,
+            resource_types=self.resource_types,
+            resource_id=self.resource_id,
+            configuration=self.configuration,
+            secrets=self.secrets,
+            user=self.user_id or self.client.active_user.id,
+            workspace=self.workspace_id or self.client.active_workspace.id,
+        )
+
+        self.connector = self.store.create_service_connector(request)
+        return self.connector
+
+    def __exit__(self, exc_type, exc_value, exc_traceback):
+        if self.delete:
+            try:
+                self.store.delete_service_connector(self.connector.id)
+            except KeyError:
+                pass
+
+
 AnyRequestModel = TypeVar("AnyRequestModel", bound=BaseRequestModel)
 AnyResponseModel = TypeVar("AnyResponseModel", bound=BaseResponseModel)
 
@@ -614,6 +671,24 @@ code_repository_crud_test_config = CrudTestConfig(
     filter_model=CodeRepositoryFilterModel,
     entity_name="code_repository",
 )
+service_connector_crud_test_config = CrudTestConfig(
+    create_model=ServiceConnectorRequestModel(
+        user=uuid.uuid4(),
+        workspace=uuid.uuid4(),
+        name=sample_name("sample_code_repository"),
+        connector_type="docker",
+        auth_method="password",
+        configuration=dict(
+            username="user",
+            password="password",
+        ),
+    ),
+    update_model=ServiceConnectorUpdateModel(
+        name=sample_name("updated_sample_service_connector"),
+    ),
+    filter_model=ServiceConnectorFilterModel,
+    entity_name="service_connector",
+)
 
 # step_run_crud_test_config = CrudTestConfig(
 #     create_model=StepRunRequestModel(
@@ -648,4 +723,5 @@ list_of_entities = [
     build_crud_test_config,
     deployment_crud_test_config,
     code_repository_crud_test_config,
+    service_connector_crud_test_config,
 ]

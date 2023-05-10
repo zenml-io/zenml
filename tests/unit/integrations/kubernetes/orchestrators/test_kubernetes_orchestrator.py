@@ -64,7 +64,7 @@ def _patch_k8s_clients(mocker):
         mock_context["name"] = "incluster"
 
     mocker.patch(
-        "zenml.integrations.kubernetes.orchestrators.kubernetes_orchestrator.KubernetesOrchestrator.kube_client",
+        "zenml.integrations.kubernetes.orchestrators.kubernetes_orchestrator.KubernetesOrchestrator.get_kube_client",
         return_value=(None),
     )
     mocker.patch(
