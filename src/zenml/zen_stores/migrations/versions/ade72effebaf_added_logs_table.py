@@ -1,8 +1,8 @@
-"""Added logs table [03caabf47fc5].
+"""Added logs table [ade72effebaf].
 
-Revision ID: 03caabf47fc5
+Revision ID: ade72effebaf
 Revises: 0.39.1
-Create Date: 2023-05-09 11:54:47.159350
+Create Date: 2023-05-10 17:26:03.716357
 
 """
 import sqlalchemy as sa
@@ -10,7 +10,7 @@ import sqlmodel
 from alembic import op
 
 # revision identifiers, used by Alembic.
-revision = "03caabf47fc5"
+revision = "ade72effebaf"
 down_revision = "0.39.1"
 branch_labels = None
 depends_on = None
@@ -36,7 +36,7 @@ def upgrade() -> None:
             ["artifact_store_id"],
             ["stack_component.id"],
             name="fk_logs_stack_component_id_stack_component",
-            ondelete="SET NULL",
+            ondelete="CASCADE",
         ),
         sa.ForeignKeyConstraint(
             ["pipeline_run_id"],

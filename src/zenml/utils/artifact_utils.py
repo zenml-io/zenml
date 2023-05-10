@@ -255,7 +255,7 @@ def load_artifact_visualization(
 
 
 def _load_artifact_store(
-    artifact_store_id: "UUID",
+    artifact_store_id: Union[str, "UUID"],
     zen_store: Optional["BaseZenStore"] = None,
 ) -> "BaseArtifactStore":
     """Load an artifact store (potentially inside the server).
@@ -273,6 +273,9 @@ def _load_artifact_store(
             an artifact store.
         NotImplementedError: If the artifact store could not be loaded.
     """
+    if isinstance(artifact_store_id, str):
+        artifact_store_id = UUID(artifact_store_id)
+
     if zen_store is None:
         zen_store = Client().zen_store
 

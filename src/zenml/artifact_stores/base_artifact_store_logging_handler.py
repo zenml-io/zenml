@@ -17,7 +17,7 @@ import io
 import time
 from logging import LogRecord
 from logging.handlers import TimedRotatingFileHandler
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from zenml.logger import get_logger
 
@@ -35,8 +35,8 @@ class ArtifactStoreLoggingHandler(TimedRotatingFileHandler):
         artifact_store: "BaseArtifactStore",
         logs_uri: str,
         max_messages: int = 20,
-        *args,
-        **kwargs
+        *args: Any,
+        **kwargs: Any
     ):
         """Initializes the handler."""
         self.artifact_store = artifact_store
@@ -47,7 +47,7 @@ class ArtifactStoreLoggingHandler(TimedRotatingFileHandler):
         self.last_upload_time = time.time()
         super().__init__(self.logs_uri, *args, **kwargs)
 
-    def emit(self, record: LogRecord):
+    def emit(self, record: LogRecord) -> None:
         """Emits the log record.
 
         Args:
@@ -66,7 +66,7 @@ class ArtifactStoreLoggingHandler(TimedRotatingFileHandler):
         ):
             self.flush()
 
-    def flush(self):
+    def flush(self) -> None:
         """Flushes the buffer to the artifact store."""
         with self.artifact_store.open(self.logs_uri, mode="a") as log_file:
             log_file.write(self.buffer.getvalue())
@@ -75,7 +75,7 @@ class ArtifactStoreLoggingHandler(TimedRotatingFileHandler):
         self.message_count = 0
         self.last_upload_time = time.time()
 
-    def doRollover(self):
+    def doRollover(self) -> None:
         """Flushes the buffer and performs a rollover."""
         self.flush()
         super().doRollover()

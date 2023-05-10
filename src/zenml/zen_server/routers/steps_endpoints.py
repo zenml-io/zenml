@@ -13,10 +13,10 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for steps (and artifacts) of pipeline runs."""
 
-from typing import TYPE_CHECKING, Any, Dict
+from typing import Any, Dict
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Security
+from fastapi import APIRouter, Depends, HTTPException, Security
 
 from zenml.constants import (
     API,
@@ -45,9 +45,6 @@ from zenml.zen_server.utils import (
     make_dependable,
     zen_store,
 )
-
-if TYPE_CHECKING:
-    from zenml.zen_stores.schemas.logs_schemas import LogsSchema
 
 router = APIRouter(
     prefix=API + VERSION_1 + STEPS,
@@ -210,8 +207,14 @@ def get_step_logs(
         The logs of the step.
     """
     store = zen_store()
-    step_logs: "LogsSchema" = store.get_run_step(step_id).step_logs
+    step_logs = store.get_run_step(step_id).step_logs
+    if step_logs is None:
+        raise HTTPException(
+            status_code=404, detail="No logs available for this step"
+        )
     artifact_store = _load_artifact_store(step_logs.artifact_store_id, store)
-    return _load_file_from_artifact_store(
-        step_logs.uri, artifact_store=artifact_store
+    return str(
+        _load_file_from_artifact_store(
+            step_logs.uri, artifact_store=artifact_store
+        )
     )

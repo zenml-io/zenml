@@ -57,7 +57,7 @@ class LogsSchema(BaseSchema, table=True):
         back_populates="step_logs"
     )
 
-    artifact_store_id: Optional[UUID] = build_foreign_key_field(
+    artifact_store_id: UUID = build_foreign_key_field(
         source=__tablename__,
         target=StackComponentSchema.__tablename__,
         source_column="stack_component_id",

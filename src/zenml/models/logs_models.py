@@ -33,7 +33,10 @@ class LogsBaseModel(BaseModel):
         title="The uri of the logs file",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    artifact_store_id: Union[str, UUID] = None
+    artifact_store_id: Union[str, UUID] = Field(
+        title="The artifact store ID to associate the logs with.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
 
 
 # -------- #
