@@ -94,14 +94,6 @@ def show_dashboard(url: str) -> None:
     Args:
         url: URL of the ZenML dashboard.
     """
-    from zenml.zen_stores.base_zen_store import DEFAULT_USERNAME
-
-    logger.info(
-        f"The ZenML dashboard is available at "
-        f"'{url}'. You can connect to it using the "
-        f"'{DEFAULT_USERNAME}' username and an empty password. "
-    )
-
     environment = get_environment()
     if environment in (EnvironmentType.NOTEBOOK, EnvironmentType.COLAB):
         from IPython.core.display import display
@@ -127,3 +119,6 @@ def show_dashboard(url: str) -> None:
                 "To open the dashboard in a browser automatically, "
                 "set the env variable AUTO_OPEN_DASHBOARD=true."
             )
+
+    else:
+        logger.info(f"The ZenML dashboard is available at {url}.")

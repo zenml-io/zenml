@@ -39,7 +39,8 @@ def show(ngrok: Optional[str] = None) -> None:
     url, port = get_active_server_details()
 
     if ngrok and port:
-        url = get_or_create_ngrok_tunnel(ngrok_token=ngrok, port=port)
-        logger.info(f"Exposing ZenML dashboard at {url}.")
+        ngrok_url = get_or_create_ngrok_tunnel(ngrok_token=ngrok, port=port)
+        logger.debug(f"Tunneling dashboard from {url} to {ngrok_url}.")
+        url = ngrok_url
 
     show_dashboard(url)

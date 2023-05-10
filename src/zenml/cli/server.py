@@ -225,7 +225,13 @@ def up(
                     DEFAULT_PASSWORD,
                 )
 
-            zenml.show()
+            if server.status and server.status.url:
+                logger.info(
+                    f"The ZenML dashboard is available at "
+                    f"'{server.status.url}'. You can connect to it using the "
+                    f"'{DEFAULT_USERNAME}' username and an empty password. "
+                )
+                zenml.show()
 
 
 @click.option(
