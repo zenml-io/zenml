@@ -68,7 +68,7 @@ class ArtifactView(BaseView):
         from zenml.environment import Environment
         from zenml.utils.artifact_utils import load_artifact_visualization
 
-        if not Environment.in_notebook() and not Environment.in_google_colab():
+        if not Environment.in_notebook():
             raise RuntimeError(
                 "The `output.visualize()` method is only available in Jupyter "
                 "notebooks. In all other runtime environments, please open "
