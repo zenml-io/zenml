@@ -34,7 +34,7 @@ class ArtifactStoreLoggingHandler(TimedRotatingFileHandler):
         self,
         artifact_store: "BaseArtifactStore",
         logs_uri: str,
-        max_messages: int = 5,
+        max_messages: int = 20,
         *args,
         **kwargs
     ):
