@@ -44,9 +44,16 @@ class LogsBaseModel(BaseModel):
 class LogsResponseModel(LogsBaseModel, BaseResponseModel):
     """Response model for logs."""
 
-    step_run_id: Optional[Union[str, UUID]] = None
-    pipeline_run_id: Optional[Union[str, UUID]] = None
-
+    step_run_id: Optional[Union[str, UUID]] = Field(
+        title="Step ID to associate the logs with.",
+        default=None,
+        description="When this is set, pipeline_run_id should be set to None.",
+    )
+    pipeline_run_id: Optional[Union[str, UUID]] = Field(
+        title="Pipeline run ID to associate the logs with.",
+        default=None,
+        description="When this is set, step_run_id should be set to None.",
+    )
 
 # ------- #
 # REQUEST #
