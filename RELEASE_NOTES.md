@@ -1,5 +1,14 @@
 <!-- markdown-link-check-disable -->
 
+# 0.39.1
+
+Minor hotfix release for running ZenML in Google Colab environments.
+
+## What's Changed
+* Fix Source Resolving in Colab by @fa9r in https://github.com/zenml-io/zenml/pull/1530
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.39.0...0.39.1
+
 # 0.39.0
 
 ZenML release 0.39.0 introduces several big new features:
