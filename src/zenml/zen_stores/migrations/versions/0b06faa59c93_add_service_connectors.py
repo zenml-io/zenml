@@ -1,8 +1,8 @@
 """Add service connectors [0b06faa59c93].
 
 Revision ID: 0b06faa59c93
-Revises: fbd7f18ced1e
-Create Date: 2023-05-01 23:19:18.775302
+Revises: 0.39.1
+Create Date: 2023-05-10 23:19:18.775302
 
 """
 import sqlalchemy as sa
@@ -11,7 +11,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "0b06faa59c93"
-down_revision = "fbd7f18ced1e"
+down_revision = "0.39.1"
 branch_labels = None
 depends_on = None
 
@@ -89,6 +89,13 @@ def upgrade() -> None:
                 nullable=True,
             )
         )
+        batch_op.add_column(
+            sa.Column(
+                "connector_resource_id_attr",
+                sqlmodel.sql.sqltypes.AutoString(),
+                nullable=True,
+            )
+        )
 
     with op.batch_alter_table("stack_component", schema=None) as batch_op:
         batch_op.add_column(
@@ -128,6 +135,7 @@ def downgrade() -> None:
     with op.batch_alter_table("flavor", schema=None) as batch_op:
         batch_op.drop_column("connector_resource_type")
         batch_op.drop_column("connector_type")
+        batch_op.drop_column("connector_resource_id_attr")
 
     op.drop_table("service_connector_label")
     op.drop_table("service_connector")
