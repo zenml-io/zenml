@@ -33,4 +33,6 @@ from pkgutil import extend_path
 __path__ = extend_path(__path__, __name__)
 
 # Define public Python API
-from zenml.api import *  # noqa
+from zenml.api import show
+
+__all__ = ["show"]
