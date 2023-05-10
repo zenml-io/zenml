@@ -140,6 +140,15 @@ class StepView(BaseView):
         return self.step_configuration.enable_artifact_metadata
 
     @property
+    def enable_artifact_visualization(self) -> Optional[bool]:
+        """Returns whether artifact visualization is enabled for this step.
+
+        Returns:
+            Whether artifact visualization is enabled for this step.
+        """
+        return self.step_configuration.enable_artifact_visualization
+
+    @property
     def step_operator(self) -> Optional[str]:
         """Returns the name of the step operator of the step.
 
@@ -251,6 +260,13 @@ class StepView(BaseView):
                 "or multiple outputs, use `StepView.outputs` instead."
             )
         return next(iter(self.outputs.values()))
+
+    def visualize(self) -> None:
+        """Visualizes all output artifacts of the step."""
+        output_artifacts = self.outputs.values()
+        for artifact in sorted(output_artifacts, key=lambda a: a.model.name):
+            title = f"{self.model.name} - {artifact.model.name}"
+            artifact.visualize(title=title)
 
     def _ensure_inputs_fetched(self) -> None:
         """Fetches all step inputs from the ZenStore."""

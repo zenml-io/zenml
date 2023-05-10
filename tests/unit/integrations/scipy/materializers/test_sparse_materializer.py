@@ -11,7 +11,6 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from contextlib import ExitStack as does_not_raise
 
 from scipy.sparse import coo_matrix
 
@@ -23,13 +22,13 @@ from zenml.integrations.scipy.materializers.sparse_materializer import (
 
 def test_scipy_sparse_matrix_materializer(clean_client):
     """Tests whether the steps work for the SciPy sparse matrix materializer."""
-    with does_not_raise():
-        sparse_matrix = _test_materializer(
-            step_output=coo_matrix(
-                ([1, 2, 3], ([0, 1, 2], [0, 1, 2])), shape=(3, 3)
-            ),
-            materializer_class=SparseMaterializer,
-        )
+    sparse_matrix = _test_materializer(
+        step_output=coo_matrix(
+            ([1, 2, 3], ([0, 1, 2], [0, 1, 2])), shape=(3, 3)
+        ),
+        materializer_class=SparseMaterializer,
+        expected_metadata_size=4,
+    )
 
     assert sparse_matrix.format == "coo"
     assert sparse_matrix.shape == (3, 3)

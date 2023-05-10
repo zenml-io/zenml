@@ -1056,6 +1056,218 @@ def generate_stack_component_flavor_delete_command(
     return delete_stack_component_flavor_command
 
 
+def generate_stack_component_deploy_command(
+    component_type: StackComponentType,
+) -> Callable[[str, str, str, List[str]], None]:
+    """Generates a `deploy` command for the stack component type.
+
+    Args:
+        component_type: Type of the component to generate the command for.
+
+    Returns:
+        A function that can be used as a `click` command.
+    """
+    display_name = _component_display_name(component_type)
+
+    @click.argument(
+        "name",
+        type=str,
+    )
+    @click.option(
+        "--flavor",
+        "-f",
+        "flavor",
+        help=f"The flavor of the {display_name} to deploy.",
+        required=True,
+        type=str,
+    )
+    @click.option(
+        "--cloud",
+        "-c",
+        "cloud",
+        type=click.Choice(["aws", "gcp", "k3d"]),
+        help="The cloud provider to use to deploy the stack component.",
+    )
+    @click.argument("args", nargs=-1, type=click.UNPROCESSED)
+    def deploy_stack_component_command(
+        name: str,
+        flavor: str,
+        cloud: str,
+        args: List[str],
+    ) -> None:
+        """Deploy a stack component.
+
+        This function also registers the newly-deployed component.
+
+        Args:
+            name: Name of the component to register.
+            flavor: Flavor of the component to register.
+            cloud: Cloud provider to use to deploy the stack component.
+            args: Additional arguments to pass to the component.
+
+        Raises:
+            error: If the component type is not supported.
+        """
+        # generate a python dict with the above structure
+        # and then use it to check if the flavor is valid
+        # for the given component type
+        allowed_flavors = {
+            "experiment_tracker": ["mlflow"],
+            "model_deployer": ["seldon", "kserve"],
+            "artifact_store": ["s3", "gcp", "minio"],
+            "container_registry": ["gcp", "aws"],
+            "orchestrator": ["kubernetes", "kubeflow", "tekton", "sagemaker"],
+            "step_operator": ["sagemaker"],
+        }
+
+        # if the flavor is not allowed for the given component type
+        # raise an error
+        if flavor not in allowed_flavors[component_type.value]:
+            cli_utils.error(
+                f"Flavor '{flavor}' is not supported for "
+                f"{_component_display_name(component_type, True)}. "
+                "Allowed flavors are: "
+                f"{', '.join(allowed_flavors[component_type.value])}."
+            )
+
+        # for cases like artifact store, secrets manager and container registry
+        # the flavor is the same as the cloud
+        if flavor in ["s3", "sagemaker", "aws"]:
+            cloud = "aws"
+        elif flavor in ["vertex", "gcp"]:
+            cloud = "gcp"
+        elif cloud is None:
+            raise cli_utils.error(
+                f"Cloud must be specified while deploying {flavor} "
+                f"{_component_display_name(component_type, True)}."
+                " Allowed clouds are: aws, gcp, k3d."
+            )
+
+        client = Client()
+
+        # Parse the given args
+        # name is guaranteed to be set by parse_name_and_extra_arguments
+        name, parsed_args = cli_utils.parse_name_and_extra_arguments(  # type: ignore[assignment]
+            list(args) + [name], expand_args=True
+        )
+
+        # if the cloud is gcp, project_id is required for the first time
+        if cloud == "gcp":
+            breakpoint()
+            if "project_id" not in parsed_args:
+                cli_utils.warning(
+                    "You should pass your GCP project ID to the deploy command, "
+                    "using the `--project_id` flag, if this is the first time that "
+                    "you are deploying a component to GCP. Ignore if you "
+                    "have already done so."
+                )
+
+        from zenml.recipes import GitStackRecipesHandler
+
+        try:
+            stack_recipe = GitStackRecipesHandler().get_stack_recipes(
+                f"{cloud}-modular"
+            )[0]
+        except KeyError as e:
+            cli_utils.error(str(e))
+        else:
+            # warn that prerequisites should be met
+            metadata = stack_recipe.metadata
+            if not cli_utils.confirmation(
+                "\nPrerequisites for running this recipe are as follows.\n"
+                f"{metadata['Prerequisites']}"
+                "\n\n Are all of these conditions met?"
+            ):
+                cli_utils.error(
+                    "Prerequisites are not installed. Please make sure "
+                    "they are met and run deploy again."
+                )
+
+            client.deploy_stack_component(
+                name=name,
+                flavor=flavor,
+                cloud=cloud,
+                configuration=parsed_args,
+                component_type=component_type,
+                labels={"cloud": cloud, "created_by": "recipe"},
+            )
+
+    return deploy_stack_component_command
+
+
+def generate_stack_component_destroy_command(
+    component_type: StackComponentType,
+) -> Callable[[str], None]:
+    """Generates a `destroy` command for the stack component type.
+
+    Args:
+        component_type: Type of the component to generate the command for.
+
+    Returns:
+        A function that can be used as a `click` command.
+    """
+    _component_display_name(component_type)
+
+    @click.argument(
+        "name_id_or_prefix",
+        type=str,
+        required=True,
+    )
+    def destroy_stack_component_command(
+        name_id_or_prefix: str,
+    ) -> None:
+        """Destroy a stack component.
+
+        Args:
+            name_id_or_prefix: Name, ID or prefix of the component to destroy.
+        """
+        client = Client()
+        from zenml.recipes import GitStackRecipesHandler
+
+        try:
+            component = client.get_stack_component(
+                name_id_or_prefix=name_id_or_prefix,
+                component_type=component_type,
+                allow_name_prefix_match=False,
+            )
+        except KeyError:
+            cli_utils.error(
+                "Could not find a stack component with name or id "
+                f"'{name_id_or_prefix}'.",
+            )
+
+        # if the component's labels don't have a key created_by
+        # equal to 'recipe', then destroy cannot be called on it
+        if (
+            not component.labels
+            or "created_by" not in component.labels
+            or component.labels["created_by"] != "recipe"
+        ):
+            cli_utils.error(
+                f"Cannot destroy stack component {component.name}. It "
+                "was not created by a recipe.",
+            )
+
+        try:
+            GitStackRecipesHandler().get_stack_recipes(
+                f"{component.labels['cloud']}-modular"
+            )[0]
+        except KeyError:
+            cli_utils.error(
+                "The backing recipe for this component is missing. "
+                "Please run `zenml stack recipe pull` to fix this."
+            )
+
+        try:
+            client.destroy_stack_component(
+                component=component,
+            )
+        except (KeyError, IllegalOperationError) as err:
+            cli_utils.error(str(err))
+
+    return destroy_stack_component_command
+
+
 def register_single_stack_component_cli_commands(
     component_type: StackComponentType, parent_group: click.Group
 ) -> None:
@@ -1186,6 +1398,22 @@ def register_single_stack_component_cli_commands(
     command_group.command(
         "explain", help=f"Explaining the {plural_display_name}."
     )(explain_command)
+
+    # zenml stack-component deploy
+    deploy_command = generate_stack_component_deploy_command(component_type)
+    context_settings = {"ignore_unknown_options": True}
+    command_group.command(
+        "deploy",
+        context_settings=context_settings,
+        help=f"Deploy a new {singular_display_name}.",
+    )(deploy_command)
+
+    # zenml stack-component destroy
+    destroy_command = generate_stack_component_destroy_command(component_type)
+    command_group.command(
+        "destroy",
+        help=f"Destroy an existing {singular_display_name}.",
+    )(destroy_command)
 
     # zenml stack-component flavor
     @command_group.group(

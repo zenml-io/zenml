@@ -16,7 +16,7 @@
 import importlib
 import os
 from tempfile import TemporaryDirectory
-from typing import Dict, Type
+from typing import Any, ClassVar, Dict, Tuple, Type
 
 from transformers import AutoConfig, PreTrainedModel  # type: ignore [import]
 
@@ -31,8 +31,8 @@ DEFAULT_PT_MODEL_DIR = "hf_pt_model"
 class HFPTModelMaterializer(BaseMaterializer):
     """Materializer to read torch model to and from huggingface pretrained model."""
 
-    ASSOCIATED_TYPES = (PreTrainedModel,)
-    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.MODEL
+    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (PreTrainedModel,)
+    ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.MODEL
 
     def load(self, data_type: Type[PreTrainedModel]) -> PreTrainedModel:
         """Reads HFModel.
@@ -43,8 +43,6 @@ class HFPTModelMaterializer(BaseMaterializer):
         Returns:
             The model read from the specified dir.
         """
-        super().load(data_type)
-
         temp_dir = TemporaryDirectory()
         io_utils.copy_dir(
             os.path.join(self.uri, DEFAULT_PT_MODEL_DIR), temp_dir.name
@@ -63,7 +61,6 @@ class HFPTModelMaterializer(BaseMaterializer):
         Args:
             model: The Torch Model to write.
         """
-        super().save(model)
         temp_dir = TemporaryDirectory()
         model.save_pretrained(temp_dir.name)
         io_utils.copy_dir(
@@ -84,7 +81,6 @@ class HFPTModelMaterializer(BaseMaterializer):
         """
         from zenml.integrations.pytorch.utils import count_module_params
 
-        super().extract_metadata(model)
         module_param_metadata = count_module_params(model)
         return {
             **module_param_metadata,

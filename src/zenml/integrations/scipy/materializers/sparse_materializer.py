@@ -14,7 +14,7 @@
 """Implementation of the Scipy Sparse Materializer."""
 
 import os
-from typing import Any, Dict, Type
+from typing import Any, ClassVar, Dict, Tuple, Type
 
 from scipy.sparse import load_npz, save_npz, spmatrix
 
@@ -29,8 +29,8 @@ DATA_FILENAME = "data.npz"
 class SparseMaterializer(BaseMaterializer):
     """Materializer to read and write scipy sparse matrices."""
 
-    ASSOCIATED_TYPES = (spmatrix,)
-    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATA
+    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (spmatrix,)
+    ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.DATA
 
     def load(self, data_type: Type[Any]) -> spmatrix:
         """Reads spmatrix from npz file.
@@ -41,7 +41,6 @@ class SparseMaterializer(BaseMaterializer):
         Returns:
             A spmatrix object.
         """
-        super().load(data_type)
         with fileio.open(os.path.join(self.uri, DATA_FILENAME), "rb") as f:
             mat = load_npz(f)
         return mat
@@ -52,7 +51,6 @@ class SparseMaterializer(BaseMaterializer):
         Args:
             mat: The spmatrix to write.
         """
-        super().save(mat)
         with fileio.open(os.path.join(self.uri, DATA_FILENAME), "wb") as f:
             save_npz(f, mat)
 
@@ -65,7 +63,6 @@ class SparseMaterializer(BaseMaterializer):
         Returns:
             The extracted metadata as a dictionary.
         """
-        super().extract_metadata(mat)
         return {
             "shape": mat.shape,
             "dtype": DType(mat.dtype),

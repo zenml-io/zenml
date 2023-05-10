@@ -126,7 +126,6 @@ second_pipeline.run()
 first_pipeline.run()
 
 get_pipelines()
->>> [PipelineView('first_pipeline'), PipelineView('second_pipeline')]
 
 # This is the recommended explicit way to retrieve your specific pipeline 
 # using the pipeline class if you have it at hand
