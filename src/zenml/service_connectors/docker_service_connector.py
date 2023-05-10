@@ -55,6 +55,7 @@ class DockerConfiguration(DockerCredentials):
     """Docker client configuration."""
 
     registry: Optional[str] = Field(
+        default=None,
         title="Registry server URL. Omit to use DockerHub.",
     )
 

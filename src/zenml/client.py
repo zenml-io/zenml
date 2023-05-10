@@ -4819,6 +4819,25 @@ class Client(metaclass=ClientMetaClass):
                 secrets=connector_model.secrets,
             )
 
+        # Add the labels
+        if labels is not None:
+            # Apply the new label values, but don't keep any labels that
+            # have been set to None in the update
+            connector_update.labels = {
+                **{
+                    label: value
+                    for label, value in connector_model.labels.items()
+                    if label not in labels
+                },
+                **{
+                    label: value
+                    for label, value in labels.items()
+                    if value is not None
+                },
+            }
+        else:
+            connector_update.labels = connector_model.labels
+
         if verify:
 
             # Prefer to verify the connector config server-side if the
@@ -4845,23 +4864,6 @@ class Client(metaclass=ClientMetaClass):
 
         if not update:
             return connector_update, connector_resources
-
-        # Add the labels
-        if labels is not None:
-            # Apply the new label values, but don't keep any labels that
-            # have been set to None in the update
-            connector_update.labels = {
-                **{
-                    label: value
-                    for label, value in connector_model.labels.items()
-                    if label not in labels
-                },
-                **{
-                    label: value
-                    for label, value in labels.items()
-                    if value is not None
-                },
-            }
 
         # For resource types that don't support multi-instances, it's
         # better to save the default resource ID in the connector, if

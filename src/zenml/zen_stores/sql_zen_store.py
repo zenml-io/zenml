@@ -156,6 +156,7 @@ from zenml.models.constants import TEXT_FIELD_MAX_LENGTH
 from zenml.models.page_model import Page
 from zenml.models.run_metadata_models import RunMetadataFilterModel
 from zenml.models.schedule_model import ScheduleFilterModel
+from zenml.models.secret_models import SecretUpdateModel
 from zenml.models.server_models import ServerDatabaseType, ServerModel
 from zenml.service_connectors.service_connector_registry import (
     service_connector_registry,
@@ -1626,12 +1627,13 @@ class SqlZenStore(BaseZenStore):
         """
         # Check if component with the same name, type is already shared
         # within the workspace
+        is_shared = True
         existing_shared_component = session.exec(
             select(StackComponentSchema)
             .where(StackComponentSchema.name == name)
             .where(StackComponentSchema.workspace_id == workspace_id)
             .where(StackComponentSchema.type == component_type)
-            .where(StackComponentSchema.is_shared is True)
+            .where(StackComponentSchema.is_shared == is_shared)
         ).first()
         if existing_shared_component is not None:
             raise StackComponentExistsError(
@@ -4209,11 +4211,12 @@ class SqlZenStore(BaseZenStore):
         """
         # Check if a service connector with the same name is already shared
         # within the workspace
+        is_shared = True
         existing_shared_connector = session.exec(
             select(ServiceConnectorSchema)
             .where(ServiceConnectorSchema.name == name)
             .where(ServiceConnectorSchema.workspace_id == workspace_id)
-            .where(ServiceConnectorSchema.is_shared is True)
+            .where(ServiceConnectorSchema.is_shared == is_shared)
         ).first()
         if existing_shared_connector is not None:
             raise EntityExistsError(
@@ -4258,7 +4261,9 @@ class SqlZenStore(BaseZenStore):
             )
 
         # Generate a unique name for the secret
-        # Replace all non-alphanumeric characters with a dash
+        # Replace all non-alphanumeric characters with a dash because
+        # the secret name must be a valid DNS subdomain name in some
+        # secrets stores
         connector_name = re.sub(r"[^a-zA-Z0-9-]", "-", connector_name)
         # Generate unique names using a random suffix until we find a name
         # that is not already in use
@@ -4559,7 +4564,26 @@ class SqlZenStore(BaseZenStore):
                 "A secrets store is not configured or supported."
             )
 
+        is_shared = (
+            existing_connector.is_shared
+            if updated_connector.is_shared is None
+            else updated_connector.is_shared
+        )
+        scope_changed = is_shared != existing_connector.is_shared
+
         if updated_connector.secrets is None:
+
+            if scope_changed and existing_connector.secret_id:
+                # Update the scope of the existing secret
+                self.secrets_store.update_secret(
+                    secret_id=existing_connector.secret_id,
+                    secret_update=SecretUpdateModel(  # type: ignore[call-arg]
+                        scope=SecretScope.WORKSPACE
+                        if is_shared
+                        else SecretScope.USER,
+                    ),
+                )
+
             # If the connector update does not contain a secrets update, keep
             # the existing secret (if any)
             return existing_connector.secret_id
@@ -4576,12 +4600,6 @@ class SqlZenStore(BaseZenStore):
         # return None
         if not updated_connector.secrets:
             return None
-
-        is_shared = (
-            existing_connector.is_shared
-            if updated_connector.is_shared is None
-            else updated_connector.is_shared
-        )
 
         assert existing_connector.user is not None
         # A secret does not exist yet, create a new one
@@ -4943,17 +4961,29 @@ class SqlZenStore(BaseZenStore):
         connector_filter_model = ServiceConnectorFilterModel(
             connector_type=connector_type,
             resource_type=resource_type,
+            is_shared=True,
+            workspace_id=workspace.id,
+        )
+
+        shared_connectors = self.list_service_connectors(
+            filter_model=connector_filter_model
+        ).items
+
+        connector_filter_model = ServiceConnectorFilterModel(
+            connector_type=connector_type,
+            resource_type=resource_type,
+            is_shared=False,
             user_id=user.id,
             workspace_id=workspace.id,
         )
 
-        connectors = self.list_service_connectors(
+        private_connectors = self.list_service_connectors(
             filter_model=connector_filter_model
         ).items
 
         resource_list: List[ServiceConnectorResourcesModel] = []
 
-        for connector in connectors:
+        for connector in list(shared_connectors) + list(private_connectors):
 
             if not service_connector_registry.is_registered(connector.type):
                 # For connectors that we can instantiate, i.e. those that have a
@@ -4997,7 +5027,7 @@ class SqlZenStore(BaseZenStore):
                         resource_type=resource_type,
                         resource_id=resource_id,
                     )
-                except AuthorizationException as e:
+                except (ValueError, AuthorizationException) as e:
                     logger.error(
                         f'Failed to fetch {resource_type or "available"} '
                         f"resources from service connector {connector.name}/"

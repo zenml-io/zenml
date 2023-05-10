@@ -11,9 +11,10 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 import uuid
+from datetime import datetime
 from typing import Any, Callable, Dict, List, Optional, Type, TypeVar
 
-from pydantic import BaseModel, SecretStr
+from pydantic import BaseModel, Field, SecretStr
 
 from tests.integration.functional.utils import sample_name
 from zenml.client import Client
@@ -30,6 +31,7 @@ from zenml.enums import (
 from zenml.models import (
     ArtifactFilterModel,
     ArtifactRequestModel,
+    AuthenticationMethodModel,
     BaseFilterModel,
     CodeRepositoryFilterModel,
     CodeRepositoryRequestModel,
@@ -49,6 +51,7 @@ from zenml.models import (
     PipelineRunRequestModel,
     PipelineRunUpdateModel,
     PipelineUpdateModel,
+    ResourceTypeModel,
     RoleFilterModel,
     RoleRequestModel,
     RoleUpdateModel,
@@ -56,6 +59,7 @@ from zenml.models import (
     SecretRequestModel,
     ServiceConnectorFilterModel,
     ServiceConnectorRequestModel,
+    ServiceConnectorTypeModel,
     ServiceConnectorUpdateModel,
     StackRequestModel,
     StepRunFilterModel,
@@ -72,6 +76,10 @@ from zenml.models import (
 from zenml.models.base_models import BaseRequestModel, BaseResponseModel
 from zenml.models.page_model import Page
 from zenml.pipelines import pipeline
+from zenml.service_connectors.service_connector import AuthenticationConfig
+from zenml.service_connectors.service_connector_registry import (
+    service_connector_registry,
+)
 from zenml.steps import step
 from zenml.utils.string_utils import random_str
 
@@ -432,30 +440,36 @@ class CodeRepositoryContext:
 class ServiceConnectorContext:
     def __init__(
         self,
-        connector_type: str = "docker",
-        auth_method: str = "password",
-        resource_types: List[str] = ["docker-registry"],
+        connector_type: str,
+        auth_method: str,
+        resource_types: List[str],
+        name: Optional[str] = None,
         resource_id: Optional[str] = None,
-        configuration: Dict[str, str] = {},
-        secrets: Dict[str, Optional[SecretStr]] = dict(
-            username=SecretStr("admin"), password=SecretStr("password")
-        ),
+        configuration: Optional[Dict[str, str]] = None,
+        secrets: Optional[Dict[str, Optional[SecretStr]]] = None,
+        expires_at: Optional[datetime] = None,
+        expiration_seconds: Optional[int] = None,
         user_id: Optional[uuid.UUID] = None,
         workspace_id: Optional[uuid.UUID] = None,
         is_shared: bool = False,
+        labels: Optional[Dict[str, str]] = None,
+        client: Optional[Client] = None,
         delete: bool = True,
     ):
-        self.name = sample_name("service_connector")
+        self.name = name or sample_name("connect-or")
         self.connector_type = connector_type
         self.auth_method = auth_method
         self.resource_types = resource_types
         self.resource_id = resource_id
         self.configuration = configuration
         self.secrets = secrets
+        self.expires_at = expires_at
+        self.expiration_seconds = expiration_seconds
         self.user_id = user_id
         self.workspace_id = workspace_id
         self.is_shared = is_shared
-        self.client = Client()
+        self.labels = labels
+        self.client = client or Client()
         self.store = self.client.zen_store
         self.delete = delete
 
@@ -466,8 +480,12 @@ class ServiceConnectorContext:
             auth_method=self.auth_method,
             resource_types=self.resource_types,
             resource_id=self.resource_id,
-            configuration=self.configuration,
-            secrets=self.secrets,
+            configuration=self.configuration or {},
+            secrets=self.secrets or {},
+            expires_at=self.expires_at,
+            expiration_seconds=self.expiration_seconds,
+            is_shared=self.is_shared,
+            labels=self.labels or {},
             user=self.user_id or self.client.active_user.id,
             workspace=self.workspace_id or self.client.active_workspace.id,
         )
@@ -479,6 +497,108 @@ class ServiceConnectorContext:
         if self.delete:
             try:
                 self.store.delete_service_connector(self.connector.id)
+            except KeyError:
+                pass
+
+
+class CatClawMarks(AuthenticationConfig):
+    """Cat claw marks authentication credentials."""
+
+    paw: SecretStr = Field(
+        title="Paw",
+    )
+    hiding_spot: Optional[SecretStr] = Field(
+        default=None,
+        title="Hiding spot",
+    )
+    color: Optional[str] = Field(
+        default=None,
+        title="Cat color.",
+    )
+    name: str = Field(
+        title="Cat name.",
+    )
+
+
+class CatVoicePrint(AuthenticationConfig):
+    """Cat voice print authentication credentials."""
+
+    secret_word: SecretStr = Field(
+        title="Secret word",
+    )
+    hiding_spot: Optional[SecretStr] = Field(
+        default=None,
+        title="Hiding spot",
+    )
+    color: Optional[str] = Field(
+        default=None,
+        title="Cat color.",
+    )
+    name: str = Field(
+        title="Cat name.",
+    )
+
+
+class ServiceConnectorTypeContext:
+    def __init__(
+        self,
+        connector_type: Optional[str] = None,
+        resource_type_one: Optional[str] = None,
+        resource_type_two: Optional[str] = None,
+        delete: bool = True,
+    ):
+        self.connector_type = connector_type
+        self.resource_type_one = resource_type_one
+        self.resource_type_two = resource_type_two
+        self.delete = delete
+
+    def __enter__(self):
+
+        self.connector_type_spec = ServiceConnectorTypeModel(
+            name="Cat service connector",
+            connector_type=self.connector_type or sample_name("cat'o'matic"),
+            auth_methods=[
+                AuthenticationMethodModel(
+                    name="Claw marks authentication",
+                    auth_method="claw-marks",
+                    config_class=CatClawMarks,
+                ),
+                AuthenticationMethodModel(
+                    name="Voice print authentication",
+                    auth_method="voice-print",
+                    config_class=CatVoicePrint,
+                ),
+            ],
+            resource_types=[
+                ResourceTypeModel(
+                    name="Cat scratches",
+                    resource_type=self.resource_type_one
+                    or sample_name("scratch"),
+                    auth_methods=["claw-marks", "voice-print"],
+                    supports_instances=True,
+                ),
+                ResourceTypeModel(
+                    name="Cat purrs",
+                    resource_type=self.resource_type_two
+                    or sample_name("purr"),
+                    auth_methods=["claw-marks", "voice-print"],
+                    supports_instances=False,
+                ),
+            ],
+        )
+
+        service_connector_registry.register_service_connector_type(
+            self.connector_type_spec
+        )
+
+        return self.connector_type_spec
+
+    def __exit__(self, exc_type, exc_value, exc_traceback):
+        if self.delete:
+            try:
+                del service_connector_registry.service_connector_types[
+                    self.connector_type
+                ]
             except KeyError:
                 pass
 
@@ -675,7 +795,7 @@ service_connector_crud_test_config = CrudTestConfig(
     create_model=ServiceConnectorRequestModel(
         user=uuid.uuid4(),
         workspace=uuid.uuid4(),
-        name=sample_name("sample_code_repository"),
+        name=sample_name("sample_service_connector"),
         connector_type="docker",
         auth_method="password",
         configuration=dict(

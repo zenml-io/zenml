@@ -1174,7 +1174,28 @@ class ServiceConnectorRequestModel(
 
 @update_model
 class ServiceConnectorUpdateModel(ServiceConnectorRequestModel):
-    """Model used for service connector updates."""
+    """Model used for service connector updates.
+
+    Most fields in the update model are optional and will not be updated if
+    omitted. However, the following fields are "special" and leaving them out
+    will also cause the corresponding value to be removed from the service
+    connector in the database:
+
+    * the `resource_id` field
+    * the `expiration_seconds` field
+
+    In addition to the above exceptions, the following rules apply:
+
+    * the `configuration` and `secrets` fields together represent a full
+    valid configuration update, not just a partial update. If either is
+    set (i.e. not None) in the update, their values are merged together and
+    will replace the existing configuration and secrets values.
+    * the `secret_id` field value in the update is ignored, given that
+    secrets are managed internally by the ZenML store.
+    * the `labels` field is also a full labels update: if set (i.e. not
+    `None`), all existing labels are removed and replaced by the new labels
+    in the update.
+    """
 
     resource_types: Optional[List[str]] = Field(  # type: ignore[assignment]
         default=None,

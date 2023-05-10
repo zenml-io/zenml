@@ -641,6 +641,7 @@ def register_service_connector(
 
                 # Print the configuration detected by the auto-configuration
                 # process
+                connector_model.connector_type = connector_type_spec
                 cli_utils.print_service_connector_configuration(
                     connector_model,
                     active_status=False,
@@ -1685,11 +1686,12 @@ def verify_service_connector(
 
     if not resources.resource_type:
         click.echo(
-            f"Service connector '{name_id_or_prefix}' is configured to "
-            f"access multiple types of resources and a list of resources "
-            "is not included. You can use the `--resource-type` argument "
-            "to show a full list of resources it can access for a "
-            "particular resource type."
+            f"The '{resources.id}' service connector is a multi-type connector "
+            "- i.e. configured to provide access to multiple types of "
+            "resources. A list of resources is not included for multi-type "
+            "connectors. You can use the `--resource-type` argument to show a "
+            "full list of resources it can access for a particular resource "
+            "type."
         )
 
 
@@ -1911,6 +1913,18 @@ def list_service_connector_resources(
     cli_utils.print_service_connector_resource_table(
         resources=resource_list,
     )
+
+    multi_type = [r for r in resource_list if r.resource_type is None]
+    if not resource_type and multi_type:
+        click.echo(
+            "\n"
+            f"{len(multi_type)} connectors in your results are multi-type "
+            "connectors - i.e. are configured to provide access to multiple "
+            "types of resources. A list of resources is not included for "
+            "these connectors. Use the '--resource-type' option to filter by "
+            "resource type and display the resources that can be accessed by "
+            "these connectors."
+        )
 
 
 @service_connector.command(

@@ -94,17 +94,34 @@ def list_service_connectors(
 @handle_exceptions
 def get_service_connector(
     connector_id: UUID,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+    auth_context: AuthContext = Security(
+        authorize, scopes=[PermissionType.READ]
+    ),
 ) -> ServiceConnectorResponseModel:
     """Returns the requested service connector.
 
     Args:
         connector_id: ID of the service connector.
+        auth_context: Authentication context.
 
     Returns:
         The requested service connector.
+
+    Raises:
+        KeyError: If the service connector does not exist or is not accessible.
     """
-    return zen_store().get_service_connector(connector_id)
+    connector = zen_store().get_service_connector(connector_id)
+
+    # Don't allow users to access service connectors that don't belong to them
+    # unless they are shared.
+    if (
+        connector.user
+        and connector.user.id == auth_context.user.id
+        or connector.is_shared
+    ):
+        return connector
+
+    raise KeyError(f"Service connector with ID {connector_id} not found.")
 
 
 @router.put(
@@ -116,21 +133,38 @@ def get_service_connector(
 def update_service_connector(
     connector_id: UUID,
     connector_update: ServiceConnectorUpdateModel,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
+    auth_context: AuthContext = Security(
+        authorize, scopes=[PermissionType.WRITE]
+    ),
 ) -> ServiceConnectorResponseModel:
     """Updates a service connector.
 
     Args:
         connector_id: ID of the service connector.
         connector_update: Service connector to use to update.
+        auth_context: Authentication context.
 
     Returns:
         Updated service connector.
+
+    Raises:
+        KeyError: If the service connector does not exist or is not accessible.
     """
-    return zen_store().update_service_connector(
-        service_connector_id=connector_id,
-        update=connector_update,
-    )
+    connector = zen_store().get_service_connector(connector_id)
+
+    # Don't allow users to access service connectors that don't belong to them
+    # unless they are shared.
+    if (
+        connector.user
+        and connector.user.id == auth_context.user.id
+        or connector.is_shared
+    ):
+        return zen_store().update_service_connector(
+            service_connector_id=connector_id,
+            update=connector_update,
+        )
+
+    raise KeyError(f"Service connector with ID {connector_id} not found.")
 
 
 @router.delete(
@@ -140,14 +174,29 @@ def update_service_connector(
 @handle_exceptions
 def delete_service_connector(
     connector_id: UUID,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
+    auth_context: AuthContext = Security(
+        authorize, scopes=[PermissionType.WRITE]
+    ),
 ) -> None:
     """Deletes a service connector.
 
     Args:
         connector_id: ID of the service connector.
+        auth_context: Authentication context.
     """
-    zen_store().delete_service_connector(connector_id)
+    connector = zen_store().get_service_connector(connector_id)
+
+    # Don't allow users to access service connectors that don't belong to them
+    # unless they are shared.
+    if (
+        connector.user
+        and connector.user.id == auth_context.user.id
+        or connector.is_shared
+    ):
+        zen_store().delete_service_connector(connector_id)
+        return
+
+    raise KeyError(f"Service connector with ID {connector_id} not found.")
 
 
 @router.post(
@@ -158,7 +207,7 @@ def delete_service_connector(
 @handle_exceptions
 def validate_and_verify_service_connector_config(
     connector: ServiceConnectorRequestModel,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
+    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> ServiceConnectorResourcesModel:
     """Verifies if a service connector configuration has access to resources.
 
@@ -188,7 +237,9 @@ def validate_and_verify_service_connector(
     connector_id: UUID,
     resource_type: Optional[str] = None,
     resource_id: Optional[str] = None,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
+    auth_context: AuthContext = Security(
+        authorize, scopes=[PermissionType.READ]
+    ),
 ) -> ServiceConnectorResourcesModel:
     """Verifies if a service connector instance has access to one or more resources.
 
@@ -200,16 +251,28 @@ def validate_and_verify_service_connector(
         connector_id: The ID of the service connector to verify.
         resource_type: The type of resource to verify access to.
         resource_id: The ID of the resource to verify access to.
+        auth_context: Authentication context.
 
     Returns:
         The list of resources that the service connector has access to, scoped
         to the supplied resource type and ID, if provided.
     """
-    return zen_store().verify_service_connector(
-        service_connector_id=connector_id,
-        resource_type=resource_type,
-        resource_id=resource_id,
-    )
+    connector = zen_store().get_service_connector(connector_id)
+
+    # Don't allow users to access service connectors that don't belong to them
+    # unless they are shared.
+    if (
+        connector.user
+        and connector.user.id == auth_context.user.id
+        or connector.is_shared
+    ):
+        return zen_store().verify_service_connector(
+            service_connector_id=connector_id,
+            resource_type=resource_type,
+            resource_id=resource_id,
+        )
+
+    raise KeyError(f"Service connector with ID {connector_id} not found.")
 
 
 @router.get(
@@ -222,7 +285,9 @@ def get_service_connector_client(
     connector_id: UUID,
     resource_type: Optional[str] = None,
     resource_id: Optional[str] = None,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
+    auth_context: AuthContext = Security(
+        authorize, scopes=[PermissionType.WRITE]
+    ),
 ) -> ServiceConnectorResponseModel:
     """Get a service connector client for a service connector and given resource.
 
@@ -234,16 +299,28 @@ def get_service_connector_client(
         connector_id: ID of the service connector.
         resource_type: Type of the resource to list.
         resource_id: ID of the resource to list.
+        auth_context: Authentication context.
 
     Returns:
         A service connector client that can be used to access the given
         resource.
     """
-    return zen_store().get_service_connector_client(
-        service_connector_id=connector_id,
-        resource_type=resource_type,
-        resource_id=resource_id,
-    )
+    connector = zen_store().get_service_connector(connector_id)
+
+    # Don't allow users to access service connectors that don't belong to them
+    # unless they are shared.
+    if (
+        connector.user
+        and connector.user.id == auth_context.user.id
+        or connector.is_shared
+    ):
+        return zen_store().get_service_connector_client(
+            service_connector_id=connector_id,
+            resource_type=resource_type,
+            resource_id=resource_id,
+        )
+
+    raise KeyError(f"Service connector with ID {connector_id} not found.")
 
 
 @types_router.get(

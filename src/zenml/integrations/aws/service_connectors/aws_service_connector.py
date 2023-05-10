@@ -1386,24 +1386,66 @@ class AWSServiceConnector(ServiceConnector):
                         "could not be used to auto-configure the connector. "
                     )
 
-                # Temporary credentials were generated. It's not possible to
-                # determine the expiration time of the temporary credentials
-                # from the boto3 session, so we assume the default IAM role
-                # expiration date is used
-                expires_at = datetime.datetime.now(
-                    tz=datetime.timezone.utc
-                ) + datetime.timedelta(
-                    seconds=DEFAULT_IAM_ROLE_TOKEN_EXPIRATION
-                )
+                if credentials.method == "assume-role":
 
-                auth_method = AWSAuthenticationMethods.STS_TOKEN
-                auth_config = STSTokenConfig(
-                    region=region_name,
-                    endpoint_url=endpoint_url,
-                    aws_access_key_id=credentials.access_key,
-                    aws_secret_access_key=credentials.secret_key,
-                    aws_session_token=credentials.token,
-                )
+                    # In the special case of IAM role authentication, the
+                    # credentials in the boto3 session are the temporary STS
+                    # credentials instead of the long-lived credentials, and the
+                    # role ARN is not known. We have to dig deeper into the
+                    # botocore session internals to retrieve the role ARN and
+                    # the original long-lived credentials.
+
+                    botocore_session = session._session
+                    profile_config = botocore_session.get_scoped_config()
+                    source_profile = profile_config.get("source_profile")
+                    role_arn = profile_config.get("role_arn")
+                    profile_map = botocore_session._build_profile_map()
+                    if not (
+                        role_arn
+                        and source_profile
+                        and source_profile in profile_map
+                    ):
+                        raise AuthorizationException(
+                            "Could not determine the IAM role ARN and source "
+                            "profile credentials from the environment"
+                        )
+
+                    auth_method = AWSAuthenticationMethods.IAM_ROLE
+                    source_profile_config = profile_map[source_profile]
+                    auth_config = IAMRoleAuthenticationConfig(
+                        region=region_name,
+                        endpoint_url=endpoint_url,
+                        aws_access_key_id=source_profile_config.get(
+                            "aws_access_key_id"
+                        ),
+                        aws_secret_access_key=source_profile_config.get(
+                            "aws_secret_access_key",
+                        ),
+                        role_arn=role_arn,
+                    )
+                    expiration_seconds = DEFAULT_IAM_ROLE_TOKEN_EXPIRATION
+
+                else:
+
+                    # Temporary credentials were picked up from the local
+                    # configuration. It's not possible to determine the
+                    # expiration time of the temporary credentials from the
+                    # boto3 session, so we assume the default IAM role
+                    # expiration period is used
+                    expires_at = datetime.datetime.now(
+                        tz=datetime.timezone.utc
+                    ) + datetime.timedelta(
+                        seconds=DEFAULT_IAM_ROLE_TOKEN_EXPIRATION
+                    )
+
+                    auth_method = AWSAuthenticationMethods.STS_TOKEN
+                    auth_config = STSTokenConfig(
+                        region=region_name,
+                        endpoint_url=endpoint_url,
+                        aws_access_key_id=credentials.access_key,
+                        aws_secret_access_key=credentials.secret_key,
+                        aws_session_token=credentials.token,
+                    )
             else:
                 # The session picked up long-lived credentials
                 if not auth_method:

@@ -1489,7 +1489,7 @@ def print_service_connector_configuration(
             "TYPE": connector.emojified_connector_type,
             "AUTH METHOD": connector.auth_method,
             "RESOURCE TYPES": ", ".join(connector.emojified_resource_types),
-            "RESOURCE NAME": connector.resource_id or "<multiple",
+            "RESOURCE NAME": connector.resource_id or "<multiple>",
             "SESSION DURATION": expiration,
             "EXPIRES IN": expires_in(
                 connector.expires_at, ":name_badge: Expired!"
