@@ -55,6 +55,7 @@ class LogsResponseModel(LogsBaseModel, BaseResponseModel):
         description="When this is set, step_run_id should be set to None.",
     )
 
+
 # ------- #
 # REQUEST #
 # ------- #

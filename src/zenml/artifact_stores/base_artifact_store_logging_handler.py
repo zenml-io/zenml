@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Logging handler for artifact stores"""
+"""Logging handler for artifact stores."""
 
 import io
 import time
@@ -28,7 +28,7 @@ if TYPE_CHECKING:
 
 
 class ArtifactStoreLoggingHandler(TimedRotatingFileHandler):
-    """Handler for logging to artifact stores"""
+    """Handler for logging to artifact stores."""
 
     def __init__(
         self,
@@ -38,7 +38,7 @@ class ArtifactStoreLoggingHandler(TimedRotatingFileHandler):
         *args,
         **kwargs
     ):
-        """Initializes the handler"""
+        """Initializes the handler."""
         self.artifact_store = artifact_store
         self.logs_uri = logs_uri
         self.max_messages = max_messages
@@ -67,7 +67,7 @@ class ArtifactStoreLoggingHandler(TimedRotatingFileHandler):
             self.flush()
 
     def flush(self):
-        """Flushes the buffer to the artifact store"""
+        """Flushes the buffer to the artifact store."""
         with self.artifact_store.open(self.logs_uri, mode="a") as log_file:
             log_file.write(self.buffer.getvalue())
         self.buffer.close()
@@ -76,6 +76,6 @@ class ArtifactStoreLoggingHandler(TimedRotatingFileHandler):
         self.last_upload_time = time.time()
 
     def doRollover(self):
-        """Flushes the buffer and performs a rollover"""
+        """Flushes the buffer and performs a rollover."""
         self.flush()
         super().doRollover()
