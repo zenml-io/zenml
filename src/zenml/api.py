@@ -11,26 +11,16 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Initialization for ZenML."""
+"""Public Python API of ZenML.
 
-# Define ROOT_DIR
-import os
+Everything defined/imported here should be highly import-optimized so we don't
+slow down the CLI.
+"""
 
-ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 
-# Set the version
-with open(os.path.join(ROOT_DIR, "VERSION")) as version_file:
-    __version__: str = version_file.read().strip()
+def show() -> None:
+    """Show the ZenML dashboard."""
+    from zenml.utils.dashboard_utils import show_dashboard
+    from zenml.zen_server.utils import get_server_url
 
-# Initialize logging
-from zenml.logger import init_logging  # noqa
-
-init_logging()
-
-# The following code is needed for `zenml.hub` subpackages to be found
-from pkgutil import extend_path
-
-__path__ = extend_path(__path__, __name__)
-
-# Define public Python API
-from zenml.api import *  # noqa
+    show_dashboard(get_server_url())
