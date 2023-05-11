@@ -69,22 +69,11 @@ def prepare_logs_uri(
     return logs_uri
 
 
-def get_step_logging_handler(
-    logs_uri: str,
-    max_messages: int = 20,
-    when: str = "s",
-    interval: int = 2,
-    backup_count: int = 0,
-) -> ArtifactStoreLoggingHandler:
+def get_step_logging_handler(logs_uri: str) -> ArtifactStoreLoggingHandler:
     """Sets up a logging handler for the artifact store.
 
     Args:
-        artifact_store: The artifact store on which the artifact will be stored.
         logs_uri: The URI of the output artifact.
-        max_messages: The maximum number of messages before logs are uploaded.
-        when: The unit of time to wait between logging.
-        interval: The interval of time to wait between logging.
-        backup_count: The number of backups to keep.
 
     Returns:
         The logging handler.
@@ -93,12 +82,6 @@ def get_step_logging_handler(
     date_format = "%Y-%m-%dT%H:%M:%S"  # ISO 8601 format
     formatter = logging.Formatter(log_format, datefmt=date_format)
 
-    handler = ArtifactStoreLoggingHandler(
-        logs_uri,
-        max_messages=max_messages,
-        when=when,
-        interval=interval,
-        backupCount=backup_count,
-    )
+    handler = ArtifactStoreLoggingHandler(logs_uri)
     handler.setFormatter(formatter)
     return handler

@@ -217,5 +217,7 @@ def get_step_logs(
         )
     artifact_store = _load_artifact_store(logs.artifact_store_id, store)
     return str(
-        _load_file_from_artifact_store(logs.uri, artifact_store=artifact_store)
+        _load_file_from_artifact_store(
+            logs.uri, artifact_store=artifact_store, mode="r"
+        )
     )

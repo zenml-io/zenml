@@ -25,35 +25,38 @@ from zenml.logger import get_logger
 logger = get_logger(__name__)
 
 if TYPE_CHECKING:
-    from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
+    pass
+
+
+# How many seconds to wait before uploading logs to the artifact store
+LOGS_HANDLER_INTERVAL_SECONDS: int = 20
+# How many messages to buffer before uploading logs to the artifact store
+LOGS_HANDLER_MAX_MESSAGES: int = 20
 
 
 class ArtifactStoreLoggingHandler(TimedRotatingFileHandler):
     """Handler for logging to artifact stores."""
 
-    def __init__(
-        self,
-        artifact_store: "BaseArtifactStore",
-        logs_uri: str,
-        max_messages: int = 20,
-        *args: Any,
-        **kwargs: Any
-    ):
+    def __init__(self, logs_uri: str, *args: Any, **kwargs: Any):
         """Initializes the handler.
 
         Args:
-            artifact_store: Artifact store to log to.
             logs_uri: URI of the logs file.
-            max_messages: Maximum number of messages to buffer before flushing.
             *args: Additional arguments to pass to the superclass.
             **kwargs: Additional keyword arguments to pass to the superclass.
         """
         self.logs_uri = logs_uri
-        self.max_messages = max_messages
+        self.max_messages = LOGS_HANDLER_MAX_MESSAGES
         self.buffer = io.StringIO()
         self.message_count = 0
         self.last_upload_time = time.time()
-        super().__init__(self.logs_uri, *args, **kwargs)
+        super().__init__(
+            self.logs_uri,
+            when="s",
+            interval=LOGS_HANDLER_INTERVAL_SECONDS,
+            *args,
+            **kwargs
+        )
 
     def emit(self, record: LogRecord) -> None:
         """Emits the log record.
