@@ -3389,11 +3389,11 @@ class SqlZenStore(BaseZenStore):
             session.add(step_schema)
 
             # Add logs entry for the step if exists
-            if step_run.step_logs is not None:
+            if step_run.logs is not None:
                 log_entry = LogsSchema(
-                    uri=step_run.step_logs.uri,
+                    uri=step_run.logs.uri,
                     step_run_id=step_schema.id,
-                    artifact_store_id=step_run.step_logs.artifact_store_id,
+                    artifact_store_id=step_run.logs.artifact_store_id,
                 )
                 session.add(log_entry)
 

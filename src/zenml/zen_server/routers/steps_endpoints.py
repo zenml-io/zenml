@@ -210,14 +210,12 @@ def get_step_logs(
         HTTPException: If no logs are available for this step.
     """
     store = zen_store()
-    step_logs = store.get_run_step(step_id).step_logs
-    if step_logs is None:
+    logs = store.get_run_step(step_id).logs
+    if logs is None:
         raise HTTPException(
             status_code=404, detail="No logs available for this step"
         )
-    artifact_store = _load_artifact_store(step_logs.artifact_store_id, store)
+    artifact_store = _load_artifact_store(logs.artifact_store_id, store)
     return str(
-        _load_file_from_artifact_store(
-            step_logs.uri, artifact_store=artifact_store
-        )
+        _load_file_from_artifact_store(logs.uri, artifact_store=artifact_store)
     )

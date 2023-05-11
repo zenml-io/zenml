@@ -153,7 +153,7 @@ class PipelineRunSchema(NamedSchema, table=True):
         back_populates="pipeline_run",
         sa_relationship_kwargs={"cascade": "delete"},
     )
-    run_logs: Optional["LogsSchema"] = Relationship(
+    logs: Optional["LogsSchema"] = Relationship(
         back_populates="pipeline_run",
         sa_relationship_kwargs={"cascade": "delete", "uselist": False},
     )

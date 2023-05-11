@@ -197,7 +197,7 @@ class StepLauncher:
                 start_time=datetime.utcnow(),
                 user=client.active_user.id,
                 workspace=client.active_workspace.id,
-                step_logs=LogsRequestModel(
+                logs=LogsRequestModel(
                     uri=logs_uri,
                     artifact_store_id=self._stack.artifact_store.id,
                 ),

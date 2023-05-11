@@ -83,7 +83,7 @@ class StepRunResponseModel(StepRunBaseModel, WorkspaceScopedResponseModel):
         default={},
         title="Metadata associated with this step run.",
     )
-    step_logs: Optional["LogsResponseModel"] = None
+    logs: Optional["LogsResponseModel"] = None
 
 
 # ------ #
@@ -148,7 +148,7 @@ class StepRunRequestModel(StepRunBaseModel, WorkspaceScopedRequestModel):
 
     input_artifacts: Dict[str, UUID] = {}
     output_artifacts: Dict[str, UUID] = {}
-    step_logs: Optional["LogsRequestModel"] = None
+    logs: Optional["LogsRequestModel"] = None
 
 
 # ------ #

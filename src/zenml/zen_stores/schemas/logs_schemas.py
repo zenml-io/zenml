@@ -42,7 +42,7 @@ class LogsSchema(BaseSchema, table=True):
         nullable=True,
     )
     pipeline_run: Optional["PipelineRunSchema"] = Relationship(
-        back_populates="run_logs"
+        back_populates="logs"
     )
 
     step_run_id: Optional[UUID] = build_foreign_key_field(
@@ -53,9 +53,7 @@ class LogsSchema(BaseSchema, table=True):
         ondelete="CASCADE",
         nullable=True,
     )
-    step_run: Optional["StepRunSchema"] = Relationship(
-        back_populates="step_logs"
-    )
+    step_run: Optional["StepRunSchema"] = Relationship(back_populates="logs")
 
     artifact_store_id: UUID = build_foreign_key_field(
         source=__tablename__,
