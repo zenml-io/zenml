@@ -16,7 +16,7 @@
 import logging
 import os
 from typing import TYPE_CHECKING, Optional
-from uuid import UUID, uuid4
+from uuid import uuid4
 
 from zenml.artifact_stores.base_artifact_store_logging_handler import (
     ArtifactStoreLoggingHandler,
@@ -33,7 +33,6 @@ logger = get_logger(__name__)
 
 def prepare_logs_uri(
     artifact_store: "BaseArtifactStore",
-    pipeline_run_id: UUID,
     step_name: str,
     log_key: Optional[str] = None,
 ) -> str:
@@ -41,20 +40,19 @@ def prepare_logs_uri(
 
     Args:
         artifact_store: The artifact store on which the artifact will be stored.
-        pipeline_run_id: The id of the pipeline run.
         step_name: Name of the step.
         log_key: The unique identification key of the log file.
 
     Returns:
-        The URI of the output artifact.
+        The URI of the logs file.
     """
     if log_key is None:
         log_key = str(uuid4())
 
     logs_base_uri = os.path.join(
         artifact_store.path,
-        str(pipeline_run_id),
         step_name,
+        "logs",
     )
 
     # Create the dir
@@ -72,7 +70,6 @@ def prepare_logs_uri(
 
 
 def get_step_logging_handler(
-    artifact_store: "BaseArtifactStore",
     logs_uri: str,
     max_messages: int = 20,
     when: str = "s",
@@ -97,7 +94,6 @@ def get_step_logging_handler(
     formatter = logging.Formatter(log_format, datefmt=date_format)
 
     handler = ArtifactStoreLoggingHandler(
-        artifact_store,
         logs_uri,
         max_messages=max_messages,
         when=when,

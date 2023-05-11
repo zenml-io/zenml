@@ -19,6 +19,7 @@ from logging import LogRecord
 from logging.handlers import TimedRotatingFileHandler
 from typing import TYPE_CHECKING, Any
 
+from zenml.io import fileio
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
@@ -47,7 +48,6 @@ class ArtifactStoreLoggingHandler(TimedRotatingFileHandler):
             *args: Additional arguments to pass to the superclass.
             **kwargs: Additional keyword arguments to pass to the superclass.
         """
-        self.artifact_store = artifact_store
         self.logs_uri = logs_uri
         self.max_messages = max_messages
         self.buffer = io.StringIO()
@@ -76,7 +76,7 @@ class ArtifactStoreLoggingHandler(TimedRotatingFileHandler):
 
     def flush(self) -> None:
         """Flushes the buffer to the artifact store."""
-        with self.artifact_store.open(self.logs_uri, mode="a") as log_file:
+        with fileio.open(self.logs_uri, mode="a") as log_file:
             log_file.write(self.buffer.getvalue())
         self.buffer.close()
         self.buffer = io.StringIO()

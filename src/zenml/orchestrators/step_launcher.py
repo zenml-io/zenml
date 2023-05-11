@@ -165,13 +165,10 @@ class StepLauncher:
         # Set up logging
         logs_uri = step_logging_utils.prepare_logs_uri(
             self._stack.artifact_store,
-            pipeline_run.id,
             self._step.config.name,
         )
 
-        zenml_handler = step_logging_utils.get_step_logging_handler(
-            self._stack.artifact_store, logs_uri
-        )
+        zenml_handler = step_logging_utils.get_step_logging_handler(logs_uri)
 
         try:
             root_logger = logging.getLogger()
