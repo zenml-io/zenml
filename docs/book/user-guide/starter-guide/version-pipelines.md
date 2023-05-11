@@ -63,3 +63,12 @@ This will now create a single `run` for `version 2` of the pipeline called `firs
 ```bash
 //PLACEHOLDER Dashboard Screenshot
 ```
+
+<details>
+
+<summary>Code examples of this section</summary>
+
+```python
+```
+
+</details>
