@@ -26,7 +26,7 @@ def upgrade() -> None:
         ),
         sa.Column("step_run_id", sqlmodel.sql.sqltypes.GUID(), nullable=True),
         sa.Column(
-            "artifact_store_id", sqlmodel.sql.sqltypes.GUID(), nullable=True
+            "artifact_store_id", sqlmodel.sql.sqltypes.GUID(), nullable=False
         ),
         sa.Column("uri", sa.TEXT(), nullable=False),
         sa.Column("id", sqlmodel.sql.sqltypes.GUID(), nullable=False),
