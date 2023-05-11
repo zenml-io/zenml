@@ -38,7 +38,15 @@ class ArtifactStoreLoggingHandler(TimedRotatingFileHandler):
         *args: Any,
         **kwargs: Any
     ):
-        """Initializes the handler."""
+        """Initializes the handler.
+
+        Args:
+            artifact_store: Artifact store to log to.
+            logs_uri: URI of the logs file.
+            max_messages: Maximum number of messages to buffer before flushing.
+            *args: Additional arguments to pass to the superclass.
+            **kwargs: Additional keyword arguments to pass to the superclass.
+        """
         self.artifact_store = artifact_store
         self.logs_uri = logs_uri
         self.max_messages = max_messages

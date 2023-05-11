@@ -205,6 +205,9 @@ def get_step_logs(
 
     Returns:
         The logs of the step.
+
+    Raises:
+        HTTPException: If no logs are available for this step.
     """
     store = zen_store()
     step_logs = store.get_run_step(step_id).step_logs
