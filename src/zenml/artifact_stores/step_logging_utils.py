@@ -87,7 +87,7 @@ def get_step_logging_handler(
         max_messages: The maximum number of messages before logs are uploaded.
         when: The unit of time to wait between logging.
         interval: The interval of time to wait between logging.
-        backupCount: The number of backups to keep.
+        backup_count: The number of backups to keep.
 
     Returns:
         The logging handler.
@@ -102,7 +102,7 @@ def get_step_logging_handler(
         max_messages=max_messages,
         when=when,
         interval=interval,
-        backupCount=backupCount,
+        backupCount=backup_count,
     )
     handler.setFormatter(formatter)
     return handler
