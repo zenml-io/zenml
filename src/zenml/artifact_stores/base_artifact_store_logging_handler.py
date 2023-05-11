@@ -17,7 +17,7 @@ import io
 import time
 from logging import LogRecord
 from logging.handlers import TimedRotatingFileHandler
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from zenml.io import fileio
 from zenml.logger import get_logger
@@ -37,13 +37,11 @@ LOGS_HANDLER_MAX_MESSAGES: int = 20
 class ArtifactStoreLoggingHandler(TimedRotatingFileHandler):
     """Handler for logging to artifact stores."""
 
-    def __init__(self, logs_uri: str, *args: Any, **kwargs: Any):
+    def __init__(self, logs_uri: str):
         """Initializes the handler.
 
         Args:
             logs_uri: URI of the logs file.
-            *args: Additional arguments to pass to the superclass.
-            **kwargs: Additional keyword arguments to pass to the superclass.
         """
         self.logs_uri = logs_uri
         self.max_messages = LOGS_HANDLER_MAX_MESSAGES
@@ -54,8 +52,6 @@ class ArtifactStoreLoggingHandler(TimedRotatingFileHandler):
             self.logs_uri,
             when="s",
             interval=LOGS_HANDLER_INTERVAL_SECONDS,
-            *args,
-            **kwargs
         )
 
     def emit(self, record: LogRecord) -> None:
