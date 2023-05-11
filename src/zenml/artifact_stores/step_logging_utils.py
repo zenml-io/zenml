@@ -61,7 +61,7 @@ def prepare_logs_uri(
     if not fileio.exists(logs_base_uri):
         fileio.makedirs(logs_base_uri)
 
-    # Check if the file already exists, if so, raise an error
+    # Delete the file if it already exists
     logs_uri = os.path.join(logs_base_uri, f"{log_key}.log")
     if fileio.exists(logs_uri):
         logger.warning(
@@ -77,7 +77,7 @@ def get_step_logging_handler(
     max_messages: int = 20,
     when: str = "s",
     interval: int = 2,
-    backupCount: int = 0,
+    backup_count: int = 0,
 ) -> ArtifactStoreLoggingHandler:
     """Sets up a logging handler for the artifact store.
 
