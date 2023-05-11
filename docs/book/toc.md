@@ -110,7 +110,7 @@
     * [Deploy with Docker](platform-guide/set-up-your-mlops-platform/deploy-zenml/deploy-with-docker.md)
     * [Deploy with Helm](platform-guide/set-up-your-mlops-platform/deploy-zenml/deploy-with-helm.md)
   * [User management](platform-guide/manage-the-deployed-services/collaborate.md)
-  * [Connect to your cloud provider](platform-guide/set-up-your-mlops-platform/connect-to-your-cloud-provider.md)
+  * [Connect ZenML to infrastructure](platform-guide/set-up-your-mlops-platform/connect-to-your-cloud-provider.md)
   * [Deploy and set up a cloud stack](platform-guide/set-up-your-mlops-platform/deploy-and-set-up-a-cloud-stack.md)
   * [Manage secrets](platform-guide/set-up-your-mlops-platform/secrets-management.md)
   * [Implement a custom stack component](platform-guide/set-up-your-mlops-platform/implement-a-custom-stack-component.md)
