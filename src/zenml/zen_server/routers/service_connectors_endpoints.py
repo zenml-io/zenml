@@ -183,6 +183,9 @@ def delete_service_connector(
     Args:
         connector_id: ID of the service connector.
         auth_context: Authentication context.
+
+    Raises:
+        KeyError: If the service connector does not exist or is not accessible.
     """
     connector = zen_store().get_service_connector(connector_id)
 
@@ -256,6 +259,9 @@ def validate_and_verify_service_connector(
     Returns:
         The list of resources that the service connector has access to, scoped
         to the supplied resource type and ID, if provided.
+
+    Raises:
+        KeyError: If the service connector does not exist or is not accessible.
     """
     connector = zen_store().get_service_connector(connector_id)
 
@@ -304,6 +310,9 @@ def get_service_connector_client(
     Returns:
         A service connector client that can be used to access the given
         resource.
+
+    Raises:
+        KeyError: If the service connector does not exist or is not accessible.
     """
     connector = zen_store().get_service_connector(connector_id)
 

@@ -32,6 +32,7 @@ from pydantic import (
     BaseModel,
     Field,
     SecretStr,
+    root_validator,
     validator,
 )
 
@@ -1079,11 +1080,13 @@ class ServiceConnectorFilterModel(ShareableWorkspaceScopedFilterModel):
         *ShareableWorkspaceScopedFilterModel.FILTER_EXCLUDE_FIELDS,
         "scope_type",
         "resource_type",
+        "labels_str",
         "labels",
     ]
     CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
         *ShareableWorkspaceScopedFilterModel.CLI_EXCLUDE_FIELDS,
         "scope_type",
+        "labels_str",
         "labels",
     ]
     scope_type: Optional[str] = Field(
@@ -1124,15 +1127,63 @@ class ServiceConnectorFilterModel(ShareableWorkspaceScopedFilterModel):
         title="Filter by the ID of the resource instance that the connector "
         "is configured to access",
     )
-    labels: Optional[Dict[str, Optional[str]]] = Field(
+    labels_str: Optional[str] = Field(
         default=None,
-        title="Filter by labels",
+        title="Filter by one or more labels. This field can be either a JSON "
+        "formatted dictionary of label names and values, where the values are "
+        'optional and can be set to None (e.g. `{"label1":"value1", "label2": '
+        "null}` ), or a comma-separated list of label names and values (e.g "
+        "`label1=value1,label2=`. If a label name is specified without a "
+        "value, the filter will match all service connectors that have that "
+        "label present, regardless of value.",
     )
     secret_id: Optional[Union[UUID, str]] = Field(
         default=None,
         title="Filter by the ID of the secret that contains the service "
         "connector's credentials",
     )
+
+    # Use this internally to configure and access the labels as a dictionary
+    labels: Optional[Dict[str, Optional[str]]] = Field(
+        default=None,
+        title="The labels to filter by, as a dictionary",
+    )
+
+    @root_validator
+    def validate_labels(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        """Parse the labels string into a label dictionary and vice-versa.
+
+        Args:
+            values: The values to validate.
+
+        Returns:
+            The validated values.
+        """
+        labels_str = values.get("labels_str")
+        labels = values.get("labels")
+        if labels_str is not None:
+            try:
+                values["labels"] = json.loads(labels_str)
+            except json.JSONDecodeError:
+                # Interpret as comma-separated values instead
+                values["labels"] = {
+                    label.split("=", 1)[0]: label.split("=", 1)[1]
+                    if "=" in label
+                    else None
+                    for label in labels_str.split(",")
+                }
+        elif labels is not None:
+            values["labels_str"] = json.dumps(values["labels"])
+
+        return values
+
+    class Config:
+        """Pydantic config class."""
+
+        # Exclude the labels field from the serialized response
+        # (it is only used internally). The labels_str field is a string
+        # representation of the labels that can be used in the API.
+        exclude = ["labels"]
 
 
 # ------- #
