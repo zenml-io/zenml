@@ -477,10 +477,10 @@ https://docs.aws.amazon.com/eks/latest/userguide/add-user-role.html
 If set, the resource name must identify an EKS cluster using one of the
 following formats:
 
-- ECR cluster name: <cluster-name>
+- EKS cluster name: <cluster-name>
 - EKS cluster ARN: arn:aws:eks:<region>:<account-id>:cluster/<cluster-name>
 
-EKS registry names are region scoped. The connector can only be used to access
+EKS cluster names are region scoped. The connector can only be used to access
 EKS clusters in the AWS region that it is configured to use.
 """,
             auth_methods=AWSAuthenticationMethods.values(),

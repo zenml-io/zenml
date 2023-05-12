@@ -100,8 +100,12 @@ azure-keyvault-secrets = { version=">=4.0.0", optional = true }
 # Optional dependencies for the HashiCorp Vault secrets store
 hvac = { version=">=0.11.2", optional = true }
 
-# Optional dependencies for the built-in connectors
+# Optional dependencies for the Kubernetes connector
 kubernetes = { version=">=18.20.0", optional = true }
+
+# Optional dependencies for the GCP connector
+google-cloud-container = { version=">=2.21.0", optional = true }
+google-cloud-storage = { version=">=2.9.0", optional = true }
 
 # Optional dependencies for the S3 artifact store
 s3fs = {version = "2022.11.0", optional = true}
@@ -163,7 +167,8 @@ s3fs = ["s3fs"]
 gcsfs = ["gcsfs"]
 adlfs = ["adlfs"]
 connectors-kubernetes = ["kubernetes"]
-connectors-aws = ["boto3"]
+connectors-aws = ["boto3", "kubernetes"]
+connectors-gcp = ["google-cloud-container", "google-cloud-storage", "kubernetes"]
 dev = ["black", "ruff", "coverage", "pytest", "mypy", "pre-commit", "pyment", "tox", "hypothesis", "typing-extensions", "darglint", "pytest-randomly", "pytest-mock", "pytest-clarity", "mkdocs", "mkdocs-material", "mkdocs-awesome-pages-plugin", "mkdocstrings", "mike", "types-certifi", "types-croniter", "types-futures", "types-Markdown", "types-Pillow", "types-protobuf", "types-PyMySQL", "types-python-dateutil", "types-python-slugify", "types-PyYAML", "types-redis", "types-requests", "types-setuptools", "types-six", "types-termcolor", "types-psutil", "docker-compose"]
 
 [build-system]

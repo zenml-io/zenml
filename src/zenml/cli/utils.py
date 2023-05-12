@@ -1696,7 +1696,9 @@ def print_service_connector_type(
         The MarkDown service connector type details as a string.
     """
     message = f"{title}\n" if title else ""
-    supported_auth_methods = list(connector_type.auth_method_map.keys())
+    supported_auth_methods = [
+        f'{Emoji("lock")} {a.auth_method}' for a in connector_type.auth_methods
+    ]
     supported_resource_types = [
         f'{Emoji(r.emoji.strip(":"))} {r.resource_type}'
         if r.emoji
@@ -1713,8 +1715,9 @@ def print_service_connector_type(
         f"(connector type: {connector_type.connector_type})\n"
     )
     message += (
-        f"**Authentication methods**: "
-        f"{', '.join(supported_auth_methods)}\n\n"
+        "**Authentication methods**:\n\n- "
+        + "\n- ".join(supported_auth_methods)
+        + "\n\n"
     )
     message += (
         "**Resource types**:\n\n- "
