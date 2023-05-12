@@ -1,0 +1,162 @@
+---
+description: How to register and use secrets
+---
+
+# Use the Secret Store
+
+## What is a ZenML secret
+
+ZenML secrets are groupings of **key-value pairs** which are securely stored in the ZenML secrets store. Additionally, a secret always has a **name** which allows you to fetch or reference them in your pipelines and stacks.
+
+{% hint style="warning" %}
+We are deprecating Secrets Managers in favor of [the centralized ZenML secrets store](./#centralized-secrets-store). Going forward, we recommend using the ZenML secrets store instead of secrets manager stack components to configure and store secrets. [Referencing secrets in your pipelines and stacks](./#how-to-use-registered-secrets) works the same way regardless of whether you are using a secrets manager or the centralized secrets store. If you already use secrets managers to manage your secrets, please use the provided `zenml secrets-manager secrets migrate` CLI command to migrate your secrets to the centralized secrets store.
+{% endhint %}
+
+## Centralized secrets store
+
+ZenML provides a centralized secrets management system that allows you to register and manage secrets in a secure way. In a local ZenML deployment, the secrets are stored in the local SQLite database. Once you are connected to a remote ZenML server, the secrets are stored in the secrets management back-end that the server is configured to use, but all access to the secrets is done through the ZenML server API.
+
+Currently, the ZenML server can be configured to use one of the following supported secrets store back-ends:
+
+* the SQL database that the ZenML server is using to store other managed objects such as pipelines, stacks, etc. This is the default option.
+* the AWS Secrets Manager
+* the GCP Secret Manager
+* the Azure Key Vault
+* the HashiCorp Vault
+* a custom secrets store back-end implementation is also supported
+
+Configuring the specific secrets store back-end that the ZenML server uses is done at deployment time. For more information on how to deploy a ZenML server and configure the secrets store back-end, refer to the [deployment guide](../../../getting-started/deploying-zenml/deploying-zenml.md).
+
+## How to create a secret&#x20;
+
+### Through the CLI
+
+To create a secret with name `<SECRET_NAME>` and a key-value pair, you can run the following CLI command:
+
+```shell
+zenml secret create <SECRET_NAME> \
+    --<KEY_1>=<VALUE_1> \
+    --<KEY_2>=<VALUE_2>
+```
+
+Alternatively, you can create the secret in an interactive session (in which ZenML will query you for the secret keys and values) by passing the `--interactive/-i` parameter:
+
+```shell
+zenml secret create <SECRET_NAME> -i
+```
+
+For secret values that are too big to pass as a command line argument, or have special characters, you can also use the special `@` syntax to indicate to ZenML that the value needs to be read from a file:
+
+```bash
+zenml secret create <SECRET_NAME> \
+   --key=@path/to/file.txt \
+   ...
+```
+
+The CLI also includes commands that can be used to list, update and delete secrets. A full guide on using the CLI to create, access, update and delete secrets is available [here](https://apidocs.zenml.io/latest/cli/#zenml.cli--secrets-management).
+
+### Interactively register missing secrets for your stack
+
+If you're using components with [secret references](./#reference-secrets-in-stack-component-attributes-and-settings) in your stack, you need to make sure that the stack contains a [secrets manager](../../../learning/component-gallery/secrets-managers/secrets-managers.md) and all the referenced secrets exist in this secrets manager. To make this process easier, you can use the following CLI command to interactively register all secrets for a stack:
+
+```shell
+zenml stack register-secrets [<STACK_NAME>]
+```
+
+### Through the Python SDK
+
+The ZenML client API offers a programmatic interface to create, e.g.:
+
+```python
+from zenml.client import Client
+
+client = Client()
+client.create_secret(
+    name = "my_secret",
+    values = {
+        "username": "admin",
+        "password": "abc123"
+    }
+)
+```
+
+Other Client methods used for secrets management include `get_secret` to fetch a secret by name or id, `update_secret` to update an existing secret, `list_secrets` to query the secrets store using a variety of filtering and sorting criteria and `delete_secret` to delete a secret. The full Client API reference is available [here](https://apidocs.zenml.io/latest/core\_code\_docs/core-client/).
+
+## Set scope for secrets
+
+ZenML secrets can be scoped to a workspace or a user. This allows you to create secrets that are only accessible within a specific workspace or to one user.
+
+By default, all created secrets are scoped to the active workspace. To create a secret and scope it to your active user instead, you can pass the `--scope` argument to the CLI command:
+
+```shell
+zenml secret create <SECRET_NAME> \
+    --scope user \
+    --<KEY_1>=<VALUE_1> \
+    --<KEY_2>=<VALUE_2>
+```
+
+Scopes also act as individual namespaces. When you are referencing a secret by name in your pipelines and stacks, ZenML will first look for a secret with that name scoped to the active user, and if it doesn't find one, it will look for one in the active workspace.
+
+## Accessing registered secrets
+
+### Reference secrets in stack component attributes and settings
+
+Some of the components in your stack require you to configure them with sensitive information like passwords or tokens so they can connect to the underlying infrastructure. Secret references allow you to configure these components in a secure way by not specifying the value directly but instead referencing a secret by providing the secret name and key. Referencing a secret for the value of any string attribute of your stack components, simply specify the attribute using the following syntax: `{{<SECRET_NAME>.<SECRET_KEY>}}`
+
+For example:
+
+```shell
+# Register a secret called `mlflow_secret` with key-value pairs for the
+# username and password to authenticate with the MLflow tracking server
+
+# Using central secrets management
+zenml secret create mlflow_secret \
+    --username=admin \
+    --password=abc123
+
+
+# Then reference the username and password in our experiment tracker component
+zenml experiment-tracker register mlflow \
+    --flavor=mlflow \
+    --tracking_username={{mlflow_secret.username}} \
+    --tracking_password={{mlflow_secret.password}} \
+    ...
+```
+
+When using secret references in your stack, ZenML will validate that all secrets and keys referenced in your stack components exist before running a pipeline. This helps us fail early so your pipeline doesn't fail after running for some time due to some missing secret.
+
+This validation by default needs to fetch and read every secret to make sure that both the secret and the specified key-value pair exist. This can take quite some time and might fail if you don't have the permissions to read secrets.
+
+You can use the environment variable `ZENML_SECRET_VALIDATION_LEVEL` to disable or control the degree to which ZenML validates your secrets:
+
+* Setting it to `NONE` disables any validation.
+* Setting it to `SECRET_EXISTS` only validates the existence of secrets. This might be useful if the machine you're running on only has permissions to list secrets but not actually read their values.
+* Setting it to `SECRET_AND_KEY_EXISTS` (the default) validates both the secret existence as well as the existence of the exact key-value pair.
+
+{% hint style="warning" %}
+If you have secrets registered through both the [centralized secrets management](./#centralized-secrets-store) and [a secrets manager](./#secrets-management-with-secrets-managers), ZenML will first try to fetch the secret from the centralized secrets management and only fall back to the secrets manager if the secret is not found. This means that if you have a secret registered with the same name in both the centralized secrets store and the secrets manager, the secret registered in the secrets store will take precedence.
+{% endhint %}
+
+### Fetch secret values in a step
+
+If you are using [centralized secrets management](./#centralized-secrets-store), you can access secrets directly from within your steps through the ZenML `Client` API. This allows you to use your secrets for querying APIs from within your step without hard-coding your access keys:
+
+```python
+from zenml.steps import step
+from zenml.client import Client
+
+@step
+def secret_loader() -> None:
+    """Load the example secret from the server."""
+    # Fetch the secret from ZenML.
+    secret = Client().get_secret(<SECRET_NAME>)
+
+    # `secret.secret_values` will contain a dictionary with all key-value
+    # pairs within your secret.
+    authenticate_to_some_api(
+        username = secret.secret_values["username"],
+        password = secret.secret_values["password"],
+    )
+    ...
+```
+
