@@ -181,20 +181,17 @@ These are some of the advantages of linking an S3 Artifact Store, or any Stack C
 
 ### Terminology
 
-As with any high-level abstraction, some terminology is needed to express the concepts and operations involved. In spite of the fact that Service Connectors cover such a large area of application as authentication and authorization for a variety of resources from a range of different vendors, we managed to keep this abstraction clean and simple. In the following sections, you'll learn more about:
+As with any high-level abstraction, some terminology is needed to express the concepts and operations involved. In spite of the fact that Service Connectors cover such a large area of application as authentication and authorization for a variety of resources from a range of different vendors, we managed to keep this abstraction clean and simple. In the following expandable sections, you'll learn more about Service Connector Types, Resource Types, Resource Names and Service Connectors.
 
-* Service Connector Types
-* Resource Types
-* Resource Names (also known as Resource IDs)
-* Service Connectors
+<details>
 
-#### Service Connector Type
+<summary>Service Connector Types</summary>
 
 This term is used to represent and identify a particular Service Connector implementation and answer questions about its capabilities such as "what types of resources does this Service Connector give me access to", "what authentication methods does it support" and "what credentials and other information do I need to configure for it". This is analogous to the role Flavors play for Stack Components in that the Service Connector Type acts as the template from which one or more Service Connectors are created.
 
 For example, the built-in AWS Service Connector Type shipped with ZenML supports a rich variety of authentication methods and provides access to AWS resources such as S3 buckets, EKS clusters and ECR registries.&#x20;
 
-The `zenml service-connector list-types` and `zenml service-connector describe-type` CLI commands can be used to explore the Service Connector Types available with your ZenML deployment. Extensive documentation is included covering supported authentication methods and resource types. The following are just some examples:
+The `zenml service-connector list-types` and `zenml service-connector describe-type` CLI commands can be used to explore the Service Connector Types available with your ZenML deployment. Extensive documentation is included covering supported authentication methods and Resource Types. The following are just some examples:
 
 ```sh
 $ zenml service-connector list-types
@@ -221,8 +218,14 @@ $ zenml service-connector describe-type aws
 ║                🔶 AWS Service Connector (connector type: aws)                ║
 ╚══════════════════════════════════════════════════════════════════════════════╝
                                                                                 
-Authentication methods: implicit, secret-key, sts-token, iam-role,              
-session-token, federation-token                                                 
+Authentication methods:                                                         
+                                                                                
+ • 🔒 implicit                                                                  
+ • 🔒 secret-key                                                                
+ • 🔒 sts-token                                                                 
+ • 🔒 iam-role                                                                  
+ • 🔒 session-token                                                             
+ • 🔒 federation-token                                                          
                                                                                 
 Resource types:                                                                 
                                                                                 
@@ -308,7 +311,11 @@ AWS Federation Token authentication method.
 ────────────────────────────────────────────────────────────────────────────────
 ```
 
-#### Resource Type
+</details>
+
+<details>
+
+<summary>Resource Types</summary>
 
 Resource Types are just a way of organizing resources into logical classes based on the standard and/or protocol used to access them, or simply based on their vendor. This creates a unified language that can be used to declare the types of resources that are provided by Service Connectors on one hand and the types of resources that are required by Stack Components on the other hand.
 
@@ -359,7 +366,11 @@ $ zenml service-connector list --resource_type kubernetes-cluster
 ┗━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━┷━━━━━━━━━┷━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━┛
 ```
 
-#### Resource Names (Resource IDs)
+</details>
+
+<details>
+
+<summary>Resource Names (also known as Resource IDs)</summary>
 
 If a Resource Type is used to identify a class of resources supported by a Service Connector, we also need some way to uniquely identify each resource instance belonging to that class that a Service Connector can provide access to. For example, an AWS Service Connector can be configured to provide access to multiple S3 buckets identifiable by their bucket names or their `s3://bucket-name` formatted URIs. Similarly, an AWS Service Connector can be configured to provide access to multiple EKS Kubernetes clusters in the same AWS region, each uniquely identifiable by their EKS cluster name. This is what we call Resource Names.
 
@@ -390,5 +401,17 @@ The following resources can be accessed by service connectors configured in your
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 ```
 
-#### Service Connectors
+</details>
 
+<details>
+
+<summary>Service Connectors</summary>
+
+The Service Connector is how you configure ZenML to authenticate and connect to one or more external resources. It stores the required configuration and security credentials and can optionally be scoped with a Resource Type and a Resource Name.
+
+Depending on the Service Connector Type implementation, a Service Connector instance can be configured in one of the following modes regarding the types and number of resources that it has access to:
+
+* a **multi-type** Service Connector instance that can be configured once and used to gain access to multiple types of resources. This is only possible with Service Connector Types that support multiple Resource Types to begin with, such as those that target multi-service cloud providers such as AWS, GCP and Azure. In contrast, a **single-type** Service Connector can only be used with a single Resource Type. To configure a multi-type Service Connector, you can simply skip scoping its Resource Type during registration.
+* a **multi-instance** Service Connector instance can be configured once and used to gain access to multiple resources of the same type, each identifiable by a Resource Name. Not all types of connectors and not all types of resources support multiple instances. Some Service Connectors Types like the generic Kubernetes and Docker connector types only allow **single-instance** configurations: a Service Connector instance can only be used to access a single Kubernetes cluster and a single Docker registry. To configure a multi-instance Service Connector, you can simply skip scoping its Resource Name during registration.
+
+</details>
