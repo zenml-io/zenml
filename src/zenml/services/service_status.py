@@ -15,8 +15,8 @@
 
 from typing import Optional
 
+from zenml.enums import StrEnum
 from zenml.logger import get_logger
-from zenml.utils.enum_utils import StrEnum
 from zenml.utils.typed_model import BaseTypedModel
 
 logger = get_logger(__name__)

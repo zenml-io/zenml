@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Zen Store enums."""
 
-from zenml.utils.enum_utils import StrEnum
+from zenml.enums import StrEnum
 
 
 class StoreEvent(StrEnum):

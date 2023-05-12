@@ -19,7 +19,7 @@ from uuid import UUID
 
 from pydantic import BaseModel
 
-from zenml.utils.enum_utils import StrEnum
+from zenml.enums import StrEnum
 
 
 class PluginStatus(StrEnum):

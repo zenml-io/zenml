@@ -27,12 +27,11 @@ from typing import (
 
 from pydantic import root_validator
 
-from zenml.enums import StackComponentType
+from zenml.enums import StackComponentType, StrEnum
 from zenml.logger import get_logger
 from zenml.stack import Flavor, StackComponent
 from zenml.stack.stack_component import StackComponentConfig
 from zenml.utils import secret_utils
-from zenml.utils.enum_utils import StrEnum
 
 if TYPE_CHECKING:
     from zenml.secret.base_secret import BaseSecretSchema

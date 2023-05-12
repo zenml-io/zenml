@@ -17,8 +17,7 @@ from uuid import UUID, uuid4
 
 from pydantic import BaseModel, Field
 
-from zenml.enums import SecretsStoreType
-from zenml.utils.enum_utils import StrEnum
+from zenml.enums import SecretsStoreType, StrEnum
 
 
 class ServerDeploymentType(StrEnum):

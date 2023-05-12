@@ -63,6 +63,7 @@ from zenml.enums import (
     SorterOps,
     StackComponentType,
     StoreType,
+    StrEnum,
 )
 from zenml.exceptions import (
     EntityExistsError,
@@ -150,7 +151,6 @@ from zenml.models.server_models import ServerDatabaseType, ServerModel
 from zenml.stack.flavor_registry import FlavorRegistry
 from zenml.utils import uuid_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track
-from zenml.utils.enum_utils import StrEnum
 from zenml.utils.networking_utils import (
     replace_localhost_with_internal_hostname,
 )

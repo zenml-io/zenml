@@ -28,12 +28,11 @@ from fastapi.security import (
 from pydantic import BaseModel
 
 from zenml.constants import API, ENV_ZENML_AUTH_TYPE, LOGIN, VERSION_1
-from zenml.enums import PermissionType
+from zenml.enums import PermissionType, StrEnum
 from zenml.exceptions import AuthorizationException
 from zenml.logger import get_logger
 from zenml.models import UserResponseModel
 from zenml.models.user_models import JWTToken, JWTTokenType, UserAuthModel
-from zenml.utils.enum_utils import StrEnum
 from zenml.zen_server.utils import ROOT_URL_PATH, zen_store
 from zenml.zen_stores.base_zen_store import DEFAULT_USERNAME
 
