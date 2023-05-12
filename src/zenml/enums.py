@@ -226,3 +226,11 @@ class OperatingSystemType(StrEnum):
     LINUX = "Linux"
     WINDOWS = "Windows"
     MACOS = "Darwin"
+
+
+class SourceContextTypes(StrEnum):
+    CLI = "cli"
+    PYTHON = "python"
+    DASHBOARD = "dashboard"
+    API = "api"
+    UNKNOWN = "unknown"
