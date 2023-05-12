@@ -2011,6 +2011,11 @@ class RestZenStore(BaseZenStore):
             The parsed response.
         """
         params = {k: str(v) for k, v in params.items()} if params else {}
+
+        self.session.headers.update(
+            {zenml.source_context.name: zenml.source_context.get().value}
+        )
+
         try:
             return self._handle_response(
                 self.session.request(
