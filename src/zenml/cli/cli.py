@@ -20,10 +20,10 @@ import click
 import rich
 from click import Command, Context, formatting
 
-from zenml import __version__
+from zenml import __version__, source_context
 from zenml.cli.formatter import ZenFormatter
 from zenml.client import Client
-from zenml.enums import CliCategories
+from zenml.enums import CliCategories, SourceContextTypes
 from zenml.logger import set_root_verbosity
 from zenml.utils import source_utils
 
@@ -132,7 +132,7 @@ class ZenMLCLI(click.Group):
                 )
             )
             rows: List[Tuple[str, str, str]] = []
-            for (tag, subcommand, cmd) in commands:
+            for tag, subcommand, cmd in commands:
                 help_ = cmd.get_short_help_str(limit=formatter.width)
                 rows.append((tag.value, subcommand, help_))
             if rows:
@@ -148,6 +148,7 @@ class ZenMLCLI(click.Group):
 def cli() -> None:
     """CLI base command for ZenML."""
     set_root_verbosity()
+    source_context.set(SourceContextTypes.CLI)
     repo_root = Client.find_repository()
     if not repo_root:
         # If we're not inside a ZenML repository, use the current working
