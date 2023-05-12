@@ -96,6 +96,14 @@ Successfully registered service connector `aws-auto` with access to the followin
 
 ```
 
+{% hint style="info" %}
+The ZenML CLI provides an even easier and more interactive way of registering Service Connectors. Just use the `-i` command line argument and follow the interactive guide:
+
+```
+zenml service-connector register -i
+```
+{% endhint %}
+
 The third step is preparing to configure the Stack Components and Stacks that you will use to run pipelines, the same way you would do it without Service Connectors, but this time you have the option of _<mark style="color:purple;">discovering which remote resources are available</mark>_ for you to use. For example, if you needed an S3 bucket for your S3 Artifact Store, you could run the following CLI command, which is the same as asking "_which S3 buckets am I authorized to access through ZenML ?_". The result is a list of resource names, identifying those S3 buckets:
 
 ```sh
@@ -129,7 +137,13 @@ Successfully connected artifact store `s3-zenfiles` to the following resources:
 
 ```
 
+{% hint style="info" %}
+The ZenML CLI provides an even easier and more interactive way of connecting a stack component to an external resource. Just pass the `-i` command line argument and follow the interactive guide:
 
+```
+zenml artifact-store connect -i
+```
+{% endhint %}
 
 At this point, you may wonder why you would need to do all this extra work when you could have simply configured your S3 Artifact Store with embedded AWS credentials or referencing AWS credentials in a ZenML secret, like this:
 
@@ -157,18 +171,224 @@ Successfully registered artifact_store `s3-zenfiles`.
 
 ```
 
-These are some of the advantages of linking an S3 Artifact Store (any Stack Component for that matter) to a Service Connector:
+These are some of the advantages of linking an S3 Artifact Store, or any Stack Component for that matter, to an external resource using a Service Connector:
 
-* the S3 Artifact Store can be used in any ZenML Stack, by any person or automated process with access to your ZenML server, on any machine or virtual environment without the need to install or configure the AWS CLI or any AWS credentials. In other cases, this extends to other CLIs/SDKs in addition to AWS (e.g. the Kubernetes `kubectl` client).
+* the S3 Artifact Store can be used in any ZenML Stack, by any person or automated process with access to your ZenML server, on any machine or virtual environment without the need to install or configure the AWS CLI or any AWS credentials. In other cases, this extends to other CLIs/SDKs in addition to AWS (e.g. the Kubernetes `kubectl` CLI).
 * setting up AWS accounts, permissions and configuring the Service Connector (first and second steps) can be done by someone with expertise in infrastructure management, while creating and using the S3 Artifact Store (third and following steps) can be done by anyone without any such knowledge.
-* you can create and connect any number of S3 Artifact Stores and other types of Stack Components (e.g. Kubernetes/Kubeflow/Tekton Orchestrators, Container Registries) to the AWS resources accessible through the Service Connector, but you only had to configure the Service Connector once.
-* if your need to make any changes to the AWS authentication configuration (e.g. refresh expired credentials or remove leaked credentials) you only need to update the Service Connector and the changes will automatically be appliet to all Stack Components linked to it.
+* you can create and connect any number of S3 Artifact Stores and other types of Stack Components (e.g. Kubernetes/Kubeflow/Tekton Orchestrators, Container Registries) to the AWS resources accessible through the Service Connector, but you only have to configure the Service Connector once.
+* if your need to make any changes to the AWS authentication configuration (e.g. refresh expired credentials or remove leaked credentials) you only need to update the Service Connector and the changes will automatically be applied to all Stack Components linked to it.
 * this last point is only useful if you're really serious about implementing security best practices: the AWS Service Connector in particular, as well as other cloud provider Service Connectors can automatically generate, distribute and refresh short-lived AWS security credentials for its clients. This keeps long-lived credentials like AWS Secret Keys safely stored on the ZenML Server while the actual workloads and people directly accessing those AWS resources are issued temporary, least-privilege credentials like AWS STS Tokens. This tremendously reduces the impact of potential security incidents.
 
 ### Terminology
 
+As with any high-level abstraction, some terminology is needed to express the concepts and operations involved. In spite of the fact that Service Connectors cover such a large area of application as authentication and authorization for a variety of resources from a range of different vendors, we managed to keep this abstraction clean and simple. In the following sections, you'll learn more about:
 
+* Service Connector Types
+* Resource Types
+* Resource Names (also known as Resource IDs)
+* Service Connectors
 
+#### Service Connector Type
 
+This term is used to represent and identify a particular Service Connector implementation and answer questions about its capabilities such as "what types of resources does this Service Connector give me access to", "what authentication methods does it support" and "what credentials and other information do I need to configure for it". This is analogous to the role Flavors play for Stack Components in that the Service Connector Type acts as the template from which one or more Service Connectors are created.
 
-:construction: WIP:construction:
+For example, the built-in AWS Service Connector Type shipped with ZenML supports a rich variety of authentication methods and provides access to AWS resources such as S3 buckets, EKS clusters and ECR registries.&#x20;
+
+The `zenml service-connector list-types` and `zenml service-connector describe-type` CLI commands can be used to explore the Service Connector Types available with your ZenML deployment. Extensive documentation is included covering supported authentication methods and resource types. The following are just some examples:
+
+```sh
+$ zenml service-connector list-types
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━┯━━━━━━━┯━━━━━━━━┓
+┃             NAME             │ TYPE          │ RESOURCE TYPES        │ AUTH METHODS     │ LOCAL │ REMOTE ┃
+┠──────────────────────────────┼───────────────┼───────────────────────┼──────────────────┼───────┼────────┨
+┃ Kubernetes Service Connector │ 🌀 kubernetes │ 🌀 kubernetes-cluster │ password         │ ✅    │ ✅     ┃
+┃                              │               │                       │ token            │       │        ┃
+┠──────────────────────────────┼───────────────┼───────────────────────┼──────────────────┼───────┼────────┨
+┃   Docker Service Connector   │ 🐳 docker     │ 🐳 docker-registry    │ password         │ ✅    │ ✅     ┃
+┠──────────────────────────────┼───────────────┼───────────────────────┼──────────────────┼───────┼────────┨
+┃    AWS Service Connector     │ 🔶 aws        │ 🔶 aws-generic        │ implicit         │ ✅    │ ✅     ┃
+┃                              │               │ 📦 s3-bucket          │ secret-key       │       │        ┃
+┃                              │               │ 🌀 kubernetes-cluster │ sts-token        │       │        ┃
+┃                              │               │ 🐳 docker-registry    │ iam-role         │       │        ┃
+┃                              │               │                       │ session-token    │       │        ┃
+┃                              │               │                       │ federation-token │       │        ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━┷━━━━━━━┷━━━━━━━━┛
+```
+
+```sh
+$ zenml service-connector describe-type aws
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                🔶 AWS Service Connector (connector type: aws)                ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+                                                                                
+Authentication methods: implicit, secret-key, sts-token, iam-role,              
+session-token, federation-token                                                 
+                                                                                
+Resource types:                                                                 
+                                                                                
+ • 🔶 aws-generic                                                               
+ • 📦 s3-bucket                                                                 
+ • 🌀 kubernetes-cluster                                                        
+ • 🐳 docker-registry                                                           
+                                                                                
+Supports auto-configuration: True 
+Available locally: True           
+Available remotely: True          
+                                                                                
+This ZenML AWS service connector facilitates connecting to, authenticating to   
+and accessing managed AWS services, such as S3 buckets, ECR repositories and EKS
+clusters. Explicit long-lived AWS credentials are supported, as well as         
+temporary STS security tokens. The connector also supports auto-configuration by
+discovering and using credentials configured on a local environment.            
+                                                                                
+The connector can be used to access to any generic AWS service, such as S3, ECR,
+EKS, EC2, etc. by providing pre-authenticated boto3 sessions for these services.
+In addition to authenticating to AWS services, the connector is able to manage  
+specialized authentication for Docker and Kubernetes Python clients and also    
+allows configuration of local Docker and Kubernetes clients.                    
+                                                                                
+────────────────────────────────────────────────────────────────────────────────
+
+```
+
+```sh
+$ zenml service-connector describe-type aws --resource-type s3-bucket
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                 📦 AWS S3 bucket (resource type: s3-bucket)                  ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+                                                                                
+Authentication methods: implicit, secret-key, sts-token, iam-role,              
+session-token, federation-token                                                 
+                                                                                
+Supports resource instances: True                                               
+                                                                                
+Allows users to connect to S3 buckets. When used by connector consumers, they   
+are provided a pre-configured boto3 S3 client instance.                         
+                                                                                
+The configured credentials must have at least the following S3 permissions:     
+                                                                                
+ • s3:ListBucket                                                                
+ • s3:GetObject                                                                 
+ • s3:PutObject                                                                 
+ • s3:DeleteObject                                                              
+ • s3:ListAllMyBuckets                                                          
+                                                                                
+If set, the resource name must identify an S3 bucket using one of the following 
+formats:                                                                        
+                                                                                
+ • S3 bucket URI: s3://<bucket-name>                                            
+ • S3 bucket ARN: arn:aws:s3:::<bucket-name>                                    
+ • S3 bucket name: <bucket-name>                                                
+                                                                                
+────────────────────────────────────────────────────────────────────────────────
+
+```
+
+```sh
+$ zenml service-connector describe-type aws --auth-method secret-key
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                 🔒 AWS Secret Key (auth method: secret-key)                   ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+                                                                                
+Supports issuing temporary credentials: False                                   
+                                                                                
+Long-lived AWS credentials consisting of an access key ID and secret access key 
+associated with an IAM user or AWS account root user (not recommended). This    
+method is preferred during development and testing due to its simplicity and    
+ease of use. It is not recommended as a direct authentication method for        
+production use cases because the clients are granted the full set of permissions
+of the IAM user or AWS account root user associated with the credentials.       
+                                                                                
+An AWS region is required and the connector may only be used to access AWS      
+resources in the specified region.                                              
+                                                                                
+For production, it is recommended to use the AWS IAM Role, AWS Session Token or 
+AWS Federation Token authentication method.                                     
+                                                                                
+────────────────────────────────────────────────────────────────────────────────
+```
+
+#### Resource Type
+
+Resource Types are just a way of organizing resources into logical classes based on the standard and/or protocol used to access them, or simply based on their vendor. This creates a unified language that can be used to declare the types of resources that are provided by Service Connectors on one hand and the types of resources that are required by Stack Components on the other hand.
+
+For example, we use the generic "Kubernetes Cluster" resource type to refer to any and all Kubernetes clusters, since they are all generally accessible using the same standard libraries, clients and API regardless of whether they are Amazon EKS, Google GKE, Azure AKS or another flavor of managed or self-hosted deployment. Similarly, there is a generic "Docker Registry" resource type that covers any and all container registries that implement the Docker/OCI interface, be it DockerHub, Amazon ECR, Google GCR, Azure ACR, K3D or something similar. Stack Components that need to connect to a Kubernetes cluster (e.g. the Kubernetes Orchestrator or the KServe Model Deployer) can use the "Kubernetes Cluster" resource type identifier to describe their resource requirements and remain agnostic of their vendor.
+
+The term Resource Type is used in ZenML everywhere resources accessible through Service Connectors are involved. For example, to list all Service Connector Types that can be used to broker access to Kubernetes Clusters, you can pass the `--resource-type` flag to the CLI command:
+
+```sh
+$ zenml service-connector list-types --resource-type kubernetes-cluster
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━┯━━━━━━━┯━━━━━━━━┓
+┃             NAME             │ TYPE          │ RESOURCE TYPES        │ AUTH METHODS     │ LOCAL │ REMOTE ┃
+┠──────────────────────────────┼───────────────┼───────────────────────┼──────────────────┼───────┼────────┨
+┃ Kubernetes Service Connector │ 🌀 kubernetes │ 🌀 kubernetes-cluster │ password         │ ✅    │ ✅     ┃
+┃                              │               │                       │ token            │       │        ┃
+┠──────────────────────────────┼───────────────┼───────────────────────┼──────────────────┼───────┼────────┨
+┃    AWS Service Connector     │ 🔶 aws        │ 🔶 aws-generic        │ implicit         │ ✅    │ ✅     ┃
+┃                              │               │ 📦 s3-bucket          │ secret-key       │       │        ┃
+┃                              │               │ 🌀 kubernetes-cluster │ sts-token        │       │        ┃
+┃                              │               │ 🐳 docker-registry    │ iam-role         │       │        ┃
+┃                              │               │                       │ session-token    │       │        ┃
+┃                              │               │                       │ federation-token │       │        ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━┷━━━━━━━┷━━━━━━━━┛
+
+```
+
+From the above, you can see that there are not one but two Service Connector Types that can connect ZenML to Kubernetes clusters: one deals exclusively with AWS EKS managed Kubernetes clusters, the other one is a generic implementation that can be used with any standard Kubernetes cluster, including those that run on-premise.
+
+Conversely, to list all currently registered Service Connector instances that provide access to Kubernetes clusters:
+
+```sh
+$ zenml service-connector list --resource_type kubernetes-cluster
+┏━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━┯━━━━━━━━━┯━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━┓
+┃ ACTIVE │ NAME                  │ ID                           │ TYPE          │ RESOURCE TYPES        │ RESOURCE NAME                │ SHARED │ OWNER   │ EXPIRES IN │ LABELS              ┃
+┠────────┼───────────────────────┼──────────────────────────────┼───────────────┼───────────────────────┼──────────────────────────────┼────────┼─────────┼────────────┼─────────────────────┨
+┃        │ aws-iam-multi-eu      │ e33c9fac-5daa-48b2-87bb-0187 │ 🔶 aws        │ 🔶 aws-generic        │ <multiple>                   │ ➖     │ default │            │ region:eu-central-1 ┃
+┃        │                       │ d3782cde                     │               │ 📦 s3-bucket          │                              │        │         │            │                     ┃
+┃        │                       │                              │               │ 🌀 kubernetes-cluster │                              │        │         │            │                     ┃
+┃        │                       │                              │               │ 🐳 docker-registry    │                              │        │         │            │                     ┃
+┠────────┼───────────────────────┼──────────────────────────────┼───────────────┼───────────────────────┼──────────────────────────────┼────────┼─────────┼────────────┼─────────────────────┨
+┃        │ aws-iam-multi-us      │ ed528d5a-d6cb-4fc4-bc52-c3d2 │ 🔶 aws        │ 🔶 aws-generic        │ <multiple>                   │ ➖     │ default │            │ region:us-east-1    ┃
+┃        │                       │ d01643e5                     │               │ 📦 s3-bucket          │                              │        │         │            │                     ┃
+┃        │                       │                              │               │ 🌀 kubernetes-cluster │                              │        │         │            │                     ┃
+┃        │                       │                              │               │ 🐳 docker-registry    │                              │        │         │            │                     ┃
+┠────────┼───────────────────────┼──────────────────────────────┼───────────────┼───────────────────────┼──────────────────────────────┼────────┼─────────┼────────────┼─────────────────────┨
+┃        │ kube-auto             │ da497715-7502-4cdd-81ed-289e │ 🌀 kubernetes │ 🌀 kubernetes-cluster │ A5F8F4142FB12DDCDE9F21F6E9B0 │ ➖     │ default │            │                     ┃
+┃        │                       │ 70664597                     │               │                       │ 7A18.gr7.us-east-1.eks.amazo │        │         │            │                     ┃
+┃        │                       │                              │               │                       │ naws.com                     │        │         │            │                     ┃
+┗━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━┷━━━━━━━━━┷━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━┛
+```
+
+#### Resource Names (Resource IDs)
+
+If a Resource Type is used to identify a class of resources supported by a Service Connector, we also need some way to uniquely identify each resource instance belonging to that class that a Service Connector can provide access to. For example, an AWS Service Connector can be configured to provide access to multiple S3 buckets identifiable by their bucket names or their `s3://bucket-name` formatted URIs. Similarly, an AWS Service Connector can be configured to provide access to multiple EKS Kubernetes clusters in the same AWS region, each uniquely identifiable by their EKS cluster name. This is what we call Resource Names.
+
+Resource Names make it generally easy to identify a particular resource instance accessible through a Service Connector, especially when used together with the Service Connector name and the Resource Type. The following ZenML CLI command output shows a few examples featuring Resource Names for S3 buckets, EKS clusters, ECR registries and general Kubernetes clusters. As you can see, the way we name resources varies from implementation to implementation and resource type to resource type:
+
+```sh
+$ zenml service-connector list-resources
+The following resources can be accessed by service connectors configured in your workspace:
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃             CONNECTOR ID             │ CONNECTOR NAME        │ CONNECTOR TYPE │ RESOURCE TYPE         │ RESOURCE NAMES                                                   ┃
+┠──────────────────────────────────────┼───────────────────────┼────────────────┼───────────────────────┼──────────────────────────────────────────────────────────────────┨
+┃ 8d307b98-f125-4d7a-b5d5-924c07ba04bb │ aws-session-docker    │ 🔶 aws         │ 🐳 docker-registry    │ 715803424590.dkr.ecr.us-east-1.amazonaws.com                     ┃
+┠──────────────────────────────────────┼───────────────────────┼────────────────┼───────────────────────┼──────────────────────────────────────────────────────────────────┨
+┃ d1e5ecf5-1531-4507-bbf5-be0a114907a5 │ aws-session-s3        │ 🔶 aws         │ 📦 s3-bucket          │ s3://public-flavor-logos                                         ┃
+┃                                      │                       │                │                       │ s3://sagemaker-us-east-1-715803424590                            ┃
+┃                                      │                       │                │                       │ s3://spark-artifact-store                                        ┃
+┃                                      │                       │                │                       │ s3://spark-demo-as                                               ┃
+┃                                      │                       │                │                       │ s3://spark-demo-dataset                                          ┃
+┠──────────────────────────────────────┼───────────────────────┼────────────────┼───────────────────────┼──────────────────────────────────────────────────────────────────┨
+┃ d2341762-28a3-4dfc-98b9-1ae9aaa93228 │ aws-key-docker-eu     │ 🔶 aws         │ 🐳 docker-registry    │ 715803424590.dkr.ecr.eu-central-1.amazonaws.com                  ┃
+┠──────────────────────────────────────┼───────────────────────┼────────────────┼───────────────────────┼──────────────────────────────────────────────────────────────────┨
+┃ 0658a465-2921-4d6b-a495-2dc078036037 │ aws-key-kube-zenhacks │ 🔶 aws         │ 🌀 kubernetes-cluster │ zenhacks-cluster                                                 ┃
+┠──────────────────────────────────────┼───────────────────────┼────────────────┼───────────────────────┼──────────────────────────────────────────────────────────────────┨
+┃ 049e7f5e-e14c-42b7-93d4-a273ef414e66 │ eks-eu-central-1      │ 🔶 aws         │ 🌀 kubernetes-cluster │ kubeflowmultitenant                                              ┃
+┃                                      │                       │                │                       │ zenbox                                                           ┃
+┠──────────────────────────────────────┼───────────────────────┼────────────────┼───────────────────────┼──────────────────────────────────────────────────────────────────┨
+┃ b551f3ae-1448-4f36-97a2-52ce303f20c9 │ kube-auto             │ 🌀 kubernetes  │ 🌀 kubernetes-cluster │ A5F8F4142FB12DDCDE9F21F6E9B07A18.gr7.us-east-1.eks.amazonaws.com ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+```
+
+#### Service Connectors
+
