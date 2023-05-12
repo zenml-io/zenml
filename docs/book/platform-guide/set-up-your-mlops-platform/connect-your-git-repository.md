@@ -2,7 +2,7 @@
 description: Tracking the code of your pipelines.
 ---
 
-# Link your own repository
+# Connect your git repository
 
 ### What is a code repository?
 
@@ -32,7 +32,7 @@ For concrete options, check out the section on the [`GitHubCodeRepository`](conn
 
 Once you have registered one or more code repositories, ZenML will check whether the files you use when running a pipeline are tracked inside one of those code repositories. This happens as follows:
 
-* First, the [source root](broken-reference/) is computed
+* First, the [source root](../../user-guide/advanced-guide/broken-reference/) is computed
 * Next, ZenML checks whether this source root directory is included in a local checkout of one of the registered code repositories
 
 #### Tracking code version for pipeline runs
@@ -46,7 +46,7 @@ When using containerized components in your stack, ZenML needs to build Docker i
 Some additional points:
 
 * The file download is only possible if the local checkout is clean (i.e. it does not contain any untracked or uncommitted files) and the latest commit has been pushed to the remote repository. This is necessary as otherwise, the file download inside the Docker container will fail.
-* If you want to disable or enforce the downloading of files, check out [this docs page](broken-reference/) for the available options.
+* If you want to disable or enforce the downloading of files, check out [this docs page](../../user-guide/advanced-guide/broken-reference/) for the available options.
 
 ### Available code repository implementation
 
@@ -74,15 +74,15 @@ After registering the GitHub code repository, ZenML will automatically detect if
 2. Select "Personal access tokens" and click on "Generate new token".
 3.  Give your token a name and a description.
 
-    ![](broken-reference)
+    ![](../../user-guide/advanced-guide/broken-reference)
 4.  We recommend selecting the specific repository and then giving `contents` read-only access.
 
-    ![](broken-reference)
+    ![](../../user-guide/advanced-guide/broken-reference)
 
-    ![](broken-reference)
+    ![](../../user-guide/advanced-guide/broken-reference)
 5.  Click on "Generate token" and copy the token to a safe place.
 
-    ![](broken-reference)
+    ![](../../user-guide/advanced-guide/broken-reference)
 
 </details>
 
@@ -109,10 +109,10 @@ After registering the GitLab code repository, ZenML will automatically detect if
 1. Go to your GitLab account settings and click on [Access Tokens](https://gitlab.com/-/profile/personal\_access\_tokens).
 2.  Name the token and select the scopes that you need (e.g. `read_repository`, `read_user`, `read_api`)
 
-    ![](broken-reference)
+    ![](../../user-guide/advanced-guide/broken-reference)
 3.  Click on "Create personal access token" and copy the token to a safe place.
 
-    ![](broken-reference)
+    ![](../../user-guide/advanced-guide/broken-reference)
 
 </details>
 
