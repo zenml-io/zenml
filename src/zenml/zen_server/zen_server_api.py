@@ -27,6 +27,7 @@ from starlette.responses import FileResponse
 
 import zenml
 from zenml.constants import API, HEALTH
+from zenml.enums import SourceContextTypes
 from zenml.zen_server.exceptions import error_detail
 from zenml.zen_server.routers import (
     artifacts_endpoints,
@@ -75,6 +76,7 @@ app = FastAPI(
     default_response_class=ORJSONResponse,
 )
 
+
 # Customize the default request validation handler that comes with FastAPI
 # to return a JSON response that matches the ZenML API spec.
 @app.exception_handler(RequestValidationError)
@@ -100,6 +102,24 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.middleware("http")
+async def infer_source_context(request: Request, call_next):
+    try:
+        s = request.headers.get(
+            zenml.source_context.name,
+            default=SourceContextTypes.API.value,
+        )
+        zenml.source_context.set(SourceContextTypes(s))
+    except Exception as e:
+        logger.warning(
+            f"An unexpected error occurred while getting the source "
+            f"context: {e}"
+        )
+        zenml.source_context.set(SourceContextTypes.API)
+
+    return await call_next(request)
 
 
 @app.on_event("startup")
