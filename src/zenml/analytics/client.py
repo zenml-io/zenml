@@ -27,6 +27,7 @@ from uuid import UUID
 
 from six import string_types
 
+from zenml import source_context
 from zenml.analytics.consumer import Consumer
 from zenml.analytics.request import post
 from zenml.constants import IS_DEBUG_ENV
@@ -158,6 +159,7 @@ class Client(object):
                 self.consumers = []
                 consumer = Consumer(
                     self.queue,
+                    base_source_context=source_context.get(),
                     on_error=on_error,
                     upload_size=upload_size,
                     upload_interval=upload_interval,

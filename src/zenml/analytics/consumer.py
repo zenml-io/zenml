@@ -25,6 +25,7 @@ import backoff  # type:ignore[import]
 import monotonic  # type:ignore[import]
 
 from zenml.analytics.request import AnalyticsAPIError, post
+from zenml.enums import SourceContextTypes
 from zenml.logger import init_logging
 
 MAX_MSG_SIZE = 32 << 10
@@ -42,6 +43,7 @@ class Consumer(Thread):
     def __init__(
         self,
         queue: Queue,  # type: ignore[type-arg]
+        base_source_context: SourceContextTypes,
         upload_size: int = 100,
         on_error: Optional[Callable[..., Any]] = None,
         upload_interval: float = 0.5,
@@ -64,6 +66,10 @@ class Consumer(Thread):
         # Initialization of the logging, that silences the backoff logger
         init_logging()
 
+        # Store the base context to set for the thread
+        self.base_source_context = base_source_context
+
+        # Set the source context from the base
         # Make consumer a daemon thread so that it doesn't block program exit
         self.daemon = True
         self.upload_size = upload_size
@@ -80,6 +86,12 @@ class Consumer(Thread):
 
     def run(self) -> None:
         """Runs the consumer."""
+        # Set the base context for each thread
+        from zenml import source_context
+
+        source_context.set(self.base_source_context)
+
+        # Run the thread
         logger.debug("Consumer is running...")
         while self.running:
             self.upload()
