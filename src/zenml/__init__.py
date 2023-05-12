@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Initialization for ZenML."""
 
+# Infer installed version
 import os
 
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -20,9 +21,18 @@ ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 with open(os.path.join(ROOT_DIR, "VERSION")) as version_file:
     __version__: str = version_file.read().strip()
 
+# Initialize logging
 from zenml.logger import init_logging  # noqa
 
 init_logging()
+
+# Initialize source context
+from zenml.enums import SourceContextTypes
+from contextvars import ContextVar
+
+source_context: ContextVar[SourceContextTypes] = ContextVar(
+    "source_context", default=SourceContextTypes.PYTHON
+)
 
 # The following code is needed for `zenml.hub` subpackages to be found
 from pkgutil import extend_path
