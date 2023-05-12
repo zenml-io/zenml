@@ -63,6 +63,10 @@ from zenml.models.base_models import (
 )
 from zenml.models.flavor_models import FlavorBaseModel
 from zenml.utils import code_repository_utils, source_utils
+from zenml.utils.artifact_utils import (
+    _load_artifact_store,
+    _load_file_from_artifact_store,
+)
 from zenml.zen_stores.base_zen_store import (
     DEFAULT_ADMIN_ROLE,
     DEFAULT_GUEST_ROLE,
@@ -1132,3 +1136,34 @@ def test_artifacts_are_not_deleted_with_run():
 
         artifacts = store.list_artifacts(ArtifactFilterModel())
         assert artifacts.total == num_artifacts_before + num_runs * 2
+
+
+# .---------.
+# | Logs    |
+# '---------'
+
+
+def test_artifacts_are_not_deleted_with_run():
+    """Tests listing with `unused=True` only returns unused artifacts."""
+    client = Client()
+    store = client.zen_store
+
+    with PipelineRunContext(2):
+        steps = store.list_run_steps(StepRunFilterModel())
+        step1_logs = steps[0].logs
+        step2_logs = steps[1].logs
+        artifact_store = _load_artifact_store(
+            step1_logs.artifact_store_id, store
+        )
+        step1_logs_content = _load_file_from_artifact_store(
+            step1_logs.uri, artifact_store=artifact_store, mode="r"
+        )
+        step2_logs_content = _load_file_from_artifact_store(
+            step2_logs.uri, artifact_store=artifact_store, mode="r"
+        )
+
+        # Step 1 has the word log! Defined in PipelineRunContext
+        assert "log" in step1_logs_content
+
+        # Step 2 does not have logs!
+        assert step2_logs_content == ""

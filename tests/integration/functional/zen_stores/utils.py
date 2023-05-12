@@ -10,6 +10,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+import logging
 import uuid
 from typing import Any, Callable, Dict, List, Optional, Type, TypeVar
 
@@ -75,6 +76,7 @@ from zenml.utils.string_utils import random_str
 
 @step
 def constant_int_output_test_step() -> int:
+    logging.info("log")
     return 7
 
 
