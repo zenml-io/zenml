@@ -12,19 +12,19 @@ Until now, you probably have kept all your code in one single file. In productio
 ├── Dockerfile
 ├── steps
 │   ├── loader_step
-│   │   ├── .dockerignore
-│   │   ├── Dockerfile
+│   │   ├── .dockerignore (optional)
+│   │   ├── Dockerfile (optional)
 │   │   ├── loader_step.py
-│   │   └── requirements.txt
+│   │   └── requirements.txt (optional)
 │   └── training_step
 │       └── ...
 ├── pipelines
 │   ├── training_pipeline
-│   │   ├── .dockerignore
-│   │   ├── config.yaml
-│   │   ├── Dockerfile
+│   │   ├── .dockerignore (optional)
+│   │   ├── config.yaml (optional)
+│   │   ├── Dockerfile (optional)
 │   │   ├── training_pipeline.py
-│   │   └── requirements.txt
+│   │   └── requirements.txt (optional)
 │   └── deployment_pipeline
 │       └── ...
 ├── notebooks

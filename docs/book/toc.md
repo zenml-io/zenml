@@ -105,7 +105,7 @@
 
 * [🏗 Set up your MLOps Platform](platform-guide/set-up-your-mlops-platform/README.md)
   * [Deploy ZenML](platform-guide/set-up-your-mlops-platform/deploy-zenml/README.md)
-    * [Deploy with the ZenML CLI](platform-guide/set-up-your-mlops-platform/deploy-zenml/deployment-using-the-cli.md)
+    * [Deploy with ZenML CLI](platform-guide/set-up-your-mlops-platform/deploy-zenml/deployment-using-the-cli.md)
     * [Deploy with Docker](platform-guide/set-up-your-mlops-platform/deploy-zenml/deploy-with-docker.md)
     * [Deploy with Helm](platform-guide/set-up-your-mlops-platform/deploy-zenml/deploy-with-helm.md)
   * [User management](platform-guide/manage-the-deployed-services/collaborate.md)
