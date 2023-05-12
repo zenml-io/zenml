@@ -1028,7 +1028,6 @@ def describe_pydantic_object(schema_json: Dict[str, Any]) -> None:
     if properties:
         warning("Properties", bold=True)
         for prop, prop_schema in properties.items():
-
             if "$ref" not in prop_schema.keys():
                 warning(
                     f"{prop}, {prop_schema['type']}"
@@ -1259,7 +1258,6 @@ def print_pipeline_runs_table(
     """
     runs_dicts = []
     for pipeline_run in pipeline_runs:
-
         if pipeline_run.user:
             user_name = pipeline_run.user.name
         else:
@@ -1432,7 +1430,6 @@ def list_options(filter_model: Type[BaseFilterModel]) -> Callable[[F], F]:
     """
 
     def inner_decorator(func: F) -> F:
-
         options = []
         data_type_descriptors = set()
         for k, v in filter_model.__fields__.items():

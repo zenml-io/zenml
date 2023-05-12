@@ -26,7 +26,6 @@ logger = get_logger(__name__)
 
 
 if __name__ == "__main__":
-
     pipeline_instance = data_profiling_pipeline(
         data_loader=data_loader(),
         data_splitter=data_splitter(),

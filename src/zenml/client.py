@@ -1598,7 +1598,6 @@ class Client(metaclass=ClientMetaClass):
         stack_components = dict()
 
         for c_type, c_identifier in components.items():
-
             # Skip non-existent components.
             if not c_identifier:
                 continue
@@ -2322,7 +2321,6 @@ class Client(metaclass=ClientMetaClass):
             event=AnalyticsEvent.DEPLOY_STACK_COMPONENT,
             v2=True,
         ) as handler:
-
             handler.metadata.update({component_type.value: flavor})
 
             import python_terraform
@@ -2474,7 +2472,6 @@ class Client(metaclass=ClientMetaClass):
             event=AnalyticsEvent.DESTROY_STACK_COMPONENT,
             v2=True,
         ) as handler:
-
             handler.metadata.update({component.type.value: component.flavor})
 
             import python_terraform
@@ -3663,7 +3660,6 @@ class Client(metaclass=ClientMetaClass):
 
         created_metadata: Dict[str, RunMetadataResponseModel] = {}
         for key, value in metadata.items():
-
             # Skip metadata that is too large to be stored in the database.
             if len(json.dumps(value)) > TEXT_FIELD_MAX_LENGTH:
                 logger.warning(
@@ -3880,7 +3876,6 @@ class Client(metaclass=ClientMetaClass):
         )
 
         for search_scope in search_scopes:
-
             partial_matches: List[SecretResponseModel] = []
             for secret in secrets.items:
                 if secret.scope != search_scope:
