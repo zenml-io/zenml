@@ -1143,7 +1143,7 @@ def test_artifacts_are_not_deleted_with_run():
 # '---------'
 
 
-def test_artifacts_are_not_deleted_with_run():
+def test_logs_are_recorded_properly():
     """Tests listing with `unused=True` only returns unused artifacts."""
     client = Client()
     store = client.zen_store
