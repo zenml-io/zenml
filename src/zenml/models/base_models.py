@@ -24,6 +24,7 @@ if TYPE_CHECKING:
     from zenml.models.user_models import UserResponseModel
     from zenml.models.workspace_models import WorkspaceResponseModel
 
+
 # ------------#
 # BASE MODELS #
 # ------------#

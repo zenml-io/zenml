@@ -423,7 +423,6 @@ class BaseSecretsStore(
             ]
 
         if existing_secrets:
-
             existing_secret_model = existing_secrets[0]
 
             msg = (
