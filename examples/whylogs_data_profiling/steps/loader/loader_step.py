@@ -29,9 +29,11 @@ from zenml.steps import Output, step
         )
     }
 )
-def data_loader() -> Output(
-    data=pd.DataFrame,
-    profile=DatasetProfileView,
+def data_loader() -> (
+    Output(
+        data=pd.DataFrame,
+        profile=DatasetProfileView,
+    )
 ):
     """Load the diabetes dataset."""
     X, y = datasets.load_diabetes(return_X_y=True, as_frame=True)

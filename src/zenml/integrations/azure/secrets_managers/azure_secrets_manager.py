@@ -299,7 +299,6 @@ class AzureSecretsManager(BaseSecretsManager):
 
         # List all secrets.
         for secret_property in self.CLIENT.list_properties_of_secrets():
-
             tags = secret_property.tags
             if not tags:
                 continue

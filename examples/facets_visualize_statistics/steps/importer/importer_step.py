@@ -20,11 +20,13 @@ from zenml.steps import Output, step
 
 
 @step
-def importer() -> Output(
-    X_train=pd.DataFrame,
-    X_test=pd.DataFrame,
-    y_train=pd.Series,
-    y_test=pd.Series,
+def importer() -> (
+    Output(
+        X_train=pd.DataFrame,
+        X_test=pd.DataFrame,
+        y_train=pd.Series,
+        y_test=pd.Series,
+    )
 ):
     """Load the iris dataset as tuple of Pandas DataFrame / Series."""
     iris = load_iris(as_frame=True)

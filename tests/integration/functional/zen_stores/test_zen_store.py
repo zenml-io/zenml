@@ -310,7 +310,6 @@ def test_removing_user_from_team_succeeds():
 
     with UserContext() as created_user:
         with TeamContext() as created_team:
-
             team_update = TeamUpdateModel(users=[created_user.id])
             team_update = zen_store.update_team(
                 team_id=created_team.id, team_update=team_update
@@ -451,7 +450,6 @@ def test_deleting_assigned_role_fails():
     zen_store = Client().zen_store
     with RoleContext() as created_role:
         with UserContext() as created_user:
-
             role_assignment = UserRoleAssignmentRequestModel(
                 role=created_role.id,
                 user=created_user.id,
@@ -515,7 +513,6 @@ def test_assigning_role_if_assignment_already_exists_fails():
 
     with RoleContext() as created_role:
         with UserContext() as created_user:
-
             role_assignment = UserRoleAssignmentRequestModel(
                 role=created_role.id,
                 user=created_user.id,
@@ -791,7 +788,6 @@ def test_register_stack_fails_when_stack_exists():
                 StackComponentType.ARTIFACT_STORE: [artifact_store.id],
             }
             with StackContext(components=components) as stack:
-
                 new_stack = StackRequestModel(
                     name=stack.name,
                     components=components,
@@ -1002,7 +998,6 @@ def test_list_runs_is_ordered():
 
     num_runs = 5
     with PipelineRunContext(num_runs):
-
         pipelines = store.list_runs(PipelineRunFilterModel()).items
         assert len(pipelines) == num_pipelines_before + num_runs
         assert all(
@@ -1086,7 +1081,6 @@ def test_get_run_step_inputs_succeeds():
     store = client.zen_store
 
     with PipelineRunContext(1):
-
         steps = store.list_run_steps(StepRunFilterModel(name="step_2"))
         for step in steps.items:
             run_step_inputs = store.get_run_step(step.id).input_artifacts
@@ -1109,7 +1103,6 @@ def test_list_unused_artifacts():
     ).total
     num_runs = 1
     with PipelineRunContext(num_runs):
-
         artifacts = store.list_artifacts(ArtifactFilterModel())
         assert artifacts.total == num_artifacts_before + num_runs * 2
 
@@ -1125,7 +1118,6 @@ def test_artifacts_are_not_deleted_with_run():
     num_artifacts_before = store.list_artifacts(ArtifactFilterModel()).total
     num_runs = 1
     with PipelineRunContext(num_runs):
-
         artifacts = store.list_artifacts(ArtifactFilterModel())
         assert artifacts.total == num_artifacts_before + num_runs * 2
 
