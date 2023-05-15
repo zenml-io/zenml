@@ -4,19 +4,53 @@ description: Birds eye view on the necessities of your MLOps Platform
 
 # 🏗 Set up your MLOps Platform
 
-To set up your own MLOps Platform with ZenML you need the following ingredients:
+To set up your own MLOps Platform with ZenML you need a few ingredients:
 
-* Deployment of the **ZenML Server** along with its **Database**
-  * The database will act as the central metadata store that tracks all pipeline runs
-  * The ZenML Server is the central point where all the runtime configuration of your architecture can be configured and shared
-  * Optionally, you need to set up a **secret manager** as a secrets backend
-* Compute infrastructure (e.g. Kubernetes or serverless alternatives)
-  * This will be used to run the pipeline code runs in production using the **orchestrator** and **step operator** stack components
-  * Optionally, this can also be used as the final location for models to be deployed to using the **model deployer** stack component
-* A data storage solution where step outputs are persisted (e.g. S3)
-  * This will be used as **artifact store** by the orchestrator
-  * You can also use this as data sources/ data sinks
-* A **container registry**
-  * This is where the docker images for all pipeline code is pushed
-  * The orchestrator will consume docker images from here
-* Deployments of all the other tools that you need (such as **experiment trackers**, **model registries**, **feature stores**)&#x20;
+<figure><img src="../../.gitbook/assets/SystemArchitecture.png" alt=""><figcaption><p>System Architecture with a deployment of ZenML along with a Cloud Stack</p></figcaption></figure>
+
+### Deployment of the ZenML Server
+
+#### The ZenML Server
+
+The ZenML Server exposes a RESTful API to the client and other consumers
+
+#### **MySQL** **Database**
+
+The database will act as the central metadata store that tracks all pipeline runs and all the configuration of  the stacks.
+
+#### Secret Store
+
+For a production setting, you should also set up a secret manager as backend for all the secrets that will be used to configure stacks
+
+{% hint style="info" %}
+See the following Section to learn about the different ways to [deploy ZenML](deploy-zenml/).
+{% endhint %}
+
+### Deployment of Stacks along with their Components
+
+#### Compute Infrastructure
+
+The Compute infrastructure (e.g. Kubernetes or serverless alternatives)
+
+* This will be used to run the pipeline code runs in production using the **orchestrator** and **step operator** stack components
+* Optionally, the same infrastructure can be used for the deployment of models using the **model deployer** stack component
+
+{% hint style="warning" %}
+The **orchestrator** will need to have access to all the other stack components, and an egress path to post to the ZenML Server&#x20;
+{% endhint %}
+
+#### Data Storage
+
+The **orchestrator**/**step operator** will use this as the **artifact store** where step outputs are persisted. You can also use the same infrastructure to host your data as data sources/ data sinks
+
+#### Container Registry
+
+This is where the docker images for all pipeline code is pushed. The **orchestrator** will consume docker images from here
+
+#### Other Tools
+
+Deployments of all the other tools that you need (such as **experiment trackers**, **model registries**, **feature stores**). Learn more about the options in our [Component Guide](../../user-guide/component-galery/).
+
+## Comming Soon: True Client-Server Architecture&#x20;
+
+We are hard at work implementing a true Client-Server Architecture where the Client no longer needs to have any access to the individual Stack Components. In the meantime we recommend using your favorite CI/CD tool to enable using ZenML without the need to configure direct access to stack components from the client machines.&#x20;
