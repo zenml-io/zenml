@@ -31,7 +31,7 @@ from zenml.enums import SourceContextTypes
 from contextvars import ContextVar
 
 source_context: ContextVar[SourceContextTypes] = ContextVar(
-    "source_context", default=SourceContextTypes.PYTHON
+    "Source-Context", default=SourceContextTypes.PYTHON
 )
 
 # The following code is needed for `zenml.hub` subpackages to be found
