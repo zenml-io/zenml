@@ -4,7 +4,7 @@ description: >-
   deployment options.
 ---
 
-# Upgrade the ZenML Version of your server
+# Upgrade the version of the ZenML server
 
 The way to upgrade your ZenML server depends a lot on how you deployed it.
 
@@ -50,8 +50,6 @@ Optionally also perform a backup before the upgrade.
     ```bash
     docker run -it -d -p 8080:8080 --name <CONTAINER_NAME> zenmldocker/zenml-server:<VERSION>
     ```
-
-Alternatively, if you&#x20;
 {% endtab %}
 
 {% tab title="Helm" %}

@@ -116,11 +116,11 @@
   * [Deploy and set up a cloud stack](platform-guide/set-up-your-mlops-platform/deploy-and-set-up-a-cloud-stack.md)
   * [Connect your git repository](platform-guide/set-up-your-mlops-platform/connect-your-git-repository.md)
   * [Implement a custom stack component](platform-guide/set-up-your-mlops-platform/implement-a-custom-stack-component.md)
-* [🔧 Manage the Deployed Services](platform-guide/manage-the-deployed-services/README.md)
-  * [Upgrade the ZenML Version of your server](platform-guide/manage-the-deployed-services/upgrading-the-zenml-version.md)
-  * [Adding Dependencies to your deployed Server](platform-guide/manage-the-deployed-services/adding-dependencies-to-your-deployed-server.md)
-  * [Troubleshooting your deployed Server](platform-guide/manage-the-deployed-services/troubleshooting-your-deployed-server.md)
-  * [Troubleshooting Stack Components](platform-guide/manage-the-deployed-services/troubleshooting-stack-components.md)
+* [🔧 Manage the deployed services](platform-guide/manage-the-deployed-services/README.md)
+  * [Upgrade the version of the ZenML server](platform-guide/manage-the-deployed-services/upgrading-the-zenml-version.md)
+  * [Add Dependencies to your deployed Server](platform-guide/manage-the-deployed-services/adding-dependencies-to-your-deployed-server.md)
+  * [Troubleshoot the deployed server](platform-guide/manage-the-deployed-services/troubleshooting-your-deployed-server.md)
+  * [Troubleshoot stack components](platform-guide/manage-the-deployed-services/troubleshooting-stack-components.md)
 
 ## Learning
 
