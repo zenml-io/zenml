@@ -51,6 +51,6 @@ This is where the docker images for all pipeline code is pushed. The **orchestra
 
 Deployments of all the other tools that you need (such as **experiment trackers**, **model registries**, **feature stores**). Learn more about the options in our [Component Guide](../../user-guide/component-galery/).
 
-## Comming Soon: True Client-Server Architecture&#x20;
+## Coming Soon: True Client-Server Architecture&#x20;
 
-We are hard at work implementing a true Client-Server Architecture where the Client no longer needs to have any access to the individual Stack Components. In the meantime we recommend using your favorite CI/CD tool to enable using ZenML without the need to configure direct access to stack components from the client machines.&#x20;
+We are hard at work implementing a true client-server architecture where the client no longer needs to have any access to the individual stack components. In the meantime we recommend using your favorite CI/CD tool to enable using ZenML without the need to configure direct access to stack components from the client machines.&#x20;

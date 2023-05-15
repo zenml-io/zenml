@@ -8,10 +8,10 @@ description: A guide on how to deploy ZenML
 
 A ZenML deployment typically consist of the following components:
 
-* A FastAPI HTTP server that exposes a RESTful API
-  * your local machine connects to this server to read and write the stack configurations to allow collaboration.
-  * the individual orchestrators and step operators communicate with the server to write and track your pipeline run data.
-  * the dashboard is served from the server to give a UI interface to all of your metadata.
+* An HTTP server that exposes a RESTful API
+  * the clients machine connects to this server to read and write the stack configurations to allow collaboration.
+  * the individual orchestrators and step operators communicate with the server to write and track the pipeline run data.
+  * the dashboard is served from the server to give a UI interface to all of the metadata.
 * An SQL database as the backend to track configurations and metadata.
   * For production currently only MySQL is supported
 * An optional external secrets management service that is used as a backend for the ZenML secrets store.
