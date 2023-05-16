@@ -29,7 +29,7 @@ if TYPE_CHECKING:
 
 
 # How many seconds to wait before uploading logs to the artifact store
-LOGS_HANDLER_INTERVAL_SECONDS: int = 20
+LOGS_HANDLER_INTERVAL_SECONDS: int = 2
 # How many messages to buffer before uploading logs to the artifact store
 LOGS_HANDLER_MAX_MESSAGES: int = 20
 
