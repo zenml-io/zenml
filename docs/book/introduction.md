@@ -4,23 +4,11 @@ description: Welcome to ZenML!
 
 # ⭐ Introduction
 
-🤹 Are you an ML engineer or data scientist shipping models to production while juggling a plethora of tools?
+ZenML is an extensible, open-source MLOps framework for creating portable, 
+production-ready machine learning pipelines.
 
-🤷‍♂️ Do you struggle with versioning data, code, and models in your projects?
-
-👀 Have you had trouble replicating production pipelines and monitoring models in production?
-
-[🙇](https://apps.timwhitlock.info/emoji/tables/unicode#emoji-modal) Are you dealing with lots of unstructured notebooks or scripts with lots of manual processes?
-
-[🚧](https://apps.timwhitlock.info/emoji/tables/unicode#emoji-modal) Do you find it challenging to transition your ML workflows from the experimentation setting to a production-ready environment?
-
-If you answered yes to any of the questions above, ZenML is here to help you:
-
-**ZenML** is an extensible, open-source MLOps framework for creating portable, 
-production-ready MLOps pipelines. 
-
-By decoupling infrastructure from code, ZenML gives all ML developers in your 
-organization more freedom and independence in how they approach their work:
+By decoupling infrastructure from code, ZenML gives all developers in your 
+organization more freedom and independence in how they approach their work.
 
 ![ZenML Overview](.gitbook/assets/intro_zenml_overview.png)
 
