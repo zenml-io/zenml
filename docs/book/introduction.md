@@ -93,13 +93,13 @@ python run.py  # run your workflows in production
 ```
 
 **Reproducibility:** ZenML enables you to painlessly reproduce previous results
-by automatically tracking and versioning stacks, pipelines, and output 
-artifacts. In the ZenML dashboard, you can get an overview of everything that
-has happened and drill down into detailed artifact lineage visualizations.
+by automatically tracking and versioning all stacks, pipelines, artifacts, and
+source code. In the ZenML dashboard, you can get an overview of everything that
+has happened and drill down into detailed lineage visualizations.
 Try it out at [https://demo.zenml.io/](https://demo.zenml.io/)!
 
 <figure>
-<img src=".gitbook/assets/intro_dashboard.png" alt="ZenML Dashboard Overview" width="50%">
+<img src=".gitbook/assets/intro_dashboard.png" alt="ZenML Dashboard Overview" width="40%">
 </figure>
 <figure>
 <img src=".gitbook/assets/artifact_visualization.png" alt="ZenML Dashboard Details View" width="50%">
@@ -108,7 +108,7 @@ Try it out at [https://demo.zenml.io/](https://demo.zenml.io/)!
 **Automated Deployments:** With ZenML, you no longer need to upload custom 
 Docker images to the cloud whenever you want to deploy a new model to 
 production. Simply define your ML workflow as a ZenML pipeline, let ZenML 
-handle all the containerization, and have your model automatically deployed to 
+handle the containerization, and have your model automatically deployed to 
 a highly scalable Kubernetes deployment service like 
 [Seldon](./user-guide/component-galery/model-deployers/seldon.md).
 
@@ -147,7 +147,7 @@ zenml stack share production  # Make it available to your colleagues
 **No Vendor Lock-In:** Since infrastructure is decoupled from code, ZenML gives
 you the freedom to switch to a different tooling stack whenever it suits you.
 By avoiding vendor lock-in, you have the flexibility to transition between 
-various cloud providers or services, ensuring that you receive the best 
+cloud providers or services, ensuring that you receive the best 
 performance and pricing available in the market at any time.
 
 ```bash
@@ -158,8 +158,17 @@ python run.py  # Now your ML workflow runs in AWS
 ```
 
 **Extensibility:** ZenML is open-source and highly extensible, so you benefit 
-from industry-standard best-practices built into the framework while also being 
-able to customize it to fit your specific needs.
+from industry-standard best-practices built into the framework while retaining
+the option to customize it to fit your specific needs.
+
+<table data-view="cards">
+    <thead><tr><th></th><th></th><th></th><th data-hidden data-card-target data-type="content-ref"></th></tr></thead>
+    <tbody>
+        <tr><td><span data-gb-custom-inline data-tag="emoji" data-code="1f4cb">📋</span> <strong>Component Guide</strong></td><td>Browse through the already-implemented integrations for ZenML.</td><td></td><td><a href="user-guide/component-galery/">component-galery</a></td></tr>
+        <tr><td><span data-gb-custom-inline data-tag="emoji" data-code="1f3d7">🏗</span> <strong>Platform Guide</strong></td><td>Set up and manage production-ready infrastructure with ZenML.</td><td></td><td><a href="platform-guide/set-up-your-mlops-platform/">set-up-your-mlops-platform</a></td></tr>
+        <tr><td><span data-gb-custom-inline data-tag="emoji" data-code="1f9d1-1f3eb">🧑🏫</span> <strong>Examples</strong></td><td>Take a peek at how ZenML works in concrete examples.</td><td></td><td><a href="learning/examples/">examples</a></td></tr>
+    </tbody>
+</table>
 
 {% endtab %}
 
