@@ -60,7 +60,7 @@ experiments.
 Try it out at [https://demo.zenml.io/](https://demo.zenml.io/)!
 
 <figure>
-<img src=".gitbook/assets/artifact_visualization.png" alt="ZenML Dashboard Details View" width="50%">
+<img src=".gitbook/assets/intro_dashboard_details.png" alt="ZenML Dashboard Details View" width="50%">
 </figure>
 
 {% hint style="info" %}
@@ -133,8 +133,8 @@ sophisticated production environments that are easy to share with colleagues.
 
 **Standardization:** With ZenML, you can standardize MLOps infrastructure and 
 tooling across your organization. Simply set up a ZenML server, register your 
-production environment as a ZenML stack, and invite your colleagues to run 
-their ML workflows on it:
+staging and production environments as ZenML stacks, and invite your colleagues
+to explore your setups and run ML workflows on them.
 
 ```bash
 zenml deploy --provider aws  # Deploy ZenML to any cloud
@@ -142,6 +142,11 @@ zenml orchestrator deploy kfp --flavor kubeflow --cloud gcp  # Deploy MLOps tool
 zenml stack register production ...  # Register your production environment
 zenml stack share production  # Make it available to your colleagues
 ```
+
+<figure>
+<img src=".gitbook/assets/intro_dashboard_stacks.png" alt="ZenML Dashboard Stacks View" width="50%">
+</figure>
+
 
 **No Vendor Lock-In:** Since infrastructure is decoupled from code, ZenML gives
 you the freedom to switch to a different tooling stack whenever it suits you.
