@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 
 import click
-from materializers.pillow_image_materializer import PillowImageMaterializer
 from pipelines import inference_pipeline, training_pipeline
 from steps.convert_annotations_step import convert_annotations
 from steps.deployment_triggers import deployment_trigger
@@ -30,15 +29,10 @@ from steps.pytorch_trainer import (
     PytorchModelTrainerParameters,
     pytorch_model_trainer,
 )
-from steps.sync_new_data_to_label_studio import (
-    azure_data_sync,
-    gcs_data_sync,
-    s3_data_sync,
-)
+from steps.sync_new_data_to_label_studio import data_sync
 
 
 @click.command()
-@click.argument("cloud_platform")
 @click.option(
     "--train",
     "pipeline",
@@ -57,19 +51,8 @@ from steps.sync_new_data_to_label_studio import (
     is_flag=True,
     default=False,
 )
-def main(cloud_platform, pipeline, rerun):
+def main(pipeline, rerun):
     """Simple CLI interface for annotation example."""
-    if cloud_platform == "azure":
-        sync_function = azure_data_sync
-    elif cloud_platform == "gcp":
-        sync_function = gcs_data_sync
-    elif cloud_platform == "aws":
-        sync_function = s3_data_sync
-    elif cloud_platform not in ["azure", "gcp", "aws"]:
-        raise ValueError(
-            f"Cloud platform '{cloud_platform}' is not supported for this example."
-        )
-
     if pipeline == "train":
         training_pipeline(
             get_or_create_dataset=get_or_create_the_dataset,
@@ -88,12 +71,12 @@ def main(cloud_platform, pipeline, rerun):
                 params=LoadImageDataParameters(
                     dir_name="batch_2" if rerun else "batch_1"
                 )
-            ).with_return_materializers({"images": PillowImageMaterializer}),
+            ),
             prediction_service_loader=prediction_service_loader(
                 PredictionServiceLoaderParameters()
             ),
             predictor=predictor(),
-            data_syncer=sync_function,
+            data_syncer=data_sync,
         ).run()
 
 

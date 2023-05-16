@@ -11,28 +11,21 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from contextlib import ExitStack as does_not_raise
 
 from transformers import AutoTokenizer
-from transformers.tokenization_utils_base import PreTrainedTokenizerBase
 
 from tests.unit.test_general import _test_materializer
 from zenml.integrations.huggingface.materializers.huggingface_tokenizer_materializer import (
     HFTokenizerMaterializer,
 )
-from zenml.post_execution.pipeline import PipelineRunView
 
 
 def test_huggingface_tokenizer_materializer(clean_client):
     """Tests whether the steps work for the Huggingface Tokenizer materializer."""
+    tokenizer = _test_materializer(
+        step_output=AutoTokenizer.from_pretrained("bert-base-cased"),
+        materializer_class=HFTokenizerMaterializer,
+        expected_metadata_size=1,
+    )
 
-    with does_not_raise():
-        _test_materializer(
-            step_output=AutoTokenizer.from_pretrained("bert-base-cased"),
-            materializer=HFTokenizerMaterializer,
-        )
-
-    last_run = PipelineRunView(clean_client.zen_store.list_runs()[-1])
-    tokenizer = last_run.steps[-1].output.read()
-    assert isinstance(tokenizer, PreTrainedTokenizerBase)
     assert tokenizer.model_max_length == 512

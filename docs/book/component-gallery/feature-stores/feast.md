@@ -148,4 +148,4 @@ A concrete example of using the Feast feature store can be found
 [here](https://github.com/zenml-io/zenml/tree/main/examples/feast_feature_store).
 
 For more information and a full list of configurable attributes of the 
-Feast feature store, check out the [API Docs](https://apidocs.zenml.io/latest/api_docs/integration_code_docs/integrations-feast/#zenml.integrations.feast.feature_stores.feast_feature_store.FeastFeatureStore).
+Feast feature store, check out the [API Docs](https://apidocs.zenml.io/latest/integration_code_docs/integrations-feast/#zenml.integrations.feast.feature_stores.feast_feature_store.FeastFeatureStore).

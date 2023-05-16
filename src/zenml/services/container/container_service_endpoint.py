@@ -29,7 +29,10 @@ from zenml.services.service_monitor import (
     HTTPEndpointHealthMonitor,
     TCPEndpointHealthMonitor,
 )
-from zenml.utils.networking_utils import port_available, scan_for_available_port
+from zenml.utils.networking_utils import (
+    port_available,
+    scan_for_available_port,
+)
 
 logger = get_logger(__name__)
 
@@ -43,15 +46,12 @@ class ContainerServiceEndpointConfig(ServiceEndpointConfig):
             is in use when the service is started, setting `allocate_port` to
             True will also try to allocate a new port value, otherwise an
             exception will be raised.
-        ip_address: the IP address of the service endpoint. If not set, the
-            default localhost IP address will be used.
         allocate_port: set to True to allocate a free TCP port for the
             service endpoint automatically.
     """
 
     protocol: ServiceEndpointProtocol = ServiceEndpointProtocol.TCP
     port: Optional[int] = None
-    ip_address: str = DEFAULT_LOCAL_SERVICE_IP_ADDRESS
     allocate_port: bool = True
 
 
@@ -124,5 +124,6 @@ class ContainerServiceEndpoint(BaseServiceEndpoint):
         This method is called before the service is started.
         """
         self.status.protocol = self.config.protocol
-        self.status.hostname = self.config.ip_address
         self.status.port = self._lookup_free_port()
+        # Container endpoints are always exposed on the local host
+        self.status.hostname = DEFAULT_LOCAL_SERVICE_IP_ADDRESS

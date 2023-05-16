@@ -26,15 +26,12 @@ from zenml.integrations.whylogs.flavors import WhylogsDataValidatorFlavor
 from zenml.integrations.whylogs.flavors.whylogs_data_validator_flavor import (
     WhylogsDataValidatorSettings,
 )
+from zenml.steps.base_parameters import BaseParameters
 from zenml.steps.base_step import BaseStep
-from zenml.steps.step_interfaces.base_analyzer_step import (
-    BaseAnalyzerParameters,
-    BaseAnalyzerStep,
-)
 from zenml.utils import settings_utils
 
 
-class WhylogsProfilerParameters(BaseAnalyzerParameters):
+class WhylogsProfilerParameters(BaseParameters):
     """Parameters class for the WhylogsProfiler step.
 
     Attributes:
@@ -46,11 +43,11 @@ class WhylogsProfilerParameters(BaseAnalyzerParameters):
     dataset_timestamp: Optional[datetime.datetime]
 
 
-class WhylogsProfilerStep(BaseAnalyzerStep):
+class WhylogsProfilerStep(BaseStep):
     """Generates a whylogs data profile from a given pd.DataFrame."""
 
     @staticmethod
-    def entrypoint(  # type: ignore[override]
+    def entrypoint(
         dataset: pd.DataFrame,
         params: WhylogsProfilerParameters,
     ) -> DatasetProfileView:
@@ -76,6 +73,7 @@ def whylogs_profiler_step(
     step_name: str,
     params: WhylogsProfilerParameters,
     dataset_id: Optional[str] = None,
+    enable_whylabs: bool = True,
 ) -> BaseStep:
     """Shortcut function to create a new instance of the WhylogsProfilerStep step.
 
@@ -87,15 +85,15 @@ def whylogs_profiler_step(
         step_name: The name of the step
         params: The step parameters
         dataset_id: Optional dataset ID to use to upload the profile to Whylabs.
+        enable_whylabs: Whether to upload the generated profile to Whylabs.
 
     Returns:
         a WhylogsProfilerStep step instance
     """
     step_instance = WhylogsProfilerStep(name=step_name, params=params)
     key = settings_utils.get_flavor_setting_key(WhylogsDataValidatorFlavor())
-
     settings = WhylogsDataValidatorSettings(
-        enable_whylabs=True, dataset_id=dataset_id
+        enable_whylabs=enable_whylabs, dataset_id=dataset_id
     )
     step_instance.configure(settings={key: settings})
     return step_instance

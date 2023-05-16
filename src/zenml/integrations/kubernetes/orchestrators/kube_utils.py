@@ -43,11 +43,7 @@ from kubernetes.client.rest import ApiException
 
 from zenml.integrations.kubernetes.orchestrators.manifest_utils import (
     build_cluster_role_binding_manifest_for_service_account,
-    build_mysql_deployment_manifest,
-    build_mysql_service_manifest,
     build_namespace_manifest,
-    build_persistent_volume_claim_manifest,
-    build_persistent_volume_manifest,
     build_service_account_manifest,
 )
 from zenml.logger import get_logger
@@ -82,20 +78,19 @@ def is_inside_kubernetes() -> bool:
         return False
 
 
-def load_kube_config(context: Optional[str] = None) -> None:
+def load_kube_config(
+    incluster: bool = False, context: Optional[str] = None
+) -> None:
     """Load the Kubernetes client config.
 
-    Depending on the environment (whether it is inside the running Kubernetes
-    cluster or remote host), different location will be searched for the config
-    file.
-
     Args:
+        incluster: Whether to load the in-cluster config.
         context: Name of the Kubernetes context. If not provided, uses the
-            currently active context.
+            currently active context. Will be ignored if `incluster` is True.
     """
-    try:
+    if incluster:
         k8s_config.load_incluster_config()
-    except k8s_config.ConfigException:
+    else:
         k8s_config.load_kube_config(context=context)
 
 
@@ -321,74 +316,3 @@ def create_namespace(core_api: k8s_client.CoreV1Api, namespace: str) -> None:
     """
     manifest = build_namespace_manifest(namespace)
     _if_not_exists(core_api.create_namespace)(body=manifest)
-
-
-def create_mysql_deployment(
-    core_api: k8s_client.CoreV1Api,
-    apps_api: k8s_client.AppsV1Api,
-    deployment_name: str,
-    namespace: str,
-    storage_capacity: str = "10Gi",
-    volume_name: str = "mysql-pv-volume",
-    volume_claim_name: str = "mysql-pv-claim",
-) -> None:
-    """Create a Kubernetes deployment with a MySQL database running on it.
-
-    Args:
-        core_api: Client of Core V1 API of Kubernetes API.
-        apps_api: Client of Apps V1 API of Kubernetes API.
-        namespace: Kubernetes namespace. Defaults to "default".
-        storage_capacity: Storage capacity of the database.
-            Defaults to `"10Gi"`.
-        deployment_name: Name of the deployment. Defaults to "mysql".
-        volume_name: Name of the persistent volume.
-            Defaults to `"mysql-pv-volume"`.
-        volume_claim_name: Name of the persistent volume claim.
-            Defaults to `"mysql-pv-claim"`.
-    """
-    pvc_manifest = build_persistent_volume_claim_manifest(
-        name=volume_claim_name,
-        namespace=namespace,
-        storage_request=storage_capacity,
-    )
-    _if_not_exists(core_api.create_namespaced_persistent_volume_claim)(
-        namespace=namespace,
-        body=pvc_manifest,
-    )
-    pv_manifest = build_persistent_volume_manifest(
-        name=volume_name, storage_capacity=storage_capacity
-    )
-    _if_not_exists(core_api.create_persistent_volume)(body=pv_manifest)
-    deployment_manifest = build_mysql_deployment_manifest(
-        name=deployment_name,
-        namespace=namespace,
-        pv_claim_name=volume_claim_name,
-    )
-    _if_not_exists(apps_api.create_namespaced_deployment)(
-        body=deployment_manifest, namespace=namespace
-    )
-    service_manifest = build_mysql_service_manifest(
-        name=deployment_name, namespace=namespace
-    )
-    _if_not_exists(core_api.create_namespaced_service)(
-        namespace=namespace, body=service_manifest
-    )
-
-
-def delete_deployment(
-    apps_api: k8s_client.AppsV1Api, deployment_name: str, namespace: str
-) -> None:
-    """Delete a Kubernetes deployment.
-
-    Args:
-        apps_api: Client of Apps V1 API of Kubernetes API.
-        deployment_name: Name of the deployment to be deleted.
-        namespace: Kubernetes namespace containing the deployment.
-    """
-    options = k8s_client.V1DeleteOptions()
-    apps_api.delete_namespaced_deployment(
-        name=deployment_name,
-        namespace=namespace,
-        body=options,
-        propagation_policy="Foreground",
-    )

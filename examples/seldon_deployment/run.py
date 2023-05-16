@@ -37,6 +37,7 @@ from pipeline import (
 from rich import print
 
 from zenml.integrations.seldon.model_deployers import SeldonModelDeployer
+from zenml.integrations.seldon.seldon_client import SeldonResourceRequirements
 from zenml.integrations.seldon.services import (
     SeldonDeploymentConfig,
     SeldonDeploymentService,
@@ -120,11 +121,11 @@ def main(
     toleration: float,
     min_accuracy: float,
 ):
-    """Run the Seldon example continuous deployment or inference pipeline
+    """Run the Seldon example continuous deployment or inference pipeline.
 
     Example usage:
 
-        python run.py --deploy --predict --model-flavor tensorflow \
+        python run.py --config deploy_and_predict --model-flavor tensorflow \
              --min-accuracy 0.80
 
     """
@@ -133,7 +134,7 @@ def main(
 
     model_name = "mnist"
     deployment_pipeline_name = "continuous_deployment_pipeline"
-    deployer_step_name = "seldon_model_deployer_step"
+    deployer_step_name = "model_deployer"
 
     model_deployer = SeldonModelDeployer.get_active_model_deployer()
 
@@ -173,6 +174,9 @@ def main(
                         model_name=model_name,
                         replicas=1,
                         implementation=seldon_implementation,
+                        resources=SeldonResourceRequirements(
+                            limits={"cpu": "200m", "memory": "250Mi"}
+                        ),
                     ),
                     timeout=120,
                 )

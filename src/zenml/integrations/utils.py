@@ -16,7 +16,7 @@
 import importlib
 import inspect
 import sys
-from typing import List, Optional, Type, cast
+from typing import List, Optional, Type
 
 from zenml.integrations.integration import Integration, IntegrationMeta
 
@@ -47,13 +47,13 @@ def get_integration_for_module(
     except KeyError:
         integration_module = importlib.import_module(integration_module_name)
 
-    for name, member in inspect.getmembers(integration_module):
+    for _, member in inspect.getmembers(integration_module):
         if (
             member is not Integration
             and isinstance(member, IntegrationMeta)
             and issubclass(member, Integration)
         ):
-            return cast(Type[Integration], member)
+            return member
 
     return None
 
@@ -73,4 +73,4 @@ def get_requirements_for_module(module_name: str) -> List[str]:
         A list of requirements for the module.
     """
     integration = get_integration_for_module(module_name)
-    return integration.REQUIREMENTS if integration else []
+    return integration.get_requirements() if integration else []

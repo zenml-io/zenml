@@ -42,4 +42,4 @@ zenml stack update -c <NAME>
 ```
 
 For more information and a full list of configurable attributes of the Default 
-container registry, check out the [API Docs](https://apidocs.zenml.io/latest/api_docs/integration_code_docs/integrations-aws/#zenml.integrations.aws.container_registries.default_container_registry.DefaultContainerRegistry).
+container registry, check out the [API Docs](https://apidocs.zenml.io/latest/integration_code_docs/integrations-aws/#zenml.integrations.aws.container_registries.default_container_registry.DefaultContainerRegistry).

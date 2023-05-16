@@ -15,12 +15,10 @@
 
 import argparse
 import socket
-from typing import Optional, cast
 
 from kubernetes import client as k8s_client
 
-from zenml.config.pipeline_deployment import PipelineDeployment
-from zenml.constants import DOCKER_IMAGE_DEPLOYMENT_CONFIG_FILE
+from zenml.client import Client
 from zenml.entrypoints.step_entrypoint_configuration import (
     StepEntrypointConfiguration,
 )
@@ -28,17 +26,16 @@ from zenml.integrations.kubernetes.flavors.kubernetes_orchestrator_flavor import
     KubernetesOrchestratorSettings,
 )
 from zenml.integrations.kubernetes.orchestrators import kube_utils
-from zenml.integrations.kubernetes.orchestrators.dag_runner import (
-    ThreadedDagRunner,
-)
 from zenml.integrations.kubernetes.orchestrators.kubernetes_orchestrator import (
     ENV_ZENML_KUBERNETES_RUN_ID,
+    KubernetesOrchestrator,
 )
 from zenml.integrations.kubernetes.orchestrators.manifest_utils import (
     build_pod_manifest,
 )
 from zenml.logger import get_logger
-from zenml.utils import yaml_utils
+from zenml.orchestrators.dag_runner import ThreadedDagRunner
+from zenml.orchestrators.utils import get_config_environment_vars
 
 logger = get_logger(__name__)
 
@@ -51,7 +48,7 @@ def parse_args() -> argparse.Namespace:
     """
     parser = argparse.ArgumentParser()
     parser.add_argument("--run_name", type=str, required=True)
-    parser.add_argument("--image_name", type=str, required=True)
+    parser.add_argument("--deployment_id", type=str, required=True)
     parser.add_argument("--kubernetes_namespace", type=str, required=True)
     return parser.parse_args()
 
@@ -65,21 +62,26 @@ def main() -> None:
     args = parse_args()
 
     # Get Kubernetes Core API for running kubectl commands later.
-    kube_utils.load_kube_config()
+    kube_utils.load_kube_config(incluster=True)
     core_api = k8s_client.CoreV1Api()
 
     orchestrator_run_id = socket.gethostname()
 
-    config_dict = yaml_utils.read_yaml(DOCKER_IMAGE_DEPLOYMENT_CONFIG_FILE)
-    deployment_config = PipelineDeployment.parse_obj(config_dict)
+    deployment_config = Client().get_deployment(args.deployment_id)
 
     pipeline_dag = {}
     step_name_to_pipeline_step_name = {}
-    for name_in_pipeline, step in deployment_config.steps.items():
+    for (
+        name_in_pipeline,
+        step,
+    ) in deployment_config.step_configurations.items():
         step_name_to_pipeline_step_name[step.config.name] = name_in_pipeline
         pipeline_dag[step.config.name] = step.spec.upstream_steps
 
     step_command = StepEntrypointConfiguration.get_entrypoint_command()
+
+    active_stack = Client().active_stack
+    mount_local_stores = active_stack.orchestrator.config.is_local
 
     def run_step_on_kubernetes(step_name: str) -> None:
         """Run a pipeline step in a separate Kubernetes pod.
@@ -92,29 +94,34 @@ def main() -> None:
         pod_name = kube_utils.sanitize_pod_name(pod_name)
 
         pipeline_step_name = step_name_to_pipeline_step_name[step_name]
+        image = KubernetesOrchestrator.get_image(
+            deployment=deployment_config, step_name=pipeline_step_name
+        )
         step_args = StepEntrypointConfiguration.get_entrypoint_arguments(
-            step_name=pipeline_step_name
+            step_name=pipeline_step_name, deployment_id=deployment_config.id
         )
 
-        settings = cast(
-            Optional[KubernetesOrchestratorSettings],
-            KubernetesOrchestratorSettings.parse_obj(
-                deployment_config.steps[pipeline_step_name].config.settings.get(
-                    "orchestrator.kubernetes", {}
-                )
-            ),
+        step_config = deployment_config.step_configurations[
+            pipeline_step_name
+        ].config
+        settings = KubernetesOrchestratorSettings.parse_obj(
+            step_config.settings.get("orchestrator.kubernetes", {})
         )
+
+        env = get_config_environment_vars()
+        env[ENV_ZENML_KUBERNETES_RUN_ID] = orchestrator_run_id
 
         # Define Kubernetes pod manifest.
         pod_manifest = build_pod_manifest(
             pod_name=pod_name,
             run_name=args.run_name,
-            pipeline_name=deployment_config.pipeline.name,
-            image_name=args.image_name,
+            pipeline_name=deployment_config.pipeline_configuration.name,
+            image_name=image,
             command=step_command,
             args=step_args,
-            env={ENV_ZENML_KUBERNETES_RUN_ID: orchestrator_run_id},
+            env=env,
             settings=settings,
+            mount_local_stores=mount_local_stores,
         )
 
         # Create and run pod.

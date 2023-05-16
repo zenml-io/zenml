@@ -18,6 +18,7 @@ from typing import Optional
 
 from pydantic import BaseModel
 
+from zenml.config.secrets_store_config import SecretsStoreConfiguration
 from zenml.enums import StoreType
 from zenml.logger import get_logger
 
@@ -34,10 +35,13 @@ class StoreConfiguration(BaseModel):
     Attributes:
         type: The type of store backend.
         url: The URL of the store backend.
+        secrets_store: The configuration of the secrets store to use to store
+            secrets. If not set, secrets management is disabled.
     """
 
     type: StoreType
     url: str
+    secrets_store: Optional[SecretsStoreConfiguration] = None
 
     @classmethod
     def copy_configuration(
@@ -72,6 +76,21 @@ class StoreConfiguration(BaseModel):
             path.
         """
         return config.copy()
+
+    @classmethod
+    def supports_url_scheme(cls, url: str) -> bool:
+        """Check if a URL scheme is supported by this store.
+
+        Concrete store configuration classes should override this method to
+        check if a URL scheme is supported by the store.
+
+        Args:
+            url: The URL to check.
+
+        Returns:
+            True if the URL scheme is supported, False otherwise.
+        """
+        return True
 
     class Config:
         """Pydantic configuration class."""

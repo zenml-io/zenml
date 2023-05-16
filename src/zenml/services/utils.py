@@ -15,6 +15,7 @@
 
 from typing import Optional
 
+from zenml.enums import ArtifactType
 from zenml.post_execution import get_pipeline
 from zenml.services.service import BaseService
 
@@ -52,7 +53,7 @@ def load_last_service_from_step(
         step = run.get_step(step=step_name)
         for artifact_view in step.outputs.values():
             # filter out anything but service artifacts
-            if artifact_view.type == "ServiceArtifact":
+            if artifact_view.type == ArtifactType.SERVICE:
                 service = artifact_view.read()
                 if not isinstance(service, BaseService):
                     raise RuntimeError(

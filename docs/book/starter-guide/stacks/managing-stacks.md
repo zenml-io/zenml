@@ -38,7 +38,7 @@ This will create a `.zen` directory, which contains a single
 `config.yaml` file that stores the local settings:
 
 ```yaml
-active_project_name: default
+active_workspace_name: default
 active_stack_id: de4d4a39-356b-48fa-8091-309fb090246f
 ```
 
@@ -57,7 +57,7 @@ $ zenml stack list
 Unable to find ZenML repository in your current working directory (/private/tmp/zenml) or any parent directories. If you want to use an existing repository which is in a different location, set the environment variable 'ZENML_REPOSITORY_PATH'. If you want to create a new repository, run zenml init.
 Running without an active repository root.
 Using the default local database.
-Running with active project: 'default' (global)
+Running with active workspace: 'default' (global)
 ┏━━━━━━━━┯━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━┯━━━━━━━━━┯━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┓
 ┃ ACTIVE │ STACK NAME │ STACK ID                             │ SHARED │ OWNER   │ ORCHESTRATOR │ ARTIFACT_STORE ┃
 ┠────────┼────────────┼──────────────────────────────────────┼────────┼─────────┼──────────────┼────────────────┨
@@ -102,7 +102,7 @@ project without impacting the global settings:
 Unable to find ZenML repository in your current working directory (/private/tmp/zenml) or any parent directories. If you want to use an existing repository which is in a different location, set the environment variable 'ZENML_REPOSITORY_PATH'. If you want to create a new repository, run zenml init.
 Running without an active repository root.
 Using the default local database.
-Running with active project: 'default' (global)
+Running with active workspace: 'default' (global)
 ┏━━━━━━━━┯━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━┯━━━━━━━━━┯━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┓
 ┃ ACTIVE │ STACK NAME │ STACK ID                             │ SHARED │ OWNER   │ ORCHESTRATOR │ ARTIFACT_STORE ┃
 ┠────────┼────────────┼──────────────────────────────────────┼────────┼─────────┼──────────────┼────────────────┨
@@ -113,7 +113,7 @@ Running with active project: 'default' (global)
 
 /tmp/zenml$ zenml init
 ⠧ Initializing ZenML repository at /private/tmp/zenml.
-Setting the repo active project to default.
+Setting the repo active workspace to default.
 ZenML repository initialized at /private/tmp/zenml.
 The local active stack was initialized to 'default'. This local configuration will only take effect when you're running ZenML from the initialized repository 
 root, or from a subdirectory. For more information on repositories and configurations, please visit https://docs.zenml.io/starter-guide/stacks/managing-stacks.
@@ -121,7 +121,7 @@ root, or from a subdirectory. For more information on repositories and configura
 
 /tmp/zenml$ zenml stack list
 Using the default local database.
-Running with active project: 'default' (repository)
+Running with active workspace: 'default' (repository)
 ┏━━━━━━━━┯━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━┯━━━━━━━━━┯━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┓
 ┃ ACTIVE │ STACK NAME │ STACK ID                             │ SHARED │ OWNER   │ ORCHESTRATOR │ ARTIFACT_STORE ┃
 ┠────────┼────────────┼──────────────────────────────────────┼────────┼─────────┼──────────────┼────────────────┨
@@ -132,12 +132,12 @@ Running with active project: 'default' (repository)
 
 /tmp/zenml$ zenml stack set zenml
 Using the default local database.
-Running with active project: 'default' (repository)
+Running with active workspace: 'default' (repository)
 Active repository stack set to: 'zenml'
 
 /tmp/zenml$ zenml stack list
 Using the default local database.
-Running with active project: 'default' (repository)
+Running with active workspace: 'default' (repository)
 ┏━━━━━━━━┯━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━┯━━━━━━━━━┯━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┓
 ┃ ACTIVE │ STACK NAME │ STACK ID                             │ SHARED │ OWNER   │ ORCHESTRATOR │ ARTIFACT_STORE ┃
 ┠────────┼────────────┼──────────────────────────────────────┼────────┼─────────┼──────────────┼────────────────┨
@@ -151,7 +151,7 @@ Running with active project: 'default' (repository)
 Unable to find ZenML repository in your current working directory (/private/tmp) or any parent directories. If you want to use an existing repository which is in a different location, set the environment variable 'ZENML_REPOSITORY_PATH'. If you want to create a new repository, run zenml init.
 Running without an active repository root.
 Using the default local database.
-Running with active project: 'default' (global)
+Running with active workspace: 'default' (global)
 ┏━━━━━━━━┯━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━┯━━━━━━━━━┯━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┓
 ┃ ACTIVE │ STACK NAME │ STACK ID                             │ SHARED │ OWNER   │ ORCHESTRATOR │ ARTIFACT_STORE ┃
 ┠────────┼────────────┼──────────────────────────────────────┼────────┼─────────┼──────────────┼────────────────┨
@@ -163,18 +163,18 @@ Running with active project: 'default' (global)
 
 </details>
 
-With collaboration being the key part of ZenML, the 0.20.0 release puts the
-concepts of Users and Projects front and center and introduces
+With collaboration being the key part of ZenML, the 
+concepts of Users and Workspaces  is front and center, giving 
 the possibility to share stacks and stack components with other users by
 means of the ZenML server.
 
 When your client is connected to a ZenML server, entities such as Stacks, Stack
 Components, Stack Component Flavors, Pipelines, Pipeline Runs, and Artifacts are
-scoped to a Project and owned by the User that creates them. Only the objects
+scoped to a Workspace and owned by the User that creates them. Only the objects
 that are owned by the current user used to authenticate to the ZenML server and
-that are part of the current project are available to the client.
+that are part of the current workspace are available to the client.
 
-Stacks and Stack Components can also be shared within the same project with
+Stacks and Stack Components can also be shared within the same workspace with
 other users. To share an object, either set it as shared during creation time
 (e.g. `zenml stack register mystack ... --share`) or afterwards (e.g. through
 `zenml stack share mystack`).
@@ -195,9 +195,13 @@ ZenML Server, even though this is not enforced by the system.
 * stacks made up of non-local stack components are only functional if they
 are shared through a remotely deployed ZenML Server.
 
-
 ![Running your pipeline in the cloud](../../assets/core_concepts/03_multi_stack.png)
 
+It is also possible to deploy Stack Components directly from the CLI using the
+`zenml <STACK_COMPONENT> deploy` command. For more information on how to use
+this and other MLOps Stack Recipes as part of your stack management, please
+read the [MLOps Stack Recipes](../../advanced-guide/practical/stack-recipes.md)
+documentation.
 
 ### Viewing the dashboard
 
@@ -238,7 +242,7 @@ The exported Stack is only a configuration. It may have local dependencies
 that are not exported and thus will not be available when importing the Stack
 on another machine:
 
-* the secrets stored in the local Secrets Managers
+* ZenML secrets referenced in the Stack
 * any references to local files and local services not accessible from outside
 the machine where the Stack is exported, such as the local Artifact Store.
 * perhaps critically, the exported stack would not contain any pipelines or
@@ -248,14 +252,14 @@ pipeline runs. For that you need to set up a ZenML Server (see section below).
 
 ![Multi-user setting](../../assets/core_concepts/04_architecture.png)
 
-To unleash the real power of ZenML, one must [deploy it in the cloud](../../getting-started/deploying-zenml/).
+To unleash the real power of ZenML, one must [deploy it in the cloud](../../getting-started/deploying-zenml/deploying-zenml.md).
 Once you have a deployed ZenML in the cloud, you can connect your client to it locally.
 Entities such as Stacks, Stack Components, Stack Component Flavors, Pipelines, Pipeline Runs, 
-and Artifacts are scoped to a Project and owned by the User that creates them. Only the objects
+and Artifacts are scoped to a Workspace and owned by the User that creates them. Only the objects
 that are owned by the current user used to authenticate to the ZenML server and
-that are part of the current project are available to the client.
+that are part of the current workspace are available to the client.
 
-Stacks and Stack Components can also be shared within the same project with
+Stacks and Stack Components can also be shared within the same workspace with
 other users. To share a stack, either set it as shared during creation time:
 
 ```shell
@@ -303,4 +307,4 @@ ZenML Server, even though this is not enforced by the system.
 are shared through a remotely deployed ZenML Server.
 
 Collaboration as a topic deserves its own section, and that's exactly  what we'll
-dive into [next](../collaborate/collaborate.md).
+dive into [next](sharing-stacks.md).

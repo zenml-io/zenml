@@ -14,9 +14,10 @@
 """Utility functions for networking."""
 
 import socket
-import sys
 from typing import Optional, cast
+from urllib.parse import urlparse
 
+from zenml.environment import Environment
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
@@ -38,7 +39,7 @@ def port_available(port: int, address: str = "127.0.0.1") -> bool:
     try:
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-            if sys.platform != "win32":
+            if hasattr(socket, "SO_REUSEPORT"):
                 s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
             else:
                 # The SO_REUSEPORT socket option is not supported on Windows.
@@ -109,3 +110,97 @@ def port_is_open(hostname: str, port: int) -> bool:
             f"Error checking TCP port {port} on host {hostname}: {str(e)}"
         )
         return False
+
+
+def replace_localhost_with_internal_hostname(url: str) -> str:
+    """Replaces the localhost with an internal Docker or K3D hostname in a given URL.
+
+    Localhost URLs that are directly accessible on the host machine are not
+    accessible from within a Docker or K3D container running on that same
+    machine, but there are special hostnames featured by both Docker
+    (`host.docker.internal`) and K3D (`host.k3d.internal`) that can be used to
+    access host services from within the containers.
+
+    Use this method to attempt to replace `localhost` in a URL with one of these
+    special hostnames, if they are available inside a container.
+
+    Args:
+        url: The URL to update.
+
+    Returns:
+        The updated URL.
+    """
+    if not Environment.in_container():
+        return url
+
+    parsed_url = urlparse(url)
+    if parsed_url.hostname in ("localhost", "127.0.0.1"):
+
+        for internal_hostname in (
+            "host.docker.internal",
+            "host.k3d.internal",
+        ):
+            try:
+                socket.gethostbyname(internal_hostname)
+                parsed_url = parsed_url._replace(
+                    netloc=parsed_url.netloc.replace(
+                        parsed_url.hostname,
+                        internal_hostname,
+                    )
+                )
+                logger.debug(
+                    f"Replacing localhost with {internal_hostname} in URL: "
+                    f"{url}"
+                )
+                return parsed_url.geturl()
+
+            except socket.gaierror:
+                continue
+
+    return url
+
+
+def replace_internal_hostname_with_localhost(hostname: str) -> str:
+    """Replaces an internal Docker or K3D hostname with localhost.
+
+    Localhost URLs that are directly accessible on the host machine are not
+    accessible from within a Docker or K3D container running on that same
+    machine, but there are special hostnames featured by both Docker
+    (`host.docker.internal`) and K3D (`host.k3d.internal`) that can be used to
+    access host services from within the containers.
+
+    Use this method to replace one of these special hostnames with localhost
+    if used outside a container or in a container where special hostnames are
+    not available.
+
+    Args:
+        hostname: The hostname to replace.
+
+    Returns:
+        The original or replaced hostname.
+    """
+    if hostname not in ("host.docker.internal", "host.k3d.internal"):
+        return hostname
+
+    if Environment.in_container():
+
+        # Try to resolve one of the special hostnames to see if it is available
+        # inside the container and use that if it is.
+        for internal_hostname in (
+            "host.docker.internal",
+            "host.k3d.internal",
+        ):
+            try:
+                socket.gethostbyname(internal_hostname)
+                if internal_hostname != hostname:
+                    logger.debug(
+                        f"Replacing internal hostname {hostname} with "
+                        f"{internal_hostname}"
+                    )
+                return internal_hostname
+            except socket.gaierror:
+                continue
+
+    logger.debug(f"Replacing internal hostname {hostname} with localhost.")
+
+    return "127.0.0.1"

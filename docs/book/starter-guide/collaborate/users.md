@@ -4,7 +4,7 @@ description: How to add users to your ZenML deployment
 
 # Multi-player mode with ZenML
 
-After you have [deployed ZenML](../../getting-started/deploying-zenml/deploying-zenml.md) and [connected your local client with the deployment](./zenml-deployment.md), you can go ahead and start adding your teammates as users.
+After you have [deployed ZenML](../../getting-started/deploying-zenml/deploying-zenml.md) and [connected your local client with the deployment](../production-fundamentals/production-fundamentals.md), you can go ahead and start adding your teammates as users.
 
 By default, all users have `Administrator` permissions throughout the ZenML dashboard, however one user can always choose to [share](../stacks/managing-stacks.md#sharing-stacks-over-a-zenml-server) or not share their stacks.
 
@@ -14,9 +14,9 @@ You can go to the settings page from the bottom of the side bar or top right of 
 
 ![Personal Settings](../../assets/starter_guide/collaboration/01_personal_settings.png)
 
-## Project Settings
+## Workspace Settings
 
-![Project Settings](../../assets/starter_guide/collaboration/02_project_settings.png)
+![Workspace Settings](../../assets/starter_guide/collaboration/02_project_settings.png)
 
 In project settings, you can see a list of users who are invited or signed up for this ZenML deployment. You can go ahead and invite a new user here with a
 unique username. The dashboard will generate a new token for you, in the form of a URL that you can copy and send to your teammate.

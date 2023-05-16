@@ -42,9 +42,11 @@ zenml integration install mlflow -y
 ```
 
 The MLflow Experiment Tracker can be configured to accommodate the following
-[MLflow deployment scenarios](https://mlflow.org/docs/latest/tracking.html#how-runs-and-artifacts-are-recorded):
+[MLflow deployment
+scenarios](https://mlflow.org/docs/latest/tracking.html#how-runs-and-artifacts-are-recorded)
+as specified in the MLflow documentation:
 
-* [Scenario 1](https://mlflow.org/docs/latest/tracking.html#scenario-1-mlflow-on-localhost):
+* ['Scenario 1'](https://mlflow.org/docs/latest/tracking.html#scenario-1-mlflow-on-localhost):
 This scenario requires that you use a [local Artifact Store](../artifact-stores/local.md)
 alongside the MLflow Experiment Tracker in your ZenML stack. The local Artifact
 Store comes with limitations regarding what other types of components you can
@@ -60,18 +62,38 @@ zenml experiment-tracker register mlflow_experiment_tracker --flavor=mlflow
 zenml stack register custom_stack -e mlflow_experiment_tracker ... --set
 ```
 
-* [Scenario 5](https://mlflow.org/docs/latest/tracking.html#scenario-5-mlflow-tracking-server-enabled-with-proxied-artifact-storage-access):
+* ['Scenario 5'](https://mlflow.org/docs/latest/tracking.html#scenario-5-mlflow-tracking-server-enabled-with-proxied-artifact-storage-access):
 This scenario assumes that you have already deployed an MLflow Tracking Server
 enabled with proxied artifact storage access. There is no restriction regarding
 what other types of components it can be combined with. This option requires
 [authentication related parameters](#authentication-methods) to be configured
 for the MLflow Experiment Tracker.
 
+{% hint style="warning" %}
+Due to a [critical severity vulnerability](https://github.com/advisories/GHSA-xg73-94fp-g449) found in older versions of MLflow, we recommend using
+MLflow version 2.2.1 or higher.
+{% endhint %}
+
 * [Databricks scenario](https://www.databricks.com/product/managed-mlflow):
 This scenario assumes that you have a Databricks workspace, and you want to
 use the managed MLflow Tracking server it provides. This option requires
 [authentication related parameters](#authentication-methods) to be configured
 for the MLflow Experiment Tracker.
+
+### Infrastructure Deployment
+
+The MLflow Experiment Tracker can be deployed directly from the ZenML CLI:
+
+```shell
+# optionally assigning an existing bucket to the MLflow Experiment Tracker
+zenml experiment-tracker deploy mlflow_tracker --flavor=mlflow --mlflow_bucket=gs://my_bucket
+```
+
+You can pass other configuration specific to the stack components as key-value
+arguments. If you don't provide a name, a random one is generated for you. For
+more information about how to work use the CLI for this, please refer to [the
+dedicated documentation
+section](../../advanced-guide/practical/stack-recipes.md#deploying-stack-components-directly).
 
 ### Authentication Methods
 
@@ -122,23 +144,42 @@ zenml stack register custom_stack -e mlflow_experiment_tracker ... --set
 ```
 {% endtab %}
 
-{% tab title="Secrets Manager (Recommended)" %}
+{% tab title="ZenML Secret (Recommended)" %}
 
-This method requires you to include a [Secrets Manager](../secrets-managers/secrets-managers.md)
-in your stack and configure a ZenML secret to store the MLflow tracking service
-credentials securely.
+This method requires you to [configure a ZenML secret](../../starter-guide/production-fundamentals/secrets-management.md)
+to store the MLflow tracking service credentials securely.
 
-{% hint style="warning" %}
-**This method is not yet supported!**
+You can create the secret using the `zenml secret create` command:
 
-We are actively working on adding Secrets Manager support to the MLflow
-Experiment Tracker.
+```shell 
+# Create a secret called `mlflow_secret` with key-value pairs for the
+# username and password to authenticate with the MLflow tracking server
+zenml secret create mlflow_secret \
+    --username=<USERNAME> \
+    --password=<PASSWORD>
+```
+
+Once the secret is created, you can use it to configure the MLflow Experiment
+Tracker:
+
+```shell
+# Reference the username and password in our experiment tracker component
+zenml experiment-tracker register mlflow \
+    --flavor=mlflow \
+    --tracking_username={{mlflow_secret.username}} \
+    --tracking_password={{mlflow_secret.password}} \
+    ...
+```
+
+{% hint style="info" %}
+Read more about [ZenML Secrets](../../starter-guide/production-fundamentals/secrets-management.md)
+in the ZenML documentation.
 {% endhint %}
 {% endtab %}
 {% endtabs %}
 
 For more, up-to-date information on the MLflow Experiment Tracker implementation
-and its configuration, you can have a look at [the API docs](https://apidocs.zenml.io/latest/api_docs/integration_code_docs/integrations-mlflow/#zenml.integrations.mlflow.experiment_trackers.mlflow_experiment_tracker).
+and its configuration, you can have a look at [the API docs](https://apidocs.zenml.io/latest/integration_code_docs/integrations-mlflow/#zenml.integrations.mlflow.experiment_trackers.mlflow_experiment_tracker).
 
 ## How do you use it?
 
@@ -173,8 +214,10 @@ def tf_trainer(
     return model
 ```
 
+### Additional configuration
+
 For additional configuration of the MLflow experiment tracker, you can pass
-`MLflowExperimentTrackerSettings` to create nested runs or add additional tags
+`MLFlowExperimentTrackerSettings` to create nested runs or add additional tags
 to your MLflow runs:
 
 ```python
@@ -197,6 +240,11 @@ def step_one(
 ) -> np.ndarray:
     ...
 ```
+
+Check out the
+[API docs](https://apidocs.zenml.io/latest/integration_code_docs/integrations-mlflow/#zenml.integrations.mlflow.flavors.mlflow_experiment_tracker_flavor.MLFlowExperimentTrackerSettings)
+for a full list of available attributes and [this docs page](../..//advanced-guide/pipelines/settings.md)
+for more information on how to specify settings.
 
 You can also check out our examples pages for working examples that use the
 MLflow Experiment Tracker in their stacks:

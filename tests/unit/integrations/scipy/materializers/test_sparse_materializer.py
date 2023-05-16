@@ -11,30 +11,25 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from contextlib import ExitStack as does_not_raise
 
-from scipy.sparse import coo_matrix, spmatrix
+from scipy.sparse import coo_matrix
 
 from tests.unit.test_general import _test_materializer
 from zenml.integrations.scipy.materializers.sparse_materializer import (
     SparseMaterializer,
 )
-from zenml.post_execution.pipeline import PipelineRunView
 
 
 def test_scipy_sparse_matrix_materializer(clean_client):
     """Tests whether the steps work for the SciPy sparse matrix materializer."""
-    with does_not_raise():
-        _test_materializer(
-            step_output=coo_matrix(
-                ([1, 2, 3], ([0, 1, 2], [0, 1, 2])), shape=(3, 3)
-            ),
-            materializer=SparseMaterializer,
-        )
+    sparse_matrix = _test_materializer(
+        step_output=coo_matrix(
+            ([1, 2, 3], ([0, 1, 2], [0, 1, 2])), shape=(3, 3)
+        ),
+        materializer_class=SparseMaterializer,
+        expected_metadata_size=4,
+    )
 
-    last_run = PipelineRunView(clean_client.zen_store.list_runs()[-1])
-    sparse_matrix = last_run.steps[-1].output.read()
-    assert isinstance(sparse_matrix, spmatrix)
     assert sparse_matrix.format == "coo"
     assert sparse_matrix.shape == (3, 3)
     assert sparse_matrix.nnz == 3

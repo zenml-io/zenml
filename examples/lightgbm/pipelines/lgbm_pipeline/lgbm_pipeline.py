@@ -15,7 +15,9 @@ from zenml.config import DockerSettings
 from zenml.integrations.constants import LIGHTGBM
 from zenml.pipelines import pipeline
 
-docker_settings = DockerSettings(required_integrations=[LIGHTGBM])
+docker_settings = DockerSettings(
+    required_integrations=[LIGHTGBM], apt_packages=["libgomp1"]
+)
 
 
 @pipeline(enable_cache=False, settings={"docker": docker_settings})
@@ -24,7 +26,7 @@ def lgbm_pipeline(
     trainer,
     predictor,
 ):
-    """Links all the steps together in a pipeline"""
+    """Links all the steps together in a pipeline."""
     mat_train, mat_test = data_loader()
     model = trainer(mat_train, mat_test)
     predictor(model)

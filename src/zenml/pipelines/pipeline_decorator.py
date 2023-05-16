@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Decorator function for ZenML pipelines."""
 
+from types import FunctionType
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -27,8 +28,12 @@ from typing import (
 
 from zenml.pipelines.base_pipeline import (
     INSTANCE_CONFIGURATION,
+    PARAM_ENABLE_ARTIFACT_METADATA,
+    PARAM_ENABLE_ARTIFACT_VISUALIZATION,
     PARAM_ENABLE_CACHE,
     PARAM_EXTRA_OPTIONS,
+    PARAM_ON_FAILURE,
+    PARAM_ON_SUCCESS,
     PARAM_SETTINGS,
     PIPELINE_INNER_FUNC_NAME,
     BasePipeline,
@@ -36,6 +41,9 @@ from zenml.pipelines.base_pipeline import (
 
 if TYPE_CHECKING:
     from zenml.config.base_settings import SettingsOrDict
+    from zenml.config.source import Source
+
+    HookSpecification = Union[str, "Source", FunctionType]
 
 F = TypeVar("F", bound=Callable[..., None])
 
@@ -49,7 +57,9 @@ def pipeline(_func: F) -> Type[BasePipeline]:
 def pipeline(
     *,
     name: Optional[str] = None,
-    enable_cache: bool = True,
+    enable_cache: Optional[bool] = None,
+    enable_artifact_metadata: Optional[bool] = None,
+    enable_artifact_visualization: Optional[bool] = None,
     settings: Optional[Dict[str, "SettingsOrDict"]] = None,
     extra: Optional[Dict[str, Any]] = None,
 ) -> Callable[[F], Type[BasePipeline]]:
@@ -60,9 +70,13 @@ def pipeline(
     _func: Optional[F] = None,
     *,
     name: Optional[str] = None,
-    enable_cache: bool = True,
+    enable_cache: Optional[bool] = None,
+    enable_artifact_metadata: Optional[bool] = None,
+    enable_artifact_visualization: Optional[bool] = None,
     settings: Optional[Dict[str, "SettingsOrDict"]] = None,
     extra: Optional[Dict[str, Any]] = None,
+    on_failure: Optional["HookSpecification"] = None,
+    on_success: Optional["HookSpecification"] = None,
 ) -> Union[Type[BasePipeline], Callable[[F], Type[BasePipeline]]]:
     """Outer decorator function for the creation of a ZenML pipeline.
 
@@ -74,8 +88,19 @@ def pipeline(
         name: The name of the pipeline. If left empty, the name of the
             decorated function will be used as a fallback.
         enable_cache: Whether to use caching or not.
+        enable_artifact_metadata: Whether to enable artifact metadata or not.
+        enable_artifact_visualization: Whether to enable artifact visualization.
         settings: Settings for this pipeline.
         extra: Extra configurations for this pipeline.
+        on_failure: Callback function in event of failure of the step. Can be
+            a function with three possible parameters,
+            `StepContext`, `BaseParameters`, and `BaseException`,
+            or a source path to a function of the same specifications
+            (e.g. `module.my_function`).
+        on_success: Callback function in event of failure of the step. Can be
+            a function with two possible parameters, `StepContext` and
+            `BaseParameters, or a source path to a function of the same specifications
+            (e.g. `module.my_function`).
 
     Returns:
         the inner decorator which creates the pipeline class based on the
@@ -99,8 +124,12 @@ def pipeline(
                 PIPELINE_INNER_FUNC_NAME: staticmethod(func),  # type: ignore[arg-type] # noqa
                 INSTANCE_CONFIGURATION: {
                     PARAM_ENABLE_CACHE: enable_cache,
+                    PARAM_ENABLE_ARTIFACT_METADATA: enable_artifact_metadata,
+                    PARAM_ENABLE_ARTIFACT_VISUALIZATION: enable_artifact_visualization,
                     PARAM_SETTINGS: settings,
                     PARAM_EXTRA_OPTIONS: extra,
+                    PARAM_ON_FAILURE: on_failure,
+                    PARAM_ON_SUCCESS: on_success,
                 },
                 "__module__": func.__module__,
                 "__doc__": func.__doc__,

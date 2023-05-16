@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2023. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -116,6 +116,8 @@ class MLFlowModelDeployer(BaseModelDeployer):
             "PREDICTION_URL": service_instance.endpoint.prediction_url,
             "MODEL_URI": service_instance.config.model_uri,
             "MODEL_NAME": service_instance.config.model_name,
+            "REGISTRY_MODEL_NAME": service_instance.config.registry_model_name,
+            "REGISTRY_MODEL_VERSION": service_instance.config.registry_model_version,
             "SERVICE_PATH": service_instance.status.runtime_path,
             "DAEMON_PID": str(service_instance.status.pid),
         }
@@ -223,8 +225,8 @@ class MLFlowModelDeployer(BaseModelDeployer):
         existing_service.stop(timeout=timeout, force=force)
 
         # delete the old configuration file
-        service_directory_path = existing_service.status.runtime_path or ""
-        shutil.rmtree(service_directory_path)
+        if existing_service.status.runtime_path:
+            shutil.rmtree(existing_service.status.runtime_path)
 
     # the step will receive a config from the user that mentions the number
     # of workers etc.the step implementation will create a new config using
@@ -256,11 +258,13 @@ class MLFlowModelDeployer(BaseModelDeployer):
         running: bool = False,
         service_uuid: Optional[UUID] = None,
         pipeline_name: Optional[str] = None,
-        pipeline_run_id: Optional[str] = None,
+        run_name: Optional[str] = None,
         pipeline_step_name: Optional[str] = None,
         model_name: Optional[str] = None,
         model_uri: Optional[str] = None,
         model_type: Optional[str] = None,
+        registry_model_name: Optional[str] = None,
+        registry_model_version: Optional[str] = None,
     ) -> List[BaseService]:
         """Finds one or more model servers that match the given criteria.
 
@@ -270,7 +274,7 @@ class MLFlowModelDeployer(BaseModelDeployer):
                 to deploy the model.
             pipeline_name: Name of the pipeline that the deployed model was part
                 of.
-            pipeline_run_id: ID of the pipeline run which the deployed model
+            run_name: Name of the pipeline run which the deployed model
                 was part of.
             pipeline_step_name: The name of the pipeline model deployment step
                 that deployed the model.
@@ -278,6 +282,10 @@ class MLFlowModelDeployer(BaseModelDeployer):
             model_uri: URI of the deployed model.
             model_type: Type/format of the deployed model. Not used in this
                 MLflow case.
+            registry_model_name: Name of the registered model that the
+                deployed model belongs to.
+            registry_model_version: Version of the registered model that
+                the deployed model belongs to.
 
         Returns:
             One or more Service objects representing model servers that match
@@ -291,8 +299,11 @@ class MLFlowModelDeployer(BaseModelDeployer):
             model_name=model_name or "",
             model_uri=model_uri or "",
             pipeline_name=pipeline_name or "",
-            pipeline_run_id=pipeline_run_id or "",
+            pipeline_run_id=run_name or "",
+            run_name=run_name or "",
             pipeline_step_name=pipeline_step_name or "",
+            registry_model_name=registry_model_name,
+            registry_model_version=registry_model_version,
         )
 
         # find all services that match the input criteria
@@ -309,8 +320,10 @@ class MLFlowModelDeployer(BaseModelDeployer):
                     existing_service_config = None
                     with open(service_config_path, "r") as f:
                         existing_service_config = f.read()
-                    existing_service = ServiceRegistry().load_service_from_json(
-                        existing_service_config
+                    existing_service = (
+                        ServiceRegistry().load_service_from_json(
+                            existing_service_config
+                        )
                     )
                     if not isinstance(
                         existing_service, MLFlowDeploymentService
@@ -322,7 +335,9 @@ class MLFlowModelDeployer(BaseModelDeployer):
                     existing_service.update_status()
                     if self._matches_search_criteria(existing_service, config):
                         if not running or existing_service.is_running:
-                            services.append(cast(BaseService, existing_service))
+                            services.append(
+                                cast(BaseService, existing_service)
+                            )
 
         return services
 
@@ -348,12 +363,12 @@ class MLFlowModelDeployer(BaseModelDeployer):
             True if the service matches the input criteria.
         """
         existing_service_config = existing_service.config
-
         # check if the existing service matches the input criteria
         if (
             (
                 not config.pipeline_name
-                or existing_service_config.pipeline_name == config.pipeline_name
+                or existing_service_config.pipeline_name
+                == config.pipeline_name
             )
             and (
                 not config.model_name
@@ -365,9 +380,20 @@ class MLFlowModelDeployer(BaseModelDeployer):
                 == config.pipeline_step_name
             )
             and (
-                not config.pipeline_run_id
-                or existing_service_config.pipeline_run_id
-                == config.pipeline_run_id
+                not config.run_name
+                or existing_service_config.run_name == config.run_name
+            )
+            and (
+                (
+                    not config.registry_model_name
+                    and not config.registry_model_version
+                )
+                or (
+                    existing_service_config.registry_model_name
+                    == config.registry_model_name
+                    and existing_service_config.registry_model_version
+                    == config.registry_model_version
+                )
             )
         ):
             return True

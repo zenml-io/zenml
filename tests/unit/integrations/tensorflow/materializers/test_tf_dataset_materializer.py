@@ -11,7 +11,6 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from contextlib import ExitStack as does_not_raise
 
 import tensorflow as tf
 
@@ -19,20 +18,15 @@ from tests.unit.test_general import _test_materializer
 from zenml.integrations.tensorflow.materializers.tf_dataset_materializer import (
     TensorflowDatasetMaterializer,
 )
-from zenml.post_execution.pipeline import PipelineRunView
 
 
 def test_tensorflow_tf_dataset_materializer(clean_client):
-    """Tests whether the steps work for the TensorFlow TF Dataset
-    materializer."""
+    """Tests whether the steps work for the TensorFlow TF Dataset materializer."""
+    dataset = _test_materializer(
+        step_output=tf.data.Dataset.from_tensor_slices([1, 2, 3]),
+        step_output_type=tf.data.Dataset,
+        materializer_class=TensorflowDatasetMaterializer,
+        expected_metadata_size=2,
+    )
 
-    with does_not_raise():
-        _test_materializer(
-            step_output=tf.data.Dataset.from_tensor_slices([1, 2, 3]),
-            materializer=TensorflowDatasetMaterializer,
-        )
-
-    last_run = PipelineRunView(clean_client.zen_store.list_runs()[-1])
-    dataset = last_run.steps[-1].output.read()
-    assert isinstance(dataset, tf.data.Dataset)
     assert isinstance(dataset.element_spec.dtype, type(tf.int32))

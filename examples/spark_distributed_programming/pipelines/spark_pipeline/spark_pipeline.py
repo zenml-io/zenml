@@ -13,19 +13,26 @@
 #  permissions and limitations under the License.
 
 
+import os
+
+from zenml.config import DockerSettings
 from zenml.pipelines import pipeline
 
+docker_settings = DockerSettings(
+    requirements=["zenml"], parent_image=os.getenv("BASE_IMAGE_NAME")
+)
 
-@pipeline
+
+@pipeline(enable_cache=True, settings={"docker": docker_settings})
 def spark_pipeline(
     importer,
     analyzer,
     splitter,
-    processer,
+    processor,
     trainer,
 ):
     dataset = importer()
     analyzer(dataset)
     train, test, evaluation = splitter(dataset)
-    train_xf, _, _ = processer(train)
+    train_xf, _, _ = processor(train)
     _ = trainer(train_xf)

@@ -32,18 +32,47 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 
+def get_run_environment_dict() -> Dict[str, str]:
+    """Returns a dictionary of the current run environment.
+
+    Everything that is returned here will be saved in the DB as
+    `pipeline_run.client_environment` and
+    `pipeline_run.orchestrator_environment` for client and orchestrator
+    respectively.
+
+    Returns:
+        A dictionary of the current run environment.
+    """
+    return {
+        "environment": get_environment(),
+        **Environment.get_system_info(),
+        "python_version": Environment.python_version(),
+    }
+
+
 def get_environment() -> str:
     """Returns a string representing the execution environment of the pipeline.
-
-    Currently, one of `docker`, `paperspace`, 'colab', or `native`.
 
     Returns:
         str: the execution environment
     """
+    # Order is important here
     if Environment.in_kubernetes():
         return "kubernetes"
+    elif Environment.in_github_actions():
+        return "github_action"
+    elif Environment.in_gitlab_ci():
+        return "gitlab_ci"
+    elif Environment.in_circle_ci():
+        return "circle_ci"
+    elif Environment.in_bitbucket_ci():
+        return "bitbucket_ci"
+    elif Environment.in_ci():
+        return "generic_ci"
     elif Environment.in_docker():
         return "docker"
+    elif Environment.in_container():
+        return "container"
     elif Environment.in_google_colab():
         return "colab"
     elif Environment.in_paperspace_gradient():
@@ -107,7 +136,7 @@ class Environment(metaclass=SingletonMetaClass):
         return self.has_component(STEP_ENVIRONMENT_NAME)
 
     @staticmethod
-    def get_system_info() -> Dict[str, Any]:
+    def get_system_info() -> Dict[str, str]:
         """Information about the operating system.
 
         Returns:
@@ -150,6 +179,17 @@ class Environment(metaclass=SingletonMetaClass):
         return platform.python_version()
 
     @staticmethod
+    def in_container() -> bool:
+        """If the current python process is running in a container.
+
+        Returns:
+            `True` if the current python process is running in a
+            container, `False` otherwise.
+        """
+        # TODO [ENG-167]: Make this more reliable and add test.
+        return INSIDE_ZENML_CONTAINER
+
+    @staticmethod
     def in_docker() -> bool:
         """If the current python process is running in a docker container.
 
@@ -157,10 +197,6 @@ class Environment(metaclass=SingletonMetaClass):
             `True` if the current python process is running in a docker
             container, `False` otherwise.
         """
-        # TODO [ENG-167]: Make this more reliable and add test.
-        if INSIDE_ZENML_CONTAINER:
-            return True
-
         if os.path.exists("./dockerenv") or os.path.exists("/.dockerinit"):
             return True
 
@@ -213,6 +249,9 @@ class Environment(metaclass=SingletonMetaClass):
             `True` if the current Python process is running in a notebook,
             `False` otherwise.
         """
+        if Environment.in_google_colab():
+            return True
+
         if find_spec("IPython") is not None:
             from IPython import get_ipython  # type: ignore
 
@@ -232,6 +271,56 @@ class Environment(metaclass=SingletonMetaClass):
             Gradient, `False` otherwise.
         """
         return "PAPERSPACE_NOTEBOOK_REPO_ID" in os.environ
+
+    @staticmethod
+    def in_github_actions() -> bool:
+        """If the current Python process is running in GitHub Actions.
+
+        Returns:
+            `True` if the current Python process is running in GitHub
+            Actions, `False` otherwise.
+        """
+        return "GITHUB_ACTIONS" in os.environ
+
+    @staticmethod
+    def in_gitlab_ci() -> bool:
+        """If the current Python process is running in GitLab CI.
+
+        Returns:
+            `True` if the current Python process is running in GitLab
+            CI, `False` otherwise.
+        """
+        return "GITLAB_CI" in os.environ
+
+    @staticmethod
+    def in_circle_ci() -> bool:
+        """If the current Python process is running in Circle CI.
+
+        Returns:
+            `True` if the current Python process is running in Circle
+            CI, `False` otherwise.
+        """
+        return "CIRCLECI" in os.environ
+
+    @staticmethod
+    def in_bitbucket_ci() -> bool:
+        """If the current Python process is running in Bitbucket CI.
+
+        Returns:
+            `True` if the current Python process is running in Bitbucket
+            CI, `False` otherwise.
+        """
+        return "BITBUCKET_BUILD_NUMBER" in os.environ
+
+    @staticmethod
+    def in_ci() -> bool:
+        """If the current Python process is running in any CI.
+
+        Returns:
+            `True` if the current Python process is running in any
+            CI, `False` otherwise.
+        """
+        return "CI" in os.environ
 
     def register_component(
         self, component: "BaseEnvironmentComponent"
@@ -266,7 +355,9 @@ class Environment(metaclass=SingletonMetaClass):
         """
         if self._components.get(component.NAME) is component:
             del self._components[component.NAME]
-            logger.debug(f"Deregistered environment component {component.NAME}")
+            logger.debug(
+                f"Deregistered environment component {component.NAME}"
+            )
 
         else:
             logger.warning(

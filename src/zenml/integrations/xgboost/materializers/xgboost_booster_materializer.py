@@ -15,11 +15,11 @@
 
 import os
 import tempfile
-from typing import Any, Type
+from typing import Any, ClassVar, Tuple, Type
 
 import xgboost as xgb
 
-from zenml.artifacts import ModelArtifact
+from zenml.enums import ArtifactType
 from zenml.io import fileio
 from zenml.materializers.base_materializer import BaseMaterializer
 
@@ -29,10 +29,10 @@ DEFAULT_FILENAME = "model.json"
 class XgboostBoosterMaterializer(BaseMaterializer):
     """Materializer to read data to and from xgboost.Booster."""
 
-    ASSOCIATED_TYPES = (xgb.Booster,)
-    ASSOCIATED_ARTIFACT_TYPES = (ModelArtifact,)
+    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (xgb.Booster,)
+    ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.MODEL
 
-    def handle_input(self, data_type: Type[Any]) -> xgb.Booster:
+    def load(self, data_type: Type[Any]) -> xgb.Booster:
         """Reads a xgboost Booster model from a serialized JSON file.
 
         Args:
@@ -41,8 +41,7 @@ class XgboostBoosterMaterializer(BaseMaterializer):
         Returns:
             A xgboost Booster object.
         """
-        super().handle_input(data_type)
-        filepath = os.path.join(self.artifact.uri, DEFAULT_FILENAME)
+        filepath = os.path.join(self.uri, DEFAULT_FILENAME)
 
         # Create a temporary folder
         temp_dir = tempfile.mkdtemp(prefix="zenml-temp-")
@@ -57,15 +56,13 @@ class XgboostBoosterMaterializer(BaseMaterializer):
         fileio.rmtree(temp_dir)
         return booster
 
-    def handle_return(self, booster: xgb.Booster) -> None:
+    def save(self, booster: xgb.Booster) -> None:
         """Creates a JSON serialization for a xgboost Booster model.
 
         Args:
             booster: A xgboost Booster model.
         """
-        super().handle_return(booster)
-
-        filepath = os.path.join(self.artifact.uri, DEFAULT_FILENAME)
+        filepath = os.path.join(self.uri, DEFAULT_FILENAME)
 
         # Make a temporary phantom artifact
         with tempfile.NamedTemporaryFile(

@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2020. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2023. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -78,13 +78,21 @@ You can also pass in a directory path manually using the
 
 ```bash
 zenml init --path /path/to/dir
+```
 
-If you wish to delete all data relating to your project from the
+If you wish to use one of [the available ZenML project templates](https://github.com/zenml-io/zenml-project-templates)
+to generate a ready-to-use project scaffold in your repository, you can do so by
+passing the ``--template`` option:
+
+```bash
+zenml init --template
+```
+
+If you wish to delete all data relating to your workspace from the
 directory, use the ``zenml clean`` command. This will:
 
--  delete all pipelines and pipeline runs
+-  delete all pipelines, pipeline runs and associated metadata
 -  delete all artifacts
--  delete all metadata
 
 Loading and using pre-built examples
 ------------------------------------
@@ -188,6 +196,61 @@ Uninstalling a specific integration is as simple as typing:
 zenml integration uninstall INTEGRATION_NAME
 ```
 
+Filtering CLI output when listing
+---------------------------------
+
+Certain CLI `list` commands allow you to filter their output. For example, all
+stack components allow you to pass custom parameters to the `list` command that
+will filter the output. To learn more about the available filters, a good quick
+reference is to use the `--help` command, as in the following example:
+
+```shell
+zenml orchestrator list --help
+```
+
+You will see a list of all the available filters for the `list` command along
+with examples of how to use them.
+
+The `--sort_by` option allows you to sort the output by a specific field and
+takes an `asc` or `desc` argument to specify the order. For example, to sort the
+output of the `list` command by the `name` field in ascending order, you would
+type:
+
+```shell
+zenml orchestrator list --sort_by "asc:name"
+```
+
+For fields marked as being of type `TEXT` or `UUID`, you can use the `contains`,
+`startswith` and `endswith` keywords along with their particular identifier. For
+example, for the orchestrator `list` command, you can use the following filter
+to find all orchestrators that contain the string `sagemaker` in their name:
+
+```shell
+zenml orchestrator list --name "contains:sagemaker"
+```
+
+For fields marked as being of type `BOOL`, you can use the 'True' or 'False'
+values to filter the output. For example, to find all orchestrators that are
+currently shared, you would type:
+
+```shell
+zenml orchestrator list --is_shared="True"
+```
+
+Finally, for fields marked as being of type `DATETIME`, you can pass in datetime
+values in the `%Y-%m-%d %H:%M:%S` format. These can be combined with the `gte`,
+`lte`, `gt` and `lt` keywords (greater than or equal, less than or equal,
+greater than and less than respectively) to specify the range of the filter. For
+example, if I wanted to find all orchestrators that were created after the 1st
+of January 2021, I would type:
+
+```shell
+zenml orchestrator list --created "gt:2021-01-01 00:00:00"
+```
+
+This syntax can also be combined to create more complex filters using the `or`
+and `and` keywords.
+
 Customizing your Artifact Store
 -------------------------------
 
@@ -200,8 +263,14 @@ to register a new artifact store, do so with the ``register`` command:
 zenml artifact-store register ARTIFACT_STORE_NAME --flavor=ARTIFACT_STORE_FLAVOR [--OPTIONS]
 ```
 
+You can also add any labels to your stack component using the `--label` or `-l` flag:
+
+```bash
+zenml artifact-store register ARTIFACT_STORE_NAME --flavor=ARTIFACT_STORE_FLAVOR -l key1=value1 -l key2=value2
+```
+
 If you wish to list the artifact stores that have already been
-registered within your ZenML project / repository, type:
+registered within your ZenML workspace / repository, type:
 
 ```bash
 zenml artifact-store list
@@ -231,8 +300,14 @@ command:
 zenml orchestrator register ORCHESTRATOR_NAME --flavor=ORCHESTRATOR_FLAVOR [--ORCHESTRATOR_OPTIONS]
 ```
 
+You can also add any label to your stack component using the `--label` or `-l` flag:
+
+```bash
+zenml orchestrator register ORCHESTRATOR_NAME --flavor=ORCHESTRATOR_FLAVOR -l key1=value1 -l key2=value2
+```
+
 If you wish to list the orchestrators that have already been registered
-within your ZenML project / repository, type:
+within your ZenML workspace / repository, type:
 
 ```bash
 zenml orchestrator list
@@ -255,6 +330,12 @@ registry, do so with the `register` command:
 
 ```bash
 zenml container-registry register REGISTRY_NAME --flavor=REGISTRY_FLAVOR [--REGISTRY_OPTIONS]
+```
+
+You can also add any label to your stack component using the `--label` or `-l` flag:
+
+```bash
+zenml container-registry register REGISTRY_NAME --flavor=REGISTRY_FLAVOR -l key1=value1 -l key2=value2
 ```
 
 If you want the name of the current container registry, use the `get` command:
@@ -295,6 +376,13 @@ experiment tracker in one of your stacks, you need to first register it:
 ```bash
 zenml experiment-tracker register EXPERIMENT_TRACKER_NAME \
     --flavor=EXPERIMENT_TRACKER_FLAVOR [--EXPERIMENT_TRACKER_OPTIONS]
+```
+
+You can also add any label to your stack component using the `--label` or `-l` flag:
+
+```bash
+zenml experiment-tracker register EXPERIMENT_TRACKER_NAME \
+      --flavor=EXPERIMENT_TRACKER_FLAVOR -l key1=value1 -l key2=value2
 ```
 
 If you want the name of the current experiment tracker, use the `get` command:
@@ -338,6 +426,12 @@ operator. If you wish to register a new step operator, do so with the
 zenml step-operator register STEP_OPERATOR_NAME --flavor STEP_OPERATOR_FLAVOR [--STEP_OPERATOR_OPTIONS]
 ```
 
+You can also add any label to your stack component using the `--label` or `-l` flag:
+
+```bash
+zenml step-operator register STEP_OPERATOR_NAME --flavor STEP_OPERATOR_FLAVOR -l key1=value1 -l key2=value2
+```
+
 If you want the name of the current step operator, use the `get` command:
 
 ```bash
@@ -366,11 +460,112 @@ command:
 zenml step-operator delete STEP_OPERATOR_NAME
 ```
 
-Setting up a Secrets Manager
-----------------------------
+Deploying Stack Components
+--------------------------
 
-ZenML offers a way to securely store secrets associated with your project. To
-set up a local file-based secrets manager, use the following CLI command:
+Stack components can be deployed directly via the CLI. You can use the `deploy`
+subcommand for this. For example, you could deploy an S3 artifact store using
+the following command:
+
+```shell
+zenml artifact-store deploy s3_artifact_store --flavor=s3
+```
+
+For full documentation on this functionality, please refer to [the dedicated
+documentation on stack component deploy](https://docs.zenml.io/advanced-guide/practical-mlops/stack-recipes#deploying-stack-components-directly).
+
+Secrets Management
+------------------
+
+ZenML offers a way to securely store secrets associated with your other
+stack components and infrastructure. A ZenML Secret is a collection or grouping
+of key-value pairs stored by the ZenML secrets store.
+ZenML Secrets are identified by a unique name which allows you to fetch or
+reference them in your pipelines and stacks.
+
+Depending on how you set up and deployed ZenML, the secrets store keeps secrets
+in the local database or uses the ZenML server your client is connected to:
+
+* if you are using the default ZenML client settings, or if you connect your
+ZenML client to a local ZenML server started with `zenml up`, the secrets store
+is using the same local SQLite database as the rest of ZenML
+* if you connect your ZenML client to a remote ZenML server, the
+secrets are no longer managed on your local machine, but through the remote
+server instead. Secrets are stored in whatever secrets store back-end the
+remote server is configured to use. This can be a SQL database, one of the
+managed cloud secrets management services, or even a custom back-end.
+
+To create a secret, use the `create` command and pass the key-value pairs
+as command-line arguments:
+
+```bash
+zenml secret create SECRET_NAME --key1=value1 --key2=value2 --key3=value3 ...
+```
+
+Note that when using the previous command the keys and values will be preserved in your `bash_history` file, so
+you may prefer to use the interactive `create` command instead:
+
+```shell
+zenml secret create SECRET_NAME -i
+```
+
+As an alternative to the interactive mode, also useful for values that
+are long or contain newline or special characters, you can also use the special
+`@` syntax to indicate to ZenML that the value needs to be read from a file:
+
+```bash
+zenml secret create SECRET_NAME \
+   --aws_access_key_id=1234567890 \
+   --aws_secret_access_key=abcdefghij \
+   --aws_session_token=@/path/to/token.txt
+```
+
+To list all the secrets available, use the `list` command:
+
+```bash
+zenml secret list
+```
+
+To get the key-value pairs for a particular secret, use the `get` command:
+
+```bash
+zenml secret get SECRET_NAME
+```
+
+To update a secret, use the `update` command:
+
+```bash
+zenml secret update SECRET_NAME --key1=value1 --key2=value2 --key3=value3 ...
+```
+
+Note that when using the previous command the keys and values will be preserved in your `bash_history` file, so
+you may prefer to use the interactive `update` command instead:
+
+```shell
+zenml secret update SECRET_NAME -i
+```
+
+Finally, to delete a secret, use the `delete` command:
+
+```bash
+zenml secret delete SECRET_NAME
+```
+
+Secrets can be scoped to a workspace or a user. By default, secrets
+are scoped to the current workspace. To scope a secret to a user, use the
+`--scope user` argument in the `register` command.
+
+Secrets Management with Secrets Managers
+----------------------------------------
+
+NOTE: this is a legacy feature that is being deprecated in favor of the
+centralized ZenML secrets store. Going forward, we recommend using centralized
+ZenML secrets instead of secrets manager stack components to configure and store
+secrets.
+
+Secrets can also be managed through the secrets manager stack component in your
+active stack. To set up a local file-based secrets manager, use the following
+CLI command:
 
 ```bash
 zenml secrets-manager register SECRETS_MANAGER_NAME --flavor=local
@@ -378,13 +573,13 @@ zenml secrets-manager register SECRETS_MANAGER_NAME --flavor=local
 
 This can then be used as part of your Stack (see below).
 
-Using Secrets
--------------
+When you use a secrets manager, ZenML secrets are managed through the secrets
+manager stack component in your active stack. This means that you can only
+use the CLI commands described here if the active stack contains a secrets
+manager. This is just one of the limitations of using secrets managers, as
+opposed to the centralized ZenML secrets store, and one of the reasons why we
+have deprecated them.
 
-Secrets are administered by the Secrets Manager. You must first register that
-and then register a stack that includes the secrets manager before you can start
-to use it. To get a full list of all the possible commands, type `zenml secret
---help`. A ZenML Secret is a collection or grouping of key-value pairs. These
 Secret groupings come in different types, and certain types have predefined keys
 that should be used. For example, an AWS secret has predefined keys of
 `aws_access_key_id` and `aws_secret_access_key` (and an optional
@@ -477,14 +672,14 @@ zenml model-deployer register MODEL_DEPLOYER_NAME --flavor=MODEL_DEPLOYER_FLAVOR
 ```
 
 If you wish to list the model-deployers that have already been registered
-within your ZenML project / repository, type:
+within your ZenML workspace / repository, type:
 
 ```bash
 zenml model-deployer list
 ```
 
 If you wish to get more detailed information about a particular model deployer
-within your ZenML project / repository, type:
+within your ZenML workspace / repository, type:
 
 ```bash
 zenml model-deployer describe MODEL_DEPLOYER_NAME
@@ -595,7 +790,7 @@ zenml stack share STACK_NAME
 ```
 
 To list the stacks that you have registered within your current ZenML
-project, type:
+workspace, type:
 
 ```bash
 zenml stack list
@@ -697,7 +892,7 @@ If you wish to remove an attribute (or multiple attributes) from a stack
 component, use the following command:
 
 ```shell
-zenml STACK_COMPONENT remove-attribute STACK_COMPONENT_NAME --ATTRIBUTE_NAME [--OTHER_ATTRIBUTE_NAME]
+zenml STACK_COMPONENT remove-attribute STACK_COMPONENT_NAME ATTRIBUTE_NAME [OTHER_ATTRIBUTE_NAME]
 ```
 
 Note that you can only remove optional attributes.
@@ -709,14 +904,70 @@ following command:
 zenml stack register-secrets [<STACK_NAME>]
 ```
 
+Administering your Code Repositories
+------------------------------------
+
+Code repositories enable ZenML to keep track of the code version that you use
+for your pipeline runs. Additionally, running a pipeline which is tracked in
+a registered code repository can decrease the time it takes Docker to build images for
+containerized stack components.
+
+To register a code repository, use the following CLI
+command:
+```shell
+zenml code-repository register <NAME> --type=<CODE_REPOSITORY_TYPE] \
+   [--CODE_REPOSITORY_OPTIONS]
+```
+
+ZenML currently supports code repositories of type `github` and `gitlab`, but
+you can also use your custom code repository implementation by passing the
+type `custom` and a source of your repository class.
+
+```shell
+zenml code-repository register <NAME> --type=custom \
+   --source=<CODE_REPOSITORY_SOURCE> [--CODE_REPOSITORY_OPTIONS]
+```
+
+The `CODE_REPOSITORY_OPTIONS` depend on the configuration necessary for the
+type of code repository that you're using.
+
+If you want to list your registered code repositories, run:
+```shell
+zenml code-repository list
+```
+
+You can delete one of your registered code repositories like this:
+```shell
+zenml code-repository delete <REPOSITORY_NAME_OR_ID>
+```
+
 Administering your Pipelines
 ----------------------------
 
 ZenML provides several CLI commands to help you administer your pipelines and
 pipeline runs.
 
-After you have run some pipelines by by executing the corresponding Python 
-scripts, you can list all pipelines via:
+To explicitly register a pipeline you need to point to a pipeline instance
+in your Python code. Let's say you have a Python file called `run.py` and
+it contains the following code:
+
+```python
+from zenml.pipelines import pipeline
+
+@pipeline
+def my_pipeline(...):
+   # Connect your pipeline steps here
+   pass
+
+pipeline_instance = my_pipeline(...)
+```
+
+You can register your pipeline like this:
+```bash
+zenml pipeline register run.pipeline_instance
+```
+
+To list all registered pipelines, use:
 
 ```bash
 zenml pipeline list
@@ -726,7 +977,7 @@ Since every pipeline run creates a new pipeline by default, you might
 occasionally want to delete a pipeline, which you can do via:
 
 ```bash
-zenml pipeline delete PIPELINE_NAME
+zenml pipeline delete <PIPELINE_NAME>
 ```
 
 This will delete the pipeline and change all corresponding pipeline runs to
@@ -738,28 +989,109 @@ To list all pipeline runs that you have executed, use:
 zenml pipeline runs list
 ```
 
-These are currently read-only and cannot be modified or deleted.
-
-If you would like to switch to a different ZenML deployment 
-(e.g., when switching from a local deployment to a cloud deployment), you can
-migrate your existing pipeline runs by exporting them to a YAML file via:
+To delete a pipeline run, use:
 
 ```bash
-zenml pipeline runs export FILENAME.yaml
+zenml pipeline runs delete <PIPELINE_RUN_NAME_OR_ID>
 ```
 
-This will create a FILENAME.yaml containing all your pipeline runs, which, after
-connecting to the new ZenML deployment, you can then import again like this:
+If you run any of your pipelines with `pipeline.run(schedule=...)`, ZenML keeps
+track of the schedule and you can list all schedules via:
 
 ```bash
-zenml pipeline runs import FILENAME.yaml
+zenml pipeline schedule list
 ```
 
-If you would like to migrate old pipeline runs from a legacy metadata store from
-ZenML versions < 0.20.0, you can do so by running the following command:
+To delete a schedule, use:
 
 ```bash
-zenml pipeline runs migrate METADATA_STORE_PATH
+zenml pipeline schedule delete <SCHEDULE_NAME_OR_ID>
+```
+
+Note, however, that this will only delete the reference saved in ZenML and does
+NOT stop/delete the schedule in the respective orchestrator. This still needs to
+be done manually. For example, using the Airflow orchestrator you would have 
+to open the web UI to manually click to stop the schedule from executing.
+
+Each pipeline run automatically saves its artifacts in the artifact store. To
+list all artifacts that have been saved, use:
+
+```bash
+zenml artifact list
+```
+
+The metadata of an artifact can only be deleted if it is no longer linked to
+any pipeline runs, i.e., if the run that produced the artifact and all runs that
+cached any of its steps have been deleted.
+
+To delete all artifacts that are no longer linked to any pipeline runs, use:
+
+```bash
+zenml artifact prune
+```
+
+To delete a specific artifact, use:
+
+```bash
+zenml artifact delete <ARTIFACT_NAME_OR_ID>
+```
+
+Each pipeline run that requires Docker images also stores a build which
+contains the image names used for this run. To list all builds, use:
+
+```bash
+zenml pipeline builds list
+```
+
+To delete a specific build, use:
+
+```bash
+zenml pipeline builds delete <BUILD_ID>
+```
+
+Building an image without running your Pipelines
+----------------------------------
+
+To build Docker images for your pipeline without actually running the pipeline,
+use:
+
+```bash
+zenml pipeline build <PIPELINE_ID_OR_NAME>
+```
+
+To specify settings for the Docker builds, use the `--config/-c` option of the
+command. For more information about the structure of this configuration file,
+check out the `zenml.pipelines.base_pipeline.BasePipeline.build(...)` method.
+
+```bash
+zenml pipeline build <PIPELINE_ID_OR_NAME> --config=<PATH_TO_CONFIG_YAML>
+```
+
+If you want to build the pipeline for a stack different than your current active
+stack, use the `--stack` option.
+```bash
+zenml pipeline build <PIPELINE_ID_OR_NAME> --stack=<STACK_ID_OR_NAME>
+```
+
+
+To run a pipeline that was previously registered, use:
+
+```bash
+zenml pipeline run  <PIPELINE_ID_OR_NAME>
+```
+
+To specify settings for the pipeline, use the `--config/-c` option of the
+command. For more information about the structure of this configuration file,
+check out the `zenml.pipelines.base_pipeline.BasePipeline.run(...)` method.
+
+```bash
+zenml pipeline run <PIPELINE_ID_OR_NAME> --config=<PATH_TO_CONFIG_YAML>
+```
+
+If you want to run the pipeline on a stack different than your current active
+stack, use the `--stack` option.
+```bash
+zenml pipeline run <PIPELINE_ID_OR_NAME> --stack=<STACK_ID_OR_NAME>
 ```
 
 Managing the local ZenML Dashboard
@@ -806,8 +1138,7 @@ The TCP port and the host address that the dashboard uses to listen for
 connections can also be customized. Using an IP address that is not the default
 `localhost` or 127.0.0.1 is especially useful if you're running some type of
 local ZenML orchestrator, such as the k3d Kubeflow orchestrator or Docker
-orchestrator, that can't directly access you loopback interface and therefore
-cannot connect to the local ZenML server.
+orchestrator, that cannot directly connect to the local ZenML server.
 
 For example, to start the dashboard on port 9000 and have it listen
 on all locally available interfaces on your machine, run:
@@ -935,7 +1266,7 @@ Example output:
 Running without an active repository root.
 Connected to a ZenML server: 'https://ac8ef63af203226194a7725ee71d85a-7635928635.us-east-1.elb.amazonaws.com'
 The current user is: 'default'
-The active project is: 'default' (global)
+The active workspace is: 'default' (global)
 The active stack is: 'default' (global)
 The status of the local dashboard:
               ZenML server 'local'              
@@ -981,11 +1312,11 @@ ssl_key: null
 ssl_verify_server_cert: false
 ```
 
-Managing users, teams, projects and roles
+Managing users, teams, workspaces and roles
 -----------------------------------------
 
 When using the ZenML service, you can manage permissions by managing users,
-teams, projects and roles using the CLI.
+teams, workspaces and roles using the CLI.
 If you want to create a new user or delete an existing one, run either
 
 ```bash
@@ -994,6 +1325,12 @@ zenml user create USER_NAME
 or
 ```bash
 zenml user delete USER_NAME
+```
+
+A freshly created user will by default be assigned the admin role. This
+behavior can be overwritten:
+```bash
+zenml user create USER_NAME --role guest
 ```
 
 To see a list of all users, run:
@@ -1026,16 +1363,27 @@ To see a list of all teams, run:
 zenml team list
 ```
 
-A role groups permissions and can be assigned to users or teams. To create or
-delete a role, run one of the following commands:
+A role groups permissions to resources. Currently, there are the following
+globally scoped roles to choose from: 'write', 'read' and 'me'. To create
+a role, run one of the following commands:
 ```bash
-zenml role create ROLE_NAME
+zenml role create ROLE_NAME -p write -p read -p me
+zenml role create ROLE_NAME -p read
+```
+
+To delete a role run:
+```bash
 zenml role delete ROLE_NAME
 ```
 
 To see a list of all roles, run:
 ```bash
 zenml role list
+```
+
+You can also update the role name and the attached permissions of a role:
+```bash
+zenml role update [-n <NEW_NAME>| -r <PERMISSION_TO_REMOVE>| -a <PERMISSION_TO_ADD>]
 ```
 
 If you want to assign or revoke a role from users or teams, you can run
@@ -1056,6 +1404,10 @@ You can see a list of all current role assignments by running:
 zenml role assignment list
 ```
 
+At any point you may inspect all available permissions:
+```bash
+zenml permission list
+```
 
 Deploying ZenML to the cloud
 ----------------------------
@@ -1099,11 +1451,13 @@ stack recipe(s). Use the `-p` or `--path` flag.
 ```bash
 zenml stack recipe pull <stack-recipe-name> --path=<PATH>
 ```
-By default, all recipes get downloaded under a directory called `zenml_stack_recipes`.
+By default, all recipes get downloaded under a directory called
+`zenml_stack_recipes`.
 
 To deploy a recipe, use the `deploy` command. Before running deploy, review the 
 `zenml_stack_recipes/<stack-recipe-name>/locals.tf` file for configuring
-non-sensitive variables and the `zenml_stack_recipes/<stack-recipe-name>/values.tfvars`
+non-sensitive variables and the
+`zenml_stack_recipes/<stack-recipe-name>/values.tfvars`
 file to add sensitive information like access keys and passwords.
 
 ```bash
@@ -1143,17 +1497,82 @@ zenml stack recipe clean
 ```
 
 This deletes all the recipes from the default path where they were downloaded.
+
+Interacting with the ZenML Hub
+------------------------------
+
+The ZenML Hub is a central location for discovering and sharing third-party 
+ZenML code, such as custom integrations, components, steps, pipelines, 
+materializers, and more. 
+You can browse the ZenML Hub at [https://hub.zenml.io](https://hub.zenml.io).
+
+The ZenML CLI provides various commands to interact with the ZenML Hub:
+
+- Listing all plugins available on the Hub:
+```bash
+zenml hub list
+```
+
+- Installing a Hub plugin:
+```bash
+zenml hub install
+```
+Installed plugins can be imported via `from zenml.hub.<plugin_name> import ...`. 
+
+
+- Uninstalling a Hub plugin:
+```bash
+zenml hub uninstall
+```
+
+- Cloning the source code of a Hub plugin (without installing it):
+```bash
+zenml hub clone
+```
+This is useful, e.g., for extending an existing plugin or for getting the 
+examples of a plugin.
+
+- Submitting/contributing a plugin to the Hub (requires login, see below):
+```bash
+zenml hub submit
+```
+If you are unsure about which arguments you need to set, you can run the
+command in interactive mode:
+```bash
+zenml hub submit --interactive
+```
+This will ask for and validate inputs one at a time.
+
+- Logging in to the Hub:
+```bash
+zenml hub login
+```
+
+- Logging out of the Hub:
+```bash
+zenml hub logout
+```
+
+- Viewing the build logs of a plugin you submitted to the Hub:
+```bash
+zenml hub logs
+```
 """
 
 from zenml.cli.annotator import *  # noqa
+from zenml.cli.artifact import *  # noqa
 from zenml.cli.base import *  # noqa
+from zenml.cli.code_repository import *  # noqa
 from zenml.cli.config import *  # noqa
 from zenml.cli.example import *  # noqa
 from zenml.cli.feature import *  # noqa
+from zenml.cli.hub import *  # noqa
 from zenml.cli.integration import *  # noqa
+from zenml.cli.served_model import *  # noqa
 from zenml.cli.model import *  # noqa
 from zenml.cli.pipeline import *  # noqa
-from zenml.cli.profile import *  # noqa
+from zenml.cli.workspace import *  # noqa
+from zenml.cli.role import *  # noqa
 from zenml.cli.secret import *  # noqa
 from zenml.cli.server import *  # noqa
 from zenml.cli.stack import *  # noqa
@@ -1161,3 +1580,4 @@ from zenml.cli.stack_components import *  # noqa
 from zenml.cli.stack_recipes import *  # noqa
 from zenml.cli.user_management import *  # noqa
 from zenml.cli.version import *  # noqa
+from zenml.cli.downgrade import *  # noqa

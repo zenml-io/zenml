@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 
 import platform
+from uuid import uuid4
 
 import pytest
 
@@ -20,13 +21,37 @@ from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.step_configurations import StepConfiguration
 from zenml.config.step_run_info import StepRunInfo
 from zenml.constants import VALID_OPERATING_SYSTEMS
-from zenml.environment import BaseEnvironmentComponent, Environment
+from zenml.environment import (
+    BaseEnvironmentComponent,
+    Environment,
+    get_environment,
+    get_run_environment_dict,
+)
 from zenml.steps import StepEnvironment
+
+
+def test_get_run_environment_dict():
+    """Unit test for `get_run_environment_dict`.
+
+    Tests that the function returns a dict of strings and that the following
+    keys are present:
+    - "environment"
+    - "os"
+    - "python_version"
+    """
+    environment_dict = get_run_environment_dict()
+    assert isinstance(environment_dict, dict)
+    assert "environment" in environment_dict
+    assert environment_dict["environment"] == get_environment()
+    assert "os" in environment_dict
+    assert environment_dict["os"] == Environment.get_system_info()["os"]
+    assert "python_version" in environment_dict
+    assert environment_dict["python_version"] == Environment.python_version()
 
 
 def test_environment_platform_info_correctness():
     """Checks that `Environment.get_system_info()` returns the correct
-    platform"""
+    platform."""
     system_id = platform.system()
 
     if system_id == "Darwin":
@@ -44,19 +69,18 @@ def test_environment_is_singleton():
 
 def test_step_is_running():
     """Tests that the environment correctly reports when a step is running."""
-
     assert Environment().step_is_running is False
     step_run_info = StepRunInfo(
         config=StepConfiguration(enable_cache=True, name="step"),
         pipeline=PipelineConfiguration(enable_cache=True, name="pipeline"),
         run_name="run_name",
+        pipeline_step_name="step_name",
+        run_id=uuid4(),
+        step_run_id=uuid4(),
     )
     with StepEnvironment(
-        pipeline_name="pipeline",
-        pipeline_run_id="run_id",
-        step_name="step",
-        cache_enabled=True,
         step_run_info=step_run_info,
+        cache_enabled=True,
     ):
         assert Environment().step_is_running is True
 
@@ -91,8 +115,7 @@ def test_environment_component_activation():
 
 
 def test_ipython_terminal_detection_when_not_installed():
-    """Tests that we detect if the Python process is running in an IPython
-    terminal when not installed."""
+    """Tests that we detect if the Python process is running in an IPython terminal when not installed."""
     try:
         import IPython  # noqa
     except ImportError:

@@ -23,31 +23,95 @@ from zenml.enums import StackComponentType
 from zenml.exceptions import StackValidationError
 from zenml.integrations.kubernetes.flavors.kubernetes_orchestrator_flavor import (
     KubernetesOrchestratorConfig,
+    KubernetesOrchestratorSettings,
 )
 from zenml.integrations.kubernetes.orchestrators import KubernetesOrchestrator
 from zenml.stack import Stack
 
+K8S_CONTEXT = "kubernetes_context"
 
-def _get_kubernetes_orchestrator() -> KubernetesOrchestrator:
+
+def _get_kubernetes_orchestrator(
+    local: bool = False, skip_local_validations: bool = False
+) -> KubernetesOrchestrator:
     """Helper function to get a Kubernetes orchestrator."""
     return KubernetesOrchestrator(
         name="",
         id=uuid4(),
-        config=KubernetesOrchestratorConfig(skip_config_loading=True),
+        config=KubernetesOrchestratorConfig(
+            kubernetes_context=K8S_CONTEXT,
+            local=local,
+            skip_local_validations=skip_local_validations,
+        ),
         flavor="kubernetes",
         type=StackComponentType.ORCHESTRATOR,
         user=uuid4(),
-        project=uuid4(),
+        workspace=uuid4(),
         created=datetime.now(),
         updated=datetime.now(),
     )
 
 
+def _patch_k8s_clients(mocker):
+    """Helper function to patch k8s clients."""
+
+    mock_context = {"name": K8S_CONTEXT}
+
+    def mock_load_kube_config(context: str) -> None:
+        mock_context["name"] = context
+
+    def mock_load_incluster_config() -> None:
+        mock_context["name"] = "incluster"
+
+    mocker.patch(
+        "kubernetes.config.load_kube_config",
+        side_effect=mock_load_kube_config,
+    )
+    mocker.patch(
+        "kubernetes.config.load_incluster_config",
+        side_effect=mock_load_incluster_config,
+    )
+
+    mocker.patch(
+        "kubernetes.config.list_kube_config_contexts",
+        return_value=([mock_context], mock_context),
+    )
+
+    mocker.patch("kubernetes.client.CoreV1Api")
+    mocker.patch("kubernetes.client.BatchV1beta1Api")
+    mocker.patch("kubernetes.client.RbacAuthorizationV1Api")
+
+
 def test_kubernetes_orchestrator_remote_stack(
-    remote_artifact_store, remote_container_registry
+    mocker, remote_artifact_store, remote_container_registry
 ) -> None:
-    """Test that the kubernetes orchestrator works with remote stacks."""
+    """Test the remote and local kubernetes orchestrator with remote stacks."""
+    _patch_k8s_clients(mocker)
+
+    # Test remote stack with remote orchestrator
     orchestrator = _get_kubernetes_orchestrator()
+    with does_not_raise():
+        Stack(
+            id=uuid4(),
+            name="",
+            orchestrator=orchestrator,
+            artifact_store=remote_artifact_store,
+            container_registry=remote_container_registry,
+        ).validate()
+
+    # Test remote stack with local orchestrator
+    orchestrator = _get_kubernetes_orchestrator(local=True)
+    with does_not_raise():
+        Stack(
+            id=uuid4(),
+            name="",
+            orchestrator=orchestrator,
+            artifact_store=remote_artifact_store,
+            container_registry=remote_container_registry,
+        ).validate()
+    orchestrator = _get_kubernetes_orchestrator(
+        local=True, skip_local_validations=True
+    )
     with does_not_raise():
         Stack(
             id=uuid4(),
@@ -59,9 +123,22 @@ def test_kubernetes_orchestrator_remote_stack(
 
 
 def test_kubernetes_orchestrator_local_stack(
-    local_artifact_store, local_container_registry
+    mocker, local_artifact_store, local_container_registry
 ) -> None:
-    """Test that the kubernetes orchestrator raises an error in local stacks."""
+    """Test the remote and local kubernetes orchestrator with remote stacks."""
+    _patch_k8s_clients(mocker)
+
+    # Test missing container registry
+    orchestrator = _get_kubernetes_orchestrator(local=True)
+    with pytest.raises(StackValidationError):
+        Stack(
+            id=uuid4(),
+            name="",
+            orchestrator=orchestrator,
+            artifact_store=local_artifact_store,
+        ).validate()
+
+    # Test local stack with remote orchestrator
     orchestrator = _get_kubernetes_orchestrator()
     with pytest.raises(StackValidationError):
         Stack(
@@ -71,3 +148,65 @@ def test_kubernetes_orchestrator_local_stack(
             artifact_store=local_artifact_store,
             container_registry=local_container_registry,
         ).validate()
+    orchestrator = _get_kubernetes_orchestrator(skip_local_validations=True)
+    with does_not_raise():
+        Stack(
+            id=uuid4(),
+            name="",
+            orchestrator=orchestrator,
+            artifact_store=local_artifact_store,
+            container_registry=local_container_registry,
+        ).validate()
+
+    # Test local stack with local orchestrator
+    orchestrator = _get_kubernetes_orchestrator(local=True)
+    with does_not_raise():
+        Stack(
+            id=uuid4(),
+            name="",
+            orchestrator=orchestrator,
+            artifact_store=local_artifact_store,
+            container_registry=local_container_registry,
+        ).validate()
+
+
+def test_kubernetes_orchestrator_uses_service_account_from_settings(mocker):
+    """Test that the service account from the settings is used."""
+    _patch_k8s_clients(mocker)
+    orchestrator = _get_kubernetes_orchestrator(local=True)
+    service_account_name = "aria-service-account"
+    settings = KubernetesOrchestratorSettings(
+        service_account_name=service_account_name
+    )
+    assert (
+        orchestrator._get_service_account_name(settings)
+        == service_account_name
+    )
+
+
+@pytest.mark.parametrize("incluster", [True, False])
+@pytest.mark.parametrize(
+    "kubernetes_context", [None, "aria-kubernetes-context"]
+)
+def test_kubernetes_orchestrator_uses_k8s_config_from_settings(
+    mocker, incluster, kubernetes_context
+):
+    """Test that the k8s config can be set from the settings."""
+    _patch_k8s_clients(mocker)
+    orchestrator = _get_kubernetes_orchestrator(local=True)
+    settings = KubernetesOrchestratorSettings(
+        kubernetes_context=kubernetes_context, incluster=incluster
+    )
+    orchestrator._initialize_k8s_clients(
+        incluster=settings.incluster, context=settings.kubernetes_context
+    )
+
+    expected_context = K8S_CONTEXT
+    if incluster:
+        expected_context = "incluster"
+    elif kubernetes_context:
+        expected_context = kubernetes_context
+    assert orchestrator.get_kubernetes_contexts() == (
+        [expected_context],
+        expected_context,
+    )

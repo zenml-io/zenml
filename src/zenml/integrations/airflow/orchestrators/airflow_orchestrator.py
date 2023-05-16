@@ -1,17 +1,3 @@
-# Copyright 2019 Google LLC. All Rights Reserved.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     https://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
 #  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
@@ -25,67 +11,102 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-
-# Minor parts of the  `prepare_or_run_pipeline()` method of this file are
-# inspired by the airflow dag runner implementation of tfx
 """Implementation of Airflow orchestrator integration."""
 
 import datetime
-import functools
+import importlib
 import os
+import platform
 import time
-from contextlib import contextmanager
-from typing import TYPE_CHECKING, Any, Dict, Iterator, Optional
+import zipfile
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    NamedTuple,
+    Optional,
+    Tuple,
+    Type,
+    cast,
+)
+from uuid import UUID
 
-from zenml.constants import ENV_ZENML_SKIP_PIPELINE_REGISTRATION
-from zenml.environment import Environment
+from zenml.config.global_config import GlobalConfiguration
+from zenml.constants import (
+    METADATA_ORCHESTRATOR_URL,
+)
+from zenml.entrypoints import StepEntrypointConfiguration
+from zenml.enums import StackComponentType
+from zenml.integrations.airflow.flavors.airflow_orchestrator_flavor import (
+    AirflowOrchestratorConfig,
+    AirflowOrchestratorSettings,
+    OperatorType,
+)
 from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.orchestrators import BaseOrchestrator
-from zenml.pipelines import Schedule
+from zenml.metadata.metadata_types import Uri
+from zenml.orchestrators import ContainerizedOrchestrator
+from zenml.orchestrators.utils import get_orchestrator_run_name
+from zenml.stack import StackValidator
 from zenml.utils import daemon, io_utils
-from zenml.utils.source_utils import get_source_root_path
+
+if TYPE_CHECKING:
+    from zenml.config import ResourceSettings
+    from zenml.config.base_settings import BaseSettings
+    from zenml.integrations.airflow.orchestrators.dag_generator import (
+        DagConfiguration,
+        TaskConfiguration,
+    )
+    from zenml.metadata.metadata_types import MetadataType
+    from zenml.models.pipeline_deployment_models import (
+        PipelineDeploymentResponseModel,
+    )
+    from zenml.pipelines import Schedule
+    from zenml.stack import Stack
 
 logger = get_logger(__name__)
 
-if TYPE_CHECKING:
-    from zenml.config.pipeline_deployment import PipelineDeployment
-    from zenml.config.step_configurations import Step
-    from zenml.stack import Stack
 
-AIRFLOW_ROOT_DIR = "airflow"
-DAG_FILEPATH_OPTION_KEY = "dag_filepath"
+class DagGeneratorValues(NamedTuple):
+    """Values from the DAG generator module."""
+
+    file: str
+    config_file_name: str
+    run_id_env_variable_name: str
+    dag_configuration_class: Type["DagConfiguration"]
+    task_configuration_class: Type["TaskConfiguration"]
 
 
-@contextmanager
-def set_environment_variable(key: str, value: str) -> Iterator[None]:
-    """Temporarily sets an environment variable.
-
-    The value will only be set while this context manager is active and will
-    be reset to the previous value afterward.
+def get_dag_generator_values(
+    custom_dag_generator_source: Optional[str] = None,
+) -> DagGeneratorValues:
+    """Gets values from the DAG generator module.
 
     Args:
-        key: The environment variable key.
-        value: The environment variable value.
+        custom_dag_generator_source: Source of a custom DAG generator module.
 
-    Yields:
-        None.
+    Returns:
+        DAG generator module values.
     """
-    old_value = os.environ.get(key, None)
-    try:
-        os.environ[key] = value
-        yield
-    finally:
-        if old_value:
-            os.environ[key] = old_value
-        else:
-            del os.environ[key]
+    if custom_dag_generator_source:
+        module = importlib.import_module(custom_dag_generator_source)
+    else:
+        from zenml.integrations.airflow.orchestrators import dag_generator
+
+        module = dag_generator
+
+    assert module.__file__
+    return DagGeneratorValues(
+        file=module.__file__,
+        config_file_name=module.CONFIG_FILENAME,
+        run_id_env_variable_name=module.ENV_ZENML_AIRFLOW_RUN_ID,
+        dag_configuration_class=module.DagConfiguration,
+        task_configuration_class=module.TaskConfiguration,
+    )
 
 
-class AirflowOrchestrator(BaseOrchestrator):
+class AirflowOrchestrator(ContainerizedOrchestrator):
     """Orchestrator responsible for running pipelines using Airflow."""
-
-    _orchestrator_run_id: Optional[str] = None
 
     def __init__(self, **values: Any):
         """Sets environment variables to configure airflow.
@@ -96,14 +117,303 @@ class AirflowOrchestrator(BaseOrchestrator):
         super().__init__(**values)
         self.airflow_home = os.path.join(
             io_utils.get_global_config_directory(),
-            AIRFLOW_ROOT_DIR,
+            "airflow",
             str(self.id),
         )
         self._set_env()
 
+    @property
+    def config(self) -> AirflowOrchestratorConfig:
+        """Returns the orchestrator config.
+
+        Returns:
+            The configuration.
+        """
+        return cast(AirflowOrchestratorConfig, self._config)
+
+    @property
+    def settings_class(self) -> Optional[Type["BaseSettings"]]:
+        """Settings class for the Kubeflow orchestrator.
+
+        Returns:
+            The settings class.
+        """
+        return AirflowOrchestratorSettings
+
+    @property
+    def dags_directory(self) -> str:
+        """Returns path to the airflow dags directory.
+
+        Returns:
+            Path to the airflow dags directory.
+        """
+        return os.path.join(self.airflow_home, "dags")
+
+    def _set_env(self) -> None:
+        """Sets environment variables to configure airflow."""
+        os.environ["AIRFLOW_HOME"] = self.airflow_home
+
+    @property
+    def validator(self) -> Optional["StackValidator"]:
+        """Validates the stack.
+
+        In the remote case, checks that the stack contains a container registry
+        and only remote components.
+
+        Returns:
+            A `StackValidator` instance.
+        """
+        if self.config.local:
+            # No container registry required if just running locally.
+            return None
+        else:
+
+            def _validate_remote_components(
+                stack: "Stack",
+            ) -> Tuple[bool, str]:
+                for component in stack.components.values():
+                    if not component.config.is_local:
+                        continue
+
+                    return False, (
+                        f"The Airflow orchestrator is configured to run "
+                        f"pipelines remotely, but the '{component.name}' "
+                        f"{component.type.value} is a local stack component "
+                        f"and will not be available in the Airflow "
+                        f"task.\nPlease ensure that you always use non-local "
+                        f"stack components with a remote Airflow orchestrator, "
+                        f"otherwise you may run into pipeline execution "
+                        f"problems."
+                    )
+
+                return True, ""
+
+            return StackValidator(
+                required_components={
+                    StackComponentType.CONTAINER_REGISTRY,
+                    StackComponentType.IMAGE_BUILDER,
+                },
+                custom_validation_function=_validate_remote_components,
+            )
+
+    def prepare_pipeline_deployment(
+        self,
+        deployment: "PipelineDeploymentResponseModel",
+        stack: "Stack",
+    ) -> None:
+        """Builds a Docker image to run pipeline steps.
+
+        Args:
+            deployment: The pipeline deployment configuration.
+            stack: The stack on which the pipeline will be deployed.
+        """
+        if self.config.local:
+            stack.check_local_paths()
+
+    def prepare_or_run_pipeline(
+        self,
+        deployment: "PipelineDeploymentResponseModel",
+        stack: "Stack",
+        environment: Dict[str, str],
+    ) -> Any:
+        """Creates and writes an Airflow DAG zip file.
+
+        Args:
+            deployment: The pipeline deployment to prepare or run.
+            stack: The stack the pipeline will run on.
+            environment: Environment variables to set in the orchestration
+                environment.
+
+        """
+        pipeline_settings = cast(
+            AirflowOrchestratorSettings, self.get_settings(deployment)
+        )
+
+        dag_generator_values = get_dag_generator_values(
+            custom_dag_generator_source=pipeline_settings.custom_dag_generator
+        )
+
+        command = StepEntrypointConfiguration.get_entrypoint_command()
+
+        tasks = []
+        for step_name, step in deployment.step_configurations.items():
+            settings = cast(
+                AirflowOrchestratorSettings, self.get_settings(step)
+            )
+            image = self.get_image(deployment=deployment, step_name=step_name)
+            arguments = StepEntrypointConfiguration.get_entrypoint_arguments(
+                step_name=step_name, deployment_id=deployment.id
+            )
+            operator_args = settings.operator_args.copy()
+            if self.requires_resources_in_orchestration_environment(step=step):
+                if settings.operator == OperatorType.KUBERNETES_POD.source:
+                    self._apply_resource_settings(
+                        resource_settings=step.config.resource_settings,
+                        operator_args=operator_args,
+                    )
+                else:
+                    logger.warning(
+                        "Specifying step resources is only supported when "
+                        "using KubernetesPodOperators, ignoring resource "
+                        "configuration for step %s.",
+                        step.config.name,
+                    )
+
+            task = dag_generator_values.task_configuration_class(
+                id=step_name,
+                zenml_step_name=step.config.name,
+                upstream_steps=step.spec.upstream_steps,
+                docker_image=image,
+                command=command,
+                arguments=arguments,
+                environment=environment,
+                operator_source=settings.operator,
+                operator_args=operator_args,
+            )
+            tasks.append(task)
+
+        local_stores_path = (
+            os.path.expanduser(GlobalConfiguration().local_stores_path)
+            if self.config.local
+            else None
+        )
+
+        dag_id = pipeline_settings.dag_id or get_orchestrator_run_name(
+            pipeline_name=deployment.pipeline_configuration.name
+        )
+        dag_config = dag_generator_values.dag_configuration_class(
+            id=dag_id,
+            local_stores_path=local_stores_path,
+            tasks=tasks,
+            tags=pipeline_settings.dag_tags,
+            dag_args=pipeline_settings.dag_args,
+            **self._translate_schedule(deployment.schedule),
+        )
+
+        self._write_dag(
+            dag_config,
+            dag_generator_values=dag_generator_values,
+            output_dir=pipeline_settings.dag_output_dir or self.dags_directory,
+        )
+
+    def _apply_resource_settings(
+        self,
+        resource_settings: "ResourceSettings",
+        operator_args: Dict[str, Any],
+    ) -> None:
+        """Adds resource settings to the operator args.
+
+        Args:
+            resource_settings: The resource settings to add.
+            operator_args: The operator args which will get modified in-place.
+        """
+        if "container_resources" in operator_args:
+            logger.warning(
+                "Received duplicate resources from ResourceSettings: `%s`"
+                "and operator_args: `%s`. Ignoring the resources defined by "
+                "the ResourceSettings.",
+                resource_settings,
+                operator_args["container_resources"],
+            )
+        else:
+            limits = {}
+
+            if resource_settings.cpu_count is not None:
+                limits["cpu"] = str(resource_settings.cpu_count)
+
+            if resource_settings.memory is not None:
+                memory_limit = resource_settings.memory[:-1]
+                limits["memory"] = memory_limit
+
+            if resource_settings.gpu_count is not None:
+                logger.warning(
+                    "Specifying GPU resources is not supported for the Airflow "
+                    "orchestrator."
+                )
+
+            operator_args["container_resources"] = {"limits": limits}
+
+    def _write_dag(
+        self,
+        dag_config: "DagConfiguration",
+        dag_generator_values: DagGeneratorValues,
+        output_dir: str,
+    ) -> None:
+        """Writes an Airflow DAG to disk.
+
+        Args:
+            dag_config: Configuration of the DAG to write.
+            dag_generator_values: Values of the DAG generator to use.
+            output_dir: The directory in which to write the DAG.
+        """
+        io_utils.create_dir_recursive_if_not_exists(output_dir)
+
+        if self.config.local and output_dir != self.dags_directory:
+            logger.warning(
+                "You're using a local Airflow orchestrator but specified a "
+                "custom DAG output directory `%s`. This DAG will not be found "
+                "by the local Airflow server until you copy it in the DAGs "
+                "directory `%s`.",
+                output_dir,
+                self.dags_directory,
+            )
+
+        def _write_zip(path: str) -> None:
+            with zipfile.ZipFile(path, mode="w") as z:
+                z.write(dag_generator_values.file, arcname="dag.py")
+                z.writestr(
+                    dag_generator_values.config_file_name, dag_config.json()
+                )
+
+            logger.info("Writing DAG definition to `%s`.", path)
+
+        dag_filename = f"{dag_config.id}.zip"
+        if io_utils.is_remote(output_dir):
+            io_utils.create_dir_recursive_if_not_exists(self.dags_directory)
+            local_zip_path = os.path.join(self.dags_directory, dag_filename)
+            remote_zip_path = os.path.join(output_dir, dag_filename)
+            _write_zip(local_zip_path)
+            try:
+                fileio.copy(local_zip_path, remote_zip_path)
+                logger.info("Copied DAG definition to `%s`.", remote_zip_path)
+            except Exception as e:
+                logger.exception(e)
+                logger.error(
+                    "Failed to upload DAG to remote path `%s`. To run the "
+                    "pipeline in Airflow, please manually copy the file `%s` "
+                    "to your Airflow DAG directory.",
+                    remote_zip_path,
+                    local_zip_path,
+                )
+        else:
+            zip_path = os.path.join(output_dir, dag_filename)
+            _write_zip(zip_path)
+
+    def get_orchestrator_run_id(self) -> str:
+        """Returns the active orchestrator run id.
+
+        Raises:
+            RuntimeError: If the environment variable specifying the run id
+                is not set.
+
+        Returns:
+            The orchestrator run id.
+        """
+        from zenml.integrations.airflow.orchestrators.dag_generator import (
+            ENV_ZENML_AIRFLOW_RUN_ID,
+        )
+
+        try:
+            return os.environ[ENV_ZENML_AIRFLOW_RUN_ID]
+        except KeyError:
+            raise RuntimeError(
+                "Unable to read run id from environment variable "
+                f"{ENV_ZENML_AIRFLOW_RUN_ID}."
+            )
+
     @staticmethod
     def _translate_schedule(
-        schedule: Optional[Schedule] = None,
+        schedule: Optional["Schedule"] = None,
     ) -> Dict[str, Any]:
         """Convert ZenML schedule into Airflow schedule.
 
@@ -121,134 +431,33 @@ class AirflowOrchestrator(BaseOrchestrator):
         if schedule:
             if schedule.cron_expression:
                 start_time = schedule.start_time or (
-                    datetime.datetime.now() - datetime.timedelta(1)
+                    datetime.datetime.utcnow() - datetime.timedelta(7)
                 )
                 return {
-                    "schedule_interval": schedule.cron_expression,
+                    "schedule": schedule.cron_expression,
                     "start_date": start_time,
                     "end_date": schedule.end_time,
                     "catchup": schedule.catchup,
                 }
             else:
                 return {
-                    "schedule_interval": schedule.interval_second,
+                    "schedule": schedule.interval_second,
                     "start_date": schedule.start_time,
                     "end_date": schedule.end_time,
                     "catchup": schedule.catchup,
                 }
 
         return {
-            "schedule_interval": "@once",
-            # set the a start time in the past and disable catchup so airflow runs the dag immediately
-            "start_date": datetime.datetime.now() - datetime.timedelta(7),
+            "schedule": "@once",
+            # set the a start time in the past and disable catchup so airflow
+            # runs the dag immediately
+            "start_date": datetime.datetime.utcnow() - datetime.timedelta(7),
             "catchup": False,
         }
 
-    def get_orchestrator_run_id(self) -> str:
-        """Returns the active orchestrator run id.
-
-        Raises:
-            RuntimeError: If no run id exists. This happens when this method
-                gets called while the orchestrator is not running a pipeline.
-
-        Returns:
-            The orchestrator run id.
-        """
-        if not self._orchestrator_run_id:
-            raise RuntimeError("No run id set.")
-
-        return self._orchestrator_run_id
-
-    def prepare_or_run_pipeline(
-        self,
-        deployment: "PipelineDeployment",
-        stack: "Stack",
-    ) -> Any:
-        """Creates an Airflow DAG as the intermediate representation for the pipeline.
-
-        This DAG will be loaded by airflow in the target environment
-        and used for orchestration of the pipeline.
-
-        How it works:
-        -------------
-        A new airflow_dag is instantiated with the pipeline name and among
-        others things the run schedule.
-
-        For each step of the pipeline a callable is created. This callable
-        uses the run_step() method to execute the step. The parameters of
-        this callable are pre-filled and an airflow step_operator is created
-        within the dag. The dependencies to upstream steps are then
-        configured.
-
-        Finally, the dag is fully complete and can be returned.
-
-        Args:
-            deployment: The pipeline deployment to prepare or run.
-            stack: The stack the pipeline will run on.
-
-        Returns:
-            The Airflow DAG.
-        """
-        import airflow
-        from airflow.operators import python as airflow_python
-
-        # Instantiate and configure airflow Dag with name and schedule
-        airflow_dag = airflow.DAG(
-            dag_id=deployment.pipeline.name,
-            is_paused_upon_creation=False,
-            **self._translate_schedule(deployment.schedule),
-        )
-
-        # Dictionary mapping step names to airflow_operators. This will be needed
-        # to configure airflow operator dependencies
-        step_name_to_airflow_operator = {}
-
-        for step in deployment.steps.values():
-            # Create callable that will be used by airflow to execute the step
-            # within the orchestrated environment
-            def _step_callable(step_instance: "Step", **kwargs):
-                if self.requires_resources_in_orchestration_environment(step):
-                    logger.warning(
-                        "Specifying step resources is not yet supported for "
-                        "the Airflow orchestrator, ignoring resource "
-                        "configuration for step %s.",
-                        step.name,
-                    )
-                self._orchestrator_run_id = kwargs["ti"].get_dagrun().run_id
-                self._prepare_run(deployment=deployment)
-                self.run_step(step=step_instance)
-                self._cleanup_run()
-                self._orchestrator_run_id = None
-
-            # Create airflow python operator that contains the step callable
-            airflow_operator = airflow_python.PythonOperator(
-                dag=airflow_dag,
-                task_id=step.config.name,
-                provide_context=True,
-                python_callable=functools.partial(
-                    _step_callable, step_instance=step
-                ),
-            )
-
-            # Configure the current airflow operator to run after all upstream
-            # operators finished executing
-            step_name_to_airflow_operator[step.config.name] = airflow_operator
-            for upstream_step_name in step.spec.upstream_steps:
-                airflow_operator.set_upstream(
-                    step_name_to_airflow_operator[upstream_step_name]
-                )
-
-        # Return the finished airflow dag
-        return airflow_dag
-
-    @property
-    def dags_directory(self) -> str:
-        """Returns path to the airflow dags directory.
-
-        Returns:
-            Path to the airflow dags directory.
-        """
-        return os.path.join(self.airflow_home, "dags")
+    #####################
+    #   Local Airflow   #
+    #####################
 
     @property
     def pid_file(self) -> str:
@@ -277,110 +486,25 @@ class AirflowOrchestrator(BaseOrchestrator):
         """
         return os.path.join(self.airflow_home, "standalone_admin_password.txt")
 
-    def _set_env(self) -> None:
-        """Sets environment variables to configure airflow."""
-        os.environ["AIRFLOW_HOME"] = self.airflow_home
-        os.environ["AIRFLOW__CORE__DAGS_FOLDER"] = self.dags_directory
-        os.environ["AIRFLOW__CORE__DAG_DISCOVERY_SAFE_MODE"] = "false"
-        os.environ["AIRFLOW__CORE__LOAD_EXAMPLES"] = "false"
-        # check the DAG folder every 10 seconds for new files
-        os.environ["AIRFLOW__SCHEDULER__DAG_DIR_LIST_INTERVAL"] = "10"
-
-    def _copy_to_dag_directory_if_necessary(self, dag_filepath: str) -> None:
-        """Copies DAG module to the Airflow DAGs directory if not already present.
-
-        Args:
-            dag_filepath: Path to the file in which the DAG is defined.
-        """
-        dags_directory = io_utils.resolve_relative_path(self.dags_directory)
-
-        if dags_directory == os.path.dirname(dag_filepath):
-            logger.debug("File is already in airflow DAGs directory.")
-        else:
-            logger.debug(
-                "Copying dag file '%s' to DAGs directory.", dag_filepath
-            )
-            destination_path = os.path.join(
-                dags_directory, os.path.basename(dag_filepath)
-            )
-            if fileio.exists(destination_path):
-                logger.info(
-                    "File '%s' already exists, overwriting with new DAG file",
-                    destination_path,
-                )
-            fileio.copy(dag_filepath, destination_path, overwrite=True)
-
-    def _log_webserver_credentials(self) -> None:
-        """Logs URL and credentials to log in to the airflow webserver.
-
-        Raises:
-            FileNotFoundError: If the password file does not exist.
-        """
-        if fileio.exists(self.password_file):
-            with open(self.password_file) as file:
-                password = file.read().strip()
-        else:
-            raise FileNotFoundError(
-                f"Can't find password file '{self.password_file}'"
-            )
-        logger.info(
-            "To inspect your DAGs, login to http://localhost:8080 "
-            "with username: admin password: %s",
-            password,
-        )
-
-    def prepare_pipeline_deployment(
-        self,
-        deployment: "PipelineDeployment",
-        stack: "Stack",
-    ) -> None:
-        """Checks Airflow is running and copies DAG file to the DAGs directory.
-
-        Args:
-            deployment: The pipeline deployment configuration.
-            stack: The stack on which the pipeline will be deployed.
-
-        Raises:
-            RuntimeError: If Airflow is not running or no DAG filepath runtime
-                          option is provided.
-        """
-        if not self.is_running:
-            raise RuntimeError(
-                "Airflow orchestrator is currently not running. Run `zenml "
-                "stack up` to provision resources for the active stack."
-            )
-
-        if Environment.in_notebook():
-            raise RuntimeError(
-                "Unable to run the Airflow orchestrator from within a "
-                "notebook. Airflow requires a python file which contains a "
-                "global Airflow DAG object and therefore does not work with "
-                "notebooks. Please copy your ZenML pipeline code in a python "
-                "file and try again."
-            )
-
-        try:
-            dag_filepath = deployment.pipeline.extra[DAG_FILEPATH_OPTION_KEY]
-        except KeyError:
-            raise RuntimeError(
-                f"No DAG filepath found in runtime configuration. Make sure "
-                f"to add the filepath to your airflow DAG file as a runtime "
-                f"option (key: '{DAG_FILEPATH_OPTION_KEY}')."
-            )
-
-        self._copy_to_dag_directory_if_necessary(dag_filepath=dag_filepath)
-
     @property
     def is_running(self) -> bool:
-        """Returns whether the airflow daemon is currently running.
+        """Returns whether the orchestrator is "running".
+
+        In the non-local case, this is always True. Otherwise checks if the
+        local Airflow server is running.
 
         Returns:
-            True if the daemon is running, False otherwise.
+            If the orchestrator is running.
 
         Raises:
             RuntimeError: If port 8080 is occupied.
         """
-        from airflow.cli.commands.standalone_command import StandaloneCommand
+        if not self.config.local:
+            return True
+
+        from airflow.cli.commands.standalone_command import (  # type: ignore
+            StandaloneCommand,
+        )
         from airflow.jobs.triggerer_job import TriggererJob
 
         daemon_running = daemon.check_if_daemon_is_running(self.pid_file)
@@ -419,34 +543,29 @@ class AirflowOrchestrator(BaseOrchestrator):
 
     def provision(self) -> None:
         """Ensures that Airflow is running."""
+        if not self.config.local:
+            return
+
         if self.is_running:
             logger.info("Airflow is already running.")
             self._log_webserver_credentials()
             return
+
+        self._check_local_server_requirements()
 
         if not fileio.exists(self.dags_directory):
             io_utils.create_dir_recursive_if_not_exists(self.dags_directory)
 
         from airflow.cli.commands.standalone_command import StandaloneCommand
 
+        self._set_server_env()
         try:
             command = StandaloneCommand()
-            # Skip pipeline registration inside the airflow server process.
-            # When searching for DAGs, airflow imports the runner file in a
-            # randomly generated module. If we don't skip pipeline registration,
-            # it would fail by trying to register a pipeline with an existing
-            # name but different module sources for the steps.
-            with set_environment_variable(
-                key=ENV_ZENML_SKIP_PIPELINE_REGISTRATION, value="True"
-            ):
-                # Run the daemon with a working directory inside the current
-                # zenml repo so the same repo will be used to run the DAGs
-                daemon.run_as_daemon(
-                    command.run,
-                    pid_file=self.pid_file,
-                    log_file=self.log_file,
-                    working_directory=get_source_root_path(),
-                )
+            daemon.run_as_daemon(
+                command.run,
+                pid_file=self.pid_file,
+                log_file=self.log_file,
+            )
             while not self.is_running:
                 # Wait until the daemon started all the relevant airflow
                 # processes
@@ -460,11 +579,94 @@ class AirflowOrchestrator(BaseOrchestrator):
                 "official Airflow quickstart guide for running Airflow locally."
             )
             self.deprovision()
+        finally:
+            logger.warning(
+                "Airflow provisioning using `zenml stack up` is "
+                "deprecated. Please follow the new Airflow quickstart guide "
+                "to run Airflow locally."
+            )
 
     def deprovision(self) -> None:
         """Stops the airflow daemon if necessary and tears down resources."""
+        if not self.config.local:
+            return
+
         if self.is_running:
             daemon.stop_daemon(self.pid_file)
 
         fileio.rmtree(self.airflow_home)
         logger.info("Airflow spun down.")
+
+    def _set_server_env(self) -> None:
+        """Sets environment variables for the local Airflow server process."""
+        os.environ["AIRFLOW__CORE__DAGS_FOLDER"] = self.dags_directory
+        os.environ["AIRFLOW__CORE__LOAD_EXAMPLES"] = "false"
+        # check the DAG folder every 10 seconds for new files
+        os.environ["AIRFLOW__SCHEDULER__DAG_DIR_LIST_INTERVAL"] = "10"
+
+        if platform.system() == "Darwin":
+            # Prevent crashes during forking on MacOS
+            # https://github.com/apache/airflow/issues/28487
+            os.environ["no_proxy"] = "*"
+
+    @staticmethod
+    def _check_local_server_requirements() -> None:
+        """Checks that all packages for a local Airflow server are installed.
+
+        When running a local Airflow server, we require the
+        `apache-airflow-providers-docker` to run steps locally in Docker
+        containers in addition to the basic integration requirements.
+
+        Raises:
+            RuntimeError: If the `apache-airflow-providers-docker` is not
+                installed in the active Python environment.
+        """
+        try:
+            from airflow.providers.docker.operators.docker import (  # noqa
+                DockerOperator,
+            )
+        except ImportError:
+            raise RuntimeError(
+                "Unable to import Airflow `DockerOperator` in the active "
+                "Python environment. Spinning up a local Airflow server to "
+                "run ZenML pipelines requires the `DockerOperator` to be "
+                "available. Please run "
+                "`pip install apache-airflow-providers-docker` to install it "
+                "and try again."
+            )
+
+    def _log_webserver_credentials(self) -> None:
+        """Logs URL and credentials to log in to the airflow webserver.
+
+        Raises:
+            FileNotFoundError: If the password file does not exist.
+        """
+        if fileio.exists(self.password_file):
+            with open(self.password_file) as file:
+                password = file.read().strip()
+        else:
+            raise FileNotFoundError(
+                f"Can't find password file '{self.password_file}'"
+            )
+        logger.info(
+            "To inspect your DAGs, login to `http://localhost:8080` "
+            "with username: `admin` password: `%s`",
+            password,
+        )
+
+    def get_pipeline_run_metadata(
+        self, run_id: UUID
+    ) -> Dict[str, "MetadataType"]:
+        """Get general component-specific metadata for a pipeline run.
+
+        Args:
+            run_id: The ID of the pipeline run.
+
+        Returns:
+            A dictionary of metadata.
+        """
+        if self.config.local:
+            return {
+                METADATA_ORCHESTRATOR_URL: Uri("http://localhost:8080"),
+            }
+        return {}

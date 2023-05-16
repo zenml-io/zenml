@@ -12,45 +12,14 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 import os
-import shutil
+from tempfile import TemporaryDirectory
+from typing import Optional, Type
 
-from zenml.artifacts.data_artifact import DataArtifact
-from zenml.materializers.default_materializer_registry import (
-    default_materializer_registry,
+from tests.unit.test_general import _test_materializer
+from zenml.materializers.base_materializer import BaseMaterializer
+from zenml.materializers.built_in_materializer import (
+    BuiltInContainerMaterializer,
 )
-
-
-def _test_materialization(
-    type_, example, artifact_uri=None, validation_function=None
-):
-    materializer_class = default_materializer_registry[type_]
-    mock_artifact = DataArtifact()
-    if artifact_uri:
-        mock_artifact.uri = artifact_uri
-    materializer = materializer_class(mock_artifact)
-    data_path = os.path.abspath(mock_artifact.uri)
-    existing_files = os.listdir(data_path)
-    try:
-        materializer.handle_return(example)
-        new_files = os.listdir(data_path)
-        assert len(new_files) > len(existing_files)  # something was written
-        loaded_data = materializer.handle_input(type_)
-        assert isinstance(loaded_data, type_)  # correct type
-        assert loaded_data == example  # correct content
-
-        if validation_function:
-            validation_function(data_path)
-    finally:
-        new_files = os.listdir(data_path)
-        created_files = [
-            filename for filename in new_files if filename not in existing_files
-        ]
-        for filename in created_files:
-            full_path = os.path.join(data_path, filename)
-            if os.path.isdir(full_path):
-                shutil.rmtree(full_path)
-            else:
-                os.remove(full_path)
 
 
 def test_basic_type_materialization():
@@ -61,7 +30,12 @@ def test_basic_type_materialization():
         (int, 0),
         (str, ""),
     ]:
-        _test_materialization(type_=type_, example=example)
+        result = _test_materializer(
+            step_output_type=type_,
+            step_output=example,
+            expected_metadata_size=1 if type_ == str else 2,
+        )
+        assert result == example
 
 
 def test_bytes_materialization():
@@ -69,64 +43,83 @@ def test_bytes_materialization():
 
     This is a separate test since `bytes` is not JSON serializable.
     """
-    _test_materialization(type_=bytes, example=b"")
+    example = b""
+    result = _test_materializer(
+        step_output_type=bytes, step_output=example, expected_metadata_size=1
+    )
+    assert result == example
 
 
 def test_empty_dict_list_tuple_materialization():
     """Test materialization for empty `dict`, `list`, `tuple` objects."""
-    _test_materialization(type_=dict, example={})
-    _test_materialization(type_=list, example=[])
-    _test_materialization(type_=tuple, example=())
+    for type_, example in [
+        (dict, {}),
+        (list, []),
+        (tuple, ()),
+    ]:
+        result = _test_materializer(
+            step_output_type=type_,
+            step_output=example,
+            expected_metadata_size=2,
+        )
+        assert result == example
 
 
 def test_simple_dict_list_tuple_materialization(tmp_path):
     """Test materialization for `dict`, `list`, `tuple` with data."""
-    artifact_uri = str(tmp_path)
 
     def _validate_single_file(artifact_uri: str) -> None:
         files = os.listdir(artifact_uri)
         assert len(files) == 1
 
-    _test_materialization(
-        type_=dict,
-        example={"a": 0, "b": 1, "c": 2},
-        artifact_uri=artifact_uri,
-        validation_function=_validate_single_file,
-    )
-    _test_materialization(
-        type_=list,
-        example=[0, 1, 2],
-        artifact_uri=artifact_uri,
-        validation_function=_validate_single_file,
-    )
-    _test_materialization(
-        type_=tuple,
-        example=(0, 1, 2),
-        artifact_uri=artifact_uri,
-        validation_function=_validate_single_file,
-    )
+    for type_, example in [
+        (dict, {"a": 0, "b": 1, "c": 2}),
+        (list, [0, 1, 2]),
+        (tuple, (0, 1, 2)),
+    ]:
+        result = _test_materializer(
+            step_output_type=type_,
+            step_output=example,
+            validation_function=_validate_single_file,
+            expected_metadata_size=2,
+        )
+        assert result == example
 
 
 def test_list_of_bytes_materialization():
     """Test materialization for lists of bytes."""
-    _test_materialization(type_=list, example=[b"0", b"1", b"2"])
+    example = [b"0", b"1", b"2"]
+    result = _test_materializer(
+        step_output_type=list, step_output=example, expected_metadata_size=2
+    )
+    assert result == example
 
 
 def test_dict_of_bytes_materialization():
     """Test materialization for dicts of bytes."""
-    _test_materialization(type_=dict, example={"a": b"0", "b": b"1", "c": b"2"})
+    example = {"a": b"0", "b": b"1", "c": b"2"}
+    result = _test_materializer(
+        step_output_type=dict, step_output=example, expected_metadata_size=2
+    )
+    assert result == example
 
 
 def test_tuple_of_bytes_materialization():
     """Test materialization for tuples of bytes."""
-    _test_materialization(type_=tuple, example=(b"0", b"1", b"2"))
+    example = (b"0", b"1", b"2")
+    result = _test_materializer(
+        step_output_type=tuple, step_output=example, expected_metadata_size=2
+    )
+    assert result == example
 
 
 def test_set_materialization():
     """Test materialization for `set` objects."""
-    _test_materialization(type_=set, example=set())
-    _test_materialization(type_=set, example={1, 2, 3})
-    _test_materialization(type_=set, example={b"0", b"1", b"2"})
+    for example in [set(), {1, 2, 3}, {b"0", b"1", b"2"}]:
+        result = _test_materializer(
+            step_output_type=set, step_output=example, expected_metadata_size=2
+        )
+        assert result == example
 
 
 def test_mixture_of_all_builtin_types():
@@ -142,10 +135,93 @@ def test_mixture_of_all_builtin_types():
         },  # non-serializable dict
         {1.0, 2.0, 4, 4},  # set of serializable types
     ]  # non-serializable list
-    _test_materialization(type_=list, example=example)
+    result = _test_materializer(
+        step_output_type=list, step_output=example, expected_metadata_size=2
+    )
+    assert result == example
 
 
 def test_none_values():
     """Tests serialization of `None` values in container types."""
-    _test_materialization(type_=list, example=[1, "a", None])
-    _test_materialization(type_=dict, example={"key": None})
+    for type_, example in [
+        (list, [1, "a", None]),
+        (tuple, (1, "a", None)),
+        (dict, {"key": None}),
+    ]:
+        result = _test_materializer(
+            step_output_type=type_,
+            step_output=example,
+            expected_metadata_size=2,
+        )
+        assert result == example
+
+
+class CustomType:
+    """Custom type used for testing the container materializer below."""
+
+    myname = "aria"
+
+    def __eq__(self, __value: object) -> bool:
+        if isinstance(__value, CustomType):
+            return self.myname == __value.myname
+        return False
+
+
+class CustomSubType(CustomType):
+    """Subtype of CustomType."""
+
+    myname = "axl"
+
+
+class CustomTypeMaterializer(BaseMaterializer):
+    """Mock materializer for custom types.
+
+    Does not actually save anything to disk, just initializes the type.
+    """
+
+    ASSOCIATED_TYPES = (CustomType,)
+
+    def save(self, data: CustomType) -> None:
+        """Save the data (not)."""
+        pass
+
+    def load(self, data_type: Type[CustomType]) -> Optional[CustomType]:
+        """Load the data."""
+        return data_type()
+
+
+def test_container_materializer_for_custom_types(mocker):
+    """Test container materializer for custom types.
+
+    This ensures that:
+    - The container materializer can handle custom types.
+    - Custom types are loaded as the correct type.
+    - The materializer of the subtype does not need to be registered in the
+        materializer registry when the container is loaded.
+    """
+    from zenml.materializers.materializer_registry import materializer_registry
+
+    example = [CustomType(), CustomSubType()]
+    with TemporaryDirectory() as artifact_uri:
+        materializer = BuiltInContainerMaterializer(uri=artifact_uri)
+
+        # Container materializer should find materializer for both elements in
+        # the default materializer registry.
+        materializer.save(example)
+
+        # When loading, the default materializer registry should no longer be
+        # needed because the container materializer should have saved the
+        # materializer that was used for each element.
+        mocker.patch.object(
+            materializer_registry,
+            "materializer_types",
+            {},
+        )
+        result = materializer.load(list)
+
+        # Check that the loaded elements are of the correct types.
+        assert isinstance(result[0], CustomType)
+        assert isinstance(result[1], CustomSubType)
+        assert result[0].myname == "aria"
+        assert result[1].myname == "axl"
+        assert result == example

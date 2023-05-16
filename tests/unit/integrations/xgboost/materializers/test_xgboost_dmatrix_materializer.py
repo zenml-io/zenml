@@ -11,7 +11,6 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from contextlib import ExitStack as does_not_raise
 
 import numpy as np
 import xgboost as xgb
@@ -20,19 +19,15 @@ from tests.unit.test_general import _test_materializer
 from zenml.integrations.xgboost.materializers.xgboost_dmatrix_materializer import (
     XgboostDMatrixMaterializer,
 )
-from zenml.post_execution.pipeline import PipelineRunView
 
 
 def test_xgboost_dmatrix_materializer(clean_client):
     """Tests whether the steps work for the XGBoost Booster materializer."""
-    with does_not_raise():
-        _test_materializer(
-            step_output=xgb.DMatrix(np.random.randn(5, 5)),
-            materializer=XgboostDMatrixMaterializer,
-        )
+    dmatrix = _test_materializer(
+        step_output=xgb.DMatrix(np.random.randn(5, 5)),
+        materializer_class=XgboostDMatrixMaterializer,
+        expected_metadata_size=2,
+    )
 
-    last_run = PipelineRunView(clean_client.zen_store.list_runs()[-1])
-    dmatrix = last_run.steps[-1].output.read()
-    assert isinstance(dmatrix, xgb.DMatrix)
     assert dmatrix.num_row() == 5
     assert dmatrix.num_col() == 5

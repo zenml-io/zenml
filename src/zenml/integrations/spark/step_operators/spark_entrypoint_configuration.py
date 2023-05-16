@@ -28,5 +28,5 @@ class SparkEntrypointConfiguration(StepOperatorEntrypointConfiguration):
         This prepends the directory containing the source files to the python
         path so that spark can find them.
         """
-        with source_utils.prepend_python_path([DOCKER_IMAGE_WORKDIR]):
+        with source_utils.prepend_python_path(DOCKER_IMAGE_WORKDIR):
             super().run()

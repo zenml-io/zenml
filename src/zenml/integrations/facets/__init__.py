@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2021. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2023. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -11,23 +11,22 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Facets integration for ZenML.
-
-The Facets integration provides a simple way to visualize post-execution objects
-like `PipelineView`, `PipelineRunView` and `StepView`. These objects can be
-extended using the `BaseVisualization` class. This integration requires
-`facets-overview` be installed in your Python environment.
-"""
+"""Facets integration for ZenML."""
 
 from zenml.integrations.constants import FACETS
 from zenml.integrations.integration import Integration
 
 
 class FacetsIntegration(Integration):
-    """Definition of [Facet](https://pair-code.github.io/facets/) integration for ZenML."""
+    """Definition of Facets integration for ZenML."""
 
     NAME = FACETS
-    REQUIREMENTS = ["facets-overview>=1.0.0", "IPython"]
+    REQUIREMENTS = ["facets-overview>=1.0.0", "pandas"]
+
+    @staticmethod
+    def activate() -> None:
+        """Activate the Facets integration."""
+        from zenml.integrations.facets import materializers  # noqa
 
 
 FacetsIntegration.check_installation()

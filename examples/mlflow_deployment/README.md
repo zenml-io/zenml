@@ -16,11 +16,10 @@ continuous model deployment with minimal effort.
 
 ## 🗺 Overview
 
-The example uses the
-[MNIST-digits](https://keras.io/api/datasets/mnist/) dataset to
-train a classifier using [Tensorflow (Keras)](https://www.tensorflow.org/) using different
-hyperparameter values (epochs and learning rate) that can also be supplied as command line
-arguments.
+The example uses the [MNIST-digits](https://keras.io/api/datasets/mnist/) 
+dataset to train a classifier using [Tensorflow (Keras)](https://www.tensorflow.org/) 
+using different hyperparameter values (epochs and learning rate) that can also 
+be supplied as command line arguments.
 
 This example uses an MLflow setup that is based on the local filesystem as
 orchestrator and artifact store. See the [MLflow
@@ -44,7 +43,8 @@ In the deployment pipeline, ZenML's MLflow tracking integration is used to log
 the hyperparameter values -- as well as the trained model itself and the model
 evaluation metrics -- as MLflow experiment tracking artifacts into the local
 MLflow backend. This pipeline also launches a local MLflow deployment server
-to serve the latest MLflow model if its accuracy is above a configured threshold.
+to serve the latest MLflow model if its accuracy is above a configured 
+threshold.
 
 The MLflow deployment server is running locally as a daemon process that will
 continue to run in the background after the example execution is complete.
@@ -116,14 +116,13 @@ class MLFlowDeploymentLoaderStepParameters(BaseParameters):
 # Step to retrieve the service associated with the last pipeline run
 @step(enable_cache=False)
 def prediction_service_loader(
-    params: MLFlowDeploymentLoaderStepParameters, context: StepContext
+    params: MLFlowDeploymentLoaderStepParameters
 ) -> MLFlowDeploymentService:
     """Get the prediction service started by the deployment pipeline"""
 
     service = load_last_service_from_step(
         pipeline_name=params.pipeline_name,
         step_name=params.step_name,
-        step_context=context,
         running=params.running,
     )
     if not service:
@@ -143,7 +142,7 @@ def predictor(
 ) -> Output(predictions=np.ndarray):
     """Run a inference request against a prediction service"""
 
-    service.start(timeout=10)  # should be a NOP if already started
+    service.start(timeout=60)  # should be a NOP if already started
     prediction = service.predict(data)
     prediction = prediction.argmax(axis=-1)
 
@@ -268,7 +267,7 @@ $ zenml model-deployer models describe 87980237-843f-414f-bf06-931f4da69e56
 ┠────────────────────────┼────────────────────────────────────────────────────┨
 ┃ PIPELINE_NAME          │ continuous_deployment_pipeline                     ┃
 ┠────────────────────────┼────────────────────────────────────────────────────┨
-┃ PIPELINE_RUN_ID        │ continuous_deployment_pipeline-12_Apr_22-22_05_32… ┃
+┃ RUN_NAME               │ continuous_deployment_pipeline-12_Apr_22-22_05_32… ┃
 ┠────────────────────────┼────────────────────────────────────────────────────┨
 ┃ PIPELINE_STEP_NAME     │ mlflow_model_deployer_step                         ┃
 ┠────────────────────────┼────────────────────────────────────────────────────┨
@@ -319,7 +318,8 @@ rm -rf zenml_examples
 
 # 📜 Learn more
 
-Our docs regarding the MLflow deployment integration can be found [here](https://docs.zenml.io/component-gallery/model-deployers/mlflow).
+Our docs regarding the MLflow deployment integration can be found 
+[here](https://docs.zenml.io/component-gallery/model-deployers/mlflow).
 
 If you want to learn more about deployment in ZenML in general or about how to 
 build your own deployer steps in ZenML check out our 

@@ -9,15 +9,12 @@ workloads.
 
 ## 🗺 Overview
 
-Here we train a simple sklearn classifier on the MNIST dataset using one of
-three step operators:
+Here, we train a simple sklearn classifier on the MNIST dataset using one of 
+these three step operators:
 
 - AWS Sagemaker
 - GCP Vertex AI
 - Microsoft AzureML
-
-Currently, step operators only work with a local orchestrator but support for
-cloud orchestrators is on the way soon!
 
 # 🖥 Run it locally
 
@@ -41,10 +38,11 @@ cd zenml_examples/step_operator_remote_training
 
 # initialize
 zenml init
-
-# Start the ZenServer to enable dashboard access
-zenml up
 ```
+
+Additionally, you require a remote ZenML server deployed to the cloud. See the 
+[deployment guide](https://docs.zenml.io/getting-started/deploying-zenml) for
+more information.
 
 Each type of step operator has their own prerequisites.
 
@@ -52,8 +50,8 @@ Before running this example, you must set up the individual cloud providers in a
 certain way. The complete guide can be found in
 the [docs](https://docs.zenml.io/component-gallery/step-operators/step-operators).
 
-Please jump to the section applicable to
-the step operator you would like to use:
+Please jump to the section applicable to the step operator you would like to 
+use:
 
 ### 🌿 Sagemaker
 
@@ -64,13 +62,19 @@ Sagemaker.
 
 The stack will consist of:
 
-* The **local metadata store** which will track the configuration of your
-  executions.
 * The **local orchestrator** which will be executing your pipelines steps.
 * An **S3 artifact store** which will be responsible for storing the
   artifacts of your pipeline.
 * The **Sagemaker step operator** which will be utilized to run the training
   step on Sagemaker.
+* An **Image Builder** which will be used to build the Docker image that will
+  be used to run the training step.
+
+Note that the S3 artifact store and the Sagemaker step operator can both (i.e.
+as individual stack components) be deployed using the ZenML CLI as well, using
+the `zenml <STACK_COMPONENT> deploy` command. For more information on this
+`deploy` subcommand, please refer to the
+[documentation](https://docs.zenml.io/advanced-guide/practical-mlops/stack-recipes#deploying-stack-components-directly).
 
 To configure resources for the step operators, please
 follow [this guide](https://docs.zenml.io/component-gallery/step-operators/amazon-sagemaker)
@@ -96,12 +100,17 @@ zenml step-operator register sagemaker \
 # register the container registry
 zenml container-registry register ecr_registry --flavor=aws --uri=<ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com
 
+# Register the image builder
+zenml image-builder register local_builder \
+  --flavor=local
+
 # register and activate the sagemaker stack
 zenml stack register sagemaker_stack \
     -o default \
     -c ecr_registry \
     -a s3_store \
     -s sagemaker \
+    -i local_builder \
     --set
 ```
 
@@ -115,8 +124,6 @@ AzureML.
 
 The stack will consist of:
 
-* The **local metadata store** which will track the configuration of your
-  executions.
 * The **local orchestrator** which will be executing your pipelines steps.
 * An **azure artifact store** which will be responsible for storing the
   artifacts of your pipeline.
@@ -161,8 +168,6 @@ run on a managed training job managed on Vertex AI.
 
 The stack will consist of:
 
-* The **local metadata store** which will track the configuration of your
-  executions.
 * The **local orchestrator** which will be executing your pipelines steps.
 * A **GCP Bucket artifact store** which will be responsible for storing the
   artifacts of your pipeline.
@@ -212,7 +217,16 @@ python run.py
 
 ### 🧽 Clean up
 
-In order to clean up, delete the remaining ZenML references.
+To destroy any resources deployed using the ZenML `deploy` subcommand, use the
+`destroy` subcommand to delete each individual stack component, as in the
+following example:
+
+```shell
+# replace with the name of the component you want to destroy
+zenml artifact-store destroy s3_artifact_store
+```
+
+Then delete the remaining ZenML references:
 
 ```shell
 rm -rf zenml_examples

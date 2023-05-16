@@ -20,22 +20,23 @@ Sagemaker.
 """
 from typing import List, Type
 
-from zenml.enums import StackComponentType
 from zenml.integrations.constants import AWS
 from zenml.integrations.integration import Integration
-from zenml.models import FlavorModel
 from zenml.stack import Flavor
 
 AWS_SECRET_MANAGER_FLAVOR = "aws"
 AWS_CONTAINER_REGISTRY_FLAVOR = "aws"
 AWS_SAGEMAKER_STEP_OPERATOR_FLAVOR = "sagemaker"
+AWS_SAGEMAKER_ORCHESTRATOR_FLAVOR = "sagemaker"
 
 
 class AWSIntegration(Integration):
     """Definition of AWS integration for ZenML."""
 
     NAME = AWS
-    REQUIREMENTS = ["boto3==1.21.0", "sagemaker==2.82.2"]
+    REQUIREMENTS = [
+        "sagemaker==2.117.0",
+    ]
 
     @classmethod
     def flavors(cls) -> List[Type[Flavor]]:
@@ -47,6 +48,7 @@ class AWSIntegration(Integration):
         from zenml.integrations.aws.flavors import (
             AWSContainerRegistryFlavor,
             AWSSecretsManagerFlavor,
+            SagemakerOrchestratorFlavor,
             SagemakerStepOperatorFlavor,
         )
 
@@ -54,6 +56,7 @@ class AWSIntegration(Integration):
             AWSSecretsManagerFlavor,
             AWSContainerRegistryFlavor,
             SagemakerStepOperatorFlavor,
+            SagemakerOrchestratorFlavor,
         ]
 
 

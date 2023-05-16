@@ -21,7 +21,6 @@ from typing import List, Type
 from zenml.enums import StackComponentType
 from zenml.integrations.constants import SELDON
 from zenml.integrations.integration import Integration
-from zenml.models import FlavorModel
 from zenml.stack import Flavor
 
 SELDON_MODEL_DEPLOYER_FLAVOR = "seldon"
@@ -33,7 +32,6 @@ class SeldonIntegration(Integration):
     NAME = SELDON
     REQUIREMENTS = [
         "kubernetes==18.20.0",
-        "seldon-core==1.14.1",
     ]
 
     @classmethod

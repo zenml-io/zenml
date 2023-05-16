@@ -15,11 +15,11 @@
 
 import os
 import tempfile
-from typing import Any, Type
+from typing import Any, ClassVar, Tuple, Type
 
 import lightgbm as lgb
 
-from zenml.artifacts import ModelArtifact
+from zenml.enums import ArtifactType
 from zenml.io import fileio
 from zenml.materializers.base_materializer import BaseMaterializer
 
@@ -29,10 +29,10 @@ DEFAULT_FILENAME = "model.txt"
 class LightGBMBoosterMaterializer(BaseMaterializer):
     """Materializer to read data to and from lightgbm.Booster."""
 
-    ASSOCIATED_TYPES = (lgb.Booster,)
-    ASSOCIATED_ARTIFACT_TYPES = (ModelArtifact,)
+    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (lgb.Booster,)
+    ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.MODEL
 
-    def handle_input(self, data_type: Type[Any]) -> lgb.Booster:
+    def load(self, data_type: Type[Any]) -> lgb.Booster:
         """Reads a lightgbm Booster model from a serialized JSON file.
 
         Args:
@@ -41,8 +41,7 @@ class LightGBMBoosterMaterializer(BaseMaterializer):
         Returns:
             A lightgbm Booster object.
         """
-        super().handle_input(data_type)
-        filepath = os.path.join(self.artifact.uri, DEFAULT_FILENAME)
+        filepath = os.path.join(self.uri, DEFAULT_FILENAME)
 
         # Create a temporary folder
         temp_dir = tempfile.mkdtemp(prefix="zenml-temp-")
@@ -56,24 +55,15 @@ class LightGBMBoosterMaterializer(BaseMaterializer):
         fileio.rmtree(temp_dir)
         return booster
 
-    def handle_return(self, booster: lgb.Booster) -> None:
+    def save(self, booster: lgb.Booster) -> None:
         """Creates a JSON serialization for a lightgbm Booster model.
 
         Args:
             booster: A lightgbm Booster model.
         """
-        super().handle_return(booster)
+        filepath = os.path.join(self.uri, DEFAULT_FILENAME)
 
-        filepath = os.path.join(self.artifact.uri, DEFAULT_FILENAME)
-
-        # Make a temporary phantom artifact
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".txt", delete=False
-        ) as f:
-            booster.save_model(f.name)
-            # Copy it into artifact store
-            fileio.copy(f.name, filepath)
-
-        # Close and remove the temporary file
-        f.close()
-        fileio.remove(f.name)
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tmp_path = os.path.join(tmp_dir, "model.txt")
+            booster.save_model(tmp_path)
+            fileio.copy(tmp_path, filepath)

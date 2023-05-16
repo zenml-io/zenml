@@ -32,6 +32,9 @@ from zenml.secrets_managers.utils import secret_from_dict, secret_to_dict
 
 logger = get_logger(__name__)
 
+_BOTO_CLIENT_LIST_SECRETS = "list_secrets"
+_PAGINATOR_RESPONSE_SECRETS_LIST_KEY = "SecretList"
+
 
 class AWSSecretsManager(BaseSecretsManager):
     """Class to interact with the AWS secrets manager."""
@@ -220,17 +223,21 @@ class AWSSecretsManager(BaseSecretsManager):
                 }
             )
 
-        # TODO [ENG-720]: Deal with pagination in the aws secret manager when
-        #  listing all secrets
-        # TODO [ENG-721]: take out this magic maxresults number
-        response = self.CLIENT.list_secrets(MaxResults=100, Filters=filters)
+        paginator = self.CLIENT.get_paginator(_BOTO_CLIENT_LIST_SECRETS)
+        pages = paginator.paginate(
+            Filters=filters,
+            PaginationConfig={
+                "PageSize": 100,
+            },
+        )
         results = []
-        for secret in response["SecretList"]:
-            name = self._get_unscoped_secret_name(secret["Name"])
-            # keep only the names that are in scope and filter by secret name,
-            # if one was given
-            if name and (not secret_name or secret_name == name):
-                results.append(name)
+        for page in pages:
+            for secret in page[_PAGINATOR_RESPONSE_SECRETS_LIST_KEY]:
+                name = self._get_unscoped_secret_name(secret["Name"])
+                # keep only the names that are in scope and filter by secret name,
+                # if one was given
+                if name and (not secret_name or secret_name == name):
+                    results.append(name)
 
         return results
 

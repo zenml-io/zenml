@@ -13,8 +13,8 @@ You should use the AzureML step operator if:
 * one or more steps of your pipeline require computing resources 
 (CPU, GPU, memory) that are not provided by your orchestrator.
 * you have access to AzureML. If you're using a different cloud 
-provider, take a look at the [SageMaker](./amazon-sagemaker.md) or 
-[Vertex](./gcloud-vertexai.md) step operators.
+provider, take a look at the [SageMaker](./sagemaker.md) or 
+[Vertex](./vertex.md) step operators.
 
 ## How to deploy it
 
@@ -72,15 +72,25 @@ def trainer(...) -> ...:
 {% hint style="info" %}
 ZenML will build a Docker image called `<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE_NAME>`
 which includes your code and use it to run your steps in AzureML. Check out
-[this page](../../advanced-guide/pipelines/containerization.md) if you want to 
+[this page](../../starter-guide/production-fundamentals/containerization.md) if you want to 
 learn more about how ZenML builds these images and how you can customize them.
 {% endhint %}
+
+### Additional configuration
+
+For additional configuration of the AzureML step operator, you can pass
+`AzureMLStepOperatorSettings` when defining or running your pipeline.
+Check out the
+[API docs](https://apidocs.zenml.io/latest/integration_code_docs/integrations-azure/#zenml.integrations.azure.flavors.azureml_step_operator_flavor.AzureMLStepOperatorSettings)
+for a full list of available attributes and [this docs page](../..//advanced-guide/pipelines/settings.md)
+for more information on how to specify settings.
+
 
 A concrete example of using the AzureML step operator can be found 
 [here](https://github.com/zenml-io/zenml/tree/main/examples/step_operator_remote_training).
 
 For more information and a full list of configurable attributes of the AzureML 
-step operator, check out the [API Docs](https://apidocs.zenml.io/latest/api_docs/integration_code_docs/integrations-azure/#zenml.integrations.azure.step_operators.azureml_step_operator.AzureMLStepOperator).
+step operator, check out the [API Docs](https://apidocs.zenml.io/latest/integration_code_docs/integrations-azure/#zenml.integrations.azure.step_operators.azureml_step_operator.AzureMLStepOperator).
 
 ### Enabling CUDA for GPU-backed hardware
 

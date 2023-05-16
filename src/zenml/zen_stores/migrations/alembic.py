@@ -19,17 +19,7 @@ database connection.
 """
 
 from pathlib import Path
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Callable,
-    Dict,
-    List,
-    Optional,
-    Sequence,
-    Union,
-    cast,
-)
+from typing import Any, Callable, Dict, List, Optional, Sequence, Union
 
 from alembic.config import Config
 from alembic.runtime.environment import EnvironmentContext
@@ -43,31 +33,9 @@ from sqlmodel import SQLModel
 
 from zenml.zen_stores import schemas
 
-if TYPE_CHECKING:
-    pass
-
 ZENML_ALEMBIC_START_REVISION = "alembic_start"
 
-# Tables that should be ignored by the Alembic migration utilities. Currently,
-# this is a list of MLMD tables, which are handled by the MLMD library.
-exclude_tables = [
-    "Event",
-    "EventPath",
-    "Attribution",
-    "Association",
-    "MLMDEnv",
-    "ExecutionProperty",
-    "Execution",
-    "Artifact",
-    "ArtifactProperty",
-    "TypeProperty",
-    "ParentType",
-    "ParentContext",
-    "Context",
-    "Type",
-    "ContextProperty",
-    "sqlite_sequence",
-]
+exclude_tables = ["sqlite_sequence"]
 
 
 def include_object(
@@ -152,7 +120,7 @@ class Alembic:
         """
         # Check the existence of any of the SQLModel tables
         return not self.engine.dialect.has_table(
-            self.engine.connect(), cast(str, schemas.StackSchema.__tablename__)
+            self.engine.connect(), schemas.StackSchema.__tablename__
         )
 
     def run_migrations(

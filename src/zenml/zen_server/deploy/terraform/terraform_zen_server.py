@@ -17,12 +17,14 @@ import json
 import os
 from pathlib import Path
 from typing import Any, Dict, Optional, cast
-from uuid import UUID, uuid4
-
-from pydantic import Field
+from uuid import UUID
 
 from zenml.logger import get_logger
-from zenml.services import ServiceType, TerraformService, TerraformServiceConfig
+from zenml.services import (
+    ServiceType,
+    TerraformService,
+    TerraformServiceConfig,
+)
 from zenml.utils.io_utils import get_global_config_directory
 from zenml.zen_server.deploy.deployment import ServerDeploymentConfig
 
@@ -83,6 +85,7 @@ class TerraformServerDeploymentConfig(ServerDeploymentConfig):
         password: The password for the default ZenML server account.
         helm_chart: The path to the ZenML server helm chart to use for
             deployment.
+        zenmlserver_image_repo: The repository to use for the zenml server.
         zenmlserver_image_tag: The tag to use for the zenml server docker
             image.
         namespace: The Kubernetes namespace to deploy the ZenML server to.
@@ -111,18 +114,20 @@ class TerraformServerDeploymentConfig(ServerDeploymentConfig):
             database connection.
         database_ssl_verify_server_cert: Whether to verify the database server
             SSL certificate.
+        analytics_opt_in: Whether to enable analytics.
     """
 
     log_level: str = "ERROR"
 
-    server_id: UUID = Field(default_factory=uuid4)
     username: str
     password: str
     helm_chart: str = get_helm_chart_path()
+    zenmlserver_image_repo: str = "zenmldocker/zenml-server"
     zenmlserver_image_tag: str = "latest"
-    zenmlinit_image_tag: str = "latest"
     namespace: str = "zenmlserver"
-    kubectl_config_path: str = os.path.join(str(Path.home()), ".kube", "config")
+    kubectl_config_path: str = os.path.join(
+        str(Path.home()), ".kube", "config"
+    )
     ingress_tls: bool = True
     ingress_tls_generate_certs: bool = True
     ingress_tls_secret_name: str = "zenml-tls-certs"
@@ -137,6 +142,7 @@ class TerraformServerDeploymentConfig(ServerDeploymentConfig):
     database_ssl_cert: str = ""
     database_ssl_key: str = ""
     database_ssl_verify_server_cert: bool = True
+    analytics_opt_in: bool = True
 
     class Config:
         """Pydantic configuration."""

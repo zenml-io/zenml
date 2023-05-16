@@ -47,7 +47,7 @@ class KServeModelDeployerConfig(BaseModelDeployerConfig):
             KServe inference services.
     """
 
-    kubernetes_context: Optional[str]
+    kubernetes_context: Optional[str]  # TODO: Potential setting
     kubernetes_namespace: Optional[str]
     base_url: str  # TODO: unused?
     secret: Optional[str]
@@ -65,6 +65,33 @@ class KServeModelDeployerFlavor(BaseModelDeployerFlavor):
             Name of the flavor.
         """
         return KSERVE_MODEL_DEPLOYER_FLAVOR
+
+    @property
+    def docs_url(self) -> Optional[str]:
+        """A url to point at docs explaining this flavor.
+
+        Returns:
+            A flavor docs url.
+        """
+        return self.generate_default_docs_url()
+
+    @property
+    def sdk_docs_url(self) -> Optional[str]:
+        """A url to point at SDK docs explaining this flavor.
+
+        Returns:
+            A flavor SDK docs url.
+        """
+        return self.generate_default_sdk_docs_url()
+
+    @property
+    def logo_url(self) -> str:
+        """A url to represent the flavor in the dashboard.
+
+        Returns:
+            The flavor logo.
+        """
+        return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/model_deployer/kserve.png"
 
     @property
     def config_class(self) -> Type[KServeModelDeployerConfig]:

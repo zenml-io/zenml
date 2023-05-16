@@ -18,6 +18,7 @@ from typing import TYPE_CHECKING, Any, Dict, Optional, Type, Union
 
 from pydantic import validator
 
+from zenml.config.base_settings import BaseSettings
 from zenml.step_operators.base_step_operator import (
     BaseStepOperatorConfig,
     BaseStepOperatorFlavor,
@@ -29,14 +30,10 @@ if TYPE_CHECKING:
     )
 
 
-class SparkStepOperatorConfig(BaseStepOperatorConfig):
-    """Spark step operator config.
+class SparkStepOperatorSettings(BaseSettings):
+    """Spark step operator settings.
 
     Attributes:
-        master: is the master URL for the cluster. You might see different
-            schemes for different cluster managers which are supported by Spark
-            like Mesos, YARN, or Kubernetes. Within the context of this PR,
-            the implementation supports Kubernetes as a cluster manager.
         deploy_mode: can either be 'cluster' (default) or 'client' and it
             decides where the driver node of the application will run.
         submit_kwargs: is the JSON string of a dict, which will be used
@@ -45,7 +42,6 @@ class SparkStepOperatorConfig(BaseStepOperatorConfig):
             operator was not implemented).
     """
 
-    master: str
     deploy_mode: str = "cluster"
     submit_kwargs: Optional[Dict[str, Any]] = None
 
@@ -84,6 +80,21 @@ class SparkStepOperatorConfig(BaseStepOperatorConfig):
             raise TypeError(f"{value} is not a json string or a dictionary.")
 
 
+class SparkStepOperatorConfig(  # type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173
+    BaseStepOperatorConfig, SparkStepOperatorSettings
+):
+    """Spark step operator config.
+
+    Attributes:
+        master: is the master URL for the cluster. You might see different
+            schemes for different cluster managers which are supported by Spark
+            like Mesos, YARN, or Kubernetes. Within the context of this PR,
+            the implementation supports Kubernetes as a cluster manager.
+    """
+
+    master: str
+
+
 class SparkStepOperatorFlavor(BaseStepOperatorFlavor):
     """Spark step operator flavor."""
 
@@ -104,6 +115,24 @@ class SparkStepOperatorFlavor(BaseStepOperatorFlavor):
                 The config class.
         """
         return SparkStepOperatorConfig
+
+    @property
+    def docs_url(self) -> Optional[str]:
+        """A url to point at docs explaining this flavor.
+
+        Returns:
+            A flavor docs url.
+        """
+        return self.generate_default_docs_url()
+
+    @property
+    def sdk_docs_url(self) -> Optional[str]:
+        """A url to point at SDK docs explaining this flavor.
+
+        Returns:
+            A flavor SDK docs url.
+        """
+        return self.generate_default_sdk_docs_url()
 
     @property
     def implementation_class(self) -> Type["SparkStepOperator"]:

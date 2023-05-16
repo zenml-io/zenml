@@ -13,58 +13,73 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for steps (and artifacts) of pipeline runs."""
 
-from typing import List, Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Security
 
-from zenml.constants import API, ARTIFACTS, VERSION_1
-from zenml.models.pipeline_models import ArtifactModel
-from zenml.zen_server.auth import authorize
-from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
+from zenml.constants import API, ARTIFACTS, VERSION_1, VISUALIZE
+from zenml.enums import PermissionType
+from zenml.models import (
+    ArtifactFilterModel,
+    ArtifactRequestModel,
+    ArtifactResponseModel,
+)
+from zenml.models.page_model import Page
+from zenml.models.visualization_models import (
+    LoadedVisualizationModel,
+)
+from zenml.utils.artifact_utils import load_artifact_visualization
+from zenml.zen_server.auth import AuthContext, authorize
+from zenml.zen_server.exceptions import error_response
+from zenml.zen_server.utils import (
+    handle_exceptions,
+    make_dependable,
+    zen_store,
+)
 
 router = APIRouter(
     prefix=API + VERSION_1 + ARTIFACTS,
     tags=["artifacts"],
-    dependencies=[Depends(authorize)],
     responses={401: error_response},
 )
 
 
 @router.get(
     "",
-    response_model=List[ArtifactModel],
+    response_model=Page[ArtifactResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def list_artifacts(
-    artifact_uri: Optional[str] = None,
-    parent_step_id: Optional[UUID] = None,
-) -> List[ArtifactModel]:
+    artifact_filter_model: ArtifactFilterModel = Depends(
+        make_dependable(ArtifactFilterModel)
+    ),
+    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+) -> Page[ArtifactResponseModel]:
     """Get artifacts according to query filters.
 
     Args:
-        artifact_uri: If specified, only artifacts with the given URI will
-            be returned.
-        parent_step_id: If specified, only artifacts for the given step run
-            will be returned.
+        artifact_filter_model: Filter model used for pagination, sorting,
+            filtering
 
     Returns:
         The artifacts according to query filters.
     """
     return zen_store().list_artifacts(
-        artifact_uri=artifact_uri,
-        parent_step_id=parent_step_id,
+        artifact_filter_model=artifact_filter_model
     )
 
 
 @router.post(
     "",
-    response_model=ArtifactModel,
+    response_model=ArtifactResponseModel,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
-def create_artifact(artifact: ArtifactModel) -> ArtifactModel:
+def create_artifact(
+    artifact: ArtifactRequestModel,
+    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
+) -> ArtifactResponseModel:
     """Create a new artifact.
 
     Args:
@@ -74,3 +89,68 @@ def create_artifact(artifact: ArtifactModel) -> ArtifactModel:
         The created artifact.
     """
     return zen_store().create_artifact(artifact)
+
+
+@router.get(
+    "/{artifact_id}",
+    response_model=ArtifactResponseModel,
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@handle_exceptions
+def get_artifact(
+    artifact_id: UUID,
+    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+) -> ArtifactResponseModel:
+    """Get an artifact by ID.
+
+    Args:
+        artifact_id: The ID of the artifact to get.
+
+    Returns:
+        The artifact with the given ID.
+    """
+    return zen_store().get_artifact(artifact_id)
+
+
+@router.delete(
+    "/{artifact_id}",
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@handle_exceptions
+def delete_artifact(
+    artifact_id: UUID,
+    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
+) -> None:
+    """Delete an artifact by ID.
+
+    Args:
+        artifact_id: The ID of the artifact to delete.
+    """
+    zen_store().delete_artifact(artifact_id)
+
+
+@router.get(
+    "/{artifact_id}" + VISUALIZE,
+    response_model=LoadedVisualizationModel,
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@handle_exceptions
+def get_artifact_visualization(
+    artifact_id: UUID,
+    index: int = 0,
+    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+) -> LoadedVisualizationModel:
+    """Get the visualization of an artifact.
+
+    Args:
+        artifact_id: ID of the artifact for which to get the visualization.
+        index: Index of the visualization to get (if there are multiple).
+
+    Returns:
+        The visualization of the artifact.
+    """
+    store = zen_store()
+    artifact = store.get_artifact(artifact_id)
+    return load_artifact_visualization(
+        artifact=artifact, index=index, zen_store=store, encode_image=True
+    )

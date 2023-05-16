@@ -18,7 +18,6 @@ from typing import List, Type
 from zenml.enums import StackComponentType
 from zenml.integrations.constants import SLACK
 from zenml.integrations.integration import Integration
-from zenml.models import FlavorModel
 from zenml.stack import Flavor
 
 SLACK_ALERTER_FLAVOR = "slack"

@@ -11,29 +11,23 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from contextlib import ExitStack as does_not_raise
 
-from torch.nn import Linear, Module
+from torch.nn import Linear
 
 from tests.unit.test_general import _test_materializer
 from zenml.integrations.pytorch.materializers.pytorch_module_materializer import (
     PyTorchModuleMaterializer,
 )
-from zenml.post_execution.pipeline import PipelineRunView
 
 
 def test_pytorch_module_materializer(clean_client):
     """Tests whether the steps work for the Sklearn materializer."""
-    with does_not_raise():
-        _test_materializer(
-            step_output=Linear(20, 20),
-            materializer=PyTorchModuleMaterializer,
-        )
+    module = _test_materializer(
+        step_output=Linear(20, 20),
+        materializer_class=PyTorchModuleMaterializer,
+        expected_metadata_size=3,
+    )
 
-    last_run = PipelineRunView(clean_client.zen_store.list_runs()[-1])
-    test_step = last_run.steps[-1]
-    module = test_step.output.read()
-    assert isinstance(module, Module)
     assert module.in_features == 20
     assert module.out_features == 20
     assert module.bias is not None

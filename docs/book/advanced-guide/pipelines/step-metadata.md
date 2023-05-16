@@ -99,7 +99,7 @@ def my_step(...)
     env = Environment().step_environment
     step_name = env.step_name
     pipeline_name = env.pipeline_name
-    run_id = env.pipeline_run_id
+    run_id = env.run_name
 ```
 
 {% hint style="info" %}

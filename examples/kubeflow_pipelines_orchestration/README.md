@@ -10,19 +10,10 @@ You can also watch a video of this example [here](https://www.youtube.com/watch?
 
 # 🖥 Run it locally
 
-## ⏩ SuperQuick `kubeflow` run
-
-If you're really in a hurry and just want to see this example pipeline run
-without wanting to fiddle around with all the individual installation and
-configuration steps, just run the following:
-
-```shell
-zenml example run kubeflow_pipelines_orchestration
-```
-
-
 ## 👣 Step-by-Step
+
 ### 📄 Prerequisites
+
 In order to run this example, we have to install a few tools that allow ZenML to
 spin up a local Kubeflow Pipelines 
 setup:
@@ -35,6 +26,8 @@ to deploy Kubeflow Pipelines
 your pipeline in Kubernetes pods (**Note**: the local Kubeflow Pipelines
 deployment requires more than 2 GB of RAM, so if you're using Docker Desktop
 make sure to update the resource limits in the preferences)
+* [Terraform](https://www.terraform.io/downloads.html) to deploy a local Kubernetes
+cluster using K3D and install Kubeflow Pipelines on it.
 
 
 Next, we will install ZenML, get the code for this example and initialize a
@@ -103,43 +96,98 @@ pipeline on a local Kubeflow Pipelines deployment.
 python run.py --stop-tensorboard
 ```
 
-## 🏃️ Run the same pipeline on a local Kubeflow Pipelines deployment
+## 🏃️ Use Kubeflow Pipelines on a local K3D cluster with ZenML Stack Recipes
 
-### 🥞 Create a local Kubeflow Pipelines Stack
+As ZenML continued to expand, we found that supporting more and more 
+orchestration tools, model deployment platforms, and other technologies that 
+require a Kubernetes cluster to operate, can be complex and prone to errors. 
+To simplify this process, we introduced the concept of **[stack recipes](https://docs.zenml.io/advanced-guide/practical-mlops/stack-recipes)**. 
+A stack recipe is a pre-configured collection of orchestrators, artifact-stores,
+and container registries that work together seamlessly. This allows you to 
+quickly spin up a Kubernetes cluster and install all the necessary tools to run 
+your pipeline with just a few commands, and support all three major 
+cloud providers (AWS, GCP, and Azure).
 
-Now with all the installation and initialization out of the way, all that's left
-to do is configuring our ZenML [stack](https://docs.zenml.io/getting-started/core-concepts). For
-this example, the stack we create consists of the following four parts:
-* The **local artifact store** stores step outputs on your hard disk. 
-* The **local metadata store** stores metadata like the pipeline name and step
-parameters inside a local SQLite database.
+### 🥞 Let's cook up a Local Kubeflow stack recipe
+
+To run the pipeline on a local Kubeflow Pipelines deployment, you can use the
+ZenML Stack recipes to spin up a local Kubernetes cluster and install Kubeflow
+Pipelines on it. The stack recipe is called `k3d-modular` and is available in the ZenML
+[stack recipe repository](https://github.com/zenml-io/mlops-stacks/tree/main/k3d-modular).
+The recipe is modular, meaning that you can configured it to use different
+orchestrators, Model Deployers, and other tools. By default, the recipe will
+install the following tools:
+
+* The **Minio Artifact Store** as a remote alternative to the local file system
+for storing artifacts, the Minio server is deployed as a Kubernetes pod.
 * The docker images that are created to run your pipeline are stored in a local
-docker **container registry**.
-* The **Kubeflow orchestrator** is responsible for running your ZenML pipeline
+docker **Container Registry**.
+* The **Kubeflow Orchestrator** is responsible for running your ZenML pipeline
 in Kubeflow Pipelines.
+* The **MLFlow Experiment Tracker** is used to track the experiments and
+metrics of your pipeline runs. The MLFlow server is deployed as a Kubernetes
+pod.
 
 ```bash
-# Make sure to create the local registry on port 5000 for it to work 
-zenml container-registry register local_registry --flavor=default --uri=localhost:5000 
-zenml orchestrator register local_kubeflow_orchestrator --flavor=kubeflow
-zenml stack register local_kubeflow_stack \
-    -a default \
-    -o local_kubeflow_orchestrator \
-    -c local_registry \
-    --set
+zenml stack recipe deploy k3d-modular
+```
+>**Note**:
+> This recipe comes with MLflow, Kubeflow and Minio enabled by default. If you want any other components like KServe, Seldon or Tekton, you can specify that using the `--install/-i` flag.
+
+#### 🏁 Deploy the stack using ZenML CLI
+
+The flow to get started for this example can be the following:
+
+1. Pull the `k3d-modular` recipe to your local system. Learn more about what 
+this recipe does from its [README](https://github.com/zenml-io/mlops-stacks/blob/main/k3d-modular/README.md).
+
+```shell
+zenml stack recipe pull k3d-modular
 ```
 
-### 🏁 Start up Kubeflow Pipelines locally
+2. (Optional) 🎨 Customize your deployment by editing the default values in the `locals.tf` file.
 
-ZenML takes care of setting up and configuring the local Kubeflow Pipelines
-deployment. All we need to do is run:
+3. Deploy the stack using the ZenML CLI:
 
-```bash
-zenml stack up
+```shell
+zenml stack recipe deploy k3d-modular -i kubeflow -i minio --no-server
 ```
 
-When the setup is finished, you should see a local URL which you can access in
-your browser and take a look at the Kubeflow Pipelines UI.
+> **Note**
+    > This command can also automatically import the resources created as a ZenML stack for you. Just run it with the `--import` flag and optionally provide a `--stack-name` and you're set! Keep in mind, in that case, you'll need all integrations for this example installed before you run this command.
+
+
+4. You'll notice that a ZenML stack configuration file gets created 🤯! You can run the following command to import the resources as a ZenML stack, manually.
+
+```shell
+zenml stack import <STACK_NAME> -f <PATH_TO_THE_CREATED_STACK_CONFIG_YAML>
+
+# set the imported stack as the active stack
+zenml stack set <STACK_NAME>
+```
+
+5. Get the endpoints of the deployed services UIs:
+
+```shell
+kubectl get ingress -A  -o jsonpath='{.items[*].spec.rules[*].host}'
+
+# Output:
+kubeflow.<EXTERNAL-IP>.nip.io mlflow.<EXTERNAL-IP>.nip.io minio-console.<EXTERNAL-IP>.nip.io
+```
+
+#### ⛽️ Deploy individual stack components using ZenML CLI
+
+As an alternative to deploying the entire stack, you can also deploy individual
+components using the `zenml <STACK_COMPONENT> deploy` command. As an
+illustration, the Kubeflow orchestrator could be deployed in the following way:
+
+```shell
+zenml orchestrator deploy kubeflow --flavor kubeflow ...
+```
+
+For more information on this `deploy`
+subcommand, please refer to the
+[documentation](https://docs.zenml.io/advanced-guide/practical-mlops/stack-recipes#deploying-stack-components-directly).
 
 ### ▶️ Run the pipeline
 We can now run the pipeline by simply executing the python script:
@@ -151,7 +199,12 @@ python run.py
 This will build a docker image containing all the necessary python packages and
 files, push it to the local container registry and schedule a pipeline run in
 Kubeflow Pipelines. Once the script is finished, you should be able to see the
-pipeline run [here](http://localhost:8080/#/runs).
+pipeline run in the Kubeflow Pipelines UI:
+
+```bash
+# Get the Kubeflow Pipelines UI endpoint
+kubectl get ingress -n kubeflow  -o jsonpath='{.items[0].spec.rules[0].host}'
+```
 
 The TensorBoard logs for the model trained in every pipeline run can be viewed
 directly in the Kubeflow Pipelines UI by clicking on the "Visualization" tab
@@ -181,98 +234,68 @@ in the background with the command:
 python run.py --stop-tensorboard
 ```
 
-You can delete the local Kubernetes cluster and all associated resources by
-calling:
+1. 🗑️ Once you're done running your pipelines, there's only a single command 
+you need to execute that will take care of cleaning up all the resources 
+that you had created on your local machine.
 
 ```bash
-zenml stack down --force
+zenml stack recipe destroy <STACK_RECIPE_NAME>
+```
+
+2. (Optional) 🧹 You can also remove all the downloaded recipe files from 
+the `pull` execution by using the `clean` command.
+
+```
+zenml stack recipe clean
 ```
 
 ## ☁️ Run the same pipeline on Kubeflow Pipelines deployed to GCP
 
-We will now run the same pipeline in Kubeflow Pipelines deployed to a Google Kubernetes Engine cluster. 
-As you can see from the long list of additional pre-requisites, this requires lots of external setup steps at the 
-moment. In future releases ZenML will be able to automate most of these steps for you, so make sure to revisit this 
-guide if this is something you're interested in!
+We will now run the same pipeline in Kubeflow Pipelines deployed to a Google 
+Kubernetes Engine cluster. As you can see from the long list of additional 
+pre-requisites, this requires lots of external setup steps at the moment. 
+In future releases ZenML will be able to automate most of these steps for you, 
+so make sure to revisit this guide if this is something you're interested in!
 
 ### 📄 Additional pre-requisites
 
+* A remote ZenML deployment to store metadata related to your pipeline runs. 
+See [here](https://docs.zenml.io/getting-started/deploying-zenml) for more 
+information on how to deploy ZenML on GCP.
+* Kubectl can [access](https://cloud.google.com/kubernetes-engine/docs/how-to/cluster-access-for-kubectl) 
+your GCP Kubernetes cluster.
 * An existing [GCP container registry](https://cloud.google.com/container-registry/docs).
 * An existing [GCP bucket](https://cloud.google.com/storage/docs/creating-buckets).
-* [Kubeflow Pipelines](https://www.kubeflow.org/docs/distributions/gke/deploy/overview/) deployed to a Google 
-Kubernetes Engine cluster.
+* [Kubeflow Pipelines](https://www.kubeflow.org/docs/distributions/gke/deploy/overview/) 
+deployed to a Google Kubernetes Engine cluster.
 * The local docker client has to be [authorized](https://cloud.google.com/container-registry/docs/advanced-authentication) 
 to access the GCP container registry.
-* Kubectl can [access](https://cloud.google.com/kubernetes-engine/docs/how-to/cluster-access-for-kubectl) your GCP 
-Kubernetes cluster.
-
-### 🚅 That seems like a lot of infrastructure work. Is there a Zen 🧘 way to run this example?
-
-Yes! With [ZenML Stack Recipes](../../docs/book/stack-deployment-guide/stack-recipes.md), you can now provision all the infrastructure you need to run your ZenML pipelines with just a few simple commands.
-
-The flow to get started for this example can be the following:
-
-1. Pull the `gcp-kubeflow-kserve` recipe to your local system. Learn more about what this recipe does from its README.
-
-    ```shell
-    zenml stack recipe pull gcp-kubeflow-kserve
-    ```
-2. (Optional) 🎨 Customize your deployment by editing the default values in the `locals.tf` file.
-
-3. 🚀 Deploy the recipe with this simple command.
-
-    ```shell
-    zenml stack recipe deploy gcp-kubeflow-kserve
-    ```
-    > **Note**
-    > This command can also automatically import the resources created as a ZenML stack for you. Just run it with the `--import` flag and optionally provide a `--stack-name` and you're set! Keep in mind, in that case, you'll need all integrations for this example installed before you run this command.
-
-    > **Note**
-    > You should also have [kubectl](https://kubernetes.io/docs/tasks/tools/#kubectl) and [docker](https://docs.docker.com/engine/install/) installed on your local system with the local [docker client authorized](https://cloud.google.com/sdk/gcloud/reference/auth/configure-docker) to push to your cloud registry.
-    
-4. You'll notice that a ZenML stack configuration file gets created 🤯! You can run the following command to import the resources as a ZenML stack, manually.
-
-    ```shell
-    zenml stack import <STACK_NAME> -f <PATH_TO_THE_CREATED_STACK_CONFIG_YAML>
-
-    # set the imported stack as the active stack
-    zenml stack set <STACK_NAME>
-    ```
-
-5. You should now create a secret for the CloudSQL instance that will allow ZenML to connect to it. Use the following command:
-
-    ```bash
-    zenml secrets-manager secret register gcp_mysql_secret --schema=mysql --user=<DB_USER> --password=<PWD> \
-      --ssl_ca=@</PATH/TO/DOWNLOADED/SERVER-CERT> \
-      --ssl_cert=@</PATH/TO/DOWNLOADED/CLIENT-CERT> \
-      --ssl_key=@</PATH/TO/DOWNLOADED/CLIENT-KEY>
-    ```
-
-    The values for the username and password can be obtained by running the following commands inside your recipe directory.
-
-    ```bash
-    terraform output metadata-db-username
-
-    terraform output metadata-db-password
-    ```
-
-    For the certificates, visit the Google Cloud Console to [create a certificate and download the files](https://cloud.google.com/sql/docs/mysql/configure-ssl-instance#:~:text=Cloud%20SQL%20Instances-,To%20open%20the%20Overview%20page%20of%20an%20instance%2C%20click%20the,Click%20Create%20client%20certificate.) to your system.
-
-
-You can now jump straight to the [section on running the pipeline](#e296b6efb88f-run-the-pipeline-1)!
 
 ### 🥞 Create a GCP Kubeflow Pipelines stack
 
-To run our pipeline on Kubeflow Pipelines deployed to GCP, we will create a new stack with these components:
-* The **artifact store** stores step outputs in a GCP Bucket. 
-* The **metadata store** stores metadata inside the Kubeflow Pipelines internal MySQL database.
-* The docker images that are created to run your pipeline are stored in GCP **container registry**.
-* The **Kubeflow orchestrator** is responsible for running your ZenML pipeline in Kubeflow Pipelines. 
-  We need to configure it with the right kubernetes context so ZenML can run pipelines in your GCP cluster. 
+To run our pipeline on Kubeflow Pipelines deployed to GCP, we will create a new 
+stack with these components:
 
-When running the upcoming commands, make sure to replace `<PATH_TO_YOUR_CONTAINER_REGISTRY>` and 
-`<PATH_TO_YOUR_GCP_BUCKET>` with the actual URIs of your container registry and bucket. You will also need to replace
-`<NAME_OF_GCP_KUBERNETES_CONTEXT>` with the kubernetes context pointing to your gcp cluster.
+* The **artifact store** stores step outputs in a GCP Bucket. 
+* The docker images that are created to run your pipeline are stored in GCP 
+**container registry**.
+* The **Kubeflow orchestrator** is responsible for running your ZenML pipeline 
+in Kubeflow Pipelines. We need to configure it with the right kubernetes 
+* context so ZenML can run pipelines in your GCP cluster.
+* Kubectl can [access](https://cloud.google.com/kubernetes-engine/docs/how-to/cluster-access-for-kubectl) 
+your GCP Kubernetes cluster.
+* An ***Image Builder** component that is responsible for building Docker images
+for your pipeline steps. We need to configure it with the right container
+registry so ZenML can push the images to your GCP container registry.
+
+### Manually setting up the stack
+
+You can also choose to register your stack and components manually by running
+the commands below. When doing so, make sure to replace 
+`<PATH_TO_YOUR_CONTAINER_REGISTRY>` and `<PATH_TO_YOUR_GCP_BUCKET>` with the 
+actual URIs of your container registry and bucket. You will also need to replace
+`<NAME_OF_GCP_KUBERNETES_CONTEXT>` with the kubernetes context pointing to 
+your gcp cluster.
 
 ```bash
 # In order to create the GCP artifact store, we need to install one additional ZenML integration:
@@ -282,14 +305,47 @@ zenml integration install gcp
 zenml container-registry register gcr_registry --flavor=gcp --uri=<PATH_TO_YOUR_CONTAINER_REGISTRY>
 zenml artifact-store register gcp_artifact_store --flavor=gcp --path=<PATH_TO_YOUR_GCP_BUCKET>
 zenml orchestrator register gcp_kubeflow_orchestrator --flavor=kubeflow --kubernetes_context=<NAME_OF_GCP_KUBERNETES_CONTEXT>
+zenml image-builder register local_builder --flavor=local
 zenml stack register gcp_kubeflow_stack \
     -a gcp_artifact_store \
     -o gcp_kubeflow_orchestrator \
     -c gcr_registry \
+    -i local_builder \
     --set
 
-# Forward the Kubeflow pipelines UI and metadata store so we can access them locally
-zenml stack up
+```
+
+### Setting up the stack using a recipe
+
+Alternatively, you can also use the `zenml stack recipe` command to create the
+stack and its components. Just as the local k3d stack, the GCP Kubeflow stack
+recipe is also available in the ZenML repository. You can pull it using the
+following command:
+
+```bash
+zenml stack recipe pull gcp_kubeflow_stack
+```
+
+You can follow the same steps as above to create and activate the stack and its
+components:
+
+Deploy the stack using the ZenML CLI:
+
+```shell
+zenml stack recipe deploy gcp_kubeflow_stack
+```
+
+> **Note**
+    > This command can also automatically import the resources created as a ZenML stack for you. Just run it with the `--import` flag and optionally provide a `--stack-name` and you're set! Keep in mind, in that case, you'll need all integrations for this example installed before you run this command.
+
+
+You can run the following command to import the resources as a ZenML stack, manually.
+
+```shell
+zenml stack import <STACK_NAME> -f <PATH_TO_THE_CREATED_STACK_CONFIG_YAML>
+
+# set the imported stack as the active stack
+zenml stack set <STACK_NAME>
 ```
 
 ### ▶️ Run the pipeline
@@ -310,9 +366,9 @@ If you're using the Kubeflow orchestrator and some of your pipelines steps have 
 hardware requirements, you can specify them using the step decorator as follows:
 
 ```python
-from zenml.steps import step, ResourceConfiguration
+from zenml.steps import step, ResourceSettings
 
-@step(resource_configuration=ResourceConfiguration(cpu_count=8, memory="16GB"))
+@step(settings={"resources": ResourceSettings(cpu_count=8, memory="16GB")})
 def my_step(...) -> ...:
     ...
 ```
@@ -321,11 +377,25 @@ This will make sure that your step runs on a machine with the specified resource
 as such a machine is available in the Kubernetes cluster you're using.
 
 ### 🧽 Clean up
-Once you're done experimenting, you can stop the port forwarding and delete the example files by calling:
+Once you're done experimenting, delete the example files by calling:
 
 ```bash
-zenml stack down --force
 rm -rf zenml_examples
+```
+
+If you have created the GCP Kubeflow stack using the recipe, you can delete it using the following command:
+
+```bash
+zenml stack recipe destroy gcp_kubeflow_stack
+```
+
+To destroy any resources deployed using the ZenML `deploy` subcommand, use the
+`destroy` subcommand to delete each individual stack component, as in the
+following example:
+
+```shell
+# replace with the name of the component you want to destroy
+zenml artifact-store destroy s3_artifact_store
 ```
 
 # ⚠️ Important note for multi-tenant Kubeflow deployments

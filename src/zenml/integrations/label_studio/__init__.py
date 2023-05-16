@@ -17,7 +17,6 @@ from typing import List, Type
 from zenml.enums import StackComponentType
 from zenml.integrations.constants import LABEL_STUDIO
 from zenml.integrations.integration import Integration
-from zenml.models import FlavorModel
 from zenml.stack import Flavor
 
 LABEL_STUDIO_ANNOTATOR_FLAVOR = "label_studio"
@@ -27,7 +26,7 @@ class LabelStudioIntegration(Integration):
     """Definition of Label Studio integration for ZenML."""
 
     NAME = LABEL_STUDIO
-    REQUIREMENTS = ["label-studio==1.6.0", "label-studio-sdk==0.0.15"]
+    REQUIREMENTS = ["label-studio==1.6.0", "label-studio-sdk>=0.0.17"]
 
     @classmethod
     def flavors(cls) -> List[Type[Flavor]]:

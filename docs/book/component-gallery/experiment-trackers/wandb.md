@@ -80,23 +80,43 @@ zenml stack register custom_stack -e wandb_experiment_tracker ... --set
 ```
 {% endtab %}
 
-{% tab title="Secrets Manager (Recommended)" %}
 
-This method requires you to include a [Secrets Manager](../secrets-managers/secrets-managers.md)
-in your stack and configure a ZenML secret to store the Weights & Biases
-credentials securely.
+{% tab title="ZenML Secret (Recommended)" %}
 
-{% hint style="warning" %}
-**This method is not yet supported!**
+This method requires you to [configure a ZenML secret](../../starter-guide/production-fundamentals/secrets-management.md)
+to store the Weights & Biases tracking service credentials securely.
 
-We are actively working on adding Secrets Manager support to the Weights & Biases
-Experiment Tracker.
+You can create the secret using the `zenml secret create` command:
+
+```shell 
+zenml secret create wandb_secret \
+    --entity=<ENTITY> \
+    --project_name=<PROJECT_NAME>
+    --api_key=<API_KEY>
+```
+
+Once the secret is created, you can use it to configure the wandb Experiment
+Tracker:
+
+```shell
+# Reference the entity, project and api-key in our experiment tracker component
+zenml experiment-tracker register wandb_tracker \
+    --flavor=wandb \
+    --entity={{wandb_secret.entity}} \
+    --project_name={{wandb_secret.project_name}} \
+    --api_key={{wandb_secret.api_key}}
+    ...
+```
+
+{% hint style="info" %}
+Read more about [ZenML Secrets](../../starter-guide/production-fundamentals/secrets-management.md)
+in the ZenML documentation.
 {% endhint %}
 {% endtab %}
 {% endtabs %}
 
 For more, up-to-date information on the Weights & Biases Experiment Tracker
-implementation and its configuration, you can have a look at [the API docs](https://apidocs.zenml.io/latest/api_docs/integration_code_docs/integrations-wandb/#zenml.integrations.wandb.experiment_trackers.wandb_experiment_tracker).
+implementation and its configuration, you can have a look at [the API docs](https://apidocs.zenml.io/latest/integration_code_docs/integrations-wandb/#zenml.integrations.wandb.experiment_trackers.wandb_experiment_tracker).
 
 ## How do you use it?
 
@@ -137,6 +157,8 @@ def tf_trainer(
     ...
 ```
 
+### Additional configuration
+
 For additional configuration of the Weights & Biases experiment tracker, you can pass
 `WandbExperimentTrackerSettings` to overwrite the [wandb.Settings](https://github.com/wandb/client/blob/master/wandb/sdk/wandb_settings.py#L353) or pass additional tags for your
 runs:
@@ -167,6 +189,11 @@ def my_step(
 
 Doing the above auto-magically logs all the data, metrics, and results within
 the step, no further action required!
+
+Check out the
+[API docs](https://apidocs.zenml.io/latest/integration_code_docs/integrations-wandb/#zenml.integrations.wandb.flavors.wandb_experiment_tracker_flavor.WandbExperimentTrackerSettings)
+for a full list of available attributes and [this docs page](../..//advanced-guide/pipelines/settings.md)
+for more information on how to specify settings.
 
 You can also check out our examples pages for working examples that use the
 Weights & Biases Experiment Tracker in their stacks:

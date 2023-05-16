@@ -14,23 +14,27 @@
 """Implementation of the TensorFlow Keras materializer."""
 
 import tempfile
-from typing import Any, Type
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, Tuple, Type
 
 from tensorflow import keras
+from tensorflow.python.keras.utils.layer_utils import count_params
 
-from zenml.artifacts import ModelArtifact
+from zenml.enums import ArtifactType
 from zenml.io import fileio
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.utils import io_utils
+
+if TYPE_CHECKING:
+    from zenml.metadata.metadata_types import MetadataType
 
 
 class KerasMaterializer(BaseMaterializer):
     """Materializer to read/write Keras models."""
 
-    ASSOCIATED_TYPES = (keras.Model,)
-    ASSOCIATED_ARTIFACT_TYPES = (ModelArtifact,)
+    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (keras.Model,)
+    ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.MODEL
 
-    def handle_input(self, data_type: Type[Any]) -> keras.Model:
+    def load(self, data_type: Type[Any]) -> keras.Model:
         """Reads and returns a Keras model after copying it to temporary path.
 
         Args:
@@ -39,13 +43,11 @@ class KerasMaterializer(BaseMaterializer):
         Returns:
             A tf.keras.Model model.
         """
-        super().handle_input(data_type)
-
         # Create a temporary directory to store the model
         temp_dir = tempfile.TemporaryDirectory()
 
         # Copy from artifact store to temporary directory
-        io_utils.copy_dir(self.artifact.uri, temp_dir.name)
+        io_utils.copy_dir(self.uri, temp_dir.name)
 
         # Load the model from the temporary directory
         model = keras.models.load_model(temp_dir.name)
@@ -55,18 +57,33 @@ class KerasMaterializer(BaseMaterializer):
 
         return model
 
-    def handle_return(self, model: keras.Model) -> None:
+    def save(self, model: keras.Model) -> None:
         """Writes a keras model to the artifact store.
 
         Args:
             model: A tf.keras.Model model.
         """
-        super().handle_return(model)
-
         # Create a temporary directory to store the model
         temp_dir = tempfile.TemporaryDirectory()
         model.save(temp_dir.name)
-        io_utils.copy_dir(temp_dir.name, self.artifact.uri)
+        io_utils.copy_dir(temp_dir.name, self.uri)
 
         # Remove the temporary directory
         fileio.rmtree(temp_dir.name)
+
+    def extract_metadata(
+        self, model: keras.Model
+    ) -> Dict[str, "MetadataType"]:
+        """Extract metadata from the given `Model` object.
+
+        Args:
+            model: The `Model` object to extract metadata from.
+
+        Returns:
+            The extracted metadata as a dictionary.
+        """
+        return {
+            "num_layers": len(model.layers),
+            "num_params": count_params(model.weights),
+            "num_trainable_params": count_params(model.trainable_weights),
+        }

@@ -32,6 +32,7 @@ from zenml.integrations.integration import Integration
 from zenml.stack import Flavor
 
 GCP_ARTIFACT_STORE_FLAVOR = "gcp"
+GCP_IMAGE_BUILDER_FLAVOR = "gcp"
 GCP_SECRETS_MANAGER_FLAVOR = "gcp"
 GCP_VERTEX_ORCHESTRATOR_FLAVOR = "vertex"
 GCP_VERTEX_STEP_OPERATOR_FLAVOR = "vertex"
@@ -42,10 +43,17 @@ class GcpIntegration(Integration):
 
     NAME = GCP
     REQUIREMENTS = [
-        "kfp==1.8.13",
+        "kfp==1.8.16",
         "gcsfs",
         "google-cloud-secret-manager",
         "google-cloud-aiplatform>=1.11.0",
+        "google-cloud-scheduler>=2.7.3",
+        "google-cloud-functions>=1.8.3",
+        "google-cloud-build>=3.11.0",
+        # google-cloud-bigquery 2.34.4 is not compatible with shapely 2.0.0
+        # which was released on 2021-12-21. This is a temporary fix until
+        # google-cloud-bigquery is updated.
+        "shapely<2.0",
     ]
 
     @classmethod
@@ -57,16 +65,18 @@ class GcpIntegration(Integration):
         """
         from zenml.integrations.gcp.flavors import (
             GCPArtifactStoreFlavor,
+            GCPImageBuilderFlavor,
             GCPSecretsManagerFlavor,
             VertexOrchestratorFlavor,
             VertexStepOperatorFlavor,
         )
 
         return [
+            GCPArtifactStoreFlavor,
+            GCPImageBuilderFlavor,
+            GCPSecretsManagerFlavor,
             VertexOrchestratorFlavor,
             VertexStepOperatorFlavor,
-            GCPSecretsManagerFlavor,
-            GCPArtifactStoreFlavor,
         ]
 
 

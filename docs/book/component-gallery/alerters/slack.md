@@ -8,10 +8,10 @@ The `SlackAlerter` enables you to send messages to a dedicated Slack
 channel directly from within your pipelines.
 
 The `slack` integration also contains the following two standard steps:
-- [slack_alerter_post_step](https://apidocs.zenml.io/latest/api_docs/integration_code_docs/integrations-slack/#zenml.integrations.slack.steps.slack_alerter_post_step.slack_alerter_post_step) 
+- [slack_alerter_post_step](https://apidocs.zenml.io/latest/integration_code_docs/integrations-slack/#zenml.integrations.slack.steps.slack_alerter_post_step.slack_alerter_post_step) 
 takes a string, posts it to Slack, and returns `True` if the operation 
 succeeded, else `False`.
-- [slack_alerter_ask_step](https://apidocs.zenml.io/latest/api_docs/integration_code_docs/integrations-slack/#zenml.integrations.slack.steps.slack_alerter_ask_step.slack_alerter_ask_step) 
+- [slack_alerter_ask_step](https://apidocs.zenml.io/latest/integration_code_docs/integrations-slack/#zenml.integrations.slack.steps.slack_alerter_ask_step.slack_alerter_ask_step) 
 does the same as `slack_alerter_post_step`, but after sending the message, it 
 waits until someone approves or rejects the operation from within Slack
 (e.g., by sending "approve" / "reject" to the bot in response).
@@ -70,7 +70,8 @@ Here is where you can find the required parameters:
 - `<SLACK_CHANNEL_ID>`: Open your desired Slack channel in a browser, and copy
 out the last part of the URL starting with `C....`.
 - `<SLACK_TOKEN>`: This is the Slack token of your bot. You can find it in the
-Slack app settings under `OAuth & Permissions`.
+Slack app settings under `OAuth & Permissions`. **IMPORTANT**: Please make sure
+that the token is the `Bot User OAuth Token` not the `User OAuth Token`.
 
 After you have registered the `slack_alerter`, you can add it to your stack
 like this:
@@ -82,8 +83,8 @@ zenml stack register ... -al slack_alerter
 ### How to Use the Slack Alerter
 
 After you have a `SlackAlerter` configured in your stack, you can directly import the 
-[slack_alerter_post_step](https://apidocs.zenml.io/latest/api_docs/integration_code_docs/integrations-slack/#zenml.integrations.slack.steps.slack_alerter_post_step.slack_alerter_post_step) and
-[slack_alerter_ask_step](https://apidocs.zenml.io/latest/api_docs/integration_code_docs/integrations-slack/#zenml.integrations.slack.steps.slack_alerter_ask_step.slack_alerter_ask_step)
+[slack_alerter_post_step](https://apidocs.zenml.io/latest/integration_code_docs/integrations-slack/#zenml.integrations.slack.steps.slack_alerter_post_step.slack_alerter_post_step) and
+[slack_alerter_ask_step](https://apidocs.zenml.io/latest/integration_code_docs/integrations-slack/#zenml.integrations.slack.steps.slack_alerter_ask_step.slack_alerter_ask_step)
 steps and use them in your pipelines.
 
 Since these steps expect a string message as input (which needs to be the 
@@ -128,4 +129,4 @@ model deployment until a user approves it in Slack.
 
 
 For more information and a full list of configurable attributes of the Slack 
-alerter, check out the [API Docs](https://apidocs.zenml.io/latest/api_docs/integration_code_docs/integrations-slack/#zenml.integrations.slack.alerters.slack_alerter.SlackAlerter).
+alerter, check out the [API Docs](https://apidocs.zenml.io/latest/integration_code_docs/integrations-slack/#zenml.integrations.slack.alerters.slack_alerter.SlackAlerter).

@@ -26,12 +26,12 @@ In ZenML, a **Stack** represents a set of configurations for your MLOps tools
 and infrastructure. For instance, you might want to:
 
 - Orchestrate your ML workflows with [Kubeflow](../../component-gallery/orchestrators/kubeflow.md),
-- Save ML artifacts in an [Amazon S3](../../component-gallery/artifact-stores/amazon-s3.md) bucket,
+- Save ML artifacts in an [Amazon S3](../../component-gallery/artifact-stores/s3.md) bucket,
 - Track your experiments with [Weights & Biases](../../component-gallery/experiment-trackers/wandb.md),
 - Deploy models on Kubernetes with [Seldon](../../component-gallery/model-deployers/seldon.md) or [KServe](../../component-gallery/model-deployers/kserve.md),
 
 In the illustration, you see one user register two stacks, the `Local Stack` and a `Production Stack`. These stacks can be shared
-with other people easily - something we'll dig into more [later](../collaborate/).
+with other people easily - something we'll dig into more [later](sharing-stacks.md).
 
 ![Running your pipeline in the cloud](../../assets/core_concepts/03_multi_stack.png)
 
@@ -84,7 +84,7 @@ Under the hood, all the artifacts in our ML pipeline are automatically stored
 in an [Artifact Store](../../component-gallery/artifact-stores/artifact-stores.md).
 By [default](../../component-gallery/artifact-stores/local.md), this is simply a
 place in your local file system, but we could also configure ZenML to store
-this data in a cloud bucket like [Amazon S3](../../component-gallery/artifact-stores/amazon-s3.md) 
+this data in a cloud bucket like [Amazon S3](../../component-gallery/artifact-stores/s3.md) 
 or any other place instead.
 
 You can see all supported stack component types in a single table view [here](../../component-gallery/categories.md)
