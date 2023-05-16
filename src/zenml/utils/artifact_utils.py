@@ -16,7 +16,7 @@
 import base64
 import os
 import tempfile
-from typing import TYPE_CHECKING, Any, Sequence, Type, Optional, Union, cast
+from typing import TYPE_CHECKING, Any, Optional, Sequence, Type, Union, cast
 
 from zenml.client import Client
 from zenml.constants import MODEL_METADATA_YAML_FILE_NAME

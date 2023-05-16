@@ -353,7 +353,6 @@ class BaseStep(metaclass=BaseStepMeta):
 
         return parameters
 
-
     def _verify_and_apply_init_params(self, *args: Any, **kwargs: Any) -> None:
         """Verifies the initialization args and kwargs of this step.
 
@@ -854,12 +853,8 @@ class BaseStep(metaclass=BaseStepMeta):
                 materializer_source = []
 
                 for output_type in output_types:
-                    if materializer_registry.is_registered(
-                        output_type
-                    ):
-                        materializer_class = materializer_registry[
-                            output_type
-                        ]
+                    if materializer_registry.is_registered(output_type):
+                        materializer_class = materializer_registry[output_type]
                     else:
                         raise StepInterfaceError(
                             f"Unable to find materializer for output "

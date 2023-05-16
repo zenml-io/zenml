@@ -38,8 +38,8 @@ from zenml.config.compiler import Compiler
 from zenml.config.pipeline_configurations import (
     PipelineConfiguration,
     PipelineConfigurationUpdate,
-    PipelineRunConfiguration,
 )
+from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
 from zenml.config.pipeline_spec import PipelineSpec
 from zenml.config.schedule import Schedule
 from zenml.config.step_configurations import StepConfigurationUpdate
@@ -101,6 +101,7 @@ class Pipeline:
         name: str,
         enable_cache: Optional[bool] = None,
         enable_artifact_metadata: Optional[bool] = None,
+        enable_artifact_visualization: Optional[bool] = None,
         settings: Optional[Mapping[str, "SettingsOrDict"]] = None,
         extra: Optional[Dict[str, Any]] = None,
         on_failure: Optional["HookSpecification"] = None,
@@ -114,6 +115,7 @@ class Pipeline:
         self.configure(
             enable_cache=enable_cache,
             enable_artifact_metadata=enable_artifact_metadata,
+            enable_artifact_visualization=enable_artifact_visualization,
             settings=settings,
             extra=extra,
             on_failure=on_failure,
@@ -178,6 +180,7 @@ class Pipeline:
         self: T,
         enable_cache: Optional[bool] = None,
         enable_artifact_metadata: Optional[bool] = None,
+        enable_artifact_visualization: Optional[bool] = None,
         settings: Optional[Mapping[str, "SettingsOrDict"]] = None,
         extra: Optional[Dict[str, Any]] = None,
         on_failure: Optional["HookSpecification"] = None,
@@ -200,6 +203,8 @@ class Pipeline:
             enable_cache: If caching should be enabled for this pipeline.
             enable_artifact_metadata: If artifact metadata should be enabled for
                 this pipeline.
+            enable_artifact_visualization: If artifact visualization should be
+                enabled for this pipeline.
             settings: settings for this pipeline.
             extra: Extra configurations for this pipeline.
             on_failure: Callback function in event of failure of the step. Can
@@ -233,6 +238,7 @@ class Pipeline:
             {
                 "enable_cache": enable_cache,
                 "enable_artifact_metadata": enable_artifact_metadata,
+                "enable_artifact_visualization": enable_artifact_visualization,
                 "settings": settings,
                 "extra": extra,
                 "failure_hook_source": failure_hook_source,

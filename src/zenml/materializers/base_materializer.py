@@ -233,7 +233,6 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
             for associated_type in cls.ASSOCIATED_TYPES
         )
 
-
     def extract_full_metadata(self, data: Any) -> Dict[str, "MetadataType"]:
         """Extract both base and custom metadata from the given data.
 
