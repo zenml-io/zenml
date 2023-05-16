@@ -163,17 +163,23 @@ class StepLauncher:
         pipeline_run, run_was_created = self._create_or_reuse_run()
 
         # Set up logging
+        step_logging_enabled = is_setting_enabled(
+            is_enabled_on_step=self._step.config.enable_step_logs,
+            is_enabled_on_pipeline=self._deployment.pipeline_configuration.enable_step_logs,
+        )
         logs_uri = step_logging_utils.prepare_logs_uri(
             self._stack.artifact_store,
             self._step.config.name,
         )
 
-        zenml_handler = step_logging_utils.get_step_logging_handler(logs_uri)
-
-        try:
+        if step_logging_enabled:
+            zenml_handler = step_logging_utils.get_step_logging_handler(
+                logs_uri
+            )
             root_logger = logging.getLogger()
             root_logger.addHandler(zenml_handler)
 
+        try:
             if run_was_created:
                 pipeline_run_metadata = self._stack.get_pipeline_run_metadata(
                     run_id=pipeline_run.id
@@ -229,8 +235,9 @@ class StepLauncher:
             raise
         finally:
             # Still write the logs to the artifact store regardless if we fail or not
-            zenml_handler.flush()
-            root_logger.removeHandler(zenml_handler)
+            if step_logging_enabled:
+                zenml_handler.flush()
+                root_logger.removeHandler(zenml_handler)
 
     def _get_step_docstring_and_source_code(self) -> Tuple[Optional[str], str]:
         """Gets the docstring and source code of the step.

@@ -174,6 +174,7 @@ class Compiler:
             enable_cache=config.enable_cache,
             enable_artifact_metadata=config.enable_artifact_metadata,
             enable_artifact_visualization=config.enable_artifact_visualization,
+            enable_step_logs=config.enable_step_logs,
             settings=config.settings,
             extra=config.extra,
         )
@@ -201,6 +202,11 @@ class Compiler:
                 step_.configure(
                     enable_artifact_visualization=config.enable_artifact_visualization
                 )
+
+        # Override `enable_step_logs` if set at run level
+        if config.enable_step_logs is not None:
+            for step_ in pipeline.steps.values():
+                step_.configure(enable_step_logs=config.enable_step_logs)
 
     def _apply_stack_default_settings(
         self, pipeline: "BasePipeline", stack: "Stack"

@@ -35,6 +35,7 @@ from tests.unit.pipelines.test_build_utils import (
 from zenml.client import Client
 from zenml.enums import StackComponentType, StoreType
 from zenml.exceptions import (
+    DoesNotExistException,
     EntityExistsError,
     IllegalOperationError,
     StackExistsError,
@@ -1136,7 +1137,7 @@ def test_artifacts_are_not_deleted_with_run():
 
 
 def test_logs_are_recorded_properly():
-    """Tests listing with `unused=True` only returns unused artifacts."""
+    """Tests if logs are stored in the artifact store."""
     client = Client()
     store = client.zen_store
 
@@ -1159,3 +1160,25 @@ def test_logs_are_recorded_properly():
 
         # Step 2 does not have logs!
         assert step2_logs_content == ""
+
+
+def test_logs_are_recorded_properly_when_disabled():
+    """Tests no logs are stored in the artifact store when disabled"""
+    client = Client()
+    store = client.zen_store
+
+    with PipelineRunContext(2, enable_step_logs=False):
+        steps = store.list_run_steps(StepRunFilterModel())
+        step1_logs = steps[0].logs
+        step2_logs = steps[1].logs
+        artifact_store = _load_artifact_store(
+            step1_logs.artifact_store_id, store
+        )
+
+        with pytest.raises(DoesNotExistException):
+            _load_file_from_artifact_store(
+                step1_logs.uri, artifact_store=artifact_store, mode="r"
+            )
+            _load_file_from_artifact_store(
+                step2_logs.uri, artifact_store=artifact_store, mode="r"
+            )

@@ -101,16 +101,19 @@ pipeline_instance = connected_two_step_pipeline(
 class PipelineRunContext:
     """Context manager that creates pipeline runs and cleans them up afterwards."""
 
-    def __init__(self, num_runs: int):
+    def __init__(self, num_runs: int, enable_step_logs: bool = True):
         self.num_runs = num_runs
         self.client = Client()
         self.store = self.client.zen_store
+        self.enable_step_logs = enable_step_logs
 
     def __enter__(self):
         self.pipeline_name = sample_name("sample_pipeline_run_")
         for i in range(self.num_runs):
             pipeline_instance.run(
-                run_name=f"{self.pipeline_name}_{i}", unlisted=True
+                run_name=f"{self.pipeline_name}_{i}",
+                unlisted=True,
+                enable_step_logs=self.enable_step_logs,
             )
 
         # persist which runs, steps and artifacts were produced, in case

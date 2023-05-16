@@ -34,6 +34,7 @@ from zenml.steps.utils import (
     PARAM_ENABLE_ARTIFACT_METADATA,
     PARAM_ENABLE_ARTIFACT_VISUALIZATION,
     PARAM_ENABLE_CACHE,
+    PARAM_ENABLE_STEP_LOGS,
     PARAM_EXPERIMENT_TRACKER,
     PARAM_EXTRA_OPTIONS,
     PARAM_ON_FAILURE,
@@ -71,6 +72,7 @@ def step(
     enable_cache: Optional[bool] = None,
     enable_artifact_metadata: Optional[bool] = None,
     enable_artifact_visualization: Optional[bool] = None,
+    enable_step_logs: Optional[bool] = None,
     experiment_tracker: Optional[str] = None,
     step_operator: Optional[str] = None,
     output_materializers: Optional["OutputMaterializersSpecification"] = None,
@@ -89,6 +91,7 @@ def step(
     enable_cache: Optional[bool] = None,
     enable_artifact_metadata: Optional[bool] = None,
     enable_artifact_visualization: Optional[bool] = None,
+    enable_step_logs: Optional[bool] = None,
     experiment_tracker: Optional[str] = None,
     step_operator: Optional[str] = None,
     output_materializers: Optional["OutputMaterializersSpecification"] = None,
@@ -115,6 +118,7 @@ def step(
         enable_artifact_visualization: Specify whether visualization is enabled
             for this step. If no value is passed, visualization is enabled by
             default.
+        enable_step_logs: Specify whether step logs are enabled for this step.
         experiment_tracker: The experiment tracker to use for this step.
         step_operator: The step operator to use for this step.
         output_materializers: Output materializers for this step. If
@@ -159,6 +163,7 @@ def step(
                     PARAM_ENABLE_CACHE: enable_cache,
                     PARAM_ENABLE_ARTIFACT_METADATA: enable_artifact_metadata,
                     PARAM_ENABLE_ARTIFACT_VISUALIZATION: enable_artifact_visualization,
+                    PARAM_ENABLE_STEP_LOGS: enable_step_logs,
                     PARAM_EXPERIMENT_TRACKER: experiment_tracker,
                     PARAM_STEP_OPERATOR: step_operator,
                     PARAM_OUTPUT_MATERIALIZERS: output_materializers,

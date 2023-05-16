@@ -58,6 +58,7 @@ from zenml.steps.utils import (
     PARAM_ENABLE_ARTIFACT_METADATA,
     PARAM_ENABLE_ARTIFACT_VISUALIZATION,
     PARAM_ENABLE_CACHE,
+    PARAM_ENABLE_STEP_LOGS,
     PARAM_EXPERIMENT_TRACKER,
     PARAM_EXTRA_OPTIONS,
     PARAM_ON_FAILURE,
@@ -227,6 +228,8 @@ class BaseStep(metaclass=BaseStepMeta):
             is enabled for this step.
         enable_artifact_visualization: A boolean indicating if artifact
             visualization is enabled for this step.
+        enable_step_logs: A boolean indicating if step logs are enabled for
+            this step.
     """
 
     INPUT_SIGNATURE: ClassVar[Dict[str, Type[Any]]] = None  # type: ignore[assignment] # noqa
@@ -314,11 +317,20 @@ class BaseStep(metaclass=BaseStepMeta):
             else "disabled",
         )
 
+        enable_step_logs = kwargs.pop(PARAM_ENABLE_STEP_LOGS, None)
+
+        logger.debug(
+            "Step '%s': logs %s.",
+            name,
+            "enabled" if enable_step_logs is not False else "disabled",
+        )
+
         self._configuration = PartialStepConfiguration(
             name=name,
             enable_cache=enable_cache,
             enable_artifact_metadata=enable_artifact_metadata,
             enable_artifact_visualization=enable_artifact_visualization,
+            enable_step_logs=enable_step_logs,
         )
         self._apply_class_configuration(kwargs)
         self._verify_and_apply_init_params(*args, **kwargs)
@@ -725,6 +737,7 @@ class BaseStep(metaclass=BaseStepMeta):
         enable_cache: Optional[bool] = None,
         enable_artifact_metadata: Optional[bool] = None,
         enable_artifact_visualization: Optional[bool] = None,
+        enable_step_logs: Optional[bool] = None,
         experiment_tracker: Optional[str] = None,
         step_operator: Optional[str] = None,
         parameters: Optional["ParametersOrDict"] = None,
@@ -756,6 +769,7 @@ class BaseStep(metaclass=BaseStepMeta):
                 for this step.
             enable_artifact_visualization: If artifact visualization should be
                 enabled for this step.
+            enable_step_logs: If step logs should be enabled for this step.
             experiment_tracker: The experiment tracker to use for this step.
             step_operator: The step operator to use for this step.
             parameters: Function parameters for this step
@@ -828,6 +842,7 @@ class BaseStep(metaclass=BaseStepMeta):
                 "enable_cache": enable_cache,
                 "enable_artifact_metadata": enable_artifact_metadata,
                 "enable_artifact_visualization": enable_artifact_visualization,
+                "enable_step_logs": enable_step_logs,
                 "experiment_tracker": experiment_tracker,
                 "step_operator": step_operator,
                 "parameters": parameters,

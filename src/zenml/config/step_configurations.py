@@ -69,6 +69,7 @@ class StepConfigurationUpdate(StrictBaseModel):
     enable_cache: Optional[bool] = None
     enable_artifact_metadata: Optional[bool] = None
     enable_artifact_visualization: Optional[bool] = None
+    enable_step_logs: Optional[bool] = None
     step_operator: Optional[str] = None
     experiment_tracker: Optional[str] = None
     parameters: Dict[str, Any] = {}
