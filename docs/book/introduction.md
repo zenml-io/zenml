@@ -106,6 +106,8 @@ Try it out at [https://demo.zenml.io/](https://demo.zenml.io/)!
 <a href="https://demo.zenml.io/">
 <img src=".gitbook/assets/intro_dashboard.png" alt="ZenML Dashboard Overview" width="40%">
 </a>
+<figcaption>
+</figcaption>
 </figure>
 
 **Automated Deployments:** With ZenML, you no longer need to upload custom 
@@ -163,6 +165,9 @@ Try it out at [https://demo.zenml.io/](https://demo.zenml.io/)!
 <figure>
 <a href="https://demo.zenml.io/">
 <img src=".gitbook/assets/intro_dashboard_stacks.png" alt="ZenML Dashboard Stacks View" width="50%">
+<figcaption>
+My picture
+</figcaption>
 </a>
 </figure>
 
