@@ -50,7 +50,10 @@ def convert_pred_filenames_to_task_ids(
     # separate encoding step
     if storage_type in {"gcs", "s3"}:
         preds = [
-            {"filename": quote(pred["filename"]), "result": pred["result"]}
+            {
+                "filename": quote(pred["filename"]).split("//")[1],
+                "result": pred["result"],
+            }
             for pred in preds
         ]
 
