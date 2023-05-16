@@ -4,7 +4,7 @@ description: Learn how to configure pipelines and their steps
 
 # Create an ML Pipeline
 
-In this section we build out the first ML pipeline. For this lets get the imports out of the way first:
+In this section, we build out the first ML pipeline. For this, let's get the imports out of the way first:
 
 ```python
 import numpy as np
@@ -19,7 +19,7 @@ from zenml.steps import Output, step
 
 ### Multiple Outputs
 
-Sometimes a step will have multiple outputs. In order to give each output a unique name, use the `Output()` Annotation. Here we load an open source dataset and split it into a train and a test dataset.
+Sometimes a step will have multiple outputs. In order to give each output a unique name, use the `Output()` Annotation. Here we load an open-source dataset and split it into a train and a test dataset.
 
 <pre class="language-python"><code class="lang-python"><strong>@step
 </strong>def digits_data_loader() -> Output(
@@ -28,9 +28,9 @@ Sometimes a step will have multiple outputs. In order to give each output a uniq
     """Loads the digits dataset and splits it into train and test data."""
     # Load data from the digits dataset
     digits = load_digits()
-    # transform these images into flattened numpy arrays
+    # Transform these images into flattened numpy arrays
     data = digits.images.reshape((len(digits.images), -1))
-    # split into datasets
+    # Split into datasets
     X_train, X_test, y_train, y_test = train_test_split(
         data, digits.target, test_size=0.2, shuffle=False
     )
@@ -39,7 +39,7 @@ Sometimes a step will have multiple outputs. In order to give each output a uniq
 
 ### Parametrize a Step
 
-Here we are creating a training step for a support vector machine classifier with sklearn. As we might want to adjust the hyperparameter `gamma` later on, we define it as an input value to the step as well.
+Here we are creating a training step for a support vector machine classifier with `sklearn`. As we might want to adjust the hyperparameter `gamma` later on, we define it as an input value to the step as well.
 
 ```python
 @step
@@ -52,13 +52,13 @@ def svc_trainer(
     
     # instantiate a support vector machine model    
     model = SVC(gamma=gamma)
-    # Train on the train dataset
+    # Train on the training dataset
     model.fit(X_train, y_train)
     return model
 ```
 
 {% hint style="info" %}
-In case you want to run the step function outside the context of a ZenML pipeline, all you need to do is call the `.entrypoint()` method with the same input signature. For example:
+If you want to run the step function outside the context of a ZenML pipeline, all you need to do is call the `.entrypoint()` method with the same input signature. For example:
 
 ```python
 svc_trainer.entrypoint(X_train=..., y_train=...)
@@ -67,7 +67,7 @@ svc_trainer.entrypoint(X_train=..., y_train=...)
 
 ### Pipeline
 
-Next, we will combine our two steps into a pipeline and run it. As you can see here, the parameter gamma is configurable as a pipeline input.
+Next, we will combine our two steps into a pipeline and run it. As you can see, the parameter gamma is configurable as a pipeline input.
 
 ```python
 @pipeline
@@ -106,13 +106,13 @@ In the output logs of a pipeline run you will see the name of the run:
 Pipeline run `first_pipeline-2023_04_29-09_19_54_273710` has finished in 0.236s.
 ```
 
-This name is automatically generated based on the current date and time. In order to change the name for a run, pass `run_name` as a parameter to the `run()` function:
+This name is automatically generated based on the current date and time. To change the name for a run, pass `run_name` as a parameter to the `run()` function:
 
 ```python
 first_pipeline_instance.run(run_name="custom_pipeline_run_name")
 ```
 
-Pipeline run names must be unique, so if you plan to run your pipelines multiple times or run them on a schedule, make sure to either compute the run name dynamically or include one of the following placeholders that will be replaced by ZenML:
+Pipeline run names must be unique, so if you plan to run your pipelines multiple times or run them on a schedule, make sure to either compute the run name dynamically or include one of the following placeholders that ZenML will replace:
 
 * `{{date}}` will resolve to the current date, e.g. `2023_02_19`
 * `{{time}}` will resolve to the current time, e.g. `11_07_09_326492`

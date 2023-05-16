@@ -30,8 +30,7 @@ if __name__ == "__main__":
 
 {% hint style="info" %}
 * `@step` is a decorator that converts its function into a step that can be used within a pipeline
-* `@pipeline` defines a function as a pipeline
-  * within this function the steps are called and their outputs are routed
+* `@pipeline` defines a function as a pipeline and within this function, the steps are called and their outputs are routed
 {% endhint %}
 
 Copy this code into a file main.py and run it.
@@ -45,7 +44,7 @@ Running pipeline my_pipeline on stack default (caching enabled)
 Step step_1 has started.
 Step step_1 has finished in 0.121s.
 Step step_2 has started.
-helloworld
+hello world
 Step step_2 has finished in 0.046s.
 Pipeline run my_pipeline-... has finished in 0.676s.
 Pipeline visualization can be seen in the ZenML Dashboard. Run zenml up to see your pipeline!
@@ -60,13 +59,13 @@ Pipeline visualization can be seen in the ZenML Dashboard. Run zenml up to see y
 ```
 {% endcode %}
 
-ZenML offers you a comprehensive Dashboard to interact with your Pipelines, Artifacts and Infrastructure. To see it, simply deploy the ZenML service locally in the next section.
+ZenML offers you a comprehensive Dashboard to interact with your Pipelines, Artifacts, and Infrastructure. To see it, simply deploy the ZenML service locally in the next section.
 
 ### Explore the Dashboard
 
 Run `zenml up` in the environment where you have ZenML installed.
 
-After a few seconds your browser should open the ZenML Dashboard for you at [http://127.0.0.1:8237/](http://127.0.0.1:8237/)
+After a few seconds, your browser should open the ZenML Dashboard for you at [http://127.0.0.1:8237/](http://127.0.0.1:8237/)
 
 The default user account is **Username**: _**default**_ with no password.
 
