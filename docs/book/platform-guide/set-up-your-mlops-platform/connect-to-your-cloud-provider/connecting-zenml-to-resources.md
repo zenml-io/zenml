@@ -39,9 +39,7 @@ $ zenml service-connector list-types
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━┷━━━━━━━┷━━━━━━━━┛
 ```
 
-Note that there is an AWS Service Connector type that we can use to gain access to several types of AWS resources:
-
-
+Note that there is an AWS Service Connector type that we can use to gain access to several types of resources, one of which is an S3 bucket. We'll use that the next steps.
 
 The second step is _<mark style="color:purple;">registering a Service Connector</mark>_ that effectively enables ZenML to authenticate to and access one or more remote resources. This step is best handled by someone with some infrastructure knowledge, but there are sane defaults and auto-detection mechanisms built into the AWS Service Connector that can make this a walk in the park even for the uninitiated. A simple example of this is registering an AWS Service Connector with AWS credentials _automatically lifted up from your local host_, giving ZenML access to the same resources that you can access from your local machine through the AWS CLI, such as EKS clusters, ECR repositories or S3 buckets:
 
@@ -57,7 +55,6 @@ Successfully registered service connector `aws-auto` with access to the followin
 ┃                                      │                │                │ 🌀 kubernetes-cluster │                ┃
 ┃                                      │                │                │ 🐳 docker-registry    │                ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┛
-
 ```
 
 {% hint style="info" %}
@@ -67,6 +64,121 @@ The ZenML CLI provides an even easier and more interactive way of registering Se
 zenml service-connector register -i
 ```
 {% endhint %}
+
+<details>
+
+<summary>Find out exactly what happens during an auto-configuration</summary>
+
+A quick glance into the Service Connector configuration that was automatically detected gives a better idea of what happened:
+
+```
+$ zenml service-connector describe aws-auto
+Service connector 'aws-auto' of type 'aws' with id 'ffbec8d7-b931-46c3-bcc5-c6252c52ee5f' is owned by user 'default' and is 'private'.
+                           'aws-auto' aws Service Connector Details                           
+┏━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ PROPERTY         │ VALUE                                                                   ┃
+┠──────────────────┼─────────────────────────────────────────────────────────────────────────┨
+┃ ID               │ ffbec8d7-b931-46c3-bcc5-c6252c52ee5f                                    ┃
+┠──────────────────┼─────────────────────────────────────────────────────────────────────────┨
+┃ NAME             │ aws-auto                                                                ┃
+┠──────────────────┼─────────────────────────────────────────────────────────────────────────┨
+┃ TYPE             │ 🔶 aws                                                                  ┃
+┠──────────────────┼─────────────────────────────────────────────────────────────────────────┨
+┃ AUTH METHOD      │ session-token                                                           ┃
+┠──────────────────┼─────────────────────────────────────────────────────────────────────────┨
+┃ RESOURCE TYPES   │ 🔶 aws-generic, 📦 s3-bucket, 🌀 kubernetes-cluster, 🐳 docker-registry ┃
+┠──────────────────┼─────────────────────────────────────────────────────────────────────────┨
+┃ RESOURCE NAME    │ <multiple>                                                              ┃
+┠──────────────────┼─────────────────────────────────────────────────────────────────────────┨
+┃ SECRET ID        │ 6e03d968-fba0-47ff-b01d-eeb58780bcc8                                    ┃
+┠──────────────────┼─────────────────────────────────────────────────────────────────────────┨
+┃ SESSION DURATION │ 43200s                                                                  ┃
+┠──────────────────┼─────────────────────────────────────────────────────────────────────────┨
+┃ EXPIRES IN       │ N/A                                                                     ┃
+┠──────────────────┼─────────────────────────────────────────────────────────────────────────┨
+┃ OWNER            │ default                                                                 ┃
+┠──────────────────┼─────────────────────────────────────────────────────────────────────────┨
+┃ WORKSPACE        │ default                                                                 ┃
+┠──────────────────┼─────────────────────────────────────────────────────────────────────────┨
+┃ SHARED           │ ➖                                                                      ┃
+┠──────────────────┼─────────────────────────────────────────────────────────────────────────┨
+┃ CREATED_AT       │ 2023-05-16 16:59:56.761936                                              ┃
+┠──────────────────┼─────────────────────────────────────────────────────────────────────────┨
+┃ UPDATED_AT       │ 2023-05-16 16:59:56.761939                                              ┃
+┗━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+            Configuration            
+┏━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━┓
+┃ PROPERTY              │ VALUE     ┃
+┠───────────────────────┼───────────┨
+┃ region                │ us-east-1 ┃
+┠───────────────────────┼───────────┨
+┃ aws_access_key_id     │ [HIDDEN]  ┃
+┠───────────────────────┼───────────┨
+┃ aws_secret_access_key │ [HIDDEN]  ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━┛
+```
+
+The AWS Service Connector discovered and lifted the AWS Secret Key that was configured on the local machine and securely stored it in the [Secrets Store](../secrets-management/#centralized-secrets-store). Normally, this would be cause for concern, because the AWS Secret Key gives access to any and all AWS resources in your account and should not be distributed to third parties.
+
+However, in this case, _the following security best practice is automatically enforced by the AWS connector_: the AWS Secret Key will be kept hidden and the clients will never use it directly to gain access to any AWS resources. Instead, the AWS Service Connector will generate short-lived security tokens and distribute those to clients. It will also take care of issuing new tokens when those expire. This is identifiable from the `session-token` authentication method and the session duration configuration attributes.
+
+One way to confirm this is to ask ZenML to show us the exact configuration that a Service Connector client would see, but this requires us to pick a resource for which temporary credentials can be generated and use the `--client` CLI flag:
+
+```
+$ zenml service-connector describe aws-auto --client --resource-type s3-bucket --resource-id s3://zenfiles
+Service connector 'aws-auto (s3-bucket | s3://zenfiles client)' of type 'aws' with id '4c0c0511-0ffd-42c6-9ea9-6a33b19620a2' is owned by user 'default' and is 'private'.
+    'aws-auto (s3-bucket | s3://zenfiles client)' aws Service     
+                        Connector Details                         
+┏━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ PROPERTY         │ VALUE                                       ┃
+┠──────────────────┼─────────────────────────────────────────────┨
+┃ ID               │ 4c0c0511-0ffd-42c6-9ea9-6a33b19620a2        ┃
+┠──────────────────┼─────────────────────────────────────────────┨
+┃ NAME             │ aws-auto (s3-bucket | s3://zenfiles client) ┃
+┠──────────────────┼─────────────────────────────────────────────┨
+┃ TYPE             │ 🔶 aws                                      ┃
+┠──────────────────┼─────────────────────────────────────────────┨
+┃ AUTH METHOD      │ sts-token                                   ┃
+┠──────────────────┼─────────────────────────────────────────────┨
+┃ RESOURCE TYPES   │ 📦 s3-bucket                                ┃
+┠──────────────────┼─────────────────────────────────────────────┨
+┃ RESOURCE NAME    │ s3://zenfiles                               ┃
+┠──────────────────┼─────────────────────────────────────────────┨
+┃ SECRET ID        │                                             ┃
+┠──────────────────┼─────────────────────────────────────────────┨
+┃ SESSION DURATION │ N/A                                         ┃
+┠──────────────────┼─────────────────────────────────────────────┨
+┃ EXPIRES IN       │ 11h59m55s                                   ┃
+┠──────────────────┼─────────────────────────────────────────────┨
+┃ OWNER            │ default                                     ┃
+┠──────────────────┼─────────────────────────────────────────────┨
+┃ WORKSPACE        │ default                                     ┃
+┠──────────────────┼─────────────────────────────────────────────┨
+┃ SHARED           │ ➖                                          ┃
+┠──────────────────┼─────────────────────────────────────────────┨
+┃ CREATED_AT       │ 2023-05-16 17:28:13.164651                  ┃
+┠──────────────────┼─────────────────────────────────────────────┨
+┃ UPDATED_AT       │ 2023-05-16 17:28:13.164654                  ┃
+┗━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+            Configuration            
+┏━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━┓
+┃ PROPERTY              │ VALUE     ┃
+┠───────────────────────┼───────────┨
+┃ region                │ us-east-1 ┃
+┠───────────────────────┼───────────┨
+┃ aws_access_key_id     │ [HIDDEN]  ┃
+┠───────────────────────┼───────────┨
+┃ aws_secret_access_key │ [HIDDEN]  ┃
+┠───────────────────────┼───────────┨
+┃ aws_session_token     │ [HIDDEN]  ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━┛
+```
+
+As can be seen, this configuration is of a temporary STS AWS token that will expire in 12 hours.
+
+Of course, the AWS Secret Key to your AWS IAM user or (worse) AWS root account should still not be used as a direct means of authentication outside of local development. This is just an example and the AWS Service Connector supports other authentication methods that are more suitable for production purposes.
+
+</details>
 
 The third step is preparing to configure the Stack Components and Stacks that you will use to run pipelines, the same way you would do it without Service Connectors, but this time you have the option of _<mark style="color:purple;">discovering which remote resources are available</mark>_ for you to use. For example, if you needed an S3 bucket for your S3 Artifact Store, you could run the following CLI command, which is the same as asking "_which S3 buckets am I authorized to access through ZenML ?_". The result is a list of resource names, identifying those S3 buckets:
 
@@ -85,7 +197,7 @@ The following 's3-bucket' resources can be accessed by service connectors config
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 ```
 
-The last step in this journey is _<mark style="color:purple;">configuring and connecting a Stack Component to a remote resource</mark>_ via the Service Connector registered and listed in previous steps. This is as easy as saying "_I want this S3 Artifact Store to use the `s3://ml-bucket` S3 bucket_" or "_I want this Kubernetes Orchestrator to use the `mega-ml-cluster` Kubernetes cluster_" and doesn't require any knowledge whatsoever about the authentication mechanisms or even the provenance of those resources. The following example creates an S3 Artifact store and connects it to an S3 bucket with the previous connector:
+The next step in this journey is _<mark style="color:purple;">configuring and connecting a Stack Component to a remote resource</mark>_ via the Service Connector registered and listed in previous steps. This is as easy as saying "_I want this S3 Artifact Store to use the `s3://ml-bucket` S3 bucket_" or "_I want this Kubernetes Orchestrator to use the `mega-ml-cluster` Kubernetes cluster_" and doesn't require any knowledge whatsoever about the authentication mechanisms or even the provenance of those resources. The following example creates an S3 Artifact store and connects it to an S3 bucket with the earlier connector:
 
 ```sh
 $ zenml artifact-store register s3-zenfiles --flavor s3 --path=s3://zenfiles
@@ -108,6 +220,12 @@ The ZenML CLI provides an even easier and more interactive way of connecting a s
 zenml artifact-store connect -i
 ```
 {% endhint %}
+
+<details>
+
+<summary>Too much work ? Find out why Service Connectors are worth the extra typing</summary>
+
+
 
 At this point, you may wonder why you would need to do all this extra work when you could have simply configured your S3 Artifact Store with embedded AWS credentials or referencing AWS credentials in a ZenML secret, like this:
 
@@ -142,3 +260,7 @@ These are some of the advantages of linking an S3 Artifact Store, or any Stack C
 * you can create and connect any number of S3 Artifact Stores and other types of Stack Components (e.g. Kubernetes/Kubeflow/Tekton Orchestrators, Container Registries) to the AWS resources accessible through the Service Connector, but you only have to configure the Service Connector once.
 * if your need to make any changes to the AWS authentication configuration (e.g. refresh expired credentials or remove leaked credentials) you only need to update the Service Connector and the changes will automatically be applied to all Stack Components linked to it.
 * this last point is only useful if you're really serious about implementing security best practices: the AWS Service Connector in particular, as well as other cloud provider Service Connectors can automatically generate, distribute and refresh short-lived AWS security credentials for its clients. This keeps long-lived credentials like AWS Secret Keys safely stored on the ZenML Server while the actual workloads and people directly accessing those AWS resources are issued temporary, least-privilege credentials like AWS STS Tokens. This tremendously reduces the impact of potential security incidents.
+
+</details>
+
+Of course, the Stack Component is not really useful on its own. You'll need to _<mark style="color:purple;">make it part of a Stack, set the Stack as active and finally run some pipelines on it</mark>_. But Service Connectors no longer play any visible role in this part, which is why they're so useful: they do all the heavy lifting in the background so you can focus on what matters.

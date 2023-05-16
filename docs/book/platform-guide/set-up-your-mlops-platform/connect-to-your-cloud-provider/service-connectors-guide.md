@@ -1,6 +1,6 @@
 ---
 description: >-
-  A guide into managing Service Connectors and connecting ZenML to external
+  A guide to managing Service Connectors and connecting ZenML to external
   resources.
 ---
 
@@ -36,6 +36,12 @@ $ zenml service-connector list-types
 ┃                              │               │ 🐳 docker-registry    │ iam-role         │       │        ┃
 ┃                              │               │                       │ session-token    │       │        ┃
 ┃                              │               │                       │ federation-token │       │        ┃
+┠──────────────────────────────┼───────────────┼───────────────────────┼──────────────────┼───────┼────────┨
+┃    GCP Service Connector     │ 🔵 gcp        │ 🔵 gcp-generic        │ implicit         │ ✅    │ ✅     ┃
+┃                              │               │ 📦 gcs-bucket         │ user-account     │       │        ┃
+┃                              │               │ 🌀 kubernetes-cluster │ service-account  │       │        ┃
+┃                              │               │ 🐳 docker-registry    │ oauth2-token     │       │        ┃
+┃                              │               │                       │ impersonation    │       │        ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━┷━━━━━━━┷━━━━━━━━┛
 ```
 
@@ -238,7 +244,7 @@ The Service Connector is how you configure ZenML to authenticate and connect to 
 
 Depending on the Service Connector Type implementation, a Service Connector instance can be configured in one of the following modes with regards to the types and number of resources that it has access to:
 
-* a **multi-type** Service Connector instance that can be configured once and used to gain access to multiple types of resources. This is only possible with Service Connector Types that support multiple Resource Types to begin with, such as those that target multi-service cloud providers such as AWS, GCP and Azure. In contrast, a **single-type** Service Connector can only be used with a single Resource Type. To configure a multi-type Service Connector, you can simply skip scoping its Resource Type during registration.
+* a **multi-type** Service Connector instance that can be configured once and used to gain access to multiple types of resources. This is only possible with Service Connector Types that support multiple Resource Types to begin with, such as those that target multi-service cloud providers like AWS, GCP and Azure. In contrast, a **single-type** Service Connector can only be used with a single Resource Type. To configure a multi-type Service Connector, you can simply skip scoping its Resource Type during registration.
 * a **multi-instance** Service Connector instance can be configured once and used to gain access to multiple resources of the same type, each identifiable by a Resource Name. Not all types of connectors and not all types of resources support multiple instances. Some Service Connectors Types like the generic Kubernetes and Docker connector types only allow **single-instance** configurations: a Service Connector instance can only be used to access a single Kubernetes cluster and a single Docker registry. To configure a multi-instance Service Connector, you can simply skip scoping its Resource Name during registration.
 
 
@@ -246,6 +252,76 @@ Depending on the Service Connector Type implementation, a Service Connector inst
 </details>
 
 ## Explore Service Connector Types
+
+Service Connector Types are not only templates used to instantiate Service Connectors, they also form a body of knowledge that documents best security practices and guides users through the complicated world of authentication and authorization.
+
+ZenML ships with a handful of Service Connector Types that enable you right out-of-the-box to connect ZenML to cloud resources and services available from cloud providers such as AWS and GCP, as well as on-premise infrastructure. In addition to built-in Service Connector Types, ZenML can be easily extended with custom Service Connector implementations.
+
+To discover the Connector Types available with your ZenML deployment, you can use the `zenml service-connector list-types` CLI command:
+
+```
+$ zenml service-connector list-types
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━┯━━━━━━━┯━━━━━━━━┓
+┃             NAME             │ TYPE          │ RESOURCE TYPES        │ AUTH METHODS     │ LOCAL │ REMOTE ┃
+┠──────────────────────────────┼───────────────┼───────────────────────┼──────────────────┼───────┼────────┨
+┃ Kubernetes Service Connector │ 🌀 kubernetes │ 🌀 kubernetes-cluster │ password         │ ✅    │ ✅     ┃
+┃                              │               │                       │ token            │       │        ┃
+┠──────────────────────────────┼───────────────┼───────────────────────┼──────────────────┼───────┼────────┨
+┃   Docker Service Connector   │ 🐳 docker     │ 🐳 docker-registry    │ password         │ ✅    │ ✅     ┃
+┠──────────────────────────────┼───────────────┼───────────────────────┼──────────────────┼───────┼────────┨
+┃    AWS Service Connector     │ 🔶 aws        │ 🔶 aws-generic        │ implicit         │ ✅    │ ✅     ┃
+┃                              │               │ 📦 s3-bucket          │ secret-key       │       │        ┃
+┃                              │               │ 🌀 kubernetes-cluster │ sts-token        │       │        ┃
+┃                              │               │ 🐳 docker-registry    │ iam-role         │       │        ┃
+┃                              │               │                       │ session-token    │       │        ┃
+┃                              │               │                       │ federation-token │       │        ┃
+┠──────────────────────────────┼───────────────┼───────────────────────┼──────────────────┼───────┼────────┨
+┃    GCP Service Connector     │ 🔵 gcp        │ 🔵 gcp-generic        │ implicit         │ ✅    │ ✅     ┃
+┃                              │               │ 📦 gcs-bucket         │ user-account     │       │        ┃
+┃                              │               │ 🌀 kubernetes-cluster │ service-account  │       │        ┃
+┃                              │               │ 🐳 docker-registry    │ oauth2-token     │       │        ┃
+┃                              │               │                       │ impersonation    │       │        ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━┷━━━━━━━┷━━━━━━━━┛
+```
+
+### Basic Service Connector Types
+
+Service Connector Types like those for Kubernetes and Docker can only handle one type of resource.
+
+### Local and remote availability
+
+The `LOCAL` and `REMOTE` flags in the `zenml service-connector list-types` output indicate if the Service Connector implementation is available locally (i.e. where the ZenML client and pipelines are running) and remotely (i.e. where the ZenML server is running).&#x20;
+
+{% hint style="info" %}
+Some Service Connector Types may require additional Python packages to be installed to be available locally. All built-in Service Connector Types are by default available on the ZenML server. ZenML provides the following pypi extras that you can install to make them available on your clients:
+
+* `pip install zenml[connectors-aws]` installs the prerequisites for the AWS Service Connector Type. Alternatively, install the entire AWS ZenML integration by running `zenml integration install aws.`
+* `pip install zenml[connectors-gcp]` installs the prerequisites for the GCP Service Connector Type. Alternatively, install the entire GCP ZenML integration by running `zenml integration install gcp`.
+* `pip install zenml[connectors-kubernetes]` installs the prerequisites for the Kubernetes Service Connector Type. Alternatively, install the entire Kubernetes ZenML integration by running `zenml integration install kubernetes`.
+* the Docker Service Connector Type doesn't require extra packages to be installed.
+{% endhint %}
+
+The local/remote availability determines the possible actions and operations that can be performed with a Service Connector. The following are possible with either a remote or a local Service Connector Type:
+
+* Service Connector registration and update.
+* Service Connector verification (i.e. checking whether its configuration and credentials are valid and can be actively used to access the remote resources).
+* Listing all the resources that can be accessed by a Service Connector.
+* Connecting a Stack Component to a remote resource via a Service Connector
+
+The following operations are only possible with Service Connector Types that are locally available (with some notable exceptions covered in the information box that follows):
+
+* Service Connector auto-configuration and discovery of credentials stored by a local client, CLI or SDK (e.g. aws or kubectl).
+* Using the configuration and credentials managed by a Service Connector to configure a local client, CLI or SDK (e.g. docker or kubectl).
+* Running pipelines with a Stack Component that is connected to a remote resource through a Service Connector&#x20;
+
+{% hint style="info" %}
+One interesting and useful byproduct of the way Service Connectors are designed is the fact that you don't need to have all Service Connector Types available client-side to be able to access some of the resources that they provide. Take the following situation for example:
+
+* the GCP Service Connector Type can provide access to GKE Kubernetes clusters and GCR Docker container registries.
+* however, you don't need the GCP Service Connector Type or any GCP libraries to be installed on the ZenML clients to connect to and use those Kubernetes clusters or Docker registries in your ML pipelines.
+* the Kubernetes Service Connector Type is enough to access any Kubernetes cluster, regardless of its provenance (AWS, GCP etc.)
+* the Docker Service Connector Type is enough to access any Docker container registry, regardless of its provenance (AWS, GCP, etc.)
+{% endhint %}
 
 ## Register Service Connectors
 
