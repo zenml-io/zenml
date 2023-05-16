@@ -345,19 +345,41 @@ class SeldonModelDeployer(BaseModelDeployer):
 
                 # Convert the credentials into the format expected by Seldon
                 # Core
-                if gcp_credentials.get("type") == "service_account":
+                if isinstance(gcp_credentials, dict):
+                    if gcp_credentials.get("type") == "service_account":
+                        return SeldonGSSecretSchema(
+                            name="",
+                            rclone_config_gs_service_account_credentials=json.dumps(
+                                gcp_credentials
+                            ),
+                        )
+                    elif gcp_credentials.get("type") == "authorized_user":
+                        return SeldonGSSecretSchema(
+                            name="",
+                            rclone_config_gs_client_id=gcp_credentials.get(
+                                "client_id"
+                            ),
+                            rclone_config_gs_client_secret=gcp_credentials.get(
+                                "client_secret"
+                            ),
+                            rclone_config_gs_token=json.dumps(
+                                dict(
+                                    refresh_token=gcp_credentials.get(
+                                        "refresh_token"
+                                    )
+                                )
+                            ),
+                        )
+                else:
+                    # Connector token-based authentication
                     return SeldonGSSecretSchema(
                         name="",
-                        rclone_config_gs_service_account_credentials=json.dumps(
-                            gcp_credentials
+                        rclone_config_gs_token=json.dumps(
+                            dict(
+                                access_token=gcp_credentials.token,
+                            )
                         ),
                     )
-
-                # Assume token-based authentication
-                return SeldonGSSecretSchema(
-                    name="",
-                    rclone_config_gs_token=json.dumps(gcp_credentials),
-                )
 
             logger.warning(
                 "No credentials are configured for the active GCS artifact "

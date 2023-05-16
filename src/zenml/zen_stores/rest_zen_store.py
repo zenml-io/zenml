@@ -1929,7 +1929,9 @@ class RestZenStore(BaseZenStore):
                     service_connector.type
                 )
             )
-            connector_type.remote = True
+            connector_type.local = True
+            if not isinstance(service_connector.connector_type, str):
+                connector_type.remote = True
             service_connector.connector_type = connector_type
 
     def create_service_connector(
@@ -2163,6 +2165,42 @@ class RestZenStore(BaseZenStore):
         ]
 
         self._populate_connector_type(*resource_list)
+
+        # For service connectors with types that are only locally available,
+        # we need to retrieve the resource list locally
+        for idx, resources in enumerate(resource_list):
+            if isinstance(resources.connector_type, str):
+                # Skip connector types that are neither locally nor remotely
+                # available
+                continue
+            if resources.connector_type.remote:
+                # Skip connector types that are remotely available
+                continue
+
+            # Retrieve the resource list locally
+            assert resources.id is not None
+            connector = self.get_service_connector(resources.id)
+            connector_instance = (
+                service_connector_registry.instantiate_connector(
+                    model=connector
+                )
+            )
+
+            try:
+                local_resources = connector_instance.verify(
+                    resource_type=resource_type,
+                    resource_id=resource_id,
+                )
+            except (ValueError, AuthorizationException) as e:
+                logger.error(
+                    f'Failed to fetch {resource_type or "available"} '
+                    f"resources from service connector {connector.name}/"
+                    f"{connector.id}: {e}"
+                )
+                continue
+
+            resource_list[idx] = local_resources
+
         return resource_list
 
     def list_service_connector_types(

@@ -20,6 +20,7 @@ from zenml.artifact_stores import (
     BaseArtifactStoreFlavor,
 )
 from zenml.integrations.gcp import GCP_ARTIFACT_STORE_FLAVOR
+from zenml.models.service_connector_models import ServiceConnectorRequirements
 from zenml.stack.authentication_mixin import AuthenticationConfigMixin
 
 if TYPE_CHECKING:
@@ -48,6 +49,24 @@ class GCPArtifactStoreFlavor(BaseArtifactStoreFlavor):
             The name of the flavor.
         """
         return GCP_ARTIFACT_STORE_FLAVOR
+
+    @property
+    def service_connector_requirements(
+        self,
+    ) -> Optional[ServiceConnectorRequirements]:
+        """Service connector resource requirements for service connectors.
+
+        Specifies resource requirements that are used to filter the available
+        service connector types that are compatible with this flavor.
+
+        Returns:
+            Requirements for compatible service connectors, if a service
+            connector is required for this flavor.
+        """
+        return ServiceConnectorRequirements(
+            resource_type="gcs-bucket",
+            resource_id_attr="path",
+        )
 
     @property
     def docs_url(self) -> Optional[str]:
