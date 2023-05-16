@@ -167,7 +167,11 @@ class StepView(BaseView):
 
     @property
     def logs(self) -> Optional[None]:
-        """Get logs for the step. Returns None if no logs are available."""
+        """Get logs for the step.
+
+        Returns:
+            The logs for the step, None if no logs are available.
+        """
         logs = self.model.logs
         if logs is None:
             return None
