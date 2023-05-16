@@ -7,10 +7,10 @@ description: Deploying ZenML to Huggingface Spaces
 A quick way to deploy ZenML and get started is to use [HuggingFace Spaces](https://huggingface.co/spaces). HuggingFace Spaces is a platform for hosting and sharing ML projects and workflows, and it also works to deploy ZenML. You can be up and running in minutes (for free) with a hosted ZenML server so it's a good option if you want to try out ZenML without any infrastructure overhead.
 
 {% hint style="info" %}
-Note that it is not recommended to use HuggingFace Spaces for production use as by default the data stored there is non-persistent and the underlying machine is not as available to you as a dedicated machine. See our [other deployment options](../platform-guide/set-up-your-mlops-platform/deploy-zenml/deploying-zenml.md) if you want to use ZenML in production.
+Note that it is not recommended to use HuggingFace Spaces for production use as by default the data stored there is non-persistent and the underlying machine is not as available to you as a dedicated machine. See our [other deployment options](deploying-zenml.md) if you want to use ZenML in production.
 {% endhint %}
 
-![ZenML on HuggingFace Spaces -- default deployment](../book/assets/huggingface/hf\_spaces\_chart.png)
+![ZenML on HuggingFace Spaces -- default deployment](../../../book/assets/huggingface/hf\_spaces\_chart.png)
 
 In this diagram you can see what the default deployment of ZenML on HuggingFace looks like.
 
@@ -22,7 +22,7 @@ You can deploy ZenML on HuggingFace Spaces with just a few clicks:
 
 To set up your ZenML app, you need to specify three main components: the Owner (either your personal account or an organization), a Space name, and the Visibility (a bit lower down the page). Note that the space visibility needs to be set to 'Public' if you wish to connect to the ZenML server from your local machine.
 
-![HuggingFace Spaces SDK interface](../book/assets/huggingface/hf-spaces-sdk.png)
+![HuggingFace Spaces SDK interface](../../../book/assets/huggingface/hf-spaces-sdk.png)
 
 You have the option here to select a higher tier machine to use for your server. The advantage of selecting a paid CPU instance is that it is not subject to auto-shutdown policies and thus will stay up as long as you leave it up. In order to make use of a persistent CPU, you'll likely want to create and set up a MySQL database to connect to (see below).
 
@@ -52,13 +52,13 @@ You can also use the Direct URL in your browser to use the ZenML dashboard as a 
 
 ## Extra Configuration Options
 
-By default the ZenML application will be configured to use a SQLite non-persistent database. If you want to use a persistent database, you can configure this by amending the `Dockerfile` in your Space's root directory. For full details on the various parameters you can change, see [our reference documentation](../platform-guide/set-up-your-mlops-platform/deploy-zenml/docker.md#zenml-server-configuration-options) on configuring ZenML when deployed with Docker.
+By default the ZenML application will be configured to use a SQLite non-persistent database. If you want to use a persistent database, you can configure this by amending the `Dockerfile` in your Space's root directory. For full details on the various parameters you can change, see [our reference documentation](docker.md#zenml-server-configuration-options) on configuring ZenML when deployed with Docker.
 
 {% hint style="info" %}
 If you are using the space just for testing and experimentation, you don't need to make any changes to the configuration. Everything will work out of the box.
 {% endhint %}
 
-You can also use an external secrets backend together with your HuggingFace Spaces as described in [our documentation](../platform-guide/set-up-your-mlops-platform/deploy-zenml/docker.md#zenml-server-configuration-options). You should be sure to use HuggingFace's inbuilt 'Repository secrets' functionality to configure any secrets you need to use in your`Dockerfile` configuration. [See the documentation](https://huggingface.co/docs/hub/spaces-sdks-docker#secret-management) for more details how to set this up.
+You can also use an external secrets backend together with your HuggingFace Spaces as described in [our documentation](docker.md#zenml-server-configuration-options). You should be sure to use HuggingFace's inbuilt 'Repository secrets' functionality to configure any secrets you need to use in your`Dockerfile` configuration. [See the documentation](https://huggingface.co/docs/hub/spaces-sdks-docker#secret-management) for more details how to set this up.
 
 {% hint style="warning" %}
 If you wish to use a cloud secrets backend together with ZenML for secrets management, **you must update your password** on your ZenML Server on the Dashboard. This is because the default user created by the HuggingFace Spaces deployment process has no password assigned to it and as the Space is publicly accessible (since the Space is public) _potentially anyone could access your secrets without this extra step_. To change your password navigate to the Settings page by clicking the button in the upper right hand corner of the Dashboard and then click 'Update Password'.

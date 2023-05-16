@@ -1,5 +1,8 @@
 ---
 description: What are the usage statistics ZenML collects
+cover: >-
+  https://images.unsplash.com/photo-1557682250-33bd709cbe85?crop=entropy&cs=srgb&fm=jpg&ixid=M3wxOTcwMjR8MHwxfHNlYXJjaHwxfHxwdXJwbGV8ZW58MHx8fHwxNjg0MjI4NzcyfDA&ixlib=rb-4.0.3&q=85
+coverY: 0
 ---
 
 # Usage Analytics

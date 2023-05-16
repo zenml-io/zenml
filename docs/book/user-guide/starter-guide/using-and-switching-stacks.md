@@ -6,17 +6,17 @@ description: Learn how to switch the infrastructure backend of your code.
 
 ## Stack
 
-In the previous section you might have already noticed the term `stack` in the logs and on the dashboard.&#x20;
+In the previous section, you might have already noticed the term `stack` in the logs and on the dashboard.&#x20;
 
 #### What is a Stack?
 
-A `stack` is the combination of tools and infrastructure that your pipelines can run on. When you run zenml code without configuring a stack, the pipeline will run on the so called `default` stack.&#x20;
+A `stack` is the combination of tools and infrastructure that your pipelines can run on. When you run zenml code without configuring a stack, the pipeline will run on the so-called `default` stack.&#x20;
 
 #### Why separate Code from Configuration and Infrastructure?
 
 <figure><img src="../../.gitbook/assets/02_pipeline_local_stack.png" alt=""><figcaption><p>ZenML is the translation layer that allows your code to run on any of your stacks</p></figcaption></figure>
 
-As visualized in the diagram above, there are two separate domains that are connected through ZenML. The right side shows the code domain. The users python code is translated into a ZenML pipeline. On the left side you can see the infrastructure domain, in this case an instance of the default stack that you learned about above. By separating these two domains, it is easy to switch the environment that the pipeline runs on without making any changes in the code. It also allows domain experts to write code/configure infrastructure without worrying about the other domain.&#x20;
+As visualized in the diagram above, there are two separate domains that are connected through ZenML. The right side shows the code domain. The user's Python code is translated into a ZenML pipeline. On the left side, you can see the infrastructure domain, in this case, an instance of the default stack that you learned about above. By separating these two domains, it is easy to switch the environment that the pipeline runs on without making any changes in the code. It also allows domain experts to write code/configure infrastructure without worrying about the other domain.&#x20;
 
 ### The Default Stack
 
@@ -52,7 +52,7 @@ Stack 'default' with id '...' is owned by user default and is 'private'.
 ```
 
 {% hint style="info" %}
-As you can see a stack can be **active** on your **client**. This simply means that any pipeline you run, will be using the **active stack** as its environment.
+As you can see a stack can be **active** on your **client**. This simply means that any pipeline you run will be using the **active stack** as its environment.
 {% endhint %}
 {% endtab %}
 
@@ -69,7 +69,7 @@ As you can see in the section above, a stack consists of multiple components. Al
 
 #### Orchestrator
 
-The **orchestrator** is responsible for executing the pipeline code. In the simplest case, this will be a simple python thread on your machine. Let's explore this default orchestrator.
+The **orchestrator** is responsible for executing the pipeline code. In the simplest case, this will be a simple Python thread on your machine. Let's explore this default orchestrator.
 
 {% tabs %}
 {% tab title="CLI" %}
@@ -112,7 +112,7 @@ The **artifact store** is responsible for persisting the step outputs. As we lea
 {% endtabs %}
 
 {% hint style="info" %}
-There are many more components that you can add to your stacks, like experiment trackers, model deployers and more. You can see all supported stack component types in a single table view [here](broken-reference/)
+There are many more components that you can add to your stacks, like experiment trackers, model deployers, and more. You can see all supported stack component types in a single table view [here](broken-reference/)
 {% endhint %}
 
 ## Register a stack
@@ -210,7 +210,7 @@ To run a pipeline using the new stack:
 zenml stack set my_stack
 ```
 
-2\) Run you pipeline code (you can use the code from the [previous section](configure-and-interact-with-pipelines.md#code-example-of-this-section))
+2\) Run your pipeline code (you can use the code from the [previous section](configure-and-interact-with-pipelines.md#code-example-of-this-section))
 
 ```bash
 python main.py

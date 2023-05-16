@@ -2,11 +2,11 @@
 description: Iterate quickly with ZenML through fast caching.
 ---
 
-# Speed up with Caching
+# Caching in ZenML
 
 Developing machine learning pipelines is very iterative. ZenML speeds you up in this work with caching of steps and pipelines.
 
-In the logs of your previous runs you might have noticed at this point that rerunning the pipeline a second time will use caching on the steps:
+In the logs of your previous runs, you might have noticed at this point that rerunning the pipeline a second time will use caching on the steps:
 
 {% tabs %}
 {% tab title="Logs" %}
@@ -23,7 +23,7 @@ Using cached version of step_2.
 {% endtab %}
 {% endtabs %}
 
-ZenML understands that nothing changed between subsequent runs, so it re-uses the output of the previous run (the outputs are persisted in the [artifact store](broken-reference/)). This behavior is known as **caching**.
+ZenML understands that nothing has changed between subsequent runs, so it re-uses the output of the previous run (the outputs are persisted in the [artifact store](broken-reference/)). This behavior is known as **caching**.
 
 In ZenML, caching is enabled by default. Since ZenML automatically tracks and versions all inputs, outputs, and parameters of steps and pipelines, steps will not be re-executed within the **same** **pipeline** on subsequent pipeline runs as long as there is **no change** in the inputs, parameters or code of a step.
 
@@ -33,7 +33,7 @@ Currently, the caching does not automatically detect changes within the file sys
 
 ### Configuring caching behavior of your pipelines
 
-With caching as default behavior, there will be times when you need to disable it.
+With caching as the default behavior, there will be times when you need to disable it.
 
 There are levels at which you can take control of when and where caching is used.
 
@@ -53,7 +53,7 @@ def first_pipeline(....):
     """Pipeline with cache disabled"""
 ```
 
-The setting above will disable caching for all steps in the pipeline, unless a step explicitly sets `enable_cache=True` (see below).
+The setting above will disable caching for all steps in the pipeline unless a step explicitly sets `enable_cache=True` (see below).
 
 {% hint style="info" %}
 When writing your pipelines, be explicit. This makes it clear when looking at the code if caching is enabled or disabled for any given pipeline.
