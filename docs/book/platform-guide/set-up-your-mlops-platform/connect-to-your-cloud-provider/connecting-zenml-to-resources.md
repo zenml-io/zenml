@@ -67,7 +67,7 @@ zenml service-connector register -i
 
 <details>
 
-<summary>Find out exactly what happens during an auto-configuration</summary>
+<summary>Want more details ? Find out exactly what happens during an auto-configuration</summary>
 
 A quick glance into the Service Connector configuration that was automatically detected gives a better idea of what happened:
 
@@ -223,9 +223,7 @@ zenml artifact-store connect -i
 
 <details>
 
-<summary>Too much work ? Find out why Service Connectors are worth the extra typing</summary>
-
-
+<summary>Too much work ? Find out exactly why Service Connectors are worth the extra typing</summary>
 
 At this point, you may wonder why you would need to do all this extra work when you could have simply configured your S3 Artifact Store with embedded AWS credentials or referencing AWS credentials in a ZenML secret, like this:
 
@@ -255,11 +253,11 @@ Successfully registered artifact_store `s3-zenfiles`.
 
 These are some of the advantages of linking an S3 Artifact Store, or any Stack Component for that matter, to an external resource using a Service Connector:
 
-* the S3 Artifact Store can be used in any ZenML Stack, by any person or automated process with access to your ZenML server, on any machine or virtual environment without the need to install or configure the AWS CLI or any AWS credentials. In other cases, this extends to other CLIs/SDKs in addition to AWS (e.g. the Kubernetes `kubectl` CLI).
-* setting up AWS accounts, permissions and configuring the Service Connector (first and second steps) can be done by someone with expertise in infrastructure management, while creating and using the S3 Artifact Store (third and following steps) can be done by anyone without any such knowledge.
+* the S3 Artifact Store can be used in any ZenML Stack, by any person or automated process with access to your ZenML server, on any machine or virtual environment without the need to install or configure the AWS CLI or any AWS credentials. In the case of other types of resources, this also extends to other CLIs/SDKs in addition to AWS (e.g. you _also_ don't need the Kubernetes `kubectl` CLI when you are accessing an EKS Kubernetes cluster in your pipelines).
+* setting up AWS accounts, permissions and configuring the Service Connector (first and second steps) can be done by someone with some expertise in infrastructure management, while creating and using the S3 Artifact Store (third and following steps) can be done by anyone without any such knowledge.
 * you can create and connect any number of S3 Artifact Stores and other types of Stack Components (e.g. Kubernetes/Kubeflow/Tekton Orchestrators, Container Registries) to the AWS resources accessible through the Service Connector, but you only have to configure the Service Connector once.
 * if your need to make any changes to the AWS authentication configuration (e.g. refresh expired credentials or remove leaked credentials) you only need to update the Service Connector and the changes will automatically be applied to all Stack Components linked to it.
-* this last point is only useful if you're really serious about implementing security best practices: the AWS Service Connector in particular, as well as other cloud provider Service Connectors can automatically generate, distribute and refresh short-lived AWS security credentials for its clients. This keeps long-lived credentials like AWS Secret Keys safely stored on the ZenML Server while the actual workloads and people directly accessing those AWS resources are issued temporary, least-privilege credentials like AWS STS Tokens. This tremendously reduces the impact of potential security incidents.
+* this last point is only useful if you're really serious about implementing security best practices: the AWS Service Connector in particular, as well as other cloud provider Service Connectors can automatically generate, distribute and refresh short-lived AWS security credentials for its clients. This keeps long-lived, broad access credentials like AWS Secret Keys safely stored on the ZenML Server while the actual workloads and people directly accessing those AWS resources are issued temporary, least-privilege credentials like AWS STS Tokens. This tremendously reduces the attack surface and impact of potential security incidents.
 
 </details>
 
