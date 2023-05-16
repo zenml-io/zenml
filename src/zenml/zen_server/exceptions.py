@@ -202,7 +202,7 @@ def exception_from_response(
         """
         try:
             detail = response.json().get("detail", response.text)
-        except requests.exceptions.JSONDecodeError:
+        except (requests.exceptions.JSONDecodeError, AttributeError):
             return None, response.text
 
         # The detail should be a list of strings encoding the exception
