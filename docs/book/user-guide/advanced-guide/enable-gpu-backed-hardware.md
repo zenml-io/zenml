@@ -4,13 +4,13 @@ description: Ensuring your pipelines or steps run on GPU-backed hardware.
 
 # Scaling Compute to the Cloud
 
-ZenML enables you to scale your pipelines or steps to run on GPU-backed hardware, ensuring that you get the performance boost you need. This can be achieved through multiple ways, such as using [step operator stack components](broken-reference/) or specifying [custom per-step or per-pipeline requirements](broken-reference/). To run steps or pipelines on GPUs, it's crucial to have the necessary CUDA tools installed in the environment. This section will guide you on how to configure your environment to utilize GPU capabilities effectively.
+ZenML enables you to scale your pipelines or steps to run on GPU-backed hardware, ensuring that you get the performance boost you need. This can be achieved through multiple ways, such as using [step operator stack components](../component-galery/step-operators/README.md) or specifying [custom per-step or per-pipeline requirements](containerize-your-pipeline.md). To run steps or pipelines on GPUs, it's crucial to have the necessary CUDA tools installed in the environment. This section will guide you on how to configure your environment to utilize GPU capabilities effectively.
 
 All steps running on GPU-backed hardware will be executed within a containerized environment, whether you're using the local Docker orchestrator or a cloud instance of Kubeflow. Therefore, you need to make two amendments to your Docker settings for the relevant steps:
 
 ## 1. **Specify a CUDA-enabled parent image in your `DockerSettings`**
 
-For complete details, refer to the [containerization page](broken-reference/) that explains how to do this. As an example, if you want to use the latest CUDA-enabled official PyTorch image for your entire pipeline run, you can include the following code:
+For complete details, refer to the [containerization page](containerize-your-pipeline.md) that explains how to do this. As an example, if you want to use the latest CUDA-enabled official PyTorch image for your entire pipeline run, you can include the following code:
 
 ```python
 docker_settings = DockerSettings(parent_image="pytorch/pytorch:1.12.1-cuda11.3-cudnn8-runtime")

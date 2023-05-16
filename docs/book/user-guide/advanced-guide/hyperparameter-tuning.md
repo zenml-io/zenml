@@ -6,6 +6,17 @@ description: Dynamically defining a pipeline at runtime.
 
 Dynamic pipelines in ZenML allow you to create pipelines with a configurable number of steps and splitting branches. This flexibility enables various use-cases, such as grid search-based hyperparameter tuning. In this guide, we will explain how to create and use dynamic pipelines in ZenML, using hyperparameter tuning as an example.
 
+```python
+@pipeline
+def my_pipeline(step_count: int) -> None:
+  data = load_data_step()
+  after = []
+  for i in range(step_count):
+    train_step(data, learning_rate=i*0.0001, name=f"train_step_{i}")
+    after.append(f"train_step_{i}")
+  model = select_model_step(..., after=after)
+```
+
 ## Creating a Dynamic Pipeline
 
 To create a dynamic pipeline, you need to define a pipeline class that inherits from the `DynamicPipeline` class, instead of ZenML's `BasePipeline` class. The pipeline class should have an `__init__` method to initialize the steps and a `connect` method to connect the steps together.
