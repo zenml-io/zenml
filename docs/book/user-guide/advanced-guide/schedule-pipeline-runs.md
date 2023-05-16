@@ -10,7 +10,7 @@ ZenML pipelines can also be used for scheduling orchestration jobs, but there ar
 
 ### How to schedule a pipeline run
 
-ZenML's scheduling functionality rests on the use of a `Schedule` object that you pass in when calling `pipeline.run()`. There are two ways to create a schedule with the `Schedule` object, though whether one or both of these are supported depends on the specific orchestrator you're using. For example, our [Vertex Orchestrator](broken-reference) only supports the cron expression method (see below).
+ZenML's scheduling functionality rests on the use of a `Schedule` object that you pass in when calling `pipeline.run()`. There are two ways to create a schedule with the `Schedule` object, though whether one or both of these are supported depends on the specific orchestrator you're using. For example, our [Vertex Orchestrator](broken-reference/) only supports the cron expression method (see below).
 
 You could write a cron expression to describe the pipeline schedule in terms that would be comprehensible as [a cron job](https://en.wikipedia.org/wiki/Cron). For example, if you wanted your pipeline to run at 14:05 on Wednesdays, you could use the following:
 
@@ -52,16 +52,15 @@ Note that ZenML only gets involved to schedule a run, but maintaining the lifecy
 
 ### Supported Orchestrators
 
-| Orchestrator              | Scheduling Support |
-| ------------------------- | ------------------ |
-| LocalOrchestrator         | ⛔️                 |
-| LocalDockerOrchestrator   | ⛔️                 |
-| KubernetesOrchestrator    | ✅                  |
-| KubeflowOrchestrator      | ✅                  |
-| VertexOrchestrator        | ✅                  |
-| TektonOrchestrator        | ⛔️                 |
-| AirflowOrchestrator       | ✅                  |
-| GitHubActionsOrchestrator | ✅                  |
+| Orchestrator            | Scheduling Support |
+| ----------------------- | ------------------ |
+| LocalOrchestrator       | ⛔️                 |
+| LocalDockerOrchestrator | ⛔️                 |
+| KubernetesOrchestrator  | ✅                  |
+| KubeflowOrchestrator    | ✅                  |
+| VertexOrchestrator      | ✅                  |
+| TektonOrchestrator      | ⛔️                 |
+| AirflowOrchestrator     | ✅                  |
 
 We maintain a public roadmap for ZenML, which you can find [here](https://zenml.io/roadmap). We welcome community contributions (see more [here](https://github.com/zenml-io/zenml/blob/main/CONTRIBUTING.md)) so if you want to enable scheduling for an unsupported orchestrator, please [do let us know](https://zenml.io/slack-invite)!
 
