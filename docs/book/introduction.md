@@ -53,23 +53,25 @@ def my_pipeline():
 my_pipeline()
 ```
 
-**Reusability:** Defining your code as ZenML steps brings standardization 
-into your organization, allowing you to easily reuse code developed by your 
-colleagues:
+**Automatic Metadata Tracking** ZenML automatically tracks metadata of all your
+experiments and saves all your datasets and models to disk and versions them.
+Using the ZenML dashboard, you can then see detailed visualizations of all your 
+experiments.
+Try it out at [https://demo.zenml.io/](https://demo.zenml.io/)!
 
-```python
-from my_organization.steps import data_loader_step, model_validation_step
+<figure>
+<img src=".gitbook/assets/artifact_visualization.png" alt="ZenML Dashboard Details View" width="50%">
+</figure>
 
-@step
-def my_model_trainer_step(data):
-    ...
+{% hint style="info" %}
+ZenML integrates seamlessly with many popular open-source tools, so you can 
+also combine ZenML with other popular experiment tracking tools like
+[Weights & Biases](./user-guide/component-galery/experiment-trackers/wandb.md),
+[MLflow](./user-guide/component-galery/experiment-trackers/mlflow.md), or
+[Neptune](./user-guide/component-galery/experiment-trackers/neptune.md)
+for even better reproducibility.
+{% endhint %}
 
-@pipeline
-def my_pipeline():
-  data = data_loader_step()
-  model = my_model_trainer_step(data)
-  eval_metric = model_validation_step(model)
-```
 {% endtab %}
 
 {% tab title="ZenML for ML Engineers" %}
@@ -100,9 +102,6 @@ Try it out at [https://demo.zenml.io/](https://demo.zenml.io/)!
 
 <figure>
 <img src=".gitbook/assets/intro_dashboard.png" alt="ZenML Dashboard Overview" width="40%">
-</figure>
-<figure>
-<img src=".gitbook/assets/artifact_visualization.png" alt="ZenML Dashboard Details View" width="50%">
 </figure>
 
 **Automated Deployments:** With ZenML, you no longer need to upload custom 
