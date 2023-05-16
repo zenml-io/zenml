@@ -28,18 +28,18 @@ organization more freedom and independence in how they approach their work:
 
 {% tab title="ZenML for Data Scientists" %}
 
-As a Data Scientists, ZenML gives you the freedom to focus on modeling and
-experimentation without having to worry about production issues at all.
+As a Data Scientist, ZenML gives you the freedom to focus on modeling and
+experimentation while writing code that is immediately production-ready.
 
-**Tooling Freedom:** Since ZenML code runs in any environment, you can 
-develop ML models locally with all your favourite tools. Once you are happy with 
+**Develop Locally:** Since ZenML code runs in any environment, you can 
+develop ML models locally with all your favorite tools. Once you are happy with 
 your results, you can switch to a production environment via a single command 
 and all your code will just work:
 
 ```bash
-python run.py  # develop your code locally with all your favourite tools
+python run.py  # develop your code locally with all your favorite tools
 zenml stack set production
-python run.py  # run your code in production without any code changes
+python run.py  # run on production infrastructure without any code changes
 ```
 
 **Pythonic SDK:** ZenML is designed to be as unintrusive as possible. Adding 
@@ -86,7 +86,7 @@ def my_pipeline():
 {% tab title="ZenML for ML Engineers" %}
 
 As an ML Engineer, ZenML enables you take ownership of the entire ML workflow
-end-to-end. Adopting ZenML means less handover points and more visibility on
+end-to-end. Adopting ZenML means fewer handover points and more visibility on
 what is happening in your organization.
 
 **ML Lifecycle Management:** ZenML's abstractions make it possible to manage the
@@ -109,7 +109,7 @@ a highly scalable Kubernetes deployment service like
 
 {% tab title="ZenML for MLOps / Platform Engineers" %}
 
-As an MLOps infrastructre expert, ZenML enables you to define, deploy, and 
+As an MLOps infrastructure expert, ZenML enables you to define, deploy, and 
 manage sophisticated production environments that are easy to share with your 
 colleagues.
 
@@ -124,9 +124,11 @@ zenml stack register production ...  # Register your production environment
 zenml stack share production  # Make it available to your colleagues
 ```
 
-**No Vendor Lock:** Since infrastructure is decoupled from code, you will never 
-be vendor-locked with ZenML. ZenML gives you the freedom to switch to a 
-different tooling stack whenever it suites you:
+**No Vendor Lock-In:** Since infrastructure is decoupled from code, ZenML gives
+you the freedom to switch to a different tooling stack whenever it suits you.
+By avoiding vendor lock-in, you have the flexibility to transition between 
+various cloud providers or services, ensuring that you receive the best 
+performance and pricing available in the market at any time.
 
 ```bash
 zenml stack set gcp
