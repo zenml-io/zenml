@@ -60,9 +60,7 @@ experiments.
 Try it out at [https://demo.zenml.io/](https://demo.zenml.io/)!
 
 <figure>
-<a href="https://demo.zenml.io/">
 <img src=".gitbook/assets/intro_dashboard_details.png" alt="ZenML Dashboard Details View" width="50%">
-</a>
 </figure>
 
 {% hint style="info" %}
@@ -103,11 +101,7 @@ has happened and drill down into detailed lineage visualizations.
 Try it out at [https://demo.zenml.io/](https://demo.zenml.io/)!
 
 <figure>
-<a href="https://demo.zenml.io/">
 <img src=".gitbook/assets/intro_dashboard.png" alt="ZenML Dashboard Overview" width="40%">
-</a>
-<figcaption>
-</figcaption>
 </figure>
 
 **Automated Deployments:** With ZenML, you no longer need to upload custom 
@@ -163,12 +157,7 @@ explore all your infrastructure setups in a convenient user interface.
 Try it out at [https://demo.zenml.io/](https://demo.zenml.io/)!
 
 <figure>
-<a href="https://demo.zenml.io/">
 <img src=".gitbook/assets/intro_dashboard_stacks.png" alt="ZenML Dashboard Stacks View" width="50%">
-<figcaption>
-My picture
-</figcaption>
-</a>
 </figure>
 
 **No Vendor Lock-In:** Since infrastructure is decoupled from code, ZenML gives
