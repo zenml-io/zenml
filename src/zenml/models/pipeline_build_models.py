@@ -40,12 +40,21 @@ class BuildItem(BaseModel):
 
     Attributes:
         image: The image name or digest.
+        dockerfile: The contents of the Dockerfile used to build the image.
+        requirements: The pip requirements installed in the image. This is a
+            string consisting of multiple concatenated requirements.txt files.
         settings_checksum: Checksum of the settings used for the build.
         contains_code: Whether the image contains user files.
         requires_code_download: Whether the image needs to download files.
     """
 
     image: str = Field(title="The image name or digest.")
+    dockerfile: Optional[str] = Field(
+        title="The dockerfile used to build the image."
+    )
+    requirements: Optional[str] = Field(
+        title="The pip requirements installed in the image."
+    )
     settings_checksum: Optional[str] = Field(
         title="The checksum of the build settings."
     )

@@ -88,6 +88,10 @@ class VertexOrchestratorConfig(  # type: ignore[misc] # https://github.com/pydan
             account. Users submitting jobs must have act-as permission on this
             run-as account.
             If not provided, the default service account will be used.
+        function_service_account: the service account for cloud function run-as
+            account, for scheduled pipelines. This service account must have
+            the act-as permission on the workload_service_account.
+            If not provided, the default service account will be used.
         network: the full name of the Compute Engine Network to which the job
             should be peered. For example, `projects/12345/global/networks/myVPC`
             If not provided, the job will not be peered with any network.
@@ -108,6 +112,7 @@ class VertexOrchestratorConfig(  # type: ignore[misc] # https://github.com/pydan
     pipeline_root: Optional[str] = None
     encryption_spec_key_name: Optional[str] = None
     workload_service_account: Optional[str] = None
+    function_service_account: Optional[str] = None
     network: Optional[str] = None
 
     cpu_limit: Optional[str] = None

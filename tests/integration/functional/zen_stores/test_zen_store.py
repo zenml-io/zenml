@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+import os
 import uuid
 from contextlib import ExitStack as does_not_raise
 
@@ -18,6 +19,7 @@ import pytest
 
 from tests.integration.functional.utils import sample_name
 from tests.integration.functional.zen_stores.utils import (
+    CodeRepositoryContext,
     ComponentContext,
     CrudTestConfig,
     PipelineRunContext,
@@ -26,6 +28,9 @@ from tests.integration.functional.zen_stores.utils import (
     TeamContext,
     UserContext,
     list_of_entities,
+)
+from tests.unit.pipelines.test_build_utils import (
+    StubLocalRepositoryContext,
 )
 from zenml.client import Client
 from zenml.enums import StackComponentType, StoreType
@@ -57,6 +62,7 @@ from zenml.models.base_models import (
     WorkspaceScopedRequestModel,
 )
 from zenml.models.flavor_models import FlavorBaseModel
+from zenml.utils import code_repository_utils, source_utils
 from zenml.zen_stores.base_zen_store import (
     DEFAULT_ADMIN_ROLE,
     DEFAULT_GUEST_ROLE,
@@ -300,7 +306,6 @@ def test_removing_user_from_team_succeeds():
 
     with UserContext() as created_user:
         with TeamContext() as created_team:
-
             team_update = TeamUpdateModel(users=[created_user.id])
             team_update = zen_store.update_team(
                 team_id=created_team.id, team_update=team_update
@@ -441,7 +446,6 @@ def test_deleting_assigned_role_fails():
     zen_store = Client().zen_store
     with RoleContext() as created_role:
         with UserContext() as created_user:
-
             role_assignment = UserRoleAssignmentRequestModel(
                 role=created_role.id,
                 user=created_user.id,
@@ -505,7 +509,6 @@ def test_assigning_role_if_assignment_already_exists_fails():
 
     with RoleContext() as created_role:
         with UserContext() as created_user:
-
             role_assignment = UserRoleAssignmentRequestModel(
                 role=created_role.id,
                 user=created_user.id,
@@ -781,7 +784,6 @@ def test_register_stack_fails_when_stack_exists():
                 StackComponentType.ARTIFACT_STORE: [artifact_store.id],
             }
             with StackContext(components=components) as stack:
-
                 new_stack = StackRequestModel(
                     name=stack.name,
                     components=components,
@@ -992,13 +994,39 @@ def test_list_runs_is_ordered():
 
     num_runs = 5
     with PipelineRunContext(num_runs):
-
         pipelines = store.list_runs(PipelineRunFilterModel()).items
         assert len(pipelines) == num_pipelines_before + num_runs
         assert all(
             pipelines[i].created <= pipelines[i + 1].created
             for i in range(len(pipelines) - 1)
         )
+
+
+def test_filter_runs_by_code_repo(mocker):
+    """Tests filtering runs by code repository id."""
+    mocker.patch.object(
+        source_utils, "get_source_root", return_value=os.getcwd()
+    )
+    store = Client().zen_store
+
+    with CodeRepositoryContext() as repo:
+        clean_local_context = StubLocalRepositoryContext(
+            code_repository_id=repo.id, root=os.getcwd(), commit="commit"
+        )
+        mocker.patch.object(
+            code_repository_utils,
+            "find_active_code_repository",
+            return_value=clean_local_context,
+        )
+
+        with PipelineRunContext(1):
+            filter_model = PipelineRunFilterModel(
+                code_repository_id=uuid.uuid4()
+            )
+            assert store.list_runs(filter_model).total == 0
+
+            filter_model = PipelineRunFilterModel(code_repository_id=repo.id)
+            assert store.list_runs(filter_model).total == 1
 
 
 def test_deleting_run_deletes_steps():
@@ -1049,7 +1077,6 @@ def test_get_run_step_inputs_succeeds():
     store = client.zen_store
 
     with PipelineRunContext(1):
-
         steps = store.list_run_steps(StepRunFilterModel(name="step_2"))
         for step in steps.items:
             run_step_inputs = store.get_run_step(step.id).input_artifacts
@@ -1072,7 +1099,6 @@ def test_list_unused_artifacts():
     ).total
     num_runs = 1
     with PipelineRunContext(num_runs):
-
         artifacts = store.list_artifacts(ArtifactFilterModel())
         assert artifacts.total == num_artifacts_before + num_runs * 2
 
@@ -1088,7 +1114,6 @@ def test_artifacts_are_not_deleted_with_run():
     num_artifacts_before = store.list_artifacts(ArtifactFilterModel()).total
     num_runs = 1
     with PipelineRunContext(num_runs):
-
         artifacts = store.list_artifacts(ArtifactFilterModel())
         assert artifacts.total == num_artifacts_before + num_runs * 2
 

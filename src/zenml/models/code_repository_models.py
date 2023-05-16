@@ -26,7 +26,7 @@ from zenml.models.base_models import (
     WorkspaceScopedResponseModel,
     update_model,
 )
-from zenml.models.constants import STR_FIELD_MAX_LENGTH
+from zenml.models.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.models.filter_models import WorkspaceScopedFilterModel
 
 # ---- #
@@ -45,6 +45,13 @@ class CodeRepositoryBaseModel(BaseModel):
         description="Configuration for the code repository."
     )
     source: Source = Field(description="The code repository source.")
+    logo_url: Optional[str] = Field(
+        description="Optional URL of a logo (png, jpg or svg) for the code repository."
+    )
+    description: Optional[str] = Field(
+        description="Code repository description.",
+        max_length=TEXT_FIELD_MAX_LENGTH,
+    )
 
 
 # -------- #

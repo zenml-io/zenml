@@ -321,7 +321,6 @@ class EvidentlyTestConfig(BaseModel):
         test_class = self.get_test_class(self.class_path)
 
         if self.is_generator:
-
             try:
                 return generate_column_tests(
                     test_class=test_class,

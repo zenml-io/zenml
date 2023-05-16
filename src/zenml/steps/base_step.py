@@ -38,7 +38,6 @@ from uuid import UUID
 
 from pydantic import BaseModel, Extra, ValidationError
 
-from zenml.artifacts.base_artifact import BaseArtifact
 from zenml.config.source import Source
 from zenml.config.step_configurations import (
     PartialArtifactConfiguration,
@@ -50,9 +49,7 @@ from zenml.constants import STEP_SOURCE_PARAMETER_NAME
 from zenml.exceptions import MissingStepParameterError, StepInterfaceError
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
-from zenml.materializers.default_materializer_registry import (
-    default_materializer_registry,
-)
+from zenml.materializers.materializer_registry import materializer_registry
 from zenml.steps.base_parameters import BaseParameters
 from zenml.steps.step_context import StepContext
 from zenml.steps.utils import (
@@ -71,12 +68,8 @@ if TYPE_CHECKING:
     from zenml.pipelines.new import Pipeline
 
     ParametersOrDict = Union["BaseParameters", Dict[str, Any]]
-    ArtifactClassOrStr = Union[str, Type["BaseArtifact"]]
     MaterializerClassOrSource = Union[str, Source, Type["BaseMaterializer"]]
     HookSpecification = Union[str, Source, FunctionType]
-    OutputArtifactsSpecification = Union[
-        "ArtifactClassOrStr", Mapping[str, "ArtifactClassOrStr"]
-    ]
     OutputMaterializersSpecification = Union[
         "MaterializerClassOrSource",
         Sequence["MaterializerClassOrSource"],
@@ -154,6 +147,8 @@ class BaseStep(metaclass=BaseStepMeta):
         enable_cache: A boolean indicating if caching is enabled for this step.
         enable_artifact_metadata: A boolean indicating if artifact metadata
             is enabled for this step.
+        enable_artifact_visualization: A boolean indicating if artifact
+            visualization is enabled for this step.
     """
 
     def __init__(
@@ -162,13 +157,13 @@ class BaseStep(metaclass=BaseStepMeta):
         name: Optional[str] = None,
         enable_cache: Optional[bool] = None,
         enable_artifact_metadata: Optional[bool] = None,
+        enable_artifact_visualization: Optional[bool] = None,
         experiment_tracker: Optional[str] = None,
         step_operator: Optional[str] = None,
         parameters: Optional["ParametersOrDict"] = None,
         output_materializers: Optional[
             "OutputMaterializersSpecification"
         ] = None,
-        output_artifacts: Optional["OutputArtifactsSpecification"] = None,
         settings: Optional[Mapping[str, "SettingsOrDict"]] = None,
         extra: Optional[Dict[str, Any]] = None,
         on_failure: Optional["HookSpecification"] = None,
@@ -211,16 +206,23 @@ class BaseStep(metaclass=BaseStepMeta):
             name,
             "enabled" if enable_artifact_metadata is not False else "disabled",
         )
+        logger.debug(
+            "Step '%s': Artifact visualization %s.",
+            name,
+            "enabled"
+            if enable_artifact_visualization is not False
+            else "disabled",
+        )
 
         self._configuration = PartialStepConfiguration(
             name=name,
             enable_cache=enable_cache,
             enable_artifact_metadata=enable_artifact_metadata,
+            enable_artifact_visualization=enable_artifact_visualization,
         )
         self.configure(
             experiment_tracker=experiment_tracker,
             step_operator=step_operator,
-            output_artifacts=output_artifacts,
             output_materializers=output_materializers,
             parameters=parameters,
             settings=settings,
@@ -350,6 +352,7 @@ class BaseStep(metaclass=BaseStepMeta):
                 parameters[key] = hash_.hexdigest()
 
         return parameters
+
 
     def _verify_and_apply_init_params(self, *args: Any, **kwargs: Any) -> None:
         """Verifies the initialization args and kwargs of this step.
@@ -558,13 +561,13 @@ class BaseStep(metaclass=BaseStepMeta):
         name: Optional[str] = None,
         enable_cache: Optional[bool] = None,
         enable_artifact_metadata: Optional[bool] = None,
+        enable_artifact_visualization: Optional[bool] = None,
         experiment_tracker: Optional[str] = None,
         step_operator: Optional[str] = None,
         parameters: Optional["ParametersOrDict"] = None,
         output_materializers: Optional[
             "OutputMaterializersSpecification"
         ] = None,
-        output_artifacts: Optional["OutputArtifactsSpecification"] = None,
         settings: Optional[Mapping[str, "SettingsOrDict"]] = None,
         extra: Optional[Dict[str, Any]] = None,
         on_failure: Optional["HookSpecification"] = None,
@@ -588,6 +591,8 @@ class BaseStep(metaclass=BaseStepMeta):
             enable_cache: If caching should be enabled for this step.
             enable_artifact_metadata: If artifact metadata should be enabled
                 for this step.
+            enable_artifact_visualization: If artifact visualization should be
+                enabled for this step.
             experiment_tracker: The experiment tracker to use for this step.
             step_operator: The step operator to use for this step.
             parameters: Function parameters for this step
@@ -595,10 +600,6 @@ class BaseStep(metaclass=BaseStepMeta):
                 given as a dict, the keys must be a subset of the output names
                 of this step. If a single value (type or string) is given, the
                 materializer will be used for all outputs.
-            output_artifacts: Output artifacts for this step. If
-                given as a dict, the keys must be a subset of the output names
-                of this step. If a single value (type or string) is given, the
-                artifact class will be used for all outputs.
             settings: settings for this step.
             extra: Extra configurations for this step.
             on_failure: Callback function in event of failure of the step. Can be
@@ -664,12 +665,6 @@ class BaseStep(metaclass=BaseStepMeta):
             # string of on_success hook function to be used for this step
             success_hook_source = resolve_and_validate_hook(on_success)
 
-        if output_artifacts:
-            logger.warning(
-                "The `output_artifacts` argument has no effect and will be "
-                "removed in a future version."
-            )
-
         if isinstance(parameters, BaseParameters):
             parameters = parameters.dict()
 
@@ -677,6 +672,7 @@ class BaseStep(metaclass=BaseStepMeta):
             {
                 "enable_cache": enable_cache,
                 "enable_artifact_metadata": enable_artifact_metadata,
+                "enable_artifact_visualization": enable_artifact_visualization,
                 "experiment_tracker": experiment_tracker,
                 "step_operator": step_operator,
                 "parameters": parameters,
@@ -816,11 +812,6 @@ class BaseStep(metaclass=BaseStepMeta):
 
         Returns:
             The finalized step configuration.
-
-        Raises:
-            StepInterfaceError: If an output does not have an explicit
-                materializer assigned to it and there is no default
-                materializer registered for the output type.
         """
         outputs: Dict[str, Dict[str, Source]] = defaultdict(dict)
 
@@ -863,10 +854,10 @@ class BaseStep(metaclass=BaseStepMeta):
                 materializer_source = []
 
                 for output_type in output_types:
-                    if default_materializer_registry.is_registered(
+                    if materializer_registry.is_registered(
                         output_type
                     ):
-                        materializer_class = default_materializer_registry[
+                        materializer_class = materializer_registry[
                             output_type
                         ]
                     else:
@@ -1239,8 +1230,8 @@ class ExternalArtifact(Artifact):
             )
         else:
             value_type = type(self._value)
-            if default_materializer_registry.is_registered(value_type):
-                return default_materializer_registry[value_type]
+            if materializer_registry.is_registered(value_type):
+                return materializer_registry[value_type]
             else:
                 raise StepInterfaceError(
                     f"Unable to find materializer for type `{value_type}`. Please "

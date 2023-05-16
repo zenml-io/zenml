@@ -143,7 +143,6 @@ def create_user(
     client = Client()
     if not password:
         if client.zen_store.type != StoreType.REST:
-
             password = click.prompt(
                 f"Password for user {user_name}",
                 hide_input=True,
@@ -264,7 +263,6 @@ def list_teams(**kwargs: Any) -> None:
     client = Client()
 
     with console.status("Listing teams...\n"):
-
         teams = client.list_teams(**kwargs)
 
         if not teams:

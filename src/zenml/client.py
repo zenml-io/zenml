@@ -1598,7 +1598,6 @@ class Client(metaclass=ClientMetaClass):
         stack_components = dict()
 
         for c_type, c_identifier in components.items():
-
             # Skip non-existent components.
             if not c_identifier:
                 continue
@@ -2273,6 +2272,245 @@ class Client(metaclass=ClientMetaClass):
             "Deregistered stack component (type: %s) with name '%s'.",
             component.type,
             component.name,
+        )
+
+    def deploy_stack_component(
+        self,
+        name: str,
+        flavor: str,
+        cloud: str,
+        component_type: StackComponentType,
+        configuration: Optional[Dict[str, Any]] = {},
+        labels: Optional[Dict[str, Any]] = None,
+    ) -> Optional["ComponentResponseModel"]:
+        """Deploys a stack component.
+
+        Args:
+            name: The name of the deployed stack component.
+            flavor: The flavor of the deployed stack component.
+            cloud: The cloud of the deployed stack component.
+            component_type: The type of the stack component to deploy.
+            configuration: The configuration of the deployed stack component.
+            labels: The labels of the deployed stack component.
+
+        Returns:
+            The deployed stack component.
+        """
+        STACK_COMPONENT_RECIPE_DIR = "deployed_stack_components"
+
+        if component_type.value not in [
+            "artifact_store",
+            "container_registry",
+            "secrets_manager",
+        ]:
+            enabled_services = [f"{component_type.value}_{flavor}"]
+        else:
+            enabled_services = [f"{component_type.value}"]
+
+        # path should be fixed at a constant in the
+        # global config directory
+        path = Path(
+            os.path.join(
+                io_utils.get_global_config_directory(),
+                STACK_COMPONENT_RECIPE_DIR,
+                f"{cloud}-modular",
+            )
+        )
+
+        with event_handler(
+            event=AnalyticsEvent.DEPLOY_STACK_COMPONENT,
+            v2=True,
+        ) as handler:
+            handler.metadata.update({component_type.value: flavor})
+
+            import python_terraform
+
+            from zenml.recipes import (
+                StackRecipeService,
+                StackRecipeServiceConfig,
+            )
+
+            # create the stack recipe service.
+            stack_recipe_service_config = StackRecipeServiceConfig(
+                directory_path=str(path),
+                enabled_services=enabled_services,
+                input_variables=configuration,
+            )
+
+            stack_recipe_service = StackRecipeService.get_service(str(path))
+
+            if stack_recipe_service:
+                logger.info(
+                    "An existing deployment of the recipe found. "
+                    f"with path {path}. "
+                    "Proceeding to update or create resources. "
+                )
+            else:
+                breakpoint()
+                stack_recipe_service = StackRecipeService(
+                    config=stack_recipe_service_config,
+                    stack_recipe_name=f"{cloud}-modular",
+                )
+
+            try:
+                # start the service (the init and apply operation)
+                stack_recipe_service.start()
+
+            except python_terraform.TerraformCommandError:
+                logger.error(
+                    "Deployment of the stack component failed or was "
+                    "interrupted. "
+                )
+                return None
+
+            # get the outputs from the deployed recipe
+            outputs = stack_recipe_service.get_outputs()
+            outputs = {k: v for k, v in outputs.items() if v != ""}
+
+            # get all outputs that start with the component type into a map
+            comp_outputs = {
+                k: v
+                for k, v in outputs.items()
+                if k.startswith(component_type.value)
+            }
+
+            logger.info(
+                "Registering a new stack component of type %s with name '%s'.",
+                component_type,
+                name or comp_outputs[f"{component_type.value}_name"],
+            )
+
+            # call the register stack component function using the values of the outputs
+            # truncate the component type from the output
+            stack_comp = self.create_stack_component(
+                name=name or comp_outputs[f"{component_type.value}_name"],
+                flavor=comp_outputs[f"{component_type.value}_flavor"],
+                component_type=component_type,
+                configuration=eval(
+                    comp_outputs[f"{component_type.value}_configuration"]
+                ),
+                labels=labels,
+            )
+
+            # if the component is an experiment tracker of flavor mlflow, then
+            # output the name of the mlflow bucket if it exists
+            if (
+                component_type == StackComponentType.EXPERIMENT_TRACKER
+                and flavor == "mlflow"
+            ):
+                mlflow_bucket = outputs.get("mlflow-bucket")
+                if mlflow_bucket:
+                    logger.info(
+                        "The bucket used for MLflow is: %s "
+                        "You can use this bucket as an artifact store to "
+                        "avoid having to create a new one.",
+                        mlflow_bucket,
+                    )
+
+            # if the cloud is k3d, then check the container registry
+            # outputs. If they are set, then create one.
+            if cloud == "k3d":
+                container_registry_outputs = {
+                    k: v
+                    for k, v in outputs.items()
+                    if k.startswith("container_registry")
+                }
+                if container_registry_outputs:
+                    self.create_stack_component(
+                        name=container_registry_outputs[
+                            "container_registry_name"
+                        ],
+                        flavor=container_registry_outputs[
+                            "container_registry_flavor"
+                        ],
+                        component_type=StackComponentType.CONTAINER_REGISTRY,
+                        configuration=eval(
+                            container_registry_outputs[
+                                "container_registry_configuration"
+                            ]
+                        ),
+                    )
+
+        return stack_comp
+
+    def destroy_stack_component(
+        self,
+        component: ComponentResponseModel,
+    ) -> None:
+        """Destroys a stack component.
+
+        Args:
+            component: The stack component to destroy.
+
+        Returns:
+            None
+        """
+        STACK_COMPONENT_RECIPE_DIR = "deployed_stack_components"
+
+        if component.type.value not in [
+            "artifact_store",
+            "container_registry",
+            "secrets_manager",
+        ]:
+            disabled_services = [f"{component.type.value}_{component.flavor}"]
+        else:
+            disabled_services = [f"{component.type.value}"]
+
+        # assert that labels is not None
+        assert component.labels is not None
+        # path should be fixed at a constant in the
+        # global config directory
+        path = Path(
+            os.path.join(
+                io_utils.get_global_config_directory(),
+                STACK_COMPONENT_RECIPE_DIR,
+                f"{component.labels['cloud']}-modular",
+            )
+        )
+
+        with event_handler(
+            event=AnalyticsEvent.DESTROY_STACK_COMPONENT,
+            v2=True,
+        ) as handler:
+            handler.metadata.update({component.type.value: component.flavor})
+
+            import python_terraform
+
+            from zenml.recipes import (
+                StackRecipeService,
+            )
+
+            stack_recipe_service = StackRecipeService.get_service(str(path))
+
+            if not stack_recipe_service:
+                logger.error(
+                    f"No deployed {component.type.value} found with "
+                    f"flavor {component.flavor} and name {component.name}."
+                )
+                return None
+
+            stack_recipe_service.config.disabled_services = disabled_services
+
+            try:
+                # start the service (the init and apply operation)
+                stack_recipe_service.stop()
+
+            except python_terraform.TerraformCommandError:
+                logger.error(
+                    "Destruction of the stack component failed or was "
+                    "interrupted. "
+                )
+                return None
+
+        logger.info(
+            "Deregistering stack component %s...",
+            component.name,
+        )
+
+        # call the delete stack component function
+        self.delete_stack_component(
+            name_id_or_prefix=component.name,
+            component_type=component.type,
         )
 
     def _validate_stack_component_configuration(
@@ -3012,6 +3250,7 @@ class Client(metaclass=ClientMetaClass):
         schedule_id: Optional[Union[str, UUID]] = None,
         build_id: Optional[Union[str, UUID]] = None,
         deployment_id: Optional[Union[str, UUID]] = None,
+        code_repository_id: Optional[Union[str, UUID]] = None,
         orchestrator_run_id: Optional[str] = None,
         status: Optional[str] = None,
         start_time: Optional[Union[datetime, str]] = None,
@@ -3036,6 +3275,7 @@ class Client(metaclass=ClientMetaClass):
             schedule_id: The id of the schedule to filter by.
             build_id: The id of the build to filter by.
             deployment_id: The id of the deployment to filter by.
+            code_repository_id: The id of the code repository to filter by.
             orchestrator_run_id: The run id of the orchestrator to filter by.
             name: The name of the run to filter by.
             status: The status of the pipeline run
@@ -3061,6 +3301,7 @@ class Client(metaclass=ClientMetaClass):
             schedule_id=schedule_id,
             build_id=build_id,
             deployment_id=deployment_id,
+            code_repository_id=code_repository_id,
             orchestrator_run_id=orchestrator_run_id,
             user_id=user_id,
             stack_id=stack_id,
@@ -3419,7 +3660,6 @@ class Client(metaclass=ClientMetaClass):
 
         created_metadata: Dict[str, RunMetadataResponseModel] = {}
         for key, value in metadata.items():
-
             # Skip metadata that is too large to be stored in the database.
             if len(json.dumps(value)) > TEXT_FIELD_MAX_LENGTH:
                 logger.warning(
@@ -3636,7 +3876,6 @@ class Client(metaclass=ClientMetaClass):
         )
 
         for search_scope in search_scopes:
-
             partial_matches: List[SecretResponseModel] = []
             for secret in secrets.items:
                 if secret.scope != search_scope:
@@ -3905,7 +4144,12 @@ class Client(metaclass=ClientMetaClass):
     # '-------------------'
 
     def create_code_repository(
-        self, name: str, config: Dict[str, Any], source: Source
+        self,
+        name: str,
+        config: Dict[str, Any],
+        source: Source,
+        description: Optional[str] = None,
+        logo_url: Optional[str] = None,
     ) -> CodeRepositoryResponseModel:
         """Create a new code repository.
 
@@ -3913,6 +4157,8 @@ class Client(metaclass=ClientMetaClass):
             name: Name of the code repository.
             config: The configuration for the code repository.
             source: The code repository implementation source.
+            description: The code repository description.
+            logo_url: URL of a logo (png, jpg or svg) for the code repository.
 
         Returns:
             The created code repository.
@@ -3941,6 +4187,8 @@ class Client(metaclass=ClientMetaClass):
             name=name,
             config=config,
             source=source,
+            description=description,
+            logo_url=logo_url,
         )
         return self.zen_store.create_code_repository(
             code_repository=repo_request
@@ -4016,6 +4264,8 @@ class Client(metaclass=ClientMetaClass):
         self,
         name_id_or_prefix: Union[UUID, str],
         name: Optional[str] = None,
+        description: Optional[str] = None,
+        logo_url: Optional[str] = None,
     ) -> CodeRepositoryResponseModel:
         """Update a code repository.
 
@@ -4023,6 +4273,8 @@ class Client(metaclass=ClientMetaClass):
             name_id_or_prefix: Name, ID or prefix of the code repository to
                 update.
             name: New name of the code repository.
+            description: New description of the code repository.
+            logo_url: New logo URL of the code repository.
 
         Returns:
             The updated code repository.
@@ -4030,7 +4282,9 @@ class Client(metaclass=ClientMetaClass):
         repo = self.get_code_repository(
             name_id_or_prefix=name_id_or_prefix, allow_name_prefix_match=False
         )
-        update = CodeRepositoryUpdateModel(name=repo.name)  # type: ignore[call-arg]
+        update = CodeRepositoryUpdateModel(  # type: ignore[call-arg]
+            name=name, description=description, logo_url=logo_url
+        )
         return self.zen_store.update_code_repository(
             code_repository_id=repo.id, update=update
         )

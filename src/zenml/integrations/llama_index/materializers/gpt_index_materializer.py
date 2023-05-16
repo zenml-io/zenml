@@ -18,7 +18,16 @@ from __future__ import annotations
 import os
 import sys
 import tempfile
-from typing import TYPE_CHECKING, Any, Generic, Type, TypeVar, cast
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    ClassVar,
+    Generic,
+    Tuple,
+    Type,
+    TypeVar,
+    cast,
+)
 
 from zenml.enums import ArtifactType
 from zenml.io import fileio
@@ -41,8 +50,8 @@ else:
 class LlamaIndexGPTIndexMaterializer(Generic[T], BaseMaterializer):
     """Materializer for llama_index GPT indices."""
 
-    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.MODEL
-    ASSOCIATED_TYPES = (BaseGPTIndex,)
+    ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.MODEL
+    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (BaseGPTIndex,)
 
     def load(self, data_type: Type[T]) -> T:
         """Loads a llama-index GPT index from disk.
@@ -53,7 +62,6 @@ class LlamaIndexGPTIndexMaterializer(Generic[T], BaseMaterializer):
         Returns:
             The index.
         """
-        super().load(data_type)
         filepath = os.path.join(self.uri, DEFAULT_FILENAME)
 
         # Create a temporary folder
@@ -76,7 +84,6 @@ class LlamaIndexGPTIndexMaterializer(Generic[T], BaseMaterializer):
         Args:
             index: The index to save.
         """
-        super().save(index)
         filepath = os.path.join(self.uri, DEFAULT_FILENAME)
 
         with tempfile.NamedTemporaryFile(
@@ -94,8 +101,8 @@ class LlamaIndexGPTIndexMaterializer(Generic[T], BaseMaterializer):
 class LlamaIndexGPTFaissIndexMaterializer(BaseMaterializer):
     """Materializer for llama_index GPT faiss indices."""
 
-    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.MODEL
-    ASSOCIATED_TYPES = (GPTFaissIndex,)
+    ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.MODEL
+    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (GPTFaissIndex,)
 
     def load(self, data_type: Type[GPTFaissIndex]) -> GPTFaissIndex:
         """Load a llama-index GPT faiss index from disk.
@@ -106,7 +113,6 @@ class LlamaIndexGPTFaissIndexMaterializer(BaseMaterializer):
         Returns:
             The index.
         """
-        super().load(data_type)
         filepath = os.path.join(self.uri, DEFAULT_FILENAME)
         faiss_filepath = os.path.join(self.uri, DEFAULT_FAISS_FILENAME)
 
@@ -131,7 +137,6 @@ class LlamaIndexGPTFaissIndexMaterializer(BaseMaterializer):
         Args:
             index: The index to save.
         """
-        super().save(index)
         filepath = os.path.join(self.uri, DEFAULT_FILENAME)
         faiss_filepath = os.path.join(self.uri, DEFAULT_FAISS_FILENAME)
 

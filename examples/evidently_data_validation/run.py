@@ -20,19 +20,6 @@ from steps.text_data_analyzer.text_analyzer_step import text_analyzer
 from steps.text_data_report.text_data_report_step import text_data_report
 from steps.text_data_test.text_data_test_step import text_data_test
 
-from zenml.integrations.evidently.visualizers import EvidentlyVisualizer
-from zenml.post_execution import get_pipeline
-
-
-def visualize_statistics():
-    """Visualize statistics from the last run of the pipeline."""
-    pipeline = get_pipeline(pipeline="text_data_report_test_pipeline")
-    text_report_step = pipeline.runs[0].get_step(step="text_report")
-    EvidentlyVisualizer().visualize(text_report_step)
-    text_test_step = pipeline.runs[0].get_step(step="text_test")
-    EvidentlyVisualizer().visualize(text_test_step)
-
-
 if __name__ == "__main__":
     pipeline_instance = text_data_report_test_pipeline(
         data_loader=data_loader(),
@@ -54,5 +41,3 @@ if __name__ == "__main__":
         "Comparison missing values: ",
         text_analysis_step.outputs["comp_missing_values"].read(),
     )
-
-    visualize_statistics()

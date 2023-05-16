@@ -14,7 +14,6 @@
 """Utility functions for networking."""
 
 import socket
-import sys
 from typing import Optional, cast
 from urllib.parse import urlparse
 
@@ -40,7 +39,7 @@ def port_available(port: int, address: str = "127.0.0.1") -> bool:
     try:
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-            if sys.platform != "win32":
+            if hasattr(socket, "SO_REUSEPORT"):
                 s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
             else:
                 # The SO_REUSEPORT socket option is not supported on Windows.
@@ -136,7 +135,6 @@ def replace_localhost_with_internal_hostname(url: str) -> str:
 
     parsed_url = urlparse(url)
     if parsed_url.hostname in ("localhost", "127.0.0.1"):
-
         for internal_hostname in (
             "host.docker.internal",
             "host.k3d.internal",
@@ -184,7 +182,6 @@ def replace_internal_hostname_with_localhost(hostname: str) -> str:
         return hostname
 
     if Environment.in_container():
-
         # Try to resolve one of the special hostnames to see if it is available
         # inside the container and use that if it is.
         for internal_hostname in (

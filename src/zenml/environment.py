@@ -249,6 +249,9 @@ class Environment(metaclass=SingletonMetaClass):
             `True` if the current Python process is running in a notebook,
             `False` otherwise.
         """
+        if Environment.in_google_colab():
+            return True
+
         if find_spec("IPython") is not None:
             from IPython import get_ipython  # type: ignore
 

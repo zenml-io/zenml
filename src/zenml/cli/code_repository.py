@@ -58,6 +58,20 @@ def code_repository() -> None:
     required=False,
     help="Module containing the code repository implementation if type is custom.",
 )
+@click.option(
+    "--description",
+    "-d",
+    type=str,
+    required=False,
+    help="The code repository description.",
+)
+@click.option(
+    "--logo-url",
+    "-l",
+    type=str,
+    required=False,
+    help="URL of a logo (png, jpg or svg) for the code repository.",
+)
 @click.argument(
     "args",
     nargs=-1,
@@ -67,6 +81,8 @@ def register_code_repository(
     name: str,
     type_: str,
     source_path: Optional[str],
+    description: Optional[str],
+    logo_url: Optional[str],
     args: List[str],
 ) -> None:
     """Register a code repository.
@@ -81,6 +97,8 @@ def register_code_repository(
         name: Name of the code repository
         type_: Type of the code repository
         source_path: Path to the source module if type is custom
+        description: The code repository description.
+        logo_url: URL of a logo (png, jpg or svg) for the code repository.
         args: Additional arguments to be passed to the code repository
     """
     cli_utils.print_active_config()
@@ -138,6 +156,8 @@ def register_code_repository(
             name=name,
             config=parsed_args,
             source=source,
+            description=description,
+            logo_url=logo_url,
         )
 
         cli_utils.declare(f"Successfully registered code repository `{name}`.")

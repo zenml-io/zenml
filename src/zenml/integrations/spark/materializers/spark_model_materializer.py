@@ -14,7 +14,7 @@
 """Implementation of the Spark Model Materializer."""
 
 import os
-from typing import Any, Type, Union
+from typing import Any, ClassVar, Tuple, Type, Union
 
 from pyspark.ml import Estimator, Model, Transformer
 
@@ -27,8 +27,12 @@ DEFAULT_FILEPATH = "model"
 class SparkModelMaterializer(BaseMaterializer):
     """Materializer to read/write Spark models."""
 
-    ASSOCIATED_TYPES = (Transformer, Estimator, Model)
-    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.MODEL
+    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (
+        Transformer,
+        Estimator,
+        Model,
+    )
+    ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.MODEL
 
     def load(
         self, model_type: Type[Any]
@@ -41,7 +45,6 @@ class SparkModelMaterializer(BaseMaterializer):
         Returns:
             A loaded spark model.
         """
-        super().load(model_type)
         path = os.path.join(self.uri, DEFAULT_FILEPATH)
         return model_type.load(path)  # type: ignore[no-any-return]
 
@@ -53,8 +56,6 @@ class SparkModelMaterializer(BaseMaterializer):
         Args:
             model: A spark model.
         """
-        super().save(model)
-
         # Write the dataframe to the artifact store
         path = os.path.join(self.uri, DEFAULT_FILEPATH)
         model.save(path)  # type: ignore[union-attr]

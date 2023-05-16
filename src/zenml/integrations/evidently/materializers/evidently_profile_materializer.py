@@ -14,7 +14,7 @@
 """Implementation of Evidently profile materializer."""
 
 import os
-from typing import Any, Type
+from typing import Any, ClassVar, Tuple, Type
 
 from evidently.model_profile import Profile  # type: ignore
 from evidently.utils import NumpyEncoder  # type: ignore
@@ -32,8 +32,10 @@ DEFAULT_FILENAME = "profile.json"
 class EvidentlyProfileMaterializer(BaseMaterializer):
     """Materializer to read data to and from an Evidently Profile."""
 
-    ASSOCIATED_TYPES = (Profile,)
-    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATA_ANALYSIS
+    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (Profile,)
+    ASSOCIATED_ARTIFACT_TYPE: ClassVar[
+        ArtifactType
+    ] = ArtifactType.DATA_ANALYSIS
 
     def load(self, data_type: Type[Any]) -> Profile:
         """Reads an Evidently Profile object from a json file.
@@ -47,7 +49,6 @@ class EvidentlyProfileMaterializer(BaseMaterializer):
         Raises:
             TypeError: if the json file contains an invalid data type.
         """
-        super().load(data_type)
         filepath = os.path.join(self.uri, DEFAULT_FILENAME)
         contents = yaml_utils.read_json(filepath)
         if type(contents) != dict:
@@ -72,8 +73,6 @@ class EvidentlyProfileMaterializer(BaseMaterializer):
         Args:
             data: The Evidently Profile to be serialized.
         """
-        super().save(data)
-
         contents = data.object()
         # include the list of profile sections in the serialized dictionary,
         # so we'll be able to re-create them during de-serialization

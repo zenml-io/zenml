@@ -559,6 +559,7 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
             location=self.config.location,
             function_name=run_name,
             credentials=credentials,
+            function_service_account_email=self.config.function_service_account,
         )
 
         # Create the scheduler job

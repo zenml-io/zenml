@@ -29,6 +29,7 @@ from typing import (
 from zenml.pipelines.base_pipeline import (
     INSTANCE_CONFIGURATION,
     PARAM_ENABLE_ARTIFACT_METADATA,
+    PARAM_ENABLE_ARTIFACT_VISUALIZATION,
     PARAM_ENABLE_CACHE,
     PARAM_EXTRA_OPTIONS,
     PARAM_ON_FAILURE,
@@ -59,6 +60,7 @@ def pipeline(
     name: Optional[str] = None,
     enable_cache: Optional[bool] = None,
     enable_artifact_metadata: Optional[bool] = None,
+    enable_artifact_visualization: Optional[bool] = None,
     settings: Optional[Dict[str, "SettingsOrDict"]] = None,
     extra: Optional[Dict[str, Any]] = None,
 ) -> Callable[[F], Type[BasePipeline]]:
@@ -71,6 +73,7 @@ def pipeline(
     name: Optional[str] = None,
     enable_cache: Optional[bool] = None,
     enable_artifact_metadata: Optional[bool] = None,
+    enable_artifact_visualization: Optional[bool] = None,
     settings: Optional[Dict[str, "SettingsOrDict"]] = None,
     extra: Optional[Dict[str, Any]] = None,
     on_failure: Optional["HookSpecification"] = None,
@@ -87,6 +90,7 @@ def pipeline(
             decorated function will be used as a fallback.
         enable_cache: Whether to use caching or not.
         enable_artifact_metadata: Whether to enable artifact metadata or not.
+        enable_artifact_visualization: Whether to enable artifact visualization.
         settings: Settings for this pipeline.
         extra: Extra configurations for this pipeline.
         on_failure: Callback function in event of failure of the step. Can be
@@ -123,6 +127,7 @@ def pipeline(
                     PARAM_PIPELINE_NAME: name,
                     PARAM_ENABLE_CACHE: enable_cache,
                     PARAM_ENABLE_ARTIFACT_METADATA: enable_artifact_metadata,
+                    PARAM_ENABLE_ARTIFACT_VISUALIZATION: enable_artifact_visualization,
                     PARAM_SETTINGS: settings,
                     PARAM_EXTRA_OPTIONS: extra,
                     PARAM_ON_FAILURE: on_failure,

@@ -49,7 +49,7 @@ def parse_plugin_name(
         raise ValueError(invalid_format_err_msg)
     name, version = parts[0], "latest" if len(parts) == 1 else parts[1]
 
-    parts = name.split("/")
+    parts = name.split(author_separator)
     if len(parts) > 2:
         raise ValueError(invalid_format_err_msg)
     name, author = parts[-1], None if len(parts) == 1 else parts[0]
@@ -61,12 +61,12 @@ def parse_plugin_name(
 
 
 def plugin_display_name(
-    plugin_name: str, version: Optional[str], author: Optional[str]
+    name: str, version: Optional[str], author: Optional[str]
 ) -> str:
     """Helper function to get the display name of a plugin.
 
     Args:
-        plugin_name: Name of the plugin.
+        name: Name of the plugin.
         version: Version of the plugin.
         author: Username of the plugin author.
 
@@ -77,4 +77,4 @@ def plugin_display_name(
     if author and author != ZENML_HUB_ADMIN_USERNAME:
         author_prefix = f"{author}/"
     version_suffix = f":{version}" if version else ":latest"
-    return f"{author_prefix}{plugin_name}{version_suffix}"
+    return f"{author_prefix}{name}{version_suffix}"

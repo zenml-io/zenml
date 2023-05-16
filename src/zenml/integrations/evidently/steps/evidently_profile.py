@@ -26,6 +26,7 @@ from zenml.integrations.evidently.data_validators import EvidentlyDataValidator
 from zenml.steps import Output
 from zenml.steps.base_parameters import BaseParameters
 from zenml.steps.base_step import BaseStep
+from zenml.types import HTMLString
 
 
 class EvidentlyProfileParameters(BaseParameters):
@@ -71,7 +72,7 @@ class EvidentlyProfileStep(BaseStep):
         comparison_dataset: pd.DataFrame,
         params: EvidentlyProfileParameters,
     ) -> Output(  # type:ignore[valid-type]
-        profile=Profile, dashboard=str
+        profile=Profile, dashboard=HTMLString
     ):
         """Main entrypoint for the Evidently categorical target drift detection step.
 
@@ -135,7 +136,7 @@ class EvidentlyProfileStep(BaseStep):
             profile_options=params.profile_options,
             dashboard_options=params.dashboard_options,
         )
-        return [profile, dashboard.html()]
+        return [profile, HTMLString(dashboard.html())]
 
 
 def evidently_profile_step(
