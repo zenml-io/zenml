@@ -1557,7 +1557,7 @@ def warn_deprecated_secrets_manager() -> None:
 def fail_secrets_manager_creation() -> None:
     """Warning for deprecating secrets managers."""
     error(
-        "ERROR: Creating secrets managers is longer supported. They will be "
+        "Creating secrets managers is longer supported. They will be "
         "removed in an upcoming release in favor of centralized secrets "
         "management. Please consider migrating all your existing secrets to "
         "the centralized secrets store by means of the `zenml secrets-manager "
