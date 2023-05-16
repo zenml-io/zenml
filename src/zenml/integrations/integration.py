@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Base and meta classes for ZenML integrations."""
 
-from typing import Any, Dict, List, Tuple, Type, cast
+from typing import Any, Dict, List, Optional, Tuple, Type, cast
 
 import pkg_resources
 
@@ -62,11 +62,11 @@ class Integration(metaclass=IntegrationMeta):
             True if all required packages are installed, False otherwise.
         """
         try:
-            for r in cls.REQUIREMENTS:
+            for r in cls.get_requirements():
                 pkg_resources.get_distribution(r)
             logger.debug(
                 f"Integration {cls.NAME} is installed correctly with "
-                f"requirements {cls.REQUIREMENTS}."
+                f"requirements {cls.get_requirements()}."
             )
             return True
         except pkg_resources.DistributionNotFound as e:
@@ -83,9 +83,26 @@ class Integration(metaclass=IntegrationMeta):
             return False
 
     @classmethod
+    def get_requirements(cls, target_os: Optional[str] = None) -> List[str]:
+        """Method to get the requirements for the integration.
+
+        Args:
+            target_os: The target operating system to get the requirements for.
+
+        Returns:
+            A list of requirements.
+        """
+        return cls.REQUIREMENTS
+
+    @classmethod
     def activate(cls) -> None:
         """Abstract method to activate the integration."""
 
     @classmethod
     def flavors(cls) -> List[Type[Flavor]]:
-        """Abstract method to declare new stack component flavors."""
+        """Abstract method to declare new stack component flavors.
+
+        Returns:
+            A list of new stack component flavors.
+        """
+        return []

@@ -18,7 +18,7 @@ import click
 import kserve
 
 from zenml.logger import get_logger
-from zenml.utils.source_utils import import_class_by_path
+from zenml.utils import source_utils
 
 logger = get_logger(__name__)
 
@@ -54,7 +54,7 @@ class ZenMLCustomModel(kserve.Model):  # type: ignore[misc]
         super().__init__(model_name)
         self.name = model_name
         self.model_uri = model_uri
-        self.predict_func = import_class_by_path(predict_func)
+        self.predict_func = source_utils.load(predict_func)
         self.model = None
         self.ready = False
 
@@ -73,7 +73,7 @@ class ZenMLCustomModel(kserve.Model):  # type: ignore[misc]
 
         """
         try:
-            from zenml.utils.materializer_utils import load_model_from_metadata
+            from zenml.utils.artifact_utils import load_model_from_metadata
 
             self.model = load_model_from_metadata(self.model_uri)
         except Exception as e:

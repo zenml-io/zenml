@@ -73,17 +73,20 @@ def is_zenml_run(run: Run) -> bool:
     return ZENML_TAG_KEY in run.data.tags
 
 
-def stop_zenml_mlflow_runs() -> None:
+def stop_zenml_mlflow_runs(status: str) -> None:
     """Stops active ZenML Mlflow runs.
 
     This function stops all MLflow active runs until no active run exists or
     a non-ZenML run is active.
+
+    Args:
+        status: The status to set the run to.
     """
     active_run = mlflow.active_run()
     while active_run:
         if is_zenml_run(active_run):
             logger.debug("Stopping mlflow run %s.", active_run.info.run_id)
-            mlflow.end_run()
+            mlflow.end_run(status=status)
             active_run = mlflow.active_run()
         else:
             break

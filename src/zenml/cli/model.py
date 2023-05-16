@@ -13,40 +13,36 @@
 #  permissions and limitations under the License.
 """Functionality for model-deployer CLI subcommands."""
 
-import uuid
-from typing import TYPE_CHECKING, Optional, cast
+from datetime import datetime
+from typing import TYPE_CHECKING, Dict, List, Optional, cast
 
 import click
-from rich.errors import MarkupError
 
+from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
-from zenml.cli.utils import (
-    declare,
-    error,
-    pretty_print_model_deployer,
-    print_served_model_configuration,
-    warning,
-)
-from zenml.console import console
 from zenml.enums import StackComponentType
+from zenml.model_registries.base_model_registry import (
+    ModelRegistryModelMetadata,
+    ModelVersionStage,
+)
 
 if TYPE_CHECKING:
-    from zenml.model_deployers import BaseModelDeployer
+    from zenml.model_registries import BaseModelRegistry
 
 
-def register_model_deployer_subcommands() -> None:  # noqa: C901
-    """Registers CLI subcommands for the Model Deployer."""
-    model_deployer_group = cast(TagGroup, cli.commands.get("model-deployer"))
-    if not model_deployer_group:
+def register_model_registry_subcommands() -> None:  # noqa: C901
+    """Registers CLI subcommands for the Model Registry."""
+    model_registry_group = cast(TagGroup, cli.commands.get("model-registry"))
+    if not model_registry_group:
         return
 
-    @model_deployer_group.group(
+    @model_registry_group.group(
         cls=TagGroup,
-        help="Commands for interacting with annotation datasets.",
+        help="Commands for interacting with registered models group of commands.",
     )
     @click.pass_context
     def models(ctx: click.Context) -> None:
-        """List and manage served models with the active model deployer.
+        """List and manage models with the active model registry.
 
         Args:
             ctx: The click context.
@@ -55,380 +51,614 @@ def register_model_deployer_subcommands() -> None:  # noqa: C901
         from zenml.stack.stack_component import StackComponent
 
         client = Client()
-        model_deployer_models = client.active_stack_model.components.get(
-            StackComponentType.MODEL_DEPLOYER
+        model_registry_models = client.active_stack_model.components.get(
+            StackComponentType.MODEL_REGISTRY
         )
-        if model_deployer_models is None:
-            error(
-                "No active model deployer found. Please add a model_deployer "
+        if model_registry_models is None:
+            cli_utils.error(
+                "No active model registry found. Please add a model_registry "
                 "to your stack."
             )
             return
-        ctx.obj = StackComponent.from_model(model_deployer_models[0])
+        ctx.obj = StackComponent.from_model(model_registry_models[0])
 
     @models.command(
         "list",
-        help="Get a list of all served models within the model-deployer stack "
-        "component.",
+        help="Get a list of all registered models within the model registry.",
     )
     @click.option(
-        "--pipeline",
-        "-p",
-        type=click.STRING,
-        default=None,
-        help="Show only served models that were deployed by the indicated "
-        "pipeline.",
-    )
-    @click.option(
-        "--step",
-        "-s",
-        type=click.STRING,
-        default=None,
-        help="Show only served models that were deployed by the indicated "
-        "pipeline step.",
-    )
-    @click.option(
-        "--pipeline-run",
-        "-r",
-        type=click.STRING,
-        default=None,
-        help="Show only served models that were deployed by the indicated "
-        "pipeline run.",
-    )
-    @click.option(
-        "--model",
+        "--metadata",
         "-m",
-        type=click.STRING,
+        type=(str, str),
         default=None,
-        help="Show only served model versions for the given model name.",
-    )
-    @click.option(
-        "--running",
-        is_flag=True,
-        help="Show only model servers that are currently running.",
+        help="Filter models by metadata. can be used like: -m key1 value1 -m key2 value",
+        multiple=True,
     )
     @click.pass_obj
-    def list_models(
-        model_deployer: "BaseModelDeployer",
-        pipeline: Optional[str],
-        step: Optional[str],
-        pipeline_run: Optional[str],
-        model: Optional[str],
-        running: bool,
+    def list_registered_models(
+        model_registry: "BaseModelRegistry",
+        metadata: Optional[Dict[str, str]],
     ) -> None:
-        """List of all served models within the model-deployer stack component.
+        """List of all registered models within the model registry.
+
+        The list can be filtered by metadata (tags) using the --metadata flag.
+        Example: zenml model-registry models list-versions -m key1 value1 -m key2 value2
 
         Args:
-            model_deployer: The model-deployer stack component.
-            pipeline: Show only served models that were deployed by the
-                indicated pipeline.
-            step: Show only served models that were deployed by the indicated
-                pipeline step.
-            pipeline_run: Show only served models that were deployed by the
-                indicated pipeline run.
-            model: Show only served model versions for the given model name.
-            running: Show only model servers that are currently running.
+            model_registry: The model registry stack component.
+            metadata: Filter models by Metadata (Tags).
         """
-        services = model_deployer.find_model_server(
-            running=running,
-            pipeline_name=pipeline,
-            pipeline_run_id=pipeline_run,
-            pipeline_step_name=step,
-            model_name=model,
-        )
-        if services:
-            pretty_print_model_deployer(
-                services,
-                model_deployer,
-            )
+        metadata = dict(metadata) if metadata else None
+        registered_models = model_registry.list_models(metadata=metadata)
+        # Print registered models if any
+        if registered_models:
+            cli_utils.pretty_print_registered_model_table(registered_models)
         else:
-            warning("No served models found.")
-
-    @models.command("describe", help="Describe a specified served model.")
-    @click.argument("served_model_uuid", type=click.STRING)
-    @click.pass_obj
-    def describe_model(
-        model_deployer: "BaseModelDeployer", served_model_uuid: str
-    ) -> None:
-        """Describe a specified served model.
-
-        Args:
-            model_deployer: The model-deployer stack component.
-            served_model_uuid: The UUID of the served model.
-        """
-        served_models = model_deployer.find_model_server(
-            service_uuid=uuid.UUID(served_model_uuid)
-        )
-        if served_models:
-            print_served_model_configuration(served_models[0], model_deployer)
-            return
-        warning(f"No model with uuid: '{served_model_uuid}' could be found.")
-        return
+            cli_utils.declare("No models found.")
 
     @models.command(
-        "get-url",
-        help="Return the prediction URL to a specified model server.",
+        "register",
+        help="Register a model with the active model registry.",
     )
-    @click.argument("served_model_uuid", type=click.STRING)
-    @click.pass_obj
-    def get_url(
-        model_deployer: "BaseModelDeployer", served_model_uuid: str
-    ) -> None:
-        """Return the prediction URL to a specified model server.
-
-        Args:
-            model_deployer: The model-deployer stack component.
-            served_model_uuid: The UUID of the served model.
-        """
-        served_models = model_deployer.find_model_server(
-            service_uuid=uuid.UUID(served_model_uuid)
-        )
-        if served_models:
-            try:
-                prediction_url = model_deployer.get_model_server_info(
-                    served_models[0]
-                ).get("PREDICTION_URL")
-                prediction_hostname = (
-                    model_deployer.get_model_server_info(served_models[0]).get(
-                        "PREDICTION_HOSTNAME"
-                    )
-                    or "No hostname specified for this service"
-                )
-                declare(
-                    f"  Prediction URL of Served Model {served_model_uuid} "
-                    f"is:\n"
-                    f"  {prediction_url}\n"
-                    f"  and the hostname is: {prediction_hostname}"
-                )
-            except KeyError:
-                warning("The deployed model instance has no 'prediction_url'.")
-            return
-        warning(f"No model with uuid: '{served_model_uuid}' could be found.")
-        return
-
-    @models.command("start", help="Start a specified model server.")
-    @click.argument("served_model_uuid", type=click.STRING)
-    @click.option(
-        "--timeout",
-        "-t",
-        type=click.INT,
-        default=300,
-        help="Time in seconds to wait for the model to start. Set to 0 to "
-        "return immediately after telling the server to start, without "
-        "waiting for it to become fully active (default: 300s).",
-    )
-    @click.pass_obj
-    def start_model_service(
-        model_deployer: "BaseModelDeployer",
-        served_model_uuid: str,
-        timeout: int,
-    ) -> None:
-        """Start a specified model server.
-
-        Args:
-            model_deployer: The model-deployer stack component.
-            served_model_uuid: The UUID of the served model.
-            timeout: Time in seconds to wait for the model to start.
-        """
-        served_models = model_deployer.find_model_server(
-            service_uuid=uuid.UUID(served_model_uuid)
-        )
-        if served_models:
-            model_deployer.start_model_server(
-                served_models[0].uuid, timeout=timeout
-            )
-            declare(f"Model server {served_models[0]} was started.")
-            return
-
-        warning(f"No model with uuid: '{served_model_uuid}' could be found.")
-        return
-
-    @models.command("stop", help="Stop a specified model server.")
-    @click.argument("served_model_uuid", type=click.STRING)
-    @click.option(
-        "--timeout",
-        "-t",
-        type=click.INT,
-        default=300,
-        help="Time in seconds to wait for the model to start. Set to 0 to "
-        "return immediately after telling the server to stop, without "
-        "waiting for it to become inactive (default: 300s).",
+    @click.argument(
+        "name",
+        type=click.STRING,
+        required=True,
     )
     @click.option(
-        "--yes",
-        "-y",
-        "force",
-        is_flag=True,
-        help="Force the model server to stop. This will bypass any graceful "
-        "shutdown processes and try to force the model server to stop "
-        "immediately, if possible.",
-    )
-    @click.option(
-        "--force",
-        "-f",
-        "old_force",
-        is_flag=True,
-        help="DEPRECATED: Force the model server to stop. This will bypass "
-        "any graceful shutdown processes and try to force the model "
-        "server to stop immediately, if possible. Use `-y/--yes` instead.",
-    )
-    @click.pass_obj
-    def stop_model_service(
-        model_deployer: "BaseModelDeployer",
-        served_model_uuid: str,
-        timeout: int,
-        force: bool,
-        old_force: bool,
-    ) -> None:
-        """Stop a specified model server.
-
-        Args:
-            model_deployer: The model-deployer stack component.
-            served_model_uuid: The UUID of the served model.
-            timeout: Time in seconds to wait for the model to stop.
-            force: Force the model server to stop.
-            old_force: DEPRECATED: Force the model server to stop.
-        """
-        if old_force:
-            force = old_force
-            warning(
-                "The `--force` flag will soon be deprecated. Use `--yes` or "
-                "`-y` instead."
-            )
-        served_models = model_deployer.find_model_server(
-            service_uuid=uuid.UUID(served_model_uuid)
-        )
-        if served_models:
-            model_deployer.stop_model_server(
-                served_models[0].uuid, timeout=timeout, force=force
-            )
-            declare(f"Model server {served_models[0]} was stopped.")
-            return
-
-        warning(f"No model with uuid: '{served_model_uuid}' could be found.")
-        return
-
-    @models.command("delete", help="Delete a specified model server.")
-    @click.argument("served_model_uuid", type=click.STRING)
-    @click.option(
-        "--timeout",
-        "-t",
-        type=click.INT,
-        default=300,
-        help="Time in seconds to wait for the model to be deleted. Set to 0 to "
-        "return immediately after stopping and deleting the model server, "
-        "without waiting for it to release all allocated resources.",
-    )
-    @click.option(
-        "--yes",
-        "-y",
-        "force",
-        is_flag=True,
-        help="Force the model server to stop and delete. This will bypass any "
-        "graceful shutdown processes and try to force the model server to "
-        "stop and delete immediately, if possible.",
-    )
-    @click.option(
-        "--force",
-        "-f",
-        "old_force",
-        is_flag=True,
-        help="DEPRECATED: Force the model server to stop and delete. This will "
-        "bypass any graceful shutdown processes and try to force the model "
-        "server to stop and delete immediately, if possible. Use `-y/--yes` "
-        "instead.",
-    )
-    @click.pass_obj
-    def delete_model_service(
-        model_deployer: "BaseModelDeployer",
-        served_model_uuid: str,
-        timeout: int,
-        force: bool,
-        old_force: bool,
-    ) -> None:
-        """Delete a specified model server.
-
-        Args:
-            model_deployer: The model-deployer stack component.
-            served_model_uuid: The UUID of the served model.
-            timeout: Time in seconds to wait for the model to be deleted.
-            force: Force the model server to stop and delete.
-            old_force: DEPRECATED: Force the model server to stop and delete.
-        """
-        if old_force:
-            force = old_force
-            warning(
-                "The `--force` flag will soon be deprecated. Use `--yes` or "
-                "`-y` instead."
-            )
-        served_models = model_deployer.find_model_server(
-            service_uuid=uuid.UUID(served_model_uuid)
-        )
-        if served_models:
-            model_deployer.delete_model_server(
-                served_models[0].uuid, timeout=timeout, force=force
-            )
-            declare(f"Model server {served_models[0]} was deleted.")
-            return
-
-        warning(f"No model with uuid: '{served_model_uuid}' could be found.")
-        return
-
-    @models.command("logs", help="Show the logs for a model server.")
-    @click.argument("served_model_uuid", type=click.STRING)
-    @click.option(
-        "--follow",
-        "-f",
-        is_flag=True,
-        help="Continue to output new log data as it becomes available.",
-    )
-    @click.option(
-        "--tail",
-        "-t",
-        type=click.INT,
+        "--description",
+        "-d",
+        type=str,
         default=None,
-        help="Only show the last NUM lines of log output.",
+        help="Description of the model to register.",
     )
     @click.option(
-        "--raw",
-        "-r",
-        is_flag=True,
-        help="Show raw log contents (don't pretty-print logs).",
+        "--metadata",
+        "-t",
+        type=(str, str),
+        default=None,
+        help="Metadata or Tags to add to the model. can be used like: -m key1 value1 -m key2 value",
+        multiple=True,
     )
     @click.pass_obj
-    def get_model_service_logs(
-        model_deployer: "BaseModelDeployer",
-        served_model_uuid: str,
-        follow: bool,
-        tail: Optional[int],
-        raw: bool,
+    def register_model(
+        model_registry: "BaseModelRegistry",
+        name: str,
+        description: Optional[str],
+        metadata: Optional[Dict[str, str]],
     ) -> None:
-        """Display the logs for a model server.
+        """Register a model with the active model registry.
 
         Args:
-            model_deployer: The model-deployer stack component.
-            served_model_uuid: The UUID of the served model.
-            follow: Continue to output new log data as it becomes available.
-            tail: Only show the last NUM lines of log output.
-            raw: Show raw log contents (don't pretty-print logs).
+            model_registry: The model registry stack component.
+            name: Name of the model to register.
+            description: Description of the model to register.
+            metadata: Metadata or Tags to add to the registered model.
         """
-        served_models = model_deployer.find_model_server(
-            service_uuid=uuid.UUID(served_model_uuid)
+        try:
+            model_registry.get_model(name)
+            cli_utils.error(f"Model with name {name} already exists.")
+        except KeyError:
+            pass
+        metadata = dict(metadata) if metadata else None
+        model_registry.register_model(
+            name=name,
+            description=description,
+            metadata=metadata,
         )
-        if not served_models:
-            warning(
-                f"No model with uuid: '{served_model_uuid}' could be found."
+        cli_utils.declare(f"Model {name} registered successfully.")
+
+    @models.command(
+        "delete",
+        help="Delete a model from the active model registry.",
+    )
+    @click.argument(
+        "name",
+        type=click.STRING,
+        required=True,
+    )
+    @click.option(
+        "--yes",
+        "-y",
+        is_flag=True,
+        help="Don't ask for confirmation.",
+    )
+    @click.pass_obj
+    def delete_model(
+        model_registry: "BaseModelRegistry",
+        name: str,
+        yes: bool = False,
+    ) -> None:
+        """Delete a model from the active model registry.
+
+        Args:
+            model_registry: The model registry stack component.
+            name: Name of the model to delete.
+            yes: If set, don't ask for confirmation.
+        """
+        try:
+            model_registry.get_model(name)
+        except KeyError:
+            cli_utils.error(f"Model with name {name} does not exist.")
+            return
+        if not yes:
+            confirmation = cli_utils.confirmation(
+                f"Found Model with name {name}. Do you want to "
+                f"delete them?"
+            )
+            if not confirmation:
+                cli_utils.declare("Model deletion canceled.")
+                return
+        model_registry.delete_model(name)
+        cli_utils.declare(f"Model {name} deleted successfully.")
+
+    @models.command(
+        "update",
+        help="Update a model in the active model registry.",
+    )
+    @click.argument(
+        "name",
+        type=click.STRING,
+        required=True,
+    )
+    @click.option(
+        "--description",
+        "-d",
+        type=str,
+        default=None,
+        help="Description of the model to update.",
+    )
+    @click.option(
+        "--metadata",
+        "-t",
+        type=(str, str),
+        default=None,
+        help="Metadata or Tags to add to the model. Ran be used like: -m key1 value1 -m key2 value",
+        multiple=True,
+    )
+    @click.pass_obj
+    def update_model(
+        model_registry: "BaseModelRegistry",
+        name: str,
+        description: Optional[str],
+        metadata: Optional[Dict[str, str]],
+    ) -> None:
+        """Update a model in the active model registry.
+
+        Args:
+            model_registry: The model registry stack component.
+            name: Name of the model to update.
+            description: Description of the model to update.
+            metadata: Metadata or Tags to add to the model.
+        """
+        try:
+            model_registry.get_model(name)
+        except KeyError:
+            cli_utils.error(f"Model with name {name} does not exist.")
+            return
+        metadata = dict(metadata) if metadata else None
+        model_registry.update_model(
+            name=name,
+            description=description,
+            metadata=metadata,
+        )
+        cli_utils.declare(f"Model {name} updated successfully.")
+
+    @models.command(
+        "get",
+        help="Get a model from the active model registry.",
+    )
+    @click.argument(
+        "name",
+        type=click.STRING,
+        required=True,
+    )
+    @click.pass_obj
+    def get_model(
+        model_registry: "BaseModelRegistry",
+        name: str,
+    ) -> None:
+        """Get a model from the active model registry.
+
+        Args:
+            model_registry: The model registry stack component.
+            name: Name of the model to get.
+        """
+        try:
+            model = model_registry.get_model(name)
+        except KeyError:
+            cli_utils.error(f"Model with name {name} does not exist.")
+            return
+        cli_utils.pretty_print_registered_model_table([model])
+
+    @models.command(
+        "get-version",
+        help="Get a model version from the active model registry.",
+    )
+    @click.argument(
+        "name",
+        type=click.STRING,
+        required=True,
+    )
+    @click.option(
+        "--version",
+        "-v",
+        type=str,
+        default=None,
+        help="Version of the model to get.",
+        required=True,
+    )
+    @click.pass_obj
+    def get_model_version(
+        model_registry: "BaseModelRegistry",
+        name: str,
+        version: str,
+    ) -> None:
+        """Get a model version from the active model registry.
+
+        Args:
+            model_registry: The model registry stack component.
+            name: Name of the model to get.
+            version: Version of the model to get.
+        """
+        try:
+            model_version = model_registry.get_model_version(name, version)
+        except KeyError:
+            cli_utils.error(
+                f"Model with name {name} and version {version} does not exist."
             )
             return
+        cli_utils.pretty_print_model_version_details(model_version)
 
-        for line in model_deployer.get_model_server_logs(
-            served_models[0].uuid, follow=follow, tail=tail
-        ):
-            # don't pretty-print log lines that are already pretty-printed
-            if raw or line.startswith("\x1b["):
-                console.print(line, markup=False)
-            else:
-                try:
-                    console.print(line)
-                except MarkupError:
-                    console.print(line, markup=False)
+    @models.command(
+        "delete-version",
+        help="Delete a model version from the active model registry.",
+    )
+    @click.argument(
+        "name",
+        type=click.STRING,
+        required=True,
+    )
+    @click.option(
+        "--version",
+        "-v",
+        type=str,
+        default=None,
+        help="Version of the model to delete.",
+        required=True,
+    )
+    @click.option(
+        "--yes",
+        "-y",
+        is_flag=True,
+        help="Don't ask for confirmation.",
+    )
+    @click.pass_obj
+    def delete_model_version(
+        model_registry: "BaseModelRegistry",
+        name: str,
+        version: str,
+        yes: bool = False,
+    ) -> None:
+        """Delete a model version from the active model registry.
+
+        Args:
+            model_registry: The model registry stack component.
+            name: Name of the model to delete.
+            version: Version of the model to delete.
+            yes: If set, don't ask for confirmation.
+        """
+        try:
+            model_registry.get_model_version(name, version)
+        except KeyError:
+            cli_utils.error(
+                f"Model with name {name} and version {version} does not exist."
+            )
+            return
+        if not yes:
+            confirmation = cli_utils.confirmation(
+                f"Found Model with the name `{name}` and the version `{version}`."
+                f"Do you want to delete it?"
+            )
+            if not confirmation:
+                cli_utils.declare("Model version deletion canceled.")
+                return
+        model_registry.delete_model_version(name, version)
+        cli_utils.declare(
+            f"Model {name} version {version} deleted successfully."
+        )
+
+    @models.command(
+        "update-version",
+        help="Update a model version in the active model registry.",
+    )
+    @click.argument(
+        "name",
+        type=click.STRING,
+        required=True,
+    )
+    @click.option(
+        "--version",
+        "-v",
+        type=str,
+        default=None,
+        help="Version of the model to update.",
+        required=True,
+    )
+    @click.option(
+        "--description",
+        "-d",
+        type=str,
+        default=None,
+        help="Description of the model to update.",
+    )
+    @click.option(
+        "--metadata",
+        "-m",
+        type=(str, str),
+        default=None,
+        help="Metadata or Tags to add to the model. can be used like: --m key1 value1 -m key2 value",
+        multiple=True,
+    )
+    @click.option(
+        "--stage",
+        "-s",
+        type=click.Choice(["None", "Staging", "Production", "Archived"]),
+        default=None,
+        help="Stage of the model to update.",
+    )
+    @click.option(
+        "--remove_metadata",
+        "-rm",
+        default=None,
+        help="Metadata or Tags to remove from the model. can be used like: -rm key1 -rm key2",
+        multiple=True,
+    )
+    @click.pass_obj
+    def update_model_version(
+        model_registry: "BaseModelRegistry",
+        name: str,
+        version: str,
+        description: Optional[str],
+        metadata: Optional[Dict[str, str]],
+        stage: Optional[str],
+        remove_metadata: Optional[List[str]],
+    ) -> None:
+        """Update a model version in the active model registry.
+
+        Args:
+            model_registry: The model registry stack component.
+            name: Name of the model to update.
+            version: Version of the model to update.
+            description: Description of the model to update.
+            metadata: Metadata to add to the model version.
+            stage: Stage of the model to update.
+            remove_metadata: Metadata to remove from the model version.
+        """
+        try:
+            model_registry.get_model_version(name, version)
+        except KeyError:
+            cli_utils.error(
+                f"Model with name {name} and version {version} does not exist."
+            )
+            return
+        metadata = dict(metadata) if metadata else {}
+        remove_metadata = list(remove_metadata) if remove_metadata else []
+        updated_version = model_registry.update_model_version(
+            name=name,
+            version=version,
+            description=description,
+            metadata=ModelRegistryModelMetadata(**metadata),
+            stage=ModelVersionStage(stage) if stage else None,
+            remove_metadata=remove_metadata,
+        )
+        cli_utils.declare(
+            f"Model {name} version {version} updated successfully."
+        )
+        cli_utils.pretty_print_model_version_details(updated_version)
+
+    @models.command(
+        "list-versions",
+        help="List all model versions in the active model registry.",
+    )
+    @click.argument(
+        "name",
+        type=click.STRING,
+        required=True,
+    )
+    @click.option(
+        "--model-uri",
+        "-m",
+        type=str,
+        default=None,
+        help="Model URI of the model to list versions for.",
+    )
+    @click.option(
+        "--metadata",
+        "-m",
+        type=(str, str),
+        default=None,
+        help="Metadata or Tags to filter the model versions by. can be used like: -m key1 value1 -m key2 value",
+        multiple=True,
+    )
+    @click.option(
+        "--count",
+        "-c",
+        type=int,
+        help="Number of model versions to list.",
+    )
+    @click.option(
+        "--order-by-date",
+        type=click.Choice(["asc", "desc"]),
+        default="desc",
+        help="Order by date.",
+    )
+    @click.option(
+        "--created-after",
+        type=click.DateTime(formats=["%Y-%m-%d"]),
+        default=None,
+        help="List model versions created after this date.",
+    )
+    @click.option(
+        "--created-before",
+        type=click.DateTime(formats=["%Y-%m-%d"]),
+        default=None,
+        help="List model versions created before this date.",
+    )
+    @click.pass_obj
+    def list_model_versions(
+        model_registry: "BaseModelRegistry",
+        name: str,
+        model_uri: Optional[str],
+        count: Optional[int],
+        metadata: Optional[Dict[str, str]],
+        order_by_date: str,
+        created_after: Optional[datetime],
+        created_before: Optional[datetime],
+    ) -> None:
+        """List all model versions in the active model registry.
+
+        Args:
+            model_registry: The model registry stack component.
+            name: Name of the model to list versions for.
+            model_uri: Model URI of the model to list versions for.
+            metadata: Metadata or Tags to filter the model versions by.
+            count: Number of model versions to list.
+            order_by_date: Order by date.
+            created_after: List model versions created after this date.
+            created_before: List model versions created before this date.
+        """
+        metadata = dict(metadata) if metadata else {}
+        model_versions = model_registry.list_model_versions(
+            name=name,
+            model_source_uri=model_uri,
+            metadata=ModelRegistryModelMetadata(**metadata),
+            count=count,
+            order_by_date=order_by_date,
+            created_after=created_after,
+            created_before=created_before,
+        )
+        if not model_versions:
+            cli_utils.declare("No model versions found.")
+            return
+        cli_utils.pretty_print_model_version_table(model_versions)
+
+    @models.command(
+        "register-version",
+        help="Register a model version in the active model registry.",
+    )
+    @click.argument(
+        "name",
+        type=click.STRING,
+        required=True,
+    )
+    @click.option(
+        "--description",
+        "-d",
+        type=str,
+        default=None,
+        help="Description of the model version.",
+    )
+    @click.option(
+        "--metadata",
+        "-m",
+        type=(str, str),
+        default=None,
+        help="Metadata or Tags to add to the model version. can be used like: -m key1 value1 -m key2 value",
+        multiple=True,
+    )
+    @click.option(
+        "--version",
+        "-v",
+        type=str,
+        required=True,
+        default=None,
+        help="Version of the model to register.",
+    )
+    @click.option(
+        "--model-uri",
+        "-u",
+        type=str,
+        default=None,
+        help="Model URI of the model to register.",
+        required=True,
+    )
+    @click.option(
+        "--zenml-version",
+        type=str,
+        default=None,
+        help="ZenML version of the model to register.",
+    )
+    @click.option(
+        "--zenml-run-name",
+        type=str,
+        default=None,
+        help="ZenML run name of the model to register.",
+    )
+    @click.option(
+        "--zenml-pipeline-run-id",
+        type=str,
+        default=None,
+        help="ZenML pipeline run ID of the model to register.",
+    )
+    @click.option(
+        "--zenml-pipeline-name",
+        type=str,
+        default=None,
+        help="ZenML pipeline name of the model to register.",
+    )
+    @click.option(
+        "--zenml-step-name",
+        type=str,
+        default=None,
+        help="ZenML step name of the model to register.",
+    )
+    @click.pass_obj
+    def register_model_version(
+        model_registry: "BaseModelRegistry",
+        name: str,
+        version: str,
+        model_uri: str,
+        description: Optional[str],
+        metadata: Optional[Dict[str, str]],
+        zenml_version: Optional[str],
+        zenml_run_name: Optional[str],
+        zenml_pipeline_run_id: Optional[str],
+        zenml_pipeline_name: Optional[str],
+        zenml_step_name: Optional[str],
+    ) -> None:
+        """Register a model version in the active model registry.
+
+        Args:
+            model_registry: The model registry stack component.
+            name: Name of the model to register.
+            version: Version of the model to register.
+            model_uri: Model URI of the model to register.
+            description: Description of the model to register.
+            metadata: Model version metadata.
+            zenml_version: ZenML version of the model to register.
+            zenml_run_name: ZenML pipeline run name of the model to register.
+            zenml_pipeline_run_id: Deprecated. Use zenml_run_name instead.
+            zenml_pipeline_name: ZenML pipeline name of the model to register.
+            zenml_step_name: ZenML step name of the model to register.
+        """
+        # Parse metadata
+        metadata = dict(metadata) if metadata else {}
+        registered_metadata = ModelRegistryModelMetadata(**dict(metadata))
+        registered_metadata.zenml_version = zenml_version
+        registered_metadata.zenml_run_name = (
+            zenml_run_name or zenml_pipeline_run_id
+        )
+        registered_metadata.zenml_pipeline_name = zenml_pipeline_name
+        registered_metadata.zenml_step_name = zenml_step_name
+        model_version = model_registry.register_model_version(
+            name=name,
+            version=version,
+            model_source_uri=model_uri,
+            description=description,
+            metadata=registered_metadata,
+        )
+        cli_utils.declare(
+            f"Model {name} version {version} registered successfully."
+        )
+        cli_utils.pretty_print_model_version_details(model_version)

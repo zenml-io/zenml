@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2021. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2023. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -13,205 +13,86 @@
 #  permissions and limitations under the License.
 """Initialization for the post-execution artifact class."""
 
-from typing import TYPE_CHECKING, Any, Optional, Type
-from uuid import UUID
+from typing import Any, Optional, Type, cast
 
+from zenml.enums import VisualizationType
 from zenml.logger import get_logger
-from zenml.models.pipeline_models import ArtifactModel
-from zenml.utils import source_utils
-
-if TYPE_CHECKING:
-    from zenml.materializers.base_materializer import BaseMaterializer
+from zenml.models.artifact_models import ArtifactResponseModel
+from zenml.models.base_models import BaseResponseModel
+from zenml.post_execution.base_view import BaseView
+from zenml.utils.visualization_utils import format_csv_visualization_as_html
 
 logger = get_logger(__name__)
 
 
-class ArtifactView:
+class ArtifactView(BaseView):
     """Post-execution artifact class.
 
     This can be used to read artifact data that was created during a pipeline
     execution.
     """
 
-    def __init__(self, model: ArtifactModel):
-        """Initializes a post-execution artifact object.
-
-        In most cases `ArtifactView` objects should not be created manually but
-        retrieved from a `StepView` via the `inputs` or `outputs` properties.
-
-        Args:
-            model: The model to initialize this object from.
-        """
-        self._model = model
+    MODEL_CLASS: Type[BaseResponseModel] = ArtifactResponseModel
+    REPR_KEYS = ["id", "name", "uri"]
 
     @property
-    def id(self) -> UUID:
-        """Returns the artifact id.
+    def model(self) -> ArtifactResponseModel:
+        """Returns the underlying `ArtifactResponseModel`.
 
         Returns:
-            The artifact id.
+            The underlying `ArtifactResponseModel`.
         """
-        return self._model.id
+        return cast(ArtifactResponseModel, self._model)
 
-    @property
-    def name(self) -> str:
-        """Returns the name of the artifact (output name in the parent step).
-
-        Returns:
-            The name of the artifact.
-        """
-        return self._model.name
-
-    @property
-    def type(self) -> str:
-        """Returns the artifact type.
-
-        Returns:
-            The artifact type.
-        """
-        return self._model.type
-
-    @property
-    def data_type(self) -> str:
-        """Returns the data type of the artifact.
-
-        Returns:
-            The data type of the artifact.
-        """
-        return self._model.data_type
-
-    @property
-    def uri(self) -> str:
-        """Returns the URI where the artifact data is stored.
-
-        Returns:
-            The URI where the artifact data is stored.
-        """
-        return self._model.uri
-
-    @property
-    def materializer(self) -> str:
-        """Returns the materializer that was used to write this artifact.
-
-        Returns:
-            The materializer that was used to write this artifact.
-        """
-        return self._model.materializer
-
-    @property
-    def parent_step_id(self) -> UUID:
-        """Returns the ID of the parent step.
-
-        This need not be equivalent to the ID of the producer step.
-
-        Returns:
-            The ID of the parent step.
-        """
-        assert self._model.parent_step_id
-        return self._model.parent_step_id
-
-    @property
-    def producer_step_id(self) -> UUID:
-        """Returns the ID of the original step that produced the artifact.
-
-        Returns:
-            The ID of the original step that produced the artifact.
-        """
-        assert self._model.producer_step_id
-        return self._model.producer_step_id
-
-    @property
-    def is_cached(self) -> bool:
-        """Returns True if artifact was cached in a previous run, else False.
-
-        Returns:
-            True if artifact was cached in a previous run, else False.
-        """
-        return self._model.is_cached
-
-    def read(
-        self,
-        output_data_type: Optional[Type[Any]] = None,
-        materializer_class: Optional[Type["BaseMaterializer"]] = None,
-    ) -> Any:
-        """Materializes the data stored in this artifact.
-
-        Args:
-            output_data_type: The datatype to which the materializer should
-                read, will be passed to the materializers `handle_input` method.
-            materializer_class: The class of the materializer that should be
-                used to read the artifact data. If no materializer class is
-                given, we use the materializer that was used to write the
-                artifact during execution of the pipeline.
+    def read(self) -> Any:
+        """Materializes (loads) the data stored in this artifact.
 
         Returns:
             The materialized data.
-
-        Raises:
-            ModuleNotFoundError: If the materializer class could not be found.
         """
-        if not materializer_class:
-            try:
-                materializer_class = source_utils.load_source_path_class(
-                    self.materializer
-                )
-            except (ModuleNotFoundError, AttributeError) as e:
-                logger.error(
-                    f"ZenML can not locate and import the materializer module "
-                    f"{self.materializer} which was used to write this "
-                    f"artifact. If you want to read from it, please provide "
-                    f"a 'materializer_class'."
-                )
-                raise ModuleNotFoundError(e) from e
+        from zenml.utils.artifact_utils import load_artifact
 
-        if not output_data_type:
-            try:
-                output_data_type = source_utils.load_source_path_class(
-                    self.data_type
-                )
-            except (ModuleNotFoundError, AttributeError) as e:
-                logger.error(
-                    f"ZenML can not locate and import the data type of this "
-                    f"artifact {self.data_type}. If you want to read "
-                    f"from it, please provide a 'output_data_type'."
-                )
-                raise ModuleNotFoundError(e) from e
+        return load_artifact(self.model)
 
-        logger.debug(
-            "Using '%s' to read '%s' (uri: %s).",
-            materializer_class.__qualname__,
-            self.type,
-            self.uri,
-        )
-
-        # TODO [ENG-162]: passing in `self` to initialize the materializer only
-        #  works because materializers only require a `.uri` property at the
-        #  moment.
-        materializer = materializer_class(self)  # type: ignore[arg-type]
-        return materializer.handle_input(output_data_type)
-
-    def __repr__(self) -> str:
-        """Returns a string representation of this artifact.
-
-        Returns:
-            A string representation of this artifact.
-        """
-        return (
-            f"{self.__class__.__qualname__}(id={self.id}, "
-            f"type='{self.type}', uri='{self.uri}', "
-            f"materializer='{self.materializer}')"
-        )
-
-    def __eq__(self, other: Any) -> bool:
-        """Returns whether the other object is referring to the same artifact.
+    def visualize(self, title: Optional[str] = None) -> None:
+        """Visualize the artifact in notebook environments.
 
         Args:
-            other: The other object to compare to.
+            title: Optional title to show before the visualizations.
 
-        Returns:
-            True if the other object is referring to the same artifact, else
-            False.
+        Raises:
+            RuntimeError: If not in a notebook environment.
         """
-        if isinstance(other, ArtifactView):
-            return self.id == other.id and self.uri == other.uri
-        return NotImplemented
+        from IPython.core.display import HTML, Image, Markdown, display
+
+        from zenml.environment import Environment
+        from zenml.utils.artifact_utils import load_artifact_visualization
+
+        if not Environment.in_notebook():
+            raise RuntimeError(
+                "The `output.visualize()` method is only available in Jupyter "
+                "notebooks. In all other runtime environments, please open "
+                "your ZenML dashboard using `zenml up` and view the "
+                "visualizations by clicking on the respective artifacts in the "
+                "pipeline run DAG instead."
+            )
+
+        if not self.model.visualizations:
+            return
+
+        if title:
+            display(Markdown(f"### {title}"))
+        for i in range(len(self.model.visualizations)):
+            visualization = load_artifact_visualization(self.model, index=i)
+            if visualization.type == VisualizationType.IMAGE:
+                display(Image(visualization.value))
+            elif visualization.type == VisualizationType.HTML:
+                display(HTML(visualization.value))
+            elif visualization.type == VisualizationType.MARKDOWN:
+                display(Markdown(visualization.value))
+            elif visualization.type == VisualizationType.CSV:
+                assert isinstance(visualization.value, str)
+                table = format_csv_visualization_as_html(visualization.value)
+                display(HTML(table))
+            else:
+                display(visualization.value)

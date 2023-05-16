@@ -15,14 +15,14 @@ running your training on a GPU will give you.
 The steps that will run on GPU-backed hardware will all be running from a
 containerized environment, whether you're using our local Docker orchestrator or
 on a cloud instance of Kubeflow. (Please see [the section on configuration of the
-Docker environment](../../advanced-guide/pipelines/containerization.md) for
+Docker environment](../../starter-guide/production-fundamentals/containerization.md) for
 general context on this and what follows.) For this reason, you will need to
 make two amendments to your Docker settings for the relevant steps as follows:
 
 1. Specify a CUDA-enabled parent image in your `DockerSettings`
 
 For full details, see the whole section where we explain how to do this [on the
-containerization page](../../advanced-guide/pipelines/containerization.md). As
+containerization page](../../starter-guide/production-fundamentals/containerization.md). As
 an example, if you wanted to use the latest CUDA-enabled official PyTorch image
 for your entire pipeline run, you could include the following code:
 

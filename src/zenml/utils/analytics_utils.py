@@ -17,10 +17,12 @@ from abc import ABC, abstractmethod
 from enum import Enum
 from types import TracebackType
 from typing import Any, Callable, ClassVar, Dict, List, Optional, Type, Union
+from uuid import UUID
 
 from pydantic import BaseModel
 
 from zenml import __version__
+from zenml.analytics.context import AnalyticsContext as AnalyticsContextV2
 from zenml.constants import IS_DEBUG_ENV, SEGMENT_KEY_DEV, SEGMENT_KEY_PROD
 from zenml.enums import StoreType
 from zenml.environment import Environment, get_environment
@@ -39,12 +41,16 @@ class AnalyticsEvent(str, Enum):
     CREATE_PIPELINE = "Pipeline created"
     UPDATE_PIPELINE = "Pipeline updated"
     DELETE_PIPELINE = "Pipeline deleted"
+    BUILD_PIPELINE = "Pipeline built"
 
     # Repo
     INITIALIZE_REPO = "ZenML initialized"
     CONNECT_REPOSITORY = "Repository connected"
     UPDATE_REPOSITORY = "Repository updated"
     DELETE_REPOSITORY = "Repository deleted"
+
+    # Template
+    GENERATE_TEMPLATE = "Template generated"
 
     # Zen store
     INITIALIZED_STORE = "Store initialized"
@@ -92,15 +98,16 @@ class AnalyticsEvent(str, Enum):
     UPDATED_TEAM = "Team updated"
     DELETED_TEAM = "Team deleted"
 
-    # Projects
-    CREATED_PROJECT = "Project created"
-    CREATED_DEFAULT_PROJECT = "Default project created"
-    UPDATED_PROJECT = "Project updated"
-    DELETED_PROJECT = "Project deleted"
-    SET_PROJECT = "Project set"
+    # Workspaces
+    CREATED_WORKSPACE = "Workspace created"
+    CREATED_DEFAULT_WORKSPACE = "Default workspace created"
+    UPDATED_WORKSPACE = "Workspace updated"
+    DELETED_WORKSPACE = "Workspace deleted"
+    SET_WORKSPACE = "Workspace set"
 
     # Role
     CREATED_ROLE = "Role created"
+    CREATED_DEFAULT_ROLES = "Default roles created"
     UPDATED_ROLE = "Role updated"
     DELETED_ROLE = "Role deleted"
 
@@ -109,13 +116,23 @@ class AnalyticsEvent(str, Enum):
     UPDATED_FLAVOR = "Flavor updated"
     DELETED_FLAVOR = "Flavor deleted"
 
+    # Secret
+    CREATED_SECRET = "Secret created"
+    UPDATED_SECRET = "Secret updated"
+    DELETED_SECRET = "Secret deleted"
+
     # Test event
     EVENT_TEST = "Test event"
 
     # Stack recipes
     PULL_STACK_RECIPE = "Stack recipes pulled"
-    RUN_STACK_RECIPE = "Stack recipe created"
+    RUN_STACK_RECIPE = "Stack recipe ran"
     DESTROY_STACK_RECIPE = "Stack recipe destroyed"
+    GET_STACK_RECIPE_OUTPUTS = "Stack recipe outputs fetched"
+
+    # Stack component deploy
+    DEPLOY_STACK_COMPONENT = "Stack component deployed"
+    DESTROY_STACK_COMPONENT = "Stack component destroyed"
 
     # ZenML server events
     ZENML_SERVER_STARTED = "ZenML server started"
@@ -123,6 +140,12 @@ class AnalyticsEvent(str, Enum):
     ZENML_SERVER_CONNECTED = "ZenML server connected"
     ZENML_SERVER_DEPLOYED = "ZenML server deployed"
     ZENML_SERVER_DESTROYED = "ZenML server destroyed"
+
+    # ZenML Hub events
+    ZENML_HUB_PLUGIN_INSTALL = "ZenML Hub plugin installed"
+    ZENML_HUB_PLUGIN_UNINSTALL = "ZenML Hub plugin uninstalled"
+    ZENML_HUB_PLUGIN_CLONE = "ZenML Hub plugin pulled"
+    ZENML_HUB_PLUGIN_SUBMIT = "ZenML Hub plugin pushed"
 
 
 class AnalyticsGroup(str, Enum):
@@ -202,12 +225,11 @@ class AnalyticsContext:
             exc_tb: Exception traceback.
 
         Returns:
-            True if exception was handled, False otherwise.
+            True, we should never fail main thread.
         """
         if exc_val is not None:
-            logger.debug("Sending telemetry data failed: {exc_val}")
+            logger.debug(f"Sending telemetry data failed: {exc_val}")
 
-        # We should never fail main thread
         return True
 
     def identify(self, traits: Optional[Dict[str, Any]] = None) -> bool:
@@ -331,11 +353,17 @@ class AnalyticsContext:
         # infinite loop
         if gc._zen_store is not None:
             zen_store = gc.zen_store
+            user = zen_store.get_user()
+
+            if "client_id" not in properties:
+                properties["client_id"] = self.user_id
+            if "user_id" not in properties:
+                properties["user_id"] = str(user.id)
+
             if (
                 zen_store.type == StoreType.REST
                 and "server_id" not in properties
             ):
-                user = zen_store.active_user
                 server_info = zen_store.get_store_info()
                 properties.update(
                     {
@@ -343,8 +371,15 @@ class AnalyticsContext:
                         "server_id": str(server_info.id),
                         "server_deployment": str(server_info.deployment_type),
                         "database_type": str(server_info.database_type),
+                        "secrets_store_type": str(
+                            server_info.secrets_store_type
+                        ),
                     }
                 )
+
+        for k, v in properties.items():
+            if isinstance(v, UUID):
+                properties[k] = str(v)
 
         analytics.track(self.user_id, event, properties)
 
@@ -356,29 +391,45 @@ class AnalyticsContext:
         return True
 
 
-def identify_user(user_metadata: Optional[Dict[str, Any]] = None) -> bool:
+def identify_user(
+    user_metadata: Optional[Dict[str, Any]] = None,
+    v1: Optional[bool] = True,
+    v2: Optional[bool] = False,
+) -> bool:
     """Attach metadata to user directly.
 
     Args:
         user_metadata: Dict of metadata to attach to the user.
+        v1: Flag to determine whether analytics v1 is included.
+        v2: Flag to determine whether analytics v2 is included.
 
     Returns:
         True if event is sent successfully, False is not.
     """
-    with AnalyticsContext() as analytics:
+    success = True
 
-        if user_metadata is None:
-            return False
+    if user_metadata is None:
+        return False
 
-        return analytics.identify(traits=user_metadata)
+    if v1:
+        with AnalyticsContext() as analytics:
+            success_v1 = analytics.identify(traits=user_metadata)
+            success = success and success_v1
 
-    return False
+    if v2:
+        with AnalyticsContextV2() as analytics:
+            success_v2 = analytics.identify(traits=user_metadata)
+            success = success and success_v2
+
+    return success
 
 
 def identify_group(
     group: Union[str, AnalyticsGroup],
-    group_id: str,
+    group_id: UUID,
     group_metadata: Optional[Dict[str, Any]] = None,
+    v1: Optional[bool] = True,
+    v2: Optional[bool] = False,
 ) -> bool:
     """Attach metadata to a segment group.
 
@@ -386,39 +437,72 @@ def identify_group(
         group: Group to track.
         group_id: ID of the group.
         group_metadata: Metadata to attach to the group.
+        v1: Flag to determine whether analytics v1 is included.
+        v2: Flag to determine whether analytics v2 is included.
 
     Returns:
         True if event is sent successfully, False is not.
     """
-    with AnalyticsContext() as analytics:
-        return analytics.group(group, group_id, traits=group_metadata)
+    success = True
 
-    return False
+    if v1:
+        with AnalyticsContext() as analytics:
+            success_v1 = analytics.group(
+                group=group, group_id=str(group_id), traits=group_metadata
+            )
+            success = success and success_v1
+
+    if v2:
+        with AnalyticsContextV2() as analytics:
+            success_v2 = analytics.group(
+                group_id=group_id, traits=group_metadata
+            )
+            success = success and success_v2
+
+    return success
 
 
 def track_event(
-    event: Union[str, AnalyticsEvent],
+    event: AnalyticsEvent,
     metadata: Optional[Dict[str, Any]] = None,
+    v1: Optional[bool] = True,
+    v2: Optional[bool] = False,
 ) -> bool:
     """Track segment event if user opted-in.
 
     Args:
         event: Name of event to track in segment.
         metadata: Dict of metadata to track.
+        v1: Flag to determine whether analytics v1 is included.
+        v2: Flag to determine whether analytics v2 is included.
 
     Returns:
         True if event is sent successfully, False is not.
     """
-    with AnalyticsContext() as analytics:
-        return analytics.track(event, metadata)
+    success = True
 
-    return False
+    if metadata is None:
+        metadata = {}
+
+    metadata.setdefault("event_success", True)
+
+    if v1:
+        with AnalyticsContext() as analytics:
+            success_v1 = analytics.track(event=event, properties=metadata)
+            success = success and success_v1
+
+    if v2:
+        with AnalyticsContextV2() as analytics:
+            success_v2 = analytics.track(event=event, properties=metadata)
+            success = success and success_v2
+
+    return success
 
 
 def parametrized(
     dec: Callable[..., Callable[..., Any]]
 ) -> Callable[..., Callable[[Callable[..., Any]], Callable[..., Any]]]:
-    """This is a meta-decorator, that is, a decorator for decorators.
+    """A meta-decorator, that is, a decorator for decorators.
 
     As a decorator is a function, it actually works as a regular decorator
     with arguments.
@@ -471,7 +555,7 @@ class AnalyticsTrackerMixin(ABC):
     @abstractmethod
     def track_event(
         self,
-        event: Union[str, AnalyticsEvent],
+        event: AnalyticsEvent,
         metadata: Optional[Dict[str, Any]],
     ) -> None:
         """Track an event.
@@ -492,7 +576,7 @@ class AnalyticsTrackedModelMixin(BaseModel):
     tracking metadata.
     """
 
-    ANALYTICS_FIELDS: ClassVar[List[str]]
+    ANALYTICS_FIELDS: ClassVar[List[str]] = []
 
     def get_analytics_metadata(self) -> Dict[str, Any]:
         """Get the analytics metadata for the model.
@@ -505,28 +589,13 @@ class AnalyticsTrackedModelMixin(BaseModel):
             metadata[field_name] = getattr(self, field_name, None)
         return metadata
 
-    def track_event(
-        self,
-        event: Union[str, AnalyticsEvent],
-        tracker: Optional[AnalyticsTrackerMixin] = None,
-    ) -> None:
-        """Track an event for the model.
-
-        Args:
-            event: Event to track.
-            tracker: Optional tracker to use for analytics.
-        """
-        metadata = self.get_analytics_metadata()
-        if tracker:
-            tracker.track_event(event, metadata)
-        else:
-            track_event(event, metadata)
-
 
 @parametrized
 def track(
     func: Callable[..., Any],
-    event: Optional[Union[str, AnalyticsEvent]] = None,
+    event: AnalyticsEvent,
+    v1: Optional[bool] = True,
+    v2: Optional[bool] = False,
 ) -> Callable[..., Any]:
     """Decorator to track event.
 
@@ -542,12 +611,12 @@ def track(
     Args:
         func: Function that is decorated.
         event: Event string to stamp with.
+        v1: Flag to determine whether analytics v1 is included.
+        v2: Flag to determine whether analytics v2 is included.
 
     Returns:
         Decorated function.
     """
-    event_name = event or func.__name__  # default to name of function
-    metadata: Dict[str, Any] = {}
 
     def inner_func(*args: Any, **kwargs: Any) -> Any:
         """Inner decorator function.
@@ -559,24 +628,95 @@ def track(
         Returns:
             Result of the function.
         """
-        result = func(*args, **kwargs)
-        try:
-            tracker: Optional[AnalyticsTrackerMixin] = None
-            if len(args) and isinstance(args[0], AnalyticsTrackerMixin):
-                tracker = args[0]
-            for obj in [result] + list(args) + list(kwargs.values()):
-                if isinstance(obj, AnalyticsTrackedModelMixin):
-                    obj.track_event(event_name, tracker=tracker)
-                    break
-            else:
-                if tracker:
-                    tracker.track_event(event_name, metadata)
-                else:
-                    track_event(event_name, metadata)
+        with event_handler(event=event, v1=v1, v2=v2) as handler:
+            try:
+                if len(args) and isinstance(args[0], AnalyticsTrackerMixin):
+                    handler.tracker = args[0]
 
-        except Exception as e:
-            logger.debug(f"Analytics tracking failure for {func}: {e}")
+                for obj in list(args) + list(kwargs.values()):
+                    if isinstance(obj, AnalyticsTrackedModelMixin):
+                        handler.metadata = obj.get_analytics_metadata()
+                        break
+            except Exception as e:
+                logger.debug(f"Analytics tracking failure for {func}: {e}")
 
-        return result
+            result = func(*args, **kwargs)
 
+            try:
+                if isinstance(result, AnalyticsTrackedModelMixin):
+                    handler.metadata = result.get_analytics_metadata()
+            except Exception as e:
+                logger.debug(f"Analytics tracking failure for {func}: {e}")
+
+            return result
+
+    inner_func.__doc__ = func.__doc__
     return inner_func
+
+
+class event_handler(object):
+    """Context handler to enable tracking the success status of an event."""
+
+    def __init__(
+        self,
+        event: AnalyticsEvent,
+        metadata: Optional[Dict[str, Any]] = None,
+        v1: Optional[bool] = True,
+        v2: Optional[bool] = False,
+    ):
+        """Initialization of the context manager.
+
+        Args:
+            event: The type of the analytics event
+            metadata: The metadata of the event.
+            v1: Flag to determine whether analytics v1 is included.
+            v2: Flag to determine whether analytics v2 is included.
+        """
+        self.event: AnalyticsEvent = event
+        self.metadata: Dict[str, Any] = metadata or {}
+        self.tracker: Optional[AnalyticsTrackerMixin] = None
+        self.v1: Optional[bool] = v1
+        self.v2: Optional[bool] = v2
+
+    def __enter__(self) -> "event_handler":
+        """Enter function of the event handler.
+
+        Returns:
+            the handler instance.
+        """
+        return self
+
+    def __exit__(
+        self,
+        type_: Optional[Any],
+        value: Optional[Any],
+        traceback: Optional[Any],
+    ) -> Any:
+        """Exit function of the event handler.
+
+        Checks whether there was a traceback and updates the metadata
+        accordingly. Following the check, it calls the function to track the
+        event.
+
+        Args:
+            type_: The class of the exception
+            value: The instance of the exception
+            traceback: The traceback of the exception
+
+        """
+        if traceback is not None:
+            self.metadata.update({"event_success": False})
+        else:
+            self.metadata.update({"event_success": True})
+
+        if type_ is not None:
+            self.metadata.update({"event_error_type": type_.__name__})
+
+        if self.v1:
+            if self.tracker:
+                self.tracker.track_event(self.event, self.metadata)
+            else:
+                track_event(self.event, self.metadata, v1=True, v2=False)
+
+        if self.v2:
+            track_event(self.event, self.metadata, v1=False, v2=True)

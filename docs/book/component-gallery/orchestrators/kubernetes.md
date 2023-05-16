@@ -17,7 +17,7 @@ You should use the Kubernetes orchestrator if:
 * you don't need a UI to list all your pipelines runs.
 * you're not willing to maintain [Kubeflow Pipelines](./kubeflow.md)
 on your Kubernetes cluster.
-* you're not interested in paying for managed solutions like [Vertex](./gcloud-vertexai.md).
+* you're not interested in paying for managed solutions like [Vertex](./vertex.md).
 
 ## How to deploy it
 
@@ -26,7 +26,23 @@ There are many ways to deploy a Kubernetes cluster using different cloud provide
 or on your custom infrastructure, and we can't possibly cover all of them, 
 but you can check out our cloud guide 
 
-If the above Kubernetes cluster is deployed remotely on the cloud, then another pre-requisite to use this orchestrator would be to deploy and connect to a [remote ZenML server](../../getting-started/deploying-zenml/deploying-zenml.md).
+If the above Kubernetes cluster is deployed remotely on the cloud, then another
+pre-requisite to use this orchestrator would be to deploy and connect to a
+[remote ZenML server](../../getting-started/deploying-zenml/deploying-zenml.md).
+
+### Infrastructure Deployment
+
+A Kubernetes orchestrator can be deployed directly from the ZenML CLI:
+
+```shell
+zenml orchestrator deploy k8s_orchestrator --flavor=kubernetes ...
+```
+
+You can pass other configuration specific to the stack components as key-value
+arguments. If you don't provide a name, a random one is generated for you. For
+more information about how to work use the CLI for this, please refer to [the
+dedicated documentation
+section](../../advanced-guide/practical/stack-recipes.md#deploying-stack-components-directly).
 
 ## How to use it
 
@@ -47,18 +63,18 @@ to see a list of available contexts.
 
 We can then register the orchestrator and use it in our active stack:
 ```shell
-zenml orchestrator register <NAME> \
+zenml orchestrator register <ORCHESTRATOR_NAME> \
     --flavor=kubernetes \
     --kubernetes_context=<KUBERNETES_CONTEXT>
 
-# Add the orchestrator to the active stack
-zenml stack update -o <NAME>
+# Register and activate a stack with the new orchestrator
+zenml stack register <STACK_NAME> -o <ORCHESTRATOR_NAME> ... --set
 ```
 
 {% hint style="info" %}
 ZenML will build a Docker image called `<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE_NAME>`
 which includes your code and use it to run your pipeline steps in Kubernetes. 
-Check out [this page](../../advanced-guide/pipelines/containerization.md)
+Check out [this page](../../starter-guide/production-fundamentals/containerization.md)
 if you want to learn more about how ZenML builds these images and
 how you can customize them.
 {% endhint %}
@@ -71,10 +87,10 @@ python file_that_runs_a_zenml_pipeline.py
 ### Additional configuration
 
 For additional configuration of the Kubernetes orchestrator, you can pass
-`KubernetesOrchestratorSettings` which allows you to configure the following attributes:
+`KubernetesOrchestratorSettings` which allows you to configure (among others) the following attributes:
 
 * `pod_settings`: Node selectors, affinity and tolerations to apply to the Kubernetes Pods running
-your pipline. These can be either specified using the Kubernetes model objects or as dictionaries.
+your pipeline. These can be either specified using the Kubernetes model objects or as dictionaries.
 
 ```python
 from zenml.integrations.kubernetes.flavors.kubernetes_orchestrator_flavor import KubernetesOrchestratorSettings
@@ -119,11 +135,16 @@ kubernetes_settings = KubernetesOrchestratorSettings(
   ...
 ```
 
+Check out the
+[API docs](https://apidocs.zenml.io/latest/integration_code_docs/integrations-kubernetes/#zenml.integrations.kubernetes.flavors.kubernetes_orchestrator_flavor.KubernetesOrchestratorSettings)
+for a full list of available attributes and [this docs page](../..//advanced-guide/pipelines/settings.md)
+for more information on how to specify settings.
+
 A concrete example of using the Kubernetes orchestrator can be found 
 [here](https://github.com/zenml-io/zenml/tree/main/examples/kubernetes_orchestration).
 
 For more information and a full list of configurable attributes of the 
-Kubernetes orchestrator, check out the [API Docs](https://apidocs.zenml.io/latest/api_docs/integration_code_docs/integrations-kubernetes/#zenml.integrations.kubernetes.orchestrators.kubernetes_orchestrator.KubernetesOrchestrator).
+Kubernetes orchestrator, check out the [API Docs](https://apidocs.zenml.io/latest/integration_code_docs/integrations-kubernetes/#zenml.integrations.kubernetes.orchestrators.kubernetes_orchestrator.KubernetesOrchestrator).
 
 ### Enabling CUDA for GPU-backed hardware
 

@@ -19,6 +19,7 @@ https://www.jejik.com/articles/2007/02/a_simple_unix_linux_daemon_in_python/
 """
 
 import atexit
+import io
 import os
 import signal
 import sys
@@ -47,11 +48,11 @@ def daemonize(
     Use this decorator to easily transform any function into a daemon
     process.
 
-    Example:
+    For example,
 
     ```python
     import time
-    from zenml.utils.daemonizer import daemonize
+    from zenml.utils.daemon import daemonize
 
 
     @daemonize(log_file='/tmp/daemon.log', pid_file='/tmp/daemon.pid')
@@ -67,7 +68,7 @@ def daemonize(
     ```
 
     Args:
-        pid_file: an optional file where the PID of the daemon process will
+        pid_file: a file where the PID of the daemon process will
             be stored.
         log_file: file where stdout and stderr are redirected for the daemon
             process. If not supplied, the daemon will be silenced (i.e. have
@@ -90,7 +91,6 @@ def daemonize(
                 **kwargs: Keyword arguments to be passed to the decorated
                     function.
             """
-            # flake8: noqa: C901
             if sys.platform == "win32":
                 logger.error(
                     "Daemon functionality is currently not supported on Windows."
@@ -110,7 +110,6 @@ def daemonize(
     return inner_decorator
 
 
-# flake8: noqa: C901
 if sys.platform == "win32":
     logger.warning(
         "Daemon functionality is currently not supported on Windows."
@@ -130,7 +129,9 @@ else:
         children = parent.children(recursive=False)
 
         for p in children:
-            sys.stderr.write(f"Terminating child process with PID {p.pid}...\n")
+            sys.stderr.write(
+                f"Terminating child process with PID {p.pid}...\n"
+            )
             p.terminate()
         _, alive = psutil.wait_procs(
             children, timeout=CHILD_PROCESS_WAIT_TIMEOUT
@@ -198,7 +199,10 @@ else:
             pid = os.fork()
             if pid > 0:
                 # this is the process that called `run_as_daemon` so we
-                # simply return so it can keep running
+                # wait for the child process to finish to avoid creating
+                # zombie processes. Then we simply return so the current process
+                # can continue what it was doing.
+                os.wait()
                 return
         except OSError as e:
             logger.error("Unable to fork (error code: %d)", e.errno)
@@ -214,11 +218,15 @@ else:
             pid = os.fork()
             if pid > 0:
                 # this is the parent of the future daemon process, kill it
-                # so the daemon gets adopted by the init process
-                sys.exit(0)
+                # so the daemon gets adopted by the init process.
+                # we use os._exit here to prevent the inherited code from
+                # catching the SystemExit exception and doing something else.
+                os._exit(0)
         except OSError as e:
             sys.stderr.write(f"Unable to fork (error code: {e.errno})")
-            sys.exit(1)
+            # we use os._exit here to prevent the inherited code from
+            # catching the SystemExit exception and doing something else.
+            os._exit(1)
 
         # redirect standard file descriptors to devnull (or the given logfile)
         devnull = "/dev/null"
@@ -233,9 +241,21 @@ else:
         )
         out_fd = log_fd or devnull_fd
 
-        os.dup2(devnull_fd, sys.stdin.fileno())
-        os.dup2(out_fd, sys.stdout.fileno())
-        os.dup2(out_fd, sys.stderr.fileno())
+        try:
+            os.dup2(devnull_fd, sys.stdin.fileno())
+        except io.UnsupportedOperation:
+            # stdin is not a file descriptor
+            pass
+        try:
+            os.dup2(out_fd, sys.stdout.fileno())
+        except io.UnsupportedOperation:
+            # stdout is not a file descriptor
+            pass
+        try:
+            os.dup2(out_fd, sys.stderr.fileno())
+        except io.UnsupportedOperation:
+            # stderr is not a file descriptor
+            pass
 
         if pid_file:
             # write the PID file

@@ -168,11 +168,36 @@ and fill in the `SUPPORTED_SCHEMES` based on your file system.
 3. Bring both of these classes together by inheriting from [the
 `BaseArtifactStoreFlavor` class]().
 
-Once you are done with the implementation, you can register it through the CLI 
-as:
+Once you are done with the implementation, you can register it through the CLI.
+Please ensure you **point to the flavor class via dot notation**: 
 
 ```shell
-zenml artifact-store flavor register <THE-SOURCE-PATH-OF-YOUR-ARTIFACT-STORE-FLAVOR>
+zenml artifact-store flavor register <path.to.MyArtifactStoreFlavor>
+```
+
+For example, if your flavor class `MyArtifactStoreFlavor` is defined in `flavors/my_flavor.py`,
+you'd register it by doing:
+
+```shell
+zenml artifact-store flavor register flavors.my_flavor.MyArtifactStoreFlavor
+```
+
+{% hint style="warning" %}
+ZenML resolves the flavor class by taking the path where you initialized zenml
+(via `zenml init`) as the starting point of resolution. Therefore, please ensure
+you follow [the best practice](../../guidelines/best-practices.md) of initializing
+zenml at the root of your repository.
+
+If ZenML does not find an initialized ZenML repository in any parent directory, it
+will default to the current working directory, but usually its better to not have to
+rely on this mechanism, and initialize zenml at the root.
+{% endhint %}
+
+Afterwards, you should see the new custom artifact store flavor in the list of
+available artifact store flavors:
+
+```shell
+zenml artifact-store flavor list
 ```
 
 {% hint style="warning" %}
@@ -196,3 +221,26 @@ in our local setting (assuming the `CustomArtifactStoreFlavor` and the
 `CustomArtifactStoreConfig` are implemented in a different module/path than 
 the actual `CustomArtifactStore`).
 {% endhint %}
+
+### Enabling Artifact Visualizations with Custom Artifact Stores
+
+ZenML automatically saves visualizations for many common data types and allows
+you to view these visualizations in the ZenML dashboard. Under the hood, this
+works by saving the visualizations together with the artifacts in the artifact
+store.
+
+In order to load and display these visualizations, ZenML needs to be able to
+load and access the corresponding artifact store. This means that your custom 
+artifact store needs to be configured in a way that allows authenticating 
+to the back-end without relying on the local environment, 
+e.g., by embedding the authentication credentials in the stack component 
+configuration or by referencing a secret.
+
+Furthermore, for deployed ZenML instances, you need to install the package 
+dependencies of your artifact store implementation in the environment where you 
+have deployed ZenML. 
+
+You can do so either by building a custom Dockerfile based on the
+[ZenML base.Dockerfile](https://github.com/zenml-io/zenml/blob/main/docker/base.Dockerfile)
+and using that to redeploy your ZenML instance or by installing the respective
+packages in the deployed environment manually.

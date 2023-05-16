@@ -26,7 +26,7 @@ step that trains a computer vision model and requires a GPU to run in
 reasonable time, combined with a [Kubeflow orchestrator](../orchestrators/kubeflow.md) 
 running on a kubernetes cluster which does not contain any GPU nodes. In that 
 case it makes sense to include a step operator like
-[SageMaker](./amazon-sagemaker.md), [Vertex](./gcloud-vertexai.md) 
+[SageMaker](./sagemaker.md), [Vertex](./vertex.md) 
 or [AzureML](./azureml.md) to execute the training step with a GPU.
 
 ## Step Operator Flavors
@@ -36,10 +36,10 @@ by the following ZenML integrations:
 
 | Step Operator                        | Flavor      | Integration | Notes                                                                    |
 |--------------------------------------|-------------|-------------|--------------------------------------------------------------------------|
-| [SageMaker](./amazon-sagemaker.md)   | `sagemaker` | `aws`       | Uses SageMaker to execute steps                                          |
-| [Vertex](./gcloud-vertexai.md)       | `vertex`    | `gcp`       | Uses Vertex AI to execute steps                                          |
+| [SageMaker](./sagemaker.md)   | `sagemaker` | `aws`       | Uses SageMaker to execute steps                                          |
+| [Vertex](./vertex.md)       | `vertex`    | `gcp`       | Uses Vertex AI to execute steps                                          |
 | [AzureML](./azureml.md)              | `azureml`   | `azure`     | Uses AzureML to execute steps                                            |
-| [Spark](./spark.md)                  | `spark`     | `spark`     | Uses Spark on Kubernetes to execute steps in a distributed manner        |
+| [Spark](./spark-kubernetes.md)                  | `spark`     | `spark`     | Uses Spark on Kubernetes to execute steps in a distributed manner        |
 | [Custom Implementation](./custom.md) | _custom_    |             | Extend the step operator abstraction and provide your own implementation |
 
 If you would like to see the available flavors of step operators, you can 

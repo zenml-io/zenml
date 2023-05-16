@@ -1,0 +1,177 @@
+# Software requirements and stack components that are needed
+# by tests can be defined globally here and referenced by name in
+# environments or per-test configurations or passed to pytest directly using the
+# `--requirements` command line argument.
+# 
+# When referenced in an environment, the stack requirements are
+# provisioned globally when the environment is setup. When referenced in a test,
+# the requirements are interpreted as a test-specific requirements.
+#
+# The following fields can be configured in the test requirements:
+#
+# - name: The name of the configuration entry. This is needed to reference the
+#   requirements in environments or test configurations.
+# - mandatory: Setting this to true has the same effect as referencing it in
+#   the environment's `mandatory_requirements` field.
+# - integrations: A list of ZenML integrations that are required for the test to
+#   run.
+# - packages: A list of extra Python packages that are required for the test to
+#   run. Each entry can be either a package name or a package name and version
+#   specifier (e.g. `numpy==1.19.5`).
+# - system_tools: A list of system_tools tools that are required for the test
+#   to run. Each entry designates a binary that must be available in the system
+#   path (e.g. `docker` or `kubectl`).
+# - system_os: A list of operating systems that the test can run on. Valid
+#   values are `linux`, `macos`, and `windows`.
+# - stacks: Optional list of ZenML stack components that are required for the
+#   test to run. Each entry contains the following fields:
+#   - name: The name of the stack component. Mandatory for environment
+#     requirements, ignored for test requirements.
+#   - type (mandatory): The type of stack component required.
+#   - flavor: The flavor of stack component required. If not
+#     specified, any flavor of the given type is accepted. When specified, the
+#     integration associated with the stack component flavor is implicitly added
+#     to the test requirements. Mandatory for environment requirements, optional
+#     for test requirements.
+#   - external: If set to true, the stack component is assumed to be
+#     already registered in the deployment and the test framework is not responsible for
+#     creating it.
+#   - containerized (optional): Whether the stack component uses (and builds)
+#     container images or not (default: `false`). If this flag is set, the
+#     framework will build the ZenML base container image locally upon
+#     provisioning.
+#   - configuration (optional): A dictionary of configuration options that must
+#     be set for the stack component to be accepted. The values may reference
+#     secrets that are defined in the test configuration or as environment
+#     variables using the `{{SECRET_NAME_OR_ENV_VAR}}` syntax.
+# - capabilities: A list of custom capabilities that the entry either provides
+#   (when used or referenced in an environment) or requires (when used or
+#   referenced in a test). Test capability requirements are compared against the
+#   capabilities provided by the active environment and deployment to determine
+#   if they can be run. When used or referenced in an environment, a `true`
+#   value indicates that the environment supports the capability, while a
+#   `false` value indicates that it doesn't. When used or referenced in a test
+#   configuration , a `true` value indicates that the test requires the
+#   capability to run, while a `false` value indicates that the test cannot run
+#   if the capability is present.
+#
+# Note that the integrations, packages and system tools requirements are not
+# installed automatically. The user is expected to install them in the host OS
+# and/or current virtual environment. The test framework only checks for their
+# presence and fails the environment setup (when used or referenced in
+# environments) or skips the test (when used or referenced in tests) if they are
+# not installed.
+#
+# Example:
+#
+#  ```
+#  requirements:
+#    - name: example
+#      integrations:
+#        - pytorch
+#        - xgboost
+#      packages:
+#        - numpy==1.19.5
+#        - pandas
+#      system_tools:
+#        - docker
+#        - kubectl
+#      system_os:
+#        - linux
+#        - macos
+#      stacks:
+#        - type: experiment_tracker
+#          flavor: mlflow
+#          configuration:
+#            nested: true
+#        - type: model_deployer
+#          flavor: seldon
+#      capabilities:
+#        mlflow: true
+#        seldon: true
+#      disabled: false
+#  ```
+#
+requirements:
+
+    # Data validators do not require external resources, infrastructure
+    # or services to be set up and can be provisioned on-demand on any
+    # environment and combined with any other stack component (local or remote)
+    # and with any server deployment (local or remote).
+  - name: data-validators
+    stacks:
+      - name: deepchecks
+        type: data_validator
+        flavor: deepchecks
+      - name: evidently
+        type: data_validator
+        flavor: evidently
+      - name: great_expectations
+        type: data_validator
+        flavor: great_expectations
+      - name: whylogs
+        type: data_validator
+        flavor: whylogs
+    capabilities:
+      deepchecks: true
+      evidently: true
+      great_expectations: true
+      whylogs: true
+
+    # Local docker orchestrator
+  - name: docker-local
+    system_tools:
+      - docker
+    stacks:
+      - name: docker-local
+        type: orchestrator
+        flavor: local_docker
+        containerized: true
+    capabilities:
+      synchronized: true
+
+    # Local airflow orchestrator
+  - name: airflow-local
+    system_tools:
+      - docker
+    packages:
+      - apache-airflow-providers-docker
+    stacks:
+      - name: airflow-local
+        type: orchestrator
+        flavor: airflow
+        containerized: true
+        configuration:
+          local: true
+    capabilities:
+      airflow: true
+
+    # Local mlflow experiment tracker
+  - name: mlflow-local-tracker
+    stacks:
+      - name: mlflow-local
+        type: experiment_tracker
+        flavor: mlflow
+    capabilities:
+      mlflow: true
+
+    # Local mlflow model registry 
+  - name: mlflow-local-registry
+    stacks:
+      - name: mlflow-local
+        type: model_registry
+        flavor: mlflow
+    capabilities:
+      mlflow: true
+
+    # Local mlflow model deployer
+  - name: mlflow-local-deployer
+    system_os:
+      - linux
+      - macos
+    stacks:
+      - name: mlflow-local
+        type: model_deployer
+        flavor: mlflow
+    capabilities:
+      mlflow: true

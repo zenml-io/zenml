@@ -117,20 +117,18 @@ the ["fork-and-pull" Git workflow](https://github.com/susam/gitpr)
 
 ### 🧐 Linting, formatting, and tests
 
-ZenML is mainly developed using [Poetry](https://python-poetry.org/) as the
-dependency management system. In order to
-install all core dev-dependencies, do:
+To install ZenML from your local checked out files includin all core dev-dependencies, run:
 
 ```
-poetry install
+pip install -e ".[server,dev]"
 ```
 
 Optionally, you might want to run the following commands to ensure you have all
 integrations for `mypy` checks:
 
 ```
-poetry run zenml integration install -f
-poetry run zenml integration install -y -i feast
+zenml integration install -f
+zenml integration install -y -i feast
 pip install click~=8.0.3
 mypy --install-types
 ```
@@ -139,21 +137,19 @@ Warning: This might take a while for both (~ 15 mins each, depending on your mac
 time, please run it as it will make the
 next commands error-free.
 
-You can now run the following scripts via Poetry to automatically format your
+You can now run the following scripts to automatically format your
 code and to check whether the code formatting, linting, docstrings, and
 spelling is in order:
 
 ```
-poetry run bash scripts/format.sh
-poetry run bash scripts/run-ci-checks.sh
+bash scripts/format.sh
+bash scripts/run-ci-checks.sh
 ```
-
-If the spell checker catches errors, you will have to add the words to `.pyspelling-ignore-words`. (Note that if you wish to run the spellchecks manually on your local machine, first install `aspell` (using `brew` or `apt-get` or whatever package manager Windows uses).)
 
 Tests can be run as follows:
 
 ```
-poetry run bash scripts/test-coverage-xml.sh
+bash scripts/test-coverage-xml.sh
 ```
 
 Please note that it is good practice to run the above commands before submitting

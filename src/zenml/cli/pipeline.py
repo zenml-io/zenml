@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2020. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -12,99 +12,412 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """CLI functionality to interact with pipelines."""
-
-
-from uuid import UUID
+import os
+from typing import Any, Optional, Union
 
 import click
 
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
+from zenml.cli.utils import list_options
 from zenml.client import Client
+from zenml.console import console
 from zenml.enums import CliCategories
-from zenml.exceptions import EntityExistsError
 from zenml.logger import get_logger
-from zenml.utils.uuid_utils import is_valid_uuid
+from zenml.models import (
+    PipelineBuildFilterModel,
+    PipelineFilterModel,
+    PipelineRunFilterModel,
+)
+from zenml.models.pipeline_build_models import PipelineBuildBaseModel
+from zenml.models.schedule_model import ScheduleFilterModel
+from zenml.pipelines import BasePipeline
+from zenml.utils import source_utils, uuid_utils
 
 logger = get_logger(__name__)
 
 
 @cli.group(cls=TagGroup, tag=CliCategories.MANAGEMENT_TOOLS)
 def pipeline() -> None:
-    """List, run, or delete pipelines."""
+    """Interact with pipelines, runs and schedules."""
 
 
-@pipeline.command("run", help="Run a pipeline with the given configuration.")
+@pipeline.command(
+    "register",
+    help="Register a pipeline instance. The SOURCE argument needs to be an "
+    "importable source path resolving to a ZenML pipeline instance, e.g. "
+    "`my_module.my_pipeline_instance`.",
+)
+@click.argument("source")
+def register_pipeline(source: str) -> None:
+    """Register a pipeline.
+
+    Args:
+        source: Importable source resolving to a pipeline instance.
+    """
+    cli_utils.print_active_config()
+
+    if "." not in source:
+        cli_utils.error(
+            f"The given source path `{source}` is invalid. Make sure it looks "
+            "like `some.module.name_of_pipeline_instance_variable` and "
+            "resolves to a pipeline object."
+        )
+
+    if not Client().root:
+        cli_utils.warning(
+            "You're running the `zenml pipeline register` command without a "
+            "ZenML repository. Your current working directory will be used "
+            "as the source root relative to which the `source` argument is "
+            "expected. To silence this warning, run `zenml init` at your "
+            "source code root."
+        )
+
+    try:
+        pipeline_instance = source_utils.load(source)
+    except ModuleNotFoundError as e:
+        source_root = source_utils.get_source_root()
+        cli_utils.error(
+            f"Unable to import module `{e.name}`. Make sure the source path is "
+            f"relative to your source root `{source_root}`."
+        )
+    except AttributeError as e:
+        cli_utils.error("Unable to load attribute from module: " + str(e))
+
+    if not isinstance(pipeline_instance, BasePipeline):
+        cli_utils.error(
+            f"The given source path `{source}` does not resolve to a pipeline "
+            "object."
+        )
+
+    pipeline_instance.register()
+
+
+@pipeline.command("build", help="Build Docker images for a pipeline.")
+@click.argument("pipeline_name_or_id")
+@click.option(
+    "--version",
+    "-v",
+    type=str,
+    required=False,
+    help="Optional version of the pipeline.",
+)
 @click.option(
     "--config",
     "-c",
     "config_path",
     type=click.Path(exists=True, dir_okay=False),
-    required=True,
+    required=False,
+    help="Path to configuration file for the build.",
 )
-@click.argument("python_file")
-def cli_pipeline_run(python_file: str, config_path: str) -> None:
-    """Runs pipeline specified by the given config YAML object.
+@click.option(
+    "--stack",
+    "-s",
+    "stack_name_or_id",
+    type=str,
+    required=False,
+    help="Name or ID of the stack to use for the build.",
+)
+@click.option(
+    "--output",
+    "-o",
+    "output_path",
+    type=click.Path(exists=False, dir_okay=False),
+    required=False,
+    help="Output path for the build information.",
+)
+def build_pipeline(
+    pipeline_name_or_id: str,
+    version: Optional[str] = None,
+    config_path: Optional[str] = None,
+    stack_name_or_id: Optional[str] = None,
+    output_path: Optional[str] = None,
+) -> None:
+    """Build Docker images for a pipeline.
 
     Args:
-        python_file: Path to the python file that defines the pipeline.
-        config_path: Path to configuration YAML file.
+        pipeline_name_or_id: Name or ID of the pipeline.
+        version: Version of the pipeline.
+        config_path: Path to pipeline configuration file.
+        stack_name_or_id: Name or ID of the stack for which the images should
+            be built.
+        output_path: Optional file path to write the output to.
     """
-    from zenml.pipelines.run_pipeline import run_pipeline
+    cli_utils.print_active_config()
 
-    run_pipeline(python_file=python_file, config_path=config_path)
+    if not Client().root:
+        cli_utils.warning(
+            "You're running the `zenml pipeline build` command without a "
+            "ZenML repository. Your current working directory will be used "
+            "as the source root relative to which the registered step classes "
+            "will be resolved. To silence this warning, run `zenml init` at "
+            "your source code root."
+        )
+
+    pipeline_model = Client().get_pipeline(
+        name_id_or_prefix=pipeline_name_or_id, version=version
+    )
+
+    with cli_utils.temporary_active_stack(stack_name_or_id=stack_name_or_id):
+        pipeline_instance = BasePipeline.from_model(pipeline_model)
+        build = pipeline_instance.build(config_path=config_path)
+
+    if build:
+        cli_utils.declare(f"Created pipeline build `{build.id}`.")
+
+        if output_path:
+            cli_utils.declare(
+                f"Writing pipeline build output to `{output_path}`."
+            )
+            with open(output_path, "w") as f:
+                f.write(
+                    build.yaml(
+                        exclude={
+                            "pipeline",
+                            "stack",
+                            "workspace",
+                            "user",
+                            "created",
+                            "updated",
+                        }
+                    )
+                )
+    else:
+        cli_utils.declare("No docker builds required.")
+
+
+@pipeline.command("run", help="Run a pipeline.")
+@click.argument("pipeline_name_or_id")
+@click.option(
+    "--version",
+    "-v",
+    type=str,
+    required=False,
+    help="Optional version of the pipeline.",
+)
+@click.option(
+    "--config",
+    "-c",
+    "config_path",
+    type=click.Path(exists=True, dir_okay=False),
+    required=False,
+    help="Path to configuration file for the run.",
+)
+@click.option(
+    "--stack",
+    "-s",
+    "stack_name_or_id",
+    type=str,
+    required=False,
+    help="Name or ID of the stack to run on.",
+)
+@click.option(
+    "--build",
+    "-b",
+    "build_path_or_id",
+    type=str,
+    required=False,
+    help="ID or path of the build to use.",
+)
+@click.option(
+    "--prevent-build-reuse",
+    is_flag=True,
+    default=False,
+    required=False,
+    help="Prevent automatic build reusing.",
+)
+def run_pipeline(
+    pipeline_name_or_id: str,
+    version: Optional[str] = None,
+    config_path: Optional[str] = None,
+    stack_name_or_id: Optional[str] = None,
+    build_path_or_id: Optional[str] = None,
+    prevent_build_reuse: bool = False,
+) -> None:
+    """Run a pipeline.
+
+    Args:
+        pipeline_name_or_id: Name or ID of the pipeline.
+        version: Version of the pipeline.
+        config_path: Path to pipeline configuration file.
+        stack_name_or_id: Name or ID of the stack on which the pipeline should
+            run.
+        build_path_or_id: ID of file path of the build to use for the pipeline
+            run.
+        prevent_build_reuse: If True, prevents automatic reusing of previous
+            builds.
+    """
+    cli_utils.print_active_config()
+
+    if not Client().root:
+        cli_utils.warning(
+            "You're running the `zenml pipeline run` command without a "
+            "ZenML repository. Your current working directory will be used "
+            "as the source root relative to which the registered step classes "
+            "will be resolved. To silence this warning, run `zenml init` at "
+            "your source code root."
+        )
+
+    pipeline_model = Client().get_pipeline(
+        name_id_or_prefix=pipeline_name_or_id, version=version
+    )
+
+    build: Union[str, "PipelineBuildBaseModel", None] = None
+    if build_path_or_id:
+        if uuid_utils.is_valid_uuid(build_path_or_id):
+            build = build_path_or_id
+        elif os.path.exists(build_path_or_id):
+            build = PipelineBuildBaseModel.from_yaml(build_path_or_id)
+        else:
+            cli_utils.error(
+                f"The specified build {build_path_or_id} is not a valid UUID "
+                "or file path."
+            )
+
+    with cli_utils.temporary_active_stack(stack_name_or_id=stack_name_or_id):
+        pipeline_instance = BasePipeline.from_model(pipeline_model)
+        pipeline_instance.run(
+            config_path=config_path,
+            build=build,
+            prevent_build_reuse=prevent_build_reuse,
+        )
 
 
 @pipeline.command("list", help="List all registered pipelines.")
-def list_pipelines() -> None:
-    """List all registered pipelines."""
-    cli_utils.print_active_config()
-    pipelines = Client().zen_store.list_pipelines(
-        project_name_or_id=Client().active_project.id
-    )
-    if not pipelines:
-        cli_utils.declare("No piplines registered.")
-        return
+@list_options(PipelineFilterModel)
+def list_pipelines(**kwargs: Any) -> None:
+    """List all registered pipelines.
 
-    cli_utils.print_pydantic_models(
-        pipelines,
-        exclude_columns=["id", "created", "updated", "user", "project"],
-    )
+    Args:
+        **kwargs: Keyword arguments to filter pipelines.
+    """
+    cli_utils.print_active_config()
+    client = Client()
+    with console.status("Listing pipelines...\n"):
+
+        pipelines = client.list_pipelines(**kwargs)
+
+        if not pipelines.items:
+            cli_utils.declare("No pipelines found for this filter.")
+            return
+
+        cli_utils.print_pydantic_models(
+            pipelines,
+            exclude_columns=["id", "created", "updated", "user", "workspace"],
+        )
 
 
 @pipeline.command("delete")
 @click.argument("pipeline_name_or_id", type=str, required=True)
-def delete_pipeline(pipeline_name_or_id: str) -> None:
+@click.option(
+    "--version",
+    "-v",
+    help="Optional pipeline version.",
+    type=str,
+    required=False,
+)
+@click.option(
+    "--yes",
+    "-y",
+    is_flag=True,
+    help="Don't ask for confirmation.",
+)
+def delete_pipeline(
+    pipeline_name_or_id: str, version: Optional[str] = None, yes: bool = False
+) -> None:
     """Delete a pipeline.
 
     Args:
         pipeline_name_or_id: The name or ID of the pipeline to delete.
+        version: The version of the pipeline to delete.
+        yes: If set, don't ask for confirmation.
     """
     cli_utils.print_active_config()
-    active_project_id = Client().active_project.id
-    assert active_project_id is not None
+
+    version_suffix = f" (version {version})" if version else ""
+
+    if not yes:
+        confirmation = cli_utils.confirmation(
+            f"Are you sure you want to delete pipeline "
+            f"`{pipeline_name_or_id}{version_suffix}`? This will change all "
+            "existing runs of this pipeline to become unlisted."
+        )
+        if not confirmation:
+            cli_utils.declare("Pipeline deletion canceled.")
+            return
+
     try:
-        client = Client()
-        if is_valid_uuid(pipeline_name_or_id):
-            pipeline = client.zen_store.get_pipeline(UUID(pipeline_name_or_id))
-        else:
-            pipeline = client.zen_store.get_pipeline_in_project(
-                pipeline_name=pipeline_name_or_id,
-                project_name_or_id=active_project_id,
-            )
-    except KeyError as err:
-        cli_utils.error(str(err))
-    confirmation = cli_utils.confirmation(
-        f"Are you sure you want to delete pipeline `{pipeline_name_or_id}`? "
-        "This will change all existing runs of this pipeline to become "
-        "unlisted."
-    )
-    if not confirmation:
-        cli_utils.declare("Pipeline deletion canceled.")
+        Client().delete_pipeline(
+            name_id_or_prefix=pipeline_name_or_id, version=version
+        )
+    except KeyError as e:
+        cli_utils.error(str(e))
+    else:
+        cli_utils.declare(
+            f"Deleted pipeline `{pipeline_name_or_id}{version_suffix}`."
+        )
+
+
+@pipeline.group()
+def schedule() -> None:
+    """Commands for pipeline run schedules."""
+
+
+@schedule.command("list", help="List all pipeline schedules.")
+@list_options(ScheduleFilterModel)
+def list_schedules(**kwargs: Any) -> None:
+    """List all pipeline schedules.
+
+    Args:
+        **kwargs: Keyword arguments to filter schedules.
+    """
+    cli_utils.print_active_config()
+    client = Client()
+
+    schedules = client.list_schedules(**kwargs)
+
+    if not schedules:
+        cli_utils.declare("No schedules found for this filter.")
         return
-    assert pipeline.id is not None
-    Client().zen_store.delete_pipeline(pipeline_id=pipeline.id)
-    cli_utils.declare(f"Deleted pipeline '{pipeline_name_or_id}'.")
+
+    cli_utils.print_pydantic_models(
+        schedules,
+        exclude_columns=["id", "created", "updated", "user", "workspace"],
+    )
+
+
+@schedule.command("delete", help="Delete a pipeline schedule.")
+@click.argument("schedule_name_or_id", type=str, required=True)
+@click.option(
+    "--yes",
+    "-y",
+    is_flag=True,
+    help="Don't ask for confirmation.",
+)
+def delete_schedule(schedule_name_or_id: str, yes: bool = False) -> None:
+    """Delete a pipeline schedule.
+
+    Args:
+        schedule_name_or_id: The name or ID of the schedule to delete.
+        yes: If set, don't ask for confirmation.
+    """
+    cli_utils.print_active_config()
+
+    if not yes:
+        confirmation = cli_utils.confirmation(
+            f"Are you sure you want to delete schedule "
+            f"`{schedule_name_or_id}`?"
+        )
+        if not confirmation:
+            cli_utils.declare("Schedule deletion canceled.")
+            return
+
+    try:
+        Client().delete_schedule(name_id_or_prefix=schedule_name_or_id)
+    except KeyError as e:
+        cli_utils.error(str(e))
+    else:
+        cli_utils.declare(f"Deleted schedule '{schedule_name_or_id}'.")
 
 
 @pipeline.group()
@@ -112,126 +425,134 @@ def runs() -> None:
     """Commands for pipeline runs."""
 
 
-@click.option("--pipeline", "-p", type=str, required=False)
-@click.option("--stack", "-s", type=str, required=False)
-@click.option("--user", "-u", type=str, required=False)
-@click.option("--unlisted", is_flag=True)
 @runs.command("list", help="List all registered pipeline runs.")
-def list_pipeline_runs(
-    pipeline: str, stack: str, user: str, unlisted: bool = False
-) -> None:
-    """List all registered pipeline runs.
+@list_options(PipelineRunFilterModel)
+def list_pipeline_runs(**kwargs: Any) -> None:
+    """List all registered pipeline runs for the filter.
 
     Args:
-        pipeline: If provided, only return runs for this pipeline.
-        stack: If provided, only return runs for this stack.
-        user: If provided, only return runs for this user.
-        unlisted: If True, only return unlisted runs that are not
-            associated with any pipeline.
+        **kwargs: Keyword arguments to filter pipeline runs.
     """
     cli_utils.print_active_config()
+
+    client = Client()
     try:
-        stack_id, pipeline_id, user_id = None, None, None
-        client = Client()
-        if stack:
-            stack_id = cli_utils.get_stack_by_id_or_name_or_prefix(
-                client=client, id_or_name_or_prefix=stack
-            ).id
-        if pipeline:
-            pipeline_id = client.get_pipeline_by_name(pipeline).id
-        if user:
-            user_id = client.zen_store.get_user(user).id
-        pipeline_runs = Client().zen_store.list_runs(
-            project_name_or_id=Client().active_project.id,
-            user_name_or_id=user_id,
-            pipeline_id=pipeline_id,
-            stack_id=stack_id,
-            unlisted=unlisted,
-        )
+        with console.status("Listing pipeline runs...\n"):
+            pipeline_runs = client.list_runs(**kwargs)
     except KeyError as err:
         cli_utils.error(str(err))
-    if not pipeline_runs:
-        cli_utils.declare("No pipeline runs registered.")
-        return
+    else:
+        if not pipeline_runs.items:
+            cli_utils.declare("No pipeline runs found for this filter.")
+            return
 
-    cli_utils.print_pipeline_runs_table(
-        client=client, pipeline_runs=pipeline_runs
-    )
-
-
-@runs.command("export", help="Export all pipeline runs to a YAML file.")
-@click.argument("filename", type=str, required=True)
-def export_pipeline_runs(filename: str) -> None:
-    """Export all pipeline runs to a YAML file.
-
-    Args:
-        filename: The filename to export the pipeline runs to.
-    """
-    cli_utils.print_active_config()
-    client = Client()
-    client.export_pipeline_runs(filename=filename)
+        cli_utils.print_pipeline_runs_table(pipeline_runs=pipeline_runs.items)
+        cli_utils.print_page_info(pipeline_runs)
 
 
-@runs.command("import", help="Import pipeline runs from a YAML file.")
-@click.argument("filename", type=str, required=True)
-def import_pipeline_runs(filename: str) -> None:
-    """Import pipeline runs from a YAML file.
-
-    Args:
-        filename: The filename from which to import the pipeline runs.
-    """
-    cli_utils.print_active_config()
-    client = Client()
-    try:
-        client.import_pipeline_runs(filename=filename)
-    except EntityExistsError as err:
-        cli_utils.error(str(err))
-
-
-@runs.command(
-    "migrate",
-    help="Migrate pipeline runs from an existing metadata store database.",
+@runs.command("delete")
+@click.argument("run_name_or_id", type=str, required=True)
+@click.option(
+    "--yes",
+    "-y",
+    is_flag=True,
+    help="Don't ask for confirmation.",
 )
-@click.argument("database", type=str, required=True)
-@click.option("--database_type", type=str, default="sqlite", required=False)
-@click.option("--mysql_host", type=str, required=False)
-@click.option("--mysql_port", type=int, default=3306, required=False)
-@click.option("--mysql_username", type=str, required=False)
-@click.option("--mysql_password", type=str, required=False)
-def migrate_pipeline_runs(
-    database: str,
-    database_type: str,
-    mysql_host: str,
-    mysql_port: int,
-    mysql_username: str,
-    mysql_password: str,
+def delete_pipeline_run(
+    run_name_or_id: str,
+    yes: bool = False,
 ) -> None:
-    """Migrate pipeline runs from a metadata store of ZenML < 0.20.0.
+    """Delete a pipeline run.
 
     Args:
-        database: The metadata store database from which to migrate the pipeline
-            runs.
-        database_type: The type of the metadata store database (sqlite | mysql).
-        mysql_host: The host of the MySQL database.
-        mysql_port: The port of the MySQL database.
-        mysql_username: The username of the MySQL database.
-        mysql_password: The password of the MySQL database.
+        run_name_or_id: The name or ID of the pipeline run to delete.
+        yes: If set, don't ask for confirmation.
     """
     cli_utils.print_active_config()
+
+    # Ask for confirmation to delete run.
+    if not yes:
+        confirmation = cli_utils.confirmation(
+            f"Are you sure you want to delete pipeline run `{run_name_or_id}`?"
+        )
+        if not confirmation:
+            cli_utils.declare("Pipeline run deletion canceled.")
+            return
+
+    # Delete run.
+    try:
+        Client().delete_pipeline_run(
+            name_id_or_prefix=run_name_or_id,
+        )
+    except KeyError as e:
+        cli_utils.error(str(e))
+    else:
+        cli_utils.declare(f"Deleted pipeline run '{run_name_or_id}'.")
+
+
+@pipeline.group()
+def builds() -> None:
+    """Commands for pipeline builds."""
+
+
+@builds.command("list", help="List all pipeline builds.")
+@list_options(PipelineBuildFilterModel)
+def list_pipeline_builds(**kwargs: Any) -> None:
+    """List all pipeline builds for the filter.
+
+    Args:
+        **kwargs: Keyword arguments to filter pipeline builds.
+    """
+    cli_utils.print_active_config()
+
     client = Client()
     try:
-        client.migrate_pipeline_runs(
-            database=database,
-            database_type=database_type,
-            mysql_host=mysql_host,
-            mysql_port=mysql_port,
-            mysql_username=mysql_username,
-            mysql_password=mysql_password,
-        )
-    except (
-        EntityExistsError,
-        NotImplementedError,
-        RuntimeError,
-        ValueError,
-    ) as err:
+        with console.status("Listing pipeline builds...\n"):
+            pipeline_builds = client.list_builds(**kwargs)
+    except KeyError as err:
         cli_utils.error(str(err))
+    else:
+        if not pipeline_builds.items:
+            cli_utils.declare("No pipeline builds found for this filter.")
+            return
+
+        cli_utils.print_pydantic_models(
+            pipeline_builds,
+            exclude_columns=["created", "updated", "user", "workspace"],
+        )
+
+
+@builds.command("delete")
+@click.argument("build_id", type=str, required=True)
+@click.option(
+    "--yes",
+    "-y",
+    is_flag=True,
+    help="Don't ask for confirmation.",
+)
+def delete_pipeline_build(
+    build_id: str,
+    yes: bool = False,
+) -> None:
+    """Delete a pipeline build.
+
+    Args:
+        build_id: The ID of the pipeline build to delete.
+        yes: If set, don't ask for confirmation.
+    """
+    cli_utils.print_active_config()
+
+    if not yes:
+        confirmation = cli_utils.confirmation(
+            f"Are you sure you want to delete pipeline build `{build_id}`?"
+        )
+        if not confirmation:
+            cli_utils.declare("Pipeline build deletion canceled.")
+            return
+
+    try:
+        Client().delete_build(build_id)
+    except KeyError as e:
+        cli_utils.error(str(e))
+    else:
+        cli_utils.declare(f"Deleted pipeline build '{build_id}'.")

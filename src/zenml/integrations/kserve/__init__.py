@@ -21,7 +21,6 @@ from typing import List, Type
 from zenml.enums import StackComponentType
 from zenml.integrations.constants import KSERVE
 from zenml.integrations.integration import Integration
-from zenml.models import FlavorModel
 from zenml.stack import Flavor
 
 KSERVE_MODEL_DEPLOYER_FLAVOR = "kserve"
@@ -32,7 +31,7 @@ class KServeIntegration(Integration):
 
     NAME = KSERVE
     REQUIREMENTS = [
-        "kserve==0.9.0",
+        "kserve>=0.9.0,<=10",
         "torch-model-archiver",
     ]
 

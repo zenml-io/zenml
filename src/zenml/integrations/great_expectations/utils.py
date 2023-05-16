@@ -50,15 +50,15 @@ def create_batch_request(
         # get pipeline name, step name and run id
         step_env = cast(StepEnvironment, Environment()[STEP_ENVIRONMENT_NAME])
         pipeline_name = step_env.pipeline_name
-        run_id = step_env.pipeline_run_id
+        run_name = step_env.run_name
         step_name = step_env.step_name
     except KeyError:
         # if not running inside a pipeline step, use random values
         pipeline_name = f"pipeline_{random_str(5)}"
-        run_id = f"pipeline_{random_str(5)}"
+        run_name = f"pipeline_{random_str(5)}"
         step_name = f"step_{random_str(5)}"
 
-    datasource_name = f"{run_id}_{step_name}"
+    datasource_name = f"{run_name}_{step_name}"
     data_connector_name = datasource_name
     data_asset_name = data_asset_name or f"{pipeline_name}_{step_name}"
     batch_identifier = "default"

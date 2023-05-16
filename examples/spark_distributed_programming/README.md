@@ -26,7 +26,7 @@ To run this example, you need to install and initialize ZenML:
 
 ```shell
 # install CLI
-pip install "zenml[server]"
+pip install zenml
 
 # install ZenML integrations
 zenml integration install spark
@@ -35,20 +35,32 @@ zenml integration install spark
 zenml example pull spark_distributed_programming
 cd zenml_examples/spark_distributed_programming
 
-# initialize a local ZenML Repository
-zenml init
-
-# Start the ZenServer to enable dashboard access
-zenml up
 ```
 
-In order to follow this example, you need an AWS account which you can use to
-spin up a few resources. Additionally, you have to install Spark following the 
-instructions [here](https://spark.apache.org/downloads.html).
+In order to follow this example, you need a remote ZenML server Deployment
+and an AWS account which you can use to spin up a few resources. Additionally, 
+you have to install Spark following the instructions 
+[here](https://spark.apache.org/downloads.html).
 
 #### Recommended versions
+
 - `spark` = 3.2.1
 - `hadoop` = 3.2
+
+# Remote ZenML Server
+
+For Advanced use cases where we have a step operator such as Spark step operator
+or to share stacks and pipelines with the team, we need to have a separate, 
+remote ZenML Server. It should be accessible from your machine as well as all 
+stack components that may need access to information or configurations from the 
+server. [Read more information about the use case here](https://docs.zenml.io/getting-started/deploying-zenml)
+
+In order to achieve this there are two different ways to get access to a remote 
+ZenML Server.
+
+1. Deploy and manage the server manually on [your own cloud](https://docs.zenml.io/getting-started/deploying-zenml)/
+2. Sign up for [ZenML Enterprise](https://zenml.io/pricing) and get access to a 
+hosted version of the ZenML Server with no setup required.
 
 # Setting up the AWS resources
 
@@ -69,40 +81,6 @@ For the artifact store, we will need to create a bucket on S3:
 REGION=<REGION> # for example us-west-1
 S3_BUCKET_NAME=<S3_BUCKET_NAME>
 ```
-
-## Metadata Store - RDS
-
-For the metadata store, we will use a MySQL database on RDS:
-
-- Go to the [RDS website](https://console.aws.amazon.com/rds).
-- Make sure the correct region is selected on the top right (this region must be
-  the same for all following steps).
-- Click on `Create database`.
-- Select `Easy Create`, `MySQL`, `Free tier` and enter values for your database
-  name, username, and password.
-- Note down the username and password:
-
-```bash
-RDS_MYSQL_USERNAME=<RDS_MYSQL_USERNAME>
-RDS_MYSQL_PASSWORD=<RDS_MYSQL_PASSWORD>
-```
-
-- Wait until the deployment is finished.
-- Select your new database and note down its endpoint:
-
-```bash
-RDS_MYSQL_ENDPOINT=<RDS_MYSQL_ENDPOINT>
-```
-
-- Click on the active VPC security group, select `Inbound rules` and click
-  on `Edit inbound rules`
-- Add a new rule with type `MYSQL/Aurora` and source `Anywhere-IPv4`. (**Note**:
-  You can also restrict this to more limited IP address ranges or security
-  groups if you want to limit access to your database.)
-- Go back to your database page and click on `Modify` in the top right.
-- In the `Connectivity` section, open the `Advanced configuration` and enable
-  public access.
-
 ## Container Registry - ECR
 
 For the container registry, we will use ECR:
@@ -131,8 +109,8 @@ to create an Amazon EKS cluster role.
 to create an Amazon EC2 node role. 
 - Go to the [IAM website](https://console.aws.amazon.com/iam), and
   select `Roles` to edit both roles.
-- Attach the `SecretsManagerReadWrite`, `AmazonRDSFullAccess`,
-  and `AmazonS3FullAccess` policies both roles.
+- Attach the `AmazonRDSFullAccess` and `AmazonS3FullAccess` policies to both
+roles.
 - Go to the [EKS website](https://console.aws.amazon.com/eks).
 - Make sure the correct region is selected on the top right.
 - Click on `Add cluster` and select `Create`.
@@ -173,13 +151,20 @@ and put them in the `jars` folder within your Spark installation. Once that
 is set up, you can build the image as follows:
 
 ```bash
-cd $SPARK_HOME
+cd $SPARK_HOME # If this empty for you then you need to set the SPARK_HOME variable which points to your Spark installation
 
 SPARK_IMAGE_TAG=<SPARK_IMAGE_TAG>
 
 ./bin/docker-image-tool.sh -t $SPARK_IMAGE_TAG -p kubernetes/dockerfiles/spark/bindings/python/Dockerfile -u 0 build
 
 BASE_IMAGE_NAME=spark-py:$SPARK_IMAGE_TAG
+```
+
+If you are working on an M1 Mac, you will need to build the image for the amd64 architecture, by using the prefix `-X`
+on the previous command. For example:
+
+```bash
+./bin/docker-image-tool.sh -X -t $SPARK_IMAGE_TAG -p kubernetes/dockerfiles/spark/bindings/python/Dockerfile -u 0 build
 ```
 
 ### Configuring RBAC
@@ -231,36 +216,44 @@ KUBERNETES_NAMESPACE=spark-namespace
 KUBERNETES_SERVICE_ACCOUNT=spark-service-account
 ```
 
-# Setting up the stack 
+# Connect to the Server and Setting up the stack 
 
-All we need to do now is to bring everything together in ZenML. Let’s start 
-by registering the most important component of the demo, namely 
+Now that we have all the necessary resources, we can connect to the server and
+then set up the stack and stack components.
+
+Note that the AWS S3 artifact store and the ECR container registry can be deployed using the ZenML CLI as well, using
+the `zenml <STACK_COMPONENT> deploy` command. For more information on this
+`deploy` subcommand, please refer to the
+[documentation](https://docs.zenml.io/advanced-guide/practical-mlops/stack-recipes#deploying-stack-components-directly).
+
+```bash
+# Connect to the server
+zenml connect --url $ZENML_REMOTE_SERVER_URL
+# Initialize the zenml repo
+zenml init
+```
+
+Let’s start by registering the most important component of the demo, namely 
 the **step operator**.
 
 ```bash
 # Register the spark on Kubernetes step operator
 zenml step-operator register spark_step_operator \
-    --flavor=spark-kubernetes \
-    --master=k8s://$EKS_API_SERVER_ENDPOINT \
-    --namespace=$KUBERNETES_NAMESPACE \
-    --service_account=$KUBERNETES_SERVICE_ACCOUNT \
-    --docker_parent_image=$BASE_IMAGE_NAME
-```
-
-Following that, we will register the **secrets manager**, as we will utilize 
-it to register some secrets required by some of the other components:
-
-```bash
-# Register the secrets manager on AWS
-zenml secrets-manager register spark_secrets_manager \
-    --flavor=aws \
-    --region_name=$REGION
+	--flavor=spark-kubernetes \
+	--master=k8s://$EKS_API_SERVER_ENDPOINT \
+	--namespace=$KUBERNETES_NAMESPACE \
+	--service_account=$KUBERNETES_SERVICE_ACCOUNT
 ```
 
 Next, let us register our **artifact store** on S3. For this example, we 
-will also use a secret while registering our artifact store.
+will also use a ZenML secret to store the credentials for the S3 bucket.
 
 ```bash
+# Register the authentication secret for s3
+zenml secret create s3_authentication \
+    --aws_access_key_id=<ACCESS_KEY_ID> \
+    --aws_secret_access_key=<SECRET_ACCESS_KEY>
+
 # Register the artifact store using the secret
 zenml artifact-store register spark_artifact_store \
     --flavor=s3 \
@@ -277,6 +270,16 @@ zenml container-registry register spark_container_registry \
     --uri=$ECR_URI
 ```
 
+We also need to register an **image builder** which will be used to build the
+Docker image for the Spark driver and executor pods. For this example, we
+will use the `local` image builder.
+
+```bash
+# Register the image builder
+zenml image-builder register local_builder \
+  --flavor=local
+```
+
 Finally, let’s finalize the stack.
 
 ```bash
@@ -284,28 +287,12 @@ Finally, let’s finalize the stack.
 zenml stack register spark_stack \
     -o default \
     -s spark_step_operator \
-    -x spark_secrets_manager \
     -a spark_artifact_store \
     -c spark_container_registry \
+    -i local_builder \
     --set
 ```
 
-and register the required secrets:
-
-```bash
-# Register the authentication secret for s3
-zenml secrets-manager secret register s3_authentication \
-    --schema=aws \
-    --aws_access_key_id=<ACCESS_KEY_ID> \
-    --aws_secret_access_key=<SECRET_ACCESS_KEY> \
-    --aws_session_token=<SESSION_TOKEN>
-	
-# Register the authentication secret for RDS
-zenml secrets-manager secret register rds_authentication \
-    --schema=mysql \
-    --user=$RDS_MYSQL_USERNAME \
-    --password=$RDS_MYSQL_PASSWORD
-```
 ### Running the pipeline
 
 Now that our stack is ready, you can go ahead and run your pipeline: 

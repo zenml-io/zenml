@@ -23,7 +23,7 @@ from steps.deployment_trigger import (
     deployment_trigger,
 )
 from steps.prediction_service_loader import (
-    PredectionServiceLoaderStepParameters,
+    PredictionServiceLoaderStepParameters,
     prediction_service_loader,
 )
 from steps.tensorflow_steps import (
@@ -92,7 +92,7 @@ def main(
 
     model_name = "mnist-tensorflow"
     deployment_pipeline_name = "tensorflow_training_deployment_pipeline"
-    deployer_step_name = "kserve_model_deployer_step"
+    deployer_step_name = "model_deployer"
 
     model_deployer = KServeModelDeployer.get_active_model_deployer()
 
@@ -120,7 +120,7 @@ def main(
         inference = tensorflow_inference_pipeline(
             predict_preprocessor=tf_predict_preprocessor(),
             prediction_service_loader=prediction_service_loader(
-                PredectionServiceLoaderStepParameters(
+                PredictionServiceLoaderStepParameters(
                     pipeline_name=deployment_pipeline_name,
                     step_name=deployer_step_name,
                     model_name=model_name,

@@ -12,27 +12,29 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Implementation of the ZenML Stack Component class."""
-import textwrap
 from abc import ABC
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set, Type, Union
 from uuid import UUID
 
-from pydantic import BaseModel, Extra, root_validator
+from pydantic import BaseModel, Extra
 
-from zenml.config.pipeline_deployment import PipelineDeployment
+from zenml.config.build_configuration import BuildConfiguration
 from zenml.config.step_configurations import Step
 from zenml.config.step_run_info import StepRunInfo
 from zenml.enums import StackComponentType
-from zenml.exceptions import StackComponentInterfaceError
 from zenml.logger import get_logger
-from zenml.models import ComponentModel
+from zenml.models import ComponentResponseModel
 from zenml.utils import secret_utils, settings_utils
 
 if TYPE_CHECKING:
     from zenml.config.base_settings import BaseSettings
+    from zenml.metadata.metadata_types import MetadataType
+    from zenml.models.pipeline_deployment_models import (
+        PipelineDeploymentBaseModel,
+        PipelineDeploymentResponseModel,
+    )
     from zenml.stack import Stack, StackValidator
-
 
 logger = get_logger(__name__)
 
@@ -40,7 +42,9 @@ logger = get_logger(__name__)
 class StackComponentConfig(BaseModel, ABC):
     """Base class for all ZenML stack component configs."""
 
-    def __init__(self, **kwargs: Any) -> None:
+    def __init__(
+        self, warn_about_plain_text_secrets: bool = False, **kwargs: Any
+    ) -> None:
         """Ensures that secret references don't clash with pydantic validation.
 
         StackComponents allow the specification of all their string attributes
@@ -53,6 +57,7 @@ class StackComponentConfig(BaseModel, ABC):
         custom pydantic validation are set as secret references.
 
         Args:
+            warn_about_plain_text_secrets: If true, then warns about using plain-text secrets.
             **kwargs: Arguments to initialize this stack component.
 
         Raises:
@@ -72,7 +77,10 @@ class StackComponentConfig(BaseModel, ABC):
                 continue
 
             if not secret_utils.is_secret_reference(value):
-                if secret_utils.is_secret_field(field):
+                if (
+                    secret_utils.is_secret_field(field)
+                    and warn_about_plain_text_secrets
+                ):
                     logger.warning(
                         "You specified a plain-text value for the sensitive "
                         f"attribute `{key}` for a `{self.__class__.__name__}` "
@@ -81,7 +89,7 @@ class StackComponentConfig(BaseModel, ABC):
                         "in sensitive information as secrets. Check out the "
                         "documentation on how to configure your stack "
                         "components with secrets here: "
-                        "https://docs.zenml.io/advanced-guide/practical/secrets-management"
+                        "https://docs.zenml.io/starter-guide/production-fundamentals/secrets-management"
                     )
                 continue
 
@@ -114,7 +122,7 @@ class StackComponentConfig(BaseModel, ABC):
 
         Concrete stack component configuration classes should override this
         method to return True if the stack component is running in a remote
-        location and it needs to access the ZenML database.
+        location, and it needs to access the ZenML database.
 
         This designation is used to determine if the stack component can be
         used with a local ZenML database or if it requires a remote ZenML
@@ -171,10 +179,33 @@ class StackComponentConfig(BaseModel, ABC):
         Returns:
             The (potentially resolved) attribute value.
         """
+        from zenml.client import Client
+
         value = super().__getattribute__(key)
 
         if not secret_utils.is_secret_reference(value):
             return value
+
+        secret_ref = secret_utils.parse_secret_reference(value)
+
+        # Try to resolve the secret using the secret store first
+        try:
+            store_secret = Client().get_secret_by_name_and_scope(
+                name=secret_ref.name,
+            )
+        except (KeyError, NotImplementedError):
+            pass
+        else:
+            if secret_ref.key in store_secret.values:
+                return store_secret.secret_values[secret_ref.key]
+            else:
+                raise KeyError(
+                    f"Failed to resolve secret reference for attribute {key} "
+                    f"of stack component `{self}`. "
+                    f"The secret {secret_ref.name} does not contain a value "
+                    f"for key {secret_ref.key}. Available keys: "
+                    f"{set(store_secret.values)}."
+                )
 
         # A stack component can be part of many stacks, and currently a
         # secrets manager is associated with a stack. This means we're
@@ -192,8 +223,6 @@ class StackComponentConfig(BaseModel, ABC):
                 "your active stack: `zenml stack set <STACK_NAME>`."
             )
 
-        from zenml.client import Client
-
         secrets_manager = Client().active_stack.secrets_manager
         if not secrets_manager:
             raise RuntimeError(
@@ -202,7 +231,6 @@ class StackComponentConfig(BaseModel, ABC):
                 "have a secrets manager."
             )
 
-        secret_ref = secret_utils.parse_secret_reference(value)
         try:
             secret = secrets_manager.get_secret(secret_ref.name)
         except KeyError:
@@ -266,10 +294,11 @@ class StackComponent:
         config: StackComponentConfig,
         flavor: str,
         type: StackComponentType,
-        user: UUID,
-        project: UUID,
+        user: Optional[UUID],
+        workspace: UUID,
         created: datetime,
         updated: datetime,
+        labels: Optional[Dict[str, Any]] = None,
         *args: Any,
         **kwargs: Any,
     ):
@@ -282,9 +311,10 @@ class StackComponent:
             flavor: The flavor of the component.
             type: The type of the component.
             user: The ID of the user who created the component.
-            project: The ID of the project the component belongs to.
+            workspace: The ID of the workspace the component belongs to.
             created: The creation time of the component.
             updated: The last update time of the component.
+            labels: The labels of the component.
             *args: Additional positional arguments.
             **kwargs: Additional keyword arguments.
 
@@ -303,12 +333,15 @@ class StackComponent:
         self.flavor = flavor
         self.type = type
         self.user = user
-        self.project = project
+        self.workspace = workspace
         self.created = created
         self.updated = updated
+        self.labels = labels
 
     @classmethod
-    def from_model(cls, component_model: "ComponentModel") -> "StackComponent":
+    def from_model(
+        cls, component_model: "ComponentResponseModel"
+    ) -> "StackComponent":
         """Creates a StackComponent from a ComponentModel.
 
         Args:
@@ -338,34 +371,22 @@ class StackComponent:
 
         configuration = flavor.config_class(**component_model.configuration)
 
+        if component_model.user is not None:
+            user_id = component_model.user.id
+        else:
+            user_id = None
+
         return flavor.implementation_class(
-            user=component_model.user,
-            project=component_model.project,
+            user=user_id,
+            workspace=component_model.workspace.id,
             name=component_model.name,
             id=component_model.id,
             config=configuration,
+            labels=component_model.labels,
             flavor=component_model.flavor,
             type=component_model.type,
             created=component_model.created,
             updated=component_model.updated,
-        )
-
-    def to_model(self) -> "ComponentModel":
-        """Converts a stack component to a model.
-
-        Returns:
-            The model representation of the stack component.
-        """
-        return ComponentModel(
-            user=self.user,
-            project=self.project,
-            id=self.id,
-            type=self.type,
-            flavor=self.flavor,
-            name=self.name,
-            configuration=self.config.dict(),
-            created=self.created,
-            updated=self.updated,
         )
 
     @property
@@ -390,8 +411,9 @@ class StackComponent:
         return None
 
     def get_settings(
-        self, container: Union["Step", "StepRunInfo", "PipelineDeployment"]
-    ) -> Optional["BaseSettings"]:
+        self,
+        container: Union["Step", "StepRunInfo", "PipelineDeploymentBaseModel"],
+    ) -> "BaseSettings":
         """Gets settings for this stack component.
 
         This will return `None` if the stack component doesn't specify a
@@ -403,23 +425,32 @@ class StackComponent:
                 which to get the settings.
 
         Returns:
-            Optional settings for this stack component.
+            Settings for this stack component.
+
+        Raises:
+            RuntimeError: If the stack component does not specify a settings
+                class.
         """
         if not self.settings_class:
-            return None
+            raise RuntimeError(
+                f"Unable to get settings for component {self} because this "
+                "component does not have an associated settings class. "
+                "Return a settings class from the `@settings_class` property "
+                "and try again."
+            )
 
         key = settings_utils.get_stack_component_setting_key(self)
 
-        options = (
+        all_settings = (
             container.config.settings
             if isinstance(container, (Step, StepRunInfo))
-            else container.pipeline.settings
+            else container.pipeline_configuration.settings
         )
 
-        if key not in options:
-            return None
-
-        return self.settings_class(**options[key].dict())
+        if key in all_settings:
+            return self.settings_class.parse_obj(all_settings[key])
+        else:
+            return self.settings_class()
 
     @property
     def log_file(self) -> Optional[str]:
@@ -458,7 +489,7 @@ class StackComponent:
 
     @property
     def local_path(self) -> Optional[str]:
-        """Path to a local directory used by the component to store persistent information.
+        """Path to a local directory to store persistent information.
 
         This property should only be implemented by components that need to
         store persistent information in a directory on the local machine and
@@ -490,9 +521,22 @@ class StackComponent:
         """
         return None
 
+    def get_docker_builds(
+        self, deployment: "PipelineDeploymentBaseModel"
+    ) -> List["BuildConfiguration"]:
+        """Gets the Docker builds required for the component.
+
+        Args:
+            deployment: The pipeline deployment for which to get the builds.
+
+        Returns:
+            The required Docker builds.
+        """
+        return []
+
     def prepare_pipeline_deployment(
         self,
-        deployment: "PipelineDeployment",
+        deployment: "PipelineDeploymentResponseModel",
         stack: "Stack",
     ) -> None:
         """Prepares deploying the pipeline.
@@ -506,6 +550,19 @@ class StackComponent:
             stack: The stack on which the pipeline will be deployed.
         """
 
+    def get_pipeline_run_metadata(
+        self, run_id: UUID
+    ) -> Dict[str, "MetadataType"]:
+        """Get general component-specific metadata for a pipeline run.
+
+        Args:
+            run_id: The ID of the pipeline run.
+
+        Returns:
+            A dictionary of metadata.
+        """
+        return {}
+
     def prepare_step_run(self, info: "StepRunInfo") -> None:
         """Prepares running a step.
 
@@ -513,16 +570,30 @@ class StackComponent:
             info: Info about the step that will be executed.
         """
 
-    def cleanup_step_run(self, info: "StepRunInfo") -> None:
+    def get_step_run_metadata(
+        self, info: "StepRunInfo"
+    ) -> Dict[str, "MetadataType"]:
+        """Get component- and step-specific metadata after a step ran.
+
+        Args:
+            info: Info about the step that was executed.
+
+        Returns:
+            A dictionary of metadata.
+        """
+        return {}
+
+    def cleanup_step_run(self, info: "StepRunInfo", step_failed: bool) -> None:
         """Cleans up resources after the step run is finished.
 
         Args:
             info: Info about the step that was executed.
+            step_failed: Whether the step failed.
         """
 
     @property
     def post_registration_message(self) -> Optional[str]:
-        """Optional message that will be printed after the stack component is registered.
+        """Optional message printed after the stack component is registered.
 
         Returns:
             An optional message.
@@ -635,84 +706,3 @@ class StackComponent:
             A string representation of the stack component.
         """
         return self.__repr__()
-
-    @root_validator(skip_on_failure=True)
-    def _ensure_stack_component_complete(cls, values: Dict[str, Any]) -> Any:
-        """Ensures that the stack component is complete.
-
-        Args:
-            values: The values of the stack component.
-
-        Returns:
-            The values of the stack component.
-
-        Raises:
-            StackComponentInterfaceError: If the stack component is not
-                implemented correctly.
-        """
-        try:
-            stack_component_type = getattr(cls, "type")
-            assert stack_component_type in StackComponentType
-        except (AttributeError, AssertionError):
-            raise StackComponentInterfaceError(
-                textwrap.dedent(
-                    """
-                    When you are working with any classes which subclass from
-                    `zenml.stack.StackComponent` please make sure that your
-                    class has a ClassVar named `type` and its value is set to a
-                    `StackComponentType` from `from zenml.enums import
-                    StackComponentType`.
-
-                    In most of the cases, this is already done for you within
-                    the implementation of the base concept.
-
-                    Example:
-
-                    class BaseArtifactStore(StackComponent):
-                        # Instance Variables
-                        path: str
-
-                        # Class Variables
-                        type: ClassVar[StackComponentType] = StackComponentType.ARTIFACT_STORE
-                    """
-                )
-            )
-
-        try:
-            getattr(cls, "flavor")
-        except AttributeError:
-            raise StackComponentInterfaceError(
-                textwrap.dedent(
-                    """
-                    When you are working with any classes which subclass from
-                    `zenml.stack.StackComponent` please make sure that your
-                    class has a defined ClassVar `flavor`.
-
-                    Example:
-
-                    class LocalArtifactStore(BaseArtifactStore):
-
-                        ...
-
-                        # Define flavor as a ClassVar
-                        flavor: ClassVar[str] = "local"
-
-                        ...
-                    """
-                )
-            )
-
-        return values
-
-    def __eq__(self, other: object) -> bool:
-        """Checks if two stack components are equal.
-
-        Args:
-            other: The other stack component to compare to.
-
-        Returns:
-            True if the stack components are equal, False otherwise.
-        """
-        if isinstance(other, StackComponent):
-            return self.to_model() == other.to_model()
-        return NotImplemented

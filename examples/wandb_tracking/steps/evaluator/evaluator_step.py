@@ -16,9 +16,18 @@ import tensorflow as tf
 import wandb
 
 from zenml.client import Client
+from zenml.integrations.wandb.experiment_trackers import WandbExperimentTracker
 from zenml.steps import step
 
 experiment_tracker = Client().active_stack.experiment_tracker
+
+if not experiment_tracker or not isinstance(
+    experiment_tracker, WandbExperimentTracker
+):
+    raise RuntimeError(
+        "Your active stack needs to contain a WandB experiment tracker for "
+        "this example to work."
+    )
 
 
 @step(experiment_tracker=experiment_tracker.name)
@@ -27,8 +36,7 @@ def tf_evaluator(
     y_test: np.ndarray,
     model: tf.keras.Model,
 ) -> float:
-    """Calculate the loss for the model for each epoch in a graph"""
-
+    """Calculate the loss for the model for each epoch in a graph."""
     _, test_acc = model.evaluate(x_test, y_test, verbose=2)
     wandb.log({"val_accuracy": test_acc})
     return test_acc

@@ -11,9 +11,9 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""MLFlow model deployer flavor."""
+"""MLflow model deployer flavor."""
 
-from typing import TYPE_CHECKING, Type
+from typing import TYPE_CHECKING, Optional, Type
 
 from zenml.integrations.mlflow import MLFLOW_MODEL_DEPLOYER_FLAVOR
 from zenml.model_deployers.base_model_deployer import (
@@ -49,7 +49,7 @@ class MLFlowModelDeployerConfig(BaseModelDeployerConfig):
 
 
 class MLFlowModelDeployerFlavor(BaseModelDeployerFlavor):
-    """Model deployer flavor for MLFlow models."""
+    """Model deployer flavor for MLflow models."""
 
     @property
     def name(self) -> str:
@@ -59,6 +59,33 @@ class MLFlowModelDeployerFlavor(BaseModelDeployerFlavor):
             The name of the flavor.
         """
         return MLFLOW_MODEL_DEPLOYER_FLAVOR
+
+    @property
+    def docs_url(self) -> Optional[str]:
+        """A url to point at docs explaining this flavor.
+
+        Returns:
+            A flavor docs url.
+        """
+        return self.generate_default_docs_url()
+
+    @property
+    def sdk_docs_url(self) -> Optional[str]:
+        """A url to point at SDK docs explaining this flavor.
+
+        Returns:
+            A flavor SDK docs url.
+        """
+        return self.generate_default_sdk_docs_url()
+
+    @property
+    def logo_url(self) -> str:
+        """A url to represent the flavor in the dashboard.
+
+        Returns:
+            The flavor logo.
+        """
+        return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/model_deployer/mlflow.png"
 
     @property
     def config_class(self) -> Type[MLFlowModelDeployerConfig]:

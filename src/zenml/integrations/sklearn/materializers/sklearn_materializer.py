@@ -13,9 +13,7 @@
 #  permissions and limitations under the License.
 """Implementation of the sklearn materializer."""
 
-import os
-import pickle
-from typing import Any, Type, Union
+from typing import Any, ClassVar, Tuple, Type
 
 from sklearn.base import (
     BaseEstimator,
@@ -30,17 +28,16 @@ from sklearn.base import (
     TransformerMixin,
 )
 
-from zenml.artifacts import ModelArtifact
-from zenml.io import fileio
-from zenml.materializers.base_materializer import BaseMaterializer
+from zenml.enums import ArtifactType
+from zenml.materializers.cloudpickle_materializer import (
+    CloudpickleMaterializer,
+)
 
-DEFAULT_FILENAME = "model"
 
-
-class SklearnMaterializer(BaseMaterializer):
+class SklearnMaterializer(CloudpickleMaterializer):
     """Materializer to read data to and from sklearn."""
 
-    ASSOCIATED_TYPES = (
+    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (
         BaseEstimator,
         ClassifierMixin,
         ClusterMixin,
@@ -52,57 +49,4 @@ class SklearnMaterializer(BaseMaterializer):
         DensityMixin,
         TransformerMixin,
     )
-    ASSOCIATED_ARTIFACT_TYPES = (ModelArtifact,)
-
-    def handle_input(
-        self, data_type: Type[Any]
-    ) -> Union[
-        BaseEstimator,
-        ClassifierMixin,
-        ClusterMixin,
-        BiclusterMixin,
-        OutlierMixin,
-        RegressorMixin,
-        MetaEstimatorMixin,
-        MultiOutputMixin,
-        DensityMixin,
-        TransformerMixin,
-    ]:
-        """Reads a base sklearn model from a pickle file.
-
-        Args:
-            data_type: The type of the model.
-
-        Returns:
-            The model.
-        """
-        super().handle_input(data_type)
-        filepath = os.path.join(self.artifact.uri, DEFAULT_FILENAME)
-        with fileio.open(filepath, "rb") as fid:
-            clf = pickle.load(fid)
-        return clf
-
-    def handle_return(
-        self,
-        clf: Union[
-            BaseEstimator,
-            ClassifierMixin,
-            ClusterMixin,
-            BiclusterMixin,
-            OutlierMixin,
-            RegressorMixin,
-            MetaEstimatorMixin,
-            MultiOutputMixin,
-            DensityMixin,
-            TransformerMixin,
-        ],
-    ) -> None:
-        """Creates a pickle for a sklearn model.
-
-        Args:
-            clf: A sklearn model.
-        """
-        super().handle_return(clf)
-        filepath = os.path.join(self.artifact.uri, DEFAULT_FILENAME)
-        with fileio.open(filepath, "wb") as fid:
-            pickle.dump(clf, fid)
+    ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.MODEL

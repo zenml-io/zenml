@@ -13,7 +13,9 @@
 #  permissions and limitations under the License.
 """Tekton orchestrator flavor."""
 
-from typing import TYPE_CHECKING, Optional, Type
+from typing import TYPE_CHECKING, Any, Dict, Optional, Type
+
+from pydantic import root_validator
 
 from zenml.integrations.tekton import TEKTON_ORCHESTRATOR_FLAVOR
 from zenml.orchestrators import BaseOrchestratorConfig, BaseOrchestratorFlavor
@@ -23,8 +25,9 @@ if TYPE_CHECKING:
 
 from zenml.config.base_settings import BaseSettings
 from zenml.integrations.kubernetes.pod_settings import KubernetesPodSettings
+from zenml.logger import get_logger
 
-DEFAULT_TEKTON_UI_PORT = 8080
+logger = get_logger(__name__)
 
 
 class TektonOrchestratorSettings(BaseSettings):
@@ -37,7 +40,9 @@ class TektonOrchestratorSettings(BaseSettings):
     pod_settings: Optional[KubernetesPodSettings] = None
 
 
-class TektonOrchestratorConfig(BaseOrchestratorConfig):
+class TektonOrchestratorConfig(  # type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173
+    BaseOrchestratorConfig, TektonOrchestratorSettings
+):
     """Configuration for the Tekton orchestrator.
 
     Attributes:
@@ -45,15 +50,71 @@ class TektonOrchestratorConfig(BaseOrchestratorConfig):
             pipelines in.
         kubernetes_namespace: Name of the kubernetes namespace in which the
             pods that run the pipeline steps should be running.
-        tekton_ui_port: A local port to which the Tekton UI will be forwarded.
-        skip_ui_daemon_provisioning: If `True`, provisioning the Tekton UI
-            daemon will be skipped.
+        local: If `True`, the orchestrator will assume it is connected to a
+            local kubernetes cluster and will perform additional validations and
+            operations to allow using the orchestrator in combination with other
+            local stack components that store data in the local filesystem
+            (i.e. it will mount the local stores directory into the pipeline
+            containers).
+        skip_local_validations: If `True`, the local validations will be
+            skipped.
     """
 
-    kubernetes_context: str
+    kubernetes_context: str  # TODO: Potential setting
     kubernetes_namespace: str = "zenml"
-    tekton_ui_port: int = DEFAULT_TEKTON_UI_PORT
-    skip_ui_daemon_provisioning: bool = False
+    local: bool = False
+    skip_local_validations: bool = False
+
+    @root_validator(pre=True)
+    def _validate_deprecated_attrs(
+        cls, values: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Pydantic root_validator for deprecated attributes.
+
+        This root validator is used for backwards compatibility purposes. E.g.
+        it handles attributes that are no longer available or that have become
+        mandatory in the meantime.
+
+        Args:
+            values: Values passed to the object constructor
+
+        Returns:
+            Values passed to the object constructor
+
+        """
+        provisioning_attrs = [
+            "tekton_ui_port",
+            "skip_ui_daemon_provisioning",
+        ]
+
+        provisioning_attrs_used = [
+            attr for attr in provisioning_attrs if attr in values
+        ]
+
+        msg_header = (
+            "Automatically exposing the Tekton UI TCP port locally as part of "
+            "the stack provisioning using `zenml stack up` has been "
+            "removed in favor of methods better suited for this "
+            "purpose, such as using an Ingress controller in the remote "
+            "cluster. \n"
+            "As a result, the following Kubernetes orchestrator configuration "
+            "attributes have been deprecated: "
+            f"{provisioning_attrs}.\n"
+        )
+
+        if provisioning_attrs_used:
+            logger.warning(
+                msg_header
+                + "To get rid of this warning, you should remove the deprecated "
+                "attributes from your orchestrator configuration (e.g. by "
+                "using the `zenml orchestrator remove-attribute <attr-name>` "
+                "CLI command)."
+            )
+            # remove deprecated attributes from values dict
+            for attr in provisioning_attrs_used:
+                del values[attr]
+
+        return values
 
     @property
     def is_remote(self) -> bool:
@@ -66,7 +127,19 @@ class TektonOrchestratorConfig(BaseOrchestratorConfig):
         Returns:
             True if this config is for a remote component, False otherwise.
         """
-        return True
+        return not self.local
+
+    @property
+    def is_local(self) -> bool:
+        """Checks if this stack component is running locally.
+
+        This designation is used to determine if the stack component can be
+        shared with other users or if it is only usable on the local host.
+
+        Returns:
+            True if this config is for a local component, False otherwise.
+        """
+        return self.local
 
 
 class TektonOrchestratorFlavor(BaseOrchestratorFlavor):
@@ -80,6 +153,33 @@ class TektonOrchestratorFlavor(BaseOrchestratorFlavor):
             Name of the orchestrator flavor.
         """
         return TEKTON_ORCHESTRATOR_FLAVOR
+
+    @property
+    def docs_url(self) -> Optional[str]:
+        """A url to point at docs explaining this flavor.
+
+        Returns:
+            A flavor docs url.
+        """
+        return self.generate_default_docs_url()
+
+    @property
+    def sdk_docs_url(self) -> Optional[str]:
+        """A url to point at SDK docs explaining this flavor.
+
+        Returns:
+            A flavor SDK docs url.
+        """
+        return self.generate_default_sdk_docs_url()
+
+    @property
+    def logo_url(self) -> str:
+        """A url to represent the flavor in the dashboard.
+
+        Returns:
+            The flavor logo.
+        """
+        return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/orchestrator/tekton.png"
 
     @property
     def config_class(self) -> Type[TektonOrchestratorConfig]:

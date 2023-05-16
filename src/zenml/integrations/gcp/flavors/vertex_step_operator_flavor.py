@@ -15,6 +15,7 @@
 
 from typing import TYPE_CHECKING, Optional, Type
 
+from zenml.config.base_settings import BaseSettings
 from zenml.integrations.gcp import GCP_VERTEX_STEP_OPERATOR_FLAVOR
 from zenml.integrations.gcp.google_credentials_mixin import (
     GoogleCredentialsConfigMixin,
@@ -28,28 +29,41 @@ if TYPE_CHECKING:
     from zenml.integrations.gcp.step_operators import VertexStepOperator
 
 
-class VertexStepOperatorConfig(
+class VertexStepOperatorSettings(BaseSettings):
+    """Settings for the Vertex step operator.
+
+    Attributes:
+        accelerator_type: Defines which accelerator (GPU, TPU) is used for the
+            job. Check out out this table to see which accelerator
+            type and count are compatible with your chosen machine type:
+            https://cloud.google.com/vertex-ai/docs/training/configure-compute#gpu-compatibility-table.
+        accelerator_count: Defines number of accelerators to be used for the
+            job. Check out out this table to see which accelerator
+            type and count are compatible with your chosen machine type:
+            https://cloud.google.com/vertex-ai/docs/training/configure-compute#gpu-compatibility-table.
+        machine_type: Machine type specified here
+            https://cloud.google.com/vertex-ai/docs/training/configure-compute#machine-types.
+
+    """
+
+    accelerator_type: Optional[str] = None
+    accelerator_count: int = 0
+    machine_type: str = "n1-standard-4"
+
+
+class VertexStepOperatorConfig(  # type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173
     BaseStepOperatorConfig,
     GoogleCredentialsConfigMixin,
+    VertexStepOperatorSettings,
 ):
     """Configuration for the Vertex step operator.
 
     Attributes:
         region: Region name, e.g., `europe-west1`.
-        project: GCP project name. If left None, inferred from the
-            environment.
-        accelerator_type: Accelerator type from list: https://cloud.google.com/vertex-ai/docs/reference/rest/v1/MachineSpec#AcceleratorType
-        accelerator_count: Defines number of accelerators to be
-            used for the job.
-        machine_type: Machine type specified here: https://cloud.google.com/vertex-ai/docs/training/configure-compute#machine-types
         encryption_spec_key_name: Encryption spec key name.
     """
 
     region: str
-    project: Optional[str] = None
-    accelerator_type: Optional[str] = None
-    accelerator_count: int = 0
-    machine_type: str = "n1-standard-4"
 
     # customer managed encryption key resource name
     # will be applied to all Vertex AI resources if set
@@ -80,6 +94,33 @@ class VertexStepOperatorFlavor(BaseStepOperatorFlavor):
             Name of the flavor.
         """
         return GCP_VERTEX_STEP_OPERATOR_FLAVOR
+
+    @property
+    def docs_url(self) -> Optional[str]:
+        """A url to point at docs explaining this flavor.
+
+        Returns:
+            A flavor docs url.
+        """
+        return self.generate_default_docs_url()
+
+    @property
+    def sdk_docs_url(self) -> Optional[str]:
+        """A url to point at SDK docs explaining this flavor.
+
+        Returns:
+            A flavor SDK docs url.
+        """
+        return self.generate_default_sdk_docs_url()
+
+    @property
+    def logo_url(self) -> str:
+        """A url to represent the flavor in the dashboard.
+
+        Returns:
+            The flavor logo.
+        """
+        return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/step_operator/vertexai.png"
 
     @property
     def config_class(self) -> Type[VertexStepOperatorConfig]:

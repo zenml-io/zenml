@@ -63,9 +63,9 @@ Artifact Stores are provided by integrations:
 | Artifact Store                          | Flavor   | Integration   | URI Schema(s)      | Notes                                                                                                                            |
 |-----------------------------------------|----------|---------------|--------------------|----------------------------------------------------------------------------------------------------------------------------------|
 | [Local](./local.md)                     | `local`  | _built-in_    | None               | This is the default Artifact Store. It stores artifacts on your local filesystem. Should be used only for running ZenML locally. |
-| [Amazon S3](./amazon-s3.md)             | `s3`     | `s3`          | `s3://`            | Uses AWS S3 as an object store backend                                                                                           |
-| [Google Cloud Storage](./gcloud-gcs.md) | `gcp`    | `gcp`         | `gs://`            | Uses Google Cloud Storage as an object store backend                                                                             |
-| [Azure](./azure-blob-storage.md)        | `azure`  | `azure`       | `abfs://`, `az://` | Uses Azure Blob Storage as an object store backend                                                                               |
+| [Amazon S3](./s3.md)             | `s3`     | `s3`          | `s3://`            | Uses AWS S3 as an object store backend                                                                                           |
+| [Google Cloud Storage](./gcp.md) | `gcp`    | `gcp`         | `gs://`            | Uses Google Cloud Storage as an object store backend                                                                             |
+| [Azure](./azure.md)        | `azure`  | `azure`       | `abfs://`, `az://` | Uses Azure Blob Storage as an object store backend                                                                               |
 | [Custom Implementation](./custom.md)    | _custom_ |               | _custom_           | Extend the Artifact Store abstraction and provide your own implementation                                                        |
 
 If you would like to see the available flavors of Artifact Stores, you can 
@@ -99,16 +99,6 @@ automatically saved in the active Artifact Store as pipeline artifacts.
 * use [the post-execution workflow API](../../starter-guide/pipelines/pipelines.md)
 to retrieve pipeline artifacts from the active Artifact Store after a pipeline
 run is complete.
-
-<!-- markdown-link-check-disable -->
-
-<!---
-* use ZenML [Visualizers](../../developer-guide/visualizer.md) to load pipeline
-artifacts from the Artifact Store and display them as notebook widgets or HTML
-pages.
--->
-
-<!-- markdown-link-check-enable -->
 
 You will probably need to interact with the [low-level Artifact Store API](#the-artifact-store-api)
 directly:

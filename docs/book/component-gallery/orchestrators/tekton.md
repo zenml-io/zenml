@@ -89,6 +89,20 @@ ZenML has only been tested with Tekton Pipelines >=0.38.3 and may not work with
 previous versions.
 {% endhint %}
 
+### Infrastructure Deployment
+
+A Tekton orchestrator can be deployed directly from the ZenML CLI:
+
+```shell
+zenml orchestrator deploy tekton_orchestrator --flavor=tekton ...
+```
+
+You can pass other configuration specific to the stack components as key-value
+arguments. If you don't provide a name, a random one is generated for you. For
+more information about how to work use the CLI for this, please refer to [the
+dedicated documentation
+section](../../advanced-guide/practical/stack-recipes.md#deploying-stack-components-directly).
+
 ## How to use it
 
 To use the Tekton orchestrator, we need:
@@ -110,25 +124,21 @@ as part of your stack.
 We can then register the orchestrator and use it in our active stack:
 
 ```shell
-zenml orchestrator register <NAME> \
+zenml orchestrator register <ORCHESTRATOR_NAME> \
     --flavor=tekton \
     --kubernetes_context=<KUBERNETES_CONTEXT>
 
-# Add the orchestrator to the active stack
-zenml stack update -o <NAME>
+# Register and activate a stack with the new orchestrator
+zenml stack register <STACK_NAME> -o <ORCHESTRATOR_NAME> ... --set
 ```
 
 {% hint style="info" %}
 ZenML will build a Docker image called `<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE_NAME>`
 which includes your code and use it to run your pipeline steps in Tekton. Check 
-out [this page](../../advanced-guide/pipelines/containerization.md) if you want 
+out [this page](../../starter-guide/production-fundamentals/containerization.md) if you want 
 to learn more about how ZenML builds these images and how you can customize 
 them.
 {% endhint %}
-
-Once the orchestrator is part of the active stack, we need to run 
-`zenml stack up` before running any pipelines. This command forwards a port, so 
-you can view the Tekton UI in your browser.
 
 You can now run any ZenML pipeline using the Tekton orchestrator:
 ```shell
@@ -138,10 +148,10 @@ python file_that_runs_a_zenml_pipeline.py
 ### Additional configuration
 
 For additional configuration of the Tekton orchestrator, you can pass
-`TektonOrchestratorSettings` which allows you to configure the following attributes:
+`TektonOrchestratorSettings` which allows you to configure (among others) the following attributes:
 
 * `pod_settings`: Node selectors, affinity and tolerations to apply to the Kubernetes Pods running
-your pipline. These can be either specified using the Kubernetes model objects or as dictionaries.
+your pipeline. These can be either specified using the Kubernetes model objects or as dictionaries.
 
 ```python
 from zenml.integrations.tekton.flavors.tekton_orchestrator_flavor import TektonOrchestratorSettings
@@ -186,11 +196,16 @@ tekton_settings = TektonOrchestratorSettings(
   ...
 ```
 
+Check out the
+[API docs](https://apidocs.zenml.io/latest/integration_code_docs/integrations-tekton/#zenml.integrations.tekton.flavors.tekton_orchestrator_flavor.TektonOrchestratorSettings)
+for a full list of available attributes and [this docs page](../..//advanced-guide/pipelines/settings.md)
+for more information on how to specify settings.
+
 A concrete example of using the Tekton orchestrator can be found 
 [here](https://github.com/zenml-io/zenml/tree/main/examples/tekton_pipelines_orchestration).
 
 For more information and a full list of configurable attributes of the Tekton 
-orchestrator, check out the [API Docs](https://apidocs.zenml.io/latest/api_docs/integration_code_docs/integrations-tekton/#zenml.integrations.tekton.orchestrators.tekton_orchestrator.TektonOrchestrator).
+orchestrator, check out the [API Docs](https://apidocs.zenml.io/latest/integration_code_docs/integrations-tekton/#zenml.integrations.tekton.orchestrators.tekton_orchestrator.TektonOrchestrator).
 
 ### Enabling CUDA for GPU-backed hardware
 

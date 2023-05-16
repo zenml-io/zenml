@@ -16,8 +16,8 @@ These functionalities are very useful in practice:
 
 The following are two very simple examples where we build a pipeline that trains 
 and evaluates a sklearn SVC model on the digits datasets, and:
-- `run_post.py` posts the evaluation result (test accuracy) to Slack.
-- `run_ask.py` posts the evaluation result (test accuracy) to Slack, 
+- posts the evaluation result (test accuracy) to Slack.
+- posts the evaluation result (test accuracy) to Slack, 
   then deploys with MLflow if the user approved it in Slack.
 
 ## 🖥 Run it locally
@@ -37,6 +37,11 @@ Under `OAuth & Permissions` you can find the `<SLACK_TOKEN>` of your bot,
 which you will need later when defining the slack alerter stack component.
 Also, under `Scopes` in the `OAuth & Permissions` tab, give your
 bot `chat:write` and `chat:write.public` permissions.
+
+**IMPORTANT**: Please make sure that the token is the `Bot User OAuth Token` not the 
+`User OAuth Token`. See reference image attached:
+
+![Slack Token Image](assets/slack_token.jpg)
 
 Now you can get started with this example. 
 Run the following code to install and initialize ZenML and create the stack.
@@ -79,7 +84,7 @@ Now we're ready. Execute on of the following:
 #### `post()` example
 
 ```shell
-python run_post.py
+python run.py -c post
 ```
 
 You should see the following output in your Slack channel:
@@ -89,7 +94,7 @@ You should see the following output in your Slack channel:
 #### `ask()` example
 
 ```shell
-python run_ask.py
+python run.py -c ask
 ```
 
 You should see the following output in your Slack channel:
@@ -106,8 +111,16 @@ In order to clean up, delete the remaining ZenML references.
 rm -rf zenml_examples
 ```
 
+### ❓ Common Errors
+
+If you experience trouble running `run_ask.py`, where the script halts and seems to wait for a
+message from a Slack channel but in the first place does not send anything to the Slack channel,
+please refer to this [issue](https://github.com/zenml-io/zenml/issues/1364).
+
+You can quickly fix this by ensuring that the alerter is configured with the right `slack_token` (See [prerequisites](#-prerequisites)).
 
 # 📜 Learn more
 
-If you want to learn more about alerters in zenml in general or about how to build your own alerter steps in ZenML
-check out our [docs](https://docs.zenml.io/component-gallery/alerters/alerters).
+If you want to learn more about alerters in zenml in general or about how to 
+build your own alerter steps in ZenML check out our 
+[docs](https://docs.zenml.io/component-gallery/alerters/alerters).

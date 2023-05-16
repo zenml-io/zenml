@@ -13,18 +13,17 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for authentication (login)."""
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter
 
 import zenml
 from zenml.constants import API, INFO, VERSION_1
 from zenml.models.server_models import ServerModel
-from zenml.zen_server.auth import authorize
-from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
+from zenml.zen_server.exceptions import error_response
+from zenml.zen_server.utils import handle_exceptions, zen_store
 
 router = APIRouter(
     prefix=API + VERSION_1,
     tags=["server"],
-    dependencies=[Depends(authorize)],
     responses={401: error_response},
 )
 

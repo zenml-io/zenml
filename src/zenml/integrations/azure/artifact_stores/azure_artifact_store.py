@@ -31,9 +31,9 @@ from zenml.artifact_stores import BaseArtifactStore
 from zenml.integrations.azure.flavors.azure_artifact_store_flavor import (
     AzureArtifactStoreConfig,
 )
+from zenml.io.fileio import convert_to_str
 from zenml.secret.schemas import AzureSecretSchema
 from zenml.stack.authentication_mixin import AuthenticationMixin
-from zenml.utils.io_utils import convert_to_str
 
 PathType = Union[bytes, str]
 
@@ -52,6 +52,17 @@ class AzureArtifactStore(BaseArtifactStore, AuthenticationMixin):
         """
         return cast(AzureArtifactStoreConfig, self._config)
 
+    def get_credentials(self) -> Optional[AzureSecretSchema]:
+        """Returns the credentials for the Azure Artifact Store if configured.
+
+        Returns:
+            The credentials.
+        """
+        secret = self.get_authentication_secret(
+            expected_schema_type=AzureSecretSchema
+        )
+        return secret
+
     @property
     def filesystem(self) -> adlfs.AzureBlobFileSystem:
         """The adlfs filesystem to access this artifact store.
@@ -60,9 +71,7 @@ class AzureArtifactStore(BaseArtifactStore, AuthenticationMixin):
             The adlfs filesystem to access this artifact store.
         """
         if not self._filesystem:
-            secret = self.get_authentication_secret(
-                expected_schema_type=AzureSecretSchema
-            )
+            secret = self.get_credentials()
             credentials = secret.content if secret else {}
 
             self._filesystem = adlfs.AzureBlobFileSystem(
@@ -278,6 +287,17 @@ class AzureArtifactStore(BaseArtifactStore, AuthenticationMixin):
             Stat info.
         """
         return self.filesystem.stat(path=path)  # type: ignore[no-any-return]
+
+    def size(self, path: PathType) -> int:
+        """Get the size of a file in bytes.
+
+        Args:
+            path: The path to the file.
+
+        Returns:
+            The size of the file in bytes.
+        """
+        return self.filesystem.size(path=path)  # type: ignore[no-any-return]
 
     def walk(
         self,

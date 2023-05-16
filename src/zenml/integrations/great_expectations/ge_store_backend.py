@@ -54,7 +54,9 @@ class ZenMLArtifactStoreBackend(TupleStoreBackend):  # type: ignore[misc]
 
         client = Client()
         artifact_store = client.active_stack.artifact_store
-        self.root_path = os.path.join(artifact_store.path, "great_expectations")
+        self.root_path = os.path.join(
+            artifact_store.path, "great_expectations"
+        )
 
         # extract the protocol used in the artifact store root path
         protocols = [
@@ -101,7 +103,7 @@ class ZenMLArtifactStoreBackend(TupleStoreBackend):  # type: ignore[misc]
             The file path pointing to where the object is stored.
         """
         if not isinstance(key, tuple):
-            key = key.to_tuple()  # type: ignore[attr-defined]
+            key = key.to_tuple()
         if not is_prefix:
             object_relative_path = self._convert_key_to_filepath(key)
         elif key:

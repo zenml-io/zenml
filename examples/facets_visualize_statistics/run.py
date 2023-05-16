@@ -12,29 +12,15 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 from pipelines.facets_pipeline.facets_pipeline import facets_pipeline
-from steps.evaluator.evaluator_step import evaluator
 from steps.importer.importer_step import importer
-from steps.trainer.trainer_step import trainer
 
-from zenml.integrations.facets.visualizers.facet_statistics_visualizer import (
-    FacetStatisticsVisualizer,
+from zenml.integrations.facets.steps.facets_visualization_steps import (
+    facets_visualization_step,
 )
-from zenml.post_execution import get_pipeline
-
-
-def visualize_statistics():
-    pipe = get_pipeline(pipeline="facets_pipeline")
-    importer_outputs = pipe.runs[-1].get_step(step="importer")
-    FacetStatisticsVisualizer().visualize(importer_outputs)
-
 
 if __name__ == "__main__":
-    # Run the pipeline
     pipeline_instance = facets_pipeline(
         importer=importer(),
-        trainer=trainer(),
-        evaluator=evaluator(),
+        facets_visualization_step=facets_visualization_step(),
     )
     pipeline_instance.run()
-
-    visualize_statistics()

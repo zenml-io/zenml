@@ -37,7 +37,7 @@ from deepchecks.vision import Suite as VisionSuite
 from deepchecks.vision import VisionData
 from deepchecks.vision.suites import full_suite as full_vision_suite
 from sklearn.base import ClassifierMixin
-from torch.nn import Module  # type: ignore[attr-defined]
+from torch.nn import Module
 from torch.utils.data.dataloader import DataLoader
 
 from zenml.data_validators import BaseDataValidator, BaseDataValidatorFlavor
@@ -82,7 +82,9 @@ class DeepchecksDataValidator(BaseDataValidator):
         """
         tabular_checks = list(
             filter(
-                lambda check: DeepchecksValidationCheck.is_tabular_check(check),
+                lambda check: DeepchecksValidationCheck.is_tabular_check(
+                    check
+                ),
                 check_list,
             )
         )
@@ -94,7 +96,6 @@ class DeepchecksDataValidator(BaseDataValidator):
         )
         return tabular_checks, vision_checks
 
-    # flake8: noqa: C901
     @classmethod
     def _create_and_run_check_suite(
         cls,

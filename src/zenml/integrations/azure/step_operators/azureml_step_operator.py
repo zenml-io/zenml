@@ -15,8 +15,7 @@
 
 import itertools
 import os
-from pathlib import PurePosixPath
-from typing import TYPE_CHECKING, List, Optional, Tuple, cast
+from typing import TYPE_CHECKING, Dict, List, Optional, Tuple, Type, cast
 
 from azureml.core import (
     ComputeTarget,
@@ -33,32 +32,29 @@ from azureml.core.conda_dependencies import CondaDependencies
 
 import zenml
 from zenml.client import Client
-from zenml.config.pipeline_deployment import PipelineDeployment
 from zenml.constants import (
-    DOCKER_IMAGE_DEPLOYMENT_CONFIG_FILE,
     ENV_ZENML_CONFIG_PATH,
 )
 from zenml.environment import Environment as ZenMLEnvironment
 from zenml.integrations.azure.flavors.azureml_step_operator_flavor import (
     AzureMLStepOperatorConfig,
+    AzureMLStepOperatorSettings,
 )
 from zenml.logger import get_logger
 from zenml.stack import Stack, StackValidator
 from zenml.step_operators import BaseStepOperator
+from zenml.utils import source_utils
 from zenml.utils.pipeline_docker_image_builder import (
     DOCKER_IMAGE_ZENML_CONFIG_DIR,
     PipelineDockerImageBuilder,
-    _include_global_config,
 )
-from zenml.utils.source_utils import get_source_root_path
 
 if TYPE_CHECKING:
     from zenml.config import DockerSettings
+    from zenml.config.base_settings import BaseSettings
     from zenml.config.step_run_info import StepRunInfo
 
 logger = get_logger(__name__)
-
-ENV_ACTIVE_DEPLOYMENT = "ZENML_ACTIVE_DEPLOYMENT"
 
 
 class AzureMLStepOperator(BaseStepOperator):
@@ -78,6 +74,15 @@ class AzureMLStepOperator(BaseStepOperator):
         return cast(AzureMLStepOperatorConfig, self._config)
 
     @property
+    def settings_class(self) -> Optional[Type["BaseSettings"]]:
+        """Settings class for the AzureML step operator.
+
+        Returns:
+            The settings class.
+        """
+        return AzureMLStepOperatorSettings
+
+    @property
     def validator(self) -> Optional[StackValidator]:
         """Validates the stack.
 
@@ -86,7 +91,9 @@ class AzureMLStepOperator(BaseStepOperator):
             store.
         """
 
-        def _validate_remote_artifact_store(stack: "Stack") -> Tuple[bool, str]:
+        def _validate_remote_artifact_store(
+            stack: "Stack",
+        ) -> Tuple[bool, str]:
             if stack.artifact_store.config.is_local:
                 return False, (
                     "The AzureML step operator runs code remotely and "
@@ -121,30 +128,13 @@ class AzureMLStepOperator(BaseStepOperator):
             )
         return None
 
-    def prepare_pipeline_deployment(
-        self, deployment: "PipelineDeployment", stack: "Stack"
-    ) -> None:
-        """Store the active deployment in an environment variable.
-
-        Args:
-            deployment: The pipeline deployment configuration.
-            stack: The stack on which the pipeline will be deployed.
-        """
-        steps_to_run = [
-            step
-            for step in deployment.steps.values()
-            if step.config.step_operator == self.name
-        ]
-        if not steps_to_run:
-            return
-
-        os.environ[ENV_ACTIVE_DEPLOYMENT] = deployment.yaml()
-
     def _prepare_environment(
         self,
         workspace: Workspace,
         docker_settings: "DockerSettings",
         run_name: str,
+        environment_variables: Dict[str, str],
+        environment_name: Optional[str] = None,
     ) -> Environment:
         """Prepares the environment in which Azure will run all jobs.
 
@@ -155,14 +145,18 @@ class AzureMLStepOperator(BaseStepOperator):
             docker_settings: The Docker settings for this step.
             run_name: The name of the pipeline run that can be used
                 for naming environments and runs.
+            environment_variables: Environment variables to set in the
+                environment.
+            environment_name: Optional name of an existing environment to use.
 
         Returns:
             The AzureML Environment object.
         """
         docker_image_builder = PipelineDockerImageBuilder()
-        requirements_files = docker_image_builder._gather_requirements_files(
+        requirements_files = docker_image_builder.gather_requirements_files(
             docker_settings=docker_settings,
             stack=Client().active_stack,
+            log=False,
         )
         requirements = list(
             itertools.chain.from_iterable(
@@ -174,9 +168,9 @@ class AzureMLStepOperator(BaseStepOperator):
             "Using requirements for AzureML step operator environment: %s",
             requirements,
         )
-        if self.config.environment_name:
+        if environment_name:
             environment = Environment.get(
-                workspace=workspace, name=self.config.environment_name
+                workspace=workspace, name=environment_name
             )
             if not environment.python.conda_dependencies:
                 environment.python.conda_dependencies = (
@@ -200,9 +194,6 @@ class AzureMLStepOperator(BaseStepOperator):
                 # replace the default azure base image
                 environment.docker.base_image = docker_settings.parent_image
 
-        environment_variables = {
-            "ENV_ZENML_PREVENT_PIPELINE_EXECUTION": "True",
-        }
         # set credentials to access azure storage
         for key in [
             "AZURE_STORAGE_ACCOUNT_KEY",
@@ -218,7 +209,6 @@ class AzureMLStepOperator(BaseStepOperator):
             ENV_ZENML_CONFIG_PATH
         ] = f"./{DOCKER_IMAGE_ZENML_CONFIG_DIR}"
         environment_variables.update(docker_settings.environment)
-
         environment.environment_variables = environment_variables
         return environment
 
@@ -226,15 +216,15 @@ class AzureMLStepOperator(BaseStepOperator):
         self,
         info: "StepRunInfo",
         entrypoint_command: List[str],
+        environment: Dict[str, str],
     ) -> None:
         """Launches a step on AzureML.
 
         Args:
             info: Information about the step run.
             entrypoint_command: Command that executes the step.
-
-        Raises:
-            RuntimeError: If the deployment config can't be found.
+            environment: Environment variables to set in the step operator
+                environment.
         """
         if not info.config.resource_settings.empty:
             logger.warning(
@@ -252,13 +242,16 @@ class AzureMLStepOperator(BaseStepOperator):
             "dockerfile",
             "build_context_root",
             "build_options",
-            "docker_target_repository",
+            "skip_build",
+            "target_repository",
             "dockerignore",
             "copy_files",
             "copy_global_config",
             "apt_packages",
+            "user",
+            "source_files",
         ]
-        docker_settings = info.pipeline.docker_settings
+        docker_settings = info.config.docker_settings
         ignored_docker_fields = docker_settings.__fields_set__.intersection(
             unused_docker_fields
         )
@@ -271,6 +264,8 @@ class AzureMLStepOperator(BaseStepOperator):
                 ignored_docker_fields,
             )
 
+        settings = cast(AzureMLStepOperatorSettings, self.get_settings(info))
+
         workspace = Workspace.get(
             subscription_id=self.config.subscription_id,
             resource_group=self.config.resource_group,
@@ -278,50 +273,28 @@ class AzureMLStepOperator(BaseStepOperator):
             auth=self._get_authentication(),
         )
 
-        source_directory = get_source_root_path()
-        deployment = os.environ.get(ENV_ACTIVE_DEPLOYMENT)
-        deployment_path = os.path.join(
-            source_directory, DOCKER_IMAGE_DEPLOYMENT_CONFIG_FILE
+        source_directory = source_utils.get_source_root()
+
+        environment = self._prepare_environment(
+            workspace=workspace,
+            docker_settings=docker_settings,
+            run_name=info.run_name,
+            environment_variables=environment,
+            environment_name=settings.environment_name,
+        )
+        compute_target = ComputeTarget(
+            workspace=workspace, name=self.config.compute_target_name
         )
 
-        if deployment:
-            with open(deployment_path, "w") as f:
-                f.write(deployment)
-        elif not os.path.exists(deployment_path):
-            # We're running in a non-local environment which should already
-            # include the deployment at the source root
-            raise RuntimeError("Unable to find deployment configuration.")
+        run_config = ScriptRunConfig(
+            source_directory=source_directory,
+            environment=environment,
+            compute_target=compute_target,
+            command=entrypoint_command,
+        )
 
-        with _include_global_config(
-            build_context_root=source_directory,
-            load_config_path=PurePosixPath(
-                f"./{DOCKER_IMAGE_ZENML_CONFIG_DIR}"
-            ),
-        ):
-            environment = self._prepare_environment(
-                workspace=workspace,
-                docker_settings=docker_settings,
-                run_name=info.run_name,
-            )
-            compute_target = ComputeTarget(
-                workspace=workspace, name=self.config.compute_target_name
-            )
-
-            try:
-                run_config = ScriptRunConfig(
-                    source_directory=source_directory,
-                    environment=environment,
-                    compute_target=compute_target,
-                    command=entrypoint_command,
-                )
-
-                experiment = Experiment(
-                    workspace=workspace, name=info.pipeline.name
-                )
-                run = experiment.submit(config=run_config)
-            finally:
-                if deployment:
-                    os.remove(deployment_path)
+        experiment = Experiment(workspace=workspace, name=info.pipeline.name)
+        run = experiment.submit(config=run_config)
 
         run.display_name = info.run_name
         run.wait_for_completion(show_output=True)

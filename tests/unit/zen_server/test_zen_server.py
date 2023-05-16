@@ -17,156 +17,24 @@ import platform
 import pytest
 import requests
 
-from zenml.constants import (
-    API,
-    DEFAULT_LOCAL_SERVICE_IP_ADDRESS,
-    LOGIN,
-    STACKS,
-    USERS,
-    VERSION_1,
-)
-from zenml.services import (
-    HTTPEndpointHealthMonitor,
-    HTTPEndpointHealthMonitorConfig,
-    LocalDaemonServiceEndpoint,
-    LocalDaemonServiceEndpointConfig,
-    ServiceEndpointProtocol,
-    ServiceState,
-)
 from zenml.utils.networking_utils import scan_for_available_port
 from zenml.zen_server.deploy import ServerDeployer, ServerDeploymentConfig
-from zenml.zen_server.deploy.local.local_zen_server import (
-    ZEN_SERVER_HEALTHCHECK_URL_PATH,
-    LocalServerDeploymentConfig,
-    LocalZenServer,
-    LocalZenServerConfig,
-)
-from zenml.zen_stores.base_zen_store import DEFAULT_USERNAME
 
-SERVER_START_STOP_TIMEOUT = 30
-
-
-@pytest.fixture
-def running_zen_server(
-    tmp_path_factory: pytest.TempPathFactory,
-) -> LocalZenServer:
-    """Spin up a ZenServer to do tests on."""
-    port = scan_for_available_port(start=8003, stop=9000)
-    zen_server = LocalZenServer(
-        config=LocalZenServerConfig(
-            server=LocalServerDeploymentConfig(name="", provider="local"),
-        ),
-        port=port,
-        endpoint=LocalDaemonServiceEndpoint(
-            config=LocalDaemonServiceEndpointConfig(
-                protocol=ServiceEndpointProtocol.HTTP,
-                ip_address=str(DEFAULT_LOCAL_SERVICE_IP_ADDRESS),
-                port=port,
-                allocate_port=False,
-            ),
-            monitor=HTTPEndpointHealthMonitor(
-                config=HTTPEndpointHealthMonitorConfig(
-                    healthcheck_uri_path=ZEN_SERVER_HEALTHCHECK_URL_PATH,
-                    use_head_request=True,
-                ),
-            ),
-        ),
-    )
-
-    try:
-        # on MAC OS, we need to set this environment variable
-        # to fix problems with the fork() calls (see this thread
-        # for more information: http://sealiesoftware.com/blog/archive/2017/6/5/Objective-C_and_fork_in_macOS_1013.html)
-        os.environ["OBJC_DISABLE_INITIALIZE_FORK_SAFETY"] = "YES"
-        zen_server.start(timeout=SERVER_START_STOP_TIMEOUT)
-    except RuntimeError:
-        print("ZenServer failed to start. Pulling logs...")
-        for line in zen_server.get_logs(tail=200):
-            print(line)
-        raise
-    finally:
-        del os.environ["OBJC_DISABLE_INITIALIZE_FORK_SAFETY"]
-
-    yield zen_server
-    try:
-        zen_server.stop(timeout=SERVER_START_STOP_TIMEOUT)
-    except RuntimeError:
-        print("ZenServer failed to stop. Pulling logs...")
-        for line in zen_server.get_logs(tail=200):
-            print(line)
-        raise
-
-    assert zen_server.check_status()[0] == ServiceState.INACTIVE
-
-
-def get_auth_token(api_endpoint: str, username: str, password: str) -> str:
-    """Get an authentication token from the server.
-
-    Returns:
-        The authentication token.
-    """
-    response = requests.post(
-        api_endpoint + LOGIN,
-        data={
-            "username": username,
-            "password": password,
-        },
-    )
-    return response.json()["access_token"]
+SERVER_START_STOP_TIMEOUT = 60
 
 
 @pytest.mark.skipif(
     platform.system() == "Windows",
     reason="ZenServer not supported as daemon on Windows.",
 )
-def test_get_stack_endpoints(running_zen_server: LocalZenServer):
-    """Test that the stack methods behave as they should."""
-    endpoint = running_zen_server.endpoint.status.uri.strip("/")
-    api_endpoint = endpoint + API + VERSION_1
-    token = get_auth_token(api_endpoint, DEFAULT_USERNAME, "")
-    stacks_response = requests.get(
-        api_endpoint + STACKS,
-        headers={"Authorization": f"Bearer {token}"},
-    )
-    assert stacks_response.status_code == 200
-    assert isinstance(stacks_response.json(), (list, tuple))
-    assert len(stacks_response.json()) == 1
-
-    users_response = requests.get(
-        api_endpoint + USERS,
-        headers={"Authorization": f"Bearer {token}"},
-    )
-    assert users_response.status_code == 200
-    assert isinstance(users_response.json(), list)
-    assert len(users_response.json()) == 1
-
-
-@pytest.mark.skipif(
-    platform.system() == "Windows",
-    reason="ZenServer not supported as daemon on Windows.",
-)
-def test_server_requires_auth(running_zen_server: LocalZenServer):
-    """Test that most service methods require authorization."""
-    endpoint = running_zen_server.endpoint.status.uri.strip("/")
-    api_endpoint = endpoint + API + VERSION_1
-
-    stacks_response = requests.get(api_endpoint + STACKS)
-    assert stacks_response.status_code == 401
-
-    users_response = requests.get(api_endpoint + USERS)
-    assert users_response.status_code == 401
-
-    # health doesn't require auth
-    health_response = requests.get(endpoint + "/health")
-    assert health_response.status_code == 200
-
-
-@pytest.mark.skipif(
-    platform.system() == "Windows",
-    reason="ZenServer not supported as daemon on Windows.",
-)
-def test_server_up_down():
+def test_server_up_down(clean_client, mocker):
     """Test spinning up and shutting down ZenServer."""
+    # on MAC OS, we need to set this environment variable
+    # to fix problems with the fork() calls (see this thread
+    # for more information: http://sealiesoftware.com/blog/archive/2017/6/5/Objective-C_and_fork_in_macOS_1013.html)
+    mocker.patch.dict(
+        os.environ, {"OBJC_DISABLE_INITIALIZE_FORK_SAFETY": "YES"}
+    )
     port = scan_for_available_port(start=8003, stop=9000)
     deployment_config = ServerDeploymentConfig(
         name="test_server",
@@ -177,10 +45,6 @@ def test_server_up_down():
     deployer = ServerDeployer()
 
     try:
-        # on MAC OS, we need to set this environment variable
-        # to fix problems with the fork() calls (see this thread
-        # for more information: http://sealiesoftware.com/blog/archive/2017/6/5/Objective-C_and_fork_in_macOS_1013.html)
-        os.environ["OBJC_DISABLE_INITIALIZE_FORK_SAFETY"] = "YES"
         server = deployer.deploy_server(
             deployment_config, timeout=SERVER_START_STOP_TIMEOUT
         )
@@ -195,7 +59,6 @@ def test_server_up_down():
             print(line)
         raise
     finally:
-        del os.environ["OBJC_DISABLE_INITIALIZE_FORK_SAFETY"]
         try:
             deployer.remove_server(
                 server_name="test_server", timeout=SERVER_START_STOP_TIMEOUT

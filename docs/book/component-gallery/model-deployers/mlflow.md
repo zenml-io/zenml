@@ -37,7 +37,7 @@ available in ZenML (e.g. Seldon Core, KServe, etc.)
 ## How do you deploy it?
 
 The MLflow Model Deployer flavor is provided by the MLflow ZenML integration, 
-you need to install it on your local machine to be able to deploy your models. 
+so you need to install it on your local machine to be able to deploy your models. 
 You can do this by running the following command:
 
 ```bash
@@ -157,4 +157,4 @@ You can check the MLflow deployment example for more details.
 - [Model Deployer with MLflow](https://github.com/zenml-io/zenml/tree/main/examples/mlflow_deployment)
 
 For more information and a full list of configurable attributes of the MLflow 
-Model Deployer, check out the [API Docs](https://apidocs.zenml.io/latest/api_docs/integration_code_docs/integrations-mlflow/#zenml.integrations.mlflow.model_deployers).
+Model Deployer, check out the [API Docs](https://apidocs.zenml.io/latest/integration_code_docs/integrations-mlflow/#zenml.integrations.mlflow.model_deployers).

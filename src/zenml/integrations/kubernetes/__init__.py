@@ -19,10 +19,8 @@ the CLI tool.
 """
 from typing import List, Type
 
-from zenml.enums import StackComponentType
 from zenml.integrations.constants import KUBERNETES
 from zenml.integrations.integration import Integration
-from zenml.models import FlavorModel
 from zenml.stack import Flavor
 
 KUBERNETES_ORCHESTRATOR_FLAVOR = "kubernetes"

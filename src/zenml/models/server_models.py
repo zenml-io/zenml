@@ -11,12 +11,13 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Model definitions for code projects."""
+"""Model definitions for ZenML servers."""
 
 from uuid import UUID, uuid4
 
 from pydantic import BaseModel, Field
 
+from zenml.enums import SecretsStoreType
 from zenml.utils.enum_utils import StrEnum
 
 
@@ -29,7 +30,9 @@ class ServerDeploymentType(StrEnum):
     AWS = "aws"
     GCP = "gcp"
     AZURE = "azure"
+    ALPHA = "alpha"
     OTHER = "other"
+    HF_SPACES = "hf_spaces"
 
 
 class ServerDatabaseType(StrEnum):
@@ -55,6 +58,10 @@ class ServerModel(BaseModel):
     database_type: ServerDatabaseType = Field(
         ServerDatabaseType.OTHER,
         title="The database type that the server is using.",
+    )
+    secrets_store_type: SecretsStoreType = Field(
+        SecretsStoreType.NONE,
+        title="The type of secrets store that the server is using.",
     )
 
     def is_local(self) -> bool:

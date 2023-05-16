@@ -21,7 +21,11 @@ from zenml.config.base_settings import BaseSettings
 from zenml.integrations.kubernetes import serialization_utils
 
 if TYPE_CHECKING:
-    from kubernetes.client.models import V1Affinity, V1Toleration
+    from kubernetes.client.models import (
+        V1Affinity,
+        V1ResourceRequirements,
+        V1Toleration,
+    )
 
 
 class KubernetesPodSettings(BaseSettings):
@@ -31,11 +35,15 @@ class KubernetesPodSettings(BaseSettings):
         node_selectors: Node selectors to apply to the pod.
         affinity: Affinity to apply to the pod.
         tolerations: Tolerations to apply to the pod.
+        resources: Resource requests and limits for the pod.
+        annotations: Annotations to apply to the pod metadata.
     """
 
     node_selectors: Dict[str, str] = {}
     affinity: Dict[str, Any] = {}
     tolerations: List[Dict[str, Any]] = []
+    resources: Dict[str, Dict[str, str]] = {}
+    annotations: Dict[str, str] = {}
 
     @validator("affinity", pre=True)
     def _convert_affinity(
@@ -80,3 +88,22 @@ class KubernetesPodSettings(BaseSettings):
                 result.append(element)
 
         return result
+
+    @validator("resources", pre=True)
+    def _convert_resources(
+        cls, value: Union[Dict[str, Any], "V1ResourceRequirements"]
+    ) -> Dict[str, Any]:
+        """Converts Kubernetes resource requirements to a dict.
+
+        Args:
+            value: The resource value.
+
+        Returns:
+            The converted value.
+        """
+        from kubernetes.client.models import V1ResourceRequirements
+
+        if isinstance(value, V1ResourceRequirements):
+            return serialization_utils.serialize_kubernetes_model(value)
+        else:
+            return value

@@ -22,7 +22,6 @@ from typing import List, Type
 from zenml.enums import StackComponentType
 from zenml.integrations.constants import GREAT_EXPECTATIONS
 from zenml.integrations.integration import Integration
-from zenml.models import FlavorModel
 from zenml.stack import Flavor
 
 GREAT_EXPECTATIONS_DATA_VALIDATOR_FLAVOR = "great_expectations"
@@ -33,7 +32,7 @@ class GreatExpectationsIntegration(Integration):
 
     NAME = GREAT_EXPECTATIONS
     REQUIREMENTS = [
-        "great-expectations~=0.15.11",
+        "great-expectations>=0.15.0,<=0.15.47",
     ]
 
     @staticmethod

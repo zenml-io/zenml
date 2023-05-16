@@ -9,11 +9,71 @@ those services. Instead of storing these credentials in code or files,
 ZenML secrets managers can be used to store and retrieve these values
 in a secure manner.
 
+{% hint style="warning" %}
+We are deprecating secrets managers in favor of the
+[centralized ZenML secrets store](../../starter-guide/production-fundamentals/secrets-management.md#centralized-secrets-store).
+Going forward, we recommend using the secrets store instead of secrets managers
+to configure and store secrets.
+
+If you already use secrets managers to manage your secrets, please use the
+provided `zenml secrets-manager secrets migrate` CLI command to migrate your
+secrets to the centralized secrets store.
+
+Managing secrets through a secrets manager stack component suffers from a
+number of limitations, some of which are:
+
+* you need to configure a Secrets Manager stack component
+and add it to your active stack before you can register and access secrets. With
+centralized secrets management, you don't need to configure anything; your ZenML
+local deployment or ZenML server replaces the secrets manager role.
+
+* even with a secrets manager configured in your active stack, if you are using
+a secrets manager flavor with a cloud back-end (e.g. AWS, GCP or Azure), you
+still need to configure all your ZenML clients with the authentication credentials
+required to access the back-end directly. This is not only an inconvenience, it
+is also a security risk, because it basically represents a large attack surface.
+With centralized secrets management, you only need to configure the ZenML server
+to access the cloud back-end.
+
+ZenML currently supports configuring the ZenML server to use the following
+back-ends as centralized secrets store replacements for secrets managers:
+
+* the SQL database that the ZenML server is using to store other managed objects
+such as pipelines, stacks, etc. This is the default option and replaces the
+`local` secrets manager flavor.
+* AWS Secrets Manager - replaces the `aws` secrets manager flavor.
+* GCP Secret Manager - replaces the `gcp` secrets manager flavor.
+* Azure Key Vault - replaces the `azure` secrets manager flavor.
+* HashiCorp Vault - replaces the `vault` secrets manager flavor.
+
+The centralized secrets store also supports using a custom back-end
+implementation.
+
+There is no direct migration path planned for the GitHub secrets manager flavor,
+given that it can only be used inside a GitHub Actions workflow and thus is not
+a service that can be used as a centralized secrets store.
+If you are using the GitHub secrets manager flavor, you have the option of
+manually transferring your secrets to one of the other supported secrets store back-ends.
+{% endhint %}
+
 ## When to use it
 
 You should include a secrets manager in your ZenML stack if any other component
 of your stack requires confidential information (such as authentication 
 credentials) or you want to access secret values inside your pipeline steps.
+
+
+## How they secret managers slot into the stack
+
+Here is an architecture diagram that shows how remote secrets managers fit into
+the overall story of a remote stack. As you can see the secrets manager is 
+accessed from the client-side as well as from the orchestrator/step operator. 
+On the client side the secret manager could be used to resolve credentials for 
+the orchestrator and container registry. Orchestrators and Step Operators can
+also query the secrets manager to get credentials for other stack components, 
+data sources, or other environments.
+
+![Secret Manager](../../assets/diagrams/Remote_with_secrets_manager.png)
 
 ## Secrets Manager Flavors
 
@@ -26,8 +86,8 @@ in local files. Additional cloud secrets managers are provided by integrations:
 | [AWS](./aws.md)                         | `aws`    | `aws`         | Yes              | Uses AWS to store secrets                                                  |
 | [GCP](./gcp.md)                         | `gcp`    | `gcp`         | Yes              | Uses GCP to store secretes                                                 |
 | [Azure](./azure.md)                     | `azure`  | `azure`       | Yes              | Uses Azure Key Vaults to store secrets                                     |
-| [HashiCorp Vault](./hashicorp-vault.md) | `vault`  | `vault`       | Yes              | Uses HashiCorp Vault to store secrets                                      |
-| [Custom Implementation](./custom.md)    | _custom_ |               | No               | Extend the secrets manager abstraction and provide your own implementation |
+| [GitHub](./github.md)                   | `github` | `github`      | No               | Uses GitHub to store secrets                                               |
+| [HashiCorp Vault](./vault.md) | `vault`  | `vault`       | Yes              | Uses HashiCorp Vault to store secrets                                      |
 
 If you would like to see the available flavors of secrets managers, you can 
 use the command:
@@ -40,7 +100,7 @@ zenml secrets-manager flavor list
 ### In the CLI
 
 A full guide on using the CLI interface to register, access, update and delete
-secrets is available [here](https://apidocs.zenml.io/latest/cli/#zenml.cli--using-secrets).
+secrets is available [here](https://apidocs.zenml.io/latest/cli/#zenml.cli--secrets-management-with-secrets-managers).
 
 {% hint style="info" %}
 
@@ -159,8 +219,9 @@ be raised
 Secret references work with any secrets manager and allow you to securely
 specify sensitive configurations for your [stack components](../../starter-guide/stacks/registering-stacks.md).
 
-Check out the corresponding [documentation page](../../advanced-guide/practical/secrets-management.md)
+Check out the corresponding [documentation page](../../starter-guide/production-fundamentals/secrets-management.md)
 for more information.
+
 ## Secret Scopes
 
 Examples of situations in which Secrets Manager scoping can be useful:
@@ -168,7 +229,7 @@ Examples of situations in which Secrets Manager scoping can be useful:
 * you want to control whether a secret configured in a Secrets Manager stack
 component is visible in another Secrets Manager stack component. This is useful
 when you want to share secrets without necessarily 
-[sharing stack components](../../starter-guide/collaborate/collaborate.md).
+[sharing stack components](../../starter-guide/stacks/sharing-stacks.md).
 * you want to be able to configure two or more secrets with the same name but
 with different values in different Secrets Manager stack components.
 * you want to emulate multiple virtual Secrets Manager instances on top of a

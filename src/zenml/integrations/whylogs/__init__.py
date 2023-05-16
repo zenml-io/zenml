@@ -18,7 +18,6 @@ from typing import List, Type
 from zenml.enums import StackComponentType
 from zenml.integrations.constants import WHYLOGS
 from zenml.integrations.integration import Integration
-from zenml.models import FlavorModel
 from zenml.stack import Flavor
 
 WHYLOGS_DATA_VALIDATOR_FLAVOR = "whylogs"
@@ -35,7 +34,6 @@ class WhylogsIntegration(Integration):
         """Activates the integration."""
         from zenml.integrations.whylogs import materializers  # noqa
         from zenml.integrations.whylogs import secret_schemas  # noqa
-        from zenml.integrations.whylogs import visualizers  # noqa
 
     @classmethod
     def flavors(cls) -> List[Type[Flavor]]:

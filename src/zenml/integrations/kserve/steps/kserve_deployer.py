@@ -17,7 +17,6 @@ from typing import List, Optional, cast
 
 from pydantic import BaseModel, validator
 
-from zenml.artifacts.model_artifact import ModelArtifact
 from zenml.client import Client
 from zenml.constants import MODEL_METADATA_YAML_FILE_NAME
 from zenml.environment import Environment
@@ -36,6 +35,7 @@ from zenml.integrations.kserve.services.kserve_deployment import (
 )
 from zenml.io import fileio
 from zenml.logger import get_logger
+from zenml.materializers import UnmaterializedArtifact
 from zenml.steps import (
     STEP_ENVIRONMENT_NAME,
     BaseParameters,
@@ -43,9 +43,8 @@ from zenml.steps import (
     step,
 )
 from zenml.steps.step_context import StepContext
-from zenml.utils import io_utils
-from zenml.utils.materializer_utils import save_model_metadata
-from zenml.utils.source_utils import import_class_by_path, is_inside_repository
+from zenml.utils import io_utils, source_utils
+from zenml.utils.artifact_utils import save_model_metadata
 
 logger = get_logger(__name__)
 
@@ -92,7 +91,7 @@ class TorchServeParameters(BaseModel):
         """
         if not v:
             raise ValueError("Model class file path is required.")
-        if not is_inside_repository(v):
+        if not Client.is_inside_repository(v):
             raise ValueError(
                 "Model class file path must be inside the repository."
             )
@@ -114,7 +113,7 @@ class TorchServeParameters(BaseModel):
         if v:
             if v in TORCH_HANDLERS:
                 return v
-            elif is_inside_repository(v):
+            elif Client.is_inside_repository(v):
                 return v
             else:
                 raise ValueError(
@@ -142,7 +141,7 @@ class TorchServeParameters(BaseModel):
         extra_files = []
         if v is not None:
             for file_path in v:
-                if is_inside_repository(file_path):
+                if Client.is_inside_repository(file_path):
                     extra_files.append(file_path)
                 else:
                     raise ValueError(
@@ -165,7 +164,7 @@ class TorchServeParameters(BaseModel):
             ValueError: if torch config file path is not valid.
         """
         if v:
-            if is_inside_repository(v):
+            if Client.is_inside_repository(v):
                 return v
             else:
                 raise ValueError(
@@ -198,7 +197,7 @@ class CustomDeployParameters(BaseModel):
             TypeError: if predict function path is not a callable function
         """
         try:
-            predict_function = import_class_by_path(predict_func_path)
+            predict_function = source_utils.load(predict_func_path)
         except AttributeError:
             raise ValueError("Predict function can't be found.")
         if not callable(predict_function):
@@ -226,7 +225,7 @@ def kserve_model_deployer_step(
     deploy_decision: bool,
     params: KServeDeployerStepParameters,
     context: StepContext,
-    model: ModelArtifact,
+    model: UnmaterializedArtifact,
 ) -> KServeDeploymentService:
     """KServe model deployer pipeline step.
 
@@ -249,12 +248,12 @@ def kserve_model_deployer_step(
     # get pipeline name, step name and run id
     step_env = cast(StepEnvironment, Environment()[STEP_ENVIRONMENT_NAME])
     pipeline_name = step_env.pipeline_name
-    pipeline_run_id = step_env.pipeline_run_id
+    run_name = step_env.run_name
     step_name = step_env.step_name
 
     # update the step configuration with the real pipeline runtime information
     params.service_config.pipeline_name = pipeline_name
-    params.service_config.pipeline_run_id = pipeline_run_id
+    params.service_config.run_name = run_name
     params.service_config.pipeline_step_name = step_name
 
     # fetch existing services with same pipeline name, step name and
@@ -331,7 +330,7 @@ def kserve_custom_model_deployer_step(
     deploy_decision: bool,
     params: KServeDeployerStepParameters,
     context: StepContext,
-    model: ModelArtifact,
+    model: UnmaterializedArtifact,
 ) -> KServeDeploymentService:
     """KServe custom model deployer pipeline step.
 
@@ -367,12 +366,12 @@ def kserve_custom_model_deployer_step(
     # get pipeline name, step name, run id
     step_env = cast(StepEnvironment, Environment()[STEP_ENVIRONMENT_NAME])
     pipeline_name = step_env.pipeline_name
-    pipeline_run_id = step_env.pipeline_run_id
+    run_name = step_env.run_name
     step_name = step_env.step_name
 
     # update the step configuration with the real pipeline runtime information
     params.service_config.pipeline_name = pipeline_name
-    params.service_config.pipeline_run_id = pipeline_run_id
+    params.service_config.run_name = run_name
     params.service_config.pipeline_step_name = step_name
 
     # fetch existing services with same pipeline name, step name and
@@ -418,26 +417,19 @@ def kserve_custom_model_deployer_step(
             "No active stack is available. "
             "Please make sure that you have registered and set a stack."
         )
-    context.stack
 
-    docker_image = step_env.step_run_info.pipeline.extra[
-        KSERVE_DOCKER_IMAGE_KEY
-    ]
+    image_name = step_env.step_run_info.get_image(key=KSERVE_DOCKER_IMAGE_KEY)
 
     # copy the model files to a new specific directory for the deployment
-    served_model_uri = os.path.join(context.get_output_artifact_uri(), "kserve")
+    served_model_uri = os.path.join(
+        context.get_output_artifact_uri(), "kserve"
+    )
     fileio.makedirs(served_model_uri)
     io_utils.copy_dir(model.uri, served_model_uri)
 
-    # Get the model artifact to extract information about the model
-    # and how it can be loaded again later in the deployment environment.
-    artifact = Client().zen_store.list_artifacts(artifact_uri=model.uri)
-    if not artifact:
-        raise DoesNotExistException(f"No artifact found at {model.uri}.")
-
     # save the model artifact metadata to the YAML file and copy it to the
     # deployment directory
-    model_metadata_file = save_model_metadata(artifact[0])
+    model_metadata_file = save_model_metadata(model)
     fileio.copy(
         model_metadata_file,
         os.path.join(served_model_uri, MODEL_METADATA_YAML_FILE_NAME),
@@ -450,7 +442,7 @@ def kserve_custom_model_deployer_step(
     # Prepare container config for custom model deployment
     service_config.container = {
         "name": service_config.model_name,
-        "image": docker_image,
+        "image": image_name,
         "command": entrypoint_command,
         "storage_uri": service_config.model_uri,
     }

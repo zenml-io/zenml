@@ -21,6 +21,7 @@ from hypothesis.strategies import lists, text
 from zenml.enums import AnnotationTasks
 from zenml.integrations.label_studio.label_config_generators import (
     generate_basic_object_detection_bounding_boxes_label_config,
+    generate_basic_ocr_label_config,
     generate_image_classification_label_config,
 )
 
@@ -46,6 +47,17 @@ def test_object_detection_label_config_generator(label_list: List[str]):
     first_label = label_list[0]
     assert f"<Label value='{first_label}' />\n" in label_config
     assert label_config_type == AnnotationTasks.OBJECT_DETECTION_BOUNDING_BOXES
+    assert label_config is not None
+
+
+@given(label_list=lists(text(min_size=1), min_size=1))
+def test_ocr_label_config_generator(label_list: List[str]):
+    (label_config, label_config_type) = generate_basic_ocr_label_config(
+        label_list
+    )
+    first_label = label_list[0]
+    assert f"<Label value='{first_label}' />\n" in label_config
+    assert label_config_type == AnnotationTasks.OCR
     assert label_config is not None
 
 

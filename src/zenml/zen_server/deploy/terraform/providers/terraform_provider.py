@@ -188,7 +188,6 @@ class TerraformServerProvider(BaseServerProvider):
         assert isinstance(service, TerraformZenServer)
 
         # preserve the server ID across updates
-        new_config.server.server_id = service.config.server.server_id
         service.config = new_config
         service.start(timeout=timeout)
 

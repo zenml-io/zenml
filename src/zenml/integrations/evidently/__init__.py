@@ -27,7 +27,6 @@ from typing import List, Type
 from zenml.enums import StackComponentType
 from zenml.integrations.constants import EVIDENTLY
 from zenml.integrations.integration import Integration
-from zenml.models import FlavorModel
 from zenml.stack import Flavor
 
 EVIDENTLY_DATA_VALIDATOR_FLAVOR = "evidently"
@@ -37,13 +36,12 @@ class EvidentlyIntegration(Integration):
     """[Evidently](https://github.com/evidentlyai/evidently) integration for ZenML."""
 
     NAME = EVIDENTLY
-    REQUIREMENTS = ["evidently==0.1.52dev0"]
+    REQUIREMENTS = ["evidently==0.2.2"]
 
     @staticmethod
     def activate() -> None:
-        """Activate the Deepchecks integration."""
+        """Activate the Evidently integration."""
         from zenml.integrations.evidently import materializers  # noqa
-        from zenml.integrations.evidently import visualizers  # noqa
 
     @classmethod
     def flavors(cls) -> List[Type[Flavor]]:

@@ -3,7 +3,8 @@ Data logging and profiling is an important part of any production ML
 pipeline. [whylogs](https://whylabs.ai/whylogs) is an open source library
 that analyzes your data and creates statistical summaries called whylogs
 profiles. whylogs profiles can be visualized locally or uploaded to the
-[WhyLabs](https://whylabs.ai/) platform where more comprehensive analyses can be carried out.
+[WhyLabs](https://whylabs.ai/) platform where more comprehensive analysis 
+can be carried out.
 
 ## 🗺 Overview
 ZenML integrates seamlessly with whylogs and WhyLabs. This example shows
@@ -12,16 +13,12 @@ profiling features. Changes to the user code are minimal while ZenML takes
 care of all aspects related to whylogs serialization, versioning and persistence
 and even uploading generated profiles to WhyLabs.
 
-The ZenML whylogs integration includes the following features showcased in this
-example:
-
-* a predefined `WhylogsProfilerStep` ZenML step class that can be
+The ZenML whylogs integration includes a predefined `WhylogsProfilerStep` ZenML 
+step class that can be
 instantiated and inserted into any pipeline to generate a whylogs profile
 out of a Pandas DataFrame and return the profile as a step output artifact.
 Instantiating this type of step is simplified even further through the
 use of the `whylogs_profiler_step` utility function.
-* a `WhylogsVisualizer` ZenML visualizer that can be used to display whylogs
-profile artifacts produced during the execution of pipelines.
 
 ## 🧰 How the example is implemented
 The ZenML pipeline in this example is rather simple, consisting of a couple
@@ -65,7 +62,9 @@ def data_loader() -> Output(data=pd.DataFrame, profile=DatasetProfileView,):
     return dataset, profile
 ```
 
-If you want to enable Whylabs logging when using the class-based API, simply configure your step as follows:
+If you want to enable Whylabs logging when using the class-based API, 
+simply configure your step as follows:
+
 ```python
 from zenml.steps import Output, BaseStep
 from whylogs.core import DatasetProfileView
@@ -101,72 +100,28 @@ from zenml.integrations.whylogs.steps import WhylogsProfilerParameters, whylogs_
 train_data_profiler = whylogs_profiler_step(
     step_name="train_data_profiler",
     params=WhylogsProfilerParameters(),
-    log_to_whylabs=True,
     dataset_id="model-2",
 )
 test_data_profiler = whylogs_profiler_step(
     step_name="test_data_profiler",
     params=WhylogsProfilerParameters(),
-    log_to_whylabs=True,
     dataset_id="model-3",
 )
 ```
 
-### 🕵️ Post execution analysis
-
-The ZenML `WhylogsVisualizer` can be used to visualize the whylogs
-profiles persisted in the Artifact Store locally. It can take in a single
-step view, or two, in which case a data drift report is created out of two
-dataset profiles generated in two different steps:
-
-```python
-from zenml.integrations.whylogs.visualizers import WhylogsVisualizer
-from zenml.logger import get_logger
-from zenml.post_execution import get_pipeline
-
-def visualize_statistics(
-    step_name: str, reference_step_name: str = None
-) -> None:
-    """Helper function to visualize whylogs statistics from step artifacts.
-
-    Args:
-        step_name: step that generated and returned a whylogs profile
-        reference_step_name: an optional second step that generated a whylogs
-            profile to use for data drift visualization where two whylogs
-            profiles are required.
-    """
-    pipe = get_pipeline(pipeline="data_profiling_pipeline")
-    whylogs_step = pipe.runs[-1].get_step(step=step_name)
-    whylogs_reference_step = None
-    if reference_step_name:
-        whylogs_reference_step = pipe.runs[-1].get_step(
-            name=reference_step_name
-        )
-
-    WhylogsVisualizer().visualize(
-        step_view=whylogs_step,
-        reference_step_view=whylogs_reference_step,
-    )
-
-visualize_statistics("data_loader")
-visualize_statistics("train_data_profiler", "test_data_profiler")
-```
-
-![whylogs visualizer](assets/whylogs-visualizer.png)
-
-Furthermore, all the generated profiles are uploaded to WhyLabs automatically
-for steps with whylabs logging enabled if the Whylabs
-credentials have been configured in the whylogs Data Validator stack component:
-
+All the generated profiles are uploaded to WhyLabs automatically for steps with 
+Whylabs logging enabled if the Whylabs credentials have been configured in the 
+whylogs Data Validator stack component.
 
 The `dataset_id` tags set for the profiles are used to associate
-the datasets models with the models in the WhyLabs platform. 
+the datasets models with the models in the WhyLabs platform.
 
 ![WhyLabs UI image 1](assets/whylabs-ui-01.png)
 ![WhyLabs UI image 2](assets/whylabs-ui-02.png)
 
 # ☁️ Run in Colab
-If you have a google account, you can get started directly with google colab - [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/zenml-io/zenml/blob/main/examples/whylogs_data_profiling/whylogs.ipynb)
+If you have a Google account, you can get started directly with 
+Google colab - [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/zenml-io/zenml/blob/main/examples/whylogs_data_profiling/whylogs.ipynb)
 
 # 🖥 Run it locally
 
@@ -205,16 +160,15 @@ zenml stack register whylogs_stack -o default -a default -dv whylogs --set
 
 Adding Whylabs logging capabilities to that (in addition to the use of the base
 whylogs data validation) is just a bit more complicated, as you
-also require a Secrets Manager in your stack:
+also need to configure a secret for the whylogs Data Validator component.:
 
 ```shell
-zenml data-validator register whylogs -f whylogs --authentication_secret=whylabs_secret
-zenml secrets-manager register local -f local
-zenml stack register whylogs_stack -o default -a default -x local -dv whylogs --set
-
-zenml secrets-manager secret register whylabs_secret -s whylogs \
+zenml secret create whylabs_secret \
     --whylabs_default_org_id=<your-whylogs-organization-id> \
     --whylabs_api_key=<your-whylogs-api-key>
+
+zenml data-validator register whylogs -f whylogs --authentication_secret=whylabs_secret --enable_whylabs=True
+zenml stack register whylogs_stack -o default -a default -dv whylogs --set
 ```
 
 ### ▶️ Run the Code

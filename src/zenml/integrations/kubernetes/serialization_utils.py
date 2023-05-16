@@ -15,10 +15,7 @@
 
 import re
 from datetime import date, datetime
-from typing import TYPE_CHECKING, Any, Dict, List, Type, cast
-
-if TYPE_CHECKING:
-    pass
+from typing import Any, Dict, List, Type, cast
 
 
 def serialize_kubernetes_model(model: Any) -> Dict[str, Any]:

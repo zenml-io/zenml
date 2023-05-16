@@ -115,7 +115,7 @@ class ContainerService(BaseService):
     `run` method. Upon `start`, the service will spawn a container that
     ends up calling the `run` method.
 
-    Example:
+    For example,
 
     ```python
 
@@ -419,7 +419,7 @@ class ContainerService(BaseService):
                     group_add=[os.getgid()],
                 )
 
-            self.docker_client.containers.run(
+            container = self.docker_client.containers.run(
                 name=self.container_id,
                 image=self.config.image,
                 entrypoint=command,
@@ -433,8 +433,10 @@ class ContainerService(BaseService):
                     "zenml-service-uuid": str(self.uuid),
                 },
                 working_dir=SERVICE_CONTAINER_PATH,
+                extra_hosts={"host.docker.internal": "host-gateway"},
                 **uid_args,
             )
+
             logger.debug(
                 "Docker container for service '%s' started with ID: %s",
                 self,
@@ -494,7 +496,9 @@ class ContainerService(BaseService):
         Yields:
             A generator that can be accessed to get the service logs.
         """
-        if not self.status.log_file or not os.path.exists(self.status.log_file):
+        if not self.status.log_file or not os.path.exists(
+            self.status.log_file
+        ):
             return
 
         with open(self.status.log_file, "r") as f:

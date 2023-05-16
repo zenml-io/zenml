@@ -63,31 +63,6 @@ class DoesNotExistException(ZenMLBaseException):
         super().__init__(message)
 
 
-class AlreadyExistsException(ZenMLBaseException):
-    """Raises exception when the `name` already exists in the system.
-
-    This happens when an action is trying to create a resource with the same
-    name.
-    """
-
-    def __init__(
-        self,
-        message: Optional[str] = None,
-        name: str = "",
-        resource_type: str = "",
-    ):
-        """Initializes the exception.
-
-        Args:
-            message: Message with details of exception.
-            name: Name of the resource that already exists.
-            resource_type: Type of the resource that already exists.
-        """
-        if message is None:
-            message = f"{resource_type} `{name}` already exists!"
-        super().__init__(message)
-
-
 class PipelineNotSucceededException(ZenMLBaseException):
     """Raises exception when trying to fetch artifacts from a not succeeded pipeline."""
 
@@ -144,6 +119,10 @@ class ArtifactInterfaceError(ZenMLBaseException):
 
 class StackComponentInterfaceError(ZenMLBaseException):
     """Raises exception when interacting with the stack components in an unsupported way."""
+
+
+class StackComponentDeploymentError(ZenMLBaseException):
+    """Raises exception when deploying a stack component fails."""
 
 
 class ArtifactStoreInterfaceError(ZenMLBaseException):
@@ -211,10 +190,6 @@ class DuplicateRunNameError(RuntimeError):
         super().__init__(message)
 
 
-class NotAuthorizedError(ZenMLBaseException):
-    """Raised when the user does not have permission to perform an action."""
-
-
 class ValidationError(ZenMLBaseException):
     """Raised when the Model passed to the ZenStore."""
 
@@ -257,3 +232,27 @@ class IllegalOperationError(ZenMLBaseException):
 
 class SettingsResolvingError(ZenMLBaseException):
     """Raised when resolving settings failed."""
+
+
+class InputResolutionError(ZenMLBaseException):
+    """Raised when step input resolving failed."""
+
+
+class ZenKeyError(KeyError):
+    """Specialized key error which allows error messages with line breaks."""
+
+    def __init__(self, message: str) -> None:
+        """Initialization.
+
+        Args:
+            message:str, the error message
+        """
+        self.message = message
+
+    def __str__(self) -> str:
+        """String function.
+
+        Returns:
+            the error message
+        """
+        return self.message

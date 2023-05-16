@@ -21,8 +21,6 @@ from zenml.alerter.base_alerter import (
     BaseAlerter,
     BaseAlerterConfig,
     BaseAlerterFlavor,
-)
-from zenml.steps.step_interfaces.base_alerter_step import (
     BaseAlerterStepParameters,
 )
 

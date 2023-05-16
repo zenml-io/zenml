@@ -13,51 +13,46 @@
 #  permissions and limitations under the License.
 """Implementation of the PyTorch DataLoader materializer."""
 
-import os
-from typing import Any, Type, cast
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, Tuple, Type
 
-import torch
+from torch.utils.data import Dataset
 from torch.utils.data.dataloader import DataLoader
 
-from zenml.artifacts import DataArtifact
-from zenml.io import fileio
-from zenml.materializers.base_materializer import BaseMaterializer
+from zenml.enums import ArtifactType
+from zenml.integrations.pytorch.materializers.base_pytorch_materializer import (
+    BasePyTorchMaterliazer,
+)
+
+if TYPE_CHECKING:
+    from zenml.metadata.metadata_types import MetadataType
 
 DEFAULT_FILENAME = "entire_dataloader.pt"
-CHECKPOINT_FILENAME = "checkpoint.pt"
 
 
-class PyTorchDataLoaderMaterializer(BaseMaterializer):
-    """Materializer to read/write PyTorch dataloaders."""
+class PyTorchDataLoaderMaterializer(BasePyTorchMaterliazer):
+    """Materializer to read/write PyTorch dataloaders and datasets."""
 
-    ASSOCIATED_TYPES = (DataLoader,)
-    ASSOCIATED_ARTIFACT_TYPES = (DataArtifact,)
+    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (DataLoader, Dataset)
+    ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.DATA
+    FILENAME: ClassVar[str] = DEFAULT_FILENAME
 
-    def handle_input(self, data_type: Type[Any]) -> DataLoader[Any]:
-        """Reads and returns a PyTorch dataloader.
+    def extract_metadata(self, dataloader: Any) -> Dict[str, "MetadataType"]:
+        """Extract metadata from the given dataloader or dataset.
 
         Args:
-            data_type: The type of the dataloader to load.
+            dataloader: The dataloader or dataset to extract metadata from.
 
         Returns:
-            A loaded PyTorch dataloader.
+            The extracted metadata as a dictionary.
         """
-        super().handle_input(data_type)
-        with fileio.open(
-            os.path.join(self.artifact.uri, DEFAULT_FILENAME), "rb"
-        ) as f:
-            return cast(DataLoader[Any], torch.load(f))  # type: ignore[no-untyped-call]  # noqa
-
-    def handle_return(self, dataloader: DataLoader[Any]) -> None:
-        """Writes a PyTorch dataloader.
-
-        Args:
-            dataloader: A torch.utils.DataLoader or a dict to pass into dataloader.save
-        """
-        super().handle_return(dataloader)
-
-        # Save entire dataloader to artifact directory
-        with fileio.open(
-            os.path.join(self.artifact.uri, DEFAULT_FILENAME), "wb"
-        ) as f:
-            torch.save(dataloader, f)
+        metadata: Dict[str, "MetadataType"] = {}
+        if isinstance(dataloader, DataLoader):
+            if hasattr(dataloader.dataset, "__len__"):
+                metadata["num_samples"] = len(dataloader.dataset)
+            if dataloader.batch_size:
+                metadata["batch_size"] = dataloader.batch_size
+            metadata["num_batches"] = len(dataloader)
+        elif isinstance(dataloader, Dataset):
+            if hasattr(dataloader, "__len__"):
+                metadata["num_samples"] = len(dataloader)
+        return metadata

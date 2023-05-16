@@ -19,13 +19,15 @@ from typing import Optional, Type, cast
 from zenml.enums import StackComponentType
 from zenml.stack import Flavor, StackComponent
 from zenml.stack.stack_component import StackComponentConfig
-from zenml.steps.step_interfaces.base_alerter_step import (
-    BaseAlerterStepParameters,
-)
+from zenml.steps import BaseParameters
 
 
 class BaseAlerterConfig(StackComponentConfig):
     """Base config for alerters."""
+
+
+class BaseAlerterStepParameters(BaseParameters):
+    """Step parameters definition for all alerters."""
 
 
 class BaseAlerter(StackComponent, ABC):
@@ -41,7 +43,7 @@ class BaseAlerter(StackComponent, ABC):
         return cast(BaseAlerterConfig, self._config)
 
     def post(
-        self, message: str, params: Optional[BaseAlerterStepParameters]
+        self, message: str, params: Optional[BaseAlerterStepParameters] = None
     ) -> bool:
         """Post a message to a chat service.
 
@@ -55,7 +57,7 @@ class BaseAlerter(StackComponent, ABC):
         return True
 
     def ask(
-        self, question: str, params: Optional[BaseAlerterStepParameters]
+        self, question: str, params: Optional[BaseAlerterStepParameters] = None
     ) -> bool:
         """Post a message to a chat service and wait for approval.
 

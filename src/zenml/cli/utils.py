@@ -12,8 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Utility functions for the CLI."""
-
-import json
+import contextlib
 import os
 import subprocess
 import sys
@@ -22,20 +21,19 @@ from typing import (
     Any,
     Callable,
     Dict,
+    Iterator,
     List,
     NoReturn,
     Optional,
     Sequence,
+    Set,
     Tuple,
     Type,
     TypeVar,
     Union,
-    cast,
 )
-from uuid import UUID
 
 import click
-from pydantic import BaseModel
 from rich import box, table
 from rich.markup import escape
 from rich.prompt import Confirm
@@ -43,13 +41,34 @@ from rich.style import Style
 
 from zenml.config.global_config import GlobalConfiguration
 from zenml.console import console, zenml_style_defaults
-from zenml.constants import IS_DEBUG_ENV
-from zenml.enums import StackComponentType, StoreType
+from zenml.constants import FILTERING_DATETIME_FORMAT, IS_DEBUG_ENV
+from zenml.enums import GenericFilterOps, StackComponentType, StoreType
 from zenml.logger import get_logger
+from zenml.model_registries.base_model_registry import (
+    ModelVersion,
+    RegisteredModel,
+)
+from zenml.models import BaseFilterModel
+from zenml.models.base_models import BaseResponseModel
+from zenml.models.filter_models import (
+    BoolFilter,
+    NumericFilter,
+    StrFilter,
+    UUIDFilter,
+)
+from zenml.models.page_model import Page
+from zenml.secret import BaseSecretSchema
+from zenml.services import BaseService, ServiceState
+from zenml.stack import StackComponent
+from zenml.stack.stack_component import StackComponentConfig
+from zenml.utils import secret_utils
+from zenml.zen_server.deploy import ServerDeployment
 
 logger = get_logger(__name__)
 
 if TYPE_CHECKING:
+    from uuid import UUID
+
     from rich.text import Text
 
     from zenml.client import Client
@@ -57,16 +76,12 @@ if TYPE_CHECKING:
     from zenml.integrations.integration import Integration
     from zenml.model_deployers import BaseModelDeployer
     from zenml.models import (
-        ComponentModel,
-        FlavorModel,
-        HydratedComponentModel,
-        HydratedStackModel,
-        PipelineRunModel,
-        StackModel,
+        ComponentResponseModel,
+        FlavorResponseModel,
+        PipelineRunResponseModel,
+        StackResponseModel,
     )
-    from zenml.secret import BaseSecretSchema
-    from zenml.services import BaseService, ServiceState
-    from zenml.zen_server.deploy.deployment import ServerDeployment
+    from zenml.stack import Stack
 
 MAX_ARGUMENT_VALUE_SIZE = 10240
 
@@ -144,7 +159,12 @@ def warning(
     console.print(text, style=style, **kwargs)
 
 
-def print_table(obj: List[Dict[str, Any]], **columns: table.Column) -> None:
+def print_table(
+    obj: List[Dict[str, Any]],
+    title: Optional[str] = None,
+    caption: Optional[str] = None,
+    **columns: table.Column,
+) -> None:
     """Prints the list of dicts in a table format.
 
     The input object should be a List of Dicts. Each item in that list represent
@@ -153,16 +173,22 @@ def print_table(obj: List[Dict[str, Any]], **columns: table.Column) -> None:
 
     Args:
         obj: A List containing dictionaries.
+        title: Title of the table.
+        caption: Caption of the table.
         columns: Optional column configurations to be used in the table.
     """
     column_keys = {key: None for dict_ in obj for key in dict_}
     column_names = [columns.get(key, key.upper()) for key in column_keys]
-    rich_table = table.Table(box=box.HEAVY_EDGE, show_lines=True)
+    rich_table = table.Table(
+        box=box.HEAVY_EDGE, show_lines=True, title=title, caption=caption
+    )
     for col_name in column_names:
         if isinstance(col_name, str):
             rich_table.add_column(str(col_name), overflow="fold")
         else:
-            rich_table.add_column(str(col_name.header).upper(), overflow="fold")
+            rich_table.add_column(
+                str(col_name.header).upper(), overflow="fold"
+            )
     for dict_ in obj:
         values = []
         for key in column_keys:
@@ -180,14 +206,14 @@ def print_table(obj: List[Dict[str, Any]], **columns: table.Column) -> None:
     console.print(rich_table)
 
 
-M = TypeVar("M", bound=BaseModel)
+T = TypeVar("T", bound=BaseResponseModel)
 
 
 def print_pydantic_models(
-    models: Sequence[M],
-    columns: Optional[Sequence[str]] = None,
-    exclude_columns: Sequence[str] = (),
-    is_active: Optional[Callable[[M], bool]] = None,
+    models: Union[Page[T], List[T]],
+    columns: Optional[List[str]] = None,
+    exclude_columns: Optional[List[str]] = None,
+    is_active: Optional[Callable[[T], bool]] = None,
 ) -> None:
     """Prints the list of Pydantic models in a table.
 
@@ -200,8 +226,10 @@ def print_pydantic_models(
         is_active: Optional function that marks as row as active.
 
     """
+    if exclude_columns is None:
+        exclude_columns = list()
 
-    def __dictify(model: M) -> Dict[str, str]:
+    def __dictify(model: T) -> Dict[str, str]:
         """Helper function to map over the list to turn Models into dicts.
 
         Args:
@@ -210,15 +238,41 @@ def print_pydantic_models(
         Returns:
             Dict of model attributes.
         """
-        items = (
-            {
-                key: str(value)
-                for key, value in model.dict().items()
-                if key not in exclude_columns
-            }
-            if columns is None
-            else {key: str(model.dict()[key]) for key in columns}
-        )
+        # Explicitly defined columns take precedence over exclude columns
+        if not columns:
+            include_columns = [
+                k for k in model.dict().keys() if k not in exclude_columns  # type: ignore[operator]
+            ]
+        else:
+            include_columns = columns
+
+        items: Dict[str, Any] = {}
+
+        for k in include_columns:
+            value = getattr(model, k)
+            # In case the response model contains nested `BaseResponseModels`
+            #  we want to attempt to represent them by name, if they contain
+            #  such a field, else the id is used
+            if isinstance(value, BaseResponseModel):
+                if "name" in value.__fields__:
+                    items[k] = str(value.name)  # type: ignore[attr-defined]
+                else:
+                    items[k] = str(value.id)
+
+            # If it is a list of `BaseResponseModels` access each Model within
+            #  the list and extract either name or id
+            elif isinstance(value, list) and issubclass(
+                model.__fields__[k].type_, BaseResponseModel
+            ):
+                for v in value:
+                    if "name" in v.__fields__:
+                        items.setdefault(k, []).append(str(v.name))
+                    else:
+                        items.setdefault(k, []).append(str(v.id))
+            elif isinstance(value, Set) or isinstance(value, List):
+                items[k] = [str(v) for v in value]
+            else:
+                items[k] = str(value)
         # prepend an active marker if a function to mark active was passed
         marker = "active"
         if marker in items:
@@ -229,7 +283,11 @@ def print_pydantic_models(
             else items
         )
 
-    print_table([__dictify(model) for model in models])
+    if isinstance(models, Page):
+        print_table([__dictify(model) for model in models.items])
+        print_page_info(models)
+    else:
+        print_table([__dictify(model) for model in models])
 
 
 def format_integration_list(
@@ -254,14 +312,16 @@ def format_integration_list(
             {
                 "INSTALLED": ":white_check_mark:" if is_installed else ":x:",
                 "INTEGRATION": name,
-                "REQUIRED_PACKAGES": ", ".join(integration_impl.REQUIREMENTS),
+                "REQUIRED_PACKAGES": ", ".join(
+                    integration_impl.get_requirements()
+                ),
             }
         )
     return list_of_dicts
 
 
 def print_stack_configuration(
-    stack: "HydratedStackModel", active: bool
+    stack: "StackResponseModel", active: bool
 ) -> None:
     """Prints the configuration options of a stack.
 
@@ -290,20 +350,20 @@ def print_stack_configuration(
     ]
     console.print(rich_table)
     declare(
-        f"Stack '{stack.name}' with id '{stack.id}' is owned by "
-        f"user '{stack.user.name}' and is "
+        f"Stack '{stack.name}' with id '{stack.id}' is "
+        f"{f'owned by user {stack.user.name} and is ' if stack.user else ''}"
         f"'{'shared' if stack.is_shared else 'private'}'."
     )
 
 
-def print_flavor_list(flavors: List["FlavorModel"]) -> None:
+def print_flavor_list(flavors: Page["FlavorResponseModel"]) -> None:
     """Prints the list of flavors.
 
     Args:
         flavors: List of flavors to print.
     """
     flavor_table = []
-    for f in flavors:
+    for f in flavors.items:
         flavor_table.append(
             {
                 "FLAVOR": f.name,
@@ -316,7 +376,7 @@ def print_flavor_list(flavors: List["FlavorModel"]) -> None:
 
 
 def print_stack_component_configuration(
-    component: "HydratedComponentModel", active_status: bool
+    component: "ComponentResponseModel", active_status: bool
 ) -> None:
     """Prints the configuration options of a stack component.
 
@@ -324,20 +384,60 @@ def print_stack_component_configuration(
         component: The stack component to print.
         active_status: Whether the stack component is active.
     """
+    if component.user:
+        user_name = component.user.name
+    else:
+        user_name = "[DELETED]"
+
     declare(
         f"{component.type.value.title()} '{component.name}' of flavor "
         f"'{component.flavor}' with id '{component.id}' is owned by "
-        f"user '{component.user.name}' and is "
+        f"user '{user_name}' and is "
         f"'{'shared' if component.is_shared else 'private'}'."
     )
 
     if len(component.configuration) == 0:
         declare("No configuration options are set for this component.")
+
+    else:
+        title_ = (
+            f"'{component.name}' {component.type.value.upper()} "
+            f"Component Configuration"
+        )
+
+        if active_status:
+            title_ += " (ACTIVE)"
+        rich_table = table.Table(
+            box=box.HEAVY_EDGE,
+            title=title_,
+            show_lines=True,
+        )
+        rich_table.add_column("COMPONENT_PROPERTY")
+        rich_table.add_column("VALUE", overflow="fold")
+
+        component_dict = component.dict()
+        component_dict.pop("configuration")
+        component_dict.update(component.configuration)
+
+        items = component.configuration.items()
+        for item in items:
+            elements = []
+            for idx, elem in enumerate(item):
+                if idx == 0:
+                    elements.append(f"{elem.upper()}")
+                else:
+                    elements.append(str(elem))
+            rich_table.add_row(*elements)
+
+        console.print(rich_table)
+
+    if not component.labels:
+        declare("No labels are set for this component.")
         return
 
     title_ = (
         f"'{component.name}' {component.type.value.upper()} "
-        f"Component Configuration"
+        f"Component Labels"
     )
 
     if active_status:
@@ -350,11 +450,7 @@ def print_stack_component_configuration(
     rich_table.add_column("COMPONENT_PROPERTY")
     rich_table.add_column("VALUE", overflow="fold")
 
-    component_dict = component.dict()
-    component_dict.pop("configuration")
-    component_dict.update(component.configuration)
-
-    items = component.configuration.items()
+    items = component.labels.items()
     for item in items:
         elements = []
         for idx, elem in enumerate(item):
@@ -387,11 +483,15 @@ def print_active_config() -> None:
         declare(f"Using the SQL database: '{gc.store.url}'.")
     elif gc.store.type == StoreType.REST:
         declare(f"Connected to the ZenML server: '{gc.store.url}'")
-    if gc.active_project_name:
-        scope = "repository" if client.uses_local_configuration else "global"
+    if client.uses_local_configuration:
         declare(
-            f"Running with active project: '{gc.active_project_name}' "
-            f"({scope})"
+            f"Running with active workspace: '{client.active_workspace.name}' "
+            "(repository)"
+        )
+    else:
+        declare(
+            f"Running with active workspace: '{gc.get_active_workspace_name()}' "
+            "(global)"
         )
 
 
@@ -472,7 +572,7 @@ def parse_name_and_extra_arguments(
         ('foo', {})
         >>> parse_name_and_extra_arguments(['foo', '--bar=1'])
         ('foo', {'bar': '1'})
-        >>> parse_name_and_extra_arguments('--bar=1', 'foo', '--baz=2'])
+        >>> parse_name_and_extra_arguments(['--bar=1', 'foo', '--baz=2'])
         ('foo', {'bar': '1', 'baz': '2'})
         >>> parse_name_and_extra_arguments(['--bar=1'])
         Traceback (most recent call last):
@@ -547,13 +647,26 @@ def parse_unknown_component_attributes(args: List[str]) -> List[str]:
     return p_args
 
 
-def install_packages(packages: List[str]) -> None:
+def install_packages(
+    packages: List[str],
+    upgrade: bool = False,
+) -> None:
     """Installs pypi packages into the current environment with pip.
 
     Args:
         packages: List of packages to install.
+        upgrade: Whether to upgrade the packages if they are already installed.
     """
-    command = [sys.executable, "-m", "pip", "install"] + packages
+    if upgrade:
+        command = [
+            sys.executable,
+            "-m",
+            "pip",
+            "install",
+            "--upgrade",
+        ] + packages
+    else:
+        command = [sys.executable, "-m", "pip", "install"] + packages
 
     if not IS_DEBUG_ENV:
         command += [
@@ -584,31 +697,39 @@ def uninstall_package(package: str) -> None:
 
 
 def pretty_print_secret(
-    secret: "BaseSecretSchema", hide_secret: bool = True
+    secret: "Union[BaseSecretSchema, Dict[str, str]]",
+    hide_secret: bool = True,
+    print_name: bool = False,
 ) -> None:
-    """Given a secret set, print all key-value pairs associated with the secret.
+    """Given a secret with values, print all key-value pairs associated with the secret.
 
     Args:
         secret: Secret of type BaseSecretSchema
         hide_secret: boolean that configures if the secret values are shown
             on the CLI
+        print_name: boolean that configures if the secret name is shown on the
+            CLI
     """
+    title: Optional[str] = None
+    if isinstance(secret, BaseSecretSchema):
+        if print_name:
+            title = f"Secret: {secret.name}"
+        secret = secret.content
 
     def get_secret_value(value: Any) -> str:
         if value is None:
             return ""
-        if hide_secret:
-            return "***"
-        return str(value)
+        return "***" if hide_secret else str(value)
 
     stack_dicts = [
         {
             "SECRET_KEY": key,
             "SECRET_VALUE": get_secret_value(value),
         }
-        for key, value in secret.content.items()
+        for key, value in secret.items()
     ]
-    print_table(stack_dicts)
+
+    print_table(stack_dicts, title=title)
 
 
 def print_list_items(list_items: List[str], column_title: str) -> None:
@@ -680,6 +801,96 @@ def pretty_print_model_deployer(
     )
 
 
+def pretty_print_registered_model_table(
+    registered_models: List["RegisteredModel"],
+) -> None:
+    """Given a list of registered_models, print all associated key-value pairs.
+
+    Args:
+        registered_models: list of registered models
+    """
+    registered_model_dicts = [
+        {
+            "NAME": registered_model.name,
+            "DESCRIPTION": registered_model.description,
+            "METADATA": registered_model.metadata,
+        }
+        for registered_model in registered_models
+    ]
+    print_table(
+        registered_model_dicts, UUID=table.Column(header="UUID", min_width=36)
+    )
+
+
+def pretty_print_model_version_table(
+    model_versions: List["ModelVersion"],
+) -> None:
+    """Given a list of model_versions, print all associated key-value pairs.
+
+    Args:
+        model_versions: list of model versions
+    """
+    model_version_dicts = [
+        {
+            "NAME": model_version.registered_model.name,
+            "MODEL_VERSION": model_version.version,
+            "VERSION_DESCRIPTION": model_version.description,
+            "METADATA": model_version.metadata.dict()
+            if model_version.metadata
+            else {},
+        }
+        for model_version in model_versions
+    ]
+    print_table(
+        model_version_dicts, UUID=table.Column(header="UUID", min_width=36)
+    )
+
+
+def pretty_print_model_version_details(
+    model_version: "ModelVersion",
+) -> None:
+    """Given a model_version, print all associated key-value pairs.
+
+    Args:
+        model_version: model version
+    """
+    title_ = f"Properties of model `{model_version.registered_model.name}` version `{model_version.version}`"
+
+    rich_table = table.Table(
+        box=box.HEAVY_EDGE,
+        title=title_,
+        show_lines=True,
+    )
+    rich_table.add_column("MODEL VERSION PROPERTY", overflow="fold")
+    rich_table.add_column("VALUE", overflow="fold")
+    model_version_info = {
+        "REGISTERED_MODEL_NAME": model_version.registered_model.name,
+        "VERSION": model_version.version,
+        "VERSION_DESCRIPTION": model_version.description,
+        "CREATED_AT": str(model_version.created_at)
+        if model_version.created_at
+        else "N/A",
+        "UPDATED_AT": str(model_version.last_updated_at)
+        if model_version.last_updated_at
+        else "N/A",
+        "METADATA": model_version.metadata.dict()
+        if model_version.metadata
+        else {},
+        "MODEL_SOURCE_URI": model_version.model_source_uri,
+        "STAGE": model_version.stage.value,
+    }
+
+    for item in model_version_info.items():
+        rich_table.add_row(*[str(elem) for elem in item])
+
+    # capitalize entries in first column
+    rich_table.columns[0]._cells = [
+        component.upper()  # type: ignore[union-attr]
+        for component in rich_table.columns[0]._cells
+    ]
+    console.print(rich_table)
+
+
 def print_served_model_configuration(
     model_service: "BaseService", model_deployer: "BaseModelDeployer"
 ) -> None:
@@ -708,7 +919,7 @@ def print_served_model_configuration(
         "STATUS": get_service_state_emoji(model_service.status.state),
         "STATUS_MESSAGE": model_service.status.last_error,
         "PIPELINE_NAME": model_service.config.pipeline_name,
-        "PIPELINE_RUN_ID": model_service.config.pipeline_run_id,
+        "RUN_NAME": model_service.config.run_name,
         "PIPELINE_STEP_NAME": model_service.config.pipeline_step_name,
     }
 
@@ -794,21 +1005,19 @@ def print_server_deployment(server: "ServerDeployment") -> None:
     console.print(rich_table)
 
 
-def describe_pydantic_object(schema_json: str) -> None:
-    """Describes a Pydantic object based on the json of its schema.
+def describe_pydantic_object(schema_json: Dict[str, Any]) -> None:
+    """Describes a Pydantic object based on the dict-representation of its schema.
 
     Args:
         schema_json: str, represents the schema of a Pydantic object, which
             can be obtained through BaseModelClass.schema_json()
     """
     # Get the schema dict
-    schema = json.loads(schema_json)
-
     # Extract values with defaults
-    schema_title = schema["title"]
-    required = schema.get("required", [])
-    description = schema.get("description", "")
-    properties = schema.get("properties", {})
+    schema_title = schema_json["title"]
+    required = schema_json.get("required", [])
+    description = schema_json.get("description", "")
+    properties = schema_json.get("properties", {})
 
     # Pretty print the schema
     warning(f"Configuration class: {schema_title}\n", bold=True)
@@ -819,117 +1028,15 @@ def describe_pydantic_object(schema_json: str) -> None:
     if properties:
         warning("Properties", bold=True)
         for prop, prop_schema in properties.items():
-            warning(
-                f"{prop}, {prop_schema['type']}"
-                f"{', REQUIRED' if prop in required else ''}"
-            )
+
+            if "$ref" not in prop_schema.keys():
+                warning(
+                    f"{prop}, {prop_schema['type']}"
+                    f"{', REQUIRED' if prop in required else ''}"
+                )
 
             if "description" in prop_schema:
                 declare(f"  {prop_schema['description']}", width=80)
-
-
-def get_stack_by_id_or_name_or_prefix(
-    client: "Client",
-    id_or_name_or_prefix: str,
-) -> "StackModel":
-    """Fetches a stack within active project using the name, id or partial id.
-
-    Args:
-        client: Instance of the Repository singleton
-        id_or_name_or_prefix: The id, name or partial id of the stack to
-                              fetch.
-
-    Returns:
-        The stack with the given name.
-
-    Raises:
-        KeyError: If no stack with the given name exists.
-    """
-    # First interpret as full UUID
-    try:
-        stack_id = UUID(id_or_name_or_prefix)
-        return client.zen_store.get_stack(stack_id)
-    except ValueError:
-        pass
-
-    user_only_stacks = cast(
-        List["StackModel"],
-        client.zen_store.list_stacks(
-            project_name_or_id=client.active_project.name,
-            name=id_or_name_or_prefix,
-            user_name_or_id=client.active_user.name,
-            is_shared=False,
-        ),
-    )
-
-    shared_stacks = cast(
-        List["StackModel"],
-        client.zen_store.list_stacks(
-            project_name_or_id=client.active_project.name,
-            name=id_or_name_or_prefix,
-            is_shared=True,
-        ),
-    )
-
-    named_stacks = user_only_stacks + shared_stacks
-
-    if len(named_stacks) > 1:
-        hydrated_name_stacks = [s.to_hydrated_model() for s in named_stacks]
-        print_stacks_table(client=client, stacks=hydrated_name_stacks)
-        error(
-            f"Multiple stacks have been found for name "
-            f"'{id_or_name_or_prefix}'. The stacks listed above all share "
-            f"this name. Please specify the stack by full or partial id."
-        )
-
-    elif len(named_stacks) == 1:
-        return named_stacks[0]
-    else:
-        logger.debug(
-            f"No stack with name '{id_or_name_or_prefix}' "
-            f"exists. Trying to resolve as partial_id"
-        )
-
-        user_only_stacks = cast(
-            List["StackModel"],
-            client.zen_store.list_stacks(
-                project_name_or_id=client.active_project.name,
-                user_name_or_id=client.active_user.name,
-                is_shared=False,
-            ),
-        )
-
-        shared_stacks = cast(
-            List["StackModel"],
-            client.zen_store.list_stacks(
-                project_name_or_id=client.active_project.name,
-                is_shared=True,
-            ),
-        )
-
-        all_stacks = user_only_stacks + shared_stacks
-
-        filtered_stacks = [
-            stack
-            for stack in all_stacks
-            if str(stack.id).startswith(id_or_name_or_prefix)
-        ]
-        if len(filtered_stacks) > 1:
-            hydrated_all_stacks = [s.to_hydrated_model() for s in all_stacks]
-            print_stacks_table(client=client, stacks=hydrated_all_stacks)
-            error(
-                f"The stacks listed above all share the provided prefix "
-                f"'{id_or_name_or_prefix}' on their ids. Please provide more "
-                f"characters to uniquely identify only one stack."
-            )
-
-        elif len(filtered_stacks) == 1:
-            return filtered_stacks[0]
-        else:
-            raise KeyError(
-                f"No stack with name or id prefix "
-                f"'{id_or_name_or_prefix}' exists."
-            )
 
 
 def get_shared_emoji(is_shared: bool) -> str:
@@ -945,7 +1052,7 @@ def get_shared_emoji(is_shared: bool) -> str:
 
 
 def print_stacks_table(
-    client: "Client", stacks: List["HydratedStackModel"]
+    client: "Client", stacks: Sequence["StackResponseModel"]
 ) -> None:
     """Print a prettified list of all stacks supplied to this method.
 
@@ -957,12 +1064,18 @@ def print_stacks_table(
     active_stack_model_id = client.active_stack_model.id
     for stack in stacks:
         is_active = stack.id == active_stack_model_id
+
+        if stack.user:
+            user_name = stack.user.name
+        else:
+            user_name = "[DELETED]"
+
         stack_config = {
             "ACTIVE": ":point_right:" if is_active else "",
             "STACK NAME": stack.name,
             "STACK ID": stack.id,
             "SHARED": get_shared_emoji(stack.is_shared),
-            "OWNER": stack.user.name,
+            "OWNER": user_name,
             **{
                 component_type.upper(): components[0].name
                 for component_type, components in stack.components.items()
@@ -976,7 +1089,7 @@ def print_stacks_table(
 def print_components_table(
     client: "Client",
     component_type: StackComponentType,
-    components: List["HydratedComponentModel"],
+    components: Sequence["ComponentResponseModel"],
 ) -> None:
     """Prints a table with configuration options for a list of stack components.
 
@@ -1009,14 +1122,90 @@ def print_components_table(
             "COMPONENT ID": component.id,
             "FLAVOR": component.flavor,
             "SHARED": get_shared_emoji(component.is_shared),
-            "OWNER": component.user.name,
-            # **{
-            #     key.upper(): str(value)
-            #     for key, value in component.configuration.items()
-            # },
+            "OWNER": f"{component.user.name if component.user else 'DELETED!'}",
         }
         configurations.append(component_config)
     print_table(configurations)
+
+
+def _get_stack_components(
+    stack: "Stack",
+) -> "List[StackComponent]":
+    """Get a dict of all components in a stack.
+
+    Args:
+        stack: A stack
+
+    Returns:
+        A list of all components in a stack.
+    """
+    return list(stack.components.values())
+
+
+def _scrub_secret(config: StackComponentConfig) -> Dict[str, Any]:
+    """Remove secret values from a configuration.
+
+    Args:
+        config: configuration for a stack component
+
+    Returns:
+        A configuration with secret values removed.
+    """
+    config_dict = {}
+    config_fields = dict(config.__class__.__fields__)
+    for key, value in config_fields.items():
+        if secret_utils.is_secret_field(value):
+            config_dict[key] = "********"
+        else:
+            config_dict[key] = getattr(config, key)
+    return config_dict
+
+
+def print_debug_stack() -> None:
+    """Print active stack and components for debugging purposes."""
+    from zenml.client import Client
+
+    client = Client()
+    stack = client.get_stack()
+    active_stack = client.active_stack
+    components = _get_stack_components(active_stack)
+
+    declare("\nCURRENT STACK\n", bold=True)
+    console.print(f"Name: {stack.name}")
+    console.print(f"ID: {str(stack.id)}")
+    console.print(f"Shared: {'Yes' if stack.is_shared else 'No'}")
+    if stack.user and stack.user.name and stack.user.id:  # mypy check
+        console.print(f"User: {stack.user.name} / {str(stack.user.id)}")
+    console.print(
+        f"Workspace: {stack.workspace.name} / {str(stack.workspace.id)}"
+    )
+
+    for component in components:
+        component_response = client.get_stack_component(
+            name_id_or_prefix=component.id, component_type=component.type
+        )
+        declare(
+            f"\n{component.type.value.upper()}: {component.name}\n", bold=True
+        )
+        console.print(f"Name: {component.name}")
+        console.print(f"ID: {str(component.id)}")
+        console.print(f"Type: {component.type.value}")
+        console.print(f"Flavor: {component.flavor}")
+        console.print(f"Configuration: {_scrub_secret(component.config)}")
+        console.print(
+            f"Shared: {'Yes' if component_response.is_shared else 'No'}"
+        )
+        if (
+            component_response.user
+            and component_response.user.name
+            and component_response.user.id
+        ):  # mypy check
+            console.print(
+                f"User: {component_response.user.name} / {str(component_response.user.id)}"
+            )
+        console.print(
+            f"Workspace: {component_response.workspace.name} / {str(component_response.workspace.id)}"
+        )
 
 
 def _component_display_name(
@@ -1033,115 +1222,6 @@ def _component_display_name(
     """
     name = component_type.plural if plural else component_type.value
     return name.replace("_", " ")
-
-
-def get_component_by_id_or_name_or_prefix(
-    client: "Client",
-    id_or_name_or_prefix: str,
-    component_type: StackComponentType,
-) -> "ComponentModel":
-    """Fetches a component of given type within active project using the name, id or partial id.
-
-    Args:
-        client: Instance of the Client singleton
-        id_or_name_or_prefix: The id, name or partial id of the component to
-                              fetch.
-        component_type: The type of the component to fetch.
-
-    Returns:
-        The component with the given name.
-
-    Raises:
-        KeyError: If no stack with the given name exists.
-    """
-    # First interpret as full UUID
-    try:
-        component_id = UUID(id_or_name_or_prefix)
-        return client.zen_store.get_stack_component(component_id)
-    except ValueError:
-        pass
-
-    user_only_components = client.zen_store.list_stack_components(
-        project_name_or_id=client.active_project.name,
-        name=id_or_name_or_prefix,
-        type=component_type,
-        user_name_or_id=client.active_user.id,
-        is_shared=False,
-    )
-
-    shared_components = client.zen_store.list_stack_components(
-        project_name_or_id=client.active_project.name,
-        name=id_or_name_or_prefix,
-        type=component_type,
-        is_shared=True,
-    )
-
-    named_components = user_only_components + shared_components
-
-    if len(named_components) > 1:
-        hydrated_components = [c.to_hydrated_model() for c in named_components]
-        print_components_table(
-            client=client,
-            component_type=component_type,
-            components=hydrated_components,
-        )
-        error(
-            f"Multiple {component_type.value} components have been found for name "
-            f"'{id_or_name_or_prefix}'. The components listed above all share "
-            f"this name. Please specify the component by full or partial id."
-        )
-
-    elif len(named_components) == 1:
-        return named_components[0]
-    else:
-        logger.debug(
-            f"No component with name '{id_or_name_or_prefix}' "
-            f"exists. Trying to resolve as partial_id"
-        )
-
-        user_only_components = client.zen_store.list_stack_components(
-            project_name_or_id=client.active_project.name,
-            user_name_or_id=client.active_user.id,
-            type=component_type,
-            is_shared=False,
-        )
-
-        shared_components = client.zen_store.list_stack_components(
-            project_name_or_id=client.active_project.name,
-            type=component_type,
-            is_shared=True,
-        )
-
-        all_components = user_only_components + shared_components
-
-        filtered_comps = [
-            component
-            for component in all_components
-            if str(component.id).startswith(id_or_name_or_prefix)
-        ]
-        if len(filtered_comps) > 1:
-            hydrated_components = [
-                c.to_hydrated_model() for c in all_components
-            ]
-
-            print_components_table(
-                client=client,
-                component_type=component_type,
-                components=hydrated_components,
-            )
-            error(
-                f"The components listed above all share the provided prefix "
-                f"'{id_or_name_or_prefix}' on their ids. Please provide more "
-                f"characters to uniquely identify only one component."
-            )
-
-        elif len(filtered_comps) == 1:
-            return filtered_comps[0]
-        else:
-            raise KeyError(
-                f"No component of type `{component_type}` with name or id "
-                f"prefix '{id_or_name_or_prefix}' exists."
-            )
 
 
 def get_execution_status_emoji(status: "ExecutionStatus") -> str:
@@ -1170,27 +1250,30 @@ def get_execution_status_emoji(status: "ExecutionStatus") -> str:
 
 
 def print_pipeline_runs_table(
-    client: "Client", pipeline_runs: List["PipelineRunModel"]
+    pipeline_runs: Sequence["PipelineRunResponseModel"],
 ) -> None:
     """Print a prettified list of all pipeline runs supplied to this method.
 
     Args:
-        client: Repository instance
         pipeline_runs: List of pipeline runs
     """
     runs_dicts = []
     for pipeline_run in pipeline_runs:
-        if pipeline_run.pipeline_id is None:
+
+        if pipeline_run.user:
+            user_name = pipeline_run.user.name
+        else:
+            user_name = "[DELETED]"
+
+        if pipeline_run.pipeline is None:
             pipeline_name = "unlisted"
         else:
-            pipeline_name = client.zen_store.get_pipeline(
-                pipeline_run.pipeline_id
-            ).name
-        if pipeline_run.stack_id is None:
+            pipeline_name = pipeline_run.pipeline.name
+        if pipeline_run.stack is None:
             stack_name = "[DELETED]"
         else:
-            stack_name = client.zen_store.get_stack(pipeline_run.stack_id).name
-        status = client.zen_store.get_run(pipeline_run.id).status
+            stack_name = pipeline_run.stack.name
+        status = pipeline_run.status
         status_emoji = get_execution_status_emoji(status)
         run_dict = {
             "PIPELINE NAME": pipeline_name,
@@ -1198,7 +1281,298 @@ def print_pipeline_runs_table(
             "RUN ID": pipeline_run.id,
             "STATUS": status_emoji,
             "STACK": stack_name,
-            "OWNER": client.zen_store.get_user(pipeline_run.user).name,
+            "OWNER": user_name,
         }
         runs_dicts.append(run_dict)
     print_table(runs_dicts)
+
+
+def warn_unsupported_non_default_workspace() -> None:
+    """Warning for unsupported non-default workspace."""
+    from zenml.constants import (
+        ENV_ZENML_DISABLE_WORKSPACE_WARNINGS,
+        handle_bool_env_var,
+    )
+
+    disable_warnings = handle_bool_env_var(
+        ENV_ZENML_DISABLE_WORKSPACE_WARNINGS, False
+    )
+    if not disable_warnings:
+        warning(
+            "Currently the concept of `workspace` is not supported "
+            "within the Dashboard. The Project functionality will be "
+            "completed in the coming weeks. For the time being it "
+            "is recommended to stay within the `default` workspace."
+        )
+
+
+def print_page_info(page: Page[T]) -> None:
+    """Print all page information showing the number of items and pages.
+
+    Args:
+        page: The page to print the information for.
+    """
+    declare(
+        f"Page `({page.index}/{page.total_pages})`, `{page.total}` items "
+        f"found for the applied filters."
+    )
+
+
+F = TypeVar("F", bound=Callable[..., None])
+
+
+def create_filter_help_text(
+    filter_model: Type[BaseFilterModel], field: str
+) -> str:
+    """Create the help text used in the click option help text.
+
+    Args:
+        filter_model: The filter model to use
+        field: The field within that filter model
+
+    Returns:
+        The help text.
+    """
+    if filter_model.is_sort_by_field(field):
+        return (
+            "[STRING] Example: --sort_by='desc:name' to sort by name in "
+            "descending order. "
+        )
+    if filter_model.is_datetime_field(field):
+        return (
+            f"[DATETIME] The following datetime format is supported: "
+            f"'{FILTERING_DATETIME_FORMAT}'. Make sure to keep it in "
+            f"quotation marks. "
+            f"Example: --{field}="
+            f"'{GenericFilterOps.GTE}:{FILTERING_DATETIME_FORMAT}' to "
+            f"filter for everything created on or after the given date."
+        )
+    elif filter_model.is_uuid_field(field):
+        return (
+            f"[UUID] Example: --{field}='{GenericFilterOps.STARTSWITH}:ab53ca' "
+            f"to filter for all UUIDs starting with that prefix."
+        )
+    elif filter_model.is_int_field(field):
+        return (
+            f"[INTEGER] Example: --{field}='{GenericFilterOps.GTE}:25' to "
+            f"filter for all entities where this field has a value greater than "
+            f"or equal to the value."
+        )
+    elif filter_model.is_bool_field(field):
+        return (
+            f"[BOOL] Example: --{field}='True' to "
+            f"filter for all instances where this field is true."
+        )
+    elif filter_model.is_str_field(field):
+        return (
+            f"[STRING] Example: --{field}='{GenericFilterOps.CONTAINS}:example' "
+            f"to filter everything that contains the query string somewhere in "
+            f"its {field}."
+        )
+    else:
+        return ""
+
+
+def create_data_type_help_text(
+    filter_model: Type[BaseFilterModel], field: str
+) -> str:
+    """Create a general help text for a fields datatype.
+
+    Args:
+        filter_model: The filter model to use
+        field: The field within that filter model
+
+    Returns:
+        The help text.
+    """
+    if filter_model.is_datetime_field(field):
+        return (
+            f"[DATETIME] supported filter operators: "
+            f"{[str(op) for op in NumericFilter.ALLOWED_OPS]}"
+        )
+    elif filter_model.is_uuid_field(field):
+        return (
+            f"[UUID] supported filter operators: "
+            f"{[str(op) for op in UUIDFilter.ALLOWED_OPS]}"
+        )
+    elif filter_model.is_int_field(field):
+        return (
+            f"[INTEGER] supported filter operators: "
+            f"{[str(op) for op in NumericFilter.ALLOWED_OPS]}"
+        )
+    elif filter_model.is_bool_field(field):
+        return (
+            f"[BOOL] supported filter operators: "
+            f"{[str(op) for op in BoolFilter.ALLOWED_OPS]}"
+        )
+    elif filter_model.is_str_field(field):
+        return (
+            f"[STRING] supported filter operators: "
+            f"{[str(op) for op in StrFilter.ALLOWED_OPS]}"
+        )
+    else:
+        return f"{field}"
+
+
+def list_options(filter_model: Type[BaseFilterModel]) -> Callable[[F], F]:
+    """Create a decorator to generate the correct list of filter parameters.
+
+    The Outer decorator (`list_options`) is responsible for creating the inner
+    decorator. This is necessary so that the type of `FilterModel` can be passed
+    in as a parameter.
+
+    Based on the filter model, the inner decorator extracts all the click
+    options that should be added to the decorated function (wrapper).
+
+    Args:
+        filter_model: The filter model based on which to decorate the function.
+
+    Returns:
+        The inner decorator.
+    """
+
+    def inner_decorator(func: F) -> F:
+
+        options = []
+        data_type_descriptors = set()
+        for k, v in filter_model.__fields__.items():
+            if k not in filter_model.CLI_EXCLUDE_FIELDS:
+                options.append(
+                    click.option(
+                        f"--{k}",
+                        type=str,
+                        default=v.default,
+                        required=False,
+                        help=create_filter_help_text(filter_model, k),
+                    )
+                )
+            if k not in filter_model.FILTER_EXCLUDE_FIELDS:
+                data_type_descriptors.add(
+                    create_data_type_help_text(filter_model, k)
+                )
+
+        def wrapper(function: F) -> F:
+            for option in reversed(options):
+                function = option(function)
+            return function
+
+        func.__doc__ = (
+            f"{func.__doc__} By default all filters are "
+            f"interpreted as a check for equality. However advanced "
+            f"filter operators can be used to tune the filtering by "
+            f"writing the operator and separating it from the "
+            f"query parameter with a colon `:`, e.g. "
+            f"--field='operator:query'."
+        )
+
+        if data_type_descriptors:
+            joined_data_type_descriptors = "\n\n".join(data_type_descriptors)
+
+            func.__doc__ = (
+                f"{func.__doc__} \n\n"
+                f"\b Each datatype supports a specific "
+                f"set of filter operations, here are the relevant "
+                f"ones for the parameters of this command: \n\n"
+                f"{joined_data_type_descriptors}"
+            )
+
+        return wrapper(func)
+
+    return inner_decorator
+
+
+@contextlib.contextmanager
+def temporary_active_stack(
+    stack_name_or_id: Union["UUID", str, None] = None
+) -> Iterator["Stack"]:
+    """Contextmanager to temporarily activate a stack.
+
+    Args:
+        stack_name_or_id: The name or ID of the stack to activate. If not given,
+            this contextmanager will not do anything.
+
+    Yields:
+        The active stack.
+    """
+    from zenml.client import Client
+
+    try:
+        if stack_name_or_id:
+            old_stack_id = Client().active_stack_model.id
+            Client().activate_stack(stack_name_or_id)
+        else:
+            old_stack_id = None
+        yield Client().active_stack
+    finally:
+        if old_stack_id:
+            Client().activate_stack(old_stack_id)
+
+
+def get_package_information(
+    package_names: Optional[List[str]] = None,
+) -> Dict[str, str]:
+    """Get a dictionary of installed packages.
+
+    Args:
+        package_names: Specific package names to get the information for.
+
+    Returns:
+        A dictionary of the name:version for the package names passed in or
+            all packages and their respective versions.
+    """
+    import pkg_resources
+
+    if package_names:
+        return {
+            pkg.key: pkg.version
+            for pkg in pkg_resources.working_set
+            if pkg.key in package_names
+        }
+
+    return {pkg.key: pkg.version for pkg in pkg_resources.working_set}
+
+
+def print_user_info(info: Dict[str, Any]) -> None:
+    """Print user information to the terminal.
+
+    Args:
+        info: The information to print.
+    """
+    for key, value in info.items():
+        if key in ["packages", "query_packages"] and not bool(value):
+            continue
+
+        declare(f"{key.upper()}: {value}")
+
+
+def warn_deprecated_secrets_manager() -> None:
+    """Warning for deprecating secrets managers."""
+    warning(
+        "Secrets managers are deprecated and will be removed in an upcoming "
+        "release in favor of centralized secrets management. Please consider "
+        "migrating all your secrets to the centralized secrets store by means "
+        "of the `zenml secrets-manager secret migrate` CLI command. "
+        "See the `zenml secret` CLI command and the "
+        "https://docs.zenml.io/starter-guide/production-fundamentals/secrets-management "
+        "documentation page for more information."
+    )
+
+
+def get_parsed_labels(labels: Optional[List[str]]) -> Dict[str, str]:
+    """Parse labels into a dictionary.
+
+    Args:
+        labels: The labels to parse.
+
+    Returns:
+        A dictionary of the metadata.
+    """
+    if not labels:
+        return {}
+
+    metadata_dict = {}
+    for m in labels:
+        key, value = m.split("=")
+        metadata_dict[key] = value
+
+    return metadata_dict

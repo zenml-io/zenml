@@ -13,6 +13,8 @@
 #  permissions and limitations under the License.
 """Step run info."""
 
+from uuid import UUID
+
 from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.step_configurations import StepConfiguration
 from zenml.config.strict_base_model import StrictBaseModel
@@ -21,6 +23,35 @@ from zenml.config.strict_base_model import StrictBaseModel
 class StepRunInfo(StrictBaseModel):
     """All information necessary to run a step."""
 
+    step_run_id: UUID
+    run_id: UUID
+    run_name: str
+    pipeline_step_name: str
+
     config: StepConfiguration
     pipeline: PipelineConfiguration
-    run_name: str
+
+    def get_image(self, key: str) -> str:
+        """Gets the Docker image for the given key.
+
+        Args:
+            key: The key for which to get the image.
+
+        Raises:
+            RuntimeError: If the run does not have an associated build.
+
+        Returns:
+            The image name or digest.
+        """
+        from zenml.client import Client
+
+        run = Client().get_pipeline_run(self.run_id)
+        if not run.build:
+            raise RuntimeError(
+                f"Missing build for run {run.id}. This is probably because "
+                "the build was manually deleted."
+            )
+
+        return run.build.get_image(
+            component_key=key, step=self.pipeline_step_name
+        )

@@ -15,7 +15,7 @@
 
 import json
 import os
-from typing import Any, Dict, Generator, Optional, Tuple, cast
+from typing import Any, Dict, Generator, List, Optional, Tuple, cast
 from uuid import UUID
 
 import requests
@@ -26,9 +26,11 @@ from zenml.integrations.seldon.seldon_client import (
     SeldonClient,
     SeldonDeployment,
     SeldonDeploymentNotFoundError,
+    SeldonDeploymentPredictorParameter,
+    SeldonResourceRequirements,
 )
 from zenml.logger import get_logger
-from zenml.services.service import BaseService, ServiceConfig
+from zenml.services.service import BaseDeploymentService, ServiceConfig
 from zenml.services.service_status import ServiceState, ServiceStatus
 from zenml.services.service_type import ServiceType
 
@@ -43,6 +45,8 @@ class SeldonDeploymentConfig(ServiceConfig):
         model_name: the name of the model. Multiple versions of the same model
             should use the same model name.
         implementation: the Seldon Core implementation used to serve the model.
+            The implementation type can be one of the following: `TENSORFLOW_SERVER`,
+            `SKLEARN_SERVER`, `XGBOOST_SERVER`, `custom`.
         replicas: number of replicas to use for the prediction service.
         secret_name: the name of a Kubernetes secret containing additional
             configuration parameters for the Seldon Core deployment (e.g.
@@ -59,6 +63,8 @@ class SeldonDeploymentConfig(ServiceConfig):
     model_name: str = "default"
     # TODO [ENG-775]: have an enum of all supported Seldon Core implementations
     implementation: str
+    parameters: Optional[List[SeldonDeploymentPredictorParameter]]
+    resources: Optional[SeldonResourceRequirements]
     replicas: int = 1
     secret_name: Optional[str]
     model_metadata: Dict[str, Any] = Field(default_factory=dict)
@@ -78,8 +84,10 @@ class SeldonDeploymentConfig(ServiceConfig):
         labels = {}
         if self.pipeline_name:
             labels["zenml.pipeline_name"] = self.pipeline_name
+        if self.run_name:
+            labels["zenml.run_name"] = self.run_name
         if self.pipeline_run_id:
-            labels["zenml.pipeline_run_id"] = self.pipeline_run_id
+            labels["zenml.pipeline_run_id"] = self.run_name
         if self.pipeline_step_name:
             labels["zenml.pipeline_step_name"] = self.pipeline_step_name
         if self.model_name:
@@ -88,6 +96,9 @@ class SeldonDeploymentConfig(ServiceConfig):
             labels["zenml.model_uri"] = self.model_uri
         if self.implementation:
             labels["zenml.model_type"] = self.implementation
+        if self.extra_args:
+            for key, value in self.extra_args.items():
+                labels[f"zenml.{key}"] = value
         SeldonClient.sanitize_labels(labels)
         return labels
 
@@ -150,7 +161,7 @@ class SeldonDeploymentServiceStatus(ServiceStatus):
     """Seldon Core deployment service status."""
 
 
-class SeldonDeploymentService(BaseService):
+class SeldonDeploymentService(BaseDeploymentService):
     """A service that represents a Seldon Core deployment server.
 
     Attributes:
@@ -165,11 +176,9 @@ class SeldonDeploymentService(BaseService):
         description="Seldon Core prediction service",
     )
 
-    config: SeldonDeploymentConfig = Field(
-        default_factory=SeldonDeploymentConfig
-    )
+    config: SeldonDeploymentConfig
     status: SeldonDeploymentServiceStatus = Field(
-        default_factory=SeldonDeploymentServiceStatus
+        default_factory=lambda: SeldonDeploymentServiceStatus()
     )
 
     def _get_client(self) -> SeldonClient:
@@ -183,7 +192,8 @@ class SeldonDeploymentService(BaseService):
         )
 
         model_deployer = cast(
-            SeldonModelDeployer, SeldonModelDeployer.get_active_model_deployer()
+            SeldonModelDeployer,
+            SeldonModelDeployer.get_active_model_deployer(),
         )
         return model_deployer.seldon_client
 
@@ -287,6 +297,8 @@ class SeldonDeploymentService(BaseService):
             model_uri=self.config.model_uri,
             model_name=self.config.model_name,
             implementation=self.config.implementation,
+            parameters=self.config.parameters,
+            engineResources=self.config.resources,
             secret_name=self.config.secret_name,
             labels=self._get_seldon_deployment_labels(),
             annotations=self.config.get_seldon_deployment_annotations(),
@@ -355,7 +367,8 @@ class SeldonDeploymentService(BaseService):
             return None
         namespace = self._get_client().namespace
         model_deployer = cast(
-            SeldonModelDeployer, SeldonModelDeployer.get_active_model_deployer()
+            SeldonModelDeployer,
+            SeldonModelDeployer.get_active_model_deployer(),
         )
         return os.path.join(
             model_deployer.config.base_url,

@@ -487,16 +487,16 @@ class GreatExpectationsDataValidator(BaseDataValidator):
             step_env = cast(
                 StepEnvironment, Environment()[STEP_ENVIRONMENT_NAME]
             )
-            run_id = step_env.pipeline_run_id
+            run_name = step_env.run_name
             step_name = step_env.step_name
         except KeyError:
             # if not running inside a pipeline step, use random values
-            run_id = f"pipeline_{random_str(5)}"
+            run_name = f"pipeline_{random_str(5)}"
             step_name = f"step_{random_str(5)}"
 
         context = self.data_context
 
-        checkpoint_name = f"{run_id}_{step_name}"
+        checkpoint_name = f"{run_name}_{step_name}"
 
         batch_request = create_batch_request(context, dataset, data_asset_name)
 
@@ -517,7 +517,7 @@ class GreatExpectationsDataValidator(BaseDataValidator):
 
         checkpoint_config = {
             "name": checkpoint_name,
-            "run_name_template": f"{run_id}",
+            "run_name_template": run_name,
             "config_version": 1,
             "class_name": "Checkpoint",
             "expectation_suite_name": expectation_suite_name,

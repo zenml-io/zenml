@@ -8,17 +8,16 @@ description: Configuring pipelines, steps, and stack components in ZenML.
 
 {% embed url="https://www.youtube.com/embed/hI-UNV7uoNI" %} Configuring pipelines, steps, and stack components in ZenML {% endembed %}
 
-This video gives an overview of everything discussed in this chapter,
-especially with a focus on the [post ZenML 0.20.0](../../guidelines/migration-zero-twenty.md) world!
+This video gives an overview of everything discussed in this chapter.
 
 ## Settings in ZenML
 
-As discussed in a [previous chapter](../../starter-guide/pipelines/iterating.md), there are two ways to configure anything in ZenML:
+As discussed in a [previous chapter](../../starter-guide/pipelines/parameters-and-caching.md), there are two ways to configure anything in ZenML:
 
 - `BaseParameters`: Runtime configuration passed down as a parameter to step functions.
 - `BaseSettings`: Runtime settings passed down to stack components and pipelines.
 
-We have [already discussed `BaseParameters`](../../starter-guide/pipelines/iterating.md) and now is the time to talk about its brother, `BaseSettings`.
+We have [already discussed `BaseParameters`](../../starter-guide/pipelines/parameters-and-caching.md) and now is the time to talk about its brother, `BaseSettings`.
 
 ### What can be configured?
 
@@ -26,7 +25,7 @@ Looked at one way, `BaseParameters` configure steps within a pipeline to behave 
 things can be configured at runtime? Here is a list:
 
 - The [resources](./step-resources.md) of a step.
-- Configuring the [containerization](./containerization.md) process of a pipeline (e.g. What requirements get installed in the Docker image).
+- Configuring the [containerization](../../starter-guide/production-fundamentals/containerization.md) process of a pipeline (e.g. What requirements get installed in the Docker image).
 - Stack component specific configuration, e.g., if you have an experiment tracker passing in the name of the experiment at runtime.
 
 You will learn about all of the above in more detail later, but for now,
@@ -37,17 +36,25 @@ let's try to understand that all of this configuration flows through one central
 Settings are categorized into two types:
 
 - **General settings** that can be used on all ZenML pipelines. Examples of these are:
-  - [`DockerSettings`](./containerization.md) to specify docker settings.
+  - [`DockerSettings`](../../starter-guide/production-fundamentals/containerization.md) to specify docker settings.
   - [`ResourceSettings`](./step-resources.md) to specify resource settings.
-- **Stack component specific settings**: These can be used to supply runtime configurations to certain stack components (key= <COMPONENT_CATEGORY>.<COMPONENT_FLAVOR>). Settings for components not in the active stack will be ignored. Examples of these are:
+- **Stack component specific settings**: These can be used to supply runtime configurations to certain stack components `(key= <COMPONENT_CATEGORY>.<COMPONENT_FLAVOR>)`. Settings for components not in the active stack will be ignored. Examples of these are:
   - [`KubeflowOrchestratorSettings`](../../component-gallery/orchestrators/kubeflow.md) to specify Kubeflow settings.
   - [`MLflowExperimentTrackerSettings`](../../component-gallery/experiment-trackers/mlflow.md) to specify MLflow settings.
   - [`WandbExperimentTrackerSettings`](../../component-gallery/experiment-trackers/wandb.md) to specify W&B settings.
   - [`WhylogsDataValidatorSettings`](../../component-gallery/data-validators/whylogs.md) to specify Whylogs settings.
 
-For stack component specific settings, you might be wondering what the difference is between these and the configuration passed in while doing `zenml stack-component register name --param1=paramvalue --param2=paramvalue` etc. The answer is that the configuration passed in at registration time is static and fixed throughout all pipeline runs, while the settings can change. 
+For stack component specific settings, you might be wondering what the difference is between these and the configuration passed in while doing `zenml stack-component register <NAME> --config1=configvalue --config2=configvalue` etc.
+The answer is that the configuration passed in at registration time is static and fixed throughout all pipeline runs, while the settings can change.
 
 A good example of this is the [`MLflow Experiment Tracker`](../../component-gallery/experiment-trackers/mlflow.md), where configuration which remains static such as the `tracking_url` is sent through at registration time, while runtime configuration such as the `experiment_name` (which might change every pipeline run) is sent through as runtime settings.
+
+Even though settings can be overridden at runtime, you can also specify *default* values for settings while configuring a stack component. For example, you could set a default value for the `nested` setting of your MLflow experiment tracker:
+`zenml experiment-tracker register <NAME> --flavor=mlflow --nested=True`
+
+This means that all pipelines that run using this experiment tracker use nested MLflow runs unless overridden by specifying settings for the pipeline at runtime.
+
+{% embed url="https://www.youtube.com/embed/AdwW6DlCWFE" %} Stack Component Config vs Settings in ZenML {% endembed %}
 
 #### Using objects or dicts
 
@@ -62,7 +69,15 @@ settings={'docker': DockerSettings(requirements=['pandas'])}
 Or like this:
 
 ```python
-settings={'docker': {'requirements': ['pandas'])}
+settings={'docker': {'requirements': ['pandas']}}
+```
+
+#### Using stack component specific settings
+Settings for stack components must be passed with the key having a specific format: `<COMPONENT_CATEGORY>.<COMPONENT_FLAVOR>`. For example, an instance of [`SagemakerStepOperatorSettings`](https://apidocs.zenml.io/latest/integration_code_docs/integrations-aws/#zenml.integrations.aws.flavors.sagemaker_step_operator_flavor.SagemakerStepOperatorSettings) for the [SageMaker Step Operator](../../component-gallery/step-operators/sagemaker.md) can be passed in as follows:
+
+```python
+from zenml.integrations.aws.flavors.sagemaker_step_operator_flavor import SagemakerStepOperatorSettings
+settings = { 'step_operator.sagemaker': SagemakerStepOperatorSettings(estimator_args={}) }
 ```
 
 ### How to use settings
@@ -139,6 +154,8 @@ The format of a YAML config file is exactly the same as the dict you would pass 
 
 ```yaml
 enable_cache: True
+enable_artifact_metadata: True
+enable_artifact_visualization: True
 extra:
   tags: production
 run_name: my_run
@@ -184,7 +201,7 @@ settings:
   docker:
     build_context_root: .
     # build_options: Mapping[str, Any]
-    # copy_files: bool
+    # source_files: str
     # copy_global_config: bool
     # dockerfile: Optional[str]
     # dockerignore: Optional[str]
@@ -272,7 +289,7 @@ from zenml.post_execution import get_pipeline
 p = get_pipeline('my_pipeline')
 
 # print out the extra
-print(p.runs[-1].pipeline_configuration['extra'])
+print(p.runs[0].pipeline_configuration['extra'])
 # {'tag': 'production'}
 ```
 

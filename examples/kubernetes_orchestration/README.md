@@ -7,34 +7,30 @@ This Kubernetes-native orchestrator is a minimalist, lightweight alternative
 to other distributed orchestrators like Airflow or Kubeflow.
 
 Overall, the Kubernetes orchestrator is quite similar to the Kubeflow
-orchestrator in that it runs each pipeline step in a separate
-Kubernetes pod. However, the orchestration of the different pods is not done
-by Kubeflow but by a separate master pod that orchestrates the step execution
-via topological sort.
+orchestrator in that it runs each pipeline step in a separate Kubernetes pod. 
+However, the orchestration of the different pods is not done by Kubeflow but 
+by a separate master pod that orchestrates the step execution via topological 
+sort.
 
 Compared to Kubeflow, this means that the Kubernetes-native orchestrator is
 faster and much simpler to start with since you do not need to install 
-and maintain Kubeflow on your cluster.
-The Kubernetes-native orchestrator is an ideal choice for teams new to 
-distributed orchestration that do not want to go with a fully-managed offering.
+and maintain Kubeflow on your cluster. The Kubernetes-native orchestrator is 
+an ideal choice for teams new to distributed orchestration that do not want 
+to go with a fully-managed offering.
 
 However, since Kubeflow is much more mature, you should, in most cases, aim to
-move your pipelines to Kubeflow in the long run.
-A smooth way to production-grade orchestration could be to set up a Kubernetes
-cluster first and get started with the Kubernetes-native orchestrator.
-If needed, you can then install and set up Kubeflow later and simply switch out
-the orchestrator of your stack as soon as your full setup is ready.
+move your pipelines to Kubeflow in the long run. A smooth way to 
+production-grade orchestration could be to set up a Kubernetes cluster first 
+and get started with the Kubernetes-native orchestrator. If needed, you can 
+then install and set up Kubeflow later and simply switch out the orchestrator 
+of your stack as soon as your full setup is ready.
+
+## ☁️ Run it in the cloud
 
 In this example, we will build a simple, four-step pipeline and orchestrate it
-in a Kubernetes cluster running in the cloud.
-To do so, we will use an AWS cloud stack, consisting of an EKS cluster,
-an ECR container registry, and a S3 bucket for artifact storage.
+in a Kubernetes cluster running in the cloud using an AWS stack.
 
-![Kubernetes AWS Stack Overview](assets/zenml_kubernetes_aws_stack_overview.png)
-
-## :heavy_check_mark: Requirements
-
-To run this example, you need to install and initialize ZenML:
+Let us start with the installation and pull the example.
 
 ```shell
 # install CLI
@@ -46,90 +42,38 @@ zenml integration install kubernetes
 # pull example
 zenml example pull kubernetes_orchestration
 cd zenml_examples/kubernetes_orchestration
-
-# initialize a local ZenML Repository
-zenml init
-
-# Start the ZenServer to enable dashboard access
-zenml up
 ```
 
-If you want to follow this example line by line, you need to spin up each of
-the corresponding AWS resources first.
-You can provision these resources manually by following the
-[ZenML cloud guide](../../docs/book/stack-deployment-guide/overview.md).
-For detailed instructions, see our
-[Kubernetes orchestrator blog post](https://blog.zenml.io/k8s-orchestrator/).
+## :heavy_check_mark: Requirements
 
-Regardless of your cloud provider choice, you will also need to have the
-following additional software installed on your local machine:
+In our AWS cloud stack, we will require:
+
+- A remote ZenML deployment to store metadata related to your pipeline runs. 
+See [here](https://docs.zenml.io/getting-started/deploying-zenml) for more 
+information on how to deploy ZenML on AWS.
+- an EKS cluster to set up the orchestration of your pipelines.
+- an ECR container registry to store the built images.
+- an S3 bucket for artifact storage.
+
+![Kubernetes AWS Stack Overview](assets/zenml_kubernetes_aws_stack_overview.png)
+
+### Setting up the stack
+
+If you want to follow this example line by line, you need to spin up each of
+the corresponding AWS resources first. In order to do this, you will also need 
+to have the following additional software installed on your local machine:
 
 * [Docker](https://www.docker.com/)
 * [kubectl](https://kubernetes.io/docs/tasks/tools/)
 * [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html)
 
-Alternatively, you can also use any other cloud provider, spin up the
-respective resources there, and adjust all `zenml ... register` commands below
-accordingly.
+Note that the Kubernetes orchestrator, the ECR container registry and the S3
+artifact store can be deployed using the ZenML CLI as well (in other words, as an
+alternative to the instructions below), using the `zenml <STACK_COMPONENT> deploy` command. For more information on this `deploy` subcommand, please refer to the 
+[documentation](https://docs.zenml.io/advanced-guide/practical-mlops/stack-recipes#deploying-stack-components-directly).
 
-### 🚅 That seems like a lot of infrastructure work. Is there a Zen 🧘 way to run this example?
+#### Setup and Register Kubernetes Orchestrator
 
-Yes! With [ZenML Stack Recipes](../../docs/book/stack-deployment-guide/stack-recipes.md), you can now provision all the infrastructure you need to run your ZenML pipelines with just a few simple commands.
-
-The flow to get started for this example can be the following:
-
-1. Pull the `aws_minimal` recipe to your local system. Learn more about what this recipe does from its README.
-
-    ```shell
-    zenml stack recipe pull aws-minimal
-    ```
-2. (Optional) 🎨 Customize your deployment by editing the default values in the `locals.tf` file.
-
-3. 🚀 Deploy the recipe with this simple command.
-
-    ```shell
-    zenml stack recipe deploy aws-minimal
-    ```
-    > **Note**
-    > This command can also automatically import the resources created as a ZenML stack for you. Just run it with the `--import` flag and optionally provide a `--stack-name` and you're set! Keep in mind, in that case, you'll need all integrations for this example installed before you run this command.
-
-    > **Note**
-    > You should also have
-    > [kubectl](https://kubernetes.io/docs/tasks/tools/#kubectl),
-    > [docker](https://docs.docker.com/engine/install/) and [helm](https://helm.sh/docs/intro/install/) installed on your local
-    > system with the local [docker client
-    > authorized](https://cloud.google.com/sdk/gcloud/reference/auth/configure-docker)
-    > to push to your cloud registry.
-
-4. You'll notice that a ZenML stack configuration file gets created 🤯! You can run the following command to import the resources as a ZenML stack, manually. You either need to have the `aws`, `mlflow` and `seldon` integrations installed before importing the stack or you can go into the YAML file and delete the sections on the `experiment_tracker` and `model_deployer` to not have them imported at all.
-
-    ```shell
-    zenml stack import <STACK_NAME> -f <PATH_TO_THE_CREATED_STACK_CONFIG_YAML>
-
-    # set the imported stack as the active stack
-    zenml stack set <STACK_NAME>
-    ```
-
-5. You should now create a secret for the RDS MySQL instance that will allow ZenML to connect to it. Use the following command:
-
-    ```bash
-    zenml secret register aws_rds_secret \
-        --schema=mysql \
-        --user=<user> \
-        --password=<password>
-    ```
-
-    The values for the username and password can be obtained by running the following commands inside your recipe directory.
-
-    ```bash
-    terraform output metadata-db-username
-
-    terraform output metadata-db-password
-    ```
-
-You can now jump straight to the [section on running the pipeline](#computer-run-pipeline)!
-
-### Setup and Register Kubernetes Orchestrator
 After spinning up your Kubernetes cluster in the cloud, you will first need
 to connect it to your local kubectl as a new Kubernetes context.
 
@@ -156,7 +100,8 @@ zenml orchestrator register k8s_orchestrator
     --synchronous=True
 ```
 
-### Register Container Registry
+#### Register Container Registry
+
 Next, we need to register a container registry where the Docker images for all
 Kubernetes pods will be stored.
 
@@ -179,7 +124,7 @@ zenml container-registry register ecr_registry
     --uri=<ECR_REGISTRY_NAME>
 ```
 
-### Setup Artifact Store
+#### Setup Artifact Store
 Lastly, we also need to register a remote artifact store (e.g. Amazon S3):
 
 ```bash
@@ -188,7 +133,17 @@ zenml artifact-store register s3_store
     --path=<REMOTE_ARTIFACT_STORE_PATH>
 ```
 
-### Register and Spin Up Stack
+#### Setup Image Builder
+
+In order to build the Docker images for the Kubernetes pods, we will use the
+`local` image builder.
+
+```bash
+zenml image-builder register local_builder 
+    --flavor=local
+```
+
+#### Register and Spin Up Stack
 
 Finally, let us bring everything together and register our stack:
 
@@ -197,6 +152,7 @@ zenml stack register k8s_stack
     -a s3_store 
     -o k8s_orchestrator 
     -c ecr_registry
+    -i local_builder
 ```
 
 Let's set this stack as active, so we use it by default for the remainder of
@@ -255,6 +211,7 @@ kubectl delete pod -n zenml -l pipeline=kubernetes_example_pipeline
 ```
 
 ### Delete Infrastructure Resources
+
 Lastly, if needed, spin down the infrastructure you created.
 How to do this depends on which cloud provider you were using to run this
 example.

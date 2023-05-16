@@ -11,40 +11,148 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Model definitions for stack component flavors."""
+"""Models representing stack component flavors."""
 
-from typing import ClassVar, List, Optional
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional, Union
+from uuid import UUID
 
-from pydantic import Field
+from pydantic import BaseModel, Field
 
 from zenml.enums import StackComponentType
-from zenml.models.base_models import ProjectScopedDomainModel
-from zenml.utils.analytics_utils import AnalyticsTrackedModelMixin
+from zenml.models.base_models import (
+    BaseRequestModel,
+    BaseResponseModel,
+    update_model,
+)
+from zenml.models.constants import STR_FIELD_MAX_LENGTH
+from zenml.models.filter_models import WorkspaceScopedFilterModel
+
+if TYPE_CHECKING:
+    from zenml.models import UserResponseModel, WorkspaceResponseModel
 
 
-class FlavorModel(ProjectScopedDomainModel, AnalyticsTrackedModelMixin):
-    """Domain model representing the custom implementation of a flavor."""
+# ---- #
+# BASE #
+# ---- #
+
+
+class FlavorBaseModel(BaseModel):
+    """Base model for stack component flavors."""
+
+    name: str = Field(
+        title="The name of the Flavor.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
+    type: StackComponentType = Field(title="The type of the Flavor.")
+    config_schema: Dict[str, Any] = Field(
+        title="The JSON schema of this flavor's corresponding configuration.",
+    )
+    source: str = Field(
+        title="The path to the module which contains this Flavor.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
+    integration: Optional[str] = Field(
+        title="The name of the integration that the Flavor belongs to.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
+    logo_url: Optional[str] = Field(
+        default=None,
+        title="Optionally, a url pointing to a png,"
+        "svg or jpg can be attached.",
+    )
+    docs_url: Optional[str] = Field(
+        default=None,
+        title="Optionally, a url pointing to docs, within docs.zenml.io.",
+    )
+    sdk_docs_url: Optional[str] = Field(
+        default=None,
+        title="Optionally, a url pointing to SDK docs,"
+        "within apidocs.zenml.io.",
+    )
+    is_custom: bool = Field(
+        title="Whether or not this flavor is a custom, user created flavor.",
+        default=True,
+    )
+
+
+# -------- #
+# RESPONSE #
+# -------- #
+
+
+class FlavorResponseModel(FlavorBaseModel, BaseResponseModel):
+    """Response model for stack component flavors."""
 
     ANALYTICS_FIELDS: ClassVar[List[str]] = [
         "id",
         "type",
         "integration",
-        "project",
-        "user",
     ]
 
-    name: str = Field(
-        title="The name of the Flavor.",
+    user: Union["UserResponseModel", None] = Field(
+        title="The user that created this resource.", nullable=True
     )
-    type: StackComponentType = Field(
-        title="The type of the Flavor.",
+
+    workspace: Optional["WorkspaceResponseModel"] = Field(
+        title="The project of this resource."
     )
-    config_schema: str = Field(
-        title="The JSON schema of this flavor's corresponding configuration."
+
+
+# ------ #
+# FILTER #
+# ------ #
+
+
+class FlavorFilterModel(WorkspaceScopedFilterModel):
+    """Model to enable advanced filtering of all Flavors."""
+
+    name: Optional[str] = Field(
+        default=None,
+        description="Name of the flavor",
     )
-    source: str = Field(
-        title="The path to the module which contains this Flavor."
+    type: Optional[str] = Field(
+        default=None,
+        description="Stack Component Type of the stack flavor",
     )
     integration: Optional[str] = Field(
-        title="The name of the integration that the Flavor belongs to."
+        default=None,
+        description="Integration associated with the flavor",
     )
+    workspace_id: Optional[Union[UUID, str]] = Field(
+        default=None, description="Workspace of the stack"
+    )
+    user_id: Optional[Union[UUID, str]] = Field(
+        default=None, description="User of the stack"
+    )
+
+
+# ------- #
+# REQUEST #
+# ------- #
+
+
+class FlavorRequestModel(FlavorBaseModel, BaseRequestModel):
+    """Request model for stack component flavors."""
+
+    ANALYTICS_FIELDS: ClassVar[List[str]] = [
+        "type",
+        "integration",
+    ]
+
+    user: Optional[UUID] = Field(
+        default=None, title="The id of the user that created this resource."
+    )
+
+    workspace: Optional[UUID] = Field(
+        default=None, title="The workspace to which this resource belongs."
+    )
+
+
+# ------- #
+# Update #
+# ------- #
+
+
+@update_model
+class FlavorUpdateModel(FlavorRequestModel):
+    """Update model for flavors."""

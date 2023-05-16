@@ -11,33 +11,30 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-import tempfile
-from contextlib import ExitStack as does_not_raise
-from pathlib import Path
+
+
+import platform
 
 import lightgbm as lgb
+import numpy as np
 import pytest
 
+from tests.unit.test_general import _test_materializer
 from zenml.integrations.lightgbm.materializers.lightgbm_booster_materializer import (
     LightGBMBoosterMaterializer,
 )
-from zenml.steps import step
 
 
-@pytest.fixture
-def empty_model_file() -> Path:
-    """Fixture to get an empty model.txt file"""
-
-    with tempfile.NamedTemporaryFile() as tmp:
-        yield tmp.name
-
-
-def test_lightgbm_booster_materializer(empty_model_file):
+@pytest.mark.skipif(
+    platform.system() == "Darwin",
+    reason="https://github.com/microsoft/LightGBM/issues/4229",
+)
+def test_lightgbm_booster_materializer():
     """Tests whether the steps work for the lightgbm booster materializer."""
-
-    @step
-    def some_step() -> lgb.Booster:
-        return lgb.Booster(model_file=empty_model_file)
-
-    with does_not_raise():
-        some_step().with_return_materializers(LightGBMBoosterMaterializer)()
+    ds = lgb.Dataset(data=np.array([[1, 2, 3]]), label=np.array([1]))
+    booster = lgb.Booster(train_set=ds)
+    _test_materializer(
+        step_output=booster,
+        materializer_class=LightGBMBoosterMaterializer,
+        expected_metadata_size=1,
+    )

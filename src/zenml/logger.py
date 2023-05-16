@@ -20,12 +20,10 @@ import sys
 from contextlib import contextmanager
 from typing import Any, Dict, Iterator
 
-from absl import logging as absl_logging
 from rich.traceback import install as rich_tb_install
 
 import zenml
 from zenml.constants import (
-    ABSL_LOGGING_VERBOSITY,
     APP_NAME,
     ENABLE_RICH_TRACEBACK,
     ENV_ZENML_SUPPRESS_LOGS,
@@ -184,18 +182,13 @@ def init_logging() -> None:
 
         # disable logger messages
         disabled_logger_names = [
-            "apache_beam",
             "rdbms_metadata_access_object",
-            "apache_beam.io.gcp.bigquery",
             "backoff",
             "segment",
         ]
         for logger_name in disabled_logger_names:
             logging.getLogger(logger_name).setLevel(logging.WARNING)
             logging.getLogger(logger_name).disabled = True
-
-    # set absl logging
-    absl_logging.set_verbosity(ABSL_LOGGING_VERBOSITY)
 
 
 @contextmanager

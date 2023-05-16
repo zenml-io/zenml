@@ -18,7 +18,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, Union, cast
 
 import wandb
 
-from zenml.config.base_settings import BaseSettings
+from zenml.constants import METADATA_EXPERIMENT_TRACKER_URL
 from zenml.experiment_trackers.base_experiment_tracker import (
     BaseExperimentTracker,
 )
@@ -27,9 +27,12 @@ from zenml.integrations.wandb.flavors.wandb_experiment_tracker_flavor import (
     WandbExperimentTrackerSettings,
 )
 from zenml.logger import get_logger
+from zenml.metadata.metadata_types import Uri
 
 if TYPE_CHECKING:
     from zenml.config.step_run_info import StepRunInfo
+    from zenml.metadata.metadata_types import MetadataType
+
 
 logger = get_logger(__name__)
 
@@ -50,8 +53,8 @@ class WandbExperimentTracker(BaseExperimentTracker):
         return cast(WandbExperimentTrackerConfig, self._config)
 
     @property
-    def settings_class(self) -> Optional[Type["BaseSettings"]]:
-        """settings class for the Wandb experiment tracker.
+    def settings_class(self) -> Type[WandbExperimentTrackerSettings]:
+        """Settings class for the Wandb experiment tracker.
 
         Returns:
             The settings class.
@@ -66,10 +69,8 @@ class WandbExperimentTracker(BaseExperimentTracker):
         """
         os.environ[WANDB_API_KEY] = self.config.api_key
         settings = cast(
-            WandbExperimentTrackerSettings,
-            self.get_settings(info) or WandbExperimentTrackerSettings(),
+            WandbExperimentTrackerSettings, self.get_settings(info)
         )
-
         tags = settings.tags + [info.run_name, info.pipeline.name]
         wandb_run_name = (
             settings.run_name or f"{info.run_name}_{info.config.name}"
@@ -78,13 +79,53 @@ class WandbExperimentTracker(BaseExperimentTracker):
             run_name=wandb_run_name, tags=tags, settings=settings.settings
         )
 
-    def cleanup_step_run(self, info: "StepRunInfo") -> None:
+    def get_step_run_metadata(
+        self, info: "StepRunInfo"
+    ) -> Dict[str, "MetadataType"]:
+        """Get component- and step-specific metadata after a step ran.
+
+        Args:
+            info: Info about the step that was executed.
+
+        Returns:
+            A dictionary of metadata.
+        """
+        run_url: Optional[str] = None
+        run_name: Optional[str] = None
+
+        # Try to get the run name and URL from WandB directly
+        current_wandb_run = wandb.run
+        if current_wandb_run:
+            run_url = current_wandb_run.get_url()
+            run_name = current_wandb_run.name
+
+        # If the URL cannot be retrieved, use the default run URL
+        default_run_url = (
+            f"https://wandb.ai/{self.config.entity}/"
+            f"{self.config.project_name}/runs/"
+        )
+        run_url = run_url or default_run_url
+
+        # If the run name cannot be retrieved, use the default run name
+        default_run_name = f"{info.run_name}_{info.config.name}"
+        settings = cast(
+            WandbExperimentTrackerSettings, self.get_settings(info)
+        )
+        run_name = run_name or settings.run_name or default_run_name
+
+        return {
+            METADATA_EXPERIMENT_TRACKER_URL: Uri(run_url),
+            "wandb_run_name": run_name,
+        }
+
+    def cleanup_step_run(self, info: "StepRunInfo", step_failed: bool) -> None:
         """Stops the Wandb run.
 
         Args:
             info: Info about the step that was executed.
+            step_failed: Whether the step failed or not.
         """
-        wandb.finish()
+        wandb.finish(exit_code=1) if step_failed else wandb.finish()
         os.environ.pop(WANDB_API_KEY, None)
 
     def _initialize_wandb(

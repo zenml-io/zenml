@@ -13,7 +13,7 @@ jobs:
       PYTHONIOENCODING: 'utf-8'
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Get the version from the github tag ref
         id: get_version
@@ -22,7 +22,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
-          python-version: 3.8
+          python-version: '3.8'
           
       - name: Install Poetry
         uses: snok/install-poetry@v1

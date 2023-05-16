@@ -11,125 +11,113 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Model definitions for pipelines, runs, steps, and artifacts."""
+"""Models representing pipelines."""
 
-from typing import Any, ClassVar, Dict, List, Optional, cast
+from typing import List, Optional, Union
 from uuid import UUID
 
-from pydantic import Field
+from pydantic import BaseModel, Field
 
-from zenml import __version__ as current_zenml_version
-from zenml.config.pipeline_configurations import PipelineSpec
-from zenml.enums import ArtifactType, ExecutionStatus
-from zenml.models.base_models import DomainModel, ProjectScopedDomainModel
-from zenml.models.constants import MODEL_NAME_FIELD_MAX_LENGTH
-from zenml.utils.analytics_utils import AnalyticsTrackedModelMixin
+from zenml.config.pipeline_spec import PipelineSpec
+from zenml.enums import ExecutionStatus
+from zenml.models.base_models import (
+    WorkspaceScopedRequestModel,
+    WorkspaceScopedResponseModel,
+    update_model,
+)
+from zenml.models.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
+from zenml.models.filter_models import WorkspaceScopedFilterModel
+from zenml.models.pipeline_run_models import PipelineRunResponseModel
 
-
-def get_git_sha(clean: bool = True) -> Optional[str]:
-    """Returns the current git HEAD SHA.
-
-    If the current working directory is not inside a git repo, this will return
-    `None`.
-
-    Args:
-        clean: If `True` and there any untracked files or files in the index or
-            working tree, this function will return `None`.
-
-    Returns:
-        The current git HEAD SHA or `None` if the current working directory is
-        not inside a git repo.
-    """
-    try:
-        from git.exc import InvalidGitRepositoryError
-        from git.repo.base import Repo
-    except ImportError:
-        return None
-
-    try:
-        repo = Repo(search_parent_directories=True)
-    except InvalidGitRepositoryError:
-        return None
-
-    if clean and repo.is_dirty(untracked_files=True):
-        return None
-    return cast(str, repo.head.object.hexsha)
+# ---- #
+# BASE #
+# ---- #
 
 
-class PipelineModel(ProjectScopedDomainModel, AnalyticsTrackedModelMixin):
-    """Domain model representing a pipeline."""
-
-    ANALYTICS_FIELDS: ClassVar[List[str]] = ["id", "project", "user"]
+class PipelineBaseModel(BaseModel):
+    """Base model for pipelines."""
 
     name: str = Field(
         title="The name of the pipeline.",
-        max_length=MODEL_NAME_FIELD_MAX_LENGTH,
+        max_length=STR_FIELD_MAX_LENGTH,
     )
-
-    docstring: Optional[str]
+    version: str = Field(
+        title="The version of the pipeline.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
+    version_hash: str = Field(
+        title="The version hash of the pipeline.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
+    docstring: Optional[str] = Field(
+        title="The docstring of the pipeline.",
+        max_length=TEXT_FIELD_MAX_LENGTH,
+    )
     spec: PipelineSpec
 
 
-class PipelineRunModel(ProjectScopedDomainModel, AnalyticsTrackedModelMixin):
-    """Domain Model representing a pipeline run."""
+# -------- #
+# RESPONSE #
+# -------- #
 
-    name: str = Field(
-        title="The name of the pipeline run.",
-        max_length=MODEL_NAME_FIELD_MAX_LENGTH,
+
+class PipelineResponseModel(PipelineBaseModel, WorkspaceScopedResponseModel):
+    """Pipeline response model user, workspace, runs, and status hydrated."""
+
+    runs: Optional[List["PipelineRunResponseModel"]] = Field(
+        default=None, title="A list of the last x Pipeline Runs."
+    )
+    status: Optional[List[ExecutionStatus]] = Field(
+        default=None, title="The status of the last x Pipeline Runs."
     )
 
-    orchestrator_run_id: Optional[str] = None
-    stack_id: Optional[UUID]  # Might become None if the stack is deleted.
-    pipeline_id: Optional[UUID]  # Unlisted runs have this as None.
 
-    status: ExecutionStatus
-    pipeline_configuration: Dict[str, Any]
-    num_steps: int
-    zenml_version: Optional[str] = current_zenml_version
-    git_sha: Optional[str] = Field(default_factory=get_git_sha)
-
-    # ID in MLMD - needed for some metadata store methods.
-    mlmd_id: Optional[int]  # Modeled as Optional, so we can remove it later.
+# ------ #
+# FILTER #
+# ------ #
 
 
-class StepRunModel(DomainModel):
-    """Domain Model representing a step in a pipeline run."""
+class PipelineFilterModel(WorkspaceScopedFilterModel):
+    """Model to enable advanced filtering of all Workspaces."""
 
-    name: str = Field(
-        title="The name of the pipeline run step.",
-        max_length=MODEL_NAME_FIELD_MAX_LENGTH,
+    name: Optional[str] = Field(
+        default=None,
+        description="Name of the Pipeline",
+    )
+    version: Optional[str] = Field(
+        default=None,
+        description="Version of the Pipeline",
+    )
+    version_hash: Optional[str] = Field(
+        default=None,
+        description="Version hash of the Pipeline",
+    )
+    docstring: Optional[str] = Field(
+        default=None,
+        description="Docstring of the Pipeline",
+    )
+    workspace_id: Optional[Union[UUID, str]] = Field(
+        default=None, description="Workspace of the Pipeline"
+    )
+    user_id: Optional[Union[UUID, str]] = Field(
+        default=None, description="User of the Pipeline"
     )
 
-    pipeline_run_id: UUID
-    parent_step_ids: List[UUID]
-    input_artifacts: Dict[str, UUID]  # mapping from input name to artifact ID
 
-    status: ExecutionStatus
-    entrypoint_name: str
-    parameters: Dict[str, str]
-    step_configuration: Dict[str, Any]
-    docstring: Optional[str]
-
-    # IDs in MLMD - needed for some metadata store methods
-    mlmd_id: Optional[int]
-    mlmd_parent_step_ids: List[int]
+# ------- #
+# REQUEST #
+# ------- #
 
 
-class ArtifactModel(DomainModel):
-    """Domain Model representing an artifact."""
+class PipelineRequestModel(PipelineBaseModel, WorkspaceScopedRequestModel):
+    """Pipeline request model."""
 
-    name: str  # Name of the output in the parent step
 
-    parent_step_id: UUID
-    producer_step_id: UUID
+# ------ #
+# UPDATE #
+# ------ #
 
-    type: ArtifactType
-    uri: str
-    materializer: str
-    data_type: str
-    is_cached: bool
 
-    # IDs in MLMD - needed for some metadata store methods
-    mlmd_id: Optional[int]
-    mlmd_parent_step_id: Optional[int]
-    mlmd_producer_step_id: Optional[int]
+@update_model
+class PipelineUpdateModel(PipelineRequestModel):
+    """Pipeline update model."""

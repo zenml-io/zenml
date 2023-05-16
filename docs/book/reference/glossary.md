@@ -136,8 +136,9 @@ that you run during your experimentation.
 When we think about steps as functions, we know they receive input in the form
 of artifacts. We also know that they produce output (also in the form of
 artifacts, stored in the artifact store). But steps also take parameters. The
-parameters that you pass into the steps are also (helpfully!) stored by ZenML. This helps freeze the iterations of your experimentation
-workflow in time, so you can return to them exactly as you ran them.
+parameters that you pass into the steps are also (helpfully!) stored by ZenML. 
+This helps freeze the iterations of your experimentation workflow in time, so
+you can return to them exactly as you ran them.
 
 ## Pipeline
 
@@ -222,7 +223,11 @@ pipeline steps in specialized runtime environments that are optimized for
 certain workloads. These specialized environments can give your steps access 
 to resources like GPUs or distributed processing frameworks like Spark.
 
-## Visualizer
+## Source root
 
-A visualizer contains logic to create visualizations within the ZenML ecosystem.
-
+The source root refers to the root directory of your source files when running a pipeline.
+ZenML will try to determine the source root in the following order:
+* If you've created a [ZenML repository](../starter-guide/stacks/stacks.md) for your project,
+the repository directory will be used.
+* Otherwise, the parent directory of the Python file you're executing will be the source root.
+For example, running `python /path/to/file.py`, the source root would be `/path/to`.

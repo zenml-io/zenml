@@ -43,7 +43,6 @@ def register_annotator_subcommands() -> None:
             ctx: The click Context object.
         """
         from zenml.client import Client
-        from zenml.stack.stack_component import StackComponent
 
         annotator_models = Client().active_stack_model.components.get(
             StackComponentType.ANNOTATOR
@@ -54,6 +53,8 @@ def register_annotator_subcommands() -> None:
                 "first and add it to your stack."
             )
             return
+
+        from zenml.stack.stack_component import StackComponent
 
         ctx.obj = StackComponent.from_model(annotator_models[0])
 
@@ -68,8 +69,12 @@ def register_annotator_subcommands() -> None:
         Args:
             annotator: The annotator stack component.
         """
+        dataset_names = annotator.get_dataset_names()
+        if not dataset_names:
+            cli_utils.warning("No datasets found.")
+            return
         cli_utils.print_list_items(
-            list_items=annotator.get_dataset_names(),
+            list_items=dataset_names,
             column_title="DATASETS",
         )
 
@@ -99,14 +104,16 @@ def register_annotator_subcommands() -> None:
         )
         cli_utils.declare(f"Total annotation tasks: {total_task_count}")
         cli_utils.declare(f"Labeled annotation tasks: {labeled_task_count}")
-        cli_utils.declare(f"Unlabeled annotation tasks: {unlabeled_task_count}")
+        cli_utils.declare(
+            f"Unlabeled annotation tasks: {unlabeled_task_count}"
+        )
 
     @dataset.command("delete")
     @click.argument("dataset_name", type=click.STRING)
     @click.option(
         "--all",
         "-a",
-        "all",
+        "all_",
         is_flag=True,
         help="Use this flag to delete all datasets.",
         type=click.BOOL,
@@ -130,14 +137,18 @@ def register_annotator_subcommands() -> None:
         )
         for dataset_name in dataset_names:
             annotator.delete_dataset(dataset_name=dataset_name)
-            cli_utils.declare(f"Dataset '{dataset_name}' has now been deleted.")
+            cli_utils.declare(
+                f"Dataset '{dataset_name}' has now been deleted."
+            )
 
     @dataset.command(
         "annotate", context_settings={"ignore_unknown_options": True}
     )
     @click.argument("dataset_name", type=click.STRING)
     @click.pass_obj
-    def dataset_annotate(annotator: "BaseAnnotator", dataset_name: str) -> None:
+    def dataset_annotate(
+        annotator: "BaseAnnotator", dataset_name: str
+    ) -> None:
         """Command to launch the annotation interface for a dataset.
 
         Args:

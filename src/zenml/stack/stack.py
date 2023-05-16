@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Implementation of the ZenML Stack class."""
 
+import itertools
 import os
 from typing import (
     TYPE_CHECKING,
@@ -27,11 +28,18 @@ from typing import (
 )
 from uuid import UUID
 
-from zenml.constants import ENV_ZENML_SECRET_VALIDATION_LEVEL
+from zenml.client import Client
+from zenml.config.build_configuration import BuildConfiguration
+from zenml.constants import (
+    ENV_ZENML_SECRET_VALIDATION_LEVEL,
+    ENV_ZENML_SKIP_IMAGE_BUILDER_DEFAULT,
+    handle_bool_env_var,
+)
 from zenml.enums import SecretValidationLevel, StackComponentType
 from zenml.exceptions import ProvisioningError, StackValidationError
 from zenml.logger import get_logger
-from zenml.models.stack_models import HydratedStackModel, StackModel
+from zenml.metadata.metadata_types import MetadataType
+from zenml.models import StackResponseModel
 from zenml.utils import settings_utils
 
 if TYPE_CHECKING:
@@ -39,7 +47,6 @@ if TYPE_CHECKING:
     from zenml.annotators import BaseAnnotator
     from zenml.artifact_stores import BaseArtifactStore
     from zenml.config.base_settings import BaseSettings
-    from zenml.config.pipeline_deployment import PipelineDeployment
     from zenml.config.step_configurations import StepConfiguration
     from zenml.config.step_run_info import StepRunInfo
     from zenml.container_registries import BaseContainerRegistry
@@ -48,7 +55,13 @@ if TYPE_CHECKING:
         BaseExperimentTracker,
     )
     from zenml.feature_stores import BaseFeatureStore
+    from zenml.image_builders import BaseImageBuilder
     from zenml.model_deployers import BaseModelDeployer
+    from zenml.model_registries import BaseModelRegistry
+    from zenml.models.pipeline_deployment_models import (
+        PipelineDeploymentBaseModel,
+        PipelineDeploymentResponseModel,
+    )
     from zenml.orchestrators import BaseOrchestrator
     from zenml.secrets_managers import BaseSecretsManager
     from zenml.stack import StackComponent
@@ -85,10 +98,10 @@ class Stack:
         alerter: Optional["BaseAlerter"] = None,
         annotator: Optional["BaseAnnotator"] = None,
         data_validator: Optional["BaseDataValidator"] = None,
+        image_builder: Optional["BaseImageBuilder"] = None,
+        model_registry: Optional["BaseModelRegistry"] = None,
     ):
         """Initializes and validates a stack instance.
-
-        # noqa: DAR402
 
         Args:
             id: Unique ID of the stack.
@@ -104,9 +117,8 @@ class Stack:
             alerter: Alerter component of the stack.
             annotator: Annotator component of the stack.
             data_validator: Data validator component of the stack.
-
-        Raises:
-            StackValidationError: If the stack configuration is not valid.
+            image_builder: Image builder component of the stack.
+            model_registry: Model registry component of the stack.
         """
         self._id = id
         self._name = name
@@ -121,30 +133,66 @@ class Stack:
         self._alerter = alerter
         self._annotator = annotator
         self._data_validator = data_validator
+        self._model_registry = model_registry
 
-    def to_model(self, user: UUID, project: UUID) -> "StackModel":
-        """Creates a StackModel from an actual Stack instance.
-
-        Args:
-            user: The user ID of the user who created the stack.
-            project: The project ID of the project the stack belongs to.
-
-        Returns:
-            A StackModel
-        """
-        return StackModel(
-            id=self.id,
-            name=self.name,
-            user=user,
-            project=project,
-            components={
-                type_: [component.to_model().id]
-                for type_, component in self.components.items()
-            },
+        requires_image_builder = (
+            orchestrator.flavor != "local"
+            or step_operator
+            or (model_deployer and model_deployer.flavor != "mlflow")
         )
+        skip_default_image_builder = handle_bool_env_var(
+            ENV_ZENML_SKIP_IMAGE_BUILDER_DEFAULT, default=False
+        )
+        if (
+            requires_image_builder
+            and not skip_default_image_builder
+            and not image_builder
+        ):
+            # This is a temporary fix to include a local image builder in each
+            # stack that needs it. This mirrors the behavior in previous
+            # versions and ensures we don't break all existing stacks
+            from datetime import datetime
+            from uuid import uuid4
+
+            from zenml.image_builders import (
+                LocalImageBuilder,
+                LocalImageBuilderConfig,
+                LocalImageBuilderFlavor,
+            )
+
+            flavor = LocalImageBuilderFlavor()
+
+            image_builder = LocalImageBuilder(
+                id=uuid4(),
+                name="temporary_default",
+                flavor=flavor.name,
+                type=flavor.type,
+                config=LocalImageBuilderConfig(),
+                user=Client().active_user.id,
+                workspace=Client().active_workspace.id,
+                created=datetime.utcnow(),
+                updated=datetime.utcnow(),
+            )
+
+            logger.warning(
+                "The stack `%s` contains components that require building "
+                "Docker images. Older versions of ZenML always built these "
+                "images locally, but since version 0.32.0 this behavior can be "
+                "configured using the `image_builder` stack component. This "
+                "stack will temporarily default to a local image builder that "
+                "mirrors the previous behavior, but this will be removed in "
+                "future versions of ZenML. Please add an image builder to this "
+                "stack:\n"
+                "`zenml image-builder register <NAME> ...\n"
+                "zenml stack update %s -i <NAME>`",
+                name,
+                id,
+            )
+
+        self._image_builder = image_builder
 
     @classmethod
-    def from_model(cls, stack_model: HydratedStackModel) -> "Stack":
+    def from_model(cls, stack_model: StackResponseModel) -> "Stack":
         """Creates a Stack instance from a StackModel.
 
         Args:
@@ -195,7 +243,9 @@ class Stack:
         from zenml.data_validators import BaseDataValidator
         from zenml.experiment_trackers import BaseExperimentTracker
         from zenml.feature_stores import BaseFeatureStore
+        from zenml.image_builders import BaseImageBuilder
         from zenml.model_deployers import BaseModelDeployer
+        from zenml.model_registries import BaseModelRegistry
         from zenml.orchestrators import BaseOrchestrator
         from zenml.secrets_managers import BaseSecretsManager
         from zenml.step_operators import BaseStepOperator
@@ -280,6 +330,18 @@ class Stack:
         ):
             _raise_type_error(data_validator, BaseDataValidator)
 
+        image_builder = components.get(StackComponentType.IMAGE_BUILDER)
+        if image_builder is not None and not isinstance(
+            image_builder, BaseImageBuilder
+        ):
+            _raise_type_error(image_builder, BaseImageBuilder)
+
+        model_registry = components.get(StackComponentType.MODEL_REGISTRY)
+        if model_registry is not None and not isinstance(
+            model_registry, BaseModelRegistry
+        ):
+            _raise_type_error(model_registry, BaseModelRegistry)
+
         return Stack(
             id=id,
             name=name,
@@ -294,6 +356,8 @@ class Stack:
             alerter=alerter,
             annotator=annotator,
             data_validator=data_validator,
+            image_builder=image_builder,
+            model_registry=model_registry,
         )
 
     @property
@@ -317,6 +381,8 @@ class Stack:
                 self.alerter,
                 self.annotator,
                 self.data_validator,
+                self.image_builder,
+                self.model_registry,
             ]
             if component is not None
         }
@@ -439,6 +505,24 @@ class Stack:
         """
         return self._data_validator
 
+    @property
+    def image_builder(self) -> Optional["BaseImageBuilder"]:
+        """The image builder of the stack.
+
+        Returns:
+            The image builder of the stack.
+        """
+        return self._image_builder
+
+    @property
+    def model_registry(self) -> Optional["BaseModelRegistry"]:
+        """The model registry of the stack.
+
+        Returns:
+            The model registry of the stack.
+        """
+        return self._model_registry
+
     def dict(self) -> Dict[str, str]:
         """Converts the stack into a dictionary.
 
@@ -551,6 +635,21 @@ class Stack:
                 setting_classes[key] = component.settings_class
         return setting_classes
 
+    @property
+    def requires_remote_server(self) -> bool:
+        """If the stack requires a remote ZenServer to run.
+
+        This is the case if any code is getting executed remotely. This is the
+        case for both remote orchestrators as well as remote step operators.
+
+        Returns:
+            If the stack requires a remote ZenServer to run.
+        """
+        return self.orchestrator.config.is_remote or (
+            self.step_operator is not None
+            and self.step_operator.config.is_remote
+        )
+
     def _validate_secrets(self, raise_exception: bool) -> None:
         """Validates that all secrets of the stack exists.
 
@@ -595,6 +694,30 @@ class Stack:
                     )
                     logger.warning(message)
 
+            missing = []
+
+            client = Client()
+
+            # First, attempt to resolve secrets through the secrets store
+            for secret_ref in required_secrets.copy():
+                try:
+                    store_secret = client.get_secret(secret_ref.name)
+                    if (
+                        secret_validation_level
+                        == SecretValidationLevel.SECRET_AND_KEY_EXISTS
+                    ):
+                        _ = store_secret.values[secret_ref.key]
+                except (KeyError, NotImplementedError):
+                    pass
+                else:
+                    # Drop this secret from the list of required secrets
+                    required_secrets.remove(secret_ref)
+
+            # If there are still required secrets, continue with the secrets
+            # manager
+            if not required_secrets:
+                return
+
             if not self.secrets_manager:
                 _handle_error(
                     f"Some component in stack `{self.name}` reference secret "
@@ -602,7 +725,6 @@ class Stack:
                 )
                 return
 
-            missing = []
             existing_secrets = set(self.secrets_manager.get_all_secret_keys())
             for secret_ref in required_secrets:
                 if (
@@ -658,7 +780,7 @@ class Stack:
         self._validate_secrets(raise_exception=fail_if_secrets_missing)
 
     def prepare_pipeline_deployment(
-        self, deployment: "PipelineDeployment"
+        self, deployment: "PipelineDeploymentResponseModel"
     ) -> None:
         """Prepares the stack for a pipeline deployment.
 
@@ -669,6 +791,8 @@ class Stack:
 
         Raises:
             StackValidationError: If the stack component is not running.
+            RuntimeError: If trying to deploy a pipeline that requires a remote
+                ZenML server with a local one.
         """
         self.validate(fail_if_secrets_missing=True)
 
@@ -679,14 +803,56 @@ class Stack:
                     f"is not currently running. Please run the following "
                     f"command to provision and start the component:\n\n"
                     f"    `zenml stack up`\n"
+                    f"It is worth noting that the provision command will "
+                    f" be deprecated in the future. ZenML will no longer "
+                    f"be responsible for provisioning infrastructure, "
+                    f"or port-forwarding directly. Instead of managing "
+                    f"the state of the components, ZenML will be utilizing "
+                    f"the already running stack or stack components directly. "
+                    f"Additionally, we are also providing a variety of "
+                    f" deployment recipes for popular Kubernetes-based "
+                    f"integrations such as Kubeflow, Tekton, and Seldon etc."
+                    f"Check out https://docs.zenml.io/advanced-guide/practical-mlops/stack-recipes"
+                    f"for more information."
                 )
+
+        if self.requires_remote_server and Client().zen_store.is_local_store():
+            raise RuntimeError(
+                "Stacks with remote components such as remote orchestrators "
+                "and step operators require a remote "
+                "ZenML server. To run a pipeline with this stack you need to "
+                "connect to a remote ZenML server first. Check out "
+                "https://docs.zenml.io/getting-started/deploying-zenml for "
+                "more information on how to deploy ZenML."
+            )
 
         for component in self.components.values():
             component.prepare_pipeline_deployment(
                 deployment=deployment, stack=self
             )
 
-    def deploy_pipeline(self, deployment: "PipelineDeployment") -> Any:
+    def get_docker_builds(
+        self, deployment: "PipelineDeploymentBaseModel"
+    ) -> List["BuildConfiguration"]:
+        """Gets the Docker builds required for the stack.
+
+        Args:
+            deployment: The pipeline deployment for which to get the builds.
+
+        Returns:
+            The required Docker builds.
+        """
+        return list(
+            itertools.chain.from_iterable(
+                component.get_docker_builds(deployment=deployment)
+                for component in self.components.values()
+            )
+        )
+
+    def deploy_pipeline(
+        self,
+        deployment: "PipelineDeploymentResponseModel",
+    ) -> Any:
         """Deploys a pipeline on this stack.
 
         Args:
@@ -744,16 +910,69 @@ class Stack:
         ).values():
             component.prepare_step_run(info=info)
 
-    def cleanup_step_run(self, info: "StepRunInfo") -> None:
+    def get_pipeline_run_metadata(
+        self, run_id: UUID
+    ) -> Dict[UUID, Dict[str, MetadataType]]:
+        """Get general component-specific metadata for a pipeline run.
+
+        Args:
+            run_id: ID of the pipeline run.
+
+        Returns:
+            A dictionary mapping component IDs to the metadata they created.
+        """
+        pipeline_run_metadata: Dict[UUID, Dict[str, MetadataType]] = {}
+        for component in self.components.values():
+            try:
+                component_metadata = component.get_pipeline_run_metadata(
+                    run_id=run_id
+                )
+                if component_metadata:
+                    pipeline_run_metadata[component.id] = component_metadata
+            except Exception as e:
+                logger.warning(
+                    f"Extracting pipeline run metadata failed for component "
+                    f"'{component.name}' of type '{component.type}': {e}"
+                )
+        return pipeline_run_metadata
+
+    def get_step_run_metadata(
+        self, info: "StepRunInfo"
+    ) -> Dict[UUID, Dict[str, MetadataType]]:
+        """Get component-specific metadata for a step run.
+
+        Args:
+            info: Info about the step that was executed.
+
+        Returns:
+            A dictionary mapping component IDs to the metadata they created.
+        """
+        step_run_metadata: Dict[UUID, Dict[str, MetadataType]] = {}
+        for component in self._get_active_components_for_step(
+            info.config
+        ).values():
+            try:
+                component_metadata = component.get_step_run_metadata(info=info)
+                if component_metadata:
+                    step_run_metadata[component.id] = component_metadata
+            except Exception as e:
+                logger.warning(
+                    f"Extracting step run metadata failed for component "
+                    f"'{component.name}' of type '{component.type}': {e}"
+                )
+        return step_run_metadata
+
+    def cleanup_step_run(self, info: "StepRunInfo", step_failed: bool) -> None:
         """Cleans up resources after the step run is finished.
 
         Args:
             info: Info about the step that was executed.
+            step_failed: Whether the step failed.
         """
         for component in self._get_active_components_for_step(
             info.config
         ).values():
-            component.cleanup_step_run(info=info)
+            component.cleanup_step_run(info=info, step_failed=step_failed)
 
     @property
     def is_provisioned(self) -> bool:
@@ -779,6 +998,7 @@ class Stack:
 
     def provision(self) -> None:
         """Provisions resources to run the stack locally."""
+        self.validate(fail_if_secrets_missing=True)
         logger.info("Provisioning resources for stack '%s'.", self.name)
         for component in self.components.values():
             if not component.is_provisioned:

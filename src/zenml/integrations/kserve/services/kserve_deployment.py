@@ -34,12 +34,12 @@ from pydantic import Field, ValidationError
 from zenml import __version__
 from zenml.logger import get_logger
 from zenml.services import (
-    BaseService,
     ServiceConfig,
     ServiceState,
     ServiceStatus,
     ServiceType,
 )
+from zenml.services.service import BaseDeploymentService
 
 if TYPE_CHECKING:
 
@@ -56,9 +56,17 @@ class KServeDeploymentConfig(ServiceConfig):
     Attributes:
         model_uri: URI of the model (or models) to serve.
         model_name: the name of the model. Multiple versions of the same model
-            should use the same model name.
-        secret_name: the name of the secret containing the model.
-        predictor: the KServe predictor used to serve the model.
+            should use the same model name. Model name must use only lowercase
+            alphanumeric characters and dashes.
+        secret_name: the name of the ZenML secret containing credentials
+            required to authenticate to the artifact store.
+        k8s_secret: the name of the Kubernetes secret to use for the prediction
+            service.
+        k8s_service_account: the name of the Kubernetes service account to use
+            for the prediction service.
+        predictor: the KServe predictor used to serve the model. The
+        predictor type can be one of the following: `tensorflow`, `pytorch`,
+        `sklearn`, `xgboost`, `custom`.
         replicas: number of replicas to use for the prediction service.
         resources: the Kubernetes resources to allocate for the prediction service.
         container: the container to use for the custom prediction services.
@@ -66,11 +74,13 @@ class KServeDeploymentConfig(ServiceConfig):
 
     model_uri: str = ""
     model_name: str
-    secret_name: Optional[str]
+    secret_name: Optional[str] = None
+    k8s_secret: Optional[str] = None
+    k8s_service_account: Optional[str] = None
     predictor: str
     replicas: int = 1
-    container: Optional[Dict[str, Any]]
-    resources: Optional[Dict[str, Any]]
+    container: Optional[Dict[str, Any]] = None
+    resources: Optional[Dict[str, Any]] = None
 
     @staticmethod
     def sanitize_labels(labels: Dict[str, str]) -> None:
@@ -102,8 +112,10 @@ class KServeDeploymentConfig(ServiceConfig):
         labels = {"app": "zenml"}
         if self.pipeline_name:
             labels["zenml.pipeline_name"] = self.pipeline_name
+        if self.run_name:
+            labels["zenml.run_name"] = self.run_name
         if self.pipeline_run_id:
-            labels["zenml.pipeline_run_id"] = self.pipeline_run_id
+            labels["zenml.pipeline_run_id"] = self.run_name
         if self.pipeline_step_name:
             labels["zenml.pipeline_step_name"] = self.pipeline_step_name
         if self.model_name:
@@ -171,7 +183,7 @@ class KServeDeploymentConfig(ServiceConfig):
         return service_config
 
 
-class KServeDeploymentService(BaseService):
+class KServeDeploymentService(BaseDeploymentService):
     """A ZenML service that represents a KServe inference service CRD.
 
     Attributes:
@@ -186,10 +198,8 @@ class KServeDeploymentService(BaseService):
         description="KServe inference service",
     )
 
-    config: KServeDeploymentConfig = Field(
-        default_factory=KServeDeploymentConfig
-    )
-    status: ServiceStatus = Field(default_factory=ServiceStatus)
+    config: KServeDeploymentConfig
+    status: ServiceStatus = Field(default_factory=lambda: ServiceStatus())
 
     def _get_model_deployer(self) -> "KServeModelDeployer":
         """Get the active KServe model deployer.
@@ -202,7 +212,8 @@ class KServeDeploymentService(BaseService):
         )
 
         return cast(
-            KServeModelDeployer, KServeModelDeployer.get_active_model_deployer()
+            KServeModelDeployer,
+            KServeModelDeployer.get_active_model_deployer(),
         )
 
     def _get_client(self) -> KServeClient:
@@ -349,14 +360,16 @@ class KServeDeploymentService(BaseService):
                             )
                         ],
                     )
-                ]
+                ],
+                "service_account_name": self.config.k8s_service_account,
             }
         else:
             predictor_kwargs = {
                 self.config.predictor: V1beta1PredictorExtensionSpec(
                     storage_uri=self.config.model_uri,
                     resources=self.config.resources,
-                )
+                ),
+                "service_account_name": self.config.k8s_service_account,
             }
 
         isvc = V1beta1InferenceService(

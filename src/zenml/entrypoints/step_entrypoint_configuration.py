@@ -12,21 +12,22 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Base class for entrypoint configurations that run a single step."""
-
-from typing import TYPE_CHECKING, Any, List, Optional, Set
-
-from tfx.orchestration.portable import data_types
+from typing import TYPE_CHECKING, Any, List, Set
 
 from zenml.client import Client
-from zenml.entrypoints import utils as entrypoint_utils
 from zenml.entrypoints.base_entrypoint_configuration import (
     BaseEntrypointConfiguration,
 )
 from zenml.integrations.registry import integration_registry
+from zenml.logger import get_logger
 
 if TYPE_CHECKING:
-    from zenml.config.pipeline_deployment import PipelineDeployment
     from zenml.config.step_configurations import Step
+    from zenml.models import (
+        PipelineDeploymentResponseModel,
+    )
+
+logger = get_logger(__name__)
 
 STEP_NAME_OPTION = "step_name"
 
@@ -96,7 +97,6 @@ class StepEntrypointConfiguration(BaseEntrypointConfiguration):
         self,
         pipeline_name: str,
         step_name: str,
-        execution_info: Optional[data_types.ExecutionInfo] = None,
     ) -> None:
         """Does cleanup or post-processing after the step finished running.
 
@@ -107,7 +107,6 @@ class StepEntrypointConfiguration(BaseEntrypointConfiguration):
             pipeline_name: Name of the parent pipeline of the step that was
                 executed.
             step_name: Name of the step that was executed.
-            execution_info: Info about the finished step execution.
         """
 
     @classmethod
@@ -147,39 +146,36 @@ class StepEntrypointConfiguration(BaseEntrypointConfiguration):
 
     def run(self) -> None:
         """Prepares the environment and runs the configured step."""
-        deployment_config = self.load_deployment_config()
-
-        step_name = self.entrypoint_args[STEP_NAME_OPTION]
-        pipeline_name = deployment_config.pipeline.name
+        deployment = self.load_deployment()
 
         # Activate all the integrations. This makes sure that all materializers
         # and stack component flavors are registered.
         integration_registry.activate_integrations()
 
-        step = deployment_config.steps[step_name]
-        entrypoint_utils.load_and_configure_step(step)
-        execution_info = self._run_step(step, deployment=deployment_config)
+        self.download_code_if_necessary(deployment=deployment)
+
+        step_name = self.entrypoint_args[STEP_NAME_OPTION]
+        pipeline_name = deployment.pipeline_configuration.name
+
+        step = deployment.step_configurations[step_name]
+        self._run_step(step, deployment=deployment)
 
         self.post_run(
             pipeline_name=pipeline_name,
             step_name=step_name,
-            execution_info=execution_info,
         )
 
     def _run_step(
         self,
         step: "Step",
-        deployment: "PipelineDeployment",
-    ) -> Optional[data_types.ExecutionInfo]:
+        deployment: "PipelineDeploymentResponseModel",
+    ) -> None:
         """Runs a single step.
 
         Args:
             step: The step to run.
             deployment: The deployment configuration.
-
-        Returns:
-            Optional execution info of the run.
         """
         orchestrator = Client().active_stack.orchestrator
         orchestrator._prepare_run(deployment=deployment)
-        return orchestrator.run_step(step=step)
+        orchestrator.run_step(step=step)

@@ -16,13 +16,24 @@ import numpy as np  # type: ignore [import]
 import tensorflow as tf  # type: ignore [import]
 
 from zenml.client import Client
+from zenml.integrations.mlflow.experiment_trackers import (
+    MLFlowExperimentTracker,
+)
 from zenml.steps import BaseParameters, step
 
 experiment_tracker = Client().active_stack.experiment_tracker
 
+if not experiment_tracker or not isinstance(
+    experiment_tracker, MLFlowExperimentTracker
+):
+    raise RuntimeError(
+        "Your active stack needs to contain a MLFlow experiment tracker for "
+        "this example to work."
+    )
+
 
 class TrainerParameters(BaseParameters):
-    """Trainer params"""
+    """Trainer params."""
 
     epochs: int = 1
     lr: float = 0.001
@@ -35,7 +46,7 @@ def tf_trainer(
     y_train: np.ndarray,
 ) -> tf.keras.Model:
     """Train a neural net from scratch to recognize MNIST digits return our
-    model or the learner"""
+    model or the learner."""
     model = tf.keras.Sequential(
         [
             tf.keras.layers.Flatten(input_shape=(28, 28)),

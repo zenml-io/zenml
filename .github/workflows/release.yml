@@ -8,12 +8,16 @@ on:
       - '*'
 
 jobs:
-  lint-code:
-    uses: ./.github/workflows/lint.yml
+
+  lint-unit-test:
+    uses: ./.github/workflows/lint-unit-test.yml
+    with:
+      os: "ubuntu-latest"
+      python-version: "3.8"
     secrets: inherit
 
   publish-python-package:
-    needs: lint-code
+    needs: lint-unit-test
     uses: ./.github/workflows/publish_to_pypi.yml
     secrets: inherit
 
@@ -21,8 +25,8 @@ jobs:
     runs-on: ubuntu-latest
     needs: publish-python-package
     steps:
-      - name: Sleep for 2 minutes
-        run: sleep 120
+      - name: Sleep for 3 minutes
+        run: sleep 180
         shell: bash
 
   publish-docker-image:

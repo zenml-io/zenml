@@ -19,7 +19,9 @@ from seldon_tensorflow.pipelines.seldon_tensorflow_pipelines import (
     tensorflow_custom_code_pipeline,
     tensorflow_inference_pipeline,
 )
-from seldon_tensorflow.steps.deployer import seldon_tensorflow_custom_deployment
+from seldon_tensorflow.steps.deployer import (
+    seldon_tensorflow_custom_deployment,
+)
 from seldon_tensorflow.steps.deployment_trigger import (
     DeploymentTriggerParameters,
     deployment_trigger,
@@ -28,8 +30,8 @@ from seldon_tensorflow.steps.inference_image_loader import (
     InferenceImageLoaderStepParameters,
     inference_image_loader,
 )
-from seldon_tensorflow.steps.predection_service_loader import (
-    PredectionServiceLoaderStepParameters,
+from seldon_tensorflow.steps.prediction_service_loader import (
+    PredictionServiceLoaderStepParameters,
     seldon_prediction_service_loader,
 )
 from seldon_tensorflow.steps.predictor import seldon_predictor
@@ -108,7 +110,7 @@ def main(
     min_accuracy: float,
     prediction_image_url: str,
 ):
-    """Run the custom code deployment example training/deployment or inference pipeline
+    """Run the custom code deployment example training/deployment or inference pipeline.
 
     Example usage:
 
@@ -119,7 +121,7 @@ def main(
     predict = config == PREDICT or config == DEPLOY_AND_PREDICT
 
     deployment_pipeline_name = "tensorflow_custom_code_pipeline"
-    step_name = "seldon_custom_model_deployer_step"
+    step_name = "deployer"
     model_name = "seldon-tensorflow-custom-model"
 
     model_deployer = SeldonModelDeployer.get_active_model_deployer()
@@ -147,7 +149,7 @@ def main(
                 ),
             ),
             prediction_service_loader=seldon_prediction_service_loader(
-                PredectionServiceLoaderStepParameters(
+                PredictionServiceLoaderStepParameters(
                     pipeline_name=deployment_pipeline_name,
                     step_name=step_name,
                     model_name=model_name,

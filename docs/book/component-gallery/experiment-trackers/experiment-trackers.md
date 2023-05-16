@@ -21,17 +21,6 @@ storing artifacts in the [Artifact Store](../artifact-stores/artifact-stores.md)
 ZenML already records information about the artifacts circulated through your
 pipelines by means of the mandatory [Artifact Store](../artifact-stores/artifact-stores.md). 
 
-<!-- markdown-link-check-disable -->
-
-<!---
-Similar to
-Experiment Trackers, the ZenML pipeline artifacts can be extracted using
-[the post-execution workflow API](../../developer-guide/post-execution-workflow.md)
-and visualized using the ZenML [Visualizers](../../developer-guide/visualizer.md).
--->
-
-<!-- markdown-link-check-enable -->
-
 However, these ZenML mechanisms are meant to be used programmatically and can be
 more difficult to work with without a visual interface.
 
@@ -44,6 +33,13 @@ You should add an Experiment Tracker to your ZenML stack and use it when you
 want to augment ZenML with the visual features provided by experiment tracking
 tools.
 
+## How they experiment trackers slot into the stack
+
+Here is an architecture diagram that shows how experiment trackers fit into the 
+overall story of a remote stack.
+
+![Experiment Tracker](../../assets/diagrams/Remote_with_exp_tracker.png)
+
 ### Experiment Tracker Flavors
 
 Experiment Trackers are optional stack components provided by integrations:
@@ -52,6 +48,7 @@ Experiment Trackers are optional stack components provided by integrations:
 |--------------------------------------|----------|---------------|-------------------------------------------------------------------------------------------------|
 | [MLflow](./mlflow.md)                | `mlflow` | `mlflow`      | Add MLflow experiment tracking and visualization capabilities to your ZenML pipelines           |
 | [Weights & Biases](./wandb.md)       | `wandb`  | `wandb`       | Add Weights & Biases experiment tracking and visualization capabilities to your ZenML pipelines |
+| [Neptune](./neptune.md)              | `neptune`| `neptune`     | Add Neptune experiment tracking and visualization capabilities to your ZenML pipelines          |
 | [Custom Implementation](./custom.md) | _custom_ |               | _custom_                                                                                        | Extend the Experiment Tracker abstraction and provide your own implementation |
 
 If you would like to see the available flavors of Experiment Tracker, you can 
@@ -73,7 +70,22 @@ steps in your pipeline by decorating them with the included decorator
 data) to the Experiment Tracker same as you would if you were using the tool
 independently of ZenML
 * finally, you can access the Experiment Tracker UI to browse and visualize the
-information logged during your pipeline runs
+information logged during your pipeline runs. You can use the following code
+snippet to get the URL of the experiment tracker UI for the experiment linked
+to a certain step of your pipeline run:
+
+```python
+from zenml.post_execution import get_run
+
+pipeline_run = get_run("<PIPELINE_RUN_NAME>")
+step = pipeline_run.get_step("<STEP_NAME>")
+experiment_tracker_url = step.metadata["experiment_tracker_url"].value
+```
+
+{% hint style="info" %}
+Experiment trackers will automatically declare runs as failed if the 
+corresponding ZenML pipeline step fails.
+{% endhint %}
 
 Consult the documentation for the particular [Experiment Tracker flavor](#experiment-tracker-flavors)
 that you plan on using or are using in your stack for detailed information about

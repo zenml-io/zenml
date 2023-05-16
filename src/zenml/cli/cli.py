@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Core CLI functionality."""
 
+import os
 from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 
 import click
@@ -21,8 +22,10 @@ from click import Command, Context, formatting
 
 from zenml import __version__
 from zenml.cli.formatter import ZenFormatter
+from zenml.client import Client
 from zenml.enums import CliCategories
 from zenml.logger import set_root_verbosity
+from zenml.utils import source_utils
 
 
 class TagGroup(click.Group):
@@ -95,7 +98,9 @@ class ZenMLCLI(click.Group):
             ctx: The click context.
             formatter: The click formatter.
         """
-        commands: List[Tuple[CliCategories, str, Union[Command, TagGroup]]] = []
+        commands: List[
+            Tuple[CliCategories, str, Union[Command, TagGroup]]
+        ] = []
         for subcommand in self.list_commands(ctx):
             cmd = self.get_command(ctx, subcommand)
             # What is this, the tool lied about a command.  Ignore it
@@ -143,6 +148,13 @@ class ZenMLCLI(click.Group):
 def cli() -> None:
     """CLI base command for ZenML."""
     set_root_verbosity()
+    repo_root = Client.find_repository()
+    if not repo_root:
+        # If we're not inside a ZenML repository, use the current working
+        # directory as the source root, as otherwise the __main__ module used
+        # as a source root is the CLI script located in the python site
+        # packages directory
+        source_utils.set_custom_source_root(source_root=os.getcwd())
 
 
 if __name__ == "__main__":

@@ -22,7 +22,6 @@ from typing import List, Type
 from zenml.enums import StackComponentType
 from zenml.integrations.constants import TEKTON
 from zenml.integrations.integration import Integration
-from zenml.models import FlavorModel
 from zenml.stack import Flavor
 
 TEKTON_ORCHESTRATOR_FLAVOR = "tekton"
@@ -32,7 +31,7 @@ class TektonIntegration(Integration):
     """Definition of Tekton Integration for ZenML."""
 
     NAME = TEKTON
-    REQUIREMENTS = ["kfp-tekton==1.3.1"]
+    REQUIREMENTS = ["kfp-tekton==1.4.1"]
 
     @classmethod
     def flavors(cls) -> List[Type[Flavor]]:
