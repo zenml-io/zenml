@@ -60,7 +60,9 @@ experiments.
 Try it out at [https://demo.zenml.io/](https://demo.zenml.io/)!
 
 <figure>
+<a href="https://demo.zenml.io/">
 <img src=".gitbook/assets/intro_dashboard_details.png" alt="ZenML Dashboard Details View" width="50%">
+</a>
 </figure>
 
 {% hint style="info" %}
@@ -101,7 +103,9 @@ has happened and drill down into detailed lineage visualizations.
 Try it out at [https://demo.zenml.io/](https://demo.zenml.io/)!
 
 <figure>
+<a href="https://demo.zenml.io/">
 <img src=".gitbook/assets/intro_dashboard.png" alt="ZenML Dashboard Overview" width="40%">
+</a>
 </figure>
 
 **Automated Deployments:** With ZenML, you no longer need to upload custom 
@@ -142,9 +146,9 @@ zenml stack recipe deploy gcp-vertexai  # Deploy entire MLOps stacks at once
 ```
 
 **Standardization:** With ZenML, you can standardize MLOps infrastructure and 
-tooling across your organization. Simply register your 
-staging and production environments as ZenML stacks and invite your colleagues
-to explore your setups and run ML workflows on them.
+tooling across your organization. Simply register your staging and production 
+environments as ZenML stacks and invite your colleagues to run ML workflows on 
+them.
 
 ```bash
 zenml orchestrator register kfp_orchestrator -f kubeflow  # Register MLOps tools and infrastructure
@@ -152,8 +156,14 @@ zenml stack register production --orchestrator kubeflow ...  # Register your pro
 zenml stack share production  # Make it available to your colleagues
 ```
 
+Registering your environments as ZenML stacks also enables you to browse and
+explore all your infrastructure setups in a convenient user interface. 
+Try it out at [https://demo.zenml.io/](https://demo.zenml.io/)!
+
 <figure>
+<a href="https://demo.zenml.io/">
 <img src=".gitbook/assets/intro_dashboard_stacks.png" alt="ZenML Dashboard Stacks View" width="50%">
+</a>
 </figure>
 
 **No Vendor Lock-In:** Since infrastructure is decoupled from code, ZenML gives
