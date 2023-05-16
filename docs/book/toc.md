@@ -20,7 +20,7 @@
   * [Follow best practices](user-guide/starter-guide/follow-best-practices.md)
 * [🐔 Advanced Guide](user-guide/advanced-guide/README.md)
   * [Configure steps/pipelines](user-guide/advanced-guide/configure-steps-and-pipelines.md)
-  * [Managing dependencies and environments](user-guide/advanced-guide/containerize-your-pipeline.md)
+  * [Managing dependencies and environments](user-guide/advanced-guide/managing-environments.md)
   * [Containerize your pipeline](user-guide/advanced-guide/containerize-your-pipeline.md)
   * [Schedule pipeline runs](user-guide/advanced-guide/schedule-pipeline-runs.md)
   * [Handle custom data types](user-guide/advanced-guide/handle-custom-data-types.md)
