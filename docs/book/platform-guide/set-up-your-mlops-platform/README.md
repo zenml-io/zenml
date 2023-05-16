@@ -6,7 +6,7 @@ description: Birds eye view on the necessities of your MLOps Platform
 
 To set up your own MLOps Platform with ZenML you need a few ingredients:
 
-<figure><img src="../../.gitbook/assets/SystemArchitecture.png" alt=""><figcaption><p>System Architecture with a deployment of ZenML along with a Cloud Stack</p></figcaption></figure>
+<figure><img src="../../.gitbook/assets/SystemArchitecture (1).png" alt=""><figcaption><p>System Architecture with a deployment of ZenML along with a Cloud Stack</p></figcaption></figure>
 
 ### Deployment of the ZenML Server
 
@@ -50,6 +50,18 @@ This is where the docker images for all pipeline code is pushed. The **orchestra
 #### Other Tools
 
 Deployments of all the other tools that you need (such as **experiment trackers**, **model registries**, **feature stores**). Learn more about the options in our [Component Guide](../../user-guide/component-galery/).
+
+### Additional Tools
+
+There are some additional tools that should be considered in the setup of the MLOps Platform
+
+#### Image Builder
+
+Optionally, you can configure an image builder service to build the docker images centrally, rather than doing so on the client machine.
+
+#### Code Repository
+
+Code Repositories can be configured within the ZenML deployment. With a code repository configured the pipeline code no longer needs to be baked into the docker images. Instead the code is loaded at runtime within the orchestrator.
 
 ## Coming Soon: True Client-Server Architecture&#x20;
 
