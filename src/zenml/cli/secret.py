@@ -32,6 +32,8 @@ from zenml.cli.utils import (
 from zenml.console import console
 from zenml.enums import StackComponentType
 from zenml.exceptions import SecretExistsError
+from zenml.constants import ARBITRARY_SECRET_SCHEMA_TYPE
+
 
 if TYPE_CHECKING:
     from zenml.secrets_managers.base_secrets_manager import BaseSecretsManager
@@ -79,7 +81,7 @@ def register_secrets_manager_subcommands() -> None:
         "--schema",
         "-s",
         "secret_schema_type",
-        default="arbitrary",  # TODO: Place in a constant outside secret module
+        default=ARBITRARY_SECRET_SCHEMA_TYPE,
         help="DEPRECATED: Register a secret with an optional schema. Secret "
         "schemas will be removed in an upcoming release of ZenML.",
         type=str,
