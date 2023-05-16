@@ -18,6 +18,13 @@ from typing import Any, Dict, List
 from urllib.parse import quote, urlparse
 
 
+def clean_url(url: str) -> str:
+    """Remove extraneous parts of the URL prior to mapping."""
+    parsed = urlparse(url)
+    parsed = parsed._replace(netloc="", query="")
+    return parsed.path.lstrip("/")
+
+
 def convert_pred_filenames_to_task_ids(
     preds: List[Dict[str, Any]],
     tasks: List[Dict[str, Any]],
@@ -36,9 +43,7 @@ def convert_pred_filenames_to_task_ids(
         List of predictions using task ids as reference.
     """
     filename_id_mapping = {
-        os.path.basename(
-            urlparse(task["data"][filename_reference]).path
-        ): task["id"]
+        clean_url(task["data"][filename_reference]): task["id"]
         for task in tasks
     }
     # GCS and S3 URL encodes filenames containing spaces, requiring this
@@ -48,11 +53,14 @@ def convert_pred_filenames_to_task_ids(
             {"filename": quote(pred["filename"]), "result": pred["result"]}
             for pred in preds
         ]
-    breakpoint()
+
     return [
         {
             "task": int(
-                filename_id_mapping[os.path.basename(pred["filename"])]
+                filename_id_mapping[
+                    urlparse(pred["filename"]).netloc
+                    + urlparse(pred["filename"]).path
+                ]
             ),
             "result": pred["result"],
         }
