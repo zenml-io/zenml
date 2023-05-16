@@ -2346,7 +2346,6 @@ class Client(metaclass=ClientMetaClass):
                     "Proceeding to update or create resources. "
                 )
             else:
-                breakpoint()
                 stack_recipe_service = StackRecipeService(
                     config=stack_recipe_service_config,
                     stack_recipe_name=f"{cloud}-modular",
