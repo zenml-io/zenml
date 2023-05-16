@@ -166,7 +166,7 @@ class StepView(BaseView):
         return True if self.step_configuration.enable_step_logs else False
 
     @property
-    def logs(self) -> Optional[None]:
+    def logs(self) -> Optional[str]:
         """Get logs for the step.
 
         Returns:
