@@ -6,7 +6,6 @@ description: Welcome to ZenML!
 
 ZenML is an extensible, open-source MLOps framework for creating portable, 
 production-ready machine learning pipelines.
-
 By decoupling infrastructure from code, ZenML gives all developers in your 
 organization more freedom and independence in how they approach their work.
 
@@ -96,12 +95,29 @@ by automatically tracking and versioning stacks, pipelines, and output
 artifacts. In the ZenML dashboard, you can get an overview of everything that 
 has happened. Try it out at [https://demo.zenml.io/](https://demo.zenml.io/)!
 
-**Automated Deployments:** With ZenML you no longer need to upload custom 
-Docker images to the cloud every time you want to deploy a new model to 
+<figure>
+<img src=".gitbook/assets/intro_dashboard.png" alt="ZenML Dashboard Overview" width="50%">
+</figure>
+
+**Automated Deployments:** With ZenML, you no longer need to upload custom 
+Docker images to the cloud whenever you want to deploy a new model to 
 production. Simply define your ML workflow as a ZenML pipeline, let ZenML 
 handle all the containerization, and have your model automatically deployed to 
 a highly scalable Kubernetes deployment service like 
 [Seldon](./user-guide/component-galery/model-deployers/seldon.md).
+
+```python
+from zenml.integrations.seldon.steps import seldon_model_deployer_step
+
+from my_organization.steps import data_loader_step, model_trainer_step
+
+
+@pipeline
+def my_pipeline():
+  data = data_loader_step()
+  model = model_trainer_step(data)
+  seldon_model_deployer_step(model)
+```
 
 {% endtab %}
 
