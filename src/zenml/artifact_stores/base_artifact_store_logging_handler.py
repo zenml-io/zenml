@@ -75,10 +75,17 @@ class ArtifactStoreLoggingHandler(TimedRotatingFileHandler):
 
     def flush(self) -> None:
         """Flushes the buffer to the artifact store."""
-        with fileio.open(self.logs_uri, mode="a") as log_file:
-            log_file.write(self.buffer.getvalue())
-        self.buffer.close()
-        self.buffer = io.StringIO()
+        try:
+            with fileio.open(self.logs_uri, mode="a") as log_file:
+                log_file.write(self.buffer.getvalue())
+            self.buffer.close()
+            self.buffer = io.StringIO()
+        except (OSError, IOError) as e:
+            # This exception can be raised if there are issues with the underlying system calls,
+            # such as reaching the maximum number of open files, permission issues, file corruption,
+            # or other I/O errors
+            logger.error(f"Error while trying to write logs: {e}")
+
         self.message_count = 0
         self.last_upload_time = time.time()
 
