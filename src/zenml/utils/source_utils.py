@@ -41,7 +41,10 @@ from zenml.environment import Environment
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
-
+NoneType = type(None)
+NoneTypeSource = Source(
+    module=NoneType.__module__, attribute="NoneType", type=SourceType.BUILTIN
+)
 
 _CUSTOM_SOURCE_ROOT: Optional[str] = None
 
@@ -57,6 +60,11 @@ def load(source: Union[Source, str]) -> Any:
     """
     if isinstance(source, str):
         source = Source.from_import_path(source)
+
+    if source.import_path == NoneTypeSource.import_path:
+        # The class of the `None` object doesn't exist in the `builtin` module
+        # so we need to manually handle it here
+        return NoneType
 
     import_root = None
     if source.type == SourceType.CODE_REPOSITORY:
@@ -94,7 +102,9 @@ def load(source: Union[Source, str]) -> Any:
     return obj
 
 
-def resolve(obj: Union[Type[Any], FunctionType, ModuleType]) -> Source:
+def resolve(
+    obj: Union[Type[Any], FunctionType, ModuleType, NoneType]
+) -> Source:
     """Resolve an object.
 
     Args:
@@ -106,6 +116,11 @@ def resolve(obj: Union[Type[Any], FunctionType, ModuleType]) -> Source:
     Returns:
         The source of the resolved object.
     """
+    if obj is NoneType:
+        # The class of the `None` object doesn't exist in the `builtin` module
+        # so we need to manually handle it here
+        return NoneTypeSource
+
     if isinstance(obj, ModuleType):
         module = obj
         attribute_name = None

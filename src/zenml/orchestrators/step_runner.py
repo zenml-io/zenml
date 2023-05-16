@@ -51,7 +51,7 @@ from zenml.steps.utils import (
     parse_return_type_annotations,
     resolve_type_annotation,
 )
-from zenml.utils import source_utils
+from zenml.utils import materializer_utils, source_utils
 
 if TYPE_CHECKING:
     from zenml.config.source import Source
@@ -213,7 +213,9 @@ class StepRunner:
         step_instance._configuration = self._step.config
         return step_instance
 
-    def _load_output_materializers(self) -> Dict[str, Type[BaseMaterializer]]:
+    def _load_output_materializers(
+        self,
+    ) -> Dict[str, Tuple[Type[BaseMaterializer], ...]]:
         """Loads the output materializers for the step.
 
         Returns:
@@ -221,12 +223,18 @@ class StepRunner:
         """
         materializers = {}
         for name, output in self.configuration.outputs.items():
-            materializer_class: Type[
-                BaseMaterializer
-            ] = source_utils.load_and_validate_class(
-                output.materializer_source, expected_class=BaseMaterializer
-            )
-            materializers[name] = materializer_class
+            output_materializers = []
+
+            for source in output.materializer_source:
+                materializer_class: Type[
+                    BaseMaterializer
+                ] = source_utils.load_and_validate_class(
+                    source, expected_class=BaseMaterializer
+                )
+                output_materializers.append(materializer_class)
+
+            materializers[name] = tuple(output_materializers)
+
         return materializers
 
     def _parse_inputs(
@@ -235,7 +243,7 @@ class StepRunner:
         annotations: Dict[str, Any],
         input_artifacts: Dict[str, "ArtifactResponseModel"],
         output_artifact_uris: Dict[str, str],
-        output_materializers: Dict[str, Type[BaseMaterializer]],
+        output_materializers: Dict[str, Tuple[Type[BaseMaterializer], ...]],
     ) -> Dict[str, Any]:
         """Parses the inputs for a step entrypoint function.
 
@@ -286,7 +294,7 @@ class StepRunner:
         annotations: Dict[str, Any],
         step_exception: Optional[BaseException],
         output_artifact_uris: Dict[str, str],
-        output_materializers: Dict[str, Type[BaseMaterializer]],
+        output_materializers: Dict[str, Tuple[Type[BaseMaterializer], ...]],
     ) -> Dict[str, Any]:
         """Parses the inputs for a hook function.
 
@@ -469,7 +477,7 @@ class StepRunner:
     def _store_output_artifacts(
         self,
         output_data: Dict[str, Any],
-        output_materializers: Dict[str, Type[BaseMaterializer]],
+        output_materializers: Dict[str, Tuple[Type[BaseMaterializer], ...]],
         output_artifact_uris: Dict[str, str],
         artifact_metadata_enabled: bool,
     ) -> Tuple[
@@ -500,53 +508,38 @@ class StepRunner:
         output_artifacts: Dict[str, ArtifactRequestModel] = {}
         output_artifact_metadata: Dict[str, Dict[str, "MetadataType"]] = {}
         for output_name, return_value in output_data.items():
-            if return_value is None:
-                from zenml.config.source import Source
-                from zenml.materializers.base_materializer import ArtifactType
+            data_type = type(return_value)
+            materializer_classes = output_materializers[output_name]
+            materializer_class = materializer_utils.select_materializer(
+                data_type=data_type, materializer_classes=materializer_classes
+            )
+            materializer_source = source_utils.resolve(materializer_class)
+            uri = output_artifact_uris[output_name]
+            materializer = materializer_class(uri)
+            materializer.save(return_value)
+            if artifact_metadata_enabled:
+                try:
+                    artifact_metadata = materializer.extract_metadata(
+                        return_value
+                    )
+                    output_artifact_metadata[output_name] = artifact_metadata
+                except Exception as e:
+                    logger.warning(
+                        f"Failed to extract metadata for output artifact "
+                        f"'{output_name}' of step "
+                        f"'{self._step.spec.pipeline_parameter_name}': {e}"
+                    )
 
-                output_artifact = ArtifactRequestModel(
-                    name=output_name,
-                    type=ArtifactType.BASE,
-                    uri="",
-                    materializer=Source.from_import_path("none"),
-                    data_type=Source.from_import_path("none"),
-                    user=active_user_id,
-                    workspace=active_workspace_id,
-                    artifact_store_id=artifact_store_id,
-                )
-            else:
-                materializer_class = output_materializers[output_name]
-                materializer_source = self.configuration.outputs[
-                    output_name
-                ].materializer_source
-                uri = output_artifact_uris[output_name]
-                materializer = materializer_class(uri)
-                materializer.save(return_value)
-                if artifact_metadata_enabled:
-                    try:
-                        artifact_metadata = materializer.extract_metadata(
-                            return_value
-                        )
-                        output_artifact_metadata[
-                            output_name
-                        ] = artifact_metadata
-                    except Exception as e:
-                        logger.warning(
-                            f"Failed to extract metadata for output artifact "
-                            f"'{output_name}' of step "
-                            f"'{self._step.spec.pipeline_parameter_name}': {e}"
-                        )
-
-                output_artifact = ArtifactRequestModel(
-                    name=output_name,
-                    type=materializer_class.ASSOCIATED_ARTIFACT_TYPE,
-                    uri=uri,
-                    materializer=materializer_source,
-                    data_type=source_utils.resolve(type(return_value)),
-                    user=active_user_id,
-                    workspace=active_workspace_id,
-                    artifact_store_id=artifact_store_id,
-                )
+            output_artifact = ArtifactRequestModel(
+                name=output_name,
+                type=materializer_class.ASSOCIATED_ARTIFACT_TYPE,
+                uri=uri,
+                materializer=materializer_source,
+                data_type=source_utils.resolve(data_type),
+                user=active_user_id,
+                workspace=active_workspace_id,
+                artifact_store_id=artifact_store_id,
+            )
             output_artifacts[output_name] = output_artifact
         return output_artifacts, output_artifact_metadata
 

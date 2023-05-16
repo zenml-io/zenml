@@ -636,8 +636,9 @@ class Pipeline:
         custom_materializer = False
         for step in deployment.step_configurations.values():
             for output in step.config.outputs.values():
-                if not output.materializer_source.is_internal:
-                    custom_materializer = True
+                for source in output.materializer_source:
+                    if not source.is_internal:
+                        custom_materializer = True
 
         stack_creator = Client().get_stack(stack.id).user
         active_user = Client().active_user
@@ -948,4 +949,6 @@ class Pipeline:
             update={"inputs": inputs, "outputs": outputs}
         )
 
+        # TODO: replace with separate _run() method call to separate the
+        # run config and run part
         return self.run()

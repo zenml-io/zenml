@@ -15,7 +15,7 @@
 
 import os
 import tempfile
-from typing import TYPE_CHECKING, Any, Union
+from typing import TYPE_CHECKING, Any, Sequence, Type, Union
 
 from zenml.client import Client
 from zenml.config.source import Source
@@ -186,3 +186,27 @@ def _load_artifact(
     logger.debug("Artifact loaded successfully.")
 
     return artifact
+
+
+def select_materializer(
+    data_type: Type[Any],
+    materializer_classes: Sequence[Type[BaseMaterializer]],
+) -> Type[BaseMaterializer]:
+    """Select a materializer for a given data type.
+
+    Args:
+        data_type: The data type for which to select the materializer.
+        materializer_classes: Available materializer classes.
+
+    Raises:
+        RuntimeError: If no materializer can handle the given data type.
+
+    Returns:
+        The first materializer that can handle the given data type.
+    """
+    for class_ in data_type.__mro__:
+        for materializer_class in materializer_classes:
+            if materializer_class.can_handle_type(class_):
+                return materializer_class
+
+    raise RuntimeError(f"No materializer found for type {data_type}.")

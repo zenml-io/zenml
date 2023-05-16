@@ -22,6 +22,7 @@ from typing import (
     Dict,
     Mapping,
     Optional,
+    Sequence,
     Type,
     TypeVar,
     Union,
@@ -43,7 +44,10 @@ if TYPE_CHECKING:
         "ArtifactClassOrStr", Mapping[str, "ArtifactClassOrStr"]
     ]
     OutputMaterializersSpecification = Union[
-        "MaterializerClassOrSource", Mapping[str, "MaterializerClassOrSource"]
+        "MaterializerClassOrSource",
+        Sequence["MaterializerClassOrSource"],
+        Mapping[str, "MaterializerClassOrSource"],
+        Mapping[str, Sequence["MaterializerClassOrSource"]],
     ]
 
 

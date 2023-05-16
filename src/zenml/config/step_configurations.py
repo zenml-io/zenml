@@ -12,10 +12,19 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Pipeline configuration classes."""
-from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    List,
+    Mapping,
+    Optional,
+    Tuple,
+    Union,
+)
 from uuid import UUID
 
-from pydantic import root_validator
+from pydantic import root_validator, validator
 
 from zenml.config.base_settings import BaseSettings, SettingsOrDict
 from zenml.config.constants import DOCKER_SETTINGS_KEY, RESOURCE_SETTINGS_KEY
@@ -33,7 +42,7 @@ logger = get_logger(__name__)
 class PartialArtifactConfiguration(StrictBaseModel):
     """Class representing a partial input/output artifact configuration."""
 
-    materializer_source: Optional[Source] = None
+    materializer_source: Optional[Tuple[Source, ...]] = None
 
     @root_validator(pre=True)
     def _remove_deprecated_attributes(
@@ -53,15 +62,51 @@ class PartialArtifactConfiguration(StrictBaseModel):
                 values.pop(deprecated_attribute)
         return values
 
-    _convert_source = convert_source_validator("materializer_source")
+    @validator("materializer_source", pre=True)
+    def _convert_source(
+        cls, value: Union[None, Source, str, Tuple[Source]]
+    ) -> Tuple[Source]:
+        """Converts old source strings to tuples of source objects.
+
+        Args:
+            cls: The class on which the attributes are defined.
+            value: Source string or object.
+
+        Returns:
+            The converted source.
+        """
+        if isinstance(value, str):
+            value = (Source.from_import_path(value),)
+        elif isinstance(value, Source):
+            value = (value,)
+
+        return value
 
 
 class ArtifactConfiguration(PartialArtifactConfiguration):
     """Class representing a complete input/output artifact configuration."""
 
-    materializer_source: Source
+    materializer_source: Tuple[Source, ...]
 
-    _convert_source = convert_source_validator("materializer_source")
+    @validator("materializer_source", pre=True)
+    def _convert_source(
+        cls, value: Union[Source, str, Tuple[Source]]
+    ) -> Tuple[Source]:
+        """Converts old source strings to tuples of source objects.
+
+        Args:
+            cls: The class on which the attributes are defined.
+            value: Source string or object.
+
+        Returns:
+            The converted source.
+        """
+        if isinstance(value, str):
+            value = (Source.from_import_path(value),)
+        elif isinstance(value, Source):
+            value = (value,)
+
+        return value
 
 
 class StepConfigurationUpdate(StrictBaseModel):

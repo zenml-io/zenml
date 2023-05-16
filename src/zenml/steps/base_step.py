@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Base Step for ZenML."""
+import hashlib
 import inspect
 import os
 from abc import abstractmethod
@@ -77,7 +78,10 @@ if TYPE_CHECKING:
         "ArtifactClassOrStr", Mapping[str, "ArtifactClassOrStr"]
     ]
     OutputMaterializersSpecification = Union[
-        "MaterializerClassOrSource", Mapping[str, "MaterializerClassOrSource"]
+        "MaterializerClassOrSource",
+        Sequence["MaterializerClassOrSource"],
+        Mapping[str, "MaterializerClassOrSource"],
+        Mapping[str, Sequence["MaterializerClassOrSource"]],
     ]
 
 logger = get_logger(__name__)
@@ -334,12 +338,16 @@ class BaseStep(metaclass=BaseStepMeta):
         for name, output in self.configuration.outputs.items():
             if output.materializer_source:
                 key = f"{name}_materializer_source"
-                materializer_class = source_utils.load(
-                    output.materializer_source
-                )
-                parameters[key] = source_code_utils.get_hashed_source_code(
-                    materializer_class
-                )
+                hash_ = hashlib.md5()
+
+                for source in output.materializer_source:
+                    materializer_class = source_utils.load(source)
+                    code_hash = source_code_utils.get_hashed_source_code(
+                        materializer_class
+                    )
+                    hash_.update(code_hash.encode())
+
+                parameters[key] = hash_.hexdigest()
 
         return parameters
 
@@ -625,20 +633,26 @@ class BaseStep(metaclass=BaseStepMeta):
             else:
                 return source_utils.resolve(value)
 
+        def _convert_to_tuple(value: Any) -> Tuple[Source]:
+            if isinstance(value, Sequence):
+                return tuple(_resolve_if_necessary(v) for v in value)
+            else:
+                return (_resolve_if_necessary(value),)
+
         outputs: Dict[str, Dict[str, Source]] = defaultdict(dict)
         allowed_output_names = set(self.entrypoint_definition.outputs)
 
         if output_materializers:
             if not isinstance(output_materializers, Mapping):
-                # string of materializer class to be used for all outputs
-                source = _resolve_if_necessary(output_materializers)
+                sources = _convert_to_tuple(output_materializers)
                 output_materializers = {
-                    output_name: source for output_name in allowed_output_names
+                    output_name: sources
+                    for output_name in allowed_output_names
                 }
 
             for output_name, materializer in output_materializers.items():
-                source = _resolve_if_necessary(materializer)
-                outputs[output_name]["materializer_source"] = source
+                sources = _convert_to_tuple(materializer)
+                outputs[output_name]["materializer_source"] = sources
 
         failure_hook_source = None
         if on_failure:
@@ -760,14 +774,15 @@ class BaseStep(metaclass=BaseStepMeta):
                 )
 
             if output.materializer_source:
-                if not source_utils.validate_source_class(
-                    output.materializer_source, expected_class=BaseMaterializer
-                ):
-                    raise StepInterfaceError(
-                        f"Materializer source `{output.materializer_source}` "
-                        f"for output '{output_name}' of step '{self.name}' "
-                        "does not resolve to a  `BaseMaterializer` subclass."
-                    )
+                for source in output.materializer_source:
+                    if not source_utils.validate_source_class(
+                        source, expected_class=BaseMaterializer
+                    ):
+                        raise StepInterfaceError(
+                            f"Materializer source `{source}` "
+                            f"for output '{output_name}' of step '{self.name}' "
+                            "does not resolve to a `BaseMaterializer` subclass."
+                        )
 
     def _validate_inputs(
         self,
@@ -832,48 +847,47 @@ class BaseStep(metaclass=BaseStepMeta):
                         "step outputs with `Any` as type annotation.",
                         url="https://docs.zenml.io/advanced-guide/pipelines/materializers",
                     )
+
                 if is_union(
                     get_origin(output_annotation) or output_annotation
                 ):
-                    potential_types = [
-                        type_
-                        for type_ in get_args(output_annotation)
-                        if not is_none_type(type_)
-                    ]
-                    if len(potential_types) == 1:
-                        # Optional[], we just need a materializer for the one
-                        # type
-                        output_annotation = potential_types[0]
+                    output_types = tuple(
+                        type(None)
+                        if is_none_type(output_type)
+                        else output_type
+                        for output_type in get_args(output_annotation)
+                    )
+                else:
+                    output_types = (output_annotation,)
+
+                materializer_source = []
+
+                for output_type in output_types:
+                    if default_materializer_registry.is_registered(
+                        output_type
+                    ):
+                        materializer_class = default_materializer_registry[
+                            output_type
+                        ]
                     else:
-                        # TODO: We should check if a materializer for each
-                        # item in the Union
                         raise StepInterfaceError(
-                            "An explicit materializer needs to be specified for "
-                            "step outputs with `Union` as type annotation.",
+                            f"Unable to find materializer for output "
+                            f"'{output_name}' of type `{output_type}` in step "
+                            f"'{self.name}'. Please make sure to either "
+                            f"explicitly set a materializer for step outputs "
+                            f"using `step.configure(output_materializers=...)` or "
+                            f"registering a default materializer for specific "
+                            f"types by subclassing `BaseMaterializer` and setting "
+                            f"its `ASSOCIATED_TYPES` class variable.",
                             url="https://docs.zenml.io/advanced-guide/pipelines/materializers",
                         )
-
-                if default_materializer_registry.is_registered(
-                    output_annotation
-                ):
-                    materializer_class = default_materializer_registry[
-                        output_annotation
-                    ]
-                else:
-                    raise StepInterfaceError(
-                        f"Unable to find materializer for output "
-                        f"'{output_name}' of type `{output_annotation}` in step "
-                        f"'{self.name}'. Please make sure to either "
-                        f"explicitly set a materializer for step outputs "
-                        f"using `step.configure(output_materializers=...)` or "
-                        f"registering a default materializer for specific "
-                        f"types by subclassing `BaseMaterializer` and setting "
-                        f"its `ASSOCIATED_TYPES` class variable.",
-                        url="https://docs.zenml.io/advanced-guide/pipelines/materializers",
+                    materializer_source.append(
+                        source_utils.resolve(materializer_class)
                     )
+
                 outputs[output_name][
                     "materializer_source"
-                ] = source_utils.resolve(materializer_class)
+                ] = materializer_source
 
         parameters = self._finalize_parameters()
         self.configure(parameters=parameters, merge=False)
@@ -1210,7 +1224,6 @@ class ExternalArtifact(Artifact):
             response = Client().zen_store.create_artifact(artifact=artifact)
             # To avoid duplicate uploads, switch to just referencing the
             # uploaded artifact
-            self._value = None
             self._id = response.id
 
         return self._id
