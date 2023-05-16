@@ -48,6 +48,7 @@ def convert_pred_filenames_to_task_ids(
             {"filename": quote(pred["filename"]), "result": pred["result"]}
             for pred in preds
         ]
+    breakpoint()
     return [
         {
             "task": int(

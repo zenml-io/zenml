@@ -38,7 +38,7 @@ def prediction_service_loader(
     return train_run.get_step(params.training_pipeline_step_name).output.read()
 
 
-@step
+@step(enable_cache=False)
 def predictor(
     model: torch.nn.Module,
     images: Dict,
