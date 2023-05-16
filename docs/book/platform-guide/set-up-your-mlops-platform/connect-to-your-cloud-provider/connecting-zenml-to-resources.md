@@ -12,7 +12,7 @@ In this section, we walk through a typical workflow to explain conceptually the 
 
 ## The typical Service Connectors workflow
 
-The first step is _<mark style="color:purple;">finding out what types of resources you can connect ZenML to</mark>_. This is where the _Service Connector Type_ concept comes in. For now, it is sufficient to think of Service Connector Types as a way to describe all the supported types of Service Connectors that can be configured and the kind of resources that they can access. This is an example of listing the available Service Connector Types with the ZenML CLI. Note that there is an AWS Service Connector type that we can use to gain access to several types of AWS resources:
+The first step is _<mark style="color:purple;">finding out what types of resources you can connect ZenML to</mark>_. This is where the _Service Connector Type_ concept comes in. For now, it is sufficient to think of Service Connector Types as a way to describe all the supported types of Service Connectors that can be configured and the kind of resources that they can access. This is an example of listing the available Service Connector Types with the ZenML CLI.
 
 ```sh
 $ zenml service-connector list-types
@@ -30,9 +30,18 @@ $ zenml service-connector list-types
 ┃                              │               │ 🐳 docker-registry    │ iam-role         │       │        ┃
 ┃                              │               │                       │ session-token    │       │        ┃
 ┃                              │               │                       │ federation-token │       │        ┃
+┠──────────────────────────────┼───────────────┼───────────────────────┼──────────────────┼───────┼────────┨
+┃    GCP Service Connector     │ 🔵 gcp        │ 🔵 gcp-generic        │ implicit         │ ✅    │ ✅     ┃
+┃                              │               │ 📦 gcs-bucket         │ user-account     │       │        ┃
+┃                              │               │ 🌀 kubernetes-cluster │ service-account  │       │        ┃
+┃                              │               │ 🐳 docker-registry    │ oauth2-token     │       │        ┃
+┃                              │               │                       │ impersonation    │       │        ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━┷━━━━━━━┷━━━━━━━━┛
-
 ```
+
+Note that there is an AWS Service Connector type that we can use to gain access to several types of AWS resources:
+
+
 
 The second step is _<mark style="color:purple;">registering a Service Connector</mark>_ that effectively enables ZenML to authenticate to and access one or more remote resources. This step is best handled by someone with some infrastructure knowledge, but there are sane defaults and auto-detection mechanisms built into the AWS Service Connector that can make this a walk in the park even for the uninitiated. A simple example of this is registering an AWS Service Connector with AWS credentials _automatically lifted up from your local host_, giving ZenML access to the same resources that you can access from your local machine through the AWS CLI, such as EKS clusters, ECR repositories or S3 buckets:
 
