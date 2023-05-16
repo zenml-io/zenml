@@ -85,18 +85,28 @@ def my_pipeline():
 
 {% tab title="ZenML for ML Engineers" %}
 
-As an ML Engineer, ZenML enables you take ownership of the entire ML workflow
-end-to-end. Adopting ZenML means fewer handover points and more visibility on
-what is happening in your organization.
+As an ML Engineer, ZenML empowers you to take ownership of the entire ML 
+lifecycle end-to-end. Adopting ZenML means fewer handover points and more 
+visibility on what is happening in your organization.
 
-**ML Lifecycle Management:** ZenML's abstractions make it possible to manage the
-entire ML lifecycle of your company end-to-end. Complex infrastructure setups 
-are bundled into "stacks" and sophisticated ML workflows into "pipelines",
-enabling you to move ML workflows between different environments in seconds.
+**ML Lifecycle Management:** ZenML's abstractions enable you to manage
+sophisticated ML setups with ease. After you define your ML workflows as 
+[Pipelines](./getting-started/core-concepts.md#1-development) and your 
+development, staging, and production infrastructures as 
+[Stacks](./getting-started/core-concepts.md#2-execution), you can move 
+entire ML workflows to different environments in seconds.
+
+```bash
+zenml stack set staging
+python run.py  # test your workflows on staging infrastructure
+zenml stack set prod
+python run.py  # run your workflows in production
+```
 
 **Reproducibility:** ZenML enables you to painlessly reproduce previous results
 by automatically tracking and versioning stacks, pipelines, and output 
-artifacts. In the ZenML dashboard you can get an overview of everything that has happened. Try it out on https://demo.zenml.io/!
+artifacts. In the ZenML dashboard, you can get an overview of everything that 
+has happened. Try it out at [https://demo.zenml.io/](https://demo.zenml.io/)!
 
 **Automated Deployments:** With ZenML you no longer need to upload custom 
 Docker images to the cloud every time you want to deploy a new model to 
