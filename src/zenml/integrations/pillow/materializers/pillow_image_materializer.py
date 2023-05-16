@@ -118,4 +118,5 @@ class PillowImageMaterializer(BaseMaterializer):
             "width": image.width,
             "height": image.height,
             "mode": str(image.mode),
+            "original_filename": getattr(image, "filename", "Unknown"),
         }
