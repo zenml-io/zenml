@@ -6,6 +6,10 @@ description: How to develop across multiple development environments
 
 In a ZenML deployment, you might have to manage multiple environments, such as your local development environment, the ZenML server environment, and the environment within the Docker images created when building pipelines. This guide will help you understand how to manage dependencies and configurations in these different environments.
 
+- what kind of environments even exist when using ZenML: theres the client environment, the build environment (image builders), the server environment (tell them that this needs to have some stuff installed if they want to use feature X and how to do it), the orchestrator environment (link to pipeline containerization page)
+- how to handle multiple pipelines/workspaces on a local machine
+- how to handle custom packages/integrations in the ZenML server
+
 ## Local Development Environment
 
 Your local development environment is where you write and test your ZenML pipelines. To manage dependencies in this environment, you can use your preferred package manager, such as `pip` or `poetry`. Make sure to install the ZenML package and any additional [ZenML integrations](broken-reference) you need for your pipelines.

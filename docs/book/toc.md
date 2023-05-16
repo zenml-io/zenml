@@ -109,7 +109,7 @@
     * [Deploy with the ZenML CLI](platform-guide/set-up-your-mlops-platform/deploy-zenml/deployment-using-the-cli.md)
     * [Deploy with Docker](platform-guide/set-up-your-mlops-platform/deploy-zenml/deploy-with-docker.md)
     * [Deploy with Helm](platform-guide/set-up-your-mlops-platform/deploy-zenml/deploy-with-helm.md)
-  * [User management](platform-guide/manage-the-deployed-services/collaborate.md)
+  * [User management](platform-guide/set-up-your-mlops-platform/collaborate.md)
   * [Connect ZenML to infrastructure](platform-guide/set-up-your-mlops-platform/connect-to-your-cloud-provider.md)
   * [Deploy and set up a cloud stack](platform-guide/set-up-your-mlops-platform/deploy-and-set-up-a-cloud-stack.md)
   * [Connect your git repository](platform-guide/set-up-your-mlops-platform/connect-your-git-repository.md)
