@@ -31,7 +31,7 @@ from zenml.cli.utils import (
     _component_display_name,
     list_options,
     print_page_info,
-    warn_deprecated_secrets_manager,
+    warn_deprecated_secrets_manager, fail_secrets_manager_creation,
 )
 from zenml.client import Client
 from zenml.console import console
@@ -228,7 +228,8 @@ def generate_stack_component_register_command(
             labels: Labels to be associated with the component.
         """
         if component_type == StackComponentType.SECRETS_MANAGER:
-            warn_deprecated_secrets_manager()
+            fail_secrets_manager_creation()
+            return
 
         client = Client()
 
