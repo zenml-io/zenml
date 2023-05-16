@@ -26,6 +26,66 @@ organization more freedom and independence in how they approach their work:
 
 {% tabs %}
 
+{% tab title="ZenML for MLOps / Platform Engineers" %}
+
+As an MLOps infrastructure expert, ZenML enables you to define, deploy, and 
+manage sophisticated production environments that are easy to share with your 
+colleagues.
+
+**Standardization:** With ZenML, you can standardize MLOps infrastructure and 
+tooling across your organization. Simply set up a ZenML server, register your 
+production environment as a ZenML stack, and invite your colleagues to run 
+their ML workflows on it:
+
+```bash
+zenml deploy  # Deploy ZenML
+zenml stack register production ...  # Register your production environment
+zenml stack share production  # Make it available to your colleagues
+```
+
+**No Vendor Lock-In:** Since infrastructure is decoupled from code, ZenML gives
+you the freedom to switch to a different tooling stack whenever it suits you.
+By avoiding vendor lock-in, you have the flexibility to transition between 
+various cloud providers or services, ensuring that you receive the best 
+performance and pricing available in the market at any time.
+
+```bash
+zenml stack set gcp
+python run.py  # Run your ML workflows in GCP
+zenml stack set aws
+python run.py  # Now your ML workflow runs in AWS
+```
+
+**Extensibility:** ZenML is open-source and highly extensible, so you benefit 
+from industry-standard best-practices built into the framework while also being 
+able to customize it to fit your specific needs.
+
+{% endtab %}
+
+{% tab title="ZenML for ML Engineers" %}
+
+As an ML Engineer, ZenML enables you take ownership of the entire ML workflow
+end-to-end. Adopting ZenML means fewer handover points and more visibility on
+what is happening in your organization.
+
+**ML Lifecycle Management:** ZenML's abstractions make it possible to manage the
+entire ML lifecycle of your company end-to-end. Complex infrastructure setups 
+are bundled into "stacks" and sophisticated ML workflows into "pipelines",
+enabling you to move ML workflows between different environments in seconds.
+
+**Reproducibility:** ZenML enables you to painlessly reproduce previous results
+by automatically tracking and versioning stacks, pipelines, and output 
+artifacts. In the ZenML dashboard you can get an overview of everything that has happened. Try it out on https://demo.zenml.io/!
+
+**Automated Deployments:** With ZenML you no longer need to upload custom 
+Docker images to the cloud every time you want to deploy a new model to 
+production. Simply define your ML workflow as a ZenML pipeline, let ZenML 
+handle all the containerization, and have your model automatically deployed to 
+a highly scalable Kubernetes deployment service like 
+[Seldon](./user-guide/component-galery/model-deployers/seldon.md).
+
+{% endtab %}
+
 {% tab title="ZenML for Data Scientists" %}
 
 As a Data Scientist, ZenML gives you the freedom to focus on modeling and
@@ -81,66 +141,6 @@ def my_pipeline():
   model = my_model_trainer_step(data)
   eval_metric = model_validation_step(model)
 ```
-{% endtab %}
-
-{% tab title="ZenML for ML Engineers" %}
-
-As an ML Engineer, ZenML enables you take ownership of the entire ML workflow
-end-to-end. Adopting ZenML means fewer handover points and more visibility on
-what is happening in your organization.
-
-**ML Lifecycle Management:** ZenML's abstractions make it possible to manage the
-entire ML lifecycle of your company end-to-end. Complex infrastructure setups 
-are bundled into "stacks" and sophisticated ML workflows into "pipelines",
-enabling you to move ML workflows between different environments in seconds.
-
-**Reproducibility:** ZenML enables you to painlessly reproduce previous results
-by automatically tracking and versioning stacks, pipelines, and output 
-artifacts. In the ZenML dashboard you can get an overview of everything that has happened. Try it out on https://demo.zenml.io/!
-
-**Automated Deployments:** With ZenML you no longer need to upload custom 
-Docker images to the cloud every time you want to deploy a new model to 
-production. Simply define your ML workflow as a ZenML pipeline, let ZenML 
-handle all the containerization, and have your model automatically deployed to 
-a highly scalable Kubernetes deployment service like 
-[Seldon](./user-guide/component-galery/model-deployers/seldon.md).
-
-{% endtab %}
-
-{% tab title="ZenML for MLOps / Platform Engineers" %}
-
-As an MLOps infrastructure expert, ZenML enables you to define, deploy, and 
-manage sophisticated production environments that are easy to share with your 
-colleagues.
-
-**Standardization:** With ZenML, you can standardize MLOps infrastructure and 
-tooling across your organization. Simply set up a ZenML server, register your 
-production environment as a ZenML stack, and invite your colleagues to run 
-their ML workflows on it:
-
-```bash
-zenml deploy  # Deploy ZenML
-zenml stack register production ...  # Register your production environment
-zenml stack share production  # Make it available to your colleagues
-```
-
-**No Vendor Lock-In:** Since infrastructure is decoupled from code, ZenML gives
-you the freedom to switch to a different tooling stack whenever it suits you.
-By avoiding vendor lock-in, you have the flexibility to transition between 
-various cloud providers or services, ensuring that you receive the best 
-performance and pricing available in the market at any time.
-
-```bash
-zenml stack set gcp
-python run.py  # Run your ML workflows in GCP
-zenml stack set aws
-python run.py  # Now your ML workflow runs in AWS
-```
-
-**Extensibility:** ZenML is open-source and highly extensible, so you benefit 
-from industry-standard best-practices built into the framework while also being 
-able to customize it to fit your specific needs.
-
 {% endtab %}
 
 {% endtabs %}
