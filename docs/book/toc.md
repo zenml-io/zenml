@@ -108,6 +108,7 @@
     * [Deploy with ZenML CLI](platform-guide/set-up-your-mlops-platform/deploy-zenml/deployment-using-the-cli.md)
     * [Deploy with Docker](platform-guide/set-up-your-mlops-platform/deploy-zenml/deploy-with-docker.md)
     * [Deploy with Helm](platform-guide/set-up-your-mlops-platform/deploy-zenml/deploy-with-helm.md)
+    * [Deploy using HuggingFace Spaces](platform-guide/set-up-your-mlops-platform/deploy-zenml/deploy-using-huggingface-spaces.md)
   * [Use the Secret Store](platform-guide/set-up-your-mlops-platform/secrets-management/README.md)
     * [Interact with Secrets](platform-guide/set-up-your-mlops-platform/secrets-management/interact-with-secrets.md)
     * [Create a custom secret store](platform-guide/set-up-your-mlops-platform/secrets-management/create-a-custom-secret-store.md)
@@ -147,8 +148,5 @@
 
 ## Doc Orphanage
 
-* [Best Practices](doc-orphanage/best-practices.md)
 * [Global Config](doc-orphanage/global-config.md)
-* [System Environmental Variables](doc-orphanage/system-environmental-variables.md)
 * [Usage Analytics](doc-orphanage/usage-analytics.md)
-* [Deploy using HuggingFace Spaces](doc-orphanage/deploy-using-huggingface-spaces.md)
