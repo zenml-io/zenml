@@ -6,8 +6,8 @@ description: Welcome to ZenML!
 
 ZenML is an extensible, open-source MLOps framework for creating portable, 
 production-ready machine learning pipelines.
-By decoupling infrastructure from code, ZenML gives all developers in your 
-organization more freedom and independence in how they approach their work.
+By decoupling infrastructure from code, ZenML enables developers across your 
+organization to collaborate more effectively as they develop to production.
 
 ![ZenML Overview](.gitbook/assets/intro_zenml_overview.png)
 
@@ -15,7 +15,7 @@ organization more freedom and independence in how they approach their work.
 
 {% tab title="ZenML for Data Scientists" %}
 
-As a Data Scientist, ZenML gives you the freedom to focus on modeling and
+ZenML gives data scientists the freedom to fully focus on modeling and
 experimentation while writing code that is immediately production-ready.
 
 **Develop Locally:** Since ZenML code runs in any environment, you can 
@@ -74,9 +74,9 @@ def my_pipeline():
 
 {% tab title="ZenML for ML Engineers" %}
 
-As an ML Engineer, ZenML empowers you to take ownership of the entire ML 
-lifecycle end-to-end. Adopting ZenML means fewer handover points and more 
-visibility on what is happening in your organization.
+ZenML empowers ML engineers to take ownership of the entire ML lifecycle
+end-to-end. Adopting ZenML means fewer handover points and more visibility
+on what is happening in your organization.
 
 **ML Lifecycle Management:** ZenML's abstractions enable you to manage
 sophisticated ML setups with ease. After you define your ML workflows as 
@@ -88,17 +88,21 @@ entire ML workflows to different environments in seconds.
 ```bash
 zenml stack set staging
 python run.py  # test your workflows on staging infrastructure
-zenml stack set prod
+zenml stack set production
 python run.py  # run your workflows in production
 ```
 
 **Reproducibility:** ZenML enables you to painlessly reproduce previous results
 by automatically tracking and versioning stacks, pipelines, and output 
-artifacts. In the ZenML dashboard, you can get an overview of everything that 
-has happened. Try it out at [https://demo.zenml.io/](https://demo.zenml.io/)!
+artifacts. In the ZenML dashboard, you can get an overview of everything that
+has happened and drill down into detailed artifact lineage visualizations.
+Try it out at [https://demo.zenml.io/](https://demo.zenml.io/)!
 
 <figure>
 <img src=".gitbook/assets/intro_dashboard.png" alt="ZenML Dashboard Overview" width="50%">
+</figure>
+<figure>
+<img src=".gitbook/assets/artifact_visualization.png" alt="ZenML Dashboard Details View" width="50%">
 </figure>
 
 **Automated Deployments:** With ZenML, you no longer need to upload custom 
@@ -125,9 +129,8 @@ def my_pipeline():
 
 {% tab title="ZenML for MLOps / Platform Engineers" %}
 
-As an MLOps infrastructure expert, ZenML enables you to define, deploy, and 
-manage sophisticated production environments that are easy to share with your 
-colleagues.
+ZenML enables MLOps infrastructure experts to define, deploy, and manage
+sophisticated production environments that are easy to share with colleagues.
 
 **Standardization:** With ZenML, you can standardize MLOps infrastructure and 
 tooling across your organization. Simply set up a ZenML server, register your 
@@ -135,7 +138,8 @@ production environment as a ZenML stack, and invite your colleagues to run
 their ML workflows on it:
 
 ```bash
-zenml deploy  # Deploy ZenML
+zenml deploy --provider aws  # Deploy ZenML to any cloud
+zenml orchestrator deploy kfp --flavor kubeflow --cloud gcp  # Deploy MLOps tools and infra to any cloud
 zenml stack register production ...  # Register your production environment
 zenml stack share production  # Make it available to your colleagues
 ```
