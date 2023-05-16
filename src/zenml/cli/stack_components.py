@@ -1153,7 +1153,6 @@ def generate_stack_component_deploy_command(
 
         # if the cloud is gcp, project_id is required for the first time
         if cloud == "gcp":
-            breakpoint()
             if "project_id" not in parsed_args:
                 cli_utils.warning(
                     "You should pass your GCP project ID to the deploy command, "
