@@ -36,6 +36,7 @@ from zenml.cli.utils import (
 )
 from zenml.client import Client
 from zenml.console import console
+from zenml.constants import ARBITRARY_SECRET_SCHEMA_TYPE
 from zenml.enums import (
     CliCategories,
     SecretScope,
@@ -96,7 +97,7 @@ def register_secrets_manager_subcommands() -> None:
         "--schema",
         "-s",
         "secret_schema_type",
-        default="arbitrary",  # TODO: Place in a constant outside secret module
+        default=ARBITRARY_SECRET_SCHEMA_TYPE,
         help="DEPRECATED: Register a secret with an optional schema. Secret "
         "schemas will be removed in an upcoming release of ZenML.",
         type=str,
