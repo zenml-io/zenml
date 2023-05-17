@@ -18,10 +18,10 @@ organization to collaborate more effectively as they develop to production.
 ZenML gives data scientists the freedom to fully focus on modeling and
 experimentation while writing code that is immediately production-ready.
 
-**Develop Locally:** Since ZenML code runs in any environment, you can 
-develop ML models locally with all your favorite tools. Once you are happy with 
-your results, you can switch to a production environment via a single command 
-and all your code will just work:
+**Develop Locally:** ZenML allows you to develop ML models in any environment 
+using your favorite tools. This means, you can start developing locally, and
+simply switch to a production environment once you are satisfied with your
+results.
 
 ```bash
 python run.py  # develop your code locally with all your favorite tools
