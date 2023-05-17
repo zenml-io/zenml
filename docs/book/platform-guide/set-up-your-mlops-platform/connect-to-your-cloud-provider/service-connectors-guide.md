@@ -1196,7 +1196,7 @@ The  's3-bucket' resource with name 'zenfiles' can be accessed by service connec
 
 ## Connect Stack Components to resources
 
-Service Connectors and the resources and services that they can authenticate to and grant access to are only useful because they are a means of providing Stack Components a better way of accessing external resources.
+Service Connectors and the resources and services that they can authenticate to and grant access to are only useful because they are a means of providing Stack Components a better and easier way of accessing external resources.
 
 If you are looking for a quick, assisted tour, we recommend using the interactive CLI mode to connect a Stack Component to a compatible Service Connector, especially if this is your first time doing it, e.g.:
 
@@ -1233,4 +1233,33 @@ register a new one by running:
 ```
 {% endhint %}
 
-For Stack Components that do support Service Connectors, the flavor indicates the Resource Type and, optionally, Service Connector Type compatible with the Stack Component. This can be used to figure out which resources are available and which Service Connectors can grant access to them.
+For Stack Components that do support Service Connectors, the flavor indicates the Resource Type and, optionally, Service Connector Type compatible with the Stack Component. This can be used to figure out which resources are available and which Service Connectors can grant access to them. In some cases it is even possible to figure out the exact Resource Name based on the attributes already configured in the Stack Component, which makes it possible to decide automatically which Resource Name to use:
+
+```
+$ zenml artifact-store register s3-zenfiles --flavor s3 --path=s3://zenfiles
+Running with active workspace: 'default' (global)
+Running with active stack: 'default' (global)
+Successfully registered artifact_store `s3-zenfiles`.
+
+$ zenml service-connector list-resources --resource-type s3-bucket --resource-id zenfiles
+The  's3-bucket' resource with name 'zenfiles' can be accessed by service connectors configured in your workspace:
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┓
+┃             CONNECTOR ID             │ CONNECTOR NAME       │ CONNECTOR TYPE │ RESOURCE TYPE │ RESOURCE NAMES ┃
+┠──────────────────────────────────────┼──────────────────────┼────────────────┼───────────────┼────────────────┨
+┃ 4a550c82-aa64-4a48-9c7f-d5e127d77a44 │ aws-multi-type       │ 🔶 aws         │ 📦 s3-bucket  │ s3://zenfiles  ┃
+┠──────────────────────────────────────┼──────────────────────┼────────────────┼───────────────┼────────────────┨
+┃ 66c0922d-db84-4e2c-9044-c13ce1611613 │ aws-multi-instance   │ 🔶 aws         │ 📦 s3-bucket  │ s3://zenfiles  ┃
+┠──────────────────────────────────────┼──────────────────────┼────────────────┼───────────────┼────────────────┨
+┃ 65c82e59-cba0-4a01-b8f6-d75e8a1d0f55 │ aws-single-instance  │ 🔶 aws         │ 📦 s3-bucket  │ s3://zenfiles  ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┛
+
+$ zenml artifact-store connect s3-zenfiles --connector aws-multi-type
+Running with active workspace: 'default' (global)
+Running with active stack: 'default' (global)
+Successfully connected artifact store `s3-zenfiles` to the following resources:
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┓
+┃             CONNECTOR ID             │ CONNECTOR NAME │ CONNECTOR TYPE │ RESOURCE TYPE │ RESOURCE NAMES ┃
+┠──────────────────────────────────────┼────────────────┼────────────────┼───────────────┼────────────────┨
+┃ 4a550c82-aa64-4a48-9c7f-d5e127d77a44 │ aws-multi-type │ 🔶 aws         │ 📦 s3-bucket  │ s3://zenfiles  ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┛
+```
