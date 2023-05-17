@@ -1,10 +1,16 @@
 ---
 description: >-
-  A guide to managing Service Connectors and connecting ZenML to external
-  resources.
+  The complete guide to managing Service Connectors and connecting ZenML to
+  external resources.
 ---
 
 # Service Connectors Guide
+
+This documentation section contains everything that you need to use Service Connectors to connect ZenML to external resources. A lot of information is covered, so it might be useful to  use the following guide to navigate it:
+
+* if you're only getting started with Service Connectors, we suggest starting by familiarizing yourself with the [terminology](service-connectors-guide.md#terminology)
+* check out the section on [Service Connector Types](service-connectors-guide.md#service-connector-types) to understand the different Service Connector implementations that are available and when to use them
+* there is an entire section dedicated to [best practices concerning the various authentication methods](service-connectors-guide.md#best-practices-for-authentication-methods) implemented by Service Connectors, such as which types of credentials to use in development or production and how to keep your security information safe. This section is particularly targeted at engineers with some knowledge in infrastructure, but it should be accessible to larger audiences.
 
 ## Terminology
 
@@ -512,7 +518,7 @@ Most [authentication methods that utilize long-lived credentials](service-connec
 
 _**Issuing temporary credentials**_: this authentication strategy keeps long-lived credentials safely stored on the ZenML server and away from the eyes of actual API clients and people that need to authenticate to the remote resources. Instead, clients are issued API tokens that have a limited lifetime and expire after a given amount of time. The Service Connector is able to generate these API tokens from long-lived credentials on a need-to-have basis. For example, the AWS Service Connector's "Session Token", "Federation Token" and "IAM Role" authentication methods and basically all authentication methods supported by the GCP Service Connector support this feature.
 
-The following example shows the difference between the long-lived AWS credentials configured for an AWS Service Connector and the temporary Kubernetes API token credentials that the client receives and uses to access the resource:
+The following example shows the difference between the long-lived AWS credentials configured for an AWS Service Connector and the temporary Kubernetes API token credentials that the client receives and uses to access the resource. Note the expiration time on the Kubernetes API token:
 
 ```
 $ zenml service-connector describe eks-zenhacks-cluster
@@ -613,11 +619,9 @@ Service connector 'eks-zenhacks-cluster (kubernetes-cluster | zenhacks-cluster c
 
 ```
 
-
-
 _**Downscoping temporary credentials**_: in addition to the above, some authentication methods also support restricting the generated API tokens to the minimum set of permissions required to access the target resource or set of resources. This is currently available for the AWS Service Connector's "Federation Token" and "IAM Role" authentication methods.
 
-#### Impersonating accounts and assuming roles
+### Impersonating accounts and assuming roles
 
 ### Short-lived credentials
 
