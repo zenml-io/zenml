@@ -532,7 +532,9 @@ Service connector 'gcp-implicit' is correctly configured with valid credentials 
 
 ### Long-lived credentials (API keys, account keys)
 
+{% hint style="success" %}
 This is the magic formula of authentication methods. When paired with another ability, such as [automatically generating short-lived API tokens](service-connectors-guide.md#issuing-temporary-and-down-scoped-credentials), or [impersonating accounts or assuming roles](service-connectors-guide.md#impersonating-accounts-and-assuming-roles), this is the ideal authentication mechanism to use, particularly when using ZenML in production and when sharing results with other members of your ZenML team.
+{% endhint %}
 
 As a general best practice, but implemented particularly well for cloud platforms, account passwords are never directly used as a credential when authenticating to the cloud platform APIs. There is always a process in place that exchanges the account/password credential for another type of long-lived credential:
 
@@ -560,10 +562,10 @@ ZenML cloud provider Service Connectors can use both classes of credentials, but
 
 Using long-lived credentials on their own still isn't ideal, because if leaked, they pose a security risk, even when they have limited permissions attached. The good news is that ZenML Service Connectors include additional mechanisms that, when used in combination with long-lived credentials, make it even safer to share long-lived credentials with other ZenML users and automated workloads:
 
-* automatically [generating temporary credentials](service-connectors-guide.md#temporary-and-down-scoped-credentials) from long-lived credentials and even downgrading their permission scope to enforce the least-privilege principle
+* automatically [generating temporary credentials](service-connectors-guide.md#generating-temporary-and-down-scoped-credentials) from long-lived credentials and even downgrading their permission scope to enforce the least-privilege principle
 * implementing [authentication schemes that impersonate accounts and assume roles](service-connectors-guide.md#impersonating-accounts-and-assuming-roles)
 
-### Temporary and down-scoped credentials
+### Generating temporary and down-scoped credentials
 
 Most [authentication methods that utilize long-lived credentials](service-connectors-guide.md#long-lived-credentials-api-keys-account-keys) also implement additional mechanisms that help reduce the accidental credentials exposure and risk of security incidents even further, making them ideal for production.
 
@@ -762,9 +764,95 @@ ClientError: An error occurred (403) when calling the HeadBucket operation: Forb
 
 ### Impersonating accounts and assuming roles
 
+{% hint style="success" %}
+These types of authentication methods require more work to set up because multiple permission bearing accounts and roles need to be provisioned in advance depending on the target audience. On the other hand, they also provide the most flexibility and control. Despite their operational cost, if you are a platform engineer and have the infrastructure know-how necessary to understand and set up the authentication resources, this is for you.
+{% endhint %}
 
+These authentication methods deliver another way of [configuring long-lived credentials](service-connectors-guide.md#long-lived-credentials-api-keys-account-keys) in your Service Connectors without exposing them to clients. They are especially useful as an alternative to cloud provider Service Connectors authentication methods that do not support [automatically downscoping the permissions of issued temporary tokens](service-connectors-guide.md#generating-temporary-and-down-scoped-credentials).
+
+The processes of account impersonation and role assumption are very similar and can be summarized as follows:
+
+* you configure a Service Connector with long-lived credentials associated with a primary user account or primary service account (preferable). As a best practice, it is common to attach a reduced set of permissions or even no permissions to these credentials other than those that allow the account impersonation or role assumption operation. This makes it more difficult to do any damage if the primary credentials are accidentally leaked.
+* in addition to the primary account and its long-lived credentials, you also need to provision one or more secondary access entities in the cloud platform bearing the effective permissions that will be needed to access the target resource(s):
+  * one or more IAM roles (to be assumed)
+  * one or more service accounts (to be impersonated)
+* the Service Connector configuration also needs to contain the name of a target IAM role to be assumed or a service account to be impersonated.
+* upon request, the Service Connector will exchange the long-lived credentials associated with the primary account for short-lived API tokens that only have the permissions associated with the target IAM role or service account. These temporary credentials are issued to clients and used to access the target resource, while the long-lived credentials are kept safe and never have to leave the ZenML server boundary.
+
+<details>
+
+<summary>GCP account impersonation example</summary>
+
+For this example, we have the following set up in GCP:
+
+* a primary `empty-connectors@zenml-core.iam.gserviceaccount.com` GCP service account with no permissions whatsoever aside from the "Service Account Token Creator" role that allows it to impersonate the secondary service account below. We also generate a service account key for this account.
+* a secondary `zenml-bucket-sl@zenml-core.iam.gserviceaccount.com` GCP service account that only has permissions to access the `zenml-bucket-sl` GCS bucket
+
+First, let's show that the `empty-connectors` service account has no permissions to access any GCS buckets or any other resources for that matter. We'll register a regular GCP Service Connector that uses the service account key (long-lived credentials) directly:
+
+```
+$ zenml service-connector register gcp-empty-sa --type gcp --auth-method service-account --service_account_json=@empty-connectors@zenml-core.json  --project_id=zenml-core
+Expanding argument value service_account_json to contents of file /home/stefan/aspyre/src/zenml/empty-connectors@zenml-core.json.
+Successfully registered service connector `gcp-empty-sa` with access to the following resources:
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┓
+┃             CONNECTOR ID             │ CONNECTOR NAME │ CONNECTOR TYPE │ RESOURCE TYPE         │ RESOURCE NAMES ┃
+┠──────────────────────────────────────┼────────────────┼────────────────┼───────────────────────┼────────────────┨
+┃ db967769-4cd5-4f07-a3f4-54e3fe534d88 │ gcp-empty-sa   │ 🔵 gcp         │ 🔵 gcp-generic        │ 🤷 none listed ┃
+┃                                      │                │                │ 📦 gcs-bucket         │                ┃
+┃                                      │                │                │ 🌀 kubernetes-cluster │                ┃
+┃                                      │                │                │ 🐳 docker-registry    │                ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┛
+
+$ zenml service-connector verify gcp-empty-sa --resource-type kubernetes-cluster
+Error: Service connector 'gcp-empty-sa' verification failed: connector authorization failure: Failed to list GKE clusters:
+403 Required "container.clusters.list" permission(s) for "projects/20219041791".
+
+$ zenml service-connector verify gcp-empty-sa --resource-type gcs-bucket
+Error: Service connector 'gcp-empty-sa' verification failed: connector authorization failure: failed to list GCS buckets:
+403 GET https://storage.googleapis.com/storage/v1/b?project=zenml-core&projection=noAcl&prettyPrint=false:
+empty-connectors@zenml-core.iam.gserviceaccount.com does not have storage.buckets.list access to the Google Cloud project.
+Permission 'storage.buckets.list' denied on resource (or it may not exist).
+
+$ zenml service-connector verify gcp-empty-sa --resource-type gcs-bucket --resource-id zenml-bucket-sl
+Error: Service connector 'gcp-empty-sa' verification failed: connector authorization failure: failed to fetch GCS bucket
+zenml-bucket-sl: 403 GET https://storage.googleapis.com/storage/v1/b/zenml-bucket-sl?projection=noAcl&prettyPrint=false:
+empty-connectors@zenml-core.iam.gserviceaccount.com does not have storage.buckets.get access to the Google Cloud Storage bucket.
+Permission 'storage.buckets.get' denied on resource (or it may not exist).
+
+```
+
+Next, we'll register a GCP Service Connector that actually uses account impersonation to access the `zenml-bucket-sl` GCS bucket and verify that it can actually access the bucket:
+
+```
+$ zenml service-connector register gcp-impersonate-sa --type gcp --auth-method impersonation --service_account_json=@empty-connectors@zenml-core.json  --project_id=zenml-core --target_principal=zenml-bucket-sl@zenml-core.iam.gserviceaccount.com --resource-type gcs-bucket --resource-id gs://zenml-bucket-sl
+Expanding argument value service_account_json to contents of file /home/stefan/aspyre/src/zenml/empty-connectors@zenml-core.json.
+Successfully registered service connector `gcp-impersonate-sa` with access to the following resources:
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━┓
+┃             CONNECTOR ID             │ CONNECTOR NAME     │ CONNECTOR TYPE │ RESOURCE TYPE │ RESOURCE NAMES       ┃
+┠──────────────────────────────────────┼────────────────────┼────────────────┼───────────────┼──────────────────────┨
+┃ f586c28e-3d60-4be5-8961-853592c48e41 │ gcp-impersonate-sa │ 🔵 gcp         │ 📦 gcs-bucket │ gs://zenml-bucket-sl ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━┛
+
+$ zenml service-connector verify gcp-impersonate-sa --resource-type gcs-bucket --resource-id zenml-bucket-sl
+Service connector 'gcp-impersonate-sa' is correctly configured with valid credentials and has access to the following resources:
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━┓
+┃             CONNECTOR ID             │ CONNECTOR NAME     │ CONNECTOR TYPE │ RESOURCE TYPE │ RESOURCE NAMES       ┃
+┠──────────────────────────────────────┼────────────────────┼────────────────┼───────────────┼──────────────────────┨
+┃ f586c28e-3d60-4be5-8961-853592c48e41 │ gcp-impersonate-sa │ 🔵 gcp         │ 📦 gcs-bucket │ gs://zenml-bucket-sl ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━┛
+```
+
+</details>
 
 ### Short-lived credentials
+
+{% hint style="warning" %}
+This category of authentication methods uses temporary credentials explicitly configured in the Service Connector. Of all available authentication methods, this is probably the least useful and you will likely never have to manually generate and use temporary credentials to authenticate to remote resources because they are terribly impractical: when they expire, Service Connectors become unusable and need to either be manually updated or replaced.
+{% endhint %}
+
+A previous section described how [temporary credentials can be automatically generated from other, long-lived credentials](service-connectors-guide.md#generating-temporary-and-down-scoped-credentials) by most cloud provider Service Connectors. It only stands to reason that temporary credentials can also be generated manually by external means such as cloud provider CLIs and used directly to configure Service Connectors.
+
+This may be used as a way to grant an external party temporary access to some resources and have the Service Connector automatically become unusable (i.e. expire) after some time.
 
 ## Register Service Connectors
 
