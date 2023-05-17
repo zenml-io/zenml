@@ -2,6 +2,17 @@
 description: How data is managed in ZenML.
 ---
 
+# TODO 
+
+- Put these in the right order and explain how the dirs are made
+![Visualizing artifacts](../../.gitbook/assets/zenml_artifact_store_underthehood_1.png)
+
+![Visualizing artifacts](../../.gitbook/assets/zenml_artifact_store_underthehood_2.png)
+
+![Visualizing artifacts](../../.gitbook/assets/zenml_artifact_store_underthehood_3.png)
+
+# ENDTODO
+
 # Data versioning and artifact management in ZenML
 
 In this guide, we will explore how ZenML seamlessly integrates data versioning and lineage into its core functionality. When you create and execute ZenML pipelines, each run generates artifacts that are automatically tracked and managed by ZenML. This allows you to easily view the entire lineage of how artifacts are created and interact with them through the [post-execution workflow](../starter-guide/fetch-runs-after-execution.md). ZenML's artifact management, caching, lineage tracking, and visualization capabilities can help you gain valuable insights, streamline your experimentation process, and ensure the reproducibility and reliability of your machine learning workflows.
@@ -24,7 +35,7 @@ By tracking the lineage of artifacts across environments and stacks, ZenML enabl
 
 ## Visualizing Artifacts
 
-![Visualizing artifacts](../../.gitbook/assets/artifact_visualization_dashboard.png)
+![Visualizing artifacts](../../.gitbook/assets/intro_dashboard_details.png)
 
 In addition to handling the storage and retrieval of artifacts, materializers can also be used to generate visualizations for your data. By overriding the `save_visualizations()` method in your custom materializer, you can create tailored visualizations for your specific artifact types. These visualizations can then be viewed in the ZenML dashboard or interactively explored in Jupyter notebooks using the `visualize()` method of an artifact.
 

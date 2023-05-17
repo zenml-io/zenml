@@ -4,6 +4,13 @@ description: Using Docker images to run your pipeline.
 
 # Containerizing Your ZenML Pipeline
 
+# TODO
+
+- This page needs to be done in conjunction with Michael. Its just about restructuring the info and doing this again with a new outlook
+- It has too much info and hard to navigate
+
+# ENDTODO
+
 When running locally, ZenML will sequentially execute the steps of your pipeline in the active Python environment. However, when using remote [orchestrators](broken-reference/) or [step operators](broken-reference/), ZenML will build [Docker](https://www.docker.com/) images which are used to run your pipeline code in an isolated and well-defined environment.
 
 For this purpose, a [Dockerfile](https://docs.docker.com/engine/reference/builder/) is dynamically generated at runtime. It is then used to build the docker image using the [image builder](broken-reference/) component of your stack. The Dockerfile consists of the following steps:

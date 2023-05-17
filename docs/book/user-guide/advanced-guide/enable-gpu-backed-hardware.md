@@ -2,6 +2,13 @@
 description: Ensuring your pipelines or steps run on GPU-backed hardware.
 ---
 
+# TODO 
+
+- Read through this again and frame it more from the use-case perspective: i.e. you want to now scale to the cloud -> A consequence of that is run on a GPU-enabled docker image, but thats not the 'goal'. 
+- Another way to scale to the cloud might be to increase `ResourceSettings` of a node in an orchestrator -> mention this too. You can copy this [page](../../../old_book/advanced-guide/pipelines/step-resources.md) from the old docs
+
+# ENDTODO
+
 # Scaling Compute to the Cloud
 
 ZenML enables you to scale your pipelines or steps to run on GPU-backed hardware, ensuring that you get the performance boost you need. This can be achieved through multiple ways, such as using [step operator stack components](../component-galery/step-operators/README.md) or specifying [custom per-step or per-pipeline requirements](containerize-your-pipeline.md). To run steps or pipelines on GPUs, it's crucial to have the necessary CUDA tools installed in the environment. This section will guide you on how to configure your environment to utilize GPU capabilities effectively.
