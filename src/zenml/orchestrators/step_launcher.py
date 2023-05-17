@@ -47,6 +47,9 @@ from zenml.stack import Stack
 from zenml.utils import string_utils
 
 if TYPE_CHECKING:
+    from zenml.artifact_stores.base_artifact_store_logging_handler import (
+        ArtifactStoreLoggingHandler,
+    )
     from zenml.models.artifact_models import ArtifactResponseModel
     from zenml.models.pipeline_deployment_models import (
         PipelineDeploymentResponseModel,
@@ -172,12 +175,18 @@ class StepLauncher:
             self._step.config.name,
         )
 
+        zenml_handler: Optional["ArtifactStoreLoggingHandler"] = None
         if step_logging_enabled:
-            zenml_handler = step_logging_utils.get_step_logging_handler(
-                logs_uri
-            )
-            root_logger = logging.getLogger()
-            root_logger.addHandler(zenml_handler)
+            try:
+                zenml_handler = step_logging_utils.get_step_logging_handler(
+                    logs_uri
+                )
+                root_logger = logging.getLogger()
+                root_logger.addHandler(zenml_handler)
+            except Exception as e:
+                logger.warning(
+                    f"Logging handler creation failed with error: {e}. Skipping recording logs.."
+                )
 
         try:
             if run_was_created:
@@ -234,8 +243,9 @@ class StepLauncher:
             publish_utils.publish_failed_pipeline_run(pipeline_run.id)
             raise
         finally:
-            # Still write the logs to the artifact store regardless if we fail or not
-            if step_logging_enabled:
+            # Only do this if handler is initialized
+            if zenml_handler:
+                # Still write the logs to the artifact store regardless if we fail or not
                 zenml_handler.flush()
                 root_logger.removeHandler(zenml_handler)
 

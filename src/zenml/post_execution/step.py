@@ -153,6 +153,7 @@ class StepView(BaseView):
         Returns:
             Whether artifact visualization is enabled for this step.
         """
+        # Consider changing this to logic of `step_logs_enabled`
         return self.step_configuration.enable_artifact_visualization
 
     @property
@@ -162,7 +163,7 @@ class StepView(BaseView):
         Returns:
             Whether step logs are enabled for this step.
         """
-        # This won't conside pipeline specific values
+        # This won't consider pipeline specific values
         return True if self.step_configuration.enable_step_logs else False
 
     @property
