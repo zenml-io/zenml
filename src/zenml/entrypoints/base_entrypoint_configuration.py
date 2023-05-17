@@ -53,7 +53,6 @@ class BaseEntrypointConfiguration(ABC):
 
     Attributes:
         entrypoint_args: The parsed arguments passed to the entrypoint.
-    ```
     """
 
     def __init__(self, arguments: List[str]):
