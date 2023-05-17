@@ -46,12 +46,23 @@ def convert_pred_filenames_to_task_ids(
         clean_url(task["data"][filename_reference]): task["id"]
         for task in tasks
     }
+
     # GCS and S3 URL encodes filenames containing spaces, requiring this
     # separate encoding step
-    if storage_type in {"gcs", "s3"}:
+    if storage_type == "gcs":
         preds = [
             {
                 "filename": quote(pred["filename"]).split("//")[1],
+                "result": pred["result"],
+            }
+            for pred in preds
+        ]
+    elif storage_type == "s3":
+        preds = [
+            {
+                "filename": "/".join(
+                    quote(pred["filename"]).split("//")[1].split("/")[1:]
+                ),
                 "result": pred["result"],
             }
             for pred in preds
