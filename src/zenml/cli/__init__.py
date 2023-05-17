@@ -190,6 +190,14 @@ zenml integration install INTEGRATION_NAME
 Note that if you don't specify a specific integration to be installed, the
 ZenML CLI will install **all** available integrations.
 
+If you want to install all integrations apart from one or multiple integrations,
+use the following syntax, for example, which will install all integrations
+except `feast` and `aws`:
+
+```shell
+zenml integration install -i feast -i aws
+```
+
 Uninstalling a specific integration is as simple as typing:
 
 ```bash
