@@ -157,7 +157,6 @@ class BaseEntrypointConfiguration(ABC):
         Raises:
             ValueError: If the arguments are not valid.
         """
-
         # Argument parser subclass that suppresses some argparse logs and
         # raises an exception instead of the `sys.exit()` call
         class _CustomParser(argparse.ArgumentParser):

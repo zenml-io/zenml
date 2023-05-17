@@ -26,7 +26,6 @@ from zenml.cli.utils import (
 from zenml.client import Client
 from zenml.console import console
 from zenml.enums import CliCategories
-from zenml.exceptions import EntityExistsError, IllegalOperationError
 from zenml.models import WorkspaceFilterModel
 
 

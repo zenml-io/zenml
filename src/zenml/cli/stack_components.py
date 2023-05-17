@@ -29,9 +29,10 @@ from zenml.cli.secret import register_secrets_manager_subcommands
 from zenml.cli.served_model import register_model_deployer_subcommands
 from zenml.cli.utils import (
     _component_display_name,
+    fail_secrets_manager_creation,
     list_options,
     print_page_info,
-    warn_deprecated_secrets_manager, fail_secrets_manager_creation,
+    warn_deprecated_secrets_manager,
 )
 from zenml.client import Client
 from zenml.console import console
