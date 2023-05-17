@@ -16,7 +16,7 @@ organization to collaborate more effectively as they develop to production.
 {% tab title="ZenML for Data Scientists" %}
 
 ZenML gives data scientists the freedom to fully focus on modeling and
-experimentation while writing code that is immediately production-ready.
+experimentation while writing code that is production-ready from the get-go.
 
 **Develop Locally:** ZenML allows you to develop ML models in any environment 
 using your favorite tools. This means, you can start developing locally, and
@@ -54,7 +54,7 @@ my_pipeline()
 ```
 
 **Automatic Metadata Tracking** ZenML automatically tracks metadata of all your
-experiments and saves all your datasets and models to disk and versions them.
+runs, and saves all your datasets and models to disk and versions them.
 Using the ZenML dashboard, you can then see detailed visualizations of all your 
 experiments.
 Try it out at [https://demo.zenml.io/](https://demo.zenml.io/)!
@@ -153,7 +153,7 @@ zenml stack share production  # Make it available to your colleagues
 ```
 
 Registering your environments as ZenML stacks also enables you to browse and
-explore all your infrastructure setups in a convenient user interface. 
+explore them in a convenient user interface. 
 Try it out at [https://demo.zenml.io/](https://demo.zenml.io/)!
 
 <figure>

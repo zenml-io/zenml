@@ -15,7 +15,7 @@ objects are by default saved using
 [cloudpickle](https://github.com/cloudpipe/cloudpickle), which is not 
 production-ready because the resulting artifacts cannot be loaded under
 different Python versions. In such cases, you should consider building a custom 
-Materializer to save your objects in more robust and efficient format.
+Materializer to save your objects in a more robust and efficient format.
 {% endhint %}
 
 ## Building a Custom Materializer
