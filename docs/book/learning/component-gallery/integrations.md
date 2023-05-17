@@ -1,5 +1,5 @@
 ---
-description: Overview of third-party ZenML integrations
+description: Overview of third-party ZenML integrations.
 ---
 
 # Integration Overview
@@ -55,6 +55,6 @@ zenml integration upgrade mlflow pytorch -y
 
 ## Help us with integrations!
 
-There are countless tools in the ML / MLOps field. We have made an initial prioritization of which tools to support with integrations that is visible on our public [roadmap](https://zenml.io/roadmap).
+There are countless tools in the ML / MLOps field. We have made an initial prioritization of which tools to support with integrations that are visible on our public [roadmap](https://zenml.io/roadmap).
 
-We also welcome community contributions. Check our [Contribution Guide](../../../old\_book/misc/contributing.md) and [External Integration Guide](../../../old\_book/misc/integrating.md) for more details on how to best contribute new integrations.
+We also welcome community contributions. Check our [Contribution Guide](../../../old\_book/misc/contributing.md) and [External Integration Guide](../../../old\_book/misc/integrating.md) for more details on how to best contribute to new integrations.

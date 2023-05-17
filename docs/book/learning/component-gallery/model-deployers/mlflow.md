@@ -1,5 +1,5 @@
 ---
-description: How to deploy your models locally with MLflow
+description: Deploying your models locally with MLflow.
 ---
 
 # MLflow
@@ -12,7 +12,7 @@ The MLflow Model Deployer is not yet available for use in production. This is a 
 
 ### When to use it?
 
-MLflow is a popular open source platform for machine learning. It's a great tool for managing the entire lifecycle of your machine learning. One of the most important features of MLflow is the ability to package your model and its dependencies into a single artifact that can be deployed to a variety of deployment targets.
+MLflow is a popular open-source platform for machine learning. It's a great tool for managing the entire lifecycle of your machine learning. One of the most important features of MLflow is the ability to package your model and its dependencies into a single artifact that can be deployed to a variety of deployment targets.
 
 You should use the MLflow Model Deployer:
 
@@ -39,7 +39,7 @@ The ZenML integration will provision a local MLflow deployment server as a daemo
 
 ### How do you use it?
 
-The first step to be able to deploy and use your MLflow model is to create Service deployment from code, this is done by setting the different parameters that the MLflow deployment step requires.
+The first step to being able to deploy and use your MLflow model is to create Service deployment from code, this is done by setting the different parameters that the MLflow deployment step requires.
 
 ```python
 from zenml.integrations.mlflow.steps import mlflow_deployer_step

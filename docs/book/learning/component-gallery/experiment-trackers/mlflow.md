@@ -1,5 +1,5 @@
 ---
-description: How to log and visualize experiments with MLflow
+description: Logging and visualizing experiments with MLflow.
 ---
 
 # MLflow
@@ -8,7 +8,7 @@ The MLflow Experiment Tracker is an [Experiment Tracker](experiment-trackers.md)
 
 ### When would you want to use it?
 
-[MLflow Tracking](https://www.mlflow.org/docs/latest/tracking.html) is a very popular tool that you would normally use in the iterative ML experimentation phase to track and visualize experiment results. That doesn't mean that it cannot be repurposed to track and visualize the results produced by your automated pipeline runs, as you make the transition towards a more production oriented workflow.
+[MLflow Tracking](https://www.mlflow.org/docs/latest/tracking.html) is a very popular tool that you would normally use in the iterative ML experimentation phase to track and visualize experiment results. That doesn't mean that it cannot be repurposed to track and visualize the results produced by your automated pipeline runs, as you make the transition toward a more production-oriented workflow.
 
 You should use the MLflow Experiment Tracker:
 
@@ -38,13 +38,13 @@ zenml experiment-tracker register mlflow_experiment_tracker --flavor=mlflow
 zenml stack register custom_stack -e mlflow_experiment_tracker ... --set
 ```
 
-* [Scenario 5](https://mlflow.org/docs/latest/tracking.html#scenario-5-mlflow-tracking-server-enabled-with-proxied-artifact-storage-access): This scenario assumes that you have already deployed an MLflow Tracking Server enabled with proxied artifact storage access. There is no restriction regarding what other types of components it can be combined with. This option requires [authentication related parameters](mlflow.md#authentication-methods) to be configured for the MLflow Experiment Tracker.
+* [Scenario 5](https://mlflow.org/docs/latest/tracking.html#scenario-5-mlflow-tracking-server-enabled-with-proxied-artifact-storage-access): This scenario assumes that you have already deployed an MLflow Tracking Server enabled with proxied artifact storage access. There is no restriction regarding what other types of components it can be combined with. This option requires [authentication-related parameters](mlflow.md#authentication-methods) to be configured for the MLflow Experiment Tracker.
 
 {% hint style="warning" %}
 Due to a [critical severity vulnerability](https://github.com/advisories/GHSA-xg73-94fp-g449) found in older versions of MLflow, we recommend using MLflow version 2.2.1 or higher.
 {% endhint %}
 
-* [Databricks scenario](https://www.databricks.com/product/managed-mlflow): This scenario assumes that you have a Databricks workspace, and you want to use the managed MLflow Tracking server it provides. This option requires [authentication related parameters](mlflow.md#authentication-methods) to be configured for the MLflow Experiment Tracker.
+* [Databricks scenario](https://www.databricks.com/product/managed-mlflow): This scenario assumes that you have a Databricks workspace, and you want to use the managed MLflow Tracking server it provides. This option requires [authentication-related parameters](mlflow.md#authentication-methods) to be configured for the MLflow Experiment Tracker.
 
 #### Authentication Methods
 
@@ -55,7 +55,7 @@ You need to configure the following credentials for authentication to a remote M
 * `tracking_password`: Password for authenticating with the MLflow tracking server.
 * `tracking_token` (in place of `tracking_username` and `tracking_password`): Token for authenticating with the MLflow tracking server.
 * `tracking_insecure_tls` (optional): Set to skip verifying the MLflow tracking server SSL certificate.
-* `databricks_host`: The host of the Databricks workspace with the MLflow managed server to connect to. This is only required if `tracking_uri` value is set to `"databricks"`. More information: [Access the MLflow tracking server from outside Databricks](https://docs.databricks.com/applications/mlflow/access-hosted-tracking-server.html)
+* `databricks_host`: The host of the Databricks workspace with the MLflow-managed server to connect to. This is only required if the `tracking_uri` value is set to `"databricks"`. More information: [Access the MLflow tracking server from outside Databricks](https://docs.databricks.com/applications/mlflow/access-hosted-tracking-server.html)
 
 Either `tracking_token` or `tracking_username` and `tracking_password` must be specified.
 

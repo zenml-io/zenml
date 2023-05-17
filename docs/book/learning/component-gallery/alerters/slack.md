@@ -1,5 +1,5 @@
 ---
-description: How to send automated alerts to a Slack channel
+description: Sending automated alerts to a Slack channel.
 ---
 
 # Slack Alerter
@@ -68,7 +68,7 @@ After you have a `SlackAlerter` configured in your stack, you can directly impor
 
 Since these steps expect a string message as input (which needs to be the output of another step), you typically also need to define a dedicated formatter step that takes whatever data you want to communicate and generates the string message that the alerter should post.
 
-As an example, adding `slack_alerter_ask_step()` into your pipeline could look like this:
+As an example, adding `slack_alerter_ask_step()` to your pipeline could look like this:
 
 ```python
 from zenml.integrations.slack.steps.slack_alerter_ask_step import slack_alerter_ask_step

@@ -1,5 +1,5 @@
 ---
-description: How to track and manage ML models
+description: Tracking and managing ML models.
 ---
 
 # Model Registries
@@ -8,11 +8,11 @@ Model registries are centralized storage solutions for managing and tracking mac
 
 ### Model Registry Concepts and Terminology
 
-ZenML provides a unified abstraction for model registries through which it is possible to handle and manage the concepts of model groups, versions, and stages in a consistent manner regardless of the underlying registry tool or platform being used. The following following concepts are useful to be aware of for this abstraction:
+ZenML provides a unified abstraction for model registries through which it is possible to handle and manage the concepts of model groups, versions, and stages in a consistent manner regardless of the underlying registry tool or platform being used. The following concepts are useful to be aware of for this abstraction:
 
 * **RegisteredModel**: A logical grouping of models that can be used to track different versions of a model. It holds information about the model, such as its name, description, and tags, and can be created by the user or automatically created by the model registry when a new model is logged.
 * **ModelVersion**: A specific version of a model identified by a unique version number or string. It holds information about the model, such as its name, description, tags, and metrics, and a reference to the model artifact logged to the model registry. In ZenML, it also holds a reference to the pipeline name, pipeline run ID, and step name. Each model version is associated with a model registration.
-* **ModelVersionStage**: A model version stage is a state that a model version can be in. It can be one of the following: `None`, `Staging`, `Production`, `Archived`. The model version stage is used to track the lifecycle of a model version. For example, a model version can be in the `Staging` stage while it is being tested and then moved to the `Production` stage once it is ready for deployment.
+* **ModelVersionStage**: A model version stage is a state in that a model version can be. It can be one of the following: `None`, `Staging`, `Production`, `Archived`. The model version stage is used to track the lifecycle of a model version. For example, a model version can be in the `Staging` stage while it is being tested and then moved to the `Production` stage once it is ready for deployment.
 
 ### When to use it
 
@@ -45,7 +45,7 @@ zenml model-registry flavor list
 
 ### How to use it
 
-Model registries are an optional component in the ZenML stack that are tied to the experiment tracker. This means that a model registry can only be used if you are also using an experiment tracker. If you're not using an experiment tracker, you can still store your models in ZenML, but you will need to manually retrieve model artifacts from the artifact store. More information on this can be found in the [documentation on the post-execution workflow](../../../../old\_book/starter-guide/pipelines/fetching-pipelines.md).
+Model registries are an optional component in the ZenML stack that is tied to the experiment tracker. This means that a model registry can only be used if you are also using an experiment tracker. If you're not using an experiment tracker, you can still store your models in ZenML, but you will need to manually retrieve model artifacts from the artifact store. More information on this can be found in the [documentation on the post-execution workflow](../../../../old\_book/starter-guide/pipelines/fetching-pipelines.md).
 
 To use model registries, you first need to register a model registry in your stack with the same flavor as your experiment tracker. Then, you can register your trained model in the model registry using one of three methods:
 

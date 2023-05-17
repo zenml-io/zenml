@@ -1,5 +1,5 @@
 ---
-description: How to store secrets in HashiCorp Vault
+description: Storing secrets in HashiCorp Vault.
 ---
 
 # HashiCorp Vault Secrets Manager

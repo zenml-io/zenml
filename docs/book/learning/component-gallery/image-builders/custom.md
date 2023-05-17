@@ -1,5 +1,5 @@
 ---
-description: How to develop a custom image builder
+description: Learning how to develop a custom image builder.
 ---
 
 # Develop a Custom Image Builder
@@ -67,9 +67,9 @@ This is a slimmed-down version of the base implementation which aims to highligh
 
 If you want to create your own custom flavor for an image builder, you can follow the following steps:
 
-1. Create a class which inherits from the `BaseImageBuilder` class and implement the abstract `build` method. This method should use the given build context and build a Docker image with it. If additionally a container registry is passed to the `build` method, the image builder is also responsible for pushing the image there.
-2. If you need to provide any configuration, create a class which inherits from the `BaseImageBuilderConfig` class add your configuration parameters.
-3. Bring both of the implementation and the configuration together by inheriting from the `BaseImageBuilderFlavor` class. Make sure that you give a `name` to the flavor through its abstract property.
+1. Create a class that inherits from the `BaseImageBuilder` class and implement the abstract `build` method. This method should use the given build context and build a Docker image with it. If additionally a container registry is passed to the `build` method, the image builder is also responsible for pushing the image there.
+2. If you need to provide any configuration, create a class that inherits from the `BaseImageBuilderConfig` class and adds your configuration parameters.
+3. Bring both the implementation and the configuration together by inheriting from the `BaseImageBuilderFlavor` class. Make sure that you give a `name` to the flavor through its abstract property.
 
 Once you are done with the implementation, you can register it through the CLI. Please ensure you **point to the flavor class via dot notation**:
 
@@ -89,7 +89,7 @@ ZenML resolves the flavor class by taking the path where you initialized zenml (
 If ZenML does not find an initialized ZenML repository in any parent directory, it will default to the current working directory, but usually its better to not have to rely on this mechanism, and initialize zenml at the root.
 {% endhint %}
 
-Afterwards, you should see the new flavor in the list of available flavors:
+Afterward, you should see the new flavor in the list of available flavors:
 
 ```shell
 zenml image-builder flavor list
@@ -99,12 +99,12 @@ zenml image-builder flavor list
 It is important to draw attention to when and how these base abstractions are coming into play in a ZenML workflow.
 
 * The **CustomImageBuilderFlavor** class is imported and utilized upon the creation of the custom flavor through the CLI.
-* The **CustomImageBuilderConfig** class is imported when someone tries to register/update a stack component with this custom flavor. Especially, during the registration process of the stack component, the config will be used to validate the values given by the user. As `Config` object are inherently `pydantic` objects, you can also add your own custom validators here.
+* The **CustomImageBuilderConfig** class is imported when someone tries to register/update a stack component with this custom flavor. Especially, during the registration process of the stack component, the config will be used to validate the values given by the user. As `Config` objects are inherently `pydantic` objects, you can also add your own custom validators here.
 * The **CustomImageBuilder** only comes into play when the component is ultimately in use.
 
 The design behind this interaction lets us separate the configuration of the flavor from its implementation. This way we can register flavors and components even when the major dependencies behind their implementation are not installed in our local setting (assuming the `CustomImageBuilderFlavor` and the `CustomImageBuilderConfig` are implemented in a different module/path than the actual `CustomImageBuilder`).
 {% endhint %}
 
-#### Using a custom build context
+#### Using a custom-build context
 
 The `BaseImageBuilder` abstraction uses the `build_context_class` to provide a class that should be used as the build context. In case your custom image builder requires a different build context than the default Docker build context, you can subclass the `BuildContext` class to customize the structure of your build context. In your image builder implementation, you can then overwrite the `build_context_class` property to specify your build context subclass.

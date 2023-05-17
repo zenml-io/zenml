@@ -1,10 +1,10 @@
 ---
-description: How to orchestrate ML pipelines
+description: Orchestrating the execution of ML pipelines.
 ---
 
 # Orchestrators
 
-The orchestrator is an essential component in any MLOps stack as it is responsible for running your machine learning pipelines. To do so, the orchestrator provides an environment which is set up to execute the steps of your pipeline. It also makes sure that the steps of your pipeline only get executed once all their inputs (which are outputs of previous steps of your pipeline) are available.
+The orchestrator is an essential component in any MLOps stack as it is responsible for running your machine learning pipelines. To do so, the orchestrator provides an environment that is set up to execute the steps of your pipeline. It also makes sure that the steps of your pipeline only get executed once all their inputs (which are outputs of previous steps of your pipeline) are available.
 
 {% hint style="info" %}
 Many of ZenML's remote orchestrators build [Docker](https://www.docker.com/) images in order to transport and execute your pipeline code. If you want to learn more about how Docker images are built by ZenML, check out [this guide](../../../../old\_book/starter-guide/production-fundamentals/containerization.md).
@@ -39,7 +39,7 @@ zenml orchestrator flavor list
 
 ### How to use it
 
-You don't need to directly interact with any ZenML orchestrator in your code. As long as the orchestrator that you want to use is part of your active [ZenML stack](../../../../old\_book/starter-guide/stacks/stacks.md), using the orchestrator is as simple as executing a python file which [runs a ZenML pipeline](../../../../old\_book/starter-guide/pipelines/pipelines.md):
+You don't need to directly interact with any ZenML orchestrator in your code. As long as the orchestrator that you want to use is part of your active [ZenML stack](../../../../old\_book/starter-guide/stacks/stacks.md), using the orchestrator is as simple as executing a Python file that [runs a ZenML pipeline](../../../../old\_book/starter-guide/pipelines/pipelines.md):
 
 ```shell
 python file_that_runs_a_zenml_pipeline.py
@@ -47,7 +47,7 @@ python file_that_runs_a_zenml_pipeline.py
 
 #### Inspecting Runs in the Orchestrator UI
 
-If your orchestrator comes with a separate user interface (for example: Kubeflow, Airflow, Vertex), you can get the URL to the orchestrator UI of a specific pipeline run using the following code snippet:
+If your orchestrator comes with a separate user interface (for example Kubeflow, Airflow, Vertex), you can get the URL to the orchestrator UI of a specific pipeline run using the following code snippet:
 
 ```python
 from zenml.post_execution import get_run

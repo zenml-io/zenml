@@ -1,5 +1,5 @@
 ---
-description: How to store artifacts on your local filesystem
+description: Storing artifacts on your local filesystem.
 ---
 
 # Local Artifact Store

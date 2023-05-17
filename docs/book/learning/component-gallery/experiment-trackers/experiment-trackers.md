@@ -1,10 +1,10 @@
 ---
-description: How to log and visualize ML experiments
+description: Logging and visualizing ML experiments.
 ---
 
 # Experiment Trackers
 
-Experiment trackers let you track your ML experiments by logging extended information about your models, datasets, metrics and other parameters and allowing you to browse them, visualize them and compare them between runs. In the ZenML world, every pipeline run is considered an experiment, and ZenML facilitates the storage of experiment results through Experiment Tracker stack components. This establishes a clear link between pipeline runs and experiments.
+Experiment trackers let you track your ML experiments by logging extended information about your models, datasets, metrics, and other parameters and allowing you to browse them, visualize them and compare them between runs. In the ZenML world, every pipeline run is considered an experiment, and ZenML facilitates the storage of experiment results through Experiment Tracker stack components. This establishes a clear link between pipeline runs and experiments.
 
 Related concepts:
 
@@ -17,7 +17,7 @@ ZenML already records information about the artifacts circulated through your pi
 
 However, these ZenML mechanisms are meant to be used programmatically and can be more difficult to work with without a visual interface.
 
-Experiment Trackers on the other hand are tools designed with usability in mind. They include extensive UI's providing users with an interactive and intuitive interface that allows them to browse and visualize the information logged during the ML pipeline runs.
+Experiment Trackers on the other hand are tools designed with usability in mind. They include extensive UIs providing users with an interactive and intuitive interface that allows them to browse and visualize the information logged during the ML pipeline runs.
 
 You should add an Experiment Tracker to your ZenML stack and use it when you want to augment ZenML with the visual features provided by experiment tracking tools.
 

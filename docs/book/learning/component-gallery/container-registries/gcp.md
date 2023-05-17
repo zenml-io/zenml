@@ -1,10 +1,10 @@
 ---
-description: How to store container images in GCP
+description: Storing container images in GCP.
 ---
 
 # Google Cloud Container Registry
 
-The GCP container registry is a [container registry](container-registries.md) flavor which comes built-in with ZenML and uses the [Google Artifact Registry](https://cloud.google.com/artifact-registry) or the [Google Container Registry](https://cloud.google.com/container-registry) to store container images.
+The GCP container registry is a [container registry](container-registries.md) flavor that comes built-in with ZenML and uses the [Google Artifact Registry](https://cloud.google.com/artifact-registry) or the [Google Container Registry](https://cloud.google.com/container-registry) to store container images.
 
 ### When to use it
 
@@ -17,7 +17,7 @@ You should use the GCP container registry if:
 
 {% tabs %}
 {% tab title="Google Container Registry" %}
-When using the Google Container Registry, all you need to do is enabling it [here](https://console.cloud.google.com/marketplace/product/google/containerregistry.googleapis.com).
+When using the Google Container Registry, all you need to do is enable it [here](https://console.cloud.google.com/marketplace/product/google/containerregistry.googleapis.com).
 {% endtab %}
 
 {% tab title="Google Artifact Registry" %}
@@ -49,11 +49,11 @@ us.gcr.io/my-project
 asia.gcr.io/another-project
 ```
 
-To figure our the URI for your registry:
+To figure out the URI for your registry:
 
 * Go to the [GCP console](https://console.cloud.google.com/).
 * Click on the dropdown menu in the top left to get a list of available projects with their names and IDs.
-* Use the ID of the project you want to use fill the template `gcr.io/<PROJECT_ID>` and get your URI (You can also use the other prefixes `<us/eu/asia>.gcr.io` as explained above if you want your images stored in a different region).
+* Use the ID of the project you want to use fill in the template `gcr.io/<PROJECT_ID>` and get your URI (You can also use the other prefixes `<us/eu/asia>.gcr.io` as explained above if you want your images stored in a different region).
 {% endtab %}
 
 {% tab title="Google Artifact Registry" %}
@@ -68,9 +68,9 @@ southamerica-east1-docker.pkg.dev/zenml/zenml-test
 asia-docker.pkg.dev/my-project/another-repo
 ```
 
-To figure our the URI for your registry:
+To figure out the URI for your registry:
 
-* Go [here](https://console.cloud.google.com/artifacts) and select the repository that you want to uses to store Docker images. If you don't have a repository yet, take a look at the [deployment section](gcp.md#how-to-deploy-it).
+* Go [here](https://console.cloud.google.com/artifacts) and select the repository that you want to use to store Docker images. If you don't have a repository yet, take a look at the [deployment section](gcp.md#how-to-deploy-it).
 * On the top, click the copy button to copy the full repository URL.
 {% endtab %}
 {% endtabs %}

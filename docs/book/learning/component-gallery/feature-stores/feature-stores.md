@@ -1,5 +1,5 @@
 ---
-description: How to manage data in feature stores
+description: Managing data in feature stores.
 ---
 
 # Feature Stores
@@ -12,7 +12,7 @@ Feature stores are a relatively recent addition to commonly-used machine learnin
 
 ### When to use it
 
-The feature store is an optional stack component in the ZenML Stack. The feature store as a technology should be used to store the features and inject them into the process in the server-side. This includes
+The feature store is an optional stack component in the ZenML Stack. The feature store as a technology should be used to store the features and inject them into the process on the server side. This includes
 
 * Productionalize new features
 * Reuse existing features across multiple pipelines and models
@@ -36,4 +36,4 @@ zenml feature-store flavor list
 
 ### How to use it
 
-The available implementation of the feature store is built on top of the feast integration, which means that using a feature store is no different from what's described in the [feast page: How to use it?](feast.md#how-do-you-use-it).
+The available implementation of the feature store is built on top of the feast integration, which means that using a feature store is no different from what's described on the [feast page: How to use it?](feast.md#how-do-you-use-it).

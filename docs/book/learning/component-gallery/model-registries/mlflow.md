@@ -1,5 +1,5 @@
 ---
-description: How to manage MLFlow logged models and artifacts
+description: Managing MLFlow logged models and artifacts
 ---
 
 # MLflow Model Registry
@@ -8,11 +8,11 @@ The MLflow Model Registry is a [model registry](model-registries.md) flavor prov
 
 ### When would you want to use it?
 
-[MLflow Model Registry](https://mlflow.org/docs/latest/model-registry.html)) is a powerful tool that you would typically use in the experimenting, QA and production phase to manage and track machine learning model versions. It is designed to help teams collaborate on model development and deployment, and keep track of which models are being used in which environments. With MLflow Model Registry, you can store and manage models, deploy them to different environments, and track their performance over time. This tool is useful in the following scenarios:
+[MLflow Model Registry](https://mlflow.org/docs/latest/model-registry.html)) is a powerful tool that you would typically use in the experimenting, QA, and production phase to manage and track machine learning model versions. It is designed to help teams collaborate on model development and deployment, and keep track of which models are being used in which environments. With MLflow Model Registry, you can store and manage models, deploy them to different environments, and track their performance over time. This tool is useful in the following scenarios:
 
 * If you are working on a machine learning project and want to keep track of different model versions as they are developed and deployed.
 * If you need to deploy machine learning models to different environments and want to keep track of which version is being used in each environment.
-* If you want to monitor and compare the performance of different model versions over time, and make data-driven decisions about which models to use in production.
+* If you want to monitor and compare the performance of different model versions over time and make data-driven decisions about which models to use in production.
 * If you want to simplify the process of deploying models either to a production environment or to a staging environment for testing.
 
 ### How do you deploy it?
@@ -82,12 +82,12 @@ zenml model-registry models register-version Tensorflow-model \
 
 #### List of available parameters
 
-To register a model version in the MLflow Model Registry, you need to provide list of parameters. when you use the built-in step, most of the parameters are automatically filled in for you. However, you can still override them if you want to. The following table shows the list of available parameters.
+To register a model version in the MLflow Model Registry, you need to provide a list of parameters. when you use the built-in step, most of the parameters are automatically filled in for you. However, you can still override them if you want to. The following table shows the list of available parameters.
 
 * `name`: The name of the model. This is a required parameter.
 * `model_source_uri`: The path to the model. This is a required parameter.
 * `description`: A description of the model version.
-* `metadata`: A list of metadata to associate with the model version of type `ModelRegistryModelMetadata`.
+* `metadata`: A list of metadata to associate with the model version of the type `ModelRegistryModelMetadata`.
 
 {% hint style="info" %}
 The `model_uri` parameter is the path to the model within the MLflow tracking server. If you are using a local MLflow tracking server, the path will be something like `file:///.../mlruns/667102566783201219/3973eabc151c41e6ab98baeb20c5323b/artifacts/model`. If you are using a remote MLflow tracking server, the path will be something like `s3://.../mlruns/667102566783201219/3973eabc151c41e6ab98baeb20c5323b/artifacts/model`.

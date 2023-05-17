@@ -1,10 +1,10 @@
 ---
-description: How to orchestrate pipelines with Airflow
+description: Orchestrating your pipelines to run on Airflow.
 ---
 
 # Airflow Orchestrator
 
-The Airflow orchestrator is an [orchestrator](orchestrators.md) flavor provided with the ZenML `airflow` integration that uses [Airflow](https://airflow.apache.org/) to run your pipelines.
+The Airflow orchestrator is an [orchestrator](orchestrators.md) flavor provided by the ZenML `airflow` integration that uses [Airflow](https://airflow.apache.org/) to run your pipelines.
 
 {% hint style="warning" %}
 If you're going to use a remote deployment of Airflow, you'll also need a [remote ZenML deployment](../../getting-started/deploying-zenml/deploying-zenml.md).
@@ -26,10 +26,10 @@ The Airflow orchestrator can be used to run pipelines locally as well as remotel
 There are many options to use a deployed Airflow server:
 
 * Use one of [ZenML's Airflow stack recipes](https://github.com/zenml-io/mlops-stacks). This is the simplest solution to get ZenML working with Airflow, as the recipe also takes care of additional steps such as installing required Python dependencies in your Airflow server environment.
-* Use a managed deployment of Airflow such as [Google Cloud Composer](https://cloud.google.com/composer), [Amazon MWAA](https://aws.amazon.com/managed-workflows-for-apache-airflow/) or [Astronomer](https://www.astronomer.io/).
+* Use a managed deployment of Airflow such as [Google Cloud Composer](https://cloud.google.com/composer), [Amazon MWAA](https://aws.amazon.com/managed-workflows-for-apache-airflow/), or [Astronomer](https://www.astronomer.io/).
 * Deploy Airflow manually. Check out the official [Airflow docs](https://airflow.apache.org/docs/apache-airflow/stable/production-deployment.html) for more information.
 
-If you're not using a stack recipe to deploy Airflow, there are some additional python packages that you'll need to install in the Python environment of your Airflow server:
+If you're not using a stack recipe to deploy Airflow, there are some additional Python packages that you'll need to install in the Python environment of your Airflow server:
 
 * `pydantic~=1.9.2`: The Airflow DAG files that ZenML creates for you require Pydantic to parse and validate configuration files.
 * `apache-airflow-providers-docker` or `apache-airflow-providers-cncf-kubernetes`, depending on which Airflow operator you'll be using to run your pipeline steps. Check out [this section](airflow.md#using-different-airflow-operators) for more information on supported operators.
@@ -189,12 +189,12 @@ airflow_settings = AirflowOrchestratorSettings(
 
 **Custom DAG generator file**
 
-To run a pipeline in Airflow, ZenML creates a Zip archive which contains two files:
+To run a pipeline in Airflow, ZenML creates a Zip archive that contains two files:
 
-* A Json configuration file that the orchestrator creates. This file contains all the information required to create the Airflow DAG to run the pipeline.
-* A Python file which reads this configuration file and actually creates the Airflow DAG. We call this file the `DAG generator` and you can find the implementation [here](https://github.com/zenml-io/zenml/blob/main/src/zenml/integrations/airflow/orchestrators/dag\_generator.py).
+* A JSON configuration file that the orchestrator creates. This file contains all the information required to create the Airflow DAG to run the pipeline.
+* A Python file that reads this configuration file and actually creates the Airflow DAG. We call this file the `DAG generator` and you can find the implementation [here](https://github.com/zenml-io/zenml/blob/main/src/zenml/integrations/airflow/orchestrators/dag\_generator.py).
 
-If you need more control over how the Airflow DAG is generated, you can provide a custom DAG generator file using the setting `custom_dag_generator`. This setting will need to reference a Python module that can be imported in your active Python environment. It will additionally need to contain the same classes (`DagConfiguration` and `TaskConfiguration`) and constants (`ENV_ZENML_AIRFLOW_RUN_ID`, `ENV_ZENML_LOCAL_STORES_PATH` and `CONFIG_FILENAME`) as the [original module](https://github.com/zenml-io/zenml/blob/main/src/zenml/integrations/airflow/orchestrators/dag\_generator.py). For this reason we suggest to start by copying the original and modifying it according to your needs.
+If you need more control over how the Airflow DAG is generated, you can provide a custom DAG generator file using the setting `custom_dag_generator`. This setting will need to reference a Python module that can be imported into your active Python environment. It will additionally need to contain the same classes (`DagConfiguration` and `TaskConfiguration`) and constants (`ENV_ZENML_AIRFLOW_RUN_ID`, `ENV_ZENML_LOCAL_STORES_PATH` and `CONFIG_FILENAME`) as the [original module](https://github.com/zenml-io/zenml/blob/main/src/zenml/integrations/airflow/orchestrators/dag\_generator.py). For this reason, we suggest starting by copying the original and modifying it according to your needs.
 
 Check out our docs on how to apply settings to your pipelines [here](../../../../old\_book/advanced-guide/pipelines/settings.md).
 

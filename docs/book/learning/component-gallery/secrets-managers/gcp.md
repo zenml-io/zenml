@@ -1,5 +1,5 @@
 ---
-description: How to store secrets in GCP
+description: Storing secrets in GCP.
 ---
 
 # Google Cloud Secrets Manager

@@ -1,5 +1,5 @@
 ---
-description: How to execute individual steps in Vertex AI
+description: Executing individual steps in Vertex AI.
 ---
 
 # Google Cloud VertexAI

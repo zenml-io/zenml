@@ -1,5 +1,5 @@
 ---
-description: How to set up storage for secrets
+description: Setting up a storage for secrets.
 ---
 
 # Secrets Managers
@@ -100,7 +100,7 @@ def secret_loader(
     context: StepContext,
 ) -> None:
     """Load the example secret from the secret manager."""
-    # Load Secret from active secret manager. This will fail if no secret
+    # Load Secret from the active secret manager. This will fail if no secret
     # manager is active or if that secret does not exist.
     retrieved_secret = context.stack.secrets_manager.get_secret(<SECRET_NAME>)
 
@@ -110,14 +110,14 @@ def secret_loader(
 ```
 
 {% hint style="info" %}
-This will only work if the environment that your orchestrator uses to execute steps has access to the secrets manager. For example a local secrets manager will not work in combination with a remote orchestrator.
+This will only work if the environment that your orchestrator uses to execute steps has access to the secrets manager. For example, a local secrets manager will not work in combination with a remote orchestrator.
 {% endhint %}
 
 ### Secret Schemas
 
 The concept of secret schemas exists to support strongly typed secrets that validate which keys can be configured for a given secret and which values are allowed for those keys.
 
-Secret schemas are available as builtin schemas, or loaded when an integration is installed. Custom schemas can also be defined by sub-classing the `zenml.secret.BaseSecretSchema` class. For example, the following is the builtin schema defined for a MySQL secret:
+Secret schemas are available as built-in schemas or loaded when an integration is installed. Custom schemas can also be defined by sub-classing the `zenml.secret.BaseSecretSchema` class. For example, the following is the builtin schema defined for a MySQL secret:
 
 ```python
 from typing import ClassVar, Optional
@@ -164,14 +164,14 @@ Examples of situations in which Secrets Manager scoping can be useful:
 * you want to be able to configure two or more secrets with the same name but with different values in different Secrets Manager stack components.
 * you want to emulate multiple virtual Secrets Manager instances on top of a single infrastructure secret management service
 
-The scope determines how secrets are shared across different _Secrets Manager instances_ that use the same _backend domain_ (e.g. the same AWS region, GCP project or Azure Key Vault). To understand if and how that is important for you, we first need to define what these terms mean:
+The scope determines how secrets are shared across different _Secrets Manager instances_ that use the same _backend domain_ (e.g. the same AWS region, GCP project, or Azure Key Vault). To understand if and how that is important for you, we first need to define what these terms mean:
 
 * a _Secrets Manager instance_ is created by running `zenml secrets-manager register`. An instance is uniquely identified by its UUID (not by its name).
-* a _Secrets Manager backend domain_ can generally be thought of as the bucket where a Secrets Manager instance stores its secrets. Every Secrets Manager flavor uses a different implementation specific backend domain (e.g. an AWS region, a GCP project or an Azure Key Vault). This is usually reflected in the attributes that need to be configured for the Secrets Manager stack component.
+* a _Secrets Manager backend domain_ can generally be thought of as the bucket where a Secrets Manager instance stores its secrets. Every Secrets Manager flavor uses a different implementation-specific backend domain (e.g. an AWS region, a GCP project, or an Azure Key Vault). This is usually reflected in the attributes that need to be configured for the Secrets Manager stack component.
 
 All secrets in a backend domain share one global namespace, meaning that all Secrets Manager instances configured to use the same backend domain have to compete over the names of secrets that they store there. Secrets Manager scoping basically controls how the ZenML secret namespace is mapped to the underlying backend namespace.
 
-The following diagram depicts the available secret scopes that you can configure for your Secrets Manager instance, if the flavor supports secret scoping. Note how the different secret namespaces are isolated from each other:
+The following diagram depicts the available secret scopes that you can configure for your Secrets Manager instance if the flavor supports secret scoping. Note how the different secret namespaces are isolated from each other:
 
 ![Secret Scoping](../../../assets/secrets-manager/secret-scoping.png)
 
@@ -180,8 +180,8 @@ The following diagram depicts the available secret scopes that you can configure
 All Secrets Managers have two configuration attributes that determine how and if a Secrets Manager instance shares secrets with other Secrets Manager instances connected to the same back-end domain:
 
 * `scope` determines the secret scope and can be set to one of the following values:
-  * `none`: no secret scoping is used when this scope value is configured. This essentially means that all secrets use the same global namespace that is shared not only with other ZenML Secrets Manager instances using a `none` scope, but also with other applications and users that configure secrets directly in the backend. This mode of operation is only used to preserve backwards compatibility with Secrets Manager instances that were already in use prior to the ZenML release 0.12.0 that introduced the concept of scoping. It is not recommended to use this scope with Secrets Manager instances that support scoping, as it will be deprecated and phased out in future ZenML versions.
-  * `global`: secrets are shared across all Secrets Manager instances that connect to the same backend and have a `global` scope. You should use this scope if you want to share your secrets with everyone using ZenML in your team or organization and are not interested in micro-managing the access to these secrets.
-  * `component`: secrets are not visible outside a Secrets Manager instance. This is the default for new instances of Secrets Manager flavors that support scoping. Use this scope if you don't intend to share your secrets with other projects or stacks. The component scope means that only stacks with a Secrets Manager with the exact UUID as your stack can access your secrets. The global or namespace scope are more suitable for sharing access to secrets.
+  * `none`: no secret scoping is used when this scope value is configured. This essentially means that all secrets use the same global namespace that is shared not only with other ZenML Secrets Manager instances using a `none` scope, but also with other applications and users that configure secrets directly in the backend. This mode of operation is only used to preserve backward compatibility with Secrets Manager instances that were already in use prior to the ZenML release 0.12.0 that introduced the concept of scoping. It is not recommended to use this scope with Secrets Manager instances that support scoping, as it will be deprecated and phased out in future ZenML versions.
+  * `global`: secrets are shared across all Secrets Manager instances that connect to the same backend and have a `global` scope. You should use this scope if you want to share your secrets with everyone using ZenML in your team or organization and are not interested in micro-managing access to these secrets.
+  * `component`: secrets are not visible outside a Secrets Manager instance. This is the default for new instances of Secrets Manager flavors that support scoping. Use this scope if you don't intend to share your secrets with other projects or stacks. The component scope means that only stacks with a Secrets Manager with the exact UUID as your stack can access your secrets. The global or namespace scope is more suitable for sharing access to secrets.
   * `namespace`: secrets in a namespace scope are shared only by Secrets Manager instances that connect to the same backend and have the same `namespace` attribute value configured (see below). Use a namespace scope when you want to fine-tune the visibility of secrets across stacks and projects.
 * `namespace` is a scope namespace value to use with the namespace scope

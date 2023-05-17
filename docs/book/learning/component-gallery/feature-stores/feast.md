@@ -1,5 +1,5 @@
 ---
-description: How to manage data in Feast feature stores
+description: Managing data in Feast feature stores.
 ---
 
 # Feast
@@ -13,7 +13,7 @@ There are two core functions that feature stores enable:
 * access to data from an offline / batch store for training.
 * access to online data at inference time.
 
-Feast integration currently supports your choice of offline data sources, and a [Redis](https://redis.com/) backend for your online feature serving. We encourage users to check out [Feast's documentation](https://docs.feast.dev/) and [guides](https://docs.feast.dev/how-to-guides/) on how to set up your offline and online data sources via the configuration `yaml` file.
+Feast integration currently supports your choice of offline data sources and a [Redis](https://redis.com/) backend for your online feature serving. We encourage users to check out [Feast's documentation](https://docs.feast.dev/) and [guides](https://docs.feast.dev/how-to-guides/) on how to set up your offline and online data sources via the configuration `yaml` file.
 
 {% hint style="info" %}
 COMING SOON: While the ZenML integration has an interface to access online feature store data, it currently is not usable in production settings with deployed models. We will update the docs when we enable this functionality.
@@ -29,7 +29,7 @@ zenml integration install feast
 
 Since this example is built around a Redis use case, a Python package to interact with Redis will get installed alongside Feast, but you will still first need to install Redis yourself. See this page for some instructions on how to do that on your operating system.
 
-You will then need to run a Redis server in the background in order for this example to work. You can either use the redis-server command in your terminal (which will run a continuous process until you CTRL-C out of it), or you can run the daemonized version:
+You will then need to run a Redis server in the background in order for this example to work. You can either use the Redis-server command in your terminal (which will run a continuous process until you CTRL-C out of it), or you can run the daemonized version:
 
 ```shell
 redis-server --daemonize yes
@@ -40,7 +40,7 @@ ps aux | grep redis-server
 
 ### How do you use it?
 
-ZenML assumes that users already have a feature store that they just need to connect with. The ZenML Online data retrieval is currently possible in a local setting, but we don't currently support using the online data serving in the context of a deployed model or as part of model deployment. We will update this documentation as we develop out this feature.
+ZenML assumes that users already have a feature store that they just need to connect with. The ZenML Online data retrieval is currently possible in a local setting, but we don't currently support using the online data serving in the context of a deployed model or as part of model deployment. We will update this documentation as we develop this feature.
 
 ZenML supports access to your feature store via a stack component that you can configure via the CLI tool. ( See [here](https://apidocs.zenml.io/latest/cli/) for details on how to do that.)
 

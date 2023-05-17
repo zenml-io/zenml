@@ -1,5 +1,5 @@
 ---
-description: Birds eye view on the necessities of your MLOps Platform
+description: Birds eye view on the necessities of your MLOps Platform.
 ---
 
 # 🏗 Set up your MLOps Platform
@@ -16,11 +16,11 @@ The ZenML Server exposes a RESTful API to the client and other consumers
 
 #### **MySQL** **Database**
 
-The database will act as the central metadata store that tracks all pipeline runs and all the configuration of  the stacks.
+The database will act as the central metadata store that tracks all pipeline runs and all the configurations of the stacks.
 
 #### Secret Store
 
-For a production setting, you should also set up a secret manager as backend for all the secrets that will be used to configure stacks
+For a production setting, you should also set up a secret manager as a backend for all the secrets that will be used to configure stacks
 
 {% hint style="info" %}
 See the following Section to learn about the different ways to [deploy ZenML](deploy-zenml/).
@@ -49,7 +49,7 @@ This is where the docker images for all pipeline code is pushed. The **orchestra
 
 #### Other Tools
 
-Deployments of all the other tools that you need (such as **experiment trackers**, **model registries**, **feature stores**). Learn more about the options in our [Component Guide](../../user-guide/component-galery/).
+Deployments of all the other tools that you need (such as **experiment trackers**, **model registries**, and **feature stores**). Learn more about the options in our [Component Guide](../../user-guide/component-galery/).
 
 ### Additional Tools
 
@@ -61,8 +61,8 @@ Optionally, you can configure an image builder service to build the docker image
 
 #### Code Repository
 
-Code Repositories can be configured within the ZenML deployment. With a code repository configured the pipeline code no longer needs to be baked into the docker images. Instead the code is loaded at runtime within the orchestrator.
+Code Repositories can be configured within the ZenML deployment. With a code repository configured the pipeline code no longer needs to be baked into the docker images. Instead, the code is loaded at runtime within the orchestrator.
 
 ## Coming Soon: True Client-Server Architecture&#x20;
 
-We are hard at work implementing a true client-server architecture where the client no longer needs to have any access to the individual stack components. In the meantime we recommend using your favorite CI/CD tool to enable using ZenML without the need to configure direct access to stack components from the client machines.&#x20;
+We are hard at work implementing a true client-server architecture where the client no longer needs to have any access to the individual stack components. In the meantime, we recommend using your favorite CI/CD tool to enable using ZenML without the need to configure direct access to stack components from the client machines.&#x20;

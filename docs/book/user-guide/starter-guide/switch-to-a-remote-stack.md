@@ -1,12 +1,10 @@
 ---
-description: Bring your pipelines into production using cloud stacks.
+description: Bringing your pipelines into production using cloud stacks.
 ---
 
 # Switch to a remote stack
 
 This page assumes that you are connected to a ZenML Deployment. If this is not the case please consult the explanations of what this means [here](switch-to-a-remote-stack.md) or learn how to deploy ZenML [here](../../platform-guide/set-up-your-mlops-platform/).
-
-
 
 ...
 

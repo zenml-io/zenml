@@ -9,7 +9,13 @@ A ZenML pipeline is built in a data-centric way. The outputs and inputs of steps
 A materializer dictates how a given artifact can be written to and retrieved from the artifact store and also contains all serialization and deserialization logic. Whenever you pass artifacts as outputs from one pipeline step to other steps as inputs, the corresponding materializer for the respective data type defines how this artifact is first serialized and written to the artifact store, and then deserialized and read in the next step.
 
 {% hint style="info" %}
-For most data types, ZenML already includes built-in a materializer that automatically handles the serialization/deserialization logic. However, if you want to pass custom objects between pipeline steps, then you need to define a custom Materializer to tell ZenML how to handle this process for that specific data type.
+ZenML already includes built-in materializers for many common data types.
+However, if you want to pass custom objects between pipeline steps, these 
+objects are by default saved using 
+[cloudpickle](https://github.com/cloudpipe/cloudpickle), which is not 
+production-ready because the resulting artifacts cannot be loaded under
+different Python versions. In such cases, you should consider building a custom 
+Materializer to save your objects in a more robust and efficient format.
 {% endhint %}
 
 ## Building a Custom Materializer
@@ -33,7 +39,7 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
         """Write logic here to load the data of an artifact.
 
         Args:
-            data_type: What type the artifact data should be loaded as.
+            data_type: The type of data that the artifact should be loaded as.
 
         Returns:
             The data of the artifact.
@@ -230,7 +236,7 @@ class MyMaterializer(BaseMaterializer):
 Pro-tip: Use the ZenML `fileio` module to ensure your materialization logic works across artifact stores (local and remote like S3 buckets).
 {% endhint %}
 
-Now ZenML can use this materializer to handle outputs and inputs of your customs object. Edit the pipeline as follows to see this in action:
+Now ZenML can use this materializer to handle the outputs and inputs of your customs object. Edit the pipeline as follows to see this in action:
 
 ```python
 first_pipeline(
@@ -348,7 +354,7 @@ def my_step(my_artifact: UnmaterializedArtifact):  # rather than pd.DataFrame
 
 #### Example
 
-The following shows an example how unmaterialized artifacts can be used in the steps of a pipeline. The pipeline we define will look like this:
+The following shows an example of how unmaterialized artifacts can be used in the steps of a pipeline. The pipeline we define will look like this:
 
 ```shell
 s1 -> s3 

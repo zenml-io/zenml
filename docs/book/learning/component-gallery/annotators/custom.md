@@ -1,5 +1,5 @@
 ---
-description: How to develop a custom annotator
+description: Learning how to develop a custom annotator.
 ---
 
 # Develop a Custom Annotator

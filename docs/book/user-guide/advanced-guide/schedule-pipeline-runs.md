@@ -6,7 +6,7 @@ description: Planning runs to add automation to your pipelines.
 
 In the world of MLOps, scheduling orchestration jobs is an important aspect of automating the processes involved in deploying and maintaining machine learning (ML) models in production environments. Scheduling orchestration jobs allows you to automate tasks such as training and evaluating ML models, deploying models to production, or running periodic checks to ensure that the models are functioning as expected. This can help ensure that your ML pipelines are executed at the right time and in the right order, and can save you time and effort by eliminating the need to manually trigger these tasks.
 
-ZenML pipelines can also be used for scheduling orchestration jobs, but there are some limitations to consider. ZenML-powered orchestrators only support scheduling in certain orchestrators and setup (see below for details on what works and what doesn't), as they require something running in the background to trigger the pipeline runs. Despite these limitations, using scheduling with ZenML can be a useful way to automate your MLOps workflow and save time and effort.
+ZenML pipelines can also be used for scheduling orchestration jobs, but there are some limitations to consider. ZenML-powered orchestrators only support scheduling in certain orchestrators and setups (see below for details on what works and what doesn't), as they require something running in the background to trigger the pipeline runs. Despite these limitations, using scheduling with ZenML can be a useful way to automate your MLOps workflow and save time and effort.
 
 ### How to schedule a pipeline run
 
@@ -68,12 +68,12 @@ We maintain a public roadmap for ZenML, which you can find [here](https://zenml.
 
 Generally one of the steps in your pipeline will be loading dynamic data if you are going to schedule it. For example, if you are training a model on a daily basis, you will want to load the latest data from your data source. This is because the data will change over time.
 
-In this case you will also want to disable the cache for both pipeline and steps so that your pipeline actually runs afresh every time.
+In this case, you will also want to disable the cache for both pipeline and steps so that your pipeline actually runs afresh every time.
 
 This is an example of such a step:
 
 ```python
-# various imports handled here
+# Various imports handled here
 
 @step(enable_cache=False)
 def staging_data_loader() -> Output(

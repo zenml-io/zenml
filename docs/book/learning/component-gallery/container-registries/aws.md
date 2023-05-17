@@ -1,5 +1,5 @@
 ---
-description: How to store container images in Amazon ECR
+description: Storing container images in Amazon ECR.
 ---
 
 # Amazon Elastic Container Registry (ECR)
@@ -34,7 +34,7 @@ The AWS container registry URI should have the following format:
 135792468.dkr.ecr.af-south-1.amazonaws.com
 ```
 
-To figure our the URI for your registry:
+To figure out the URI for your registry:
 
 * Go to the [AWS console](https://console.aws.amazon.com/) and click on your user account in the top right to see the `Account ID`.
 * Go [here](https://docs.aws.amazon.com/general/latest/gr/rande.html#regional-endpoints) and choose the region in which you would like to store your container images. Make sure to choose a nearby region for faster access.

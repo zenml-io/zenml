@@ -26,9 +26,10 @@
   * [Schedule pipeline runs](user-guide/advanced-guide/schedule-pipeline-runs.md)
   * [Handle custom data types](user-guide/advanced-guide/handle-custom-data-types.md)
   * [Use failure/success hooks](user-guide/advanced-guide/use-failure-success-hooks.md)
-  * [Access metadata within steps](user-guide/advanced-guide/access-metadata-within-steps.md)
+  * [Fetch metadata within steps](user-guide/advanced-guide/access-metadata-within-steps.md)
   * [Dynamic pipelines](user-guide/advanced-guide/hyperparameter-tuning.md)
   * [Scale compute to the cloud](user-guide/advanced-guide/enable-gpu-backed-hardware.md)
+  * [Global settings of ZenML](user-guide/advanced-guide/global-config.md)
 * [📜 Component Guide](user-guide/component-galery/README.md)
   * [Integration Overview](learning/component-gallery/integrations.md)
   * [Orchestrators](learning/component-gallery/orchestrators/orchestrators.md)
@@ -118,6 +119,10 @@
     * [Service Connectors Use-Cases](platform-guide/set-up-your-mlops-platform/connect-to-your-cloud-provider/service-connectors-use-cases.md)
     * [Connecting ZenML to resources](platform-guide/set-up-your-mlops-platform/connect-to-your-cloud-provider/connecting-zenml-to-resources.md)
     * [Service Connectors Guide](platform-guide/set-up-your-mlops-platform/connect-to-your-cloud-provider/service-connectors-guide.md)
+    * [Docker Service Connector](platform-guide/set-up-your-mlops-platform/connect-to-your-cloud-provider/docker-service-connector.md)
+    * [Kubernetes Service Connector](platform-guide/set-up-your-mlops-platform/connect-to-your-cloud-provider/kubernetes-service-connector.md)
+    * [AWS Service Connector](platform-guide/set-up-your-mlops-platform/connect-to-your-cloud-provider/aws-service-connector.md)
+    * [GCP Service Connector](platform-guide/set-up-your-mlops-platform/connect-to-your-cloud-provider/gcp-service-connector.md)
   * [Deploy and set up a cloud stack](platform-guide/set-up-your-mlops-platform/deploy-and-set-up-a-cloud-stack/README.md)
     * [Deploying Stack Components](platform-guide/set-up-your-mlops-platform/deploy-and-set-up-a-cloud-stack/deploying-stack-components.md)
     * [Deploying a Stack using Stack Recipes](platform-guide/set-up-your-mlops-platform/deploy-and-set-up-a-cloud-stack/deploying-a-stack-using-stack-recipes.md)
@@ -132,7 +137,7 @@
 
 ## Learning
 
-* [🚀 Quickstart](https://github.com/zenml-io/zenml/blob/cb1bcbda58df06e057fd0a152b4ba3facf9c2d59/examples/quickstart/README.md)
+* [🚀 Quickstart](https://github.com/zenml-io/zenml/blob/main/examples/quickstart/README.md)
 * [🧩 Examples](learning/examples/README.md)
   * [Using ZenML with LLMs to Analyze and Version Data from Databases](https://github.com/zenml-io/zenml-projects/tree/main/supabase-openai-summary)
   * [Build a LLM-powered Community Slack Bot](https://github.com/zenml-io/zenml-projects/tree/main/langchain-llamaindex-slackbot)
@@ -146,8 +151,3 @@
 * [🤷 CLI & API reference](https://apidocs.zenml.io/)
 * [💜 Community & Content](reference/community-and-content.md)
 * [🙋 FAQ](learning/faq.md)
-
-## Doc Orphanage
-
-* [Global Config](doc-orphanage/global-config.md)
-* [Usage Analytics](doc-orphanage/usage-analytics.md)
