@@ -6,13 +6,17 @@ description: >-
 
 # Connecting ZenML to resources
 
-Everything around Service Connectors is expressed in terms of resources. A Kubernetes cluster is a resource. An S3 bucket is another resource. Service Connectors simplify the configuration of ZenML to enable authentication and access to these resources. Once Service Connectors are set up, Stacks and Stack Components can easily access and utilize these resources in your ML pipelines without worrying about the specifics of authentication and access.
+Everything around Service Connectors is expressed in terms of resources: a Kubernetes cluster is a resource, an S3 bucket is another resource. Different flavors of Stack Components need to use different resources to function: the Kubernetes and Tekton Orchestrators need access to a Kubernetes cluster, the S3 Artifact Store needs access to an S3 bucket. It is still possible to configure Stack Components like these to authenticate and connect directly to the target services that they need to interact with, but this is not simple to set up and it definitely isn't easily reproducible and maintainable.
+
+Service Connectors simplify the configuration of ZenML Stack Components by taking over and mediating all concerns related to authentication and access to these resources. Once Service Connectors are set up, anyone can configure Stacks and Stack Components to easily access and utilize external resources in their ML pipelines without worrying about the specifics of authentication and access.
 
 In this section, we walk through a typical workflow to explain conceptually the role that Service Connectors play in connecting ZenML to external resources.
 
 ## The typical Service Connectors workflow
 
-The first step is _<mark style="color:purple;">finding out what types of resources you can connect ZenML to</mark>_. This is where the _Service Connector Type_ concept comes in. For now, it is sufficient to think of Service Connector Types as a way to describe all the supported types of Service Connectors that can be configured and the kind of resources that they can access. This is an example of listing the available Service Connector Types with the ZenML CLI.
+The first step is _<mark style="color:purple;">finding out what types of resources you can connect ZenML to</mark>_. Maybe you have already planned out the infrastructure options for your MLOps platform and are looking to find whether ZenML can accommodate them. Or perhaps you want to use a particular Stack Component flavor in your Stack and are wondering whether you can use a Service Connector to connect it to external resources.
+
+This is where the _Service Connector Type_ concept comes in. For now, it is sufficient to think of Service Connector Types as a way to describe all the different kinds of resources that Service Connectors can mediate access to. This is an example of listing the available Service Connector Types with the ZenML CLI.
 
 ```sh
 $ zenml service-connector list-types
@@ -39,7 +43,138 @@ $ zenml service-connector list-types
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━┷━━━━━━━┷━━━━━━━━┛
 ```
 
-Note that there is an AWS Service Connector type that we can use to gain access to several types of resources, one of which is an S3 bucket. We'll use that the next steps.
+Let's say our cloud provider of choice is AWS and we're looking to hook up an S3 bucket to an S3 Artifact Store stack component and potentially other AWS resources in addition to that. Note that there is an AWS Service Connector type that we can use to gain access to several types of resources, one of which is an S3 bucket. We'll use that the next steps.
+
+<details>
+
+<summary>Need more details ? Find out how to access the wealth of information behind Service Connector Types</summary>
+
+A lot more is hidden behind a Service Connector Type than a name and a simple list of resource types. Before using a Service Connector Type to configure a Service Connector, you probably need to understand what it is, what it can offer and what are the supported authentication methods and their requirements. All this can be accessed on-site directly through the CLI. Some examples are included here.
+
+Showing information about the `aws` Service Connector Type:
+
+```
+$ zenml service-connector describe-type aws
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                🔶 AWS Service Connector (connector type: aws)                ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+                                                                                
+Authentication methods:                                                         
+                                                                                
+ • 🔒 implicit                                                                  
+ • 🔒 secret-key                                                                
+ • 🔒 sts-token                                                                 
+ • 🔒 iam-role                                                                  
+ • 🔒 session-token                                                             
+ • 🔒 federation-token                                                          
+                                                                                
+Resource types:                                                                 
+                                                                                
+ • 🔶 aws-generic                                                               
+ • 📦 s3-bucket                                                                 
+ • 🌀 kubernetes-cluster                                                        
+ • 🐳 docker-registry                                                           
+                                                                                
+Supports auto-configuration: True                                               
+                                                                                
+Available locally: True                                                         
+                                                                                
+Available remotely: True                                                        
+                                                                                
+This ZenML AWS service connector facilitates connecting to, authenticating to   
+and accessing managed AWS services, such as S3 buckets, ECR repositories and EKS
+clusters. Explicit long-lived AWS credentials are supported, as well as         
+temporary STS security tokens. The connector also supports auto-configuration by
+discovering and using credentials configured on a local environment.            
+                                                                                
+The connector can be used to access to any generic AWS service, such as S3, ECR,
+EKS, EC2, etc. by providing pre-authenticated boto3 sessions for these services.
+In addition to authenticating to AWS services, the connector is able to manage  
+specialized authentication for Docker and Kubernetes Python clients and also    
+allows configuration of local Docker and Kubernetes clients.                    
+                                                                                
+────────────────────────────────────────────────────────────────────────────────
+```
+
+Fetching details about the `s3-bucket` resource type:
+
+```
+$ zenml service-connector describe-type aws --resource-type s3-bucket
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                 📦 AWS S3 bucket (resource type: s3-bucket)                  ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+                                                                                
+Authentication methods: implicit, secret-key, sts-token, iam-role,              
+session-token, federation-token                                                 
+                                                                                
+Supports resource instances: True                                               
+                                                                                
+Allows users to connect to S3 buckets. When used by connector consumers, they   
+are provided a pre-configured boto3 S3 client instance.                         
+                                                                                
+The configured credentials must have at least the following S3 permissions:     
+                                                                                
+ • s3:ListBucket                                                                
+ • s3:GetObject                                                                 
+ • s3:PutObject                                                                 
+ • s3:DeleteObject                                                              
+ • s3:ListAllMyBuckets                                                          
+                                                                                
+If set, the resource name must identify an S3 bucket using one of the following 
+formats:                                                                        
+                                                                                
+ • S3 bucket URI: s3://<bucket-name>                                            
+ • S3 bucket ARN: arn:aws:s3:::<bucket-name>                                    
+ • S3 bucket name: <bucket-name>                                                
+                                                                                
+────────────────────────────────────────────────────────────────────────────────
+```
+
+Displaying information about the `session-token` authentication method:
+
+```
+$ zenml service-connector describe-type aws --auth-method session-token
+╔══════════════════════════════════════════════════════════════════════════════╗
+║              🔒 AWS Session Token (auth method: session-token)               ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+                                                                                
+Supports issuing temporary credentials: True                                    
+                                                                                
+Generates temporary session STS tokens for IAM users. The connector needs to be 
+configured with a key ID and secret access key associated with an IAM user or   
+AWS account root user (not recommended). The connector will then generate new   
+temporary STS tokens upon request by calling the GetSessionToken STS API. These 
+STS tokens have an expiration period longer that those issued through the AWS   
+IAM Role authentication method and are more suitable for long-running processes 
+that cannot automatically re-generate credentials upon expiration.              
+                                                                                
+An AWS region is required and the connector may only be used to access AWS      
+resources in the specified region.                                              
+                                                                                
+The default expiration period for generated STS tokens is 12 hours with a       
+minimum of 15 minutes and a maximum of 36 hours. Temporary credentials obtained 
+by using the AWS account root user credentials (not recommended) have a maximum 
+duration of 1 hour.                                                             
+                                                                                
+Generated STS tokens inherit the full set of permissions of the IAM user or AWS 
+account root user that is calling the GetSessionToken. This is not recommended  
+for production use, as it can lead to accidental privilege escalation. Instead, 
+it is recommended to use the AWS Federation Token or AWS IAM Role authentication
+methods with additional session policies to restrict the permissions of the     
+generated STS tokens.                                                           
+                                                                                
+For more information on session tokens and the GetSessionToken AWS API, see:    
+https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_temp_request.htm
+l#api_getsessiontoken                                                           
+                                                                                
+This method might not be suitable for consumers that cannot automatically       
+re-generate temporary credentials upon expiration (e.g. an external client or   
+long-running process).                                                          
+                                                                                
+────────────────────────────────────────────────────────────────────────────────
+```
+
+</details>
 
 The second step is _<mark style="color:purple;">registering a Service Connector</mark>_ that effectively enables ZenML to authenticate to and access one or more remote resources. This step is best handled by someone with some infrastructure knowledge, but there are sane defaults and auto-detection mechanisms built into the AWS Service Connector that can make this a walk in the park even for the uninitiated. A simple example of this is registering an AWS Service Connector with AWS credentials _automatically lifted up from your local host_, giving ZenML access to the same resources that you can access from your local machine through the AWS CLI, such as EKS clusters, ECR repositories or S3 buckets:
 
@@ -180,7 +315,7 @@ Of course, the AWS Secret Key to your AWS IAM user or (worse) AWS root account s
 
 </details>
 
-The third step is preparing to configure the Stack Components and Stacks that you will use to run pipelines, the same way you would do it without Service Connectors, but this time you have the option of _<mark style="color:purple;">discovering which remote resources are available</mark>_ for you to use. For example, if you needed an S3 bucket for your S3 Artifact Store, you could run the following CLI command, which is the same as asking "_which S3 buckets am I authorized to access through ZenML ?_". The result is a list of resource names, identifying those S3 buckets:
+The third step is preparing to configure the Stack Components and Stacks that you will use to run pipelines, the same way you would do it without Service Connectors, but this time you have the option of _<mark style="color:purple;">discovering which remote resources are available</mark>_ for you to use. For example, if you needed an S3 bucket for your S3 Artifact Store, you could run the following CLI command, which is the same as asking "_which S3 buckets am I authorized to access through ZenML ?_". The result is a list of resource names, identifying those S3 buckets and the Service Connectors that facilitate access to them:&#x20;
 
 ```sh
 $ zenml service-connector list-resources --resource-type s3-bucket
@@ -197,7 +332,7 @@ The following 's3-bucket' resources can be accessed by service connectors config
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 ```
 
-The next step in this journey is _<mark style="color:purple;">configuring and connecting a Stack Component to a remote resource</mark>_ via the Service Connector registered and listed in previous steps. This is as easy as saying "_I want this S3 Artifact Store to use the `s3://ml-bucket` S3 bucket_" or "_I want this Kubernetes Orchestrator to use the `mega-ml-cluster` Kubernetes cluster_" and doesn't require any knowledge whatsoever about the authentication mechanisms or even the provenance of those resources. The following example creates an S3 Artifact store and connects it to an S3 bucket with the earlier connector:
+The next step in this journey is _<mark style="color:purple;">configuring and connecting one or more Stack Components to a remote resource</mark>_ via the Service Connector registered and listed in previous steps. This is as easy as saying "_I want this S3 Artifact Store to use the `s3://ml-bucket` S3 bucket_" or "_I want this Kubernetes Orchestrator to use the `mega-ml-cluster` Kubernetes cluster_" and doesn't require any knowledge whatsoever about the authentication mechanisms or even the provenance of those resources. The following example creates an S3 Artifact store and connects it to an S3 bucket with the earlier connector:
 
 ```sh
 $ zenml artifact-store register s3-zenfiles --flavor s3 --path=s3://zenfiles
@@ -261,4 +396,4 @@ These are some of the advantages of linking an S3 Artifact Store, or any Stack C
 
 </details>
 
-Of course, the Stack Component is not really useful on its own. You'll need to _<mark style="color:purple;">make it part of a Stack, set the Stack as active and finally run some pipelines on it</mark>_. But Service Connectors no longer play any visible role in this part, which is why they're so useful: they do all the heavy lifting in the background so you can focus on what matters.
+Of course, the Stack Component we just connected to infrastructure is not really useful on its own. We need to _<mark style="color:purple;">make it part of a Stack, set the Stack as active and finally run some pipelines on it</mark>_. But Service Connectors no longer play any visible role in this part, which is why they're so useful: they do all the heavy lifting in the background so you can focus on what matters.
