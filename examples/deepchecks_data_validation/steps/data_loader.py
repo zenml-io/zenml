@@ -19,8 +19,8 @@ from zenml.steps import Output, step
 
 
 @step
-def data_loader() -> Output(
-    reference_dataset=pd.DataFrame, comparison_dataset=pd.DataFrame
+def data_loader() -> (
+    Output(reference_dataset=pd.DataFrame, comparison_dataset=pd.DataFrame)
 ):
     """Load the iris dataset."""
     iris_df = iris.load_data(data_format="Dataframe", as_train_test=False)
