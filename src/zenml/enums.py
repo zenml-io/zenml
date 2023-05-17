@@ -243,3 +243,4 @@ class EnvironmentType(StrEnum):
     NATIVE = "native"
     NOTEBOOK = "notebook"
     PAPERSPACE = "paperspace"
+    WSL = "wsl"

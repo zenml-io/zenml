@@ -80,6 +80,8 @@ def get_environment() -> str:
         return EnvironmentType.PAPERSPACE
     elif Environment.in_notebook():
         return EnvironmentType.NOTEBOOK
+    elif Environment.in_wsl():
+        return EnvironmentType.WSL
     else:
         return EnvironmentType.NATIVE
 
@@ -322,6 +324,17 @@ class Environment(metaclass=SingletonMetaClass):
             CI, `False` otherwise.
         """
         return "CI" in os.environ
+
+    @staticmethod
+    def in_wsl() -> bool:
+        """If the current process is running in Windows Subsystem for Linux.
+
+        source: https://www.scivision.dev/python-detect-wsl/
+
+        Returns:
+            `True` if the current process is running in WSL, `False` otherwise.
+        """
+        return "microsoft-standard" in platform.uname().release
 
     def register_component(
         self, component: "BaseEnvironmentComponent"

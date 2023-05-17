@@ -101,12 +101,15 @@ def show_dashboard(url: str) -> None:
 
         display(IFrame(src=url, width="100%", height=720))
 
-    elif environment == EnvironmentType.NATIVE:
+    elif environment in (EnvironmentType.NATIVE, EnvironmentType.WSL):
         if handle_bool_env_var(ENV_AUTO_OPEN_DASHBOARD, default=True):
             try:
                 import webbrowser
 
-                webbrowser.open(url)
+                if environment == EnvironmentType.WSL:
+                    webbrowser.get("wslview %s").open(url)
+                else:
+                    webbrowser.open(url)
                 logger.info(
                     "Automatically opening the dashboard in your "
                     "browser. To disable this, set the env variable "
