@@ -1,5 +1,5 @@
 ---
-description: How to develop a custom feature store
+description: Learning how to develop a custom feature store.
 ---
 
 # Develop a Custom Feature Store

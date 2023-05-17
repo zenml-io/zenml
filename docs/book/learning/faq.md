@@ -12,7 +12,7 @@ We built it because we scratched our own itch while deploying multiple machine-l
 
 Not really! An orchestrator in MLOps is the system component that is responsible for executing and managing the execution of an ML pipeline. ZenML is a framework that allows you to run your pipelines on whatever orchestrator you like, and we coordinate with all the other parts of an ML system in production. There are [standard orchestrators](../component-gallery/orchestrators/orchestrators.md) that ZenML supports out-of-the-box, but you are encouraged to [write your own orchestrator](../component-gallery/orchestrators/custom.md) in order to gain more control as to exactly how your pipelines are executed!
 
-#### Can I use tool X? How does tool Y integrate with ZenML?
+#### Can I use the tool `X`? How does the tool `Y` integrate with ZenML?
 
 Take a look at our [examples](https://github.com/zenml-io/zenml/tree/main/examples) directory, which showcases detailed examples for each integration that ZenML supports out-of-the-box.
 

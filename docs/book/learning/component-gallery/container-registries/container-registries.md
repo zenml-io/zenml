@@ -1,14 +1,14 @@
 ---
-description: How to set up the storage for Docker images
+description: Setting up a storage for Docker images.
 ---
 
 # Container Registries
 
-The container registry is an essential part in most remote MLOps stacks. It is used to store container images that are built to run machine learning pipelines in remote environments. Containerization of the pipeline code creates a portable environment which allows code to run in an isolated manner.
+The container registry is an essential part of most remote MLOps stacks. It is used to store container images that are built to run machine learning pipelines in remote environments. Containerization of the pipeline code creates a portable environment that allows code to run in an isolated manner.
 
 ### When to use it
 
-The container registry is needed whenever other components of your stack need to push or pull container images. Currently, this is the case for most of ZenML's remote [orchestrators](../orchestrators/orchestrators.md), [step operators](../step-operators/step-operators.md) and some [model deployers](../model-deployers/model-deployers.md). These containerize your pipeline code and therefore require a container registry to store the resulting [Docker](https://www.docker.com/) images. Take a look at the documentation page of the component you want to use in your stack to see if it requires a container registry or even a specific container registry flavor.
+The container registry is needed whenever other components of your stack need to push or pull container images. Currently, this is the case for most of ZenML's remote [orchestrators](../orchestrators/orchestrators.md), [step operators](../step-operators/step-operators.md), and some [model deployers](../model-deployers/model-deployers.md). These containerize your pipeline code and therefore require a container registry to store the resulting [Docker](https://www.docker.com/) images. Take a look at the documentation page of the component you want to use in your stack to see if it requires a container registry or even a specific container registry flavor.
 
 ### Container Registry Flavors
 

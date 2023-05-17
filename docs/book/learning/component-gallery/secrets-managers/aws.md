@@ -1,5 +1,5 @@
 ---
-description: How to store secrets in AWS
+description: Storing secrets in AWS
 ---
 
 # AWS Secrets Manager

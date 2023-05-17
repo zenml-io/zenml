@@ -1,12 +1,12 @@
 ---
-description: How to develop a custom orchestrator
+description: Learning how to develop a custom orchestrator.
 ---
 
 # Develop a Custom Orchestrator
 
 ### Base Implementation
 
-ZenML aims to enable orchestration with any orchestration tool. This is where the `BaseOrchestrator` comes into play. It abstracts away many of the ZenML specific details from the actual implementation and exposes a simplified interface:
+ZenML aims to enable orchestration with any orchestration tool. This is where the `BaseOrchestrator` comes into play. It abstracts away many of the ZenML-specific details from the actual implementation and exposes a simplified interface:
 
 ```python
 from abc import ABC, abstractmethod
@@ -67,9 +67,9 @@ This is a slimmed-down version of the base implementation which aims to highligh
 
 If you want to create your own custom flavor for an orchestrator, you can follow the following steps:
 
-1. Create a class which inherits from the `BaseOrchestrator` class and implement the abstract `prepare_or_run_pipeline` method.
-2. If you need to provide any configuration, create a class which inherits from the `BaseOrchestratorConfig` class add your configuration parameters.
-3. Bring both of the implementation and the configuration together by inheriting from the `BaseOrchestratorFlavor` class. Make sure that you give a `name` to the flavor through its abstract property.
+1. Create a class that inherits from the `BaseOrchestrator` class and implement the abstract `prepare_or_run_pipeline` method.
+2. If you need to provide any configuration, create a class that inherits from the `BaseOrchestratorConfig` class and add your configuration parameters.
+3. Bring both the implementation and the configuration together by inheriting from the `BaseOrchestratorFlavor` class. Make sure that you give a `name` to the flavor through its abstract property.
 
 Once you are done with the implementation, you can register it through the CLI. Please ensure you **point to the flavor class via dot notation**:
 
@@ -86,10 +86,10 @@ zenml orchestrator flavor register flavors.my_flavor.MyOrchestratorFlavor
 {% hint style="warning" %}
 ZenML resolves the flavor class by taking the path where you initialized zenml (via `zenml init`) as the starting point of resolution. Therefore, please ensure you follow [the best practice](broken-reference) of initializing zenml at the root of your repository.
 
-If ZenML does not find an initialized ZenML repository in any parent directory, it will default to the current working directory, but usually its better to not have to rely on this mechanism, and initialize zenml at the root.
+If ZenML does not find an initialized ZenML repository in any parent directory, it will default to the current working directory, but usually, it's better to not have to rely on this mechanism and initialize zenml at the root.
 {% endhint %}
 
-Afterwards, you should see the new flavor in the list of available flavors:
+Afterward, you should see the new flavor in the list of available flavors:
 
 ```shell
 zenml orchestrator flavor list
@@ -107,7 +107,7 @@ The design behind this interaction lets us separate the configuration of the fla
 
 ## Some additional implementation details
 
-Not all orchestrators are created equal. Here is a few basic categories that differentiate them.
+Not all orchestrators are created equal. Here are a few basic categories that differentiate them.
 
 ### Direct Orchestration
 
@@ -118,13 +118,13 @@ for step in deployment.steps.values():
     self.run_step(step)
 ```
 
-The orchestrator basically iterates through each step and directly executes the step within the same Python process. Obviously all kind of additional configuration could be added around this.
+The orchestrator basically iterates through each step and directly executes the step within the same Python process. Obviously, all kinds of additional configurations could be added around this.
 
 ### Container-based Orchestration
 
-The `KubeflowOrchestrator` is a great example of container-based orchestration. In an implementation-specific method called `prepare_pipeline_deployment()` a Docker image containing the complete project context is built.
+The `KubeflowOrchestrator` is a great example of container-based orchestration. In an implementation-specific method called `prepare_pipeline_deployment(),` a Docker image containing the complete project context is built.
 
-Within `prepare_or_run_pipeline()` a yaml file is created as an intermediate representation of the pipeline and uploaded to the Kubeflow instance. To create this yaml file a callable is defined within which a `dsl.ContainerOp` is created for each step. This ContainerOp contains the container entrypoint command and arguments that will make the image run just the one step. The ContainerOps are assembled according to their interdependencies inside a `dsl.Pipeline` which can then be compiled into the yaml file.
+Within `prepare_or_run_pipeline()` a YAML file is created as an intermediate representation of the pipeline and uploaded to the Kubeflow instance. To create this YAML file a callable is defined within which a `dsl.ContainerOp` is created for each step. This `ContainerOp` contains the container entrypoint command and arguments that will make the image run just one step. The ContainerOps are assembled according to their interdependencies inside a `dsl.Pipeline` which can then be compiled into the YAMLfile.
 
 Additionally, the `prepare_or_run_pipeline()` method receives a dictionary of environment variables that need to be set in the environment in which the steps will be executed. Coming back to our example of the `KubeflowOrchestrator`, we set these environment variables on the `dsl.ContainerOp` objects that we created earlier.
 
@@ -142,7 +142,7 @@ def prepare_or_run_pipeline(...):
 
 ### Base Implementation of the Step Entrypoint Configuration
 
-Within the base Docker images that are used for container-based orchestration the `src.zenml.entrypoints.entrypoint.py` is the default entrypoint to run a specific step. It does so by loading an orchestrator specific `StepEntrypointConfiguration` object. This object is then used to parse all entrypoint arguments (e.g. `--step_name <STEP_NAME>`). Finally, the `StepEntrypointConfiguration.run()` method is used to execute the step. Under the hood this will eventually also call the orchestrators `run_step()` method.
+Within the base Docker images that are used for container-based orchestration, the `src.zenml.entrypoints.entrypoint.py` is the default entrypoint to run a specific step. It does so by loading an orchestrator-specific `StepEntrypointConfiguration` object. This object is then used to parse all entrypoint arguments (e.g. `--step_name <STEP_NAME>`). Finally, the `StepEntrypointConfiguration.run()` method is used to execute the step. Under the hood, this will eventually also call the orchestrators `run_step()` method.
 
 The `StepEntrypointConfiguration` is the base class that already implements most of the required functionality. Let's dive right into it:
 

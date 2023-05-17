@@ -1,5 +1,5 @@
 ---
-description: Understand how and when the version of a pipeline is incremented.
+description: Understanding how and when the version of a pipeline is incremented.
 ---
 
 # Version Pipelines

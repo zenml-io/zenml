@@ -4,5 +4,5 @@ description: >-
   buckets, EKS Kubernetes clusters and ECR container registries.
 ---
 
-# 🔶 AWS Service Connector
+# AWS Service Connector
 

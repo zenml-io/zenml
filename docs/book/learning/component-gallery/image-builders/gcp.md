@@ -1,10 +1,10 @@
 ---
-description: How to build container images with Google Cloud Build
+description: Building container images with Google Cloud Build
 ---
 
 # Google Cloud Image Builder
 
-The Google Cloud image builder is an [image builder](image-builders.md) flavor provided with the ZenML `gcp` integration that uses [Google Cloud Build](https://cloud.google.com/build) to build container images.
+The Google Cloud image builder is an [image builder](image-builders.md) flavor provided by the ZenML `gcp` integration that uses [Google Cloud Build](https://cloud.google.com/build) to build container images.
 
 ### When to use it
 
@@ -52,7 +52,7 @@ zenml stack register <STACK_NAME> -i <IMAGE_BUILDER_NAME> ... --set
 
 ### Caveats
 
-As described in this [Google Cloud Build documentation page](https://cloud.google.com/build/docs/build-config-file-schema#network), Google Cloud Build uses containers to execute the build steps which are automatically attached to a network called `cloudbuild` that provides some Application Default Credentials (ADC), that allows the container to be authenticated and therefore use other GCP services.
+As described in this [Google Cloud Build documentation page](https://cloud.google.com/build/docs/build-config-file-schema#network), Google Cloud Build uses containers to execute the build steps which are automatically attached to a network called `cloudbuild` that provides some Application Default Credentials (ADC), that allow the container to be authenticated and therefore use other GCP services.
 
 By default, the GCP Image Builder is executing the build command of the ZenML Pipeline Docker image with the option `--network=cloudbuild`, so the ADC provided by the `cloudbuild` network can also be used in the build. This is useful if you want to install a private dependency from a GCP Artifact Registry, but you will also need to use a [custom base parent image](../../../../old\_book/starter-guide/production-fundamentals/containerization.md#using-a-custom-parent-image) with the [`keyrings.google-artifactregistry-auth`](https://pypi.org/project/keyrings.google-artifactregistry-auth/) installed, so `pip` can connect and authenticate in the private artifact registry to download the dependency.
 
@@ -63,5 +63,5 @@ RUN pip install keyrings.google-artifactregistry-auth
 ```
 
 {% hint style="warning" %}
-The above `Dockerfile` uses `zenmldocker/zenml:latest` as base image, but is recommended to change the tag to specify the ZenML version and Python version like `0.33.0-py3.10`.
+The above `Dockerfile` uses `zenmldocker/zenml:latest` as a base image, but is recommended to change the tag to specify the ZenML version and Python version like `0.33.0-py3.10`.
 {% endhint %}

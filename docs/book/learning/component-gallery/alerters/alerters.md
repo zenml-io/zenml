@@ -1,5 +1,5 @@
 ---
-description: How to send automated alerts to chat services
+description: Sending automated alerts to chat services.
 ---
 
 # Alerters
@@ -25,7 +25,7 @@ zenml alerter flavor list
 
 ## How to use Alerters with ZenML
 
-Each alerter integration comes with specific standard steps that you can use out-of-the-box.
+Each alerter integration comes with specific standard steps that you can use out of the box.
 
 However, you first need to register an alerter component in your terminal:
 
@@ -39,4 +39,4 @@ Then you can add it to your stack using
 zenml stack register ... -al <ALERTER_NAME>
 ```
 
-Afterwards, you can import the alerter standard steps provided by the respective integration and directly use them in your pipelines.
+Afterward, you can import the alerter standard steps provided by the respective integration and directly use them in your pipelines.

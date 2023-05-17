@@ -1,5 +1,5 @@
 ---
-description: How to orchestrate pipelines with Tekton
+description: Orchestrating your pipelines to run on Tekton.
 ---
 
 # Tekton Orchestrator
@@ -7,7 +7,7 @@ description: How to orchestrate pipelines with Tekton
 The Tekton orchestrator is an [orchestrator](orchestrators.md) flavor provided with the ZenML `tekton` integration that uses [Tekton Pipelines](https://tekton.dev/) to run your pipelines.
 
 {% hint style="warning" %}
-This component is only meant to be used within the context of [remote ZenML deployment scenario](../../getting-started/deploying-zenml/deploying-zenml.md). Usage with a local ZenML deployment may lead to unexpected behavior!
+This component is only meant to be used within the context of a [remote ZenML deployment scenario](../../getting-started/deploying-zenml/deploying-zenml.md). Usage with a local ZenML deployment may lead to unexpected behavior!
 {% endhint %}
 
 ### When to use it
@@ -110,7 +110,7 @@ python file_that_runs_a_zenml_pipeline.py
 
 For additional configuration of the Tekton orchestrator, you can pass `TektonOrchestratorSettings` which allows you to configure (among others) the following attributes:
 
-* `pod_settings`: Node selectors, affinity and tolerations to apply to the Kubernetes Pods running your pipeline. These can be either specified using the Kubernetes model objects or as dictionaries.
+* `pod_settings`: Node selectors, affinity, and tolerations to apply to the Kubernetes Pods running your pipeline. These can be either specified using the Kubernetes model objects or as dictionaries.
 
 ```python
 from zenml.integrations.tekton.flavors.tekton_orchestrator_flavor import TektonOrchestratorSettings

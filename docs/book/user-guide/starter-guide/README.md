@@ -1,3 +1,7 @@
+---
+description: Everything you need to know to start using ZenML.
+---
+
 # 🐣 Starter Guide
 
 ZenML helps you standardize your ML workflows as **Pipelines** consisting of decoupled, modular **Steps**. This enables you to write portable code that can be moved from experimentation to production in seconds.
@@ -105,7 +109,7 @@ def my_pipeline():
   step_2(input_one="hello", input_two=output_step_one)
 ```
 
-Pipelines are also functions. However you are only allowed to call steps within this function. The inputs for steps within a function can either be the outputs of previous steps, or alternatively you can pass in values directly.
+Pipelines are also functions. However, you are only allowed to call steps within this function. The inputs for steps within a function can either be the outputs of previous steps or alternatively, you can pass in values directly.
 
 ### Executing the Code
 
@@ -118,6 +122,6 @@ Executing the Pipeline is as easy as just calling the function that you decorate
 
 
 
-In the following sections you will learn more about&#x20;
+In the following sections, you will learn more about&#x20;
 
-<table data-view="cards"><thead><tr><th></th><th></th><th></th></tr></thead><tbody><tr><td><mark style="color:purple;"><strong>Create an ML Pipeline</strong></mark></td><td>Learn how to setup and configure your pipeline.</td><td></td></tr><tr><td><mark style="color:purple;"><strong>Caching in ZenML</strong></mark></td><td>When running pipelines multiple times, caching speeds you up. Learn how to leverage this.</td><td></td></tr><tr><td><mark style="color:purple;"><strong>Version Pipelines</strong></mark></td><td></td><td></td></tr><tr><td><mark style="color:purple;"><strong>Fetch runs after execution</strong></mark></td><td></td><td></td></tr><tr><td><mark style="color:purple;"><strong>Understand stacks</strong></mark></td><td></td><td></td></tr><tr><td><mark style="color:purple;"><strong>Connect to a deployed ZenML Server</strong></mark></td><td></td><td></td></tr><tr><td><mark style="color:purple;"><strong>Switch  to a remote stack</strong></mark></td><td></td><td></td></tr><tr><td><mark style="color:purple;"><strong>Leverage community contributed plugins</strong></mark></td><td></td><td></td></tr><tr><td><mark style="color:purple;"><strong>Follow best practices</strong></mark></td><td></td><td></td></tr></tbody></table>
+<table data-view="cards"><thead><tr><th></th><th></th><th></th></tr></thead><tbody><tr><td><mark style="color:purple;"><strong>Create an ML Pipeline</strong></mark></td><td>Learning how to setup and configure your pipeline.</td><td></td></tr><tr><td><mark style="color:purple;"><strong>Caching in ZenML</strong></mark></td><td>Iterating quickly with ZenML through fast caching.</td><td></td></tr><tr><td><mark style="color:purple;"><strong>Version Pipelines</strong></mark></td><td>Understanding how and when the version of a pipeline is incremented.</td><td></td></tr><tr><td><mark style="color:purple;"><strong>Fetch runs after execution</strong></mark></td><td>Inspecting a finished pipeline run and its outputs.</td><td></td></tr><tr><td><mark style="color:purple;"><strong>Understand stacks</strong></mark></td><td>Learning how to switch the infrastructure backend of your code.</td><td></td></tr><tr><td><mark style="color:purple;"><strong>Connect to a deployed ZenML Server</strong></mark></td><td>Learning about the ZenML server.</td><td></td></tr><tr><td><mark style="color:purple;"><strong>Switch  to a remote stack</strong></mark></td><td>Bringing your pipelines into production using cloud stacks.</td><td></td></tr><tr><td><mark style="color:purple;"><strong>Leverage community contributed plugins</strong></mark></td><td>Collaborating with the ZenML community.</td><td></td></tr><tr><td><mark style="color:purple;"><strong>Follow best practices</strong></mark></td><td>Recommended repository structure and best practices.</td><td></td></tr></tbody></table>

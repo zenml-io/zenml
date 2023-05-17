@@ -1,5 +1,5 @@
 ---
-description: How to develop a custom alerter
+description: Learning how to develop a custom alerter.
 ---
 
 # Develop a Custom Alerter
@@ -9,7 +9,7 @@ description: How to develop a custom alerter
 The base abstraction for alerters is very basic, as it only defines two abstract methods that subclasses should implement:
 
 * `post()` takes a string, posts it to the desired chat service, and returns `True` if the operation succeeded, else `False`.
-* `ask()` does the same as `post()`, but after sending the message, it waits until someone approves or rejects the operation from within the chat service (e.g., by sending "approve" / "reject" to the bot as response). `ask()` then only returns `True` if the operation succeeded and was approved, else `False`.
+* `ask()` does the same as `post()`, but after sending the message, it waits until someone approves or rejects the operation from within the chat service (e.g., by sending "approve" / "reject" to the bot as a response). `ask()` then only returns `True` if the operation succeeded and was approved, else `False`.
 
 Then base abstraction looks something like this:
 
@@ -117,10 +117,10 @@ zenml alerter flavor register flavors.my_flavor.MyAlerterFlavor
 {% hint style="warning" %}
 ZenML resolves the flavor class by taking the path where you initialized zenml (via `zenml init`) as the starting point of resolution. Therefore, please ensure you follow [the best practice](broken-reference) of initializing zenml at the root of your repository.
 
-If ZenML does not find an initialized ZenML repository in any parent directory, it will default to the current working directory, but usually its better to not have to rely on this mechanism, and initialize zenml at the root.
+If ZenML does not find an initialized ZenML repository in any parent directory, it will default to the current working directory, but usually, it's better to not have to rely on this mechanism and initialize zenml at the root.
 {% endhint %}
 
-Afterwards, you should see the new custom alerter flavor in the list of available alerter flavors:
+Afterward, you should see the new custom alerter flavor in the list of available alerter flavors:
 
 ```shell
 zenml alerter flavor list
@@ -130,7 +130,7 @@ zenml alerter flavor list
 It is important to draw attention to when and how these abstractions are coming into play in a ZenML workflow.
 
 * The **MyAlerterFlavor** class is imported and utilized upon the creation of the custom flavor through the CLI.
-* The **MyAlerterConfig** class is imported when someone tries to register/update a stack component with the `my_alerter` flavor. Especially, during the registration process of the stack component, the config will be used to validate the values given by the user. As `Config` object are inherently `pydantic` objects, you can also add your own custom validators here.
+* The **MyAlerterConfig** class is imported when someone tries to register/update a stack component with the `my_alerter` flavor. Especially, during the registration process of the stack component, the config will be used to validate the values given by the user. As `Config` objects are inherently `pydantic` objects, you can also add your own custom validators here.
 * The **MyAlerter** only comes into play when the component is ultimately in use.
 
 The design behind this interaction lets us separate the configuration of the flavor from its implementation. This way we can register flavors and components even when the major dependencies behind their implementation are not installed in our local setting (assuming the `MyAlerterFlavor` and the `MyAlerterConfig` are implemented in a different module/path than the actual `MyAlerter`).

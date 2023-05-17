@@ -1,5 +1,5 @@
 ---
-description: How to deploy models to Kubernetes with Seldon Core
+description: Deploying models to Kubernetes with Seldon Core.
 ---
 
 # Seldon
@@ -8,7 +8,7 @@ The Seldon Core Model Deployer is one of the available flavors of the [Model Dep
 
 ### When to use it?
 
-[Seldon Core](https://github.com/SeldonIO/seldon-core) is a production grade open source model serving platform. It packs a wide range of features built around deploying models to REST/GRPC microservices that include monitoring and logging, model explainers, outlier detectors and various continuous deployment strategies such as A/B testing, canary deployments and more.
+[Seldon Core](https://github.com/SeldonIO/seldon-core) is a production-grade open-source model serving platform. It packs a wide range of features built around deploying models to REST/GRPC microservices that include monitoring and logging, model explainers, outlier detectors, and various continuous deployment strategies such as A/B testing, canary deployments, and more.
 
 Seldon Core also comes equipped with a set of built-in model server implementations designed to work with standard formats for packaging ML models that greatly simplify the process of serving models for real-time inference.
 
@@ -18,7 +18,7 @@ You should use the Seldon Core Model Deployer:
 * If you want to handle the lifecycle of the deployed model with no downtime, including updating the runtime graph, scaling, monitoring, and security.
 * Looking for more advanced API endpoints to interact with the deployed model, including REST and GRPC endpoints.
 * If you want more advanced deployment strategies like A/B testing, canary deployments, and more.
-* if you have a need for a more complex deployment process which can be customized by the advanced inference graph that includes custom [TRANSFORMER](https://docs.seldon.io/projects/seldon-core/en/latest/workflow/overview.html) and [ROUTER](https://docs.seldon.io/projects/seldon-core/en/latest/analytics/routers.html?highlight=routers).
+* if you have a need for a more complex deployment process that can be customized by the advanced inference graph that includes custom [TRANSFORMER](https://docs.seldon.io/projects/seldon-core/en/latest/workflow/overview.html) and [ROUTER](https://docs.seldon.io/projects/seldon-core/en/latest/analytics/routers.html?highlight=routers).
 
 If you are looking for a more easy way to deploy your models locally, you can use the [MLflow Model Deployer](mlflow.md) flavor.
 
@@ -54,7 +54,7 @@ The Seldon Core Model Deployer requires access to the persistent storage where m
 
 If Seldon Core is already running in the same cloud as the Artifact Store (e.g. S3 and an EKS cluster for AWS, or GCS and a GKE cluster for GCP), there are ways of configuring cloud workloads to have implicit access to other cloud resources like persistent storage without requiring explicit credentials. However, if Seldon Core is running in a different cloud, or on-prem, or if implicit in-cloud workload authentication is not enabled, then you need to configure explicit credentials for the Artifact Store to allow other components like the Seldon Core model deployer to authenticate to it. Every cloud Artifact Store flavor supports some way of configuring explicit credentials and this is documented for each individual flavor in the [Artifact Store documentation](../artifact-stores/artifact-stores.md).
 
-When explicit credentials are configured in the Artifact Store, the Seldon Core Model Deployer doesn't need any additional configuration and will use those credentials automatically to authenticate to the same persistent storage service used by the Artifact Store. If the Artifact Store doesn't have explicit credentials configured, then Seldon Core will default to using whatever implicit authentication method is available in the Kubernetes cluster where it is running. For example, in AWS this means using the IAM role attached to the EC2 or EKS worker nodes and in GCP this means using the service account attached to the GKE worker nodes.
+When explicit credentials are configured in the Artifact Store, the Seldon Core Model Deployer doesn't need any additional configuration and will use those credentials automatically to authenticate to the same persistent storage service used by the Artifact Store. If the Artifact Store doesn't have explicit credentials configured, then Seldon Core will default to using whatever implicit authentication method is available in the Kubernetes cluster where it is running. For example, in AWS this means using the IAM role attached to the EC2 or EKS worker nodes, and in GCP this means using the service account attached to the GKE worker nodes.
 
 {% hint style="warning" %}
 If the Artifact Store used in combination with the Seldon Core Model Deployer in the same ZenML stack does not have explicit credentials configured, then the Seldon Core Model Deployer might not be able to authenticate to the Artifact Store which will cause the deployed model servers to fail.
@@ -221,7 +221,7 @@ Within the `SeldonDeploymentConfig` you can configure:
 * `model_name`: the name of the model in the KServe cluster and in ZenML.
 * `replicas`: the number of replicas with which to deploy the model
 * `implementation`: the type of Seldon inference server to use for the model. The implementation type can be one of the following: `TENSORFLOW_SERVER`, `SKLEARN_SERVER`, `XGBOOST_SERVER`, `custom`.
-* `parameters`: an optional list of parameters (`SeldonDeploymentPredictorParameter`) to pass to the deployment predictor in a form of:
+* `parameters`: an optional list of parameters (`SeldonDeploymentPredictorParameter`) to pass to the deployment predictor in the form of:
   * `name`
   * `type`
   * `value`
@@ -235,7 +235,7 @@ For more information and a full list of configurable attributes of the Seldon Co
 
 When you have a custom use-case where Seldon Core pre-packaged inference servers cannot cover your needs, you can leverage the language wrappers to containerize your machine learning model(s) and logic. With ZenML's Seldon Core Integration, you can create your own custom model deployment code by creating a custom predict function that will be passed to a custom deployment step responsible for preparing a Docker image for the model server.
 
-This `custom_predict` function should be getting the model and the input data as arguments and return the output data. ZenML will take care of loading the model into memory, starting the `seldon-core-microservice` that will be responsible for serving the model, and running the predict function.
+This `custom_predict` function should be getting the model and the input data as arguments and returning the output data. ZenML will take care of loading the model into memory, starting the `seldon-core-microservice` that will be responsible for serving the model and running the predict function.
 
 ```python
 def pre_process(input: np.ndarray) -> np.ndarray:
@@ -269,7 +269,7 @@ def custom_predict(
     pass
 ```
 
-Then this custom predict function `path` can be passed to the custom deployment parameters.
+Then this `custom_predict` function `path` can be passed to the custom deployment parameters.
 
 ```python
 from zenml.integrations.seldon.steps import (
@@ -307,4 +307,4 @@ The built-in Seldon Core custom deployment step is a good starting point for dep
 
 Example of the [custom class](https://apidocs.zenml.io/0.13.0/api\_docs/integrations/#zenml.integrations.seldon.custom\_deployer.zenml\_custom\_model.ZenMLCustomModel).
 
-The built-in Seldon Core custom deployment step responsible for packaging, preparing and deploying to Seldon Core can be found [here](https://apidocs.zenml.io/latest/integration\_code\_docs/integrations-seldon/#zenml.integrations.seldon.steps.seldon\_deployer.seldon\_model\_deployer\_step).
+The built-in Seldon Core custom deployment step responsible for packaging, preparing, and deploying to Seldon Core can be found [here](https://apidocs.zenml.io/latest/integration\_code\_docs/integrations-seldon/#zenml.integrations.seldon.steps.seldon\_deployer.seldon\_model\_deployer\_step).

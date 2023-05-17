@@ -1,5 +1,5 @@
 ---
-description: How to orchestrate pipelines with Kubernetes
+description: Orchestrating your pipelines to run on Kubernetes clusters.
 ---
 
 # Kubernetes Orchestrator
@@ -7,7 +7,7 @@ description: How to orchestrate pipelines with Kubernetes
 The Kubernetes orchestrator is an [orchestrator](orchestrators.md) flavor provided with the ZenML `kubernetes` integration that runs your pipelines on a [Kubernetes](https://kubernetes.io/) cluster.
 
 {% hint style="warning" %}
-This component is only meant to be used within the context of [remote ZenML deployment scenario](../../getting-started/deploying-zenml/deploying-zenml.md). Usage with a local ZenML deployment may lead to unexpected behavior!
+This component is only meant to be used within the context of a [remote ZenML deployment scenario](../../getting-started/deploying-zenml/deploying-zenml.md). Usage with a local ZenML deployment may lead to unexpected behavior!
 {% endhint %}
 
 ### When to use it
@@ -15,7 +15,7 @@ This component is only meant to be used within the context of [remote ZenML depl
 You should use the Kubernetes orchestrator if:
 
 * you're looking lightweight way of running your pipelines on Kubernetes.
-* you don't need a UI to list all your pipelines runs.
+* you don't need a UI to list all your pipeline runs.
 * you're not willing to maintain [Kubeflow Pipelines](kubeflow.md) on your Kubernetes cluster.
 * you're not interested in paying for managed solutions like [Vertex](vertex.md).
 
@@ -65,7 +65,7 @@ python file_that_runs_a_zenml_pipeline.py
 
 For additional configuration of the Kubernetes orchestrator, you can pass `KubernetesOrchestratorSettings` which allows you to configure (among others) the following attributes:
 
-* `pod_settings`: Node selectors, affinity and tolerations to apply to the Kubernetes Pods running your pipeline. These can be either specified using the Kubernetes model objects or as dictionaries.
+* `pod_settings`: Node selectors, affinity, and tolerations to apply to the Kubernetes Pods running your pipeline. These can be either specified using the Kubernetes model objects or as dictionaries.
 
 ```python
 from zenml.integrations.kubernetes.flavors.kubernetes_orchestrator_flavor import KubernetesOrchestratorSettings

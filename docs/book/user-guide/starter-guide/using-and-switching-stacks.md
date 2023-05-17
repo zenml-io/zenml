@@ -1,5 +1,5 @@
 ---
-description: Learn how to switch the infrastructure backend of your code.
+description: Learning how to switch the infrastructure backend of your code.
 ---
 
 # Understand stacks

@@ -4,7 +4,7 @@ description: >-
   registries
 ---
 
-# 🐋 Docker Service Connector
+# Docker Service Connector
 
 The ZenML Docker Service Connector allows authenticating with a Docker or OCI container registry and managing Docker clients for the registry. This connector provides pre-authenticated python-docker Python clients to Stack Components that are linked to it.
 

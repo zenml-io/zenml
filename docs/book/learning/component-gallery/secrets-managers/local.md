@@ -1,10 +1,10 @@
 ---
-description: How to store secrets locally
+description: Storing secrets locally.
 ---
 
 # Local Secrets Manager
 
-The local secrets manager is a [secrets manager](secrets-managers.md) flavor which comes built-in with ZenML and uses the local filesystem to store secrets.
+The local secrets manager is a [secrets manager](secrets-managers.md) flavor that comes built-in with ZenML and uses the local filesystem to store secrets.
 
 {% hint style="warning" %}
 We are deprecating secrets managers in favor of the [centralized ZenML secrets store](../../../../old\_book/starter-guide/production-fundamentals/secrets-management.md#centralized-secrets-store). Going forward, we recommend using the secrets store instead of secrets managers to configure and store secrets.

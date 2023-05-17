@@ -1,5 +1,5 @@
 ---
-description: How to log and visualize experiments with Weights & Biases
+description: Logging and visualizing experiments with Weights & Biases.
 ---
 
 # Weights & Biases
@@ -8,13 +8,13 @@ The Weights & Biases Experiment Tracker is an [Experiment Tracker](experiment-tr
 
 ### When would you want to use it?
 
-[Weights & Biases](https://wandb.ai/site/experiment-tracking) is a very popular platform that you would normally use in the iterative ML experimentation phase to track and visualize experiment results. That doesn't mean that it cannot be repurposed to track and visualize the results produced by your automated pipeline runs, as you make the transition towards a more production oriented workflow.
+[Weights & Biases](https://wandb.ai/site/experiment-tracking) is a very popular platform that you would normally use in the iterative ML experimentation phase to track and visualize experiment results. That doesn't mean that it cannot be repurposed to track and visualize the results produced by your automated pipeline runs, as you make the transition towards a more production-oriented workflow.
 
 You should use the Weights & Biases Experiment Tracker:
 
 * if you have already been using Weights & Biases to track experiment results for your project and would like to continue doing so as you are incorporating MLOps workflows and best practices in your project through ZenML.
 * if you are looking for a more visually interactive way of navigating the results produced from your ZenML pipeline runs (e.g. models, metrics, datasets)
-* if you would like to connect ZenML to Weights & Biases to share the artifacts and metrics logged by your pipelines with your team, organization or external stakeholders
+* if you would like to connect ZenML to Weights & Biases to share the artifacts and metrics logged by your pipelines with your team, organization, or external stakeholders
 
 You should consider one of the other [Experiment Tracker flavors](experiment-trackers.md#experiment-tracker-flavors) if you have never worked with Weights & Biases before and would rather use another experiment tracking tool that you are more familiar with.
 
@@ -150,7 +150,7 @@ def my_step(
     ...
 ```
 
-Doing the above auto-magically logs all the data, metrics, and results within the step, no further action required!
+Doing the above auto-magically logs all the data, metrics, and results within the step, no further action is required!
 
 Check out the [API docs](https://apidocs.zenml.io/latest/integration\_code\_docs/integrations-wandb/#zenml.integrations.wandb.flavors.wandb\_experiment\_tracker\_flavor.WandbExperimentTrackerSettings) for a full list of available attributes and [this docs page](../../advanced-guide/pipelines/settings.md) for more information on how to specify settings.
 

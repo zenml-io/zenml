@@ -1,12 +1,12 @@
 ---
-description: Deploying ZenML in a container.
+description: Deploying ZenML in a Docker container.
 ---
 
 # Deploy with Docker
 
 The ZenML server container image is available at [`zenmldocker/zenml-server`](https://hub.docker.com/r/zenmldocker/zenml/) and can be used to deploy ZenML with a container management or orchestration tool like docker and docker-compose, or a serverless platform like [Cloud Run](https://cloud.google.com/run), [Container Apps](https://learn.microsoft.com/en-us/azure/container-apps/overview), and more! This guide walks you through the various configuration options that the ZenML server container expects as well as a few deployment use cases.
 
-## Try it out locally first&#x20;
+## Try it out locally first
 
 If you're just looking for a quick way to deploy the ZenML server using a container, without going through the hassle of interacting with a container management tool like docker and manually configuring your container, you can use the ZenML CLI to do so. You only need to have Docker installed and running on your machine:
 
@@ -20,14 +20,14 @@ The rest of this guide is addressed to advanced users who are looking to manuall
 
 ## ZenML Server Configuration Options
 
-If you're planning on deploying a custom containerized ZenML server yourself, you probably need to configure some settings for it like the **database** it should use, the **default user details** and more. The ZenML server container image uses sensible defaults, so you can simply start a container without worrying too much about the configuration. However, if you're looking to connect the ZenML server to an external MySQL database or secrets management service, or to persist the internal SQLite database, or simply want to control other settings like the default account, you can do so by customizing the container's environment variables.
+If you're planning on deploying a custom containerized ZenML server yourself, you probably need to configure some settings for it like the **database** it should use, the **default user details,** and more. The ZenML server container image uses sensible defaults, so you can simply start a container without worrying too much about the configuration. However, if you're looking to connect the ZenML server to an external MySQL database or secrets management service, to persist the internal SQLite database, or simply want to control other settings like the default account, you can do so by customizing the container's environment variables.
 
 The following environment variables can be passed to the container:
 
-* **ZENML\_DEFAULT\_PROJECT\_NAME**: The name of the default project created by the server on first deployment, during database initialization. Defaults to `default`.
-* **ZENML\_DEFAULT\_USER\_NAME**: The name of the default admin user account created by the server on first deployment, during database initialization. Defaults to `default`.
+* **ZENML\_DEFAULT\_PROJECT\_NAME**: The name of the default project created by the server on the first deployment, during database initialization. Defaults to `default`.
+* **ZENML\_DEFAULT\_USER\_NAME**: The name of the default admin user account created by the server on the first deployment, during database initialization. Defaults to `default`.
 * **ZENML\_DEFAULT\_USER\_PASSWORD**: The password to use for the default admin user account. Defaults to an empty password value, if not set.
-*   **ZENML\_STORE\_URL**: This URL should point to a SQLite database file _mounted in the container_, or to a MySQL compatible database service _reachable from the container_. It takes one of the forms:
+*   **ZENML\_STORE\_URL**: This URL should point to an SQLite database file _mounted in the container_, or to a MySQL-compatible database service _reachable from the container_. It takes one of these forms:
 
     ```
       sqlite:////path/to/zenml.db
@@ -38,23 +38,23 @@ The following environment variables can be passed to the container:
     ```
       mysql://username:password@host:port/database
     ```
-* **ZENML\_STORE\_SSL\_CA**: This can be set to a custom server CA certificate in use by the MySQL database service. Only valid when `ZENML_STORE_URL` points to a MySQL database that uses SSL secured connections. The variable can be set either to the path where the certificate file is mounted inside the container or to the certificate contents themselves.
-* **ZENML\_STORE\_SSL\_CERT**: This can be set to a the client SSL certificate required to connect to the MySQL database service. Only valid when `ZENML_STORE_URL` points to a MySQL database that uses SSL secured connections and requires client SSL certificates. The variable can be set either to the path where the certificate file is mounted inside the container or to the certificate contents themselves. This variable also requires `ZENML_STORE_SSL_KEY` to be set.
-* **ZENML\_STORE\_SSL\_KEY**: This can be set to a the client SSL private key required to connect to the MySQL database service. Only valid when `ZENML_STORE_URL` points to a MySQL database that uses SSL secured connections and requires client SSL certificates. The variable can be set either to the path where the certificate file is mounted inside the container or to the certificate contents themselves. This variable also requires `ZENML_STORE_SSL_CERT` to be set.
-* **ZENML\_STORE\_SSL\_VERIFY\_SERVER\_CERT**: This boolean variable controls whether the SSL certificate in use by the MySQL server is verified. Only valid when `ZENML_STORE_URL` points to a MySQL database that uses SSL secured connections. Defaults to `False`.
+* **ZENML\_STORE\_SSL\_CA**: This can be set to a custom server CA certificate in use by the MySQL database service. Only valid when `ZENML_STORE_URL` points to a MySQL database that uses SSL-secured connections. The variable can be set either to the path where the certificate file is mounted inside the container or to the certificate contents themselves.
+* **ZENML\_STORE\_SSL\_CERT**: This can be set to a client SSL certificate required to connect to the MySQL database service. Only valid when `ZENML_STORE_URL` points to a MySQL database that uses SSL-secured connections and requires client SSL certificates. The variable can be set either to the path where the certificate file is mounted inside the container or to the certificate contents themselves. This variable also requires `ZENML_STORE_SSL_KEY` to be set.
+* **ZENML\_STORE\_SSL\_KEY**: This can be set to a client SSL private key required to connect to the MySQL database service. Only valid when `ZENML_STORE_URL` points to a MySQL database that uses SSL-secured connections and requires client SSL certificates. The variable can be set either to the path where the certificate file is mounted inside the container or to the certificate contents themselves. This variable also requires `ZENML_STORE_SSL_CERT` to be set.
+* **ZENML\_STORE\_SSL\_VERIFY\_SERVER\_CERT**: This boolean variable controls whether the SSL certificate in use by the MySQL server is verified. Only valid when `ZENML_STORE_URL` points to a MySQL database that uses SSL-secured connections. Defaults to `False`.
 * **ZENML\_LOGGING\_VERBOSITY**: Use this variable to control the verbosity of logs inside the container. It can be set to one of the following values: `NOTSET`, `ERROR`, `WARN`, `INFO` (default), `DEBUG` or `CRITICAL`.
 
-If none of the `ZENML_STORE_*` variables are set, the container will default to creating and using a SQLite database file stored at `/zenml/.zenconfig/local_stores/default_zen_store/zenml.db` inside the container. The `/zenml/.zenconfig/local_stores` base path where the default SQLite database is located can optionally be overridden by setting the `ZENML_LOCAL_STORES_PATH` environment variable to point to a different path (e.g. a persistent volume or directory that is mounted from the host).
+If none of the `ZENML_STORE_*` variables are set, the container will default to creating and using an SQLite database file stored at `/zenml/.zenconfig/local_stores/default_zen_store/zenml.db` inside the container. The `/zenml/.zenconfig/local_stores` base path where the default SQLite database is located can optionally be overridden by setting the `ZENML_LOCAL_STORES_PATH` environment variable to point to a different path (e.g. a persistent volume or directory that is mounted from the host).
 
 ### Secret Store Environment Variables
 
-There are many possible Secret Stores that you can choose between. Each one of these Secret Stores require the docker image to contain different configurations.
+There are many possible Secret Stores that you can choose between. Each one of these Secret Stores requires the docker image to contain different configurations.
 
 {% tabs %}
 {% tab title="MySQL" %}
 The SQL database is used as the default secret store. You only need to configure these options if you want to change the default behavior.
 
-* **ZENML\_SECRETS\_STORE\_TYPE:** Set this to `sql` in order to explicitly set this type of  secret store.
+* **ZENML\_SECRETS\_STORE\_TYPE:** Set this to `sql` in order to explicitly set this type of secret store.
 *   **ZENML\_SECRETS\_STORE\_ENCRYPTION\_KEY**: This is a secret key used to encrypt all secrets stored in the SQL secrets store. If not set, encryption will not be used and passwords will be stored unencrypted in the database. This should be set to a random string with a recommended length of at least 32 characters, e.g.:
 
     ```python
@@ -74,7 +74,7 @@ The SQL database is used as the default secret store. You only need to configure
 {% tab title="AWS" %}
 These configuration options are only relevant if you're using the AWS Secrets Manager as the secrets store backend.
 
-* **ZENML\_SECRETS\_STORE\_TYPE:** Set this to `aws` in order to set this type of  secret store.
+* **ZENML\_SECRETS\_STORE\_TYPE:** Set this to `aws` in order to set this type of secret store.
 * **ZENML\_SECRETS\_STORE\_REGION\_NAME**: The AWS region to use. This must be set to the region where the AWS Secrets Manager service that you want to use is located.
 * **ZENML\_SECRETS\_STORE\_AWS\_ACCESS\_KEY\_ID**: The AWS access key ID to use for authentication. This must be set to a valid AWS access key ID that has access to the AWS Secrets Manager service that you want to use. If you are using an IAM role attached to an EKS cluster to authenticate, you can omit this variable. NOTE: this is the same as setting the `AWS_ACCESS_KEY_ID` environment variable.
 * **ZENML\_SECRETS\_STORE\_AWS\_SECRET\_ACCESS\_KEY**: The AWS secret access key to use for authentication. This must be set to a valid AWS secret access key that has access to the AWS Secrets Manager service that you want to use. If you are using an IAM role attached to an EKS cluster to authenticate, you can omit this variable. NOTE: this is the same as setting the `AWS_SECRET_ACCESS_KEY` environment variable.
@@ -85,7 +85,7 @@ These configuration options are only relevant if you're using the AWS Secrets Ma
 {% tab title="GCP" %}
 These configuration options are only relevant if you're using the GCP Secrets Manager as the secrets store backend.
 
-* **ZENML\_SECRETS\_STORE\_TYPE:** Set this to `gcp` in order to set this type of  secret store.
+* **ZENML\_SECRETS\_STORE\_TYPE:** Set this to `gcp` in order to set this type of secret store.
 * **ZENML\_SECRETS\_STORE\_PROJECT\_ID**: The GCP project ID to use. This must be set to the project ID where the GCP Secrets Manager service that you want to use is located.
 * **GOOGLE\_APPLICATION\_CREDENTIALS**: The path to the GCP service account credentials file to use for authentication. This must be set to a valid GCP service account credentials file that has access to the GCP Secrets Manager service that you want to use. If you are using a GCP service account attached to a GKE cluster to authenticate, you can omit this variable. NOTE: the path to the credentials file must be mounted into the container.
 {% endtab %}
@@ -93,7 +93,7 @@ These configuration options are only relevant if you're using the GCP Secrets Ma
 {% tab title="Azure" %}
 These configuration options are only relevant if you're using Azure Key Vault as the secrets store backend.
 
-* **ZENML\_SECRETS\_STORE\_TYPE:** Set this to `azure` in order to set this type of  secret store.
+* **ZENML\_SECRETS\_STORE\_TYPE:** Set this to `azure` in order to set this type of secret store.
 * **ZENML\_SECRETS\_STORE\_KEY\_VAULT\_NAME**: The name of the Azure Key Vault. This must be set to point to the Azure Key Vault instance that you want to use.
 * **ZENML\_SECRETS\_STORE\_AZURE\_CLIENT\_ID**: The Azure application service principal client ID to use to authenticate with the Azure Key Vault API. If you are running the ZenML server hosted in Azure and are using a managed identity to access the Azure Key Vault service, you can omit this variable. NOTE: this is the same as setting the `AZURE_CLIENT_ID` environment variable.
 * **ZENML\_SECRETS\_STORE\_AZURE\_CLIENT\_SECRET**: The Azure application service principal client secret to use to authenticate with the Azure Key Vault API. If you are running the ZenML server hosted in Azure and are using a managed identity to access the Azure Key Vault service, you can omit this variable. NOTE: this is the same as setting the `AZURE_CLIENT_SECRET` environment variable.
@@ -103,8 +103,8 @@ These configuration options are only relevant if you're using Azure Key Vault as
 {% tab title="Hashicorp" %}
 These configuration options are only relevant if you're using Hashicorp Vault as the secrets store backend.
 
-* **ZENML\_SECRETS\_STORE\_TYPE:** Set this to `hashicorp` in order to set this type of  secret store.
-* **ZENML\_SECRETS\_STORE\_VAULT\_ADDR**: The url of the HashiCorp Vault server to connect to. NOTE: this is the same as setting the `VAULT_ADDR` environment variable.
+* **ZENML\_SECRETS\_STORE\_TYPE:** Set this to `hashicorp` in order to set this type of secret store.
+* **ZENML\_SECRETS\_STORE\_VAULT\_ADDR**: The URL of the HashiCorp Vault server to connect to. NOTE: this is the same as setting the `VAULT_ADDR` environment variable.
 * **ZENML\_SECRETS\_STORE\_VAULT\_TOKEN**: The token to use to authenticate with the HashiCorp Vault server. NOTE: this is the same as setting the `VAULT_TOKEN` environment variable.
 * **ZENML\_SECRETS\_STORE\_VAULT\_NAMESPACE**: The Vault Enterprise namespace. Not required for Vault OSS. NOTE: this is the same as setting the `VAULT_NAMESPACE` environment variable.
 * **ZENML\_SECRETS\_STORE\_MAX\_VERSIONS**: The maximum number of secret versions to keep for each Vault secret. If not set, the default value of 1 will be used (only the latest version will be kept).
@@ -115,7 +115,7 @@ These configuration options are only relevant if you're using a custom secrets s
 
 The following configuration option is required:
 
-* **ZENML\_SECRETS\_STORE\_TYPE:** Set this to `custom` in order to set this type of  secret store.
+* **ZENML\_SECRETS\_STORE\_TYPE:** Set this to `custom` in order to set this type of secret store.
 * **ZENML\_SECRETS\_STORE\_CLASS\_PATH**: The fully qualified path to the class that implements the custom secrets store API (e.g. `my_package.my_module.MySecretsStore`).
 
 If your custom secrets store implementation requires additional configuration options, you can pass them as environment variables using the following naming convention:
@@ -125,8 +125,6 @@ If your custom secrets store implementation requires additional configuration op
 {% endtabs %}
 
 {% hint style="info" %}
-
-
 **ZENML\_SECRETS\_STORE\_TYPE**: Set this variable to `none`to disable the secrets store functionality altogether.
 {% endhint %}
 
@@ -157,7 +155,7 @@ docker run -it -d -p 8080:8080 --name zenml zenmldocker/zenml-server
 
 > **Note** It is recommended to use a ZenML container image version that matches the version of your client, to avoid any potential API incompatibilities (e.g. `zenmldocker/zenml-server:0.21.1` instead of `zenmldocker/zenml-server`).
 
-The above command will start a containerized ZenML server running on your machine that uses a temporary SQLite database file stored in the container. Temporary means that the database and all its contents (stacks, pipelines, pipeline runs etc.) will be lost when the container is removed with `docker rm`.
+The above command will start a containerized ZenML server running on your machine that uses a temporary SQLite database file stored in the container. Temporary means that the database and all its contents (stacks, pipelines, pipeline runs, etc.) will be lost when the container is removed with `docker rm`.
 
 You can visit the ZenML dashboard at http://localhost:8080 or connect your client to the server with the `default` username and empty password:
 

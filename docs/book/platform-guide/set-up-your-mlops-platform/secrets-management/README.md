@@ -1,5 +1,5 @@
 ---
-description: How to register and use secrets
+description: Registering and utilizing secrets.
 ---
 
 # Use the Secret Store
@@ -10,7 +10,7 @@ The Stack Component formerly known as Secrets Managers is being deprecated in fa
 
 ## What is a ZenML secret
 
-ZenML secrets are groupings of **key-value pairs** which are securely stored in the ZenML secrets store. Additionally, a secret always has a **name** which allows you to fetch or reference them in your pipelines and stacks.
+ZenML secrets are groupings of **key-value pairs** which are securely stored in the ZenML secrets store. Additionally, a secret always has a **name** that allows you to fetch or reference them in your pipelines and stacks.
 
 ## Centralized secrets store
 

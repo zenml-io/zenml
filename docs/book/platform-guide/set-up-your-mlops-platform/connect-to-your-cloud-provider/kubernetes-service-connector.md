@@ -4,7 +4,7 @@ description: >-
   clusters
 ---
 
-# 🌀 Kubernetes Service Connector
+# Kubernetes Service Connector
 
 The ZenML Kubernetes service connector facilitates authenticating and connecting to a Kubernetes cluster. The connector can be used to access to any generic Kubernetes cluster by providing pre-authenticated Kubernetes python clients to Stack Components that are linked to it and also allows configuration of local Kubernetes clients (i.e. `kubectl`).
 

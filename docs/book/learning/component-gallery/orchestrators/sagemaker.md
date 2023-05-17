@@ -1,5 +1,5 @@
 ---
-description: How to orchestrate pipelines with Amazon Sagemaker
+description: Orchestrating your pipelines to run on Amazon Sagemaker.
 ---
 
 # AWS Sagemaker Orchestrator
@@ -7,7 +7,7 @@ description: How to orchestrate pipelines with Amazon Sagemaker
 The Sagemaker orchestrator is an [orchestrator](orchestrators.md) flavor provided with the ZenML `aws` integration that uses [Amazon Sagemaker Pipelines](https://sagemaker-examples.readthedocs.io/en/latest/sagemaker-pipelines/index.html) to run your pipelines.
 
 {% hint style="warning" %}
-This component is only meant to be used within the context of [remote ZenML deployment scenario](../../getting-started/deploying-zenml/deploying-zenml.md). Usage with a local ZenML deployment may lead to unexpected behavior!
+This component is only meant to be used within the context of a [remote ZenML deployment scenario](../../getting-started/deploying-zenml/deploying-zenml.md). Usage with a local ZenML deployment may lead to unexpected behavior!
 {% endhint %}
 
 ### When to use it
@@ -42,7 +42,7 @@ zenml integration install aws s3
 * A [remote artifact store](../artifact-stores/artifact-stores.md) as part of your stack (configured with an `authentication_secret` attribute).
 * A [remote container registry](../container-registries/container-registries.md) as part of your stack.
 * An IAM role or user with [an `AmazonSageMakerFullAccess` managed policy](https://docs.aws.amazon.com/sagemaker/latest/dg/security-iam-awsmanpol.html) applied to it as well as `sagemaker.amazonaws.com` added as a Principal Service. Full details on these permissions can be found [here](https://docs.aws.amazon.com/sagemaker/latest/dg/sagemaker-roles.html) or use the ZenML recipe (when available) which will set up the necessary permissions for you. The creation of this role is described in more detail [in the instructions](https://github.com/zenml-io/zenml/tree/main/examples/sagemaker\_orchestration) for using our `sagemaker_orchestration` example.
-* The local client (whoever is running the pipeline) will also have to have the necessary permissions or role to be able to launch Sagemaker jobs. (This would be covered by the `AmazonSageMakerFullAccess` policy suggested above.)
+* The local client (whoever is running the pipeline) will also have to have the necessary permissions or roles to be able to launch Sagemaker jobs. (This would be covered by the `AmazonSageMakerFullAccess` policy suggested above.)
 
 We can then register the orchestrator and use it in our active stack:
 
@@ -78,7 +78,7 @@ For additional configuration of the Sagemaker orchestrator, you can pass `Sagema
 * `max_runtime_in_seconds`: The maximum runtime of the Sagemaker training job. (Defaults to 1 day or 86400 seconds.)
 * `processor_tags`: Any tags you want to add to the particular step or pipeline as a whole.
 
-Check out the [this docs page](../../advanced-guide/pipelines/settings.md) for more information on how to specify settings.
+Check out [this docs page](../../advanced-guide/pipelines/settings.md) for more information on how to specify settings.
 
 A concrete example of using the Sagemaker orchestrator can be found [here](https://github.com/zenml-io/zenml/tree/main/examples/sagemaker\_orchestration).
 

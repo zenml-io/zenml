@@ -4,5 +4,5 @@ description: >-
   buckets, GKE Kubernetes clusters and GCR container registries.
 ---
 
-# 🔵 GCP Service Connector
+# GCP Service Connector
 

@@ -1,24 +1,24 @@
 ---
-description: How to deploy models to Kubernetes with KServe
+description: Deploying models to Kubernetes with KServe.
 ---
 
 # KServe
 
-The KServe Model Deployer is one of the available flavors of the[Model Deployer](model-deployers.md) stack component. Provided with the MLflow and Seldon Core integration, it can be used to deploy and manage models on an inference server running on top of a Kubernetes cluster.
+The KServe Model Deployer is one of the available flavors of the [Model Deployer](model-deployers.md) stack component. Provided with the MLflow and Seldon Core integration, it can be used to deploy and manage models on an inference server running on top of a Kubernetes cluster.
 
 ### When to use it?
 
-[KServe](https://kserve.github.io/website) is a Kubernetes-based model inference platform built for highly scalable deployment use cases. It provides a standardized inference protocol across ML frameworks while supporting a serverless architecture with autoscaling including Scale to Zero on GPUs. KServe uses a simple and pluggable production serving architecture for production ML serving that includes prediction, pre-/post-processing, monitoring and explainability.
+[KServe](https://kserve.github.io/website) is a Kubernetes-based model inference platform built for highly scalable deployment use cases. It provides a standardized inference protocol across ML frameworks while supporting a serverless architecture with autoscaling including Scale to Zero on GPUs. KServe uses a simple and pluggable production serving architecture for production ML serving that includes prediction, pre-/post-processing, monitoring, and explainability.
 
-KServe encapsulates the complexity of autoscaling, networking, health checking, and server configuration to bring cutting edge serving features like GPU Autoscaling, Scale to Zero, and Canary Rollouts to your ML deployments. It enables a simple, pluggable, and complete story for Production ML Serving including prediction, pre-processing, post-processing and explainability. KServe is being used across various organizations.
+KServe encapsulates the complexity of autoscaling, networking, health checking, and server configuration to bring cutting-edge serving features like GPU Autoscaling, Scale to Zero, and Canary Rollouts to your ML deployments. It enables a simple, pluggable, and complete story for Production ML Serving including prediction, pre-processing, post-processing, and explainability. KServe is being used across various organizations.
 
 You should use the KServe Model Deployer:
 
 * If you are looking to deploy your model with an advanced Model Inference Platform with Kubernetes, built for highly scalable use cases.
-* If you want to handle the lifecycle of the deployed model with no downtime, with possibility of scaling to zero on GPUs.
+* If you want to handle the lifecycle of the deployed model with no downtime, with the possibility of scaling to zero on GPUs.
 * Looking for out-of-the-box model serving runtimes that are easy to use and easy to deploy model from the majority of frameworks.
-* If you want more advanced deployment strategies like A/B testing, canary deployments, ensembles and transformers.
-* if you want to overcome the model deployment Scalability problems. Read more about KServe Multi Model Serving or [ModelMesh ](https://kserve.github.io/website/0.9/modelserving/mms/modelmesh/overview/).
+* If you want more advanced deployment strategies like A/B testing, canary deployments, ensembles, and transformers.
+* if you want to overcome the model deployment Scalability problems. Read more about KServe Multi-Model Serving or [ModelMesh ](https://kserve.github.io/website/0.9/modelserving/mms/modelmesh/overview/).
 
 If you are looking for a more easy way to deploy your models locally, you can use the [MLflow Model Deployer](mlflow.md) flavor.
 
@@ -52,7 +52,7 @@ The KServe Model Deployer requires access to the persistent storage where models
 
 If KServe is already running in the same cloud as the Artifact Store (e.g. S3 and an EKS cluster for AWS, or GCS and a GKE cluster for GCP), there are ways of configuring cloud workloads to have implicit access to other cloud resources like persistent storage without requiring explicit credentials. However, if KServe is running in a different cloud, or on-prem, or if implicit in-cloud workload authentication is not enabled, then you need to configure explicit credentials for the Artifact Store to allow other components like the KServe model deployer to authenticate to it. Every cloud Artifact Store flavor supports some way of configuring explicit credentials and this is documented for each individual flavor in the [Artifact Store documentation](../artifact-stores/artifact-stores.md).
 
-When explicit credentials are configured in the Artifact Store, the KServe Model Deployer doesn't need any additional configuration and will use those credentials automatically to authenticate to the same persistent storage service used by the Artifact Store. If the Artifact Store doesn't have explicit credentials configured, then KServe will default to using whatever implicit authentication method is available in the Kubernetes cluster where it is running. For example, in AWS this means using the IAM role attached to the EC2 or EKS worker nodes and in GCP this means using the service account attached to the GKE worker nodes.
+When explicit credentials are configured in the Artifact Store, the KServe Model Deployer doesn't need any additional configuration and will use those credentials automatically to authenticate to the same persistent storage service used by the Artifact Store. If the Artifact Store doesn't have explicit credentials configured, then KServe will default to using whatever implicit authentication method is available in the Kubernetes cluster where it is running. For example, in AWS this means using the IAM role attached to the EC2 or EKS worker nodes, and in GCP this means using the service account attached to the GKE worker nodes.
 
 {% hint style="warning" %}
 If the Artifact Store used in combination with the KServe Model Deployer in the same ZenML stack does not have explicit credentials configured, then the KServe Model Deployer might not be able to authenticate to the Artifact Store which will cause the deployed model servers to fail.
@@ -64,7 +64,7 @@ If you want to use a custom persistent storage with KServe, or if you prefer to 
 
 **Advanced: Configuring a Custom KServe Secret**
 
-The KServe model deployer stack component allows configuring an additional `secret` attribute that can be used to specify custom credentials that KServe should use to authenticate to the persistent storage service where models are located. This is useful if you want to connect KServe to a persistent storage service that is not supported as a ZenML Artifact Store, or if you don't want to configure or use the same credentials configured for your Artifact Store. The `secret` attribute must be set to the name of [a ZenML secret](../../../../old\_book/starter-guide/production-fundamentals/secrets-management.md) containing credentials that will mounted as environment variables in the KServe model servers.
+The KServe model deployer stack component allows configuring an additional `secret` attribute that can be used to specify custom credentials that KServe should use to authenticate to the persistent storage service where models are located. This is useful if you want to connect KServe to a persistent storage service that is not supported as a ZenML Artifact Store, or if you don't want to configure or use the same credentials configured for your Artifact Store. The `secret` attribute must be set to the name of [a ZenML secret](../../../../old\_book/starter-guide/production-fundamentals/secrets-management.md) containing credentials that will be mounted as environment variables in the KServe model servers.
 
 {% hint style="info" %}
 This method is not recommended, because it limits the KServe model deployer to a single persistent storage service, whereas using the Artifact Store credentials gives you more flexibility in combining the KServe model deployer with any Artifact Store in the same ZenML stack.
@@ -153,7 +153,7 @@ This step will:
 
 * Verify if the model is already deployed in the KServe cluster. If not, it will deploy the model.
 * Prepare the model artifacts to the right format for the TF, MLServer runtimes servers.
-* Package, verify and prepare the model artifact for the PyTorch runtime server since it requires additional files.
+* Package, verify, and prepare the model artifact for the PyTorch runtime server since it requires additional files.
 * Upload the model artifacts to the Artifact Store.
 
 An example of how to use the model deployment step is shown below.
@@ -197,7 +197,7 @@ A concrete example of using the KServe Model Deployer can be found [here](https:
 For more information and a full list of configurable attributes of the KServe Model Deployer, check out the [API Docs](https://apidocs.zenml.io/latest/integration\_code\_docs/integrations-kserve/#zenml.integrations.kserve.model\_deployers).
 
 {% hint style="info" %}
-The model deployment step are experimental good for standard use cases. However, if you need to customize the deployment step, you can always create your own model deployment step. Find more information about model deployment steps in the [Model Deployment Steps](https://apidocs.zenml.io/latest/integration\_code\_docs/integrations-kserve/#zenml.integrations.kserve.steps) section.
+The model deployment step is experimental and good for standard use cases. However, if you need to customize the deployment step, you can always create your own model deployment step. Find more information about model deployment steps in the [Model Deployment Steps](https://apidocs.zenml.io/latest/integration\_code\_docs/integrations-kserve/#zenml.integrations.kserve.steps) section.
 {% endhint %}
 
 ### Custom Model Deployment
@@ -237,7 +237,7 @@ def custom_predict(
     pass
 ```
 
-Then this custom predict function `path` can be passed to the custom deployment parameters.
+Then this `custom_predict` function `path` can be passed to the custom deployment parameters.
 
 ```python
 from zenml.integrations.kserve.steps import (
@@ -277,4 +277,4 @@ The built-in KServe custom deployment step is a good starting point for deployin
 
 Example of the [custom model class](https://apidocs.zenml.io/0.13.0/api\_docs/integrations/#zenml.integrations.kserve.custom\_deployer.zenml\_custom\_model.ZenMLCustomModel)
 
-The built-in KServe custom deployment step responsible for packaging, preparing and deploying to KServe can be found [here](https://apidocs.zenml.io/0.13.0/api\_docs/integrations/#zenml.integrations.kserve.steps.kserve\_deployer.kserve\_model\_deployer\_step)
+The built-in KServe custom deployment step responsible for packaging, preparing, and deploying to KServe can be found [here](https://apidocs.zenml.io/0.13.0/api\_docs/integrations/#zenml.integrations.kserve.steps.kserve\_deployer.kserve\_model\_deployer\_step)

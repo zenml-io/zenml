@@ -1,5 +1,5 @@
 ---
-description: How to develop a custom model registry
+description: Learning how to develop a custom model registry.
 ---
 
 # Develop a Custom Model Registry
@@ -160,11 +160,11 @@ This is a slimmed-down version of the base implementation which aims to highligh
 
 ### Build your own custom model registry
 
-If you want to create your own custom flavor for an model registry, you can follow the following steps:
+If you want to create your own custom flavor for a model registry, you can follow the following steps:
 
-1. Learn more about the core concepts for the model registry [here](model-registries.md#model-registry-concepts-and-terminology). Your custom model registry will be build on top of these concepts so it helps to be aware of them.
-2. Create a class that inherits from `BaseModelRegistry` and implement the abstract methods.
-3. Create a `ModelRegistryConfig` class that inherits from `BaseModelRegistryConfig` and add any additional configuration parameters that you need.
+1. Learn more about the core concepts for the model registry [here](model-registries.md#model-registry-concepts-and-terminology). Your custom model registry will be built on top of these concepts so it helps to be aware of them.
+2. Create a class that inherits from `BaseModelRegistry` and implements the abstract methods.
+3. Create a `ModelRegistryConfig` class that inherits from `BaseModelRegistryConfig` and adds any additional configuration parameters that you need.
 4. Bring the implementation and the configuration together by inheriting from the `BaseModelRegistryFlavor` class. Make sure that you give a `name` to the flavor through its abstract property.
 
 Once you are done with the implementation, you can register it through the CLI with the following command:

@@ -1,19 +1,19 @@
 ---
-description: How to store artifacts using Azure Blob Storage
+description: Storing artifacts using Azure Blob Storage
 ---
 
 # Azure Blob Storage
 
-The Azure Artifact Store is an [Artifact Store](artifact-stores.md) flavor provided with the Azure ZenML integration that uses[the Azure Blob Storage managed object storage service](https://azure.microsoft.com/en-us/services/storage/blobs/) to store ZenML artifacts in an Azure Blob Storage container.
+The Azure Artifact Store is an [Artifact Store](artifact-stores.md) flavor provided with the Azure ZenML integration that uses [the Azure Blob Storage managed object storage service](https://azure.microsoft.com/en-us/services/storage/blobs/) to store ZenML artifacts in an Azure Blob Storage container.
 
 ### When would you want to use it?
 
 Running ZenML pipelines with [the local Artifact Store](local.md) is usually sufficient if you just want to evaluate ZenML or get started quickly without incurring the trouble and the cost of employing cloud storage services in your stack. However, the local Artifact Store becomes insufficient or unsuitable if you have more elaborate needs for your project:
 
 * if you want to share your pipeline run results with other team members or stakeholders inside or outside your organization
-* if you have other components in your stack that are running remotely (e.g. a Kubeflow or Kubernetes Orchestrator running in public cloud).
+* if you have other components in your stack that are running remotely (e.g. a Kubeflow or Kubernetes Orchestrator running in a public cloud).
 * if you outgrow what your local machine can offer in terms of storage space and need to use some form of private or public storage service that is shared with others
-* if you are running pipelines at scale and need an Artifact Store that can handle the demands of production grade MLOps
+* if you are running pipelines at scale and need an Artifact Store that can handle the demands of production-grade MLOps
 
 In all these cases, you need an Artifact Store that is backed by a form of public cloud or self-hosted shared object storage service.
 
@@ -27,7 +27,7 @@ The Azure Artifact Store flavor is provided by the Azure ZenML integration, you 
 zenml integration install azure -y
 ```
 
-The only configuration parameter mandatory for registering an Azure Artifact Store is the root path URI, which needs to point to an Azure Blog Storage container and takes the form `az://container-name` or `abfs://container-name`. Please read [the Azure Blob Storage documentation](https://docs.microsoft.com/en-us/azure/storage/blobs/storage-quickstart-blobs-portal) on how to configure an Azure Blob Storage container.
+The only configuration parameter mandatory for registering an Azure Artifact Store is the root path URI, which needs to point to an Azure Blog Storage container and take the form `az://container-name` or `abfs://container-name`. Please read [the Azure Blob Storage documentation](https://docs.microsoft.com/en-us/azure/storage/blobs/storage-quickstart-blobs-portal) on how to configure an Azure Blob Storage container.
 
 With the URI to your Azure Blob Storage container known, registering an Azure Artifact Store can be done as follows:
 
@@ -39,11 +39,11 @@ zenml artifact-store register az_store -f azure --path=az://container-name
 zenml stack register custom_stack -a az_store ... --set
 ```
 
-Depending on your use-case, however, you may also need to provide additional configuration parameters pertaining to [authentication](azure.md#authentication-methods) to match your deployment scenario.
+Depending on your use case, however, you may also need to provide additional configuration parameters pertaining to [authentication](azure.md#authentication-methods) to match your deployment scenario.
 
 #### Authentication Methods
 
-Integrating and using an Azure Artifact Store in your pipelines is not possible without employing some form of authentication. ZenML currently provides two options for managing Azure authentication: one for which you don't need to manage credentials explicitly, the other one that requires you to generate Azure credentials and store them in a [ZenML Secret](../../../../old\_book/starter-guide/production-fundamentals/secrets-management.md). Each method has advantages and disadvantages, and you should choose the one that best suits your use-case. If you're looking for a quick way to get started locally, we recommend using the _Implicit Authentication_ method. However, if you would like to experiment with ZenML stacks that combine the Azure Artifact Store with other remote stack components, we recommend using the _Azure Credentials_ method, especially if you don't have a lot of experience with Azure Managed Identities.
+Integrating and using an Azure Artifact Store in your pipelines is not possible without employing some form of authentication. ZenML currently provides two options for managing Azure authentication: one for which you don't need to manage credentials explicitly, and the other one that requires you to generate Azure credentials and store them in a [ZenML Secret](../../../../old\_book/starter-guide/production-fundamentals/secrets-management.md). Each method has advantages and disadvantages, and you should choose the one that best suits your use case. If you're looking for a quick way to get started locally, we recommend using the _Implicit Authentication_ method. However, if you would like to experiment with ZenML stacks that combine the Azure Artifact Store with other remote stack components, we recommend using the _Azure Credentials_ method, especially if you don't have a lot of experience with Azure Managed Identities.
 
 You will need the following information to configure Azure credentials for ZenML, depending on which type of Azure credentials you want to use:
 
@@ -57,7 +57,7 @@ For information on how to configure an Azure service principal, please consult t
 
 {% tabs %}
 {% tab title="Implicit Authentication" %}
-This method uses the implicit Azure authentication available _in the environment where the ZenML code is running_. On your local machine, this is the quickest way to configure an Azure Artifact Store. You don't need to supply credentials explicitly when you register the Azure Artifact Store, instead you have to set one of the following sets of environment variables:
+This method uses the implicit Azure authentication available _in the environment where the ZenML code is running_. On your local machine, this is the quickest way to configure an Azure Artifact Store. You don't need to supply credentials explicitly when you register the Azure Artifact Store, instead, you have to set one of the following sets of environment variables:
 
 * to use [an Azure storage account key](https://learn.microsoft.com/en-us/azure/storage/common/storage-account-keys-manage), set `AZURE_STORAGE_ACCOUNT_NAME` to your account name and one of `AZURE_STORAGE_ACCOUNT_KEY` or `AZURE_STORAGE_SAS_TOKEN` to the Azure key value.
 * to use [an Azure storage account key connection string](https://learn.microsoft.com/en-us/azure/storage/common/storage-account-keys-manage), set `AZURE_STORAGE_CONNECTION_STRING` to your Azure Storage Key connection string
@@ -67,7 +67,7 @@ This method uses the implicit Azure authentication available _in the environment
 The implicit authentication method needs to be coordinated with other stack components that are highly dependent on the Artifact Store and need to interact with it directly to function. If these components are not running on your machine, they do not have access to the local environment variables and will encounter authentication failures while trying to access the Azure Artifact Store:
 
 * [Orchestrators](../orchestrators/orchestrators.md) need to access the Artifact Store to manage pipeline artifacts
-* [Step Operators](../step-operators/step-operators.md) need to access the Artifact Store to manage step level artifacts
+* [Step Operators](../step-operators/step-operators.md) need to access the Artifact Store to manage step-level artifacts
 * [Model Deployers](../model-deployers/model-deployers.md) need to access the Artifact Store to load served models
 
 These remote stack components can still use the implicit authentication method: if they are also running within the Azure Kubernetes Service, you can configure your cluster to use [Azure Managed Identities](https://docs.microsoft.com/en-us/azure/aks/use-managed-identity). This mechanism allows Azure workloads like AKS pods to access other Azure services without requiring explicit credentials.

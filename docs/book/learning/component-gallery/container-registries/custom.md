@@ -1,5 +1,5 @@
 ---
-description: How to develop a custom container registry
+description: Learning how to develop a custom container registry.
 ---
 
 # Develop a Custom Container Registry
@@ -76,9 +76,9 @@ This is a slimmed-down version of the base implementation which aims to highligh
 
 If you want to create your own custom flavor for a container registry, you can follow the following steps:
 
-1. Create a class which inherits from the `BaseContainerRegistry` class and if you need to execute any checks/validation before the image gets pushed, you can define these operations in the `prepare_image_push` method. As an example, you can check the `AWSContainerRegistry`.
+1. Create a class that inherits from the `BaseContainerRegistry` class and if you need to execute any checks/validation before the image gets pushed, you can define these operations in the `prepare_image_push` method. As an example, you can check the `AWSContainerRegistry`.
 2. If you need further configuration, you can create a class which inherits from the `BaseContainerRegistryConfig` class.
-3. Bring both of the implementation and the configuration together by inheriting from the `BaseContainerRegistryFlavor` class.
+3. Bring both the implementation and the configuration together by inheriting from the `BaseContainerRegistryFlavor` class.
 
 Once you are done with the implementation, you can register it through the CLI. Please ensure you **point to the flavor class via dot notation**:
 
@@ -98,7 +98,7 @@ ZenML resolves the flavor class by taking the path where you initialized zenml (
 If ZenML does not find an initialized ZenML repository in any parent directory, it will default to the current working directory, but usually its better to not have to rely on this mechanism, and initialize zenml at the root.
 {% endhint %}
 
-Afterwards, you should see the new flavor in the list of available flavors:
+Afterward, you should see the new flavor in the list of available flavors:
 
 ```shell
 zenml container-registry flavor list

@@ -1,5 +1,5 @@
 ---
-description: How to log and visualize experiments with neptune.ai
+description: Logging and visualizing experiments with neptune.ai
 ---
 
 # Neptune
@@ -8,13 +8,13 @@ The Neptune Experiment Tracker is an [Experiment Tracker](experiment-trackers.md
 
 ### When would you want to use it?
 
-[Neptune](https://neptune.ai/product/experiment-tracking) is a popular tool that you would normally use in the iterative ML experimentation phase to track and visualize experiment results or as a model registry for your production-ready models. Neptune can also track and visualize the results produced by your automated pipeline runs, as you make the transition towards a more production oriented workflow.
+[Neptune](https://neptune.ai/product/experiment-tracking) is a popular tool that you would normally use in the iterative ML experimentation phase to track and visualize experiment results or as a model registry for your production-ready models. Neptune can also track and visualize the results produced by your automated pipeline runs, as you make the transition towards a more production-oriented workflow.
 
 You should use the Neptune Experiment Tracker:
 
 * if you have already been using neptune.ai to track experiment results for your project and would like to continue doing so as you are incorporating MLOps workflows and best practices in your project through ZenML.
 * if you are looking for a more visually interactive way of navigating the results produced from your ZenML pipeline runs (e.g. models, metrics, datasets)
-* if you would like to connect ZenML to neptune.ai to share the artifacts and metrics logged by your pipelines with your team, organization or external stakeholders
+* if you would like to connect ZenML to neptune.ai to share the artifacts and metrics logged by your pipelines with your team, organization, or external stakeholders
 
 You should consider one of the other [Experiment Tracker flavors](experiment-trackers.md#experiment-tracker-flavors) if you have never worked with neptune.ai before and would rather use another experiment tracking tool that you are more familiar with.
 
@@ -64,7 +64,7 @@ zenml secret create neptune_secret \
     --api_token=<API_TOKEN>
 ```
 
-Once the secret is created, you can use it to configure the neptune Experiment Tracker:
+Once the secret is created, you can use it to configure the `neptune` Experiment Tracker:
 
 ```shell
 # Reference the project and api-token in our experiment tracker component

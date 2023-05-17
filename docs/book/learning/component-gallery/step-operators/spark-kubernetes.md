@@ -1,5 +1,5 @@
 ---
-description: How to execute individual steps on Spark
+description: Executing individual steps on Spark
 ---
 
 # Spark
@@ -91,11 +91,11 @@ class SparkStepOperator(BaseStepOperator):
         """Launches the step on Spark."""
 ```
 
-Under the base configuration, you will see is the main configuration parameters:
+Under the base configuration, you will see the main configuration parameters:
 
 * `master` is the master URL for the cluster where Spark will run. You might see different schemes for this URL with varying cluster managers such as Mesos, YARN, or Kubernetes.
 * `deploy_mode` can either be 'cluster' (default) or 'client' and it decides where the driver node of the application will run.
-* `submit_args` is the JSON string of a dictionary, which will be used to define additional params if required (Spark has a wide variety of parameters, thus including them all in a single class was deemed unnecessary.).
+* `submit_args` is the JSON string of a dictionary, which will be used to define additional parameters if required (Spark has a wide variety of parameters, thus including them all in a single class was deemed unnecessary.).
 
 In addition to this configuration, the `launch` method of the step operator gets additional configuration parameters from the `DockerSettings` and `ResourceSettings`. As a result, the overall configuration happens in 4 base methods:
 
@@ -167,7 +167,7 @@ Additionally, the `_backend_configuration` method is adjusted to handle the Kube
 You should use the Spark step operator:
 
 * when you are dealing with large amounts of data.
-* when you are designing a step which can benefit from distributed computing paradigms in terms of time and resources.
+* when you are designing a step that can benefit from distributed computing paradigms in terms of time and resources.
 
 ### How to deploy it
 

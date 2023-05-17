@@ -1,10 +1,10 @@
 ---
-description: How to store container images in Azure
+description: Storing container images in Azure.
 ---
 
 # Azure Container Registry
 
-The Azure container registry is a [container registry](container-registries.md) flavor which comes built-in with ZenML and uses the [Azure Container Registry](https://azure.microsoft.com/en-us/services/container-registry/) to store container images.
+The Azure container registry is a [container registry](container-registries.md) flavor that comes built-in with ZenML and uses the [Azure Container Registry](https://azure.microsoft.com/en-us/services/container-registry/) to store container images.
 
 ### When to use it
 
@@ -15,7 +15,7 @@ You should use the Azure container registry if:
 
 ### How to deploy it
 
-Go [here](https://portal.azure.com/#create/Microsoft.ContainerRegistry) and choose a subscription, resource group, location and registry name. Then click on `Review + Create` and to create your container registry.
+Go [here](https://portal.azure.com/#create/Microsoft.ContainerRegistry) and choose a subscription, resource group, location, and registry name. Then click on `Review + Create` and to create your container registry.
 
 ### How to find the registry URI
 
@@ -28,7 +28,7 @@ zenmlregistry.azurecr.io
 myregistry.azurecr.io
 ```
 
-To figure our the URI for your registry:
+To figure out the URI for your registry:
 
 * Go to the [Azure portal](https://portal.azure.com/#home).
 * In the search bar, enter `container registries` and select the container registry you want to use. If you don't have any container registries yet, check out the [deployment section](azure.md#how-to-deploy-it) on how to create one.

@@ -1,10 +1,10 @@
 ---
-description: How to store container images in DockerHub
+description: Storing container images in DockerHub.
 ---
 
 # DockerHub
 
-The DockerHub container registry is a [container registry](container-registries.md) flavor which comes built-in with ZenML and uses [DockerHub](https://hub.docker.com/) to store container images.
+The DockerHub container registry is a [container registry](container-registries.md) flavor that comes built-in with ZenML and uses [DockerHub](https://hub.docker.com/) to store container images.
 
 ### When to use it
 
@@ -35,7 +35,7 @@ docker.io/zenml
 docker.io/my-username
 ```
 
-To figure our the URI for your registry:
+To figure out the URI for your registry:
 
 * Find out the account name of your [DockerHub](https://hub.docker.com/) account.
 * Use the account name to fill the template `docker.io/<ACCOUNT_NAME>` and get your URI.
@@ -64,4 +64,4 @@ Additionally, we'll need to log in to the container registry so Docker can pull 
 docker login
 ```
 
-For more information and a full list of configurable attributes of the dockerhub container registry, check out the [API Docs](https://apidocs.zenml.io/latest/core\_code\_docs/core-container\_registries/#zenml.container\_registries.dockerhub\_container\_registry.DockerHubContainerRegistry).
+For more information and a full list of configurable attributes of the `dockerhub` container registry, check out the [API Docs](https://apidocs.zenml.io/latest/core\_code\_docs/core-container\_registries/#zenml.container\_registries.dockerhub\_container\_registry.DockerHubContainerRegistry).

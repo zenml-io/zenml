@@ -1,7 +1,5 @@
 ---
-description: >-
-  For any secret backends that ZenML does not natively support, just build you
-  own.
+description: Learning how to develop a custom secret store.
 ---
 
 # Create a custom secret store
@@ -72,6 +70,6 @@ This is a slimmed-down version of the real interface which aims to highlight the
 
 If you want to create your own custom secrets store implementation, you can follow the following steps:
 
-1. Create a class which inherits from the `zenml.zen_stores.secrets_stores.base_secrets_store.BaseSecretsManager` base class and implement the `abstractmethod`s shown in the interface above. Use `SecretsStoreType.CUSTOM` as the `TYPE` value for your secrets store class.
-2. If you need to provide any configuration, create a class which inherits from the `SecretsStoreConfiguration` class and add your configuration parameters there. Use that as the `CONFIG_TYPE` value for your secrets store class.
+1. Create a class that inherits from the `zenml.zen_stores.secrets_stores.base_secrets_store.BaseSecretsManager` base class and implements the `abstractmethod`s shown in the interface above. Use `SecretsStoreType.CUSTOM` as the `TYPE` value for your secrets store class.
+2. If you need to provide any configuration, create a class that inherits from the `SecretsStoreConfiguration` class and add your configuration parameters there. Use that as the `CONFIG_TYPE` value for your secrets store class.
 3. To configure the ZenML server to use your custom secrets store, make sure your code is available in the container image that is used to run the ZenML server. Then, use environment variables or helm chart values to configure the ZenML server to use your custom secrets store, as covered in the [deployment guide](../../../getting-started/deploying-zenml/deploying-zenml.md).

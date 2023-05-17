@@ -1,20 +1,20 @@
 ---
-description: How to deploy your models and serve real-time predictions
+description: Deploying your models and serve real-time predictions.
 ---
 
 # Model Deployers
 
-Model Deployment is the process of making a machine learning model available to make predictions and decisions on real world data. Getting predictions from trained models can be done in different ways depending on the use-case, a batch prediction is used to generate prediction for a large amount of data at once, while a real-time prediction is used to generate predictions for a single data point at a time.
+Model Deployment is the process of making a machine learning model available to make predictions and decisions on real-world data. Getting predictions from trained models can be done in different ways depending on the use case, a batch prediction is used to generate predictions for a large amount of data at once, while a real-time prediction is used to generate predictions for a single data point at a time.
 
 Model deployers are stack components responsible for serving models on a real-time or batch basis.
 
 Online serving is the process of hosting and loading machine-learning models as part of a managed web service and providing access to the models through an API endpoint like HTTP or GRPC. Once deployed, model inference can be triggered at any time, and you can send inference requests to the model through the web service's API and receive fast, low-latency responses.
 
-Batch inference or offline inference is the process of making a machine learning model make predictions on a batch observations. This is useful for generating predictions for a large amount of data at once. The predictions are usually stored as files or in a database for end users or business applications.
+Batch inference or offline inference is the process of making a machine learning model make predictions on a batch of observations. This is useful for generating predictions for a large amount of data at once. The predictions are usually stored as files or in a database for end users or business applications.
 
 ### When to use it?
 
-The model deployers are optional components in the ZenML stack. They are used to deploy machine learning models to a target environment either a development (local) or a production (Kubernetes), the model deployers are mainly used to deploy models for real time inference use cases. With the model deployers and other stack components, you can build pipelines that are continuously trained and deployed to a production.
+The model deployers are optional components in the ZenML stack. They are used to deploy machine learning models to a target environment either a development (local) or a production (Kubernetes), the model deployers are mainly used to deploy models for real-time inference use cases. With the model deployers and other stack components, you can build pipelines that are continuously trained and deployed to production.
 
 ### How they experiment trackers slot into the stack
 
@@ -35,7 +35,7 @@ ZenML comes with a `local` MLflow model deployer which is a simple model deploye
 | [Custom Implementation](custom.md) | _custom_  |               | Extend the Artifact Store abstraction and provide your own implementation    |
 
 {% hint style="info" %}
-Every model deployer may have different attributes that must be configured in order to interact with the model serving tool, framework or platform (e.g. hostnames, URLs, references to credentials, other client related configuration parameters). The following example shows the configuration of the MLflow and Seldon Core model deployers:
+Every model deployer may have different attributes that must be configured in order to interact with the model serving tool, framework, or platform (e.g. hostnames, URLs, references to credentials, and other client-related configuration parameters). The following example shows the configuration of the MLflow and Seldon Core model deployers:
 
 ```shell
 # Configure MLflow model deployer
@@ -49,9 +49,9 @@ zenml model-deployer register seldon --flavor=seldon \
 ```
 {% endhint %}
 
-#### The role Model Deployer plays in a ZenML Stack
+#### The role that a model deployer plays in a ZenML Stack
 
-1.  Holds all the stack related configuration attributes required to interact with the remote model serving tool, service or platform (e.g. hostnames, URLs, references to credentials, other client related configuration parameters). The following are examples of configuring the MLflow and Seldon Core Model Deployers and registering them as a Stack component:
+1.  Holds all the stack-related configuration attributes required to interact with the remote model serving tool, service, or platform (e.g. hostnames, URLs, references to credentials, and other client-related configuration parameters). The following are examples of configuring the MLflow and Seldon Core Model Deployers and registering them as a Stack component:
 
     ```bash
     zenml integration install mlflow
@@ -90,7 +90,7 @@ zenml model-deployer register seldon --flavor=seldon \
     ) -> SeldonDeploymentService:
       model_deployer = SeldonModelDeployer.get_active_model_deployer()
 
-      # get pipeline name, step name and run id
+      # get pipeline name, step name, and run id
       step_env = Environment()[STEP_ENVIRONMENT_NAME]
 
       service_config=SeldonDeploymentConfig(
@@ -152,10 +152,10 @@ zenml model-deployer register seldon --flavor=seldon \
 
 **Post-processing** is the process of transforming the data after it is returned from the machine learning model, and before it is returned to the user.
 
-Both pre- and post-processing are very essential for the model deployment process. Most models require specific input formats which requires transforming the data before it is passed to the model and after it is returned from the model. ZenML allows you to define your own pre- and post-processing in two ways:
+Both pre-and post-processing is very essential for the model deployment process. Most models require specific input formats which require transforming the data before it is passed to the model and after it is returned from the model. ZenML allows you to define your own pre- and post-processing in two ways:
 
-1. At the pipeline level by defining custom steps before and after the predict step in the ZenML pipeline.
-2. At the model deployment tool level by defining a custom predict, pre- and post-processing functions that would be wrapped in a Docker container and executed on the model deployment server.
+1. At the pipeline level, by defining custom steps before and after the predict step in the ZenML pipeline.
+2. At the model deployment tool level, by defining a custom predict, pre- and post-processing functions that would be wrapped in a Docker container and executed on the model deployment server.
 
 {% hint style="info" %}
 The custom model deployment support is available only for the following integrations:
@@ -164,9 +164,9 @@ The custom model deployment support is available only for the following integrat
 * [Seldon Core Custom Python Model](seldon.md#custom-model-deployment)
 {% endhint %}
 
-\### How to Interact with model deployer after deployment?
+#### &#x20;How to Interact with a model deployer after deployment?
 
-When a Model Deployer is part of the active ZenML Stack, it is also possible to interact with it from the CLI to list, start, stop or delete the model servers that is manages:
+When a Model Deployer is part of the active ZenML Stack, it is also possible to interact with it from the CLI to list, start, stop, or delete the model servers that is managed:
 
 ```
 $ zenml model-deployer models list

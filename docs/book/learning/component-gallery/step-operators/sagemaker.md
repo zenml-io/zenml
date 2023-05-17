@@ -1,5 +1,5 @@
 ---
-description: How to execute individual steps in SageMaker
+description: Executing individual steps in SageMaker.
 ---
 
 # Amazon SageMaker
@@ -33,7 +33,7 @@ To use the SageMaker step operator, we need:
 * If using a [local orchestrator](../orchestrators/local.md): The `aws` cli set up and authenticated. Make sure you have the permissions to create and manage SageMaker runs.
 * If using a remote orchestrator: The environment in which the orchestrator runs its containers needs to be able to assume the IAM role specified when registering the SageMaker step operator.
 * An instance type that we want to execute our steps on. See [here](https://docs.aws.amazon.com/sagemaker/latest/dg/notebooks-available-instance-types.html) for a list of available instance types.
-* (Optional) An experiment which is used to group SageMaker runs. Check [this guide](https://docs.aws.amazon.com/sagemaker/latest/dg/experiments-create.html) to see how to create an experiment.
+* (Optional) An experiment that is used to group SageMaker runs. Check [this guide](https://docs.aws.amazon.com/sagemaker/latest/dg/experiments-create.html) to see how to create an experiment.
 
 We can then register the step operator and use it in our active stack:
 

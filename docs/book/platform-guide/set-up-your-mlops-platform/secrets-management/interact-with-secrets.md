@@ -1,10 +1,14 @@
+---
+description: Managing your secrets with ZenML.
+---
+
 # Interact with Secrets
 
 ## How to create a secret&#x20;
 
 ### Through the CLI
 
-To create a secret with name `<SECRET_NAME>` and a key-value pair, you can run the following CLI command:
+To create a secret with a name `<SECRET_NAME>` and a key-value pair, you can run the following CLI command:
 
 ```shell
 zenml secret create <SECRET_NAME> \
@@ -53,7 +57,7 @@ client.create_secret(
 )
 ```
 
-Other Client methods used for secrets management include `get_secret` to fetch a secret by name or id, `update_secret` to update an existing secret, `list_secrets` to query the secrets store using a variety of filtering and sorting criteria and `delete_secret` to delete a secret. The full Client API reference is available [here](https://apidocs.zenml.io/latest/core\_code\_docs/core-client/).
+Other Client methods used for secrets management include `get_secret` to fetch a secret by name or id, `update_secret` to update an existing secret, `list_secrets` to query the secrets store using a variety of filtering and sorting criteria, and `delete_secret` to delete a secret. The full Client API reference is available [here](https://apidocs.zenml.io/latest/core\_code\_docs/core-client/).
 
 ## Set scope for secrets
 
@@ -103,7 +107,7 @@ This validation by default needs to fetch and read every secret to make sure tha
 You can use the environment variable `ZENML_SECRET_VALIDATION_LEVEL` to disable or control the degree to which ZenML validates your secrets:
 
 * Setting it to `NONE` disables any validation.
-* Setting it to `SECRET_EXISTS` only validates the existence of secrets. This might be useful if the machine you're running on only has permissions to list secrets but not actually read their values.
+* Setting it to `SECRET_EXISTS` only validates the existence of secrets. This might be useful if the machine you're running on only has permission to list secrets but not actually read their values.
 * Setting it to `SECRET_AND_KEY_EXISTS` (the default) validates both the secret existence as well as the existence of the exact key-value pair.
 
 {% hint style="warning" %}

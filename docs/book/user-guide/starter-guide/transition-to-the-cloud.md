@@ -1,5 +1,5 @@
 ---
-description: Learning about the ZenML server
+description: Learning about the ZenML server.
 ---
 
 # Connect to a deployed ZenML

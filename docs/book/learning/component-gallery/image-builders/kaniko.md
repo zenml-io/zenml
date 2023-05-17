@@ -1,10 +1,10 @@
 ---
-description: How to build container images with Kaniko
+description: Building container images with Kaniko.
 ---
 
 # Kaniko Image Builder
 
-The Kaniko image builder is an [image builder](image-builders.md) flavor provided with the ZenML `kaniko` integration that uses [Kaniko](https://github.com/GoogleContainerTools/kaniko) to build container images.
+The Kaniko image builder is an [image builder](image-builders.md) flavor provided by the ZenML `kaniko` integration that uses [Kaniko](https://github.com/GoogleContainerTools/kaniko) to build container images.
 
 ### When to use it
 
@@ -45,7 +45,7 @@ For more information and a full list of configurable attributes of the Kaniko im
 
 #### Authentication for the container registry and artifact store
 
-The Kaniko image builder will create a Kubernetes pod which is running the build. This build pod needs to be able to pull from/push to certain container registries, and depending on the stack component configuration also needs to be able to read from the artifact store:
+The Kaniko image builder will create a Kubernetes pod that is running the build. This build pod needs to be able to pull from/push to certain container registries, and depending on the stack component configuration also needs to be able to read from the artifact store:
 
 * The pod needs to be authenticated to push to the container registry in your active stack.
 * In case the [parent image](../../../../old\_book/starter-guide/production-fundamentals/containerization.md#using-a-pre-built-parent-image) you use in your `DockerSettings` is stored in a private registry, the pod needs to be authenticated to pull from this registry.
@@ -75,7 +75,7 @@ Check out [the Kaniko docs](https://github.com/GoogleContainerTools/kaniko#pushi
 
 {% tab title="GCP" %}
 * [Enable workload identity](https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity#enable\_on\_cluster) for your cluster
-* Follow the steps described [here](https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity#authenticating\_to) to create a Google service account, Kubernetes service account as well as a IAM policy binding between them.
+* Follow the steps described [here](https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity#authenticating\_to) to create a Google service account, a Kubernetes service account as well as an IAM policy binding between them.
 * Grant the Google service account permissions to push to your GCR registry and read from your GCP bucket.
 * Configure the image builder to run in the correct namespace and use the correct service account:
 
@@ -97,14 +97,14 @@ Check out [the Kaniko docs](https://github.com/GoogleContainerTools/kaniko#pushi
 {% endtab %}
 
 {% tab title="Azure" %}
-* Create a Kubernetes configmap for a Docker config that uses the Azure credentials helper:
+* Create a Kubernetes `configmap` for a Docker config that uses the Azure credentials helper:
 
 ```shell
 kubectl create configmap docker-config --from-literal='config.json={ "credHelpers": { "mycr.azurecr.io": "acr-env" } }'
 ```
 
 * Follow [these steps](https://learn.microsoft.com/en-us/azure/aks/use-managed-identity) to configure your cluster to use a managed identity
-* Configure the image builder to mount the configmap in the Kaniko build pod:
+* Configure the image builder to mount the `configmap` in the Kaniko build pod:
 
 ```shell
 # register a new image builder with the mounted configmap
@@ -126,7 +126,7 @@ Check out [the Kaniko docs](https://github.com/GoogleContainerTools/kaniko#pushi
 
 #### Passing additional parameters to the Kaniko build
 
-If you want to pass [additional flags](https://github.com/GoogleContainerTools/kaniko#additional-flags) to the Kaniko build, pass them as a json string when registering your image builder in the stack:
+If you want to pass [additional flags](https://github.com/GoogleContainerTools/kaniko#additional-flags) to the Kaniko build, pass them as a JSON string when registering your image builder in the stack:
 
 ```shell
 zenml image-builder register <NAME> \

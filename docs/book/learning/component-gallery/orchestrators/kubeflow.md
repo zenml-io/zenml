@@ -1,13 +1,13 @@
 ---
-description: How to orchestrate pipelines with Kubeflow
+description: Orchestrating your pipelines to run on Kubeflow.
 ---
 
 # Kubeflow Orchestrator
 
-The Kubeflow orchestrator is an [orchestrator](orchestrators.md) flavor provided with the ZenML `kubeflow` integration that uses [Kubeflow Pipelines](https://www.kubeflow.org/docs/components/pipelines/introduction/) to run your pipelines.
+The Kubeflow orchestrator is an [orchestrator](orchestrators.md) flavor provided by the ZenML `kubeflow` integration that uses [Kubeflow Pipelines](https://www.kubeflow.org/docs/components/pipelines/introduction/) to run your pipelines.
 
 {% hint style="warning" %}
-This component is only meant to be used within the context of [remote ZenML deployment scenario](../../getting-started/deploying-zenml/deploying-zenml.md). Usage with a local ZenML deployment may lead to unexpected behavior!
+This component is only meant to be used within the context of a [remote ZenML deployment scenario](../../getting-started/deploying-zenml/deploying-zenml.md). Usage with a local ZenML deployment may lead to unexpected behavior!
 {% endhint %}
 
 ### When to use it
@@ -51,7 +51,7 @@ If you want to run your pipelines on a remote cluster instead, you'll need to se
 {% tab title="Azure" %}
 * Have an existing [AKS cluster](https://azure.microsoft.com/en-in/services/kubernetes-service/#documentation) set up.
 * Make sure you have the [`az` CLI](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli) set up first.
-*   Download and [install](https://kubernetes.io/docs/tasks/tools/) `kubectl` and it to talk to your AKS cluster using the following command:
+*   Download and [install](https://kubernetes.io/docs/tasks/tools/) `kubectl` and ensure that it talks to your AKS cluster using the following command:
 
     ```powershell
     az aks get-credentials --resource-group RESOURCE_GROUP --name CLUSTER_NAME
@@ -105,7 +105,7 @@ When using the Kubeflow orchestrator locally, you'll additionally need:
 * [K3D](https://k3d.io/v5.2.1/#installation) installed to spin up a local Kubernetes cluster.
 * [Terraform](https://www.terraform.io/downloads.html) installed to set up the Kubernetes cluster with various deployments.
 
-To run the pipeline on a local Kubeflow Pipelines deployment, you can use the ZenML Stack recipes to spin up a local Kubernetes cluster and install Kubeflow Pipelines on it. The stack recipe is called `k3d-modular` and is available in the ZenML [stack recipe repository](https://github.com/zenml-io/mlops-stacks/tree/main/k3d-modular). The recipe is modular, meaning that you can configured it to use different orchestrators, Model Deployers, and other tools.
+To run the pipeline on a local Kubeflow Pipelines deployment, you can use the ZenML Stack recipes to spin up a local Kubernetes cluster and install Kubeflow Pipelines on it. The stack recipe is called `k3d-modular` and is available in the ZenML [stack recipe repository](https://github.com/zenml-io/mlops-stacks/tree/main/k3d-modular). The recipe is modular, meaning that you can configure it to use different orchestrators, Model Deployers, and other tools.
 
 To deploy the stack, run the following commands:
 
@@ -181,7 +181,7 @@ For additional configuration of the Kubeflow orchestrator, you can pass `Kubeflo
 
 * `client_args`: Arguments to pass when initializing the KFP client.
 * `user_namespace`: The user namespace to use when creating experiments and runs.
-* `pod_settings`: Node selectors, affinity and tolerations to apply to the Kubernetes Pods running your pipeline. These can be either specified using the Kubernetes model objects or as dictionaries.
+* `pod_settings`: Node selectors, affinity, and tolerations to apply to the Kubernetes Pods running your pipeline. These can be either specified using the Kubernetes model objects or as dictionaries.
 
 ```python
 from zenml.integrations.kubeflow.flavors.kubeflow_orchestrator_flavor import KubeflowOrchestratorSettings
@@ -236,7 +236,7 @@ Note that if you wish to use this orchestrator to run steps on a GPU, you will n
 
 ### Important Note for Multi-Tenancy Deployments
 
-Kubeflow has a notion of [multi-tenancy](https://www.kubeflow.org/docs/components/multi-tenancy/overview/) built into its deployment. Kubeflow's multi-user isolation simplifies user operations because each user only views and edited\s the Kubeflow components and model artifacts defined in their configuration.
+Kubeflow has a notion of [multi-tenancy](https://www.kubeflow.org/docs/components/multi-tenancy/overview/) built into its deployment. Kubeflow's multi-user isolation simplifies user operations because each user only views and edited the Kubeflow components and model artifacts defined in their configuration.
 
 Using the ZenML Kubeflow orchestrator on a multi-tenant deployment without any settings will result in the following error:
 
@@ -247,7 +247,7 @@ namespace.","details":[{"@type":"type.googleapis.com/api.Error","error_message":
 
 In order to get it to work, we need to leverage the `KubeflowOrchestratorSettings` referenced above. By setting the namespace option, and by passing in the right authentication credentials to the Kubeflow Pipelines Client, we can make it work.
 
-First, when registering your kubeflow orchestrator, please make sure to include the `kubeflow_hostname` parameter. The `kubeflow_hostname` **must end with the `/pipeline` post-fix**.
+First, when registering your Kubeflow orchestrator, please make sure to include the `kubeflow_hostname` parameter. The `kubeflow_hostname` **must end with the `/pipeline` post-fix**.
 
 ```shell
 zenml orchestrator register <NAME> \
@@ -298,7 +298,7 @@ Note that the above is also currently not tested on all Kubeflow versions, so th
 
 #### Using secrets in settings
 
-The above example encoded the username and password in plain-text as settings. You can also set them as secrets.
+The above example encoded the username and password in plain text as settings. You can also set them as secrets.
 
 ```shell
 zenml secret create kubeflow_secret \
