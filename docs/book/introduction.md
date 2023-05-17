@@ -79,8 +79,8 @@ Here is a collection of pages you can take a look at next:
 <table data-view="cards">
     <thead><tr><th></th><th></th><th></th><th data-hidden data-card-target data-type="content-ref"></th></tr></thead>
     <tbody>
-        <tr><td><span data-gb-custom-inline data-tag="emoji" data-code="1f4bf">💿</span> <strong>Installation</strong></td><td>Install ZenML via pip.</td><td></td><td><a href="getting-started/installation.md">installation.md</a></td></tr>
         <tr><td><span data-gb-custom-inline data-tag="emoji" data-code="1f9f1">🧱</span> <strong>Core Concepts</strong></td><td>Understand the core concepts behind ZenML.</td><td></td><td><a href="getting-started/core-concepts.md">core-concepts.md</a></td></tr>
+        <tr><td><span data-gb-custom-inline data-tag="emoji" data-code="1f423">🐣</span> <strong>Starter Guide</strong></td><td>Get started with ZenML and learn how to build your first pipeline and stack.</td><td></td><td><a href="user-guide/starter-guide/">starter-guide</a></td></tr>
         <tr><td><span data-gb-custom-inline data-tag="emoji" data-code="1f3c3">🏃</span> <strong>Quickstart (in Colab)</strong></td><td>Build your first ZenML pipeline and deploy it in the cloud.</td><td></td><td><a href="https://colab.research.google.com/github/zenml-io/zenml/blob/main/examples/quickstart/notebooks/quickstart.ipynb">quickstart</a></td></tr>
     </tbody>
 </table>
@@ -147,7 +147,7 @@ Here is a collection of pages you can take a look at next:
 <table data-view="cards">
     <thead><tr><th></th><th></th><th></th><th data-hidden data-card-target data-type="content-ref"></th></tr></thead>
     <tbody>
-        <tr><td><span data-gb-custom-inline data-tag="emoji" data-code="1f423">🐣</span> <strong>Starter Guide</strong></td><td>Create your first ZenML pipeline and stack.</td><td></td><td><a href="user-guide/starter-guide/">starter-guide</a></td></tr>
+        <tr><td><span data-gb-custom-inline data-tag="emoji" data-code="1f423">🐣</span> <strong>Starter Guide</strong></td><td>Get started with ZenML and learn how to build your first pipeline and stack.</td><td></td><td><a href="user-guide/starter-guide/">starter-guide</a></td></tr>
         <tr><td><span data-gb-custom-inline data-tag="emoji" data-code="1f414">🐔</span> <strong>Advanced Guide</strong></td><td>Discover advanced ZenML features like config management and containerization.</td><td></td><td><a href="user-guide/advanced-guide/">advanced-guie</a></td></tr>
         <tr><td><span data-gb-custom-inline data-tag="emoji" data-code="1f9d1-1f3eb">🧑🏫</span> <strong>Examples</strong></td><td>Explore ZenML through practical use-case examples.</td><td></td><td><a href="learning/examples/">examples</a></td></tr>
     </tbody>
