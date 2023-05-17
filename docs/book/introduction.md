@@ -60,7 +60,7 @@ experiments.
 Try it out at [https://demo.zenml.io/](https://demo.zenml.io/)!
 
 <figure>
-<img src=".gitbook/assets/intro_dashboard_details.png" alt="ZenML Dashboard Details View" width="50%">
+<img src=".gitbook/assets/intro_dashboard_details.png" alt="ZenML Dashboard Details View" width="80%">
 </figure>
 
 {% hint style="info" %}
@@ -71,6 +71,19 @@ also combine ZenML with other popular experiment tracking tools like
 [Neptune](./user-guide/component-galery/experiment-trackers/neptune.md)
 for even better reproducibility.
 {% endhint %}
+
+### Learn More
+Ready to develop production-ready code with ZenML?
+Here is a collection of pages you can take a look at next:
+
+<table data-view="cards">
+    <thead><tr><th></th><th></th><th></th><th data-hidden data-card-target data-type="content-ref"></th></tr></thead>
+    <tbody>
+        <tr><td><span data-gb-custom-inline data-tag="emoji" data-code="1f4bf">💿</span> <strong>Installation</strong></td><td>Install ZenML via pip.</td><td></td><td><a href="getting-started/installation.md">installation.md</a></td></tr>
+        <tr><td><span data-gb-custom-inline data-tag="emoji" data-code="1f9f1">🧱</span> <strong>Core Concepts</strong></td><td>Understand the core concepts behind ZenML.</td><td></td><td><a href="getting-started/core-concepts.md">core-concepts.md</a></td></tr>
+        <tr><td><span data-gb-custom-inline data-tag="emoji" data-code="1f3c3">🏃</span> <strong>Quickstart (in Colab)</strong></td><td>Build your first ZenML pipeline and deploy it in the cloud.</td><td></td><td><a href="https://colab.research.google.com/github/zenml-io/zenml/blob/main/examples/quickstart/notebooks/quickstart.ipynb">quickstart</a></td></tr>
+    </tbody>
+</table>
 
 {% endtab %}
 
@@ -101,7 +114,10 @@ has happened and drill down into detailed lineage visualizations.
 Try it out at [https://demo.zenml.io/](https://demo.zenml.io/)!
 
 <figure>
-<img src=".gitbook/assets/intro_dashboard.png" alt="ZenML Dashboard Overview" width="40%">
+<img src=".gitbook/assets/intro_dashboard.png" alt="ZenML Dashboard Overview" width="70%">
+</figure>
+<figure>
+<img src=".gitbook/assets/intro_dashboard_details.png" alt="ZenML Dashboard Details View" width="80%">
 </figure>
 
 **Automated Deployments:** With ZenML, you no longer need to upload custom 
@@ -124,9 +140,22 @@ def my_pipeline():
   seldon_model_deployer_step(model)
 ```
 
+### Learn More
+Ready to manage your ML lifecycles end-to-end with ZenML?
+Here is a collection of pages you can take a look at next:
+
+<table data-view="cards">
+    <thead><tr><th></th><th></th><th></th><th data-hidden data-card-target data-type="content-ref"></th></tr></thead>
+    <tbody>
+        <tr><td><span data-gb-custom-inline data-tag="emoji" data-code="1f423">🐣</span> <strong>Starter Guide</strong></td><td>Create your first ZenML pipeline and stack.</td><td></td><td><a href="user-guide/starter-guide/">starter-guide</a></td></tr>
+        <tr><td><span data-gb-custom-inline data-tag="emoji" data-code="1f414">🐔</span> <strong>Advanced Guide</strong></td><td>Discover advanced ZenML features like config management and containerization.</td><td></td><td><a href="user-guide/advanced-guide/">advanced-guie</a></td></tr>
+        <tr><td><span data-gb-custom-inline data-tag="emoji" data-code="1f9d1-1f3eb">🧑🏫</span> <strong>Examples</strong></td><td>Explore ZenML through practical use-case examples.</td><td></td><td><a href="learning/examples/">examples</a></td></tr>
+    </tbody>
+</table>
+
 {% endtab %}
 
-{% tab title="ZenML for MLOps / Platform Engineers" %}
+{% tab title="ZenML for Platform Engineers" %}
 
 ZenML enables MLOps infrastructure experts to define, deploy, and manage
 sophisticated production environments that are easy to share with colleagues.
@@ -157,7 +186,7 @@ explore them in a convenient user interface.
 Try it out at [https://demo.zenml.io/](https://demo.zenml.io/)!
 
 <figure>
-<img src=".gitbook/assets/intro_dashboard_stacks.png" alt="ZenML Dashboard Stacks View" width="50%">
+<img src=".gitbook/assets/intro_dashboard_stacks.png" alt="ZenML Dashboard Stacks View" width="80%">
 </figure>
 
 **No Vendor Lock-In:** Since infrastructure is decoupled from code, ZenML gives
@@ -173,35 +202,19 @@ zenml stack set aws
 python run.py  # Now your ML workflow runs in AWS
 ```
 
+### Learn More
+Ready to deploy and manage your MLOps infrastructure with ZenML?
+Here is a collection of pages you can take a look at next:
 
 <table data-view="cards">
     <thead><tr><th></th><th></th><th></th><th data-hidden data-card-target data-type="content-ref"></th></tr></thead>
     <tbody>
-        <tr><td><span data-gb-custom-inline data-tag="emoji" data-code="1f4cb">📋</span> <strong>Component Guide</strong></td><td>Browse through the already-implemented integrations for ZenML.</td><td></td><td><a href="user-guide/component-galery/">component-galery</a></td></tr>
         <tr><td><span data-gb-custom-inline data-tag="emoji" data-code="1f3d7">🏗</span> <strong>Platform Guide</strong></td><td>Set up and manage production-ready infrastructure with ZenML.</td><td></td><td><a href="platform-guide/set-up-your-mlops-platform/">set-up-your-mlops-platform</a></td></tr>
-        <tr><td><span data-gb-custom-inline data-tag="emoji" data-code="1f9d1-1f3eb">🧑🏫</span> <strong>Examples</strong></td><td>Take a peek at how ZenML works in concrete examples.</td><td></td><td><a href="learning/examples/">examples</a></td></tr>
+        <tr><td><span data-gb-custom-inline data-tag="emoji" data-code="1f4cb">📋</span> <strong>Component Guide</strong></td><td>Explore the existing infrastructure and tooling integrations of ZenML.</td><td></td><td><a href="user-guide/component-galery/">component-galery</a></td></tr>
+        <tr><td><span data-gb-custom-inline data-tag="emoji" data-code="1f64b">🙋</span> <strong>FAQ</strong></td><td>Find answers to the most frequently asked questions.</td><td></td><td><a href="learning/faq.md">faq.md</a></td></tr>
     </tbody>
 </table>
 
 {% endtab %}
 
 {% endtabs %}
-
-## Directions
-
-Ready to harness the power of ZenML for your machine learning projects? Here is a collection of pages you can take a look at next:
-
-<table data-view="cards">
-    <thead><tr><th></th><th></th><th></th><th data-hidden data-card-target data-type="content-ref"></th></tr></thead>
-    <tbody>
-        <tr><td><span data-gb-custom-inline data-tag="emoji" data-code="1f4bf">💿</span> <strong>Installation</strong></td><td>Install ZenML via pip.</td><td></td><td><a href="getting-started/installation.md">installation.md</a></td></tr>
-        <tr><td><span data-gb-custom-inline data-tag="emoji" data-code="1f9f1">🧱</span> <strong>Core Concepts</strong></td><td>Understand the core concepts behind ZenML.</td><td></td><td><a href="getting-started/core-concepts.md">core-concepts.md</a></td></tr>
-        <tr><td><span data-gb-custom-inline data-tag="emoji" data-code="1f3c3">🏃</span> <strong>Quickstart</strong></td><td>Build your first ZenML pipeline and deploy it in the cloud.</td><td></td><td><a href="https://github.com/zenml-io/zenml/blob/main/examples/quickstart/README.md">quickstart</a></td></tr>
-        <tr><td><span data-gb-custom-inline data-tag="emoji" data-code="1f423">🐣</span> <strong>Starter Guide</strong></td><td>Get started quickly with a simple setup.</td><td></td><td><a href="user-guide/starter-guide/">starter-guide</a></td></tr>
-        <tr><td><span data-gb-custom-inline data-tag="emoji" data-code="1f414">🐔</span> <strong>Advanced Guide</strong></td><td>Hone your MLOps skills with an advanced guide.</td><td></td><td><a href="user-guide/advanced-guide/">advanced-guie</a></td></tr>
-        <tr><td><span data-gb-custom-inline data-tag="emoji" data-code="1f4cb">📋</span> <strong>Component Guide</strong></td><td>Browse through the already-implemented integrations for ZenML.</td><td></td><td><a href="user-guide/component-galery/">component-galery</a></td></tr>
-        <tr><td><span data-gb-custom-inline data-tag="emoji" data-code="1f3d7">🏗</span> <strong>Platform Guide</strong></td><td>Set up and manage production-ready infrastructure with ZenML.</td><td></td><td><a href="platform-guide/set-up-your-mlops-platform/">set-up-your-mlops-platform</a></td></tr>
-        <tr><td><span data-gb-custom-inline data-tag="emoji" data-code="1f9d1-1f3eb">🧑🏫</span> <strong>Examples</strong></td><td>Take a peek at how ZenML works in concrete examples.</td><td></td><td><a href="learning/examples/">examples</a></td></tr>
-        <tr><td><span data-gb-custom-inline data-tag="emoji" data-code="1f64b">🙋</span> <strong>FAQ</strong></td><td>Find the answers to the most frequently asked questions.</td><td></td><td><a href="learning/faq.md">faq.md</a></td></tr>
-    </tbody>
-</table>
