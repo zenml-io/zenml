@@ -371,13 +371,13 @@ Cloud service providers like AWS, GCP and Azure implement one or more authentica
 
 * they support multiple types of resources (e.g. Kubernetes clusters, Docker registries, a form of object storage)
 * they usually include some form of "generic" Resource Type that can be used by clients to access types of resources that are not yet part of the supported set. When this generic Resource Type is used, clients and Stack Components that access the connector are provided some form of generic session, credentials or client that can be used to access any of the cloud provider resources. For example, in the AWS case, clients accessing the `aws-generic` Resource Type are issued a pre-authenticated `boto3` Session object that can be used to access any AWS service.
-* they support multiple authentication methods. Some of these allow clients direct access to long-lived, broad-access credentials and are only recommended for local development use. Others support distributing temporary API tokens automatically generated from long-lived credentials, which are safer for production use-cases, but may be more difficult to set up. A few authentication methods even support down-scoping the permissions of temporary API tokens so that they only allow access to the target resource and restrict access to everything else.
+* they support multiple authentication methods. Some of these allow clients direct access to long-lived, broad-access credentials and are only recommended for local development use. Others support distributing temporary API tokens automatically generated from long-lived credentials, which are safer for production use-cases, but may be more difficult to set up. A few authentication methods even support down-scoping the permissions of temporary API tokens so that they only allow access to the target resource and restrict access to everything else. This is covered at length [in the section on best practices for authentication methods](service-connectors-guide.md#best-practices-for-authentication-methods).&#x20;
 * there is flexibility regarding the range of resources that a single cloud provider Service Connector instance configured with a single set of credentials can be scoped to access:
   * a _multi-type Service Connector_ instance can access any type of resources from the range of supported Resource Types&#x20;
   * a _multi-instance Service Connector_ instance can access multiple resources of the same type
   * a _single-instance Service Connector_ instance is scoped to access a single resource
 
-The following output shows three different Service Connectors configured from the same GCP Service Connector Type using three different scopes:
+The following output shows three different Service Connectors configured from the same GCP Service Connector Type using three different scopes but with the same credentials:
 
 * a multi-type GCP Service Connector that allows access to every possible resource accessible with the configured credentials
 * a multi-instance GCS Service Connector that allows access to multiple GCS buckets
@@ -478,6 +478,11 @@ There are a few caveats that you should be aware of when choosing an implicit au
 
 * when used with a local ZenML deployment, like the default deployment, or [a local ZenML server started with `zenml up`](../../../user-guide/starter-guide/transition-to-the-cloud.md), the implicit authentication method will use the configuration files and credentials or environment variables set up _on your local machine_. These will not be available to anyone else outside your local environment and will also not be accessible to workloads running in other environments on your local host. This includes for example local K3D Kubernetes clusters and local Docker containers.
 * when used with a remote ZenML server, the implicit authentication method only works if your ZenML server is deployed in the same cloud as the one supported by the Service Connector Type that you are using. For instance, if you're using the AWS Service Connector Type, then the ZenML server must also be deployed in AWS (e.g. in an EKS Kubernetes cluster). You may also need to manually adjust the cloud configuration of the remote cloud workload where the ZenML server is running to allow access to resources (e.g. add permissions to the AWS IAM role attached to the EC2 or EKS node, add roles to the GCP service account attached to the GKE cluster nodes).
+
+The following is an example of using the GCP Service Connector's implicit authentication method to gain immediate access to all the GCP resources that the ZenML server also has access to. Note that this is only possible because the ZenML server is also deployed in GCP, in a GKE cluster, and the cluster is attached to a GCP service account with permissions to access the project resources:
+
+```
+```
 
 ### Long-lived credentials (API keys, account keys)
 
