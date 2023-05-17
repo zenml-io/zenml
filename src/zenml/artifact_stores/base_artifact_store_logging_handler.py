@@ -55,8 +55,8 @@ class ArtifactStoreLoggingHandler(TimedRotatingFileHandler):
         if is_remote(self.logs_uri):
             # We log to a temporary file first, because
             # TimedRotatingFileHandler does not support writing
-            # to a remote file.
-            local_logging_file = f".tmp_logs_{int(time.time())}"
+            # to a remote file, but still needs a file to get going
+            local_logging_file = f".zenml_tmp_logs_{int(time.time())}"
         else:
             local_logging_file = self.logs_uri
 
@@ -88,18 +88,8 @@ class ArtifactStoreLoggingHandler(TimedRotatingFileHandler):
     def flush(self) -> None:
         """Flushes the buffer to the artifact store."""
         try:
-            # We have to read the current logs first, because
-            # fileio does not support appending to a remote file.
-            try:
-                with fileio.open(self.logs_uri, mode="rb") as log_file:
-                    current_logs = log_file.read().decode("utf-8")
-            except Exception:
-                current_logs = ""
-            logs = current_logs + self.buffer.getvalue()
             with fileio.open(self.logs_uri, mode="wb") as log_file:
-                log_file.write(logs.encode("utf-8"))
-            self.buffer.close()
-            self.buffer = io.StringIO()
+                log_file.write(self.buffer.getvalue().encode("utf-8"))
         except (OSError, IOError) as e:
             # This exception can be raised if there are issues with the underlying system calls,
             # such as reaching the maximum number of open files, permission issues, file corruption,
