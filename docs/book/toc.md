@@ -27,7 +27,7 @@
   * [Handle custom data types](user-guide/advanced-guide/handle-custom-data-types.md)
   * [Use failure/success hooks](user-guide/advanced-guide/use-failure-success-hooks.md)
   * [Fetch metadata within steps](user-guide/advanced-guide/access-metadata-within-steps.md)
-  * [Dynamic pipelines](user-guide/advanced-guide/hyperparameter-tuning.md)
+  * [Hyper-parameter tuning](user-guide/advanced-guide/hyperparameter-tuning.md)
   * [Scale compute to the cloud](user-guide/advanced-guide/enable-gpu-backed-hardware.md)
   * [Global settings of ZenML](user-guide/advanced-guide/global-config.md)
 * [📜 Component Guide](user-guide/component-galery/README.md)
