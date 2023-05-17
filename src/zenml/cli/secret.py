@@ -24,7 +24,7 @@ from zenml.cli.utils import (
     confirmation,
     declare,
     error,
-    expand_argument_value_from_file,
+    fail_secret_creation_on_secrets_manager,
     list_options,
     parse_name_and_extra_arguments,
     pretty_print_secret,
@@ -42,7 +42,7 @@ from zenml.enums import (
     SecretsStoreType,
     StackComponentType,
 )
-from zenml.exceptions import EntityExistsError, SecretExistsError, ZenKeyError
+from zenml.exceptions import EntityExistsError, ZenKeyError
 from zenml.logger import get_logger
 from zenml.models.secret_models import SecretFilterModel
 
@@ -170,116 +170,8 @@ def register_secrets_manager_subcommands() -> None:
                 values.
             args: Command line arguments.
         """
-        # TODO [ENG-725]: Allow passing in json/dict when registering a secret
-        #  as an additional option for the user on top of the interactive
-
-        # Parse the given args
-        # name is guaranteed to be set by parse_name_and_extra_arguments
-        name, parsed_args = parse_name_and_extra_arguments(  # type: ignore[assignment]
-            list(args) + [name], expand_args=True
-        )
-
-        if "name" in parsed_args:
-            error("You can't use 'name' as the key for one of your secrets.")
-        elif name == "name":
-            error("Secret names cannot be named 'name'.")
-
-        from zenml.constants import ARBITRARY_SECRET_SCHEMA_TYPE
-
-        if secret_schema_type != ARBITRARY_SECRET_SCHEMA_TYPE:
-            warning(
-                "Secret schemas will be deprecated soon. You can still "
-                "register secrets as a group of key-value pairs using the "
-                "`ArbitrarySecretSchema` by not specifying a secret schema "
-                "with the `--schema/-s` option."
-            )
-
-        try:
-            from zenml.secret.secret_schema_class_registry import (
-                SecretSchemaClassRegistry,
-            )
-
-            secret_schema = SecretSchemaClassRegistry.get_class(
-                secret_schema=secret_schema_type
-            )
-        except KeyError as e:
-            error(str(e))
-
-        secret_keys = secret_schema.get_schema_keys()
-
-        secret_contents = {"name": name}
-
-        if interactive:
-            if parsed_args:
-                error(
-                    "Cannot pass secret fields as arguments when using "
-                    "interactive mode."
-                )
-
-            if secret_schema_type != ARBITRARY_SECRET_SCHEMA_TYPE:
-                click.echo(
-                    "You have supplied a secret schema with predefined keys. "
-                    "You can fill these out sequentially now. Just press ENTER "
-                    "to skip optional secrets that you do not want to set"
-                )
-                for k in secret_keys:
-                    v = getpass.getpass(f"Secret value for {k}:")
-                    if v:
-                        secret_contents[k] = expand_argument_value_from_file(
-                            name=k, value=v
-                        )
-            else:
-                click.echo(
-                    "You have not supplied a secret schema with any "
-                    "predefined keys. Entering interactive mode:"
-                )
-                while True:
-                    k = click.prompt("Please enter a secret key")
-                    if k not in secret_contents:
-                        v = getpass.getpass(
-                            f"Please enter the secret value for the key [{k}]:"
-                        )
-                        secret_contents[k] = expand_argument_value_from_file(
-                            name=k, value=v
-                        )
-                    else:
-                        warning(
-                            f"Key {k} already in this secret. Please restart "
-                            f"this process or use 'zenml secrets-manager "
-                            f"secret update {name} --{k}=...' to update this "
-                            f"key after the secret is registered. Skipping ..."
-                        )
-
-                    if not click.confirm(
-                        "Do you want to add another key-value pair to this "
-                        "secret?"
-                    ):
-                        break
-
-        else:
-            if not parsed_args:
-                error(
-                    "Secret fields must be passed as arguments when not using "
-                    "interactive mode."
-                )
-
-            secret_contents.update(parsed_args)
-
-        try:
-            secret = secret_schema(**secret_contents)
-        except ValidationError as e:
-            error(
-                f"Secret values do not conform with the secret schema: {str(e)}"
-            )
-
-        click.echo("The following secret will be registered.")
-        pretty_print_secret(secret=secret, hide_secret=True)
-
-        with console.status(f"Saving secret `{name}`..."):
-            try:
-                secrets_manager.register_secret(secret=secret)
-            except SecretExistsError:
-                error(f"A secret with name '{name}' already exists.")
+        fail_secret_creation_on_secrets_manager()
+        return
 
     @secret.command("get", help="Get a secret, given its name.")
     @click.argument("name", type=click.STRING)
