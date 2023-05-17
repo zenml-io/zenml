@@ -509,7 +509,6 @@ def test_share_stack_when_component_is_already_shared_by_other_user_fails(
         other_user,
         other_client,
     ):
-
         other_client.create_stack_component(
             name=shared_artifact_store.name,
             is_shared=True,
