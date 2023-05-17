@@ -433,6 +433,10 @@ Service Connector Types, especially those targeted at cloud providers, offer a p
 
 This section explores some of those patterns and gives some advice regarding which authentication methods are best suited for your needs.
 
+{% hint style="info" %}
+This section may require some general knowledge about authentication and authorization to be properly understood. We tried to keep it simple and limit ourselves to talking about high-level concepts, but some areas may get a bit too technical.
+{% endhint %}
+
 ### Username and password
 
 {% hint style="danger" %}
@@ -443,43 +447,177 @@ Ultimately, if you have no choice, be cognizant of the third parties you share y
 
 This is the typical authentication method that uses a username or account name plus the associated password. While this is the de facto method used to authenticate with web consoles and local CLIs, this is the least secure of all authentication methods and _never_ something you want to share with other members of your team or organization or use to authenticate automated workloads.
 
-In fact, cloud platforms don't even allow using the root account password directly as a credential when authenticating to the cloud platform APIs. There is always a process in place that allows exchanging the account/password credential for something else:
+In fact, cloud platforms don't even allow using user account passwords directly as a credential when authenticating to the cloud platform APIs. There is always a process in place that allows exchanging the account/password credential for [another form of long-lived credential](service-connectors-guide.md#long-lived-credentials-api-keys-account-keys).
 
-* AWS uses the [`aws configure` CLI command](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-configure.html)&#x20;
-* GCP offers the [`gcloud auth login` and `gcloud auth application-default login` CLI commands](https://cloud.google.com/sdk/docs/authorizing)
-* Azure provides [the `az login` CLI command](https://learn.microsoft.com/en-us/cli/azure/authenticate-azure-cli)
-
-None of your original login information is stored on your local machine. Instead, an authentication token, a secret key or some other form of intermediate credential is generated and stored on the local host and used to authenticate to remote cloud service APIs.
-
-Some services (e.g. DockerHub) allow using an API access key instead of the password, which is always preferable to plain passwords.
+Even when passwords are mentioned as credentials, some services (e.g. DockerHub) also allow using an API access key in place of the user account password.
 
 ### Implicit authentication
 
 {% hint style="info" %}
-The key take-away here is that implicit authentication gives you immediate access to some cloud resources, but it may take some extra effort to expand the range of resources that you're initially allowed to access with it. This is not an authentication method you want to use if you're interested in portability and enabling others to reproduce your results.
+The key take-away here is that implicit authentication gives you immediate access to some cloud resources and require no configuration, but it may take some extra effort to expand the range of resources that you're initially allowed to access with it. This is not an authentication method you want to use if you're interested in portability and enabling others to reproduce your results.
 {% endhint %}
 
 Implicit authentication is just a fancy way of saying that the Service Connector will use locally stored credentials, configuration files, environment variables, basically any form of authentication available on the environment where it is running, either locally or in the cloud.
 
-Most cloud providers and their associated Service Connector Types include some form of implicit authentication that is able to automatically discover and use the following forms of authentication:
+Most cloud providers and their associated Service Connector Types include some form of implicit authentication that is able to automatically discover and use the following forms of authentication in the environment where they are running:
 
 * configuration and credentials set up and stored locally through the cloud platform CLI
 * configuration and credentials passed as environment variables
 * some form of implicit authentication attached to the workload environment itself. This is only available in virtual environments that are already running inside the same cloud where other resources are available for use. This is called differently depending on the cloud provider in question, but they are essentially the same thing:
   * in AWS, if you're running on Amazon EC2, ECS, EKS, Lambda or some other form of AWS cloud workload, credentials can be loaded directly from _the instance metadata service._ This [uses the IAM role attached to your workload](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/iam-roles-for-amazon-ec2.html) to authenticate to other AWS services without the need to configure explicit credentials.
-  * in GCP, a similar _metadata service_ allows accessing othe GCP cloud resources via [the service account attached to the GCP workload](https://cloud.google.com/docs/authentication/application-default-credentials#attached-sa).
+  * in GCP, a similar _metadata service_ allows accessing other GCP cloud resources via [the service account attached to the GCP workload](https://cloud.google.com/docs/authentication/application-default-credentials#attached-sa) (e.g. GCP VMs or GKE clusters).
   * in Azure, the [Azure Managed Identity](https://learn.microsoft.com/en-us/azure/active-directory/managed-identities-azure-resources/overview) services can be used to gain access to other Azure services without requiring explicit credentials
 
-There are a few cave-ats that you should be aware of when choosing an implicit authentication method. It may seem like the easiest way out, but it carries with it some implications that may impact portability and usability:
+There are a few caveats that you should be aware of when choosing an implicit authentication method. It may seem like the easiest way out, but it carries with it some implications that may impact portability and usability later down the road:
 
-* when used with a local ZenML deployment, like the default deployment, or [a local ZenML server started with `zenml up`](../../../user-guide/starter-guide/transition-to-the-cloud.md) the implicit authentication method will use the configuration files and credentials or environment variables set up _on your local machine_. These will not be available to anyone else outside your local environment and will also not be accessible to workloads running in other environments on your local host. This includes for example local Kubernetes clusters and local Docker containers.
-* when used with a remote ZenML server, the implicit authentication method only works if your ZenML server is deployed in the same cloud as the one supported by the Service Connector Type that you are using. For instance, if you're using the AWS Service Connector Type, then the ZenML server must also be deployed in AWS (e.g. in an EKS Kubernetes cluster). You may also need to manually adjust the cloud configuration of the remote cloud workload where the ZenML server is running to allow access to more resources (e.g. add more permissions to the AWS IAM role attached to the EC2 or EKS node, add more roles to the GCP service account attached to the GKE cluster nodes).
+* when used with a local ZenML deployment, like the default deployment, or [a local ZenML server started with `zenml up`](../../../user-guide/starter-guide/transition-to-the-cloud.md), the implicit authentication method will use the configuration files and credentials or environment variables set up _on your local machine_. These will not be available to anyone else outside your local environment and will also not be accessible to workloads running in other environments on your local host. This includes for example local K3D Kubernetes clusters and local Docker containers.
+* when used with a remote ZenML server, the implicit authentication method only works if your ZenML server is deployed in the same cloud as the one supported by the Service Connector Type that you are using. For instance, if you're using the AWS Service Connector Type, then the ZenML server must also be deployed in AWS (e.g. in an EKS Kubernetes cluster). You may also need to manually adjust the cloud configuration of the remote cloud workload where the ZenML server is running to allow access to resources (e.g. add permissions to the AWS IAM role attached to the EC2 or EKS node, add roles to the GCP service account attached to the GKE cluster nodes).
 
 ### Long-lived credentials (API keys, account keys)
 
-#### Impersonating accounts and assuming roles
+This is the magic formula of authentication methods. When paired with another ability, such as [automatically generating short-lived API tokens](service-connectors-guide.md#issuing-temporary-and-down-scoped-credentials), or [impersonating accounts or assuming roles](service-connectors-guide.md#impersonating-accounts-and-assuming-roles), this is the ideal authentication mechanism to use, particularly when using ZenML in production and when sharing results with other members of your ZenML team.
 
-#### Issuing temporary and down-scoped credentials
+As a general best practice, but implemented particularly well for cloud platforms, account passwords are never directly used as a credential when authenticating to the cloud platform APIs. There is always a process in place that exchanges the account/password credential for another type of long-lived credential:
+
+* AWS uses the [`aws configure` CLI command](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-configure.html)&#x20;
+* GCP offers the [`gcloud auth login` and `gcloud auth application-default login` CLI commands](https://cloud.google.com/sdk/docs/authorizing)
+* Azure provides [the `az login` CLI command](https://learn.microsoft.com/en-us/cli/azure/authenticate-azure-cli)
+
+None of your original login information is stored on your local machine or used to access workloads. Instead, an API key, account key or some other form of intermediate credential is generated and stored on the local host and used to authenticate to remote cloud service APIs.
+
+{% hint style="info" %}
+When using auto-configuration with Service Connector registration, this is usually the type of credentials automatically identified and extracted from your local machine.
+{% endhint %}
+
+Different cloud providers use different names for these types of long-lived credentials, but they usually represent the same concept, with minor variations regarding the identity information and level of permissions attached to them:
+
+* AWS has [Account Access Keys](https://docs.aws.amazon.com/powershell/latest/userguide/pstools-appendix-sign-up.html) and [IAM User Access Keys](https://docs.aws.amazon.com/IAM/latest/UserGuide/id\_credentials\_access-keys.html)
+* GCP has [User Account Credentials](https://cloud.google.com/docs/authentication#user-accounts) and [Service Account Credentials](https://cloud.google.com/docs/authentication#service-accounts)
+
+Generally speaking, a differentiation is being made between the following two classes of credentials:
+
+* _user credentials_: credentials representing a human user and usually directly tied to a user account identity. These credentials are usually associated with a broad spectrum of permissions and it is therefore not recommended to share them or make them available outside the confines of your local host.&#x20;
+* _service credentials:_ credentials used with automated processes and programmatic access, where humans are not directly involved. These credentials are not directly tied to a user account identity, but some other form of accounting like a service account or an IAM user devised to be used by non-human actors. It is also usually possible to restrict the range of permissions associated with this class of credentials, which makes them better candidates for sharing them with a larger audience.
+
+ZenML cloud provider Service Connectors can use both classes of credentials, but you should aim to use _service credentials_ as often as possible instead of _user credentials_, especially in production environments. Attaching automated workloads like ML pipelines to service accounts instead of user accounts acts as an extra layer of protection for your user identity and facilitates enforcing another security best practice called [_"the least-privilege principle"_](https://en.wikipedia.org/wiki/Principle\_of\_least\_privilege)_:_ granting each actor only the minimum level of permissions required to function correctly.
+
+Using long-lived credentials on their own still isn't ideal, because if leaked, they pose a security risk, even if they have limited permissions attached. The good news is that ZenML Service Connectors include additional mechanisms that, when used in combination with long-lived credentials, make it even safer to share long-lived credentials with other ZenML users and automated workloads:
+
+* automatically [generating temporary credentials](service-connectors-guide.md#temporary-and-down-scoped-credentials) from long-lived credentials and even downgrading their permission scope to enforce the least-privilege principle
+* implementing [authentication schemes that impersonate accounts and assume roles](service-connectors-guide.md#impersonating-accounts-and-assuming-roles)
+
+### Temporary and down-scoped credentials
+
+Most [authentication methods that utilize long-lived credentials](service-connectors-guide.md#long-lived-credentials-api-keys-account-keys) also implement additional mechanisms that help reduce the exposure and risk of security incidents even further, making them ideal for production.
+
+_**Issuing temporary credentials**_: this authentication strategy keeps long-lived credentials safely stored on the ZenML server and away from the eyes of actual API clients and people that need to authenticate to the remote resources. Instead, clients are issued API tokens that have a limited lifetime and expire after a given amount of time. The Service Connector is able to generate these API tokens from long-lived credentials on a need-to-have basis. For example, the AWS Service Connector's "Session Token", "Federation Token" and "IAM Role" authentication methods and basically all authentication methods supported by the GCP Service Connector support this feature.
+
+The following example shows the difference between the long-lived AWS credentials configured for an AWS Service Connector and the temporary Kubernetes API token credentials that the client receives and uses to access the resource:
+
+```
+$ zenml service-connector describe eks-zenhacks-cluster
+Service connector 'eks-zenhacks-cluster' of type 'aws' with id '7365b136-65b2-4a88-8283-9ecaefbe812b' is owned by user 'default' and is 'private'.
+   'eks-zenhacks-cluster' aws Service Connector Details    
+┏━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ PROPERTY         │ VALUE                                ┃
+┠──────────────────┼──────────────────────────────────────┨
+┃ ID               │ 7365b136-65b2-4a88-8283-9ecaefbe812b ┃
+┠──────────────────┼──────────────────────────────────────┨
+┃ NAME             │ eks-zenhacks-cluster                 ┃
+┠──────────────────┼──────────────────────────────────────┨
+┃ TYPE             │ 🔶 aws                               ┃
+┠──────────────────┼──────────────────────────────────────┨
+┃ AUTH METHOD      │ session-token                        ┃
+┠──────────────────┼──────────────────────────────────────┨
+┃ RESOURCE TYPES   │ 🌀 kubernetes-cluster                ┃
+┠──────────────────┼──────────────────────────────────────┨
+┃ RESOURCE NAME    │ zenhacks-cluster                     ┃
+┠──────────────────┼──────────────────────────────────────┨
+┃ SECRET ID        │ 735c0e1a-cf1e-4a43-aed0-144b9a61c903 ┃
+┠──────────────────┼──────────────────────────────────────┨
+┃ SESSION DURATION │ 43200s                               ┃
+┠──────────────────┼──────────────────────────────────────┨
+┃ EXPIRES IN       │ N/A                                  ┃
+┠──────────────────┼──────────────────────────────────────┨
+┃ OWNER            │ default                              ┃
+┠──────────────────┼──────────────────────────────────────┨
+┃ WORKSPACE        │ default                              ┃
+┠──────────────────┼──────────────────────────────────────┨
+┃ SHARED           │ ➖                                   ┃
+┠──────────────────┼──────────────────────────────────────┨
+┃ CREATED_AT       │ 2023-05-17 14:33:06.173039           ┃
+┠──────────────────┼──────────────────────────────────────┨
+┃ UPDATED_AT       │ 2023-05-17 14:33:06.173041           ┃
+┗━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+            Configuration            
+┏━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━┓
+┃ PROPERTY              │ VALUE     ┃
+┠───────────────────────┼───────────┨
+┃ region                │ us-east-1 ┃
+┠───────────────────────┼───────────┨
+┃ aws_access_key_id     │ [HIDDEN]  ┃
+┠───────────────────────┼───────────┨
+┃ aws_secret_access_key │ [HIDDEN]  ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━┛
+
+$ zenml service-connector describe eks-zenhacks-cluster --client
+Service connector 'eks-zenhacks-cluster (kubernetes-cluster | zenhacks-cluster client)' of type 'kubernetes' with id '7365b136-65b2-4a88-8283-9ecaefbe812b' is owned by user 'default' and is 
+'private'.
+ 'eks-zenhacks-cluster (kubernetes-cluster | zenhacks-cluster client)' kubernetes Service 
+                                    Connector Details                                     
+┏━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ PROPERTY         │ VALUE                                                               ┃
+┠──────────────────┼─────────────────────────────────────────────────────────────────────┨
+┃ ID               │ 7365b136-65b2-4a88-8283-9ecaefbe812b                                ┃
+┠──────────────────┼─────────────────────────────────────────────────────────────────────┨
+┃ NAME             │ eks-zenhacks-cluster (kubernetes-cluster | zenhacks-cluster client) ┃
+┠──────────────────┼─────────────────────────────────────────────────────────────────────┨
+┃ TYPE             │ 🌀 kubernetes                                                       ┃
+┠──────────────────┼─────────────────────────────────────────────────────────────────────┨
+┃ AUTH METHOD      │ token                                                               ┃
+┠──────────────────┼─────────────────────────────────────────────────────────────────────┨
+┃ RESOURCE TYPES   │ 🌀 kubernetes-cluster                                               ┃
+┠──────────────────┼─────────────────────────────────────────────────────────────────────┨
+┃ RESOURCE NAME    │ arn:aws:eks:us-east-1:715803424590:cluster/zenhacks-cluster         ┃
+┠──────────────────┼─────────────────────────────────────────────────────────────────────┨
+┃ SECRET ID        │                                                                     ┃
+┠──────────────────┼─────────────────────────────────────────────────────────────────────┨
+┃ SESSION DURATION │ N/A                                                                 ┃
+┠──────────────────┼─────────────────────────────────────────────────────────────────────┨
+┃ EXPIRES IN       │ 11h59m56s                                                           ┃
+┠──────────────────┼─────────────────────────────────────────────────────────────────────┨
+┃ OWNER            │ default                                                             ┃
+┠──────────────────┼─────────────────────────────────────────────────────────────────────┨
+┃ WORKSPACE        │ default                                                             ┃
+┠──────────────────┼─────────────────────────────────────────────────────────────────────┨
+┃ SHARED           │ ➖                                                                  ┃
+┠──────────────────┼─────────────────────────────────────────────────────────────────────┨
+┃ CREATED_AT       │ 2023-05-17 14:33:41.861267                                          ┃
+┠──────────────────┼─────────────────────────────────────────────────────────────────────┨
+┃ UPDATED_AT       │ 2023-05-17 14:33:41.861269                                          ┃
+┗━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+                                           Configuration                                            
+┏━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ PROPERTY              │ VALUE                                                                    ┃
+┠───────────────────────┼──────────────────────────────────────────────────────────────────────────┨
+┃ server                │ https://A5F8F4142FB12DDCDE9F21F6E9B07A18.gr7.us-east-1.eks.amazonaws.com ┃
+┠───────────────────────┼──────────────────────────────────────────────────────────────────────────┨
+┃ insecure              │ False                                                                    ┃
+┠───────────────────────┼──────────────────────────────────────────────────────────────────────────┨
+┃ cluster_name          │ arn:aws:eks:us-east-1:715803424590:cluster/zenhacks-cluster              ┃
+┠───────────────────────┼──────────────────────────────────────────────────────────────────────────┨
+┃ token                 │ [HIDDEN]                                                                 ┃
+┠───────────────────────┼──────────────────────────────────────────────────────────────────────────┨
+┃ certificate_authority │ [HIDDEN]                                                                 ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+```
+
+
+
+_**Downscoping temporary credentials**_: in addition to the above, some authentication methods also support restricting the generated API tokens to the minimum set of permissions required to access the target resource or set of resources. This is currently available for the AWS Service Connector's "Federation Token" and "IAM Role" authentication methods.
+
+#### Impersonating accounts and assuming roles
 
 ### Short-lived credentials
 
