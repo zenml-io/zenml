@@ -86,7 +86,7 @@ LOCAL_ZENML_SERVER_NAME = "local"
     "`--docker` is set.",
 )
 @click.option(
-    "--ngrok",
+    "--ngrok-token",
     type=str,
     default=None,
     help="Specify an ngrok auth token to use for exposing the ZenML server.",
@@ -100,7 +100,7 @@ def up(
     blocking: bool = False,
     connect: bool = False,
     image: Optional[str] = None,
-    ngrok: Optional[str] = None,
+    ngrok_token: Optional[str] = None,
 ) -> None:
     """Start the ZenML dashboard locally and connect the client to it.
 
@@ -113,8 +113,9 @@ def up(
             connected to a remote ZenML server.
         image: A custom Docker image to use for the server, when the
             `--docker` flag is set.
-        ngrok: An ngrok auth token to use for exposing the ZenML dashboard on a
-            public domain. Primarily used for accessing the dashboard in Colab.
+        ngrok_token: An ngrok auth token to use for exposing the ZenML dashboard
+            on a public domain. Primarily used for accessing the dashboard in
+            Colab.
     """
     with event_handler(
         AnalyticsEvent.ZENML_SERVER_STARTED
@@ -230,24 +231,25 @@ def up(
                     f"'{server.status.url}'. You can connect to it using the "
                     f"'{DEFAULT_USERNAME}' username and an empty password. "
                 )
-                zenml.show(ngrok=ngrok)
+                zenml.show(ngrok_token=ngrok_token)
 
 
 @click.option(
-    "--ngrok",
+    "--ngrok-token",
     type=str,
     default=None,
     help="Specify an ngrok auth token to use for exposing the ZenML server.",
 )
 @cli.command("show", help="Show the ZenML dashboard.")
-def show(ngrok: Optional[str] = None) -> None:
+def show(ngrok_token: Optional[str] = None) -> None:
     """Show the ZenML dashboard.
 
     Args:
-        ngrok: An ngrok auth token to use for exposing the ZenML dashboard on a
-            public domain. Primarily used for accessing the dashboard in Colab.
+        ngrok_token: An ngrok auth token to use for exposing the ZenML dashboard
+            on a public domain. Primarily used for accessing the dashboard in
+            Colab.
     """
-    zenml.show(ngrok=ngrok)
+    zenml.show(ngrok_token=ngrok_token)
 
 
 @cli.command("down", help="Shut down the local ZenML dashboard.")

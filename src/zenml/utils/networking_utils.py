@@ -231,8 +231,8 @@ def get_or_create_ngrok_tunnel(ngrok_token: str, port: int) -> str:
         if tunnel.config and isinstance(tunnel.config, dict):
             tunnel_protocol = tunnel.config.get("proto")
             tunnel_port = tunnel.config.get("addr")
-        if tunnel_protocol == "http" and tunnel_port == port:
-            return str(tunnel.public_url)
+            if tunnel_protocol == "http" and tunnel_port == port:
+                return str(tunnel.public_url)
 
     # Create new tunnel
     ngrok_client.set_auth_token(ngrok_token)
