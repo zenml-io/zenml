@@ -554,6 +554,7 @@ def expand_argument_value_from_file(name: str, value: str) -> str:
             f"'{filename}' could not be accessed: {str(e)}"
         )
 
+get_value_from_file(): #TODO
 
 def parse_name_and_extra_arguments(
     args: List[str],
@@ -563,18 +564,20 @@ def parse_name_and_extra_arguments(
     """Parse a name and extra arguments from the CLI.
 
     This is a utility function used to parse a variable list of optional CLI
-    arguments of the form `--key=value` that must also include one mandatory
-    free-form name argument. There is no restriction as to the order of the
-    arguments.
+    arguments of the form `--values=key:value pairs that can be a dict/JSON/YAML
+    and that must also include one mandatoryfree-form name argument.
+    There is no restriction as to the order of the arguments.
 
     Examples:
         >>> parse_name_and_extra_arguments(['foo']])
         ('foo', {})
-        >>> parse_name_and_extra_arguments(['foo', '--bar=1'])
-        ('foo', {'bar': '1'})
-        >>> parse_name_and_extra_arguments(['--bar=1', 'foo', '--baz=2'])
-        ('foo', {'bar': '1', 'baz': '2'})
-        >>> parse_name_and_extra_arguments(['--bar=1'])
+        >>> parse_name_and_extra_arguments(['foo', '--values={"location": "Nevada", "aliens":"many"}'])
+        ('foo', {'location': 'Nevada', 'aliens':'many'})
+        >>> parse_name_and_extra_arguments(["--values={'location': 'Nevada', 'aliens':'many'}", 'foo'])
+        ('foo', {'location': 'Nevada', 'aliens':'many'})
+        >>> parse_name_and_extra_arguments(['--values=location: Nevada\\naliens: many', 'foo'])
+        ('foo', {'location': 'Nevada', 'aliens':'many'})
+        >>> parse_name_and_extra_arguments(["--values={'location': 'Nevada', 'aliens':'many'}"])
         Traceback (most recent call last):
             ...
             ValueError: Missing required argument: name
@@ -589,7 +592,7 @@ def parse_name_and_extra_arguments(
         The name and a dict of parsed args.
     """
     name: Optional[str] = None
-    # The name was not supplied as the first argument, we have to
+    # If the name was not supplied as the first argument, we have to
     # search the other arguments for the name.
     for i, arg in enumerate(args):
         if arg.startswith("--"):
