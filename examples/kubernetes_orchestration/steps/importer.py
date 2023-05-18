@@ -20,11 +20,13 @@ from zenml.steps import Output, step
 
 
 @step
-def digits_data_loader() -> Output(
-    X_train=np.ndarray,
-    X_test=np.ndarray,
-    y_train=np.ndarray,
-    y_test=np.ndarray,
+def digits_data_loader() -> (
+    Output(
+        X_train=np.ndarray,
+        X_test=np.ndarray,
+        y_train=np.ndarray,
+        y_test=np.ndarray,
+    )
 ):
     """Loads the digits dataset as a tuple of flattened numpy arrays."""
     digits = load_digits()

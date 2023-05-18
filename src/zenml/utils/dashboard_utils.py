@@ -17,7 +17,9 @@ from typing import Optional
 from uuid import UUID
 
 from zenml.client import Client
-from zenml.enums import StoreType
+from zenml.constants import ENV_AUTO_OPEN_DASHBOARD, handle_bool_env_var
+from zenml.enums import EnvironmentType, StoreType
+from zenml.environment import get_environment
 from zenml.logger import get_logger
 from zenml.utils.pagination_utils import depaginate
 
@@ -81,3 +83,45 @@ def print_run_url(run_name: str, pipeline_id: Optional[UUID] = None) -> None:
             "Pipeline visualization can be seen in the ZenML Dashboard. "
             "Run `zenml up` to see your pipeline!"
         )
+
+
+def show_dashboard(url: str) -> None:
+    """Show the ZenML dashboard at the given URL.
+
+    In native environments, the dashboard is opened in the default browser.
+    In notebook environments, the dashboard is embedded in an iframe.
+
+    Args:
+        url: URL of the ZenML dashboard.
+    """
+    environment = get_environment()
+    if environment in (EnvironmentType.NOTEBOOK, EnvironmentType.COLAB):
+        from IPython.core.display import display
+        from IPython.display import IFrame
+
+        display(IFrame(src=url, width="100%", height=720))
+
+    elif environment in (EnvironmentType.NATIVE, EnvironmentType.WSL):
+        if handle_bool_env_var(ENV_AUTO_OPEN_DASHBOARD, default=True):
+            try:
+                import webbrowser
+
+                if environment == EnvironmentType.WSL:
+                    webbrowser.get("wslview %s").open(url)
+                else:
+                    webbrowser.open(url)
+                logger.info(
+                    "Automatically opening the dashboard in your "
+                    "browser. To disable this, set the env variable "
+                    "AUTO_OPEN_DASHBOARD=false."
+                )
+            except Exception as e:
+                logger.error(e)
+        else:
+            logger.info(
+                "To open the dashboard in a browser automatically, "
+                "set the env variable AUTO_OPEN_DASHBOARD=true."
+            )
+
+    else:
+        logger.info(f"The ZenML dashboard is available at {url}.")

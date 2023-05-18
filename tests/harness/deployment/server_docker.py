@@ -61,7 +61,6 @@ class ServerDockerTestDeployment(BaseTestDeployment):
         # Managing the local server deployment is done through a default
         # local deployment with the same config.
         with self.default_deployment.connect():
-
             deployer = ServerDeployer()
             servers = deployer.list_servers(
                 provider_type=ServerProviderType.DOCKER
@@ -96,7 +95,6 @@ class ServerDockerTestDeployment(BaseTestDeployment):
         from zenml.zen_server.deploy.deployment import ServerDeploymentConfig
 
         if self.is_running:
-
             logging.info(
                 f"Deployment '{self.config.name}' is already running. "
                 f"Skipping provisioning."
@@ -110,7 +108,6 @@ class ServerDockerTestDeployment(BaseTestDeployment):
         # Managing the local server deployment is done through the default
         # deployment with the same config.
         with self.default_deployment.connect():
-
             port = scan_for_available_port(LOCAL_ZENML_SERVER_DEFAULT_PORT)
 
             if port is None:
@@ -137,11 +134,9 @@ class ServerDockerTestDeployment(BaseTestDeployment):
 
         server = self.server
         if server is not None:
-
             # Managing the local server deployment is done through the default
             # deployment with the same config.
             with self.default_deployment.connect():
-
                 deployer = ServerDeployer()
                 deployer.remove_server(server.config.name)
 

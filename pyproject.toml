@@ -84,7 +84,7 @@ orjson = { version = "~3.8.3", optional = true}
 # Optional dependencies for project templates
 copier = { version = ">=7.0.0", optional = true }
 jinja2-time = { version = "^0.2.0", optional = true }
-black = { version = "^22.3.0", optional = true }
+black = { version = "^23.3.0", optional = true }
 ruff = { version = "^0.0.265", optional = true }
 
 # Optional dependencies for the AWS secrets store
@@ -289,6 +289,7 @@ module = [
     "numpy.*",
     "facets_overview.*",
     "IPython.core.*",
+    "IPython.display.*",
     "plotly.*",
     "graphviz.*",
     "dash.*",
@@ -325,6 +326,7 @@ module = [
     "sqlalchemy_utils.*",
     "copier.*",
     "datasets.*",
+    "pyngrok.*",
     "cloudpickle.*",
 ]
 ignore_missing_imports = true

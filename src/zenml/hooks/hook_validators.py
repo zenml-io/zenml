@@ -21,7 +21,6 @@ from zenml.config.source import Source
 from zenml.utils import source_utils
 
 if TYPE_CHECKING:
-
     HookSpecification = Union[str, Source, FunctionType]
 
 

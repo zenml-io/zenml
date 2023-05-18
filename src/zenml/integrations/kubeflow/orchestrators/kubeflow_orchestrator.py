@@ -140,7 +140,6 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
         """
 
         def _validate_local_requirements(stack: "Stack") -> Tuple[bool, str]:
-
             container_registry = stack.container_registry
 
             # should not happen, because the stack validation takes care of
@@ -191,7 +190,6 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
                 not self.config.skip_local_validations
                 and not self.config.is_local
             ):
-
                 # if the orchestrator is not running in a local k3d cluster,
                 # we cannot have any other local components in our stack,
                 # because we cannot mount the local path into the container.
