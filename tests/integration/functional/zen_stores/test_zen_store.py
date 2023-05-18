@@ -1154,7 +1154,6 @@ def test_connector_with_no_secrets():
         resource_id="aria",
         configuration=config,
     ) as connector:
-
         assert connector.id is not None
         assert connector.type == "cat'o'matic"
         assert connector.auth_method == "paw-print"
@@ -1197,7 +1196,6 @@ def test_connector_with_secrets():
         configuration=config,
         secrets=secrets,
     ) as connector:
-
         assert connector.id is not None
         assert connector.type == "cat'o'matic"
         assert connector.auth_method == "paw-print"
@@ -1235,7 +1233,6 @@ def test_connector_with_no_config_no_secrets():
         resource_types=["spacecat"],
         resource_id="axl",
     ) as connector:
-
         assert connector.id is not None
         assert connector.type == "cat'o'matic"
         assert connector.auth_method == "whiskers"
@@ -1283,7 +1280,6 @@ def test_connector_with_labels():
         secrets=secrets,
         labels=labels,
     ) as connector:
-
         assert connector.id is not None
         assert connector.type == "cat'o'matic"
         assert connector.auth_method == "tail-print"
@@ -1333,7 +1329,6 @@ def test_connector_secret_share_lifespan():
         configuration=config,
         secrets=secrets,
     ) as connector:
-
         assert connector.id is not None
         assert connector.type == "cat'o'matic"
         assert connector.auth_method == "paw-print"
@@ -1386,7 +1381,6 @@ def test_connector_same_name_different_users():
         auth_method="paw-print",
         resource_types=["cat"],
     ) as connector_one:
-
         with UserContext(login=True):
             #  Client() needs to be instantiated here with the new
             #  logged-in user
@@ -1414,7 +1408,6 @@ def test_connector_same_name_different_users_shared():
         resource_types=["cat"],
         is_shared=True,
     ) as connector_one:
-
         with UserContext(login=True):
             #  Client() needs to be instantiated here with the new
             #  logged-in user
@@ -1442,7 +1435,6 @@ def test_connector_same_name_different_users_both_shared():
         resource_types=["cat"],
         is_shared=True,
     ) as connector_one:
-
         with UserContext(login=True):
             #  Client() needs to be instantiated here with the new
             #  logged-in user
@@ -1511,7 +1503,6 @@ def test_connector_list():
         secrets=secrets1,
         labels=labels1,
     ) as aria_connector:
-
         with ServiceConnectorContext(
             connector_type="tail'o'matic",
             auth_method="tail-print",
@@ -1520,7 +1511,6 @@ def test_connector_list():
             secrets=secrets2,
             labels=labels2,
         ) as multi_connector:
-
             with ServiceConnectorContext(
                 connector_type="tail'o'matic",
                 auth_method="tail-print",
@@ -1530,7 +1520,6 @@ def test_connector_list():
                 secrets=secrets3,
                 labels=labels3,
             ) as rodent_connector:
-
                 # List all connectors
                 connectors = store.list_service_connectors(
                     ServiceConnectorFilterModel()
@@ -1679,7 +1668,6 @@ def test_private_connector_not_visible_to_other_user():
         resource_types=["cat"],
         is_shared=False,
     ) as connector:
-
         with UserContext(login=True):
             #  Client() needs to be instantiated here with the new
             #  logged-in user
@@ -1708,7 +1696,6 @@ def test_shared_connector_is_visible_to_other_user():
         resource_types=["cat"],
         is_shared=True,
     ) as connector:
-
         with UserContext(login=True):
             #  Client() needs to be instantiated here with the new
             #  logged-in user
@@ -1764,7 +1751,6 @@ def _update_connector_and_test(
         expiration_seconds=60,
         labels=labels,
     ) as connector:
-
         assert connector.id is not None
         assert connector.type == "cat'o'matic"
         assert connector.auth_method == "paw-print"
@@ -2013,7 +1999,6 @@ def test_connector_sharing():
         secrets=secrets,
         is_shared=False,
     ) as connector:
-
         assert connector.secret_id is not None
         secret = store.get_secret(connector.secret_id)
         assert secret.scope == SecretScope.USER
@@ -2072,7 +2057,6 @@ def test_connector_sharing_fails_if_name_shared():
         resource_types=["cat"],
         is_shared=True,
     ) as connector:
-
         with UserContext(login=True):
             #  Client() needs to be instantiated here with the new
             #  logged-in user
@@ -2094,7 +2078,6 @@ def test_connector_sharing_fails_if_name_shared():
                 resource_types=["cat"],
                 is_shared=False,
             ) as other_connector:
-
                 with pytest.raises(EntityExistsError):
                     other_store.update_service_connector(
                         other_connector.id,
@@ -2136,7 +2119,6 @@ def test_connector_type_register():
         resource_type_one=resource_type_one,
         resource_type_two=resource_type_two,
     ) as connector_type_spec:
-
         assert (
             store.get_service_connector_type(connector_type)
             == connector_type_spec
@@ -2167,7 +2149,6 @@ def test_connector_validation():
         resource_type_one=resource_type_one,
         resource_type_two=resource_type_two,
     ):
-
         # All attributes
         config = {
             "color": "pink",
@@ -2184,7 +2165,6 @@ def test_connector_validation():
             configuration=config,
             secrets=secrets,
         ) as connector:
-
             assert connector.configuration == config
             assert connector.secrets == {}
             assert connector.secret_id is not None
@@ -2205,7 +2185,6 @@ def test_connector_validation():
             configuration=config,
             secrets=secrets,
         ) as connector:
-
             assert connector.configuration == config
             assert connector.secrets == {}
             assert connector.secret_id is not None
@@ -2261,7 +2240,6 @@ def test_connector_validation():
             resource_types=[resource_type_one, resource_type_two],
             configuration=full_config,
         ) as connector:
-
             assert connector.configuration == config
             assert connector.secrets == {}
             assert connector.secret_id is not None

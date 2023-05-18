@@ -574,7 +574,6 @@ class AWSServiceConnector(ServiceConnector):
                 determined.
         """
         if self._account_id is None:
-
             logger.debug("Getting ECR registry ID from AWS...")
             try:
                 session, _ = self.get_boto3_session(self.auth_method)
@@ -1231,7 +1230,6 @@ class AWSServiceConnector(ServiceConnector):
         )
 
         if resource_type == S3_RESOURCE_TYPE:
-
             # Validate that the resource ID is a valid S3 bucket name
             self._parse_s3_resource_id(resource_id)
 
@@ -1387,7 +1385,6 @@ class AWSServiceConnector(ServiceConnector):
                     )
 
                 if credentials.method == "assume-role":
-
                     # In the special case of IAM role authentication, the
                     # credentials in the boto3 session are the temporary STS
                     # credentials instead of the long-lived credentials, and the
@@ -1426,7 +1423,6 @@ class AWSServiceConnector(ServiceConnector):
                     expiration_seconds = DEFAULT_IAM_ROLE_TOKEN_EXPIRATION
 
                 else:
-
                     # Temporary credentials were picked up from the local
                     # configuration. It's not possible to determine the
                     # expiration time of the temporary credentials from the

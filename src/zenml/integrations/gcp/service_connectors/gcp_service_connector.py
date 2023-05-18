@@ -615,7 +615,6 @@ class GCPServiceConnector(ServiceConnector):
         scopes = self._get_scopes(resource_type, resource_id)
         expires_at: Optional[datetime.datetime] = None
         if auth_method == GCPAuthenticationMethods.IMPLICIT:
-
             # Determine the credentials from the environment
             # Override the project ID if specified in the config
             credentials, project_id = google.auth.default(
@@ -911,7 +910,6 @@ class GCPServiceConnector(ServiceConnector):
         )
 
         if resource_type == GCS_RESOURCE_TYPE:
-
             # Validate that the resource ID is a valid GCS bucket name
             self._parse_gcs_resource_id(resource_id)
 
@@ -1026,7 +1024,6 @@ class GCPServiceConnector(ServiceConnector):
                 project_id=project_id,
             )
         elif auth_method == GCPAuthenticationMethods.OAUTH2_TOKEN:
-
             # Refresh the credentials if necessary, to fetch the access token
             if not credentials.valid or not credentials.token:
                 try:
@@ -1054,7 +1051,6 @@ class GCPServiceConnector(ServiceConnector):
                     tzinfo=datetime.timezone.utc
                 )
         else:
-
             # Check if user account credentials are available
             if isinstance(credentials, gcp_credentials.Credentials):
                 if auth_method not in [
@@ -1279,7 +1275,6 @@ class GCPServiceConnector(ServiceConnector):
         )
 
         if resource_type in [GCP_RESOURCE_TYPE, GCS_RESOURCE_TYPE]:
-
             # Use the temporary credentials extracted from the boto3 session
             config = GCPOAuth2TokenConfig(
                 project_id=self.config.project_id,

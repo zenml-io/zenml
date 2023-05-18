@@ -1329,7 +1329,6 @@ def print_service_connectors_table(
 
     configurations = []
     for connector in connectors:
-
         is_active = connector.id in active_connector_ids
         labels = [
             f"{label}:{value}" for label, value in connector.labels.items()
@@ -1366,7 +1365,6 @@ def print_service_connector_resource_table(
     """
     resource_table = []
     for resource_model in resources:
-
         resource_types = resource_model.emojified_resource_types
         if not resource_model.resource_type:
             # Multi-type connector

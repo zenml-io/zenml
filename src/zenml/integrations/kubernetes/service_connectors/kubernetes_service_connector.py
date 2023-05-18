@@ -223,14 +223,12 @@ class KubernetesServiceConnector(ServiceConnector):
         k8s_conf = k8s_client.Configuration()
 
         if self.auth_method == KubernetesAuthenticationMethods.PASSWORD:
-
             assert isinstance(cfg, KubernetesUserPasswordConfig)
 
             k8s_conf.username = cfg.username.get_secret_value()
             k8s_conf.password = cfg.password.get_secret_value()
 
         else:
-
             assert isinstance(cfg, KubernetesTokenConfig)
 
             k8s_conf.api_key["authorization"] = cfg.token.get_secret_value()
@@ -270,7 +268,6 @@ class KubernetesServiceConnector(ServiceConnector):
         cluster_name = cfg.cluster_name
 
         if self.auth_method == KubernetesAuthenticationMethods.PASSWORD:
-
             assert isinstance(cfg, KubernetesUserPasswordConfig)
 
             username = cfg.username.get_secret_value()
@@ -288,7 +285,6 @@ class KubernetesServiceConnector(ServiceConnector):
             ]
 
         else:
-
             assert isinstance(cfg, KubernetesTokenConfig)
 
             token = cfg.token.get_secret_value()

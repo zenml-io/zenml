@@ -1372,7 +1372,6 @@ def prompt_select_resource(
             cli_utils.error("Aborting.")
         resources = resource_list[0]
     else:
-
         # Prompt the user to select a connector by its name or ID
         while True:
             connector_id = click.prompt(
@@ -1571,7 +1570,6 @@ def generate_stack_component_connect_command(
             ]
 
             if not resource_list:
-
                 # No compatible resources were found
                 additional_info = ""
                 if error_resource_list:
@@ -1607,7 +1605,6 @@ def generate_stack_component_connect_command(
             connector_id, resource_id = prompt_select_resource(resource_list)
             no_verify = False
         else:
-
             # Non-interactive mode: we need to fetch the connector model first
 
             assert connector is not None
@@ -1690,7 +1687,6 @@ def generate_stack_component_connect_command(
             )
 
         else:
-
             cli_utils.declare(
                 f"Successfully connected {display_name} "
                 f"`{component_model.name}` to resource."

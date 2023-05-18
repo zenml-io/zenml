@@ -194,7 +194,6 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
         def _validate_kube_context(
             kubernetes_context: str,
         ) -> Tuple[bool, str]:
-
             contexts, active_context = self.get_kubernetes_contexts()
 
             if kubernetes_context and kubernetes_context not in contexts:
@@ -234,7 +233,6 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
             return True, ""
 
         def _validate_local_requirements(stack: "Stack") -> Tuple[bool, str]:
-
             container_registry = stack.container_registry
 
             # should not happen, because the stack validation takes care of
@@ -245,7 +243,6 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
             connector = self.get_connector()
 
             if not connector:
-
                 if (
                     not kubernetes_context
                     and not self.config.kubeflow_hostname

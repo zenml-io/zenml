@@ -4568,7 +4568,6 @@ class SqlZenStore(BaseZenStore):
         scope_changed = is_shared != existing_connector.is_shared
 
         if updated_connector.secrets is None:
-
             if scope_changed and existing_connector.secret_id:
                 # Update the scope of the existing secret
                 self.secrets_store.update_secret(
@@ -4980,7 +4979,6 @@ class SqlZenStore(BaseZenStore):
         resource_list: List[ServiceConnectorResourcesModel] = []
 
         for connector in list(shared_connectors) + list(private_connectors):
-
             if not service_connector_registry.is_registered(connector.type):
                 # For connectors that we can instantiate, i.e. those that have a
                 # connector type available locally, we return complete

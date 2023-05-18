@@ -886,7 +886,6 @@ class ServiceConnector(BaseModel, metaclass=ServiceConnectorMeta):
         )
 
         if resource_id:
-
             if self.resource_id and self.resource_id != resource_id:
                 raise ValueError(
                     f"the connector is configured to provide access to a "

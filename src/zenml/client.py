@@ -4623,7 +4623,6 @@ class Client(metaclass=ClientMetaClass):
                 configuration=configuration,
             )
             if verify:
-
                 # Prefer to verify the connector config server-side if the
                 # implementation if available there, because it ensures
                 # that the connector can be shared with other users or used
@@ -4833,7 +4832,6 @@ class Client(metaclass=ClientMetaClass):
             connector_update.labels = connector_model.labels
 
         if verify:
-
             # Prefer to verify the connector config server-side if the
             # implementation if available there, because it ensures
             # that the connector can be shared with other users or used

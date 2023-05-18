@@ -553,7 +553,6 @@ class ServiceConnectorTypeContext:
         self.delete = delete
 
     def __enter__(self):
-
         self.connector_type_spec = ServiceConnectorTypeModel(
             name="Cat service connector",
             connector_type=self.connector_type or sample_name("cat'o'matic"),

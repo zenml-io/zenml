@@ -596,7 +596,6 @@ def register_service_connector(
             # Try to auto-configure the service connector
             try:
                 with console.status("Auto-configuring service connector...\n"):
-
                     (
                         connector_model,
                         connector_resources,
@@ -738,7 +737,6 @@ def register_service_connector(
                 with console.status(
                     "Validating service connector configuration...\n"
                 ):
-
                     (
                         connector_model,
                         connector_resources,
@@ -1250,7 +1248,6 @@ def update_service_connector(
         cli_utils.error(str(e))
 
     if interactive:
-
         # Fetch the connector type specification if not already embedded
         # into the connector model
         if isinstance(connector.connector_type, str):
@@ -1308,7 +1305,6 @@ def update_service_connector(
         existing_config = connector.full_configuration
 
         if confirm:
-
             # Here we reconfigure the connector or update the existing
             # configuration. The existing configuration is used as much
             # as possible to avoid the user having to re-enter the same
@@ -1380,7 +1376,6 @@ def update_service_connector(
             # resources that are accessible with the provided configuration
             # in the process
             with console.status("Validating service connector update...\n"):
-
                 (
                     connector_model,
                     connector_resources,
@@ -1434,7 +1429,6 @@ def update_service_connector(
         no_verify = False
 
     else:
-
         # Non-interactive configuration
 
         # Apply the configuration from the command line arguments
