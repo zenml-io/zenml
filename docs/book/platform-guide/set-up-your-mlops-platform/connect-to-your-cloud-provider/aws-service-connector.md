@@ -36,7 +36,13 @@ The AWS Service Connector is part of the AWS ZenML integration. You can either i
 
 It is not required to [install and set up the AWS CLI on your local machine](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-configure.html) to use the AWS Service Connector to link Stack Components to AWS resources and services. However, it is recommended to do so if you are looking for a quick setup that includes using the auto-configuration Service Connector features.
 
-Most of the examples in this page rely on the AWS CLI being installed and already configured with valid credentials of one type or another.
+{% hint style="info" %}
+The auto-configuration examples in this page rely on the AWS CLI being installed and already configured with valid credentials of one type or another. If you want to avoid installing the AWS CLI, we recommend using the interactive mode of the ZenML CLI to register Service Connectors:
+
+```
+zenml service-connector register -i --type aws
+```
+{% endhint %}
 
 ## Resource Types
 
@@ -59,6 +65,10 @@ The configured credentials must have at least the following [AWS IAM permissions
 * s3:PutObject
 * s3:DeleteObject
 * s3:ListAllMyBuckets
+
+{% hint style="info" %}
+If you are using the AWS IAM role, Session Token or Federation Token authentication methods, you don't have to worry too much about restricting the permissions of the AWS credentials that you use to access the AWS cloud resources. These authentication methods already support [automatically generating termporary tokens](best-security-practices.md#generating-temporary-and-down-scoped-credentials) with [permissions down-scoped to the minimum required](best-security-practices.md#aws-down-scoped-credentials-example) to access the target resource.
+{% endhint %}
 
 If set, the resource name must identify an S3 bucket using one of the following formats:
 
