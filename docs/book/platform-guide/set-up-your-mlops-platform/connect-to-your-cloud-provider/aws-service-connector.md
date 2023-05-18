@@ -67,7 +67,7 @@ The configured credentials must have at least the following [AWS IAM permissions
 * s3:ListAllMyBuckets
 
 {% hint style="info" %}
-If you are using the AWS IAM role, Session Token or Federation Token authentication methods, you don't have to worry too much about restricting the permissions of the AWS credentials that you use to access the AWS cloud resources. These authentication methods already support [automatically generating termporary tokens](best-security-practices.md#generating-temporary-and-down-scoped-credentials) with [permissions down-scoped to the minimum required](best-security-practices.md#aws-down-scoped-credentials-example) to access the target resource.
+If you are using the [AWS IAM role](aws-service-connector.md#aws-iam-role), [Session Token](aws-service-connector.md#aws-session-token) or [Federation Token](aws-service-connector.md#aws-federation-token) authentication methods, you don't have to worry too much about restricting the permissions of the AWS credentials that you use to access the AWS cloud resources. These authentication methods already support [automatically generating temporary tokens](best-security-practices.md#generating-temporary-and-down-scoped-credentials) with permissions down-scoped to the minimum required to access the target resource.
 {% endhint %}
 
 If set, the resource name must identify an S3 bucket using one of the following formats:
@@ -84,6 +84,10 @@ The configured credentials must have at least the following [AWS IAM permissions
 
 * eks:ListClusters
 * eks:DescribeCluster
+
+{% hint style="info" %}
+If you are using the [AWS IAM role](aws-service-connector.md#aws-iam-role), [Session Token](aws-service-connector.md#aws-session-token) or [Federation Token](aws-service-connector.md#aws-federation-token) authentication methods, you don't have to worry too much about restricting the permissions of the AWS credentials that you use to access the AWS cloud resources. These authentication methods already support [automatically generating temporary tokens](best-security-practices.md#generating-temporary-and-down-scoped-credentials) with permissions down-scoped to the minimum required to access the target resource.
+{% endhint %}
 
 In addition to the above permissions, if the credentials are not associated with the same IAM user or role that created the EKS cluster, the IAM principal must be manually added to the EKS cluster's `aws-auth` ConfigMap, otherwise the Kubernetes client will not be allowed to access the cluster's resources. This makes it more challenging to use [the AWS Implicit](aws-service-connector.md#implicit-authentication) and [AWS Federation Token](aws-service-connector.md#aws-federation-token) authentication methods for this resource. For more information, [see this documentation](https://docs.aws.amazon.com/eks/latest/userguide/add-user-role.html).
 
@@ -112,6 +116,10 @@ The configured credentials must have at least the following [AWS IAM permissions
 * ecr:CompleteLayerUpload
 * ecr:PutImage
 * ecr:GetAuthorizationToken
+
+{% hint style="info" %}
+If you are using the [AWS IAM role](aws-service-connector.md#aws-iam-role), [Session Token](aws-service-connector.md#aws-session-token) or [Federation Token](aws-service-connector.md#aws-federation-token) authentication methods, you don't have to worry too much about restricting the permissions of the AWS credentials that you use to access the AWS cloud resources. These authentication methods already support [automatically generating temporary tokens](best-security-practices.md#generating-temporary-and-down-scoped-credentials) with permissions down-scoped to the minimum required to access the target resource.
+{% endhint %}
 
 This resource type is not scoped to a single ECR repository. Instead, a connector configured with this resource type will grant access to all the ECR repositories that the credentials are allowed to access under the configured AWS region (i.e. all repositories under the Docker registry URL `https://{account-id}.dkr.ecr.{region}.amazonaws.com`).
 
@@ -527,7 +535,7 @@ The connector needs to be configured with the IAM role to be assumed accompanied
 
 An AWS region is required and the connector may only be used to access AWS resources in the specified region.
 
-One or more optional [IAM session policies](https://docs.aws.amazon.com/IAM/latest/UserGuide/access\_policies.html#policies\_session) may also be configured to further restrict the permissions of the generated STS tokens. If not specified, IAM session policies are automatically configured for the generated STS tokens [to restrict them to the minimum set of permissions required to access the target resource](best-security-practices.md#aws-down-scoped-credentials-example). Refer to the documentation for each supported Resource Type for the complete list of AWS permissions automatically granted to the generated STS tokens.
+One or more optional [IAM session policies](https://docs.aws.amazon.com/IAM/latest/UserGuide/access\_policies.html#policies\_session) may also be configured to further restrict the permissions of the generated STS tokens. If not specified, IAM session policies are automatically configured for the generated STS tokens [to restrict them to the minimum set of permissions required to access the target resource](best-security-practices.md#generating-temporary-and-down-scoped-credentials). Refer to the documentation for each supported Resource Type for the complete list of AWS permissions automatically granted to the generated STS tokens.
 
 The default expiration period for generated STS tokens is 1 hour with a minimum of 15 minutes up to the maximum session duration setting configured for the IAM role (default is 1 hour). If you need longer-lived tokens, you can configure the IAM role to use a higher maximum expiration value (up to 12 hours) or use the AWS Federation Token or AWS Session Token authentication methods.
 
@@ -804,10 +812,10 @@ These STS tokens have an expiration period longer that those issued through [the
 
 An AWS region is required and the connector may only be used to access AWS resources in the specified region.
 
-One or more optional [IAM session policies](https://docs.aws.amazon.com/IAM/latest/UserGuide/access\_policies.html#policies\_session) may also be configured to further restrict the permissions of the generated STS tokens. If not specified, IAM session policies are automatically configured for the generated STS tokens [to restrict them to the minimum set of permissions required to access the target resource](best-security-practices.md#aws-down-scoped-credentials-example). Refer to the documentation for each supported Resource Type for the complete list of AWS permissions automatically granted to the generated STS tokens.
+One or more optional [IAM session policies](https://docs.aws.amazon.com/IAM/latest/UserGuide/access\_policies.html#policies\_session) may also be configured to further restrict the permissions of the generated STS tokens. If not specified, IAM session policies are automatically configured for the generated STS tokens [to restrict them to the minimum set of permissions required to access the target resource](best-security-practices.md#generating-temporary-and-down-scoped-credentials). Refer to the documentation for each supported Resource Type for the complete list of AWS permissions automatically granted to the generated STS tokens.
 
 {% hint style="warning" %}
-If this authentication method is used with the generic AWS resource type, a session policy MUST be explicitly specified, otherwise the generated STS tokens will not have any permissions.
+If this authentication method is used with [the generic AWS resource type](aws-service-connector.md#generic-aws-resource), a session policy MUST be explicitly specified, otherwise the generated STS tokens will not have any permissions.
 {% endhint %}
 
 The default expiration period for generated STS tokens is 12 hours with a minimum of 15 minutes and a maximum of 36 hours. Temporary credentials obtained by using the AWS account root user credentials (not recommended) have a maximum duration of 1 hour.
