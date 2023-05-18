@@ -22,7 +22,7 @@ The key take-away is this: you should avoid using your primary account password 
 Ultimately, if you have no choice, be cognizant of the third parties you share your passwords with. If possible, they should never leave the premises of your local host or development environment.
 {% endhint %}
 
-This is the typical authentication method that uses a username or account name plus the associated password. While this is the de facto method used to authenticate with web consoles and local CLIs, this is the least secure of all authentication methods and _never_ something you want to share with other members of your team or organization or use to authenticate automated workloads.
+This is the typical authentication method that uses a username or account name plus the associated password. While this is the de facto method used to login with web consoles and local CLIs, this is the least secure of all authentication methods and _never_ something you want to share with other members of your team or organization or use to authenticate automated workloads.
 
 In fact, cloud platforms don't even allow using user account passwords directly as a credential when authenticating to the cloud platform APIs. There is always a process in place that allows exchanging the account/password credential for [another form of long-lived credential](best-security-practices.md#long-lived-credentials-api-keys-account-keys).
 

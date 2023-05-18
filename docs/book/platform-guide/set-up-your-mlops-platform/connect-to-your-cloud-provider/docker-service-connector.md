@@ -49,7 +49,7 @@ Successfully registered service connector `dockerhub` with access to the followi
 This Service Connector does not support generating short-lived credentials from the username and password or token credentials configured in the Service Connector. In effect, this means that the configured credentials will be distributed directly to clients and used to authenticate directly to the target Docker/OCI registry service.
 {% endhint %}
 
-## Auto-discovery
+## Auto-configuration
 
 {% hint style="info" %}
 This Service Connector does not support auto-discovery and extraction of authentication credentials from local Docker clients.

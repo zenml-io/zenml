@@ -10,12 +10,12 @@ The ZenML Kubernetes service connector facilitates authenticating and connecting
 
 ## Prerequisites
 
-The Kubernetes Service Connector is part of the `kubernetes` ZenML integration. You can either the entire integration or use a pypi extra to install it independently of the integration:
+The Kubernetes Service Connector is part of the Kubernetes ZenML integration. You can either install the entire integration or use a pypi extra to install it independently of the integration:
 
 * `pip install zenml[connectors-kubernetes]` installs only prerequisites for the Kubernetes Service Connector Type
 * `zenml integration install kubernetes` installs the entire Kubernetes ZenML integration
 
-A local Kubernetes client (i.e. `kubectl` ) is not required to use access Kubernetes clusters in your Stack Components through the Kubernetes Service Connector.
+A local Kubernetes CLI (i.e. `kubectl` ) and setting up local `kubectl` configuration contexts is not required to access Kubernetes clusters in your Stack Components through the Kubernetes Service Connector.
 
 ## Resource Types
 
@@ -34,9 +34,9 @@ Two authentication methods are supported:
 This Service Connector does not support generating short-lived credentials from the credentials configured in the Service Connector. In effect, this means that the configured credentials will be distributed directly to clients and used to authenticate to the target Kubernetes API. It is recommended therefore to use API tokens accompanied by client certificates if possible.
 {% endhint %}
 
-## Auto-discovery
+## Auto-configuration
 
-The Kubernetes Service Connector allows fetching credentials from the local Kubernetes client (i.e. `kubectl`) during registration. The current Kubernetes kubectl configuration context is used for this purpose. The following is an example of lifting Kubernetes credentials granting access to a GKE cluster:
+The Kubernetes Service Connector allows fetching credentials from the local Kubernetes CLI (i.e. `kubectl`) during registration. The current Kubernetes kubectl configuration context is used for this purpose. The following is an example of lifting Kubernetes credentials granting access to a GKE cluster:
 
 ```
 $ zenml service-connector register kube-auto --type kubernetes --auto-configure
