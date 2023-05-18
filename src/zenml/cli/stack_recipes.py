@@ -479,7 +479,6 @@ def deploy(
         metadata={"stack_recipe_name": stack_recipe_name},
         v2=True,
     ) as handler:
-
         # build a dict of all stack component options that have non-null values
         stack_component_options = {
             "artifact_store": artifact_store,
@@ -817,7 +816,6 @@ def destroy(
         event=AnalyticsEvent.DESTROY_STACK_RECIPE,
         metadata={"stack_recipe_name": stack_recipe_name},
     ) as handler:
-
         # build a dict of all stack component options that have non-null values
         stack_component_options = {
             "artifact_store": artifact_store,
