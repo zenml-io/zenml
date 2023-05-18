@@ -6,9 +6,9 @@ description: >-
 
 # AWS Service Connector
 
-The ZenML AWS Service Connector facilitates the authentication and access to managed AWS services and resources. These encompass a range of resources, including S3 buckets, ECR repositories, and EKS clusters. The connector provides support for various authentication methods, including explicit long-lived AWS credentials, IAM roles, and implicit authentication.
+The ZenML AWS Service Connector facilitates the authentication and access to managed AWS services and resources. These encompass a range of resources, including S3 buckets, ECR container repositories and EKS clusters. The connector provides support for various authentication methods, including explicit long-lived AWS secret keys, IAM roles, short-lived STS tokens and implicit authentication.
 
-To ensure heightened security measures, this connector also enables the generation of temporary STS security tokens that are scoped down to the minimum permissions necessary for accessing the intended resource. Furthermore, it includes automatic configuration and detection of  credentials locally configured through the AWS CLI.
+To ensure heightened security measures, this connector also enables [the generation of temporary STS security tokens that are scoped down to the minimum permissions necessary](best-security-practices.md#generating-temporary-and-down-scoped-credentials) for accessing the intended resource. Furthermore, it includes [automatic configuration and detection of  credentials locally configured through the AWS CLI](service-connectors-guide.md#auto-configuration).
 
 This connector serves as a general means of accessing any AWS service by issuing pre-authenticated boto3 sessions. Additionally, the connector can handle specialized authentication for S3, Docker and Kubernetes Python clients. It also allows for the configuration of local Docker and Kubernetes CLIs.
 
@@ -78,7 +78,7 @@ If set, the resource name must identify an S3 bucket using one of the following 
 
 ### EKS Kubernetes cluster
 
-Allows users to access an EKS cluster as a standard Kubernetes cluster resource. When used by connector consumers, they are provided a pre-authenticated Python Kubernetes client instance.
+Allows users to access an EKS cluster as a standard Kubernetes cluster resource. When used by Stack Components, they are provided a pre-authenticated Python Kubernetes client instance.
 
 The configured credentials must have at least the following [AWS IAM permissions](https://docs.aws.amazon.com/IAM/latest/UserGuide/access\_policies.html) associated with the [ARNs of EKS clusters](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference-arns.html) that the connector will be allowed to access (e.g. `arn:aws:eks:{region_id}:{project_id}:cluster/*` represents all the EKS clusters available in the target AWS region).
 
@@ -100,7 +100,7 @@ EKS cluster names are region scoped. The connector can only be used to access EK
 
 ### ECR container registry
 
-Allows users to access one or more ECR repositories as a standard Docker registry resource. When used by connector consumers, they are provided a pre-authenticated python-docker client instance.
+Allows Stack Components to access one or more ECR repositories as a standard Docker registry resource. When used by Stack Components, they are provided a pre-authenticated python-docker client instance.
 
 The configured credentials must have at least the following [AWS IAM permissions](https://docs.aws.amazon.com/IAM/latest/UserGuide/access\_policies.html) associated with the [ARNs of one or more ECR repositories](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference-arns.html) that the connector will be allowed to access (e.g. `arn:aws:ecr:{region}:{account}:repository/*` represents all the ECR repositories available in the target AWS region).
 
@@ -125,8 +125,13 @@ This resource type is not scoped to a single ECR repository. Instead, a connecto
 
 The resource name associated with this resource type uniquely identifies an ECR registry using one of the following formats (the repository name is ignored, only the registry URL/ARN is used):
 
-* ECR repository URI: `https://{account}.dkr.ecr.{region}.amazonaws.com[/{repository-name}]`
-* ECR repository ARN: `arn:aws:ecr:{region}:{account-id}:repository[/{repository-name}]`
+* ECR repository URI (canonical resource name):
+
+`[https://]{account}.dkr.ecr.{region}.amazonaws.com[/{repository-name}]`
+
+* ECR repository ARN :
+
+`arn:aws:ecr:{region}:{account-id}:repository[/{repository-name}]`
 
 ECR repository names are region scoped. The connector can only be used to access ECR repositories in the AWS region that it is configured to use.
 
@@ -142,7 +147,7 @@ This authentication method doesn't require any credentials to be explicitly conf
 * local configuration files [set up through the AWS CLI ](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-configure.html)(\~/aws/credentials, \~/.aws/config)
 * IAM roles for Amazon EC2, ECS, EKS, Lambda, etc. Only works when running the ZenML server on an AWS resource with an IAM role attached to it.
 
-This is the quickest and easiest way to authenticate to AWS services. However, the results depend on how ZenML is deployed and the environment where it is used and is thus not fully reproducible:
+This is the quickest and easiest way to authenticate to AWS services. However, the results depend on how ZenML is deployed and the environment where it is used and are thus not fully reproducible:
 
 * when used with the default local ZenML deployment or a local ZenML server, the credentials are the same as those used by the AWS CLI or extracted from local environment variables
 * when connected to a ZenML server, this method only works if the ZenML server is deployed in AWS and will use the IAM role attached to the AWS resource where the ZenML server is running (e.g. an EKS cluster). The IAM role permissions may need to be adjusted to allows listing and accessing/describing the AWS resources that the connector is configured to access.
@@ -951,6 +956,10 @@ Service connector 'aws-federation-token (s3-bucket | s3://zenfiles client)' of t
 
 The AWS Service Connector allows [auto-discovering and fetching credentials](service-connectors-guide.md#auto-configuration) and configuration set up [by the AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-configure.html) during registration. The default AWS CLI profile is used, unless the AWS\_PROFILE environment points to a different profile.
 
+<details>
+
+<summary>Auto-configuration example</summary>
+
 The following is an example of lifting AWS credentials granting access to the same set of AWS resources and services that the local AWS CLI is allowed to access. In this case, [the IAM role authentication method](aws-service-connector.md#aws-iam-role) was automatically detected:
 
 ```
@@ -1037,7 +1046,88 @@ Service connector 'aws-auto' is correctly configured with valid credentials and 
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━┛
 ```
 
+</details>
+
 ## Local client provisioning
+
+The local Kubernetes `kubectl` CLI and the Docker CLI can be [configured with credentials extracted from or generated by a compatible AWS Service Connector](service-connectors-guide.md#configure-local-clients). Please note that unlike the configuration made possible through the AWS CLI, the credentials issued by the AWS Service Connector have a short lifetime and will need to be regularly refreshed. This is a byproduct of implementing a high security profile. &#x20;
+
+<details>
+
+<summary>Local CLI configuration examples</summary>
+
+The following shows an example of configuring the local Kubernetes CLI to access an EKS cluster reachable through an AWS Service Connector:
+
+```
+$ zenml service-connector list
+┏━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━┯━━━━━━━━━┯━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ ACTIVE │ NAME                         │ ID                                 │ TYPE          │ RESOURCE TYPES        │ RESOURCE NAME                  │ SHARED │ OWNER   │ EXPIRES IN  │ LABELS                   ┃
+┠────────┼──────────────────────────────┼────────────────────────────────────┼───────────────┼───────────────────────┼────────────────────────────────┼────────┼─────────┼─────────────┼──────────────────────────┨
+┃        │ aws-session-token            │ 3ae3e595-5cbc-446e-be64-e54e854e0e │ 🔶 aws        │ 🔶 aws-generic        │ <multiple>                     │ ➖     │ default │             │                          ┃
+┃        │                              │ 3f                                 │               │ 📦 s3-bucket          │                                │        │         │             │                          ┃
+┃        │                              │                                    │               │ 🌀 kubernetes-cluster │                                │        │         │             │                          ┃
+┃        │                              │                                    │               │ 🐳 docker-registry    │                                │        │         │             │                          ┃
+┗━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━┷━━━━━━━━━┷━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+$ zenml service-connector verify aws-session-token --resource-type kubernetes-cluster
+Service connector 'aws-session-token' is correctly configured with valid credentials and has access to the following resources:
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━┓
+┃             CONNECTOR ID             │ CONNECTOR NAME    │ CONNECTOR TYPE │ RESOURCE TYPE         │ RESOURCE NAMES   ┃
+┠──────────────────────────────────────┼───────────────────┼────────────────┼───────────────────────┼──────────────────┨
+┃ 3ae3e595-5cbc-446e-be64-e54e854e0e3f │ aws-session-token │ 🔶 aws         │ 🌀 kubernetes-cluster │ zenhacks-cluster ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━┛
+
+$ zenml service-connector login aws-session-token --resource-type kubernetes-cluster --resource-id zenhacks-cluster
+⠇ Attempting to configure local client using service connector 'aws-session-token'...
+Cluster "arn:aws:eks:us-east-1:715803424590:cluster/zenhacks-cluster" set.
+Context "arn:aws:eks:us-east-1:715803424590:cluster/zenhacks-cluster" modified.
+Updated local kubeconfig with the cluster details. The current kubectl context was set to 'arn:aws:eks:us-east-1:715803424590:cluster/zenhacks-cluster'.
+The 'aws-session-token' Kubernetes Service Connector connector was used to successfully configure the local Kubernetes cluster client/SDK.
+
+$ kubectl cluster-info
+Kubernetes control plane is running at https://A5F8F4142FB12DDCDE9F21F6E9B07A18.gr7.us-east-1.eks.amazonaws.com
+CoreDNS is running at https://A5F8F4142FB12DDCDE9F21F6E9B07A18.gr7.us-east-1.eks.amazonaws.com/api/v1/namespaces/kube-system/services/kube-dns:dns/proxy
+```
+
+A similar process is possible with ECR container registries:
+
+```
+$ zenml service-connector verify aws-session-token --resource-type docker-registry
+Service connector 'aws-session-token' is correctly configured with valid credentials and has access to the following resources:
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃             CONNECTOR ID             │ CONNECTOR NAME    │ CONNECTOR TYPE │ RESOURCE TYPE      │ RESOURCE NAMES                               ┃
+┠──────────────────────────────────────┼───────────────────┼────────────────┼────────────────────┼──────────────────────────────────────────────┨
+┃ 3ae3e595-5cbc-446e-be64-e54e854e0e3f │ aws-session-token │ 🔶 aws         │ 🐳 docker-registry │ 715803424590.dkr.ecr.us-east-1.amazonaws.com ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+$ zenml service-connector login aws-session-token --resource-type docker-registry 
+⠏ Attempting to configure local client using service connector 'aws-session-token'...
+WARNING! Your password will be stored unencrypted in /home/stefan/.docker/config.json.
+Configure a credential helper to remove this warning. See
+https://docs.docker.com/engine/reference/commandline/login/#credentials-store
+
+The 'aws-session-token' Docker Service Connector connector was used to successfully configure the local Docker/OCI container registry client/SDK.
+
+$ docker pull 715803424590.dkr.ecr.us-east-1.amazonaws.com/zenml-server
+Using default tag: latest
+latest: Pulling from zenml-server
+e9995326b091: Pull complete 
+f3d7f077cdde: Pull complete 
+0db71afa16f3: Pull complete 
+6f0b5905c60c: Pull complete 
+9d2154d50fd1: Pull complete 
+d072bba1f611: Pull complete 
+20e776588361: Pull complete 
+3ce69736a885: Pull complete 
+c9c0554c8e6a: Pull complete 
+bacdcd847a66: Pull complete 
+482033770844: Pull complete 
+Digest: sha256:bf2cc3895e70dfa1ee1cd90bbfa599fa4cd8df837e27184bac1ce1cc239ecd3f
+Status: Downloaded newer image for 715803424590.dkr.ecr.us-east-1.amazonaws.com/zenml-server:latest
+715803424590.dkr.ecr.us-east-1.amazonaws.com/zenml-server:latest
+```
+
+</details>
 
 {% hint style="info" %}
 This Service Connector does not support configuring the local AWS CLI with credentials stored in or generated from the connector configuration. If this feature is useful to you or your organization, please let us know by messaging us in [Slack](https://zenml.io/slack-invite) or [creating an issue on GitHub](https://github.com/zenml-io/zenml/issues).
