@@ -379,6 +379,8 @@ def print_flavor_list(flavors: Page["FlavorResponseModel"]) -> None:
                 "FLAVOR": f.name,
                 "INTEGRATION": f.integration,
                 "SOURCE": f.source,
+                "CONNECTOR TYPE": f.connector_type or "",
+                "RESOURCE TYPE": f.connector_resource_type or "",
             }
         )
 

@@ -1017,6 +1017,32 @@ def generate_stack_component_flavor_describe_command(
             )
 
             cli_utils.describe_pydantic_object(flavor_model.config_schema)
+            resources = flavor_model.connector_requirements
+            if resources:
+                resources_str = f"a '{resources.resource_type}' resource"
+                cli_args = f"--resource-type {resources.resource_type}"
+                if resources.connector_type:
+                    resources_str += (
+                        f" provided by a '{resources.connector_type}' "
+                        "connector"
+                    )
+                    cli_args += f"--connector-type {resources.connector_type}"
+
+                cli_utils.declare(
+                    f"This flavor supports connecting to external resources "
+                    f"with a Service Connector. It requires {resources_str}. "
+                    "You can get a list of all available connectors and the "
+                    "compatible resources that they can access by running:\n\n"
+                    f"'zenml service-connector list-resources {cli_args}'\n"
+                    "If no compatible Service Connectors are yet registered, "
+                    "you can can register a new one by running:\n\n"
+                    f"'zenml service-connector register -i'"
+                )
+            else:
+                cli_utils.declare(
+                    "This flavor does not support connecting to external "
+                    "resources with a Service Connector."
+                )
 
     return describe_stack_component_flavor_command
 
