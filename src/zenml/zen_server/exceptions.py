@@ -207,8 +207,6 @@ def exception_from_response(
 
         if isinstance(response_json, dict):
             detail = response_json.get("detail", response.text)
-        elif isinstance(response_json, list):
-            detail = response_json
         else:
             detail = response_json
 

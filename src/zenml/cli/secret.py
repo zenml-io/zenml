@@ -36,6 +36,7 @@ from zenml.cli.utils import (
 )
 from zenml.client import Client
 from zenml.console import console
+from zenml.constants import ARBITRARY_SECRET_SCHEMA_TYPE
 from zenml.enums import (
     CliCategories,
     SecretScope,
@@ -96,7 +97,7 @@ def register_secrets_manager_subcommands() -> None:
         "--schema",
         "-s",
         "secret_schema_type",
-        default="arbitrary",  # TODO: Place in a constant outside secret module
+        default=ARBITRARY_SECRET_SCHEMA_TYPE,
         help="DEPRECATED: Register a secret with an optional schema. Secret "
         "schemas will be removed in an upcoming release of ZenML.",
         type=str,
@@ -210,7 +211,6 @@ def register_secrets_manager_subcommands() -> None:
         secret_contents = {"name": name}
 
         if interactive:
-
             if parsed_args:
                 error(
                     "Cannot pass secret fields as arguments when using "
@@ -429,7 +429,6 @@ def register_secrets_manager_subcommands() -> None:
                     updated_contents[key] = value
 
         else:
-
             if not parsed_args:
                 error(
                     "Secret fields must be passed as arguments when not using "
@@ -649,7 +648,6 @@ use the `--delete` flag:
 
         migrated_secrets_count = 0
         for secret_name in secret_names:
-
             migrated_secret_name = secret_name
 
             try:
@@ -700,7 +698,6 @@ use the `--delete` flag:
                 pass
 
             if not skip_migration:
-
                 if prompt_migrate:
                     choice = click.prompt(
                         "Would you like to migrate this secret ?",
@@ -768,7 +765,6 @@ use the `--delete` flag:
                 declare(f"Secret `{secret_name}` migrated successfully.")
 
             if delete:
-
                 if prompt_delete:
                     choice = click.prompt(
                         "Would you like to delete the secret ?",

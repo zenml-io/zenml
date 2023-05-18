@@ -154,7 +154,6 @@ class AzureSecretsStore(BaseSecretsStore):
             The Azure Key Vault client.
         """
         if self._client is None:
-
             azure_logger = logging.getLogger("azure")
 
             # Suppress the INFO logging level of the Azure SDK if the
