@@ -6,12 +6,14 @@ description: >-
 
 # Service Connectors Guide
 
-This documentation section contains everything that you need to use Service Connectors to connect ZenML to external resources. A lot of information is covered, so it might be useful to  use the following guide to navigate it:
+This documentation section contains everything that you need to use Service Connectors to connect ZenML to external resources. A lot of information is covered, so it might be useful to use the following guide to navigate it:
 
-* if you're only getting started with Service Connectors, we suggest starting by familiarizing yourself with the [terminology](service-connectors-guide.md#terminology)
-* check out the section on [Service Connector Types](service-connectors-guide.md#service-connector-types) to understand the different Service Connector implementations that are available and when to use them
-* there is an entire section dedicated to [best practices concerning the various authentication methods](service-connectors-guide.md#best-practices-for-authentication-methods) implemented by Service Connectors, such as which types of credentials to use in development or production and how to keep your security information safe. This section is particularly targeted at engineers with some knowledge in infrastructure, but it should be accessible to larger audiences.
-* jumping straight to the section on [Registering Service Connectors](service-connectors-guide.md#register-service-connectors) can get you set up quickly if you are only looking for a quick way to evaluate Service Connectors and their features.&#x20;
+* if you're only getting started with Service Connectors, we suggest starting by familiarizing yourself with the [terminology](service-connectors-guide.md#terminology).
+* check out the section on [Service Connector Types](service-connectors-guide.md#service-connector-types) to understand the different Service Connector implementations that are available and when to use them.
+* jumping straight to the sections on [Registering Service Connectors](service-connectors-guide.md#register-service-connectors) can get you set up quickly if you are only looking for a quick way to evaluate Service Connectors and their features.
+* if all you need to do is connect a ZenML Stack Component to an external resource or service like a Kubernetes cluster, a Docker container registry or an object storage bucket and you already have some Service Connectors available, the section on [connecting Stack Components to resources](service-connectors-guide.md#connect-stack-components-to-resources) is all you need.
+
+In addition to this guide, there is an entire section dedicated to [best security practices concerning the various authentication methods](best-security-practices.md) implemented by Service Connectors, such as which types of credentials to use in development or production and how to keep your security information safe. That section is particularly targeted at engineers with some knowledge in infrastructure, but it should be accessible to larger audiences.
 
 ## Terminology
 
@@ -434,430 +436,9 @@ One interesting and useful byproduct of the way cloud provider Service Connector
 * the Docker Service Connector Type is enough to access any Docker container registry, regardless of its provenance (AWS, GCP, etc.)
 {% endhint %}
 
-## Best practices for authentication methods
-
-Service Connector Types, especially those targeted at cloud providers, offer a plethora of authentication methods matching those supported by the remote cloud platforms. While there is no single authentication standard that unifies this process, there are some patterns that are easily identifiable and can be used as guidelines when deciding which authentication method to use to configure a Service Connector.
-
-This section explores some of those patterns and gives some advice regarding which authentication methods are best suited for your needs.
-
-{% hint style="info" %}
-This section may require some general knowledge about authentication and authorization to be properly understood. We tried to keep it simple and limit ourselves to talking about high-level concepts, but some areas may get a bit too technical.
-{% endhint %}
-
-### Username and password
-
-{% hint style="danger" %}
-The key take-away is this: you should avoid using your primary account password as authentication credentials as much as possible. If there are alternative authentication methods that you can use or other types of credentials (e.g. session tokens, API keys, API tokens), you should always try to use those instead.
-
-Ultimately, if you have no choice, be cognizant of the third parties you share your passwords with. If possible, they should never leave the premises of your local host or development environment.
-{% endhint %}
-
-This is the typical authentication method that uses a username or account name plus the associated password. While this is the de facto method used to authenticate with web consoles and local CLIs, this is the least secure of all authentication methods and _never_ something you want to share with other members of your team or organization or use to authenticate automated workloads.
-
-In fact, cloud platforms don't even allow using user account passwords directly as a credential when authenticating to the cloud platform APIs. There is always a process in place that allows exchanging the account/password credential for [another form of long-lived credential](service-connectors-guide.md#long-lived-credentials-api-keys-account-keys).
-
-Even when passwords are mentioned as credentials, some services (e.g. DockerHub) also allow using an API access key in place of the user account password.
-
-### Implicit authentication
-
-{% hint style="info" %}
-The key take-away here is that implicit authentication gives you immediate access to some cloud resources and require no configuration, but it may take some extra effort to expand the range of resources that you're initially allowed to access with it. This is not an authentication method you want to use if you're interested in portability and enabling others to reproduce your results.
-{% endhint %}
-
-Implicit authentication is just a fancy way of saying that the Service Connector will use locally stored credentials, configuration files, environment variables, basically any form of authentication available on the environment where it is running, either locally or in the cloud.
-
-Most cloud providers and their associated Service Connector Types include some form of implicit authentication that is able to automatically discover and use the following forms of authentication in the environment where they are running:
-
-* configuration and credentials set up and stored locally through the cloud platform CLI
-* configuration and credentials passed as environment variables
-* some form of implicit authentication attached to the workload environment itself. This is only available in virtual environments that are already running inside the same cloud where other resources are available for use. This is called differently depending on the cloud provider in question, but they are essentially the same thing:
-  * in AWS, if you're running on Amazon EC2, ECS, EKS, Lambda or some other form of AWS cloud workload, credentials can be loaded directly from _the instance metadata service._ This [uses the IAM role attached to your workload](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/iam-roles-for-amazon-ec2.html) to authenticate to other AWS services without the need to configure explicit credentials.
-  * in GCP, a similar _metadata service_ allows accessing other GCP cloud resources via [the service account attached to the GCP workload](https://cloud.google.com/docs/authentication/application-default-credentials#attached-sa) (e.g. GCP VMs or GKE clusters).
-  * in Azure, the [Azure Managed Identity](https://learn.microsoft.com/en-us/azure/active-directory/managed-identities-azure-resources/overview) services can be used to gain access to other Azure services without requiring explicit credentials
-
-There are a few caveats that you should be aware of when choosing an implicit authentication method. It may seem like the easiest way out, but it carries with it some implications that may impact portability and usability later down the road:
-
-* when used with a local ZenML deployment, like the default deployment, or [a local ZenML server started with `zenml up`](../../../user-guide/starter-guide/transition-to-the-cloud.md), the implicit authentication method will use the configuration files and credentials or environment variables set up _on your local machine_. These will not be available to anyone else outside your local environment and will also not be accessible to workloads running in other environments on your local host. This includes for example local K3D Kubernetes clusters and local Docker containers.
-* when used with a remote ZenML server, the implicit authentication method only works if your ZenML server is deployed in the same cloud as the one supported by the Service Connector Type that you are using. For instance, if you're using the AWS Service Connector Type, then the ZenML server must also be deployed in AWS (e.g. in an EKS Kubernetes cluster). You may also need to manually adjust the cloud configuration of the remote cloud workload where the ZenML server is running to allow access to resources (e.g. add permissions to the AWS IAM role attached to the EC2 or EKS node, add roles to the GCP service account attached to the GKE cluster nodes).
-
-<details>
-
-<summary>GCP implicit authentication method example</summary>
-
-The following is an example of using the GCP Service Connector's implicit authentication method to gain immediate access to all the GCP resources that the ZenML server also has access to. Note that this is only possible because the ZenML server is also deployed in GCP, in a GKE cluster, and the cluster is attached to a GCP service account with permissions to access the project resources:
-
-```
-$ zenml service-connector register gcp-implicit --type gcp --auth-method implicit --project_id=zenml-core
-Successfully registered service connector `gcp-implicit` with access to the following resources:
-┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┓
-┃             CONNECTOR ID             │ CONNECTOR NAME │ CONNECTOR TYPE │ RESOURCE TYPE         │ RESOURCE NAMES ┃
-┠──────────────────────────────────────┼────────────────┼────────────────┼───────────────────────┼────────────────┨
-┃ 0e244dd6-6f0a-4e63-ae79-33f8d6d6f8f9 │ gcp-implicit   │ 🔵 gcp         │ 🔵 gcp-generic        │ 🤷 none listed ┃
-┃                                      │                │                │ 📦 gcs-bucket         │                ┃
-┃                                      │                │                │ 🌀 kubernetes-cluster │                ┃
-┃                                      │                │                │ 🐳 docker-registry    │                ┃
-┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┛
-
-$ zenml service-connector verify gcp-implicit --resource-type gcs-bucket
-Service connector 'gcp-implicit' is correctly configured with valid credentials and has access to the following resources:
-┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃             CONNECTOR ID             │ CONNECTOR NAME │ CONNECTOR TYPE │ RESOURCE TYPE │ RESOURCE NAMES                                  ┃
-┠──────────────────────────────────────┼────────────────┼────────────────┼───────────────┼─────────────────────────────────────────────────┨
-┃ 0e244dd6-6f0a-4e63-ae79-33f8d6d6f8f9 │ gcp-implicit   │ 🔵 gcp         │ 📦 gcs-bucket │ gs://annotation-gcp-store                       ┃
-┃                                      │                │                │               │ gs://zenml-bucket-sl                            ┃
-┃                                      │                │                │               │ gs://zenml-kubeflow-artifact-store              ┃
-┃                                      │                │                │               │ gs://zenml-project-time-series-bucket           ┃
-┃                                      │                │                │               │ gs://zenml-public-bucket                        ┃
-┃                                      │                │                │               │ gs://zenml-vertex-test                          ┃
-┃                                      │                │                │               │ gs://zenml_projects_artifact_store              ┃
-┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
-
-$ zenml service-connector verify gcp-implicit --resource-type kubernetes-cluster
-Service connector 'gcp-implicit' is correctly configured with valid credentials and has access to the following resources:
-┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━┓
-┃             CONNECTOR ID             │ CONNECTOR NAME │ CONNECTOR TYPE │ RESOURCE TYPE         │ RESOURCE NAMES     ┃
-┠──────────────────────────────────────┼────────────────┼────────────────┼───────────────────────┼────────────────────┨
-┃ 0e244dd6-6f0a-4e63-ae79-33f8d6d6f8f9 │ gcp-implicit   │ 🔵 gcp         │ 🌀 kubernetes-cluster │ zenml-test-cluster ┃
-┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━┛
-
-$ zenml service-connector verify gcp-implicit --resource-type docker-registry
-Service connector 'gcp-implicit' is correctly configured with valid credentials and has access to the following resources:
-┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━┓
-┃             CONNECTOR ID             │ CONNECTOR NAME │ CONNECTOR TYPE │ RESOURCE TYPE      │ RESOURCE NAMES    ┃
-┠──────────────────────────────────────┼────────────────┼────────────────┼────────────────────┼───────────────────┨
-┃ 0e244dd6-6f0a-4e63-ae79-33f8d6d6f8f9 │ gcp-implicit   │ 🔵 gcp         │ 🐳 docker-registry │ gcr.io/zenml-core ┃
-┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━┛
-```
-
-</details>
-
-### Long-lived credentials (API keys, account keys)
-
-{% hint style="success" %}
-This is the magic formula of authentication methods. When paired with another ability, such as [automatically generating short-lived API tokens](service-connectors-guide.md#issuing-temporary-and-down-scoped-credentials), or [impersonating accounts or assuming roles](service-connectors-guide.md#impersonating-accounts-and-assuming-roles), this is the ideal authentication mechanism to use, particularly when using ZenML in production and when sharing results with other members of your ZenML team.
-{% endhint %}
-
-As a general best practice, but implemented particularly well for cloud platforms, account passwords are never directly used as a credential when authenticating to the cloud platform APIs. There is always a process in place that exchanges the account/password credential for another type of long-lived credential:
-
-* AWS uses the [`aws configure` CLI command](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-configure.html)&#x20;
-* GCP offers the [`gcloud auth login` and `gcloud auth application-default login` CLI commands](https://cloud.google.com/sdk/docs/authorizing)
-* Azure provides [the `az login` CLI command](https://learn.microsoft.com/en-us/cli/azure/authenticate-azure-cli)
-
-None of your original login information is stored on your local machine or used to access workloads. Instead, an API key, account key or some other form of intermediate credential is generated and stored on the local host and used to authenticate to remote cloud service APIs.
-
-{% hint style="info" %}
-When using auto-configuration with Service Connector registration, this is usually the type of credentials automatically identified and extracted from your local machine.
-{% endhint %}
-
-Different cloud providers use different names for these types of long-lived credentials, but they usually represent the same concept, with minor variations regarding the identity information and level of permissions attached to them:
-
-* AWS has [Account Access Keys](https://docs.aws.amazon.com/powershell/latest/userguide/pstools-appendix-sign-up.html) and [IAM User Access Keys](https://docs.aws.amazon.com/IAM/latest/UserGuide/id\_credentials\_access-keys.html)
-* GCP has [User Account Credentials](https://cloud.google.com/docs/authentication#user-accounts) and [Service Account Credentials](https://cloud.google.com/docs/authentication#service-accounts)
-
-Generally speaking, a differentiation is being made between the following two classes of credentials:
-
-* _user credentials_: credentials representing a human user and usually directly tied to a user account identity. These credentials are usually associated with a broad spectrum of permissions and it is therefore not recommended to share them or make them available outside the confines of your local host.&#x20;
-* _service credentials:_ credentials used with automated processes and programmatic access, where humans are not directly involved. These credentials are not directly tied to a user account identity, but some other form of accounting like a service account or an IAM user devised to be used by non-human actors. It is also usually possible to restrict the range of permissions associated with this class of credentials, which makes them better candidates for sharing them with a larger audience.
-
-ZenML cloud provider Service Connectors can use both classes of credentials, but you should aim to use _service credentials_ as often as possible instead of _user credentials_, especially in production environments. Attaching automated workloads like ML pipelines to service accounts instead of user accounts acts as an extra layer of protection for your user identity and facilitates enforcing another security best practice called [_"the least-privilege principle"_](https://en.wikipedia.org/wiki/Principle\_of\_least\_privilege)_:_ granting each actor only the minimum level of permissions required to function correctly.
-
-Using long-lived credentials on their own still isn't ideal, because if leaked, they pose a security risk, even when they have limited permissions attached. The good news is that ZenML Service Connectors include additional mechanisms that, when used in combination with long-lived credentials, make it even safer to share long-lived credentials with other ZenML users and automated workloads:
-
-* automatically [generating temporary credentials](service-connectors-guide.md#generating-temporary-and-down-scoped-credentials) from long-lived credentials and even downgrading their permission scope to enforce the least-privilege principle
-* implementing [authentication schemes that impersonate accounts and assume roles](service-connectors-guide.md#impersonating-accounts-and-assuming-roles)
-
-### Generating temporary and down-scoped credentials
-
-Most [authentication methods that utilize long-lived credentials](service-connectors-guide.md#long-lived-credentials-api-keys-account-keys) also implement additional mechanisms that help reduce the accidental credentials exposure and risk of security incidents even further, making them ideal for production.
-
-_**Issuing temporary credentials**_: this authentication strategy keeps long-lived credentials safely stored on the ZenML server and away from the eyes of actual API clients and people that need to authenticate to the remote resources. Instead, clients are issued API tokens that have a limited lifetime and expire after a given amount of time. The Service Connector is able to generate these API tokens from long-lived credentials on a need-to-have basis. For example, the AWS Service Connector's "Session Token", "Federation Token" and "IAM Role" authentication methods and basically all authentication methods supported by the GCP Service Connector support this feature.
-
-<details>
-
-<summary>AWS temporary credentials example</summary>
-
-The following example shows the difference between the long-lived AWS credentials configured for an AWS Service Connector and kept on the ZenML server and the temporary Kubernetes API token credentials that the client receives and uses to access the resource. Note the expiration time on the Kubernetes API token:
-
-```
-$ zenml service-connector describe eks-zenhacks-cluster
-Service connector 'eks-zenhacks-cluster' of type 'aws' with id '7365b136-65b2-4a88-8283-9ecaefbe812b' is owned by user 'default' and is 'private'.
-   'eks-zenhacks-cluster' aws Service Connector Details    
-┏━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃ PROPERTY         │ VALUE                                ┃
-┠──────────────────┼──────────────────────────────────────┨
-┃ ID               │ 7365b136-65b2-4a88-8283-9ecaefbe812b ┃
-┠──────────────────┼──────────────────────────────────────┨
-┃ NAME             │ eks-zenhacks-cluster                 ┃
-┠──────────────────┼──────────────────────────────────────┨
-┃ TYPE             │ 🔶 aws                               ┃
-┠──────────────────┼──────────────────────────────────────┨
-┃ AUTH METHOD      │ session-token                        ┃
-┠──────────────────┼──────────────────────────────────────┨
-┃ RESOURCE TYPES   │ 🌀 kubernetes-cluster                ┃
-┠──────────────────┼──────────────────────────────────────┨
-┃ RESOURCE NAME    │ zenhacks-cluster                     ┃
-┠──────────────────┼──────────────────────────────────────┨
-┃ SECRET ID        │ 735c0e1a-cf1e-4a43-aed0-144b9a61c903 ┃
-┠──────────────────┼──────────────────────────────────────┨
-┃ SESSION DURATION │ 43200s                               ┃
-┠──────────────────┼──────────────────────────────────────┨
-┃ EXPIRES IN       │ N/A                                  ┃
-┠──────────────────┼──────────────────────────────────────┨
-┃ OWNER            │ default                              ┃
-┠──────────────────┼──────────────────────────────────────┨
-┃ WORKSPACE        │ default                              ┃
-┠──────────────────┼──────────────────────────────────────┨
-┃ SHARED           │ ➖                                   ┃
-┠──────────────────┼──────────────────────────────────────┨
-┃ CREATED_AT       │ 2023-05-17 14:33:06.173039           ┃
-┠──────────────────┼──────────────────────────────────────┨
-┃ UPDATED_AT       │ 2023-05-17 14:33:06.173041           ┃
-┗━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
-            Configuration            
-┏━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━┓
-┃ PROPERTY              │ VALUE     ┃
-┠───────────────────────┼───────────┨
-┃ region                │ us-east-1 ┃
-┠───────────────────────┼───────────┨
-┃ aws_access_key_id     │ [HIDDEN]  ┃
-┠───────────────────────┼───────────┨
-┃ aws_secret_access_key │ [HIDDEN]  ┃
-┗━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━┛
-
-$ zenml service-connector describe eks-zenhacks-cluster --client
-Service connector 'eks-zenhacks-cluster (kubernetes-cluster | zenhacks-cluster client)' of type 'kubernetes' with id '7365b136-65b2-4a88-8283-9ecaefbe812b' is owned by user 'default' and is 
-'private'.
- 'eks-zenhacks-cluster (kubernetes-cluster | zenhacks-cluster client)' kubernetes Service 
-                                    Connector Details                                     
-┏━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃ PROPERTY         │ VALUE                                                               ┃
-┠──────────────────┼─────────────────────────────────────────────────────────────────────┨
-┃ ID               │ 7365b136-65b2-4a88-8283-9ecaefbe812b                                ┃
-┠──────────────────┼─────────────────────────────────────────────────────────────────────┨
-┃ NAME             │ eks-zenhacks-cluster (kubernetes-cluster | zenhacks-cluster client) ┃
-┠──────────────────┼─────────────────────────────────────────────────────────────────────┨
-┃ TYPE             │ 🌀 kubernetes                                                       ┃
-┠──────────────────┼─────────────────────────────────────────────────────────────────────┨
-┃ AUTH METHOD      │ token                                                               ┃
-┠──────────────────┼─────────────────────────────────────────────────────────────────────┨
-┃ RESOURCE TYPES   │ 🌀 kubernetes-cluster                                               ┃
-┠──────────────────┼─────────────────────────────────────────────────────────────────────┨
-┃ RESOURCE NAME    │ arn:aws:eks:us-east-1:715803424590:cluster/zenhacks-cluster         ┃
-┠──────────────────┼─────────────────────────────────────────────────────────────────────┨
-┃ SECRET ID        │                                                                     ┃
-┠──────────────────┼─────────────────────────────────────────────────────────────────────┨
-┃ SESSION DURATION │ N/A                                                                 ┃
-┠──────────────────┼─────────────────────────────────────────────────────────────────────┨
-┃ EXPIRES IN       │ 11h59m56s                                                           ┃
-┠──────────────────┼─────────────────────────────────────────────────────────────────────┨
-┃ OWNER            │ default                                                             ┃
-┠──────────────────┼─────────────────────────────────────────────────────────────────────┨
-┃ WORKSPACE        │ default                                                             ┃
-┠──────────────────┼─────────────────────────────────────────────────────────────────────┨
-┃ SHARED           │ ➖                                                                  ┃
-┠──────────────────┼─────────────────────────────────────────────────────────────────────┨
-┃ CREATED_AT       │ 2023-05-17 14:33:41.861267                                          ┃
-┠──────────────────┼─────────────────────────────────────────────────────────────────────┨
-┃ UPDATED_AT       │ 2023-05-17 14:33:41.861269                                          ┃
-┗━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
-                                           Configuration                                            
-┏━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃ PROPERTY              │ VALUE                                                                    ┃
-┠───────────────────────┼──────────────────────────────────────────────────────────────────────────┨
-┃ server                │ https://A5F8F4142FB12DDCDE9F21F6E9B07A18.gr7.us-east-1.eks.amazonaws.com ┃
-┠───────────────────────┼──────────────────────────────────────────────────────────────────────────┨
-┃ insecure              │ False                                                                    ┃
-┠───────────────────────┼──────────────────────────────────────────────────────────────────────────┨
-┃ cluster_name          │ arn:aws:eks:us-east-1:715803424590:cluster/zenhacks-cluster              ┃
-┠───────────────────────┼──────────────────────────────────────────────────────────────────────────┨
-┃ token                 │ [HIDDEN]                                                                 ┃
-┠───────────────────────┼──────────────────────────────────────────────────────────────────────────┨
-┃ certificate_authority │ [HIDDEN]                                                                 ┃
-┗━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
-
-```
-
-</details>
-
-_**Issuing downscoped credentials**_: in addition to the above, some authentication methods also support restricting the generated temporary API tokens to the minimum set of permissions required to access the target resource or set of resources. This is currently available for the AWS Service Connector's "Federation Token" and "IAM Role" authentication methods.
-
-<details>
-
-<summary>AWS down-scoped credentials example</summary>
-
-It's not easy to showcase this without using some ZenML Python Client code, but here is an example that proves that the AWS client token issued to an S3 client can only access the S3 bucket resource it was issued for, even if the originating AWS Service Connector is able to access multiple S3 buckets with the corresponding long-lived credentials:
-
-```
-$ zenml service-connector register aws-federation-multi --type aws --auth-method=federation-token --auto-configure 
-⠴ Registering service connector 'aws-federation-multi'...
-Successfully registered service connector `aws-federation-multi` with access to the following resources:
-┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┓
-┃             CONNECTOR ID             │ CONNECTOR NAME       │ CONNECTOR TYPE │ RESOURCE TYPE         │ RESOURCE NAMES ┃
-┠──────────────────────────────────────┼──────────────────────┼────────────────┼───────────────────────┼────────────────┨
-┃ 88b82bbe-bf35-4fbe-8805-217121c133c9 │ aws-federation-multi │ 🔶 aws         │ 🔶 aws-generic        │ 🤷 none listed ┃
-┃                                      │                      │                │ 📦 s3-bucket          │                ┃
-┃                                      │                      │                │ 🌀 kubernetes-cluster │                ┃
-┃                                      │                      │                │ 🐳 docker-registry    │                ┃
-┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┛
-
-$ zenml service-connector verify aws-federation-multi --resource-type s3-bucket
-Service connector 'aws-federation-multi' is correctly configured with valid credentials and has access to the following resources:
-┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃             CONNECTOR ID             │ CONNECTOR NAME       │ CONNECTOR TYPE │ RESOURCE TYPE │ RESOURCE NAMES                        ┃
-┠──────────────────────────────────────┼──────────────────────┼────────────────┼───────────────┼───────────────────────────────────────┨
-┃ 88b82bbe-bf35-4fbe-8805-217121c133c9 │ aws-federation-multi │ 🔶 aws         │ 📦 s3-bucket  │ s3://public-flavor-logos              ┃
-┃                                      │                      │                │               │ s3://zenbytes-bucket                  ┃
-┃                                      │                      │                │               │ s3://zenfiles                         ┃
-┃                                      │                      │                │               │ s3://zenml-demos                      ┃
-┃                                      │                      │                │               │ s3://zenml-generative-chat            ┃
-┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
-
-# The next part involves running some ZenML Python code
-
-$ python
->>> from zenml.client import Client
->>> client = Client()
->>>
->>> # Get a Service Connector client for a particular S3 bucket
->>> connector_client = client.get_service_connector_client(name_id_or_prefix="aws-federation-multi", resource_type="s3-bucket", resource_id="s3://zenfiles")
->>>
->>> # Get the S3 boto3 python client pre-configured and pre-authenticated
->>> # from the Service Connector client
->>> s3_client = connector_client.connect()
->>>
->>> # Verify access to the chosen S3 bucket using the temporary token that
->>> # was issued to the client.
->>> s3_client.head_bucket(Bucket="zenfiles")
-{'ResponseMetadata': {'HTTPStatusCode': 200, ...}}
->>>
->>> # Try to access another S3 bucket that the original AWS long-lived credentials can access.
->>> # An error will be thrown indicating that the bucket is not accessible.
->>> s3_client.head_bucket(Bucket="zenml-demos")
-╭─────────────────────────────── Traceback (most recent call last) ────────────────────────────────╮
-│ <stdin>:1 in <module>                                                                            │
-│                                                                                                  │
-│ /home/stefan/aspyre/src/zenml/.venv/lib/python3.8/site-packages/botocore/client.py:530 in        │
-│ _api_call                                                                                        │
-│                                                                                                  │
-│    527 │   │   │   │   │   f"{py_operation_name}() only accepts keyword arguments."              │
-│    528 │   │   │   │   )                                                                         │
-│    529 │   │   │   # The "self" in this scope is referring to the BaseClient.                    │
-│ ❱  530 │   │   │   return self._make_api_call(operation_name, kwargs)                            │
-│    531 │   │                                                                                     │
-│    532 │   │   _api_call.__name__ = str(py_operation_name)                                       │
-│    533                                                                                           │
-│                                                                                                  │
-│ /home/stefan/aspyre/src/zenml/.venv/lib/python3.8/site-packages/botocore/client.py:964 in        │
-│ _make_api_call                                                                                   │
-│                                                                                                  │
-│    961 │   │   if http.status_code >= 300:                                                       │
-│    962 │   │   │   error_code = parsed_response.get("Error", {}).get("Code")                     │
-│    963 │   │   │   error_class = self.exceptions.from_code(error_code)                           │
-│ ❱  964 │   │   │   raise error_class(parsed_response, operation_name)                            │
-│    965 │   │   else:                                                                             │
-│    966 │   │   │   return parsed_response                                                        │
-│    967                                                                                           │
-╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
-ClientError: An error occurred (403) when calling the HeadBucket operation: Forbidden
-```
-
-</details>
-
-### Impersonating accounts and assuming roles
-
-{% hint style="success" %}
-These types of authentication methods require more work to set up because multiple permission bearing accounts and roles need to be provisioned in advance depending on the target audience. On the other hand, they also provide the most flexibility and control. Despite their operational cost, if you are a platform engineer and have the infrastructure know-how necessary to understand and set up the authentication resources, this is for you.
-{% endhint %}
-
-These authentication methods deliver another way of [configuring long-lived credentials](service-connectors-guide.md#long-lived-credentials-api-keys-account-keys) in your Service Connectors without exposing them to clients. They are especially useful as an alternative to cloud provider Service Connectors authentication methods that do not support [automatically downscoping the permissions of issued temporary tokens](service-connectors-guide.md#generating-temporary-and-down-scoped-credentials).
-
-The processes of account impersonation and role assumption are very similar and can be summarized as follows:
-
-* you configure a Service Connector with long-lived credentials associated with a primary user account or primary service account (preferable). As a best practice, it is common to attach a reduced set of permissions or even no permissions to these credentials other than those that allow the account impersonation or role assumption operation. This makes it more difficult to do any damage if the primary credentials are accidentally leaked.
-* in addition to the primary account and its long-lived credentials, you also need to provision one or more secondary access entities in the cloud platform bearing the effective permissions that will be needed to access the target resource(s):
-  * one or more IAM roles (to be assumed)
-  * one or more service accounts (to be impersonated)
-* the Service Connector configuration also needs to contain the name of a target IAM role to be assumed or a service account to be impersonated.
-* upon request, the Service Connector will exchange the long-lived credentials associated with the primary account for short-lived API tokens that only have the permissions associated with the target IAM role or service account. These temporary credentials are issued to clients and used to access the target resource, while the long-lived credentials are kept safe and never have to leave the ZenML server boundary.
-
-<details>
-
-<summary>GCP account impersonation example</summary>
-
-For this example, we have the following set up in GCP:
-
-* a primary `empty-connectors@zenml-core.iam.gserviceaccount.com` GCP service account with no permissions whatsoever aside from the "Service Account Token Creator" role that allows it to impersonate the secondary service account below. We also generate a service account key for this account.
-* a secondary `zenml-bucket-sl@zenml-core.iam.gserviceaccount.com` GCP service account that only has permissions to access the `zenml-bucket-sl` GCS bucket
-
-First, let's show that the `empty-connectors` service account has no permissions to access any GCS buckets or any other resources for that matter. We'll register a regular GCP Service Connector that uses the service account key (long-lived credentials) directly:
-
-```
-$ zenml service-connector register gcp-empty-sa --type gcp --auth-method service-account --service_account_json=@empty-connectors@zenml-core.json  --project_id=zenml-core
-Expanding argument value service_account_json to contents of file /home/stefan/aspyre/src/zenml/empty-connectors@zenml-core.json.
-Successfully registered service connector `gcp-empty-sa` with access to the following resources:
-┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┓
-┃             CONNECTOR ID             │ CONNECTOR NAME │ CONNECTOR TYPE │ RESOURCE TYPE         │ RESOURCE NAMES ┃
-┠──────────────────────────────────────┼────────────────┼────────────────┼───────────────────────┼────────────────┨
-┃ db967769-4cd5-4f07-a3f4-54e3fe534d88 │ gcp-empty-sa   │ 🔵 gcp         │ 🔵 gcp-generic        │ 🤷 none listed ┃
-┃                                      │                │                │ 📦 gcs-bucket         │                ┃
-┃                                      │                │                │ 🌀 kubernetes-cluster │                ┃
-┃                                      │                │                │ 🐳 docker-registry    │                ┃
-┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┛
-
-$ zenml service-connector verify gcp-empty-sa --resource-type kubernetes-cluster
-Error: Service connector 'gcp-empty-sa' verification failed: connector authorization failure: Failed to list GKE clusters:
-403 Required "container.clusters.list" permission(s) for "projects/20219041791".
-
-$ zenml service-connector verify gcp-empty-sa --resource-type gcs-bucket
-Error: Service connector 'gcp-empty-sa' verification failed: connector authorization failure: failed to list GCS buckets:
-403 GET https://storage.googleapis.com/storage/v1/b?project=zenml-core&projection=noAcl&prettyPrint=false:
-empty-connectors@zenml-core.iam.gserviceaccount.com does not have storage.buckets.list access to the Google Cloud project.
-Permission 'storage.buckets.list' denied on resource (or it may not exist).
-
-$ zenml service-connector verify gcp-empty-sa --resource-type gcs-bucket --resource-id zenml-bucket-sl
-Error: Service connector 'gcp-empty-sa' verification failed: connector authorization failure: failed to fetch GCS bucket
-zenml-bucket-sl: 403 GET https://storage.googleapis.com/storage/v1/b/zenml-bucket-sl?projection=noAcl&prettyPrint=false:
-empty-connectors@zenml-core.iam.gserviceaccount.com does not have storage.buckets.get access to the Google Cloud Storage bucket.
-Permission 'storage.buckets.get' denied on resource (or it may not exist).
-
-```
-
-Next, we'll register a GCP Service Connector that actually uses account impersonation to access the `zenml-bucket-sl` GCS bucket and verify that it can actually access the bucket:
-
-```
-$ zenml service-connector register gcp-impersonate-sa --type gcp --auth-method impersonation --service_account_json=@empty-connectors@zenml-core.json  --project_id=zenml-core --target_principal=zenml-bucket-sl@zenml-core.iam.gserviceaccount.com --resource-type gcs-bucket --resource-id gs://zenml-bucket-sl
-Expanding argument value service_account_json to contents of file /home/stefan/aspyre/src/zenml/empty-connectors@zenml-core.json.
-Successfully registered service connector `gcp-impersonate-sa` with access to the following resources:
-┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━┓
-┃             CONNECTOR ID             │ CONNECTOR NAME     │ CONNECTOR TYPE │ RESOURCE TYPE │ RESOURCE NAMES       ┃
-┠──────────────────────────────────────┼────────────────────┼────────────────┼───────────────┼──────────────────────┨
-┃ f586c28e-3d60-4be5-8961-853592c48e41 │ gcp-impersonate-sa │ 🔵 gcp         │ 📦 gcs-bucket │ gs://zenml-bucket-sl ┃
-┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━┛
-
-$ zenml service-connector verify gcp-impersonate-sa --resource-type gcs-bucket --resource-id zenml-bucket-sl
-Service connector 'gcp-impersonate-sa' is correctly configured with valid credentials and has access to the following resources:
-┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━┓
-┃             CONNECTOR ID             │ CONNECTOR NAME     │ CONNECTOR TYPE │ RESOURCE TYPE │ RESOURCE NAMES       ┃
-┠──────────────────────────────────────┼────────────────────┼────────────────┼───────────────┼──────────────────────┨
-┃ f586c28e-3d60-4be5-8961-853592c48e41 │ gcp-impersonate-sa │ 🔵 gcp         │ 📦 gcs-bucket │ gs://zenml-bucket-sl ┃
-┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━┛
-```
-
-</details>
-
-### Short-lived credentials
-
-{% hint style="warning" %}
-This category of authentication methods uses temporary credentials explicitly configured in the Service Connector. Of all available authentication methods, this is probably the least useful and you will likely never have to manually generate and use temporary credentials to authenticate to remote resources because they are terribly impractical: when they expire, Service Connectors become unusable and need to either be manually updated or replaced.
-{% endhint %}
-
-A previous section described how [temporary credentials can be automatically generated from other, long-lived credentials](service-connectors-guide.md#generating-temporary-and-down-scoped-credentials) by most cloud provider Service Connectors. It only stands to reason that temporary credentials can also be generated manually by external means such as cloud provider CLIs and used directly to configure Service Connectors.
-
-This may be used as a way to grant an external party temporary access to some resources and have the Service Connector automatically become unusable (i.e. expire) after some time.
-
 ## Register Service Connectors
 
-When you reach this section, you probably already made up your mind about the type of infrastructure or cloud provider that you want to use to run your ZenML pipelines after reading through [the Service Connector Types section](service-connectors-guide.md#explore-service-connector-types), and you carefully weighed your [choices of authentication methods and best security practices](service-connectors-guide.md#best-practices-for-authentication-methods). Either that, or you simply want to quickly try out a Service Connector to [connect one of the ZenML Stack components to an external resource](service-connectors-guide.md#connect-stack-components-to-resources).
+When you reach this section, you probably already made up your mind about the type of infrastructure or cloud provider that you want to use to run your ZenML pipelines after reading through [the Service Connector Types section](service-connectors-guide.md#explore-service-connector-types), and you probably carefully weighed your [choices of authentication methods and best security practices](best-security-practices.md). Either that, or you simply want to quickly try out a Service Connector to [connect one of the ZenML Stack components to an external resource](service-connectors-guide.md#connect-stack-components-to-resources).
 
 If you are looking for a quick, assisted tour, we recommend using the interactive CLI mode to configure Service Connectors, especially if this is your first time doing it:
 
@@ -868,19 +449,25 @@ zenml service-connector register -i
 Regardless of how you came here, you should already have some idea of the following:
 
 * the type of resources that you want to connect ZenML to. This may be a Kubernetes cluster, a Docker container registry or an object storage service like AWS S3 or GCS.
-* the Service Connector implementation (i.e. Service Connector Type) that you want to use to connect to those resources. This could be one of the cloud provider Service Connector Types like AWS and GCP or one of the basic Service Connector Types.
+* the Service Connector implementation (i.e. Service Connector Type) that you want to use to connect to those resources. This could be one of the cloud provider Service Connector Types like AWS and GCP that provide access to a broader range of services, or one of the basic Service Connector Types like Kubernetes or Docker that only target a specific resource.
 * the credentials and authentication method that you want to use
 
-Other questions that you should probably have answers to or will get answers to in the process of registering a Service Connector:
+Other questions that should be answered in this section:
 
-* are you just looking to connect a ZenML Stack Component to a single resource ? or would you rather configure a wide-access ZenML Service Connector that gives ZenML and all its users access to a broader range of resource types and resource instances with a single set of credentials issued by your cloud provider ? The interactive CLI mode will help you decide as you go.
+* are you just looking to connect a ZenML Stack Component to a single resource ? or would you rather configure a wide-access ZenML Service Connector that gives ZenML and all its users access to a broader range of resource types and resource instances with a single set of credentials issued by your cloud provider ?
 * have you already provisioned all the authentication prerequisites (e.g. service accounts, roles, permissions) and prepared the credentials you will need to configure the Service Connector ? If you already have one of the cloud provider CLIs configured with credentials on your local host, you can easily use the Service Connector auto-configuration capabilities to get faster where you need to go.
 
-For help answering these questions, you can use the interactive CLI mode to register Service Connectors and/or consult the documentation dedicated to each individual Service Connector Type.&#x20;
+For help answering these questions, you can also use the interactive CLI mode to register Service Connectors and/or consult the documentation dedicated to each individual Service Connector Type.&#x20;
 
 ### Auto-configuration
 
-Many Service Connector Types support using auto-configuration to discover and extract configuration information and credentials directly from your local environment. This assumes that you have already installed and set up the local CLI or SDK associated with the type of resource or cloud provider that you're willing to use. You can consult the documentation section for the Service Connector Type of choice to find out if auto-configuration is supported.
+Many Service Connector Types support using auto-configuration to discover and extract configuration information and credentials directly from your local environment. This assumes that you have already installed and set up the local CLI or SDK associated with the type of resource or cloud provider that you're willing to use. The Service Connector auto-configuration feature relies on these CLIs being configured with valid credentials to work properly. Some examples are listed here, but you should consult the documentation section for the Service Connector Type of choice to find out if and how auto-configuration is supported:
+
+* AWS uses the [`aws configure` CLI command](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-configure.html)&#x20;
+* GCP offers [the `gcloud auth application-default login` CLI command](https://cloud.google.com/docs/authentication/provide-credentials-adc#how\_to\_provide\_credentials\_to\_adc)
+* Azure provides [the `az login` CLI command](https://learn.microsoft.com/en-us/cli/azure/authenticate-azure-cli)
+
+
 
 <details>
 
@@ -987,7 +574,7 @@ The following might help understand the difference between scopes:
 
 When registering Service Connectors, the authentication configuration and credentials are automatically verified to ensure that they can indeed be used to gain access to the target resources:
 
-* for multi-type Service Connectors, this verification only means checking that the configured credentials can be used to authenticate successfully to the remote service, without checking permissions for individual Resource Types.
+* for multi-type Service Connectors, this verification only means checking that the configured credentials can be used to authenticate successfully to the remote service, without checking permissions for individual resources and Resource Types.
 * for multi-instance Service Connectors, this verification step means listing all resources that the credentials have permissions to access in addition to validating that the credentials can be used to authenticate to the target service or platform.
 * for single-instance Service Connectors, the verification step simply checks that the configured credentials have permissions to access the target resource
 
@@ -1104,14 +691,64 @@ Service connector 'aws-single-instance' is correctly configured with valid crede
 
 </details>
 
+## Configure local clients
+
+Yet another neat feature built into some Service Container Types that is the opposite of [Service Connector auto-configuration](service-connectors-guide.md#auto-configuration) is the ability to configure local CLI and SDK utilities installed on your host, like the Docker or Kubernetes CLI (`kubectl`) with credentials issued by a compatible Service Connector.
+
+You may need to exercise this feature to get direct CLI access to a remote service in order to manually manage some configurations or resources, to debug some workloads or to simply verify that the Service Connector credentials are actually working.
+
+{% hint style="warning" %}
+When configuring local CLI utilities with credentials extracted from Service Connectors, keep in mind that most Service Connectors, particularly those used with cloud platforms, exercise the security best practice of issuing _temporary credentials such as API tokens._ The implication is that your local CLI will only be allowed access to the remote service for a short time before those credentials expire, then you need to fetch another set of credentials from the Service Connector.
+{% endhint %}
+
+<details>
+
+<summary>Examples of local CLI configuration</summary>
+
+The following examples show how the local Kubernetes `kubectl` CLI can be configured with credentials issued by a Service Connector and then used to access a Kubernetes cluster directly:
+
+```
+$ zenml service-connector list-resources --resource-type kubernetes-cluster
+The following 'kubernetes-cluster' resources can be accessed by service connectors configured in your workspace:
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃             CONNECTOR ID             │ CONNECTOR NAME       │ CONNECTOR TYPE │ RESOURCE TYPE         │ RESOURCE NAMES                                                                      ┃
+┠──────────────────────────────────────┼──────────────────────┼────────────────┼───────────────────────┼─────────────────────────────────────────────────────────────────────────────────────┨
+┃ 9d953320-3560-4a78-817c-926a3898064d │ gcp-user-multi       │ 🔵 gcp         │ 🌀 kubernetes-cluster │ zenml-test-cluster                                                                  ┃
+┠──────────────────────────────────────┼──────────────────────┼────────────────┼───────────────────────┼─────────────────────────────────────────────────────────────────────────────────────┨
+┃ 4a550c82-aa64-4a48-9c7f-d5e127d77a44 │ aws-multi-type       │ 🔶 aws         │ 🌀 kubernetes-cluster │ zenhacks-cluster                                                                    ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+$ zenml service-connector login gcp-user-multi --resource-type kubernetes-cluster --resource-id zenml-test-cluster
+⠇ Attempting to configure local client using service connector 'gcp-user-multi'...
+Updated local kubeconfig with the cluster details. The current kubectl context was set to 'gke_zenml-core_zenml-test-cluster'.
+The 'gcp-user-multi' Kubernetes Service Connector connector was used to successfully configure the local Kubernetes cluster client/SDK.
+
+$ kubectl cluster-info
+Kubernetes control plane is running at https://35.185.95.223
+GLBCDefaultBackend is running at https://35.185.95.223/api/v1/namespaces/kube-system/services/default-http-backend:http/proxy
+KubeDNS is running at https://35.185.95.223/api/v1/namespaces/kube-system/services/kube-dns:dns/proxy
+Metrics-server is running at https://35.185.95.223/api/v1/namespaces/kube-system/services/https:metrics-server:/proxy
+
+$ zenml service-connector login aws-multi-type --resource-type kubernetes-cluster --resource-id zenhacks-cluster
+⠏ Attempting to configure local client using service connector 'aws-multi-type'...
+Updated local kubeconfig with the cluster details. The current kubectl context was set to 'arn:aws:eks:us-east-1:715803424590:cluster/zenhacks-cluster'.
+The 'aws-multi-type' Kubernetes Service Connector connector was used to successfully configure the local Kubernetes cluster client/SDK.
+
+$ kubectl cluster-info
+Kubernetes control plane is running at https://A5F8F4142FB12DDCDE9F21F6E9B07A18.gr7.us-east-1.eks.amazonaws.com
+CoreDNS is running at https://A5F8F4142FB12DDCDE9F21F6E9B07A18.gr7.us-east-1.eks.amazonaws.com/api/v1/namespaces/kube-system/services/kube-dns:dns/proxy
+```
+
+</details>
+
 ## Discover available resources
 
 One of the questions that you may have as a ZenML user looking to register and connect a Stack Component to an external resource is "what resources do I even have access to ?". Sure, you can browse through all the registered Service connectors and manually verify each one to find a particular resource that you are looking for, but this is counterproductive.
 
 A better way is to ask ZenML directly questions such as:
 
-* what are all the Kubernetes clusters that I can access through Service Connectors ?
-* can I access this particular S3 bucket through one of the Service Connectors ?
+* what are the Kubernetes clusters that I can get access to through Service Connectors ?
+* can I access this particular S3 bucket through one of the Service Connectors ? Which one ?
 
 The `zenml service-connector list-resources` CLI command can be used exactly for this purpose.
 
@@ -1206,10 +843,10 @@ zenml orchestrator connect <component-name> -i
 zenml container-registry connect <component-name> -i
 ```
 
-Note that not all Stack Components support being connected to an external resource or service via a Service Connector.
+To connect a Stack Component to an external resource or service, you first need to [register one or more Service Connectors](service-connectors-guide.md#register-service-connectors), or have someone else in your team with more infrastructure knowledge do it for you. If you already have that covered, you might want to ask ZenML "which resources/services am I even authorized to access with the available Service Connectors?". [The resource discovery feature](service-connectors-guide.md#resource-discovery-examples) is designed exactly for this purpose. This last check is already included in the interactive ZenML CLI command used to connect a Stack Component to a remote resource.
 
 {% hint style="info" %}
-Whether a Stack Component can use a Service Connector to connect to a remote resource or service or not is shown in the Stack Component flavor details:
+Not all Stack Components support being connected to an external resource or service via a Service Connector. Whether a Stack Component can use a Service Connector to connect to a remote resource or service or not is shown in the Stack Component flavor details:
 
 ```
 $ zenml artifact-store flavor describe s3
@@ -1233,7 +870,7 @@ register a new one by running:
 ```
 {% endhint %}
 
-For Stack Components that do support Service Connectors, the flavor indicates the Resource Type and, optionally, Service Connector Type compatible with the Stack Component. This can be used to figure out which resources are available and which Service Connectors can grant access to them. In some cases it is even possible to figure out the exact Resource Name based on the attributes already configured in the Stack Component, which makes it possible to decide automatically which Resource Name to use:
+For Stack Components that do support Service Connectors, their flavor indicates the Resource Type and, optionally, Service Connector Type compatible with the Stack Component. This can be used to figure out which resources are available and which Service Connectors can grant access to them. In some cases it is even possible to figure out the exact Resource Name based on the attributes already configured in the Stack Component, which makes it possible to decide automatically which Resource Name to use:
 
 ```
 $ zenml artifact-store register s3-zenfiles --flavor s3 --path=s3://zenfiles

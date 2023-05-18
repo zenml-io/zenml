@@ -14,7 +14,7 @@ Gaining access to infrastructure resources and services requires knowledge about
 
 The challenge comes from _setting up and implementing proper authentication and authorization_ with best security practices in mind, while at the same time _keeping this complexity away from the day-to-day routines_ of coding and running pipelines.
 
-The hard-to-swallow truth is there is no single standard that unifies all authentication and authorization-related matters or a single, well-defined set of security best practices that you can follow. However, with ZenML you get the next best thing: an abstraction that keeps the complexity of authentication and authorization away from your code and makes it easier to tackle them, _<mark style="color:blue;">the ZenML Service Connectors</mark>_.
+The hard-to-swallow truth is there is no single standard that unifies all authentication and authorization-related matters or a single, well-defined set of security best practices that you can follow. However, with ZenML you get the next best thing, an abstraction that keeps the complexity of authentication and authorization away from your code and makes it easier to tackle them: _<mark style="color:blue;">the ZenML Service Connectors</mark>_.
 
 <figure><img src="../../.gitbook/assets/ConnectorsDiagram.png" alt=""><figcaption><p>Service Connectors abstract away complexity and implement security best practices</p></figcaption></figure>
 
