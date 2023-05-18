@@ -42,11 +42,75 @@ Most of the examples in this page rely on the AWS CLI being installed and alread
 
 ### Generic AWS resource
 
+This resource type allows consumers to use the AWS Service Connector to connect to any AWS service or resource. When used by connector clients, they are provided a generic Python boto3 session instance pre-configured with AWS credentials. This session can then be used to create boto3 clients for any particular AWS service.
+
+This generic AWS resource type is meant to be used with Stack Components that are not represented by other, more specific resource type, like S3 buckets, Kubernetes clusters or Docker registries. It should be accompanied by a matching set of AWS permissions that allow access to the set of remote resources required by the client(s).
+
+The resource name represents the AWS region that the connector is authorized to access.
+
 ### S3 bucket
+
+Allows users to connect to S3 buckets. When used by connector consumers, they are provided a pre-configured boto3 S3 client instance.
+
+The configured credentials must have at least the following [AWS IAM permissions](https://docs.aws.amazon.com/IAM/latest/UserGuide/access\_policies.html) associated with [the ARNs of S3 buckets ](https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-arn-format.html)that the connector will be allowed to access (e.g. `arn:aws:s3:::*` and `arn:aws:s3:::*/*` represent all the available S3 buckets).
+
+* s3:ListBucket
+* s3:GetObject
+* s3:PutObject
+* s3:DeleteObject
+* s3:ListAllMyBuckets
+
+If set, the resource name must identify an S3 bucket using one of the following formats:
+
+* S3 bucket URI (canonical resource name): `s3://{bucket-name}`
+* S3 bucket ARN: `arn:aws:s3:::{bucket-name}`
+* S3 bucket name: `{bucket-name}`
 
 ### EKS Kubernetes cluster
 
+Allows users to access an EKS cluster as a standard Kubernetes cluster resource. When used by connector consumers, they are provided a pre-authenticated Python Kubernetes client instance.
+
+The configured credentials must have at least the following [AWS IAM permissions](https://docs.aws.amazon.com/IAM/latest/UserGuide/access\_policies.html) associated with the [ARNs of EKS clusters](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference-arns.html) that the connector will be allowed to access (e.g. `arn:aws:eks:{region_id}:{project_id}:cluster/*` represents all the EKS clusters available in the target AWS region).
+
+* eks:ListClusters
+* eks:DescribeCluster
+
+In addition to the above permissions, if the credentials are not associated with the same IAM user or role that created the EKS cluster, the IAM principal must be manually added to the EKS cluster's `aws-auth` ConfigMap, otherwise the Kubernetes client will not be allowed to access the cluster's resources. This makes it more challenging to use [the AWS Implicit](aws-service-connector.md#implicit-authentication) and [AWS Federation Token](aws-service-connector.md#aws-federation-token) authentication methods for this resource. For more information, [see this documentation](https://docs.aws.amazon.com/eks/latest/userguide/add-user-role.html).
+
+If set, the resource name must identify an EKS cluster using one of the following formats:
+
+* EKS cluster name (canonical resource name): `{cluster-name}`
+* EKS cluster ARN: `arn:aws:eks:{region}:{account-id}:cluster/{cluster-name}`
+
+EKS cluster names are region scoped. The connector can only be used to access EKS clusters in the AWS region that it is configured to use.
+
 ### ECR container registry
+
+Allows users to access one or more ECR repositories as a standard Docker registry resource. When used by connector consumers, they are provided a pre-authenticated python-docker client instance.
+
+The configured credentials must have at least the following [AWS IAM permissions](https://docs.aws.amazon.com/IAM/latest/UserGuide/access\_policies.html) associated with the [ARNs of one or more ECR repositories](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference-arns.html) that the connector will be allowed to access (e.g. `arn:aws:ecr:{region}:{account}:repository/*` represents all the ECR repositories available in the target AWS region).
+
+* ecr:DescribeRegistry
+* ecr:DescribeRepositories
+* ecr:ListRepositories
+* ecr:BatchGetImage
+* ecr:DescribeImages
+* ecr:BatchCheckLayerAvailability
+* ecr:GetDownloadUrlForLayer
+* ecr:InitiateLayerUpload
+* ecr:UploadLayerPart
+* ecr:CompleteLayerUpload
+* ecr:PutImage
+* ecr:GetAuthorizationToken
+
+This resource type is not scoped to a single ECR repository. Instead, a connector configured with this resource type will grant access to all the ECR repositories that the credentials are allowed to access under the configured AWS region (i.e. all repositories under the Docker registry URL `https://{account-id}.dkr.ecr.{region}.amazonaws.com`).
+
+The resource name associated with this resource type uniquely identifies an ECR registry using one of the following formats (the repository name is ignored, only the registry URL/ARN is used):
+
+* ECR repository URI: `https://{account}.dkr.ecr.{region}.amazonaws.com[/{repository-name}]`
+* ECR repository ARN: `arn:aws:ecr:{region}:{account-id}:repository[/{repository-name}]`
+
+ECR repository names are region scoped. The connector can only be used to access ECR repositories in the AWS region that it is configured to use.
 
 ## Authentication Methods
 
