@@ -6,7 +6,7 @@ description: >-
 
 # Kubernetes Service Connector
 
-The ZenML Kubernetes service connector facilitates authenticating and connecting to a Kubernetes cluster. The connector can be used to access to any generic Kubernetes cluster by providing pre-authenticated Kubernetes python clients to Stack Components that are linked to it and also allows configuration of local Kubernetes clients (i.e. `kubectl`).
+The ZenML Kubernetes service connector facilitates authenticating and connecting to a Kubernetes cluster. The connector can be used to access to any generic Kubernetes cluster by providing pre-authenticated Kubernetes python clients to Stack Components that are linked to it and also allows configuring the local Kubernetes CLI (i.e. `kubectl`).
 
 ## Prerequisites
 
@@ -16,6 +16,16 @@ The Kubernetes Service Connector is part of the Kubernetes ZenML integration. Yo
 * `zenml integration install kubernetes` installs the entire Kubernetes ZenML integration
 
 A local Kubernetes CLI (i.e. `kubectl` ) and setting up local `kubectl` configuration contexts is not required to access Kubernetes clusters in your Stack Components through the Kubernetes Service Connector.
+
+```
+$ zenml service-connector list-types --type kubernetes
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━┯━━━━━━━┯━━━━━━━━┓
+┃             NAME             │ TYPE          │ RESOURCE TYPES        │ AUTH METHODS │ LOCAL │ REMOTE ┃
+┠──────────────────────────────┼───────────────┼───────────────────────┼──────────────┼───────┼────────┨
+┃ Kubernetes Service Connector │ 🌀 kubernetes │ 🌀 kubernetes-cluster │ password     │ ✅    │ ✅     ┃
+┃                              │               │                       │ token        │       │        ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━┷━━━━━━━┷━━━━━━━━┛
+```
 
 ## Resource Types
 

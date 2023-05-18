@@ -8,6 +8,15 @@ description: >-
 
 The ZenML Docker Service Connector allows authenticating with a Docker or OCI container registry and managing Docker clients for the registry. This connector provides pre-authenticated python-docker Python clients to Stack Components that are linked to it.
 
+```
+$ zenml service-connector list-types --type docker
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━┯━━━━━━━┯━━━━━━━━┓
+┃           NAME           │ TYPE      │ RESOURCE TYPES     │ AUTH METHODS │ LOCAL │ REMOTE ┃
+┠──────────────────────────┼───────────┼────────────────────┼──────────────┼───────┼────────┨
+┃ Docker Service Connector │ 🐳 docker │ 🐳 docker-registry │ password     │ ✅    │ ✅     ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━┷━━━━━━━┷━━━━━━━━┛
+```
+
 ## Prerequisites
 
 No Python packages are required for this Service Connector. All prerequisites are included in the base ZenML Python package. Docker needs to be installed on environments where container images are built and pushed to the target container registry.
@@ -52,7 +61,7 @@ This Service Connector does not support generating short-lived credentials from 
 ## Auto-configuration
 
 {% hint style="info" %}
-This Service Connector does not support auto-discovery and extraction of authentication credentials from local Docker clients.
+This Service Connector does not support auto-discovery and extraction of authentication credentials from local Docker clients. If this feature is useful to you or your organization, please let us know by messaging us in [Slack](https://zenml.io/slack-invite) or [creating an issue on GitHub](https://github.com/zenml-io/zenml/issues).
 {% endhint %}
 
 ## Local client provisioning
