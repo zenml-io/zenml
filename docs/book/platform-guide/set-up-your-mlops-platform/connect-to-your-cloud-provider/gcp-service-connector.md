@@ -728,19 +728,28 @@ This Service Connector does not support configuring the local GCP CLI with crede
 
 ## Stack Components use
 
-The GCS Artifact Store Stack Component can be connected to a remote GCS bucket through a GCP Service Connector.
+The[ GCS Artifact Store Stack Component](../../../learning/component-gallery/artifact-stores/gcp.md) can be connected to a remote GCS bucket through a GCP Service Connector.
 
-The GCP Service Connector can also be used in a wide range of Orchestrators and Model Deployer stack component flavors that rely on Kubernetes clusters to manage their workloads. This allows GKE Kubernetes container workloads to be managed without the need to configure and maintain explicit GCP or Kubernetes `kubectl` configuration contexts and credentials in the target environment and in the Stack Component.
+The [Google Cloud Image Builder Stack Component](../../../learning/component-gallery/image-builders/gcp.md), [VertexAI Orchestrator](../../../learning/component-gallery/orchestrators/vertex.md) and [VertexAI Step Operator](../../../learning/component-gallery/step-operators/vertex.md) can be connected and use the resources of a target GCP project through a GCP Service Connector.&#x20;
+
+The GCP Service Connector can also be used with any Orchestrator or Model Deployer stack component flavor that relies on a Kubernetes clusters to manage workloads. This allows GKE Kubernetes container workloads to be managed without the need to configure and maintain explicit GCP or Kubernetes `kubectl` configuration contexts and credentials in the target environment or in the Stack Component itself.
 
 Similarly, Container Registry Stack Components can be connected to a GCR Container Registry through an GCP Service Connector. This allows container images to be built and published to GCR container registries without the need to configure explicit GCP credentials in the target environment or the Stack Component.
 
-## Full examples
+## End-to-end examples
 
 <details>
 
-<summary>GKE Kubernetes Orchestrator, GCS Artifact Store, GCR Container Registry</summary>
+<summary>GKE Kubernetes Orchestrator, GCS Artifact Store and GCR Container Registry with a multi-type GCP Service Connector</summary>
 
-This is an example of an end-to-end workflow involving Service Connectors that starts with configuring a GCP Service Connector and ends with a complete ZenML Stack composed of Stack Components connected to GCP resources through the Service Connector on which a pipeline is run.
+This is an example of an end-to-end workflow involving Service Connectors that uses a single multi-type GCP Service Connector to give access to multiple resources for multiple Stack Components. A complete ZenML Stack is registered composed of the following Stack Components, all connected through the same Service Connector:
+
+* a [Kubernetes Orchestrator](../../../learning/component-gallery/orchestrators/kubernetes.md) connected to a GKE Kubernetes cluster
+* a [GCS Artifact Store](../../../learning/component-gallery/artifact-stores/gcp.md) connected to a GCS bucket
+* a [GCR Container Registry](../../../learning/component-gallery/container-registries/gcp.md) connected to a GCR container registry
+* a local [Image Builder](../../../learning/component-gallery/image-builders/local.md)
+
+As a last step, a simple pipeline is run on the resulting Stack.
 
 1. Configure the local GCP CLI with valid user account credentials with a wide range of permissions (i.e. by running `gcloud auth application-default login`) and install ZenML integration prerequisites:
 
@@ -788,6 +797,8 @@ Successfully registered service connector `gcp-demo-multi` with access to the fo
 ┃                                      │                │                │ 🐳 docker-registry    │                ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┛
 ```
+
+**NOTE**: from this point forward, we don't need the local GCP CLI credentials or the local GCP CLI at all. The steps that follow can be run on any machine regardless of whether it has been configured and authorized to access the GCP project.
 
 3. find out which GCS buckets, GCR registries and GKE Kubernetes clusters we can gain access to. We'll use this information to configure the Stack Components in our minimal GCP stack: a GCS Artifact Store, a Kubernetes Orchestrator and a GCP Container Registry.
 
@@ -969,6 +980,275 @@ Hello World!
 Step simple_step_two has finished in 3.136s.
 Pod of step simple_step_two completed.
 Orchestration pod completed.
+Dashboard URL: http://34.148.131.191/workspaces/default/pipelines/cec118d1-d90a-44ec-8bd7-d978f726b7aa/runs
+```
+
+</details>
+
+<details>
+
+<summary>VertexAI Orchestrator, GCS Artifact Store, GCR Container Registry and GCP Image Builder with single-instance GCP Service Connectors</summary>
+
+This is an example of an end-to-end workflow involving Service Connectors that uses multiple single-instance GCP Service Connectors, each giving access to a resource for a Stack Component. A complete ZenML Stack is registered composed of the following Stack Components, all connected through its individual Service Connector:
+
+* a [VertexAI Orchestrator](../../../learning/component-gallery/orchestrators/vertex.md) connected to the GCP project
+* a [GCS Artifact Store](../../../learning/component-gallery/artifact-stores/gcp.md) connected to a GCS bucket
+* a [GCR Container Registry](../../../learning/component-gallery/container-registries/gcp.md) connected to a GCR container registry
+* a [Google Cloud Image Builder](../../../learning/component-gallery/image-builders/gcp.md) connected to the GCP project
+
+As a last step, a simple pipeline is run on the resulting Stack.
+
+1. Configure the local GCP CLI with valid user account credentials with a wide range of permissions (i.e. by running `gcloud auth application-default login`) and install ZenML integration prerequisites:
+
+```
+$ gcloud auth application-default login
+
+Credentials saved to file: [/home/stefan/.config/gcloud/application_default_credentials.json]
+
+These credentials will be used by any library that requests Application Default Credentials (ADC).
+
+Quota project "zenml-core" was added to ADC which can be used by Google client libraries for billing
+and quota. Note that some services may still bill the project owning the resource.
+
+
+$ zenml integration install -y gcp
+
+```
+
+2. Make sure the GCP Service Connector Type is available
+
+```
+$ zenml service-connector list-types --type gcp
+┏━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━┯━━━━━━━┯━━━━━━━━┓
+┃         NAME          │ TYPE   │ RESOURCE TYPES        │ AUTH METHODS    │ LOCAL │ REMOTE ┃
+┠───────────────────────┼────────┼───────────────────────┼─────────────────┼───────┼────────┨
+┃ GCP Service Connector │ 🔵 gcp │ 🔵 gcp-generic        │ implicit        │ ✅    │ ✅     ┃
+┃                       │        │ 📦 gcs-bucket         │ user-account    │       │        ┃
+┃                       │        │ 🌀 kubernetes-cluster │ service-account │       │        ┃
+┃                       │        │ 🐳 docker-registry    │ oauth2-token    │       │        ┃
+┃                       │        │                       │ impersonation   │       │        ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━┷━━━━━━━┷━━━━━━━━┛
+```
+
+2. Register an individual single-instance GCP Service Connector using auto-configuration for each of the resources that will be needed for the Stack Components: a GCS bucket, a GCR registry, and generic GCP access for the VertexAI orchestrator and another one for the GCP Cloud Builder:
+
+```
+$ zenml service-connector register gcs-zenml-bucket-sl --type gcp --resource-type gcs-bucket --resource-id gs://zenml-bucket-sl --auto-configure
+Successfully registered service connector `gcs-zenml-bucket-sl` with access to the following resources:
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━┓
+┃             CONNECTOR ID             │ CONNECTOR NAME      │ CONNECTOR TYPE │ RESOURCE TYPE │ RESOURCE NAMES       ┃
+┠──────────────────────────────────────┼─────────────────────┼────────────────┼───────────────┼──────────────────────┨
+┃ 405034fe-5e6e-4d29-ba62-8ae025381d98 │ gcs-zenml-bucket-sl │ 🔵 gcp         │ 📦 gcs-bucket │ gs://zenml-bucket-sl ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━┛
+
+$ zenml service-connector register gcr-zenml-core --type gcp --resource-type docker-registry --auto-configure
+Successfully registered service connector `gcr-zenml-core` with access to the following resources:
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━┓
+┃             CONNECTOR ID             │ CONNECTOR NAME │ CONNECTOR TYPE │ RESOURCE TYPE      │ RESOURCE NAMES    ┃
+┠──────────────────────────────────────┼────────────────┼────────────────┼────────────────────┼───────────────────┨
+┃ 9fddfaba-6d46-4806-ad96-9dcabef74639 │ gcr-zenml-core │ 🔵 gcp         │ 🐳 docker-registry │ gcr.io/zenml-core ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━┛
+
+$ zenml service-connector register vertex-ai-zenml-core --type gcp --resource-type gcp-generic --auto-configure
+Successfully registered service connector `vertex-ai-zenml-core` with access to the following resources:
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┓
+┃             CONNECTOR ID             │ CONNECTOR NAME       │ CONNECTOR TYPE │ RESOURCE TYPE  │ RESOURCE NAMES ┃
+┠──────────────────────────────────────┼──────────────────────┼────────────────┼────────────────┼────────────────┨
+┃ f97671b9-8c73-412b-bf5e-4b7c48596f5f │ vertex-ai-zenml-core │ 🔵 gcp         │ 🔵 gcp-generic │ zenml-core     ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┛
+
+$ zenml service-connector register gcp-cloud-builder-zenml-core --type gcp --resource-type gcp-generic --auto-configure
+Successfully registered service connector `gcp-cloud-builder-zenml-core` with access to the following resources:
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┓
+┃             CONNECTOR ID             │ CONNECTOR NAME               │ CONNECTOR TYPE │ RESOURCE TYPE  │ RESOURCE NAMES ┃
+┠──────────────────────────────────────┼──────────────────────────────┼────────────────┼────────────────┼────────────────┨
+┃ 648c1016-76e4-4498-8de7-808fd20f057b │ gcp-cloud-builder-zenml-core │ 🔵 gcp         │ 🔵 gcp-generic │ zenml-core     ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┛
+```
+
+**NOTE**: from this point forward, we don't need the local GCP CLI credentials or the local GCP CLI at all. The steps that follow can be run on any machine regardless of whether it has been configured and authorized to access the GCP project.
+
+At the end, the service connector list should look like this:
+
+```
+$ zenml service-connector list
+┏━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━┯━━━━━━━━━┯━━━━━━━━━━━━┯━━━━━━━━┓
+┃ ACTIVE │ NAME                         │ ID                                   │ TYPE   │ RESOURCE TYPES     │ RESOURCE NAME        │ SHARED │ OWNER   │ EXPIRES IN │ LABELS ┃
+┠────────┼──────────────────────────────┼──────────────────────────────────────┼────────┼────────────────────┼──────────────────────┼────────┼─────────┼────────────┼────────┨
+┃        │ gcs-zenml-bucket-sl          │ 405034fe-5e6e-4d29-ba62-8ae025381d98 │ 🔵 gcp │ 📦 gcs-bucket      │ gs://zenml-bucket-sl │ ➖     │ default │            │        ┃
+┠────────┼──────────────────────────────┼──────────────────────────────────────┼────────┼────────────────────┼──────────────────────┼────────┼─────────┼────────────┼────────┨
+┃        │ gcr-zenml-core               │ 9fddfaba-6d46-4806-ad96-9dcabef74639 │ 🔵 gcp │ 🐳 docker-registry │ gcr.io/zenml-core    │ ➖     │ default │            │        ┃
+┠────────┼──────────────────────────────┼──────────────────────────────────────┼────────┼────────────────────┼──────────────────────┼────────┼─────────┼────────────┼────────┨
+┃        │ vertex-ai-zenml-core         │ f97671b9-8c73-412b-bf5e-4b7c48596f5f │ 🔵 gcp │ 🔵 gcp-generic     │ zenml-core           │ ➖     │ default │            │        ┃
+┠────────┼──────────────────────────────┼──────────────────────────────────────┼────────┼────────────────────┼──────────────────────┼────────┼─────────┼────────────┼────────┨
+┃        │ gcp-cloud-builder-zenml-core │ 648c1016-76e4-4498-8de7-808fd20f057b │ 🔵 gcp │ 🔵 gcp-generic     │ zenml-core           │ ➖     │ default │            │        ┃
+┗━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━┷━━━━━━━━━┷━━━━━━━━━━━━┷━━━━━━━━┛
+```
+
+3. register and connect a GCS Artifact Store Stack Component to the GCS bucket:
+
+```
+$ zenml artifact-store register gcs-zenml-bucket-sl --flavor gcp --path=gs://zenml-bucket-sl
+Running with active workspace: 'default' (global)
+Running with active stack: 'default' (global)
+Successfully registered artifact_store `gcs-zenml-bucket-sl`.
+
+$ zenml artifact-store connect gcs-zenml-bucket-sl --connector gcs-zenml-bucket-sl
+Connected to the ZenML server: 'http://34.148.131.191'
+Running with active workspace: 'default' (global)
+Running with active stack: 'default' (global)
+Successfully connected artifact store `gcs-zenml-bucket-sl` to the following resources:
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━┓
+┃             CONNECTOR ID             │ CONNECTOR NAME      │ CONNECTOR TYPE │ RESOURCE TYPE │ RESOURCE NAMES       ┃
+┠──────────────────────────────────────┼─────────────────────┼────────────────┼───────────────┼──────────────────────┨
+┃ 405034fe-5e6e-4d29-ba62-8ae025381d98 │ gcs-zenml-bucket-sl │ 🔵 gcp         │ 📦 gcs-bucket │ gs://zenml-bucket-sl ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━┛
+```
+
+4. register and connect a Google Cloud Image Builder Stack Component to the target GCP project:
+
+```
+$ zenml image-builder register gcp-zenml-core --flavor gcp 
+Running with active workspace: 'default' (repository)
+Running with active stack: 'default' (repository)
+Successfully registered image_builder `gcp-zenml-core`.
+
+$ zenml image-builder connect gcp-zenml-core --connector gcp-cloud-builder-zenml-core 
+Running with active workspace: 'default' (repository)
+Running with active stack: 'default' (repository)
+Successfully connected image builder `gcp-zenml-core` to the following resources:
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┓
+┃             CONNECTOR ID             │ CONNECTOR NAME               │ CONNECTOR TYPE │ RESOURCE TYPE  │ RESOURCE NAMES ┃
+┠──────────────────────────────────────┼──────────────────────────────┼────────────────┼────────────────┼────────────────┨
+┃ 648c1016-76e4-4498-8de7-808fd20f057b │ gcp-cloud-builder-zenml-core │ 🔵 gcp         │ 🔵 gcp-generic │ zenml-core     ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┛
+```
+
+5. register and connect a Vertex AI Orchestrator Stack Component to the target GCP project:
+
+```
+$ zenml orchestrator register vertex-ai-zenml-core --flavor=vertex --location=europe-west1 --synchronous=true
+Running with active workspace: 'default' (repository)
+Running with active stack: 'default' (repository)
+Successfully registered orchestrator `vertex-ai-zenml-core`.
+
+$ zenml orchestrator connect vertex-ai-zenml-core --connector vertex-ai-zenml-core
+Running with active workspace: 'default' (repository)
+Running with active stack: 'default' (repository)
+Successfully connected orchestrator `vertex-ai-zenml-core` to the following resources:
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┓
+┃             CONNECTOR ID             │ CONNECTOR NAME       │ CONNECTOR TYPE │ RESOURCE TYPE  │ RESOURCE NAMES ┃
+┠──────────────────────────────────────┼──────────────────────┼────────────────┼────────────────┼────────────────┨
+┃ f97671b9-8c73-412b-bf5e-4b7c48596f5f │ vertex-ai-zenml-core │ 🔵 gcp         │ 🔵 gcp-generic │ zenml-core     ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┛
+```
+
+6. Register and connect a GCP Container Registry Stack Component to a GCR container registry:
+
+```
+$ zenml container-registry register gcr-zenml-core --flavor gcp --uri=gcr.io/zenml-core 
+Running with active workspace: 'default' (repository)
+Running with active stack: 'default' (repository)
+Successfully registered container_registry `gcr-zenml-core`.
+
+$ zenml container-registry connect gcr-zenml-core --connector gcr-zenml-core
+Running with active workspace: 'default' (repository)
+Running with active stack: 'default' (repository)
+Successfully connected container registry `gcr-zenml-core` to the following resources:
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━┓
+┃             CONNECTOR ID             │ CONNECTOR NAME │ CONNECTOR TYPE │ RESOURCE TYPE      │ RESOURCE NAMES    ┃
+┠──────────────────────────────────────┼────────────────┼────────────────┼────────────────────┼───────────────────┨
+┃ 9fddfaba-6d46-4806-ad96-9dcabef74639 │ gcr-zenml-core │ 🔵 gcp         │ 🐳 docker-registry │ gcr.io/zenml-core ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━┛
+```
+
+7. Combine all Stack Components together into a Stack and set it as active:
+
+```
+$ zenml stack register gcp-demo -a gcs-zenml-bucket-sl -o vertex-ai-zenml-core -c gcr-zenml-core -i gcp-zenml-core --set
+Connected to the ZenML server: 'http://34.148.131.191'
+Running with active workspace: 'default' (repository)
+Stack 'gcp-demo' successfully registered!
+Active repository stack set to:'gcp-demo'
+```
+
+8. Finally, run a simple pipeline to prove that everything works as expected. We'll use the simplest pipelines possible for this example:
+
+```python
+from zenml.config import DockerSettings
+from zenml.pipelines import pipeline
+from zenml.steps import step
+
+@pipeline
+def simple_pipeline(simple_step_one, simple_step_two):
+    """Define single step pipeline."""
+    message = simple_step_one()
+    simple_step_two(msg=message)
+
+
+@step
+def simple_step_one() -> str:
+    """Simple step one."""
+
+    return "Hello World!"
+
+
+@step
+def simple_step_two(msg: str) -> None:
+    """Simple step two."""
+
+    print(msg)
+
+
+if __name__ == "__main__":
+    pipeline = simple_pipeline(
+        simple_step_one=simple_step_one(), simple_step_two=simple_step_two()
+    )
+    pipeline.run(enable_cache=False)
+```
+
+Saving that to a `run.py` file and running it gives us:
+
+```
+$ python run.py 
+Reusing registered pipeline simple_pipeline (version: 1).
+Building Docker image(s) for pipeline simple_pipeline.
+Building Docker image gcr.io/zenml-core/zenml:simple_pipeline-orchestrator.
+- Including integration requirements: gcsfs, google-cloud-aiplatform>=1.11.0, google-cloud-build>=3.11.0, google-cloud-container>=2.21.0, google-cloud-functions>=1.8.3, google-cloud-scheduler>=2.7.3, google-cloud-secret-manager, google-cloud-storage>=2.9.0, kfp==1.8.16, shapely<2.0
+Using Cloud Build to build image gcr.io/zenml-core/zenml:simple_pipeline-orchestrator
+No .dockerignore found, including all files inside build context.
+Uploading build context to gs://zenml-bucket-sl/cloud-build-contexts/b97909351a7210dafdcf35142fae574f0d1c3ebc.tar.gz.
+Build context located in bucket zenml-bucket-sl and object path cloud-build-contexts/b97909351a7210dafdcf35142fae574f0d1c3ebc.tar.gz
+Using Cloud Builder image gcr.io/cloud-builders/docker to run the steps in the build. Container will be attached to network using option --network=cloudbuild.
+Running Cloud Build to build the Docker image. Cloud Build logs: https://console.cloud.google.com/cloud-build/builds/93a7e7f3-33fb-4b9a-afdc-e7c23346a9d4?project=20219041791
+The Docker image has been built successfully. More information can be found in the Cloud Build logs: https://console.cloud.google.com/cloud-build/builds/93a7e7f3-33fb-4b9a-afdc-e7c23346a9d4?project=20219041791.
+Finished building Docker image(s).
+Running pipeline simple_pipeline on stack gcp-demo (caching disabled)
+The attribute pipeline_root has not been set in the orchestrator configuration. One has been generated automatically based on the path of the GCPArtifactStore artifact store in the stack used to execute the pipeline. The generated pipeline_root is gs://zenml-bucket-sl/vertex_pipeline_root/simple_pipeline/simple_pipeline_default_8cdad5b5.
+/home/stefan/aspyre/src/zenml/.venv/lib/python3.8/site-packages/kfp/v2/compiler/compiler.py:1290: FutureWarning: APIs imported from the v1 namespace (e.g. kfp.dsl, kfp.components, etc) will not be supported by the v2 compiler since v2.0.0
+  warnings.warn(
+Writing Vertex workflow definition to /home/stefan/.config/zenml/vertex/d061ccbb-7b1a-476c-af7f-e347f893a045/pipelines/simple_pipeline_default_8cdad5b5.json.
+No schedule detected. Creating one-off vertex job...
+Submitting pipeline job with job_id simple-pipeline-default-8cdad5b5 to Vertex AI Pipelines service.
+Creating PipelineJob
+INFO:google.cloud.aiplatform.pipeline_jobs:Creating PipelineJob
+PipelineJob created. Resource name: projects/20219041791/locations/europe-west3/pipelineJobs/simple-pipeline-default-8cdad5b5
+INFO:google.cloud.aiplatform.pipeline_jobs:PipelineJob created. Resource name: projects/20219041791/locations/europe-west3/pipelineJobs/simple-pipeline-default-8cdad5b5
+To use this PipelineJob in another session:
+INFO:google.cloud.aiplatform.pipeline_jobs:To use this PipelineJob in another session:
+pipeline_job = aiplatform.PipelineJob.get('projects/20219041791/locations/europe-west3/pipelineJobs/simple-pipeline-default-8cdad5b5')
+INFO:google.cloud.aiplatform.pipeline_jobs:pipeline_job = aiplatform.PipelineJob.get('projects/20219041791/locations/europe-west3/pipelineJobs/simple-pipeline-default-8cdad5b5')
+View Pipeline Job:
+https://console.cloud.google.com/vertex-ai/locations/europe-west3/pipelines/runs/simple-pipeline-default-8cdad5b5?project=20219041791
+INFO:google.cloud.aiplatform.pipeline_jobs:View Pipeline Job:
+https://console.cloud.google.com/vertex-ai/locations/europe-west3/pipelines/runs/simple-pipeline-default-8cdad5b5?project=20219041791
+View the Vertex AI Pipelines job at https://console.cloud.google.com/vertex-ai/locations/europe-west3/pipelines/runs/simple-pipeline-default-8cdad5b5?project=20219041791
+Waiting for the Vertex AI Pipelines job to finish...
+PipelineJob projects/20219041791/locations/europe-west3/pipelineJobs/simple-pipeline-default-8cdad5b5 current state:
+PipelineState.PIPELINE_STATE_PENDING
+INFO:google.cloud.aiplatform.pipeline_jobs:PipelineJob projects/20219041791/locations/europe-west3/pipelineJobs/simple-pipeline-default-8cdad5b5 current state:
+PipelineState.PIPELINE_STATE_PENDING
+
 Dashboard URL: http://34.148.131.191/workspaces/default/pipelines/cec118d1-d90a-44ec-8bd7-d978f726b7aa/runs
 ```
 
