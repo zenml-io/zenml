@@ -5,22 +5,45 @@ description: Configuring pipelines, steps, and stack components in ZenML.
 # Configure steps/pipelines
 
 * [ ] Add the step order to the configuration.
-* [ ] We probably need to have a section for BaseParameters as well.
+
+## Parameterize your Steps
+
+When calling a step in a pipeline, the inputs provided to the step function can either be an **artifact** or a **parameter**. An artifact represents the output of another step that was executed as part of the same pipeline and serves as a means to share data between steps. Parameters, on the other hand, are values provided explicitly when invoking a step. They are not dependent on the output of other steps and allow you to parameterize the behavior of your steps.&#x20;
+
+{% hint style="info" %}
+To allow configuring your steps using a configuration file, only values that can be serialized to JSON using Pydantic can be passed as parameters.
+{% endhint %}
+
+```python
+@step
+def my_step(input_1: int, input_2: int) -> None:
+  pass
+
+@pipeline
+def my_pipeline():
+  int_artifact = some_other_step()
+  # We supply the value of `input_1` as an artifact and
+  # `input_2` as a parameter
+  my_step(input_1=int_artifact, input_2=17)
+  # We could also call the step with two artifacts or two
+  # parameters instead
+  # my_step(input_1=int_artifact, input_2=int_artifact)
+  # my_step(input_1=1, input_2=2)
+```
+
+**Parameters and Caching**
+
+When an input is passed as a parameter, the step will only be cached if all parameter values are exactly the same as for previous executions of the step.
+
+**Artifacts and Caching**
+
+When an artifact is used as a step function input, the step will only be cached if all the  artifacts are exactly the same as for previous executions of the step. This means that if any of the the upstream steps that produce the input artifacts for a step was not cached, the step itself will always be executed.
 
 ## Settings in ZenML
 
-As discussed in a [previous chapter](broken-reference/), there are two ways to configure anything in ZenML:
+Settings in ZenML allow you to configure runtime configurations for stack components and pipelines. Concretely, they allow you to configure:
 
-* `BaseParameters`: Runtime configuration passed down as a parameter to step functions.
-* `BaseSettings`: Runtime settings passed down to stack components and pipelines.
-
-We have [already discussed `BaseParameters`](broken-reference/) and now is the time to talk about its brother, `BaseSettings`.
-
-### What can be configured?
-
-Looked at one way, `BaseParameters` configure steps within a pipeline to behave in a different way during runtime. But what other things can be configured at runtime? Here is a list:
-
-* The [resources](broken-reference/) of a step.
+* The [resources](broken-reference/) required for a step.
 * Configuring the [containerization](broken-reference/) process of a pipeline (e.g. What requirements get installed in the Docker image).
 * Stack component specific configuration, e.g., if you have an experiment tracker passing in the name of the experiment at runtime.
 
