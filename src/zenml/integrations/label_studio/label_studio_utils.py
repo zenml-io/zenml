@@ -50,6 +50,8 @@ def convert_pred_filenames_to_task_ids(
     # GCS and S3 URL encodes filenames containing spaces, requiring this
     # separate encoding step
     if storage_type == "gcs":
+        # we remove the scheme from the URL to match the pred to the Label
+        # Studio task
         preds = [
             {
                 "filename": quote(pred["filename"]).split("//")[1],
@@ -58,6 +60,9 @@ def convert_pred_filenames_to_task_ids(
             for pred in preds
         ]
     elif storage_type == "s3":
+        # S3 URLs are of the form s3://bucket-name/path/to/file so we need to
+        # make sure we only encode the path so we can match the pred to the
+        # Label Studio task
         preds = [
             {
                 "filename": "/".join(
