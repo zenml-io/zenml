@@ -115,8 +115,8 @@ class PillowImageMaterializer(BaseMaterializer):
             The extracted metadata as a dictionary.
         """
         metadata = {
-            "width": str(image.width),
-            "height": str(image.height),
+            "width": image.width,
+            "height": image.height,
             "mode": str(image.mode),
         }
         if hasattr(image, "filename"):
