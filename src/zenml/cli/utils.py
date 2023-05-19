@@ -595,7 +595,7 @@ def convert_str_to_dict(string) -> dict:
     except yaml.YAMLError:
         pass
 
-    error(f"Invalid argument: '{string}'. Please provide the value in Json/Dict/Yaml Format")
+    error(f"Invalid argument: '{string}'. Please provide the value in Json/Dict/Yaml format")
 
 
 def read_args_from_file(value: str) -> str:
