@@ -75,6 +75,16 @@ To figure out the URI for your registry:
 {% endtab %}
 {% endtabs %}
 
+#### Infrastructure Deployment
+
+A GCP Container Registry can be deployed directly from the ZenML CLI:
+
+```shell
+zenml container-registry deploy gcp_container_registry --flavor=gcp ...
+```
+
+You can pass other configurations specific to the stack components as key-value arguments. If you don't provide a name, a random one is generated for you. For more information about how to work use the CLI for this, please refer to the dedicated documentation section.
+
 ### How to use it
 
 To use the GCP container registry, we need:

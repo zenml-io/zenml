@@ -8,15 +8,15 @@ The local Artifact Store is a built-in ZenML [Artifact Store](artifact-stores.md
 
 ### When would you want to use it?
 
-The local Artifact Store is a great way to get started with ZenML, as it doesn't require you to provision additional local resources, or to interact with managed object store services like Amazon S3 and Google Cloud Storage. All you need is the local filesystem. You should use the local Artifact Store if you're just evaluating or getting started with ZenML, or if you are still in the experimental phase and don't need to share your pipeline artifacts (dataset, models, etc.) with others.
+The local Artifact Store is a great way to get started with ZenML, as it doesn't require you to provision additional local resources or to interact with managed object-store services like Amazon S3 and Google Cloud Storage. All you need is the local filesystem. You should use the local Artifact Store if you're just evaluating or getting started with ZenML, or if you are still in the experimental phase and don't need to share your pipeline artifacts (dataset, models, etc.) with others.
 
 {% hint style="warning" %}
-The local Artifact Store is not meant to be utilized in production. The local filesystem cannot be shared across your team and doesn't cover services like high-availability, scalability, backup and restore and other features that are expected from a production grade MLOps system.
+The local Artifact Store is not meant to be utilized in production. The local filesystem cannot be shared across your team and the artifacts stored in it cannot be accessed from other machines. This also means that artifact visualizations will not be available when using a local Artifact Store through a ZenML instance deployed in the cloud. Furthermore, the local Artifact Store doesn't cover services like high availability, scalability, backup and restore, and other features that are expected from a production-grade MLOps system.
 
 The fact that it stores artifacts on your local filesystem also means that not all stack components can be used in the same stack as a local Artifact Store:
 
 * only [Orchestrators](../orchestrators/orchestrators.md) running on the local machine, such as the [local Orchestrator](../orchestrators/local.md), a [local Kubeflow Orchestrator](../orchestrators/kubeflow.md), or a [local Kubernetes Orchestrator](../orchestrators/kubernetes.md) can be combined with a local Artifact Store
-* only [Model Deployers](../model-deployers/model-deployers.md) that are running locally, such as the [MLflow Model Deployer](../model-deployers/mlflow.md) can only be used in combination with a local Artifact Store
+* only [Model Deployers](../model-deployers/model-deployers.md) that are running locally, such as the [MLflow Model Deployer](../model-deployers/mlflow.md) can be used in combination with a local Artifact Store
 * [Step Operators](../step-operators/step-operators.md): none of the Step Operators can be used in the same stack as a local Artifact Store, given that their very purpose is to run ZenML steps in remote specialized environments
 
 As you transition to a team setting or a production setting, you can replace the local Artifact Store in your stack with one of the other flavors that are better suited for these purposes, with no changes required in your code.
@@ -70,7 +70,7 @@ zenml stack register custom_stack -o default -a custom_local --set
 ```
 
 {% hint style="warning" %}
-Same as all other Artifact Store flavors, the local Artifact Store does take in a `path` configuration parameter that can be set during registration to point to a custom path on your machine. However, it is highly recommended that you rely on the default `path` value, otherwise it may lead to unexpected results. Other local stack components depend on the convention used for the default path to be able to access the local Artifact Store.
+Same as all other Artifact Store flavors, the local Artifact Store does take in a `path` configuration parameter that can be set during registration to point to a custom path on your machine. However, it is highly recommended that you rely on the default `path` value, otherwise, it may lead to unexpected results. Other local stack components depend on the convention used for the default path to be able to access the local Artifact Store.
 {% endhint %}
 
 For more, up-to-date information on the local Artifact Store implementation and its configuration, you can have a look at [the API docs](https://apidocs.zenml.io/latest/core\_code\_docs/core-artifact\_stores/#zenml.artifact\_stores.local\_artifact\_store).
