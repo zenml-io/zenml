@@ -936,3 +936,10 @@ Successfully connected artifact store `s3-zenfiles` to the following resources:
 ┃ 4a550c82-aa64-4a48-9c7f-d5e127d77a44 │ aws-multi-type │ 🔶 aws         │ 📦 s3-bucket  │ s3://zenfiles  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┛
 ```
+
+## End-to-end examples
+
+To get an idea of what a complete end-to-end journey looks like, from registering Service Connector all the way to configuring Stacks and Stack Components and running pipelines that access remote resources through Service Connectors, take a look at the following full-fledged examples:
+
+* [the AWS Service Connector end-to-end examples](aws-service-connector.md#end-to-end-examples)
+* [the GCP Service Connector end-to-end examples](gcp-service-connector.md#end-to-end-examples)
