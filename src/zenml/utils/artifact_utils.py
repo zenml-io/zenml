@@ -160,6 +160,8 @@ def _load_artifact(
     Raises:
         ModuleNotFoundError: If the materializer or data type cannot be found.
     """
+    from zenml.materializers.base_materializer import BaseMaterializer
+
     # Resolve the materializer class
     try:
         materializer_class = source_utils.load(materializer)
@@ -196,8 +198,8 @@ def _load_artifact(
 
 def select_materializer(
     data_type: Type[Any],
-    materializer_classes: Sequence[Type[BaseMaterializer]],
-) -> Type[BaseMaterializer]:
+    materializer_classes: Sequence[Type["BaseMaterializer"]],
+) -> Type["BaseMaterializer"]:
     """Select a materializer for a given data type.
 
     Args:
