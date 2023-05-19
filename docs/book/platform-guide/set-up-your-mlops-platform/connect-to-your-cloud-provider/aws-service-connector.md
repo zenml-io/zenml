@@ -446,6 +446,8 @@ Uses [temporary STS tokens](best-security-practices.md#short-lived-credentials) 
 
 This method has the major limitation that the user must regularly generate new tokens and update the connector configuration as STS tokens expire. This method is best used in cases where the connector only needs to be used for a short period of time.
 
+Using other authentication methods like [IAM role](aws-service-connector.md#aws-iam-role), [Session Token](aws-service-connector.md#aws-session-token) or [Federation Token](aws-service-connector.md#aws-federation-token) will automatically generate and refresh STS tokens for clients upon request.
+
 An AWS region is required and the connector may only be used to access AWS resources in the specified region.
 
 <details>
@@ -537,6 +539,8 @@ $ zenml service-connector list
 Generates [temporary STS credentials](best-security-practices.md#impersonating-accounts-and-assuming-roles) by assuming an AWS IAM role.
 
 The connector needs to be configured with the IAM role to be assumed accompanied by an AWS secret key associated with an IAM user or an STS token associated with another IAM role. The IAM user or IAM role must have permissions to assume the target IAM role. The connector will [generate temporary STS tokens](best-security-practices.md#generating-temporary-and-down-scoped-credentials) upon request by [calling the AssumeRole STS API](https://docs.aws.amazon.com/IAM/latest/UserGuide/id\_credentials\_temp\_request.html#api\_assumerole).
+
+[The best practice implemented with this authentication scheme](best-security-practices.md#impersonating-accounts-and-assuming-roles) is to keep the set of permissions associated with the primary IAM user or IAM role down to the bare minimum and grant permissions to the privilege bearing IAM role instead.
 
 An AWS region is required and the connector may only be used to access AWS resources in the specified region.
 
