@@ -14,17 +14,14 @@
 """Base Step for ZenML."""
 import hashlib
 import inspect
-import os
 from abc import abstractmethod
 from collections import defaultdict
 from types import FunctionType
 from typing import (
     TYPE_CHECKING,
     Any,
-    Callable,
     Dict,
     Mapping,
-    NamedTuple,
     Optional,
     Sequence,
     Set,
@@ -51,9 +48,11 @@ from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.materializers.materializer_registry import materializer_registry
 from zenml.steps.base_parameters import BaseParameters
-from zenml.steps.step_context import StepContext
-from zenml.steps.utils import (
-    parse_return_type_annotations,
+from zenml.steps.entrypoint_function_utils import (
+    ExternalArtifact,
+    StepArtifact,
+    get_step_entrypoint_signature,
+    validate_entrypoint_function,
 )
 from zenml.utils import (
     dict_utils,
@@ -65,7 +64,6 @@ from zenml.utils import (
 
 if TYPE_CHECKING:
     from zenml.config.base_settings import SettingsOrDict
-    from zenml.pipelines.new import Pipeline
 
     ParametersOrDict = Union["BaseParameters", Dict[str, Any]]
     MaterializerClassOrSource = Union[str, Source, Type["BaseMaterializer"]]
@@ -784,8 +782,7 @@ class BaseStep(metaclass=BaseStepMeta):
         input_artifacts: Dict[str, "StepArtifact"],
         external_artifacts: Dict[str, UUID],
     ) -> None:
-        signature = get_step_entrypoint_signature(step=self)
-        for key in signature.parameters.keys():
+        for key in self.entrypoint_definition.inputs.keys():
             if (
                 key in input_artifacts
                 or key in self.configuration.parameters
@@ -828,10 +825,16 @@ class BaseStep(metaclass=BaseStepMeta):
                 is_union,
             )
 
+            from zenml.materializers import CloudpickleMaterializer
             from zenml.steps.utils import get_args
 
             if not output.materializer_source:
                 if output_annotation is Any:
+                    logger.warning()
+                    outputs[output_name]["materializer_source"] = (
+                        source_utils.resolve(CloudpickleMaterializer),
+                    )
+
                     raise StepInterfaceError(
                         "An explicit materializer needs to be specified for "
                         "step outputs with `Any` as type annotation.",
@@ -853,20 +856,7 @@ class BaseStep(metaclass=BaseStepMeta):
                 materializer_source = []
 
                 for output_type in output_types:
-                    if materializer_registry.is_registered(output_type):
-                        materializer_class = materializer_registry[output_type]
-                    else:
-                        raise StepInterfaceError(
-                            f"Unable to find materializer for output "
-                            f"'{output_name}' of type `{output_type}` in step "
-                            f"'{self.name}'. Please make sure to either "
-                            f"explicitly set a materializer for step outputs "
-                            f"using `step.configure(output_materializers=...)` or "
-                            f"registering a default materializer for specific "
-                            f"types by subclassing `BaseMaterializer` and setting "
-                            f"its `ASSOCIATED_TYPES` class variable.",
-                            url="https://docs.zenml.io/advanced-guide/pipelines/materializers",
-                        )
+                    materializer_class = materializer_registry[output_type]
                     materializer_source.append(
                         source_utils.resolve(materializer_class)
                     )
@@ -899,14 +889,12 @@ class BaseStep(metaclass=BaseStepMeta):
         return complete_configuration
 
     def _finalize_parameters(self) -> Dict[str, Any]:
-        signature = get_step_entrypoint_signature(step=self)
-
         params = {}
         for key, value in self.configuration.parameters.items():
-            if key not in signature.parameters:
+            if key not in self.entrypoint_definition.inputs:
                 continue
 
-            annotation = signature.parameters[key].annotation
+            annotation = self.entrypoint_definition.inputs[key].annotation
             if inspect.isclass(annotation) and issubclass(
                 annotation, BaseModel
             ):
@@ -993,427 +981,3 @@ class BaseStep(metaclass=BaseStepMeta):
             raise StepInterfaceError("Failed to validate function parameters.")
 
         return values
-
-
-def is_json_serializable(obj: Any) -> bool:
-    import json
-
-    from pydantic.json import pydantic_encoder
-
-    try:
-        json.dumps(obj, default=pydantic_encoder)
-        return True
-    except TypeError:
-        return False
-
-
-def get_step_entrypoint_signature(
-    step: "BaseStep", include_step_context: bool = False
-) -> inspect.Signature:
-    signature = inspect.signature(step.entrypoint, follow_wrapped=True)
-
-    if include_step_context:
-        return signature
-
-    def _is_step_context_param(annotation: Any) -> bool:
-        return inspect.isclass(annotation) and issubclass(
-            annotation, StepContext
-        )
-
-    params_without_step_context = [
-        param
-        for param in signature.parameters.values()
-        if not _is_step_context_param(param.annotation)
-    ]
-
-    signature = signature.replace(parameters=params_without_step_context)
-    return signature
-
-
-class StepInvocation:
-    def __init__(
-        self,
-        id: str,
-        step: "BaseStep",
-        input_artifacts: Dict[str, "StepArtifact"],
-        external_artifacts: Dict[str, "ExternalArtifact"],
-        parameters: Dict[str, Any],
-        upstream_steps: Sequence[str],
-        pipeline: "Pipeline",
-    ) -> None:
-        self.id = id
-        self.step = step
-        self.input_artifacts = input_artifacts
-        self.external_artifacts = external_artifacts
-        self.parameters = parameters
-        self.invocation_upstream_steps = upstream_steps
-        self.pipeline = pipeline
-
-    @property
-    def upstream_steps(self) -> Set[str]:
-        return self.invocation_upstream_steps.union(
-            self._get_and_validate_step_upstream_steps()
-        )
-
-    def _get_and_validate_step_upstream_steps(self) -> Set[str]:
-        if self.step.upstream_steps:
-            # If the step has upstream steps, it can only be part of a single
-            # invocation, otherwise it's not clear which invocation should come
-            # after the upstream steps
-            invocations = {
-                invocation
-                for invocation in self.pipeline.steps.values()
-                if invocation.step is self.step
-            }
-
-            if len(invocations) > 1:
-                raise RuntimeError(
-                    "Setting upstream steps for a step using the `.after(...) "
-                    "method is not allowed in combination with calling the "
-                    "step multiple times."
-                )
-
-        upstream_steps = set()
-
-        for step in self.step.upstream_steps:
-            upstream_steps_invocations = {
-                invocation.id
-                for invocation in self.pipeline.steps.values()
-                if invocation.step is step
-            }
-
-            if len(upstream_steps_invocations) == 1:
-                upstream_steps.add(upstream_steps_invocations.pop())
-            elif len(upstream_steps_invocations) > 1:
-                raise RuntimeError(
-                    "Setting upstream steps for a step using the `.after(...) "
-                    "method is not allowed in combination with calling the "
-                    "step multiple times."
-                )
-
-        return upstream_steps
-
-    def finalize(self) -> StepConfiguration:
-        self._get_and_validate_step_upstream_steps()
-        self.step.configure(parameters=self.parameters)
-
-        external_artifact_ids = {}
-        for key, artifact in self.external_artifacts.items():
-            external_artifact_ids[key] = artifact.do_something()
-
-        return self.step._finalize_configuration(
-            input_artifacts=self.input_artifacts,
-            external_artifacts=external_artifact_ids,
-        )
-
-
-class Artifact:
-    @property
-    @abstractmethod
-    def type(self) -> Any:
-        """The data type of the artifact."""
-
-
-class StepArtifact(Artifact):
-    def __init__(
-        self,
-        invocation_id: str,
-        output_name: str,
-        annotation: Any,
-        pipeline: "Pipeline",
-    ) -> None:
-        self.invocation_id = invocation_id
-        self.output_name = output_name
-        self.annotation = annotation
-        self.pipeline = pipeline
-
-    @property
-    def type(self) -> Any:
-        return self.annotation
-
-
-class ExternalArtifact(Artifact):
-    def __init__(
-        self,
-        value: Any = None,
-        id: Optional[UUID] = None,
-        materializer: Optional["MaterializerClassOrSource"] = None,
-        store_artifact_metadata: bool = True,
-        skip_type_checking: bool = False,
-    ) -> None:
-        if value is not None and id is not None:
-            raise ValueError("Only value or ID allowed")
-        if value is None and id is None:
-            raise ValueError("Either value or ID required")
-
-        self._value = value
-        self._id = id
-        self._materializer = materializer
-        self._store_artifact_metadata = store_artifact_metadata
-        self._skip_type_checking = skip_type_checking
-
-    @property
-    def type(self) -> Any:
-        from zenml.client import Client
-
-        if self._skip_type_checking:
-            return Any
-        elif self._id:
-            response = Client().get_artifact(artifact_id=self._id)
-            return source_utils.load(response.data_type)
-        else:
-            return type(self._value)
-
-    def do_something(self) -> UUID:
-        from uuid import uuid4
-
-        from zenml.client import Client
-        from zenml.io import fileio
-        from zenml.models import ArtifactRequestModel
-
-        artifact_store_id = Client().active_stack.artifact_store.id
-
-        if self._id:
-            response = Client().get_artifact(artifact_id=self._id)
-            if response.artifact_store_id != artifact_store_id:
-                raise RuntimeError("Artifact store mismatch")
-        else:
-            logger.info("Uploading external artifact.")
-            client = Client()
-            active_user_id = client.active_user.id
-            active_workspace_id = client.active_workspace.id
-            artifact_name = f"external_{uuid4()}"
-            materializer_class = self._get_materializer()
-
-            uri = os.path.join(
-                Client().active_stack.artifact_store.path,
-                "external_artifacts",
-                artifact_name,
-            )
-            if fileio.exists(uri):
-                raise RuntimeError("Artifact URI already exists")
-            fileio.makedirs(uri)
-
-            materializer = materializer_class(uri)
-            materializer.save(self._value)
-
-            artifact = ArtifactRequestModel(
-                name=artifact_name,
-                type=materializer_class.ASSOCIATED_ARTIFACT_TYPE,
-                uri=uri,
-                materializer=source_utils.resolve(materializer_class),
-                data_type=source_utils.resolve(type(self._value)),
-                user=active_user_id,
-                workspace=active_workspace_id,
-                artifact_store_id=artifact_store_id,
-            )
-            response = Client().zen_store.create_artifact(artifact=artifact)
-            # To avoid duplicate uploads, switch to just referencing the
-            # uploaded artifact
-            self._id = response.id
-
-        return self._id
-
-    def _get_materializer(self) -> Type["BaseMaterializer"]:
-        assert self._value is not None
-
-        if inspect.isclass(self._materializer):
-            return self._materializer
-        elif self._materializer:
-            return source_utils.load_and_validate_class(
-                self._materializer, expected_class=BaseMaterializer
-            )
-        else:
-            value_type = type(self._value)
-            if materializer_registry.is_registered(value_type):
-                return materializer_registry[value_type]
-            else:
-                raise StepInterfaceError(
-                    f"Unable to find materializer for type `{value_type}`. Please "
-                    "make sure to either explicitly set a materializer for your "
-                    "external artifact using "
-                    "`ExternalArtifact(value=..., materializer=...)` or "
-                    f"register a default materializer for specific "
-                    f"types by subclassing `BaseMaterializer` and setting "
-                    f"its `ASSOCIATED_TYPES` class variable.",
-                    url="https://docs.zenml.io/advanced-guide/pipelines/materializers",
-                )
-
-
-def validate_reserved_arguments(
-    signature: inspect.Signature, reserved_arguments: Sequence[str]
-):
-    for arg in reserved_arguments:
-        if arg in signature.parameters:
-            raise RuntimeError(f"Reserved argument name {arg}.")
-
-
-class EntrypointFunctionDefinition(NamedTuple):
-    inputs: Dict[str, inspect.Parameter]
-    outputs: Dict[str, Any]
-    context: Optional[inspect.Parameter]
-    params: Optional[inspect.Parameter]
-
-    def validate_input(
-        self,
-        key: str,
-        input_: Union["Artifact", Any],
-    ) -> None:
-        from zenml.materializers import UnmaterializedArtifact
-
-        if key not in self.inputs:
-            raise KeyError(f"No input for key {key}.")
-
-        parameter = self.inputs[key]
-
-        if isinstance(input_, Artifact):
-            pass
-            # TODO: If we want to do some type validation here, it won't support
-            # type coercion
-            # if parameter.annotation is not UnmaterializedArtifact:
-            #     self._validate_input_type(
-            #         parameter=parameter, annotation=input_.type
-            #     )
-        else:
-            # Not an artifact -> This is a parameter
-            if parameter.annotation is UnmaterializedArtifact:
-                raise RuntimeError(
-                    "Passing parameter for input of type `UnmaterializedArtifact` "
-                    "is not allowed."
-                )
-
-            self._validate_input_value(parameter=parameter, value=input_)
-
-            if not is_json_serializable(input_):
-                raise StepInterfaceError(
-                    f"Argument type (`{type(input_)}`) for argument "
-                    f"'{key}' is not JSON "
-                    "serializable."
-                )
-
-    def _validate_input_value(
-        self, parameter: inspect.Parameter, value: Any
-    ) -> None:
-        from pydantic import BaseConfig, ValidationError, create_model
-
-        class ModelConfig(BaseConfig):
-            arbitrary_types_allowed = False
-
-        # Create a pydantic model with just a single required field with the
-        # type annotation of the parameter to verify the input type including
-        # pydantics type coercion
-        validation_model_class = create_model(
-            "input_validation_model",
-            __config__=ModelConfig,
-            value=(parameter.annotation, ...),
-        )
-
-        try:
-            validation_model_class(value=value)
-        except ValidationError as e:
-            raise RuntimeError("Input validation failed.") from e
-
-    def _validate_input_type(
-        self, parameter: inspect.Parameter, annotation: Any
-    ) -> None:
-
-        from pydantic.typing import get_origin, is_union
-
-        from zenml.steps.utils import get_args
-
-        def _get_allowed_types(annotation) -> Tuple:
-            origin = get_origin(annotation) or annotation
-            if is_union(origin):
-                allowed_types = get_args(annotation)
-            elif inspect.isclass(annotation) and issubclass(
-                annotation, BaseModel
-            ):
-                if annotation.__custom_root_type__:
-                    allowed_types = (annotation,) + _get_allowed_types(
-                        annotation.__fields__["__root__"].outer_type_
-                    )
-                else:
-                    allowed_types = (annotation, dict)
-            else:
-                allowed_types = (origin,)
-
-            return allowed_types
-
-        allowed_types = _get_allowed_types(annotation=parameter.annotation)
-        input_types = _get_allowed_types(annotation=annotation)
-
-        if Any in input_types or Any in allowed_types:
-            # Skip type checks for `Any` annotations
-            return
-
-        for type_ in input_types:
-            if not issubclass(type_, allowed_types):
-                raise StepInterfaceError(
-                    f"Wrong input type (`{annotation}`) for argument "
-                    f"'{parameter.name}'. The argument "
-                    f"should be of type `{parameter.annotation}`."
-                )
-
-
-def validate_entrypoint_function(
-    func: Callable[..., Any], reserved_arguments: Sequence[str] = ()
-) -> EntrypointFunctionDefinition:
-    signature = inspect.signature(func, follow_wrapped=True)
-    validate_reserved_arguments(
-        signature=signature, reserved_arguments=reserved_arguments
-    )
-
-    inputs = {}
-    context: Optional[inspect.Parameter] = None
-    params: Optional[inspect.Parameter] = None
-
-    for key, parameter in signature.parameters.items():
-        if parameter.kind in {parameter.VAR_POSITIONAL, parameter.VAR_KEYWORD}:
-            raise StepInterfaceError(
-                f"Variable args or kwargs not allowed for function {func.__name__}."
-            )
-
-        annotation = parameter.annotation
-        if annotation is parameter.empty:
-            raise StepInterfaceError(
-                f"Missing type annotation for argument '{key}'. Please make "
-                "sure to include type annotations for all your step inputs "
-                f"and outputs."
-            )
-
-        if inspect.isclass(annotation) and issubclass(
-            annotation, BaseParameters
-        ):
-            if params is not None:
-                raise StepInterfaceError(
-                    f"Found multiple parameter arguments "
-                    f"('{params.name}' and '{key}') "
-                    f"for function {func.__name__}."
-                )
-            params = parameter
-
-        elif inspect.isclass(annotation) and issubclass(
-            annotation, StepContext
-        ):
-            if context is not None:
-                raise StepInterfaceError(
-                    f"Found multiple context arguments "
-                    f"('{context.name}' and '{key}') "
-                    f"for function {func.__name__}."
-                )
-            context = parameter
-        else:
-            inputs[key] = parameter
-
-    if signature.return_annotation is signature.empty:
-        raise StepInterfaceError(
-            f"Missing return type annotation for function {func.__name__}."
-        )
-
-    outputs = parse_return_type_annotations(
-        return_annotation=signature.return_annotation
-    )
-
-    return EntrypointFunctionDefinition(
-        inputs=inputs, outputs=outputs, context=context, params=params
-    )

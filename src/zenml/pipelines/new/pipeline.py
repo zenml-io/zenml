@@ -62,11 +62,11 @@ from zenml.models.pipeline_deployment_models import PipelineDeploymentBaseModel
 from zenml.pipelines import build_utils
 from zenml.stack import Stack
 from zenml.steps import BaseStep
-from zenml.steps.base_step import (
+from zenml.steps.entrypoint_function_utils import (
     ExternalArtifact,
     StepArtifact,
-    StepInvocation,
 )
+from zenml.steps.step_invocation import StepInvocation
 from zenml.utils import (
     code_repository_utils,
     dashboard_utils,
@@ -112,6 +112,7 @@ class Pipeline:
         self._configuration = PipelineConfiguration(
             name=name,
         )
+        self._run_args = {}
         self.configure(
             enable_cache=enable_cache,
             enable_artifact_metadata=enable_artifact_metadata,
@@ -862,7 +863,7 @@ class Pipeline:
             raise RuntimeError("Duplicate step ID")
 
         id_ = base_id
-        for index in range(2, 100):
+        for index in range(2, 10000):
             if id_ not in self.steps:
                 break
 
@@ -882,11 +883,35 @@ class Pipeline:
     def __exit__(self, type, value, traceback):
         Pipeline.ACTIVE_PIPELINE = None
 
-    def with_options(self, **kwargs) -> "Pipeline":
+    def with_options(
+        self,
+        run_name: Optional[str] = None,
+        schedule: Optional[Schedule] = None,
+        build: Union[str, "UUID", "PipelineBuildBaseModel", None] = None,
+        step_configurations: Optional[
+            Mapping[str, "StepConfigurationUpdateOrDict"]
+        ] = None,
+        config_path: Optional[str] = None,
+        unlisted: bool = False,
+        prevent_build_reuse: bool = False,
+        **kwargs,
+    ) -> "Pipeline":
         import copy
 
         pipeline_copy = copy.deepcopy(self)
         pipeline_copy.configure(**kwargs)
+        run_args = dict_utils.remove_none_values(
+            {
+                "run_name": run_name,
+                "schedule": schedule,
+                "build": build,
+                "step_configurations": step_configurations,
+                "config_path": config_path,
+                "unlisted": unlisted,
+                "prevent_build_reuse": prevent_build_reuse,
+            }
+        )
+        pipeline_copy._run_args.update(run_args)
         return pipeline_copy
 
     def copy(self) -> "Pipeline":
@@ -932,7 +957,9 @@ class Pipeline:
             elif isinstance(value, ExternalArtifact):
                 return ArtifactReference(id=value._id)
             else:
-                from zenml.steps.base_step import is_json_serializable
+                from zenml.steps.entrypoint_function_utils import (
+                    is_json_serializable,
+                )
 
                 if not is_json_serializable(value):
                     raise RuntimeError(
@@ -957,4 +984,4 @@ class Pipeline:
 
         # TODO: replace with separate _run() method call to separate the
         # run config and run part
-        return self.run()
+        return self.run(**self._run_args)
