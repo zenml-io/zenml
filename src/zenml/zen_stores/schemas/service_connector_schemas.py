@@ -16,7 +16,7 @@
 import base64
 import json
 from datetime import datetime
-from typing import TYPE_CHECKING, Dict, List, Optional
+from typing import TYPE_CHECKING, Dict, List, Optional, cast
 from uuid import UUID
 
 from sqlalchemy import TEXT, Column
@@ -102,7 +102,8 @@ class ServiceConnectorSchema(ShareableSchema, table=True):
         """
         if self.labels is None:
             return {}
-        return json.loads(base64.b64decode(self.labels).decode())
+        labels_dict = json.loads(base64.b64decode(self.labels).decode())
+        return cast(Dict[str, str], labels_dict)
 
     def has_labels(self, labels: Dict[str, Optional[str]]) -> bool:
         """Checks if the connector has the given labels.
