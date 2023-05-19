@@ -19,7 +19,20 @@ from urllib.parse import quote, urlparse
 
 
 def clean_url(url: str) -> str:
-    """Remove extraneous parts of the URL prior to mapping."""
+    """Remove extraneous parts of the URL prior to mapping.
+
+    Removes the query and netloc parts of the URL, and strips the leading slash
+    from the path. For example, a string like
+    `'gs%3A//label-studio/load_image_data/images/fdbcd451-0c80-495c-a9c5-6b51776f5019/1/0/image_file.JPEG'`
+    would become
+    `label-studio/load_image_data/images/fdbcd451-0c80-495c-a9c5-6b51776f5019/1/0/image_file.JPEG`.
+
+    Args:
+        url: A URL string.
+
+    Returns:
+        A cleaned URL string.
+    """
     parsed = urlparse(url)
     parsed = parsed._replace(netloc="", query="")
     return parsed.path.lstrip("/")
