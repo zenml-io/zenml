@@ -120,5 +120,5 @@ class PillowImageMaterializer(BaseMaterializer):
             "mode": str(image.mode),
         }
         if hasattr(image, "filename"):
-            metadata["original_filename"] = image.filename
+            metadata["original_filename"] = str(image.filename)
         return metadata
