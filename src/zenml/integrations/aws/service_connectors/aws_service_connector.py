@@ -32,7 +32,7 @@ from typing import Any, Dict, List, Optional, Tuple, cast
 
 import boto3
 from botocore.client import BaseClient
-from botocore.exceptions import ClientError
+from botocore.exceptions import BotoCoreError, ClientError
 from botocore.signers import RequestSigner
 from pydantic import Field, SecretStr
 
@@ -174,17 +174,38 @@ AWS_SERVICE_CONNECTOR_TYPE_SPEC = ServiceConnectorTypeModel(
     name="AWS Service Connector",
     connector_type=AWS_CONNECTOR_TYPE,
     description="""
-This ZenML AWS service connector facilitates connecting to, authenticating to
-and accessing managed AWS services, such as S3 buckets, ECR repositories and EKS
-clusters. Explicit long-lived AWS credentials are supported, as well as
-temporary STS security tokens. The connector also supports auto-configuration
-by discovering and using credentials configured on a local environment.
+The ZenML AWS Service Connector facilitates the authentication and access to
+managed AWS services and resources. These encompass a range of resources,
+including S3 buckets, ECR repositories, and EKS clusters. The connector
+provides support for various authentication methods, including explicit
+long-lived AWS secret keys, IAM roles, short-lived STS tokens and implicit
+authentication.
 
-The connector can be used to access to any generic AWS service, such as S3, ECR,
-EKS, EC2, etc. by providing pre-authenticated boto3 sessions for these services.
-In addition to authenticating to AWS services, the connector is able to manage
-specialized authentication for Docker and Kubernetes Python clients and also
-allows configuration of local Docker and Kubernetes clients.
+To ensure heightened security measures, this connector also enables the
+generation of temporary STS security tokens that are scoped down to the
+minimum permissions necessary for accessing the intended resource. Furthermore,
+it includes automatic configuration and detection of credentials locally
+configured through the AWS CLI.
+
+This connector serves as a general means of accessing any AWS service by
+issuing pre-authenticated boto3 sessions to clients. Additionally, the connector
+can handle specialized authentication for S3, Docker and Kubernetes Python
+clients. It also allows for the configuration of local Docker and Kubernetes
+CLIs.
+
+The AWS Service Connector is part of the AWS ZenML integration. You can either
+install the entire integration or use a pypi extra to install it independently
+of the integration:
+
+* `pip install zenml[connectors-aws]` installs only prerequisites for the AWS
+Service Connector Type
+* `zenml integration install aws` installs the entire AWS ZenML integration
+
+It is not required to [install and set up the AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-configure.html)
+on your local machine to use the AWS Service Connector to link Stack Components
+to AWS resources and services. However, it is recommended to do so if you are
+looking for a quick setup that includes using the auto-configuration Service
+Connector features.
 """,
     supports_auto_configuration=True,
     logo_url="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/container_registry/aws.png",
@@ -201,7 +222,8 @@ credentials from one of the following sources:
 
 - environment variables (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY,
 AWS_SESSION_TOKEN, AWS_DEFAULT_REGION)
-- local configuration files (~/aws/credentials, ~/.aws/config)
+- local configuration files [set up through the AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-configure.html)
+(~/aws/credentials, ~/.aws/config)
 - IAM roles for Amazon EC2, ECS, EKS, Lambda, etc. Only works when running
 the ZenML server on an AWS resource with an IAM role attached to it.
 
@@ -210,7 +232,8 @@ the results depend on how ZenML is deployed and the environment where it is used
 and is thus not fully reproducible:
 
 - when used with the default local ZenML deployment or a local ZenML server, the
-credentials are the same as those used by the AWS CLI.
+credentials are the same as those used by the AWS CLI or extracted from local
+environment variables.
 - when connected to a ZenML server, this method only works if the ZenML server
 is deployed in AWS and will use the IAM role attached to the AWS resource where
 the ZenML server is running (e.g. an EKS cluster). The IAM role permissions may
@@ -218,17 +241,18 @@ need to be adjusted to allows listing and accessing/describing the AWS resources
 that the connector is configured to access.
 
 Note that the discovered credentials inherit the full set of permissions of the
-local AWS client configuration or remote AWS IAM role. This is not recommended
-for production use, as it can lead to accidental privilege escalation. Instead,
-it is recommended to use the AWS Federation Token or AWS IAM Role authentication
-methods with additional session policies to restrict the permissions that are
-granted to the connector clients.
+local AWS client configuration, environment variables or remote AWS IAM role.
+Depending on the extent of those permissions, this authentication method might
+not be recommended for production use, as it can lead to accidental privilege
+escalation. Instead, it is recommended to use the AWS IAM Role, AWS Session
+Token or AWS Federation Token authentication methods to limit the validity
+and/or permissions of the credentials being issued to connector clients.
 
 If you need to access an EKS kubernetes cluster with this authentication method,
-please be advised that the EKS cluster's `aws-auth` ConfigMap must be manually
-configured to allow authentication with the implicit IAM role. For more
-information, see:
-https://docs.aws.amazon.com/eks/latest/userguide/add-user-role.html
+please be advised that the EKS cluster's aws-auth ConfigMap may need to be
+manually configured to allow authentication with the implicit IAM user or role
+picked up by the Service Connector. For more information,
+[see this documentation](https://docs.aws.amazon.com/eks/latest/userguide/add-user-role.html).
 
 An AWS region is required and the connector may only be used to access AWS
 resources in the specified region. When used with a remote IAM role, the region
@@ -240,18 +264,22 @@ has to be the same as the region where the IAM role is configured.
             name="AWS Secret Key",
             auth_method=AWSAuthenticationMethods.SECRET_KEY,
             description="""
-Long-lived AWS credentials consisting of an access key ID and secret access key
-associated with an IAM user or AWS account root user (not recommended). This
-method is preferred during development and testing due to its simplicity and
-ease of use. It is not recommended as a direct authentication method for
-production use cases because the clients are granted the full set of permissions
-of the IAM user or AWS account root user associated with the credentials.
+Long-lived AWS credentials consisting of an AWS access key ID and secret access
+key associated with an AWS IAM user or AWS account root user (not recommended).
+
+This method is preferred during development and testing due to its simplicity
+and ease of use. It is not recommended as a direct authentication method for
+production use cases because the clients have direct access to long-lived
+credentials and are granted the full set of permissions of the IAM user or AWS
+account root user associated with the credentials. For production, it is
+recommended to use the AWS IAM Role, AWS Session Token or AWS Federation Token
+authentication method instead.
 
 An AWS region is required and the connector may only be used to access AWS
 resources in the specified region.
 
-For production, it is recommended to use the AWS IAM Role, AWS Session Token
-or AWS Federation Token authentication method.
+If you already have the local AWS CLI set up with these credentials, they will
+be automatically picked up when auto-configuration is used.
 """,
             config_class=AWSSecretKeyConfig,
         ),
@@ -262,8 +290,13 @@ or AWS Federation Token authentication method.
 Uses temporary STS tokens explicitly configured by the user or auto-configured
 from a local environment. This method has the major limitation that the user
 must regularly generate new tokens and update the connector configuration as STS
-tokens expire. This method is best used in cases where the connector only needs
-to be used for a short period of time.
+tokens expire. On the other hand, this method is ideal in cases where the
+connector only needs to be used for a short period of time, such as sharing
+access temporarily with someone else in your team.
+
+Using other authentication methods like IAM role, Session Token or Federation
+Token will automatically generate and refresh STS tokens for clients upon
+request.
 
 An AWS region is required and the connector may only be used to access AWS
 resources in the specified region.
@@ -274,37 +307,40 @@ resources in the specified region.
             name="AWS IAM Role",
             auth_method=AWSAuthenticationMethods.IAM_ROLE,
             description="""
-Generates temporary STS credentials by assuming an IAM role.
-The connector needs to be configured with an IAM role accompanied by an access
-key ID and secret access key associated with an IAM user or an STS token
-associated with another IAM role. The IAM user or IAM role must have permissions
-to assume the IAM role. The connector will then generate new temporary STS
-tokens upon request by calling the AssumeRole STS API.
+Generates temporary STS credentials by assuming an AWS IAM role.
+The connector needs to be configured with the IAM role to be assumed accompanied
+by an AWS secret key associated with an IAM user or an STS token associated with
+another IAM role. The IAM user or IAM role must have permissions to assume the
+target IAM role. The connector will generate temporary STS tokens upon
+request by [calling the AssumeRole STS API](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_temp_request.html#api_assumerole).
+
+The best practice implemented with this authentication scheme is to keep the set
+of permissions associated with the primary IAM user or IAM role down to the bare
+minimum and grant permissions to the privilege bearing IAM role instead.
 
 An AWS region is required and the connector may only be used to access AWS
 resources in the specified region.
 
-One or more optional IAM managed policies may also be configured to further
-restrict the permissions of the generated STS tokens. If not specified, the
-connector will automatically configure policies according to the resource
-type and resource ID that the connector is configured to access.
+One or more optional [IAM session policies](https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies.html#policies_session)
+may also be configured to further restrict the permissions of the generated STS
+tokens. If not specified, IAM session policies are automatically configured for
+the generated STS tokens to restrict them to the minimum set of permissions
+required to access the target resource. Refer to the documentation for each
+supported Resource Type for the complete list of AWS permissions automatically
+granted to the generated STS tokens.
 
-The default expiration period for generated STS tokens is 1 hour with a
-minimum of 15 minutes up to the maximum session duration setting configured for
-the IAM role (default is 1 hour). If you need longer-lived tokens, you can
-configure the IAM role to use a higher maximum expiration value (up to 12 hours)
-or use the AWS Federation Token or AWS Session Token authentication methods.
+The default expiration period for generated STS tokens is 1 hour with a minimum
+of 15 minutes up to the maximum session duration setting configured for the IAM
+role (default is 1 hour). If you need longer-lived tokens, you can configure the
+IAM role to use a higher maximum expiration value (up to 12 hours) or use the
+AWS Federation Token or AWS Session Token authentication methods.
 
-For more information on IAM roles and the AssumeRole AWS API, see:
-https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_temp_request.html#api_assumerole
+For more information on IAM roles and the AssumeRole AWS API, see
+[the official AWS documentation on the subject](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_temp_request.html#api_assumerole).
 
 For more information about the difference between this method and the AWS
-Federation Token authentication method, see:
-https://aws.amazon.com/blogs/security/understanding-the-api-options-for-securely-delegating-access-to-your-aws-account/
-
-This method might not be suitable for consumers that cannot automatically
-re-generate temporary credentials upon expiration (e.g. an external client or
-long-running process).
+Federation Token authentication method,
+[consult this AWS documentation page](https://aws.amazon.com/blogs/security/understanding-the-api-options-for-securely-delegating-access-to-your-aws-account/). 
 """,
             min_expiration_seconds=900,  # 15 minutes
             default_expiration_seconds=DEFAULT_IAM_ROLE_TOKEN_EXPIRATION,  # 1 hour
@@ -315,13 +351,13 @@ long-running process).
             auth_method=AWSAuthenticationMethods.SESSION_TOKEN,
             description="""
 Generates temporary session STS tokens for IAM users.
-The connector needs to be configured with a key ID and secret access key
-associated with an IAM user or AWS account root user (not recommended). The
-connector will then generate new temporary STS tokens upon request by calling
-the GetSessionToken STS API. These STS tokens have an expiration period longer
-that those issued through the AWS IAM Role authentication method and are more
-suitable for long-running processes that cannot automatically re-generate
-credentials upon expiration.
+The connector needs to be configured with an AWS secret key associated with an
+IAM user or AWS account root user (not recommended). The connector will generate
+temporary STS tokens upon request by calling [the GetSessionToken STS API](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_temp_request.html#api_getsessiontoken).
+
+These STS tokens have an expiration period longer that those issued through the
+AWS IAM Role authentication method and are more suitable for long-running
+processes that cannot automatically re-generate credentials upon expiration.
 
 An AWS region is required and the connector may only be used to access AWS
 resources in the specified region.
@@ -331,19 +367,20 @@ minimum of 15 minutes and a maximum of 36 hours. Temporary credentials obtained
 by using the AWS account root user credentials (not recommended) have a maximum
 duration of 1 hour.
 
+As a precaution, when long-lived credentials (i.e. AWS Secret Keys) are detected
+on your environment by the Service Connector during auto-configuration, this
+authentication method is automatically chosen instead of the AWS Secret Key
+authentication method alternative.
+
 Generated STS tokens inherit the full set of permissions of the IAM user or
-AWS account root user that is calling the GetSessionToken. This is not
-recommended for production use, as it can lead to accidental privilege
-escalation. Instead, it is recommended to use the AWS Federation Token or AWS
-IAM Role authentication methods with additional session policies to restrict
-the permissions of the generated STS tokens.
+AWS account root user that is calling the GetSessionToken API. Depending on your
+security needs, this may not be suitable for production use, as it can lead to
+accidental privilege escalation. Instead, it is recommended to use the AWS
+Federation Token or AWS IAM Role authentication methods to restrict the
+permissions of the generated STS tokens.
 
 For more information on session tokens and the GetSessionToken AWS API, see:
-https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_temp_request.html#api_getsessiontoken
-
-This method might not be suitable for consumers that cannot automatically
-re-generate temporary credentials upon expiration (e.g. an external client or
-long-running process).
+[the official AWS documentation on the subject](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_temp_request.html#api_getsessiontoken).
 """,
             min_expiration_seconds=900,  # 15 minutes
             max_expiration_seconds=129600,  # 36 hours
@@ -355,25 +392,31 @@ long-running process).
             auth_method=AWSAuthenticationMethods.FEDERATION_TOKEN,
             description="""
 Generates temporary STS tokens for federated users.
-The connector needs to be configured with a key ID and secret access key
-associated with an IAM user or AWS account root user (not recommended) and one
-or more session policies. The IAM user must have permissions to call the
-GetFederationToken STS API (i.e. allow the `sts:GetFederationToken` action on
-the `*` IAM resource). The connector will then generate new temporary STS
-tokens upon request by calling the GetFederationToken STS API. These STS tokens
-have an expiration period longer that those issued through the AWS IAM Role
+The connector needs to be configured with an AWS secret key associated with an
+IAM user or AWS account root user (not recommended). The IAM user must have
+permissions to call [the GetFederationToken STS API](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_temp_request.html#api_getfederationtoken)
+(i.e. allow the `sts:GetFederationToken` action on the `*` IAM resource). The
+connector will generate temporary STS tokens upon request by calling the
+GetFederationToken STS API.
+
+These STS tokens have an expiration period longer that those issued through the AWS IAM Role
 authentication method and are more suitable for long-running processes that
 cannot automatically re-generate credentials upon expiration.
 
 An AWS region is required and the connector may only be used to access AWS
 resources in the specified region.
 
-One or more IAM managed policies may also be configured to grant permissions
-to the generated STS tokens. If not specified, the connector will automatically
-configure policies according to the resource type and resource ID that the
-connector is configured to access. If this authentication method is used with
-the generic AWS resource type, a session policy MUST be explicitly specified,
-otherwise the generated STS tokens will not have any permissions.
+One or more optional [IAM session policies](https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies.html#policies_session)
+may also be configured to further restrict the permissions of the generated STS
+tokens. If not specified, IAM session policies are automatically configured for
+the generated STS tokens to restrict them to the minimum set of permissions
+required to access the target resource. Refer to the documentation for each
+supported Resource Type for the complete list of AWS permissions automatically
+granted to the generated STS tokens.
+
+If this authentication method is used with the generic AWS resource type, a
+session policy MUST be explicitly specified, otherwise the generated STS tokens
+will not have any permissions.
 
 The default expiration period for generated STS tokens is 12 hours with a
 minimum of 15 minutes and a maximum of 36 hours. Temporary credentials obtained
@@ -381,22 +424,16 @@ by using the AWS account root user credentials (not recommended) have a maximum
 duration of 1 hour.
 
 If you need to access an EKS kubernetes cluster with this authentication method,
-please be advised that the EKS cluster's `aws-auth` ConfigMap must be manually
-configured to allow authentication with the federated user. For more
-information, see:
-https://docs.aws.amazon.com/eks/latest/userguide/add-user-role.html
+please be advised that the EKS cluster's aws-auth ConfigMap may need to be
+manually configured to allow authentication with the federated user. For more
+information, [see this documentation](https://docs.aws.amazon.com/eks/latest/userguide/add-user-role.html).
 
 For more information on user federation tokens, session policies and the
-GetFederationToken AWS API, see:
-https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_temp_request.html#api_getfederationtoken
+GetFederationToken AWS API, see [the official AWS documentation on the subject](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_temp_request.html#api_getfederationtoken).
 
 For more information about the difference between this method and the AWS
-IAM Role authentication method, see:
-https://aws.amazon.com/blogs/security/understanding-the-api-options-for-securely-delegating-access-to-your-aws-account/
-
-This method might not be suitable for consumers that cannot automatically
-re-generate temporary credentials upon expiration (e.g. an external client or
-long-running process).
+IAM Role authentication method,
+[consult this AWS documentation page](https://aws.amazon.com/blogs/security/understanding-the-api-options-for-securely-delegating-access-to-your-aws-account/).
 """,
             min_expiration_seconds=900,  # 15 minutes
             max_expiration_seconds=129600,  # 36 hours
@@ -409,10 +446,17 @@ long-running process).
             name="Generic AWS resource",
             resource_type=AWS_RESOURCE_TYPE,
             description="""
-Multi-purpose AWS resource type. It allows consumers to use the connector to
-connect to any AWS service. When used by connector consumers, they are provided
-a generic boto3 session instance pre-configured with AWS credentials. This
-session can then be used to create boto3 clients for any particular AWS service.
+Multi-purpose AWS resource type. It allows Stack Components to use the connector
+to connect to any AWS service. When used by Stack Components, they are provided
+a generic Python boto3 session instance pre-configured with AWS credentials.
+This session can then be used to create boto3 clients for any particular AWS
+service.
+
+This generic AWS resource type is meant to be used with Stack Components that
+are not represented by other, more specific resource type, like S3 buckets,
+Kubernetes clusters or Docker registries. It should be accompanied by a matching
+set of AWS permissions that allow access to the set of remote resources required
+by the client(s).
 
 The resource name represents the AWS region that the connector is authorized to
 access.
@@ -428,23 +472,27 @@ access.
             name="AWS S3 bucket",
             resource_type=S3_RESOURCE_TYPE,
             description="""
-Allows users to connect to S3 buckets. When used by connector consumers, they
+Allows users to connect to S3 buckets. When used by Stack Components, they
 are provided a pre-configured boto3 S3 client instance.
 
-The configured credentials must have at least the following S3 permissions:
+The configured credentials must have at least the following
+[AWS IAM permissions](https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies.html)
+associated with the [ARNs of S3 buckets](https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-arn-format.html)
+that the connector will be allowed to access (e.g. `arn:aws:s3:::*` and
+`arn:aws:s3:::*/*` represent all the available S3 buckets).
 
-- s3:ListBucket
-- s3:GetObject
-- s3:PutObject
-- s3:DeleteObject
-- s3:ListAllMyBuckets
+- `s3:ListBucket`
+- `s3:GetObject`
+- `s3:PutObject`
+- `s3:DeleteObject`
+- `s3:ListAllMyBuckets`
 
 If set, the resource name must identify an S3 bucket using one of the following
 formats:
 
-- S3 bucket URI: s3://<bucket-name>
-- S3 bucket ARN: arn:aws:s3:::<bucket-name>
-- S3 bucket name: <bucket-name>
+- S3 bucket URI (canonical resource name): `s3://{bucket-name}`
+- S3 bucket ARN: `arn:aws:s3:::{bucket-name}`
+- S3 bucket name: `{bucket-name}`
 """,
             auth_methods=AWSAuthenticationMethods.values(),
             # Request an S3 bucket to be configured in the
@@ -457,28 +505,33 @@ formats:
             name="AWS EKS Kubernetes cluster",
             resource_type=KUBERNETES_RESOURCE_TYPE,
             description="""
-Allows users to access an EKS registry as a standard Kubernetes cluster
-resource. When used by connector consumers, they are provided a
+Allows users to access an EKS cluster as a standard Kubernetes cluster
+resource. When used by Stack Components, they are provided a
 pre-authenticated python-kubernetes client instance.
 
-The configured credentials must have at least the following EKS permissions:
+The configured credentials must have at least the following
+[AWS IAM permissions](https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies.html)
+associated with the [ARNs of EKS clusters](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference-arns.html)
+that the connector will be allowed to access (e.g.
+`arn:aws:eks:{region}:{account}:cluster/*` represents all the EKS clusters
+available in the target AWS region).
 
-- eks:ListClusters
-- eks:DescribeCluster
+- `eks:ListClusters`
+- `eks:DescribeCluster`
 
 In addition to the above permissions, if the credentials are not associated
 with the same IAM user or role that created the EKS cluster, the IAM principal
 must be manually added to the EKS cluster's `aws-auth` ConfigMap, otherwise the
 Kubernetes client will not be allowed to access the cluster's resources. This
 makes it more challenging to use the AWS Implicit and AWS Federation Token
-authentication method for this resource. For more information, see:
-https://docs.aws.amazon.com/eks/latest/userguide/add-user-role.html
+authentication methods for this resource. For more information,
+[see this documentation](https://docs.aws.amazon.com/eks/latest/userguide/add-user-role.html).
 
 If set, the resource name must identify an EKS cluster using one of the
 following formats:
 
-- EKS cluster name: <cluster-name>
-- EKS cluster ARN: arn:aws:eks:<region>:<account-id>:cluster/<cluster-name>
+- EKS cluster name (canonical resource name): `{cluster-name}`
+- EKS cluster ARN: `arn:aws:eks:{region}:{account}:cluster/{cluster-name}`
 
 EKS cluster names are region scoped. The connector can only be used to access
 EKS clusters in the AWS region that it is configured to use.
@@ -495,37 +548,42 @@ EKS clusters in the AWS region that it is configured to use.
             resource_type=DOCKER_RESOURCE_TYPE,
             description="""
 Allows users to access one or more ECR repositories as a standard Docker
-registry resource. When used by connector consumers, they are provided a
+registry resource. When used by Stack Components, they are provided a
 pre-authenticated python-docker client instance.
 
-The configured credentials must have at least the following ECR permissions for
-one or more ECR repositories:
+The configured credentials must have at least the following
+[AWS IAM permissions](https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies.html)
+associated with the [ARNs of one or more ECR repositories](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference-arns.html)
+that the connector will be allowed to access (e.g.
+`arn:aws:ecr:{region}:{account}:repository/*` represents all the ECR
+repositories available in the target AWS region).
 
-- ecr:DescribeRegistry
-- ecr:DescribeRepositories
-- ecr:ListRepositories
-- ecr:BatchGetImage
-- ecr:DescribeImages
-- ecr:BatchCheckLayerAvailability
-- ecr:GetDownloadUrlForLayer
-- ecr:InitiateLayerUpload
-- ecr:UploadLayerPart
-- ecr:CompleteLayerUpload
-- ecr:PutImage
-- ecr:GetAuthorizationToken
+- `ecr:DescribeRegistry`
+- `ecr:DescribeRepositories`
+- `ecr:ListRepositories`
+- `ecr:BatchGetImage`
+- `ecr:DescribeImages`
+- `ecr:BatchCheckLayerAvailability`
+- `ecr:GetDownloadUrlForLayer`
+- `ecr:InitiateLayerUpload`
+- `ecr:UploadLayerPart`
+- `ecr:CompleteLayerUpload`
+- `ecr:PutImage`
+- `ecr:GetAuthorizationToken`
 
 This resource type is not scoped to a single ECR repository. Instead,
 a connector configured with this resource type will grant access to all the
 ECR repositories that the credentials are allowed to access under the configured
 AWS region (i.e. all repositories under the Docker registry URL
-`<account-id>.dkr.ecr.<region>.amazonaws.com`).
+`https://{account-id}.dkr.ecr.{region}.amazonaws.com`).
 
 The resource name associated with this resource type uniquely identifies an ECR
 registry using one of the following formats (the repository name is ignored,
 only the registry URL/ARN is used):
             
-- ECR repository URI: https://<account-id>.dkr.ecr.<region>.amazonaws.com[/<repository-name>]
-- ECR repository ARN: arn:aws:ecr:<region>:<account-id>:repository[/<repository-name>]
+- ECR repository URI (canonical resource name):
+`[https://]{account}.dkr.ecr.{region}.amazonaws.com[/{repository-name}]`
+- ECR repository ARN: `arn:aws:ecr:{region}:{account-id}:repository[/{repository-name}]`
 
 ECR repository names are region scoped. The connector can only be used to access
 ECR repositories in the AWS region that it is configured to use.
@@ -579,7 +637,7 @@ class AWSServiceConnector(ServiceConnector):
                 session, _ = self.get_boto3_session(self.auth_method)
                 sts_client = session.client("sts")
                 response = sts_client.get_caller_identity()
-            except ClientError as e:
+            except (ClientError, BotoCoreError) as e:
                 raise AuthorizationException(
                     "Failed to get the ECR registry ID from ECR repository "
                     f"name: {e}"
@@ -858,7 +916,7 @@ class AWSServiceConnector(ServiceConnector):
                             DurationSeconds=self.expiration_seconds,
                             **policy_kwargs,
                         )
-                    except ClientError as e:
+                    except (ClientError, BotoCoreError) as e:
                         raise AuthorizationException(
                             f"Failed to assume IAM role {cfg.role_arn} "
                             f"using the AWS credentials configured in the "
@@ -874,7 +932,7 @@ class AWSServiceConnector(ServiceConnector):
                             DurationSeconds=self.expiration_seconds,
                             **policy_kwargs,
                         )
-                    except ClientError as e:
+                    except (ClientError, BotoCoreError) as e:
                         raise AuthorizationException(
                             "Failed to get federation token "
                             "using the AWS credentials configured in the "
@@ -887,7 +945,7 @@ class AWSServiceConnector(ServiceConnector):
                     response = sts.get_session_token(
                         DurationSeconds=self.expiration_seconds,
                     )
-                except ClientError as e:
+                except (ClientError, BotoCoreError) as e:
                     raise AuthorizationException(
                         "Failed to get session token "
                         "using the AWS credentials configured in the "
@@ -1375,16 +1433,20 @@ class AWSServiceConnector(ServiceConnector):
                 )
             if credentials.token:
                 # The session picked up temporary STS credentials
-                if (
-                    auth_method
-                    and auth_method != AWSAuthenticationMethods.STS_TOKEN
-                ):
+                if auth_method and auth_method not in [
+                    None,
+                    AWSAuthenticationMethods.STS_TOKEN,
+                    AWSAuthenticationMethods.IAM_ROLE,
+                ]:
                     raise NotImplementedError(
                         f"The specified authentication method '{auth_method}' "
                         "could not be used to auto-configure the connector. "
                     )
 
-                if credentials.method == "assume-role":
+                if (
+                    credentials.method == "assume-role"
+                    and auth_method != AWSAuthenticationMethods.STS_TOKEN
+                ):
                     # In the special case of IAM role authentication, the
                     # credentials in the boto3 session are the temporary STS
                     # credentials instead of the long-lived credentials, and the
@@ -1423,6 +1485,13 @@ class AWSServiceConnector(ServiceConnector):
                     expiration_seconds = DEFAULT_IAM_ROLE_TOKEN_EXPIRATION
 
                 else:
+                    if auth_method == AWSAuthenticationMethods.IAM_ROLE:
+                        raise NotImplementedError(
+                            f"The specified authentication method "
+                            f"'{auth_method}' could not be used to "
+                            "auto-configure the connector."
+                        )
+
                     # Temporary credentials were picked up from the local
                     # configuration. It's not possible to determine the
                     # expiration time of the temporary credentials from the
@@ -1461,17 +1530,32 @@ class AWSServiceConnector(ServiceConnector):
                     )
 
                 if auth_method == AWSAuthenticationMethods.STS_TOKEN:
-                    raise NotImplementedError(
-                        f"The specified authentication method '{auth_method}' "
-                        "could not be used to auto-configure the connector. "
+                    # Generate a session token from the long-lived credentials
+                    # and store it in the connector secrets.
+                    sts_client = session.client("sts")
+                    response = sts_client.get_session_token(
+                        DurationSeconds=DEFAULT_STS_TOKEN_EXPIRATION
+                    )
+                    credentials = response["Credentials"]
+                    auth_config = STSTokenConfig(
+                        region=region_name,
+                        endpoint_url=endpoint_url,
+                        aws_access_key_id=credentials["AccessKeyId"],
+                        aws_secret_access_key=credentials["SecretAccessKey"],
+                        aws_session_token=credentials["SessionToken"],
+                    )
+                    expires_at = datetime.datetime.now(
+                        tz=datetime.timezone.utc
+                    ) + datetime.timedelta(
+                        seconds=DEFAULT_STS_TOKEN_EXPIRATION
                     )
 
-                if auth_method == AWSAuthenticationMethods.IAM_ROLE:
+                elif auth_method == AWSAuthenticationMethods.IAM_ROLE:
                     if not role_arn:
                         raise ValueError(
                             "The ARN of the AWS role to assume must be "
                             "specified when using the IAM role authentication "
-                            "method"
+                            "method."
                         )
                     auth_config = IAMRoleAuthenticationConfig(
                         region=region_name,
@@ -1562,7 +1646,7 @@ class AWSServiceConnector(ServiceConnector):
         sts_client = session.client("sts")
         try:
             sts_client.get_caller_identity()
-        except ClientError as err:
+        except (ClientError, BotoCoreError) as err:
             msg = f"failed to verify AWS account access: {err}"
             logger.debug(msg)
             raise AuthorizationException(msg) from err
@@ -1584,7 +1668,7 @@ class AWSServiceConnector(ServiceConnector):
                 # List all S3 buckets
                 try:
                     response = s3_client.list_buckets()
-                except ClientError as e:
+                except (ClientError, BotoCoreError) as e:
                     msg = f"failed to list S3 buckets: {e}"
                     logger.error(msg)
                     raise AuthorizationException(msg) from e
@@ -1598,7 +1682,7 @@ class AWSServiceConnector(ServiceConnector):
                 try:
                     s3_client.head_bucket(Bucket=bucket_name)
                     return [resource_id]
-                except ClientError as e:
+                except (ClientError, BotoCoreError) as e:
                     msg = f"failed to fetch S3 bucket {bucket_name}: {e}"
                     logger.error(msg)
                     raise AuthorizationException(msg) from e
@@ -1614,7 +1698,7 @@ class AWSServiceConnector(ServiceConnector):
             # List all ECR repositories
             try:
                 repositories = ecr_client.describe_repositories()
-            except ClientError as e:
+            except (ClientError, BotoCoreError) as e:
                 msg = f"failed to list ECR repositories: {e}"
                 logger.error(msg)
                 raise AuthorizationException(msg) from e
@@ -1639,7 +1723,7 @@ class AWSServiceConnector(ServiceConnector):
                 # List all EKS clusters
                 try:
                     clusters = eks_client.list_clusters()
-                except ClientError as e:
+                except (ClientError, BotoCoreError) as e:
                     msg = f"Failed to list EKS clusters: {e}"
                     logger.error(msg)
                     raise AuthorizationException(msg) from e
@@ -1650,7 +1734,7 @@ class AWSServiceConnector(ServiceConnector):
                 cluster_name = self._parse_eks_resource_id(resource_id)
                 try:
                     clusters = eks_client.describe_cluster(name=cluster_name)
-                except ClientError as e:
+                except (ClientError, BotoCoreError) as e:
                     msg = f"Failed to fetch EKS cluster {cluster_name}: {e}"
                     logger.error(msg)
                     raise AuthorizationException(msg) from e
@@ -1698,6 +1782,7 @@ class AWSServiceConnector(ServiceConnector):
         logger.debug(f"Getting connector client for {connector_name}")
 
         if resource_type in [AWS_RESOURCE_TYPE, S3_RESOURCE_TYPE]:
+            auth_method = self.auth_method
             if self.auth_method in [
                 AWSAuthenticationMethods.SECRET_KEY,
                 AWSAuthenticationMethods.STS_TOKEN,
@@ -1726,16 +1811,33 @@ class AWSServiceConnector(ServiceConnector):
                 )
                 assert isinstance(session, boto3.Session)
                 credentials = session.get_credentials()
-                assert credentials.token is not None
 
-                # Use the temporary credentials extracted from the boto3 session
-                config = STSTokenConfig(
-                    region=self.config.region,
-                    endpoint_url=self.config.endpoint_url,
-                    aws_access_key_id=credentials.access_key,
-                    aws_secret_access_key=credentials.secret_key,
-                    aws_session_token=credentials.token,
-                )
+                if (
+                    self.auth_method == AWSAuthenticationMethods.IMPLICIT
+                    and credentials.token is None
+                ):
+                    # The implicit authentication method may involve picking up
+                    # long-lived credentials from the environment
+                    auth_method = AWSAuthenticationMethods.SECRET_KEY
+                    config = AWSSecretKeyConfig(
+                        region=self.config.region,
+                        endpoint_url=self.config.endpoint_url,
+                        aws_access_key_id=credentials.access_key,
+                        aws_secret_access_key=credentials.secret_key,
+                    )
+                else:
+                    assert credentials.token is not None
+
+                    # Use the temporary credentials extracted from the boto3
+                    # session
+                    auth_method = AWSAuthenticationMethods.STS_TOKEN
+                    config = STSTokenConfig(
+                        region=self.config.region,
+                        endpoint_url=self.config.endpoint_url,
+                        aws_access_key_id=credentials.access_key,
+                        aws_secret_access_key=credentials.secret_key,
+                        aws_session_token=credentials.token,
+                    )
 
             # Create a client-side AWS connector instance that is fully formed
             # and ready to use to connect to the specified resource (i.e. has
@@ -1744,7 +1846,7 @@ class AWSServiceConnector(ServiceConnector):
             return AWSServiceConnector(
                 id=self.id,
                 name=connector_name,
-                auth_method=AWSAuthenticationMethods.STS_TOKEN,
+                auth_method=auth_method,
                 resource_type=resource_type,
                 resource_id=resource_id,
                 config=config,
@@ -1779,7 +1881,7 @@ class AWSServiceConnector(ServiceConnector):
                         registry_id,
                     ]
                 )
-            except ClientError as e:
+            except (ClientError, BotoCoreError) as e:
                 raise AuthorizationException(
                     f"Failed to get authorization token from ECR: {e}"
                 ) from e
@@ -1831,7 +1933,7 @@ class AWSServiceConnector(ServiceConnector):
 
             try:
                 cluster = eks_client.describe_cluster(name=cluster_name)
-            except ClientError as e:
+            except (ClientError, BotoCoreError) as e:
                 raise AuthorizationException(
                     f"Failed to get EKS cluster {cluster_name}: {e}"
                 ) from e
@@ -1842,7 +1944,7 @@ class AWSServiceConnector(ServiceConnector):
                     cluster_id=cluster_name,
                     region=self.config.region,
                 )
-            except ClientError as e:
+            except (ClientError, BotoCoreError) as e:
                 raise AuthorizationException(
                     f"Failed to get EKS bearer token: {e}"
                 ) from e

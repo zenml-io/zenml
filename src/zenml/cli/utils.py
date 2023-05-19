@@ -1606,6 +1606,9 @@ def print_service_connector_resource_type(
     emoji = (
         Emoji(resource_type.emoji.strip(":")) if resource_type.emoji else ""
     )
+    supported_auth_methods = [
+        f'{Emoji("lock")} {a}' for a in resource_type.auth_methods
+    ]
     message += (
         f"{heading} {emoji} {resource_type.name} "
         f"(resource type: {resource_type.resource_type})\n"
@@ -1617,6 +1620,11 @@ def print_service_connector_resource_type(
     message += (
         f"**Supports resource instances**: "
         f"{resource_type.supports_instances}\n\n"
+    )
+    message += (
+        "**Authentication methods**:\n\n- "
+        + "\n- ".join(supported_auth_methods)
+        + "\n\n"
     )
     message += f"{resource_type.description}\n"
 
@@ -1659,6 +1667,33 @@ def print_service_connector_auth_method(
         f"{auth_method.supports_temporary_credentials()}\n\n"
     )
     message += f"{auth_method.description}\n"
+
+    attributes: List[str] = []
+    for attr_name, attr_schema in auth_method.config_schema.get(
+        "properties", {}
+    ).items():
+        title = attr_schema.get("title", "<no description>")
+        attr_type = attr_schema.get("type", "string")
+        required = attr_name in auth_method.config_schema.get("required", [])
+        hidden = attr_schema.get("format", "") == "password"
+        subtitles: List[str] = []
+        subtitles.append(attr_type)
+        if hidden:
+            subtitles.append("secret")
+        if required:
+            subtitles.append("required")
+        else:
+            subtitles.append("optional")
+
+        description = f"- `{attr_name}`"
+        if subtitles:
+            description = f"{description} {{{', '.join(subtitles)}}}"
+        description = f"{description}: _{title}_"
+        attributes.append(description)
+    if attributes:
+        message += "\n**Attributes**:\n"
+        message += "\n".join(attributes) + "\n"
+
     message += footer
 
     if print:

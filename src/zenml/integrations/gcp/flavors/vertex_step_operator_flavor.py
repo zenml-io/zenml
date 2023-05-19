@@ -110,7 +110,7 @@ class VertexStepOperatorFlavor(BaseStepOperatorFlavor):
             connector is required for this flavor.
         """
         return ServiceConnectorRequirements(
-            resource_type="gcp",
+            resource_type="gcp-generic",
         )
 
     @property

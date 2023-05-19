@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Base ZenML Service Connector class."""
-
+import logging
 from abc import abstractmethod
 from datetime import datetime, timezone
 from typing import Any, ClassVar, Dict, List, Optional, Tuple, Type, cast
@@ -187,11 +187,17 @@ class ServiceConnector(BaseModel, metaclass=ServiceConnectorMeta):
                     self.resource_type, self.resource_id
                 )
             except AuthorizationException as e:
-                logger.exception(
+                error = (
                     f"Authorization error validating resource ID "
                     f"{self.resource_id} for resource type "
                     f"{self.resource_type}: {e}"
                 )
+                # Log an exception if debug logging is enabled
+                if logger.isEnabledFor(logging.DEBUG):
+                    logger.exception(error)
+                else:
+                    logger.warning(error)
+
                 self.resource_id = None
 
     @classmethod
@@ -1135,8 +1141,14 @@ class ServiceConnector(BaseModel, metaclass=ServiceConnectorMeta):
                 f"The connector configuration is incomplete or invalid: {exc}",
             )
         except AuthorizationException as exc:
-            resources.error = f"connector authorization failure: {exc}"
-            logger.exception(resources.error)
+            resources.error = (
+                f"connector {self.name} authorization failure: {exc}"
+            )
+            # Log an exception if debug logging is enabled
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.exception(resources.error)
+            else:
+                logger.warning(resources.error)
             return resources
 
         if self.has_expired():
@@ -1153,13 +1165,25 @@ class ServiceConnector(BaseModel, metaclass=ServiceConnectorMeta):
                 resource_id=resource_id,
             )
         except AuthorizationException as exc:
-            resources.error = f"connector authorization failure: {exc}"
-            logger.exception(resources.error)
+            resources.error = (
+                f"connector '{self.name}' authorization failure: {exc}"
+            )
+            # Log an exception if debug logging is enabled
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.exception(resources.error)
+            else:
+                logger.warning(resources.error)
             return resources
         except Exception as exc:
-            logger.exception(
-                f"connector verification failed with unexpected error: {exc}"
+            error = (
+                f"connector {self.name} verification failed with unexpected "
+                f"error: {exc}"
             )
+            # Log an exception if debug logging is enabled
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.exception(error)
+            else:
+                logger.warning(error)
             resources.error = (
                 "an unexpected error occurred while verifying the connector."
             )

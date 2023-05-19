@@ -127,8 +127,22 @@ This ZenML Kubernetes service connector facilitates authenticating and
 connecting to a Kubernetes cluster.
 
 The connector can be used to access to any generic Kubernetes cluster by
-providing pre-authenticated Kubernetes python clients and also
-allows configuration of local Kubernetes clients.
+providing pre-authenticated Kubernetes python clients to Stack Components that
+are linked to it and also allows configuring the local Kubernetes CLI
+(i.e. `kubectl`).
+
+The Kubernetes Service Connector is part of the Kubernetes ZenML integration.
+You can either install the entire integration or use a pypi extra to install it
+independently of the integration:
+
+* `pip install zenml[connectors-kubernetes]` installs only prerequisites for the
+Kubernetes Service Connector Type
+* `zenml integration install kubernetes` installs the entire Kubernetes ZenML
+integration
+
+A local Kubernetes CLI (i.e. `kubectl` ) and setting up local kubectl
+configuration contexts is not required to access Kubernetes clusters in your
+Stack Components through the Kubernetes Service Connector.
 """,
     supports_auto_configuration=True,
     logo_url="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/orchestrator/kubernetes.png",

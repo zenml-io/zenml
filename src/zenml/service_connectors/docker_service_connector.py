@@ -78,7 +78,13 @@ DOCKER_SERVICE_CONNECTOR_TYPE_SPEC = ServiceConnectorTypeModel(
 The ZenML Docker Service Connector allows authenticating with a Docker or OCI
 container registry and managing Docker clients for the registry. 
 
-The connector provides pre-authenticated python-docker clients.
+This connector provides pre-authenticated python-docker Python clients to Stack
+Components that are linked to it.
+
+No Python packages are required for this Service Connector. All prerequisites
+are included in the base ZenML Python package. Docker needs to be installed on
+environments where container images are built and pushed to the target container
+registry.
 """,
     logo_url="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/container_registry/docker.png",
     emoji=":whale:",

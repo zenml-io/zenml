@@ -1663,6 +1663,18 @@ def generate_stack_component_connect_command(
                         f"Access to the resource could not be verified: {e}"
                     )
 
+            if connector_resources.resource_ids:
+                if len(connector_resources.resource_ids) > 1:
+                    cli_utils.error(
+                        f"Multiple {resource_type} resources are available for "
+                        "the selected connector. Please use the "
+                        "`--resource-id` command line argument to configure a "
+                        f"{resource_type} resource or use the interactive mode "
+                        "to select a resource interactively."
+                    )
+                else:
+                    resource_id = connector_resources.resource_ids[0]
+
         with console.status(
             f"Updating {display_name} '{name_id_or_prefix}'...\n"
         ):

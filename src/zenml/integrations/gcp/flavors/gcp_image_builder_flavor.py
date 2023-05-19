@@ -82,7 +82,8 @@ class GCPImageBuilderFlavor(BaseImageBuilderFlavor):
             connector is required for this flavor.
         """
         return ServiceConnectorRequirements(
-            resource_type="gcp",
+            connector_type="gcp",
+            resource_type="gcp-generic",
         )
 
     @property

@@ -75,7 +75,7 @@ class GCPArtifactStore(BaseArtifactStore, AuthenticationMixin):
                     f"Expected a google.cloud.storage.Client while trying to "
                     f"use the linked connector, but got {type(client)}."
                 )
-            return client.credentials
+            return client._credentials
 
         secret = self.get_authentication_secret(
             expected_schema_type=GCPSecretSchema

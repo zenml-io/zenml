@@ -5010,23 +5010,28 @@ class SqlZenStore(BaseZenStore):
                         continue
 
             else:
-                connector_instance = (
-                    service_connector_registry.instantiate_connector(
-                        model=connector
-                    )
-                )
-
                 try:
+                    connector_instance = (
+                        service_connector_registry.instantiate_connector(
+                            model=connector
+                        )
+                    )
+
                     resources = connector_instance.verify(
                         resource_type=resource_type,
                         resource_id=resource_id,
                     )
                 except (ValueError, AuthorizationException) as e:
-                    logger.error(
+                    error = (
                         f'Failed to fetch {resource_type or "available"} '
                         f"resources from service connector {connector.name}/"
                         f"{connector.id}: {e}"
                     )
+                    # Log an exception if debug logging is enabled
+                    if logger.isEnabledFor(logging.DEBUG):
+                        logger.exception(error)
+                    else:
+                        logger.error(error)
                     continue
 
             resource_list.append(resources)
