@@ -121,4 +121,4 @@ class PillowImageMaterializer(BaseMaterializer):
         }
         if hasattr(image, "filename"):
             metadata["original_filename"] = str(image.filename)
-        return metadata
+        return metadata  # type: ignore[return-value]
