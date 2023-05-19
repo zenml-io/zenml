@@ -27,6 +27,7 @@ from zenml.cli.utils import (
     expand_argument_value_from_file,
     list_options,
     parse_name_and_extra_arguments,
+    parse_secret_name_and_arguements,
     pretty_print_secret,
     print_list_items,
     print_page_info,
@@ -840,9 +841,8 @@ def create_secret(
         interactive: Whether to use interactive mode to enter the secret values.
         args: The arguments to pass to the secret.
     """
-    name, parsed_args = parse_name_and_extra_arguments(  # type: ignore[assignment]
-        list(args) + [name], expand_args=True
-    )
+    name, parsed_args = parse_secret_name_and_arguements(  # type: ignore[assignment]
+        list(args) + [name])
 
     if "name" in parsed_args:
         error("You can't use 'name' as the key for one of your secrets.")
