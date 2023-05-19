@@ -467,8 +467,6 @@ Many Service Connector Types support using auto-configuration to discover and ex
 * GCP offers [the `gcloud auth application-default login` CLI command](https://cloud.google.com/docs/authentication/provide-credentials-adc#how\_to\_provide\_credentials\_to\_adc)
 * Azure provides [the `az login` CLI command](https://learn.microsoft.com/en-us/cli/azure/authenticate-azure-cli)
 
-
-
 <details>
 
 <summary>Or simply try it and find out</summary>
@@ -737,6 +735,44 @@ The 'aws-multi-type' Kubernetes Service Connector connector was used to successf
 $ kubectl cluster-info
 Kubernetes control plane is running at https://A5F8F4142FB12DDCDE9F21F6E9B07A18.gr7.us-east-1.eks.amazonaws.com
 CoreDNS is running at https://A5F8F4142FB12DDCDE9F21F6E9B07A18.gr7.us-east-1.eks.amazonaws.com/api/v1/namespaces/kube-system/services/kube-dns:dns/proxy
+```
+
+The same is possible with the local  Docker client:
+
+```
+$ zenml service-connector verify aws-session-token --resource-type docker-registry
+Service connector 'aws-session-token' is correctly configured with valid credentials and has access to the following resources:
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃             CONNECTOR ID             │ CONNECTOR NAME    │ CONNECTOR TYPE │ RESOURCE TYPE      │ RESOURCE NAMES                               ┃
+┠──────────────────────────────────────┼───────────────────┼────────────────┼────────────────────┼──────────────────────────────────────────────┨
+┃ 3ae3e595-5cbc-446e-be64-e54e854e0e3f │ aws-session-token │ 🔶 aws         │ 🐳 docker-registry │ 715803424590.dkr.ecr.us-east-1.amazonaws.com ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+$ zenml service-connector login aws-session-token --resource-type docker-registry 
+⠏ Attempting to configure local client using service connector 'aws-session-token'...
+WARNING! Your password will be stored unencrypted in /home/stefan/.docker/config.json.
+Configure a credential helper to remove this warning. See
+https://docs.docker.com/engine/reference/commandline/login/#credentials-store
+
+The 'aws-session-token' Docker Service Connector connector was used to successfully configure the local Docker/OCI container registry client/SDK.
+
+$ docker pull 715803424590.dkr.ecr.us-east-1.amazonaws.com/zenml-server
+Using default tag: latest
+latest: Pulling from zenml-server
+e9995326b091: Pull complete 
+f3d7f077cdde: Pull complete 
+0db71afa16f3: Pull complete 
+6f0b5905c60c: Pull complete 
+9d2154d50fd1: Pull complete 
+d072bba1f611: Pull complete 
+20e776588361: Pull complete 
+3ce69736a885: Pull complete 
+c9c0554c8e6a: Pull complete 
+bacdcd847a66: Pull complete 
+482033770844: Pull complete 
+Digest: sha256:bf2cc3895e70dfa1ee1cd90bbfa599fa4cd8df837e27184bac1ce1cc239ecd3f
+Status: Downloaded newer image for 715803424590.dkr.ecr.us-east-1.amazonaws.com/zenml-server:latest
+715803424590.dkr.ecr.us-east-1.amazonaws.com/zenml-server:latest
 ```
 
 </details>

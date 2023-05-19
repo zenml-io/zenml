@@ -124,14 +124,9 @@ The resource name associated with this resource type identifies the GCR containe
 This is the quickest and easiest way to authenticate to GCP services. However, the results depend on how ZenML is deployed and the environment where it is used and are thus not fully reproducible:
 
 * when used with the default local ZenML deployment or a local ZenML server, the credentials are those set up on your machine (i.e. by running `gcloud auth application-default login` or setting the `GOOGLE_APPLICATION_CREDENTIALS` environment variable to point to a service account key JSON file).
-* when connected to a ZenML server, this method only works if the ZenML server is deployed in GCP and will use the service account attached to the GCP resource where the ZenML server is running (e.g. an GKE cluster). The service account permissions may need to be adjusted to allow listing and accessing/describing the GCP resources that the connector is configured to access.
+* when connected to a ZenML server, this method only works if the ZenML server is deployed in GCP and will use the service account attached to the GCP resource where the ZenML server is running (e.g. a GKE cluster). The service account permissions may need to be adjusted to allow listing and accessing/describing the GCP resources that the connector is configured to access.
 
-This is the quickest and easiest way to authenticate to AWS services. However, the results depend on how ZenML is deployed and the environment where it is used and is thus not fully reproducible:
-
-* when used with the default local ZenML deployment or a local ZenML server, the credentials are the same as those used by the AWS CLI or extracted from local environment variables
-* when connected to a ZenML server, this method only works if the ZenML server is deployed in AWS and will use the IAM role attached to the AWS resource where the ZenML server is running (e.g. an EKS cluster). The IAM role permissions may need to be adjusted to allows listing and accessing/describing the AWS resources that the connector is configured to access.
-
-Note that the discovered credentials inherit the full set of permissions of the local GCP CLI credentials or service account attached to the GCP workload. Depending on the extent of those permissions, this authentication method might not be recommended for production use, as it can lead to accidental privilege escalation. Instead, it is recommended to use the Service Account Key or Service Account Impersonation authentication methods to restrict the permissions that are granted to the connector clients.
+Note that the discovered credentials inherit the full set of permissions of the local GCP CLI credentials or service account attached to the ZenML server GCP workload. Depending on the extent of those permissions, this authentication method might not be suitable for production use, as it can lead to accidental privilege escalation. Instead, it is recommended to use [the Service Account Key](gcp-service-connector.md#gcp-service-account) or [Service Account Impersonation](gcp-service-connector.md#gcp-service-account-impersonation) authentication methods to restrict the permissions that are granted to the connector clients.
 
 To find out more about Application Default Credentials, [see the GCP ADC documentation](https://cloud.google.com/docs/authentication/provide-credentials-adc).
 
@@ -144,22 +139,81 @@ A GCP project is required and the connector may only be used to access GCP resou
 The following assumes the local GCP CLI has already been configured with user account credentials by running the `gcloud auth application-default login` command:
 
 ```
-$ zenml service-connector register gcp-implicit --type gcp --auth-method implicit
-
+$ zenml service-connector register gcp-implicit --type gcp --auth-method implicit --auto-configure
+Successfully registered service connector `gcp-implicit` with access to the following resources:
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┓
+┃             CONNECTOR ID             │ CONNECTOR NAME │ CONNECTOR TYPE │ RESOURCE TYPE         │ RESOURCE NAMES ┃
+┠──────────────────────────────────────┼────────────────┼────────────────┼───────────────────────┼────────────────┨
+┃ 0c49a7fe-5e87-41b9-adbe-3da0a0452e44 │ gcp-implicit   │ 🔵 gcp         │ 🔵 gcp-generic        │ 🤷 none listed ┃
+┃                                      │                │                │ 📦 gcs-bucket         │                ┃
+┃                                      │                │                │ 🌀 kubernetes-cluster │                ┃
+┃                                      │                │                │ 🐳 docker-registry    │                ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┛
 ```
 
 No credentials are stored with the Service Connector:
 
 ```
 $ zenml service-connector describe gcp-implicit 
-
+Service connector 'gcp-implicit' of type 'gcp' with id '0c49a7fe-5e87-41b9-adbe-3da0a0452e44' is owned by user 'default' and is 'private'.
+                         'gcp-implicit' gcp Service Connector Details                          
+┏━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ PROPERTY         │ VALUE                                                                    ┃
+┠──────────────────┼──────────────────────────────────────────────────────────────────────────┨
+┃ ID               │ 0c49a7fe-5e87-41b9-adbe-3da0a0452e44                                     ┃
+┠──────────────────┼──────────────────────────────────────────────────────────────────────────┨
+┃ NAME             │ gcp-implicit                                                             ┃
+┠──────────────────┼──────────────────────────────────────────────────────────────────────────┨
+┃ TYPE             │ 🔵 gcp                                                                   ┃
+┠──────────────────┼──────────────────────────────────────────────────────────────────────────┨
+┃ AUTH METHOD      │ implicit                                                                 ┃
+┠──────────────────┼──────────────────────────────────────────────────────────────────────────┨
+┃ RESOURCE TYPES   │ 🔵 gcp-generic, 📦 gcs-bucket, 🌀 kubernetes-cluster, 🐳 docker-registry ┃
+┠──────────────────┼──────────────────────────────────────────────────────────────────────────┨
+┃ RESOURCE NAME    │ <multiple>                                                               ┃
+┠──────────────────┼──────────────────────────────────────────────────────────────────────────┨
+┃ SECRET ID        │                                                                          ┃
+┠──────────────────┼──────────────────────────────────────────────────────────────────────────┨
+┃ SESSION DURATION │ N/A                                                                      ┃
+┠──────────────────┼──────────────────────────────────────────────────────────────────────────┨
+┃ EXPIRES IN       │ N/A                                                                      ┃
+┠──────────────────┼──────────────────────────────────────────────────────────────────────────┨
+┃ OWNER            │ default                                                                  ┃
+┠──────────────────┼──────────────────────────────────────────────────────────────────────────┨
+┃ WORKSPACE        │ default                                                                  ┃
+┠──────────────────┼──────────────────────────────────────────────────────────────────────────┨
+┃ SHARED           │ ➖                                                                       ┃
+┠──────────────────┼──────────────────────────────────────────────────────────────────────────┨
+┃ CREATED_AT       │ 2023-05-19 08:04:51.037955                                               ┃
+┠──────────────────┼──────────────────────────────────────────────────────────────────────────┨
+┃ UPDATED_AT       │ 2023-05-19 08:04:51.037958                                               ┃
+┗━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+       Configuration       
+┏━━━━━━━━━━━━┯━━━━━━━━━━━━┓
+┃ PROPERTY   │ VALUE      ┃
+┠────────────┼────────────┨
+┃ project_id │ zenml-core ┃
+┗━━━━━━━━━━━━┷━━━━━━━━━━━━┛
 ```
 
 Verifying access to resources:
 
 ```
 $ zenml service-connector verify gcp-implicit --resource-type gcs-bucket
-
+Service connector 'gcp-implicit' is correctly configured with valid credentials and has access to the following resources:
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃             CONNECTOR ID             │ CONNECTOR NAME │ CONNECTOR TYPE │ RESOURCE TYPE │ RESOURCE NAMES                                  ┃
+┠──────────────────────────────────────┼────────────────┼────────────────┼───────────────┼─────────────────────────────────────────────────┨
+┃ 0c49a7fe-5e87-41b9-adbe-3da0a0452e44 │ gcp-implicit   │ 🔵 gcp         │ 📦 gcs-bucket │ gs://annotation-gcp-store                       ┃
+┃                                      │                │                │               │ gs://zenml-bucket-sl                            ┃
+┃                                      │                │                │               │ gs://zenml-datasets                             ┃
+┃                                      │                │                │               │ gs://zenml-internal-artifact-store              ┃
+┃                                      │                │                │               │ gs://zenml-kubeflow-artifact-store              ┃
+┃                                      │                │                │               │ gs://zenml-project-time-series-bucket           ┃
+┃                                      │                │                │               │ gs://zenml-public-bucket                        ┃
+┃                                      │                │                │               │ gs://zenml-vertex-test                          ┃
+┃                                      │                │                │               │ gs://zenml_projects_artifact_store              ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 ```
 
 </details>
@@ -183,18 +237,64 @@ If you already have the local GCP CLI set up with these credentials, they will b
 The following assumes the local GCP CLI has been configured with GCP user account credentials by running the `gcloud auth application-default login` command:
 
 ```
-$ zenml service-connector register gcp-user-account --type gcp --auth-method user-accoint --auto-configure
-
+$ zenml service-connector register gcp-user-account --type gcp --auth-method user-account --auto-configure
+Successfully registered service connector `gcp-user-account` with access to the following resources:
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┓
+┃             CONNECTOR ID             │ CONNECTOR NAME   │ CONNECTOR TYPE │ RESOURCE TYPE         │ RESOURCE NAMES ┃
+┠──────────────────────────────────────┼──────────────────┼────────────────┼───────────────────────┼────────────────┨
+┃ ddbce93f-df14-4861-a8a4-99a80972f3bc │ gcp-user-account │ 🔵 gcp         │ 🔵 gcp-generic        │ 🤷 none listed ┃
+┃                                      │                  │                │ 📦 gcs-bucket         │                ┃
+┃                                      │                  │                │ 🌀 kubernetes-cluster │                ┃
+┃                                      │                  │                │ 🐳 docker-registry    │                ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┛
 ```
 
 The GCP user account credentials were lifted up from the local host:
 
 ```
-$ zenml service-connector describe gcp-user-account
-
+$ zenml service-connector describe gcp-user-account 
+Service connector 'gcp-user-account' of type 'gcp' with id 'ddbce93f-df14-4861-a8a4-99a80972f3bc' is owned by user 'default' and is 'private'.
+                       'gcp-user-account' gcp Service Connector Details                        
+┏━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ PROPERTY         │ VALUE                                                                    ┃
+┠──────────────────┼──────────────────────────────────────────────────────────────────────────┨
+┃ ID               │ ddbce93f-df14-4861-a8a4-99a80972f3bc                                     ┃
+┠──────────────────┼──────────────────────────────────────────────────────────────────────────┨
+┃ NAME             │ gcp-user-account                                                         ┃
+┠──────────────────┼──────────────────────────────────────────────────────────────────────────┨
+┃ TYPE             │ 🔵 gcp                                                                   ┃
+┠──────────────────┼──────────────────────────────────────────────────────────────────────────┨
+┃ AUTH METHOD      │ user-account                                                             ┃
+┠──────────────────┼──────────────────────────────────────────────────────────────────────────┨
+┃ RESOURCE TYPES   │ 🔵 gcp-generic, 📦 gcs-bucket, 🌀 kubernetes-cluster, 🐳 docker-registry ┃
+┠──────────────────┼──────────────────────────────────────────────────────────────────────────┨
+┃ RESOURCE NAME    │ <multiple>                                                               ┃
+┠──────────────────┼──────────────────────────────────────────────────────────────────────────┨
+┃ SECRET ID        │ 17692951-614f-404f-a13a-4abb25bfa758                                     ┃
+┠──────────────────┼──────────────────────────────────────────────────────────────────────────┨
+┃ SESSION DURATION │ N/A                                                                      ┃
+┠──────────────────┼──────────────────────────────────────────────────────────────────────────┨
+┃ EXPIRES IN       │ N/A                                                                      ┃
+┠──────────────────┼──────────────────────────────────────────────────────────────────────────┨
+┃ OWNER            │ default                                                                  ┃
+┠──────────────────┼──────────────────────────────────────────────────────────────────────────┨
+┃ WORKSPACE        │ default                                                                  ┃
+┠──────────────────┼──────────────────────────────────────────────────────────────────────────┨
+┃ SHARED           │ ➖                                                                       ┃
+┠──────────────────┼──────────────────────────────────────────────────────────────────────────┨
+┃ CREATED_AT       │ 2023-05-19 08:09:44.102934                                               ┃
+┠──────────────────┼──────────────────────────────────────────────────────────────────────────┨
+┃ UPDATED_AT       │ 2023-05-19 08:09:44.102936                                               ┃
+┗━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+          Configuration           
+┏━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━┓
+┃ PROPERTY          │ VALUE      ┃
+┠───────────────────┼────────────┨
+┃ project_id        │ zenml-core ┃
+┠───────────────────┼────────────┨
+┃ user_account_json │ [HIDDEN]   ┃
+┗━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━┛
 ```
-
-
 
 </details>
 
@@ -208,6 +308,80 @@ A GCP project is required and the connector may only be used to access GCP resou
 
 If you already have the `GOOGLE_APPLICATION_CREDENTIALS` environment variable configured to point to a service account key JSON file, it will be automatically picked up when auto-configuration is used.
 
+<details>
+
+<summary>Example configuration</summary>
+
+The following assumes a GCP service account was created, [granted permissions to access GCS buckets](gcp-service-connector.md#gcs-bucket) in the target project and a service account key JSON was generated and saved locally in the `connectors-devel@zenml-core.json` file:
+
+```
+$ zenml service-connector register gcp-service-account --type gcp --auth-method service-account --resource-type gcs-bucket --project_id=zenml-core --service_account_json=@connectors-devel@zenml-core.json
+Expanding argument value service_account_json to contents of file connectors-devel@zenml-core.json.
+Successfully registered service connector `gcp-service-account` with access to the following resources:
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃             CONNECTOR ID             │ CONNECTOR NAME      │ CONNECTOR TYPE │ RESOURCE TYPE │ RESOURCE NAMES                                  ┃
+┠──────────────────────────────────────┼─────────────────────┼────────────────┼───────────────┼─────────────────────────────────────────────────┨
+┃ 4b3d41c9-6a6f-46da-b7ba-8f374c3f49c5 │ gcp-service-account │ 🔵 gcp         │ 📦 gcs-bucket │ gs://annotation-gcp-store                       ┃
+┃                                      │                     │                │               │ gs://zenml-datasets                             ┃
+┃                                      │                     │                │               │ gs://zenml-internal-artifact-store              ┃
+┃                                      │                     │                │               │ gs://zenml-kubeflow-artifact-store              ┃
+┃                                      │                     │                │               │ gs://zenml-project-time-series-bucket           ┃
+┃                                      │                     │                │               │ gs://zenml-public-bucket                        ┃
+┃                                      │                     │                │               │ gs://zenml-vertex-test                          ┃
+┃                                      │                     │                │               │ gs://zenml_projects_artifact_store              ┃
+┃                                      │                     │                │               │ gs://zennews-artifact-store                     ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+```
+
+The GCP service connector configuration and service account credentials:
+
+```
+$ zenml service-connector describe gcp-service-account 
+Service connector 'gcp-service-account' of type 'gcp' with id '4b3d41c9-6a6f-46da-b7ba-8f374c3f49c5' is owned by user 'default' and is 'private'.
+    'gcp-service-account' gcp Service Connector Details    
+┏━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ PROPERTY         │ VALUE                                ┃
+┠──────────────────┼──────────────────────────────────────┨
+┃ ID               │ 4b3d41c9-6a6f-46da-b7ba-8f374c3f49c5 ┃
+┠──────────────────┼──────────────────────────────────────┨
+┃ NAME             │ gcp-service-account                  ┃
+┠──────────────────┼──────────────────────────────────────┨
+┃ TYPE             │ 🔵 gcp                               ┃
+┠──────────────────┼──────────────────────────────────────┨
+┃ AUTH METHOD      │ service-account                      ┃
+┠──────────────────┼──────────────────────────────────────┨
+┃ RESOURCE TYPES   │ 📦 gcs-bucket                        ┃
+┠──────────────────┼──────────────────────────────────────┨
+┃ RESOURCE NAME    │ <multiple>                           ┃
+┠──────────────────┼──────────────────────────────────────┨
+┃ SECRET ID        │ 0d0a42bb-40a4-4f43-af9e-6342eeca3f28 ┃
+┠──────────────────┼──────────────────────────────────────┨
+┃ SESSION DURATION │ N/A                                  ┃
+┠──────────────────┼──────────────────────────────────────┨
+┃ EXPIRES IN       │ N/A                                  ┃
+┠──────────────────┼──────────────────────────────────────┨
+┃ OWNER            │ default                              ┃
+┠──────────────────┼──────────────────────────────────────┨
+┃ WORKSPACE        │ default                              ┃
+┠──────────────────┼──────────────────────────────────────┨
+┃ SHARED           │ ➖                                   ┃
+┠──────────────────┼──────────────────────────────────────┨
+┃ CREATED_AT       │ 2023-05-19 08:15:48.056937           ┃
+┠──────────────────┼──────────────────────────────────────┨
+┃ UPDATED_AT       │ 2023-05-19 08:15:48.056940           ┃
+┗━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+            Configuration            
+┏━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━┓
+┃ PROPERTY             │ VALUE      ┃
+┠──────────────────────┼────────────┨
+┃ project_id           │ zenml-core ┃
+┠──────────────────────┼────────────┨
+┃ service_account_json │ [HIDDEN]   ┃
+┗━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━┛
+```
+
+</details>
+
 ### GCP Service Account impersonation
 
 Generates [temporary STS credentials](best-security-practices.md#impersonating-accounts-and-assuming-roles) by [impersonating another GCP service account](https://cloud.google.com/iam/docs/create-short-lived-credentials-direct#sa-impersonation).
@@ -220,35 +394,248 @@ A GCP project is required and the connector may only be used to access GCP resou
 
 If you already have the `GOOGLE_APPLICATION_CREDENTIALS` environment variable configured to point to the primary service account key JSON file, it will be automatically picked up when auto-configuration is used.
 
+<details>
+
+<summary>Configuration example</summary>
+
+For this example, we have the following set up in GCP:
+
+* a primary `empty-connectors@zenml-core.iam.gserviceaccount.com` GCP service account with no permissions whatsoever aside from the "Service Account Token Creator" role that allows it to impersonate the secondary service account below. We also generate a service account key for this account.
+* a secondary `zenml-bucket-sl@zenml-core.iam.gserviceaccount.com` GCP service account that only has permissions to access the `zenml-bucket-sl` GCS bucket
+
+First, let's show that the `empty-connectors` service account has no permissions to access any GCS buckets or any other resources for that matter. We'll register a regular GCP Service Connector that uses the service account key (long-lived credentials) directly:
+
+```
+$ zenml service-connector register gcp-empty-sa --type gcp --auth-method service-account --service_account_json=@empty-connectors@zenml-core.json  --project_id=zenml-core
+Expanding argument value service_account_json to contents of file /home/stefan/aspyre/src/zenml/empty-connectors@zenml-core.json.
+Successfully registered service connector `gcp-empty-sa` with access to the following resources:
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┓
+┃             CONNECTOR ID             │ CONNECTOR NAME │ CONNECTOR TYPE │ RESOURCE TYPE         │ RESOURCE NAMES ┃
+┠──────────────────────────────────────┼────────────────┼────────────────┼───────────────────────┼────────────────┨
+┃ db967769-4cd5-4f07-a3f4-54e3fe534d88 │ gcp-empty-sa   │ 🔵 gcp         │ 🔵 gcp-generic        │ 🤷 none listed ┃
+┃                                      │                │                │ 📦 gcs-bucket         │                ┃
+┃                                      │                │                │ 🌀 kubernetes-cluster │                ┃
+┃                                      │                │                │ 🐳 docker-registry    │                ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┛
+
+$ zenml service-connector verify gcp-empty-sa --resource-type kubernetes-cluster
+Error: Service connector 'gcp-empty-sa' verification failed: connector authorization failure: Failed to list GKE clusters:
+403 Required "container.clusters.list" permission(s) for "projects/20219041791".
+
+$ zenml service-connector verify gcp-empty-sa --resource-type gcs-bucket
+Error: Service connector 'gcp-empty-sa' verification failed: connector authorization failure: failed to list GCS buckets:
+403 GET https://storage.googleapis.com/storage/v1/b?project=zenml-core&projection=noAcl&prettyPrint=false:
+empty-connectors@zenml-core.iam.gserviceaccount.com does not have storage.buckets.list access to the Google Cloud project.
+Permission 'storage.buckets.list' denied on resource (or it may not exist).
+
+$ zenml service-connector verify gcp-empty-sa --resource-type gcs-bucket --resource-id zenml-bucket-sl
+Error: Service connector 'gcp-empty-sa' verification failed: connector authorization failure: failed to fetch GCS bucket
+zenml-bucket-sl: 403 GET https://storage.googleapis.com/storage/v1/b/zenml-bucket-sl?projection=noAcl&prettyPrint=false:
+empty-connectors@zenml-core.iam.gserviceaccount.com does not have storage.buckets.get access to the Google Cloud Storage bucket.
+Permission 'storage.buckets.get' denied on resource (or it may not exist).
+
+```
+
+Next, we'll register a GCP Service Connector that actually uses account impersonation to access the `zenml-bucket-sl` GCS bucket and verify that it can actually access the bucket:
+
+```
+$ zenml service-connector register gcp-impersonate-sa --type gcp --auth-method impersonation --service_account_json=@empty-connectors@zenml-core.json  --project_id=zenml-core --target_principal=zenml-bucket-sl@zenml-core.iam.gserviceaccount.com --resource-type gcs-bucket --resource-id gs://zenml-bucket-sl
+Expanding argument value service_account_json to contents of file /home/stefan/aspyre/src/zenml/empty-connectors@zenml-core.json.
+Successfully registered service connector `gcp-impersonate-sa` with access to the following resources:
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━┓
+┃             CONNECTOR ID             │ CONNECTOR NAME     │ CONNECTOR TYPE │ RESOURCE TYPE │ RESOURCE NAMES       ┃
+┠──────────────────────────────────────┼────────────────────┼────────────────┼───────────────┼──────────────────────┨
+┃ f586c28e-3d60-4be5-8961-853592c48e41 │ gcp-impersonate-sa │ 🔵 gcp         │ 📦 gcs-bucket │ gs://zenml-bucket-sl ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━┛
+
+$ zenml service-connector verify gcp-impersonate-sa --resource-type gcs-bucket --resource-id zenml-bucket-sl
+Service connector 'gcp-impersonate-sa' is correctly configured with valid credentials and has access to the following resources:
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━┓
+┃             CONNECTOR ID             │ CONNECTOR NAME     │ CONNECTOR TYPE │ RESOURCE TYPE │ RESOURCE NAMES       ┃
+┠──────────────────────────────────────┼────────────────────┼────────────────┼───────────────┼──────────────────────┨
+┃ f586c28e-3d60-4be5-8961-853592c48e41 │ gcp-impersonate-sa │ 🔵 gcp         │ 📦 gcs-bucket │ gs://zenml-bucket-sl ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━┛
+```
+
+</details>
+
 ### GCP OAuth 2.0 token
 
 Uses [temporary OAuth 2.0 tokens](best-security-practices.md#short-lived-credentials) explicitly configured by the user.
 
-This method has the major limitation that the user must regularly generate new tokens and update the connector configuration as OAuth 2.0 tokens expire. This method is best used in cases where the connector only needs to be used for a short period of time.
+This method has the major limitation that the user must regularly generate new tokens and update the connector configuration as OAuth 2.0 tokens expire. On the other hand, this method is ideal in cases where the connector only needs to be used for a short period of time, such as sharing access temporarily with someone else in your team.
 
 Using any of the other authentication methods will automatically generate and refresh OAuth 2.0 tokens for clients upon request.
 
 A GCP project is required and the connector may only be used to access GCP resources in the specified project.
 
+<details>
+
+<summary>Example auto-configuration</summary>
+
+Fetching OAuth 2.0 tokens from the local GCP CLI is possible if the GCP CLI is already configured with valid credentials (i.e. by running `gcloud auth application-default login`). We need to force the ZenML CLI to use the OAuth 2.0 token authentication by passing the `--auth-method oauth2-token` option, otherwise it would automatically pick-up long-term credentials:
+
+```
+$ zenml service-connector register gcp-oauth2-token --type gcp --auto-configure --auth-method oauth2-token
+Successfully registered service connector `gcp-oauth2-token` with access to the following resources:
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┓
+┃             CONNECTOR ID             │ CONNECTOR NAME   │ CONNECTOR TYPE │ RESOURCE TYPE         │ RESOURCE NAMES ┃
+┠──────────────────────────────────────┼──────────────────┼────────────────┼───────────────────────┼────────────────┨
+┃ ec4d7d85-c71c-476b-aa76-95bf772c90da │ gcp-oauth2-token │ 🔵 gcp         │ 🔵 gcp-generic        │ 🤷 none listed ┃
+┃                                      │                  │                │ 📦 gcs-bucket         │                ┃
+┃                                      │                  │                │ 🌀 kubernetes-cluster │                ┃
+┃                                      │                  │                │ 🐳 docker-registry    │                ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┛
+
+$ zenml service-connector describe gcp-oauth2-token 
+Service connector 'gcp-oauth2-token' of type 'gcp' with id 'ec4d7d85-c71c-476b-aa76-95bf772c90da' is owned by user 'default' and is 'private'.
+                       'gcp-oauth2-token' gcp Service Connector Details                        
+┏━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ PROPERTY         │ VALUE                                                                    ┃
+┠──────────────────┼──────────────────────────────────────────────────────────────────────────┨
+┃ ID               │ ec4d7d85-c71c-476b-aa76-95bf772c90da                                     ┃
+┠──────────────────┼──────────────────────────────────────────────────────────────────────────┨
+┃ NAME             │ gcp-oauth2-token                                                         ┃
+┠──────────────────┼──────────────────────────────────────────────────────────────────────────┨
+┃ TYPE             │ 🔵 gcp                                                                   ┃
+┠──────────────────┼──────────────────────────────────────────────────────────────────────────┨
+┃ AUTH METHOD      │ oauth2-token                                                             ┃
+┠──────────────────┼──────────────────────────────────────────────────────────────────────────┨
+┃ RESOURCE TYPES   │ 🔵 gcp-generic, 📦 gcs-bucket, 🌀 kubernetes-cluster, 🐳 docker-registry ┃
+┠──────────────────┼──────────────────────────────────────────────────────────────────────────┨
+┃ RESOURCE NAME    │ <multiple>                                                               ┃
+┠──────────────────┼──────────────────────────────────────────────────────────────────────────┨
+┃ SECRET ID        │ 4694de65-997b-4929-8831-b49d5e067b97                                     ┃
+┠──────────────────┼──────────────────────────────────────────────────────────────────────────┨
+┃ SESSION DURATION │ N/A                                                                      ┃
+┠──────────────────┼──────────────────────────────────────────────────────────────────────────┨
+┃ EXPIRES IN       │ 59m46s                                                                   ┃
+┠──────────────────┼──────────────────────────────────────────────────────────────────────────┨
+┃ OWNER            │ default                                                                  ┃
+┠──────────────────┼──────────────────────────────────────────────────────────────────────────┨
+┃ WORKSPACE        │ default                                                                  ┃
+┠──────────────────┼──────────────────────────────────────────────────────────────────────────┨
+┃ SHARED           │ ➖                                                                       ┃
+┠──────────────────┼──────────────────────────────────────────────────────────────────────────┨
+┃ CREATED_AT       │ 2023-05-19 09:04:33.557126                                               ┃
+┠──────────────────┼──────────────────────────────────────────────────────────────────────────┨
+┃ UPDATED_AT       │ 2023-05-19 09:04:33.557127                                               ┃
+┗━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+       Configuration       
+┏━━━━━━━━━━━━┯━━━━━━━━━━━━┓
+┃ PROPERTY   │ VALUE      ┃
+┠────────────┼────────────┨
+┃ project_id │ zenml-core ┃
+┠────────────┼────────────┨
+┃ token      │ [HIDDEN]   ┃
+┗━━━━━━━━━━━━┷━━━━━━━━━━━━┛
+```
+
+Note the temporary nature of the Service Connector. It will expire and become unusable in 1 hour:
+
+```
+$ zenml service-connector list --name gcp-oauth2-token 
+┏━━━━━━━━┯━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━┯━━━━━━━━┯━━━━━━━━━┯━━━━━━━━━━━━┯━━━━━━━━┓
+┃ ACTIVE │ NAME             │ ID                                   │ TYPE   │ RESOURCE TYPES        │ RESOURCE NAME │ SHARED │ OWNER   │ EXPIRES IN │ LABELS ┃
+┠────────┼──────────────────┼──────────────────────────────────────┼────────┼───────────────────────┼───────────────┼────────┼─────────┼────────────┼────────┨
+┃        │ gcp-oauth2-token │ ec4d7d85-c71c-476b-aa76-95bf772c90da │ 🔵 gcp │ 🔵 gcp-generic        │ <multiple>    │ ➖     │ default │ 59m35s     │        ┃
+┃        │                  │                                      │        │ 📦 gcs-bucket         │               │        │         │            │        ┃
+┃        │                  │                                      │        │ 🌀 kubernetes-cluster │               │        │         │            │        ┃
+┃        │                  │                                      │        │ 🐳 docker-registry    │               │        │         │            │        ┃
+┗━━━━━━━━┷━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━┷━━━━━━━━┷━━━━━━━━━┷━━━━━━━━━━━━┷━━━━━━━━┛
+```
+
+</details>
+
 ## Auto-configuration
 
-The GCP Service Connector allows [auto-discovering and fetching credentials](service-connectors-guide.md#auto-configuration) and configuration [set up by the GCP CLI](https://cloud.google.com/sdk/gcloud) during registration.
+The GCP Service Connector allows [auto-discovering and fetching credentials](service-connectors-guide.md#auto-configuration) and configuration [set up by the GCP CLI](https://cloud.google.com/sdk/gcloud) on your local host.
 
 <details>
 
 <summary>Auto-configuration example</summary>
 
-The following is an example of lifting GCP user credentials granting access to the same set of GCP resources and services that the local GCP CLI is allowed to access. In this case, the [GCP user account authentication method](gcp-service-connector.md#gcp-user-account) was automatically detected:
+The following is an example of lifting GCP user credentials granting access to the same set of GCP resources and services that the local GCP CLI is allowed to access. The GCP CLI should already be configured with valid credentials (i.e. by running `gcloud auth application-default login`). In this case, the [GCP user account authentication method](gcp-service-connector.md#gcp-user-account) is automatically detected:
 
 ```
 $ zenml service-connector register gcp-auto --type gcp --auto-configure
+Successfully registered service connector `gcp-auto` with access to the following resources:
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┓
+┃             CONNECTOR ID             │ CONNECTOR NAME │ CONNECTOR TYPE │ RESOURCE TYPE         │ RESOURCE NAMES ┃
+┠──────────────────────────────────────┼────────────────┼────────────────┼───────────────────────┼────────────────┨
+┃ fe16f141-7406-437e-a579-acebe618a293 │ gcp-auto       │ 🔵 gcp         │ 🔵 gcp-generic        │ 🤷 none listed ┃
+┃                                      │                │                │ 📦 gcs-bucket         │                ┃
+┃                                      │                │                │ 🌀 kubernetes-cluster │                ┃
+┃                                      │                │                │ 🐳 docker-registry    │                ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┛
 
 $ zenml service-connector describe gcp-auto 
+Service connector 'gcp-auto' of type 'gcp' with id 'fe16f141-7406-437e-a579-acebe618a293' is owned by user 'default' and is 'private'.
+                           'gcp-auto' gcp Service Connector Details                            
+┏━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ PROPERTY         │ VALUE                                                                    ┃
+┠──────────────────┼──────────────────────────────────────────────────────────────────────────┨
+┃ ID               │ fe16f141-7406-437e-a579-acebe618a293                                     ┃
+┠──────────────────┼──────────────────────────────────────────────────────────────────────────┨
+┃ NAME             │ gcp-auto                                                                 ┃
+┠──────────────────┼──────────────────────────────────────────────────────────────────────────┨
+┃ TYPE             │ 🔵 gcp                                                                   ┃
+┠──────────────────┼──────────────────────────────────────────────────────────────────────────┨
+┃ AUTH METHOD      │ user-account                                                             ┃
+┠──────────────────┼──────────────────────────────────────────────────────────────────────────┨
+┃ RESOURCE TYPES   │ 🔵 gcp-generic, 📦 gcs-bucket, 🌀 kubernetes-cluster, 🐳 docker-registry ┃
+┠──────────────────┼──────────────────────────────────────────────────────────────────────────┨
+┃ RESOURCE NAME    │ <multiple>                                                               ┃
+┠──────────────────┼──────────────────────────────────────────────────────────────────────────┨
+┃ SECRET ID        │ 5eca8f6e-291f-4958-ae2d-a3e847a1ad8a                                     ┃
+┠──────────────────┼──────────────────────────────────────────────────────────────────────────┨
+┃ SESSION DURATION │ N/A                                                                      ┃
+┠──────────────────┼──────────────────────────────────────────────────────────────────────────┨
+┃ EXPIRES IN       │ N/A                                                                      ┃
+┠──────────────────┼──────────────────────────────────────────────────────────────────────────┨
+┃ OWNER            │ default                                                                  ┃
+┠──────────────────┼──────────────────────────────────────────────────────────────────────────┨
+┃ WORKSPACE        │ default                                                                  ┃
+┠──────────────────┼──────────────────────────────────────────────────────────────────────────┨
+┃ SHARED           │ ➖                                                                       ┃
+┠──────────────────┼──────────────────────────────────────────────────────────────────────────┨
+┃ CREATED_AT       │ 2023-05-19 09:15:12.882929                                               ┃
+┠──────────────────┼──────────────────────────────────────────────────────────────────────────┨
+┃ UPDATED_AT       │ 2023-05-19 09:15:12.882930                                               ┃
+┗━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+          Configuration           
+┏━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━┓
+┃ PROPERTY          │ VALUE      ┃
+┠───────────────────┼────────────┨
+┃ project_id        │ zenml-core ┃
+┠───────────────────┼────────────┨
+┃ user_account_json │ [HIDDEN]   ┃
+┗━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━┛
 
 $ zenml service-connector verify gcp-auto --resource-type gcs-bucket
+Service connector 'gcp-auto' is correctly configured with valid credentials and has access to the following resources:
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃             CONNECTOR ID             │ CONNECTOR NAME │ CONNECTOR TYPE │ RESOURCE TYPE │ RESOURCE NAMES                                  ┃
+┠──────────────────────────────────────┼────────────────┼────────────────┼───────────────┼─────────────────────────────────────────────────┨
+┃ fe16f141-7406-437e-a579-acebe618a293 │ gcp-auto       │ 🔵 gcp         │ 📦 gcs-bucket │ gs://annotation-gcp-store                       ┃
+┃                                      │                │                │               │ gs://zenml-bucket-sl                            ┃
+┃                                      │                │                │               │ gs://zenml-core_cloudbuild                      ┃
+┃                                      │                │                │               │ gs://zenml-datasets                             ┃
+┃                                      │                │                │               │ gs://zenml-internal-artifact-store              ┃
+┃                                      │                │                │               │ gs://zenml-kubeflow-artifact-store              ┃
+┃                                      │                │                │               │ gs://zenml-project-time-series-bucket           ┃
+┃                                      │                │                │               │ gs://zenml-public-bucket                        ┃
+┃                                      │                │                │               │ gs://zenml-vertex-test                          ┃
+┃                                      │                │                │               │ gs://zenml_projects_artifact_store              ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
 $ zenml service-connector verify gcp-auto --resource-type kubernetes-cluster
-
+Service connector 'gcp-auto' is correctly configured with valid credentials and has access to the following resources:
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━┓
+┃             CONNECTOR ID             │ CONNECTOR NAME │ CONNECTOR TYPE │ RESOURCE TYPE         │ RESOURCE NAMES     ┃
+┠──────────────────────────────────────┼────────────────┼────────────────┼───────────────────────┼────────────────────┨
+┃ fe16f141-7406-437e-a579-acebe618a293 │ gcp-auto       │ 🔵 gcp         │ 🌀 kubernetes-cluster │ zenml-test-cluster ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━┛
 ```
 
 </details>
@@ -264,26 +651,73 @@ The local Kubernetes `kubectl` CLI and the Docker CLI can be[ configured with cr
 The following shows an example of configuring the local Kubernetes CLI to access a GKE cluster reachable through a GCP Service Connector:
 
 ```
-$ zenml service-connector list
+$ zenml service-connector list --name gcp-user-account
+┏━━━━━━━━┯━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━┯━━━━━━━━┯━━━━━━━━━┯━━━━━━━━━━━━┯━━━━━━━━┓
+┃ ACTIVE │ NAME             │ ID                                   │ TYPE   │ RESOURCE TYPES        │ RESOURCE NAME │ SHARED │ OWNER   │ EXPIRES IN │ LABELS ┃
+┠────────┼──────────────────┼──────────────────────────────────────┼────────┼───────────────────────┼───────────────┼────────┼─────────┼────────────┼────────┨
+┃        │ gcp-user-account │ ddbce93f-df14-4861-a8a4-99a80972f3bc │ 🔵 gcp │ 🔵 gcp-generic        │ <multiple>    │ ➖     │ default │            │        ┃
+┃        │                  │                                      │        │ 📦 gcs-bucket         │               │        │         │            │        ┃
+┃        │                  │                                      │        │ 🌀 kubernetes-cluster │               │        │         │            │        ┃
+┃        │                  │                                      │        │ 🐳 docker-registry    │               │        │         │            │        ┃
+┗━━━━━━━━┷━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━┷━━━━━━━━┷━━━━━━━━━┷━━━━━━━━━━━━┷━━━━━━━━┛
 
 $ zenml service-connector verify gcp-user-account --resource-type kubernetes-cluster
+Service connector 'gcp-user-account' is correctly configured with valid credentials and has access to the following resources:
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━┓
+┃             CONNECTOR ID             │ CONNECTOR NAME   │ CONNECTOR TYPE │ RESOURCE TYPE         │ RESOURCE NAMES     ┃
+┠──────────────────────────────────────┼──────────────────┼────────────────┼───────────────────────┼────────────────────┨
+┃ ddbce93f-df14-4861-a8a4-99a80972f3bc │ gcp-user-account │ 🔵 gcp         │ 🌀 kubernetes-cluster │ zenml-test-cluster ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━┛
 
-$ zenml service-connector login gcp-user-account --resource-type kubernetes-cluster --resource-id zenhacks-cluster
+$ zenml service-connector login gcp-user-account --resource-type kubernetes-cluster --resource-id zenml-test-cluster
+⠴ Attempting to configure local client using service connector 'gcp-user-account'...
+Context "gke_zenml-core_zenml-test-cluster" modified.
+Updated local kubeconfig with the cluster details. The current kubectl context was set to 'gke_zenml-core_zenml-test-cluster'.
+The 'gcp-user-account' Kubernetes Service Connector connector was used to successfully configure the local Kubernetes cluster client/SDK.
 
 $ kubectl cluster-info
-
+Kubernetes control plane is running at https://35.185.95.223
+GLBCDefaultBackend is running at https://35.185.95.223/api/v1/namespaces/kube-system/services/default-http-backend:http/proxy
+KubeDNS is running at https://35.185.95.223/api/v1/namespaces/kube-system/services/kube-dns:dns/proxy
+Metrics-server is running at https://35.185.95.223/api/v1/namespaces/kube-system/services/https:metrics-server:/proxy
 ```
 
 A similar process is possible with GCR container registries:
 
 ```
 $ zenml service-connector verify gcp-user-account --resource-type docker-registry
-
+Service connector 'gcp-user-account' is correctly configured with valid credentials and has access to the following resources:
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━┓
+┃             CONNECTOR ID             │ CONNECTOR NAME   │ CONNECTOR TYPE │ RESOURCE TYPE      │ RESOURCE NAMES    ┃
+┠──────────────────────────────────────┼──────────────────┼────────────────┼────────────────────┼───────────────────┨
+┃ ddbce93f-df14-4861-a8a4-99a80972f3bc │ gcp-user-account │ 🔵 gcp         │ 🐳 docker-registry │ gcr.io/zenml-core ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━┛
 
 $ zenml service-connector login gcp-user-account --resource-type docker-registry 
+⠦ Attempting to configure local client using service connector 'gcp-user-account'...
+WARNING! Your password will be stored unencrypted in /home/stefan/.docker/config.json.
+Configure a credential helper to remove this warning. See
+https://docs.docker.com/engine/reference/commandline/login/#credentials-store
 
-$ docker pull gcr.io/zenml-server
+The 'gcp-user-account' Docker Service Connector connector was used to successfully configure the local Docker/OCI container registry client/SDK.
 
+$ docker push gcr.io/zenml-core/zenml-server:connectors
+The push refers to repository [gcr.io/zenml-core/zenml-server]
+d4aef4f5ed86: Pushed 
+2d69a4ce1784: Pushed 
+204066eca765: Pushed 
+2da74ab7b0c1: Pushed 
+75c35abda1d1: Layer already exists 
+415ff8f0f676: Layer already exists 
+c14cb5b1ec91: Layer already exists 
+a1d005f5264e: Layer already exists 
+3a3fd880aca3: Layer already exists 
+149a9c50e18e: Layer already exists 
+1f6d3424b922: Layer already exists 
+8402c959ae6f: Layer already exists 
+419599cb5288: Layer already exists 
+8553b91047da: Layer already exists 
+connectors: digest: sha256:a4cfb18a5cef5b2201759a42dd9fe8eb2f833b788e9d8a6ebde194765b42fe46 size: 3256
 ```
 
 </details>
@@ -299,3 +733,243 @@ The GCS Artifact Store Stack Component can be connected to a remote GCS bucket t
 The GCP Service Connector can also be used in a wide range of Orchestrators and Model Deployer stack component flavors that rely on Kubernetes clusters to manage their workloads. This allows GKE Kubernetes container workloads to be managed without the need to configure and maintain explicit GCP or Kubernetes `kubectl` configuration contexts and credentials in the target environment and in the Stack Component.
 
 Similarly, Container Registry Stack Components can be connected to a GCR Container Registry through an GCP Service Connector. This allows container images to be built and published to GCR container registries without the need to configure explicit GCP credentials in the target environment or the Stack Component.
+
+## Full examples
+
+<details>
+
+<summary>GKE Kubernetes Orchestrator, GCS Artifact Store, GCR Container Registry</summary>
+
+This is an example of an end-to-end workflow involving Service Connectors that starts with configuring a GCP Service Connector and ends with a complete ZenML Stack composed of Stack Components connected to GCP resources through the Service Connector on which a pipeline is run.
+
+1. Configure the local GCP CLI with valid user account credentials with a wide range of permissions (i.e. by running `gcloud auth application-default login`) and install ZenML integration prerequisites:
+
+```
+$ gcloud auth application-default login
+
+Credentials saved to file: [/home/stefan/.config/gcloud/application_default_credentials.json]
+
+These credentials will be used by any library that requests Application Default Credentials (ADC).
+
+Quota project "zenml-core" was added to ADC which can be used by Google client libraries for billing
+and quota. Note that some services may still bill the project owning the resource.
+
+
+$ zenml integration install -y gcp
+
+```
+
+2. Make sure the GCP Service Connector Type is available
+
+```
+$ zenml service-connector list-types --type gcp
+┏━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━┯━━━━━━━┯━━━━━━━━┓
+┃         NAME          │ TYPE   │ RESOURCE TYPES        │ AUTH METHODS    │ LOCAL │ REMOTE ┃
+┠───────────────────────┼────────┼───────────────────────┼─────────────────┼───────┼────────┨
+┃ GCP Service Connector │ 🔵 gcp │ 🔵 gcp-generic        │ implicit        │ ✅    │ ✅     ┃
+┃                       │        │ 📦 gcs-bucket         │ user-account    │       │        ┃
+┃                       │        │ 🌀 kubernetes-cluster │ service-account │       │        ┃
+┃                       │        │ 🐳 docker-registry    │ oauth2-token    │       │        ┃
+┃                       │        │                       │ impersonation   │       │        ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━┷━━━━━━━┷━━━━━━━━┛
+```
+
+2. Register a multi-type GCP Service Connector using auto-configuration
+
+```
+$ zenml service-connector register gcp-demo-multi --type gcp --auto-configure
+Successfully registered service connector `gcp-demo-multi` with access to the following resources:
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┓
+┃             CONNECTOR ID             │ CONNECTOR NAME │ CONNECTOR TYPE │ RESOURCE TYPE         │ RESOURCE NAMES ┃
+┠──────────────────────────────────────┼────────────────┼────────────────┼───────────────────────┼────────────────┨
+┃ eeeabc13-9203-463b-aa52-216e629e903c │ gcp-demo-multi │ 🔵 gcp         │ 🔵 gcp-generic        │ 🤷 none listed ┃
+┃                                      │                │                │ 📦 gcs-bucket         │                ┃
+┃                                      │                │                │ 🌀 kubernetes-cluster │                ┃
+┃                                      │                │                │ 🐳 docker-registry    │                ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┛
+```
+
+3. find out which GCS buckets, GCR registries and GKE Kubernetes clusters we can gain access to. We'll use this information to configure the Stack Components in our minimal GCP stack: a GCS Artifact Store, a Kubernetes Orchestrator and a GCP Container Registry.
+
+```
+$ zenml service-connector list-resources --resource-type gcs-bucket
+The following 'gcs-bucket' resources can be accessed by service connectors configured in your workspace:
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃             CONNECTOR ID             │ CONNECTOR NAME │ CONNECTOR TYPE │ RESOURCE TYPE │ RESOURCE NAMES                                  ┃
+┠──────────────────────────────────────┼────────────────┼────────────────┼───────────────┼─────────────────────────────────────────────────┨
+┃ eeeabc13-9203-463b-aa52-216e629e903c │ gcp-demo-multi │ 🔵 gcp         │ 📦 gcs-bucket │ gs://annotation-gcp-store                       ┃
+┃                                      │                │                │               │ gs://zenml-bucket-sl                            ┃
+┃                                      │                │                │               │ gs://zenml-core.appspot.com                     ┃
+┃                                      │                │                │               │ gs://zenml-core_cloudbuild                      ┃
+┃                                      │                │                │               │ gs://zenml-datasets                             ┃
+┃                                      │                │                │               │ gs://zenml-internal-artifact-store              ┃
+┃                                      │                │                │               │ gs://zenml-kubeflow-artifact-store              ┃
+┃                                      │                │                │               │ gs://zenml-project-time-series-bucket           ┃
+┃                                      │                │                │               │ gs://zenml-public-bucket                        ┃
+┃                                      │                │                │               │ gs://zenml-vertex-test                          ┃
+┃                                      │                │                │               │ gs://zenml_projects_artifact_store              ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+$ zenml service-connector list-resources --resource-type kubernetes-cluster
+The following 'kubernetes-cluster' resources can be accessed by service connectors configured in your workspace:
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━┓
+┃             CONNECTOR ID             │ CONNECTOR NAME │ CONNECTOR TYPE │ RESOURCE TYPE         │ RESOURCE NAMES     ┃
+┠──────────────────────────────────────┼────────────────┼────────────────┼───────────────────────┼────────────────────┨
+┃ eeeabc13-9203-463b-aa52-216e629e903c │ gcp-demo-multi │ 🔵 gcp         │ 🌀 kubernetes-cluster │ zenml-test-cluster ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━┛
+
+$ zenml service-connector list-resources --resource-type docker-registry
+The following 'docker-registry' resources can be accessed by service connectors configured in your workspace:
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━┓
+┃             CONNECTOR ID             │ CONNECTOR NAME │ CONNECTOR TYPE │ RESOURCE TYPE      │ RESOURCE NAMES    ┃
+┠──────────────────────────────────────┼────────────────┼────────────────┼────────────────────┼───────────────────┨
+┃ eeeabc13-9203-463b-aa52-216e629e903c │ gcp-demo-multi │ 🔵 gcp         │ 🐳 docker-registry │ gcr.io/zenml-core ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━┛
+```
+
+4. register and connect a GCS Artifact Store Stack Component to a GCS bucket:
+
+```
+$ zenml artifact-store register gcs-zenml-bucket-sl --flavor gcp --path=gs://zenml-bucket-sl
+Running with active workspace: 'default' (global)
+Running with active stack: 'default' (global)
+Successfully registered artifact_store `gcs-zenml-bucket-sl`.
+
+$ zenml artifact-store connect gcs-zenml-bucket-sl --connector gcp-demo-multi
+Running with active workspace: 'default' (global)
+Running with active stack: 'default' (global)
+Successfully connected artifact store `gcs-zenml-bucket-sl` to the following resources:
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━┓
+┃             CONNECTOR ID             │ CONNECTOR NAME │ CONNECTOR TYPE │ RESOURCE TYPE │ RESOURCE NAMES       ┃
+┠──────────────────────────────────────┼────────────────┼────────────────┼───────────────┼──────────────────────┨
+┃ eeeabc13-9203-463b-aa52-216e629e903c │ gcp-demo-multi │ 🔵 gcp         │ 📦 gcs-bucket │ gs://zenml-bucket-sl ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━┛
+```
+
+5. register and connect a Kubernetes Orchestrator Stack Component to a GKE cluster:
+
+```
+$ zenml orchestrator register gke-zenml-test-cluster --flavor kubernetes --synchronous=true --kubernetes_namespace=zenml-workloads
+Running with active workspace: 'default' (global)
+Running with active stack: 'default' (global)
+Successfully registered orchestrator `gke-zenml-test-cluster`.
+
+$ zenml orchestrator connect gke-zenml-test-cluster --connector gcp-demo-multi
+Running with active workspace: 'default' (global)
+Running with active stack: 'default' (global)
+Successfully connected orchestrator `gke-zenml-test-cluster` to the following resources:
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━┓
+┃             CONNECTOR ID             │ CONNECTOR NAME │ CONNECTOR TYPE │ RESOURCE TYPE         │ RESOURCE NAMES     ┃
+┠──────────────────────────────────────┼────────────────┼────────────────┼───────────────────────┼────────────────────┨
+┃ eeeabc13-9203-463b-aa52-216e629e903c │ gcp-demo-multi │ 🔵 gcp         │ 🌀 kubernetes-cluster │ zenml-test-cluster ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━┛
+```
+
+6. Register and connect a GCP Container Registry Stack Component to a GCR container registry:
+
+```
+$ zenml container-registry register gcr-zenml-core --flavor gcp --uri=gcr.io/zenml-core 
+Running with active workspace: 'default' (global)
+Running with active stack: 'default' (global)
+Successfully registered container_registry `gcr-zenml-core`.
+
+$ zenml container-registry connect gcr-zenml-core --connector gcp-demo-multi
+Running with active workspace: 'default' (global)
+Running with active stack: 'default' (global)
+Successfully connected container registry `gcr-zenml-core` to the following resources:
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━┓
+┃             CONNECTOR ID             │ CONNECTOR NAME │ CONNECTOR TYPE │ RESOURCE TYPE      │ RESOURCE NAMES    ┃
+┠──────────────────────────────────────┼────────────────┼────────────────┼────────────────────┼───────────────────┨
+┃ eeeabc13-9203-463b-aa52-216e629e903c │ gcp-demo-multi │ 🔵 gcp         │ 🐳 docker-registry │ gcr.io/zenml-core ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━┛
+```
+
+7. Combine all Stack Components together into a Stack and set it as active (also throw in a local Image Builder for completion):
+
+```
+$ zenml image-builder register local --flavor local
+Running with active workspace: 'default' (global)
+Running with active stack: 'gcp-demo' (global)
+Successfully registered image_builder `local`.
+
+$ zenml stack register gcp-demo -a gcs-zenml-bucket-sl -o gke-zenml-test-cluster -c gcr-zenml-core -i local --set
+Running with active workspace: 'default' (global)
+Stack 'gcp-demo' successfully registered!
+Active global stack set to:'gcp-demo'
+```
+
+8. Finally, run a simple pipeline to prove that everything works as expected. We'll use the simplest pipelines possible for this example:
+
+```python
+from zenml.config import DockerSettings
+from zenml.pipelines import pipeline
+from zenml.steps import step
+
+@pipeline
+def simple_pipeline(simple_step_one, simple_step_two):
+    """Define single step pipeline."""
+    message = simple_step_one()
+    simple_step_two(msg=message)
+
+
+@step
+def simple_step_one() -> str:
+    """Simple step one."""
+
+    return "Hello World!"
+
+
+@step
+def simple_step_two(msg: str) -> None:
+    """Simple step two."""
+
+    print(msg)
+
+
+if __name__ == "__main__":
+    pipeline = simple_pipeline(
+        simple_step_one=simple_step_one(), simple_step_two=simple_step_two()
+    )
+    pipeline.run(enable_cache=False)
+```
+
+Saving that to a `run.py` file and running it gives us:
+
+```
+$ python run.py 
+Reusing registered pipeline simple_pipeline (version: 1).
+Building Docker image(s) for pipeline simple_pipeline.
+Building Docker image gcr.io/zenml-core/zenml:simple_pipeline-orchestrator.
+- Including integration requirements: gcsfs, google-cloud-aiplatform>=1.11.0, google-cloud-build>=3.11.0, google-cloud-container>=2.21.0, google-cloud-functions>=1.8.3, google-cloud-scheduler>=2.7.3, google-cloud-secret-manager, google-cloud-storage>=2.9.0, kfp==1.8.16, kubernetes==18.20.0, shapely<2.0
+No .dockerignore found, including all files inside build context.
+Step 1/8 : FROM zenmldocker/zenml:0.39.1-py3.8
+Step 2/8 : WORKDIR /app
+Step 3/8 : COPY .zenml_integration_requirements .
+Step 4/8 : RUN pip install --default-timeout=60 --no-cache-dir  -r .zenml_integration_requirements
+Step 5/8 : ENV ZENML_ENABLE_REPO_INIT_WARNINGS=False
+Step 6/8 : ENV ZENML_CONFIG_PATH=/app/.zenconfig
+Step 7/8 : COPY . .
+Step 8/8 : RUN chmod -R a+rw .
+Pushing Docker image gcr.io/zenml-core/zenml:simple_pipeline-orchestrator.
+Finished pushing Docker image.
+Finished building Docker image(s).
+Running pipeline simple_pipeline on stack gcp-demo (caching disabled)
+Waiting for Kubernetes orchestrator pod...
+Kubernetes orchestrator pod started.
+Could not import AWS service connector: No module named 'boto3'.
+Waiting for pod of step simple_step_one to start...
+Step simple_step_one has started.
+Could not import AWS service connector: No module named 'boto3'.
+Step simple_step_one has finished in 1.357s.
+Pod of step simple_step_one completed.
+Waiting for pod of step simple_step_two to start...
+Step simple_step_two has started.
+Could not import AWS service connector: No module named 'boto3'.
+Hello World!
+Step simple_step_two has finished in 3.136s.
+Pod of step simple_step_two completed.
+Orchestration pod completed.
+Dashboard URL: http://34.148.131.191/workspaces/default/pipelines/cec118d1-d90a-44ec-8bd7-d978f726b7aa/runs
+```
+
+</details>
