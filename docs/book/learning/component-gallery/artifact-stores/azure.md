@@ -64,7 +64,9 @@ This method uses the implicit Azure authentication available _in the environment
 * to use [Azure Service Principal credentials](https://learn.microsoft.com/en-us/azure/active-directory/develop/app-objects-and-service-principals), [create an Azure Service Principal](https://learn.microsoft.com/en-us/azure/active-directory/develop/howto-create-service-principal-portal) and then set set `AZURE_STORAGE_ACCOUNT_NAME` to your account name and `AZURE_STORAGE_CLIENT_ID`, `AZURE_STORAGE_CLIENT_SECRET` and `AZURE_STORAGE_TENANT_ID` to the client ID, secret and tenant ID of your service principal
 
 {% hint style="warning" %}
-The implicit authentication method needs to be coordinated with other stack components that are highly dependent on the Artifact Store and need to interact with it directly to function. If these components are not running on your machine, they do not have access to the local environment variables and will encounter authentication failures while trying to access the Azure Artifact Store:
+Certain dashboard functionality, such as visualizing or deleting artifacts, is not available when using an implicitly authenticated artifact store together with a deployed ZenML server because the ZenML server will not have permission to access the filesystem.
+
+The implicit authentication method also needs to be coordinated with other stack components that are highly dependent on the Artifact Store and need to interact with it directly to the function. If these components are not running on your machine, they do not have access to the local environment variables and will encounter authentication failures while trying to access the Azure Artifact Store:
 
 * [Orchestrators](../orchestrators/orchestrators.md) need to access the Artifact Store to manage pipeline artifacts
 * [Step Operators](../step-operators/step-operators.md) need to access the Artifact Store to manage step-level artifacts

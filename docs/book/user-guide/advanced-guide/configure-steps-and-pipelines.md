@@ -193,6 +193,8 @@ Some configuration is commented out as it is not needed.
 
 ```yaml
 enable_cache: True
+enable_artifact_metadata: True
+enable_artifact_visualization: True
 extra:
   tags: production
 run_name: my_run

@@ -4,7 +4,7 @@ description: Welcome to ZenML!
 
 # ⭐ Introduction
 
-ZenML is an extensible, open-source MLOps framework for creating portable, production-ready machine learning pipelines. By decoupling infrastructure from code, ZenML enables developers across your organization to collaborate more effectively as they develop to production.
+**ZenML** is an extensible, open-source MLOps framework for creating portable, production-ready machine learning pipelines. By decoupling infrastructure from code, ZenML enables developers across your organization to collaborate more effectively as they develop to production.
 
 ![ZenML Overview](.gitbook/assets/intro\_zenml\_overview.png)
 
@@ -12,7 +12,7 @@ ZenML is an extensible, open-source MLOps framework for creating portable, produ
 {% tab title="ZenML for Data Scientists" %}
 ZenML gives data scientists the freedom to fully focus on modeling and experimentation while writing code that is production-ready from the get-go.
 
-**Develop Locally:** ZenML allows you to develop ML models in any environment using your favorite tools. This means, you can start developing locally, and simply switch to a production environment once you are satisfied with your results.
+**Develop Locally:** ZenML allows you to develop ML models in any environment using your favorite tools. This means you can start developing locally, and simply switch to a production environment once you are satisfied with your results.
 
 ```bash
 python run.py  # develop your code locally with all your favorite tools
@@ -42,7 +42,7 @@ def my_pipeline():
 my_pipeline()
 ```
 
-**Automatic Metadata Tracking** ZenML automatically tracks metadata of all your runs, and saves all your datasets and models to disk and versions them. Using the ZenML dashboard, you can then see detailed visualizations of all your experiments. Try it out at [https://demo.zenml.io/](https://demo.zenml.io/)!
+**Automatic Metadata Tracking** ZenML automatically tracks the metadata of all your runs and saves all your datasets and models to disk and versions them. Using the ZenML dashboard, you can see detailed visualizations of all your experiments. Try it out at [https://demo.zenml.io/](https://demo.zenml.io/)!
 
 <figure><img src=".gitbook/assets/intro_dashboard_details.png" alt="ZenML Dashboard Details View" width="80%"><figcaption></figcaption></figure>
 
@@ -54,7 +54,7 @@ ZenML integrates seamlessly with many popular open-source tools, so you can also
 
 Ready to develop production-ready code with ZenML? Here is a collection of pages you can take a look at next:
 
-<table data-view="cards"><thead><tr><th></th><th></th><th></th><th data-hidden data-card-target data-type="content-ref"></th></tr></thead><tbody><tr><td><span data-gb-custom-inline data-tag="emoji" data-code="1f9f1">🧱</span> <strong>Core Concepts</strong></td><td>Understand the core concepts behind ZenML.</td><td></td><td><a href="getting-started/core-concepts.md">core-concepts.md</a></td></tr><tr><td><span data-gb-custom-inline data-tag="emoji" data-code="1f423">🐣</span> <strong>Starter Guide</strong></td><td>Get started with ZenML and learn how to build your first pipeline and stack.</td><td></td><td><a href="user-guide/starter-guide/">starter-guide</a></td></tr><tr><td><span data-gb-custom-inline data-tag="emoji" data-code="1f3c3">🏃</span> <strong>Quickstart (in Colab)</strong></td><td>Build your first ZenML pipeline and deploy it in the cloud.</td><td></td><td><a href="https://colab.research.google.com/github/zenml-io/zenml/blob/main/examples/quickstart/notebooks/quickstart.ipynb">https://colab.research.google.com/github/zenml-io/zenml/blob/main/examples/quickstart/notebooks/quickstart.ipynb</a></td></tr></tbody></table>
+<table data-view="cards"><thead><tr><th></th><th></th><th></th><th data-hidden data-card-target data-type="content-ref"></th></tr></thead><tbody><tr><td><span data-gb-custom-inline data-tag="emoji" data-code="1f9f1">🧱</span> <mark style="color:purple;"><strong>Core Concepts</strong></mark></td><td>Understand the core concepts behind ZenML.</td><td></td><td><a href="getting-started/core-concepts.md">core-concepts.md</a></td></tr><tr><td><span data-gb-custom-inline data-tag="emoji" data-code="1f423">🐣</span> <mark style="color:purple;"><strong>Starter Guide</strong></mark></td><td>Get started with ZenML and learn how to build your first pipeline and stack.</td><td></td><td><a href="user-guide/starter-guide/">starter-guide</a></td></tr><tr><td><span data-gb-custom-inline data-tag="emoji" data-code="1f3c3">🏃</span> <mark style="color:purple;"><strong>Quickstart (in Colab)</strong></mark></td><td>Build your first ZenML pipeline and deploy it in the cloud.</td><td></td><td><a href="https://colab.research.google.com/github/zenml-io/zenml/blob/main/examples/quickstart/notebooks/quickstart.ipynb">https://colab.research.google.com/github/zenml-io/zenml/blob/main/examples/quickstart/notebooks/quickstart.ipynb</a></td></tr></tbody></table>
 {% endtab %}
 
 {% tab title="ZenML for ML Engineers" %}
@@ -94,7 +94,7 @@ def my_pipeline():
 
 Ready to manage your ML lifecycles end-to-end with ZenML? Here is a collection of pages you can take a look at next:
 
-<table data-view="cards"><thead><tr><th></th><th></th><th></th><th data-hidden data-card-target data-type="content-ref"></th></tr></thead><tbody><tr><td><span data-gb-custom-inline data-tag="emoji" data-code="1f423">🐣</span> <strong>Starter Guide</strong></td><td>Get started with ZenML and learn how to build your first pipeline and stack.</td><td></td><td><a href="user-guide/starter-guide/">starter-guide</a></td></tr><tr><td><span data-gb-custom-inline data-tag="emoji" data-code="1f414">🐔</span> <strong>Advanced Guide</strong></td><td>Discover advanced ZenML features like config management and containerization.</td><td></td><td><a href="user-guide/advanced-guide/">advanced-guide</a></td></tr><tr><td><span data-gb-custom-inline data-tag="emoji" data-code="1f9d1-1f3eb">🧑🏫</span> <strong>Examples</strong></td><td>Explore ZenML through practical use-case examples.</td><td></td><td><a href="learning/examples/">examples</a></td></tr></tbody></table>
+<table data-view="cards"><thead><tr><th></th><th></th><th></th><th data-hidden data-card-target data-type="content-ref"></th></tr></thead><tbody><tr><td><span data-gb-custom-inline data-tag="emoji" data-code="1f423">🐣</span> <mark style="color:purple;"><strong>Starter Guide</strong></mark></td><td>Get started with ZenML and learn how to build your first pipeline and stack.</td><td></td><td><a href="user-guide/starter-guide/">starter-guide</a></td></tr><tr><td><span data-gb-custom-inline data-tag="emoji" data-code="1f414">🐔</span> <mark style="color:purple;"><strong>Advanced Guide</strong></mark></td><td>Discover advanced ZenML features like config management and containerization.</td><td></td><td><a href="user-guide/advanced-guide/">advanced-guide</a></td></tr><tr><td><span data-gb-custom-inline data-tag="emoji" data-code="1f9d1-1f3eb">🧑🏫</span> <mark style="color:purple;"><strong>Examples</strong></mark></td><td>Explore ZenML through practical use-case examples.</td><td></td><td><a href="learning/examples/">examples</a></td></tr></tbody></table>
 {% endtab %}
 
 {% tab title="ZenML for Platform Engineers" %}
@@ -133,6 +133,6 @@ python run.py  # Now your ML workflow runs in AWS
 
 Ready to deploy and manage your MLOps infrastructure with ZenML? Here is a collection of pages you can take a look at next:
 
-<table data-view="cards"><thead><tr><th></th><th></th><th></th><th data-hidden data-card-target data-type="content-ref"></th></tr></thead><tbody><tr><td><span data-gb-custom-inline data-tag="emoji" data-code="1f3d7">🏗</span> <strong>Platform Guide</strong></td><td>Set up and manage production-ready infrastructure with ZenML.</td><td></td><td><a href="platform-guide/set-up-your-mlops-platform/">set-up-your-mlops-platform</a></td></tr><tr><td><span data-gb-custom-inline data-tag="emoji" data-code="1f4cb">📋</span> <strong>Component Guide</strong></td><td>Explore the existing infrastructure and tooling integrations of ZenML.</td><td></td><td><a href="user-guide/component-galery/">component-galery</a></td></tr><tr><td><span data-gb-custom-inline data-tag="emoji" data-code="1f64b">🙋</span> <strong>FAQ</strong></td><td>Find answers to the most frequently asked questions.</td><td></td><td><a href="learning/faq.md">faq.md</a></td></tr></tbody></table>
+<table data-view="cards"><thead><tr><th></th><th></th><th></th><th data-hidden data-card-target data-type="content-ref"></th></tr></thead><tbody><tr><td><span data-gb-custom-inline data-tag="emoji" data-code="1f3d7">🏗</span> <mark style="color:purple;"><strong>Platform Guide</strong></mark></td><td>Set up and manage production-ready infrastructure with ZenML.</td><td></td><td><a href="platform-guide/set-up-your-mlops-platform/">set-up-your-mlops-platform</a></td></tr><tr><td><span data-gb-custom-inline data-tag="emoji" data-code="1f4cb">📋</span> <mark style="color:purple;"><strong>Component Guide</strong></mark></td><td>Explore the existing infrastructure and tooling integrations of ZenML.</td><td></td><td><a href="user-guide/component-galery/">component-galery</a></td></tr><tr><td><span data-gb-custom-inline data-tag="emoji" data-code="1f64b">🙋</span> <mark style="color:purple;"><strong>FAQ</strong></mark></td><td>Find answers to the most frequently asked questions.</td><td></td><td><a href="learning/faq.md">faq.md</a></td></tr></tbody></table>
 {% endtab %}
 {% endtabs %}

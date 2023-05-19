@@ -1,5 +1,5 @@
 ---
-description: Learning how to configure pipelines and their steps
+description: Learning how to configure pipelines and their steps.
 ---
 
 # Create an ML Pipeline

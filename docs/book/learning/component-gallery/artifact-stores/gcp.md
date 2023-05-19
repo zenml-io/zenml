@@ -41,6 +41,16 @@ zenml stack register custom_stack -a gs_store ... --set
 
 Depending on your use case, however, you may also need to provide additional configuration parameters pertaining to [authentication](gcp.md#authentication-methods) to match your deployment scenario.
 
+#### Infrastructure Deployment
+
+A GCS Artifact Store can be deployed directly from the ZenML CLI:
+
+```shell
+zenml artifact-store deploy gcs_artifact_store --flavor=gcp ...
+```
+
+You can pass other configurations specific to the stack components as key-value arguments. If you don't provide a name, a random one is generated for you. For more information about how to work use the CLI for this, please refer to the dedicated documentation section.
+
 #### Authentication Methods
 
 Integrating and using a GCS Artifact Store in your pipelines is not possible without employing some form of authentication. ZenML currently provides two options for managing GCS authentication: one for which you don't need to manage credentials explicitly, and the other one that requires you to generate a GCP Service Account key and store it in a [ZenML Secret](../../../../old\_book/starter-guide/production-fundamentals/secrets-management.md). Each method has advantages and disadvantages, and you should choose the one that best suits your use case. If you're looking for a quick way to get started locally, we recommend using the _Implicit Authentication_ method. However, if you would like to experiment with ZenML stacks that combine the GCS Artifact Store with other remote stack components, we recommend using the _GCP Credentials_ method, especially if you don't have a lot of experience with GCP Service Accounts and configuring Workload Identity for GKE.
@@ -50,7 +60,9 @@ Integrating and using a GCS Artifact Store in your pipelines is not possible wit
 This method uses the implicit GCP authentication available _in the environment where the ZenML code is running_. On your local machine, this is the quickest way to configure a GCS Artifact Store. You don't need to supply credentials explicitly when you register the GCS Artifact Store, as it leverages the local credentials and configuration that the Google Cloud CLI stores on your local machine. However, you will need to install and set up the Google Cloud CLI on your machine as a prerequisite, as covered in [the Google Cloud documentation](https://cloud.google.com/sdk/docs/install-sdk), before you register the GCS Artifact Store.
 
 {% hint style="warning" %}
-The implicit authentication method needs to be coordinated with other stack components that are highly dependent on the Artifact Store and need to interact with it directly to function. If these components are not running on your machine, they do not have access to the local Google Cloud CLI configuration and will encounter authentication failures while trying to access the GCS Artifact Store:
+Certain dashboard functionality, such as visualizing or deleting artifacts, is not available when using an implicitly authenticated artifact store together with a deployed ZenML server because the ZenML server will not have permission to access the filesystem.
+
+The implicit authentication method also needs to be coordinated with other stack components that are highly dependent on the Artifact Store and need to interact with it directly to the function. If these components are not running on your machine, they do not have access to the local Google Cloud CLI configuration and will encounter authentication failures while trying to access the GCS Artifact Store:
 
 * [Orchestrators](../orchestrators/orchestrators.md) need to access the Artifact Store to manage pipeline artifacts
 * [Step Operators](../step-operators/step-operators.md) need to access the Artifact Store to manage step-level artifacts

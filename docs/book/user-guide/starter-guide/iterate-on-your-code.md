@@ -1,5 +1,5 @@
 ---
-description: Iterate quickly with ZenML through fast caching.
+description: Iterating quickly with ZenML through fast caching.
 ---
 
 # Caching in ZenML
