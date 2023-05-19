@@ -197,7 +197,6 @@ from zenml.zen_stores.schemas import (
     RoleSchema,
     RunMetadataSchema,
     ScheduleSchema,
-    ServiceConnectorLabelSchema,
     ServiceConnectorSchema,
     StackComponentSchema,
     StackCompositionSchema,
@@ -4371,19 +4370,6 @@ class SqlZenStore(BaseZenStore):
                     secret_id=secret_id,
                 )
 
-                # Create labels.
-                labels = []
-                for key, value in service_connector.labels.items():
-                    label = ServiceConnectorLabelSchema(
-                        name=key,
-                        value=value,
-                        service_connector=new_service_connector,
-                    )
-                    session.add(label)
-                    labels.append(label)
-
-                new_service_connector.labels = labels
-
                 session.add(new_service_connector)
                 session.commit()
 
@@ -4758,22 +4744,6 @@ class SqlZenStore(BaseZenStore):
                     configuration=update.configuration,
                     secrets=update.secrets,
                 )
-
-            # Update labels
-            if update.labels is not None:
-                # Delete existing labels
-                for label in existing_connector.labels:
-                    session.delete(label)
-
-                # Create new labels
-                for key, value in update.labels.items():
-                    label = ServiceConnectorLabelSchema(
-                        name=key,
-                        value=value,
-                        service_connector=existing_connector,
-                    )
-                    session.add(label)
-                    existing_connector.labels.append(label)
 
             # Update secret
             secret_id = self._update_connector_secret(

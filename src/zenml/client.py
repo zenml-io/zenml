@@ -4600,7 +4600,7 @@ class Client(metaclass=ClientMetaClass):
                         f"Multiple authentication methods are available for "
                         f"the {connector.name} service connector type. Please "
                         f"specify one of the following: "
-                        f"{list(connector.auth_method_map.keys())}."
+                        f"{list(connector.auth_method_dict.keys())}."
                     )
 
             connector_request = ServiceConnectorRequestModel(

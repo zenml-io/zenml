@@ -20,7 +20,7 @@ from typing import TYPE_CHECKING, Dict, List, Optional
 from uuid import UUID
 
 from sqlalchemy import TEXT, Column
-from sqlmodel import Field, Relationship, SQLModel
+from sqlmodel import Field, Relationship
 
 from zenml.models import (
     ServiceConnectorRequestModel,
@@ -51,11 +51,7 @@ class ServiceConnectorSchema(ShareableSchema, table=True):
     secret_id: Optional[UUID]
     expires_at: Optional[datetime]
     expiration_seconds: Optional[int]
-
-    labels: List["ServiceConnectorLabelSchema"] = Relationship(
-        back_populates="service_connector",
-        sa_relationship_kwargs={"cascade": "delete"},
-    )
+    labels: Optional[bytes]
 
     workspace_id: UUID = build_foreign_key_field(
         source=__tablename__,
@@ -104,7 +100,9 @@ class ServiceConnectorSchema(ShareableSchema, table=True):
         Returns:
             The labels as a dictionary.
         """
-        return {label.name: label.value for label in self.labels}
+        if self.labels is None:
+            return {}
+        return json.loads(base64.b64decode(self.labels).decode())
 
     def has_labels(self, labels: Dict[str, Optional[str]]) -> bool:
         """Checks if the connector has the given labels.
@@ -163,6 +161,11 @@ class ServiceConnectorSchema(ShareableSchema, table=True):
             secret_id=secret_id,
             expires_at=connector_request.expires_at,
             expiration_seconds=connector_request.expiration_seconds,
+            labels=base64.b64encode(
+                json.dumps(connector_request.labels).encode("utf-8")
+            )
+            if connector_request.labels
+            else None,
         )
 
     def update(
@@ -181,7 +184,7 @@ class ServiceConnectorSchema(ShareableSchema, table=True):
         """
         for field, value in connector_update.dict(
             exclude_unset=False,
-            exclude={"workspace", "user", "labels", "secrets"},
+            exclude={"workspace", "user", "secrets"},
         ).items():
             if value is None:
                 if field == "resource_id":
@@ -208,6 +211,14 @@ class ServiceConnectorSchema(ShareableSchema, table=True):
             elif field == "resource_types":
                 self.resource_types = base64.b64encode(
                     json.dumps(connector_update.resource_types).encode("utf-8")
+                )
+            elif field == "labels":
+                self.labels = (
+                    base64.b64encode(
+                        json.dumps(connector_update.labels).encode("utf-8")
+                    )
+                    if connector_update.labels
+                    else None
                 )
             else:
                 setattr(self, field, value)
@@ -247,25 +258,3 @@ class ServiceConnectorSchema(ShareableSchema, table=True):
             expiration_seconds=self.expiration_seconds,
             labels=self.labels_dict,
         )
-
-
-class ServiceConnectorLabelSchema(SQLModel, table=True):
-    """SQL Model for service connector labels."""
-
-    __tablename__ = "service_connector_label"
-
-    id: Optional[int] = Field(default=None, primary_key=True)
-    name: str
-    value: str
-
-    service_connector_id: UUID = build_foreign_key_field(
-        source=__tablename__,
-        target=ServiceConnectorSchema.__tablename__,
-        source_column="service_connector_id",
-        target_column="id",
-        ondelete="CASCADE",
-        nullable=False,
-    )
-    service_connector: ServiceConnectorSchema = Relationship(
-        back_populates="labels"
-    )

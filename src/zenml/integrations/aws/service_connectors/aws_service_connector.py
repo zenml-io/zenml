@@ -36,9 +36,12 @@ from botocore.exceptions import BotoCoreError, ClientError
 from botocore.signers import RequestSigner
 from pydantic import Field, SecretStr
 
+from zenml.constants import (
+    DOCKER_REGISTRY_RESOURCE_TYPE,
+    KUBERNETES_CLUSTER_RESOURCE_TYPE,
+)
 from zenml.exceptions import AuthorizationException
 from zenml.integrations.kubernetes.service_connectors.kubernetes_service_connector import (
-    KUBERNETES_RESOURCE_TYPE,
     KubernetesAuthenticationMethods,
     KubernetesServiceConnector,
     KubernetesTokenConfig,
@@ -50,7 +53,6 @@ from zenml.models import (
     ServiceConnectorTypeModel,
 )
 from zenml.service_connectors.docker_service_connector import (
-    DOCKER_RESOURCE_TYPE,
     DockerAuthenticationMethods,
     DockerConfiguration,
     DockerServiceConnector,
@@ -503,7 +505,7 @@ formats:
         ),
         ResourceTypeModel(
             name="AWS EKS Kubernetes cluster",
-            resource_type=KUBERNETES_RESOURCE_TYPE,
+            resource_type=KUBERNETES_CLUSTER_RESOURCE_TYPE,
             description="""
 Allows users to access an EKS cluster as a standard Kubernetes cluster
 resource. When used by Stack Components, they are provided a
@@ -545,7 +547,7 @@ EKS clusters in the AWS region that it is configured to use.
         ),
         ResourceTypeModel(
             name="AWS ECR container registry",
-            resource_type=DOCKER_RESOURCE_TYPE,
+            resource_type=DOCKER_REGISTRY_RESOURCE_TYPE,
             description="""
 Allows users to access one or more ECR repositories as a standard Docker
 registry resource. When used by Stack Components, they are provided a
@@ -632,15 +634,14 @@ class AWSServiceConnector(ServiceConnector):
                 determined.
         """
         if self._account_id is None:
-            logger.debug("Getting ECR registry ID from AWS...")
+            logger.debug("Getting account ID from AWS...")
             try:
                 session, _ = self.get_boto3_session(self.auth_method)
                 sts_client = session.client("sts")
                 response = sts_client.get_caller_identity()
             except (ClientError, BotoCoreError) as e:
                 raise AuthorizationException(
-                    "Failed to get the ECR registry ID from ECR repository "
-                    f"name: {e}"
+                    f"Failed to fetch the AWS account ID: {e}"
                 ) from e
 
             self._account_id = response["Account"]
@@ -732,7 +733,7 @@ class AWSServiceConnector(ServiceConnector):
                 ],
             }
             return json.dumps(policy)
-        elif resource_type == KUBERNETES_RESOURCE_TYPE:
+        elif resource_type == KUBERNETES_CLUSTER_RESOURCE_TYPE:
             if resource_id:
                 cluster_name = self._parse_eks_resource_id(resource_id)
                 resource = [
@@ -755,7 +756,7 @@ class AWSServiceConnector(ServiceConnector):
                 ],
             }
             return json.dumps(policy)
-        elif resource_type == DOCKER_RESOURCE_TYPE:
+        elif resource_type == DOCKER_REGISTRY_RESOURCE_TYPE:
             resource = [
                 f"arn:aws:ecr:{region_id}:*:repository/*",
                 f"arn:aws:ecr:{region_id}:*:repository",
@@ -1203,10 +1204,10 @@ class AWSServiceConnector(ServiceConnector):
         if resource_type == S3_RESOURCE_TYPE:
             bucket = self._parse_s3_resource_id(resource_id)
             return f"s3://{bucket}"
-        elif resource_type == KUBERNETES_RESOURCE_TYPE:
+        elif resource_type == KUBERNETES_CLUSTER_RESOURCE_TYPE:
             cluster_name = self._parse_eks_resource_id(resource_id)
             return cluster_name
-        elif resource_type == DOCKER_RESOURCE_TYPE:
+        elif resource_type == DOCKER_REGISTRY_RESOURCE_TYPE:
             registry_id = self._parse_ecr_resource_id(
                 resource_id,
             )
@@ -1232,7 +1233,7 @@ class AWSServiceConnector(ServiceConnector):
         """
         if resource_type == AWS_RESOURCE_TYPE:
             return self.config.region
-        elif resource_type == DOCKER_RESOURCE_TYPE:
+        elif resource_type == DOCKER_REGISTRY_RESOURCE_TYPE:
             # we need to get the account ID (same as registry ID) from the
             # caller identity AWS service
             account_id = self.account_id
@@ -1687,7 +1688,7 @@ class AWSServiceConnector(ServiceConnector):
                     logger.error(msg)
                     raise AuthorizationException(msg) from e
 
-        if resource_type == DOCKER_RESOURCE_TYPE:
+        if resource_type == DOCKER_REGISTRY_RESOURCE_TYPE:
             assert resource_id is not None
 
             ecr_client = session.client(
@@ -1713,7 +1714,7 @@ class AWSServiceConnector(ServiceConnector):
 
             return [resource_id]
 
-        if resource_type == KUBERNETES_RESOURCE_TYPE:
+        if resource_type == KUBERNETES_CLUSTER_RESOURCE_TYPE:
             eks_client = session.client(
                 "eks",
                 region_name=self.config.region,
@@ -1853,7 +1854,7 @@ class AWSServiceConnector(ServiceConnector):
                 expires_at=expires_at,
             )
 
-        if resource_type == DOCKER_RESOURCE_TYPE:
+        if resource_type == DOCKER_REGISTRY_RESOURCE_TYPE:
             assert resource_id is not None
 
             # Get an authenticated boto3 session
@@ -1909,7 +1910,7 @@ class AWSServiceConnector(ServiceConnector):
                 expires_at=expires_at,
             )
 
-        if resource_type == KUBERNETES_RESOURCE_TYPE:
+        if resource_type == KUBERNETES_CLUSTER_RESOURCE_TYPE:
             assert resource_id is not None
 
             # Get an authenticated boto3 session

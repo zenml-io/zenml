@@ -1411,7 +1411,7 @@ def prompt_select_resource(
     assert resources.resource_type is not None
     resource_name = resources.resource_type
     if not isinstance(resources.connector_type, str):
-        resource_type_spec = resources.connector_type.resource_type_map[
+        resource_type_spec = resources.connector_type.resource_type_dict[
             resources.resource_type
         ]
         resource_name = resource_type_spec.name

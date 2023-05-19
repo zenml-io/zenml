@@ -17,6 +17,7 @@ The Kubernetes Service Connector implements various authentication methods for
 Kubernetes clusters.
 """
 import base64
+import os
 import subprocess
 import tempfile
 from typing import Any, List, Optional
@@ -25,6 +26,7 @@ from kubernetes import client as k8s_client
 from kubernetes import config as k8s_config
 from pydantic import Field, SecretStr
 
+from zenml.constants import KUBERNETES_CLUSTER_RESOURCE_TYPE
 from zenml.exceptions import AuthorizationException
 from zenml.logger import get_logger
 from zenml.models import (
@@ -109,7 +111,6 @@ class KubernetesTokenConfig(KubernetesBaseConfig, KubernetesTokenCredentials):
 
 
 KUBERNETES_CONNECTOR_TYPE = "kubernetes"
-KUBERNETES_RESOURCE_TYPE = "kubernetes-cluster"
 
 
 class KubernetesAuthenticationMethods(StrEnum):
@@ -171,7 +172,7 @@ Use a token to authenticate to the Kubernetes cluster.
     resource_types=[
         ResourceTypeModel(
             name="Kubernetes cluster",
-            resource_type=KUBERNETES_RESOURCE_TYPE,
+            resource_type=KUBERNETES_CLUSTER_RESOURCE_TYPE,
             description="""
 Kubernetes cluster resource. When used by connector consumers, they are provided
 a Kubernetes client pre-configured with credentials required to access a
@@ -248,7 +249,25 @@ class KubernetesServiceConnector(ServiceConnector):
             k8s_conf.api_key["authorization"] = cfg.token.get_secret_value()
             k8s_conf.api_key_prefix["authorization"] = "Bearer"
 
-            # TODO: client cert/key support
+            if cfg.client_certificate is not None:
+                client_cert = cfg.client_certificate.get_secret_value()
+                client_cert_bs = base64.urlsafe_b64decode(
+                    client_cert.encode("utf-8")
+                )
+
+                with tempfile.NamedTemporaryFile(delete=False) as fp:
+                    fp.write(client_cert_bs)
+                    k8s_conf.cert_file = fp.name
+
+            if cfg.client_key is not None:
+                client_key = cfg.client_key.get_secret_value()
+                client_key_bs = base64.urlsafe_b64decode(
+                    client_key.encode("utf-8")
+                )
+
+                with tempfile.NamedTemporaryFile(delete=False) as fp:
+                    fp.write(client_key_bs)
+                    k8s_conf.key_file = fp.name
 
         k8s_conf.host = cfg.server
 
@@ -280,6 +299,7 @@ class KubernetesServiceConnector(ServiceConnector):
         """
         cfg = self.config
         cluster_name = cfg.cluster_name
+        delete_files: List[str] = []
 
         if self.auth_method == KubernetesAuthenticationMethods.PASSWORD:
             assert isinstance(cfg, KubernetesUserPasswordConfig)
@@ -312,7 +332,36 @@ class KubernetesServiceConnector(ServiceConnector):
                 token,
             ]
 
-            # TODO: client cert/key support
+            if cfg.client_certificate and cfg.client_key:
+                add_user_cmd += [
+                    "--embed-certs",
+                ]
+
+                client_cert = cfg.client_certificate.get_secret_value()
+                client_cert_bs = base64.urlsafe_b64decode(
+                    client_cert.encode("utf-8")
+                )
+
+                with tempfile.NamedTemporaryFile(delete=False) as fp:
+                    fp.write(client_cert_bs)
+                    add_user_cmd += [
+                        "--client-certificate",
+                        fp.name,
+                    ]
+                    delete_files.append(fp.name)
+
+                client_key = cfg.client_key.get_secret_value()
+                client_key_bs = base64.urlsafe_b64decode(
+                    client_key.encode("utf-8")
+                )
+
+                with tempfile.NamedTemporaryFile(delete=False) as fp:
+                    fp.write(client_key_bs)
+                    add_user_cmd += [
+                        "--client-key",
+                        fp.name,
+                    ]
+                    delete_files.append(fp.name)
 
         # add the cluster config to the default kubeconfig
         add_cluster_cmd = [
@@ -335,6 +384,7 @@ class KubernetesServiceConnector(ServiceConnector):
                     "--certificate-authority",
                     fp.name,
                 ]
+                delete_files.append(fp.name)
 
         add_context_cmd = [
             "kubectl",
@@ -372,6 +422,10 @@ class KubernetesServiceConnector(ServiceConnector):
             f"Updated local kubeconfig with the cluster details. "
             f"The current kubectl context was set to '{cluster_name}'."
         )
+
+        # delete the temporary files
+        for f in delete_files:
+            os.unlink(f)
 
     @classmethod
     def _auto_configure(
@@ -459,7 +513,7 @@ class KubernetesServiceConnector(ServiceConnector):
 
         return cls(
             auth_method=auth_method,
-            resource_type=KUBERNETES_RESOURCE_TYPE,
+            resource_type=KUBERNETES_CLUSTER_RESOURCE_TYPE,
             config=auth_config,
         )
 

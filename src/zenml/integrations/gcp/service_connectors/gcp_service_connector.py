@@ -38,9 +38,12 @@ from google.oauth2 import credentials as gcp_credentials
 from google.oauth2 import service_account as gcp_service_account
 from pydantic import Field, SecretStr, validator
 
+from zenml.constants import (
+    DOCKER_REGISTRY_RESOURCE_TYPE,
+    KUBERNETES_CLUSTER_RESOURCE_TYPE,
+)
 from zenml.exceptions import AuthorizationException
 from zenml.integrations.kubernetes.service_connectors.kubernetes_service_connector import (
-    KUBERNETES_RESOURCE_TYPE,
     KubernetesAuthenticationMethods,
     KubernetesServiceConnector,
     KubernetesTokenConfig,
@@ -52,7 +55,6 @@ from zenml.models import (
     ServiceConnectorTypeModel,
 )
 from zenml.service_connectors.docker_service_connector import (
-    DOCKER_RESOURCE_TYPE,
     DockerAuthenticationMethods,
     DockerConfiguration,
     DockerServiceConnector,
@@ -483,7 +485,7 @@ formats:
         ),
         ResourceTypeModel(
             name="GCP GKE Kubernetes cluster",
-            resource_type=KUBERNETES_RESOURCE_TYPE,
+            resource_type=KUBERNETES_CLUSTER_RESOURCE_TYPE,
             description="""
 Allows Stack Components to access a GKE registry as a standard Kubernetes
 cluster resource. When used by Stack Components, they are provided a
@@ -516,7 +518,7 @@ GKE clusters in the GCP project that it is configured to use.
         ),
         ResourceTypeModel(
             name="GCP GCR container registry",
-            resource_type=DOCKER_RESOURCE_TYPE,
+            resource_type=DOCKER_REGISTRY_RESOURCE_TYPE,
             description="""
 Allows Stack Components to access a GCR registry as a standard
 Docker registry resource. When used by Stack Components, they are provided a
@@ -873,10 +875,10 @@ class GCPServiceConnector(ServiceConnector):
         if resource_type == GCS_RESOURCE_TYPE:
             bucket = self._parse_gcs_resource_id(resource_id)
             return f"gs://{bucket}"
-        elif resource_type == KUBERNETES_RESOURCE_TYPE:
+        elif resource_type == KUBERNETES_CLUSTER_RESOURCE_TYPE:
             cluster_name = self._parse_gke_resource_id(resource_id)
             return cluster_name
-        elif resource_type == DOCKER_RESOURCE_TYPE:
+        elif resource_type == DOCKER_REGISTRY_RESOURCE_TYPE:
             registry_id = self._parse_gcr_resource_id(
                 resource_id,
             )
@@ -902,7 +904,7 @@ class GCPServiceConnector(ServiceConnector):
         """
         if resource_type == GCP_RESOURCE_TYPE:
             return self.config.project_id
-        elif resource_type == DOCKER_RESOURCE_TYPE:
+        elif resource_type == DOCKER_REGISTRY_RESOURCE_TYPE:
             return f"gcr.io/{self.config.project_id}"
 
         raise RuntimeError(
@@ -1237,14 +1239,14 @@ class GCPServiceConnector(ServiceConnector):
                     logger.error(msg)
                     raise AuthorizationException(msg) from e
 
-        if resource_type == DOCKER_RESOURCE_TYPE:
+        if resource_type == DOCKER_REGISTRY_RESOURCE_TYPE:
             assert resource_id is not None
 
             # No way to verify a GCR registry without attempting to
             # connect to it via Docker/OCI, so just return the resource ID.
             return [resource_id]
 
-        if resource_type == KUBERNETES_RESOURCE_TYPE:
+        if resource_type == KUBERNETES_CLUSTER_RESOURCE_TYPE:
             gke_client = container_v1.ClusterManagerClient(
                 credentials=credentials
             )
@@ -1340,7 +1342,7 @@ class GCPServiceConnector(ServiceConnector):
                 expires_at=expires_at,
             )
 
-        if resource_type == DOCKER_RESOURCE_TYPE:
+        if resource_type == DOCKER_REGISTRY_RESOURCE_TYPE:
             assert resource_id is not None
 
             registry_id = self._parse_gcr_resource_id(resource_id)
@@ -1360,7 +1362,7 @@ class GCPServiceConnector(ServiceConnector):
                 expires_at=expires_at,
             )
 
-        if resource_type == KUBERNETES_RESOURCE_TYPE:
+        if resource_type == KUBERNETES_CLUSTER_RESOURCE_TYPE:
             assert resource_id is not None
 
             cluster_name = self._parse_gke_resource_id(resource_id)

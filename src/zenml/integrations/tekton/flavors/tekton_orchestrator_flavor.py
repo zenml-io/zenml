@@ -17,6 +17,7 @@ from typing import TYPE_CHECKING, Any, Dict, Optional, Type
 
 from pydantic import root_validator
 
+from zenml.constants import KUBERNETES_CLUSTER_RESOURCE_TYPE
 from zenml.integrations.tekton import TEKTON_ORCHESTRATOR_FLAVOR
 from zenml.models.service_connector_models import ServiceConnectorRequirements
 from zenml.orchestrators import BaseOrchestratorConfig, BaseOrchestratorFlavor
@@ -149,7 +150,7 @@ class TektonOrchestratorFlavor(BaseOrchestratorFlavor):
             connector is required for this flavor.
         """
         return ServiceConnectorRequirements(
-            resource_type="kubernetes-cluster",
+            resource_type=KUBERNETES_CLUSTER_RESOURCE_TYPE,
         )
 
     @property

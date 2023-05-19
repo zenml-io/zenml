@@ -662,14 +662,16 @@ def register_service_connector(
 
         if connector_model is not None and connector_resources is not None:
             assert auth_method is not None
-            auth_method_spec = connector_type_spec.auth_method_map[auth_method]
+            auth_method_spec = connector_type_spec.auth_method_dict[
+                auth_method
+            ]
         else:
             # In this branch, we are either not using auto-configuration or the
             # auto-configuration failed or was dismissed. In all cases, we need
             # to ask the user for the authentication method to use and then
             # prompt for the configuration
 
-            auth_methods = list(connector_type_spec.auth_method_map.keys())
+            auth_methods = list(connector_type_spec.auth_method_dict.keys())
 
             if not no_docs:
                 # Print the name, identifier and description of all available auth
@@ -677,7 +679,7 @@ def register_service_connector(
                 message = "# Available authentication methods\n"
                 for a in auth_methods:
                     message += cli_utils.print_service_connector_auth_method(
-                        auth_method=connector_type_spec.auth_method_map[a],
+                        auth_method=connector_type_spec.auth_method_dict[a],
                         heading="##",
                         footer="",
                         print=False,
@@ -707,7 +709,9 @@ def register_service_connector(
                 )
 
             assert auth_method is not None
-            auth_method_spec = connector_type_spec.auth_method_map[auth_method]
+            auth_method_spec = connector_type_spec.auth_method_dict[
+                auth_method
+            ]
 
             cli_utils.declare(
                 f"Please enter the configuration for the {auth_method_spec.name} "
@@ -769,7 +773,7 @@ def register_service_connector(
             # resource type, prompt the user to select one of the available
             # resources that can be accessed with the connector. We don't do
             # need to do this for resource types that don't support instances.
-            resource_type_spec = connector_type_spec.resource_type_map[
+            resource_type_spec = connector_type_spec.resource_type_dict[
                 resource_type
             ]
             if resource_type_spec.supports_instances:
@@ -1283,13 +1287,13 @@ def update_service_connector(
             "configuration and credentials and may require you to reconfigure "
             "the connector from scratch",
             type=click.Choice(
-                list(connector_type_spec.auth_method_map.keys()),
+                list(connector_type_spec.auth_method_dict.keys()),
             ),
             default=connector.auth_method,
         )
 
         assert auth_method is not None
-        auth_method_spec = connector_type_spec.auth_method_map[auth_method]
+        auth_method_spec = connector_type_spec.auth_method_dict[auth_method]
 
         # If the authentication method has changed, we need to reconfigure
         # the connector from scratch; otherwise, we ask the user if they
@@ -1410,7 +1414,7 @@ def update_service_connector(
             # resource type, prompt the user to select one of the available
             # resources that can be accessed with the connector. We don't need
             # to do this for resource types that don't support instances.
-            resource_type_spec = connector_type_spec.resource_type_map[
+            resource_type_spec = connector_type_spec.resource_type_dict[
                 resource_type
             ]
             if resource_type_spec.supports_instances:
@@ -1771,7 +1775,7 @@ def login_service_connector(
         spec = connector.get_type()
         resource_type = resource_type or connector.resource_type
         assert resource_type is not None
-        resource_name = spec.resource_type_map[resource_type].name
+        resource_name = spec.resource_type_dict[resource_type].name
         cli_utils.declare(
             f"The '{name_id_or_prefix}' {spec.name} connector was used to "
             f"successfully configure the local {resource_name} client/SDK."
@@ -2040,22 +2044,22 @@ def describe_service_connector_type(
         cli_utils.error(f"Service connector type '{type}' not found.")
 
     if resource_type:
-        if resource_type not in connector_type.resource_type_map:
+        if resource_type not in connector_type.resource_type_dict:
             cli_utils.error(
                 f"Resource type '{resource_type}' not found for service "
                 f"connector type '{type}'."
             )
         cli_utils.print_service_connector_resource_type(
-            connector_type.resource_type_map[resource_type]
+            connector_type.resource_type_dict[resource_type]
         )
     elif auth_method:
-        if auth_method not in connector_type.auth_method_map:
+        if auth_method not in connector_type.auth_method_dict:
             cli_utils.error(
                 f"Authentication method '{auth_method}' not found for service"
                 f" connector type '{type}'."
             )
         cli_utils.print_service_connector_auth_method(
-            connector_type.auth_method_map[auth_method]
+            connector_type.auth_method_dict[auth_method]
         )
     else:
         cli_utils.print_service_connector_type(

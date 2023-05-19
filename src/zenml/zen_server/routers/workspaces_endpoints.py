@@ -1218,7 +1218,10 @@ def create_service_connector(
 
 
 @router.get(
-    WORKSPACES + "/{workspace_name_or_id}" + SERVICE_CONNECTOR_RESOURCES,
+    WORKSPACES
+    + "/{workspace_name_or_id}"
+    + SERVICE_CONNECTORS
+    + SERVICE_CONNECTOR_RESOURCES,
     response_model=List[ServiceConnectorResourcesModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )

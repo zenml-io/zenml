@@ -144,11 +144,11 @@ class ServiceConnectorRegistry:
                 and (
                     resource_type is None
                     or resource_type
-                    in service_connector_type.resource_type_map
+                    in service_connector_type.resource_type_dict
                 )
                 and (
                     auth_method is None
-                    or auth_method in service_connector_type.auth_method_map
+                    or auth_method in service_connector_type.auth_method_dict
                 )
             ):
                 matches.append(service_connector_type.copy())

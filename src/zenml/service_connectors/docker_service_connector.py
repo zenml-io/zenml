@@ -24,6 +24,7 @@ from docker.client import DockerClient
 from docker.errors import DockerException
 from pydantic import Field, SecretStr
 
+from zenml.constants import DOCKER_REGISTRY_RESOURCE_TYPE
 from zenml.exceptions import AuthorizationException
 from zenml.logger import get_logger
 from zenml.models import (
@@ -61,7 +62,6 @@ class DockerConfiguration(DockerCredentials):
 
 
 DOCKER_CONNECTOR_TYPE = "docker"
-DOCKER_RESOURCE_TYPE = "docker-registry"
 DOCKER_REGISTRY_NAME = "docker.io"
 
 
@@ -102,7 +102,7 @@ registry server.
     resource_types=[
         ResourceTypeModel(
             name="Docker/OCI container registry",
-            resource_type=DOCKER_RESOURCE_TYPE,
+            resource_type=DOCKER_REGISTRY_RESOURCE_TYPE,
             description="""
 Allows users to access a Docker or OCI compatible container registry as a
 resource. When used by connector consumers, they are provided a
@@ -177,10 +177,7 @@ class DockerServiceConnector(ServiceConnector):
                 "generic OCI registry URI: http[s]://host[:port][/<repository-name>]"
             )
 
-        if (
-            registry == DOCKER_REGISTRY_NAME
-            or registry == f"index.{DOCKER_REGISTRY_NAME}"
-        ):
+        if registry == f"index.{DOCKER_REGISTRY_NAME}":
             registry = DOCKER_REGISTRY_NAME
         return registry
 

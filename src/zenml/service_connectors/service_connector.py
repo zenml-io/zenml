@@ -490,7 +490,7 @@ class ServiceConnector(BaseModel, metaclass=ServiceConnectorMeta):
                 access the provided resource ID.
         """
         # Fetch the resource type specification
-        resource_type_spec = self.type.resource_type_map[resource_type]
+        resource_type_spec = self.type.resource_type_dict[resource_type]
         # If the resource type supports multiple instances, return the supplied
         # resource converted to canonical format, if supplied
         if resource_type_spec.supports_instances:
@@ -557,7 +557,7 @@ class ServiceConnector(BaseModel, metaclass=ServiceConnectorMeta):
         if self.resource_type:
             resource_types = [self.resource_type]
         else:
-            resource_types = list(spec.resource_type_map.keys())
+            resource_types = list(spec.resource_type_dict.keys())
 
         return resource_types
 
@@ -1006,13 +1006,13 @@ class ServiceConnector(BaseModel, metaclass=ServiceConnectorMeta):
         if not spec.supports_auto_configuration:
             return None
 
-        if auth_method and auth_method not in spec.auth_method_map:
+        if auth_method and auth_method not in spec.auth_method_dict:
             raise ValueError(
                 f"connector type {spec.name} does not support authentication "
                 f"method: '{auth_method}'"
             )
 
-        if resource_type and resource_type not in spec.resource_type_map:
+        if resource_type and resource_type not in spec.resource_type_dict:
             raise ValueError(
                 f"connector type {spec.name} does not support resource type: "
                 f"'{resource_type}'"
@@ -1194,7 +1194,7 @@ class ServiceConnector(BaseModel, metaclass=ServiceConnectorMeta):
             # as argument, we don't expect any resources to be listed
             return resources
 
-        resource_type_spec = spec.resource_type_map[resource_type]
+        resource_type_spec = spec.resource_type_dict[resource_type]
 
         if resource_id:
             # A single resource was requested, so we expect a single resource

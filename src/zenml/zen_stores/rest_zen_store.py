@@ -2154,7 +2154,7 @@ class RestZenStore(BaseZenStore):
         if resource_id:
             params["resource_id"] = resource_id
         response_body = self.get(
-            f"{WORKSPACES}/{workspace_name_or_id}{SERVICE_CONNECTOR_RESOURCES}",
+            f"{WORKSPACES}/{workspace_name_or_id}{SERVICE_CONNECTORS}{SERVICE_CONNECTOR_RESOURCES}",
             params=params,
         )
 

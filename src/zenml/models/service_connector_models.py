@@ -215,9 +215,9 @@ class AuthenticationMethodModel(BaseModel):
 
             return None
 
-        if self.default_expiration_seconds is not None:
-            if expiration_seconds is None:
-                expiration_seconds = self.default_expiration_seconds
+        expiration_seconds = (
+            expiration_seconds or self.default_expiration_seconds
+        )
 
         if expiration_seconds is None:
             return None
@@ -411,7 +411,7 @@ class ServiceConnectorTypeModel(BaseModel):
         return values
 
     @property
-    def resource_type_map(
+    def resource_type_dict(
         self,
     ) -> Dict[str, ResourceTypeModel]:
         """Returns a map of resource types to resource type specifications.
@@ -422,7 +422,7 @@ class ServiceConnectorTypeModel(BaseModel):
         return {r.resource_type: r for r in self.resource_types}
 
     @property
-    def auth_method_map(
+    def auth_method_dict(
         self,
     ) -> Dict[str, AuthenticationMethodModel]:
         """Returns a map of authentication methods to authentication method specifications.
@@ -457,16 +457,16 @@ class ServiceConnectorTypeModel(BaseModel):
                 connector for the specified resource type and ID.
         """
         # Verify the authentication method
-        auth_method_map = self.auth_method_map
-        if auth_method in auth_method_map:
+        auth_method_dict = self.auth_method_dict
+        if auth_method in auth_method_dict:
             # A match was found for the authentication method
-            auth_method_spec = auth_method_map[auth_method]
+            auth_method_spec = auth_method_dict[auth_method]
         else:
             # No match was found for the authentication method
             raise KeyError(
                 f"connector type '{self.connector_type}' does not support the "
                 f"'{auth_method}' authentication method. Supported "
-                f"authentication methods are: {list(auth_method_map.keys())}."
+                f"authentication methods are: {list(auth_method_dict.keys())}."
             )
 
         if resource_type is None:
@@ -475,14 +475,14 @@ class ServiceConnectorTypeModel(BaseModel):
             return auth_method_spec, None
 
         # Verify the resource type
-        resource_type_map = self.resource_type_map
-        if resource_type in resource_type_map:
-            resource_type_spec = resource_type_map[resource_type]
+        resource_type_dict = self.resource_type_dict
+        if resource_type in resource_type_dict:
+            resource_type_spec = resource_type_dict[resource_type]
         else:
             raise KeyError(
                 f"connector type '{self.connector_type}' does not support "
                 f"resource type '{resource_type}'. Supported resource types "
-                f"are: {list(resource_type_map.keys())}."
+                f"are: {list(resource_type_dict.keys())}."
             )
 
         if auth_method not in resource_type_spec.auth_methods:
@@ -596,7 +596,7 @@ class ServiceConnectorBaseModel(BaseModel):
         """
         if not isinstance(self.connector_type, str):
             return [
-                self.connector_type.resource_type_map[
+                self.connector_type.resource_type_dict[
                     resource_type
                 ].emojified_resource_type
                 for resource_type in self.resource_types
@@ -730,7 +730,9 @@ class ServiceConnectorBaseModel(BaseModel):
             # A multi-type connector is associated with all resource types
             # that it supports, does not have a resource ID configured
             # and it's unclear if it supports multiple instances or not
-            self.resource_types = list(connector_type.resource_type_map.keys())
+            self.resource_types = list(
+                connector_type.resource_type_dict.keys()
+            )
             self.supports_instances = False
 
         if configuration is None and secrets is None:
@@ -799,8 +801,7 @@ class ServiceConnectorRequirements(BaseModel):
         connector_type: The type of service connector that is required. If
             omitted, any service connector type can be used.
         resource_type: The type of resource that the service connector instance
-            must be able to access. If omitted, any resource type can be
-            accessed.
+            must be able to access.
         resource_id_attr: The name of an attribute in the stack component
             configuration that contains the resource ID of the resource that
             the service connector instance must be able to access.
@@ -938,14 +939,14 @@ class ServiceConnectorResourcesModel(BaseModel):
         if not isinstance(self.connector_type, str):
             if self.resource_type:
                 return [
-                    self.connector_type.resource_type_map[
+                    self.connector_type.resource_type_dict[
                         self.resource_type
                     ].emojified_resource_type
                 ]
             else:
                 return [
                     resource_type_spec.emojified_resource_type
-                    for resource_type_spec in self.connector_type.resource_type_map.values()
+                    for resource_type_spec in self.connector_type.resource_type_dict.values()
                 ]
 
         return [self.resource_type] if self.resource_type else None
@@ -964,7 +965,7 @@ class ServiceConnectorResourcesModel(BaseModel):
         if isinstance(self.connector_type, str):
             return False
 
-        resource_type_spec = self.connector_type.resource_type_map[
+        resource_type_spec = self.connector_type.resource_type_dict[
             self.resource_type
         ]
         return resource_type_spec.supports_instances

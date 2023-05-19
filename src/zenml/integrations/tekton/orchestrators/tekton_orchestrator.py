@@ -499,10 +499,12 @@ class TektonOrchestrator(ContainerizedOrchestrator):
                 self.config.kubernetes_namespace,
             )
         elif self.connector:
+            connector = self.get_connector()
+            assert connector is not None
             logger.info(
                 "Running Tekton pipeline with Kubernetes credentials from "
                 "connector '%s'.",
-                str(self.connector),
+                connector.name or str(connector),
             )
 
         # Read the Tekton pipeline resource from the generated YAML file

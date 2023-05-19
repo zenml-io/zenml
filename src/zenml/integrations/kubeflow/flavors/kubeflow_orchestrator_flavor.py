@@ -18,6 +18,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, cast
 from pydantic import root_validator
 
 from zenml.config.base_settings import BaseSettings
+from zenml.constants import KUBERNETES_CLUSTER_RESOURCE_TYPE
 from zenml.integrations.kubeflow import KUBEFLOW_ORCHESTRATOR_FLAVOR
 from zenml.integrations.kubernetes.pod_settings import KubernetesPodSettings
 from zenml.logger import get_logger
@@ -264,7 +265,7 @@ class KubeflowOrchestratorFlavor(BaseOrchestratorFlavor):
             connector is required for this flavor.
         """
         return ServiceConnectorRequirements(
-            resource_type="kubernetes-cluster",
+            resource_type=KUBERNETES_CLUSTER_RESOURCE_TYPE,
         )
 
     @property

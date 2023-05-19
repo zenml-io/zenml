@@ -18,6 +18,7 @@ from typing import TYPE_CHECKING, Optional, Tuple, Type, cast
 
 from pydantic import validator
 
+from zenml.constants import DOCKER_REGISTRY_RESOURCE_TYPE
 from zenml.enums import StackComponentType
 from zenml.models.service_connector_models import ServiceConnectorRequirements
 from zenml.secret.schemas import BasicAuthSecretSchema
@@ -207,7 +208,7 @@ class BaseContainerRegistryFlavor(Flavor):
             connector is required for this flavor.
         """
         return ServiceConnectorRequirements(
-            resource_type="docker-registry",
+            resource_type=DOCKER_REGISTRY_RESOURCE_TYPE,
             resource_id_attr="uri",
         )
 

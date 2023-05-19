@@ -42,6 +42,7 @@ def upgrade() -> None:
         sa.Column("secret_id", sqlmodel.sql.sqltypes.GUID(), nullable=True),
         sa.Column("expires_at", sa.DateTime(), nullable=True),
         sa.Column("expiration_seconds", sa.Integer(), nullable=True),
+        sa.Column("labels", sa.LargeBinary(), nullable=True),
         sa.ForeignKeyConstraint(
             ["user_id"],
             ["user.id"],
@@ -52,24 +53,6 @@ def upgrade() -> None:
             ["workspace_id"],
             ["workspace.id"],
             name="fk_service_connector_workspace_id_workspace",
-            ondelete="CASCADE",
-        ),
-        sa.PrimaryKeyConstraint("id"),
-    )
-    op.create_table(
-        "service_connector_label",
-        sa.Column(
-            "service_connector_id",
-            sqlmodel.sql.sqltypes.GUID(),
-            nullable=False,
-        ),
-        sa.Column("id", sa.Integer(), nullable=False),
-        sa.Column("name", sqlmodel.sql.sqltypes.AutoString(), nullable=False),
-        sa.Column("value", sqlmodel.sql.sqltypes.AutoString(), nullable=False),
-        sa.ForeignKeyConstraint(
-            ["service_connector_id"],
-            ["service_connector.id"],
-            name="fk_service_connector_label_service_connector",
             ondelete="CASCADE",
         ),
         sa.PrimaryKeyConstraint("id"),
@@ -137,6 +120,5 @@ def downgrade() -> None:
         batch_op.drop_column("connector_type")
         batch_op.drop_column("connector_resource_id_attr")
 
-    op.drop_table("service_connector_label")
     op.drop_table("service_connector")
     # ### end Alembic commands ###

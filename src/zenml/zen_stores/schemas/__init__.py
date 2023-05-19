@@ -39,7 +39,6 @@ from zenml.zen_stores.schemas.run_metadata_schemas import RunMetadataSchema
 from zenml.zen_stores.schemas.schedule_schema import ScheduleSchema
 from zenml.zen_stores.schemas.secret_schemas import SecretSchema
 from zenml.zen_stores.schemas.service_connector_schemas import (
-    ServiceConnectorLabelSchema,
     ServiceConnectorSchema,
 )
 from zenml.zen_stores.schemas.stack_schemas import (

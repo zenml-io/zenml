@@ -1566,7 +1566,7 @@ def print_service_connector_types_table(
 
     configurations = []
     for connector_type in connector_types:
-        supported_auth_methods = list(connector_type.auth_method_map.keys())
+        supported_auth_methods = list(connector_type.auth_method_dict.keys())
 
         connector_type_config = {
             "NAME": connector_type.name,
