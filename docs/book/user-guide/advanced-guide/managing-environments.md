@@ -2,6 +2,19 @@
 description: How to develop across multiple development environments
 ---
 
+# TODO
+
+The "Managing environments" page:
+- what kind of environments even exist when using ZenML: theres the client
+  environment, the build environment (image builders), the server environment
+  (tell them that this needs to have some stuff installed if they want to use
+  feature X and how to do it), the orchestrator environment (link to pipeline
+  containerization page)
+- how to handle multiple pipelines/workspaces on a local machine
+- how to handle custom packages/integrations in the ZenML server
+
+# ENDTODO
+
 # Managing Multiple Environments in ZenML
 
 # This page is WIP

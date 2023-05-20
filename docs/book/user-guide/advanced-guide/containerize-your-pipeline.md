@@ -8,6 +8,16 @@ description: Using Docker images to run your pipeline.
 
 - This page needs to be done in conjunction with Michael. Its just about restructuring the info and doing this again with a new outlook
 - It has too much info and hard to navigate
+- The main purpose of rewriting the containerization page was to make it simpler/easier to digest
+
+The containerization page:
+Should stay pretty similar in terms of content, it should be an in-depth explanation of how to use DockerSettings
+
+Currently it also contains:
+reference to image builders: Relevant for containerizing a pipeline, but not related to DockerSettings
+how to build images without running a pipeline: Relevant for containerizing a pipeline, but not related to DockerSettings
+
+Not sure if these fit somewhere else (e.g. the "managing environments" page above for the image builders?) or should stay on the page
 
 # ENDTODO
 
