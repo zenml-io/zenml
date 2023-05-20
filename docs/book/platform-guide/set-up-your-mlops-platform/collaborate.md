@@ -2,23 +2,27 @@
 description: Combining your efforts, expertise and resources.
 ---
 
-# User management
+# Collaborating as a team with ZenML
 
-# TODO
+Collaboration is a crucial aspect of any MLOps team as they often need to bring
+together individuals with diverse skills and expertise to create a cohesive and
+effective workflow for machine learning projects. A successful MLOps team
+requires seamless collaboration between data scientists, engineers, and DevOps
+professionals to develop, train, deploy, and maintain machine learning models.
+This can be a challenging task as it requires coordination across different
+tools, processes, and frameworks.
 
-- Try to make it flow coherently, right now its a copy paste of three older pages. Goal is to just talk about how to manage multiple users in a ZenML server.
-- Go through this, make a link to the previous page, and update screenshots
-- Add a link to Felix's introduction page diagram to again talk about the different roles in a team: https://discord.com/channels/621988642553987082/1108337326234542190/1108338541206962227
+<!-- INCLUDE LINK HERE TO FELIX'S DIAGRAM
+to again talk about the different roles in a team: https://discord.com/channels/621988642553987082/1108337326234542190/1108338541206962227
+ -->
 
-Optional:
-- Mention the word `multi-tenancy` and whatever rudimentary support we have of it
+Herein lies one of ZenML's most significant strengths: a collaborative platform
+that extends beyond your team and includes the community. With ZenML, you can
+seamlessly work together with others, sharing resources and insights to achieve
+your common goals. Removing barriers to collaboration allows teams to iterate on
+ideas and problems much more efficiently which in turn leads to faster results.
 
-# ENDTODO
-
-
-Collaboration is a crucial aspect of any MLOps team as they often need to bring together individuals with diverse skills and expertise to create a cohesive and effective workflow for machine learning projects. A successful MLOps team requires seamless collaboration between data scientists, engineers, and DevOps professionals to develop, train, deploy, and maintain machine learning models. This can be a challenging task as it requires coordination across different tools, processes, and frameworks.
-
-Herein lies one of ZenML's most significant strengths: a collaborative platform that extends beyond your team and includes the community. With ZenML, you can seamlessly work together with others, sharing resources and insights to achieve your common goals.
+<!-- CORE FEATURES PROVIDED BY ZENML (overview) -->
 
 * With a deployed ZenML instance, users have the ability to create their own teams and project structures. They can easily share pipelines, runs, stacks, and other resources, streamlining the workflow and promoting teamwork.
 * On the flip side, there's the ZenML Hub. Here, you can peruse a collection of community-driven solutions, share your own code, and collaborate with fellow members of the community.
@@ -29,7 +33,7 @@ This section will center on managing users, their roles, and permissions within 
 Permissions and roles are an alpha feature of ZenML and are in active development.
 {% endhint %}
 
-## Multi-player mode with ZenML
+## Team administration and user management
 
 After you have [deployed ZenML](../../getting-started/deploying-zenml/deploying-zenml.md) and [connected your local client with the deployment](../production-fundamentals/production-fundamentals.md), you can go ahead and start adding your teammates as users.
 
@@ -116,6 +120,10 @@ By default, user creation through the UI will grant the user `admin` rights. Thi
 If you want to inspect which roles have been assigned to which users, simply run:
 
 `zenml role assignment list`
+
+## ZenML's support for multi-tenancy
+
+TODO / TO WRITE
 
 ### Limitations
 
