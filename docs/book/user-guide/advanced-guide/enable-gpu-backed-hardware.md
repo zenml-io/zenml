@@ -7,14 +7,37 @@ description: Ensuring your pipelines or steps run on GPU-backed hardware.
 There are several reasons why you may want to scale your machine learning
 pipelines to the cloud, such as utilizing more powerful hardware or distributing
 tasks across multiple nodes. In order to achieve this with ZenML you'll need to
-run your steps on GPU-backed hardware (or adjust `ResourceSettings` to allocate
-greater resources on an orchestrator node) and make some adjustments to the
+run your steps on GPU-backed hardware using `ResourceSettings` to allocate
+greater resources on an orchestrator node and/or and make some adjustments to the
 container environment.
 
-You can use use [step operator stack
-components](../component-galery/step-operators/README.md) or specify [custom
-per-step or per-pipeline requirements](containerize-your-pipeline.md). To run
-steps or pipelines on GPUs, it's crucial to have the necessary CUDA tools
+## Specify resource requirements for steps
+
+Some steps of your machine learning pipeline might be more resource-intensive
+and require special hardware to execute. In such cases, you can specify the
+required resources for steps as follows:
+
+```python
+from zenml.steps import step, ResourceSettings
+
+@step(settings={"resources": ResourceSettings(cpu_count=8, gpu_count=2, memory="8GB")})
+def training_step(...) -> ...:
+    # train a model
+```
+
+If the underlying [orchestrator](../component-galery/orchestrators/README.md) in your stack then supports specifying resources, this setting will attempt to secure these resources.
+
+{% hint style="info" %}
+If you're using an orchestrator which does not support
+this feature or its underlying infrastructure doesn't cover your requirements,
+you can also take a look at [step operators](../component-galery/step-operators/README.md) which allow you to execute individual
+steps of your pipeline in environments independent of your orchestrator.
+{% endhint %}
+
+
+### Ensure your container is CUDA-enabled
+
+To run steps or pipelines on GPUs, it's crucial to have the necessary CUDA tools
 installed in the environment. This section will guide you on how to configure
 your environment to utilize GPU capabilities effectively.
 
@@ -24,11 +47,9 @@ be properly utilized. If you don't update the settings, your steps might run,
 but they will not see any boost in performance from the custom hardware.
 {% endhint %}
 
-## Run your steps on GPU-backed hardware
-
 All steps running on GPU-backed hardware will be executed within a containerized environment, whether you're using the local Docker orchestrator or a cloud instance of Kubeflow. Therefore, you need to make two amendments to your Docker settings for the relevant steps:
 
-### 1. **Specify a CUDA-enabled parent image in your `DockerSettings`**
+#### 1. **Specify a CUDA-enabled parent image in your `DockerSettings`**
 
 For complete details, refer to the [containerization page](containerize-your-pipeline.md) that explains how to do this. As an example, if you want to use the latest CUDA-enabled official PyTorch image for your entire pipeline run, you can include the following code:
 
@@ -42,12 +63,12 @@ def my_pipeline(...):
 
 For TensorFlow, you might use the `tensorflow/tensorflow:latest-gpu` image, as detailed in the [official TensorFlow documentation](https://www.tensorflow.org/install/docker#gpu_support) or their [DockerHub overview](https://hub.docker.com/r/tensorflow/tensorflow).
 
-### 2. **Add ZenML as an explicit pip requirement**
+#### 2. **Add ZenML as an explicit pip requirement**
 
 ZenML requires that ZenML itself be installed for the containers running your pipelines and steps. Therefore, you need to explicitly state that ZenML should be installed. There are several ways to specify this, but as an example, you can update the code from above as follows:
 
 ```python
-docker_settings = DockerSettings(parent_image="pytorch/pytorch:1.12.1-cuda11.3-cudnn8-runtime", requirements=["zenml==0.20.5", "torchvision"])
+docker_settings = DockerSettings(parent_image="pytorch/pytorch:1.12.1-cuda11.3-cudnn8-runtime", requirements=["zenml==0.39.1", "torchvision"])
 
 @pipeline(settings={"docker": docker_settings})
 def my_pipeline(...):
@@ -70,24 +91,3 @@ The core cloud operators offer prebuilt Docker images that fit with their hardwa
 Not all of these images are available on DockerHub, so ensure that the
 orchestrator environment your pipeline runs in has sufficient permissions to
 pull images from registries if you are using one of those.
-
-## Specify resource requirements for steps
-
-Some steps of your machine learning pipeline might be more resource-intensive
-and require special hardware to execute. In such cases, you can specify the
-required resources for steps as follows:
-
-```python
-from zenml.steps import step, ResourceSettings
-
-@step(settings={"resources": ResourceSettings(cpu_count=8, gpu_count=2)})
-def training_step(...) -> ...:
-    # train a model
-```
-
-{% hint style="info" %}
-If you're using an orchestrator which does not support
-this feature or its underlying infrastructure doesn't cover your requirements,
-you can also take a look at step operators which allow you to execute individual
-steps of your pipeline in environments independent of your orchestrator.
-{% endhint %}
