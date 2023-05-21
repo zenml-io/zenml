@@ -46,6 +46,17 @@ Due to a [critical severity vulnerability](https://github.com/advisories/GHSA-xg
 
 * [Databricks scenario](https://www.databricks.com/product/managed-mlflow): This scenario assumes that you have a Databricks workspace, and you want to use the managed MLflow Tracking server it provides. This option requires [authentication-related parameters](mlflow.md#authentication-methods) to be configured for the MLflow Experiment Tracker.
 
+#### Infrastructure Deployment
+
+The MLflow Experiment Tracker can be deployed directly from the ZenML CLI:
+
+```shell
+# optionally assigning an existing bucket to the MLflow Experiment Tracker
+zenml experiment-tracker deploy mlflow_tracker --flavor=mlflow --mlflow_bucket=gs://my_bucket
+```
+
+You can pass other configurations specific to the stack components as key-value arguments. If you don't provide a name, a random one is generated for you. For more information about how to work use the CLI for this, please refer to the dedicated documentation section.
+
 #### Authentication Methods
 
 You need to configure the following credentials for authentication to a remote MLflow tracking server:

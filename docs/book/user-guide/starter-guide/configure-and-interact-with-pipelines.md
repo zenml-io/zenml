@@ -1,5 +1,5 @@
 ---
-description: Learning how to configure pipelines and their steps
+description: Learning how to configure pipelines and their steps.
 ---
 
 # Create an ML Pipeline
@@ -16,6 +16,15 @@ from sklearn.svm import SVC
 from zenml.pipelines.new import pipeline
 from zenml.steps import Output, step
 ```
+
+Make sure to install the requirements as well:
+
+```bash
+pip install matplotlib
+zenml integration install sklearn
+```
+
+In this case ZenML has an integration with sklearn so you can use the ZenML CLI to install the right version directly.
 
 ### Multiple Outputs
 
@@ -88,15 +97,18 @@ if __name__ == "__main__":
 ```
 {% endhint %}
 
-Running it should look somewhat like this in the terminal.
+Running it like this `python main.py` should look somewhat like this in the terminal.
 
-<pre class="language-sh" data-line-numbers><code class="lang-sh">$python main.py
-<strong>Registered new pipeline with name `first_pipeline`.
+<pre class="language-sh" data-line-numbers><code class="lang-sh"><strong>Registered new pipeline with name `first_pipeline`.
 </strong>.
 .
 .
 Pipeline run `first_pipeline-2023_04_29-09_19_54_273710` has finished in 0.236s.
 </code></pre>
+
+In the dashboard you should now be able to see this new run, along with its runtime configuration and some visualizations.
+
+<figure><img src="../../.gitbook/assets/DigitsRun.png" alt=""><figcaption><p>Run created by the code in this section along with a visualization of the ground-truth distribution.</p></figcaption></figure>
 
 ### Give each pipeline run a name
 

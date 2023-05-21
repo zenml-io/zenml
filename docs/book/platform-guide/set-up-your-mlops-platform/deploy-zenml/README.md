@@ -4,7 +4,7 @@ description: A guide on how to deploy ZenML.
 
 # Deploy ZenML
 
-### The components of a ZenML Deployment
+### Components of a ZenML Deployment
 
 A ZenML deployment typically looks like this:
 
@@ -20,5 +20,5 @@ A ZenML deployment typically looks like this:
 
 Choose the most appropriate deployment strategy for you out of the following options to get started with the deployment
 
-<table data-view="cards"><thead><tr><th></th><th></th><th></th><th data-type="content-ref"></th></tr></thead><tbody><tr><td>Deploy to Kubernetes on AWS, GCP or Azure with the ZenML CLI</td><td></td><td></td><td><a href="deployment-using-the-cli.md">deployment-using-the-cli.md</a></td></tr><tr><td>Deploy anywhere using Docker</td><td></td><td></td><td><a href="deploy-with-docker.md">deploy-with-docker.md</a></td></tr><tr><td>Deploy to any Kubernetes cluster with Helm</td><td></td><td></td><td><a href="deploy-with-helm.md">deploy-with-helm.md</a></td></tr></tbody></table>
+<table data-view="cards"><thead><tr><th></th><th></th><th></th><th data-type="content-ref"></th><th data-hidden data-card-target data-type="content-ref"></th></tr></thead><tbody><tr><td><mark style="color:purple;"><strong>Deploy with ZenML CLI</strong></mark></td><td>Deploying ZenML on cloud using the CLI.</td><td></td><td></td><td><a href="deployment-using-the-cli.md">deployment-using-the-cli.md</a></td></tr><tr><td><mark style="color:purple;"><strong>Deploy with Docker</strong></mark></td><td>Deploying ZenML in a Docker container.</td><td></td><td></td><td><a href="deploy-with-docker.md">deploy-with-docker.md</a></td></tr><tr><td><mark style="color:purple;"><strong>Deploy with Helm</strong></mark></td><td>Deploying ZenML in a Kubernetes cluster with Helm.</td><td></td><td></td><td><a href="deploy-with-helm.md">deploy-with-helm.md</a></td></tr><tr><td><mark style="color:purple;"><strong>Deploy using HuggingFace Spaces</strong></mark></td><td>Deploying ZenML to Huggingface Spaces.</td><td></td><td></td><td><a href="deploy-using-huggingface-spaces.md">deploy-using-huggingface-spaces.md</a></td></tr></tbody></table>
 

@@ -16,20 +16,22 @@ from zenml.steps import step
 
 @step
 def step_1() -> str:
-  return "world"
+    """Returns the `world` substring."""
+    return "world"
 
 @step
 def step_2(input_one: str, input_two: str) -> None:
-  combined_str = input_one + ' ' + input_two
-  print(combined_str)
+    """Combines the two strings at its input and prints them."""
+    combined_str = input_one + ' ' + input_two
+    print(combined_str)
 
 @pipeline
 def my_pipeline():
-  output_step_one = step_1()
-  step_2(input_one="hello", input_two=output_step_one)
+    output_step_one = step_1()
+    step_2(input_one="hello", input_two=output_step_one)
 
 if __name__ == "__main__":
-  my_pipeline()
+    my_pipeline()
 ```
 
 {% hint style="info" %}
@@ -71,17 +73,15 @@ Run `zenml up` in the environment where you have ZenML installed.
 
 After a few seconds, your browser should open the ZenML Dashboard for you at [http://127.0.0.1:8237/](http://127.0.0.1:8237/)
 
-The default user account is **Username**: _**default**_ with no password.
+The default user account is **Username**: _**default**_ with **no** **password**.
 
-<figure><img src="../../.gitbook/assets/Dashboard.png" alt=""><figcaption><p>Landing Page of the Dashboard</p></figcaption></figure>
+<figure><img src="../../.gitbook/assets/landingpage.png" alt=""><figcaption><p>Landing Page of the Dashboard</p></figcaption></figure>
 
-As you can see, the dashboard shows you that there is 1 pipeline and 1 pipeline run. (feel free to ignore the stack and components for the time being)
+As you can see, the dashboard shows you that there is 1 pipeline and 1 pipeline run. (feel free to ignore the stack and components for the time being) and continue to the run you just executed.
 
-If you navigate to the run that you just executed, you will see a diagram view of the pipeline run, including a visualization of the data that is passed between the steps.
+<figure><img src="../../.gitbook/assets/DAGofRun.png" alt=""><figcaption><p>Diagram view of the run, with the runtime attributes of step 2.</p></figcaption></figure>
 
-```
-// Placeholder for Screenshot
-```
+If you navigate to the run that you just executed, you will see a diagram view of the pipeline run, including a visualization of the data that is passed between the steps. Feel free to explore the Run, its steps, and its artifacts.
 
 ## Recap
 
@@ -90,6 +90,7 @@ If you navigate to the run that you just executed, you will see a diagram view o
 ```python
 @step
 def step_2(input_one: str, input_two: str) -> None:
+  """Combines the two strings at its input and prints them."""
   combined_str = input_one + input_two
   return combined_str
 ```
@@ -102,7 +103,7 @@ The inputs and outputs of a step are called _artifacts._ They are automatically 
 
 ### Pipeline
 
-```
+```python
 @pipeline
 def my_pipeline():
   output_step_one = step_1()
@@ -113,15 +114,13 @@ Pipelines are also functions. However, you are only allowed to call steps within
 
 ### Executing the Code
 
-```
+```python
 if __name__ == "__main__":
   my_pipeline()
 ```
 
 Executing the Pipeline is as easy as just calling the function that you decorated with the `@pipeline()` decorator.
 
-
-
-In the following sections, you will learn more about&#x20;
+In the following sections, you will learn more about the following topics:
 
 <table data-view="cards"><thead><tr><th></th><th></th><th></th></tr></thead><tbody><tr><td><mark style="color:purple;"><strong>Create an ML Pipeline</strong></mark></td><td>Learning how to setup and configure your pipeline.</td><td></td></tr><tr><td><mark style="color:purple;"><strong>Caching in ZenML</strong></mark></td><td>Iterating quickly with ZenML through fast caching.</td><td></td></tr><tr><td><mark style="color:purple;"><strong>Version Pipelines</strong></mark></td><td>Understanding how and when the version of a pipeline is incremented.</td><td></td></tr><tr><td><mark style="color:purple;"><strong>Fetch runs after execution</strong></mark></td><td>Inspecting a finished pipeline run and its outputs.</td><td></td></tr><tr><td><mark style="color:purple;"><strong>Understand stacks</strong></mark></td><td>Learning how to switch the infrastructure backend of your code.</td><td></td></tr><tr><td><mark style="color:purple;"><strong>Connect to a deployed ZenML Server</strong></mark></td><td>Learning about the ZenML server.</td><td></td></tr><tr><td><mark style="color:purple;"><strong>Switch  to a remote stack</strong></mark></td><td>Bringing your pipelines into production using cloud stacks.</td><td></td></tr><tr><td><mark style="color:purple;"><strong>Leverage community contributed plugins</strong></mark></td><td>Collaborating with the ZenML community.</td><td></td></tr><tr><td><mark style="color:purple;"><strong>Follow best practices</strong></mark></td><td>Recommended repository structure and best practices.</td><td></td></tr></tbody></table>

@@ -48,6 +48,16 @@ In addition to these parameters, the Seldon Core Model Deployer may also require
 Configuring Seldon Core in a Kubernetes cluster can be a complex and error-prone process, so we have provided a set of Terraform-based recipes to quickly provision popular combinations of MLOps tools. More information about these recipes can be found in the [Open Source MLOps Stack Recipes](https://github.com/zenml-io/mlops-stacks).
 {% endhint %}
 
+#### Infrastructure Deployment
+
+The Seldon Model Deployer can be deployed directly from the ZenML CLI:
+
+```shell
+zenml model-deployer deploy seldon_deployer --flavor=seldon ...
+```
+
+You can pass other configurations specific to the stack components as key-value arguments. If you don't provide a name, a random one is generated for you. For more information about how to work use the CLI for this, please refer to the dedicated documentation section.
+
 #### Managing Seldon Core Authentication
 
 The Seldon Core Model Deployer requires access to the persistent storage where models are located. In most cases, you will use the Seldon Core model deployer to serve models that are trained through ZenML pipelines and stored in the ZenML Artifact Store, which implies that the Seldon Core model deployer needs to access the Artifact Store.

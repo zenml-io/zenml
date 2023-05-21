@@ -1,5 +1,5 @@
 ---
-description: Iterate quickly with ZenML through fast caching.
+description: Iterating quickly with ZenML through fast caching.
 ---
 
 # Caching in ZenML
@@ -19,7 +19,7 @@ Using cached version of step_2.
 {% endtab %}
 
 {% tab title="Dashboard" %}
-<figure><img src="../../.gitbook/assets/cached_run_dashboard.png" alt=""><figcaption><p>DAG of a cached pipeline run</p></figcaption></figure>
+<figure><img src="../../.gitbook/assets/cached (1).png" alt=""><figcaption><p>DAG of a cached pipeline run</p></figcaption></figure>
 {% endtab %}
 {% endtabs %}
 
@@ -80,7 +80,7 @@ def import_data_from_api(...):
     ...
 ```
 
-The code above turns caching off for this step only.&#x20;
+The code above turns caching off for this step only.
 
 {% hint style="info" %}
 You can get a graphical visualization of which steps were cached using the [ZenML Dashboard](broken-reference/).

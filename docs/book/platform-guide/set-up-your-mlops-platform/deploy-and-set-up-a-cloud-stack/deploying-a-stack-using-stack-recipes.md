@@ -51,7 +51,7 @@ Once the recipe is deployed, you'll notice that a ZenML stack configuration file
 zenml stack import <STACK_NAME> -f <PATH_TO_THE_CREATED_STACK_CONFIG_YAML>
 ```
 
-#### Deleting resources
+### Deleting resources
 
 1.  🗑️ Once you're done running your pipelines, there's only a single command you need to execute that will take care of cleaning up all the resources that you had created on your cloud.
 

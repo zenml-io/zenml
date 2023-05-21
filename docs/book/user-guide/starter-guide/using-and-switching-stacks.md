@@ -59,7 +59,7 @@ As you can see a stack can be **active** on your **client**. This simply means t
 {% tab title="Dashboard" %}
 You can explore all your stacks in the dashboard. When you click on a specific one you can see its configuration and all the pipeline runs that were executed using this stack.
 
-<figure><img src="../../.gitbook/assets/stack_in_dashboard.png" alt=""><figcaption><p>The default stack on the Dashboard</p></figcaption></figure>
+<figure><img src="../../.gitbook/assets/DefaultStack.png" alt=""><figcaption><p>The default stack on the Dashboard</p></figcaption></figure>
 {% endtab %}
 {% endtabs %}
 
@@ -85,7 +85,7 @@ The **orchestrator** is responsible for executing the pipeline code. In the simp
 {% endtab %}
 
 {% tab title="Dashboard" %}
-
+<figure><img src="../../.gitbook/assets/DefaultOrch.png" alt=""><figcaption><p>Default orchestrator in the dashboard.</p></figcaption></figure>
 {% endtab %}
 {% endtabs %}
 
@@ -107,7 +107,7 @@ The **artifact store** is responsible for persisting the step outputs. As we lea
 {% endtab %}
 
 {% tab title="Dashboard" %}
-
+<figure><img src="../../.gitbook/assets/DefaultArtifactStore.png" alt=""><figcaption><p>Default artifact store in the dashboard.</p></figcaption></figure>
 {% endtab %}
 {% endtabs %}
 
@@ -151,7 +151,7 @@ zenml artifact-store describe my_artifact_store
 {% endtab %}
 
 {% tab title="Dashboard" %}
-
+<figure><img src="../../.gitbook/assets/CreateArtifactStore.png" alt=""><figcaption><p>Creating an Artifact Store in the dashboard.</p></figcaption></figure>
 {% endtab %}
 {% endtabs %}
 
@@ -160,7 +160,7 @@ zenml artifact-store describe my_artifact_store
 With the artifact store created, we can now create a new stack with this artifact store.
 
 {% tabs %}
-{% tab title="First Tab" %}
+{% tab title="CLI" %}
 ```bash
 zenml stack register my_stack --orchestrator default --artifact-store my_artifact_store
 ```
@@ -200,6 +200,10 @@ Which will give you an output like this:
 Stack 'my_stack' with id '...' is owned by user default and is 'private'.
 ```
 {% endtab %}
+
+{% tab title="Dashboard" %}
+<figure><img src="../../.gitbook/assets/CreateStack.png" alt=""><figcaption><p>Register a new stack.</p></figcaption></figure>
+{% endtab %}
 {% endtabs %}
 
 To run a pipeline using the new stack:
@@ -214,10 +218,6 @@ zenml stack set my_stack
 
 ```bash
 python main.py
-```
-
-```
-//PLACEHOLDER Dashboard Screenshot
 ```
 
 Before we can move on to using a cloud stack, we need to find out more about the ZenML server in the next section.

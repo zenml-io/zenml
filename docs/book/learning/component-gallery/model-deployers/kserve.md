@@ -46,6 +46,16 @@ Since the KServe Model Deployer is interacting with the KServe model serving Pla
 Configuring KServe in a Kubernetes cluster can be a complex and error-prone process, We provide a simple start guide on how to configure and setup KServe on your Kubernetes cluster, you can find it [here](https://github.com/zenml-io/zenml/tree/main/examples/kserve\_deployment#installing-kserve-eg-in-an-gke-cluster) we have also provided a set of Terraform-based recipes to quickly provision popular combinations of MLOps tools. More information about these recipes can be found in the [Open Source MLOps Stack Recipes](https://github.com/zenml-io/mlops-stacks)
 {% endhint %}
 
+#### Infrastructure Deployment
+
+The KServe Model Deployer can be deployed directly from the ZenML CLI:
+
+```shell
+zenml model-deployer deploy kserve_deployer --flavor=kserve ...
+```
+
+You can pass other configurations specific to the stack components as key-value arguments. If you don't provide a name, a random one is generated for you. For more information about how to work use the CLI for this, please refer to the dedicated documentation section.
+
 #### Managing KServe Authentication
 
 The KServe Model Deployer requires access to the persistent storage where models are located. In most cases, you will use the KServe model deployer to serve models that are trained through ZenML pipelines and stored in the ZenML Artifact Store, which implies that the KServe model deployer needs to access the Artifact Store.

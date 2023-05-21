@@ -9,13 +9,7 @@ A ZenML pipeline is built in a data-centric way. The outputs and inputs of steps
 A materializer dictates how a given artifact can be written to and retrieved from the artifact store and also contains all serialization and deserialization logic. Whenever you pass artifacts as outputs from one pipeline step to other steps as inputs, the corresponding materializer for the respective data type defines how this artifact is first serialized and written to the artifact store, and then deserialized and read in the next step.
 
 {% hint style="info" %}
-ZenML already includes built-in materializers for many common data types.
-However, if you want to pass custom objects between pipeline steps, these 
-objects are by default saved using 
-[cloudpickle](https://github.com/cloudpipe/cloudpickle), which is not 
-production-ready because the resulting artifacts cannot be loaded under
-different Python versions. In such cases, you should consider building a custom 
-Materializer to save your objects in a more robust and efficient format.
+ZenML already includes built-in materializers for many common data types. However, if you want to pass custom objects between pipeline steps, these objects are by default saved using [cloudpickle](https://github.com/cloudpipe/cloudpickle), which is not production-ready because the resulting artifacts cannot be loaded under different Python versions. In such cases, you should consider building a custom Materializer to save your objects in a more robust and efficient format.
 {% endhint %}
 
 ## Building a Custom Materializer
@@ -44,7 +38,11 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
         Returns:
             The data of the artifact.
         """
-        # read from self.uri
+        # read from a location inside self.uri
+        # 
+        # Example:
+        # data_path = os.path.join(self.uri, "abc.json")
+        # return yaml_utils.read_json(data_path)
         ...
 
     def save(self, data: Any) -> None:
@@ -53,9 +51,36 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
         Args:
             data: The data of the artifact to save.
         """
-        # write `data` to self.uri
+        # write `data` into self.uri
+        # 
+        # Example:
+        # data_path = os.path.join(self.uri, "abc.json")
+        # yaml_utils.write_json(data_path, data)
         ...
     
+    def save_visualizations(self, data: Any) -> Dict[str, VisualizationType]:
+        """Save visualizations of the given data.
+        Args:
+            data: The data of the artifact to visualize.
+        Returns:
+            A dictionary of visualization URIs and their types.
+        """
+        # Optionally, define some visualizations for your artifact
+        #
+        # E.g.:
+        # visualization_uri = os.path.join(self.uri, "visualization.html")
+        #
+        # with fileio.open(visualization_uri, "w") as f:
+        #     f.write("<html><body>data</body></html>")
+        #
+        # visualization_uri_2 = os.path.join(self.uri, "visualization.png")
+        # data.save_as_png(visualization_uri_2)
+        # return {
+        #     visualization_uri: ArtifactVisualizationType.HTML,
+        #     visualization_uri_2: ArtifactVisualizationType.IMAGE
+        # }
+        ...
+        
     def extract_metadata(self, data: Any) -> Dict[str, "MetadataType"]:
         """Extract metadata from the given data.
 
@@ -68,7 +93,8 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
             A dictionary of metadata.
         """
         # Optionally, extract some metadata from `data` for ZenML to store.
-        # E.g.:
+        #
+        # Example:
         # return {
         #     "some_attribute_i_want_to_track": self.some_attribute,
         #     "pi": 3.14,
@@ -97,11 +123,31 @@ The `load()` and `save()` methods define the serialization and deserialization o
 * `load()` defines how data is read from the artifact store and deserialized,
 * `save()` defines how data is serialized and saved to the artifact store.
 
-You will need to overwrite these methods according to how you plan to serialize your objects. E.g., if you have custom PyTorch classes as `ASSOCIATED_TYPES`, then you might want to use `torch.save()` and `torch.load()` here.
+You will need to override these methods according to how you plan to serialize your objects. E.g., if you have custom PyTorch classes as `ASSOCIATED_TYPES`, then you might want to use `torch.save()` and `torch.load()` here.
 
-### (Optional) Which Metadata to Extract for the Artifact
+#### (Optional) How to Visualize the Artifact
 
-Optionally, you can overwrite the `extract_metadata()` method to track custom metadata for all artifacts saved by your materializer. Anything you extract here will be displayed in the dashboard next to your artifacts.
+Optionally, you can override the `save_visualizations()` method to automatically save visualizations for all artifacts saved by your materializer. These visualizations are then shown next to your artifacts in the dashboard:
+
+They can also be displayed in Jupyter notebooks via post-execution visualization.
+
+Currently, artifacts can be visualized either as CSV table, embedded HTML, image or Markdown. For more information, see [zenml.enums.VisualizationType](https://github.com/zenml-io/zenml/blob/main/src/zenml/enums.py).
+
+To create visualizations, you need to:
+
+1. Compute the visualizations based on the artifact
+2. Save all visualizations to paths inside `self.uri`
+3. Return a dictionary mapping visualization paths to visualization types.
+
+As an example, check out the implementation of the [zenml.materializers.NumpyMaterializer](https://github.com/zenml-io/zenml/blob/main/src/zenml/materializers/numpy\_materializer.py) that use matplotlib to automatically save or plot certain arrays.
+
+{% hint style="info" %}
+If you would like to disable artifact visualization altogether, you can set `enable_artifact_visualization` at either pipeline, step, or run level via `@pipeline(enable_artifact_visualization=False)` or `@step(enable_artifact_visualization=False)` or `my_pipeline(...).run(enable_artifact_visualization=False)`.
+{% endhint %}
+
+#### (Optional) Which Metadata to Extract for the Artifact
+
+Optionally, you can override the `extract_metadata()` method to track custom metadata for all artifacts saved by your materializer. Anything you extract here will be displayed in the dashboard next to your artifacts.
 
 To extract metadata, define and return a dictionary of values you want to track. The only requirement is that all your values are built-in types (like `str`, `int`, `list`, `dict`, ...) or among the special types defined in [src.zenml.metadata.metadata\_types](https://github.com/zenml-io/zenml/blob/main/src/zenml/metadata/metadata\_types.py) that are displayed in a dedicated way in the dashboard. See [src.zenml.metadata.metadata\_types.MetadataType](https://github.com/zenml-io/zenml/blob/main/src/zenml/metadata/metadata\_types.py) for more details.
 
@@ -220,14 +266,12 @@ class MyMaterializer(BaseMaterializer):
 
     def load(self, data_type: Type[MyObj]) -> MyObj:
         """Read from artifact store"""
-        super().load(data_type)
         with fileio.open(os.path.join(self.uri, 'data.txt'), 'r') as f:
             name = f.read()
         return MyObj(name=name)
 
     def save(self, my_obj: MyObj) -> None:
         """Write to artifact store"""
-        super().save(my_obj)
         with fileio.open(os.path.join(self.uri, 'data.txt'), 'w') as f:
             f.write(my_obj.name)
 ```
@@ -293,14 +337,12 @@ class MyMaterializer(BaseMaterializer):
 
     def load(self, data_type: Type[MyObj]) -> MyObj:
         """Read from artifact store"""
-        super().load(data_type)
         with fileio.open(os.path.join(self.uri, 'data.txt'), 'r') as f:
             name = f.read()
         return MyObj(name=name)
 
     def save(self, my_obj: MyObj) -> None:
         """Write to artifact store"""
-        super().save(my_obj)
         with fileio.open(os.path.join(self.uri, 'data.txt'), 'w') as f:
             f.write(my_obj.name)
 
@@ -475,7 +517,6 @@ class PandasMaterializer(BaseMaterializer):
         Returns:
             The pandas dataframe or series.
         """
-        super().load(data_type)
         temp_dir = tempfile.mkdtemp(prefix="zenml-temp-")
         if fileio.exists(self.parquet_path):
             if self.pyarrow_exists:
@@ -530,8 +571,6 @@ class PandasMaterializer(BaseMaterializer):
         Args:
             df: The pandas dataframe or series to write.
         """
-        super().save(df)
-
         if isinstance(df, pd.Series):
 
             df = df.to_frame(name="series")

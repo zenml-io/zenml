@@ -60,9 +60,7 @@ Registered pipeline first_pipeline (version 1).
 
 This will now create a single `run` for `version 2` of the pipeline called `first_pipeline`.&#x20;
 
-```bash
-//PLACEHOLDER Dashboard Screenshot
-```
+<figure><img src="../../.gitbook/assets/pipelineversions.png" alt=""><figcaption></figcaption></figure>
 
 <details>
 

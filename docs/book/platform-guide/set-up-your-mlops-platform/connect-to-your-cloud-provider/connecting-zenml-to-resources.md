@@ -81,17 +81,35 @@ Available locally: True
                                                                                 
 Available remotely: True                                                        
                                                                                 
-This ZenML AWS service connector facilitates connecting to, authenticating to   
-and accessing managed AWS services, such as S3 buckets, ECR repositories and EKS
-clusters. Explicit long-lived AWS credentials are supported, as well as         
-temporary STS security tokens. The connector also supports auto-configuration by
-discovering and using credentials configured on a local environment.            
+The ZenML AWS Service Connector facilitates the authentication and access to    
+managed AWS services and resources. These encompass a range of resources,       
+including S3 buckets, ECR repositories, and EKS clusters. The connector provides
+support for various authentication methods, including explicit long-lived AWS   
+secret keys, IAM roles, short-lived STS tokens and implicit authentication.     
                                                                                 
-The connector can be used to access to any generic AWS service, such as S3, ECR,
-EKS, EC2, etc. by providing pre-authenticated boto3 sessions for these services.
-In addition to authenticating to AWS services, the connector is able to manage  
-specialized authentication for Docker and Kubernetes Python clients and also    
-allows configuration of local Docker and Kubernetes clients.                    
+To ensure heightened security measures, this connector also enables the         
+generation of temporary STS security tokens that are scoped down to the minimum 
+permissions necessary for accessing the intended resource. Furthermore, it      
+includes automatic configuration and detection of credentials locally configured
+through the AWS CLI.                                                            
+                                                                                
+This connector serves as a general means of accessing any AWS service by issuing
+pre-authenticated boto3 sessions to clients. Additionally, the connector can    
+handle specialized authentication for S3, Docker and Kubernetes Python clients. 
+It also allows for the configuration of local Docker and Kubernetes CLIs.       
+                                                                                
+The AWS Service Connector is part of the AWS ZenML integration. You can either  
+install the entire integration or use a pypi extra to install it independently  
+of the integration:                                                             
+                                                                                
+ • pip install zenml[connectors-aws] installs only prerequisites for the AWS    
+   Service Connector Type                                                       
+ • zenml integration install aws installs the entire AWS ZenML integration      
+                                                                                
+It is not required to install and set up the AWS CLI on your local machine to   
+use the AWS Service Connector to link Stack Components to AWS resources and     
+services. However, it is recommended to do so if you are looking for a quick    
+setup that includes using the auto-configuration Service Connector features.    
                                                                                 
 ────────────────────────────────────────────────────────────────────────────────
 ```
@@ -109,10 +127,22 @@ session-token, federation-token
                                                                                 
 Supports resource instances: True                                               
                                                                                 
-Allows users to connect to S3 buckets. When used by connector consumers, they   
-are provided a pre-configured boto3 S3 client instance.                         
+Authentication methods:                                                         
                                                                                 
-The configured credentials must have at least the following S3 permissions:     
+ • 🔒 implicit                                                                  
+ • 🔒 secret-key                                                                
+ • 🔒 sts-token                                                                 
+ • 🔒 iam-role                                                                  
+ • 🔒 session-token                                                             
+ • 🔒 federation-token                                                          
+                                                                                
+Allows users to connect to S3 buckets. When used by Stack Components, they are  
+provided a pre-configured boto3 S3 client instance.                             
+                                                                                
+The configured credentials must have at least the following AWS IAM permissions 
+associated with the ARNs of S3 buckets that the connector will be allowed to    
+access (e.g. arn:aws:s3:::* and arn:aws:s3:::*/* represent all the available S3 
+buckets).                                                                       
                                                                                 
  • s3:ListBucket                                                                
  • s3:GetObject                                                                 
@@ -123,9 +153,9 @@ The configured credentials must have at least the following S3 permissions:
 If set, the resource name must identify an S3 bucket using one of the following 
 formats:                                                                        
                                                                                 
- • S3 bucket URI: s3://<bucket-name>                                            
- • S3 bucket ARN: arn:aws:s3:::<bucket-name>                                    
- • S3 bucket name: <bucket-name>                                                
+ • S3 bucket URI (canonical resource name): s3://{bucket-name}                  
+ • S3 bucket ARN: arn:aws:s3:::{bucket-name}                                    
+ • S3 bucket name: {bucket-name}                                                
                                                                                 
 ────────────────────────────────────────────────────────────────────────────────
 ```
@@ -141,12 +171,13 @@ $ zenml service-connector describe-type aws --auth-method session-token
 Supports issuing temporary credentials: True                                    
                                                                                 
 Generates temporary session STS tokens for IAM users. The connector needs to be 
-configured with a key ID and secret access key associated with an IAM user or   
-AWS account root user (not recommended). The connector will then generate new   
-temporary STS tokens upon request by calling the GetSessionToken STS API. These 
-STS tokens have an expiration period longer that those issued through the AWS   
-IAM Role authentication method and are more suitable for long-running processes 
-that cannot automatically re-generate credentials upon expiration.              
+configured with an AWS secret key associated with an IAM user or AWS account    
+root user (not recommended). The connector will generate temporary STS tokens   
+upon request by calling the GetSessionToken STS API.                            
+                                                                                
+These STS tokens have an expiration period longer that those issued through the 
+AWS IAM Role authentication method and are more suitable for long-running       
+processes that cannot automatically re-generate credentials upon expiration.    
                                                                                 
 An AWS region is required and the connector may only be used to access AWS      
 resources in the specified region.                                              
@@ -156,20 +187,27 @@ minimum of 15 minutes and a maximum of 36 hours. Temporary credentials obtained
 by using the AWS account root user credentials (not recommended) have a maximum 
 duration of 1 hour.                                                             
                                                                                 
+As a precaution, when long-lived credentials (i.e. AWS Secret Keys) are detected
+on your environment by the Service Connector during auto-configuration, this    
+authentication method is automatically chosen instead of the AWS Secret Key     
+authentication method alternative.                                              
+                                                                                
 Generated STS tokens inherit the full set of permissions of the IAM user or AWS 
-account root user that is calling the GetSessionToken. This is not recommended  
-for production use, as it can lead to accidental privilege escalation. Instead, 
-it is recommended to use the AWS Federation Token or AWS IAM Role authentication
-methods with additional session policies to restrict the permissions of the     
-generated STS tokens.                                                           
+account root user that is calling the GetSessionToken API. Depending on your    
+security needs, this may not be suitable for production use, as it can lead to  
+accidental privilege escalation. Instead, it is recommended to use the AWS      
+Federation Token or AWS IAM Role authentication methods to restrict the         
+permissions of the generated STS tokens.                                        
                                                                                 
-For more information on session tokens and the GetSessionToken AWS API, see:    
-https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_temp_request.htm
-l#api_getsessiontoken                                                           
+For more information on session tokens and the GetSessionToken AWS API, see: the
+official AWS documentation on the subject.                                      
                                                                                 
-This method might not be suitable for consumers that cannot automatically       
-re-generate temporary credentials upon expiration (e.g. an external client or   
-long-running process).                                                          
+Attributes:                                                                     
+                                                                                
+ • aws_access_key_id {string, secret, required}: AWS Access Key ID              
+ • aws_secret_access_key {string, secret, required}: AWS Secret Access Key      
+ • region {string, required}: AWS Region                                        
+ • endpoint_url {string, optional}: AWS Endpoint URL                            
                                                                                 
 ────────────────────────────────────────────────────────────────────────────────
 ```
