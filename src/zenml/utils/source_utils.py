@@ -432,28 +432,24 @@ def _resolve_module(module: ModuleType) -> str:
             )
         return module.__name__
 
-    module_file = os.path.abspath(module.__file__)
-    source_root = os.path.abspath(get_source_root())
+    module_file = Path(module.__file__).resolve()
+    source_root = Path(get_source_root()).resolve()
 
-    module_source_path = os.path.relpath(module_file, source_root)
-
-    if module_source_path.startswith(os.pardir):
+    if source_root not in module_file.parents:
         raise RuntimeError(
             f"Unable to resolve module `{module}`. The file from which the "
             f"module was loaded ({module_file}) is outside the source root "
             f"({source_root})."
         )
 
-    # Remove the file extension and replace the os-specific path separators
-    # with `.` to get the module source
-    module_source_path, file_extension = os.path.splitext(module_source_path)
-    if file_extension != ".py":
+    if module_file.suffix != ".py":
         raise RuntimeError(
             f"Unable to resolve module `{module}`. The file from which the "
             f"module was loaded ({module_file}) is not a python file."
         )
 
-    module_source = module_source_path.replace(os.path.sep, ".")
+    module_source_path = module_file.relative_to(source_root).with_suffix("")
+    module_source = str(module_source_path).replace(os.path.sep, ".")
 
     logger.debug("Resolved module `%s` to `%s`", module, module_source)
 

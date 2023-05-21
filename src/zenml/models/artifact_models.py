@@ -26,6 +26,7 @@ from zenml.models.base_models import (
 )
 from zenml.models.constants import STR_FIELD_MAX_LENGTH
 from zenml.models.filter_models import WorkspaceScopedFilterModel
+from zenml.models.visualization_models import VisualizationModel
 
 if TYPE_CHECKING:
     from zenml.models.run_metadata_models import RunMetadataResponseModel
@@ -52,6 +53,9 @@ class ArtifactBaseModel(BaseModel):
     )
     data_type: Source = Field(
         title="Data type of the artifact.",
+    )
+    visualizations: Optional[List[VisualizationModel]] = Field(
+        default=None, title="Visualizations of the artifact."
     )
 
     _convert_source = convert_source_validator("materializer", "data_type")

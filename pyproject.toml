@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "zenml"
-version = "0.38.0"
+version = "0.39.1"
 packages = [
     { include = "zenml", from = "src" },
 ]
@@ -84,11 +84,11 @@ orjson = { version = "~3.8.3", optional = true}
 # Optional dependencies for project templates
 copier = { version = ">=7.0.0", optional = true }
 jinja2-time = { version = "^0.2.0", optional = true }
-black = { version = "^22.3.0", optional = true }
-ruff = { version = "^0.0.261", optional = true }
+black = { version = "^23.3.0", optional = true }
+ruff = { version = "^0.0.265", optional = true }
 
 # Optional dependencies for the AWS secrets store
-boto3 = { version=">=1.16.0", optional = true }
+boto3 = { version=">=1.16.0,<=1.24.59", optional = true }
 
 # Optional dependencies for the GCP secrets store
 google-cloud-secret-manager = { version=">=2.12.5", optional = true }
@@ -99,6 +99,15 @@ azure-keyvault-secrets = { version=">=4.0.0", optional = true }
 
 # Optional dependencies for the HashiCorp Vault secrets store
 hvac = { version=">=0.11.2", optional = true }
+
+# Optional dependencies for the S3 artifact store
+s3fs = {version = "2022.11.0", optional = true}
+
+# Optional dependencies for the GCS artifact store
+gcsfs = {version = "2022.11.0", optional = true}
+
+# Optional dependencies for the Azure artifact store
+adlfs = {version = ">=2021.10.0", optional = true}
 
 # Optional development dependencies
 coverage = { extras = ["toml"], version = "^5.5", optional = true }
@@ -147,6 +156,9 @@ secrets-aws = ["boto3"]
 secrets-gcp = ["google-cloud-secret-manager"]
 secrets-azure = ["azure-identity", "azure-keyvault-secrets"]
 secrets-hashicorp = ["hvac"]
+s3fs = ["s3fs"]
+gcsfs = ["gcsfs"]
+adlfs = ["adlfs"]
 dev = ["black", "ruff", "coverage", "pytest", "mypy", "pre-commit", "pyment", "tox", "hypothesis", "typing-extensions", "darglint", "pytest-randomly", "pytest-mock", "pytest-clarity", "mkdocs", "mkdocs-material", "mkdocs-awesome-pages-plugin", "mkdocstrings", "mike", "types-certifi", "types-croniter", "types-futures", "types-Markdown", "types-Pillow", "types-protobuf", "types-PyMySQL", "types-python-dateutil", "types-python-slugify", "types-PyYAML", "types-redis", "types-requests", "types-setuptools", "types-six", "types-termcolor", "types-psutil", "docker-compose"]
 
 [build-system]
@@ -277,6 +289,7 @@ module = [
     "numpy.*",
     "facets_overview.*",
     "IPython.core.*",
+    "IPython.display.*",
     "plotly.*",
     "graphviz.*",
     "dash.*",
@@ -313,6 +326,7 @@ module = [
     "sqlalchemy_utils.*",
     "copier.*",
     "datasets.*",
+    "pyngrok.*",
     "cloudpickle.*",
 ]
 ignore_missing_imports = true

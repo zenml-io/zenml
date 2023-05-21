@@ -65,7 +65,6 @@ def test_create_fails_with_bad_scope():
     """Tests that creating a secret with a bad scope fails."""
     runner = CliRunner()
     with cleanup_secrets() as secret_name:
-
         result = runner.invoke(
             secret_create_command,
             [secret_name, "--test_value=aria", "--scope=axl_scope"],
@@ -80,7 +79,6 @@ def test_list_secret_works():
     """Test that the secret list command works."""
     runner = CliRunner()
     with cleanup_secrets() as secret_name:
-
         result1 = runner.invoke(
             secret_list_command,
         )
@@ -104,7 +102,6 @@ def test_get_secret_works():
     """Test that the secret get command works."""
     runner = CliRunner()
     with cleanup_secrets() as secret_name:
-
         result1 = runner.invoke(
             secret_get_command,
             [secret_name],
@@ -160,7 +157,6 @@ def test_get_secret_with_scope_works():
     """Test that the secret get command works with a scope."""
     runner = CliRunner()
     with cleanup_secrets() as secret_name:
-
         result1 = runner.invoke(
             secret_get_command,
             [secret_name, f"--scope={SecretScope.USER}"],
@@ -231,9 +227,7 @@ def test_rename_secret_works():
     runner = CliRunner()
 
     with cleanup_secrets() as secret_name:
-
         with cleanup_secrets() as new_secret_name:
-
             result1 = runner.invoke(
                 secret_rename_command,
                 [secret_name, "-n", new_secret_name],
@@ -275,7 +269,6 @@ def test_update_secret_works():
     client = Client()
 
     with cleanup_secrets() as secret_name:
-
         result1 = runner.invoke(
             secret_update_command,
             [secret_name, "--test_value=aria", "--test_value2=axl"],

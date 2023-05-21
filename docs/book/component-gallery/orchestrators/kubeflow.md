@@ -114,6 +114,20 @@ service is called exactly `ml-pipeline`. This is a requirement for ZenML to
 connect to your Kubeflow Pipelines deployment.
 {% endhint %}
 
+### Infrastructure Deployment
+
+A Kubeflow orchestrator can be deployed directly from the ZenML CLI:
+
+```shell
+zenml orchestrator deploy kubeflow_orchestrator --flavor=kubeflow ...
+```
+
+You can pass other configuration specific to the stack components as key-value
+arguments. If you don't provide a name, a random one is generated for you. For
+more information about how to work use the CLI for this, please refer to [the
+dedicated documentation
+section](../../advanced-guide/practical/stack-recipes.md#deploying-stack-components-directly).
+
 ## How to use it
 
 To use the Kubeflow orchestrator, we need:

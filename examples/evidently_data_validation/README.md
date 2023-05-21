@@ -143,9 +143,9 @@ def text_data_report_test_pipeline(
     text_analyzer(report)
 ```
 
-In the post-execution phase, after the pipeline runs, we use the ZenML Evidently
-visualizer to display data report and test results in your browser or within a
-Jupyter notebook:
+The materializer included in this integration automatically saves the Evidently
+reports and test results in artifact store so we can inspect them in the ZenML 
+dashboard by clicking on the corresponding artifact:
 
 ![Evidently metrics report visualization](assets/evidently-metrics-report.png)
 ![Evidently test results visualization](assets/evidently-test-results.png)

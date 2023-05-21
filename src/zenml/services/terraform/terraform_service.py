@@ -166,6 +166,33 @@ class TerraformService(BaseService):
         else:
             return (ServiceState.ERROR, f"Deployment error: \n{err}")
 
+    def _update_service_config(self) -> None:
+        """Update the service configuration file.
+
+        This function is called after the service has been started, to update
+        the service configuration file with the runtime path of the service.
+        """
+        # write the service information in the service config file
+        assert self.status.config_file is not None
+
+        with open(self.status.config_file, "w") as f:
+            f.write(self.json(indent=4))
+
+    def _write_vars_to_file(self, vars: Dict[str, Any]) -> None:
+        """Write variables to the variables file.
+
+        Args:
+            vars: The variables to write to the file.
+        """
+        import json
+
+        path = self.terraform_client.working_dir
+        variables_file_path = os.path.join(
+            path, self.config.variables_file_path
+        )
+        with open(variables_file_path, "w") as f:
+            json.dump(vars, f)
+
     def _init_and_apply(self) -> None:
         """Function to call terraform init and terraform apply.
 
@@ -175,11 +202,7 @@ class TerraformService(BaseService):
         Raises:
             RuntimeError: if init or apply function fails.
         """
-        # write the service information in the service config file
-        assert self.status.config_file is not None
-
-        with open(self.status.config_file, "w") as f:
-            f.write(self.json(indent=4))
+        self._update_service_config()
 
         # this directory gets created after a successful init
         previous_run_dir = os.path.join(
@@ -205,7 +228,11 @@ class TerraformService(BaseService):
             input=False,
             capture_output=False,
             raise_on_error=True,
+            refresh=False,
         )
+
+        # write variables to the variable file after execution is successful
+        self._write_vars_to_file(vars)
 
     def get_vars(self) -> Dict[str, Any]:
         """Get variables as a dictionary from values.tfvars.json.
@@ -252,7 +279,10 @@ class TerraformService(BaseService):
             capture_output=False,
             raise_on_error=True,
             force=python_terraform.IsNotFlagged,
+            refresh=False,
         )
+
+        # set empty vars to the file
 
     def _setup_runtime_path(self) -> None:
         """Set up the runtime path for the service.
@@ -353,6 +383,29 @@ class TerraformService(BaseService):
         raise NotImplementedError(
             "This method is not available for Terraform services."
         )
+
+    def get_outputs(self, output: Optional[str] = None) -> Dict[str, Any]:
+        """Get outputs from the terraform state.
+
+        Args:
+            output: if specified, only the output with the given name will be
+                returned. Otherwise, all outputs will be returned.
+
+        Returns:
+            A dictionary of outputs from the terraform state.
+        """
+        if output:
+            # if output is specified, then full_outputs is just a string
+            full_outputs = self.terraform_client.output(
+                output, full_value=True
+            )
+            return {output: full_outputs}
+        else:
+            # get value of the "value" key in the value of full_outputs
+            # and assign it to the key in the output dict
+            full_outputs = self.terraform_client.output(full_value=True)
+            outputs = {k: v["value"] for k, v in full_outputs.items()}
+            return outputs
 
     def check_installation(self) -> None:
         """Checks if necessary tools are installed on the host system.

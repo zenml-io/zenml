@@ -195,6 +195,9 @@ from zenml.zen_stores.schemas import (
     UserSchema,
     WorkspaceSchema,
 )
+from zenml.zen_stores.schemas.artifact_schemas import (
+    ArtifactVisualizationSchema,
+)
 from zenml.zen_stores.secrets_stores.sql_secrets_store import (
     SqlSecretsStoreConfiguration,
 )
@@ -3149,7 +3152,6 @@ class SqlZenStore(BaseZenStore):
             EntityExistsError: If an identical pipeline run already exists.
         """
         with Session(self.engine) as session:
-
             # Check if pipeline run with same name already exists.
             existing_domain_run = session.exec(
                 select(PipelineRunSchema).where(
@@ -3352,7 +3354,6 @@ class SqlZenStore(BaseZenStore):
             KeyError: if the pipeline run doesn't exist.
         """
         with Session(self.engine) as session:
-
             # Check if the pipeline run exists
             run = session.exec(
                 select(PipelineRunSchema).where(
@@ -3691,7 +3692,6 @@ class SqlZenStore(BaseZenStore):
             KeyError: if the step run doesn't exist.
         """
         with Session(self.engine) as session:
-
             # Check if the step exists
             existing_step_run = session.exec(
                 select(StepRunSchema).where(StepRunSchema.id == step_run_id)
@@ -3739,8 +3739,18 @@ class SqlZenStore(BaseZenStore):
             The created artifact.
         """
         with Session(self.engine) as session:
+            # Save artifact.
             artifact_schema = ArtifactSchema.from_request(artifact)
             session.add(artifact_schema)
+
+            # Save visualizations of the artifact.
+            if artifact.visualizations:
+                for vis in artifact.visualizations:
+                    vis_schema = ArtifactVisualizationSchema.from_model(
+                        visualization=vis, artifact_id=artifact_schema.id
+                    )
+                    session.add(vis_schema)
+
             session.commit()
             return self._artifact_schema_to_model(artifact_schema)
 
