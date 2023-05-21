@@ -51,7 +51,6 @@ hyper-parameter tuning, see [our Dynamic Pipelines
 example](https://github.com/zenml-io/zenml/tree/main/examples/dynamic_pipelines).
 
 Hyper-parameter tuning is not yet a first-class citizen in ZenML, but it is
-[(high up) on our roadmap of
-features](https://zenml.hellonext.co/p/enable-hyper-parameter-tuning) that are
+[(high up) on our roadmap of features](https://zenml.hellonext.co/p/enable-hyper-parameter-tuning) that are
 due for implementation in an integrated way. In the meantime, the above is a way
 to achieve the same functionality.
