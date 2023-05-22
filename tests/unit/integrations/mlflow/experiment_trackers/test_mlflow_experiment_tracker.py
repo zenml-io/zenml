@@ -28,6 +28,12 @@ from zenml.integrations.gcp.flavors.gcp_artifact_store_flavor import (
     GCPArtifactStoreConfig,
 )
 from zenml.integrations.mlflow.experiment_trackers.mlflow_experiment_tracker import (
+    MLFlowExperimentTracker,
+)
+from zenml.integrations.mlflow.flavors.mlflow_experiment_tracker_flavor import (
+    MLFlowExperimentTrackerConfig,
+)
+from zenml.integrations.mlflow.mixins.mlflow_stack_component_mixin import (
     DATABRICKS_HOST,
     DATABRICKS_PASSWORD,
     DATABRICKS_TOKEN,
@@ -36,10 +42,6 @@ from zenml.integrations.mlflow.experiment_trackers.mlflow_experiment_tracker imp
     MLFLOW_TRACKING_PASSWORD,
     MLFLOW_TRACKING_TOKEN,
     MLFLOW_TRACKING_USERNAME,
-    MLFlowExperimentTracker,
-)
-from zenml.integrations.mlflow.flavors.mlflow_experiment_tracker_flavor import (
-    MLFlowExperimentTrackerConfig,
 )
 from zenml.orchestrators import LocalOrchestrator
 from zenml.stack import Stack
