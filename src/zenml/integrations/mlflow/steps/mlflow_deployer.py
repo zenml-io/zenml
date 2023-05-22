@@ -13,9 +13,9 @@
 #  permissions and limitations under the License.
 """Implementation of the MLflow model deployer pipeline step."""
 
-from typing import Optional, Type, cast
+from typing import Optional, cast
 
-from mlflow.tracking import MlflowClient, artifact_utils
+from mlflow.tracking import artifact_utils
 
 from zenml.client import Client
 from zenml.constants import (
@@ -23,9 +23,6 @@ from zenml.constants import (
     MLFLOW_MODEL_FORMAT,
 )
 from zenml.environment import Environment
-from zenml.integrations.mlflow.experiment_trackers.mlflow_experiment_tracker import (
-    MLFlowExperimentTracker,
-)
 from zenml.integrations.mlflow.model_deployers.mlflow_model_deployer import (
     MLFlowModelDeployer,
 )
@@ -45,7 +42,6 @@ from zenml.model_registries.base_model_registry import (
 from zenml.steps import (
     STEP_ENVIRONMENT_NAME,
     BaseParameters,
-    BaseStep,
     StepEnvironment,
     step,
 )
@@ -115,15 +111,6 @@ def mlflow_model_deployer_step(
         MLFlowModelDeployer, MLFlowModelDeployer.get_active_model_deployer()
     )
 
-    experiment_tracker = Client().active_stack.experiment_tracker
-
-    if not isinstance(experiment_tracker, MLFlowExperimentTracker):
-        raise ValueError(
-            "MLflow model deployer step requires an MLflow experiment "
-            "tracker. Please add an MLflow experiment tracker to your "
-            "stack."
-        )
-
     # get pipeline name, step name and run id
     step_env = cast(StepEnvironment, Environment()[STEP_ENVIRONMENT_NAME])
     pipeline_name = step_env.pipeline_name
@@ -131,9 +118,8 @@ def mlflow_model_deployer_step(
     step_name = step_env.step_name
 
     # Configure Mlflow so the client points to the correct store
-    experiment_tracker.configure_mlflow()
-    client = MlflowClient()
-    mlflow_run_id = experiment_tracker.get_run_id(
+    client = model_deployer.mlflow_client
+    mlflow_run_id = model_deployer.get_run_id(
         experiment_name=params.experiment_name or pipeline_name,
         run_name=params.run_name or run_name,
     )
@@ -281,6 +267,7 @@ def mlflow_model_registry_deployer_step(
         )
 
     # fetch the model version
+    model_version = None
     if params.registry_model_version:
         try:
             model_version = model_registry.get_model_version(
@@ -288,8 +275,8 @@ def mlflow_model_registry_deployer_step(
                 version=params.registry_model_version,
             )
         except KeyError:
-            model_version = None
-    elif params.registry_model_stage:
+            pass
+    if not model_version and params.registry_model_stage:
         model_version = model_registry.get_latest_model_version(
             name=params.registry_model_name,
             stage=params.registry_model_stage,
@@ -359,27 +346,3 @@ def mlflow_model_registry_deployer_step(
     )
 
     return new_service
-
-
-def mlflow_deployer_step(
-    enable_cache: bool = True,
-    name: Optional[str] = None,
-) -> Type[BaseStep]:
-    """Creates a pipeline step to deploy a given ML model with a local MLflow prediction server.
-
-    The returned step can be used in a pipeline to implement continuous
-    deployment for an MLflow model.
-
-    Args:
-        enable_cache: Specify whether caching is enabled for this step. If no
-            value is passed, caching is enabled by default
-        name: Name of the step.
-
-    Returns:
-        an MLflow model deployer pipeline step
-    """
-    logger.warning(
-        "The `mlflow_deployer_step` function is deprecated. Please "
-        "use the built-in `mlflow_model_deployer_step` step instead."
-    )
-    return mlflow_model_deployer_step

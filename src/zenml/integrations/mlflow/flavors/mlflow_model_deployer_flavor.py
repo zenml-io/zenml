@@ -16,6 +16,9 @@
 from typing import TYPE_CHECKING, Optional, Type
 
 from zenml.integrations.mlflow import MLFLOW_MODEL_DEPLOYER_FLAVOR
+from zenml.integrations.mlflow.mixins.mlflow_config_mixin import (
+    MLFlowConfigMixin,
+)
 from zenml.model_deployers.base_model_deployer import (
     BaseModelDeployerConfig,
     BaseModelDeployerFlavor,
@@ -25,7 +28,7 @@ if TYPE_CHECKING:
     from zenml.integrations.mlflow.model_deployers import MLFlowModelDeployer
 
 
-class MLFlowModelDeployerConfig(BaseModelDeployerConfig):
+class MLFlowModelDeployerConfig(BaseModelDeployerConfig, MLFlowConfigMixin):
     """Configuration for the MLflow model deployer.
 
     Attributes:

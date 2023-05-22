@@ -18,7 +18,6 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional, Tuple, cast
 
 import mlflow
-from mlflow import MlflowClient
 from mlflow.entities.model_registry import ModelVersion as MLflowModelVersion
 from mlflow.exceptions import MlflowException
 from mlflow.pyfunc import load_model
@@ -26,12 +25,11 @@ from pydantic import Field
 
 from zenml.client import Client
 from zenml.constants import MLFLOW_MODEL_FORMAT
-from zenml.enums import StackComponentType
-from zenml.integrations.mlflow.experiment_trackers.mlflow_experiment_tracker import (
-    MLFlowExperimentTracker,
-)
 from zenml.integrations.mlflow.flavors.mlflow_model_registry_flavor import (
     MLFlowModelRegistryConfig,
+)
+from zenml.integrations.mlflow.mixins.mlflow_stack_component_mixin import (
+    MLFlowStackComponentMixin,
 )
 from zenml.logger import get_logger
 from zenml.model_registries.base_model_registry import (
@@ -47,10 +45,8 @@ from zenml.stack.stack_validator import StackValidator
 logger = get_logger(__name__)
 
 
-class MLFlowModelRegistry(BaseModelRegistry):
+class MLFlowModelRegistry(BaseModelRegistry, MLFlowStackComponentMixin):
     """Register models using MLflow."""
-
-    _client: Optional[MlflowClient] = None
 
     @property
     def config(self) -> MLFlowModelRegistryConfig:
@@ -60,24 +56,6 @@ class MLFlowModelRegistry(BaseModelRegistry):
             The configuration.
         """
         return cast(MLFlowModelRegistryConfig, self._config)
-
-    def configure_mlflow(self) -> None:
-        """Configures the MLflow Client with the experiment tracker config."""
-        experiment_tracker = Client().active_stack.experiment_tracker
-        assert isinstance(experiment_tracker, MLFlowExperimentTracker)
-        experiment_tracker.configure_mlflow()
-
-    @property
-    def mlflow_client(self) -> MlflowClient:
-        """Get the MLflow client.
-
-        Returns:
-            The MLFlowClient.
-        """
-        if not self._client:
-            self.configure_mlflow()
-            self._client = mlflow.tracking.MlflowClient()
-        return self._client
 
     @property
     def validator(self) -> Optional[StackValidator]:
@@ -96,21 +74,8 @@ class MLFlowModelRegistry(BaseModelRegistry):
             Returns:
                 A tuple of (is_valid, error_message).
             """
-            # Validate that the experiment tracker is an mlflow experiment tracker.
-            experiment_tracker = stack.experiment_tracker
-            assert experiment_tracker is not None
-            if experiment_tracker.flavor != "mlflow":
-                return False, (
-                    "The MLflow model registry requires a MLflow experiment "
-                    "tracker. You should register a MLflow experiment "
-                    "tracker to the stack using the following command: "
-                    "`zenml stack update model_registry -e mlflow_tracker"
-                )
             mlflow_version = mlflow.version.VERSION
-            if (
-                not mlflow_version >= "2.1.1"
-                and experiment_tracker.config.is_local
-            ):
+            if not mlflow_version >= "2.1.1" and self.config.is_local:
                 return False, (
                     "The MLflow model registry requires MLflow version "
                     f"2.1.1 or higher to use a local MLflow registry. "
@@ -121,9 +86,6 @@ class MLFlowModelRegistry(BaseModelRegistry):
             return True, ""
 
         return StackValidator(
-            required_components={
-                StackComponentType.EXPERIMENT_TRACKER,
-            },
             custom_validation_function=_validate_stack_requirements,
         )
 

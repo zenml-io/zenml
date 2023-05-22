@@ -25,6 +25,9 @@ from zenml.integrations.mlflow.flavors.mlflow_model_deployer_flavor import (
     MLFlowModelDeployerConfig,
     MLFlowModelDeployerFlavor,
 )
+from zenml.integrations.mlflow.mixins.mlflow_stack_component_mixin import (
+    MLFlowStackComponentMixin,
+)
 from zenml.integrations.mlflow.services.mlflow_deployment import (
     MLFlowDeploymentConfig,
     MLFlowDeploymentService,
@@ -39,7 +42,7 @@ from zenml.utils.io_utils import create_dir_recursive_if_not_exists
 logger = get_logger(__name__)
 
 
-class MLFlowModelDeployer(BaseModelDeployer):
+class MLFlowModelDeployer(BaseModelDeployer, MLFlowStackComponentMixin):
     """MLflow implementation of the BaseModelDeployer."""
 
     NAME: ClassVar[str] = "MLflow"

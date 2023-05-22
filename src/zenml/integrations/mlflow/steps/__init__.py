@@ -15,6 +15,5 @@
 
 from zenml.integrations.mlflow.steps.mlflow_deployer import (
     MLFlowDeployerParameters,
-    mlflow_deployer_step,
     mlflow_model_deployer_step,
 )

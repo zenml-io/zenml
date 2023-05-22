@@ -21,9 +21,6 @@ from pydantic import Field
 from zenml import __version__
 from zenml.client import Client
 from zenml.environment import Environment
-from zenml.integrations.mlflow.experiment_trackers.mlflow_experiment_tracker import (
-    MLFlowExperimentTracker,
-)
 from zenml.integrations.mlflow.model_registries.mlflow_model_registry import (
     MLFlowModelRegistry,
 )
@@ -89,15 +86,6 @@ def mlflow_register_model_step(
         RuntimeError: If no model source URI is provided and no model is found.
         RuntimeError: If no run ID is provided and no run is found.
     """
-    # get the experiment tracker and check if it is an MLflow experiment tracker.
-    experiment_tracker = Client().active_stack.experiment_tracker
-    if not isinstance(experiment_tracker, MLFlowExperimentTracker):
-        raise ValueError(
-            "The MLflow model registry step can only be used with an "
-            "MLflow experiment tracker. Please add an MLflow experiment "
-            "tracker to your stack."
-        )
-
     # fetch the MLflow model registry
     model_registry = Client().active_stack.model_registry
     if not isinstance(model_registry, MLFlowModelRegistry):
@@ -115,7 +103,7 @@ def mlflow_register_model_step(
 
     # Get MLflow run ID either from params or from experiment tracker using
     # pipeline name and run name
-    mlflow_run_id = params.run_id or experiment_tracker.get_run_id(
+    mlflow_run_id = params.run_id or model_registry.get_run_id(
         experiment_name=params.experiment_name or pipeline_name,
         run_name=params.run_name or run_name,
     )

@@ -16,6 +16,9 @@
 from typing import TYPE_CHECKING, Optional, Type
 
 from zenml.integrations.mlflow import MLFLOW_MODEL_REGISTRY_FLAVOR
+from zenml.integrations.mlflow.mixins.mlflow_config_mixin import (
+    MLFlowConfigMixin,
+)
 from zenml.model_registries.base_model_registry import (
     BaseModelRegistryConfig,
     BaseModelRegistryFlavor,
@@ -27,7 +30,7 @@ if TYPE_CHECKING:
     )
 
 
-class MLFlowModelRegistryConfig(BaseModelRegistryConfig):
+class MLFlowModelRegistryConfig(BaseModelRegistryConfig, MLFlowConfigMixin):
     """Configuration for the MLflow model registry."""
 
 

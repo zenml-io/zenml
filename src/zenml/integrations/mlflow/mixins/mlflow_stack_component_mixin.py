@@ -18,6 +18,7 @@ import os
 from typing import Any, Optional, cast
 
 import mlflow
+from mlflow import MlflowClient
 from mlflow.entities import Run
 from mlflow.store.db.db_types import DATABASE_ENGINES
 
@@ -48,6 +49,8 @@ DATABRICKS_TOKEN = "DATABRICKS_TOKEN"
 
 class MLFlowStackComponentMixin(StackComponent):
     """Mixin class for MLflow stack components."""
+
+    _client: Optional[MlflowClient] = None
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         """Initialize the experiment tracker and validate the tracking uri.
@@ -197,3 +200,15 @@ class MLFlowStackComponentMixin(StackComponent):
             return cast(str, run.info.run_id)
         else:
             return None
+
+    @property
+    def mlflow_client(self) -> MlflowClient:
+        """Get the MLflow client.
+
+        Returns:
+            The MLFlowClient.
+        """
+        if not self._client:
+            self.configure_mlflow()
+            self._client = mlflow.tracking.MlflowClient()
+        return self._client
