@@ -2220,6 +2220,36 @@ def warn_deprecated_secrets_manager() -> None:
     )
 
 
+def fail_secrets_manager_creation() -> None:
+    """Warning for deprecating secrets managers."""
+    error(
+        "Creating secrets managers is no longer supported. Existing secrets "
+        "managers will be removed in an upcoming release in favor of the "
+        "centralized secrets management. Please consider migrating all your "
+        "existing secrets to the centralized secrets store by means of the "
+        "`zenml secrets-manager secret migrate` CLI command."
+        " See the `zenml secret` CLI command or the "
+        "https://docs.zenml.io/starter-guide/production-fundamentals/secrets-management "
+        "documentation page for more information. "
+    )
+
+
+def fail_secret_creation_on_secrets_manager() -> None:
+    """Warning for deprecating secrets managers."""
+    error(
+        "Creating secrets within the stack component `secrets manager` is no "
+        "longer supported. "
+        "Existing secrets managers will be removed in an "
+        "upcoming release in favor of the centralized secrets management. "
+        "Learn more about this in our documentation:"
+        "https://docs.zenml.io/starter-guide/production-fundamentals/secrets-management "
+        "Please also consider migrating all your existing secrets to the "
+        "centralized secrets store by means of the "
+        "`zenml secrets-manager secret migrate` CLI command. "
+        "See the `zenml secret --help` for more information."
+    )
+
+
 def get_parsed_labels(
     labels: Optional[List[str]], allow_label_only: bool = False
 ) -> Dict[str, Optional[str]]:
