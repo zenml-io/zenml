@@ -220,6 +220,7 @@ And run a simple pipeline on Airflow (or an orchestrator of your choice) creatin
 import mlflow
 from sklearn.base import ClassifierMixin
 from sklearn.svm import SVC
+from zenml import step
 from zenml.client import Client
 
 experiment_tracker = Client().active_stack.experiment_tracker

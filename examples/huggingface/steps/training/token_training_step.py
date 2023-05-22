@@ -21,7 +21,7 @@ from transformers import (
     create_optimizer,
 )
 
-from zenml.steps import step
+from zenml import step
 
 
 @step

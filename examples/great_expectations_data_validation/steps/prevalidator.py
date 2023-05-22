@@ -15,7 +15,7 @@
 
 from great_expectations.core import ExpectationSuite  # type: ignore[import]
 
-from zenml.steps import step
+from zenml import step
 
 
 @step

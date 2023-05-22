@@ -11,12 +11,14 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+
+from zenml import step
 from zenml.integrations.mlflow.model_deployers.mlflow_model_deployer import (
     MLFlowModelDeployer,
 )
 from zenml.integrations.mlflow.services import MLFlowDeploymentService
 from zenml.integrations.mlflow.steps import mlflow_model_deployer_step
-from zenml.steps import BaseParameters, step
+from zenml.steps import BaseParameters
 
 model_deployer = mlflow_model_deployer_step
 

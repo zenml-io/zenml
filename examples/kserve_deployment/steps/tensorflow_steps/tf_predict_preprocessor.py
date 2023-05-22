@@ -19,7 +19,8 @@ import numpy as np
 import requests
 from PIL import Image
 
-from zenml.steps import BaseParameters, step
+from zenml import step
+from zenml.steps import BaseParameters
 
 
 class TensorflowInferenceProcessorStepParameters(BaseParameters):

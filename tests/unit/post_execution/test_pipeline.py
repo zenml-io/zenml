@@ -17,13 +17,12 @@ from unittest.mock import ANY
 
 import pytest
 
-from zenml.pipelines import pipeline
+from zenml import pipeline, step
 from zenml.post_execution.pipeline import (
     PipelineVersionView,
     PipelineView,
     get_pipeline,
 )
-from zenml.steps import step
 
 
 def test_get_pipeline():

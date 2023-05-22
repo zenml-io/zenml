@@ -19,6 +19,7 @@ from uuid import uuid4
 import pytest
 from pytest_mock import MockFixture
 
+from zenml import pipeline, step
 from zenml.client import Client
 from zenml.config.compiler import Compiler
 from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
@@ -30,8 +31,8 @@ from zenml.exceptions import (
 from zenml.models.page_model import Page
 from zenml.models.pipeline_build_models import PipelineBuildBaseModel
 from zenml.models.pipeline_deployment_models import PipelineDeploymentBaseModel
-from zenml.pipelines import BasePipeline, Schedule, pipeline
-from zenml.steps import BaseParameters, BaseStep, step
+from zenml.pipelines import BasePipeline, Schedule
+from zenml.steps import BaseParameters, BaseStep
 
 
 def create_pipeline_with_param_value(param_value: int):
@@ -622,7 +623,7 @@ def test_loading_pipeline_from_model(clean_workspace, create_pipeline_model):
     with open("my_steps.py", "w") as f:
         f.write(
             (
-                "from zenml.steps import step\n"
+                "from zenml import step\n"
                 "@step\n"
                 "def s1() -> int:\n"
                 "  return 1\n\n"
@@ -761,7 +762,7 @@ def test_connect_method_generation(clean_workspace, create_pipeline_model):
     with open("my_steps.py", "w") as f:
         f.write(
             (
-                "from zenml.steps import step\n"
+                "from zenml import step\n"
                 "@step\n"
                 "def s1() -> int:\n"
                 "  return 1\n\n"

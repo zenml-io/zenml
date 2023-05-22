@@ -13,13 +13,14 @@
 #  permissions and limitations under the License.
 from typing import cast
 
+from zenml import step
 from zenml.integrations.bentoml.model_deployers.bentoml_model_deployer import (
     BentoMLModelDeployer,
 )
 from zenml.integrations.bentoml.services.bentoml_deployment import (
     BentoMLDeploymentService,
 )
-from zenml.steps import BaseParameters, step
+from zenml.steps import BaseParameters
 
 
 class PredictionServiceLoaderStepParameters(BaseParameters):

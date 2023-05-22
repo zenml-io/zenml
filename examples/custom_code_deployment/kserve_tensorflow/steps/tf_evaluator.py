@@ -15,7 +15,7 @@
 import numpy as np  # type: ignore [import]
 import tensorflow as tf  # type: ignore [import]
 
-from zenml.steps import step
+from zenml import step
 
 
 @step

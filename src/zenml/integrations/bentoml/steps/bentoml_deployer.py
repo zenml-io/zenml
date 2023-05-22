@@ -17,6 +17,7 @@ from typing import List, Optional, cast
 import bentoml
 from bentoml._internal.bento import bento
 
+from zenml import step
 from zenml.environment import Environment
 from zenml.integrations.bentoml.model_deployers.bentoml_model_deployer import (
     BentoMLModelDeployer,
@@ -31,7 +32,6 @@ from zenml.steps import (
     STEP_ENVIRONMENT_NAME,
     BaseParameters,
     StepEnvironment,
-    step,
 )
 from zenml.utils import source_utils
 

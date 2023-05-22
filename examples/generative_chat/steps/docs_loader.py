@@ -18,7 +18,8 @@ from typing import List
 from langchain.docstore.document import Document
 from langchain.document_loaders import GitbookLoader
 
-from zenml.steps import BaseParameters, step
+from zenml import step
+from zenml.steps import BaseParameters
 
 
 class DocsLoaderParameters(BaseParameters):

@@ -16,7 +16,7 @@ from enum import Enum
 from dynamic_pipelines.gather_step import GatherStepsParameters
 from steps.evaluation.evaluation_parameters import EvaluationOutputParams
 
-from zenml.steps import step
+from zenml import step
 
 
 class ReduceType(Enum):

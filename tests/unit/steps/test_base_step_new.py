@@ -17,8 +17,7 @@ from typing import Dict, List, Tuple
 import pytest
 from pydantic import BaseModel
 
-from zenml.new.pipelines.pipeline_decorator import pipeline
-from zenml.steps import step
+from zenml import pipeline, step
 
 
 @step

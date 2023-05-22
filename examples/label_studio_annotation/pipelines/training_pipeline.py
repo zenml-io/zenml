@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 
 
-from zenml.pipelines import pipeline
+from zenml import pipeline
 
 
 @pipeline(enable_cache=False)

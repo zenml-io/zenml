@@ -14,7 +14,7 @@
 
 import pandas as pd
 
-from zenml.steps import step
+from zenml import step
 
 
 @step

@@ -18,7 +18,7 @@ from typing import Optional, cast
 from mlflow.tracking import artifact_utils
 from pydantic import Field
 
-from zenml import __version__
+from zenml import __version__, step
 from zenml.client import Client
 from zenml.environment import Environment
 from zenml.integrations.mlflow.experiment_trackers.mlflow_experiment_tracker import (
@@ -36,7 +36,6 @@ from zenml.steps import (
     STEP_ENVIRONMENT_NAME,
     BaseParameters,
     StepEnvironment,
-    step,
 )
 
 logger = get_logger(__name__)

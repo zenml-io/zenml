@@ -15,9 +15,10 @@ import numpy as np
 import tensorflow as tf
 from wandb.integration.keras import WandbCallback
 
+from zenml import step
 from zenml.client import Client
 from zenml.integrations.wandb.experiment_trackers import WandbExperimentTracker
-from zenml.steps import BaseParameters, step
+from zenml.steps import BaseParameters
 
 experiment_tracker = Client().active_stack.experiment_tracker
 

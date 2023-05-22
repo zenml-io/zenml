@@ -24,8 +24,8 @@ from langchain.text_splitter import (
 from langchain.vectorstores import FAISS, VectorStore
 from openai.error import InvalidRequestError
 
+from zenml import step
 from zenml.logger import get_logger
-from zenml.steps import step
 from zenml.steps.base_parameters import BaseParameters
 
 logger = get_logger(__name__)

@@ -16,7 +16,7 @@ from scipy.sparse import csr_matrix
 from sklearn.base import ClassifierMixin
 from sklearn.linear_model import LogisticRegression
 
-from zenml.steps import step
+from zenml import step
 
 
 @step

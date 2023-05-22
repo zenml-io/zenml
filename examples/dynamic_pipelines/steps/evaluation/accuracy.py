@@ -18,7 +18,7 @@ from steps.evaluation.evaluation_parameters import (
     EvaluationParams,
 )
 
-from zenml.steps.step_decorator import step
+from zenml import step
 
 
 @step

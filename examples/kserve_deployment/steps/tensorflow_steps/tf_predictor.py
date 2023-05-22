@@ -14,8 +14,8 @@
 import numpy as np
 from rich import print as rich_print
 
+from zenml import step
 from zenml.integrations.kserve.services import KServeDeploymentService
-from zenml.steps import step
 
 
 @step

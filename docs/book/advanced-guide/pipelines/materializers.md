@@ -288,8 +288,7 @@ a custom class called `MyObject` that flows between two steps in a pipeline:
 
 ```python
 import logging
-from zenml.steps import step
-from zenml.pipelines import pipeline
+from zenml import step, pipeline
 
 
 class MyObj:

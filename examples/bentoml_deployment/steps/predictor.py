@@ -16,8 +16,8 @@ from typing import Dict, List
 import numpy as np
 from rich import print as rich_print
 
+from zenml import step
 from zenml.integrations.bentoml.services import BentoMLDeploymentService
-from zenml.steps import step
 
 
 @step

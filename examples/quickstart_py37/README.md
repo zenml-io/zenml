@@ -46,7 +46,8 @@ import pandas as pd
 from sklearn.datasets import load_iris
 from sklearn.model_selection import train_test_split
 
-from zenml.steps import step, Output
+from zenml import step
+from zenml.steps import Output
 
 @step
 def training_data_loader() -> Output(
@@ -71,7 +72,7 @@ workflows by linking different steps together. For instance, the training
 pipeline that we will use in this example looks like this:
 
 ```python
-from zenml.pipelines import pipeline
+from zenml import pipeline
 
 @pipeline(enable_cache=False)
 def training_pipeline(

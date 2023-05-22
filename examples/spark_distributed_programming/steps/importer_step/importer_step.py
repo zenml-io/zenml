@@ -14,8 +14,9 @@
 
 from pyspark.sql import DataFrame, SparkSession
 
+from zenml import step
 from zenml.client import Client
-from zenml.steps import BaseParameters, step
+from zenml.steps import BaseParameters
 
 step_operator = Client().active_stack.step_operator
 

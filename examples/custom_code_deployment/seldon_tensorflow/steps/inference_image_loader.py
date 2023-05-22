@@ -18,7 +18,8 @@ import requests
 from numpy import asarray
 from PIL import Image
 
-from zenml.steps import BaseParameters, step
+from zenml import step
+from zenml.steps import BaseParameters
 
 
 class InferenceImageLoaderStepParameters(BaseParameters):

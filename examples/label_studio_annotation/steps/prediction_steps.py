@@ -16,8 +16,9 @@ from typing import Dict, List
 import torch
 from steps.pytorch_trainer import LABEL_MAPPING, load_mobilenetv3_transforms
 
+from zenml import step
 from zenml.post_execution import get_pipeline
-from zenml.steps import BaseParameters, Output, step
+from zenml.steps import BaseParameters, Output
 from zenml.steps.step_context import StepContext
 
 REVERSE_LABEL_MAPPING = {value: key for key, value in LABEL_MAPPING.items()}

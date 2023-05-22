@@ -16,6 +16,7 @@
 from typing import Any, Dict, List, Optional, cast
 from urllib.parse import urlparse
 
+from zenml import step
 from zenml.exceptions import StackComponentInterfaceError
 from zenml.integrations.label_studio.label_config_generators import (
     TASK_TO_FILENAME_REFERENCE_MAPPING,
@@ -24,7 +25,7 @@ from zenml.integrations.label_studio.label_studio_utils import (
     convert_pred_filenames_to_task_ids,
 )
 from zenml.logger import get_logger
-from zenml.steps import BaseParameters, StepContext, step
+from zenml.steps import BaseParameters, StepContext
 
 logger = get_logger(__name__)
 

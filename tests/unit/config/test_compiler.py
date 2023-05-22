@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 import pytest
 
+from zenml import pipeline, step
 from zenml.config import ResourceSettings
 from zenml.config.base_settings import BaseSettings
 from zenml.config.compiler import Compiler
@@ -21,8 +22,6 @@ from zenml.config.pipeline_spec import PipelineSpec
 from zenml.config.step_configurations import StepConfigurationUpdate
 from zenml.exceptions import PipelineInterfaceError, StackValidationError
 from zenml.hooks.hook_validators import resolve_and_validate_hook
-from zenml.pipelines import pipeline
-from zenml.steps import step
 
 
 def test_compiling_pipeline_with_duplicate_step_names_fails(

@@ -17,8 +17,8 @@ from pyspark.ml import Model
 from pyspark.ml.classification import RandomForestClassifier
 from pyspark.sql import DataFrame
 
+from zenml import step
 from zenml.client import Client
-from zenml.steps import step
 
 step_operator = Client().active_stack.step_operator
 

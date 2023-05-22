@@ -17,13 +17,13 @@ from typing import Dict, List, Optional
 import pytest
 from pydantic import BaseModel
 
+from zenml import pipeline, step
 from zenml.environment import Environment
 from zenml.exceptions import MissingStepParameterError, StepInterfaceError
 from zenml.materializers import BuiltInMaterializer
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.models.artifact_models import ArtifactResponseModel
-from zenml.pipelines import pipeline
-from zenml.steps import BaseParameters, BaseStep, Output, StepContext, step
+from zenml.steps import BaseParameters, BaseStep, Output, StepContext
 
 
 def test_step_decorator_creates_class_in_same_module_as_decorated_function():

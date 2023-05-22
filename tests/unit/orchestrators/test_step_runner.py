@@ -17,13 +17,13 @@ from uuid import uuid4
 
 import pytest
 
+from zenml import step
 from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.step_configurations import Step
 from zenml.config.step_run_info import StepRunInfo
 from zenml.materializers import UnmaterializedArtifact
 from zenml.orchestrators.step_launcher import StepRunner
 from zenml.stack import Stack
-from zenml.steps import step
 
 
 @step

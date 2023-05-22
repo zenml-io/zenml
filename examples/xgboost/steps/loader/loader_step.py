@@ -16,7 +16,8 @@ import tempfile
 import requests
 import xgboost as xgb
 
-from zenml.steps import Output, step
+from zenml import step
+from zenml.steps import Output
 
 TRAIN_SET_RAW = (
     "https://raw.githubusercontent.com/dmlc/xgboost/master/demo"

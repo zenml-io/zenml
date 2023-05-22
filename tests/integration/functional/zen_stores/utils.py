@@ -16,6 +16,7 @@ from typing import Any, Callable, Dict, List, Optional, Type, TypeVar
 from pydantic import BaseModel
 
 from tests.integration.functional.utils import sample_name
+from zenml import pipeline, step
 from zenml.client import Client
 from zenml.config.global_config import GlobalConfiguration
 from zenml.config.pipeline_configurations import PipelineConfiguration
@@ -68,8 +69,6 @@ from zenml.models import (
 )
 from zenml.models.base_models import BaseRequestModel, BaseResponseModel
 from zenml.models.page_model import Page
-from zenml.pipelines import pipeline
-from zenml.steps import step
 from zenml.utils.string_utils import random_str
 
 

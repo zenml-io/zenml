@@ -18,9 +18,10 @@ from typing import Any, Dict, List, Union
 
 import pandas as pd
 
+from zenml import step
 from zenml.exceptions import DoesNotExistException
 from zenml.logger import get_logger
-from zenml.steps import BaseParameters, StepContext, step
+from zenml.steps import BaseParameters, StepContext
 
 logger = get_logger(__name__)
 

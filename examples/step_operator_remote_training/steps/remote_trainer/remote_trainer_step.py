@@ -15,8 +15,8 @@ import numpy as np
 from sklearn.base import ClassifierMixin
 from sklearn.svm import SVC
 
+from zenml import step
 from zenml.client import Client
-from zenml.steps import step
 
 step_operator = Client().active_stack.step_operator
 if not step_operator:

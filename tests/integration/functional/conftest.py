@@ -14,8 +14,7 @@
 
 import pytest
 
-from zenml.pipelines import pipeline
-from zenml.steps import step
+from zenml import pipeline, step
 from zenml.types import HTMLString
 
 

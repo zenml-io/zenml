@@ -13,7 +13,8 @@
 #  permissions and limitations under the License.
 import xgboost as xgb
 
-from zenml.steps import BaseParameters, step
+from zenml import step
+from zenml.steps import BaseParameters
 
 
 class XGBoostParameters(BaseParameters):

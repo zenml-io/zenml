@@ -27,9 +27,8 @@ object.
 from typing import Type
 import os
 
+from zenml import step, pipeline
 from zenml.enums import ArtifactType
-from zenml.steps import step
-from zenml.pipelines import pipeline
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.io import fileio
 

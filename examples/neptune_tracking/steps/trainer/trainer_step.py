@@ -16,6 +16,7 @@ import numpy as np
 import tensorflow as tf
 from neptune.new.integrations.tensorflow_keras import NeptuneCallback
 
+from zenml import step
 from zenml.client import Client
 from zenml.integrations.neptune.experiment_trackers import (
     NeptuneExperimentTracker,
@@ -27,7 +28,7 @@ from zenml.integrations.neptune.flavors import NeptuneExperimentTrackerSettings
 from zenml.integrations.tensorflow.materializers.keras_materializer import (
     KerasMaterializer,
 )
-from zenml.steps import BaseParameters, step
+from zenml.steps import BaseParameters
 
 experiment_tracker = Client().active_stack.experiment_tracker
 
