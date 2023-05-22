@@ -1188,7 +1188,7 @@ $ zenml service-connector list-types --type aws
 ┗━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━┷━━━━━━━┷━━━━━━━━┛
 ```
 
-2. Register a multi-type AWS Service Connector using auto-configuration
+3. Register a multi-type AWS Service Connector using auto-configuration
 
 ```
 $ AWS_PROFILE=connectors zenml service-connector register aws-demo-multi --type aws --auto-configure
@@ -1206,7 +1206,7 @@ Successfully registered service connector `aws-demo-multi` with access to the fo
 
 **NOTE**: from this point forward, we don't need the local AWS CLI credentials or the local AWS CLI at all. The steps that follow can be run on any machine regardless of whether it has been configured and authorized to access the AWS platform or not.
 
-3. find out which S3 buckets, ECR registries and EKS Kubernetes clusters we can gain access to. We'll use this information to configure the Stack Components in our minimal AWS stack: an S3 Artifact Store, a Kubernetes Orchestrator and an ECR Container Registry.
+4. find out which S3 buckets, ECR registries and EKS Kubernetes clusters we can gain access to. We'll use this information to configure the Stack Components in our minimal AWS stack: an S3 Artifact Store, a Kubernetes Orchestrator and an ECR Container Registry.
 
 ```
 $ zenml service-connector list-resources --resource-type s3-bucket
@@ -1240,7 +1240,7 @@ The following 'docker-registry' resources can be accessed by service connectors 
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 ```
 
-4. register and connect an S3 Artifact Store Stack Component to an S3 bucket:
+5. register and connect an S3 Artifact Store Stack Component to an S3 bucket:
 
 ```
 $ zenml artifact-store register s3-zenfiles --flavor s3 --path=s3://zenfiles
@@ -1259,7 +1259,7 @@ Successfully connected artifact store `s3-zenfiles` to the following resources:
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┛
 ```
 
-5. register and connect a Kubernetes Orchestrator Stack Component to an EKS cluster:
+6. register and connect a Kubernetes Orchestrator Stack Component to an EKS cluster:
 
 ```
 $ zenml orchestrator register eks-zenml-zenhacks --flavor kubernetes --synchronous=true --kubernetes_namespace=zenml-workloads
@@ -1278,7 +1278,7 @@ Successfully connected orchestrator `eks-zenml-zenhacks` to the following resour
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━┛
 ```
 
-6. Register and connect an EC GCP Container Registry Stack Component to an ECR container registry:
+7. Register and connect an EC GCP Container Registry Stack Component to an ECR container registry:
 
 ```
 $ zenml container-registry register ecr-us-east-1 --flavor aws --uri=715803424590.dkr.ecr.us-east-1.amazonaws.com
@@ -1297,7 +1297,7 @@ Successfully connected container registry `ecr-us-east-1` to the following resou
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 ```
 
-7. Combine all Stack Components together into a Stack and set it as active (also throw in a local Image Builder for completion):
+8. Combine all Stack Components together into a Stack and set it as active (also throw in a local Image Builder for completion):
 
 ```
 $ zenml image-builder register local --flavor local
@@ -1312,7 +1312,7 @@ Stack 'aws-demo' successfully registered!
 Active repository stack set to:'aws-demo'
 ```
 
-8. Finally, run a simple pipeline to prove that everything works as expected. We'll use the simplest pipelines possible for this example:
+9. Finally, run a simple pipeline to prove that everything works as expected. We'll use the simplest pipelines possible for this example:
 
 ```python
 from zenml.config import DockerSettings
