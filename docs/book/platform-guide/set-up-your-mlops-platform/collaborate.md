@@ -27,7 +27,7 @@ ideas and problems much more efficiently which in turn leads to faster results.
 * With a deployed ZenML instance, users have the ability to create their own teams and project structures. They can easily share pipelines, runs, stacks, and other resources, streamlining the workflow and promoting teamwork.
 * On the flip side, there's the ZenML Hub. Here, you can peruse a collection of community-driven solutions, share your own code, and collaborate with fellow members of the community.
 
-This section will center on managing users, their roles, and permissions within a deployed ZenML instance, as well as exploring how the ZenML Hub integrates into the overall workflow.
+This section will center on managing users, their roles, and permissions within a deployed ZenML instance, while the [ZenML Hub](../../user-guide/starter-guide/zenml-hub.md) 
 
 {% hint style="warning" %}
 Permissions and roles are an alpha feature of ZenML and are in active development.
@@ -120,10 +120,6 @@ By default, user creation through the UI will grant the user `admin` rights. Thi
 If you want to inspect which roles have been assigned to which users, simply run:
 
 `zenml role assignment list`
-
-## ZenML's support for multi-tenancy
-
-TODO / TO WRITE
 
 ### Limitations
 
