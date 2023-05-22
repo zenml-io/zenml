@@ -4,16 +4,26 @@ description: Using Docker images to run your pipeline.
 
 # Containerizing Your ZenML Pipeline
 
+TODO: Introducing the whole containerization process
+
+## Define where an image is built
+
+TODO: Include reference to managing envioronments and maybe move to the top [managing environments](managing-environments.md)
+
+## Reusing docker images
+
+Link to [code repository](connect-your-git-repository.md)
+
+## Customize the docker building
+
 When running locally, ZenML will sequentially execute the steps of your pipeline in the active Python environment. However, when using remote [orchestrators](broken-reference/) or [step operators](broken-reference/), ZenML will build [Docker](https://www.docker.com/) images which are used to run your pipeline code in an isolated and well-defined environment.
 
-For this purpose, a [Dockerfile](https://docs.docker.com/engine/reference/builder/) is dynamically generated at runtime. It is then used to build the docker image using the [image builder](broken-reference/) component of your stack. The Dockerfile consists of the following steps:
+For this purpose, a [Dockerfile](https://docs.docker.com/engine/reference/builder/) is dynamically generated at runtime. It is then used to build the docker image using the [image builder](managing-environments.md) component of your stack. The Dockerfile consists of the following steps:
 
 * **Starts from a parent image** that has **ZenML installed**. By default, this will use the [official ZenML image](https://hub.docker.com/r/zenmldocker/zenml/) for the Python and ZenML version that you're using in the active Python environment. If you want to use a different image as the base for the following steps, check out [this guide](containerize-your-pipeline.md#using-a-custom-parent-image).
 * **Installs additional pip dependencies**. ZenML will automatically detect which integrations are used in your stack and install the required dependencies. If your pipeline needs any additional requirements, check out our [guide on including custom dependencies](containerize-your-pipeline.md#how-to-install-additional-pip-dependencies).
 * **Optionally copies your source files**. Your source files need to be available inside the Docker container so ZenML can execute your step code. Check out [this section](containerize-your-pipeline.md#handling-source-files) for more information on how you can customize how ZenML handles your source files in Docker images.
 * **Sets user-defined environment variables.**
-
-## Customizing the Build Process
 
 The process described above is automated by ZenML and covers most basic use cases. This section covers various ways to customize the Docker build process to fit your needs.
 
@@ -206,11 +216,3 @@ docker_settings = DockerSettings(
 def my_pipeline(...):
     ...
 ```
-
-### Customizing the `build` environment
-
-TODO: Include reference to managing envioronments and maybe move to the top [managing environments](managing-environments.md)
-
-### Building Docker Images without Running the Pipeline
-
-Link to [code repository](connect-your-git-repository.md)
