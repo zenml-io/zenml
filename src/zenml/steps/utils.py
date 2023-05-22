@@ -16,6 +16,8 @@
 
 from typing import Any, Dict, Tuple
 
+import pydantic.typing as pydantic_typing
+
 from zenml.logger import get_logger
 from zenml.steps.step_output import Output
 
@@ -38,19 +40,26 @@ def resolve_type_annotation(obj: Any) -> Any:
     Returns:
         The non-generic class for generic aliases of the typing module.
     """
-    from pydantic.typing import get_origin, is_union
+    origin = pydantic_typing.get_origin(obj) or obj
 
-    origin = get_origin(obj) or obj
-
-    if is_union(origin):
+    if pydantic_typing.is_union(origin):
         return obj
 
     return origin
 
 
 def get_args(obj: Any) -> Tuple[Any]:
-    import pydantic.typing as pydantic_typing
+    """Get arguments of a Union type annotation.
 
+    Example:
+        `get_args(Union[int, str]) == (int, str)`
+
+    Args:
+        obj: The annotation.
+
+    Returns:
+        The args of the Union annotation.
+    """
     return tuple(
         pydantic_typing.get_origin(v) or v
         for v in pydantic_typing.get_args(obj)
@@ -63,7 +72,7 @@ def parse_return_type_annotations(return_annotation: Any) -> Dict[str, Any]:
     Called within `BaseStepMeta.__new__()` to define `cls.OUTPUT_SIGNATURE`.
 
     Args:
-        step_annotations: Type annotations of the step function.
+        return_annotation: Return annotation of the step function.
 
     Returns:
         Output signature of the new step class.

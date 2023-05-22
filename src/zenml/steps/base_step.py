@@ -137,16 +137,7 @@ T = TypeVar("T", bound="BaseStep")
 
 
 class BaseStep(metaclass=BaseStepMeta):
-    """Abstract base class for all ZenML steps.
-
-    Attributes:
-        name: The name of this step.
-        enable_cache: A boolean indicating if caching is enabled for this step.
-        enable_artifact_metadata: A boolean indicating if artifact metadata
-            is enabled for this step.
-        enable_artifact_visualization: A boolean indicating if artifact
-            visualization is enabled for this step.
-    """
+    """Abstract base class for all ZenML steps."""
 
     def __init__(
         self,
@@ -171,6 +162,29 @@ class BaseStep(metaclass=BaseStepMeta):
 
         Args:
             *args: Positional arguments passed to the step.
+            name: The name of the step.
+            enable_cache: If caching should be enabled for this step.
+            enable_artifact_metadata: If artifact metadata should be enabled
+                for this step.
+            enable_artifact_visualization: If artifact visualization should be
+                enabled for this step.
+            experiment_tracker: The experiment tracker to use for this step.
+            step_operator: The step operator to use for this step.
+            parameters: Function parameters for this step
+            output_materializers: Output materializers for this step. If
+                given as a dict, the keys must be a subset of the output names
+                of this step. If a single value (type or string) is given, the
+                materializer will be used for all outputs.
+            settings: settings for this step.
+            extra: Extra configurations for this step.
+            on_failure: Callback function in event of failure of the step. Can
+                be a function with three possible parameters, `StepContext`,
+                `BaseParameters`, and `BaseException`, or a source path to a
+                function of the same specifications (e.g. `module.my_function`)
+            on_success: Callback function in event of failure of the step. Can
+                be a function with two possible parameters, `StepContext` and
+                `BaseParameters, or a source path to a function of the same
+                specifications (e.g. `module.my_function`).
             **kwargs: Keyword arguments passed to the step.
         """
         self._upstream_steps: Set[str] = set()
@@ -416,7 +430,8 @@ class BaseStep(metaclass=BaseStepMeta):
                 raise StepInterfaceError(
                     f"`{config}` object passed when creating a "
                     f"'{self.name}' step is not a "
-                    f"`{self.entrypoint_definition.params.annotation.__name__}` instance."
+                    f"`{self.entrypoint_definition.params.annotation.__name__} "
+                    "` instance."
                 )
 
             self.configure(parameters=config)
@@ -477,6 +492,22 @@ class BaseStep(metaclass=BaseStepMeta):
         after: Union[str, Sequence[str], None] = None,
         **kwargs: Any,
     ) -> Any:
+        """Handle a call of the step.
+
+        This method does one of two things:
+        * If there is an active pipeline context, it adds an invocation of the
+          step instance to the pipeline.
+        * If no pipeline is active, it calls the step entrypoint function.
+
+        Args:
+            *args: Entrypoint function arguments.
+            id: Invocation ID to use.
+            after: Upstream steps for the invocation.
+            **kwargs: Entrypoint function keyword arguments.
+
+        Returns:
+            The outputs of the entrypoint function call.
+        """
         from zenml.new.pipelines.pipeline import Pipeline
 
         if not Pipeline.ACTIVE_PIPELINE:
@@ -523,6 +554,15 @@ class BaseStep(metaclass=BaseStepMeta):
             return outputs
 
     def call_entrypoint(self, *args: Any, **kwargs: Any) -> Any:
+        """Calls the entrypoint function of the step.
+
+        Args:
+            *args: Entrypoint function arguments.
+            **kwargs: Entrypoint function keyword arguments.
+
+        Returns:
+            The return value of the entrypoint function.
+        """
         from pydantic.decorator import ValidatedFunction
 
         validation_func = ValidatedFunction(
@@ -613,14 +653,14 @@ class BaseStep(metaclass=BaseStepMeta):
                 materializer will be used for all outputs.
             settings: settings for this step.
             extra: Extra configurations for this step.
-            on_failure: Callback function in event of failure of the step. Can be
-                a function with three possible parameters, `StepContext`, `BaseParameters`,
-                and `BaseException`, or a source path to a function of the same specifications
-                (e.g. `module.my_function`)
-            on_success: Callback function in event of failure of the step. Can be
-                a function with two possible parameters, `StepContext` and `BaseParameters, or
-                a source path to a function of the same specifications
-                (e.g. `module.my_function`).
+            on_failure: Callback function in event of failure of the step. Can
+                be a function with three possible parameters, `StepContext`,
+                `BaseParameters`, and `BaseException`, or a source path to a
+                function of the same specifications (e.g. `module.my_function`)
+            on_success: Callback function in event of failure of the step. Can
+                be a function with two possible parameters, `StepContext` and
+                `BaseParameters, or a source path to a function of the same
+                specifications (e.g. `module.my_function`).
             merge: If `True`, will merge the given dictionary configurations
                 like `parameters` and `settings` with existing
                 configurations. If `False` the given configurations will
@@ -715,6 +755,40 @@ class BaseStep(metaclass=BaseStepMeta):
         on_success: Optional["HookSpecification"] = None,
         merge: bool = True,
     ) -> "BaseStep":
+        """Copies the step and applies the given configurations.
+
+        Args:
+            enable_cache: If caching should be enabled for this step.
+            enable_artifact_metadata: If artifact metadata should be enabled
+                for this step.
+            enable_artifact_visualization: If artifact visualization should be
+                enabled for this step.
+            experiment_tracker: The experiment tracker to use for this step.
+            step_operator: The step operator to use for this step.
+            parameters: Function parameters for this step
+            output_materializers: Output materializers for this step. If
+                given as a dict, the keys must be a subset of the output names
+                of this step. If a single value (type or string) is given, the
+                materializer will be used for all outputs.
+            settings: settings for this step.
+            extra: Extra configurations for this step.
+            on_failure: Callback function in event of failure of the step. Can
+                be a function with three possible parameters, `StepContext`,
+                `BaseParameters`, and `BaseException`, or a source path to a
+                function of the same specifications (e.g. `module.my_function`)
+            on_success: Callback function in event of failure of the step. Can
+                be a function with two possible parameters, `StepContext` and
+                `BaseParameters, or a source path to a function of the same
+                specifications (e.g. `module.my_function`).
+            merge: If `True`, will merge the given dictionary configurations
+                like `parameters` and `settings` with existing
+                configurations. If `False` the given configurations will
+                overwrite all existing ones. See the general description of this
+                method for an example.
+
+        Returns:
+            The copied step instance.
+        """
         step_copy = self.copy()
         step_copy.configure(
             enable_cache=enable_cache,
@@ -861,6 +935,7 @@ class BaseStep(metaclass=BaseStepMeta):
 
         Args:
             input_artifacts: The input artifacts of this step.
+            external_artifacts: The external artifacts of this step.
 
         Returns:
             The finalized step configuration.

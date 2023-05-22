@@ -966,24 +966,32 @@ class Pipeline:
         return id_
 
     def __enter__(self: T) -> T:
-        """Enter the pipeline context.
+        """Activate the pipeline context.
 
         Args:
-            self: _description_
+            self: The pipeline instance.
 
         Raises:
-            RuntimeError: _description_
+            RuntimeError: If a different pipeline is already active.
 
         Returns:
-            _description_
+            The pipeline instance.
         """
         if Pipeline.ACTIVE_PIPELINE:
-            raise RuntimeError("Pipeline already active.")
+            raise RuntimeError(
+                "Unable to enter pipeline context. A different pipeline "
+                f"{Pipeline.ACTIVE_PIPELINE.name} is already active."
+            )
 
         Pipeline.ACTIVE_PIPELINE = self
         return self
 
-    def __exit__(self, type, value, traceback):
+    def __exit__(self, *args: Any) -> None:
+        """Deactivates the pipeline context.
+
+        Args:
+            *args: The arguments passed to the context exit handler.
+        """
         Pipeline.ACTIVE_PIPELINE = None
 
     def with_options(
@@ -999,6 +1007,28 @@ class Pipeline:
         prevent_build_reuse: bool = False,
         **kwargs,
     ) -> "Pipeline":
+        """Copies the pipeline and applies the given configurations.
+
+        Args:
+            run_name: Name of the pipeline run.
+            schedule: Optional schedule to use for the run.
+            build: Optional build to use for the run.
+            step_configurations: Configurations for steps of the pipeline.
+            config_path: Path to a yaml configuration file. This file will
+                be parsed as a
+                `zenml.config.pipeline_configurations.PipelineRunConfiguration`
+                object. Options provided in this file will be overwritten by
+                options provided in code using the other arguments of this
+                method.
+            unlisted: Whether the pipeline run should be unlisted (not assigned
+                to any pipeline).
+            prevent_build_reuse: Whether to prevent the reuse of a build.
+            **kwargs: Pipeline configuration options. These will be passed
+                to the `pipeline.configure(...)` method.
+
+        Returns:
+            The copied pipeline instance.
+        """
         pipeline_copy = self.copy()
         pipeline_copy.configure(**kwargs)
 
@@ -1025,11 +1055,33 @@ class Pipeline:
         return copy.deepcopy(self)
 
     def __call__(self, *args: Any, **kwargs: Any) -> Any:
+        """Handle a call of the pipeline.
+
+        This method does one of two things:
+        * If there is an active pipeline context, it calls the pipeline
+          entrypoint function within that context and the step invocations
+          will be added to the active pipeline.
+        * If no pipeline is active, it activates this pipeline before calling
+          the entrypoint function.
+
+        Args:
+            *args: Entrypoint function arguments.
+            **kwargs: Entrypoint function keyword arguments.
+
+        Raises:
+            RuntimeError: If an entrypoint input is not an artifact and not
+                JSON serializable.
+
+        Returns:
+            The outputs of the entrypoint function call.
+        """
         if Pipeline.ACTIVE_PIPELINE:
             # Calling a pipeline inside a pipeline, we return the potential
             # outputs of the entrypoint function
 
-            # TODO: how do we handle the pipeline config here?
+            # TODO: This currently ignores the configuration of the pipeline
+            # and instead applies the configuration of the previously active
+            # pipeline. Is this what we want?
             return self.entrypoint(*args, **kwargs)
 
         self = self.copy()

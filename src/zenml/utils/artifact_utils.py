@@ -352,7 +352,13 @@ def upload_artifact(
     """Upload an artifact.
 
     Args:
-
+        name: The name of the artifact.
+        data: The artifact data.
+        materializer: The materializer to store the artifact.
+        artifact_store_id: ID of the artifact store in which the artifact should
+            be stored.
+        extract_metadata: If artifact metadata should be extracted and returned.
+        include_visualizations: If artifact visualizations should be generated.
 
     Returns:
         A request model to store the artifact in the ZenStore and optional
