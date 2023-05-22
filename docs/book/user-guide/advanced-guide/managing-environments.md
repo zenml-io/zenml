@@ -2,28 +2,13 @@
 description: How to develop across multiple development environments
 ---
 
-# TODO
-
-The "Managing environments" page:
-- What kind of environments even exist when using ZenML: theres the client
-  environment, the build environment (image builders), the server environment
-  (tell them that this needs to have some stuff installed if they want to use
-  feature X and how to do it), the orchestrator environment (link to pipeline
-  containerization page)
-- how to handle multiple pipelines/workspaces on a local machine
-- how to handle custom packages/integrations in the ZenML server
-
-# ENDTODO
-
 # Managing Multiple Environments in ZenML
 
-# This page is WIP
+{% hint style="warning" %}
+**Note:** This page is a work in progress (WIP) and is currently under development. If you have any questions or need assistance, please join our [Slack community](https://zenml.io/slack).
+{% endhint %}
 
-In a ZenML deployment, you might have to manage multiple environments, such as your local development environment, the ZenML server environment, and the environment within the Docker images created when building pipelines. This guide will help you understand how to manage dependencies and configurations in these different environments.
-
-- what kind of environments even exist when using ZenML: theres the client environment, the build environment (image builders), the server environment (tell them that this needs to have some stuff installed if they want to use feature X and how to do it), the orchestrator environment (link to pipeline containerization page)
-- how to handle multiple pipelines/workspaces on a local machine
-- how to handle custom packages/integrations in the ZenML server
+In a ZenML deployment, you might have to manage multiple environments, such as your local development environment, the ZenML server environment, the build environment (image builders), and the orchestrator environment. This guide will help you understand how to manage dependencies and configurations in these different environments.
 
 ## Local Development Environment
 
@@ -37,14 +22,38 @@ The ZenML server environment is where the ZenML server runs and manages your pip
 
 To ensure that the ZenML server environment matches your local development environment, you can use a `requirements.txt` file to specify the exact package versions you need. This way, you can easily share the same environment configuration between your local development environment and the ZenML server.
 
-## Docker Images for Pipeline Execution
+## Build Environment (Image Builders)
 
-When you build pipelines in ZenML, it creates Docker images that encapsulate the environment needed to run your pipeline steps. These images need to be configured with the correct dependencies and configurations to ensure that your pipeline runs smoothly.
+The build environment is where Docker images are created for your pipelines. These images need to be configured with the correct dependencies and configurations to ensure that your pipeline runs smoothly.
 
 ZenML automatically handles most of the Docker image configuration for you. It starts with a base image that has ZenML and Python installed and then installs any additional dependencies required by your pipeline. You can customize the Docker image configuration using the [DockerSettings](containerize-your-pipeline.md) class.
 
 To manage dependencies in the Docker images, you can follow the steps described in the [Containerize your pipeline](containerize-your-pipeline.md) guide. This includes specifying additional pip dependencies, using a custom parent image, and customizing the build process.
 
+## Orchestrator Environment
+
+The orchestrator environment is responsible for managing the execution of your pipelines. To ensure that the orchestrator environment is properly configured, you need to install the necessary dependencies and integrations, just like in your local development and ZenML server environments.
+
+To manage dependencies in the orchestrator environment, you can use a package manager like `pip` or `poetry`. Make sure to install the ZenML package and any required integrations.
+
+For more information on configuring the orchestrator environment, refer to the [Pipeline Containerization](containerize-your-pipeline.md) guide.
+
+## Handling Multiple Pipelines and Workspaces on a Local Machine
+
+To manage multiple pipelines and workspaces on your local machine, you can use ZenML's workspace management features. Workspaces allow you to isolate different projects and their dependencies, making it easier to switch between them without conflicts.
+
+To create a new workspace, use the `zenml workspace create` command followed by the workspace name. To switch between workspaces, use the `zenml workspace switch` command followed by the workspace name.
+
+For more information on working with workspaces, refer to the [ZenML Workspaces](workspaces.md) guide.
+
+## Handling Custom Packages and Integrations in the ZenML Server
+
+To handle custom packages and integrations in the ZenML server, you need to ensure that the server environment has the necessary dependencies installed. This can be done using a package manager like `pip` or `poetry`.
+
+When installing custom packages, make sure to specify the exact package versions in a `requirements.txt` file. This ensures that the ZenML server environment matches your local development environment and other environments in your deployment.
+
+For more information on installing custom packages and integrations, refer to the [ZenML Integrations](integrations.md) guide.
+
 ## Summary
 
-Managing multiple environments in a ZenML deployment involves keeping track of dependencies and configurations in your local development environment, the ZenML server environment, and the Docker images created for pipeline execution. By using package managers, specifying dependencies, and customizing Docker image configurations, you can ensure that your environments are consistent and your pipelines run smoothly.
+Managing multiple environments in a ZenML deployment involves keeping track of dependencies and configurations in your local development environment, the ZenML server environment, the build environment, and the orchestrator environment. By using package managers, specifying dependencies, and customizing Docker image configurations, you can ensure that your environments are consistent and your pipelines run smoothly.

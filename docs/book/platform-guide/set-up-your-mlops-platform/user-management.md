@@ -12,9 +12,7 @@ professionals to develop, train, deploy, and maintain machine learning models.
 This can be a challenging task as it requires coordination across different
 tools, processes, and frameworks.
 
-<!-- INCLUDE LINK HERE TO FELIX'S DIAGRAM
-to again talk about the different roles in a team: https://discord.com/channels/621988642553987082/1108337326234542190/1108338541206962227
- -->
+![ZenML Overview](.gitbook/assets/intro\_zenml\_overview.png)
 
 Herein lies one of ZenML's most significant strengths: a collaborative platform
 that extends beyond your team and includes the community. With ZenML, you can
