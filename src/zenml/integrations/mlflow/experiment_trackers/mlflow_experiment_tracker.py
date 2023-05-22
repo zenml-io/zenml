@@ -22,7 +22,6 @@ from mlflow.store.db.db_types import DATABASE_ENGINES
 
 import zenml
 from zenml.artifact_stores import LocalArtifactStore
-from zenml.client import Client
 from zenml.config.base_settings import BaseSettings
 from zenml.constants import METADATA_EXPERIMENT_TRACKER_URL
 from zenml.experiment_trackers.base_experiment_tracker import (
@@ -146,27 +145,13 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
         """
         return MLFlowExperimentTrackerSettings
 
-    @staticmethod
-    def _local_mlflow_backend() -> str:
-        """Gets the local MLflow backend inside the ZenML artifact repository directory.
-
-        Returns:
-            The MLflow tracking URI for the local MLflow backend.
-        """
-        client = Client()
-        artifact_store = client.active_stack.artifact_store
-        local_mlflow_tracking_uri = os.path.join(artifact_store.path, "mlruns")
-        if not os.path.exists(local_mlflow_tracking_uri):
-            os.makedirs(local_mlflow_tracking_uri)
-        return "file:" + local_mlflow_tracking_uri
-
     def get_tracking_uri(self) -> str:
         """Returns the configured tracking URI or a local fallback.
 
         Returns:
             The tracking URI.
         """
-        return self.config.tracking_uri or self._local_mlflow_backend()
+        return self.config.tracking_uri or mlflow_utils.local_mlflow_backend()
 
     def prepare_step_run(self, info: "StepRunInfo") -> None:
         """Sets the MLflow tracking uri and credentials.
@@ -210,11 +195,14 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
         Returns:
             A dictionary of metadata.
         """
-        return {
+        metadata: Dict[str, "MetadataType"] = {
             METADATA_EXPERIMENT_TRACKER_URL: Uri(self.get_tracking_uri()),
-            "mlflow_run_id": mlflow.active_run().info.run_id,
-            "mlflow_experiment_id": mlflow.active_run().info.experiment_id,
         }
+        active_run = mlflow.active_run()
+        if active_run:
+            metadata["mlflow_run_id"] = active_run.info.run_id
+            metadata["mlflow_experiment_id"] = active_run.info.experiment_id
+        return metadata
 
     def disable_autologging(self) -> None:
         """Disables MLflow autologging."""

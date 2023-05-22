@@ -13,6 +13,8 @@
 #  permissions and limitations under the License.
 """Implementation of utils specific to the MLflow integration."""
 
+import os
+
 import mlflow
 from mlflow.entities import Run
 
@@ -21,6 +23,22 @@ from zenml.logger import get_logger
 logger = get_logger(__name__)
 
 ZENML_TAG_KEY = "zenml"
+
+
+def local_mlflow_backend() -> str:
+    """Gets the local MLflow backend inside the ZenML artifact store.
+
+    Returns:
+        The MLflow tracking URI for the local MLflow backend.
+    """
+    from zenml.client import Client
+
+    client = Client()
+    artifact_store = client.active_stack.artifact_store
+    local_mlflow_tracking_uri = os.path.join(artifact_store.path, "mlruns")
+    if not os.path.exists(local_mlflow_tracking_uri):
+        os.makedirs(local_mlflow_tracking_uri)
+    return "file:" + local_mlflow_tracking_uri
 
 
 def is_zenml_run(run: Run) -> bool:
