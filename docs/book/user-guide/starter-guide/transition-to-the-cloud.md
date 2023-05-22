@@ -6,12 +6,6 @@ description: Learning about the ZenML server.
 
 Although the basic functionalities of ZenML work perfectly on your local machine, you need to connect to **a deployed ZenML server** to use remote services and infrastructure.
 
-{% hint style="warning" %}
-If you are the person who is setting up ZenML for your organization and looking for detailed documentation regarding the deployment, head on over to the [Platform Guide](../../platform-guide/set-up-your-mlops-platform/) to set it up on your infrastructure of choice.&#x20;
-
-Alternatively, if you are just getting started and want to try things out along with this starter guide, take a look at the ZenML Sandbox, which allows you to spin up a remote sandbox ZenML deployment.
-{% endhint %}
-
 ### ZenML Server
 
 When you first get started with ZenML it is based on the following architecture on your machine.
@@ -28,7 +22,7 @@ In order to move into production, you will need to deploy this server somewhere 
 
 #### Connect your client to the server
 
-In Scenario 2 the `zenml up` command implicitly connects the client to the server. When ZenML is deployed remotely, the client needs to be explicitly connected. This is how you do it:
+When ZenML is deployed, the client can be explicitly connected. This is how you do it:
 
 ```bash
 zenml connect --url https://<your-own-deployment> --username default
@@ -41,7 +35,17 @@ Connecting to: 'https://<your-own-deployment>'...
 Password for user zenml (press ENTER for empty password) []:
 ```
 
-And just like that, your client should be connected to the server. You can simply verify this by running `zenml status`
+{% hint style="info" %}
+In Scenario 2, the `zenml up` command implicitly connects the client to the server.
+{% endhint %}
+
+{% hint style="warning" %}
+In order to use the `zenml connect` command, you need to first deploy a remote ZenML server. If you are the person who is setting up it for your organization and looking for detailed documentation regarding the deployment, head on over to the [Platform Guide](../../platform-guide/set-up-your-mlops-platform/) to set it up on your infrastructure of choice.&#x20;
+
+Alternatively, if you are just getting started and want to try things out along with this starter guide, take a look at the [ZenML Sandbox](switch-to-a-remote-stack.md), which allows you to spin up a remote sandbox ZenML deployment.
+{% endhint %}
+
+And just like that, your client should be connected to the server. You can simply verify this by running `zenml status`:
 
 ```bash
 Using configuration from: '/home/apenner/.config/zenml'
@@ -53,5 +57,5 @@ The active stack is: 'default' (global)
 ```
 
 {% hint style="info" %}
-You can **disconnect** from a server using `zenml disconnect`
+Similarly, you can **disconnect** from a server using `zenml disconnect`
 {% endhint %}
