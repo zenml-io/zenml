@@ -27,7 +27,7 @@ from steps import (
     training_data_loader,
 )
 
-from zenml.integrations.mlflow.mlflow_utils import get_tracking_uri
+from zenml.constants import METADATA_EXPERIMENT_TRACKER_URL
 
 
 def main():
@@ -51,10 +51,12 @@ def main():
     )
     inference_pipeline_instance.run()
 
+    trainer_step = training_pipeline_instance.get_runs()[0].get_step("trainer")
+    tracking_uri = trainer_step.metadata[METADATA_EXPERIMENT_TRACKER_URL]
     print(
         "You can run:\n "
         "[italic green]    mlflow ui --backend-store-uri "
-        f"'{get_tracking_uri()}'[/italic green]\n "
+        f"'{tracking_uri}'[/italic green]\n "
         "...to inspect your experiment runs "
         "within the MLflow UI.\nYou can find your runs tracked within the "
         "`training_pipeline` experiment. There you'll also be able to "

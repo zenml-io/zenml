@@ -16,49 +16,11 @@
 import mlflow
 from mlflow.entities import Run
 
-from zenml.client import Client
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
 
 ZENML_TAG_KEY = "zenml"
-
-
-def get_missing_mlflow_experiment_tracker_error() -> ValueError:
-    """Returns description of how to add an MLflow experiment tracker to your stack.
-
-    Returns:
-        ValueError: If no MLflow experiment tracker is registered in the active stack.
-    """
-    return ValueError(
-        "The active stack needs to have a MLflow experiment tracker "
-        "component registered to be able to track experiments using "
-        "MLflow. You can create a new stack with a MLflow experiment "
-        "tracker component or update your existing stack to add this "
-        "component, e.g.:\n\n"
-        "  'zenml experiment-tracker register mlflow_tracker "
-        "--type=mlflow'\n"
-        "  'zenml stack register stack-name -e mlflow_tracker ...'\n"
-    )
-
-
-def get_tracking_uri() -> str:
-    """Gets the MLflow tracking URI from the active experiment tracking stack component.
-
-    # noqa: DAR401
-
-    Returns:
-        MLflow tracking URI.
-    """
-    from zenml.integrations.mlflow.experiment_trackers.mlflow_experiment_tracker import (
-        MLFlowExperimentTracker,
-    )
-
-    tracker = Client().active_stack.experiment_tracker
-    if tracker is None or not isinstance(tracker, MLFlowExperimentTracker):
-        raise get_missing_mlflow_experiment_tracker_error()
-
-    return tracker.get_tracking_uri()
 
 
 def is_zenml_run(run: Run) -> bool:

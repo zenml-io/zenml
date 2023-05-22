@@ -29,7 +29,7 @@ from steps.tf_predict_preprocessor.tf_predict_preprocessor_step import (
 )
 from steps.trainer.trainer_step import TrainerParameters, tf_trainer
 
-from zenml.integrations.mlflow.mlflow_utils import get_tracking_uri
+from zenml.constants import METADATA_EXPERIMENT_TRACKER_URL
 from zenml.integrations.mlflow.steps.mlflow_deployer import (
     MLFlowDeployerParameters,
     mlflow_model_registry_deployer_step,
@@ -77,9 +77,11 @@ if __name__ == "__main__":
     )
     pipeline.run()
 
+    trainer_step = pipeline.get_runs()[0].get_step("trainer")
+    tracking_uri = trainer_step.metadata[METADATA_EXPERIMENT_TRACKER_URL]
     print(
         "Now run \n "
-        f"    mlflow ui --backend-store-uri '{get_tracking_uri()}'\n"
+        f"    mlflow ui --backend-store-uri '{tracking_uri}'\n"
         "to inspect your experiment runs within the MLflow UI.\n"
         "You can find your runs tracked within the `mlflow_example_pipeline`"
         "experiment. Here you'll also be able to compare the two runs.)"

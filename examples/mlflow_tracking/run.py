@@ -20,7 +20,7 @@ from steps.loader.loader_step import loader_mnist
 from steps.normalizer.normalizer_step import normalizer
 from steps.trainer.trainer_step import TrainerParameters, tf_trainer
 
-from zenml.integrations.mlflow.mlflow_utils import get_tracking_uri
+from zenml.constants import METADATA_EXPERIMENT_TRACKER_URL
 
 if __name__ == "__main__":
     # Initialize a pipeline run
@@ -43,9 +43,11 @@ if __name__ == "__main__":
 
     run_2.run()
 
+    trainer_step = run_2.get_runs()[0].get_step("trainer")
+    tracking_uri = trainer_step.metadata[METADATA_EXPERIMENT_TRACKER_URL]
     print(
         "Now run \n "
-        f"    mlflow ui --backend-store-uri '{get_tracking_uri()}'\n"
+        f"    mlflow ui --backend-store-uri '{tracking_uri}'\n"
         "To inspect your experiment runs within the mlflow UI.\n"
         "You can find your runs tracked within the `mlflow_example_pipeline`"
         "experiment. Here you'll also be able to compare the two runs.)"
