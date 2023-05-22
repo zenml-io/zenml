@@ -6,7 +6,7 @@ description: Everything you need to know to start using ZenML.
 
 ZenML helps you standardize your ML workflows as **Pipelines** consisting of decoupled, modular **Steps**. This enables you to write portable code that can be moved from experimentation to production in seconds.
 
-### Pipeline
+## Pipelines & steps
 
 The simplest ZenML pipeline could look like this:
 
@@ -35,8 +35,8 @@ if __name__ == "__main__":
 ```
 
 {% hint style="info" %}
-* `@step` is a decorator that converts its function into a step that can be used within a pipeline
-* `@pipeline` defines a function as a pipeline and within this function, the steps are called and their outputs are routed
+* **`@step`** is a decorator that converts its function into a step that can be used within a pipeline
+* **`@pipeline`** defines a function as a pipeline and within this function, the steps are called and their outputs are routed
 {% endhint %}
 
 Copy this code into a file main.py and run it.
@@ -65,9 +65,9 @@ Pipeline visualization can be seen in the ZenML Dashboard. Run zenml up to see y
 ```
 {% endcode %}
 
-ZenML offers you a comprehensive Dashboard to interact with your Pipelines, Artifacts, and Infrastructure. To see it, simply deploy the ZenML service locally in the next section.
+ZenML offers you a comprehensive Dashboard to interact with your Pipelines, Artifacts, and Infrastructure. To see it, simply deploy the ZenML server locally in the next section.
 
-### Explore the Dashboard
+## Explore the dashboard
 
 Run `zenml up` in the environment where you have ZenML installed.
 
@@ -85,7 +85,9 @@ If you navigate to the run that you just executed, you will see a diagram view o
 
 ## Recap
 
-### Step
+#### Step
+
+Steps are functions. These functions have inputs and outputs. For ZenML to work properly, these need to be typed.
 
 ```python
 @step
@@ -95,13 +97,13 @@ def step_2(input_one: str, input_two: str) -> None:
   return combined_str
 ```
 
-Steps are functions. These functions have inputs and outputs. For ZenML to work properly, these need to be typed.
-
-### Artifacts
+#### Artifacts
 
 The inputs and outputs of a step are called _artifacts._ They are automatically tracked and stored by ZenML in the artifact store. Artifacts are produced by and circulated among steps whenever your step returns an object or a value. This means the data is not passed between steps in memory. Rather at the output of a step they are written to storage and at the input of the step they are loaded from storage.
 
-### Pipeline
+#### Pipeline
+
+Pipelines are also functions. However, you are only allowed to call steps within this function. The inputs for steps within a function can either be the outputs of previous steps or alternatively, you can pass in values directly.
 
 ```python
 @pipeline
@@ -110,16 +112,14 @@ def my_pipeline():
   step_2(input_one="hello", input_two=output_step_one)
 ```
 
-Pipelines are also functions. However, you are only allowed to call steps within this function. The inputs for steps within a function can either be the outputs of previous steps or alternatively, you can pass in values directly.
+#### Executing the Code
 
-### Executing the Code
+Executing the Pipeline is as easy as just calling the function that you decorated with the `@pipeline()` decorator.
 
 ```python
 if __name__ == "__main__":
   my_pipeline()
 ```
-
-Executing the Pipeline is as easy as just calling the function that you decorated with the `@pipeline()` decorator.
 
 In the following sections, you will learn more about the following topics:
 

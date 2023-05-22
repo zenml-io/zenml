@@ -39,7 +39,7 @@ if __name__ == "__main__":
 
 This will create _yet another_ `run` for `version 1` of the pipeline called `first_pipeline`. So now the same pipeline has two runs. You can also verify this in the dashboard.
 
-However, now let's change the pipeline configuration itself. You can do this by either modifying the step connections within the `@pipeline` function or by replacing a concrete step with another one. For example, lets create an alternative trainer step called `custom_trainer`.
+However, now let's change the pipeline configuration itself. You can do this by either modifying the step connections within the `@pipeline` function or by replacing a concrete step with another one. For example, let's create an alternative trainer step called `custom_trainer`.
 
 ```python
 @pipeline
@@ -54,19 +54,10 @@ if __name__ == "__main__":
 ```python
 $python main.py
 ...
-Registered pipeline first_pipeline (version 1).
+Registered pipeline first_pipeline (version 2).
 ...
 ```
 
 This will now create a single `run` for `version 2` of the pipeline called `first_pipeline`.&#x20;
 
 <figure><img src="../../.gitbook/assets/pipelineversions.png" alt=""><figcaption></figcaption></figure>
-
-<details>
-
-<summary>Code examples of this section</summary>
-
-```python
-```
-
-</details>

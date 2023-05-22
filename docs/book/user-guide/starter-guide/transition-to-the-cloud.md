@@ -4,9 +4,13 @@ description: Learning about the ZenML server.
 
 # Connect to a deployed ZenML
 
-Although the basic functionalities of ZenML work perfectly on your local machine, you need to connect to a deployed ZenML server to use remote services and infrastructure.
+Although the basic functionalities of ZenML work perfectly on your local machine, you need to connect to **a deployed ZenML server** to use remote services and infrastructure.
 
-If you are the one setting up ZenML for your organization, head on over to the [Platform Guide](../../platform-guide/set-up-your-mlops-platform/) to set this up on your infrastructure of choice. Alternatively, if you are just getting started and want to try things out, the ZenML Sandbox is the right resource for you.
+{% hint style="warning" %}
+If you are the person who is setting up ZenML for your organization and looking for detailed documentation regarding the deployment, head on over to the [Platform Guide](../../platform-guide/set-up-your-mlops-platform/) to set it up on your infrastructure of choice.&#x20;
+
+Alternatively, if you are just getting started and want to try things out along with this starter guide, take a look at the ZenML Sandbox, which allows you to spin up a remote sandbox ZenML deployment.
+{% endhint %}
 
 ### ZenML Server
 
@@ -14,7 +18,7 @@ When you first get started with ZenML it is based on the following architecture 
 
 <figure><img src="../../.gitbook/assets/Scenario1.png" alt="" width="563"><figcaption><p>Scenario 1: ZenML default local configuration</p></figcaption></figure>
 
-The SQLite **Database** that you can see in this diagram is used to store information about pipelines, pipeline runs, stacks, and other configurations. In the previous pages, we have used the `zenml up` command to spin up a local rest server to serve the dashboard as well. The diagram for this will look as follows:
+The SQLite **Database** that you can see in this diagram is used to store information about pipelines, pipeline runs, stacks, and other configurations. In the previous pages, we used the `zenml up` command to spin up a local rest server to serve the dashboard as well. The diagram for this will look as follows:
 
 <figure><img src="../../.gitbook/assets/Scenario2.png" alt="" width="563"><figcaption><p>Scenario 2: ZenML with a local REST Server</p></figcaption></figure>
 
@@ -22,7 +26,7 @@ In order to move into production, you will need to deploy this server somewhere 
 
 <figure><img src="../../.gitbook/assets/Scenario3.png" alt="" width="563"><figcaption><p>Scenario 3: Deployed ZenML Server</p></figcaption></figure>
 
-### Connect your client to the server
+#### Connect your client to the server
 
 In Scenario 2 the `zenml up` command implicitly connects the client to the server. When ZenML is deployed remotely, the client needs to be explicitly connected. This is how you do it:
 

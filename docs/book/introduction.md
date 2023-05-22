@@ -110,10 +110,11 @@ ZenML enables MLOps infrastructure experts to define, deploy, and manage sophist
 *   **Standardization:** With ZenML, you can standardize MLOps infrastructure and tooling across your organization. Simply register your staging and production environments as ZenML stacks and invite your colleagues to run ML workflows on them.\
 
 
-    <pre class="language-bash"><code class="lang-bash">zenml orchestrator register kfp_orchestrator -f kubeflow  # Register MLOps tools and infrastructure
-    <strong>zenml stack register production --orchestrator kubeflow ...  # Register your production environment
-    </strong>zenml stack share production  # Make it available to your colleagues
-    </code></pre>
+    ```bash
+    zenml orchestrator register kfp_orchestrator -f kubeflow  # Register MLOps tools and infrastructure
+    zenml stack register production --orchestrator kubeflow ...  # Register your production environment
+    zenml stack share production  # Make it available to your colleagues
+    ```
 * Registering your environments as ZenML stacks also enables you to browse and explore them in a convenient user interface. Try it out at [https://demo.zenml.io/](https://demo.zenml.io/)!
 
 <figure><img src=".gitbook/assets/intro_dashboard_stacks.png" alt="ZenML Dashboard Stacks View" width="80%"><figcaption></figcaption></figure>
