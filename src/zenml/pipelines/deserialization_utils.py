@@ -18,7 +18,7 @@ from typing import TYPE_CHECKING, Callable, Dict, Set, Type
 from packaging import version
 
 from zenml.logger import get_logger
-from zenml.pipelines.new import Pipeline, PipelineTemplate
+from zenml.new.pipelines.pipeline import Pipeline
 from zenml.steps.base_step import BaseStep, StepArtifact
 from zenml.utils import source_utils
 
@@ -30,6 +30,18 @@ logger = get_logger(__name__)
 
 
 def load_pipeline(model: "PipelineResponseModel") -> "Pipeline":
+    """Load a pipeline from a model.
+
+    Args:
+        model: The pipeline model to load.
+
+    Raises:
+        ValueError: If the pipeline can't be loaded due to an old model spec
+            (version <0.2).
+
+    Returns:
+        The loaded pipeline.
+    """
     model_version = version.parse(model.spec.version)
     if model_version < version.parse("0.2"):
         raise ValueError(
@@ -56,6 +68,17 @@ def load_pipeline(model: "PipelineResponseModel") -> "Pipeline":
 
 
 def load_pipeline_v_0_3(model: "PipelineResponseModel") -> "Pipeline":
+    """Load a pipeline from a model with spec version 0.3.
+
+    Args:
+        model: The pipeline model to load.
+
+    Raises:
+        RuntimeError: If an upstream step or output is missing.
+
+    Returns:
+        The loaded pipeline.
+    """
     outputs = {}
 
     with Pipeline(name=model.name) as p:
@@ -101,12 +124,22 @@ def load_pipeline_v_0_3(model: "PipelineResponseModel") -> "Pipeline":
 
 
 def load_pipeline_v_0_2(model: "PipelineResponseModel") -> "Pipeline":
+    """Load a pipeline from a model with spec version 0.2.
+
+    Args:
+        model: The pipeline model to load.
+
+    Returns:
+        The loaded pipeline.
+    """
+    from zenml.pipelines.base_pipeline import BasePipeline
+
     steps = _load_and_verify_steps(pipeline_spec=model.spec)
     connect_method = _generate_connect_method(model=model)
 
     pipeline_class = type(
         model.name,
-        (PipelineTemplate,),
+        (BasePipeline,),
         {
             "connect": staticmethod(connect_method),
             "__doc__": model.docstring,

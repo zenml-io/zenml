@@ -11,8 +11,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Definition of a ZenML pipeline."""
 import copy
 import hashlib
+import inspect
 from datetime import datetime
 from pathlib import Path
 from types import FunctionType
@@ -140,11 +142,14 @@ class GetRunsDescriptor:
 
 
 class Pipeline:
+    """ZenML pipeline class."""
+
     ACTIVE_PIPELINE: ClassVar[Optional["Pipeline"]] = None
 
     def __init__(
         self,
         name: str,
+        entrypoint=None,
         enable_cache: Optional[bool] = None,
         enable_artifact_metadata: Optional[bool] = None,
         enable_artifact_visualization: Optional[bool] = None,
@@ -152,13 +157,34 @@ class Pipeline:
         extra: Optional[Dict[str, Any]] = None,
         on_failure: Optional["HookSpecification"] = None,
         on_success: Optional["HookSpecification"] = None,
-        entrypoint=None,
     ) -> None:
+        """Initializes a pipeline.
+
+        Args:
+            name: The name of the pipeline.
+            entrypoint: The entrypoint function of the pipeline.
+            enable_cache: If caching should be enabled for this pipeline.
+            enable_artifact_metadata: If artifact metadata should be enabled for
+                this pipeline.
+            enable_artifact_visualization: If artifact visualization should be
+                enabled for this pipeline.
+            settings: settings for this pipeline.
+            extra: Extra configurations for this pipeline.
+            on_failure: Callback function in event of failure of the step. Can
+                be a function with three possible parameters, `StepContext`,
+                `BaseParameters`, and `BaseException`, or a source path to a
+                function of the same specifications (e.g. `module.my_function`).
+            on_success: Callback function in event of failure of the step. Can
+                be a function with two possible parameters, `StepContext` and
+                `BaseParameters, or a source path to a function of the same
+                specifications (e.g. `module.my_function`).
+        """
         self._invocations: Dict[str, StepInvocation] = {}
+        self._run_args: Dict[str, Any] = {}
+
         self._configuration = PipelineConfiguration(
             name=name,
         )
-        self._run_args = {}
         self.configure(
             enable_cache=enable_cache,
             enable_artifact_metadata=enable_artifact_metadata,
@@ -198,8 +224,11 @@ class Pipeline:
         return self._configuration
 
     @property
-    def step_invocations(self) -> Dict[str, StepInvocation]:
+    def invocations(self) -> Dict[str, StepInvocation]:
         """Returns the step invocations of this pipeline.
+
+        This dictionary will only be populated once the pipeline has been
+        called.
 
         Returns:
             The step invocations.
@@ -592,7 +621,7 @@ class Pipeline:
                 step_settings[key] = fields
 
         steps = {}
-        for step_name, invocation in self.step_invocations.items():
+        for step_name, invocation in self.invocations.items():
             step = invocation.step
             parameters = (
                 pydantic_utils.TemplateGenerator(
@@ -683,7 +712,7 @@ class Pipeline:
         return {
             "store_type": Client().zen_store.type.value,
             **stack_metadata,
-            "total_steps": len(self.step_invocations),
+            "total_steps": len(self.invocations),
             "schedule": bool(deployment.schedule),
             "custom_materializer": custom_materializer,
             "own_stack": own_stack,
@@ -798,9 +827,7 @@ class Pipeline:
         hash_.update(pipeline_spec.json_with_string_sources.encode())
 
         for step_spec in pipeline_spec.steps:
-            invocation = self.step_invocations[
-                step_spec.pipeline_parameter_name
-            ]
+            invocation = self.invocations[step_spec.pipeline_parameter_name]
             step_source = invocation.step.source_code
             hash_.update(step_source.encode())
 
@@ -842,7 +869,7 @@ class Pipeline:
 
         return None
 
-    def add_step(
+    def add_step_invocation(
         self,
         step: "BaseStep",
         input_artifacts: Dict[str, StepArtifact],
@@ -852,15 +879,37 @@ class Pipeline:
         custom_id: Optional[str] = None,
         allow_id_suffix: bool = True,
     ) -> str:
+        """Adds a step invocation to the pipeline.
+
+        Args:
+            step: The step for which to add an invocation.
+            input_artifacts: The input artifacts for the invocation.
+            external_artifacts: The external artifacts for the invocation.
+            parameters: The parameters for the invocation.
+            upstream_steps: The upstream steps for the invocation.
+            custom_id: Custom ID to use for the invocation.
+            allow_id_suffix: Whether a suffix can be appended to the invocation
+                ID.
+
+        Raises:
+            RuntimeError: If the method is called on an inactive pipeline.
+            RuntimeError: If the invocation was called with an artifact from
+                a different pipeline.
+
+        Returns:
+            The step invocation ID.
+        """
         if Pipeline.ACTIVE_PIPELINE != self:
             raise RuntimeError(
-                "Add_step can only be called on an active pipeline."
+                "A step invocation can only be added to an active pipeline."
             )
 
         for artifact in input_artifacts.values():
             if artifact.pipeline is not self:
                 raise RuntimeError(
-                    "Got input artifact from a different pipeline."
+                    "Got invalid input artifact for invocation of step "
+                    f"{step.name}: The input artifact was produced by a step "
+                    f"inside a different pipeline {artifact.pipeline.name}."
                 )
 
         invocation_id = self._compute_invocation_id(
@@ -884,14 +933,30 @@ class Pipeline:
         custom_id: Optional[str] = None,
         allow_suffix: bool = True,
     ) -> str:
+        """Compute the invocation ID.
+
+        Args:
+            step: The step for which to compute the ID.
+            custom_id: Custom ID to use for the invocation.
+            allow_suffix: Whether a suffix can be appended to the invocation
+                ID.
+
+        Raises:
+            RuntimeError: If no ID suffix is allowed and an invocation for the
+                same ID already exists.
+            RuntimeError: If no unique invocation ID can be found.
+
+        Returns:
+            The invocation ID.
+        """
         base_id = custom_id or step.name
 
-        if base_id in self.step_invocations and not allow_suffix:
+        if base_id in self.invocations and not allow_suffix:
             raise RuntimeError("Duplicate step ID")
 
         id_ = base_id
         for index in range(2, 10000):
-            if id_ not in self.step_invocations:
+            if id_ not in self.invocations:
                 break
 
             id_ = f"{base_id}_{index}"
@@ -901,6 +966,17 @@ class Pipeline:
         return id_
 
     def __enter__(self: T) -> T:
+        """Enter the pipeline context.
+
+        Args:
+            self: _description_
+
+        Raises:
+            RuntimeError: _description_
+
+        Returns:
+            _description_
+        """
         if Pipeline.ACTIVE_PIPELINE:
             raise RuntimeError("Pipeline already active.")
 
@@ -964,8 +1040,6 @@ class Pipeline:
             entrypoint_outputs = ()
         elif not isinstance(entrypoint_outputs, Tuple):
             entrypoint_outputs = (entrypoint_outputs,)
-
-        import inspect
 
         from zenml.config.pipeline_configurations import (
             ArtifactReference,

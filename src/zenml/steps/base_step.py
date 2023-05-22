@@ -497,7 +497,7 @@ class BaseStep(metaclass=BaseStepMeta):
         elif isinstance(after, Sequence):
             upstream_steps.union(after)
 
-        invocation_id = Pipeline.ACTIVE_PIPELINE.add_step(
+        invocation_id = Pipeline.ACTIVE_PIPELINE.add_step_invocation(
             step=self,
             input_artifacts=input_artifacts,
             external_artifacts=external_artifacts,

@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Legacy ZenML pipeline decorator definition."""
 from types import FunctionType
 from typing import (
     TYPE_CHECKING,
@@ -78,9 +79,6 @@ def pipeline(
 ) -> Union[Type[BasePipeline], Callable[[F], Type[BasePipeline]]]:
     """Outer decorator function for the creation of a ZenML pipeline.
 
-    In order to be able to work with parameters such as "name", it features a
-    nested decorator structure.
-
     Args:
         _func: The decorated function.
         name: The name of the pipeline. If left empty, the name of the
@@ -106,15 +104,6 @@ def pipeline(
     """
 
     def inner_decorator(func: F) -> Type[BasePipeline]:
-        """Inner decorator function for the creation of a ZenML pipeline.
-
-        Args:
-            func: types.FunctionType, this function will be used as the
-                "connect" method of the generated Pipeline
-
-        Returns:
-            the class of a newly generated ZenML Pipeline
-        """
         return type(
             func.__name__,
             (BasePipeline,),

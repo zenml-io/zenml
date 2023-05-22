@@ -166,27 +166,27 @@ class Compiler:
         )
 
         for step_name, step_config in config.steps.items():
-            if step_name not in pipeline.step_invocations:
+            if step_name not in pipeline.invocations:
                 raise KeyError(f"No step with name {step_name}.")
-            pipeline.step_invocations[step_name].step._apply_configuration(
+            pipeline.invocations[step_name].step._apply_configuration(
                 step_config
             )
 
         # Override `enable_cache` of all steps if set at run level
         if config.enable_cache is not None:
-            for invocation in pipeline.step_invocations.values():
+            for invocation in pipeline.invocations.values():
                 invocation.step.configure(enable_cache=config.enable_cache)
 
         # Override `enable_artifact_metadata` of all steps if set at run level
         if config.enable_artifact_metadata is not None:
-            for invocation in pipeline.step_invocations.values():
+            for invocation in pipeline.invocations.values():
                 invocation.step.configure(
                     enable_artifact_metadata=config.enable_artifact_metadata
                 )
 
         # Override `enable_artifact_visualization` if set at run level
         if config.enable_artifact_visualization is not None:
-            for step_ in pipeline.step_invocations.values():
+            for step_ in pipeline.invocations.values():
                 step_.configure(
                     enable_artifact_visualization=config.enable_artifact_visualization
                 )
@@ -276,7 +276,7 @@ class Compiler:
         Raises:
             RuntimeError: If an upstream step is missing.
         """
-        available_steps = set(pipeline.step_invocations)
+        available_steps = set(pipeline.invocations)
         missing_steps = invocation.upstream_steps - available_steps
 
         if missing_steps:
@@ -335,7 +335,7 @@ class Compiler:
         """Gets the spec for a step invocation.
 
         Args:
-            step: The step for which to get the spec.
+            invocation: The invocation for which to get the spec.
 
         Returns:
             The step spec.
@@ -428,11 +428,11 @@ class Compiler:
     ) -> List[Tuple[str, "StepInvocation"]]:
         """Sorts the step invocations of a pipeline using topological sort.
 
-        The resulting list of steps will be in an order that can be executed
-        sequentially without any conflicts.
+        The resulting list of invocations will be in an order that can be
+        executed sequentially without any conflicts.
 
         Args:
-            steps: ZenML pipeline steps.
+            pipeline: The pipeline of which to sort the invocations
 
         Returns:
             The sorted steps.
@@ -442,7 +442,7 @@ class Compiler:
 
         # Sort step names using topological sort
         dag: Dict[str, List[str]] = {}
-        for name, step in pipeline.step_invocations.items():
+        for name, step in pipeline.invocations.items():
             self._verify_upstream_steps(invocation=step, pipeline=pipeline)
             dag[name] = list(step.upstream_steps)
 
@@ -455,7 +455,7 @@ class Compiler:
         )
         sorted_step_names = [step for layer in layers for step in layer]
         sorted_steps: List[Tuple[str, "BaseStep"]] = [
-            (name_in_pipeline, pipeline.step_invocations[name_in_pipeline])
+            (name_in_pipeline, pipeline.invocations[name_in_pipeline])
             for name_in_pipeline in sorted_step_names
         ]
         return sorted_steps

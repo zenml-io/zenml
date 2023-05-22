@@ -349,6 +349,15 @@ def upload_artifact(
     extract_metadata: bool,
     include_visualizations: bool,
 ) -> Tuple["ArtifactRequestModel", Dict[str, "MetadataType"]]:
+    """Upload an artifact.
+
+    Args:
+
+
+    Returns:
+        A request model to store the artifact in the ZenStore and optional
+        metadata for the artifact.
+    """
     data_type = type(data)
     materializer.validate_type_compatibility(data_type)
     materializer.save(data)

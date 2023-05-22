@@ -261,7 +261,6 @@ class StepRunner:
         Returns:
             The parsed inputs for the step entrypoint function.
         """
-
         function_params: Dict[str, Any] = {}
 
         if args and args[0] == "self":

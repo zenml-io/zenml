@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Legacy ZenML pipeline class definition."""
 import inspect
 from abc import ABC, abstractmethod
 from types import FunctionType
@@ -52,15 +53,23 @@ TEMPLATE_NAME_ATTRIBUTE = "_template_name"
 
 
 class BasePipeline(Pipeline, ABC):
+    """Legacy pipeline class."""
+
     _CLASS_CONFIGURATION: ClassVar[Optional[Dict[str, Any]]] = None
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
-        config = self._CLASS_CONFIGURATION or {}
+        """Initializes a pipeline.
+
+        Args:
+            *args: Initialization arguments.
+            **kwargs: Initialization keyword arguments.
+        """
         self._steps = self._verify_steps(*args, **kwargs)
 
         def entrypoint() -> None:
             self.connect(**self._steps)
 
+        config = self._CLASS_CONFIGURATION or {}
         super().__init__(
             name=config.pop(PARAM_PIPELINE_NAME, None)
             or self.__class__.__name__,
@@ -79,6 +88,12 @@ class BasePipeline(Pipeline, ABC):
 
     @abstractmethod
     def connect(self, *args: BaseStep, **kwargs: BaseStep) -> None:
+        """Abstract method that connects the pipeline steps.
+
+        Args:
+            *args: Connect method arguments.
+            **kwargs: Connect method keyword arguments.
+        """
         raise NotImplementedError
 
     def run(
@@ -146,17 +161,42 @@ class BasePipeline(Pipeline, ABC):
         custom_id: Optional[str] = None,
         allow_suffix: bool = True,
     ) -> str:
-        if not custom_id:
-            custom_id = getattr(step, TEMPLATE_NAME_ATTRIBUTE, None)
-            allow_suffix = True
+        """Compute the invocation ID.
+
+        Args:
+            step: The step for which to compute the ID.
+            custom_id: Custom ID to use for the invocation.
+            allow_suffix: Whether a suffix can be appended to the invocation
+                ID.
+
+        Returns:
+            The invocation ID.
+        """
+        custom_id = getattr(step, TEMPLATE_NAME_ATTRIBUTE, None)
 
         return super()._compute_invocation_id(
-            step=step, custom_id=custom_id, allow_suffix=allow_suffix
+            step=step, custom_id=custom_id, allow_suffix=False
         )
 
     def _verify_steps(
         self, *args: Any, **kwargs: Any
     ) -> Dict[str, "BaseStep"]:
+        """Verifies the initialization args and kwargs of this pipeline.
+
+        This method makes sure that no missing/unexpected arguments or
+        arguments of a wrong type are passed when creating a pipeline.
+
+        Args:
+            *args: The args passed to the init method of this pipeline.
+            **kwargs: The kwargs passed to the init method of this pipeline.
+
+        Raises:
+            PipelineInterfaceError: If there are too many/few arguments or
+                arguments with a wrong name/type.
+
+        Returns:
+            The verified steps.
+        """
         signature = inspect.signature(self.connect, follow_wrapped=True)
 
         try:
