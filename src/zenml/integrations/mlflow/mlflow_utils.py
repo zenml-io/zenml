@@ -70,3 +70,26 @@ def stop_zenml_mlflow_runs(status: str) -> None:
             active_run = mlflow.active_run()
         else:
             break
+
+
+def is_databricks_tracking_uri(tracking_uri: str) -> bool:
+    """Checks whether the given tracking uri is a Databricks tracking uri.
+    Args:
+        tracking_uri: The tracking uri to check.
+    Returns:
+        `True` if the tracking uri is a Databricks tracking uri, `False`
+        otherwise.
+    """
+    return tracking_uri == "databricks"
+
+
+def is_remote_mlflow_tracking_uri(tracking_uri: str) -> bool:
+    """Checks whether the given tracking uri is remote or not.
+    Args:
+        tracking_uri: The tracking uri to check.
+    Returns:
+        `True` if the tracking uri is remote, `False` otherwise.
+    """
+    return any(
+        tracking_uri.startswith(prefix) for prefix in ["http://", "https://"]
+    ) or is_databricks_tracking_uri(tracking_uri)
