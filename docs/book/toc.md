@@ -15,7 +15,7 @@
   * [Fetch runs after execution](user-guide/starter-guide/fetch-runs-after-execution.md)
   * [Understand stacks](user-guide/starter-guide/using-and-switching-stacks.md)
   * [Connect to a deployed ZenML](user-guide/starter-guide/transition-to-the-cloud.md)
-  * [Switch to a remote stack](user-guide/starter-guide/switch-to-a-remote-stack.md)
+  * [Switch to Production](user-guide/starter-guide/switch-to-a-remote-stack.md)
   * [Leverage community-contributed plugins](user-guide/starter-guide/zenml-hub.md)
   * [Follow best practices](user-guide/starter-guide/follow-best-practices.md)
 * [🐔 Advanced Guide](user-guide/advanced-guide/README.md)

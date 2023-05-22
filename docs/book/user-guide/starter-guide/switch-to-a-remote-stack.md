@@ -1,113 +1,26 @@
 ---
-description: Bring your pipelines into production using cloud stacks.
+description: Bring your pipelines into production using ZenML Sandbox
 ---
 
-# Switch to a remote stack
+# Switch to Production
 
-## Switch to a Remote Stack
+Transitioning your machine learning pipelines to production means deploying your models on real-world data to make predictions that drive business decisions. To achieve this, you need an infrastructure that can handle the demands of running machine learning models at scale. However, setting up such an infrastructure involves careful planning and consideration of various factors, such as data storage, compute resources, monitoring, and security.
 
-In order to bring your pipelines into production using cloud stacks, you need to configure and register stack components and stacks. This guide will walk you through the process of registering stack components, registering a stack, activating a stack, changing stacks, accessing the active stack in Python, and unregistering stacks.
+Moving to a production environment offers several benefits over staying local:
 
-Before diving into the steps, it's important to note that you will need access to a ZenML Deployment. If you don't have one set up yet, don't worry! ZenML provides a managed Sandbox environment with a pre-configured remote stack for users to try out its features without setting up their own infrastructure. You can learn more about the ZenML Sandbox later in this guide.
+1. **Scalability**: Production environments are designed to handle large-scale workloads, allowing your models to process more data and deliver faster results.
+2. **Reliability**: Production-grade infrastructure ensures high availability and fault tolerance, minimizing downtime and ensuring consistent performance.
+3. **Collaboration**: A shared production environment enables seamless collaboration between team members, making it easier to iterate on models and share insights.
 
-### High-Level Overview
+Despite these advantages, transitioning to production can be challenging due to the complexities involved in setting up the needed infrastructure.
 
-Switching to a remote stack involves several key steps:
+This is where ZenML comes in. By providing seamless integration with various [MLOps tools](../../learning/component-gallery/integrations.md) and platforms, ZenML simplifies the process of moving your pipelines into production. One way it does this is by offering a free, limited, and easy-to-use Sandbox environment that allows you to experiment with remote stacks without any setup or configuration.
 
-1. Registering Stack Components: Configure each tool as a stack component with the desired flavor.
-2. Registering a Stack: Combine registered stack components into one stack.
-3. Activating a Stack: Set the registered stack as active for your pipelines.
-4. Changing Stacks: Switch between multiple configured stacks as needed.
-5. Accessing the Active Stack in Python: Retrieve or modify information of your active stack and its components programmatically.
-6. Unregistering Stacks: Remove registered stacks and their components when no longer needed.
+For those who prefer more control over their infrastructure, ZenML offers a more manual approach that still streamlines parts of the deployment process. With the [deploy CLI](../../platform-guide/set-up-your-mlops-platform/deploy-and-set-up-a-cloud-stack/), you can quickly set up a full-fledged MLOps stack with just a few commands. You have the option to deploy individual stack components through the [stack-component CLI](../../platform-guide/set-up-your-mlops-platform/deploy-and-set-up-a-cloud-stack/deploying-stack-components.md) or [deploy a stack with multiple components](../../platform-guide/set-up-your-mlops-platform/deploy-and-set-up-a-cloud-stack/deploying-a-stack-using-stack-recipes.md) together using Terraform stack recipes.
 
-Throughout this guide, we will use practical examples with commands based on the ZenML Sandbox environment.
+### ZenML Sandbox: A Simple and Easy Starting Point
 
-### Registering Stack Components
-
-First, you need to create a new instance of the respective stack component with the desired flavor using `zenml <STACK_COMPONENT> register <NAME> --flavor=<FLAVOR>`. Most flavors require further parameters that you can pass as additional argument `--param=value`, similar to how we passed the flavor.
-
-For example, let's assume you have access to a ZenML Sandbox environment. You can register an _S3_ artifact store using the following command:
-
-```shell
-zenml artifact-store register <ARTIFACT_STORE_NAME> \
-    --flavor=s3 \
-    --bucket=<SANDBOX_BUCKET_NAME> \
-    --access_key=<SANDBOX_ACCESS_KEY> \
-    --secret_key=<SANDBOX_SECRET_KEY>
-```
-
-After registering, you should be able to see the new artifact store in the list of registered artifact stores, which you can access using the following command:
-
-```shell
-zenml artifact-store list
-```
-
-### Registering a Stack
-
-After registering each tool as the respective stack components, you can combine all of them into one stack using the `zenml stack register` command:
-
-```shell
-zenml stack register <STACK_NAME> \
-    --orchestrator <ORCHESTRATOR_NAME> \
-    --artifact-store <ARTIFACT_STORE_NAME> \
-    ...
-```
-
-For example, with your ZenML Sandbox environment, you can register a stack that includes the S3 artifact store you registered earlier:
-
-```shell
-zenml stack register sandbox_stack \
-    --orchestrator kubeflow_orchestrator \
-    --artifact-store s3_artifact_store
-```
-
-### Activating a Stack
-
-Finally, to start using the stack you just registered, set it as active:
-
-```shell
-zenml stack set <STACK_NAME>
-```
-
-Now all your code is automatically executed using this stack.
-
-### Changing Stacks
-
-If you have multiple stacks configured, you can switch between them using the `zenml stack set` command, similar to how you activate a stack.
-
-### Accessing the Active Stack in Python
-
-The following code snippet shows how you can retrieve or modify information of your active stack and stack components in Python:
-
-```python
-from zenml.client import Client
-
-client = Client()
-active_stack = client.active_stack
-print(active_stack.name)
-print(active_stack.orchestrator.name)
-print(active_stack.artifact_store.name)
-print(active_stack.artifact_store.path)
-```
-
-### Unregistering Stacks
-
-To unregister (delete) a stack and all of its components, run
-
-```shell
-zenml stack delete <STACK_NAME>
-```
-
-to delete the stack itself, followed by
-
-```shell
-zenml <STACK_COMPONENT> delete <STACK_COMPONENT_NAME>
-```
-
-### ZenML Sandbox
-
-As mentioned earlier, ZenML provides a managed Sandbox environment with a pre-configured remote stack for users to try out its features without setting up their own infrastructure. The ZenML Sandbox is a great resource for learning how to switch to a remote stack and experiment with different configurations. This managed infrastructure deployed on Kubernetes includes a Kubeflow Orchestrator, MLflow Experiment Tracker, and MinIO Object Storage. This isolated environment enables users to explore and experiment with ZenML's features without the need for setting up and managing their own infrastructure. Each sandbox is only available for a maximum of 8 hours, and users can create one sandbox at a time.
+To help you get started with moving your pipelines into production, ZenML offers a managed Sandbox environment with a pre-configured remote stack for users to try out its features without setting up their own infrastructure. The ZenML Sandbox provides an isolated environment where you can experiment with different configurations and learn how to switch between remote stacks.
 
 ### Getting Started with ZenML Sandbox
 
@@ -117,7 +30,7 @@ To start using the ZenML Sandbox, sign up with your Google account. This will cr
 
 #### Step 2: Access credentials
 
-After signing up and creating your sandbox, you will be provided with credentials for Kubeflow, MinIO, MLflow, and ZenML. These credentials will allow you to access and interact with the various applications and services within the sandbox.
+After signing up and creating your sandbox, you will be provided with credentials for [Kubeflow](../../learning/component-gallery/orchestrators/kubeflow.md), [MinIO](../../learning/component-gallery/artifact-stores/s3.md), [MLflow](../../learning/component-gallery/experiment-trackers/mlflow.md), and [ZenML Server](transition-to-the-cloud.md). These credentials will allow you to access and interact with the various applications and services within the sandbox.
 
 #### Step 3: Connect and set the stack
 
