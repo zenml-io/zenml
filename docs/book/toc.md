@@ -119,7 +119,7 @@
     * [Service Connectors Use-Cases](platform-guide/set-up-your-mlops-platform/connect-to-your-cloud-provider/service-connectors-use-cases.md)
     * [Connecting ZenML to resources](platform-guide/set-up-your-mlops-platform/connect-to-your-cloud-provider/connecting-zenml-to-resources.md)
     * [Service Connectors Guide](platform-guide/set-up-your-mlops-platform/connect-to-your-cloud-provider/service-connectors-guide.md)
-    * [Best Security Practices](platform-guide/set-up-your-mlops-platform/connect-to-your-cloud-provider/best-security-practices.md)
+    * [Security Best Practices](platform-guide/set-up-your-mlops-platform/connect-to-your-cloud-provider/best-security-practices.md)
     * [Docker Service Connector](platform-guide/set-up-your-mlops-platform/connect-to-your-cloud-provider/docker-service-connector.md)
     * [Kubernetes Service Connector](platform-guide/set-up-your-mlops-platform/connect-to-your-cloud-provider/kubernetes-service-connector.md)
     * [AWS Service Connector](platform-guide/set-up-your-mlops-platform/connect-to-your-cloud-provider/aws-service-connector.md)
