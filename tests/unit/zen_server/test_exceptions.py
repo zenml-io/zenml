@@ -206,7 +206,7 @@ def test_unpack_unknown_error(error_code, exception_type):
 
     assert reconstructed_exception is not None
     assert reconstructed_exception.__class__ is exception_type
-    assert reconstructed_exception.args == ('{"detail": "error message"}',)
+    assert reconstructed_exception.args == ("error message",)
 
     response = requests.Response()
     response.status_code = error_code

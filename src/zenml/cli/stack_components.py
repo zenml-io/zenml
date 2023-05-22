@@ -29,6 +29,7 @@ from zenml.cli.secret import register_secrets_manager_subcommands
 from zenml.cli.served_model import register_model_deployer_subcommands
 from zenml.cli.utils import (
     _component_display_name,
+    fail_secrets_manager_creation,
     list_options,
     print_page_info,
     warn_deprecated_secrets_manager,
@@ -228,7 +229,8 @@ def generate_stack_component_register_command(
             labels: Labels to be associated with the component.
         """
         if component_type == StackComponentType.SECRETS_MANAGER:
-            warn_deprecated_secrets_manager()
+            fail_secrets_manager_creation()
+            return
 
         client = Client()
 
@@ -1153,7 +1155,6 @@ def generate_stack_component_deploy_command(
 
         # if the cloud is gcp, project_id is required for the first time
         if cloud == "gcp":
-            breakpoint()
             if "project_id" not in parsed_args:
                 cli_utils.warning(
                     "You should pass your GCP project ID to the deploy command, "

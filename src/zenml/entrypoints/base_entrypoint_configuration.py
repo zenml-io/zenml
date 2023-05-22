@@ -53,7 +53,6 @@ class BaseEntrypointConfiguration(ABC):
 
     Attributes:
         entrypoint_args: The parsed arguments passed to the entrypoint.
-    ```
     """
 
     def __init__(self, arguments: List[str]):
@@ -157,9 +156,13 @@ class BaseEntrypointConfiguration(ABC):
         Raises:
             ValueError: If the arguments are not valid.
         """
-        # Argument parser subclass that suppresses some argparse logs and
-        # raises an exception instead of the `sys.exit()` call
+
         class _CustomParser(argparse.ArgumentParser):
+            """Argument parser subclass that suppresses some argparse logs.
+
+            Also raises an exception instead of the `sys.exit()` call.
+            """
+
             def error(self, message: str) -> NoReturn:
                 raise ValueError(
                     f"Failed to parse entrypoint arguments: {message}"

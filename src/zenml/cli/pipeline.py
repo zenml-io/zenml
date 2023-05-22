@@ -294,7 +294,6 @@ def list_pipelines(**kwargs: Any) -> None:
     cli_utils.print_active_config()
     client = Client()
     with console.status("Listing pipelines...\n"):
-
         pipelines = client.list_pipelines(**kwargs)
 
         if not pipelines.items:

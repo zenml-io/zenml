@@ -284,7 +284,7 @@ The following code snippet shows how to use the Seldon Core Model Deployer to
 deploy a model inside a ZenML pipeline step:
 
 ```python
-from zenml.artifacts import ModelArtifact
+from zenml.materializers import UnmaterializedArtifact
 from zenml.environment import Environment
 from zenml.integrations.seldon.model_deployers import SeldonModelDeployer
 from zenml.integrations.seldon.services.seldon_deployment import (
@@ -300,7 +300,7 @@ from zenml.steps import (
 @step(enable_cache=True)
 def seldon_model_deployer_step(
   context: StepContext,
-  model: ModelArtifact,
+  model: UnmaterializedArtifact,
 ) -> SeldonDeploymentService:
   model_deployer = SeldonModelDeployer.get_active_model_deployer()
 
