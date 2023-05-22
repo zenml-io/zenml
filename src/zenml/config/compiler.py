@@ -30,7 +30,6 @@ if TYPE_CHECKING:
     from zenml.config.source import Source
     from zenml.new.pipelines.pipeline import Pipeline
     from zenml.stack import Stack, StackComponent
-    from zenml.steps import BaseStep
     from zenml.steps.step_invocation import StepInvocation
 
 from zenml.logger import get_logger
@@ -186,8 +185,8 @@ class Compiler:
 
         # Override `enable_artifact_visualization` if set at run level
         if config.enable_artifact_visualization is not None:
-            for step_ in pipeline.invocations.values():
-                step_.configure(
+            for invocation in pipeline.invocations.values():
+                invocation.step.configure(
                     enable_artifact_visualization=config.enable_artifact_visualization
                 )
 
@@ -454,11 +453,11 @@ class Compiler:
             get_child_nodes=lambda node: reversed_dag[node],
         )
         sorted_step_names = [step for layer in layers for step in layer]
-        sorted_steps: List[Tuple[str, "BaseStep"]] = [
+        sorted_invocations: List[Tuple[str, "StepInvocation"]] = [
             (name_in_pipeline, pipeline.invocations[name_in_pipeline])
             for name_in_pipeline in sorted_step_names
         ]
-        return sorted_steps
+        return sorted_invocations
 
     @staticmethod
     def _ensure_required_stack_components_exist(

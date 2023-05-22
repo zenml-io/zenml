@@ -48,7 +48,7 @@ def resolve_type_annotation(obj: Any) -> Any:
     return origin
 
 
-def get_args(obj: Any) -> Tuple[Any]:
+def get_args(obj: Any) -> Tuple[Any, ...]:
     """Get arguments of a Union type annotation.
 
     Example:

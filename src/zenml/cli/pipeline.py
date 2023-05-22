@@ -31,7 +31,7 @@ from zenml.models import (
 )
 from zenml.models.pipeline_build_models import PipelineBuildBaseModel
 from zenml.models.schedule_model import ScheduleFilterModel
-from zenml.pipelines import BasePipeline
+from zenml.new.pipelines.pipeline import Pipeline
 from zenml.utils import source_utils, uuid_utils
 
 logger = get_logger(__name__)
@@ -84,7 +84,7 @@ def register_pipeline(source: str) -> None:
     except AttributeError as e:
         cli_utils.error("Unable to load attribute from module: " + str(e))
 
-    if not isinstance(pipeline_instance, BasePipeline):
+    if not isinstance(pipeline_instance, Pipeline):
         cli_utils.error(
             f"The given source path `{source}` does not resolve to a pipeline "
             "object."
@@ -159,7 +159,7 @@ def build_pipeline(
     )
 
     with cli_utils.temporary_active_stack(stack_name_or_id=stack_name_or_id):
-        pipeline_instance = BasePipeline.from_model(pipeline_model)
+        pipeline_instance = Pipeline.from_model(pipeline_model)
         build = pipeline_instance.build(config_path=config_path)
 
     if build:
@@ -275,12 +275,13 @@ def run_pipeline(
             )
 
     with cli_utils.temporary_active_stack(stack_name_or_id=stack_name_or_id):
-        pipeline_instance = BasePipeline.from_model(pipeline_model)
-        pipeline_instance.run(
+        pipeline_instance = Pipeline.from_model(pipeline_model)
+        pipeline_instance = pipeline_instance.with_options(
             config_path=config_path,
             build=build,
             prevent_build_reuse=prevent_build_reuse,
         )
+        pipeline_instance()
 
 
 @pipeline.command("list", help="List all registered pipelines.")

@@ -49,10 +49,6 @@ F = TypeVar("F", bound=Callable[..., Any])
 
 
 class _DecoratedStep(BaseStep):
-    def __init__(self, entrypoint: F, **kwargs: Any) -> None:
-        self.entrypoint = entrypoint
-        super().__init__(**kwargs)
-
     @property
     def source_object(self) -> Any:
         """The source object of this step.
@@ -148,17 +144,18 @@ def step(
         The step instance.
     """
 
-    def inner_decorator(func: F) -> Type[BaseStep]:
-        """Inner decorator function for the creation of a ZenML Step.
+    def inner_decorator(func: F) -> BaseStep:
+        class_: Type[BaseStep] = type(
+            func.__name__,
+            (_DecoratedStep,),
+            {
+                "entrypoint": func,
+                "__module__": func.__module__,
+                "__doc__": func.__doc__,
+            },
+        )
 
-        Args:
-            func: The entrypoint function for the step.
-
-        Returns:
-            The step instance.
-        """
-        step_instance = _DecoratedStep(
-            entrypoint=func,
+        step_instance = class_(
             name=name or func.__name__,
             enable_cache=enable_cache,
             enable_artifact_metadata=enable_artifact_metadata,
@@ -172,7 +169,6 @@ def step(
             on_success=on_success,
         )
 
-        step_instance.__doc__ = func.__doc__
         return step_instance
 
     if _func is None:

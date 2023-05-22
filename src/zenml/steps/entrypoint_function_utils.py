@@ -33,8 +33,8 @@ from pydantic.json import pydantic_encoder
 
 from zenml.exceptions import StepInterfaceError
 from zenml.logger import get_logger
-from zenml.materializers import materializer_registry
 from zenml.materializers.base_materializer import BaseMaterializer
+from zenml.materializers.materializer_registry import materializer_registry
 from zenml.steps.utils import parse_return_type_annotations
 from zenml.utils import artifact_utils, source_utils
 
@@ -170,7 +170,7 @@ class ExternalArtifact(Artifact):
     def _get_materializer(self) -> Type["BaseMaterializer"]:
         assert self._value is not None
 
-        if inspect.isclass(self._materializer):
+        if isinstance(self._materializer, type):
             return self._materializer
         elif self._materializer:
             return source_utils.load_and_validate_class(
@@ -183,7 +183,7 @@ class ExternalArtifact(Artifact):
 
 def validate_reserved_arguments(
     signature: inspect.Signature, reserved_arguments: Sequence[str]
-):
+) -> None:
     for arg in reserved_arguments:
         if arg in signature.parameters:
             raise RuntimeError(f"Reserved argument name {arg}.")
@@ -259,7 +259,7 @@ class EntrypointFunctionDefinition(NamedTuple):
 
         from zenml.steps.utils import get_args
 
-        def _get_allowed_types(annotation) -> Tuple[Any, ...]:
+        def _get_allowed_types(annotation: Any) -> Tuple[Any, ...]:
             origin = get_origin(annotation) or annotation
             if is_union(origin):
                 allowed_types = get_args(annotation)

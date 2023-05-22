@@ -64,8 +64,8 @@ class PartialArtifactConfiguration(StrictBaseModel):
 
     @validator("materializer_source", pre=True)
     def _convert_source(
-        cls, value: Union[None, Source, str, Tuple[Source]]
-    ) -> Tuple[Source]:
+        cls, value: Union[None, Source, str, Tuple[Source, ...]]
+    ) -> Optional[Tuple[Source, ...]]:
         """Converts old source strings to tuples of source objects.
 
         Args:
@@ -90,8 +90,8 @@ class ArtifactConfiguration(PartialArtifactConfiguration):
 
     @validator("materializer_source", pre=True)
     def _convert_source(
-        cls, value: Union[Source, str, Tuple[Source]]
-    ) -> Tuple[Source]:
+        cls, value: Union[Source, str, Tuple[Source, ...]]
+    ) -> Tuple[Source, ...]:
         """Converts old source strings to tuples of source objects.
 
         Args:

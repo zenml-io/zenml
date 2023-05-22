@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Step invocation class definition."""
-from typing import TYPE_CHECKING, Any, Dict, Sequence, Set
+from typing import TYPE_CHECKING, Any, Dict, Set
 
 if TYPE_CHECKING:
     from zenml.config.step_configurations import StepConfiguration
@@ -34,7 +34,7 @@ class StepInvocation:
         input_artifacts: Dict[str, "StepArtifact"],
         external_artifacts: Dict[str, "ExternalArtifact"],
         parameters: Dict[str, Any],
-        upstream_steps: Sequence[str],
+        upstream_steps: Set[str],
         pipeline: "Pipeline",
     ) -> None:
         """Initialize a step invocation.
@@ -63,7 +63,7 @@ class StepInvocation:
         Returns:
             The upstream steps of the invocation.
         """
-        return set(self.invocation_upstream_steps).union(
+        return self.invocation_upstream_steps.union(
             self._get_and_validate_step_upstream_steps()
         )
 
@@ -87,7 +87,7 @@ class StepInvocation:
             # after the upstream steps
             invocations = {
                 invocation
-                for invocation in self.pipeline.steps.values()
+                for invocation in self.pipeline.invocations.values()
                 if invocation.step is self.step
             }
 
@@ -103,7 +103,7 @@ class StepInvocation:
         for step in self.step.upstream_steps:
             upstream_steps_invocations = {
                 invocation.id
-                for invocation in self.pipeline.steps.values()
+                for invocation in self.pipeline.invocations.values()
                 if invocation.step is step
             }
 

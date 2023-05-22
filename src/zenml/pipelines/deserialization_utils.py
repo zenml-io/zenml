@@ -19,7 +19,8 @@ from packaging import version
 
 from zenml.logger import get_logger
 from zenml.new.pipelines.pipeline import Pipeline
-from zenml.steps.base_step import BaseStep, StepArtifact
+from zenml.steps.base_step import BaseStep
+from zenml.steps.entrypoint_function_utils import StepArtifact
 from zenml.utils import source_utils
 
 if TYPE_CHECKING:

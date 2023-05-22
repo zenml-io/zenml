@@ -187,7 +187,7 @@ class BaseStep(metaclass=BaseStepMeta):
                 specifications (e.g. `module.my_function`).
             **kwargs: Keyword arguments passed to the step.
         """
-        self._upstream_steps: Set[str] = set()
+        self._upstream_steps: Set["BaseStep"] = set()
         self.entrypoint_definition = validate_entrypoint_function(
             self.entrypoint, reserved_arguments=["after", "id"]
         )
@@ -286,7 +286,7 @@ class BaseStep(metaclass=BaseStepMeta):
         return source_utils.resolve(self.__class__)
 
     @property
-    def upstream_steps(self) -> Set[str]:
+    def upstream_steps(self) -> Set["BaseStep"]:
         """Names of the upstream steps of this step.
 
         This property will only contain the full set of upstream steps once
@@ -685,13 +685,13 @@ class BaseStep(metaclass=BaseStepMeta):
             else:
                 return source_utils.resolve(value)
 
-        def _convert_to_tuple(value: Any) -> Tuple[Source]:
+        def _convert_to_tuple(value: Any) -> Tuple[Source, ...]:
             if isinstance(value, Sequence):
                 return tuple(_resolve_if_necessary(v) for v in value)
             else:
                 return (_resolve_if_necessary(value),)
 
-        outputs: Dict[str, Dict[str, Source]] = defaultdict(dict)
+        outputs: Dict[str, Dict[str, Tuple[Source, ...]]] = defaultdict(dict)
         allowed_output_names = set(self.entrypoint_definition.outputs)
 
         if output_materializers:
@@ -940,7 +940,7 @@ class BaseStep(metaclass=BaseStepMeta):
         Returns:
             The finalized step configuration.
         """
-        outputs: Dict[str, Dict[str, Source]] = defaultdict(dict)
+        outputs: Dict[str, Dict[str, Tuple[Source, ...]]] = defaultdict(dict)
 
         for (
             output_name,
@@ -987,17 +987,17 @@ class BaseStep(metaclass=BaseStepMeta):
                 else:
                     output_types = (output_annotation,)
 
-                materializer_source = []
+                materializer_sources = []
 
                 for output_type in output_types:
                     materializer_class = materializer_registry[output_type]
-                    materializer_source.append(
+                    materializer_sources.append(
                         source_utils.resolve(materializer_class)
                     )
 
-                outputs[output_name][
-                    "materializer_source"
-                ] = materializer_source
+                outputs[output_name]["materializer_source"] = tuple(
+                    materializer_sources
+                )
 
         parameters = self._finalize_parameters()
         self.configure(parameters=parameters, merge=False)

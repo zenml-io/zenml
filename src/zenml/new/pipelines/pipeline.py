@@ -27,7 +27,7 @@ from typing import (
     List,
     Mapping,
     Optional,
-    Sequence,
+    Set,
     Tuple,
     Type,
     TypeVar,
@@ -100,6 +100,7 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 T = TypeVar("T", bound="Pipeline")
+F = TypeVar("F", bound=Callable[..., None])
 
 
 class GetRunsDescriptor:
@@ -149,7 +150,7 @@ class Pipeline:
     def __init__(
         self,
         name: str,
-        entrypoint=None,
+        entrypoint: F,
         enable_cache: Optional[bool] = None,
         enable_artifact_metadata: Optional[bool] = None,
         enable_artifact_visualization: Optional[bool] = None,
@@ -875,7 +876,7 @@ class Pipeline:
         input_artifacts: Dict[str, StepArtifact],
         external_artifacts: Dict[str, ExternalArtifact],
         parameters: Dict[str, Any],
-        upstream_steps: Sequence[str],
+        upstream_steps: Set[str],
         custom_id: Optional[str] = None,
         allow_id_suffix: bool = True,
     ) -> str:
@@ -1005,7 +1006,7 @@ class Pipeline:
         config_path: Optional[str] = None,
         unlisted: bool = False,
         prevent_build_reuse: bool = False,
-        **kwargs,
+        **kwargs: Any,
     ) -> "Pipeline":
         """Copies the pipeline and applies the given configurations.
 
@@ -1090,7 +1091,7 @@ class Pipeline:
 
         if entrypoint_outputs is None:
             entrypoint_outputs = ()
-        elif not isinstance(entrypoint_outputs, Tuple):
+        elif not isinstance(entrypoint_outputs, tuple):
             entrypoint_outputs = (entrypoint_outputs,)
 
         from zenml.config.pipeline_configurations import (

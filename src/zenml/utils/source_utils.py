@@ -20,7 +20,7 @@ import site
 import sys
 from distutils.sysconfig import get_python_lib
 from pathlib import Path, PurePath
-from types import FunctionType, ModuleType
+from types import ModuleType
 from typing import (
     Any,
     Callable,
@@ -103,7 +103,7 @@ def load(source: Union[Source, str]) -> Any:
 
 
 def resolve(
-    obj: Union[Type[Any], FunctionType, ModuleType, NoneType],
+    obj: Union[Type[Any], Callable[..., Any], ModuleType, NoneType],
     skip_validation: bool = False,
 ) -> Source:
     """Resolve an object.
@@ -123,8 +123,7 @@ def resolve(
         # The class of the `None` object doesn't exist in the `builtin` module
         # so we need to manually handle it here
         return NoneTypeSource
-
-    if isinstance(obj, ModuleType):
+    elif isinstance(obj, ModuleType):
         module = obj
         attribute_name = None
     else:
