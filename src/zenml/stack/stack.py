@@ -591,7 +591,6 @@ class Stack:
         # go through all stack components and identify those that advertise
         # a local path where they persist information that they need to be
         # available when running pipelines.
-        has_local_paths = False
         for stack_comp in self.components.values():
             local_path = stack_comp.local_path
             if not local_path:
@@ -604,9 +603,9 @@ class Stack:
                     f"{stack_comp.name} is not in the local stores "
                     f"directory ({local_stores_path})."
                 )
-            has_local_paths = True
+            return True
 
-        return has_local_paths
+        return False
 
     @property
     def required_secrets(self) -> Set["secret_utils.SecretReference"]:

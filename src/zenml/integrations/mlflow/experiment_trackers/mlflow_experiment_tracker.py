@@ -74,7 +74,6 @@ class MLFlowExperimentTracker(
         Args:
             info: Info about the step that will be executed.
         """
-        self.configure_mlflow()
         settings = cast(
             MLFlowExperimentTrackerSettings,
             self.get_settings(info),
@@ -83,7 +82,7 @@ class MLFlowExperimentTracker(
         experiment_name = settings.experiment_name or info.pipeline.name
         experiment = set_active_experiment(
             experiment_name=experiment_name,
-            in_databricks=is_databricks_tracking_uri(self.get_tracking_uri()),
+            in_databricks=is_databricks_tracking_uri(self.tracking_uri),
         )
         run_id = self.get_run_id(
             experiment_name=experiment_name, run_name=info.run_name
@@ -114,7 +113,7 @@ class MLFlowExperimentTracker(
             A dictionary of metadata.
         """
         metadata: Dict[str, "MetadataType"] = {
-            METADATA_EXPERIMENT_TRACKER_URL: Uri(self.get_tracking_uri()),
+            METADATA_EXPERIMENT_TRACKER_URL: Uri(self.tracking_uri),
         }
         active_run = mlflow.active_run()
         if active_run:

@@ -265,7 +265,7 @@ def test_mlflow_experiment_tracker_set_config(local_stack: Stack) -> None:
         updated=datetime.now(),
     )
 
-    local_stack._experiment_tracker.configure_mlflow()
+    local_stack._experiment_tracker._configure_mlflow()
 
     assert os.environ[MLFLOW_TRACKING_USERNAME] == "john_doe"
     assert os.environ[MLFLOW_TRACKING_PASSWORD] == "password"
@@ -290,7 +290,7 @@ def test_mlflow_experiment_tracker_set_config(local_stack: Stack) -> None:
         updated=datetime.now(),
     )
 
-    local_stack._experiment_tracker.configure_mlflow()
+    local_stack._experiment_tracker._configure_mlflow()
 
     assert os.environ[DATABRICKS_USERNAME] == "john_doe"
     assert os.environ[DATABRICKS_PASSWORD] == "password"

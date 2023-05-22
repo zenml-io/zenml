@@ -74,7 +74,7 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
         self, run_id: UUID
     ) -> Dict[str, "MetadataType"]:
         return {
-            "mlflow_tracking_uri": Uri(self.get_tracking_uri()),
+            "mlflow_tracking_uri": Uri(self.tracking_uri),
         }
     
     ...
