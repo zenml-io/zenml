@@ -16,7 +16,7 @@
 import base64
 import os
 import tempfile
-from typing import TYPE_CHECKING, Any, Optional, Union, cast
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union, cast
 
 from zenml.client import Client
 from zenml.constants import MODEL_METADATA_YAML_FILE_NAME
@@ -24,15 +24,22 @@ from zenml.enums import StackComponentType, VisualizationType
 from zenml.exceptions import DoesNotExistException
 from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.models.visualization_models import LoadedVisualizationModel
+from zenml.models import ArtifactRequestModel, ArtifactResponseModel
+from zenml.models.visualization_models import (
+    LoadedVisualizationModel,
+    VisualizationModel,
+)
 from zenml.stack import StackComponent
 from zenml.utils import source_utils
 from zenml.utils.yaml_utils import read_yaml, write_yaml
 
 if TYPE_CHECKING:
+    from uuid import UUID
+
     from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
     from zenml.config.source import Source
-    from zenml.models import ArtifactResponseModel
+    from zenml.materializers.base_materializer import BaseMaterializer
+    from zenml.metadata.metadata_types import MetadataType
     from zenml.zen_stores.base_zen_store import BaseZenStore
 
 
@@ -332,3 +339,55 @@ def _load_file_from_artifact_store(
             f"likely because the authentication credentials are not configured "
             f"in the artifact store itself. For more information, see {link}."
         )
+
+
+def upload_artifact(
+    name: str,
+    data: Any,
+    materializer: "BaseMaterializer",
+    artifact_store_id: "UUID",
+    extract_metadata: bool,
+    include_visualizations: bool,
+) -> Tuple["ArtifactRequestModel", Dict[str, "MetadataType"]]:
+    data_type = type(data)
+    materializer.validate_type_compatibility(data_type)
+    materializer.save(data)
+
+    visualizations: List[VisualizationModel] = []
+    if include_visualizations:
+        try:
+            vis_data = materializer.save_visualizations(data)
+            for vis_uri, vis_type in vis_data.items():
+                vis_model = VisualizationModel(
+                    type=vis_type,
+                    uri=vis_uri,
+                )
+                visualizations.append(vis_model)
+        except Exception as e:
+            logger.warning(
+                f"Failed to save visualization for output artifact '{name}': "
+                f"{e}"
+            )
+
+    artifact_metadata = {}
+    if extract_metadata:
+        try:
+            artifact_metadata = materializer.extract_full_metadata(data)
+        except Exception as e:
+            logger.warning(
+                f"Failed to extract metadata for output artifact '{name}': {e}"
+            )
+
+    artifact_request = ArtifactRequestModel(
+        name=name,
+        type=materializer.ASSOCIATED_ARTIFACT_TYPE,
+        uri=materializer.uri,
+        materializer=source_utils.resolve(materializer.__class__),
+        data_type=source_utils.resolve(data_type),
+        user=Client().active_user.id,
+        workspace=Client().active_workspace.id,
+        artifact_store_id=artifact_store_id,
+        visualizations=visualizations,
+    )
+
+    return artifact_request, artifact_metadata

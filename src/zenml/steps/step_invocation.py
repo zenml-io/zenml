@@ -16,7 +16,7 @@ from typing import TYPE_CHECKING, Any, Dict, Sequence, Set
 
 if TYPE_CHECKING:
     from zenml.config.step_configurations import StepConfiguration
-    from zenml.pipelines.new import Pipeline
+    from zenml.new.pipelines.pipeline import Pipeline
     from zenml.steps import BaseStep
     from zenml.steps.entrypoint_function_utils import (
         ExternalArtifact,
@@ -93,7 +93,7 @@ class StepInvocation:
 
         external_artifact_ids = {}
         for key, artifact in self.external_artifacts.items():
-            external_artifact_ids[key] = artifact.do_something()
+            external_artifact_ids[key] = artifact.upload_if_necessary()
 
         return self.step._finalize_configuration(
             input_artifacts=self.input_artifacts,

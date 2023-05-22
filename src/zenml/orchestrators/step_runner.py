@@ -37,7 +37,6 @@ from zenml.models.artifact_models import (
     ArtifactRequestModel,
     ArtifactResponseModel,
 )
-from zenml.models.visualization_models import VisualizationModel
 from zenml.orchestrators.publish_utils import (
     publish_output_artifact_metadata,
     publish_output_artifacts,
@@ -51,7 +50,7 @@ from zenml.steps.utils import (
     parse_return_type_annotations,
     resolve_type_annotation,
 )
-from zenml.utils import materializer_utils, source_utils
+from zenml.utils import artifact_utils, materializer_utils, source_utils
 
 if TYPE_CHECKING:
     from zenml.config.source import Source
@@ -492,8 +491,6 @@ class StepRunner:
             and the metadata of each output artifact.
         """
         client = Client()
-        active_user_id = client.active_user.id
-        active_workspace_id = client.active_workspace.id
         artifact_stores = client.active_stack_model.components.get(
             StackComponentType.ARTIFACT_STORE
         )
@@ -507,56 +504,24 @@ class StepRunner:
             materializer_class = materializer_utils.select_materializer(
                 data_type=data_type, materializer_classes=materializer_classes
             )
-            materializer_source = source_utils.resolve(materializer_class)
             uri = output_artifact_uris[output_name]
             materializer = materializer_class(uri)
-            materializer.validate_type_compatibility(type(return_value))
-            materializer.save(return_value)
 
-            # Save artifact visualizations.
-            visualizations: List[VisualizationModel] = []
-            if artifact_visualization_enabled:
-                try:
-                    vis_data = materializer.save_visualizations(return_value)
-                    for vis_uri, vis_type in vis_data.items():
-                        vis_model = VisualizationModel(
-                            type=vis_type,
-                            uri=vis_uri,
-                        )
-                        visualizations.append(vis_model)
-                except Exception as e:
-                    logger.warning(
-                        f"Failed to save visualization for output artifact "
-                        f"'{output_name}' of step '{self.configuration.name}': "
-                        f"{e}"
-                    )
-
-            # Get artifact metadata.
-            if artifact_metadata_enabled:
-                try:
-                    artifact_metadata = materializer.extract_full_metadata(
-                        return_value
-                    )
-                    output_artifact_metadata[output_name] = artifact_metadata
-                except Exception as e:
-                    logger.warning(
-                        f"Failed to extract metadata for output artifact "
-                        f"'{output_name}' of step "
-                        f"'{self._step.spec.pipeline_parameter_name}': {e}"
-                    )
-
-            output_artifact = ArtifactRequestModel(
+            (
+                output_artifact,
+                artifact_metadata,
+            ) = artifact_utils.upload_artifact(
                 name=output_name,
-                type=materializer_class.ASSOCIATED_ARTIFACT_TYPE,
-                uri=uri,
-                materializer=materializer_source,
-                data_type=source_utils.resolve(data_type),
-                user=active_user_id,
-                workspace=active_workspace_id,
+                data=return_value,
+                materializer=materializer,
                 artifact_store_id=artifact_store_id,
-                visualizations=visualizations,
+                extract_metadata=artifact_metadata_enabled,
+                include_visualizations=artifact_visualization_enabled,
             )
             output_artifacts[output_name] = output_artifact
+            if artifact_metadata_enabled:
+                output_artifact_metadata[output_name] = artifact_metadata
+
         return output_artifacts, output_artifact_metadata
 
     def load_and_run_hook(

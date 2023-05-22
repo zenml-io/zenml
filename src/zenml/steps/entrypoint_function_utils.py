@@ -36,11 +36,11 @@ from zenml.logger import get_logger
 from zenml.materializers import materializer_registry
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.steps.utils import parse_return_type_annotations
-from zenml.utils import source_utils
+from zenml.utils import artifact_utils, source_utils
 
 if TYPE_CHECKING:
     from zenml.config.source import Source
-    from zenml.pipelines.new import Pipeline
+    from zenml.new.pipelines.pipeline import Pipeline
     from zenml.steps import BaseStep
 
     MaterializerClassOrSource = Union[str, "Source", Type["BaseMaterializer"]]
@@ -106,6 +106,7 @@ class ExternalArtifact(Artifact):
         id: Optional[UUID] = None,
         materializer: Optional["MaterializerClassOrSource"] = None,
         store_artifact_metadata: bool = True,
+        store_artifact_visualizations: bool = True,
     ) -> None:
         if value is not None and id is not None:
             raise ValueError("Only value or ID allowed")
@@ -116,13 +117,13 @@ class ExternalArtifact(Artifact):
         self._id = id
         self._materializer = materializer
         self._store_artifact_metadata = store_artifact_metadata
+        self._store_artifact_visualizations = store_artifact_visualizations
 
-    def do_something(self) -> UUID:
+    def upload_if_necessary(self) -> UUID:
         from uuid import uuid4
 
         from zenml.client import Client
         from zenml.io import fileio
-        from zenml.models import ArtifactRequestModel
 
         artifact_store_id = Client().active_stack.artifact_store.id
 
@@ -132,9 +133,6 @@ class ExternalArtifact(Artifact):
                 raise RuntimeError("Artifact store mismatch")
         else:
             logger.info("Uploading external artifact.")
-            client = Client()
-            active_user_id = client.active_user.id
-            active_workspace_id = client.active_workspace.id
             artifact_name = f"external_{uuid4()}"
             materializer_class = self._get_materializer()
 
@@ -144,23 +142,25 @@ class ExternalArtifact(Artifact):
                 artifact_name,
             )
             if fileio.exists(uri):
-                raise RuntimeError("Artifact URI already exists")
+                raise RuntimeError(f"Artifact URI {uri} already exists.")
             fileio.makedirs(uri)
 
             materializer = materializer_class(uri)
-            materializer.save(self._value)
 
-            artifact = ArtifactRequestModel(
+            artifact, metadata = artifact_utils.upload_artifact(
                 name=artifact_name,
-                type=materializer_class.ASSOCIATED_ARTIFACT_TYPE,
-                uri=uri,
-                materializer=source_utils.resolve(materializer_class),
-                data_type=source_utils.resolve(type(self._value)),
-                user=active_user_id,
-                workspace=active_workspace_id,
+                data=self._value,
+                materializer=materializer,
                 artifact_store_id=artifact_store_id,
+                extract_metadata=self._store_artifact_metadata,
+                include_visualizations=self._store_artifact_visualizations,
             )
             response = Client().zen_store.create_artifact(artifact=artifact)
+            if metadata:
+                Client().create_run_metadata(
+                    metadata=metadata, artifact_id=response.id
+                )
+
             # To avoid duplicate uploads, switch to just referencing the
             # uploaded artifact
             self._id = response.id
@@ -177,20 +177,8 @@ class ExternalArtifact(Artifact):
                 self._materializer, expected_class=BaseMaterializer
             )
         else:
-            value_type = type(self._value)
-            if materializer_registry.is_registered(value_type):
-                return materializer_registry[value_type]
-            else:
-                raise StepInterfaceError(
-                    f"Unable to find materializer for type `{value_type}`. Please "
-                    "make sure to either explicitly set a materializer for your "
-                    "external artifact using "
-                    "`ExternalArtifact(value=..., materializer=...)` or "
-                    f"register a default materializer for specific "
-                    f"types by subclassing `BaseMaterializer` and setting "
-                    f"its `ASSOCIATED_TYPES` class variable.",
-                    url="https://docs.zenml.io/advanced-guide/pipelines/materializers",
-                )
+            type_ = type(self._value)
+            return materializer_registry[type_]
 
 
 def validate_reserved_arguments(
