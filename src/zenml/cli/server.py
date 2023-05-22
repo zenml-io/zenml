@@ -16,71 +16,28 @@
 import ipaddress
 import os
 import sys
-from typing import TYPE_CHECKING, Any, Dict, Optional, Union
+from typing import Any, Dict, Optional, Union
 
 import click
 import yaml
 from rich.errors import MarkupError
 
+import zenml
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import cli
 from zenml.client import Client
 from zenml.config.global_config import GlobalConfiguration
 from zenml.console import console
-from zenml.constants import ENV_AUTO_OPEN_DASHBOARD, handle_bool_env_var
 from zenml.enums import ServerProviderType, StoreType
 from zenml.exceptions import IllegalOperationError
 from zenml.logger import get_logger
 from zenml.utils import yaml_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, event_handler
+from zenml.zen_server.utils import get_active_deployment
 
 logger = get_logger(__name__)
 
 LOCAL_ZENML_SERVER_NAME = "local"
-
-if TYPE_CHECKING:
-    from zenml.zen_server.deploy.deployment import ServerDeployment
-
-
-def get_active_deployment(local: bool = False) -> Optional["ServerDeployment"]:
-    """Get the active local or remote server deployment.
-
-    Call this function to retrieve the local or remote server deployment that
-    was last provisioned on this machine.
-
-    Args:
-        local: Whether to return the local active deployment or the remote one.
-
-    Returns:
-        The local or remote active server deployment or None, if no deployment
-        was found.
-    """
-    from zenml.zen_server.deploy.deployer import ServerDeployer
-
-    deployer = ServerDeployer()
-    if local:
-        servers = deployer.list_servers(provider_type=ServerProviderType.LOCAL)
-        if not servers:
-            servers = deployer.list_servers(
-                provider_type=ServerProviderType.DOCKER
-            )
-    else:
-        servers = deployer.list_servers()
-
-    if not servers:
-        return None
-
-    for server in servers:
-        if server.config.provider in [
-            ServerProviderType.LOCAL,
-            ServerProviderType.DOCKER,
-        ]:
-            if local:
-                return server
-        elif not local:
-            return server
-
-    return None
 
 
 @cli.command("up", help="Start the ZenML dashboard locally.")
@@ -128,6 +85,12 @@ def get_active_deployment(local: bool = False) -> Optional["ServerDeployment"]:
     help="Use a custom Docker image for the ZenML server. Only used when "
     "`--docker` is set.",
 )
+@click.option(
+    "--ngrok-token",
+    type=str,
+    default=None,
+    help="Specify an ngrok auth token to use for exposing the ZenML server.",
+)
 def up(
     docker: bool = False,
     ip_address: Union[
@@ -137,6 +100,7 @@ def up(
     blocking: bool = False,
     connect: bool = False,
     image: Optional[str] = None,
+    ngrok_token: Optional[str] = None,
 ) -> None:
     """Start the ZenML dashboard locally and connect the client to it.
 
@@ -149,6 +113,9 @@ def up(
             connected to a remote ZenML server.
         image: A custom Docker image to use for the server, when the
             `--docker` flag is set.
+        ngrok_token: An ngrok auth token to use for exposing the ZenML dashboard
+            on a public domain. Primarily used for accessing the dashboard in
+            Colab.
     """
     with event_handler(
         AnalyticsEvent.ZENML_SERVER_STARTED
@@ -263,22 +230,26 @@ def up(
                     f"The local ZenML dashboard is available at "
                     f"'{server.status.url}'. You can connect to it using the "
                     f"'{DEFAULT_USERNAME}' username and an empty password. "
-                    f"To open the dashboard in a browser automatically, "
-                    f"set the env variable AUTO_OPEN_DASHBOARD=true."
                 )
+                zenml.show(ngrok_token=ngrok_token)
 
-                if handle_bool_env_var(ENV_AUTO_OPEN_DASHBOARD, default=True):
-                    try:
-                        import webbrowser
 
-                        webbrowser.open(server.status.url)
-                        cli_utils.declare(
-                            "Automatically opening the dashboard in your "
-                            "browser. To disable this, set the env variable "
-                            "AUTO_OPEN_DASHBOARD=false."
-                        )
-                    except Exception as e:
-                        logger.error(e)
+@click.option(
+    "--ngrok-token",
+    type=str,
+    default=None,
+    help="Specify an ngrok auth token to use for exposing the ZenML server.",
+)
+@cli.command("show", help="Show the ZenML dashboard.")
+def show(ngrok_token: Optional[str] = None) -> None:
+    """Show the ZenML dashboard.
+
+    Args:
+        ngrok_token: An ngrok auth token to use for exposing the ZenML dashboard
+            on a public domain. Primarily used for accessing the dashboard in
+            Colab.
+    """
+    zenml.show(ngrok_token=ngrok_token)
 
 
 @cli.command("down", help="Shut down the local ZenML dashboard.")
