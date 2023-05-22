@@ -28,6 +28,12 @@ ZenML automatically handles most of the Docker image configuration for you. It s
 
 To manage dependencies in the Docker images, you can follow the steps described in the [Containerize your pipeline](containerize-your-pipeline.md) guide. This includes specifying additional pip dependencies, using a custom parent image, and customizing the build process.
 
+### Customizing the `build` environment
+
+TODO: Include reference to managing envioronments and maybe move to the top
+
+The [image builder](broken-reference/) component of your stack defines the environment in which the Docker build with the previously described Dockerfile gets executed. This could be either on your local machine (when using the [local image builder](broken-reference/)) or in some remote environment. Check our the image builder documentation for more information.
+
 ## Orchestrator Environment
 
 The orchestrator environment is responsible for managing the execution of your pipelines. To ensure that the orchestrator environment is properly configured, you need to install the necessary dependencies and integrations, just like in your local development and ZenML server environments.

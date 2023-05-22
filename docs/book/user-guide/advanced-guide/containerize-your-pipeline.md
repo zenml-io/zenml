@@ -4,23 +4,6 @@ description: Using Docker images to run your pipeline.
 
 # Containerizing Your ZenML Pipeline
 
-# TODO
-
-- This page needs to be done in conjunction with Michael. Its just about restructuring the info and doing this again with a new outlook
-- It has too much info and hard to navigate
-- The main purpose of rewriting the containerization page was to make it simpler/easier to digest
-
-The containerization page:
-Should stay pretty similar in terms of content, it should be an in-depth explanation of how to use DockerSettings
-
-Currently it also contains:
-reference to image builders: Relevant for containerizing a pipeline, but not related to DockerSettings
-how to build images without running a pipeline: Relevant for containerizing a pipeline, but not related to DockerSettings
-
-Not sure if these fit somewhere else (e.g. the "managing environments" page above for the image builders?) or should stay on the page
-
-# ENDTODO
-
 When running locally, ZenML will sequentially execute the steps of your pipeline in the active Python environment. However, when using remote [orchestrators](broken-reference/) or [step operators](broken-reference/), ZenML will build [Docker](https://www.docker.com/) images which are used to run your pipeline code in an isolated and well-defined environment.
 
 For this purpose, a [Dockerfile](https://docs.docker.com/engine/reference/builder/) is dynamically generated at runtime. It is then used to build the docker image using the [image builder](broken-reference/) component of your stack. The Dockerfile consists of the following steps:
@@ -226,23 +209,8 @@ def my_pipeline(...):
 
 ### Customizing the `build` environment
 
-The [image builder](broken-reference/) component of your stack defines the environment in which the Docker build with the previously described Dockerfile gets executed. This could be either on your local machine (when using the [local image builder](broken-reference/)) or in some remote environment. Check our the image builder documentation for more information.
-
+TODO: Include reference to managing envioronments and maybe move to the top [managing environments](managing-environments.md)
 
 ### Building Docker Images without Running the Pipeline
 
-Whenever you run a pipeline on a stack that requires Docker images, ZenML automatically builds these images for you to ensure your pipeline can be executed. If you want to run this build step separately without actually running the pipeline, you can do so by calling `pipeline_instance.build(...)` in Python or using the CLI command `zenml pipeline build`. This will register the build output in the ZenML database and allow you to use the built images when running a pipeline later. To use a registered build when running a pipeline, pass it as an argument in Python
-
-```python
-pipeline_instance.run(build=<BUILD_ID>)
-```
-
-or when running a pipeline from the CLI
-
-```bash
-zenml pipeline run <PIPELINE_NAME> --build=<BUILD_ID>
-```
-
-{% hint style="warning" %}
-Building Docker images currently includes your step code, which means specifying a custom build when running a pipeline will not run the code that you have on your client machine, but will instead use the code that is included in the Docker images of the build.
-{% endhint %}
+Link to [code repository](connect-your-git-repository.md)
