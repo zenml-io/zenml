@@ -114,7 +114,7 @@
   * [Use the Secret Store](platform-guide/set-up-your-mlops-platform/secrets-management/README.md)
     * [Interact with Secrets](platform-guide/set-up-your-mlops-platform/secrets-management/interact-with-secrets.md)
     * [Create a custom secret store](platform-guide/set-up-your-mlops-platform/secrets-management/create-a-custom-secret-store.md)
-  * [User management](platform-guide/set-up-your-mlops-platform/collaborate.md)
+  * [User management](platform-guide/set-up-your-mlops-platform/user-management.md)
   * [Connect ZenML to infrastructure](platform-guide/set-up-your-mlops-platform/connect-to-your-cloud-provider.md)
     * [Service Connectors Use-Cases](platform-guide/set-up-your-mlops-platform/connect-to-your-cloud-provider/service-connectors-use-cases.md)
     * [Connecting ZenML to resources](platform-guide/set-up-your-mlops-platform/connect-to-your-cloud-provider/connecting-zenml-to-resources.md)

@@ -2,7 +2,7 @@
 description: Combining your efforts, expertise and resources.
 ---
 
-# Collaborating as a team with ZenML
+# Managing multiple users in a ZenML deployment
 
 Collaboration is a crucial aspect of any MLOps team as they often need to bring
 together individuals with diverse skills and expertise to create a cohesive and
@@ -21,8 +21,6 @@ that extends beyond your team and includes the community. With ZenML, you can
 seamlessly work together with others, sharing resources and insights to achieve
 your common goals. Removing barriers to collaboration allows teams to iterate on
 ideas and problems much more efficiently which in turn leads to faster results.
-
-<!-- CORE FEATURES PROVIDED BY ZENML (overview) -->
 
 * With a deployed ZenML instance, users have the ability to create their own teams and project structures. They can easily share pipelines, runs, stacks, and other resources, streamlining the workflow and promoting teamwork.
 * On the flip side, there's the ZenML Hub. Here, you can peruse a collection of community-driven solutions, share your own code, and collaborate with fellow members of the community.
