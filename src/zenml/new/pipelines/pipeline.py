@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+import copy
 import hashlib
 from datetime import datetime
 from pathlib import Path
@@ -108,7 +109,7 @@ class Pipeline:
         on_success: Optional["HookSpecification"] = None,
         entrypoint=None,
     ) -> None:
-        self._steps: Dict[str, BaseStep] = {}
+        self._invocations: Dict[str, StepInvocation] = {}
         self._configuration = PipelineConfiguration(
             name=name,
         )
@@ -152,13 +153,13 @@ class Pipeline:
         return self._configuration
 
     @property
-    def steps(self) -> Dict[str, StepInvocation]:
+    def step_invocations(self) -> Dict[str, StepInvocation]:
         """Returns a dictionary of pipeline steps.
 
         Returns:
             A dictionary of pipeline steps.
         """
-        return self._steps
+        return self._invocations
 
     @classmethod
     def from_model(cls, model: "PipelineResponseModel") -> "Pipeline":
@@ -567,7 +568,7 @@ class Pipeline:
                 step_settings[key] = fields
 
         steps = {}
-        for step_name, invocation in self.steps.items():
+        for step_name, invocation in self.step_invocations.items():
             step = invocation.step
             parameters = (
                 pydantic_utils.TemplateGenerator(
@@ -658,7 +659,7 @@ class Pipeline:
         return {
             "store_type": Client().zen_store.type.value,
             **stack_metadata,
-            "total_steps": len(self.steps),
+            "total_steps": len(self.step_invocations),
             "schedule": bool(deployment.schedule),
             "custom_materializer": custom_materializer,
             "own_stack": own_stack,
@@ -773,7 +774,9 @@ class Pipeline:
         hash_.update(pipeline_spec.json_with_string_sources.encode())
 
         for step_spec in pipeline_spec.steps:
-            invocation = self.steps[step_spec.pipeline_parameter_name]
+            invocation = self.step_invocations[
+                step_spec.pipeline_parameter_name
+            ]
             step_source = invocation.step.source_code
             hash_.update(step_source.encode())
 
@@ -823,7 +826,7 @@ class Pipeline:
         parameters: Dict[str, Any],
         upstream_steps: Sequence[str],
         custom_id: Optional[str] = None,
-        allow_suffix: bool = True,
+        allow_id_suffix: bool = True,
     ) -> str:
         if Pipeline.ACTIVE_PIPELINE != self:
             raise RuntimeError(
@@ -837,7 +840,7 @@ class Pipeline:
                 )
 
         invocation_id = self._compute_invocation_id(
-            step=step, custom_id=custom_id, allow_suffix=allow_suffix
+            step=step, custom_id=custom_id, allow_suffix=allow_id_suffix
         )
         invocation = StepInvocation(
             id=invocation_id,
@@ -848,7 +851,7 @@ class Pipeline:
             upstream_steps=upstream_steps,
             pipeline=self,
         )
-        self._steps[invocation_id] = invocation
+        self._invocations[invocation_id] = invocation
         return invocation_id
 
     def _compute_invocation_id(
@@ -859,12 +862,12 @@ class Pipeline:
     ) -> str:
         base_id = custom_id or step.name
 
-        if base_id in self.steps and not allow_suffix:
+        if base_id in self.step_invocations and not allow_suffix:
             raise RuntimeError("Duplicate step ID")
 
         id_ = base_id
         for index in range(2, 10000):
-            if id_ not in self.steps:
+            if id_ not in self.step_invocations:
                 break
 
             id_ = f"{base_id}_{index}"
@@ -896,10 +899,9 @@ class Pipeline:
         prevent_build_reuse: bool = False,
         **kwargs,
     ) -> "Pipeline":
-        import copy
-
-        pipeline_copy = copy.deepcopy(self)
+        pipeline_copy = self.copy()
         pipeline_copy.configure(**kwargs)
+
         run_args = dict_utils.remove_none_values(
             {
                 "run_name": run_name,
@@ -915,9 +917,16 @@ class Pipeline:
         return pipeline_copy
 
     def copy(self) -> "Pipeline":
-        import copy
+        """Copies the pipeline.
 
-        return copy.deepcopy(self)
+        Returns:
+            The pipeline copy.
+        """
+        pipeline_copy = Pipeline(name=self.name, entrypoint=self.entrypoint)
+        pipeline_copy._configuration = copy.deepcopy(self.configuration)
+        pipeline_copy._run_args = copy.deepcopy(self._run_args)
+
+        return pipeline_copy
 
     def __call__(self, *args: Any, **kwargs: Any) -> Any:
         if Pipeline.ACTIVE_PIPELINE:

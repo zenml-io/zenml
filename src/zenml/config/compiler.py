@@ -24,14 +24,14 @@ from zenml.config.step_configurations import InputSpec, Step, StepSpec
 from zenml.environment import get_run_environment_dict
 from zenml.exceptions import StackValidationError
 from zenml.models.pipeline_deployment_models import PipelineDeploymentBaseModel
-from zenml.utils import pydantic_utils, settings_utils, source_utils
+from zenml.utils import pydantic_utils, settings_utils
 
 if TYPE_CHECKING:
     from zenml.config.source import Source
-    from zenml.pipelines.new import Pipeline
+    from zenml.new.pipelines.pipeline import Pipeline
     from zenml.stack import Stack, StackComponent
     from zenml.steps import BaseStep
-    from zenml.steps.base_step import StepInvocation
+    from zenml.steps.step_invocation import StepInvocation
 
 from zenml.logger import get_logger
 
@@ -82,7 +82,7 @@ class Compiler:
         }
 
         steps = {
-            name: self._compile_step(
+            name: self._compile_step_invocation(
                 invocation=step,
                 pipeline_settings=settings_to_passdown,
                 pipeline_extra=pipeline.configuration.extra,
@@ -90,7 +90,7 @@ class Compiler:
                 pipeline_failure_hook_source=pipeline.configuration.failure_hook_source,
                 pipeline_success_hook_source=pipeline.configuration.success_hook_source,
             )
-            for name, step in self._get_sorted_steps(pipeline=pipeline)
+            for name, step in self._get_sorted_invocations(pipeline=pipeline)
         }
 
         self._ensure_required_stack_components_exist(stack=stack, steps=steps)
@@ -132,13 +132,15 @@ class Compiler:
         # the pipeline object/step objects in any way
         pipeline = copy.deepcopy(pipeline)
 
-        steps = [
+        invocations = [
             self._get_step_spec(
-                step=step,
+                invocation=invocation,
             )
-            for _, step in self._get_sorted_steps(pipeline=pipeline)
+            for _, invocation in self._get_sorted_invocations(
+                pipeline=pipeline
+            )
         ]
-        pipeline_spec = PipelineSpec(steps=steps)
+        pipeline_spec = PipelineSpec(steps=invocations)
         logger.debug("Compiled pipeline spec: %s", pipeline_spec)
         return pipeline_spec
 
@@ -164,25 +166,27 @@ class Compiler:
         )
 
         for step_name, step_config in config.steps.items():
-            if step_name not in pipeline.steps:
+            if step_name not in pipeline.step_invocations:
                 raise KeyError(f"No step with name {step_name}.")
-            pipeline.steps[step_name].step._apply_configuration(step_config)
+            pipeline.step_invocations[step_name].step._apply_configuration(
+                step_config
+            )
 
         # Override `enable_cache` of all steps if set at run level
         if config.enable_cache is not None:
-            for invocation in pipeline.steps.values():
+            for invocation in pipeline.step_invocations.values():
                 invocation.step.configure(enable_cache=config.enable_cache)
 
         # Override `enable_artifact_metadata` of all steps if set at run level
         if config.enable_artifact_metadata is not None:
-            for invocation in pipeline.steps.values():
+            for invocation in pipeline.step_invocations.values():
                 invocation.step.configure(
                     enable_artifact_metadata=config.enable_artifact_metadata
                 )
 
         # Override `enable_artifact_visualization` if set at run level
         if config.enable_artifact_visualization is not None:
-            for step_ in pipeline.steps.values():
+            for step_ in pipeline.step_invocations.values():
                 step_.configure(
                     enable_artifact_visualization=config.enable_artifact_visualization
                 )
@@ -260,10 +264,20 @@ class Compiler:
             )
 
     def _verify_upstream_steps(
-        self, step: "StepInvocation", pipeline: "Pipeline"
+        self, invocation: "StepInvocation", pipeline: "Pipeline"
     ) -> None:
-        available_steps = set(pipeline.steps)
-        missing_steps = step.upstream_steps - available_steps
+        """Verifies the upstream steps for a step invocation.
+
+        Args:
+            invocation: The step invocation for which to verify the upstream
+                steps.
+            pipeline: The parent pipeline of the invocation.
+
+        Raises:
+            RuntimeError: If an upstream step is missing.
+        """
+        available_steps = set(pipeline.step_invocations)
+        missing_steps = invocation.upstream_steps - available_steps
 
         if missing_steps:
             raise RuntimeError(
@@ -316,9 +330,9 @@ class Compiler:
 
     def _get_step_spec(
         self,
-        step: "StepInvocation",
+        invocation: "StepInvocation",
     ) -> StepSpec:
-        """Gets the spec for a step.
+        """Gets the spec for a step invocation.
 
         Args:
             step: The step for which to get the spec.
@@ -331,16 +345,16 @@ class Compiler:
                 step_name=artifact.invocation_id,
                 output_name=artifact.output_name,
             )
-            for key, artifact in step.input_artifacts.items()
+            for key, artifact in invocation.input_artifacts.items()
         }
         return StepSpec(
-            source=source_utils.resolve(step.step.__class__),
-            upstream_steps=sorted(step.upstream_steps),
+            source=invocation.step.resolve(),
+            upstream_steps=sorted(invocation.upstream_steps),
             inputs=inputs,
-            pipeline_parameter_name=step.id,
+            pipeline_parameter_name=invocation.id,
         )
 
-    def _compile_step(
+    def _compile_step_invocation(
         self,
         invocation: "StepInvocation",
         pipeline_settings: Dict[str, "BaseSettings"],
@@ -352,7 +366,7 @@ class Compiler:
         """Compiles a ZenML step.
 
         Args:
-            step: The step to compile.
+            invocation: The step invocation to compile.
             pipeline_settings: settings configured on the
                 pipeline of the step.
             pipeline_extra: Extra values configured on the pipeline of the step.
@@ -368,7 +382,7 @@ class Compiler:
         invocation = copy.deepcopy(invocation)
 
         step = invocation.step
-        step_spec = self._get_step_spec(step=invocation)
+        step_spec = self._get_step_spec(invocation=invocation)
         step_settings = self._filter_and_validate_settings(
             settings=step.configuration.settings,
             configuration_level=ConfigurationLevel.STEP,
@@ -408,11 +422,11 @@ class Compiler:
         """
         return f"{pipeline_name}-{{date}}-{{time}}"
 
-    def _get_sorted_steps(
+    def _get_sorted_invocations(
         self,
         pipeline: "Pipeline",
     ) -> List[Tuple[str, "StepInvocation"]]:
-        """Sorts the steps of a pipeline using topological sort.
+        """Sorts the step invocations of a pipeline using topological sort.
 
         The resulting list of steps will be in an order that can be executed
         sequentially without any conflicts.
@@ -428,8 +442,8 @@ class Compiler:
 
         # Sort step names using topological sort
         dag: Dict[str, List[str]] = {}
-        for name, step in pipeline.steps.items():
-            self._verify_upstream_steps(step=step, pipeline=pipeline)
+        for name, step in pipeline.step_invocations.items():
+            self._verify_upstream_steps(invocation=step, pipeline=pipeline)
             dag[name] = list(step.upstream_steps)
 
         reversed_dag: Dict[str, List[str]] = reverse_dag(dag)
@@ -441,7 +455,7 @@ class Compiler:
         )
         sorted_step_names = [step for layer in layers for step in layer]
         sorted_steps: List[Tuple[str, "BaseStep"]] = [
-            (name_in_pipeline, pipeline.steps[name_in_pipeline])
+            (name_in_pipeline, pipeline.step_invocations[name_in_pipeline])
             for name_in_pipeline in sorted_step_names
         ]
         return sorted_steps

@@ -23,7 +23,7 @@ from typing import (
     overload,
 )
 
-from zenml.pipelines.new.pipeline import Pipeline
+from zenml.new.pipelines.pipeline import Pipeline
 
 if TYPE_CHECKING:
     from zenml.config.base_settings import SettingsOrDict

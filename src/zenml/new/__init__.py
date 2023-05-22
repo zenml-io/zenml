@@ -11,18 +11,3 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from zenml.config import DockerSettings
-from zenml.config.schedule import Schedule
-from zenml.pipelines.new.pipeline import Pipeline
-from zenml.pipelines.new.pipeline_template_decorator import pipeline_template
-from zenml.pipelines.new.pipeline_template import PipelineTemplate
-from zenml.pipelines.new.pipeline_decorator import pipeline
-
-__all__ = [
-    "Pipeline",
-    "pipeline_template",
-    "PipelineTemplate",
-    "DockerSettings",
-    "Schedule",
-    "pipeline",
-]

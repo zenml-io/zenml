@@ -33,7 +33,7 @@ def _compile_step(step: BaseStep) -> Step:
     step()
 
     compiler = Compiler()
-    return compiler._compile_step(
+    return compiler._compile_step_invocation(
         pipeline_parameter_name="",
         step=step,
         pipeline_settings={},

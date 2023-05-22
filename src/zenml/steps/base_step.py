@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Base Step for ZenML."""
+import copy
 import hashlib
 import inspect
 from abc import abstractmethod
@@ -107,29 +108,29 @@ class BaseStepMeta(type):
 
         return cls
 
-    def __call__(self, *args: Any, **kwargs: Any) -> Any:
-        from zenml.pipelines.new import Pipeline
+    # def __call__(self, *args: Any, **kwargs: Any) -> Any:
+    #     from zenml.new.pipelines.pipeline import Pipeline
 
-        if not Pipeline.ACTIVE_PIPELINE:
-            return super().__call__(*args, **kwargs)
+    #     if not Pipeline.ACTIVE_PIPELINE:
+    #         return super().__call__(*args, **kwargs)
 
-        init_kwargs = {}
-        call_kwargs = {}
+    #     init_kwargs = {}
+    #     call_kwargs = {}
 
-        # TODO: validate the entrypoint does not define reserved params like
-        # "settings" or "extra"
-        entrypoint_params = set(inspect.signature(self.entrypoint).parameters)
-        entrypoint_params.add("after")
-        entrypoint_params.add("id")
+    #     # TODO: validate the entrypoint does not define reserved params like
+    #     # "settings" or "extra"
+    #     entrypoint_params = set(inspect.signature(self.entrypoint).parameters)
+    #     entrypoint_params.add("after")
+    #     entrypoint_params.add("id")
 
-        for key, value in kwargs.items():
-            if key in entrypoint_params:
-                call_kwargs[key] = value
-            else:
-                init_kwargs[key] = value
+    #     for key, value in kwargs.items():
+    #         if key in entrypoint_params:
+    #             call_kwargs[key] = value
+    #         else:
+    #             init_kwargs[key] = value
 
-        step_instance = super().__call__(**init_kwargs)
-        return step_instance(*args, **call_kwargs)
+    #     step_instance = super().__call__(**init_kwargs)
+    #     return step_instance(*args, **call_kwargs)
 
 
 T = TypeVar("T", bound="BaseStep")
@@ -176,7 +177,7 @@ class BaseStep(metaclass=BaseStepMeta):
         """
         self._upstream_steps: Set[str] = set()
         self.entrypoint_definition = validate_entrypoint_function(
-            self.entrypoint
+            self.entrypoint, reserved_arguments=["after", "id"]
         )
 
         name = name or self.__class__.__name__
@@ -251,11 +252,26 @@ class BaseStep(metaclass=BaseStepMeta):
 
         Returns:
             The loaded step.
+
+        Raises:
+            ValueError: If the source is not a valid step source.
         """
-        step_class: Type[BaseStep] = source_utils.load_and_validate_class(
-            source, expected_class=BaseStep
-        )
-        return step_class()
+        obj = source_utils.load(source)
+
+        if isinstance(obj, BaseStep):
+            return obj
+        elif isinstance(obj, type) and issubclass(obj, BaseStep):
+            return obj()
+        else:
+            raise ValueError("Invalid step source.")
+
+    def resolve(self) -> Source:
+        """Resolves the step.
+
+        Returns:
+            The step source.
+        """
+        return source_utils.resolve(self.__class__)
 
     @property
     def upstream_steps(self) -> Set[str]:
@@ -463,7 +479,7 @@ class BaseStep(metaclass=BaseStepMeta):
         after: Union[str, Sequence[str], None] = None,
         **kwargs: Any,
     ) -> Any:
-        from zenml.pipelines.new.pipeline import Pipeline
+        from zenml.new.pipelines.pipeline import Pipeline
 
         if not Pipeline.ACTIVE_PIPELINE:
             # The step is being called outside of the context of a pipeline,
@@ -490,7 +506,7 @@ class BaseStep(metaclass=BaseStepMeta):
             parameters=parameters,
             upstream_steps=upstream_steps,
             custom_id=id,
-            allow_suffix=not id,
+            allow_id_suffix=not id,
         )
 
         outputs = []
@@ -683,6 +699,48 @@ class BaseStep(metaclass=BaseStepMeta):
         config = StepConfigurationUpdate(**values)
         self._apply_configuration(config, merge=merge)
         return self
+
+    def with_options(
+        self,
+        enable_cache: Optional[bool] = None,
+        enable_artifact_metadata: Optional[bool] = None,
+        enable_artifact_visualization: Optional[bool] = None,
+        experiment_tracker: Optional[str] = None,
+        step_operator: Optional[str] = None,
+        parameters: Optional["ParametersOrDict"] = None,
+        output_materializers: Optional[
+            "OutputMaterializersSpecification"
+        ] = None,
+        settings: Optional[Mapping[str, "SettingsOrDict"]] = None,
+        extra: Optional[Dict[str, Any]] = None,
+        on_failure: Optional["HookSpecification"] = None,
+        on_success: Optional["HookSpecification"] = None,
+        merge: bool = True,
+    ) -> "BaseStep":
+        step_copy = self.copy()
+        step_copy.configure(
+            enable_cache=enable_cache,
+            enable_artifact_metadata=enable_artifact_metadata,
+            enable_artifact_visualization=enable_artifact_visualization,
+            experiment_tracker=experiment_tracker,
+            step_operator=step_operator,
+            parameters=parameters,
+            output_materializers=output_materializers,
+            settings=settings,
+            extra=extra,
+            on_failure=on_failure,
+            on_success=on_success,
+            merge=merge,
+        )
+        return step_copy
+
+    def copy(self) -> "BaseStep":
+        """Copies the step.
+
+        Returns:
+            The step copy.
+        """
+        return copy.deepcopy(self)
 
     def _apply_configuration(
         self,

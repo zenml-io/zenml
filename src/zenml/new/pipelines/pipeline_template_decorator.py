@@ -24,7 +24,7 @@ from typing import (
     overload,
 )
 
-from zenml.pipelines.new.pipeline_template import (
+from zenml.new.pipelines.pipeline_template import (
     CLASS_CONFIGURATION,
     PARAM_ENABLE_ARTIFACT_METADATA,
     PARAM_ENABLE_CACHE,

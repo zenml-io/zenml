@@ -103,12 +103,15 @@ def load(source: Union[Source, str]) -> Any:
 
 
 def resolve(
-    obj: Union[Type[Any], FunctionType, ModuleType, NoneType]
+    obj: Union[Type[Any], FunctionType, ModuleType, NoneType],
+    skip_validation: bool = False,
 ) -> Source:
     """Resolve an object.
 
     Args:
         obj: The object to resolve.
+        skip_validation: If True, the validation that the object exist in the
+            module is skipped.
 
     Raises:
         RuntimeError: If the object can't be resolved.
@@ -128,7 +131,11 @@ def resolve(
         module = sys.modules[obj.__module__]
         attribute_name = obj.__name__
 
-    if attribute_name and getattr(module, attribute_name, None) is not obj:
+    if (
+        not skip_validation
+        and attribute_name
+        and getattr(module, attribute_name, None) is not obj
+    ):
         raise RuntimeError(
             f"Unable to resolve object `{obj}`. For the resolving to work, the "
             "class or function must be defined as top-level code (= it must "
