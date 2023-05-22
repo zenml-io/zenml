@@ -4,7 +4,16 @@ description: How data is managed in ZenML.
 
 # Data versioning and artifact management in ZenML
 
-ZenML seamlessly integrates data versioning and lineage into its core functionality. When a pipeline is executed, each run generates artifacts that are automatically tracked and managed. One can easily view the entire lineage of how artifacts are created and interact with them through the [post-execution workflow](../starter-guide/fetch-runs-after-execution.md). ZenML's artifact management, caching, lineage tracking, and visualization capabilities can help gain valuable insights, streamline the experimentation process, and ensure the reproducibility and reliability of machine learning workflows.
+ZenML seamlessly integrates data versioning and lineage into its core
+functionality. When a pipeline is executed, each run generates artifacts that
+are automatically tracked and managed. One can easily view the entire lineage of
+how artifacts are created and interact with them through the [post-execution
+workflow](../starter-guide/fetch-runs-after-execution.md). The dashboard is also
+a way to interact with the artifacts produced by different pipeline runs.
+ZenML's artifact management, caching, lineage tracking, and visualization
+capabilities can help gain valuable insights, streamline the experimentation
+process, and ensure the reproducibility and reliability of machine learning
+workflows.
 
 ## Artifact Versioning, Caching, and Lineage
 
@@ -45,7 +54,7 @@ output = step.outputs["output_name"]
 output.read()  
 ```
 
-Of course, the dashboard provides a convenient way to look at this information in the dag visualizer view.
+Of course, the dashboard provides a convenient way to look at this information in the DAG visualizer view.
 
 By tracking the lineage of artifacts across environments and stacks, ZenML enables ML engineers to reproduce results and understand the exact steps taken to create a model. This is crucial for ensuring the reliability and reproducibility of machine learning models, especially when working in a team or across different environments.
 
@@ -56,9 +65,22 @@ Materializers play a crucial role in ZenML's artifact management system. They ar
 
 ![Visualizing artifacts](../../.gitbook/assets/zenml_artifact_store_underthehood_3.png)
 
-Materializers are designed to be extensible and customizable, allowing you to define your own serialization and deserialization logic for specific data types or storage systems. By default, ZenML provides built-in materializers for common data types, and uses `cloudpickle` to pickle objects where there is no default materializer. However, you can easily create custom materializers by extending the `BaseMaterializer` class and implementing the required methods for your specific use case. Read more about materializers [here](handle-custom-data-types.md).
+Materializers are designed to be extensible and customizable, allowing you to
+define your own serialization and deserialization logic for specific data types
+or storage systems. By default, ZenML provides built-in materializers for common
+data types, and uses `cloudpickle` to pickle objects where there is no default
+materializer. If you want direct control over how objects are serialized, you
+can easily create custom materializers by extending the `BaseMaterializer` class
+and implementing the required methods for your specific use case. Read more
+about materializers [here](handle-custom-data-types.md).
 
-When a pipeline runs, ZenML uses the appropriate materializers to save and load artifacts using the ZenML `fileio` system, that works across multiple artifact stores. This not only simplifies the process of working with different data formats and storage systems but also enables artifact caching and lineage tracking. You can see an example of a default materializer (the `numpy` materializer) in action [here](https://github.com/zenml-io/zenml/blob/main/src/zenml/materializers/numpy_materializer.py).
+When a pipeline runs, ZenML uses the appropriate materializers to save and load
+artifacts using the ZenML `fileio` system (built to work across multiple
+artifact stores). This not only simplifies the process of working with different
+data formats and storage systems but also enables artifact caching and lineage
+tracking. You can see an example of a default materializer (the `numpy`
+materializer) in action
+[here](https://github.com/zenml-io/zenml/blob/main/src/zenml/materializers/numpy_materializer.py).
 
 ## Visualizing Artifacts
 
@@ -70,4 +92,7 @@ ZenML automatically saves visualizations for many common data types, allowing yo
 
 In addition to the dashboard, you can also view visualizations in Jupyter notebooks using the `visualize()` method of an artifact. This allows you to interactively explore your artifacts and their visualizations within your notebook environment.
 
-By leveraging ZenML's artifact management, caching, lineage tracking, and visualization capabilities, ML engineers can gain valuable insights into their models, streamline their experimentation process, and ensure the reproducibility and reliability of their machine learning workflows.
+By leveraging ZenML's artifact management, caching, lineage tracking, and
+visualization capabilities, you can gain valuable insights into your models,
+streamline your experimentation process, and ensure the reproducibility and
+reliability of your machine learning workflows.
