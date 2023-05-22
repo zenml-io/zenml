@@ -663,7 +663,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
             if deployment_model:
                 runs = Client().list_runs(
                     deployment_id=deployment_model.id,
-                    sort_by="desc:created",
+                    sort_by="asc:start_time",
                     size=1,
                 )
 
