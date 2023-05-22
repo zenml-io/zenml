@@ -24,18 +24,16 @@ from typing import (
     overload,
 )
 
-from zenml.new.pipelines.pipeline import Pipeline
-
 if TYPE_CHECKING:
     from zenml.config.base_settings import SettingsOrDict
+    from zenml.new.pipelines.pipeline import Pipeline
 
     HookSpecification = Union[str, FunctionType]
-
-F = TypeVar("F", bound=Callable[..., None])
+    F = TypeVar("F", bound=Callable[..., None])
 
 
 @overload
-def pipeline(_func: F) -> Pipeline:
+def pipeline(_func: "F") -> "Pipeline":
     ...
 
 
@@ -47,12 +45,12 @@ def pipeline(
     enable_artifact_metadata: Optional[bool] = None,
     settings: Optional[Dict[str, "SettingsOrDict"]] = None,
     extra: Optional[Dict[str, Any]] = None,
-) -> Callable[[F], Pipeline]:
+) -> Callable[["F"], "Pipeline"]:
     ...
 
 
 def pipeline(
-    _func: Optional[F] = None,
+    _func: Optional["F"] = None,
     *,
     name: Optional[str] = None,
     enable_cache: Optional[bool] = None,
@@ -61,7 +59,7 @@ def pipeline(
     extra: Optional[Dict[str, Any]] = None,
     on_failure: Optional["HookSpecification"] = None,
     on_success: Optional["HookSpecification"] = None,
-) -> Union[Pipeline, Callable[[F], Pipeline]]:
+) -> Union["Pipeline", Callable[["F"], "Pipeline"]]:
     """Decorator to create a pipeline.
 
     Args:
@@ -86,7 +84,9 @@ def pipeline(
         A pipeline instance.
     """
 
-    def inner_decorator(func: F) -> Pipeline:
+    def inner_decorator(func: F) -> "Pipeline":
+        from zenml.new.pipelines.pipeline import Pipeline
+
         p = Pipeline(
             name=name or func.__name__,
             enable_cache=enable_cache,
