@@ -19,6 +19,7 @@ from types import FunctionType
 from typing import (
     TYPE_CHECKING,
     Any,
+    Callable,
     ClassVar,
     Dict,
     List,
@@ -26,6 +27,7 @@ from typing import (
     Optional,
     Sequence,
     Tuple,
+    Type,
     TypeVar,
     Union,
 )
@@ -82,7 +84,11 @@ from zenml.utils.analytics_utils import AnalyticsEvent, event_handler
 if TYPE_CHECKING:
     from zenml.config.base_settings import SettingsOrDict
     from zenml.config.source import Source
-    from zenml.post_execution import PipelineRunView
+    from zenml.post_execution import (
+        PipelineRunView,
+        PipelineVersionView,
+        PipelineView,
+    )
 
     StepConfigurationUpdateOrDict = Union[
         Dict[str, Any], StepConfigurationUpdate
@@ -92,6 +98,45 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 T = TypeVar("T", bound="Pipeline")
+
+
+class GetRunsDescriptor:
+    """Descriptor to define the `BasePipeline.get_runs`.
+
+    Descriptors (https://docs.python.org/3/reference/datamodel.html#implementing-descriptors)
+    allow us to define different behaviors for pipeline classes and instances.
+    """
+
+    def __get__(
+        self, instance: Optional["Pipeline"], cls: Type["Pipeline"]
+    ) -> Callable[[], List["PipelineRunView"]]:
+        """Get all runs of this pipeline instance or class.
+
+        Args:
+            instance: The pipeline instance if called on an instance else None.
+            cls: The pipeline class.
+
+        Returns:
+            A list of all runs of this pipeline instance or class.
+
+        Raises:
+            RuntimeError: If the method is called on a pipeline instance that
+                has not been run yet.
+        """
+        from zenml.post_execution import get_pipeline
+
+        pipeline_view: Union["PipelineVersionView", "PipelineView"]
+        if instance is None:
+            pipeline_view = get_pipeline(cls)
+        else:
+            pipeline_view = get_pipeline(instance)
+
+        if pipeline_view:
+            return lambda: pipeline_view.runs
+        raise RuntimeError(
+            "The pipeline view for this pipeline was not found. Please check "
+            "that the pipeline has been run already."
+        )
 
 
 class Pipeline:
@@ -154,10 +199,10 @@ class Pipeline:
 
     @property
     def step_invocations(self) -> Dict[str, StepInvocation]:
-        """Returns a dictionary of pipeline steps.
+        """Returns the step invocations of this pipeline.
 
         Returns:
-            A dictionary of pipeline steps.
+            The step invocations.
         """
         return self._invocations
 
@@ -321,7 +366,7 @@ class Pipeline:
                 code_repository=code_repository,
             )
 
-    def run(
+    def _run(
         self,
         *,
         run_name: Optional[str] = None,
@@ -515,28 +560,7 @@ class Pipeline:
                 pipeline_id=pipeline_id,
             )
 
-    @classmethod
-    def get_runs(cls) -> Optional[List["PipelineRunView"]]:
-        """Get all past runs from the associated PipelineView.
-
-        Returns:
-            A list of all past PipelineRunViews.
-
-        Raises:
-            RuntimeError: In case the repository does not contain the view
-                of the current pipeline.
-        """
-        from zenml.post_execution import get_pipeline
-
-        pipeline_view = get_pipeline(cls)
-        if pipeline_view:
-            return pipeline_view.runs  # type: ignore[no-any-return]
-        else:
-            raise RuntimeError(
-                f"The PipelineView for `{cls.__name__}` could "
-                f"not be found. Are you sure this pipeline has "
-                f"been run already?"
-            )
+    get_runs = GetRunsDescriptor()
 
     def write_run_configuration_template(
         self, path: str, stack: Optional["Stack"] = None
@@ -922,11 +946,7 @@ class Pipeline:
         Returns:
             The pipeline copy.
         """
-        pipeline_copy = Pipeline(name=self.name, entrypoint=self.entrypoint)
-        pipeline_copy._configuration = copy.deepcopy(self.configuration)
-        pipeline_copy._run_args = copy.deepcopy(self._run_args)
-
-        return pipeline_copy
+        return copy.deepcopy(self)
 
     def __call__(self, *args: Any, **kwargs: Any) -> Any:
         if Pipeline.ACTIVE_PIPELINE:
@@ -991,6 +1011,4 @@ class Pipeline:
             update={"inputs": inputs, "outputs": outputs}
         )
 
-        # TODO: replace with separate _run() method call to separate the
-        # run config and run part
-        return self.run(**self._run_args)
+        return self._run(**self._run_args)

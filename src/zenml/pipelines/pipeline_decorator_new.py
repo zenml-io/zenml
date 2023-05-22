@@ -24,9 +24,10 @@ from typing import (
     overload,
 )
 
-from zenml.new.pipelines.pipeline_template import (
+from zenml.pipelines.base_pipeline_new import (
     CLASS_CONFIGURATION,
     PARAM_ENABLE_ARTIFACT_METADATA,
+    PARAM_ENABLE_ARTIFACT_VISUALIZATION,
     PARAM_ENABLE_CACHE,
     PARAM_EXTRA_OPTIONS,
     PARAM_ON_FAILURE,
@@ -34,7 +35,7 @@ from zenml.new.pipelines.pipeline_template import (
     PARAM_PIPELINE_NAME,
     PARAM_SETTINGS,
     PIPELINE_INNER_FUNC_NAME,
-    PipelineTemplate,
+    BasePipeline,
 )
 
 if TYPE_CHECKING:
@@ -46,33 +47,35 @@ F = TypeVar("F", bound=Callable[..., None])
 
 
 @overload
-def pipeline_template(_func: F) -> Type[PipelineTemplate]:
+def pipeline(_func: F) -> Type[BasePipeline]:
     ...
 
 
 @overload
-def pipeline_template(
+def pipeline(
     *,
     name: Optional[str] = None,
     enable_cache: Optional[bool] = None,
     enable_artifact_metadata: Optional[bool] = None,
+    enable_artifact_visualization: Optional[bool] = None,
     settings: Optional[Dict[str, "SettingsOrDict"]] = None,
     extra: Optional[Dict[str, Any]] = None,
-) -> Callable[[F], Type[PipelineTemplate]]:
+) -> Callable[[F], Type[BasePipeline]]:
     ...
 
 
-def pipeline_template(
+def pipeline(
     _func: Optional[F] = None,
     *,
     name: Optional[str] = None,
     enable_cache: Optional[bool] = None,
     enable_artifact_metadata: Optional[bool] = None,
+    enable_artifact_visualization: Optional[bool] = None,
     settings: Optional[Dict[str, "SettingsOrDict"]] = None,
     extra: Optional[Dict[str, Any]] = None,
     on_failure: Optional["HookSpecification"] = None,
     on_success: Optional["HookSpecification"] = None,
-) -> Union[Type[PipelineTemplate], Callable[[F], Type[PipelineTemplate]]]:
+) -> Union[Type[BasePipeline], Callable[[F], Type[BasePipeline]]]:
     """Outer decorator function for the creation of a ZenML pipeline.
 
     In order to be able to work with parameters such as "name", it features a
@@ -84,6 +87,7 @@ def pipeline_template(
             decorated function will be used as a fallback.
         enable_cache: Whether to use caching or not.
         enable_artifact_metadata: Whether to enable artifact metadata or not.
+        enable_artifact_visualization: Whether to enable artifact visualization.
         settings: Settings for this pipeline.
         extra: Extra configurations for this pipeline.
         on_failure: Callback function in event of failure of the step. Can be
@@ -101,7 +105,7 @@ def pipeline_template(
         ZenML BasePipeline
     """
 
-    def inner_decorator(func: F) -> Type[PipelineTemplate]:
+    def inner_decorator(func: F) -> Type[BasePipeline]:
         """Inner decorator function for the creation of a ZenML pipeline.
 
         Args:
@@ -113,13 +117,14 @@ def pipeline_template(
         """
         return type(
             func.__name__,
-            (PipelineTemplate,),
+            (BasePipeline,),
             {
                 PIPELINE_INNER_FUNC_NAME: staticmethod(func),  # type: ignore[arg-type]
                 CLASS_CONFIGURATION: {
                     PARAM_PIPELINE_NAME: name,
                     PARAM_ENABLE_CACHE: enable_cache,
                     PARAM_ENABLE_ARTIFACT_METADATA: enable_artifact_metadata,
+                    PARAM_ENABLE_ARTIFACT_VISUALIZATION: enable_artifact_visualization,
                     PARAM_SETTINGS: settings,
                     PARAM_EXTRA_OPTIONS: extra,
                     PARAM_ON_FAILURE: on_failure,

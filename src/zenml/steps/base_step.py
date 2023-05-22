@@ -141,8 +141,6 @@ class BaseStep(metaclass=BaseStepMeta):
 
     Attributes:
         name: The name of this step.
-        pipeline_parameter_name: The name of the pipeline parameter for which
-            this step was passed as an argument.
         enable_cache: A boolean indicating if caching is enabled for this step.
         enable_artifact_metadata: A boolean indicating if artifact metadata
             is enabled for this step.
@@ -888,15 +886,18 @@ class BaseStep(metaclass=BaseStepMeta):
 
             if not output.materializer_source:
                 if output_annotation is Any:
-                    logger.warning()
-                    outputs[output_name]["materializer_source"] = (
-                        source_utils.resolve(CloudpickleMaterializer),
+                    logger.warning(
+                        f"No materializer specified for output with `Any` type "
+                        f"annotation (output {output_name} of step {self.name} "
+                        "). The Cloudpickle materializer will be used for the "
+                        "artifact but the artifact won't be readable in "
+                        "different Python versions. Please consider specifying "
+                        "an explicit materializer for this output by following "
+                        "this guide: https://docs.zenml.io/advanced-guide/pipelines/materializers."
                     )
 
-                    raise StepInterfaceError(
-                        "An explicit materializer needs to be specified for "
-                        "step outputs with `Any` as type annotation.",
-                        url="https://docs.zenml.io/advanced-guide/pipelines/materializers",
+                    outputs[output_name]["materializer_source"] = (
+                        source_utils.resolve(CloudpickleMaterializer),
                     )
 
                 if is_union(
