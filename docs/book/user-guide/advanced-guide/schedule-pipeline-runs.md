@@ -8,7 +8,7 @@ In the world of MLOps, scheduling orchestration jobs is an important aspect of a
 
 ZenML pipelines can also be used for scheduling orchestration jobs, but there are some limitations to consider. ZenML-powered orchestrators only support scheduling in certain orchestrators and setups (see below for details on what works and what doesn't), as they require something running in the background to trigger the pipeline runs. Despite these limitations, using scheduling with ZenML can be a useful way to automate your MLOps workflow and save time and effort.
 
-### How to schedule a pipeline run
+## Scheduling a pipeline run
 
 ZenML's scheduling functionality rests on the use of a `Schedule` object that you pass in when calling `pipeline.run()`. There are two ways to create a schedule with the `Schedule` object, though whether one or both of these are supported depends on the specific orchestrator you're using. For example, our [Vertex Orchestrator](broken-reference/) only supports the cron expression method (see below).
 
@@ -44,13 +44,7 @@ In the context of scheduled cron or pipeline jobs, backfilling refers to running
 Here's [a handy guide](https://medium.com/nerd-for-tech/airflow-catchup-backfill-demystified-355def1b6f92) in the context of Airflow.
 {% endhint %}
 
-### How to stop or pause a scheduled run
-
-The way pipelines are scheduled depends on the orchestrator you are using. For example, if you are using Kubeflow, you can use the Kubeflow UI to stop or pause a scheduled run. If you are using Airflow, you can use the Airflow UI to do the same. However, the exact steps for stopping or pausing a scheduled run may vary depending on the orchestrator you are using. We recommend consulting the documentation for your orchestrator to learn the current method for stopping or pausing a scheduled run.
-
-Note that ZenML only gets involved to schedule a run, but maintaining the lifecycle of the schedule (as explained above) is the responsibility of the user. If you run a pipeline containing a schedule two times, two scheduled pipelines (with different/unique names) will be created in whatever orchestrator you're using, so in that sense, it's on you to stop or pause the schedule as is appropriate.
-
-### Supported Orchestrators
+### Supported orchestrators
 
 | Orchestrator            | Scheduling Support |
 | ----------------------- | ------------------ |
@@ -62,9 +56,17 @@ Note that ZenML only gets involved to schedule a run, but maintaining the lifecy
 | TektonOrchestrator      | ⛔️                 |
 | AirflowOrchestrator     | ✅                  |
 
+{% hint style="info" %}
 We maintain a public roadmap for ZenML, which you can find [here](https://zenml.io/roadmap). We welcome community contributions (see more [here](https://github.com/zenml-io/zenml/blob/main/CONTRIBUTING.md)) so if you want to enable scheduling for an unsupported orchestrator, please [do let us know](https://zenml.io/slack-invite)!
+{% endhint %}
 
-### Tips for using Schedules
+## Stopping/pausing a scheduled run
+
+The way pipelines are scheduled depends on the orchestrator you are using. For example, if you are using Kubeflow, you can use the Kubeflow UI to stop or pause a scheduled run. If you are using Airflow, you can use the Airflow UI to do the same. However, the exact steps for stopping or pausing a scheduled run may vary depending on the orchestrator you are using. We recommend consulting the documentation for your orchestrator to learn the current method for stopping or pausing a scheduled run.
+
+Note that ZenML only gets involved to schedule a run, but maintaining the lifecycle of the schedule (as explained above) is the responsibility of the user. If you run a pipeline containing a schedule two times, two scheduled pipelines (with different/unique names) will be created in whatever orchestrator you're using, so in that sense, it's on you to stop or pause the schedule as is appropriate.
+
+## Tips for using schedules
 
 Generally one of the steps in your pipeline will be loading dynamic data if you are going to schedule it. For example, if you are training a model on a daily basis, you will want to load the latest data from your data source. This is because the data will change over time.
 

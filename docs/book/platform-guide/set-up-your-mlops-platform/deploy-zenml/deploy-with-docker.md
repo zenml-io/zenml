@@ -10,7 +10,7 @@ The ZenML server container image is available at [`zenmldocker/zenml-server`](ht
 
 If you're just looking for a quick way to deploy the ZenML server using a container, without going through the hassle of interacting with a container management tool like docker and manually configuring your container, you can use the ZenML CLI to do so. You only need to have Docker installed and running on your machine:
 
-```
+```bash
 zenml up --docker
 ```
 
@@ -18,7 +18,7 @@ This command deploys a ZenML server locally in a Docker container, then connects
 
 The rest of this guide is addressed to advanced users who are looking to manually deploy and manage a containerized ZenML server.
 
-## ZenML Server Configuration Options
+## ZenML server configuration options
 
 If you're planning on deploying a custom containerized ZenML server yourself, you probably need to configure some settings for it like the **database** it should use, the **default user details,** and more. The ZenML server container image uses sensible defaults, so you can simply start a container without worrying too much about the configuration. However, if you're looking to connect the ZenML server to an external MySQL database or secrets management service, to persist the internal SQLite database, or simply want to control other settings like the default account, you can do so by customizing the container's environment variables.
 
@@ -30,13 +30,13 @@ The following environment variables can be passed to the container:
 *   **ZENML\_STORE\_URL**: This URL should point to an SQLite database file _mounted in the container_, or to a MySQL-compatible database service _reachable from the container_. It takes one of these forms:
 
     ```
-      sqlite:////path/to/zenml.db
+    sqlite:////path/to/zenml.db
     ```
 
     or:
 
     ```
-      mysql://username:password@host:port/database
+    mysql://username:password@host:port/database
     ```
 * **ZENML\_STORE\_SSL\_CA**: This can be set to a custom server CA certificate in use by the MySQL database service. Only valid when `ZENML_STORE_URL` points to a MySQL database that uses SSL-secured connections. The variable can be set either to the path where the certificate file is mounted inside the container or to the certificate contents themselves.
 * **ZENML\_STORE\_SSL\_CERT**: This can be set to a client SSL certificate required to connect to the MySQL database service. Only valid when `ZENML_STORE_URL` points to a MySQL database that uses SSL-secured connections and requires client SSL certificates. The variable can be set either to the path where the certificate file is mounted inside the container or to the certificate contents themselves. This variable also requires `ZENML_STORE_SSL_KEY` to be set.
@@ -46,7 +46,7 @@ The following environment variables can be passed to the container:
 
 If none of the `ZENML_STORE_*` variables are set, the container will default to creating and using an SQLite database file stored at `/zenml/.zenconfig/local_stores/default_zen_store/zenml.db` inside the container. The `/zenml/.zenconfig/local_stores` base path where the default SQLite database is located can optionally be overridden by setting the `ZENML_LOCAL_STORES_PATH` environment variable to point to a different path (e.g. a persistent volume or directory that is mounted from the host).
 
-### Secret Store Environment Variables
+### Secret store environment variables
 
 There are many possible Secret Stores that you can choose between. Each one of these Secret Stores requires the docker image to contain different configurations.
 
@@ -68,7 +68,7 @@ The SQL database is used as the default secret store. You only need to configure
     openssl rand -hex 32
     ```
 
-> **Important** If you configure encryption for your SQL database secrets store, you should keep the `ZENML_SECRETS_STORE_ENCRYPTION_KEY` value somewhere safe and secure, as it will be required to decrypt the secrets in the database. If you lose the encryption key, you will not be able to decrypt the secrets in the database and will have to reset them.
+> **Important:** If you configure encryption for your SQL database secrets store, you should keep the `ZENML_SECRETS_STORE_ENCRYPTION_KEY` value somewhere safe and secure, as it will be required to decrypt the secrets in the database. If you lose the encryption key, you will not be able to decrypt the secrets in the database and will have to reset them.
 {% endtab %}
 
 {% tab title="AWS" %}
@@ -128,7 +128,7 @@ If your custom secrets store implementation requires additional configuration op
 **ZENML\_SECRETS\_STORE\_TYPE**: Set this variable to `none`to disable the secrets store functionality altogether.
 {% endhint %}
 
-### Advanced Server Configuration Options
+### Advanced server configuration options
 
 These configuration options are not required for most use cases, but can be useful in certain scenarios that require mirroring the same ZenML server configuration across multiple container instances (e.g. a Kubernetes deployment with multiple replicas):
 
@@ -149,15 +149,15 @@ These configuration options are not required for most use cases, but can be usef
 
 As previously mentioned, the ZenML server container image uses sensible defaults for most configuration options. This means that you can simply run the container with Docker without any additional configuration and it will work out of the box for most use cases:
 
-```
+```bash
 docker run -it -d -p 8080:8080 --name zenml zenmldocker/zenml-server
 ```
 
-> **Note** It is recommended to use a ZenML container image version that matches the version of your client, to avoid any potential API incompatibilities (e.g. `zenmldocker/zenml-server:0.21.1` instead of `zenmldocker/zenml-server`).
+> **Note:** It is recommended to use a ZenML container image version that matches the version of your client, to avoid any potential API incompatibilities (e.g. `zenmldocker/zenml-server:0.21.1` instead of `zenmldocker/zenml-server`).
 
 The above command will start a containerized ZenML server running on your machine that uses a temporary SQLite database file stored in the container. Temporary means that the database and all its contents (stacks, pipelines, pipeline runs, etc.) will be lost when the container is removed with `docker rm`.
 
-You can visit the ZenML dashboard at http://localhost:8080 or connect your client to the server with the `default` username and empty password:
+You can visit the ZenML dashboard at `http://localhost:8080` or connect your client to the server with the `default` username and empty password:
 
 ```shell
 $ zenml connect --url http://localhost:8080
@@ -224,7 +224,7 @@ docker run --name mysql -d -p 3306:3306 -e MYSQL_ROOT_PASSWORD=password \
     mysql:8.0
 ```
 
-Configuring the ZenML server container to connect to the MySQL database is just a matter of setting the `ZENML_STORE_URL` environment variable. We use the special `host.docker.internal` DNS name resolved from within the Docker containers to the gateway IP address used by the Docker network (see the [Docker documentation](https://docs.docker.com/desktop/networking/#use-cases-and-workarounds-for-all-platforms) for more details). On Linux, this needs to be explicitly enabled in the `docker run` command with the `--add-host` argument:
+Configuring the ZenML server container to connect to the MySQL database is just a matter of setting the `ZENML_STORE_URL` environment variable. We use the special `host.docker.internal` DNS name that is resolved from within the Docker containers to the gateway IP address used by the Docker network (see the [Docker documentation](https://docs.docker.com/desktop/networking/#use-cases-and-workarounds-for-all-platforms) for more details). On Linux, this needs to be explicitly enabled in the `docker run` command with the `--add-host` argument:
 
 ```shell
 docker run -it -d -p 8080:8080 --name zenml \
@@ -257,7 +257,7 @@ zenml connect --url mysql://127.0.0.1/zenml --username root --password password
 
 > **Note** The `localhost` hostname will not work with MySQL databases. You need to use the `127.0.0.1` IP address instead.
 
-### ZenML server with Docker Compose
+### ZenML server with `docker-compose`
 
 Docker compose offers a simpler way of managing multi-container setups on your local machine, which is the case for instance if you are looking to deploy the ZenML server container and connect it to a MySQL database service also running in a Docker container.
 
@@ -326,7 +326,7 @@ docker-compose -p zenml down
 
 You can check the logs of the container to verify if the server is up and, depending on where you have deployed it, you can also access the dashboard at a `localhost` port (if running locally) or through some other service that exposes your container to the internet.
 
-### CLI Docker Deployments
+### CLI Docker deployments
 
 If you used the `zenml up --docker` CLI command to deploy the Docker ZenML server, you can check the logs with the command:
 
@@ -334,7 +334,7 @@ If you used the `zenml up --docker` CLI command to deploy the Docker ZenML serve
 zenml logs -f
 ```
 
-### Manual Docker Deployments
+### Manual Docker deployments
 
 If you used the `docker run` command to manually deploy the Docker ZenML server, you can check the logs with the command:
 

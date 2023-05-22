@@ -1,23 +1,23 @@
 ---
-description: Learn how to troubleshoot Stack Components deployed with ZenML
+description: Learn how to troubleshoot Stack Components deployed with ZenML.
 ---
 
 # Troubleshoot stack components
 
 There are two ways in which you can understand if something has gone wrong while deploying your stack or stack components.&#x20;
 
-## 📜 Error logs from the CLI
+## Error logs from the CLI
 
 The CLI will show any errors that the deployment runs into. Most of these would be coming from the underlying terraform library and could range from issues like resources with the same name existing in your cloud to a wrong naming scheme for some resource.
 
 Most of these are easy to fix and self-explanatory but feel free to ask any questions or doubts you may have to us on the ZenML Slack! 🙋‍
 
-## 🔎 Debugging errors with already deployed components
+## Debugging errors with already deployed components
 
 Sometimes, an application might fail after an initial successful deployment. This section will cover steps on how to debug failures in such a case, for Kubernetes apps, since they form a majority of all tools deployed with the CLI.
 
 {% hint style="info" %}
-Other components include cloud-specific apps like Vertex AI, Sagemaker, S3 buckets and more and information on what has went wrong with them would be best found on the web console for the respective clouds.
+Other components include cloud-specific apps like Vertex AI, Sagemaker, S3 buckets, and more. Information on what has gone wrong with them would be best found on the web console for the respective clouds.
 {% endhint %}
 
 ### Getting access to the Kubernetes Cluster&#x20;
@@ -37,11 +37,8 @@ kubectl get nodes
 {% tabs %}
 {% tab title="AWS" %}
 1. Get the name of the deployed cluster.\
-   \
-   `zenml stack recipe output eks-cluster-name`\
-
-2. Figure out the region that the cluster is deployed to. By default, the region is set to `eu-west-1` , which you should use in the next step if you haven't supplied a custom value while creating the cluster.\
-   &#x20;
+   `zenml stack recipe output eks-cluster-name`
+2. Figure out the region that the cluster is deployed to. By default, the region is set to `eu-west-1` , which you should use in the next step if you haven't supplied a custom value while creating the cluster.
 3. Run the following command.\
    `aws eks update-kubeconfig --name <NAME> --region <REGION>`
 {% endtab %}

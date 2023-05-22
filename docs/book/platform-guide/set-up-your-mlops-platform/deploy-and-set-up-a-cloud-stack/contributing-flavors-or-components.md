@@ -1,4 +1,8 @@
-# Contributing flavors or components
+---
+description: Creating your custom stack component solutions.
+---
+
+# Contribute flavors or components
 
 Before you can start contributing, it is important to know that the stack component deploy CLI also makes use of the stack recipes (specifically, the modular stack recipes) in the background. Thus, contributing a new deployment option for both the deployment methods that we have seen, involves making a contribution to the base recipe.
 

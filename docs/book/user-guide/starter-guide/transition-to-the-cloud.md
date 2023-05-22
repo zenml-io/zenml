@@ -8,11 +8,11 @@ Although the basic functionalities of ZenML work perfectly on your local machine
 
 ### ZenML Server
 
-When you first get started with ZenML it is based on the following architecture on your machine.
+When you first get started with ZenML, it is based on the following architecture on your machine.
 
 <figure><img src="../../.gitbook/assets/Scenario1.png" alt="" width="563"><figcaption><p>Scenario 1: ZenML default local configuration</p></figcaption></figure>
 
-The SQLite **Database** that you can see in this diagram is used to store information about pipelines, pipeline runs, stacks, and other configurations. In the previous pages, we used the `zenml up` command to spin up a local rest server to serve the dashboard as well. The diagram for this will look as follows:
+The SQLite database that you can see in this diagram is used to store information about pipelines, pipeline runs, stacks, and other configurations. In the previous pages, we used the `zenml up` command to spin up a local rest server to serve the dashboard as well. The diagram for this will look as follows:
 
 <figure><img src="../../.gitbook/assets/Scenario2.png" alt="" width="563"><figcaption><p>Scenario 2: ZenML with a local REST Server</p></figcaption></figure>
 

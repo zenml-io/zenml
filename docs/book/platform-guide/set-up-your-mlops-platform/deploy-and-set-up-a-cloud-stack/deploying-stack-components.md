@@ -1,4 +1,8 @@
-# Deploying Stack Components
+---
+description: Individually deploying different stack components.
+---
+
+# Deploy a stack component
 
 You can deploy individual stack components using the `zenml <STACK_COMPONENT> deploy` CLI 🚀. For example, to deploy an MLflow tracking server on a GCP account, you can run:
 

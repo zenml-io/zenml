@@ -32,7 +32,7 @@ After creating your Space, you'll notice a 'Building' status along with logs dis
 
 Use our default login to access the dashboard (username: 'default', password: (leave it empty)).
 
-## Connecting to your ZenML Server from your Local Machine
+## Connecting to your ZenML Server from your local machine
 
 Once you have your ZenML server up and running, you can connect to it from your local machine. To do this, you'll need to get your Space's URL.
 
@@ -50,7 +50,7 @@ zenml connect --url '<YOUR_HF_SPACES_DIRECT_URL>' --username='default' --passwor
 
 You can also use the Direct URL in your browser to use the ZenML dashboard as a fullscreen application (i.e. without the HuggingFace Spaces wrapper around it).
 
-## Extra Configuration Options
+## Extra configuration options
 
 By default, the ZenML application will be configured to use an SQLite non-persistent database. If you want to use a persistent database, you can configure this by amending the `Dockerfile` to your Space's root directory. For full details on the various parameters you can change, see [our reference documentation](docker.md#zenml-server-configuration-options) on configuring ZenML when deployed with Docker.
 

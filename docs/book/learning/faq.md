@@ -1,8 +1,8 @@
 ---
-description: Find answers to the most frequently asked questions about ZenML
+description: Find answers to the most frequently asked questions about ZenML.
 ---
 
-# 🙋 FAQ
+# ❓ FAQ
 
 #### Why did you build ZenML?
 

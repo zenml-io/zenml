@@ -1,5 +1,5 @@
 ---
-description: Deploying ZenML on cloud using the CLI.
+description: Deploying ZenML on cloud using the ZenML CLI.
 ---
 
 # Deploy with ZenML CLI
@@ -15,25 +15,29 @@ If you don't have an existing Kubernetes cluster, you have the following two opt
 * Creating it manually using the documentation for your cloud provider. For convenience, here are links for [AWS](https://docs.aws.amazon.com/eks/latest/userguide/create-cluster.html), [Azure](https://learn.microsoft.com/en-us/azure/aks/learn/quick-kubernetes-deploy-portal?tabs=azure-cli), and [GCP](https://cloud.google.com/kubernetes-engine/docs/how-to/creating-a-zonal-cluster#before\_you\_begin).
 * Using a [stack recipe](../../advanced-guide/practical/stack-recipes.md) that sets up a cluster along with other tools that you might need in your cloud stack like artifact stores and secret managers. Take a look at all [available stack recipes](https://github.com/zenml-io/mlops-stacks#-list-of-recipes) to see if there's something that works for you.
 
-> **Note** Once you have created your cluster, make sure that you configure your [kubectl](https://kubernetes.io/docs/tasks/tools/#kubectl) client to talk to it. If you have used stack recipes, this step is already done for you!
+{% hint style="warning" %}
+Once you have created your cluster, make sure that you configure your [kubectl](https://kubernetes.io/docs/tasks/tools/#kubectl) client to talk to it.
+{% endhint %}
 
 You're now ready to deploy ZenML! Run the following command:
 
-```
+```bash
 zenml deploy
 ```
 
 You will be prompted to provide a name for your deployment and details like what cloud provider you want to deploy to, in addition to the username, password, and email you want to set for the default user — and that's it! It creates the database and any VPCs, permissions, and more that are needed.
 
-> **Note** To be able to run the deploy command, you should have your cloud provider's CLI configured locally with permissions to create resources like MySQL databases and networks.
+{% hint style="info" %}
+In order to be able to run the `deploy` command, you should have your cloud provider's CLI configured locally with permissions to create resources like MySQL databases and networks.
+{% endhint %}
 
 Reasonable defaults are in place for you already and if you wish to configure more settings, take a look at the next scenario that uses a config file.
 
 ## Option 2: Using existing cloud resources
 
-### Existing Kubernetes Cluster
+### Existing Kubernetes cluster
 
-If you already have an existing cluster without an ingress controller, you can jump straight to the `deploy` command above to get going with the defaults. Please make sure you have your local `kubectl` configured to talk to your cluster.
+If you already have an existing cluster without an ingress controller, you can jump straight to the `deploy` command above to get going with the defaults. Please make sure that you have your local `kubectl` configured to talk to your cluster.
 
 #### Having an existing NGINX Ingress Controller
 
@@ -41,7 +45,7 @@ The `deploy` command, by default, tries to create an NGINX ingress controller on
 
 *   Check if an ingress controller is running on your cluster by running the following command. You should see an entry in the output with the hostname populated.
 
-    ```
+    ```bash
     # change the namespace to any other where 
     # You might have the controller installed
     kubectl get svc -n ingress-nginx
@@ -49,36 +53,40 @@ The `deploy` command, by default, tries to create an NGINX ingress controller on
 * Set `create_ingress_controller` to `false`.
 *   Supply your controller's hostname to the `ingress_controller_hostname` variable.
 
-    > **Note** The address should not have a trailing `/`.
+    > **Note:** The address should not have a trailing `/`.
 *   You can now run the `deploy` command and pass the config file above, to it.
 
     ```
     zenml deploy --config=/PATH/TO/FILE
     ```
 
-    > **Note** To be able to run the deploy command, you should have your cloud provider's CLI configured locally with permissions to create resources like MySQL databases and networks.
+    > **Note:** To be able to run the deploy command, you should have your cloud provider's CLI configured locally with permissions to create resources like MySQL databases and networks.
 
-### Existing Hosted SQL Database
+### Existing hosted SQL database
 
-If you also already have a database that you would want to use with the deployment, you can choose to configure it with the use of the config file. Here we will demonstrate setting the database.
-
-> **Note**
+If you also already have a database that you would want to use with the deployment, you can choose to configure it with the use of the config file. Here, we will demonstrate setting the database.
 
 *   Fill the fields below from the config file with values from your database.
 
-    ```
-    database_username: The username for the database.
-    database_password: The password for the database.
+    ```yaml
+    # The username and password for the database.
+    database_username: 
+    database_password: 
 
-    database_url: The URL of the database to use for the ZenML server.
-    database_ssl_ca: The path to the SSL CA certificate to use for the
-        database connection.
-    database_ssl_cert: The path to the client SSL certificate to use for the
-        database connection.
-    database_ssl_key: The path to the client SSL key to use for the
-        database connection.
-    database_ssl_verify_server_cert: Whether to verify the database server
-        SSL certificate.
+    # The URL of the database to use for the ZenML server.
+    database_url: 
+
+    # The path to the SSL CA certificate to use for the database connection.
+    database_ssl_ca: 
+
+    # The path to the client SSL certificate to use for the database connection.
+    database_ssl_cert: 
+
+    # The path to the client SSL key to use for the database connection.
+    database_ssl_key: 
+
+    # Whether to verify the database server SSL certificate.
+    database_ssl_verify_server_cert: 
     ```
 *   Run the `deploy` command and pass the config file above to it.
 
@@ -88,90 +96,139 @@ If you also already have a database that you would want to use with the deployme
 
     > **Note** To be able to run the deploy command, you should have your cloud provider's CLI configured locally with permissions to create resources like MySQL databases and networks.
 
-## Configuration File Templates
+## Configuration file templates
 
-### Base Config File
+#### Base configuration file
 
-This is the general structure of a config file. Use this as a base and then add any cloud-specific parameters from the sections below.
-
-> **Note** Feel free to include only those variables that you want to customize, in your file. For all other variables, the defaults (specified in square brackets) would be used.
+Below is the general structure of a config file. Use this as a base and then add any cloud-specific parameters from the sections below.
 
 <details>
 
 <summary>General</summary>
 
-```
-name: Name of the server deployment.
-provider: The server provider type. # one of aws, gcp or azure
-username: The username for the default ZenML server account.
-password: The password for the default ZenML server account.
+```yaml
+# Name of the server deployment.
+name: 
 
-kubectl_config_path: The path to the kubectl config file to use for
-    deployment.
-namespace [zenmlserver]: The Kubernetes namespace to deploy the ZenML server to.
-helm_chart: The path to the ZenML server helm chart to use for
-    deployment.
-zenmlserver_image_tag [latest]: The tag to use for the ZenML server Docker image.
+# The server provider type, one of aws, gcp or azure.
+provider: 
 
-create_ingress_controller [true]: Whether to deploy an nginx ingress
-    controller as part of the deployment.
-ingress_tls [true]: Whether to use TLS for the ingress.
-ingress_tls_generate_certs [true]: Whether to generate self-signed TLS
-    certificates for the ingress.
-ingress_tls_secret_name [zenml-tls-certs]: The name of the Kubernetes secret to use for
-    the ingress.
-ingress_path [""]: The path to use for the ingress.
-ingress_controller_hostname: The ingress controller hostname to use for
-    the ingress self-signed certificate and to compute the ZenML server
-    URL.
+# The username for the default ZenML server account.
+username: 
+password: 
 
-deploy_db [true]: Whether to create a SQL database service as part of the recipe.
-database_username [admin]: The username for the database.
-database_password: The password for the database.
-database_url: The URL of the database to use for the ZenML server.
-database_ssl_ca: The path to the SSL CA certificate to use for the
-    database connection.
-database_ssl_cert: The path to the client SSL certificate to use for the
-    database connection.
-database_ssl_key: The path to the client SSL key to use for the
-    database connection.
-database_ssl_verify_server_cert: Whether to verify the database server
-    SSL certificate.
+# The path to the kubectl config file to use for deployment.
+kubectl_config_path: 
 
-log_level [ERROR]: The log level to set the terraform client to. Choose one of
-    TRACE, DEBUG, INFO, WARN or ERROR (case insensitive).
+# The Kubernetes namespace to deploy the ZenML server to.
+namespace: zenmlserver 
+
+# The path to the ZenML server helm chart to use for deployment.
+helm_chart: 
+
+# The tag to use for the ZenML server Docker image.
+zenmlserver_image_tag: latest 
+
+# Whether to deploy an nginx ingress controller as part of the deployment.
+create_ingress_controller: true
+
+# Whether to use TLS for the ingress.
+ingress_tls: true
+
+# Whether to generate self-signed TLS certificates for the ingress.
+ingress_tls_generate_certs: true 
+
+# The name of the Kubernetes secret to use for the ingress.
+ingress_tls_secret_name: zenml-tls-certs 
+
+# The path to use for the ingress.
+ingress_path: ""
+
+# The ingress controller hostname to use for the ingress self-signed 
+# certificate and compute the ZenML server URL.
+ingress_controller_hostname: 
+
+# Whether to create a SQL database service as part of the recipe.
+deploy_db: true
+
+# The username and password for the database. 
+database_username: admin
+database_password: 
+
+# The URL of the database to use for the ZenML server.
+database_url: 
+
+# The path to the SSL CA certificate to use for the database connection.
+database_ssl_ca: 
+
+# The path to the client SSL certificate to use for the database connection.
+database_ssl_cert: 
+
+# The path to the client SSL key to use for the database connection.
+database_ssl_key: 
+
+# Whether to verify the database server SSL certificate.
+database_ssl_verify_server_cert: 
+
+# The log level to set the terraform client. Choose one of TRACE, 
+# DEBUG, INFO, WARN, or ERROR (case insensitive).
+log_level: ERROR 
 ```
 
 </details>
 
-### Cloud specific settings
+{% hint style="info" %}
+Feel free to include only those variables that you want to customize, in your file. For all other variables, the default values (shown above) will be used.
+{% endhint %}
+
+#### Cloud-specific settings
 
 {% tabs %}
 {% tab title="AWS" %}
-```
-region [eu-west-1]: The AWS region to deploy to.
+<pre class="language-yaml"><code class="lang-yaml"># The AWS region to deploy to.
+region: eu-west-1 
 
-rds_name [zenmlserver]: The name of the RDS instance to create
-db_name [zenmlserver]: Name of RDS database to create.
-db_type [mysql]: Type of RDS database to create.
-db_version [5.7.38]: Version of RDS database to create.
-db_instance_class [db.t3.micro]: Instance class of RDS database to create.
-db_allocated_storage [5]: Allocated storage of RDS database to create.
-```
+# The name of the RDS instance to create
+<strong>rds_name: zenmlserver
+</strong><strong>
+</strong><strong># Name of RDS database to create.
+</strong>db_name: zenmlserver
+
+# Type of RDS database to create.
+db_type: mysql
+
+# Version of RDS database to create.
+db_version: 5.7.38
+
+# Instance class of RDS database to create.
+db_instance_class: db.t3.micro
+
+# Allocated storage of RDS database to create.
+db_allocated_storage: 5
+</code></pre>
 
 The `database_username` and `database_password` from the general config is used to set those variables for the AWS RDS instance.
 {% endtab %}
 
 {% tab title="GCP" %}
-```
-project_id: The project in GCP to deploy the server to.
-region [europe-west3]: The GCP region to deploy to.
+<pre class="language-yaml"><code class="lang-yaml"># The project in GCP to deploy the server in.
+project_id: 
 
-cloudsql_name [zenmlserver]: The name of the CloudSQL instance to create
-db_name [zenmlserver]: Name of CloudSQL database to create.
-db_instance_tier [db-n1-standard-1]: Instance class of CloudSQL database to create.
-db_disk_size [10]: Allocated storage of CloudSQL database, in GB, to create.
-```
+<strong># The GCP region to deploy to.
+</strong>region: europe-west3
+
+# The name of the CloudSQL instance to create.
+cloudsql_name: zenmlserver
+
+# Name of CloudSQL database to create.
+db_name: zenmlserver
+
+# Instance class of CloudSQL database to create.
+db_instance_tier: db-n1-standard-1
+
+# Allocated storage of CloudSQL database, in GB, to create.
+db_disk_size: 10
+</code></pre>
 
 * The `project_id` is required to be set.
 * The `database_username` and `database_password` from the general config is used to set those variables for the CloudSQL instance.
@@ -179,14 +236,24 @@ db_disk_size [10]: Allocated storage of CloudSQL database, in GB, to create.
 {% endtab %}
 
 {% tab title="Azure" %}
-```
-resource_group [zenml]: The Azure resource_group to deploy to.
+```yaml
+# The Azure resource_group to deploy to.
+resource_group: zenml
 
-db_instance_name [zenmlserver]: The name of the Flexible MySQL instance to create
-db_name [zenmlserver]: Name of RDS database to create.
-db_version [5.7]: Version of MySQL database to create.
-db_sku_name [B_Standard_B1s]: The sku_name for the database resource.
-db_disk_size [20]: Allocated storage of MySQL database to create.
+# The name of the Flexible MySQL instance to create.
+db_instance_name: zenmlserver 
+
+# Name of RDS database to create.
+db_name: zenmlserver
+
+# Version of MySQL database to create.
+db_version: 5.7
+
+# The sku_name for the database resource.
+db_sku_name: B_Standard_B1s
+
+# Allocated storage of MySQL database to create.
+db_disk_size: 20
 ```
 
 The `database_username` and `database_password` from the general config is used to set those variables for the Azure Flexible MySQL server.
@@ -195,15 +262,17 @@ The `database_username` and `database_password` from the general config is used 
 
 ## Connecting to deployed ZenML
 
-Once ZenML is deployed, one or multiple users can connect to it with the `zenml connect` command. If no arguments are supplied, ZenML will attempt to connect to the last ZenML server deployed from the local host using the `zenml deploy` command:
-
-### ZenML Connect: Various options
+Once ZenML is deployed, one or multiple users can connect to it with the `zenml connect` command.&#x20;
 
 ```bash
 zenml connect
 ```
 
-To connect to a ZenML server, you can either pass the configuration as command line arguments or as a YAML file:
+{% hint style="info" %}
+If no arguments are supplied, ZenML will attempt to connect to the last ZenML server deployed from the local host using the `zenml deploy` command:
+{% endhint %}
+
+In order to connect to a specific ZenML server, you can either pass the configuration as command line arguments or as a YAML file:
 
 ```bash
 zenml connect --url=https://zenml.example.com:8080 --username=admin --no-verify-ssl
@@ -218,17 +287,20 @@ zenml connect --config=/path/to/zenml_server_config.yaml
 The YAML file should have the following structure when connecting to a ZenML server:
 
 ```yaml
-url: <The URL of the ZenML server>
-username: <The username to use for authentication>
-password: <The password to use for authentication>
-verify_ssl: |
-  <Either a boolean, in which case it controls whether the
-  server's TLS certificate is verified, or a string, in which case it
-  must be a path to a CA certificate bundle to use or the CA bundle
-  value itself>
+# The URL of the ZenML server
+url: ...
+
+# The username and password to use for authentication
+username: ...
+password: ...
+
+# Either a boolean, in which case it controls whether the server's TLS 
+# certificate is verified, or a string, in which case it must be a path 
+# to a CA certificate bundle to use or the CA bundle value itself
+verify_ssl: ...
 ```
 
-Example of a ZenML server YAML configuration file:
+Here is an example of a ZenML server YAML configuration file:
 
 ```yaml
 url: https://ac8ef63af203226194a7725ee71d85a-7635928635.us-east-1.elb.amazonaws.com/zenml

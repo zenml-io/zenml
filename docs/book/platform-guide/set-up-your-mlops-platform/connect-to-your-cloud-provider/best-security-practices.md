@@ -4,9 +4,9 @@ description: >-
   Service Connectors.
 ---
 
-# Best Security Practices
+# Security best practices
 
-Service Connector Types, especially those targeted at cloud providers, offer a plethora of authentication methods matching those supported by the remote cloud platforms. While there is no single authentication standard that unifies this process, there are some patterns that are easily identifiable and can be used as guidelines when deciding which authentication method to use to configure a Service Connector.
+Service Connector Types, especially those targeted at cloud providers, offer a plethora of authentication methods matching those supported by remote cloud platforms. While there is no single authentication standard that unifies this process, there are some patterns that are easily identifiable and can be used as guidelines when deciding which authentication method to use to configure a Service Connector.
 
 This section explores some of those patterns and gives some advice regarding which authentication methods are best suited for your needs.
 
@@ -17,12 +17,12 @@ This section may require some general knowledge about authentication and authori
 ## Username and password
 
 {% hint style="danger" %}
-The key take-away is this: you should avoid using your primary account password as authentication credentials as much as possible. If there are alternative authentication methods that you can use or other types of credentials (e.g. session tokens, API keys, API tokens), you should always try to use those instead.
+The key takeaway is this: you should avoid using your primary account password as authentication credentials as much as possible. If there are alternative authentication methods that you can use or other types of credentials (e.g. session tokens, API keys, API tokens), you should always try to use those instead.
 
 Ultimately, if you have no choice, be cognizant of the third parties you share your passwords with. If possible, they should never leave the premises of your local host or development environment.
 {% endhint %}
 
-This is the typical authentication method that uses a username or account name plus the associated password. While this is the de facto method used to login with web consoles and local CLIs, this is the least secure of all authentication methods and _never_ something you want to share with other members of your team or organization or use to authenticate automated workloads.
+This is the typical authentication method that uses a username or account name plus the associated password. While this is the de facto method used to log in with web consoles and local CLIs, this is the least secure of all authentication methods and _never_ something you want to share with other members of your team or organization or use to authenticate automated workloads.
 
 In fact, cloud platforms don't even allow using user account passwords directly as a credential when authenticating to the cloud platform APIs. There is always a process in place that allows exchanging the account/password credential for [another form of long-lived credential](best-security-practices.md#long-lived-credentials-api-keys-account-keys).
 
@@ -338,7 +338,7 @@ ClientError: An error occurred (403) when calling the HeadBucket operation: Forb
 ### Impersonating accounts and assuming roles
 
 {% hint style="success" %}
-These types of authentication methods require more work to set up because multiple permission bearing accounts and roles need to be provisioned in advance depending on the target audience. On the other hand, they also provide the most flexibility and control. Despite their operational cost, if you are a platform engineer and have the infrastructure know-how necessary to understand and set up the authentication resources, this is for you.
+These types of authentication methods require more work to set up because multiple permission-bearing accounts and roles need to be provisioned in advance depending on the target audience. On the other hand, they also provide the most flexibility and control. Despite their operational cost, if you are a platform engineer and have the infrastructure know-how necessary to understand and set up the authentication resources, this is for you.
 {% endhint %}
 
 These authentication methods deliver another way of [configuring long-lived credentials](best-security-practices.md#long-lived-credentials-api-keys-account-keys) in your Service Connectors without exposing them to clients. They are especially useful as an alternative to cloud provider Service Connectors authentication methods that do not support [automatically downscoping the permissions of issued temporary tokens](best-security-practices.md#generating-temporary-and-down-scoped-credentials).

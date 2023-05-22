@@ -12,13 +12,13 @@ The Helm chart is not available on a public online repository yet, but it is inc
 
 You'll need the following:
 
-* A Kubernetes cluster.
-* Optional, but recommended: a MySQL-compatible database reachable from the Kubernetes cluster (e.g. one of the managed databases offered by Google Cloud, AWS, or Azure). A MySQL server version of 8.0 or higher is required.
-* the [Kubernetes client](https://kubernetes.io/docs/tasks/tools/#kubectl) already installed on your machine and configured to access your cluster.
-* [Helm](https://helm.sh/docs/intro/install/) installed on your machine.
-* Optional: an external Secrets Manager service (e.g. one of the managed secrets management services offered by Google Cloud, AWS, Azure, or HashiCorp Vault). By default, ZenML stores secrets inside the SQL database that it's connected to, but you also have the option of using an external cloud Secrets Manager service if you already happen to use one of those cloud or service providers.
+* A Kubernetes cluster
+* Optional, but recommended: a MySQL-compatible database reachable from the Kubernetes cluster (e.g. one of the managed databases offered by Google Cloud, AWS, or Azure). A MySQL server version of 8.0 or higher is required
+* the [Kubernetes client](https://kubernetes.io/docs/tasks/tools/#kubectl) already installed on your machine and configured to access your cluster
+* [Helm](https://helm.sh/docs/intro/install/) installed on your machine
+* Optional: an external Secrets Manager service (e.g. one of the managed secrets management services offered by Google Cloud, AWS, Azure, or HashiCorp Vault). By default, ZenML stores secrets inside the SQL database that it's connected to, but you also have the option of using an external cloud Secrets Manager service if you already happen to use one of those cloud or service providers
 
-To gain access to the ZenML Helm chart, you'll need to clone the ZenML repository and checkout the `main` branch, or one of the release tags:
+In order to gain access to the ZenML Helm chart, you'll need to clone the ZenML repository and checkout the `main` branch, or one of the release tags:
 
 ```bash
 git clone https://github.com/zenml-io/zenml.git
@@ -59,7 +59,7 @@ If you decide to use an external secrets management service, you will need to co
 For the AWS secrets manager:
 
 * the AWS region that you want to use to store your secrets
-* an AWS access key ID and secret access key that have provides full access to the AWS secrets manager service. You can create a dedicated IAM user for this purpose, or use an existing user with the necessary permissions. If you deploy the ZenML server in an EKS Kubernetes cluster that is already configured to use implicit authorization with an IAM role for service accounts, you can omit this step.
+* an AWS access key ID and secret access key that provides full access to the AWS secrets manager service. You can create a dedicated IAM user for this purpose, or use an existing user with the necessary permissions. If you deploy the ZenML server in an EKS Kubernetes cluster that is already configured to use implicit authorization with an IAM role for service accounts, you can omit this step.
 
 For the Google Cloud secrets manager:
 

@@ -2,7 +2,7 @@
 description: Overview of third-party ZenML integrations.
 ---
 
-# Integration Overview
+# Integration overview
 
 [Categorizing the MLOps stack](broken-reference/) is a good way to write abstractions for an MLOps pipeline and standardize your processes. But ZenML goes further and also provides concrete implementations of these categories by **integrating** with various tools for each category. Once code is organized into a ZenML pipeline, you can supercharge your ML workflows with the best-in-class solutions from various MLOps areas.
 
@@ -12,13 +12,13 @@ There are lots of moving parts for all the MLOps tooling and infrastructure you 
 
 ![ZenML is the glue](../../assets/zenml-is-the-glue.jpeg)
 
-## Available Integrations
+## Available integrations
 
 We have a [dedicated webpage](https://zenml.io/integrations) that indexes all supported ZenML integrations and their categories.
 
 Another easy way of seeing a list of integrations is to see the list of directories in the [integrations directory](https://github.com/zenml-io/zenml/tree/main/src/zenml/integrations) on our GitHub.
 
-## Installing ZenML Integrations
+## Installing ZenML integrations
 
 Before you can use integrations, you first need to install them using `zenml integration install`, e.g., you can install [Kubeflow](orchestrators/kubeflow.md), [MLflow Tracking](experiment-trackers/mlflow.md), and [Seldon Core](model-deployers/seldon.md), using:
 
@@ -40,7 +40,7 @@ You can run `zenml integration --help` to see a full list of CLI commands that Z
 
 Note, that you can also install your dependencies directly, but please note that there is no guarantee that ZenML internals with work with any arbitrary version of any external library.
 
-## Upgrade ZenML Integrations
+## Upgrade ZenML integrations
 
 You can upgrade all integrations to their latest possible version using:
 
