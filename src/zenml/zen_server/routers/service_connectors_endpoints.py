@@ -66,6 +66,7 @@ def list_service_connectors(
     connector_filter_model: ServiceConnectorFilterModel = Depends(
         make_dependable(ServiceConnectorFilterModel)
     ),
+    expand_secrets: bool = True,
     auth_context: AuthContext = Security(
         authorize, scopes=[PermissionType.READ]
     ),
@@ -74,16 +75,28 @@ def list_service_connectors(
 
     Args:
         connector_filter_model: Filter model used for pagination, sorting,
-                                filtering
+            filtering
+        expand_secrets: Whether to expand secrets or not.
         auth_context: Authentication Context
 
     Returns:
         Page with list of service connectors for a specific type.
     """
     connector_filter_model.set_scope_user(user_id=auth_context.user.id)
-    return zen_store().list_service_connectors(
+    connectors = zen_store().list_service_connectors(
         filter_model=connector_filter_model
     )
+
+    if expand_secrets and PermissionType.WRITE in auth_context.permissions:
+        for connector in connectors.items:
+            if not connector.secret_id:
+                continue
+            secret = zen_store().get_secret(secret_id=connector.secret_id)
+
+            # Update the connector configuration with the secret.
+            connector.configuration.update(secret.secret_values)
+
+    return connectors
 
 
 @router.get(
@@ -94,6 +107,7 @@ def list_service_connectors(
 @handle_exceptions
 def get_service_connector(
     connector_id: UUID,
+    expand_secrets: bool = True,
     auth_context: AuthContext = Security(
         authorize, scopes=[PermissionType.READ]
     ),
@@ -102,6 +116,7 @@ def get_service_connector(
 
     Args:
         connector_id: ID of the service connector.
+        expand_secrets: Whether to expand secrets or not.
         auth_context: Authentication context.
 
     Returns:
@@ -119,6 +134,15 @@ def get_service_connector(
         and connector.user.id == auth_context.user.id
         or connector.is_shared
     ):
+        if PermissionType.WRITE not in auth_context.permissions:
+            return connector
+
+        if expand_secrets and connector.secret_id:
+            secret = zen_store().get_secret(secret_id=connector.secret_id)
+
+            # Update the connector configuration with the secret.
+            connector.configuration.update(secret.secret_values)
+
         return connector
 
     raise KeyError(f"Service connector with ID {connector_id} not found.")

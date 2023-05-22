@@ -1968,6 +1968,7 @@ class RestZenStore(BaseZenStore):
             resource_id=service_connector_id,
             route=SERVICE_CONNECTORS,
             response_model=ServiceConnectorResponseModel,
+            params={"expand_secrets": False},
         )
         self._populate_connector_type(connector_model)
         return connector_model
@@ -1988,6 +1989,7 @@ class RestZenStore(BaseZenStore):
             route=SERVICE_CONNECTORS,
             response_model=ServiceConnectorResponseModel,
             filter_model=filter_model,
+            params={"expand_secrets": False},
         )
         self._populate_connector_type(*connector_models.items)
         return connector_models
@@ -2692,6 +2694,7 @@ class RestZenStore(BaseZenStore):
         resource_id: Union[str, UUID],
         route: str,
         response_model: Type[AnyResponseModel],
+        params: Optional[Dict[str, Any]] = None,
     ) -> AnyResponseModel:
         """Retrieve a single resource.
 
@@ -2699,11 +2702,12 @@ class RestZenStore(BaseZenStore):
             resource_id: The ID of the resource to retrieve.
             route: The resource REST API route to use.
             response_model: Model to use to serialize the response body.
+            params: Optional query parameters to pass to the endpoint.
 
         Returns:
             The retrieved resource.
         """
-        body = self.get(f"{route}/{str(resource_id)}")
+        body = self.get(f"{route}/{str(resource_id)}", params=params)
         return response_model.parse_obj(body)
 
     def _list_paginated_resources(
@@ -2711,6 +2715,7 @@ class RestZenStore(BaseZenStore):
         route: str,
         response_model: Type[AnyResponseModel],
         filter_model: BaseFilterModel,
+        params: Optional[Dict[str, Any]] = None,
     ) -> Page[AnyResponseModel]:
         """Retrieve a list of resources filtered by some criteria.
 
@@ -2718,6 +2723,7 @@ class RestZenStore(BaseZenStore):
             route: The resource REST API route to use.
             response_model: Model to use to serialize the response body.
             filter_model: The filter model to use for the list query.
+            params: Optional query parameters to pass to the endpoint.
 
         Returns:
             List of retrieved resources matching the filter criteria.
@@ -2726,9 +2732,9 @@ class RestZenStore(BaseZenStore):
             ValueError: If the value returned by the server is not a list.
         """
         # leave out filter params that are not supplied
-        body = self.get(
-            f"{route}", params=filter_model.dict(exclude_none=True)
-        )
+        params = params or {}
+        params.update(filter_model.dict(exclude_none=True))
+        body = self.get(f"{route}", params=params)
         if not isinstance(body, dict):
             raise ValueError(
                 f"Bad API Response. Expected list, got {type(body)}"
