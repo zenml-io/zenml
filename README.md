@@ -116,7 +116,7 @@
       <a href="#-getting-started">Getting Started</a>
       <ul>
         <li><a href="#-installation">Installation</a></li>
-        <li><a href="#-quickstart">Quickstart</a></li>
+        <li><a href="#-run-a-pipeline">Run a pipeline</a></li>
         <li><a href="#-start-the-local-dashboard">Start the local Dashboard</a></li>
         <li><a href="#-zenbytes">ZenBytes</a></li>
         <li><a href="#-zenml-projects">ZenML Projects</a></li>
@@ -159,6 +159,7 @@ so you can tailor a workflow that caters to your specific needs.
     <img src="docs/book/assets/stack.gif">
 </div>
 
+
 # 🤸 Getting Started
 
 ## 💾 Installation
@@ -170,33 +171,49 @@ so you can tailor a workflow that caters to your specific needs.
 pip install "zenml[server]"
 ```
 
-## 🏇 Quickstart
+Take a tour with the guided quickstart by running:
 
 ```bash
 zenml go
 ```
 
-This will spin up a Jupyter notebook that gets you started quickly.
+## 🏇 Run a pipeline
 
+Here's an example of a hello world ZenML pipeline in code:
+
+```python
+from zenml import pipeline, step
+
+@step
+def step_1() -> str:
+    """Returns the `world` substring."""
+    return "world"
+
+@step
+def step_2(input_one: str, input_two: str) -> None:
+    """Combines the two strings at its input and prints them."""
+    combined_str = input_one + ' ' + input_two
+    print(combined_str)
+
+@pipeline
+def my_pipeline():
+    output_step_one = step_1()
+    step_2(input_one="hello", input_two=output_step_one)
+
+if __name__ == "__main__":
+    my_pipeline()
+```
 
 ## 👭 Start the local Dashboard
+
+Serve the dashboard locally using this command.
 
 ```
 zenml up
 ```
 
-![ZenML Dashboard](docs/book/assets/getting_started/zenml-up.gif)
+![ZenML Dashboard](docs/book/.gitbook/assets/landingpage.png")
 
-
-## 🍰 ZenBytes
-
-New to MLOps? Get up to speed by visiting
-the [ZenBytes](https://github.com/zenml-io/zenbytes) repo.
-
-> ZenBytes is a series of short practical MLOps lessons taught using ZenML.
-> It covers many of
-> the [core concepts](https://docs.zenml.io/getting-started/core-concepts) widely
-> used in ZenML and MLOps in general.
 
 ## 📜 ZenML Projects
 
