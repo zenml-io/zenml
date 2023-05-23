@@ -14,10 +14,6 @@
 
 import click
 from pipelines.mnist_pipeline import mnist_pipeline
-from steps.evaluators import evaluator
-from steps.importers import importer
-from steps.normalizers import normalizer
-from steps.trainers import TrainerParameters, trainer
 
 from zenml.integrations.tensorboard.visualizers import (
     stop_tensorboard_server,
@@ -44,13 +40,7 @@ def main(epochs: int, lr: float, stop_tensorboard: bool):
         return
 
     # Run the pipeline
-    pipeline_instance = mnist_pipeline(
-        importer=importer(),
-        normalizer=normalizer(),
-        trainer=trainer(params=TrainerParameters(epochs=epochs, lr=lr)),
-        evaluator=evaluator(),
-    )
-    pipeline_instance.run()
+    mnist_pipeline(epochs=epochs, lr=lr)
 
     visualize_tensorboard(
         pipeline_name="mnist_pipeline",
