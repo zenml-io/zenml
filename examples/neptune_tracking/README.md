@@ -37,7 +37,7 @@ pip install "zenml[server]"
 
 # install ZenML integrations
 zenml integration install tensorflow neptune
-pip install neptune-client[tensorflow-keras]
+pip install "neptune-client[tensorflow-keras]"
 
 # pull example
 zenml example pull neptune_tracking
