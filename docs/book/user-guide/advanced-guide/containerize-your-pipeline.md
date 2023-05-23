@@ -4,7 +4,7 @@ description: Using Docker images to run your pipeline.
 
 # Containerize your pipeline
 
-TODO: Introducing the whole containerization process
+
 
 ## Define where an image is built
 
