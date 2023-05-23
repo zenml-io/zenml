@@ -59,20 +59,24 @@ def step1() -> MyObj:
     return MyObj("jk")
 
 
+# (Optional) tell ZenML to use your custom materializer for this step.
+# This is usually not needed since ZenML automatically discovers materializers
+# and determines which one to use based on the data type of your output
+step1.configure(output_materializers=MyMaterializer)
+
+
 @step
 def step2(my_obj: MyObj):
     print(my_obj.name)
 
 
 @pipeline
-def pipe(step1, step2):
+def pipe():
     step2(step1())
 
 
 if __name__ == "__main__":
-    pipe(
-        step1=step1().configure(output_materializers=MyMaterializer), step2=step2()
-    ).run()
+    pipe()
 ```
 
 ## 📰 Write the Readme
