@@ -4,7 +4,7 @@ description: Configuring pipelines, steps, and stack components in ZenML.
 
 # Configure steps/pipelines
 
-## Parameterize your Steps
+## Parameters for your Steps
 
 When calling a step in a pipeline, the inputs provided to the step function can either be an **artifact** or a **parameter**. An artifact represents the output of another step that was executed as part of the same pipeline and serves as a means to share data between steps. Parameters, on the other hand, are values provided explicitly when invoking a step. They are not dependent on the output of other steps and allow you to parameterize the behavior of your steps.
 

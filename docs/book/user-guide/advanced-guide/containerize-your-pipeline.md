@@ -2,7 +2,7 @@
 description: Using Docker images to run your pipeline.
 ---
 
-# Containerizing Your ZenML Pipeline
+# Containerize your pipeline
 
 TODO: Introducing the whole containerization process
 
@@ -10,11 +10,11 @@ TODO: Introducing the whole containerization process
 
 TODO: Include reference to managing envioronments and maybe move to the top [managing environments](managing-environments.md)
 
-## Reusing docker images
+## Reusing Docker images
 
 Link to [code repository](connect-your-git-repository.md)
 
-## Customize the docker building
+## Customize the Docker building
 
 When running locally, ZenML will sequentially execute the steps of your pipeline in the active Python environment. However, when using remote [orchestrators](broken-reference/) or [step operators](broken-reference/), ZenML will build [Docker](https://www.docker.com/) images which are used to run your pipeline code in an isolated and well-defined environment.
 
@@ -27,7 +27,7 @@ For this purpose, a [Dockerfile](https://docs.docker.com/engine/reference/builde
 
 The process described above is automated by ZenML and covers most basic use cases. This section covers various ways to customize the Docker build process to fit your needs.
 
-For a full list of configuration options, check out [our API Docs](https://apidocs.zenml.io/latest/core_code_docs/core-config/#zenml.config.docker_settings.DockerSettings).
+For a full list of configuration options, check out [our API Docs](https://apidocs.zenml.io/latest/core\_code\_docs/core-config/#zenml.config.docker\_settings.DockerSettings).
 
 For the configuration examples described below, you'll need to import the `DockerSettings` class:
 
@@ -35,7 +35,7 @@ For the configuration examples described below, you'll need to import the `Docke
 from zenml.config import DockerSettings
 ```
 
-### Handling Source Files
+### Handling source files
 
 ZenML determines the root directory of your source files in the following order:
 
@@ -54,101 +54,103 @@ You can specify how these files are handled using the `source_files` attribute o
 When including files in the image, ZenML copies all contents of the root directory into the Docker image. To exclude files and keep the image smaller, use a [.dockerignore file](https://docs.docker.com/engine/reference/builder/#dockerignore-file) in either of the following ways:
 
 * Have a file called `.dockerignore` in your source root directory.
-* Explicitly specify a `.dockerignore` file to use:
+*   Explicitly specify a `.dockerignore` file to use:
 
-  ```python
-  docker_settings = DockerSettings(dockerignore="/path/to/.dockerignore")
+    ```python
+    docker_settings = DockerSettings(dockerignore="/path/to/.dockerignore")
 
-  @pipeline(settings={"docker": docker_settings})
-  def my_pipeline(...):
-      ...
-  ```
+    @pipeline(settings={"docker": docker_settings})
+    def my_pipeline(...):
+        ...
+    ```
 
-### Installing Additional Pip Dependencies or Apt Packages
+### Installing additional pip dependencies or apt packages
 
 By default, ZenML automatically installs all packages required by your active ZenML stack. However, you can specify additional packages to be installed in various ways:
 
-*   Install all the packages in your local Python environment (This will use the `pip` or `poetry` package manager to get a list of your local packages):
+* Install all the packages in your local Python environment (This will use the `pip` or `poetry` package manager to get a list of your local packages):
 
-  ```python
-  # or use "poetry_export"
-  docker_settings = DockerSettings(replicate_local_python_environment="pip_freeze")
+```python
+# or use "poetry_export"
+docker_settings = DockerSettings(replicate_local_python_environment="pip_freeze")
 
-  @pipeline(settings={"docker": docker_settings})
-  def my_pipeline(...):
-      ...
-  ```
+@pipeline(settings={"docker": docker_settings})
+def my_pipeline(...):
+    ...
+```
 
-  If required, a custom command can be provided. This command must output a list of requirements following the format ofthe [requirements file](https://pip.pypa.io/en/stable/reference/requirements-file-format/):
+If required, a custom command can be provided. This command must output a list of requirements following the format ofthe [requirements file](https://pip.pypa.io/en/stable/reference/requirements-file-format/):
 
-  ```python
-  docker_settings = DockerSettings(replicate_local_python_environment=[
-      "poetry",
-      "export",
-      "--extras=train",
-      "--format=requirements.txt"
-  ])
+```python
+docker_settings = DockerSettings(replicate_local_python_environment=[
+    "poetry",
+    "export",
+    "--extras=train",
+    "--format=requirements.txt"
+])
 
-  @pipeline(settings={"docker": docker_settings})
-  def my_pipeline(...):
-      ...
-  ```
-* Specify a list of pip requirements in code:
+@pipeline(settings={"docker": docker_settings})
+def my_pipeline(...):
+    ...
+```
 
-  ```python
-  docker_settings = DockerSettings(requirements=["torch==1.12.0", "torchvision"])
+*   Specify a list of pip requirements in code:
 
-  @pipeline(settings={"docker": docker_settings})
-  def my_pipeline(...):
-      ...
-  ```
-* Specify a pip requirements file:
-
-  ```python
-  docker_settings = DockerSettings(requirements="/path/to/requirements.txt")
+    ```python
+    docker_settings = DockerSettings(requirements=["torch==1.12.0", "torchvision"])
 
     @pipeline(settings={"docker": docker_settings})
     def my_pipeline(...):
         ...
     ```
-*   Specify a list of [ZenML integrations](broken-reference/) that you're using in your pipeline:
+*   Specify a pip requirements file:
 
-  ```python
-  from zenml.integrations.constants import PYTORCH, EVIDENTLY
+    ```python
+    docker_settings = DockerSettings(requirements="/path/to/requirements.txt")
 
-  docker_settings = DockerSettings(required_integrations=[PYTORCH, EVIDENTLY])
+      @pipeline(settings={"docker": docker_settings})
+      def my_pipeline(...):
+          ...
+    ```
+* Specify a list of [ZenML integrations](broken-reference/) that you're using in your pipeline:
 
-  @pipeline(settings={"docker": docker_settings})
-  def my_pipeline(...):
-      ...
-  ```
-* Specify a list of apt packages in code:
+```python
+from zenml.integrations.constants import PYTORCH, EVIDENTLY
 
-  ```python
-  docker_settings = DockerSettings(apt_packages=["git"])
+docker_settings = DockerSettings(required_integrations=[PYTORCH, EVIDENTLY])
 
-  @pipeline(settings={"docker": docker_settings})
-  def my_pipeline(...):
-      ...
-  ```
-* Prevent ZenML from automatically installing the requirements of your stack:
+@pipeline(settings={"docker": docker_settings})
+def my_pipeline(...):
+    ...
+```
 
-  ```python
-  docker_settings = DockerSettings(install_stack_requirements=False)
+*   Specify a list of apt packages in code:
+
+    ```python
+    docker_settings = DockerSettings(apt_packages=["git"])
 
     @pipeline(settings={"docker": docker_settings})
     def my_pipeline(...):
         ...
     ```
-*   In some cases the steps of your pipeline will have conflicting requirements or some steps of your pipeline will require large dependencies that don't need to be installed to run the remaining steps of your pipeline. For this case, ZenML allows you to specify custom Docker settings for steps in your pipeline.
+*   Prevent ZenML from automatically installing the requirements of your stack:
 
-  ```python
-  docker_settings = DockerSettings(requirements=["tensorflow"])
+    ```python
+    docker_settings = DockerSettings(install_stack_requirements=False)
 
-  @step(settings={"docker": docker_settings})
-  def my_training_step(...):
-      ...
-  ```
+      @pipeline(settings={"docker": docker_settings})
+      def my_pipeline(...):
+          ...
+    ```
+* In some cases the steps of your pipeline will have conflicting requirements or some steps of your pipeline will require large dependencies that don't need to be installed to run the remaining steps of your pipeline. For this case, ZenML allows you to specify custom Docker settings for steps in your pipeline.
+
+```python
+docker_settings = DockerSettings(requirements=["tensorflow"])
+
+@step(settings={"docker": docker_settings})
+def my_training_step(...):
+    ...
+```
 
 {% hint style="info" %}
 You can combine these methods but do make sure that your list of pip requirements does not overlap with the ones specified explicitly in the docker settings.
@@ -160,7 +162,7 @@ Depending on the options specified in your Docker settings, ZenML installs the r
 * The packages specified via the `requirements` attribute (step level overwrites pipeline level)
 * The packages specified via the `required_integrations` and potentially stack requirements
 
-### Using a Custom Parent Image
+### Using a custom parent image
 
 By default, ZenML performs all the steps described above on top of the [official ZenML image](https://hub.docker.com/r/zenmldocker/zenml/) for the Python and ZenML version in the active Python environment. To have more control over the entire environment used to execute your pipelines, you can either specify a custom pre-built parent image or a Dockerfile that ZenML uses to build a parent image for you.
 
@@ -168,7 +170,7 @@ By default, ZenML performs all the steps described above on top of the [official
 If you're going to use a custom parent image (either pre-built or by specifying a Dockerfile), you need to make sure that it has Python, pip, and ZenML installed for it to work. If you need a starting point, you can take a look at the Dockerfile that ZenML uses [here](https://github.com/zenml-io/zenml/blob/main/docker/base.Dockerfile).
 {% endhint %}
 
-#### Using a Pre-built Parent Image
+#### Using a pre-built parent image
 
 To use a static parent image (e.g., with internal dependencies installed) that doesn't need to be rebuilt on every pipeline run, specify it in the Docker settings for your pipeline:
 
@@ -197,7 +199,7 @@ def my_pipeline(...):
 This is an advanced feature and may cause unintended behavior when running your pipelines. If you use this, ensure your code files are correctly included in the image you specified.
 {% endhint %}
 
-#### Specifying a Dockerfile to Dynamically Build a Parent Image
+#### Specifying a Dockerfile to dynamically build a parent image
 
 In some cases, you might want full control over the resulting Docker image but want to build a Docker image dynamically each time a pipeline is executed. To make this process easier, ZenML allows you to specify a custom Dockerfile as well as `build context` directory and build options. ZenML then builds an intermediate image based on the Dockerfile you specified and uses the intermediate image as the parent image.
 

@@ -131,7 +131,7 @@ Optionally, you can override the `save_visualizations()` method to automatically
 
 They can also be displayed in Jupyter notebooks via post-execution visualization.
 
-Currently, artifacts can be visualized either as CSV table, embedded HTML, image or Markdown. For more information, see [zenml.enums.VisualizationType](https://github.com/zenml-io/zenml/blob/main/src/zenml/enums.py).
+Currently, artifacts can be visualized either as CSV table, embedded HTML, image, or Markdown. For more information, see [zenml.enums.VisualizationType](https://github.com/zenml-io/zenml/blob/main/src/zenml/enums.py).
 
 To create visualizations, you need to:
 
@@ -306,8 +306,6 @@ The following object was passed to this step: `my_object`
 Step `my_second_step` has finished in 0.048s.
 Pipeline run `first_pipeline-22_Apr_22-10_58_51_135729` has finished in 0.153s.
 ```
-
-#### Code Summary
 
 <details>
 
