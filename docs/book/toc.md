@@ -139,7 +139,7 @@
 ## Learning
 
 * [🚀 Quickstart](https://github.com/zenml-io/zenml/blob/main/examples/quickstart/README.md)
-* [🧩 Examples](learning/examples/README.md)
+* [🧩 Examples](learning/examples/examples.md)
   * [Build an LLM-powered community Slack bot](https://github.com/zenml-io/zenml-projects/tree/main/langchain-llamaindex-slackbot)
   * [Summarize news articles with NLP](https://github.com/zenml-io/zenml-projects/tree/main/zen-news-summarization)
   * [Use ZenML seamlessly with GitHub Actions](https://github.com/zenml-io/zenml-gitflow)
@@ -152,4 +152,4 @@
 * [🤷 SDK & CLI reference](https://apidocs.zenml.io/)
 * [🤷 Server API reference](https://demoserver.zenml.io/docs)
 * [💜 Community & content](reference/community-and-content.md)
-* [❓ FAQ](learning/faq.md)
+* [❓ FAQ](reference/faq.md)
