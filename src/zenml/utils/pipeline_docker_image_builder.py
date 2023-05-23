@@ -73,7 +73,7 @@ class PipelineDockerImageBuilder:
         entrypoint: Optional[str] = None,
         extra_files: Optional[Dict[str, str]] = None,
         code_repository: Optional["BaseCodeRepository"] = None,
-    ) -> str:
+    ) -> Tuple[str, Optional[str], Optional[str]]:
         """Builds (and optionally pushes) a Docker image to run a pipeline.
 
         Use the image name returned by this method whenever you need to uniquely
@@ -94,8 +94,12 @@ class PipelineDockerImageBuilder:
                 downloaded.
 
         Returns:
-            The Docker image repo digest or local name, depending on whether
+            A tuple (image_digest, dockerfile, requirements):
+            - The Docker image repo digest or local name, depending on whether
             the image was pushed or is just stored locally.
+            - Dockerfile will contain the contents of the Dockerfile used to
+            build the image.
+            - Requirements is a string with a single pip requirement per line.
 
         Raises:
             RuntimeError: If the stack does not contain an image builder.
@@ -103,6 +107,9 @@ class PipelineDockerImageBuilder:
                 specified and the Docker configuration doesn't require an
                 image build.
         """
+        requirements: Optional[str] = None
+        dockerfile: Optional[str] = None
+
         if docker_settings.skip_build:
             assert (
                 docker_settings.parent_image
@@ -111,7 +118,7 @@ class PipelineDockerImageBuilder:
             # Should we tag this here and push it to the container registry of
             # the stack to make sure it's always accessible when running the
             # pipeline?
-            return docker_settings.parent_image
+            return docker_settings.parent_image, dockerfile, requirements
 
         image_builder = stack.image_builder
         if not image_builder:
@@ -226,13 +233,23 @@ class PipelineDockerImageBuilder:
                 dockerignore_file=docker_settings.dockerignore,
             )
 
-            requirements_file_names = self._add_requirements_files(
+            requirements_files = self.gather_requirements_files(
                 docker_settings=docker_settings,
-                build_context=build_context,
                 stack=stack,
                 # Only pass code repo to include its dependencies if we actually
                 # need to download code
                 code_repository=code_repository if download_files else None,
+            )
+
+            self._add_requirements_files(
+                requirements_files=requirements_files,
+                build_context=build_context,
+            )
+            requirements = (
+                "\n".join(
+                    file_content for _, file_content, _ in requirements_files
+                )
+                or None
             )
 
             apt_packages = docker_settings.apt_packages
@@ -270,7 +287,7 @@ class PipelineDockerImageBuilder:
                 parent_image=parent_image,
                 docker_settings=docker_settings,
                 download_files=download_files,
-                requirements_files=requirements_file_names,
+                requirements_files=requirements_files,
                 apt_packages=apt_packages,
                 entrypoint=entrypoint,
             )
@@ -289,7 +306,7 @@ class PipelineDockerImageBuilder:
                 container_registry=container_registry,
             )
 
-        return image_name_or_digest
+        return image_name_or_digest, dockerfile, requirements
 
     @staticmethod
     def _get_target_image_name(
@@ -322,41 +339,18 @@ class PipelineDockerImageBuilder:
     @classmethod
     def _add_requirements_files(
         cls,
-        docker_settings: DockerSettings,
+        requirements_files: List[Tuple[str, str, List[str]]],
         build_context: "BuildContext",
-        stack: "Stack",
-        code_repository: Optional["BaseCodeRepository"] = None,
-    ) -> List[str]:
+    ) -> None:
         """Adds requirements files to the build context.
 
         Args:
-            docker_settings: Docker settings that specifies which
-                requirements to install.
+            requirements_files: List of tuples
+                (filename, file_content, pip_options).
             build_context: Build context to add the requirements files to.
-            stack: The stack on which the pipeline will run.
-            code_repository: The code repository from which files will be
-                downloaded.
-
-        Returns:
-            Name of the requirements files in the build context.
-            The files will be in the following order:
-            - Packages installed in the local Python environment
-            - User-defined requirements
-            - Requirements defined by user-defined and/or stack integrations
         """
-        requirements_file_names: List[str] = []
-
-        requirements_files = cls.gather_requirements_files(
-            docker_settings=docker_settings,
-            stack=stack,
-            code_repository=code_repository,
-        )
-
-        for filename, file_content in requirements_files:
+        for filename, file_content, _ in requirements_files:
             build_context.add_file(source=file_content, destination=filename)
-            requirements_file_names.append(filename)
-
-        return requirements_file_names
 
     @staticmethod
     def gather_requirements_files(
@@ -364,7 +358,7 @@ class PipelineDockerImageBuilder:
         stack: "Stack",
         code_repository: Optional["BaseCodeRepository"] = None,
         log: bool = True,
-    ) -> List[Tuple[str, str]]:
+    ) -> List[Tuple[str, str, List[str]]]:
         """Gathers and/or generates pip requirements files.
 
         This method is called in `PipelineDockerImageBuilder.build_docker_image`
@@ -385,13 +379,14 @@ class PipelineDockerImageBuilder:
                 failed.
 
         Returns:
-            List of tuples (filename, file_content) of all requirements files.
+            List of tuples (filename, file_content, pip_options) of all
+            requirements files.
             The files will be in the following order:
             - Packages installed in the local Python environment
             - User-defined requirements
             - Requirements defined by user-defined and/or stack integrations
         """
-        requirements_files = []
+        requirements_files: List[Tuple[str, str, List[str]]] = []
 
         # Generate requirements file for the local environment if configured
         if docker_settings.replicate_local_python_environment:
@@ -417,7 +412,7 @@ class PipelineDockerImageBuilder:
                 ) from e
 
             requirements_files.append(
-                (".zenml_local_requirements", local_requirements)
+                (".zenml_local_requirements", local_requirements, [])
             )
             if log:
                 logger.info(
@@ -446,7 +441,7 @@ class PipelineDockerImageBuilder:
 
         if user_requirements:
             requirements_files.append(
-                (".zenml_user_requirements", user_requirements)
+                (".zenml_user_requirements", user_requirements, [])
             )
 
         # Generate requirements file for all required integrations
@@ -474,6 +469,7 @@ class PipelineDockerImageBuilder:
                 (
                     ".zenml_integration_requirements",
                     integration_requirements_file,
+                    [],
                 )
             )
             if log:
@@ -498,7 +494,9 @@ class PipelineDockerImageBuilder:
                 file_name = f".zenml_hub_internal_requirements_{i}"
                 file_lines = [f"-i {index}", *packages]
                 file_contents = "\n".join(file_lines)
-                requirements_files.append((file_name, file_contents))
+                requirements_files.append(
+                    (file_name, file_contents, ["--no-deps"])
+                )
                 if log:
                     logger.info(
                         "- Including internal hub packages from index `%s`: %s",
@@ -510,7 +508,7 @@ class PipelineDockerImageBuilder:
             if hub_pypi_requirements:
                 file_name = ".zenml_hub_pypi_requirements"
                 file_contents = "\n".join(hub_pypi_requirements)
-                requirements_files.append((file_name, file_contents))
+                requirements_files.append((file_name, file_contents, []))
                 if log:
                     logger.info(
                         "- Including hub requirements from PyPI: %s",
@@ -577,7 +575,7 @@ class PipelineDockerImageBuilder:
         parent_image: str,
         docker_settings: DockerSettings,
         download_files: bool,
-        requirements_files: Sequence[str] = (),
+        requirements_files: Sequence[Tuple[str, str, List[str]]] = (),
         apt_packages: Sequence[str] = (),
         entrypoint: Optional[str] = None,
     ) -> str:
@@ -587,7 +585,11 @@ class PipelineDockerImageBuilder:
             parent_image: The image to use as parent for the Dockerfile.
             docker_settings: Docker settings for this image build.
             download_files: Whether to download files in the build context.
-            requirements_files: Paths of requirements files to install.
+            requirements_files: List of tuples that contain three items:
+                - the name of a requirements file,
+                - the content of that file,
+                - options that should be passed to pip when installing the
+                    requirements file.
             apt_packages: APT packages to install.
             entrypoint: The default entrypoint command that gets executed when
                 running a container of an image created by this Dockerfile.
@@ -605,10 +607,13 @@ class PipelineDockerImageBuilder:
                 f"--no-install-recommends {apt_packages}"
             )
 
-        for file in requirements_files:
+        for file, _, options in requirements_files:
             lines.append(f"COPY {file} .")
+
+            option_string = " ".join(options)
             lines.append(
-                f"RUN pip install --default-timeout=60 --no-cache-dir -r {file}"
+                f"RUN pip install --default-timeout=60 --no-cache-dir "
+                f"{option_string} -r {file}"
             )
 
         lines.append(f"ENV {ENV_ZENML_ENABLE_REPO_INIT_WARNINGS}=False")

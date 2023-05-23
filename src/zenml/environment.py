@@ -23,6 +23,7 @@ import distro
 
 from zenml import __version__
 from zenml.constants import INSIDE_ZENML_CONTAINER
+from zenml.enums import EnvironmentType
 from zenml.logger import get_logger
 from zenml.utils.singleton import SingletonMetaClass
 
@@ -58,29 +59,31 @@ def get_environment() -> str:
     """
     # Order is important here
     if Environment.in_kubernetes():
-        return "kubernetes"
+        return EnvironmentType.KUBERNETES
     elif Environment.in_github_actions():
-        return "github_action"
+        return EnvironmentType.GITHUB_ACTION
     elif Environment.in_gitlab_ci():
-        return "gitlab_ci"
+        return EnvironmentType.GITLAB_CI
     elif Environment.in_circle_ci():
-        return "circle_ci"
+        return EnvironmentType.CIRCLE_CI
     elif Environment.in_bitbucket_ci():
-        return "bitbucket_ci"
+        return EnvironmentType.BITBUCKET_CI
     elif Environment.in_ci():
-        return "generic_ci"
+        return EnvironmentType.GENERIC_CI
     elif Environment.in_docker():
-        return "docker"
+        return EnvironmentType.DOCKER
     elif Environment.in_container():
-        return "container"
+        return EnvironmentType.CONTAINER
     elif Environment.in_google_colab():
-        return "colab"
+        return EnvironmentType.COLAB
     elif Environment.in_paperspace_gradient():
-        return "paperspace"
+        return EnvironmentType.PAPERSPACE
     elif Environment.in_notebook():
-        return "notebook"
+        return EnvironmentType.NOTEBOOK
+    elif Environment.in_wsl():
+        return EnvironmentType.WSL
     else:
-        return "native"
+        return EnvironmentType.NATIVE
 
 
 def get_system_details() -> str:
@@ -249,6 +252,9 @@ class Environment(metaclass=SingletonMetaClass):
             `True` if the current Python process is running in a notebook,
             `False` otherwise.
         """
+        if Environment.in_google_colab():
+            return True
+
         if find_spec("IPython") is not None:
             from IPython import get_ipython  # type: ignore
 
@@ -318,6 +324,17 @@ class Environment(metaclass=SingletonMetaClass):
             CI, `False` otherwise.
         """
         return "CI" in os.environ
+
+    @staticmethod
+    def in_wsl() -> bool:
+        """If the current process is running in Windows Subsystem for Linux.
+
+        source: https://www.scivision.dev/python-detect-wsl/
+
+        Returns:
+            `True` if the current process is running in WSL, `False` otherwise.
+        """
+        return "microsoft-standard" in platform.uname().release
 
     def register_component(
         self, component: "BaseEnvironmentComponent"

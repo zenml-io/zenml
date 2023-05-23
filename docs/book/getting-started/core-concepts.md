@@ -1,8 +1,8 @@
 ---
-description: Understanding the core concepts behind ZenML.
+description: Discovering the core concepts behind ZenML.
 ---
 
-# 🪄 Core Concepts
+# 🪄 Core concepts
 
 **ZenML** is an extensible, open-source MLOps framework for creating portable, production-ready **MLOps pipelines**. It's built for data scientists, ML Engineers, and MLOps Developers to collaborate as they develop to production. In order to achieve this goal, ZenML introduces various concepts for different aspects of an ML workflow and we can categorize these concepts under three different threads:
 

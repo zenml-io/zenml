@@ -32,6 +32,7 @@ from zenml.steps.utils import (
     INSTANCE_CONFIGURATION,
     PARAM_CREATED_BY_FUNCTIONAL_API,
     PARAM_ENABLE_ARTIFACT_METADATA,
+    PARAM_ENABLE_ARTIFACT_VISUALIZATION,
     PARAM_ENABLE_CACHE,
     PARAM_EXPERIMENT_TRACKER,
     PARAM_EXTRA_OPTIONS,
@@ -69,6 +70,7 @@ def step(
     name: Optional[str] = None,
     enable_cache: Optional[bool] = None,
     enable_artifact_metadata: Optional[bool] = None,
+    enable_artifact_visualization: Optional[bool] = None,
     experiment_tracker: Optional[str] = None,
     step_operator: Optional[str] = None,
     output_materializers: Optional["OutputMaterializersSpecification"] = None,
@@ -86,6 +88,7 @@ def step(
     name: Optional[str] = None,
     enable_cache: Optional[bool] = None,
     enable_artifact_metadata: Optional[bool] = None,
+    enable_artifact_visualization: Optional[bool] = None,
     experiment_tracker: Optional[str] = None,
     step_operator: Optional[str] = None,
     output_materializers: Optional["OutputMaterializersSpecification"] = None,
@@ -109,6 +112,9 @@ def step(
             `zenml.steps.step_context.StepContext` for more information).
         enable_artifact_metadata: Specify whether metadata is enabled for this
             step. If no value is passed, metadata is enabled by default.
+        enable_artifact_visualization: Specify whether visualization is enabled
+            for this step. If no value is passed, visualization is enabled by
+            default.
         experiment_tracker: The experiment tracker to use for this step.
         step_operator: The step operator to use for this step.
         output_materializers: Output materializers for this step. If
@@ -152,6 +158,7 @@ def step(
                     PARAM_CREATED_BY_FUNCTIONAL_API: True,
                     PARAM_ENABLE_CACHE: enable_cache,
                     PARAM_ENABLE_ARTIFACT_METADATA: enable_artifact_metadata,
+                    PARAM_ENABLE_ARTIFACT_VISUALIZATION: enable_artifact_visualization,
                     PARAM_EXPERIMENT_TRACKER: experiment_tracker,
                     PARAM_STEP_OPERATOR: step_operator,
                     PARAM_OUTPUT_MATERIALIZERS: output_materializers,

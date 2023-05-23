@@ -60,8 +60,10 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
     
     def save_visualizations(self, data: Any) -> Dict[str, VisualizationType]:
         """Save visualizations of the given data.
+
         Args:
             data: The data of the artifact to visualize.
+
         Returns:
             A dictionary of visualization URIs and their types.
         """
@@ -125,11 +127,13 @@ The `load()` and `save()` methods define the serialization and deserialization o
 
 You will need to override these methods according to how you plan to serialize your objects. E.g., if you have custom PyTorch classes as `ASSOCIATED_TYPES`, then you might want to use `torch.save()` and `torch.load()` here.
 
-#### (Optional) How to Visualize the Artifact
+### (Optional) How to Visualize the Artifact
 
 Optionally, you can override the `save_visualizations()` method to automatically save visualizations for all artifacts saved by your materializer. These visualizations are then shown next to your artifacts in the dashboard:
 
-They can also be displayed in Jupyter notebooks via post-execution visualization.
+![Evidently Artifact Visualization Example](../../assets/dashboard/artifact\_visualization.png)
+
+They can also be displayed in Jupyter notebooks via [post-execution visualization](../../starter-guide/pipelines/fetching-pipelines.md#visualizing-artifacts).
 
 Currently, artifacts can be visualized either as CSV table, embedded HTML, image or Markdown. For more information, see [zenml.enums.VisualizationType](https://github.com/zenml-io/zenml/blob/main/src/zenml/enums.py).
 
@@ -139,7 +143,19 @@ To create visualizations, you need to:
 2. Save all visualizations to paths inside `self.uri`
 3. Return a dictionary mapping visualization paths to visualization types.
 
-As an example, check out the implementation of the [zenml.materializers.NumpyMaterializer](https://github.com/zenml-io/zenml/blob/main/src/zenml/materializers/numpy\_materializer.py) that uses `matplotlib` to automatically save or plot certain arrays.
+As an example, check out the implementation of the [zenml.materializers.NumpyMaterializer](https://github.com/zenml-io/zenml/blob/main/src/zenml/materializers/numpy\_materializer.py) that use matplotlib to automatically save or plot certain arrays.
+
+{% hint style="info" %}
+If you would like to disable artifact visualization altogether, you can set `enable_artifact_visualization` at either pipeline, step, or run level via `@pipeline(enable_artifact_visualization=False)` or `@step(enable_artifact_visualization=False)` or `my_pipeline(...).run(enable_artifact_visualization=False)`.
+{% endhint %}
+
+### (Optional) Which Metadata to Extract for the Artifact
+
+Optionally, you can override the `extract_metadata()` method to track custom metadata for all artifacts saved by your materializer. Anything you extract here will be displayed in the dashboard next to your artifacts.
+
+To extract metadata, define and return a dictionary of values you want to track. The only requirement is that all your values are built-in types (like `str`, `int`, `list`, `dict`, ...) or among the special types defined in [zenml.metadata.metadata\_types](https://github.com/zenml-io/zenml/blob/main/src/zenml/metadata/metadata\_types.py) that are displayed in a dedicated way in the dashboard. See [zenml.metadata.metadata\_types.MetadataType](https://github.com/zenml-io/zenml/blob/main/src/zenml/metadata/metadata\_types.py) for more details.
+
+By default, this method will only extract the storage size of an artifact, but you can override it to track anything you wish. E.g., the [zenml.materializers.NumpyMaterializer](https://github.com/zenml-io/zenml/blob/main/src/zenml/materializers/numpy\_materializer.py) overrides this method to track the `shape`, `dtype`, and some statistical properties of each `np.ndarray` that it saves.
 
 {% hint style="info" %}
 If you would like to disable artifact visualization altogether, you can set `enable_artifact_visualization` at either pipeline, step, or run level via `@pipeline(enable_artifact_visualization=False)` or `@step(enable_artifact_visualization=False)` or `my_pipeline(...).run(enable_artifact_visualization=False)`.
@@ -306,8 +322,6 @@ The following object was passed to this step: `my_object`
 Step `my_second_step` has finished in 0.048s.
 Pipeline run `first_pipeline-22_Apr_22-10_58_51_135729` has finished in 0.153s.
 ```
-
-#### Code Summary
 
 <details>
 
@@ -572,7 +586,6 @@ class PandasMaterializer(BaseMaterializer):
             df: The pandas dataframe or series to write.
         """
         if isinstance(df, pd.Series):
-
             df = df.to_frame(name="series")
 
         # Create a temporary file to store the data

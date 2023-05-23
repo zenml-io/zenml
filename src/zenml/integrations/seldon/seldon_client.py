@@ -880,7 +880,6 @@ class SeldonClient:
             ",".join(f"{k}={v}" for k, v in labels.items()) if labels else None
         )
         try:
-
             logger.debug(
                 f"Searching SeldonDeployment resources with label selector "
                 f"'{labels or ''}' and field selector '{fields or ''}'"

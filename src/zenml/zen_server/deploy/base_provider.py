@@ -273,7 +273,6 @@ class BaseServerProvider(ABC):
         gc = GlobalConfiguration()
         url: Optional[str] = None
         if service.is_running:
-
             # all services must have an endpoint
             assert service.endpoint is not None
 

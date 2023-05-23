@@ -110,7 +110,7 @@ The sorting of **runs** on a PipelineVersionView is from **newest** to **oldest*
 Alternatively, you can also access the runs from the pipeline class/instance itself:
 
 ```python
-from zenml.pipelines import pipeline
+from zenml import pipeline
 
 # Definition of pipeline
 @pipeline
@@ -155,7 +155,7 @@ zenml pipeline runs list -p <MY_PIPELINE_NAME_OR_ID>
 ```
 
 {% hint style="info" %}
-#### Runs Configuration
+#### Runs configuration
 
 Each run has a collection of useful metadata which you can access to ensure all runs are reproducible.
 {% endhint %}

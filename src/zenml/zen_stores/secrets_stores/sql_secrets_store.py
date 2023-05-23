@@ -229,7 +229,6 @@ class SqlSecretsStore(BaseSecretsStore):
         existing_secret = session.exec(scope_filter).first()
 
         if existing_secret is not None:
-
             existing_secret_model = existing_secret.to_model(
                 encryption_engine=self._encryption_engine
             )

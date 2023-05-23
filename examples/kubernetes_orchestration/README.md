@@ -67,6 +67,11 @@ to have the following additional software installed on your local machine:
 * [kubectl](https://kubernetes.io/docs/tasks/tools/)
 * [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html)
 
+Note that the Kubernetes orchestrator, the ECR container registry and the S3
+artifact store can be deployed using the ZenML CLI as well (in other words, as an
+alternative to the instructions below), using the `zenml <STACK_COMPONENT> deploy` command. For more information on this `deploy` subcommand, please refer to the 
+[documentation](https://docs.zenml.io/advanced-guide/practical-mlops/stack-recipes#deploying-stack-components-directly).
+
 #### Setup and Register Kubernetes Orchestrator
 
 After spinning up your Kubernetes cluster in the cloud, you will first need

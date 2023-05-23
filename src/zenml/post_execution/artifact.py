@@ -13,12 +13,14 @@
 #  permissions and limitations under the License.
 """Initialization for the post-execution artifact class."""
 
-from typing import Any, Type, cast
+from typing import Any, Optional, Type, cast
 
+from zenml.enums import VisualizationType
 from zenml.logger import get_logger
 from zenml.models.artifact_models import ArtifactResponseModel
 from zenml.models.base_models import BaseResponseModel
 from zenml.post_execution.base_view import BaseView
+from zenml.utils.visualization_utils import format_csv_visualization_as_html
 
 logger = get_logger(__name__)
 
@@ -48,6 +50,49 @@ class ArtifactView(BaseView):
         Returns:
             The materialized data.
         """
-        from zenml.utils.materializer_utils import load_artifact
+        from zenml.utils.artifact_utils import load_artifact
 
         return load_artifact(self.model)
+
+    def visualize(self, title: Optional[str] = None) -> None:
+        """Visualize the artifact in notebook environments.
+
+        Args:
+            title: Optional title to show before the visualizations.
+
+        Raises:
+            RuntimeError: If not in a notebook environment.
+        """
+        from IPython.core.display import HTML, Image, Markdown, display
+
+        from zenml.environment import Environment
+        from zenml.utils.artifact_utils import load_artifact_visualization
+
+        if not Environment.in_notebook():
+            raise RuntimeError(
+                "The `output.visualize()` method is only available in Jupyter "
+                "notebooks. In all other runtime environments, please open "
+                "your ZenML dashboard using `zenml up` and view the "
+                "visualizations by clicking on the respective artifacts in the "
+                "pipeline run DAG instead."
+            )
+
+        if not self.model.visualizations:
+            return
+
+        if title:
+            display(Markdown(f"### {title}"))
+        for i in range(len(self.model.visualizations)):
+            visualization = load_artifact_visualization(self.model, index=i)
+            if visualization.type == VisualizationType.IMAGE:
+                display(Image(visualization.value))
+            elif visualization.type == VisualizationType.HTML:
+                display(HTML(visualization.value))
+            elif visualization.type == VisualizationType.MARKDOWN:
+                display(Markdown(visualization.value))
+            elif visualization.type == VisualizationType.CSV:
+                assert isinstance(visualization.value, str)
+                table = format_csv_visualization_as_html(visualization.value)
+                display(HTML(table))
+            else:
+                display(visualization.value)

@@ -136,10 +136,11 @@ def test_build_skipping():
     """Tests that the parent image is returned directly if `skip_build` is set
     to `True`."""
     settings = DockerSettings(skip_build=True, parent_image="my_parent_image")
-    assert PipelineDockerImageBuilder().build_docker_image(
+    image_digest, _, _ = PipelineDockerImageBuilder().build_docker_image(
         docker_settings=settings,
         tag="tag",
         stack=Client().active_stack,
         include_files=True,
         download_files=False,
     )
+    assert image_digest

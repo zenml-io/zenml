@@ -1028,7 +1028,6 @@ def describe_pydantic_object(schema_json: Dict[str, Any]) -> None:
     if properties:
         warning("Properties", bold=True)
         for prop, prop_schema in properties.items():
-
             if "$ref" not in prop_schema.keys():
                 warning(
                     f"{prop}, {prop_schema['type']}"
@@ -1259,7 +1258,6 @@ def print_pipeline_runs_table(
     """
     runs_dicts = []
     for pipeline_run in pipeline_runs:
-
         if pipeline_run.user:
             user_name = pipeline_run.user.name
         else:
@@ -1432,7 +1430,6 @@ def list_options(filter_model: Type[BaseFilterModel]) -> Callable[[F], F]:
     """
 
     def inner_decorator(func: F) -> F:
-
         options = []
         data_type_descriptors = set()
         for k, v in filter_model.__fields__.items():
@@ -1555,6 +1552,36 @@ def warn_deprecated_secrets_manager() -> None:
         "See the `zenml secret` CLI command and the "
         "https://docs.zenml.io/starter-guide/production-fundamentals/secrets-management "
         "documentation page for more information."
+    )
+
+
+def fail_secrets_manager_creation() -> None:
+    """Warning for deprecating secrets managers."""
+    error(
+        "Creating secrets managers is no longer supported. Existing secrets "
+        "managers will be removed in an upcoming release in favor of the "
+        "centralized secrets management. Please consider migrating all your "
+        "existing secrets to the centralized secrets store by means of the "
+        "`zenml secrets-manager secret migrate` CLI command."
+        " See the `zenml secret` CLI command or the "
+        "https://docs.zenml.io/starter-guide/production-fundamentals/secrets-management "
+        "documentation page for more information. "
+    )
+
+
+def fail_secret_creation_on_secrets_manager() -> None:
+    """Warning for deprecating secrets managers."""
+    error(
+        "Creating secrets within the stack component `secrets manager` is no "
+        "longer supported. "
+        "Existing secrets managers will be removed in an "
+        "upcoming release in favor of the centralized secrets management. "
+        "Learn more about this in our documentation:"
+        "https://docs.zenml.io/starter-guide/production-fundamentals/secrets-management "
+        "Please also consider migrating all your existing secrets to the "
+        "centralized secrets store by means of the "
+        "`zenml secrets-manager secret migrate` CLI command. "
+        "See the `zenml secret --help` for more information."
     )
 
 

@@ -14,7 +14,7 @@ pip install zenml
 Please note that ZenML currently only supports **Python 3.7, 3.8, 3.9, and 3.10**. Please make sure that you are using a supported Python version.
 {% endhint %}
 
-### Install with the dashboard
+## Install with the dashboard
 
 ZenML comes bundled with a React-based dashboard that lives inside a [sister repository](https://github.com/zenml-io/zenml-dashboard). In order to get access to the dashboard **locally**, you need to launch the [ZenML Server and Dashboard locally](../deploying-zenml/deploying-zenml.md). For this, you need to install the optional dependencies for the ZenML Server:
 
@@ -26,7 +26,7 @@ pip install "zenml[server]"
 We highly encourage you to install ZenML in a virtual environment. At ZenML, We like to use [virtualenvwrapper](https://virtualenvwrapper.readthedocs.io/en/latest/) or [pyenv-virtualenv](https://github.com/pyenv/pyenv-virtualenv) to manage our Python virtual environments.
 {% endhint %}
 
-## Verifying Installations
+## Verifying installations
 
 Once the installation is completed, you can check whether the installation was successful either through Bash:
 
