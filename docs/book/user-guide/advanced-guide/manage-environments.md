@@ -10,6 +10,10 @@ description: Navigating multiple development environments.
 
 ZenML deployments often involve multiple environments, such as local development, ZenML server, and `build` environments (image builders). This guide helps you manage dependencies and configurations across these environments.
 
+Here is a visual overview of the different enviornments:
+
+<figure><img src="../../.gitbook/assets/SystemArchitecture.png" alt=""><figcaption><p>Left box is the client enviornment, middle is the zenml server environment, and the right most contains the build enviornments</p></figcaption></figure>
+
 ## Client Environment
 
 The client environment is where ZenML pipelines run, typically a local development environment or a [CI runner](../../platform-guide/set-up-your-mlops-platform/productionalize-with-ci-cd-ct.md) in production. Use your preferred package manager (e.g., `pip` or `poetry`) to manage dependencies, and create a virtual environment to install packages, avoiding conflicts and facilitating sharing. Ensure you install the ZenML package and any required [integrations](../component-guide/component-guide.md).
