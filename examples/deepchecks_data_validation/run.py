@@ -19,7 +19,6 @@ from steps.model_drift_detector import model_drift_detector
 from steps.model_validator import model_validator
 from steps.trainer import trainer
 
-from zenml.integrations.deepchecks.visualizers import DeepchecksVisualizer
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
@@ -35,13 +34,3 @@ if __name__ == "__main__":
         model_drift_detector=model_drift_detector,
     )
     pipeline_instance.run()
-
-    last_run = pipeline_instance.get_runs()[0]
-    data_val_step = last_run.get_step(step="data_validator")
-    model_val_step = last_run.get_step(step="model_validator")
-    data_drift_step = last_run.get_step(step="data_drift_detector")
-    model_drift_step = last_run.get_step(step="model_drift_detector")
-    DeepchecksVisualizer().visualize(data_val_step)
-    DeepchecksVisualizer().visualize(model_val_step)
-    DeepchecksVisualizer().visualize(data_drift_step)
-    DeepchecksVisualizer().visualize(model_drift_step)

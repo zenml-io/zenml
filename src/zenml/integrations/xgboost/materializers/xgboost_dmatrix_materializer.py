@@ -15,7 +15,7 @@
 
 import os
 import tempfile
-from typing import TYPE_CHECKING, Any, Dict, Type
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, Tuple, Type
 
 import xgboost as xgb
 
@@ -32,8 +32,8 @@ DEFAULT_FILENAME = "data.binary"
 class XgboostDMatrixMaterializer(BaseMaterializer):
     """Materializer to read data to and from xgboost.DMatrix."""
 
-    ASSOCIATED_TYPES = (xgb.DMatrix,)
-    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATA
+    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (xgb.DMatrix,)
+    ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.DATA
 
     def load(self, data_type: Type[Any]) -> xgb.DMatrix:
         """Reads a xgboost.DMatrix binary file and loads it.
@@ -44,7 +44,6 @@ class XgboostDMatrixMaterializer(BaseMaterializer):
         Returns:
             Materialized xgboost matrix.
         """
-        super().load(data_type)
         filepath = os.path.join(self.uri, DEFAULT_FILENAME)
 
         # Create a temporary folder
@@ -65,7 +64,6 @@ class XgboostDMatrixMaterializer(BaseMaterializer):
         Args:
             matrix: A xgboost.DMatrix object.
         """
-        super().save(matrix)
         filepath = os.path.join(self.uri, DEFAULT_FILENAME)
 
         # Make a temporary phantom artifact
@@ -89,7 +87,4 @@ class XgboostDMatrixMaterializer(BaseMaterializer):
         Returns:
             The extracted metadata as a dictionary.
         """
-        super().extract_metadata(dataset)
-        return {
-            "shape": (dataset.num_row(), dataset.num_col()),
-        }
+        return {"shape": (dataset.num_row(), dataset.num_col())}

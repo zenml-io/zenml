@@ -259,7 +259,6 @@ class SlackAlerter(BaseAlerter):
             """
             event = payload["data"]
             if event["channel"] == slack_channel_id:
-
                 # approve request (return True)
                 if event["text"] in self._get_approve_msg_options(params):
                     print(f"User {event['user']} approved on slack.")

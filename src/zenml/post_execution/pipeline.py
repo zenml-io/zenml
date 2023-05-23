@@ -13,15 +13,17 @@
 #  permissions and limitations under the License.
 """Implementation of the post-execution pipeline."""
 
+from functools import partial
 from typing import TYPE_CHECKING, Any, List, Optional, Type, Union, cast
 
 from zenml.client import Client
-from zenml.logger import get_apidocs_link, get_logger
+from zenml.logger import get_logger
 from zenml.models import PipelineResponseModel, PipelineRunFilterModel
 from zenml.models.base_models import BaseResponseModel
 from zenml.post_execution.base_view import BaseView
 from zenml.post_execution.pipeline_run import PipelineRunView
 from zenml.utils.analytics_utils import AnalyticsEvent, track
+from zenml.utils.pagination_utils import depaginate
 
 if TYPE_CHECKING:
     from zenml.pipelines.base_pipeline import BasePipeline
@@ -30,29 +32,25 @@ logger = get_logger(__name__)
 
 
 @track(event=AnalyticsEvent.GET_PIPELINES)
-def get_pipelines() -> List["PipelineView"]:
+def get_pipelines() -> List["PipelineVersionView"]:
     """Fetches all post-execution pipeline views in the active workspace.
 
     Returns:
         A list of post-execution pipeline views.
     """
-    # TODO: [server] handle the active stack correctly
     client = Client()
     pipelines = client.list_pipelines(
         workspace_id=client.active_workspace.id,
         sort_by="desc:created",
     )
-    return [PipelineView(model) for model in pipelines.items]
+    return [PipelineVersionView(model) for model in pipelines.items]
 
 
 @track(event=AnalyticsEvent.GET_PIPELINE)
 def get_pipeline(
-    pipeline: Optional[
-        Union["BasePipeline", Type["BasePipeline"], str]
-    ] = None,
+    pipeline: Union["BasePipeline", Type["BasePipeline"], str],
     version: Optional[str] = None,
-    **kwargs: Any,
-) -> Optional["PipelineView"]:
+) -> Optional[Union["PipelineView", "PipelineVersionView"]]:
     """Fetches a post-execution pipeline view.
 
     Use it in one of these ways:
@@ -74,71 +72,137 @@ def get_pipeline(
 
     Args:
         pipeline: Name, class or instance of the pipeline.
-        version: Optional version of the pipeline. If not given, the latest
-            version will be returned.
-        **kwargs: The deprecated `pipeline_name` is caught as a kwarg to
-            specify the pipeline instead of using the `pipeline` argument.
+        version: Optional pipeline version. Behavior depends on `pipeline`:
+            - If `pipeline` is a pipeline instance, this argument is ignored.
+            - If `pipeline` is a pipeline class or name, then this argument
+            specifies the version of the pipeline to return. If not given, a
+            `PipelineView` will be returned that contains all versions and
+            all runs of this pipeline name/class.
 
     Returns:
-        A post-execution pipeline view for the given pipeline or `None` if
-        it doesn't exist.
+        A post-execution view for the given pipeline name, class, or instance
+        or `None` if it doesn't exist.
 
     Raises:
         RuntimeError: If the pipeline was not specified correctly.
     """
     from zenml.pipelines.base_pipeline import BasePipeline
 
-    if isinstance(pipeline, str):
-        pipeline_name = pipeline
-    elif isinstance(pipeline, BasePipeline):
+    # Pipeline instance: find the corresponding pipeline version in the DB.
+    if isinstance(pipeline, BasePipeline):
         pipeline_model = pipeline._get_registered_model()
         if pipeline_model:
-            return PipelineView(model=pipeline_model)
+            return PipelineVersionView(model=pipeline_model)
         else:
             return None
+
+    # Otherwise, for pipeline name or class, determine the name first.
+    if isinstance(pipeline, str):
+        pipeline_name = pipeline
+
     elif isinstance(pipeline, type) and issubclass(pipeline, BasePipeline):
         pipeline_name = pipeline.__name__
-    elif "pipeline_name" in kwargs and isinstance(
-        kwargs.get("pipeline_name"), str
-    ):
-        logger.warning(
-            "Using 'pipeline_name' to get a pipeline from "
-            "'get_pipeline()' is deprecated and "
-            "will be removed in the future. Instead please "
-            "use 'pipeline' to access a pipeline in your Repository based "
-            "on the name of the pipeline or even the class or instance "
-            "of the pipeline. Learn more in our API docs: %s",
-            get_apidocs_link(
-                "core-repository", "zenml.post_execution.pipeline.get_pipeline"
-            ),
-        )
-
-        pipeline_name = kwargs.pop("pipeline_name")
     else:
         raise RuntimeError(
-            "No pipeline specified. Please set a `pipeline` "
-            "within the `get_pipeline()` method. Learn more "
-            "in our API docs: %s",
-            get_apidocs_link(
-                "core-repository", "zenml.post_execution.pipeline.get_pipeline"
-            ),
+            f"Pipeline must be specified as a name (string), a class or an "
+            f"instance of a class. Got type `{type(pipeline)}` instead."
         )
 
+    # If no version is given, return a `PipelineView` that contains all
+    # versions and all runs of this pipeline name/class.
+    if version is None:
+        class_view = PipelineView(name=pipeline_name)
+        if class_view.runs:
+            return class_view
+        return None
+
+    # Otherwise, find the corresponding pipeline version in the DB.
     client = Client()
     try:
         pipeline_model = client.get_pipeline(
             name_id_or_prefix=pipeline_name, version=version
         )
-        return PipelineView(model=pipeline_model)
+        return PipelineVersionView(model=pipeline_model)
     except KeyError:
         return None
 
 
-class PipelineView(BaseView):
-    """Post-execution pipeline class."""
+class PipelineView:
+    """Post-execution class for a pipeline name/class."""
+
+    def __init__(self, name: str):
+        """Initializes a post-execution class for a pipeline name/class.
+
+        Args:
+            name: The name of the pipeline.
+        """
+        self.name = name
+
+    @property
+    def versions(self) -> List["PipelineVersionView"]:
+        """Returns all versions/instances of this pipeline name/class.
+
+        Returns:
+            A list of all versions of this pipeline.
+        """
+        client = Client()
+
+        pipelines = depaginate(
+            partial(
+                client.list_pipelines,
+                workspace_id=client.active_workspace.id,
+                name=self.name,
+                sort_by="desc:created",
+            )
+        )
+        return [PipelineVersionView(model) for model in pipelines]
+
+    @property
+    def num_runs(self) -> int:
+        """Returns the number of runs of this pipeline name/class.
+
+        This is the sum of all runs of all versions of this pipeline.
+
+        Returns:
+            The number of runs of this pipeline name/class.
+        """
+        return sum(version.num_runs for version in self.versions)
+
+    @property
+    def runs(self) -> List["PipelineRunView"]:
+        """Returns the last 50 stored runs of this pipeline name/class.
+
+        The runs are returned in reverse chronological order, so the latest
+        run will be the first element in this list.
+
+        Returns:
+            A list of all stored runs of this pipeline name/class.
+        """
+        all_runs = [run for version in self.versions for run in version.runs]
+        sorted_runs = sorted(
+            all_runs, key=lambda x: x.model.created, reverse=True
+        )
+        return sorted_runs[:50]
+
+    def __eq__(self, other: Any) -> bool:
+        """Compares this pipeline class view to another object.
+
+        Args:
+            other: The other object to compare to.
+
+        Returns:
+            Whether the other object is a pipeline class view with same name.
+        """
+        if not isinstance(other, PipelineView):
+            return False
+        return self.name == other.name
+
+
+class PipelineVersionView(BaseView):
+    """Post-execution class for a specific version/instance of a pipeline."""
 
     MODEL_CLASS: Type[BaseResponseModel] = PipelineResponseModel
-    REPR_KEYS = ["id", "name"]
+    REPR_KEYS = ["id", "name", "version"]
 
     @property
     def model(self) -> PipelineResponseModel:
@@ -189,34 +253,3 @@ class PipelineView(BaseView):
         )
 
         return [PipelineRunView(run) for run in runs.items]
-
-    def get_run_for_completed_step(self, step_name: str) -> "PipelineRunView":
-        """Ascertains which pipeline run produced the cached artifact of a given step.
-
-        Args:
-            step_name: Name of step at hand
-
-        Returns:
-            None if no run is found that completed the given step,
-                else the original pipeline_run.
-
-        Raises:
-            LookupError: If no run is found that completed the given step
-        """
-        orig_pipeline_run = None
-
-        for run in reversed(self.runs):
-            try:
-                step = run.get_step(step_name)
-                if step.is_completed:
-                    orig_pipeline_run = run
-                    break
-            except KeyError:
-                pass
-        if not orig_pipeline_run:
-            raise LookupError(
-                "No Pipeline Run could be found, that has"
-                f" completed the provided step: [{step_name}]"
-            )
-
-        return orig_pipeline_run

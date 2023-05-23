@@ -1,8 +1,8 @@
 ---
-description: Find answers to the most frequently asked questions about ZenML
+description: Find answers to the most frequently asked questions about ZenML.
 ---
 
-# 🙋 FAQ
+# ❓ FAQ
 
 #### Why did you build ZenML?
 
@@ -12,7 +12,7 @@ We built it because we scratched our own itch while deploying multiple machine-l
 
 Not really! An orchestrator in MLOps is the system component that is responsible for executing and managing the execution of an ML pipeline. ZenML is a framework that allows you to run your pipelines on whatever orchestrator you like, and we coordinate with all the other parts of an ML system in production. There are [standard orchestrators](../component-gallery/orchestrators/orchestrators.md) that ZenML supports out-of-the-box, but you are encouraged to [write your own orchestrator](../component-gallery/orchestrators/custom.md) in order to gain more control as to exactly how your pipelines are executed!
 
-#### Can I use tool X? How does tool Y integrate with ZenML?
+#### Can I use the tool `X`? How does the tool `Y` integrate with ZenML?
 
 Take a look at our [examples](https://github.com/zenml-io/zenml/tree/main/examples) directory, which showcases detailed examples for each integration that ZenML supports out-of-the-box.
 
@@ -35,23 +35,6 @@ Check out our [ZenBytes](https://github.com/zenml-io/zenbytes) repository and co
 * [MadeWithML](https://madewithml.com/)
 * [Full Stack Deep Learning](https://fullstackdeeplearning.com/)
 * [CS 329S: Machine Learning Systems Design](https://stanford-cs329s.github.io/)
-
-#### Why should I use ZenML?
-
-ZenML pipelines are designed to be written early on in the development lifecycle. Data scientists can explore their pipelines as they develop toward production, switching stacks from local to cloud deployments with ease. You can read more about why we started building ZenML [on our blog](https://blog.zenml.io/). By using ZenML in the early stages of your project, you get the following benefits:
-
-* Extensible so you can build out the framework to suit your specific needs
-* Reproducibility of training and inference workflows
-* A simple and clear way to represent the steps of your pipeline in code
-* Batteries-included integrations: bring all your favorite tools together
-* Easy switch between local and cloud stacks
-* Painless deployment and configuration of infrastructure
-
-#### How can I be sure you'll stick around as a tool?
-
-The [team behind ZenML](https://zenml.io/company#CompanyTeam) has a shared vision of making MLOps simple and accessible to accelerate problem-solving in the world. We recently raised our [seed round](https://venturebeat.com/2021/12/14/open-source-mlops-framework-zenml-raises-2-7m/) to fulfill this vision, and you can be sure we're here to stay!
-
-Plus, ZenML is and always will be an open-source effort, which lowers the risk of it just going away any time soon.
 
 #### How can I speak with the community?
 

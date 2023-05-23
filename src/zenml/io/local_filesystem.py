@@ -65,7 +65,8 @@ class LocalFilesystem(BaseFilesystem):
         Returns:
             Any: The file object.
         """
-        return open(name, mode=mode)
+        encoding = "utf-8" if "b" not in mode else None
+        return open(name, mode=mode, encoding=encoding)
 
     @staticmethod
     def copyfile(

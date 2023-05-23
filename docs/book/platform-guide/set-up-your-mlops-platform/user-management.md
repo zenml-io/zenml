@@ -13,7 +13,7 @@ Herein lies one of ZenML's most significant strengths: a collaborative platform 
 * With a deployed ZenML instance, users have the ability to create their own teams and project structures. They can easily share pipelines, runs, stacks, and other resources, streamlining the workflow and promoting teamwork.
 * On the flip side, there's the ZenML Hub. Here, you can peruse a collection of community-driven solutions, share your own code, and collaborate with fellow members of the community.
 
-This section will center on managing users, their roles, and permissions within a deployed ZenML instance, while the [ZenML Hub](../../user-guide/starter-guide/zenml-hub.md)
+This section will center on managing users, their roles, and permissions within a deployed ZenML instance, while the [ZenML Hub](../../user-guide/advanced-guide/leverage-community-contributed-plugins.md)
 
 {% hint style="warning" %}
 Permissions and roles are an alpha feature of ZenML and are in active development.

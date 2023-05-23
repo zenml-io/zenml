@@ -311,20 +311,6 @@ def test_call_step_with_wrong_kwarg_type(
         step_with_two_int_inputs()(input_1=1, input_2=int_step_output)
 
 
-def test_call_step_with_missing_materializer_for_type():
-    """Tests that calling a step with an output without registered materializer raises a StepInterfaceError."""
-
-    class MyTypeWithoutMaterializer:
-        pass
-
-    @step
-    def some_step() -> MyTypeWithoutMaterializer:
-        return MyTypeWithoutMaterializer()
-
-    with pytest.raises(StepInterfaceError):
-        some_step()()
-
-
 class MyType:
     pass
 
@@ -560,8 +546,8 @@ def list_of_str_output_step() -> List[str]:
 
 
 @step
-def dict_of_str_output_step() -> Output(
-    str_output=str, dict_output=Dict[str, int]
+def dict_of_str_output_step() -> (
+    Output(str_output=str, dict_output=Dict[str, int])
 ):
     return "", {}
 
@@ -605,8 +591,8 @@ def test_step_can_have_generic_input_types():
 
 
 @step
-def subscripted_generic_output_step() -> Output(
-    dict_output=Dict[str, int], list_output=List[str]
+def subscripted_generic_output_step() -> (
+    Output(dict_output=Dict[str, int], list_output=List[str])
 ):
     return {}, []
 

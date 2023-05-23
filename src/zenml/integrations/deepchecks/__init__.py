@@ -17,9 +17,8 @@ The Deepchecks integration provides a way to validate your data in your pipeline
 It includes a way to detect data anomalies and define checks to ensure quality of
 data.
 
-The integration includes custom materializers to store Deepchecks `SuiteResults` and
-a visualizer to visualize the results in an easy way on a notebook and in your
-browser.
+The integration includes custom materializers to store and visualize Deepchecks
+`SuiteResults`.
 """
 
 from typing import List, Type
@@ -47,7 +46,6 @@ class DeepchecksIntegration(Integration):
     def activate() -> None:
         """Activate the Deepchecks integration."""
         from zenml.integrations.deepchecks import materializers  # noqa
-        from zenml.integrations.deepchecks import visualizers  # noqa
 
     @classmethod
     def flavors(cls) -> List[Type[Flavor]]:

@@ -239,6 +239,8 @@ def create_pipeline_build(
             item_key = checksums[checksum]
             image_name_or_digest = images[item_key].image
             contains_code = images[item_key].contains_code
+            dockerfile = images[item_key].dockerfile
+            requirements = images[item_key].requirements
         else:
             tag = deployment.pipeline_configuration.name
             if build_config.step_name:
@@ -252,7 +254,11 @@ def create_pipeline_build(
                 code_repository=code_repository,
             )
 
-            image_name_or_digest = docker_image_builder.build_docker_image(
+            (
+                image_name_or_digest,
+                dockerfile,
+                requirements,
+            ) = docker_image_builder.build_docker_image(
                 docker_settings=build_config.settings,
                 tag=tag,
                 stack=stack,
@@ -266,6 +272,8 @@ def create_pipeline_build(
 
         images[combined_key] = BuildItem(
             image=image_name_or_digest,
+            dockerfile=dockerfile,
+            requirements=requirements,
             settings_checksum=checksum,
             contains_code=contains_code,
             requires_code_download=download_files,

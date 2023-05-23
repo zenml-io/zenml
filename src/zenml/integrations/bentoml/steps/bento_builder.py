@@ -26,7 +26,7 @@ from zenml.materializers import UnmaterializedArtifact
 from zenml.steps import BaseParameters, step
 from zenml.steps.step_context import StepContext
 from zenml.utils import source_utils
-from zenml.utils.materializer_utils import load_artifact
+from zenml.utils.artifact_utils import load_artifact
 
 logger = get_logger(__name__)
 

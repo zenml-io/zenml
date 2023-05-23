@@ -75,6 +75,7 @@ app = FastAPI(
     default_response_class=ORJSONResponse,
 )
 
+
 # Customize the default request validation handler that comes with FastAPI
 # to return a JSON response that matches the ZenML API spec.
 @app.exception_handler(RequestValidationError)
