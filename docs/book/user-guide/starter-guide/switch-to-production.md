@@ -14,7 +14,7 @@ Moving to a production environment offers several benefits over staying local:
 
 Despite these advantages, transitioning to production can be challenging due to the complexities involved in setting up the needed infrastructure.
 
-This is where ZenML comes in. By providing seamless integration with various [MLOps tools](../../learning/component-gallery/integrations.md) and platforms, ZenML simplifies the process of moving your pipelines into production. One way it does this is by offering a free, limited, and easy-to-use Sandbox environment that allows you to experiment with remote stacks without any setup or configuration.
+This is where ZenML comes in. By providing seamless integration with various [MLOps tools](../component-guide/integration-overview.md) and platforms, ZenML simplifies the process of moving your pipelines into production. One way it does this is by offering a free, limited, and easy-to-use Sandbox environment that allows you to experiment with remote stacks without any setup or configuration.
 
 For those who prefer more control over their infrastructure, ZenML offers a more manual approach that still streamlines parts of the deployment process. With the [deploy CLI](../../platform-guide/set-up-your-mlops-platform/deploy-and-set-up-a-cloud-stack/), you can quickly set up a full-fledged MLOps stack with just a few commands. You have the option to deploy individual stack components through the [stack-component CLI](../../platform-guide/set-up-your-mlops-platform/deploy-and-set-up-a-cloud-stack/deploying-stack-components.md) or [deploy a stack with multiple components](../../platform-guide/set-up-your-mlops-platform/deploy-and-set-up-a-cloud-stack/deploying-a-stack-using-stack-recipes.md) together using Terraform stack recipes.
 
@@ -30,7 +30,7 @@ To start using the ZenML Sandbox, sign up with your Google account. This will cr
 
 #### Step 2: Access credentials
 
-After signing up and creating your sandbox, you will be provided with credentials for [Kubeflow](../../learning/component-gallery/orchestrators/kubeflow.md), [MinIO](../../learning/component-gallery/artifact-stores/s3.md), [MLflow](../../learning/component-gallery/experiment-trackers/mlflow.md), and [ZenML Server](connect-to-a-deployed-zenml.md). These credentials will allow you to access and interact with the various applications and services within the sandbox.
+After signing up and creating your sandbox, you will be provided with credentials for [Kubeflow](../component-guide/orchestrators/kubeflow.md), [MinIO](../component-guide/artifact-stores/s3.md), [MLflow](../component-guide/experiment-trackers/mlflow.md), and [ZenML Server](connect-to-a-deployed-zenml.md). These credentials will allow you to access and interact with the various applications and services within the sandbox.
 
 #### Step 3: Connect and set the stack
 

@@ -34,7 +34,7 @@ The CLI also includes commands that can be used to list, update and delete secre
 
 #### Interactively register missing secrets for your stack
 
-If you're using components with [secret references](interact-with-secrets.md#reference-secrets-in-stack-component-attributes-and-settings) in your stack, you need to make sure that the stack contains a [secrets manager](../../../learning/component-gallery/secrets-managers/secrets-managers.md) and all of the referenced secrets exist in this secrets manager. To make this process easier, you can use the following CLI command to interactively register all secrets for a stack:
+If you're using components with [secret references](interact-with-secrets.md#reference-secrets-in-stack-component-attributes-and-settings) in your stack, you need to make sure that the stack contains a [secrets manager](../../../user-guide/component-guide/secrets-managers/secrets-managers.md) and all of the referenced secrets exist in this secrets manager. To make this process easier, you can use the following CLI command to interactively register all secrets for a stack:
 
 ```shell
 zenml stack register-secrets [<STACK_NAME>]

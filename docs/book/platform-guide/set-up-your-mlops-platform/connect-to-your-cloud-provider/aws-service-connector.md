@@ -1138,7 +1138,7 @@ This Service Connector does not support configuring the local AWS CLI with crede
 
 ## Stack Components use
 
-The [S3 Artifact Store Stack Component](../../../learning/component-gallery/artifact-stores/s3.md) can be connected to a remote AWS S3 bucket through an AWS Service Connector.
+The [S3 Artifact Store Stack Component](../../../user-guide/component-guide/artifact-stores/s3.md) can be connected to a remote AWS S3 bucket through an AWS Service Connector.
 
 The AWS Service Connector can also be used any Orchestrator or Model Deployer stack component flavor that relies on a Kubernetes clusters to manage workloads. This allows EKS Kubernetes container workloads to be managed without the need to configure and maintain explicit AWS or Kubernetes `kubectl` configuration contexts and credentials in the target environment and in the Stack Component.
 
@@ -1152,10 +1152,10 @@ Similarly, Container Registry Stack Components can be connected to an ECR Contai
 
 This is an example of an end-to-end workflow involving Service Connectors that uses a single multi-type AWS Service Connector to give access to multiple resources for multiple Stack Components. A complete ZenML Stack is registered composed of the following Stack Components, all connected through the same Service Connector:
 
-* a [Kubernetes Orchestrator](../../../learning/component-gallery/orchestrators/kubernetes.md) connected to an EKS Kubernetes cluster
-* an [S3 Artifact Store](../../../learning/component-gallery/artifact-stores/s3.md) connected to an S3 bucket
-* an [ECR Container Registry](../../../learning/component-gallery/container-registries/aws.md) stack component connected to an ECR container registry
-* a local [Image Builder](../../../learning/component-gallery/image-builders/local.md)
+* a [Kubernetes Orchestrator](../../../user-guide/component-guide/orchestrators/kubernetes.md) connected to an EKS Kubernetes cluster
+* an [S3 Artifact Store](../../../user-guide/component-guide/artifact-stores/s3.md) connected to an S3 bucket
+* an [ECR Container Registry](../../../user-guide/component-guide/container-registries/aws.md) stack component connected to an ECR container registry
+* a local [Image Builder](../../../user-guide/component-guide/image-builders/local.md)
 
 As a last step, a simple pipeline is run on the resulting Stack.
 

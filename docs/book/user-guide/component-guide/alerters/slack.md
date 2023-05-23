@@ -27,7 +27,7 @@ zenml integration install slack -y
 ```
 
 {% hint style="info" %}
-See the [Integrations](../integrations.md) page for more details on ZenML integrations and how to install and use them.
+See the [Integrations](../integration-overview.md) page for more details on ZenML integrations and how to install and use them.
 {% endhint %}
 
 ### Setting Up a Slack Bot

@@ -48,7 +48,7 @@ zenml service-connector register -i --type gcp
 
 This resource type allows Stack Components to use the GCP Service Connector to connect to any GCP service or resource. When used by Stack Components, they are provided a Python google-auth credentials object populated with a GCP OAuth 2.0 token. This credentials object can then be used to create GCP Python clients for any particular GCP service.
 
-This generic GCP resource type is meant to be used with Stack Components that are not represented by one of the other, more specific resource types like GCS buckets, Kubernetes clusters or Docker registries. For example, it can be used with [the Google Cloud Image Builder](../../../learning/component-gallery/image-builders/gcp.md) stack component, or [the Vertex AI Orchestrator](../../../learning/component-gallery/orchestrators/vertex.md) and [Step Operator](../../../learning/component-gallery/step-operators/vertex.md). It should be accompanied by a matching set of GCP permissions that allow access to the set of remote resources required by the client and Stack Component (see the documentation of each Stack Component for more details).
+This generic GCP resource type is meant to be used with Stack Components that are not represented by one of the other, more specific resource types like GCS buckets, Kubernetes clusters or Docker registries. For example, it can be used with [the Google Cloud Image Builder](../../../user-guide/component-guide/image-builders/gcp.md) stack component, or [the Vertex AI Orchestrator](../../../user-guide/component-guide/orchestrators/vertex.md) and [Step Operator](../../../user-guide/component-guide/step-operators/vertex.md). It should be accompanied by a matching set of GCP permissions that allow access to the set of remote resources required by the client and Stack Component (see the documentation of each Stack Component for more details).
 
 The resource name represents the GCP project that the connector is authorized to access.
 
@@ -728,9 +728,9 @@ This Service Connector does not support configuring the local GCP CLI with crede
 
 ## Stack Components use
 
-The[ GCS Artifact Store Stack Component](../../../learning/component-gallery/artifact-stores/gcp.md) can be connected to a remote GCS bucket through a GCP Service Connector.
+The[ GCS Artifact Store Stack Component](../../../user-guide/component-guide/artifact-stores/gcp.md) can be connected to a remote GCS bucket through a GCP Service Connector.
 
-The [Google Cloud Image Builder Stack Component](../../../learning/component-gallery/image-builders/gcp.md), [VertexAI Orchestrator](../../../learning/component-gallery/orchestrators/vertex.md) and [VertexAI Step Operator](../../../learning/component-gallery/step-operators/vertex.md) can be connected and use the resources of a target GCP project through a GCP Service Connector.&#x20;
+The [Google Cloud Image Builder Stack Component](../../../user-guide/component-guide/image-builders/gcp.md), [VertexAI Orchestrator](../../../user-guide/component-guide/orchestrators/vertex.md) and [VertexAI Step Operator](../../../user-guide/component-guide/step-operators/vertex.md) can be connected and use the resources of a target GCP project through a GCP Service Connector.&#x20;
 
 The GCP Service Connector can also be used with any Orchestrator or Model Deployer stack component flavor that relies on a Kubernetes clusters to manage workloads. This allows GKE Kubernetes container workloads to be managed without the need to configure and maintain explicit GCP or Kubernetes `kubectl` configuration contexts and credentials in the target environment or in the Stack Component itself.
 
@@ -744,10 +744,10 @@ Similarly, Container Registry Stack Components can be connected to a GCR Contain
 
 This is an example of an end-to-end workflow involving Service Connectors that uses a single multi-type GCP Service Connector to give access to multiple resources for multiple Stack Components. A complete ZenML Stack is registered composed of the following Stack Components, all connected through the same Service Connector:
 
-* a [Kubernetes Orchestrator](../../../learning/component-gallery/orchestrators/kubernetes.md) connected to a GKE Kubernetes cluster
-* a [GCS Artifact Store](../../../learning/component-gallery/artifact-stores/gcp.md) connected to a GCS bucket
-* a [GCR Container Registry](../../../learning/component-gallery/container-registries/gcp.md) connected to a GCR container registry
-* a local [Image Builder](../../../learning/component-gallery/image-builders/local.md)
+* a [Kubernetes Orchestrator](../../../user-guide/component-guide/orchestrators/kubernetes.md) connected to a GKE Kubernetes cluster
+* a [GCS Artifact Store](../../../user-guide/component-guide/artifact-stores/gcp.md) connected to a GCS bucket
+* a [GCR Container Registry](../../../user-guide/component-guide/container-registries/gcp.md) connected to a GCR container registry
+* a local [Image Builder](../../../user-guide/component-guide/image-builders/local.md)
 
 As a last step, a simple pipeline is run on the resulting Stack.
 
@@ -991,10 +991,10 @@ Dashboard URL: http://34.148.132.191/workspaces/default/pipelines/cec118d1-d90a-
 
 This is an example of an end-to-end workflow involving Service Connectors that uses multiple single-instance GCP Service Connectors, each giving access to a resource for a Stack Component. A complete ZenML Stack is registered composed of the following Stack Components, all connected through its individual Service Connector:
 
-* a [VertexAI Orchestrator](../../../learning/component-gallery/orchestrators/vertex.md) connected to the GCP project
-* a [GCS Artifact Store](../../../learning/component-gallery/artifact-stores/gcp.md) connected to a GCS bucket
-* a [GCR Container Registry](../../../learning/component-gallery/container-registries/gcp.md) connected to a GCR container registry
-* a [Google Cloud Image Builder](../../../learning/component-gallery/image-builders/gcp.md) connected to the GCP project
+* a [VertexAI Orchestrator](../../../user-guide/component-guide/orchestrators/vertex.md) connected to the GCP project
+* a [GCS Artifact Store](../../../user-guide/component-guide/artifact-stores/gcp.md) connected to a GCS bucket
+* a [GCR Container Registry](../../../user-guide/component-guide/container-registries/gcp.md) connected to a GCR container registry
+* a [Google Cloud Image Builder](../../../user-guide/component-guide/image-builders/gcp.md) connected to the GCP project
 
 As a last step, a simple pipeline is run on the resulting Stack.
 
