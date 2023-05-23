@@ -139,23 +139,23 @@ class EntrypointFunctionDefinition(NamedTuple):
             # If we were to do any type validation for artifacts here, we
             # would not be able to leverage pydantics type coercion (e.g.
             # providing an `int` artifact for a `float` input)
-            pass
-        else:
-            # Not an artifact -> This is a parameter
-            if parameter.annotation is UnmaterializedArtifact:
-                raise RuntimeError(
-                    "Passing parameter for input of type `UnmaterializedArtifact` "
-                    "is not allowed."
-                )
+            return
 
-            self._validate_input_value(parameter=parameter, value=input_)
+        # Not an artifact -> This is a parameter
+        if parameter.annotation is UnmaterializedArtifact:
+            raise RuntimeError(
+                "Passing parameter for input of type `UnmaterializedArtifact` "
+                "is not allowed."
+            )
 
-            if not yaml_utils.is_json_serializable(input_):
-                raise StepInterfaceError(
-                    f"Argument type (`{type(input_)}`) for argument "
-                    f"'{key}' is not JSON "
-                    "serializable."
-                )
+        self._validate_input_value(parameter=parameter, value=input_)
+
+        if not yaml_utils.is_json_serializable(input_):
+            raise StepInterfaceError(
+                f"Argument type (`{type(input_)}`) for argument "
+                f"'{key}' is not JSON "
+                "serializable."
+            )
 
     def _validate_input_value(
         self, parameter: inspect.Parameter, value: Any
