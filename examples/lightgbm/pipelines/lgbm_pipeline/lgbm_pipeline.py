@@ -11,6 +11,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+from steps.data_loader.data_loader_step import data_loader
+from steps.predictor.predictor_step import predictor
+from steps.trainer.trainer_step import trainer
+
 from zenml import pipeline
 from zenml.config import DockerSettings
 from zenml.integrations.constants import LIGHTGBM
@@ -21,11 +25,7 @@ docker_settings = DockerSettings(
 
 
 @pipeline(enable_cache=False, settings={"docker": docker_settings})
-def lgbm_pipeline(
-    data_loader,
-    trainer,
-    predictor,
-):
+def lgbm_pipeline():
     """Links all the steps together in a pipeline."""
     mat_train, mat_test = data_loader()
     model = trainer(mat_train, mat_test)
