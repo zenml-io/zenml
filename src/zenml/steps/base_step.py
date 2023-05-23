@@ -462,7 +462,7 @@ class BaseStep(metaclass=BaseStepMeta):
         # TODO @schustmi: document what this does
         bound_args.apply_defaults()
         for key, value in bound_args.arguments.items():
-            self.entrypoint_definition.validate_input(key=key, input_=value)
+            self.entrypoint_definition.validate_input(key=key, value=value)
             if (
                 key not in artifacts
                 and key not in external_artifacts
