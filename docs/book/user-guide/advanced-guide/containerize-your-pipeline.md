@@ -10,7 +10,7 @@ There are three ways to control this containerization process:
 
 - [Control how and where an image is built](#define-where-an-image-is-built)
 - [Utilize docker images from previous runs](#reuse-docker-image-builds-from-previous-runs)
-- [Customize what gets built into the image](#containerize-your-pipeline)
+- [Customize what gets built into the image](#customize-the-docker-building)
 
 ## Define where an image is built
 
