@@ -30,6 +30,7 @@ from pydantic import BaseConfig, ValidationError, create_model
 from zenml.exceptions import StepInterfaceError
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
+from zenml.steps.external_artifact import ExternalArtifact
 from zenml.steps.utils import parse_return_type_annotations
 from zenml.utils import yaml_utils
 
@@ -81,11 +82,7 @@ def get_step_entrypoint_signature(
     return signature
 
 
-class Artifact:
-    pass
-
-
-class StepArtifact(Artifact):
+class StepArtifact:
     def __init__(
         self,
         invocation_id: str,
@@ -133,11 +130,7 @@ class EntrypointFunctionDefinition(NamedTuple):
     context: Optional[inspect.Parameter]
     legacy_params: Optional[inspect.Parameter]
 
-    def validate_input(
-        self,
-        key: str,
-        value: Union["Artifact", Any],
-    ) -> None:
+    def validate_input(self, key: str, value: Any) -> None:
         """Validates an input to the step entrypoint function.
 
         Args:
@@ -160,7 +153,7 @@ class EntrypointFunctionDefinition(NamedTuple):
 
         parameter = self.inputs[key]
 
-        if isinstance(value, Artifact):
+        if isinstance(value, (StepArtifact, ExternalArtifact)):
             # If we were to do any type validation for artifacts here, we
             # would not be able to leverage pydantics type coercion (e.g.
             # providing an `int` artifact for a `float` input)
