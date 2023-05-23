@@ -12,15 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 from pipelines.facets_pipeline.facets_pipeline import facets_pipeline
-from steps.importer.importer_step import importer
-
-from zenml.integrations.facets.steps.facets_visualization_steps import (
-    facets_visualization_step,
-)
 
 if __name__ == "__main__":
-    pipeline_instance = facets_pipeline(
-        importer=importer(),
-        facets_visualization_step=facets_visualization_step(),
-    )
-    pipeline_instance.run()
+    pipeline_instance = facets_pipeline()
