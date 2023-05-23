@@ -140,12 +140,13 @@
 
 # 🤖 Introduction
 
-🤹 ZenML is an extensible, open-source MLOps framework for creating portable,
-production-ready MLOps pipelines. It's built for Data Scientists, ML Engineers,
-and MLOps Developers to collaborate as they develop to production. 
-Configurability and extensibility are maximized for each persona 
-(Data Scientist, ML Engineer, MLOps Developer) while hiding all complexity
-outside their area of expertise.
+🤹 ZenML is an extensible, open-source MLOps framework for creating portable, production-ready machine learning pipelines. By decoupling infrastructure from code, ZenML enables developers across your organization to collaborate more effectively as they develop to production.
+
+- emoji ZenML gives data scientists the freedom to fully focus on modeling and experimentation while writing code that is production-ready from the get-go.
+
+- emoji ZenML empowers ML engineers to take ownership of the entire ML lifecycle end-to-end. Adopting ZenML means fewer handover points and more visibility on what is happening in your organization.
+
+- emoji ZenML enables MLOps infrastructure experts to define, deploy, and manage sophisticated production environments that are easy to share with colleagues.
 
 ![The long journey from experimentation to production.](docs/book/.gitbook/assets/intro-zenml-overview.png)
 
