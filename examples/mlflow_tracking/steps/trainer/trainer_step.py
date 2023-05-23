@@ -20,7 +20,6 @@ from zenml.client import Client
 from zenml.integrations.mlflow.experiment_trackers import (
     MLFlowExperimentTracker,
 )
-from zenml.steps import BaseParameters
 
 experiment_tracker = Client().active_stack.experiment_tracker
 
@@ -33,18 +32,12 @@ if not experiment_tracker or not isinstance(
     )
 
 
-class TrainerParameters(BaseParameters):
-    """Trainer params."""
-
-    epochs: int = 1
-    lr: float = 0.001
-
-
 @step(experiment_tracker=experiment_tracker.name)
 def tf_trainer(
-    params: TrainerParameters,
     x_train: np.ndarray,
     y_train: np.ndarray,
+    epochs: int = 1,
+    lr: float = 0.0001,
 ) -> tf.keras.Model:
     """Train a neural net from scratch to recognize MNIST digits return our
     model or the learner."""
@@ -56,7 +49,7 @@ def tf_trainer(
     )
 
     model.compile(
-        optimizer=tf.keras.optimizers.Adam(params.lr),
+        optimizer=tf.keras.optimizers.Adam(lr),
         loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
         metrics=["accuracy"],
     )
@@ -65,7 +58,7 @@ def tf_trainer(
     model.fit(
         x_train,
         y_train,
-        epochs=params.epochs,
+        epochs=epochs,
     )
 
     # write model
