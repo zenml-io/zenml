@@ -491,7 +491,7 @@ def test_finding_existing_build(
         ),
     )
     mocker.patch(
-        "zenml.pipelines.build_utils.compute_build_checksum",
+        "zenml.new.pipelines.build_utils.compute_build_checksum",
         return_value="checksum",
     )
     mocker.patch.object(Stack, "get_docker_builds", return_value=[])

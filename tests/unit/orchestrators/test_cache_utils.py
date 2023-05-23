@@ -32,17 +32,14 @@ from zenml.steps.step_invocation import StepInvocation
 
 
 def _compile_step(step: BaseStep) -> Step:
-    # Call the step here to finalize the configuration
-    step()
-
-    pipeline = Pipeline(name="test_pipeline")
+    pipeline = Pipeline(name="test_pipeline", entrypoint=lambda: None)
     invocation = StepInvocation(
         id="",
         step=step,
         input_artifacts={},
         external_artifacts={},
         parameters={},
-        upstream_steps=[],
+        upstream_steps=set(),
         pipeline=pipeline,
     )
 
