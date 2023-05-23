@@ -1,18 +1,16 @@
 ---
-description: Birds eye view on the necessities of your MLOps Platform.
+description: Birds-eye view on the necessities of your MLOps platform.
 ---
 
 # 🏗 Set up your MLOps Platform
 
-To set up your own MLOps Platform with ZenML you need a few ingredients:
+In order to establish your own MLOps platform with ZenML, you need to deploy a few ingredients:
 
-<figure><img src="../../.gitbook/assets/SystemArchitecture (1).png" alt=""><figcaption><p>System Architecture with a deployment of ZenML along with a Cloud Stack</p></figcaption></figure>
+<figure><img src="../../.gitbook/assets/SystemArchitecture (1).png" alt=""><figcaption><p>System architecture with a deployment of ZenML along with a cloud stack</p></figcaption></figure>
 
-### Deployment of the ZenML Server
+## The ZenML server
 
-#### The ZenML Server
-
-The ZenML Server exposes a RESTful API to the client and other consumers
+The ZenML server exposes a RESTful API to the client and other consumers.
 
 #### **MySQL** **Database**
 
@@ -23,10 +21,10 @@ The database will act as the central metadata store that tracks all pipeline run
 For a production setting, you should also set up a secret manager as a backend for all the secrets that will be used to configure stacks
 
 {% hint style="info" %}
-See the following Section to learn about the different ways to [deploy ZenML](deploy-zenml/).
+See the following section to learn about the different ways of [deploying ZenML](deploy-zenml/).
 {% endhint %}
 
-### Deployment of Stacks along with their Components
+## Stacks and their components
 
 #### Compute Infrastructure
 
@@ -63,6 +61,8 @@ Optionally, you can configure an image builder service to build the docker image
 
 Code Repositories can be configured within the ZenML deployment. With a code repository configured the pipeline code no longer needs to be baked into the docker images. Instead, the code is loaded at runtime within the orchestrator.
 
-## Coming Soon: True Client-Server Architecture&#x20;
+{% hint style="info" %}
+#### Coming Soon: True Client-Server Architecture&#x20;
 
 We are hard at work implementing a true client-server architecture where the client no longer needs to have any access to the individual stack components. In the meantime, we recommend using your favorite CI/CD tool to enable using ZenML without the need to configure direct access to stack components from the client machines.&#x20;
+{% endhint %}

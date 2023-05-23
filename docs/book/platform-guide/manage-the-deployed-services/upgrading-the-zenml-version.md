@@ -55,7 +55,7 @@ Optionally also perform a backup before the upgrade.
 {% tab title="Helm" %}
 To upgrade your ZenML server Helm release to a new version, follow the steps below:
 
-* Pull the latest version of the Helm chart from the ZenML github repository, or a version of your choice, e.g.:
+* Pull the latest version of the Helm chart from the ZenML GitHub repository, or a version of your choice, e.g.:
 
 ```bash
 # If you haven't cloned the ZenML repository yet
@@ -89,5 +89,5 @@ Downgrading the server to an older version is not supported and can lead to unex
 {% endhint %}
 
 {% hint style="info" %}
-The version of the python client that connects to the server should be kept at the same version as the server.
+The version of the Python client that connects to the server should be kept at the same version as the server.
 {% endhint %}

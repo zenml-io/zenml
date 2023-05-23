@@ -4,7 +4,7 @@ description: Iterating quickly with ZenML through fast caching.
 
 # Caching in ZenML
 
-Developing machine learning pipelines is very iterative. ZenML speeds you up in this work with caching of steps and pipelines.
+Developing machine learning pipelines is very iterative. ZenML speeds you up in this work with the caching feature of steps and pipelines.
 
 In the logs of your previous runs, you might have noticed at this point that rerunning the pipeline a second time will use caching on the steps:
 
@@ -25,10 +25,10 @@ Using cached version of step_2.
 
 ZenML understands that nothing has changed between subsequent runs, so it re-uses the output of the previous run (the outputs are persisted in the [artifact store](broken-reference/)). This behavior is known as **caching**.
 
-In ZenML, caching is enabled by default. Since ZenML automatically tracks and versions all inputs, outputs, and parameters of steps and pipelines, steps will not be re-executed within the **same** **pipeline** on subsequent pipeline runs as long as there is **no change** in the inputs, parameters or code of a step.
+In ZenML, caching is enabled by default. Since ZenML automatically tracks and versions all inputs, outputs, and parameters of steps and pipelines, steps will not be re-executed within the **same** **pipeline** on subsequent pipeline runs as long as there is **no change** in the inputs, parameters, or code of a step.
 
 {% hint style="warning" %}
-Currently, the caching does not automatically detect changes within the file system or on external APIs. Make sure to **manually** set caching to `False` on steps that depend on **external inputs, file-system changes** or if the step should run regardless of caching.
+Currently, the caching does not automatically detect changes within the file system or on external APIs. Make sure to **manually** set caching to `False` on steps that depend on **external inputs, file-system changes,** or if the step should run regardless of caching.
 {% endhint %}
 
 ### Configuring caching behavior of your pipelines
@@ -69,7 +69,7 @@ first_pipeline(step_1=..., step_2=...).run(enable_cache=False)
 
 The code above disables caching for all steps of your pipeline, no matter what you have configured in the `@step` or `@parameter` decorators.
 
-#### Caching at a step level
+#### Caching at a step-level
 
 Caching can also be explicitly configured at a step level via a parameter of the `@step` decorator:
 

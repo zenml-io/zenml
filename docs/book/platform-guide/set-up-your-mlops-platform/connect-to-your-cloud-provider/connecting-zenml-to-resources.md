@@ -1,6 +1,6 @@
 ---
 description: >-
-  Understand the workflow of using Service Connectors to access external
+  Understanding the workflow of using Service Connectors to access external
   resources with ZenML.
 ---
 
@@ -14,7 +14,7 @@ In this section, we walk through a typical workflow to explain conceptually the 
 
 ## The typical Service Connectors workflow
 
-The first step is _<mark style="color:purple;">finding out what types of resources you can connect ZenML to</mark>_. Maybe you have already planned out the infrastructure options for your MLOps platform and are looking to find whether ZenML can accommodate them. Or perhaps you want to use a particular Stack Component flavor in your Stack and are wondering whether you can use a Service Connector to connect it to external resources.
+The first step is _<mark style="color:purple;">finding out what types of resources you can connect ZenML to</mark>_. Maybe you have already planned out the infrastructure options for your MLOps platform and are looking to find out whether ZenML can accommodate them. Or perhaps you want to use a particular Stack Component flavor in your Stack and are wondering whether you can use a Service Connector to connect it to external resources.
 
 This is where the _Service Connector Type_ concept comes in. For now, it is sufficient to think of Service Connector Types as a way to describe all the different kinds of resources that Service Connectors can mediate access to. This is an example of listing the available Service Connector Types with the ZenML CLI.
 
@@ -43,11 +43,11 @@ $ zenml service-connector list-types
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━┷━━━━━━━┷━━━━━━━━┛
 ```
 
-Let's say our cloud provider of choice is AWS and we're looking to hook up an S3 bucket to an S3 Artifact Store stack component and potentially other AWS resources in addition to that. Note that there is an AWS Service Connector type that we can use to gain access to several types of resources, one of which is an S3 bucket. We'll use that the next steps.
+Let's say our cloud provider of choice is AWS and we're looking to hook up an S3 bucket to an S3 Artifact Store stack component and potentially other AWS resources in addition to that. Note that there is an AWS Service Connector type that we can use to gain access to several types of resources, one of which is an S3 bucket. We'll use that in the next steps.
 
 <details>
 
-<summary>Need more details ? Find out how to access the wealth of information behind Service Connector Types</summary>
+<summary>Need more details? Find out how to access the wealth of information behind Service Connector Types</summary>
 
 A lot more is hidden behind a Service Connector Type than a name and a simple list of resource types. Before using a Service Connector Type to configure a Service Connector, you probably need to understand what it is, what it can offer and what are the supported authentication methods and their requirements. All this can be accessed on-site directly through the CLI. Some examples are included here.
 
@@ -434,4 +434,4 @@ These are some of the advantages of linking an S3 Artifact Store, or any Stack C
 
 </details>
 
-Of course, the Stack Component we just connected to infrastructure is not really useful on its own. We need to _<mark style="color:purple;">make it part of a Stack, set the Stack as active and finally run some pipelines on it</mark>_. But Service Connectors no longer play any visible role in this part, which is why they're so useful: they do all the heavy lifting in the background so you can focus on what matters.
+Of course, the stack component we just connected to the infrastructure is not really useful on its own. We need to _<mark style="color:purple;">make it part of a Stack, set the Stack as active, and finally run some pipelines on it</mark>_. But Service Connectors no longer play any visible role in this part, which is why they're so useful: they do all the heavy lifting in the background so you can focus on what matters.

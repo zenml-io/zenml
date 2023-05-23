@@ -22,7 +22,7 @@ Let us investigate how to traverse this hierarchy level by level:
 
 ZenML keeps a collection of all created pipelines. With `get_pipeline()` you can get a specific pipeline.
 
-#### List all pipeline
+#### List all pipelines
 
 You can also access a list of all your pipelines through the CLI by executing the following command on the terminal:
 
@@ -81,7 +81,7 @@ The sorting of **versions** on a PipelineView is from **newest** to **oldest** w
 
 ## Runs
 
-### Getting runs from a fetched pipeline version
+#### Getting runs from a fetched pipeline version
 
 Each pipeline version can be executed many times. You can get a list of all runs using the `runs` attribute of a PiplineVersionView:
 
@@ -105,7 +105,7 @@ last_run = latest_version.runs[0]
 The sorting of **runs** on a PipelineVersionView is from **newest** to **oldest** with the most recent runs at the beginning of the list.
 {% endhint %}
 
-### Getting runs from a pipeline instance:
+#### Getting runs from a pipeline instance:
 
 Alternatively, you can also access the runs from the pipeline class/instance itself:
 
@@ -134,7 +134,7 @@ last_run = runs[0]
 run = example_pipeline.get_run(run_name=...)
 ```
 
-### Directly getting a run
+#### Directly getting a run
 
 Finally, you can also access a run directly with the `get_run(run_name=...)`:
 
@@ -154,9 +154,11 @@ zenml pipeline runs list
 zenml pipeline runs list -p <MY_PIPELINE_NAME_OR_ID>
 ```
 
-### Runs Configuration
+{% hint style="info" %}
+#### Runs Configuration
 
-Each run has a collection of useful metadata which you can access to ensure all runs are reproducible:
+Each run has a collection of useful metadata which you can access to ensure all runs are reproducible.
+{% endhint %}
 
 #### Git SHA
 
@@ -168,7 +170,7 @@ commit = run.git_sha
 
 #### Status
 
-and The status of a pipeline run can also be found here. There are four possible states: failed, completed, running, and cached:
+The status of a pipeline run can also be found here. There are four possible states: failed, completed, running, and cached:
 
 ```python
 status = run.status
@@ -191,7 +193,7 @@ If you wrote a docstring into your pipeline function, you can retrieve it here a
 pipeline_docstring = run.docstring
 ```
 
-#### Component-Specific Metadata
+#### Component-specific metadata
 
 Depending on the stack components you use, you might have additional component-specific metadata associated with your run, such as the URL to the UI of a remote orchestrator. You can access this component-specific metadata via the `metadata` attribute:
 
@@ -212,7 +214,7 @@ steps = run.steps
 # get the step that was executed first
 first_step = steps[0]
 
-# or get a specific step by name
+# or get a specific step by its name
 step = run.get_step(step="first_step")
 ```
 
@@ -262,7 +264,7 @@ def some_step() -> Output(output_name=int):
 ```
 {% endhint %}
 
-### Visualizing Artifacts
+#### Visualizing Artifacts
 
 ZenML automatically saves visualizations for many common data types. For instance, 3D NumPy Arrays with three channels are automatically visualized as images and data validation reports as embedded HTML visualizations. In Jupyter Notebooks, you can view the visualization of an artifact using the `visualize()` method:
 
@@ -283,7 +285,7 @@ run.visualize()  # visualizes all artifacts produced by this run
 
 In all other runtime environments, please open your ZenML dashboard using `zenml up` and view the visualizations by clicking on the respective artifact in the pipeline run DAG.
 
-### Output Artifact Metadata
+#### Output Artifact Metadata
 
 All output artifacts saved through ZenML will automatically have certain datatype-specific metadata saved with them. NumPy Arrays, for instance, always have their storage size, `shape`, `dtype`, and some statistical properties saved with them. You can access such metadata via the `metadata` attribute of an output, e.g.:
 
@@ -321,13 +323,13 @@ step_1 = pipe.get_runs()[0].get_step(step="step_1")
 output = step_1.output.read()
 ```
 
-## Final note: Fetching older pipeline runs within a step
+## Final note
 
 While most of this document has been focusing on the so-called post-execution workflow (i.e. fetching objects after a pipeline has been completed), it can also be used within the context of a running pipeline.
 
 This is often desirable in cases where a pipeline is running continuously over time and decisions have to be made according to older runs.
 
-E.g. Here, we fetch from within a step the last pipeline run for the same pipeline:
+E.g., we can fetch from within a step the last pipeline run for the same pipeline:
 
 ```python
 from zenml.post_execution import get_pipeline

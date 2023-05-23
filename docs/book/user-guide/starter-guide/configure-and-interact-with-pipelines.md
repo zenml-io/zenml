@@ -8,6 +8,7 @@ In this section, we build out the first ML pipeline. For this, let's get the imp
 
 ```python
 import numpy as np
+
 from sklearn.datasets import load_digits
 from sklearn.model_selection import train_test_split
 from sklearn.base import ClassifierMixin
@@ -24,9 +25,9 @@ pip install matplotlib
 zenml integration install sklearn
 ```
 
-In this case ZenML has an integration with sklearn so you can use the ZenML CLI to install the right version directly.
+In this case, ZenML has an integration with `sklearn` so you can use the ZenML CLI to install the right version directly.
 
-### Multiple Outputs
+#### Steps with multiple outputs
 
 Sometimes a step will have multiple outputs. In order to give each output a unique name, use the `Output()` Annotation. Here we load an open-source dataset and split it into a train and a test dataset.
 
@@ -46,7 +47,7 @@ Sometimes a step will have multiple outputs. In order to give each output a uniq
     return X_train, X_test, y_train, y_test
 </code></pre>
 
-### Parametrize a Step
+#### Parametrizing a step
 
 Here we are creating a training step for a support vector machine classifier with `sklearn`. As we might want to adjust the hyperparameter `gamma` later on, we define it as an input value to the step as well.
 
@@ -73,8 +74,6 @@ If you want to run the step function outside the context of a ZenML pipeline, al
 svc_trainer.entrypoint(X_train=..., y_train=...)
 ```
 {% endhint %}
-
-### Pipeline
 
 Next, we will combine our two steps into a pipeline and run it. As you can see, the parameter gamma is configurable as a pipeline input.
 
@@ -106,11 +105,11 @@ Running it like this `python main.py` should look somewhat like this in the term
 Pipeline run `first_pipeline-2023_04_29-09_19_54_273710` has finished in 0.236s.
 </code></pre>
 
-In the dashboard you should now be able to see this new run, along with its runtime configuration and some visualizations.
+In the dashboard, you should now be able to see this new run, along with its runtime configuration and some visualizations.
 
 <figure><img src="../../.gitbook/assets/DigitsRun.png" alt=""><figcaption><p>Run created by the code in this section along with a visualization of the ground-truth distribution.</p></figcaption></figure>
 
-### Give each pipeline run a name
+#### Give each pipeline run a name
 
 In the output logs of a pipeline run you will see the name of the run:
 
@@ -133,7 +132,7 @@ Pipeline run names must be unique, so if you plan to run your pipelines multiple
 first_pipeline_instance.run(run_name="custom_pipeline_run_name_{{date}}_{{time}}")
 ```
 
-### Code Example
+## Code Example
 
 The following example shows caching in action with the code example from the previous section.
 

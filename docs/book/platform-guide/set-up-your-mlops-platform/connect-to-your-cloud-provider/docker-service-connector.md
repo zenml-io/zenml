@@ -1,7 +1,7 @@
 ---
 description: >-
-  Configure Docker Service Connectors to connect ZenML to Docker container
-  registries
+  Configuring Docker Service Connectors to connect ZenML to Docker container
+  registries.
 ---
 
 # Docker Service Connector

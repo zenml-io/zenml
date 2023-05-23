@@ -13,7 +13,7 @@ A hook executes right after step execution, within the same environment as the s
 
 Here is a short demo for hooks in ZenML:
 
-{% embed url="https://www.youtube.com/embed/KUW2G3EsqF8" %}
+{% embed url="https://www.youtube.com/embed/KUW2G3EsqF8" fullWidth="false" %}
 Failure and Success Hooks in ZenML Short Demo
 {% endembed %}
 
@@ -41,7 +41,7 @@ def my_successful_step() -> int:
 
 In this example, we define two hooks: `on_failure` and `on_success`, which print a message when the step fails or succeeds, respectively. We then use these hooks with two steps, `my_failing_step` and `my_successful_step`. When `my_failing_step` is executed, it raises a `ValueError`, which triggers the `on_failure` hook. Similarly, when `my_successful_step` is executed, it returns an integer successfully, which triggers the on\_success hook.
 
-A step can also be specified as a local user-defined function path (of the form `mymodule.myfile.my_function`). This is particularly useful when defining the hooks via a [YAML Config](broken-reference).
+A step can also be specified as a local user-defined function path (of the form `mymodule.myfile.my_function`). This is particularly useful when defining the hooks via a [YAML Config](broken-reference/).
 
 ## Defining hooks on a pipeline level
 
@@ -88,7 +88,7 @@ def my_step(params: MyParameters)
 
 ## Linking to the `Alerter` Stack component
 
-A common use case is to use the [Alerter](broken-reference) component inside the failure or success hooks to notify relevant people. It is quite easy to do this:
+A common use case is to use the [Alerter](broken-reference/) component inside the failure or success hooks to notify relevant people. It is quite easy to do this:
 
 ```python
 def on_failure(context: StepContext):
@@ -107,7 +107,7 @@ def my_step(...):
     ...
 ```
 
-## Using the OpenAI ChatGPT Failure Hook
+## Using the OpenAI ChatGPT failure hook
 
 The OpenAI ChatGPT failure hook is a hook that uses the OpenAI integration to generate a possible fix for whatever exception caused the step to fail. It is quite easy to use. (You will need [a valid OpenAI API key](https://help.openai.com/en/articles/4936850-where-do-i-find-my-secret-api-key) that has correctly set up billing for this.)
 

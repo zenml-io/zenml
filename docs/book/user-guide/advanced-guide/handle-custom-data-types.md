@@ -4,7 +4,7 @@ description: Using materializers to pass custom data types through steps.
 
 # Handle custom data types
 
-A ZenML pipeline is built in a data-centric way. The outputs and inputs of steps define how steps are connected and the order in which they are executed. Each step should be considered as its very own process that reads and writes its inputs and outputs from and to the [Artifact Store](broken-reference/). This is where **Materializers** come into play.
+A ZenML pipeline is built in a data-centric way. The outputs and inputs of steps define how steps are connected and the order in which they are executed. Each step should be considered as its very own process that reads and writes its inputs and outputs from and to the [artifact store](broken-reference/). This is where **materializers** come into play.
 
 A materializer dictates how a given artifact can be written to and retrieved from the artifact store and also contains all serialization and deserialization logic. Whenever you pass artifacts as outputs from one pipeline step to other steps as inputs, the corresponding materializer for the respective data type defines how this artifact is first serialized and written to the artifact store, and then deserialized and read in the next step.
 
@@ -12,9 +12,9 @@ A materializer dictates how a given artifact can be written to and retrieved fro
 ZenML already includes built-in materializers for many common data types. However, if you want to pass custom objects between pipeline steps, these objects are by default saved using [cloudpickle](https://github.com/cloudpipe/cloudpickle), which is not production-ready because the resulting artifacts cannot be loaded under different Python versions. In such cases, you should consider building a custom Materializer to save your objects in a more robust and efficient format.
 {% endhint %}
 
-## Building a Custom Materializer
+## Custom materializers
 
-### Base Implementation
+#### Base implementation
 
 Before we dive into how custom materializers can be built, let us briefly discuss how materializers in general are implemented. In the following, you can see the implementation of the abstract base class `BaseMaterializer`, which defines the interface of all materializers:
 
@@ -102,21 +102,21 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
         ...
 ```
 
-### Which Data Type to Handle?
+#### Handled data types
 
 Each materializer has an `ASSOCIATED_TYPES` attribute that contains a list of data types that this materializer can handle. ZenML uses this information to call the right materializer at the right time. I.e., if a ZenML step returns a `pd.DataFrame`, ZenML will try to find any materializer that has `pd.DataFrame` in its `ASSOCIATED_TYPES`. List the data type of your custom object here to link the materializer to that data type.
 
-### What Type of Artifact to Generate
+#### The type of the generated artifact
 
 Each materializer also has an `ASSOCIATED_ARTIFACT_TYPE` attribute, which defines what `zenml.enums.ArtifactType` is assigned to this data.
 
 In most cases, you should choose either `ArtifactType.DATA` or `ArtifactType.MODEL` here. If you are unsure, just use `ArtifactType.DATA`. The exact choice is not too important, as the artifact type is only used as a tag in some of ZenML's visualizations.
 
-### Where to Store the Artifact
+#### Target location to store the artifact
 
 Each materializer has a `uri` attribute, which is automatically created by ZenML whenever you run a pipeline and points to the directory of a file system where the respective artifact is stored (some location in the artifact store).
 
-### How to Store and Retrieve the Artifact
+#### Storing and retrieving the artifact
 
 The `load()` and `save()` methods define the serialization and deserialization of artifacts.
 
@@ -139,7 +139,7 @@ To create visualizations, you need to:
 2. Save all visualizations to paths inside `self.uri`
 3. Return a dictionary mapping visualization paths to visualization types.
 
-As an example, check out the implementation of the [zenml.materializers.NumpyMaterializer](https://github.com/zenml-io/zenml/blob/main/src/zenml/materializers/numpy\_materializer.py) that use matplotlib to automatically save or plot certain arrays.
+As an example, check out the implementation of the [zenml.materializers.NumpyMaterializer](https://github.com/zenml-io/zenml/blob/main/src/zenml/materializers/numpy\_materializer.py) that uses `matplotlib` to automatically save or plot certain arrays.
 
 {% hint style="info" %}
 If you would like to disable artifact visualization altogether, you can set `enable_artifact_visualization` at either pipeline, step, or run level via `@pipeline(enable_artifact_visualization=False)` or `@step(enable_artifact_visualization=False)` or `my_pipeline(...).run(enable_artifact_visualization=False)`.
@@ -157,11 +157,11 @@ By default, this method will only extract the storage size of an artifact, but y
 If you would like to disable artifact metadata extraction altogether, you can set `enable_artifact_metadata` at either pipeline, step, or run level via `@pipeline(enable_artifact_metadata=False)` or `@step(enable_artifact_metadata=False)` or `my_pipeline(...).run(enable_artifact_metadata=False)`.
 {% endhint %}
 
-## Using a Custom Materializer
+## Usage
 
 ZenML automatically scans your source code for definitions of materializers and registers them for the corresponding data type, so just having a custom materializer definition in your code is enough to enable the respective data type to be used in your pipelines.
 
-Alternatively, you can also explicitly define which materializer to use for a specific step
+Alternatively, you can also explicitly define which materializer to use for a specific step:
 
 ```python
 @step(output_materializers=MyMaterializer)
@@ -169,7 +169,7 @@ def my_first_step(...) -> ...:
     ...
 ```
 
-Or you can use the `configure()` method of the step. E.g.:
+or you can use the `configure()` method of the step. E.g.:
 
 ```python
 first_pipeline(
@@ -184,7 +184,7 @@ When there are multiple outputs, a dictionary of type `{<OUTPUT_NAME>:<MATERIALI
 Note that `.configure(output_materializers=...)` only needs to be called for the output of the first step that produced an artifact of a given data type, all downstream steps will use the same materializer by default.
 {% endhint %}
 
-### Configuring Materializers at Runtime
+#### Configuring materializers at runtime
 
 As briefly outlined in the [Runtime Configuration](broken-reference/) section, which materializer to use for the output of what step can also be configured within YAML config files.
 
@@ -204,7 +204,7 @@ The name of the output can be found in the function declaration, e.g. `my_step()
 
 Similar to other configuration entries, the materializer `name` refers to the class name of your materializer, and the `file` should contain a path to the module where the materializer is defined.
 
-## Basic Example
+## Basic example
 
 Let's see how materialization works with a basic example. Let's say you have a custom class called `MyObject` that flows between two steps in a pipeline:
 
@@ -221,7 +221,7 @@ class MyObj:
 
 @step
 def my_first_step() -> MyObj:
-    """Step that returns an object of type MyObj"""
+    """Step that returns an object of type MyObj."""
     return MyObj("my_object")
 
 
@@ -265,13 +265,13 @@ class MyMaterializer(BaseMaterializer):
     ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATA
 
     def load(self, data_type: Type[MyObj]) -> MyObj:
-        """Read from artifact store"""
+        """Read from artifact store."""
         with fileio.open(os.path.join(self.uri, 'data.txt'), 'r') as f:
             name = f.read()
         return MyObj(name=name)
 
     def save(self, my_obj: MyObj) -> None:
-        """Write to artifact store"""
+        """Write to artifact store."""
         with fileio.open(os.path.join(self.uri, 'data.txt'), 'w') as f:
             f.write(my_obj.name)
 ```
@@ -280,7 +280,7 @@ class MyMaterializer(BaseMaterializer):
 Pro-tip: Use the ZenML `fileio` module to ensure your materialization logic works across artifact stores (local and remote like S3 buckets).
 {% endhint %}
 
-Now ZenML can use this materializer to handle the outputs and inputs of your customs object. Edit the pipeline as follows to see this in action:
+Now, ZenML can use this materializer to handle the outputs and inputs of your customs object. Edit the pipeline as follows to see this in action:
 
 ```python
 first_pipeline(
@@ -336,20 +336,20 @@ class MyMaterializer(BaseMaterializer):
     ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATA
 
     def load(self, data_type: Type[MyObj]) -> MyObj:
-        """Read from artifact store"""
+        """Read from artifact store."""
         with fileio.open(os.path.join(self.uri, 'data.txt'), 'r') as f:
             name = f.read()
         return MyObj(name=name)
 
     def save(self, my_obj: MyObj) -> None:
-        """Write to artifact store"""
+        """Write to artifact store."""
         with fileio.open(os.path.join(self.uri, 'data.txt'), 'w') as f:
             f.write(my_obj.name)
 
 
 @step
 def my_first_step() -> MyObj:
-    """Step that returns an object of type MyObj"""
+    """Step that returns an object of type MyObj."""
     return MyObj("my_object")
 
 
@@ -374,7 +374,7 @@ first_pipeline(
 
 </details>
 
-## Skipping Materialization
+## Skipping materialization
 
 {% hint style="warning" %}
 Skipping materialization might have unintended consequences for downstream tasks that rely on materialized artifacts. Only skip materialization if there is no other way to do what you want to do.
@@ -447,13 +447,13 @@ def example_pipeline(step_1, step_2, step_3, step_4):
 example_pipeline(step_1(), step_2(), step_3(), step_4()).run()
 ```
 
-## Materializers for Custom Artifact Stores
+## Interaction with custom artifact stores
 
-When creating a custom Artifact Store, you may encounter a situation where the default materializers do not function properly. Specifically, the `fileio.open` method used in these materializers may not be compatible with your custom store due to not being implemented properly.
+When creating a custom artifact store, you may encounter a situation where the default materializers do not function properly. Specifically, the `fileio.open` method used in these materializers may not be compatible with your custom store due to not being implemented properly.
 
 In this case, you can create a modified version of the failing materializer by copying it and modifying it to copy the artifact to a local path, then opening it from there. For example, consider the following implementation of a custom [PandasMaterializer](https://github.com/zenml-io/zenml/blob/main/src/zenml/materializers/pandas\_materializer.py) that works with a custom artifact store. In this implementation, we copy the artifact to a local path because we want to use the `pandas.read_csv` method to read it. If we were to use the `fileio.open` method instead, we would not need to make this copy.
 
-{% hint style="info" %}
+{% hint style="warning" %}
 It is worth noting that copying the artifact to a local path may not always be necessary and can potentially be a performance bottleneck.
 {% endhint %}
 

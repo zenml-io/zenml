@@ -4,14 +4,12 @@ description: Configuring pipelines, steps, and stack components in ZenML.
 
 # Configure steps/pipelines
 
-* [ ] Add the step order to the configuration.
-
 ## Parameterize your Steps
 
-When calling a step in a pipeline, the inputs provided to the step function can either be an **artifact** or a **parameter**. An artifact represents the output of another step that was executed as part of the same pipeline and serves as a means to share data between steps. Parameters, on the other hand, are values provided explicitly when invoking a step. They are not dependent on the output of other steps and allow you to parameterize the behavior of your steps.&#x20;
+When calling a step in a pipeline, the inputs provided to the step function can either be an **artifact** or a **parameter**. An artifact represents the output of another step that was executed as part of the same pipeline and serves as a means to share data between steps. Parameters, on the other hand, are values provided explicitly when invoking a step. They are not dependent on the output of other steps and allow you to parameterize the behavior of your steps.
 
 {% hint style="info" %}
-To allow configuring your steps using a configuration file, only values that can be serialized to JSON using Pydantic can be passed as parameters.
+In order to allow the configuration of your steps using a configuration file, only values that can be serialized to JSON using Pydantic can be passed as parameters.
 {% endhint %}
 
 ```python
@@ -31,21 +29,21 @@ def my_pipeline():
   # my_step(input_1=1, input_2=2)
 ```
 
-**Parameters and Caching**
+**Parameters and caching**
 
 When an input is passed as a parameter, the step will only be cached if all parameter values are exactly the same as for previous executions of the step.
 
-**Artifacts and Caching**
+**Artifacts and caching**
 
-When an artifact is used as a step function input, the step will only be cached if all the  artifacts are exactly the same as for previous executions of the step. This means that if any of the the upstream steps that produce the input artifacts for a step was not cached, the step itself will always be executed.
+When an artifact is used as a step function input, the step will only be cached if all the artifacts are exactly the same as for previous executions of the step. This means that if any of the upstream steps that produce the input artifacts for a step were not cached, the step itself will always be executed.
 
 ## Settings in ZenML
 
 Settings in ZenML allow you to configure runtime configurations for stack components and pipelines. Concretely, they allow you to configure:
 
-* The [resources](broken-reference/) required for a step.
-* Configuring the [containerization](broken-reference/) process of a pipeline (e.g. What requirements get installed in the Docker image).
-* Stack component specific configuration, e.g., if you have an experiment tracker passing in the name of the experiment at runtime.
+* The [resources](broken-reference/) required for a step
+* Configuring the [containerization](broken-reference/) process of a pipeline (e.g. What requirements get installed in the Docker image)
+* Stack component-specific configuration, e.g., if you have an experiment tracker passing in the name of the experiment at runtime
 
 You will learn about all of the above in more detail later, but for now, let's try to understand that all of this configuration flows through one central concept, called `BaseSettings` (From here on, we use `settings` and `BaseSettings` as analogous in this guide).
 
@@ -56,13 +54,13 @@ Settings are categorized into two types:
 * **General settings** that can be used on all ZenML pipelines. Examples of these are:
   * [`DockerSettings`](broken-reference/) to specify docker settings.
   * [`ResourceSettings`](broken-reference/) to specify resource settings.
-* **Stack component specific settings**: These can be used to supply runtime configurations to certain stack components (key= \<COMPONENT\_CATEGORY>.\<COMPONENT\_FLAVOR>). Settings for components not in the active stack will be ignored. Examples of these are:
+* **Stack-component-specific settings**: These can be used to supply runtime configurations to certain stack components (key= \<COMPONENT\_CATEGORY>.\<COMPONENT\_FLAVOR>). Settings for components not in the active stack will be ignored. Examples of these are:
   * [`KubeflowOrchestratorSettings`](broken-reference/) to specify Kubeflow settings.
   * [`MLflowExperimentTrackerSettings`](broken-reference/) to specify MLflow settings.
   * [`WandbExperimentTrackerSettings`](broken-reference/) to specify W\&B settings.
   * [`WhylogsDataValidatorSettings`](broken-reference/) to specify Whylogs settings.
 
-For stack component specific settings, you might be wondering what the difference is between these and the configuration passed in while doing `zenml stack-component register <NAME> --config1=configvalue --config2=configvalue` etc. The answer is that the configuration passed in at registration time is static and fixed throughout all pipeline runs, while the settings can change.
+For stack-component-specific settings, you might be wondering what the difference is between these and the configuration passed in while doing `zenml stack-component register <NAME> --config1=configvalue --config2=configvalue` , etc. The answer is that the configuration passed in at registration time is static and fixed throughout all pipeline runs, while the settings can change.
 
 A good example of this is the [`MLflow Experiment Tracker`](broken-reference/), where configuration which remains static such as the `tracking_url` is sent through at registration time, while runtime configuration such as the `experiment_name` (which might change every pipeline run) is sent through as runtime settings.
 
@@ -76,7 +74,7 @@ Stack Component Config vs Settings in ZenML
 
 #### Using objects or dicts
 
-Settings can be passed in directly as BaseSettings-subclassed objects, or a dict-representation of the object. For example, a Docker configuration can be passed in as follows:
+Settings can be passed in directly as BaseSettings-subclassed objects, or a dictionary-representation of the object. For example, a Docker configuration can be passed in as follows:
 
 ```python
 from zenml.config import DockerSettings
@@ -90,7 +88,7 @@ Or like this:
 settings={'docker': {'requirements': ['pandas']}}
 ```
 
-### How to use settings
+### Utilizing the settings
 
 #### Method 1: Directly on the decorator
 
@@ -105,7 +103,7 @@ The most basic way to set settings is through the `settings` variable that exist
 ```
 
 {% hint style="info" %}
-Once you set settings on a pipeline, they will be applied to all steps with some exception. See the [later section on precedence for more details](configure-steps-and-pipelines.md#hierarchy-and-precedence).
+Once you set settings on a pipeline, they will be applied to all steps with some exceptions. See the [later section on precedence for more details](configure-steps-and-pipelines.md#hierarchy-and-precedence).
 {% endhint %}
 
 #### Method 2: On the step/pipeline instance
@@ -137,7 +135,7 @@ pipeline_instance.run(settings=...)
 
 #### Method 3: Configuring with YAML
 
-As all settings can be passed through as a dict, users have the option to send all configuration in via a YAML file. This is useful in situations where code changes are not desirable.
+As all settings can be passed through as a dictionary, users have the option to send all configurations in via a YAML file. This is useful in situations where code changes are not desirable.
 
 To use a YAML file, you must pass it in the `run` method of a pipeline instance:
 
@@ -158,7 +156,7 @@ pipeline_instance = my_pipeline(
 pipeline_instance.run(config_path='/local/path/to/config.yaml')
 ```
 
-The format of a YAML config file is exactly the same as the dict you would pass in python in the above two sections. The step specific settings are nested in a key called `steps`. Here is rough skeleton of a valid YAML config. All keys are optional.
+The format of a YAML config file is exactly the same as the dictionary you would pass in Python in the above two sections. The step-specific settings are nested in a key called `steps`. Here is a rough skeleton of a valid YAML config. All keys are optional.
 
 ```yaml
 enable_cache: True
@@ -181,7 +179,7 @@ ZenML provides a convenient method that takes a pipeline instance and generates 
 pipeline_instance.write_run_configuration_template(path='/local/path/to/config.yaml')
 ```
 
-This will write a template file at `/local/path/to/config.yaml` with a commented out YAML file with all possible options that the pipeline instance can take.
+This will write a template file at `/local/path/to/config.yaml` with a commented-out YAML file with all possible options that the pipeline instance can take.
 
 Here is an example of a YAML config file generated from the above method:
 
@@ -278,7 +276,7 @@ steps:
 
 ### The `extra` dict
 
-You might have noticed another dict that is available to pass through to steps and pipelines called `extra`. This dict is meant to be used to pass any configuration down to the pipeline, step, or stack components that the user has use of.
+You might have noticed another dictionary that is available to be passed to steps and pipelines called `extra`. This dictionary is meant to be used to pass any configuration down to the pipeline, step, or stack components that the user has use of.
 
 An example of this is if I want to tag a pipeline, I can do the following:
 
@@ -301,7 +299,7 @@ print(p.runs[0].pipeline_configuration['extra'])
 
 ### Hierarchy and precedence
 
-Some settings can be configured on pipelines and steps, some only on one of the two. Pipeline level settings will be automatically applied to all steps, but if the same setting is configured on a step as well that takes precedence. The next section explains in more detail how the step level settings will be merged with pipeline settings.
+Some settings can be configured on pipelines and steps, some only on one of the two. Pipeline-level settings will be automatically applied to all steps, but if the same setting is configured on a step as well that takes precedence. The next section explains in more detail how the step-level settings will be merged with pipeline settings.
 
 ### Merging settings on class/instance/run:
 
@@ -315,8 +313,12 @@ def my_step() -> None:
   ...
 
 step_instance = my_step()
-step_instance.configure(settings={"resources": ResourceSettings(gpu_count=1, memory="2GB")})
-step_instance.configuration.settings["resources"] # cpu_count: 2, gpu_count=1, memory="2GB"
+step_instance.configure(
+  settings={"resources": ResourceSettings(gpu_count=1, memory="2GB")}
+  )
+  
+step_instance.configuration.settings["resources"] 
+# cpu_count: 2, gpu_count=1, memory="2GB"
 ```
 
 In the above example, the two settings were automatically merged.

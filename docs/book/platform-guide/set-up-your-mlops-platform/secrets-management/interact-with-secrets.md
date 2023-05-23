@@ -2,7 +2,7 @@
 description: Managing your secrets with ZenML.
 ---
 
-# Interact with Secrets
+# Interact with secrets
 
 ## How to create a secret&#x20;
 
@@ -32,9 +32,9 @@ zenml secret create <SECRET_NAME> \
 
 The CLI also includes commands that can be used to list, update and delete secrets. A full guide on using the CLI to create, access, update and delete secrets is available [here](https://apidocs.zenml.io/latest/cli/#zenml.cli--secrets-management).
 
-### Interactively register missing secrets for your stack
+#### Interactively register missing secrets for your stack
 
-If you're using components with [secret references](interact-with-secrets.md#reference-secrets-in-stack-component-attributes-and-settings) in your stack, you need to make sure that the stack contains a [secrets manager](../../../learning/component-gallery/secrets-managers/secrets-managers.md) and all the referenced secrets exist in this secrets manager. To make this process easier, you can use the following CLI command to interactively register all secrets for a stack:
+If you're using components with [secret references](interact-with-secrets.md#reference-secrets-in-stack-component-attributes-and-settings) in your stack, you need to make sure that the stack contains a [secrets manager](../../../learning/component-gallery/secrets-managers/secrets-managers.md) and all of the referenced secrets exist in this secrets manager. To make this process easier, you can use the following CLI command to interactively register all secrets for a stack:
 
 ```shell
 zenml stack register-secrets [<STACK_NAME>]
@@ -102,7 +102,7 @@ zenml experiment-tracker register mlflow \
 
 When using secret references in your stack, ZenML will validate that all secrets and keys referenced in your stack components exist before running a pipeline. This helps us fail early so your pipeline doesn't fail after running for some time due to some missing secret.
 
-This validation by default needs to fetch and read every secret to make sure that both the secret and the specified key-value pair exist. This can take quite some time and might fail if you don't have the permissions to read secrets.
+This validation by default needs to fetch and read every secret to make sure that both the secret and the specified key-value pair exist. This can take quite some time and might fail if you don't have permission to read secrets.
 
 You can use the environment variable `ZENML_SECRET_VALIDATION_LEVEL` to disable or control the degree to which ZenML validates your secrets:
 
