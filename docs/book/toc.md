@@ -2,7 +2,7 @@
 
 ## Getting Started
 
-* [⭐ Introduction](introduction.md)
+* [⭐ Introduction](getting-started/introduction.md)
 * [🧙 Installation](getting-started/installation.md)
 * [🪄 Core concepts](getting-started/core-concepts.md)
 

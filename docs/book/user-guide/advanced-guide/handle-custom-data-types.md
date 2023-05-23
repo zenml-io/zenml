@@ -135,7 +135,7 @@ Optionally, you can override the `save_visualizations()` method to
 automatically save visualizations for all artifacts saved by your materializer.
 These visualizations are then shown next to your artifacts in the dashboard:
 
-![Evidently Artifact Visualization Example](../../assets/dashboard/artifact_visualization.png)
+![Evidently Artifact Visualization Example](../../.gitbook/assets/artifact_visualization_2.png)
 
 They can also be displayed in Jupyter notebooks via 
 [post-execution visualization](../../starter-guide/pipelines/fetching-pipelines.md#visualizing-artifacts).
