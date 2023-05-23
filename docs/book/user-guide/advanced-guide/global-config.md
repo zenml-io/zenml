@@ -4,8 +4,6 @@ description: Understanding the global settings of your ZenML installation.
 
 # Global settings of ZenML
 
-## Global config directory
-
 The information about the global settings of ZenML on a machine is kept in a folder commonly referred to as the **ZenML Global Config Directory** or the **ZenML Config Path**. The location of this folder depends on the operating system type and the current system user, but is usually located in the following locations:
 
 * Linux: `~/.config/zenml`
@@ -85,7 +83,7 @@ In addition to the above, you may also find the following files and folders unde
 * `zenml_examples` - used as a local cache by the `zenml example` command, where the pulled ZenML examples are stored.
 * `kubeflow` - this is where the Kubeflow orchestrators that are part of a stack store some of their configuration and logs.
 
-## Usage Analytics
+## Usage analytics
 
 In order to help us better understand how the community uses ZenML, the pip package reports **anonymized** usage statistics. You can always opt-out by using the CLI command:
 
@@ -113,7 +111,7 @@ In both versions, none of the data sent can identify you individually but allows
 
 No, we won't. Our sole purpose of contacting you will be to ask for feedback (e.g. in the shape of a user interview). These interviews help the core team understand usage better and prioritize feature requests. If you have any concerns about data privacy and the usage of personal information, please [contact us](mailto:support@zenml.io), and we will try to alleviate any concerns as soon as possible.
 
-## Version Mismatch (Downgrading)
+## Version mismatch (downgrading)
 
 If you've recently downgraded your ZenML version to an earlier release or installed a newer version on a different environment on the same machine, you might encounter an error message when running ZenML that says:
 

@@ -155,7 +155,7 @@ zenml pipeline runs list -p <MY_PIPELINE_NAME_OR_ID>
 ```
 
 {% hint style="info" %}
-#### Runs Configuration
+#### Runs configuration
 
 Each run has a collection of useful metadata which you can access to ensure all runs are reproducible.
 {% endhint %}

@@ -2,9 +2,9 @@
 description: Understanding how and when the version of a pipeline is incremented.
 ---
 
-# Version Pipelines
+# Version pipelines
 
-You might have noticed that when you run a pipeline in ZenML with the same name, but with different steps, it creates a new _version_ of the pipeline. Consider our example pipeline:
+You might have noticed that when you run a pipeline in ZenML with the same name, but with different steps, it creates a new **version** of the pipeline. Consider our example pipeline:
 
 ```python
 @pipeline

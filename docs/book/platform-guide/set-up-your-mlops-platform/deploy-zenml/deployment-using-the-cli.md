@@ -288,16 +288,16 @@ The YAML file should have the following structure when connecting to a ZenML ser
 
 ```yaml
 # The URL of the ZenML server
-url: ...
+url: 
 
 # The username and password to use for authentication
-username: ...
-password: ...
+username: 
+password: 
 
 # Either a boolean, in which case it controls whether the server's TLS 
 # certificate is verified, or a string, in which case it must be a path 
 # to a CA certificate bundle to use or the CA bundle value itself
-verify_ssl: ...
+verify_ssl: 
 ```
 
 Here is an example of a ZenML server YAML configuration file:

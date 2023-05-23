@@ -60,7 +60,7 @@ zenml hub clone <PLUGIN_NAME>
 {% tab title="Dashboard" %}
 You can see the available plugins on the `Plugins` page:
 
-![Dashboard List Plugin](../starter-guide/broken-reference)
+![Dashboard List Plugin](broken-reference)
 
 You can browse through the plugins to see more details.
 {% endtab %}
@@ -74,7 +74,7 @@ zenml hub list
 
 You should see a table similar to:
 
-![CLI List Plugin](../starter-guide/broken-reference)
+![CLI List Plugin](broken-reference)
 {% endtab %}
 {% endtabs %}
 
@@ -90,7 +90,7 @@ If you haven't used the ZenML Hub before, this process will create a ZenML Hub a
 {% tab title="Dashboard" %}
 In order to log in through the dashboard, you can use the connect button on the Plugins page.
 
-![Dashboard Login](../starter-guide/broken-reference)
+![Dashboard Login](broken-reference)
 
 Similar to the CLI, you can disconnect your account using the Disconnect button.
 {% endtab %}
@@ -118,7 +118,7 @@ After logging in, you can start submitting your own plugins. The submitted plugi
 {% tab title="Dashboard" %}
 If you are submitting your plugin through the dashboard, you need to provide the required metadata about your plugin.
 
-![Dashboard Create Plugin](../starter-guide/broken-reference)
+![Dashboard Create Plugin](broken-reference)
 {% endtab %}
 
 {% tab title="CLI" %}
