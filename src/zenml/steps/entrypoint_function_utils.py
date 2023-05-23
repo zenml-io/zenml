@@ -93,6 +93,7 @@ def get_step_entrypoint_signature(
 
 
 class StepArtifact:
+    """Class to represent step output artifacts."""
     def __init__(
         self,
         invocation_id: str,
@@ -100,6 +101,14 @@ class StepArtifact:
         annotation: Any,
         pipeline: "Pipeline",
     ) -> None:
+        """Initialize a step artifact.
+
+        Args:
+            invocation_id: The ID of the invocation that produces this artifact.
+            output_name: The name of the output that produces this artifact.
+            annotation: The output type annotation.
+            pipeline: The pipeline which the invocation is part of.
+        """
         self.invocation_id = invocation_id
         self.output_name = output_name
         self.annotation = annotation
