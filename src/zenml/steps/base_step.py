@@ -428,8 +428,6 @@ class BaseStep(metaclass=BaseStepMeta):
                 f"Wrong arguments when calling step '{self.name}': {e}"
             ) from e
 
-        bound_args.apply_defaults()
-
         artifacts = {}
         external_artifacts = {}
         parameters = {}
@@ -457,6 +455,17 @@ class BaseStep(metaclass=BaseStepMeta):
                         "artifacts which will improve this behavior."
                     )
             else:
+                parameters[key] = value
+
+        # TODO @schustmi: document what this does
+        bound_args.apply_defaults()
+        for key, value in bound_args.arguments.items():
+            self.entrypoint_definition.validate_input(key=key, input_=value)
+            if (
+                key not in artifacts
+                and key not in external_artifacts
+                and key not in self.configuration.parameters
+            ):
                 parameters[key] = value
 
         return artifacts, external_artifacts, parameters
