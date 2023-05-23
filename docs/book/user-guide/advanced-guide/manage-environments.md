@@ -12,13 +12,13 @@ In a ZenML deployment, you might have to manage multiple environments, such as y
 
 ## The Client environment
 
-The client environment is the environment in which zenml pipelines are run. This is usually a local development environment but often in production, it can be a [CI runner](../../platform-guide/set-up-your-mlops-platform/productionalize-with-ci-cd-ct.md). To manage dependencies in this environment, you can use your preferred package manager, such as `pip` or `poetry`. You can create a virtual environment and install the necessary packages there. This will help you avoid conflicts with other projects and make it easier to share your environment with your team. Make sure to install the ZenML package and any additional [integrations](../component-guide/) you need for your pipelines.
+The client environment is the environment in which zenml pipelines are run. This is usually a local development environment but often in production, it can be a [CI runner](../../platform-guide/set-up-your-mlops-platform/productionalize-with-ci-cd-ct.md). To manage dependencies in this environment, you can use your preferred package manager, such as `pip` or `poetry`. You can create a virtual environment and install the necessary packages there. This will help you avoid conflicts with other projects and make it easier to share your environment with your team. Make sure to install the ZenML package and any additional [integrations](../component-guide/component-guide.md) you need for your pipelines.
 
 To summarize, the client environment needs the ZenML dependency and all other dependencies that are required to run your pipeline. It often generates the [pipeline build environment](manage-environments.md#the-pipeline-build-environment)
 
 ## The ZenML Server environment
 
-The ZenML server environment is a FastAPI application that manages your pipelines and their metadata. It is the environment you get when you [deploy ZenML](../../platform-guide/set-up-your-mlops-platform/deploy-zenml/) and usually has the ZenML Dashboard built into it. This environment should have the ZenML package and some extra dependencies involved. To manage dependencies in the ZenML server environment, you can install them when [deploying ZenML](../../platform-guide/set-up-your-mlops-platform/deploy-zenml/). However, you would only need to do this when you have custom integrations as most necessary integrations come built-in.
+The ZenML server environment is a FastAPI application that manages your pipelines and their metadata. It is the environment you get when you [deploy ZenML](../../platform-guide/set-up-your-mlops-platform/deploy-zenml/deploy-zenml.md) and usually has the ZenML Dashboard built into it. This environment should have the ZenML package and some extra dependencies involved. To manage dependencies in the ZenML server environment, you can install them when [deploying ZenML](../../platform-guide/set-up-your-mlops-platform/deploy-zenml/deploy-zenml.md). However, you would only need to do this when you have custom integrations as most necessary integrations come built-in.
 
 ## The `build` environments
 

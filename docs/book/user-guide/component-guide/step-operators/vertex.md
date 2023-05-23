@@ -64,7 +64,7 @@ ZenML will build a Docker image called `<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE
 
 #### Additional configuration
 
-For additional configuration of the Vertex step operator, you can pass `VertexStepOperatorSettings` when defining or running your pipeline. Check out the [API docs](https://apidocs.zenml.io/latest/integration\_code\_docs/integrations-gcp/#zenml.integrations.gcp.flavors.vertex\_step\_operator\_flavor.VertexStepOperatorSettings) for a full list of available attributes and [this docs page](../../advanced-guide/pipelines/settings.md) for more information on how to specify settings.
+For additional configuration of the Vertex step operator, you can pass `VertexStepOperatorSettings` when defining or running your pipeline. Check out the [API docs](https://apidocs.zenml.io/latest/integration\_code\_docs/integrations-gcp/#zenml.integrations.gcp.flavors.vertex\_step\_operator\_flavor.VertexStepOperatorSettings) for a full list of available attributes and [this docs page](../../../learning/advanced-guide/pipelines/settings.md) for more information on how to specify settings.
 
 A concrete example of using the Vertex step operator can be found [here](https://github.com/zenml-io/zenml/tree/main/examples/step\_operator\_remote\_training).
 

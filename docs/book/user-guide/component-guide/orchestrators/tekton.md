@@ -7,7 +7,7 @@ description: Orchestrating your pipelines to run on Tekton.
 The Tekton orchestrator is an [orchestrator](orchestrators.md) flavor provided with the ZenML `tekton` integration that uses [Tekton Pipelines](https://tekton.dev/) to run your pipelines.
 
 {% hint style="warning" %}
-This component is only meant to be used within the context of a [remote ZenML deployment scenario](../../getting-started/deploying-zenml/deploying-zenml.md). Usage with a local ZenML deployment may lead to unexpected behavior!
+This component is only meant to be used within the context of a [remote ZenML deployment scenario](../../../learning/getting-started/deploying-zenml/deploying-zenml.md). Usage with a local ZenML deployment may lead to unexpected behavior!
 {% endhint %}
 
 ### When to use it
@@ -25,7 +25,7 @@ You'll first need to set up a Kubernetes cluster and deploy Tekton Pipelines:
 
 {% tabs %}
 {% tab title="AWS" %}
-* A remote ZenML server. See the [deployment guide](../../getting-started/deploying-zenml/deploying-zenml.md) for more information.
+* A remote ZenML server. See the [deployment guide](../../../learning/getting-started/deploying-zenml/deploying-zenml.md) for more information.
 * Have an existing AWS [EKS cluster](https://docs.aws.amazon.com/eks/latest/userguide/create-cluster.html) set up.
 * Make sure you have the [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html) set up.
 *   Download and [install](https://kubernetes.io/docs/tasks/tools/) `kubectl` and [configure](https://aws.amazon.com/premiumsupport/knowledge-center/eks-cluster-connection/) it to talk to your EKS cluster using the following command:
@@ -37,7 +37,7 @@ You'll first need to set up a Kubernetes cluster and deploy Tekton Pipelines:
 {% endtab %}
 
 {% tab title="GCP" %}
-* A remote ZenML server. See the [deployment guide](../../getting-started/deploying-zenml/deploying-zenml.md) for more information.
+* A remote ZenML server. See the [deployment guide](../../../learning/getting-started/deploying-zenml/deploying-zenml.md) for more information.
 * Have an existing GCP [GKE cluster](https://cloud.google.com/kubernetes-engine/docs/quickstart) set up.
 * Make sure you have the [Google Cloud CLI](https://cloud.google.com/sdk/docs/install-sdk) set up first.
 *   Download and [install](https://kubernetes.io/docs/tasks/tools/) `kubectl` and [configure](https://cloud.google.com/kubernetes-engine/docs/how-to/cluster-access-for-kubectl) it to talk to your GKE cluster using the following command:
@@ -49,7 +49,7 @@ You'll first need to set up a Kubernetes cluster and deploy Tekton Pipelines:
 {% endtab %}
 
 {% tab title="Azure" %}
-* A remote ZenML server. See the [deployment guide](../../getting-started/deploying-zenml/deploying-zenml.md) for more information.
+* A remote ZenML server. See the [deployment guide](../../../learning/getting-started/deploying-zenml/deploying-zenml.md) for more information.
 * Have an existing [AKS cluster](https://azure.microsoft.com/en-in/services/kubernetes-service/#documentation) set up.
 * Make sure you have the [`az` CLI](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli) set up first.
 *   Download and [install](https://kubernetes.io/docs/tasks/tools/) `kubectl` and it to talk to your AKS cluster using the following command:
@@ -165,7 +165,7 @@ tekton_settings = TektonOrchestratorSettings(
   ...
 ```
 
-Check out the [API docs](https://apidocs.zenml.io/latest/integration\_code\_docs/integrations-tekton/#zenml.integrations.tekton.flavors.tekton\_orchestrator\_flavor.TektonOrchestratorSettings) for a full list of available attributes and [this docs page](../../advanced-guide/pipelines/settings.md) for more information on how to specify settings.
+Check out the [API docs](https://apidocs.zenml.io/latest/integration\_code\_docs/integrations-tekton/#zenml.integrations.tekton.flavors.tekton\_orchestrator\_flavor.TektonOrchestratorSettings) for a full list of available attributes and [this docs page](../../../learning/advanced-guide/pipelines/settings.md) for more information on how to specify settings.
 
 A concrete example of using the Tekton orchestrator can be found [here](https://github.com/zenml-io/zenml/tree/main/examples/tekton\_pipelines\_orchestration).
 

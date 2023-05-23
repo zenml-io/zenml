@@ -11,8 +11,7 @@ ZenML helps you standardize your ML workflows as **Pipelines** consisting of dec
 The simplest ZenML pipeline could look like this:
 
 ```python
-from zenml.pipelines.new import pipeline
-from zenml.steps import step
+from zenml import pipeline, step
 
 @step
 def step_1() -> str:

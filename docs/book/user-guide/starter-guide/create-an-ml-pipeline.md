@@ -2,7 +2,7 @@
 description: Learning how to configure pipelines and their steps.
 ---
 
-# Create an ML Pipeline
+# Create an ML pipeline
 
 In this section, we build out the first ML pipeline. For this, let's get the imports out of the way first:
 
@@ -14,8 +14,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.base import ClassifierMixin
 from sklearn.svm import SVC
 
-from zenml.pipelines.new import pipeline
-from zenml.steps import Output, step
+from zenml import pipeline, step
 ```
 
 Make sure to install the requirements as well:
@@ -147,8 +146,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.base import ClassifierMixin
 from sklearn.svm import SVC
 
-from zenml.pipelines.new import pipeline
-from zenml.steps import Output, step
+from zenml import pipeline, step
 
 
 @step

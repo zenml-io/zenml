@@ -152,7 +152,7 @@ def my_step(
 
 Doing the above auto-magically logs all the data, metrics, and results within the step, no further action is required!
 
-Check out the [API docs](https://apidocs.zenml.io/latest/integration\_code\_docs/integrations-wandb/#zenml.integrations.wandb.flavors.wandb\_experiment\_tracker\_flavor.WandbExperimentTrackerSettings) for a full list of available attributes and [this docs page](../../advanced-guide/pipelines/settings.md) for more information on how to specify settings.
+Check out the [API docs](https://apidocs.zenml.io/latest/integration\_code\_docs/integrations-wandb/#zenml.integrations.wandb.flavors.wandb\_experiment\_tracker\_flavor.WandbExperimentTrackerSettings) for a full list of available attributes and [this docs page](../../../learning/advanced-guide/pipelines/settings.md) for more information on how to specify settings.
 
 You can also check out our examples pages for working examples that use the Weights & Biases Experiment Tracker in their stacks:
 
