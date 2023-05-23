@@ -18,7 +18,6 @@ import subprocess
 import sys
 import json
 import yaml
-import ast
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -576,13 +575,6 @@ def convert_str_to_dict(string) -> dict:
     Returns:
         dict_: Returns dict from str -> Json/Yaml/dict -> dict
     """
-    try:
-        dict_ = ast.literal_eval(string)
-        if isinstance(dict_, dict):
-            return dict_
-    except (ValueError, TypeError, SyntaxError):
-        pass
-
     try:
         dict_ = json.loads(string)
         return dict_
