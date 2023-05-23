@@ -14,7 +14,7 @@
 """Implementation of the TensorFlow Keras materializer."""
 
 import tempfile
-from typing import TYPE_CHECKING, Any, Dict, Type
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, Tuple, Type
 
 from tensorflow import keras
 from tensorflow.python.keras.utils.layer_utils import count_params
@@ -31,8 +31,8 @@ if TYPE_CHECKING:
 class KerasMaterializer(BaseMaterializer):
     """Materializer to read/write Keras models."""
 
-    ASSOCIATED_TYPES = (keras.Model,)
-    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.MODEL
+    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (keras.Model,)
+    ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.MODEL
 
     def load(self, data_type: Type[Any]) -> keras.Model:
         """Reads and returns a Keras model after copying it to temporary path.
@@ -43,8 +43,6 @@ class KerasMaterializer(BaseMaterializer):
         Returns:
             A tf.keras.Model model.
         """
-        super().load(data_type)
-
         # Create a temporary directory to store the model
         temp_dir = tempfile.TemporaryDirectory()
 
@@ -65,8 +63,6 @@ class KerasMaterializer(BaseMaterializer):
         Args:
             model: A tf.keras.Model model.
         """
-        super().save(model)
-
         # Create a temporary directory to store the model
         temp_dir = tempfile.TemporaryDirectory()
         model.save(temp_dir.name)
@@ -86,7 +82,6 @@ class KerasMaterializer(BaseMaterializer):
         Returns:
             The extracted metadata as a dictionary.
         """
-        super().extract_metadata(model)
         return {
             "num_layers": len(model.layers),
             "num_params": count_params(model.weights),

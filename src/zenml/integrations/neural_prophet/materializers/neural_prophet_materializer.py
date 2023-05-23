@@ -13,15 +13,14 @@
 #  permissions and limitations under the License.
 """Implementation of the Neural Prophet materializer."""
 
-import os
-from typing import Any, Type
+from typing import Any, ClassVar, Tuple, Type
 
-import torch
 from neuralprophet import NeuralProphet
 
 from zenml.enums import ArtifactType
-from zenml.io import fileio
-from zenml.materializers.base_materializer import BaseMaterializer
+from zenml.integrations.pytorch.materializers.base_pytorch_materializer import (
+    BasePyTorchMaterliazer,
+)
 
 # TODO [ENG-794]: The integration consists of a simple materializer that uses the
 #  torch load and save methods which is the [current recommended way of storing
@@ -31,31 +30,9 @@ from zenml.materializers.base_materializer import BaseMaterializer
 DEFAULT_FILENAME = "entire_model.pt"
 
 
-class NeuralProphetMaterializer(BaseMaterializer):
+class NeuralProphetMaterializer(BasePyTorchMaterliazer):
     """Materializer to read/write NeuralProphet models."""
 
-    ASSOCIATED_TYPES = (NeuralProphet,)
-    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.MODEL
-
-    def load(self, data_type: Type[Any]) -> NeuralProphet:
-        """Reads and returns a NeuralProphet model.
-
-        Args:
-            data_type: A NeuralProphet model object.
-
-        Returns:
-            A loaded NeuralProphet model.
-        """
-        super().load(data_type)
-        with fileio.open(os.path.join(self.uri, DEFAULT_FILENAME), "rb") as f:
-            return torch.load(f)
-
-    def save(self, model: NeuralProphet) -> None:
-        """Writes a NeuralProphet model.
-
-        Args:
-            model: A NeuralProphet model object.
-        """
-        super().save(model)
-        with fileio.open(os.path.join(self.uri, DEFAULT_FILENAME), "wb") as f:
-            torch.save(model, f)
+    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (NeuralProphet,)
+    ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.MODEL
+    FILENAME: ClassVar[str] = DEFAULT_FILENAME

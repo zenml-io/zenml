@@ -11,13 +11,29 @@ The local Artifact Store is a built-in ZenML [Artifact Store](artifact-stores.md
 The local Artifact Store is a great way to get started with ZenML, as it doesn't require you to provision additional local resources or to interact with managed object-store services like Amazon S3 and Google Cloud Storage. All you need is the local filesystem. You should use the local Artifact Store if you're just evaluating or getting started with ZenML, or if you are still in the experimental phase and don't need to share your pipeline artifacts (dataset, models, etc.) with others.
 
 {% hint style="warning" %}
-The local Artifact Store is not meant to be utilized in production. The local filesystem cannot be shared across your team and the artifacts stored in it cannot be accessed from other machines. This also means that artifact visualizations will not be available when using a local Artifact Store through a ZenML instance deployed in the cloud. Furthermore, the local Artifact Store doesn't cover services like high availability, scalability, backup and restore, and other features that are expected from a production-grade MLOps system.
+The local Artifact Store is not meant to be utilized in production. The local
+filesystem cannot be shared across your team and the artifacts stored in it
+cannot be accessed from other machines. This also means that
+[artifact visualizations](../../starter-guide/pipelines/fetching-pipelines.md#visualizing-artifacts)
+will not be available when using a local Artifact Store through a
+[ZenML instance deployed in the cloud](../../getting-started/deploying-zenml/deploying-zenml.md#deploying-zenml-in-the-cloud-remote-deployment-of-the-http-server-and-database).
+Furthermore, the local Artifact Store doesn't cover services like
+high-availability, scalability, backup and restore and other features that are
+expected from a production grade MLOps system.
 
 The fact that it stores artifacts on your local filesystem also means that not all stack components can be used in the same stack as a local Artifact Store:
 
-* only [Orchestrators](../orchestrators/orchestrators.md) running on the local machine, such as the [local Orchestrator](../orchestrators/local.md), a [local Kubeflow Orchestrator](../orchestrators/kubeflow.md), or a [local Kubernetes Orchestrator](../orchestrators/kubernetes.md) can be combined with a local Artifact Store
-* only [Model Deployers](../model-deployers/model-deployers.md) that are running locally, such as the [MLflow Model Deployer](../model-deployers/mlflow.md) can be used in combination with a local Artifact Store
-* [Step Operators](../step-operators/step-operators.md): none of the Step Operators can be used in the same stack as a local Artifact Store, given that their very purpose is to run ZenML steps in remote specialized environments
+* only [Orchestrators](../orchestrators/orchestrators.md) running on the local
+machine, such as the [local Orchestrator](../orchestrators/local.md),
+a [local Kubeflow Orchestrator](../orchestrators/kubeflow.md), or a
+[local Kubernetes Orchestrator](../orchestrators/kubernetes.md) can be combined
+with a local Artifact Store
+* only [Model Deployers](../model-deployers/model-deployers.md) that are running
+locally, such as the [MLflow Model Deployer](../model-deployers/mlflow.md),
+can be used in combination with a local Artifact Store
+* [Step Operators](../step-operators/step-operators.md): none of the Step Operators can be used
+in the same stack as a local Artifact Store, given that their very purpose is
+to run ZenML steps in remote specialized environments
 
 As you transition to a team setting or a production setting, you can replace the local Artifact Store in your stack with one of the other flavors that are better suited for these purposes, with no changes required in your code.
 {% endhint %}

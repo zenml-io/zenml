@@ -13,6 +13,16 @@
 #  permissions and limitations under the License.
 """Recipes for ZenML stacks."""
 
-from zenml.recipes.stack_recipe_service import StackRecipeService
+from zenml.recipes.stack_recipe_service import (
+    GitStackRecipesHandler,
+    StackRecipe,
+    StackRecipeService,
+    StackRecipeServiceConfig,
+)
 
-__all__ = ["StackRecipeService"]
+__all__ = [
+    "GitStackRecipesHandler",
+    "StackRecipeService",
+    "StackRecipeServiceConfig",
+    "StackRecipe",
+]

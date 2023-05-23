@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Unit tests for manifest_utils.py."""
 
-from kubernetes.client import V1ObjectMeta, V1Pod
+from kubernetes.client import V1ObjectMeta, V1Pod, V1PodSpec, V1Toleration
 
 from zenml.integrations.kubernetes.flavors.kubernetes_orchestrator_flavor import (
     KubernetesOrchestratorSettings,
@@ -47,3 +47,57 @@ def test_build_pod_manifest_metadata():
     assert metadata.labels["run"] == "test_run"
     assert metadata.labels["pipeline"] == "test_pipeline"
     assert metadata.annotations["blupus_loves"] == "strawberries"
+
+
+def test_build_pod_manifest_pod_settings():
+    """Test that the pod settings are correctly set in the manifest."""
+    kubernetes_settings = KubernetesOrchestratorSettings(
+        pod_settings={
+            "affinity": {
+                "nodeAffinity": {
+                    "requiredDuringSchedulingIgnoredDuringExecution": {
+                        "nodeSelectorTerms": [
+                            {
+                                "matchExpressions": [
+                                    {
+                                        "key": "node.kubernetes.io/name",
+                                        "operator": "In",
+                                        "values": ["my_powerful_node_group"],
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                }
+            },
+            "tolerations": [
+                V1Toleration(
+                    key="node.kubernetes.io/name",
+                    operator="Equal",
+                    value="",
+                    effect="NoSchedule",
+                )
+            ],
+            "resources": {"requests": {"memory": "2G"}},
+        }
+    )
+
+    manifest: V1Pod = build_pod_manifest(
+        pod_name="test_name",
+        run_name="test_run",
+        pipeline_name="test_pipeline",
+        image_name="test_image",
+        command=["test", "command"],
+        args=["test", "args"],
+        settings=kubernetes_settings,
+    )
+    assert isinstance(manifest, V1Pod)
+    assert isinstance(manifest.spec, V1PodSpec)
+    assert (
+        manifest.spec.affinity["nodeAffinity"][
+            "requiredDuringSchedulingIgnoredDuringExecution"
+        ]["nodeSelectorTerms"][0]["matchExpressions"][0]["key"]
+        == "node.kubernetes.io/name"
+    )
+    assert manifest.spec.tolerations[0]["key"] == "node.kubernetes.io/name"
+    assert manifest.spec.containers[0].resources["requests"]["memory"] == "2G"

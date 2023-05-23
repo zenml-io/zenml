@@ -16,7 +16,7 @@
 import os
 from collections import defaultdict
 from tempfile import TemporaryDirectory, mkdtemp
-from typing import TYPE_CHECKING, Dict, Type, Union
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, Tuple, Type, Union
 
 from datasets import Dataset, load_from_disk
 from datasets.dataset_dict import DatasetDict
@@ -36,8 +36,10 @@ DEFAULT_DATASET_DIR = "hf_datasets"
 class HFDatasetMaterializer(BaseMaterializer):
     """Materializer to read data to and from huggingface datasets."""
 
-    ASSOCIATED_TYPES = (Dataset, DatasetDict)
-    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATA_ANALYSIS
+    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (Dataset, DatasetDict)
+    ASSOCIATED_ARTIFACT_TYPE: ClassVar[
+        ArtifactType
+    ] = ArtifactType.DATA_ANALYSIS
 
     def load(
         self, data_type: Union[Type[Dataset], Type[DatasetDict]]
@@ -50,7 +52,6 @@ class HFDatasetMaterializer(BaseMaterializer):
         Returns:
             The dataset read from the specified dir.
         """
-        super().load(data_type)
         temp_dir = mkdtemp()
         io_utils.copy_dir(
             os.path.join(self.uri, DEFAULT_DATASET_DIR),
@@ -64,7 +65,6 @@ class HFDatasetMaterializer(BaseMaterializer):
         Args:
             ds: The Dataset to write.
         """
-        super().save(ds)
         temp_dir = TemporaryDirectory()
         path = os.path.join(temp_dir.name, DEFAULT_DATASET_DIR)
         try:
@@ -90,7 +90,6 @@ class HFDatasetMaterializer(BaseMaterializer):
         Raises:
             ValueError: If the given object is not a `Dataset` or `DatasetDict`.
         """
-        super().extract_metadata(ds)
         pandas_materializer = PandasMaterializer(self.uri)
         if isinstance(ds, Dataset):
             return pandas_materializer.extract_metadata(ds.to_pandas())

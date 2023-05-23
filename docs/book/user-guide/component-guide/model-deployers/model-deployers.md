@@ -70,7 +70,7 @@ zenml model-deployer register seldon --flavor=seldon \
 2.  Implements the continuous deployment logic necessary to deploy models in a way that updates an existing model server that is already serving a previous version of the same model instead of creating a new model server for every new model version. Every model server that the Model Deployer provisions externally to deploy a model is represented internally as a `Service` object that may be accessed for visibility and control over a single model deployment. This functionality can be consumed directly from ZenML pipeline steps, but it can also be used outside the pipeline to deploy ad-hoc models. The following code is an example of using the Seldon Core Model Deployer to deploy a model inside a ZenML pipeline step:
 
     ```python
-    from zenml.artifacts import ModelArtifact
+    from zenml.materializers import UnmaterializedArtifact
     from zenml.environment import Environment
     from zenml.integrations.seldon.model_deployers import SeldonModelDeployer
     from zenml.integrations.seldon.services.seldon_deployment import (
@@ -86,7 +86,7 @@ zenml model-deployer register seldon --flavor=seldon \
     @step(enable_cache=True)
     def seldon_model_deployer_step(
       context: StepContext,
-      model: ModelArtifact,
+      model: UnmaterializedArtifact,
     ) -> SeldonDeploymentService:
       model_deployer = SeldonModelDeployer.get_active_model_deployer()
 

@@ -14,7 +14,6 @@
 """Utility functions for networking."""
 
 import socket
-import sys
 from typing import Optional, cast
 from urllib.parse import urlparse
 
@@ -40,7 +39,7 @@ def port_available(port: int, address: str = "127.0.0.1") -> bool:
     try:
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-            if sys.platform != "win32":
+            if hasattr(socket, "SO_REUSEPORT"):
                 s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
             else:
                 # The SO_REUSEPORT socket option is not supported on Windows.
@@ -136,7 +135,6 @@ def replace_localhost_with_internal_hostname(url: str) -> str:
 
     parsed_url = urlparse(url)
     if parsed_url.hostname in ("localhost", "127.0.0.1"):
-
         for internal_hostname in (
             "host.docker.internal",
             "host.k3d.internal",
@@ -184,7 +182,6 @@ def replace_internal_hostname_with_localhost(hostname: str) -> str:
         return hostname
 
     if Environment.in_container():
-
         # Try to resolve one of the special hostnames to see if it is available
         # inside the container and use that if it is.
         for internal_hostname in (
@@ -205,3 +202,38 @@ def replace_internal_hostname_with_localhost(hostname: str) -> str:
     logger.debug(f"Replacing internal hostname {hostname} with localhost.")
 
     return "127.0.0.1"
+
+
+def get_or_create_ngrok_tunnel(ngrok_token: str, port: int) -> str:
+    """Get or create an ngrok tunnel at the given port.
+
+    Args:
+        ngrok_token: The ngrok auth token.
+        port: The port to tunnel.
+
+    Returns:
+        The public URL of the ngrok tunnel.
+
+    Raises:
+        ImportError: If the `pyngrok` package is not installed.
+    """
+    try:
+        from pyngrok import ngrok as ngrok_client
+    except ImportError:
+        raise ImportError(
+            "The `pyngrok` package is required to create ngrok tunnels. "
+            "Please install it by running `pip install pyngrok`."
+        )
+
+    # Check if ngrok is already tunneling the port
+    tunnels = ngrok_client.get_tunnels()
+    for tunnel in tunnels:
+        if tunnel.config and isinstance(tunnel.config, dict):
+            tunnel_protocol = tunnel.config.get("proto")
+            tunnel_port = tunnel.config.get("addr")
+            if tunnel_protocol == "http" and tunnel_port == port:
+                return str(tunnel.public_url)
+
+    # Create new tunnel
+    ngrok_client.set_auth_token(ngrok_token)
+    return str(ngrok_client.connect(port).public_url)

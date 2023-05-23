@@ -163,7 +163,6 @@ services:
         )
 
         if self.is_running:
-
             logging.info(
                 f"Deployment '{self.config.name}' is already running. "
                 f"Skipping provisioning."

@@ -160,6 +160,8 @@ The format of a YAML config file is exactly the same as the dictionary you would
 
 ```yaml
 enable_cache: True
+enable_artifact_metadata: True
+enable_artifact_visualization: True
 extra:
   tags: production
 run_name: my_run

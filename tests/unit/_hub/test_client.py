@@ -13,10 +13,9 @@
 #  permissions and limitations under the License.
 """Unit tests for the ZenML Hub client."""
 
-from src.zenml.constants import ENV_ZENML_HUB_URL
-
 from zenml._hub.client import HubClient
 from zenml._hub.constants import ZENML_HUB_DEFAULT_URL
+from zenml.constants import ENV_ZENML_HUB_URL
 
 
 def test_default_url(mocker):

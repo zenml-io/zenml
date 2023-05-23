@@ -14,15 +14,23 @@
 """Implementation of ZenML's builtin materializer."""
 
 import os
-from typing import TYPE_CHECKING, Any, Dict, Iterable, Type, Union
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    ClassVar,
+    Dict,
+    Iterable,
+    List,
+    Tuple,
+    Type,
+    Union,
+)
 
 from zenml.enums import ArtifactType
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
-from zenml.materializers.default_materializer_registry import (
-    default_materializer_registry,
-)
+from zenml.materializers.materializer_registry import materializer_registry
 from zenml.utils import source_utils, yaml_utils
 
 if TYPE_CHECKING:
@@ -43,8 +51,8 @@ BASIC_TYPES = (
 class BuiltInMaterializer(BaseMaterializer):
     """Handle JSON-serializable basic types (`bool`, `float`, `int`, `str`)."""
 
-    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATA
-    ASSOCIATED_TYPES = BASIC_TYPES
+    ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.DATA
+    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = BASIC_TYPES
 
     def __init__(self, uri: str):
         """Define `self.data_path`.
@@ -66,7 +74,6 @@ class BuiltInMaterializer(BaseMaterializer):
         Returns:
             The data read.
         """
-        super().load(data_type)
         contents = yaml_utils.read_json(self.data_path)
         if type(contents) != data_type:
             # TODO [ENG-142]: Raise error or try to coerce
@@ -82,7 +89,6 @@ class BuiltInMaterializer(BaseMaterializer):
         Args:
             data: The data to store.
         """
-        super().save(data)
         yaml_utils.write_json(self.data_path, data)
 
     def extract_metadata(
@@ -96,22 +102,19 @@ class BuiltInMaterializer(BaseMaterializer):
         Returns:
             The extracted metadata as a dictionary.
         """
-        base_metadata = super().extract_metadata(data)
-        builtin_metadata: Dict[str, "MetadataType"] = {}
-
         # For boolean and numbers, add the string representation as metadata.
         # We don't to this for strings because they can be arbitrarily long.
         if isinstance(data, (bool, float, int)):
-            builtin_metadata["string_representation"] = str(data)
+            return {"string_representation": str(data)}
 
-        return {**base_metadata, **builtin_metadata}
+        return {}
 
 
 class BytesMaterializer(BaseMaterializer):
     """Handle `bytes` data type, which is not JSON serializable."""
 
-    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATA
-    ASSOCIATED_TYPES = (bytes,)
+    ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.DATA
+    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (bytes,)
 
     def __init__(self, uri: str):
         """Define `self.data_path`.
@@ -131,7 +134,6 @@ class BytesMaterializer(BaseMaterializer):
         Returns:
             The data read.
         """
-        super().load(data_type)
         with fileio.open(self.data_path, "rb") as file_:
             return file_.read()
 
@@ -141,7 +143,6 @@ class BytesMaterializer(BaseMaterializer):
         Args:
             data: The data to store.
         """
-        super().save(data)
         with fileio.open(self.data_path, "wb") as file_:
             file_.write(data)
 
@@ -198,7 +199,7 @@ def find_type_by_str(type_str: str) -> Type[Any]:
     Returns:
         The type whose string representation is `type_str`.
     """
-    registered_types = default_materializer_registry.materializer_types.keys()
+    registered_types = materializer_registry.materializer_types.keys()
     type_str_mapping = {str(type_): type_ for type_ in registered_types}
     if type_str in type_str_mapping:
         return type_str_mapping[type_str]
@@ -220,10 +221,10 @@ def find_materializer_registry_type(type_: Type[Any]) -> Type[Any]:
         RuntimeError: If the type could not be resolved.
     """
     # Check that a unique materializer is registered for this type
-    default_materializer_registry[type_]
+    materializer_registry[type_]
 
     # Check if the type itself is registered
-    registered_types = default_materializer_registry.materializer_types.keys()
+    registered_types = materializer_registry.materializer_types.keys()
     if type_ in registered_types:
         return type_
 
@@ -243,7 +244,12 @@ def find_materializer_registry_type(type_: Type[Any]) -> Type[Any]:
 class BuiltInContainerMaterializer(BaseMaterializer):
     """Handle built-in container types (dict, list, set, tuple)."""
 
-    ASSOCIATED_TYPES = (dict, list, set, tuple)
+    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (
+        dict,
+        list,
+        set,
+        tuple,
+    )
 
     def __init__(self, uri: str):
         """Define `self.data_path` and `self.metadata_path`.
@@ -275,8 +281,6 @@ class BuiltInContainerMaterializer(BaseMaterializer):
         Raises:
             RuntimeError: If the data was not found.
         """
-        super().load(data_type)
-
         # If the data was not serialized, there must be metadata present.
         if not fileio.exists(self.data_path) and not fileio.exists(
             self.metadata_path
@@ -301,7 +305,7 @@ class BuiltInContainerMaterializer(BaseMaterializer):
                     metadata["paths"], metadata["types"]
                 ):
                     type_ = find_type_by_str(type_str)
-                    materializer_class = default_materializer_registry[type_]
+                    materializer_class = materializer_registry[type_]
                     materializer = materializer_class(uri=path_)
                     element = materializer.load(type_)
                     outputs.append(element)
@@ -350,8 +354,6 @@ class BuiltInContainerMaterializer(BaseMaterializer):
         Raises:
             Exception: If any exception occurs, it is raised after cleanup.
         """
-        super().save(data)
-
         # tuple and set: handle as list.
         if isinstance(data, tuple) or isinstance(data, set):
             data = list(data)
@@ -367,13 +369,14 @@ class BuiltInContainerMaterializer(BaseMaterializer):
 
         # non-serializable list: Materialize each element into a subfolder.
         # Get path, type, and corresponding materializer for each element.
-        metadata, materializers = [], []
+        metadata: List[Dict[str, str]] = []
+        materializers: List[BaseMaterializer] = []
         try:
             for i, element in enumerate(data):
                 element_path = os.path.join(self.uri, str(i))
                 fileio.mkdir(element_path)
                 type_ = type(element)
-                materializer_class = default_materializer_registry[type_]
+                materializer_class = materializer_registry[type_]
                 materializer = materializer_class(uri=element_path)
                 materializers.append(materializer)
                 metadata.append(
@@ -389,6 +392,7 @@ class BuiltInContainerMaterializer(BaseMaterializer):
             yaml_utils.write_json(self.metadata_path, metadata)
             # Materialize each element.
             for element, materializer in zip(data, materializers):
+                materializer.validate_type_compatibility(type(element))
                 materializer.save(element)
         # If an error occurs, delete all created files.
         except Exception as e:
@@ -409,10 +413,6 @@ class BuiltInContainerMaterializer(BaseMaterializer):
         Returns:
             The extracted metadata as a dictionary.
         """
-        base_metadata = super().extract_metadata(data)
-        container_metadata = {}
         if hasattr(data, "__len__"):
-            container_metadata = {
-                "length": len(data),
-            }
-        return {**base_metadata, **container_metadata}
+            return {"length": len(data)}
+        return {}

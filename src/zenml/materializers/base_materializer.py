@@ -16,13 +16,11 @@
 import inspect
 from typing import Any, ClassVar, Dict, Tuple, Type, cast
 
-from zenml.enums import ArtifactType
+from zenml.enums import ArtifactType, VisualizationType
 from zenml.exceptions import MaterializerInterfaceError
 from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.materializers.default_materializer_registry import (
-    default_materializer_registry,
-)
+from zenml.materializers.materializer_registry import materializer_registry
 from zenml.metadata.metadata_types import MetadataType
 
 logger = get_logger(__name__)
@@ -54,8 +52,10 @@ class BaseMaterializerMeta(type):
             Type["BaseMaterializer"], super().__new__(mcs, name, bases, dct)
         )
 
-        # Skip the following validation and registration for the base class.
-        if name == "BaseMaterializer":
+        # Skip the following validation and registration for base classes.
+        if cls.SKIP_REGISTRATION:
+            # Reset the flag so subclasses don't have it set automatically.
+            cls.SKIP_REGISTRATION = False
             return cls
 
         # Validate that the class is properly defined.
@@ -93,7 +93,7 @@ class BaseMaterializerMeta(type):
 
         # Register the materializer.
         for associated_type in cls.ASSOCIATED_TYPES:
-            default_materializer_registry.register_materializer_type(
+            materializer_registry.register_materializer_type(
                 associated_type, cls
             )
 
@@ -106,6 +106,12 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
     ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.BASE
     ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = ()
 
+    # `SKIP_REGISTRATION` can be set to True to not register the class in the
+    # materializer registry. This is primarily useful for defining base classes.
+    # Subclasses will automatically have this set to False unless they override
+    # it themselves.
+    SKIP_REGISTRATION: ClassVar[bool] = True
+
     def __init__(self, uri: str):
         """Initializes a materializer with the given URI.
 
@@ -113,6 +119,104 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
             uri: The URI where the artifact data will be stored.
         """
         self.uri = uri
+
+    # ================
+    # Public Interface
+    # ================
+
+    def load(self, data_type: Type[Any]) -> Any:
+        """Write logic here to load the data of an artifact.
+
+        Args:
+            data_type: What type the artifact data should be loaded as.
+
+        Returns:
+            The data of the artifact.
+        """
+        # read from a location inside self.uri
+        return None
+
+    def save(self, data: Any) -> None:
+        """Write logic here to save the data of an artifact.
+
+        Args:
+            data: The data of the artifact to save.
+        """
+        # write `data` into self.uri
+
+    def save_visualizations(self, data: Any) -> Dict[str, VisualizationType]:
+        """Save visualizations of the given data.
+
+        If this method is not overridden, no visualizations will be saved.
+
+        When overriding this method, make sure to save all visualizations to
+        files within `self.uri`.
+
+        Example:
+        ```
+        visualization_uri = os.path.join(self.uri, "visualization.html")
+        with fileio.open(visualization_uri, "w") as f:
+            f.write("<html><body>data</body></html>")
+
+        visualization_uri_2 = os.path.join(self.uri, "visualization.png")
+        data.save_as_png(visualization_uri_2)
+
+        return {
+            visualization_uri: ArtifactVisualizationType.HTML,
+            visualization_uri_2: ArtifactVisualizationType.IMAGE
+        }
+        ```
+
+        Args:
+            data: The data of the artifact to visualize.
+
+        Returns:
+            A dictionary of visualization URIs and their types.
+        """
+        # Optionally, save some visualizations of `data` inside `self.uri`.
+        return {}
+
+    def extract_metadata(self, data: Any) -> Dict[str, "MetadataType"]:
+        """Extract metadata from the given data.
+
+        This metadata will be tracked and displayed alongside the artifact.
+
+        Example:
+        ```
+        return {
+            "some_attribute_i_want_to_track": self.some_attribute,
+            "pi": 3.14,
+        }
+        ```
+
+        Args:
+            data: The data to extract metadata from.
+
+        Returns:
+            A dictionary of metadata.
+        """
+        # Optionally, extract some metadata from `data` for ZenML to store.
+        return {}
+
+    # ================
+    # Internal Methods
+    # ================
+
+    def validate_type_compatibility(self, data_type: Type[Any]) -> None:
+        """Checks whether the materializer can read/write the given type.
+
+        Args:
+            data_type: The type to check.
+
+        Raises:
+            TypeError: If the materializer cannot read/write the given type.
+        """
+        if not self._can_handle_type(data_type):
+            raise TypeError(
+                f"Unable to handle type {data_type}. {self.__class__.__name__} "
+                f"can only read/write artifacts of the following types: "
+                f"{self.ASSOCIATED_TYPES}."
+            )
 
     def _can_handle_type(self, data_type: Type[Any]) -> bool:
         """Whether the materializer can read/write a certain type.
@@ -128,68 +232,34 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
             for associated_type in self.ASSOCIATED_TYPES
         )
 
-    def load(self, data_type: Type[Any]) -> Any:
-        """Write logic here to load the data of an artifact.
-
-        Args:
-            data_type: What type the artifact data should be loaded as.
-
-        Returns:
-            The data of the artifact.
-
-        Raises:
-            TypeError: If the artifact data is not of the correct type.
-        """
-        if not self._can_handle_type(data_type):
-            raise TypeError(
-                f"Unable to handle type {data_type}. {self.__class__.__name__} "
-                f"can only read artifacts to the following types: "
-                f"{self.ASSOCIATED_TYPES}."
-            )
-
-        return None
-
-    def save(self, data: Any) -> None:
-        """Write logic here to save the data of an artifact.
-
-        Args:
-            data: The data of the artifact to save.
-
-        Raises:
-            TypeError: If the artifact data is not of the correct type.
-        """
-        data_type = type(data)
-        if not self._can_handle_type(data_type):
-            raise TypeError(
-                f"Unable to write {data_type}. {self.__class__.__name__} "
-                f"can only write the following types: {self.ASSOCIATED_TYPES}."
-            )
-
-    def extract_metadata(self, data: Any) -> Dict[str, "MetadataType"]:
-        """Extract metadata from the given data.
-
-        This metadata will be tracked and displayed alongside the artifact.
+    def extract_full_metadata(self, data: Any) -> Dict[str, "MetadataType"]:
+        """Extract both base and custom metadata from the given data.
 
         Args:
             data: The data to extract metadata from.
 
         Returns:
             A dictionary of metadata.
+        """
+        base_metadata = self._extract_base_metadata(data)
+        custom_metadata = self.extract_metadata(data)
+        return {**base_metadata, **custom_metadata}
 
-        Raises:
-            TypeError: If the data is not of the correct type.
+    def _extract_base_metadata(self, data: Any) -> Dict[str, "MetadataType"]:
+        """Extract metadata from the given data.
+
+        This metadata will be extracted for all artifacts in addition to the
+        metadata extracted by the `extract_metadata` method.
+
+        Args:
+            data: The data to extract metadata from.
+
+        Returns:
+            A dictionary of metadata.
         """
         from zenml.metadata.metadata_types import StorageSize
 
-        data_type = type(data)
-        if not self._can_handle_type(data_type):
-            raise TypeError(
-                f"Unable to extract metadata from {data_type}. "
-                f"{self.__class__.__name__} can only write the following "
-                f"types: {self.ASSOCIATED_TYPES}."
-            )
-
         storage_size = fileio.size(self.uri)
-        if storage_size:
+        if isinstance(storage_size, int):
             return {"storage_size": StorageSize(storage_size)}
         return {}

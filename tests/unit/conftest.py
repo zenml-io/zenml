@@ -23,6 +23,7 @@ from zenml.artifact_stores.local_artifact_store import (
     LocalArtifactStoreConfig,
 )
 from zenml.client import Client
+from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.pipeline_spec import PipelineSpec
 from zenml.config.step_configurations import Step
 from zenml.container_registries.base_container_registry import (
@@ -402,7 +403,7 @@ def sample_pipeline_run_model(
     return PipelineRunResponseModel(
         id=uuid4(),
         name="sample_run_name",
-        pipeline_configuration={},
+        pipeline_configuration=PipelineConfiguration(name="aria_pipeline"),
         num_steps=1,
         status=ExecutionStatus.COMPLETED,
         created=datetime.now(),
@@ -418,7 +419,7 @@ def sample_pipeline_run_request_model() -> PipelineRunRequestModel:
     return PipelineRunRequestModel(
         id=uuid4(),
         name="sample_run_name",
-        pipeline_configuration={},
+        pipeline_configuration=PipelineConfiguration(name="aria_pipeline"),
         num_steps=1,
         status=ExecutionStatus.COMPLETED,
         user=uuid4(),

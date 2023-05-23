@@ -208,6 +208,7 @@ VERSION_1 = "/v1"
 STATUS = "/status"
 GET_OR_CREATE = "/get-or-create"
 SECRETS = "/secrets"
+VISUALIZE = "/visualize"
 CODE_REPOSITORIES = "/code_repositories"
 
 # mandatory stack component attributes

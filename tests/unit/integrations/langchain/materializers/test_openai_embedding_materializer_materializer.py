@@ -12,7 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 import sys
-from contextlib import ExitStack as does_not_raise
 
 import pytest
 
@@ -35,15 +34,15 @@ def test_langchain_openai_embedding_materializer(clean_client):
     fake_chunk_size = 1234
     fake_model_name = "zenml_best_model"
 
-    with does_not_raise():
-        embeddings = _test_materializer(
-            step_output=OpenAIEmbeddings(
-                chunk_size=fake_chunk_size,
-                openai_api_key=fake_key,
-                document_model_name=fake_model_name,
-            ),
-            materializer_class=LangchainOpenaiEmbeddingMaterializer,
-        )
+    embeddings = _test_materializer(
+        step_output=OpenAIEmbeddings(
+            chunk_size=fake_chunk_size,
+            openai_api_key=fake_key,
+            document_model_name=fake_model_name,
+        ),
+        materializer_class=LangchainOpenaiEmbeddingMaterializer,
+        expected_metadata_size=1,
+    )
 
     assert embeddings.document_model_name == fake_model_name
     assert embeddings.openai_api_key == fake_key

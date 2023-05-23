@@ -74,19 +74,21 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
     _k8s_batch_api: k8s_client.BatchV1beta1Api = None
     _k8s_rbac_api: k8s_client.RbacAuthorizationV1Api = None
 
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        """Initialize the class and the Kubernetes clients.
+    def _initialize_k8s_clients(
+        self, incluster: bool = False, context: Optional[str] = None
+    ) -> None:
+        """Initialize the Kubernetes clients.
 
         Args:
-            *args: The positional arguments to pass to the Pydantic object.
-            **kwargs: The keyword arguments to pass to the Pydantic object.
+            incluster: Whether to load the incluster Kubernetes configuration.
+                If set, the `context` argument will have no effect.
+            context: The Kubernetes context to use. If not set, the default
+                context defined in the orchestrator config is used.
         """
-        super().__init__(*args, **kwargs)
-        self._initialize_k8s_clients()
-
-    def _initialize_k8s_clients(self) -> None:
-        """Initialize the Kubernetes clients."""
-        kube_utils.load_kube_config(context=self.config.kubernetes_context)
+        kube_utils.load_kube_config(
+            incluster=incluster,
+            context=context or self.config.kubernetes_context,
+        )
         self._k8s_core_api = k8s_client.CoreV1Api()
         self._k8s_batch_api = k8s_client.BatchV1beta1Api()
         self._k8s_rbac_api = k8s_client.RbacAuthorizationV1Api()
@@ -197,7 +199,6 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                 not self.config.skip_local_validations
                 and not self.config.is_local
             ):
-
                 # if the orchestrator is not running in a local k3d cluster,
                 # we cannot have any other local components in our stack,
                 # because we cannot mount the local path into the container.
@@ -324,6 +325,11 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
 
         settings = cast(
             KubernetesOrchestratorSettings, self.get_settings(deployment)
+        )
+
+        # Use a different Kubernetes context if specified in the settings.
+        self._initialize_k8s_clients(
+            incluster=settings.incluster, context=settings.kubernetes_context
         )
 
         # Authorize pod to run Kubernetes commands inside the cluster.
