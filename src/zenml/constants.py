@@ -211,6 +211,11 @@ GET_OR_CREATE = "/get-or-create"
 SECRETS = "/secrets"
 VISUALIZE = "/visualize"
 CODE_REPOSITORIES = "/code_repositories"
+SERVICE_CONNECTORS = "/service_connectors"
+SERVICE_CONNECTOR_TYPES = "/service_connector_types"
+SERVICE_CONNECTOR_VERIFY = "/verify"
+SERVICE_CONNECTOR_RESOURCES = "/resources"
+SERVICE_CONNECTOR_CLIENT = "/client"
 
 # mandatory stack component attributes
 MANDATORY_COMPONENT_ATTRIBUTES = ["name", "uuid"]
@@ -243,3 +248,7 @@ METADATA_DEPLOYED_MODEL_URL = "deployed_model_url"
 
 # Model registries constants
 MLFLOW_MODEL_FORMAT = "MLflow"
+
+# Service connector constants
+DOCKER_REGISTRY_RESOURCE_TYPE = "docker-registry"
+KUBERNETES_CLUSTER_RESOURCE_TYPE = "kubernetes-cluster"

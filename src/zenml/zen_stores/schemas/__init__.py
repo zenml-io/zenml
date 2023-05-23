@@ -38,6 +38,9 @@ from zenml.zen_stores.schemas.role_schemas import (
 from zenml.zen_stores.schemas.run_metadata_schemas import RunMetadataSchema
 from zenml.zen_stores.schemas.schedule_schema import ScheduleSchema
 from zenml.zen_stores.schemas.secret_schemas import SecretSchema
+from zenml.zen_stores.schemas.service_connector_schemas import (
+    ServiceConnectorSchema,
+)
 from zenml.zen_stores.schemas.stack_schemas import (
     StackCompositionSchema,
     StackSchema,
@@ -63,6 +66,7 @@ __all__ = [
     "CodeReferenceSchema",
     "FlavorSchema",
     "IdentitySchema",
+    "ServiceConnectorLabelSchema",
     "PipelineBuildSchema",
     "PipelineDeploymentSchema",
     "PipelineRunSchema",
@@ -73,6 +77,7 @@ __all__ = [
     "RunMetadataSchema",
     "ScheduleSchema",
     "SecretSchema",
+    "ServiceConnectorSchema",
     "StackSchema",
     "StackComponentSchema",
     "StackCompositionSchema",

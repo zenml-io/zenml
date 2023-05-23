@@ -218,3 +218,14 @@ def test_unpack_unknown_error(error_code, exception_type):
     assert reconstructed_exception is not None
     assert reconstructed_exception.__class__ is exception_type
     assert reconstructed_exception.args == ("error message",)
+
+    response = requests.Response()
+    response.status_code = error_code
+    response._content = json.dumps(
+        [exception_type.__name__, "error message"]
+    ).encode()
+    reconstructed_exception = exception_from_response(response)
+
+    assert reconstructed_exception is not None
+    assert reconstructed_exception.__class__ is exception_type
+    assert reconstructed_exception.args == ("error message",)
