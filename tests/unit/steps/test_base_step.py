@@ -23,7 +23,7 @@ from zenml.materializers import BuiltInMaterializer
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.models.artifact_models import ArtifactResponseModel
 from zenml.pipelines import pipeline
-from zenml.steps import BaseParameters, BaseStep, Output, StepContext, step
+from zenml.steps import BaseParameters, Output, StepContext, step
 
 
 def test_step_decorator_creates_class_in_same_module_as_decorated_function():
@@ -344,7 +344,9 @@ def test_step_uses_config_class_default_values_if_no_config_is_passed():
     step_instance = some_step()
     step_instance._finalize_configuration({}, {})
 
-    assert step_instance.configuration.parameters["some_parameter"] == 1
+    assert (
+        step_instance.configuration.parameters["params"]["some_parameter"] == 1
+    )
 
 
 def test_step_fails_if_config_parameter_value_is_missing():
@@ -685,7 +687,7 @@ def test_upstream_step_computation():
     pipeline_instance = p(s1, s2, s3)
     pipeline_instance.connect(**pipeline_instance.steps)
 
-    assert s1.upstream_steps == {"upstream_test_step_2"}
+    assert s1.upstream_steps == {s2}
     assert not s2.upstream_steps
     assert not s3.upstream_steps
 
@@ -741,19 +743,16 @@ def test_step_decorator_configuration_gets_applied_during_initialization(
         "experiment_tracker": "e",
         "step_operator": "s",
         "extra": {"key": "value"},
-        "settings": {"docker": {"target_repository": "custom_repo"}},
-        "output_materializers": None,
-        "on_failure": None,
-        "on_success": None,
     }
 
     @step(**config)
     def s() -> None:
         pass
 
-    mock_configure = mocker.patch.object(BaseStep, "configure")
-    s()
-    mock_configure.assert_called_with(**config)
+    step_instance = s()
+    assert step_instance.configuration.experiment_tracker == "e"
+    assert step_instance.configuration.step_operator == "s"
+    assert step_instance.configuration.extra == {"key": "value"}
 
 
 def test_step_configuration(empty_step):
@@ -872,7 +871,7 @@ def test_configure_step_with_invalid_parameters():
     step_instance = step_with_parameters().configure(
         parameters={"invalid_key": 1}
     )
-    with pytest.raises(MissingStepParameterError):
+    with pytest.raises(StepInterfaceError):
         step_instance()
 
     # Wrong type (only fail once step is called)
