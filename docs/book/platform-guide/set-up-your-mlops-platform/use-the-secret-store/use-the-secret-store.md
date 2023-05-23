@@ -7,7 +7,7 @@ description: Registering and utilizing secrets.
 TODO: Add images of the dashboard to the page!
 
 {% hint style="danger" %}
-The stack component formerly known as Secrets Managers is being deprecated in favor of [the centralized ZenML secrets store](./#centralized-secrets-store). Going forward, it is recommended to use the ZenML secrets store instead of secrets manager stack components to configure and store secrets. [Referencing secrets in your pipelines and stacks](./#how-to-use-registered-secrets) works the same way regardless of whether you are using a secrets manager or the centralized secrets store. If you already use secrets managers to manage your secrets, please use the provided `zenml secrets-manager secrets migrate` CLI command to migrate your secrets to the centralized secrets store.
+The stack component formerly known as Secrets Managers is being deprecated in favor of [the centralized ZenML secrets store](use-the-secret-store.md#centralized-secrets-store). Going forward, it is recommended to use the ZenML secrets store instead of secrets manager stack components to configure and store secrets. [Referencing secrets in your pipelines and stacks](use-the-secret-store.md#how-to-use-registered-secrets) works the same way regardless of whether you are using a secrets manager or the centralized secrets store. If you already use secrets managers to manage your secrets, please use the provided `zenml secrets-manager secrets migrate` CLI command to migrate your secrets to the centralized secrets store.
 {% endhint %}
 
 ## What is a ZenML secret?
@@ -27,5 +27,4 @@ Currently, the ZenML server can be configured to use one of the following suppor
 * the HashiCorp Vault
 * a custom secrets store back-end implementation is also supported
 
-Configuring the specific secrets store back-end that the ZenML server uses is done at deployment time. For more information on how to deploy a ZenML server and configure the secrets store back-end, refer to your deployment strategy inside the [deployment guide](../deploy-zenml/).
-
+Configuring the specific secrets store back-end that the ZenML server uses is done at deployment time. For more information on how to deploy a ZenML server and configure the secrets store back-end, refer to your deployment strategy inside the [deployment guide](../deploy-zenml/deploy-zenml.md).

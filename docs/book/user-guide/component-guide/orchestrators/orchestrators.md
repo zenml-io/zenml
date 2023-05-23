@@ -18,18 +18,18 @@ The orchestrator is a mandatory component in the ZenML stack. It is used to stor
 
 Out of the box, ZenML comes with a `local` orchestrator already part of the default stack that runs pipelines locally. Additional orchestrators are provided by integrations:
 
-| Orchestrator                               | Flavor         | Integration  | Notes                                                                   |
-| ------------------------------------------ | -------------- | ------------ | ----------------------------------------------------------------------- |
-| [LocalOrchestrator](local.md)              | `local`        | _built-in_   | Runs your pipelines locally.                                            |
-| [LocalDockerOrchestrator](local-docker.md) | `local_docker` | _built-in_   | Runs your pipelines locally using Docker.                               |
-| [KubernetesOrchestrator](kubernetes.md)    | `kubernetes`   | `kubernetes` | Runs your pipelines in Kubernetes clusters.                             |
-| [KubeflowOrchestrator](kubeflow.md)        | `kubeflow`     | `kubeflow`   | Runs your pipelines using Kubeflow.                                     |
-| [VertexOrchestrator](vertex.md)            | `vertex`       | `gcp`        | Runs your pipelines in Vertex AI.                                       |
-| [SagemakerOrchestrator](sagemaker.md)      | `sagemaker`    | `aws`        | Runs your pipelines in Sagemaker.                                       |
-| [TektonOrchestrator](tekton.md)            | `tekton`       | `tekton`     | Runs your pipelines using Tekton.                                       |
-| [AirflowOrchestrator](airflow.md)          | `airflow`      | `airflow`    | Runs your pipelines using Airflow.                                      |
-| [GitHubActionsOrchestrator](github.md)     | `github`       | `github`     | Runs your pipelines using GitHub Actions.                               |
-| [Custom Implementation](custom.md)         | _custom_       |              | Extend the orchestrator abstraction and provide your own implementation |
+| Orchestrator                                                                             | Flavor         | Integration  | Notes                                                                   |
+| ---------------------------------------------------------------------------------------- | -------------- | ------------ | ----------------------------------------------------------------------- |
+| [LocalOrchestrator](local.md)                                                            | `local`        | _built-in_   | Runs your pipelines locally.                                            |
+| [LocalDockerOrchestrator](local-docker.md)                                               | `local_docker` | _built-in_   | Runs your pipelines locally using Docker.                               |
+| [KubernetesOrchestrator](kubernetes.md)                                                  | `kubernetes`   | `kubernetes` | Runs your pipelines in Kubernetes clusters.                             |
+| [KubeflowOrchestrator](kubeflow.md)                                                      | `kubeflow`     | `kubeflow`   | Runs your pipelines using Kubeflow.                                     |
+| [VertexOrchestrator](vertex.md)                                                          | `vertex`       | `gcp`        | Runs your pipelines in Vertex AI.                                       |
+| [SagemakerOrchestrator](sagemaker.md)                                                    | `sagemaker`    | `aws`        | Runs your pipelines in Sagemaker.                                       |
+| [TektonOrchestrator](tekton.md)                                                          | `tekton`       | `tekton`     | Runs your pipelines using Tekton.                                       |
+| [AirflowOrchestrator](airflow.md)                                                        | `airflow`      | `airflow`    | Runs your pipelines using Airflow.                                      |
+| [GitHubActionsOrchestrator](../../../learning/component-gallery/orchestrators/github.md) | `github`       | `github`     | Runs your pipelines using GitHub Actions.                               |
+| [Custom Implementation](custom.md)                                                       | _custom_       |              | Extend the orchestrator abstraction and provide your own implementation |
 
 If you would like to see the available flavors of orchestrators, you can use the command:
 

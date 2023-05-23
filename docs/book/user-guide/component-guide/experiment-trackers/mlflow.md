@@ -179,7 +179,7 @@ def step_one(
     ...
 ```
 
-Check out the [API docs](https://apidocs.zenml.io/latest/integration\_code\_docs/integrations-mlflow/#zenml.integrations.mlflow.flavors.mlflow\_experiment\_tracker\_flavor.MLFlowExperimentTrackerSettings) for a full list of available attributes and [this docs page](../../advanced-guide/pipelines/settings.md) for more information on how to specify settings.
+Check out the [API docs](https://apidocs.zenml.io/latest/integration\_code\_docs/integrations-mlflow/#zenml.integrations.mlflow.flavors.mlflow\_experiment\_tracker\_flavor.MLFlowExperimentTrackerSettings) for a full list of available attributes and [this docs page](../../../learning/advanced-guide/pipelines/settings.md) for more information on how to specify settings.
 
 You can also check out our examples pages for working examples that use the MLflow Experiment Tracker in their stacks:
 

@@ -12,7 +12,7 @@ You should use the Google Cloud image builder if:
 
 * you're **unable** to install or use [Docker](https://www.docker.com) on your client machine.
 * you're already using GCP.
-* your stack is mainly composed of other Google Cloud components such as the [GCS Artifact Store](../artifact-stores/gcloud-gcs.md) or the [Vertex Orchestrator](../orchestrators/gcloud-vertexai.md).
+* your stack is mainly composed of other Google Cloud components such as the [GCS Artifact Store](../../../learning/component-gallery/artifact-stores/gcloud-gcs.md) or the [Vertex Orchestrator](../../../learning/component-gallery/orchestrators/gcloud-vertexai.md).
 
 ### How to deploy it
 
@@ -27,7 +27,7 @@ To use the Google Cloud image builder, we need:
     ```shell
     zenml integration install gcp
     ```
-* A [GCP Artifact Store](../artifact-stores/gcloud-gcs.md) where the build context will be uploaded, so Google Cloud Build can access it.
+* A [GCP Artifact Store](../../../learning/component-gallery/artifact-stores/gcloud-gcs.md) where the build context will be uploaded, so Google Cloud Build can access it.
 * A [GCP container registry](../container-registries/gcp.md) where the built image will be pushed.
 * Optionally, the GCP project ID in which you want to run the build and a service account with the needed permissions to run the build. If not provided, then the project ID and credentials will be inferred from the environment.
 * Optionally, you can change:

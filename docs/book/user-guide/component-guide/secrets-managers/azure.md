@@ -11,7 +11,7 @@ We are deprecating secrets managers in favor of the [centralized ZenML secrets s
 
 If you already use secrets managers to manage your secrets, please use the provided `zenml secrets-manager secrets migrate` CLI command to migrate your secrets to the centralized secrets store.
 
-To continue using Azure Key Vault as the service of choice for managing your secrets in the cloud, [configure your ZenML server to connect to and use the Azure Key Vault service](../../getting-started/deploying-zenml/deploying-zenml.md) directly as a back-end for the centralized secrets store and then use `zenml secret` CLI commands to manage your secrets instead of `zenml secrets-manager secret` CLI commands. You no longer need to register the Azure secrets manager stack component or add it to your active stack.
+To continue using Azure Key Vault as the service of choice for managing your secrets in the cloud, [configure your ZenML server to connect to and use the Azure Key Vault service](../../../learning/getting-started/deploying-zenml/deploying-zenml.md) directly as a back-end for the centralized secrets store and then use `zenml secret` CLI commands to manage your secrets instead of `zenml secrets-manager secret` CLI commands. You no longer need to register the Azure secrets manager stack component or add it to your active stack.
 
 Alternatively, you may use any of the other secrets store back-ends that the ZenML server supports, such as Google Secret Manager, AWS Secrets Manager, HashiCorp Vault, or even the ZenML SQL database.
 {% endhint %}
