@@ -103,7 +103,7 @@ The most basic way to set settings is through the `settings` variable that exist
 ```
 
 {% hint style="info" %}
-Once you set settings on a pipeline, they will be applied to all steps with some exceptions. See the [later section on precedence for more details](configure-steps-and-pipelines.md#hierarchy-and-precedence).
+Once you set settings on a pipeline, they will be applied to all steps with some exceptions. See the [later section on precedence for more details](configure-steps-pipelines.md#hierarchy-and-precedence).
 {% endhint %}
 
 #### Method 2: On the step/pipeline instance

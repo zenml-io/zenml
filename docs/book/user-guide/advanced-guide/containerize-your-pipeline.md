@@ -8,7 +8,7 @@ TODO: Introducing the whole containerization process
 
 ## Define where an image is built
 
-TODO: Include reference to managing envioronments and maybe move to the top [managing environments](managing-environments.md)
+TODO: Include reference to managing envioronments and maybe move to the top [managing environments](manage-environments.md)
 
 ## Reusing Docker images
 
@@ -18,7 +18,7 @@ Link to [code repository](connect-your-git-repository.md)
 
 When running locally, ZenML will sequentially execute the steps of your pipeline in the active Python environment. However, when using remote [orchestrators](broken-reference/) or [step operators](broken-reference/), ZenML will build [Docker](https://www.docker.com/) images which are used to run your pipeline code in an isolated and well-defined environment.
 
-For this purpose, a [Dockerfile](https://docs.docker.com/engine/reference/builder/) is dynamically generated at runtime. It is then used to build the docker image using the [image builder](managing-environments.md) component of your stack. The Dockerfile consists of the following steps:
+For this purpose, a [Dockerfile](https://docs.docker.com/engine/reference/builder/) is dynamically generated at runtime. It is then used to build the docker image using the [image builder](manage-environments.md) component of your stack. The Dockerfile consists of the following steps:
 
 * **Starts from a parent image** that has **ZenML installed**. By default, this will use the [official ZenML image](https://hub.docker.com/r/zenmldocker/zenml/) for the Python and ZenML version that you're using in the active Python environment. If you want to use a different image as the base for the following steps, check out [this guide](containerize-your-pipeline.md#using-a-custom-parent-image).
 * **Installs additional pip dependencies**. ZenML will automatically detect which integrations are used in your stack and install the required dependencies. If your pipeline needs any additional requirements, check out our [guide on including custom dependencies](containerize-your-pipeline.md#how-to-install-additional-pip-dependencies).

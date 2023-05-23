@@ -14,7 +14,7 @@ In a ZenML deployment, you might have to manage multiple environments, such as y
 
 The client environment is the environment in which zenml pipelines are run. This is usually a local development environment but often in production, it can be a [CI runner](../../platform-guide/set-up-your-mlops-platform/productionalize-with-ci-cd-ct.md). To manage dependencies in this environment, you can use your preferred package manager, such as `pip` or `poetry`. You can create a virtual environment and install the necessary packages there. This will help you avoid conflicts with other projects and make it easier to share your environment with your team. Make sure to install the ZenML package and any additional [integrations](../component-galery/) you need for your pipelines.
 
-To summarize, the client environment needs the ZenML dependency and all other dependencies that are required to run your pipeline. It often generates the [pipeline build environment](managing-environments.md#the-pipeline-build-environment)
+To summarize, the client environment needs the ZenML dependency and all other dependencies that are required to run your pipeline. It often generates the [pipeline build environment](manage-environments.md#the-pipeline-build-environment)
 
 ## The ZenML Server environment
 

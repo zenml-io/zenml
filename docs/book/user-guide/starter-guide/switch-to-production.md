@@ -30,7 +30,7 @@ To start using the ZenML Sandbox, sign up with your Google account. This will cr
 
 #### Step 2: Access credentials
 
-After signing up and creating your sandbox, you will be provided with credentials for [Kubeflow](../../learning/component-gallery/orchestrators/kubeflow.md), [MinIO](../../learning/component-gallery/artifact-stores/s3.md), [MLflow](../../learning/component-gallery/experiment-trackers/mlflow.md), and [ZenML Server](transition-to-the-cloud.md). These credentials will allow you to access and interact with the various applications and services within the sandbox.
+After signing up and creating your sandbox, you will be provided with credentials for [Kubeflow](../../learning/component-gallery/orchestrators/kubeflow.md), [MinIO](../../learning/component-gallery/artifact-stores/s3.md), [MLflow](../../learning/component-gallery/experiment-trackers/mlflow.md), and [ZenML Server](connect-to-a-deployed-zenml.md). These credentials will allow you to access and interact with the various applications and services within the sandbox.
 
 #### Step 3: Connect and set the stack
 

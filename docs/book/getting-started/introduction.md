@@ -6,7 +6,7 @@ description: Welcome to ZenML!
 
 **ZenML** is an extensible, open-source MLOps framework for creating portable, production-ready machine learning pipelines. By decoupling infrastructure from code, ZenML enables developers across your organization to collaborate more effectively as they develop to production.
 
-![ZenML Overview](.gitbook/assets/intro-zenml-overview.png)
+![ZenML Overview](../.gitbook/assets/intro-zenml-overview.png)
 
 {% tabs %}
 {% tab title="ZenML for Data Scientists" %}
@@ -45,7 +45,7 @@ ZenML gives data scientists the freedom to fully focus on modeling and experimen
 <figure><img src=".gitbook/assets/intro_dashboard_details.png" alt="ZenML Dashboard Details View" width="80%"><figcaption></figcaption></figure>
 
 {% hint style="info" %}
-ZenML integrates seamlessly with many popular open-source tools, so you can also combine ZenML with other popular experiment tracking tools like [Weights & Biases](user-guide/component-galery/experiment-trackers/wandb.md), [MLflow](user-guide/component-galery/experiment-trackers/mlflow.md), or [Neptune](user-guide/component-galery/experiment-trackers/neptune.md) for even better reproducibility.
+ZenML integrates seamlessly with many popular open-source tools, so you can also combine ZenML with other popular experiment tracking tools like [Weights & Biases](../user-guide/component-galery/experiment-trackers/wandb.md), [MLflow](../user-guide/component-galery/experiment-trackers/mlflow.md), or [Neptune](../user-guide/component-galery/experiment-trackers/neptune.md) for even better reproducibility.
 {% endhint %}
 
 :rocket: **Learn More**&#x20;
@@ -58,7 +58,7 @@ Ready to develop production-ready code with ZenML? Here is a collection of pages
 {% tab title="ZenML for ML Engineers" %}
 ZenML empowers ML engineers to take ownership of the entire ML lifecycle end-to-end. Adopting ZenML means fewer handover points and more visibility on what is happening in your organization.
 
-*   **ML Lifecycle Management:** ZenML's abstractions enable you to manage sophisticated ML setups with ease. After you define your ML workflows as [Pipelines](getting-started/core-concepts.md#1-development) and your development, staging, and production infrastructures as [Stacks](getting-started/core-concepts.md#2-execution), you can move entire ML workflows to different environments in seconds.\\
+*   **ML Lifecycle Management:** ZenML's abstractions enable you to manage sophisticated ML setups with ease. After you define your ML workflows as [Pipelines](core-concepts.md#1-development) and your development, staging, and production infrastructures as [Stacks](core-concepts.md#2-execution), you can move entire ML workflows to different environments in seconds.\\
 
     ```bash
     zenml stack set staging
@@ -72,7 +72,7 @@ ZenML empowers ML engineers to take ownership of the entire ML lifecycle end-to-
 
 <figure><img src=".gitbook/assets/intro_dashboard_details.png" alt="ZenML Dashboard Details View" width="80%"><figcaption></figcaption></figure>
 
-*   **Automated Deployments:** With ZenML, you no longer need to upload custom Docker images to the cloud whenever you want to deploy a new model to production. Simply define your ML workflow as a ZenML pipeline, let ZenML handle the containerization, and have your model automatically deployed to a highly scalable Kubernetes deployment service like [Seldon](user-guide/component-galery/model-deployers/seldon.md).\\
+*   **Automated Deployments:** With ZenML, you no longer need to upload custom Docker images to the cloud whenever you want to deploy a new model to production. Simply define your ML workflow as a ZenML pipeline, let ZenML handle the containerization, and have your model automatically deployed to a highly scalable Kubernetes deployment service like [Seldon](../user-guide/component-galery/model-deployers/seldon.md).\\
 
     ```python
     from zenml.integrations.seldon.steps import seldon_model_deployer_step
