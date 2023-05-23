@@ -2357,4 +2357,3 @@ def test_connector_validation():
             secrets=secrets,
         ):
             pass
-
