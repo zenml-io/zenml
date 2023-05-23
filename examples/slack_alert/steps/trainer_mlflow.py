@@ -12,19 +12,35 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import mlflow
 import numpy as np
 from sklearn.base import ClassifierMixin
 from sklearn.svm import SVC
 
 from zenml import step
+from zenml.client import Client
+from zenml.integrations.mlflow.experiment_trackers import (
+    MLFlowExperimentTracker,
+)
+
+experiment_tracker = Client().active_stack.experiment_tracker
+
+if not experiment_tracker or not isinstance(
+    experiment_tracker, MLFlowExperimentTracker
+):
+    raise RuntimeError(
+        "Your active stack needs to contain a MLFlow experiment tracker for "
+        "this example to work."
+    )
 
 
-@step
-def svc_trainer(
+@step(enable_cache=False, experiment_tracker=experiment_tracker.name)
+def svc_trainer_mlflow(
     X_train: np.ndarray,
     y_train: np.ndarray,
 ) -> ClassifierMixin:
-    """Train a sklearn SVC classifier."""
+    """Train a sklearn SVC classifier and log to MLflow."""
+    mlflow.sklearn.autolog()
     model = SVC(gamma=0.001)
     model.fit(X_train, y_train)
     return model

@@ -11,24 +11,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 import click
-from pipelines.ask_pipeline import slack_ask_pipeline
-from pipelines.post_pipeline import slack_post_pipeline
-from steps import (
-    digits_data_loader,
-    evaluator,
-    svc_trainer,
-    svc_trainer_mlflow,
-    test_acc_ask_formatter,
-    test_acc_post_formatter,
-)
-
-from zenml.integrations.mlflow.steps import mlflow_model_deployer_step
-from zenml.integrations.slack.steps.slack_alerter_ask_step import (
-    slack_alerter_ask_step,
-)
-from zenml.integrations.slack.steps.slack_alerter_post_step import (
-    slack_alerter_post_step,
-)
 
 POST = "post"
 ASK = "ask"
@@ -47,22 +29,13 @@ def main(config: str):
     post = config == POST
 
     if post:
-        slack_post_pipeline(
-            data_loader=digits_data_loader(),
-            trainer=svc_trainer(),
-            evaluator=evaluator(),
-            formatter=test_acc_post_formatter(),
-            alerter=slack_alerter_post_step(),
-        ).run()
+        from pipelines.post_pipeline import slack_post_pipeline
+
+        slack_post_pipeline()
     else:
-        slack_ask_pipeline(
-            data_loader=digits_data_loader(),
-            trainer=svc_trainer_mlflow(),
-            evaluator=evaluator(),
-            formatter=test_acc_ask_formatter(),
-            alerter=slack_alerter_ask_step(),
-            deployer=mlflow_model_deployer_step(),
-        ).run()
+        from pipelines.ask_pipeline import slack_ask_pipeline
+
+        slack_ask_pipeline()
 
 
 if __name__ == "__main__":
