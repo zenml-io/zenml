@@ -4,14 +4,14 @@ description: Combining your efforts, expertise and resources.
 
 # User management
 
-Collaboration is a crucial aspect of any MLOps team as they often need to bring together individuals with diverse skills and expertise to create a cohesive and effective workflow for machine learning projects. A successful MLOps team requires seamless collaboration between data scientists, engineers, and DevOps professionals to develop, train, deploy, and maintain machine learning models. This can be a challenging task as it requires coordination across different tools, processes, and frameworks.
+Collaboration is a vital aspect of any MLOps team, as it often requires bringing together individuals with diverse skills and expertise to create a cohesive and effective workflow for machine learning projects. A successful MLOps team needs seamless collaboration between data scientists, engineers, and DevOps professionals to develop, train, deploy, and maintain machine learning models. This can be challenging, as it requires coordination across various tools, processes, and frameworks.
 
 ![ZenML Overview](.gitbook/assets/intro\_zenml\_overview.png)
 
-Herein lies one of ZenML's most significant strengths: a collaborative platform that extends beyond your team and includes the community. With ZenML, you can seamlessly work together with others, sharing resources and insights to achieve your common goals. Removing barriers to collaboration allows teams to iterate on ideas and problems much more efficiently which in turn leads to faster results.
+This is where ZenML excels: providing a collaborative platform that goes beyond your team and includes the community. With ZenML, you can effortlessly work together with others, sharing resources and insights to achieve your shared goals. Removing barriers to collaboration enables teams to iterate on ideas and problems more efficiently, leading to faster results.
 
-* With a deployed ZenML instance, users have the ability to create their own teams and project structures. They can easily share pipelines, runs, stacks, and other resources, streamlining the workflow and promoting teamwork.
-* On the flip side, there's the ZenML Hub. Here, you can peruse a collection of community-driven solutions, share your own code, and collaborate with fellow members of the community.
+* With a deployed ZenML instance, users can create their own teams and project structures. They can easily share pipelines, runs, stacks, and other resources, streamlining the workflow and promoting teamwork.
+* On the other hand, there's the ZenML Hub. Here, you can browse a collection of community-driven solutions, share your own code, and collaborate with fellow community members.
 
 This section will center on managing users, their roles, and permissions within a deployed ZenML instance, while the [ZenML Hub](../../user-guide/advanced-guide/leverage-community-contributed-plugins.md)
 
@@ -23,7 +23,7 @@ Permissions and roles are an alpha feature of ZenML and are in active developmen
 
 After you have [deployed ZenML](../../getting-started/deploying-zenml/deploying-zenml.md) and [connected your local client with the deployment](../production-fundamentals/production-fundamentals.md), you can go ahead and start adding your teammates as users.
 
-By default, all users have `Administrator` permissions throughout the ZenML dashboard, however, one user can always choose to [share](../stacks/managing-stacks.md#sharing-stacks-over-a-zenml-server) or not share their stacks.
+By default, all users have `Administrator` permissions throughout the ZenML dashboard. However, one user can always choose to [share](../stacks/managing-stacks.md#sharing-stacks-over-a-zenml-server) or not share their stacks.
 
 ### Personal Settings
 
@@ -35,7 +35,7 @@ You can go to the settings page from the bottom of the sidebar or top right of t
 
 ![Workspace Settings](../../assets/starter\_guide/collaboration/02\_project\_settings.png)
 
-In project settings, you can see a list of users who are invited or signed up for this ZenML deployment. You can go ahead and invite a new user here with a unique username. The dashboard will generate a new token for you, in the form of a URL that you can copy and send to your teammate.
+In the project settings, you can see a list of users who are invited or signed up for this ZenML deployment. You can invite a new user here with a unique username. The dashboard will generate a new token for you in the form of a URL that you can copy and send to your teammate.
 
 ![Invite Token](../../assets/starter\_guide/collaboration/03\_invite\_token.png)
 
