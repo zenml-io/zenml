@@ -459,7 +459,12 @@ class BaseStep(metaclass=BaseStepMeta):
             else:
                 parameters[key] = value
 
-        # TODO @schustmi: document what this does
+        # Above we iterated over the provided arguments which should overwrite
+        # any parameters previously defined on the step instance. Now we apply
+        # the default values on the entrypoint function and add those as
+        # parameters for any argument that has no value yet. If we were to do
+        # that in the above loop, we would overwrite previously configured
+        # parameters with the default values.
         bound_args.apply_defaults()
         for key, value in bound_args.arguments.items():
             self.entrypoint_definition.validate_input(key=key, value=value)
