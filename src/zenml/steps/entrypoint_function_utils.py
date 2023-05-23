@@ -11,9 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Util functions for step and pipeline entrypoint functions."""
 import inspect
-import json
-import os
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -26,17 +25,14 @@ from typing import (
     Type,
     Union,
 )
-from uuid import UUID
 
 from pydantic import BaseModel
-from pydantic.json import pydantic_encoder
 
 from zenml.exceptions import StepInterfaceError
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
-from zenml.materializers.materializer_registry import materializer_registry
 from zenml.steps.utils import parse_return_type_annotations
-from zenml.utils import artifact_utils, source_utils
+from zenml.utils import yaml_utils
 
 if TYPE_CHECKING:
     from zenml.config.source import Source
@@ -48,17 +44,22 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 
-def is_json_serializable(obj: Any) -> bool:
-    try:
-        json.dumps(obj, default=pydantic_encoder)
-        return True
-    except TypeError:
-        return False
-
-
 def get_step_entrypoint_signature(
     step: "BaseStep", include_step_context: bool = False
 ) -> inspect.Signature:
+    """Get the entrypoint signature of a step.
+
+    Args:
+        step: The step for which to get the entrypoint signature.
+        include_step_context: Whether to include the `StepContext` as a
+            parameter of the returned signature. If `True`, the exact signature
+            of the entrypoint function will be returned. If `False`, a potential
+            signature parameter of type `StepContext` will be removed before
+            returning the signature.
+
+    Returns:
+        The entrypoint function signature.
+    """
     from zenml.steps import StepContext
 
     signature = inspect.signature(step.entrypoint, follow_wrapped=True)
@@ -99,94 +100,21 @@ class StepArtifact(Artifact):
         self.pipeline = pipeline
 
 
-class ExternalArtifact(Artifact):
-    def __init__(
-        self,
-        value: Any = None,
-        id: Optional[UUID] = None,
-        materializer: Optional["MaterializerClassOrSource"] = None,
-        store_artifact_metadata: bool = True,
-        store_artifact_visualizations: bool = True,
-    ) -> None:
-        if value is not None and id is not None:
-            raise ValueError("Only value or ID allowed")
-        if value is None and id is None:
-            raise ValueError("Either value or ID required")
-
-        self._value = value
-        self._id = id
-        self._materializer = materializer
-        self._store_artifact_metadata = store_artifact_metadata
-        self._store_artifact_visualizations = store_artifact_visualizations
-
-    def upload_if_necessary(self) -> UUID:
-        from uuid import uuid4
-
-        from zenml.client import Client
-        from zenml.io import fileio
-
-        artifact_store_id = Client().active_stack.artifact_store.id
-
-        if self._id:
-            response = Client().get_artifact(artifact_id=self._id)
-            if response.artifact_store_id != artifact_store_id:
-                raise RuntimeError("Artifact store mismatch")
-        else:
-            logger.info("Uploading external artifact.")
-            artifact_name = f"external_{uuid4()}"
-            materializer_class = self._get_materializer()
-
-            uri = os.path.join(
-                Client().active_stack.artifact_store.path,
-                "external_artifacts",
-                artifact_name,
-            )
-            if fileio.exists(uri):
-                raise RuntimeError(f"Artifact URI {uri} already exists.")
-            fileio.makedirs(uri)
-
-            materializer = materializer_class(uri)
-
-            artifact, metadata = artifact_utils.upload_artifact(
-                name=artifact_name,
-                data=self._value,
-                materializer=materializer,
-                artifact_store_id=artifact_store_id,
-                extract_metadata=self._store_artifact_metadata,
-                include_visualizations=self._store_artifact_visualizations,
-            )
-            response = Client().zen_store.create_artifact(artifact=artifact)
-            if metadata:
-                Client().create_run_metadata(
-                    metadata=metadata, artifact_id=response.id
-                )
-
-            # To avoid duplicate uploads, switch to just referencing the
-            # uploaded artifact
-            self._id = response.id
-
-        return self._id
-
-    def _get_materializer(self) -> Type["BaseMaterializer"]:
-        assert self._value is not None
-
-        if isinstance(self._materializer, type):
-            return self._materializer
-        elif self._materializer:
-            return source_utils.load_and_validate_class(
-                self._materializer, expected_class=BaseMaterializer
-            )
-        else:
-            type_ = type(self._value)
-            return materializer_registry[type_]
-
-
 def validate_reserved_arguments(
     signature: inspect.Signature, reserved_arguments: Sequence[str]
 ) -> None:
+    """Validates that the signature does not contain any reserved arguments.
+
+    Args:
+        signature: The signature to validate.
+        reserved_arguments: The reserved arguments for the signature.
+
+    Raises:
+        RuntimeError: If the signature contains a reserved argument.
+    """
     for arg in reserved_arguments:
         if arg in signature.parameters:
-            raise RuntimeError(f"Reserved argument name {arg}.")
+            raise RuntimeError(f"Reserved argument name '{arg}'.")
 
 
 class EntrypointFunctionDefinition(NamedTuple):
@@ -222,7 +150,7 @@ class EntrypointFunctionDefinition(NamedTuple):
 
             self._validate_input_value(parameter=parameter, value=input_)
 
-            if not is_json_serializable(input_):
+            if not yaml_utils.is_json_serializable(input_):
                 raise StepInterfaceError(
                     f"Argument type (`{type(input_)}`) for argument "
                     f"'{key}' is not JSON "

@@ -73,6 +73,8 @@ def test_using_step_instance_and_class():
 
 def test_passing_invalid_parameters():
     class UnsupportedClass:
+        # This class is not supported as a parameter as it's not JSON
+        # serializable
         pass
 
     @step

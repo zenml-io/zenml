@@ -46,11 +46,24 @@ class PipelineConfigurationUpdate(StrictBaseModel):
 
 
 class StepOutput(StrictBaseModel):
+    """Reference to the output of a step.
+
+    Attributes:
+        invocation_id: The ID of the invocation that produces the artifact.
+        output_name: Name of the output of the step invocation.
+    """
+
     invocation_id: str
     output_name: str
 
 
 class ArtifactReference(StrictBaseModel):
+    """Reference to an Artifact.
+
+    Attributes:
+        id: The ID of the referenced artifact.
+    """
+
     id: UUID
 
 
