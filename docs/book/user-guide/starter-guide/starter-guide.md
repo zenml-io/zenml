@@ -18,7 +18,7 @@ def step_1() -> str:
     """Returns the `world` substring."""
     return "world"
 
-@step
+@step(enable_cache=False)
 def step_2(input_one: str, input_two: str) -> None:
     """Combines the two strings at its input and prints them."""
     combined_str = input_one + ' ' + input_two
@@ -89,7 +89,7 @@ If you navigate to the run that you just executed, you will see a diagram view o
 Steps are functions. These functions have inputs and outputs. For ZenML to work properly, these need to be typed.
 
 ```python
-@step
+@step(enable_cache=False)
 def step_2(input_one: str, input_two: str) -> None:
   """Combines the two strings at its input and prints them."""
   combined_str = input_one + input_two
@@ -123,3 +123,36 @@ if __name__ == "__main__":
 In the following sections, you will learn more about the following topics:
 
 <table data-card-size="large" data-view="cards"><thead><tr><th></th><th></th><th data-hidden></th></tr></thead><tbody><tr><td><mark style="color:purple;"><strong>Create an ML Pipeline</strong></mark></td><td>Learning how to setup and configure your pipeline.</td><td></td></tr><tr><td><mark style="color:purple;"><strong>Caching previous executions</strong></mark></td><td>Iterating quickly with ZenML through fast caching.</td><td></td></tr><tr><td><mark style="color:purple;"><strong>Version pipelines</strong></mark></td><td>Understanding how and when the version of a pipeline is incremented.</td><td></td></tr><tr><td><mark style="color:purple;"><strong>Fetch runs after execution</strong></mark></td><td>Inspecting a finished pipeline run and its outputs.</td><td></td></tr><tr><td><mark style="color:purple;"><strong>Understand stacks</strong></mark></td><td>Learning how to switch the infrastructure backend of your code.</td><td></td></tr><tr><td><mark style="color:purple;"><strong>Connect to a deployed ZenML</strong></mark></td><td>Learning about the ZenML server.</td><td></td></tr><tr><td><mark style="color:purple;"><strong>Switch to production</strong></mark></td><td>Bringing your pipelines into production using cloud stacks.</td><td></td></tr><tr><td><mark style="color:purple;"><strong>Follow best practices</strong></mark></td><td>Recommended repository structure and best practices.</td><td></td></tr></tbody></table>
+
+<details>
+
+<summary>Code Example of this Section</summary>
+
+```python
+from zenml import pipeline, step
+
+
+@step
+def step_1() -> str:
+    """Returns the `world` substring."""
+    return "world"
+
+
+@step(enable_cache=False)
+def step_2(input_one: str, input_two: str) -> None:
+    """Combines the two strings at its input and prints them."""
+    combined_str = input_one + ' ' + input_two
+    print(combined_str)
+
+
+@pipeline
+def my_pipeline():
+    output_step_one = step_1()
+    step_2(input_one="hello", input_two=output_step_one)
+
+
+if __name__ == "__main__":
+    my_pipeline()
+```
+
+</details>

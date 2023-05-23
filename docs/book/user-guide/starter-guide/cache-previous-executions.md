@@ -9,6 +9,10 @@ Developing machine learning pipelines is very iterative. ZenML speeds you up in 
 In the logs of your previous runs, you might have noticed at this point that rerunning the pipeline a second time will use caching on the steps:
 
 {% tabs %}
+{% tab title="Dashboard" %}
+<figure><img src="broken-reference" alt=""><figcaption><p>DAG of a cached pipeline run</p></figcaption></figure>
+{% endtab %}
+
 {% tab title="Logs" %}
 ```bash
 Step step_1 has started.
@@ -16,10 +20,6 @@ Using cached version of step_1.
 Step step_2 has started.
 Using cached version of step_2.
 ```
-{% endtab %}
-
-{% tab title="Dashboard" %}
-<figure><img src="broken-reference" alt=""><figcaption><p>DAG of a cached pipeline run</p></figcaption></figure>
 {% endtab %}
 {% endtabs %}
 
