@@ -128,7 +128,7 @@ def step(
             func.__name__,
             (_DecoratedStep,),
             {
-                "entrypoint": func,
+                "entrypoint": staticmethod(func),
                 "__module__": func.__module__,
                 "__doc__": func.__doc__,
             },

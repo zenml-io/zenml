@@ -84,7 +84,7 @@ def pipeline(
         A pipeline instance.
     """
 
-    def inner_decorator(func: F) -> "Pipeline":
+    def inner_decorator(func: "F") -> "Pipeline":
         from zenml.new.pipelines.pipeline import Pipeline
 
         p = Pipeline(
