@@ -140,31 +140,38 @@
 
 # 🤖 Introduction
 
-🤹 ZenML is an extensible, open-source MLOps framework for creating portable, production-ready machine learning pipelines. By decoupling infrastructure from code, ZenML enables developers across your organization to collaborate more effectively as they develop to production.
+🤹 ZenML is an extensible, open-source MLOps framework for creating portable,
+production-ready machine learning pipelines. By decoupling infrastructure from
+code, ZenML enables developers across your organization to collaborate more
+effectively as they develop to production.
 
-- emoji ZenML gives data scientists the freedom to fully focus on modeling and experimentation while writing code that is production-ready from the get-go.
+- 🧑‍💼 ZenML gives data scientists the freedom to fully focus on modeling and
+  experimentation while writing code that is production-ready from the get-go.
 
-- emoji ZenML empowers ML engineers to take ownership of the entire ML lifecycle end-to-end. Adopting ZenML means fewer handover points and more visibility on what is happening in your organization.
+- 👨‍💻 ZenML empowers ML engineers to take ownership of the entire ML lifecycle
+  end-to-end. Adopting ZenML means fewer handover points and more visibility on
+  what is happening in your organization.
 
-- emoji ZenML enables MLOps infrastructure experts to define, deploy, and manage sophisticated production environments that are easy to share with colleagues.
+- 🧑‍✈️ ZenML enables MLOps infrastructure experts to define, deploy, and manage
+  sophisticated production environments that are easy to share with colleagues.
 
 ![The long journey from experimentation to production.](docs/book/.gitbook/assets/intro-zenml-overview.png)
 
 ZenML offers a simple and flexible syntax, is cloud- and tool-agnostic, and has
 interfaces/abstractions catered toward ML workflows.
 With ZenML you centralize the management of all your ML pipelines and
-help data scientists write code once, but deploy to any infrastructure target seamlessly
+help data scientists write code once, but deploy to any infrastructure target
+seamlessly
 
 <div align="center">
     <img src="docs/book/assets/stack.gif">
 </div>
 
-
 # 🤸 Getting Started
 
 ## 💾 Installation
 
-[Install ZenML](https://docs.zenml.io/getting-started/installation) via 
+[Install ZenML](https://docs.zenml.io/getting-started/installation) via
 [PyPI](https://pypi.org/project/zenml/). Python 3.7 - 3.10 is required:
 
 ```bash
@@ -184,10 +191,12 @@ Here's an example of a hello world ZenML pipeline in code:
 ```python
 from zenml import pipeline, step
 
+
 @step
 def step_1() -> str:
     """Returns the `world` substring."""
     return "world"
+
 
 @step
 def step_2(input_one: str, input_two: str) -> None:
@@ -195,10 +204,12 @@ def step_2(input_one: str, input_two: str) -> None:
     combined_str = input_one + ' ' + input_two
     print(combined_str)
 
+
 @pipeline
 def my_pipeline():
     output_step_one = step_1()
     step_2(input_one="hello", input_two=output_step_one)
+
 
 if __name__ == "__main__":
     my_pipeline()
@@ -213,7 +224,6 @@ zenml up
 ```
 
 ![ZenML Dashboard](docs/book/.gitbook/assets/landingpage.png")
-
 
 ## 📜 ZenML Projects
 
@@ -234,8 +244,8 @@ enable collaborative features as the central MLOps interface for teams.
 
 ![ZenML Architecture Diagram.](docs/book/assets/getting_started/Scenario3.2.png)
 
-You can choose to deploy with the ZenML CLI (see `zenml deploy --help`), docker 
-or helm. Check out the 
+You can choose to deploy with the ZenML CLI (see `zenml deploy --help`), docker
+or helm. Check out the
 [docs](https://docs.zenml.io/getting-started/deploying-zenml/deploying-zenml)
 to find out how.
 
@@ -245,12 +255,13 @@ Apart from the infrastructure required to run ZenML itself, ZenML also boasts a
 ton of [integrations](https://zenml.io/integrations) into popular MLOps tools.
 The [ZenML Stack](https://docs.zenml.io/starter-guide/stacks/stacks) concept
 ensures that these tools work nicely together, therefore bringing structure and
-standardization into the MLOps workflow. 
+standardization into the MLOps workflow.
 
-If the infrastructure is not spun up yet, zenml can handle the deployment 
-for you as well with 
+If the infrastructure is not spun up yet, zenml can handle the deployment
+for you as well with
 `zenml <STACK_COMPONENT_TYPE> deploy <NAME> --flavor=<FLAVOR_TYPE>`. Learn more
-in the docs [here](https://docs.zenml.io/platform-guide/set-up-your-mlops-platform/deploy-and-set-up-a-cloud-stack/deploying-stack-components)
+in the
+docs [here](https://docs.zenml.io/platform-guide/set-up-your-mlops-platform/deploy-and-set-up-a-cloud-stack/deploying-stack-components)
 
 # 🗺 Roadmap
 
@@ -259,7 +270,7 @@ regularly updated source of truth for the ZenML community to understand where
 the product is going in the short, medium, and long term.
 
 ZenML is managed by a [core team](https://zenml.io/company#CompanyTeam) of
-developers that are responsible for making key decisions and incorporating 
+developers that are responsible for making key decisions and incorporating
 feedback from the community. The team oversees feedback via various channels,
 and you can directly influence the roadmap as follows:
 
