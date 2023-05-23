@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-
+"""Internal BaseStep subclass used by the step decorator."""
 from typing import Any
 
 from zenml.config.source import Source
@@ -19,9 +19,12 @@ from zenml.steps import BaseStep
 
 
 class _DecoratedStep(BaseStep):
+    """Internal BaseStep subclass used by the step decorator."""
+
     @property
     def source_object(self) -> Any:
         """The source object of this step.
+
         Returns:
             The source object of this step.
         """
@@ -29,6 +32,7 @@ class _DecoratedStep(BaseStep):
 
     def resolve(self) -> "Source":
         """Resolves the step.
+
         Returns:
             The step source.
         """

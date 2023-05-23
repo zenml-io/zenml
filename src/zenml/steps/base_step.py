@@ -370,7 +370,9 @@ class BaseStep(metaclass=BaseStepMeta):
             StepInterfaceError: If there are too many arguments or arguments
                 with a wrong name/type.
         """
-        maximum_arg_count = 1 if self.entrypoint_definition.params else 0
+        maximum_arg_count = (
+            1 if self.entrypoint_definition.legacy_params else 0
+        )
         arg_count = len(args) + len(kwargs)
         if arg_count > maximum_arg_count:
             raise StepInterfaceError(
@@ -379,18 +381,18 @@ class BaseStep(metaclass=BaseStepMeta):
                 f"'{self.name}' step."
             )
 
-        if self.entrypoint_definition.params:
+        if self.entrypoint_definition.legacy_params:
             if args:
                 config = args[0]
             elif kwargs:
                 key, config = kwargs.popitem()
 
-                if key != self.entrypoint_definition.params.name:
+                if key != self.entrypoint_definition.legacy_params.name:
                     raise StepInterfaceError(
                         f"Unknown keyword argument '{key}' when creating a "
                         f"'{self.name}' step, only expected a single "
                         "argument with key "
-                        f"'{self.entrypoint_definition.params.name}'."
+                        f"'{self.entrypoint_definition.legacy_params.name}'."
                     )
             else:
                 # This step requires configuration parameters but no parameters
@@ -401,12 +403,12 @@ class BaseStep(metaclass=BaseStepMeta):
                 return
 
             if not isinstance(
-                config, self.entrypoint_definition.params.annotation
+                config, self.entrypoint_definition.legacy_params.annotation
             ):
                 raise StepInterfaceError(
                     f"`{config}` object passed when creating a "
                     f"'{self.name}' step is not a "
-                    f"`{self.entrypoint_definition.params.annotation.__name__} "
+                    f"`{self.entrypoint_definition.legacy_params.annotation.__name__} "
                     "` instance."
                 )
 
@@ -435,7 +437,7 @@ class BaseStep(metaclass=BaseStepMeta):
         parameters = {}
 
         for key, value in bound_args.arguments.items():
-            self.entrypoint_definition.validate_input(key=key, input_=value)
+            self.entrypoint_definition.validate_input(key=key, value=value)
 
             if isinstance(value, StepArtifact):
                 artifacts[key] = value
@@ -840,11 +842,9 @@ class BaseStep(metaclass=BaseStepMeta):
 
         for key, value in parameters.items():
             if key in self.entrypoint_definition.inputs:
-                self.entrypoint_definition.validate_input(
-                    key=key, input_=value
-                )
+                self.entrypoint_definition.validate_input(key=key, value=value)
 
-            elif not self.entrypoint_definition.params:
+            elif not self.entrypoint_definition.legacy_params:
                 raise StepInterfaceError(
                     "Can't set parameter without param class."
                 )
@@ -1033,9 +1033,11 @@ class BaseStep(metaclass=BaseStepMeta):
             else:
                 params[key] = value
 
-        if self.entrypoint_definition.params:
+        if self.entrypoint_definition.legacy_params:
             legacy_params = self._finalize_legacy_parameters()
-            params[self.entrypoint_definition.params.name] = legacy_params
+            params[
+                self.entrypoint_definition.legacy_params.name
+            ] = legacy_params
 
         return params
 
@@ -1055,14 +1057,14 @@ class BaseStep(metaclass=BaseStepMeta):
                 more config parameters.
             StepInterfaceError: If the parameter class validation failed.
         """
-        if not self.entrypoint_definition.params:
+        if not self.entrypoint_definition.legacy_params:
             return {}
 
         # parameters for the `BaseParameters` class specified in the "new" way
         # by specifying a dict of parameters for the corresponding key
         params_defined_in_new_way = (
             self.configuration.parameters.get(
-                self.entrypoint_definition.params.name
+                self.entrypoint_definition.legacy_params.name
             )
             or {}
         )
@@ -1072,7 +1074,9 @@ class BaseStep(metaclass=BaseStepMeta):
         for (
             name,
             field,
-        ) in self.entrypoint_definition.params.annotation.__fields__.items():
+        ) in (
+            self.entrypoint_definition.legacy_params.annotation.__fields__.items()
+        ):
             if name in self.configuration.parameters:
                 # a value for this parameter has been set already
                 values[name] = self.configuration.parameters[name]
@@ -1092,11 +1096,11 @@ class BaseStep(metaclass=BaseStepMeta):
             raise MissingStepParameterError(
                 self.name,
                 missing_keys,
-                self.entrypoint_definition.params.annotation,
+                self.entrypoint_definition.legacy_params.annotation,
             )
 
         if (
-            self.entrypoint_definition.params.annotation.Config.extra
+            self.entrypoint_definition.legacy_params.annotation.Config.extra
             == Extra.allow
         ):
             # Add all parameters for the config class for backwards
@@ -1104,7 +1108,7 @@ class BaseStep(metaclass=BaseStepMeta):
             values.update(self.configuration.parameters)
 
         try:
-            self.entrypoint_definition.params.annotation(**values)
+            self.entrypoint_definition.legacy_params.annotation(**values)
         except ValidationError:
             raise StepInterfaceError("Failed to validate function parameters.")
 

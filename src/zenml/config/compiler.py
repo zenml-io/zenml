@@ -276,12 +276,12 @@ class Compiler:
             RuntimeError: If an upstream step is missing.
         """
         available_steps = set(pipeline.invocations)
-        missing_steps = invocation.upstream_steps - available_steps
+        invalid_upstream_steps = invocation.upstream_steps - available_steps
 
-        if missing_steps:
+        if invalid_upstream_steps:
             raise RuntimeError(
-                f"Invalid upstream steps: {missing_steps}. Available steps in "
-                f"this pipeline: {available_steps}."
+                f"Invalid upstream steps: {invalid_upstream_steps}. Available "
+                f"steps in this pipeline: {available_steps}."
             )
 
     def _filter_and_validate_settings(

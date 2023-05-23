@@ -34,12 +34,9 @@ from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.materializers.unmaterialized_artifact import UnmaterializedArtifact
 from zenml.models.artifact_models import (
-    ArtifactRequestModel,
     ArtifactResponseModel,
 )
 from zenml.orchestrators.publish_utils import (
-    publish_output_artifact_metadata,
-    publish_output_artifacts,
     publish_step_run_metadata,
     publish_successful_step_run,
 )
@@ -53,9 +50,10 @@ from zenml.steps.utils import (
 from zenml.utils import artifact_utils, materializer_utils, source_utils
 
 if TYPE_CHECKING:
+    from uuid import UUID
+
     from zenml.config.source import Source
     from zenml.config.step_configurations import Step
-    from zenml.metadata.metadata_types import MetadataType
     from zenml.stack import Stack
     from zenml.steps import BaseStep
 
@@ -183,21 +181,13 @@ class StepRunner:
                 is_enabled_on_step=step_run_info.config.enable_artifact_visualization,
                 is_enabled_on_pipeline=step_run_info.pipeline.enable_artifact_visualization,
             )
-            output_artifacts, artifact_metadata = self._store_output_artifacts(
+            output_artifact_ids = self._store_output_artifacts(
                 output_data=output_data,
                 output_artifact_uris=output_artifact_uris,
                 output_materializers=output_materializers,
                 artifact_metadata_enabled=artifact_metadata_enabled,
                 artifact_visualization_enabled=artifact_visualization_enabled,
             )
-
-        output_artifact_ids = publish_output_artifacts(
-            output_artifacts=output_artifacts,
-        )
-        publish_output_artifact_metadata(
-            output_artifact_ids=output_artifact_ids,
-            output_artifact_metadata=artifact_metadata,
-        )
 
         # Update the status and output artifacts of the step run.
         publish_successful_step_run(
@@ -470,9 +460,7 @@ class StepRunner:
         output_artifact_uris: Dict[str, str],
         artifact_metadata_enabled: bool,
         artifact_visualization_enabled: bool,
-    ) -> Tuple[
-        Dict[str, ArtifactRequestModel], Dict[str, Dict[str, "MetadataType"]]
-    ]:
+    ) -> Dict[str, "UUID"]:
         """Stores the output artifacts of the step.
 
         Args:
@@ -486,8 +474,7 @@ class StepRunner:
                 enabled.
 
         Returns:
-            An `ArtifactRequestModel` for each output artifact that was saved,
-            and the metadata of each output artifact.
+            The IDs of the published output artifacts.
         """
         client = Client()
         artifact_stores = client.active_stack_model.components.get(
@@ -495,8 +482,8 @@ class StepRunner:
         )
         assert artifact_stores  # Every stack has an artifact store.
         artifact_store_id = artifact_stores[0].id
-        output_artifacts: Dict[str, ArtifactRequestModel] = {}
-        output_artifact_metadata: Dict[str, Dict[str, "MetadataType"]] = {}
+        output_artifacts: Dict[str, "UUID"] = {}
+
         for output_name, return_value in output_data.items():
             data_type = type(return_value)
             materializer_classes = output_materializers[output_name]
@@ -506,10 +493,7 @@ class StepRunner:
             uri = output_artifact_uris[output_name]
             materializer = materializer_class(uri)
 
-            (
-                output_artifact,
-                artifact_metadata,
-            ) = artifact_utils.upload_artifact(
+            artifact_id = artifact_utils.upload_artifact(
                 name=output_name,
                 data=return_value,
                 materializer=materializer,
@@ -517,11 +501,9 @@ class StepRunner:
                 extract_metadata=artifact_metadata_enabled,
                 include_visualizations=artifact_visualization_enabled,
             )
-            output_artifacts[output_name] = output_artifact
-            if artifact_metadata_enabled:
-                output_artifact_metadata[output_name] = artifact_metadata
+            output_artifacts[output_name] = artifact_id
 
-        return output_artifacts, output_artifact_metadata
+        return output_artifacts
 
     def load_and_run_hook(
         self,

@@ -16,7 +16,7 @@
 import base64
 import os
 import tempfile
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union, cast
+from typing import TYPE_CHECKING, Any, List, Optional, Union, cast
 
 from zenml.client import Client
 from zenml.constants import MODEL_METADATA_YAML_FILE_NAME
@@ -39,7 +39,6 @@ if TYPE_CHECKING:
     from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
     from zenml.config.source import Source
     from zenml.materializers.base_materializer import BaseMaterializer
-    from zenml.metadata.metadata_types import MetadataType
     from zenml.zen_stores.base_zen_store import BaseZenStore
 
 
@@ -348,8 +347,8 @@ def upload_artifact(
     artifact_store_id: "UUID",
     extract_metadata: bool,
     include_visualizations: bool,
-) -> Tuple["ArtifactRequestModel", Dict[str, "MetadataType"]]:
-    """Upload an artifact.
+) -> "UUID":
+    """Upload and publish an artifact.
 
     Args:
         name: The name of the artifact.
@@ -361,8 +360,7 @@ def upload_artifact(
         include_visualizations: If artifact visualizations should be generated.
 
     Returns:
-        A request model to store the artifact in the ZenStore and optional
-        metadata for the artifact.
+        The ID of the published artifact.
     """
     data_type = type(data)
     materializer.validate_type_compatibility(data_type)
@@ -393,7 +391,7 @@ def upload_artifact(
                 f"Failed to extract metadata for output artifact '{name}': {e}"
             )
 
-    artifact_request = ArtifactRequestModel(
+    artifact = ArtifactRequestModel(
         name=name,
         type=materializer.ASSOCIATED_ARTIFACT_TYPE,
         uri=materializer.uri,
@@ -404,5 +402,10 @@ def upload_artifact(
         artifact_store_id=artifact_store_id,
         visualizations=visualizations,
     )
+    response = Client().zen_store.create_artifact(artifact=artifact)
+    if artifact_metadata:
+        Client().create_run_metadata(
+            metadata=artifact_metadata, artifact_id=response.id
+        )
 
-    return artifact_request, artifact_metadata
+    return response.id

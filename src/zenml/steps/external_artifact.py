@@ -38,7 +38,29 @@ logger = get_logger(__name__)
 
 
 class ExternalArtifact:
-    """ """
+    """External artifacts can be used to provide values as input to ZenML steps.
+
+    ZenML steps accept either artifacts (=outputs of other steps), parameters
+    (raw, JSON serializable values) or external artifacts. External artifacts
+    can be used to provide any value as input to a step without needing to
+    write an additional step that returns this value.
+
+    Example:
+    ```
+    from zenml import step, pipeline, ExternalArtifact
+    import numpy as np
+
+    @step
+    def my_step(value: np.ndarray) -> None:
+      print(value)
+
+    my_array = np.array([1, 2, 3])
+
+    @pipeline
+    def my_pipeline():
+      my_step(value=ExternalArtifact(my_array))
+    ```
+    """
 
     def __init__(
         self,
@@ -68,13 +90,19 @@ class ExternalArtifact:
                 artifact should be stored. Only used when `value` is provided.
 
         Raises:
-            ValueError: If no `v
-
+            ValueError: If no/multiple values are provided for the `value` and
+                `id` arguments.
         """
         if value is not None and id is not None:
-            raise ValueError("Only value or ID allowed")
+            raise ValueError(
+                "Only a value or an ID can be provided when creating an "
+                "external artifact."
+            )
         if value is None and id is None:
-            raise ValueError("Either value or ID required")
+            raise ValueError(
+                "Either a value or an ID must be provided when creating an "
+                "external artifact."
+            )
 
         self._value = value
         self._id = id
@@ -83,12 +111,33 @@ class ExternalArtifact:
         self._store_artifact_visualizations = store_artifact_visualizations
 
     def upload_if_necessary(self) -> UUID:
+        """Uploads the artifact if necessary.
+
+        This method does one of two things:
+        - If an artifact is referenced by ID, it will verify that the artifact
+          exists and is in the correct artifact store.
+        - Otherwise, the artifact value will be uploaded and published.
+
+        Raises:
+            RuntimeError: If the artifact store of the referenced artifact
+                is not the same as the one in the active stack.
+            RuntimeError: If the URI of the artifact already exists.
+
+        Returns:
+            The artifact ID.
+        """
         artifact_store_id = Client().active_stack.artifact_store.id
 
         if self._id:
             response = Client().get_artifact(artifact_id=self._id)
             if response.artifact_store_id != artifact_store_id:
-                raise RuntimeError("Artifact store mismatch")
+                raise RuntimeError(
+                    f"The artifact {response.name} (ID: {response.id}) "
+                    "referenced by an external artifact is not stored in the "
+                    "artifact store of the active stack. This will lead to "
+                    "issues loading the artifact. Please make sure to only "
+                    "reference artifacts stored in your active artifact store."
+                )
         else:
             assert self._value
 
@@ -104,12 +153,12 @@ class ExternalArtifact:
                 artifact_name,
             )
             if fileio.exists(uri):
-                raise RuntimeError(f"Artifact URI {uri} already exists.")
+                raise RuntimeError(f"Artifact URI '{uri}' already exists.")
             fileio.makedirs(uri)
 
             materializer = materializer_class(uri)
 
-            artifact, metadata = artifact_utils.upload_artifact(
+            artifact_id = artifact_utils.upload_artifact(
                 name=artifact_name,
                 data=self._value,
                 materializer=materializer,
@@ -117,22 +166,27 @@ class ExternalArtifact:
                 extract_metadata=self._store_artifact_metadata,
                 include_visualizations=self._store_artifact_visualizations,
             )
-            response = Client().zen_store.create_artifact(artifact=artifact)
-            if metadata:
-                Client().create_run_metadata(
-                    metadata=metadata, artifact_id=response.id
-                )
 
-            # To avoid duplicate uploads, switch to just referencing the
-            # uploaded artifact
-            self._id = response.id
+            # To avoid duplicate uploads, switch to referencing the uploaded
+            # artifact by ID
+            self._id = artifact_id
             logger.info(
-                "Finished uploading external artifact %s.", response.id
+                "Finished uploading external artifact %s.", artifact_id
             )
 
         return self._id
 
     def _get_materializer_class(self, value: Any) -> Type["BaseMaterializer"]:
+        """Gets a materializer class for a value.
+
+        If a custom materializer is defined for this artifact it will be
+        returned. Otherwise it will get the materializer class from the
+        registry, falling back to the Cloudpickle materializer if no concrete
+        materializer is registered for the type of value.
+
+        Returns:
+            The materializer class.
+        """
         if isinstance(self._materializer, type):
             return self._materializer
         elif self._materializer:
