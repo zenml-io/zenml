@@ -42,7 +42,11 @@ ZenML gives data scientists the freedom to fully focus on modeling and experimen
     ```
 * **Automatic Metadata Tracking:** ZenML automatically tracks the metadata of all your runs and saves all your datasets and models to disk and versions them. Using the ZenML dashboard, you can see detailed visualizations of all your experiments. Try it out at [https://demo.zenml.io/](https://demo.zenml.io/)!
 
+<<<<<<< Updated upstream:docs/book/introduction.md
 <figure><img src="getting-started/.gitbook/assets/intro_dashboard_details.png" alt="ZenML Dashboard Details View" width="80%"><figcaption></figcaption></figure>
+=======
+<figure><img src="../.gitbook/assets/intro_dashboard_details.png" alt="ZenML Dashboard Details View" width="80%"><figcaption></figcaption></figure>
+>>>>>>> Stashed changes:docs/book/getting-started/introduction.md
 
 {% hint style="info" %}
 ZenML integrates seamlessly with many popular open-source tools, so you can also combine ZenML with other popular experiment tracking tools like [Weights & Biases](user-guide/component-guide/experiment-trackers/wandb.md), [MLflow](user-guide/component-guide/experiment-trackers/mlflow.md), or [Neptune](user-guide/component-guide/experiment-trackers/neptune.md) for even better reproducibility.
@@ -68,9 +72,15 @@ ZenML empowers ML engineers to take ownership of the entire ML lifecycle end-to-
     ```
 * **Reproducibility:** ZenML enables you to painlessly reproduce previous results by automatically tracking and versioning all stacks, pipelines, artifacts, and source code. In the ZenML dashboard, you can get an overview of everything that has happened and drill down into detailed lineage visualizations. Try it out at [https://demo.zenml.io/](https://demo.zenml.io/)!
 
+<<<<<<< Updated upstream:docs/book/introduction.md
 <figure><img src="getting-started/.gitbook/assets/intro_dashboard.png" alt="ZenML Dashboard Overview" width="70%"><figcaption></figcaption></figure>
 
 <figure><img src="getting-started/.gitbook/assets/intro_dashboard_details.png" alt="ZenML Dashboard Details View" width="80%"><figcaption></figcaption></figure>
+=======
+<figure><img src="../.gitbook/assets/intro_dashboard.png" alt="ZenML Dashboard Overview" width="70%"><figcaption></figcaption></figure>
+
+<figure><img src="../.gitbook/assets/intro_dashboard_details.png" alt="ZenML Dashboard Details View" width="80%"><figcaption></figcaption></figure>
+>>>>>>> Stashed changes:docs/book/getting-started/introduction.md
 
 *   **Automated Deployments:** With ZenML, you no longer need to upload custom Docker images to the cloud whenever you want to deploy a new model to production. Simply define your ML workflow as a ZenML pipeline, let ZenML handle the containerization, and have your model automatically deployed to a highly scalable Kubernetes deployment service like [Seldon](user-guide/component-guide/model-deployers/seldon.md).\\
 
@@ -111,7 +121,11 @@ ZenML enables MLOps infrastructure experts to define, deploy, and manage sophist
     ```
 * Registering your environments as ZenML stacks also enables you to browse and explore them in a convenient user interface. Try it out at [https://demo.zenml.io/](https://demo.zenml.io/)!
 
+<<<<<<< Updated upstream:docs/book/introduction.md
 <figure><img src="getting-started/.gitbook/assets/intro_dashboard_stacks.png" alt="ZenML Dashboard Stacks View" width="80%"><figcaption></figcaption></figure>
+=======
+<figure><img src="../.gitbook/assets/intro_dashboard_stacks.png" alt="ZenML Dashboard Stacks View" width="80%"><figcaption></figcaption></figure>
+>>>>>>> Stashed changes:docs/book/getting-started/introduction.md
 
 *   **No Vendor Lock-In:** Since infrastructure is decoupled from code, ZenML gives you the freedom to switch to a different tooling stack whenever it suits you. By avoiding vendor lock-in, you have the flexibility to transition between cloud providers or services, ensuring that you receive the best performance and pricing available in the market at any time.\\
 
