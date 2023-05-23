@@ -66,7 +66,7 @@ from zenml.models.pipeline_build_models import (
     PipelineBuildBaseModel,
 )
 from zenml.models.pipeline_deployment_models import PipelineDeploymentBaseModel
-from zenml.pipelines import build_utils
+from zenml.new.pipelines import build_utils
 from zenml.stack import Stack
 from zenml.steps import BaseStep
 from zenml.steps.base_step import BaseStepMeta

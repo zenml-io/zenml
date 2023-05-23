@@ -50,11 +50,11 @@ from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.materializers.materializer_registry import materializer_registry
 from zenml.steps.base_parameters import BaseParameters
 from zenml.steps.entrypoint_function_utils import (
-    ExternalArtifact,
     StepArtifact,
     get_step_entrypoint_signature,
     validate_entrypoint_function,
 )
+from zenml.steps.external_artifact import ExternalArtifact
 from zenml.utils import (
     dict_utils,
     pydantic_utils,
@@ -107,30 +107,6 @@ class BaseStepMeta(type):
             validate_entrypoint_function(cls.entrypoint)
 
         return cls
-
-    # def __call__(self, *args: Any, **kwargs: Any) -> Any:
-    #     from zenml.new.pipelines.pipeline import Pipeline
-
-    #     if not Pipeline.ACTIVE_PIPELINE:
-    #         return super().__call__(*args, **kwargs)
-
-    #     init_kwargs = {}
-    #     call_kwargs = {}
-
-    #     # TODO: validate the entrypoint does not define reserved params like
-    #     # "settings" or "extra"
-    #     entrypoint_params = set(inspect.signature(self.entrypoint).parameters)
-    #     entrypoint_params.add("after")
-    #     entrypoint_params.add("id")
-
-    #     for key, value in kwargs.items():
-    #         if key in entrypoint_params:
-    #             call_kwargs[key] = value
-    #         else:
-    #             init_kwargs[key] = value
-
-    #     step_instance = super().__call__(**init_kwargs)
-    #     return step_instance(*args, **call_kwargs)
 
 
 T = TypeVar("T", bound="BaseStep")
@@ -566,7 +542,8 @@ class BaseStep(metaclass=BaseStepMeta):
         from pydantic.decorator import ValidatedFunction
 
         validation_func = ValidatedFunction(
-            self.entrypoint, config={"arbitrary_types_allowed": True}
+            self.entrypoint,
+            config={"arbitrary_types_allowed": True, "smart_union": True},
         )
         model = validation_func.init_model_instance(*args, **kwargs)
 
@@ -912,6 +889,18 @@ class BaseStep(metaclass=BaseStepMeta):
         input_artifacts: Dict[str, "StepArtifact"],
         external_artifacts: Dict[str, UUID],
     ) -> None:
+        """Validates the step inputs.
+
+        This method makes sure that all inputs are provided either as an
+        artifact or parameter.
+
+        Args:
+            input_artifacts: The input artifacts.
+            external_artifacts: The external input artifacts.
+
+        Raises:
+            StepInterfaceError: If an entrypoint input is missing.
+        """
         for key in self.entrypoint_definition.inputs.keys():
             if (
                 key in input_artifacts
@@ -1023,6 +1012,11 @@ class BaseStep(metaclass=BaseStepMeta):
         return complete_configuration
 
     def _finalize_parameters(self) -> Dict[str, Any]:
+        """Finalizes the config parameters for running this step.
+
+        Returns:
+            All parameter values for running this step.
+        """
         params = {}
         for key, value in self.configuration.parameters.items():
             if key not in self.entrypoint_definition.inputs:

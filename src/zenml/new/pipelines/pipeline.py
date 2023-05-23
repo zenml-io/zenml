@@ -32,6 +32,7 @@ from typing import (
     Type,
     TypeVar,
     Union,
+    cast,
 )
 from uuid import UUID
 
@@ -64,13 +65,13 @@ from zenml.models.pipeline_build_models import (
     PipelineBuildBaseModel,
 )
 from zenml.models.pipeline_deployment_models import PipelineDeploymentBaseModel
-from zenml.pipelines import build_utils
+from zenml.new.pipelines import build_utils
 from zenml.stack import Stack
 from zenml.steps import BaseStep
 from zenml.steps.entrypoint_function_utils import (
-    ExternalArtifact,
     StepArtifact,
 )
+from zenml.steps.external_artifact import ExternalArtifact
 from zenml.steps.step_invocation import StepInvocation
 from zenml.utils import (
     code_repository_utils,
@@ -145,6 +146,9 @@ class GetRunsDescriptor:
 class Pipeline:
     """ZenML pipeline class."""
 
+    # The active pipeline is the pipeline to which step invocations will be
+    # added when a step is called. It is set using a context manager when a
+    # pipeline is called (see Pipeline.__call__ for more context)
     ACTIVE_PIPELINE: ClassVar[Optional["Pipeline"]] = None
 
     def __init__(
@@ -249,7 +253,7 @@ class Pipeline:
         Raises:
             ValueError: If the spec version of the given model is <0.2
         """
-        from zenml.pipelines.deserialization_utils import load_pipeline
+        from zenml.new.pipelines.deserialization_utils import load_pipeline
 
         return load_pipeline(model=model)
 
@@ -1086,6 +1090,7 @@ class Pipeline:
 
         self = self.copy()
         with self:
+            # ...
             entrypoint_outputs = self.entrypoint(*args, **kwargs)
 
         if entrypoint_outputs is None:
@@ -1096,6 +1101,7 @@ class Pipeline:
         from zenml.config.pipeline_configurations import (
             ArtifactReference,
             Parameter,
+            PipelineOutput,
             StepOutput,
         )
 
@@ -1103,7 +1109,7 @@ class Pipeline:
         bound_args = signature.bind(*args, **kwargs)
         bound_args.apply_defaults()
 
-        def _convert(value: Any) -> Any:
+        def _convert(value: Any) -> PipelineOutput:
             if isinstance(value, StepArtifact):
                 return StepOutput(
                     invocation_id=value.invocation_id,
@@ -1112,11 +1118,7 @@ class Pipeline:
             elif isinstance(value, ExternalArtifact):
                 return ArtifactReference(id=value._id)
             else:
-                from zenml.steps.entrypoint_function_utils import (
-                    is_json_serializable,
-                )
-
-                if not is_json_serializable(value):
+                if not yaml_utils.is_json_serializable(value):
                     raise RuntimeError(
                         f"Pipeline output of type (`{type(value)}`) is not "
                         "a step output or JSON serializable."
@@ -1128,6 +1130,7 @@ class Pipeline:
         for key, value in bound_args.arguments.items():
             inputs[key] = _convert(value)
 
+        entrypoint_outputs = cast(Tuple[Any, ...], entrypoint_outputs)
         outputs = {}
         for i, output in enumerate(entrypoint_outputs):
             key = f"output_{i}"
