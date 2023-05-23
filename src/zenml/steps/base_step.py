@@ -50,11 +50,11 @@ from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.materializers.materializer_registry import materializer_registry
 from zenml.steps.base_parameters import BaseParameters
 from zenml.steps.entrypoint_function_utils import (
-    ExternalArtifact,
     StepArtifact,
     get_step_entrypoint_signature,
     validate_entrypoint_function,
 )
+from zenml.steps.external_artifact import ExternalArtifact
 from zenml.utils import (
     dict_utils,
     pydantic_utils,

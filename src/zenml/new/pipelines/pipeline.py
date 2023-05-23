@@ -65,13 +65,13 @@ from zenml.models.pipeline_build_models import (
     PipelineBuildBaseModel,
 )
 from zenml.models.pipeline_deployment_models import PipelineDeploymentBaseModel
-from zenml.pipelines import build_utils
+from zenml.new.pipelines import build_utils
 from zenml.stack import Stack
 from zenml.steps import BaseStep
 from zenml.steps.entrypoint_function_utils import (
-    ExternalArtifact,
     StepArtifact,
 )
+from zenml.steps.external_artifact import ExternalArtifact
 from zenml.steps.step_invocation import StepInvocation
 from zenml.utils import (
     code_repository_utils,
@@ -253,7 +253,7 @@ class Pipeline:
         Raises:
             ValueError: If the spec version of the given model is <0.2
         """
-        from zenml.pipelines.deserialization_utils import load_pipeline
+        from zenml.new.pipelines.deserialization_utils import load_pipeline
 
         return load_pipeline(model=model)
 

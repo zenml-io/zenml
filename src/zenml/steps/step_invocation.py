@@ -14,14 +14,13 @@
 """Step invocation class definition."""
 from typing import TYPE_CHECKING, Any, Dict, Set
 
+from zenml.steps.external_artifact import ExternalArtifact
+
 if TYPE_CHECKING:
     from zenml.config.step_configurations import StepConfiguration
     from zenml.new.pipelines.pipeline import Pipeline
     from zenml.steps import BaseStep
-    from zenml.steps.entrypoint_function_utils import (
-        ExternalArtifact,
-        StepArtifact,
-    )
+    from zenml.steps.entrypoint_function_utils import StepArtifact
 
 
 class StepInvocation:

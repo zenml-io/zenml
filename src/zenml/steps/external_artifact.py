@@ -83,7 +83,6 @@ class ExternalArtifact:
         self._store_artifact_visualizations = store_artifact_visualizations
 
     def upload_if_necessary(self) -> UUID:
-
         artifact_store_id = Client().active_stack.artifact_store.id
 
         if self._id:

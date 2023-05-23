@@ -182,7 +182,6 @@ class EntrypointFunctionDefinition(NamedTuple):
     def _validate_input_type(
         self, parameter: inspect.Parameter, annotation: Any
     ) -> None:
-
         from pydantic.typing import get_origin, is_union
 
         from zenml.steps.utils import get_args
