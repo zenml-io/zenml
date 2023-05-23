@@ -630,9 +630,9 @@ class Pipeline:
             step = invocation.step
             parameters = (
                 pydantic_utils.TemplateGenerator(
-                    step.entrypoint_definition.params.annotation
+                    step.entrypoint_definition.legacy_params.annotation
                 ).run()
-                if step.entrypoint_definition.params
+                if step.entrypoint_definition.legacy_params
                 else {}
             )
             outputs = {
@@ -1090,7 +1090,9 @@ class Pipeline:
 
         self = self.copy()
         with self:
-            # ...
+            # Enter the context manager so we become the active pipeline. This
+            # means that all steps that get called while the entrypoint function
+            # is executed will be added as invocation to this pipeline instance.
             entrypoint_outputs = self.entrypoint(*args, **kwargs)
 
         if entrypoint_outputs is None:

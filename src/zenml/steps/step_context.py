@@ -16,7 +16,7 @@
 from typing import (
     TYPE_CHECKING,
     Any,
-    Dict,
+    Mapping,
     NamedTuple,
     Optional,
     Sequence,
@@ -68,8 +68,8 @@ class StepContext:
     def __init__(
         self,
         step_name: str,
-        output_materializers: Dict[str, Sequence[Type["BaseMaterializer"]]],
-        output_artifact_uris: Dict[str, str],
+        output_materializers: Mapping[str, Sequence[Type["BaseMaterializer"]]],
+        output_artifact_uris: Mapping[str, str],
     ):
         """Initializes a StepContext instance.
 

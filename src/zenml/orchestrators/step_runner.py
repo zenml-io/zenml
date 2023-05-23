@@ -25,6 +25,8 @@ from typing import (
     Type,
 )
 
+from pydantic.typing import get_origin, is_union
+
 from zenml.client import Client
 from zenml.config.step_configurations import StepConfiguration
 from zenml.config.step_run_info import StepRunInfo
@@ -317,7 +319,9 @@ class StepRunner:
 
             # Parse the parameters
             if issubclass(arg_type, BaseParameters):
-                step_params = arg_type.parse_obj(self.configuration.parameters)
+                step_params = arg_type.parse_obj(
+                    self.configuration.parameters[arg]
+                )
                 function_params[arg] = step_params
 
             # Parse the step context
@@ -357,8 +361,6 @@ class StepRunner:
         # Skip materialization for `UnmaterializedArtifact`.
         if data_type == UnmaterializedArtifact:
             return UnmaterializedArtifact.parse_obj(artifact)
-
-        from pydantic.typing import get_origin, is_union
 
         if data_type is Any or is_union(get_origin(data_type)):
             # Entrypoint function does not define a specific type for the input,
@@ -510,7 +512,7 @@ class StepRunner:
         hook_source: "Source",
         step_exception: Optional[BaseException],
         output_artifact_uris: Dict[str, str],
-        output_materializers: Dict[str, Type[BaseMaterializer]],
+        output_materializers: Dict[str, Tuple[Type[BaseMaterializer], ...]],
     ) -> None:
         """Loads hook source and runs the hook.
 
