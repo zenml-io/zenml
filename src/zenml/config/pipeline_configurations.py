@@ -12,8 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Pipeline configuration classes."""
-from typing import TYPE_CHECKING, Any, Dict, Optional, Union
-from uuid import UUID
+from typing import TYPE_CHECKING, Any, Dict, Optional
 
 from pydantic import validator
 
@@ -45,44 +44,10 @@ class PipelineConfigurationUpdate(StrictBaseModel):
     )
 
 
-class StepOutput(StrictBaseModel):
-    """Reference to the output of a step.
-
-    Attributes:
-        invocation_id: The ID of the invocation that produces the artifact.
-        output_name: Name of the output of the step invocation.
-    """
-
-    invocation_id: str
-    output_name: str
-
-
-class ArtifactReference(StrictBaseModel):
-    """Reference to an Artifact.
-
-    Attributes:
-        id: The ID of the referenced artifact.
-    """
-
-    id: UUID
-
-
-class Parameter(StrictBaseModel):
-    # TODO: either store the type here or somehow infer it from the pipeline/
-    # step function when needed
-    value: Any
-
-
-Input = Union[StepOutput, ArtifactReference, Parameter]
-PipelineOutput = Input
-
-
 class PipelineConfiguration(PipelineConfigurationUpdate):
     """Pipeline configuration class."""
 
     name: str
-    inputs: Dict[str, Input] = {}
-    outputs: Dict[str, PipelineOutput] = {}
 
     @validator("name")
     def ensure_pipeline_name_allowed(cls, name: str) -> str:
