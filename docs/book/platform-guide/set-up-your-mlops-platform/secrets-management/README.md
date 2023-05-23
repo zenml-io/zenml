@@ -4,6 +4,8 @@ description: Registering and utilizing secrets.
 
 # Use the Secret Store
 
+TODO: Add images of the dashboard to the page!
+
 {% hint style="danger" %}
 The stack component formerly known as Secrets Managers is being deprecated in favor of [the centralized ZenML secrets store](./#centralized-secrets-store). Going forward, it is recommended to use the ZenML secrets store instead of secrets manager stack components to configure and store secrets. [Referencing secrets in your pipelines and stacks](./#how-to-use-registered-secrets) works the same way regardless of whether you are using a secrets manager or the centralized secrets store. If you already use secrets managers to manage your secrets, please use the provided `zenml secrets-manager secrets migrate` CLI command to migrate your secrets to the centralized secrets store.
 {% endhint %}

@@ -116,7 +116,6 @@
   * [Use the Secret Store](platform-guide/set-up-your-mlops-platform/secrets-management/README.md)
     * [Interact with secrets](platform-guide/set-up-your-mlops-platform/secrets-management/interact-with-secrets.md)
     * [Custom secret stores](platform-guide/set-up-your-mlops-platform/secrets-management/create-a-custom-secret-store.md)
-  * [User management](platform-guide/set-up-your-mlops-platform/user-management-1.md)
   * [Connect ZenML to infrastructure](platform-guide/set-up-your-mlops-platform/connect-to-your-cloud-provider.md)
     * [Service Connectors use cases](platform-guide/set-up-your-mlops-platform/connect-to-your-cloud-provider/service-connectors-use-cases.md)
     * [Connecting ZenML to resources](platform-guide/set-up-your-mlops-platform/connect-to-your-cloud-provider/connecting-zenml-to-resources.md)
@@ -130,7 +129,7 @@
     * [Deploy a stack component](platform-guide/set-up-your-mlops-platform/deploy-and-set-up-a-cloud-stack/deploying-stack-components.md)
     * [Deploy a stack using Stack Recipes](platform-guide/set-up-your-mlops-platform/deploy-and-set-up-a-cloud-stack/deploying-a-stack-using-stack-recipes.md)
     * [Contribute flavors or components](platform-guide/set-up-your-mlops-platform/deploy-and-set-up-a-cloud-stack/contributing-flavors-or-components.md)
-  * [Connect your git repository](platform-guide/set-up-your-mlops-platform/connect-your-git-repository.md)
+  * [Productionalize with CI/CD/CT](platform-guide/set-up-your-mlops-platform/productionalize-with-ci-cd-ct.md)
   * [Implement a custom stack component](platform-guide/set-up-your-mlops-platform/implement-a-custom-stack-component.md)
 * [🔧 Manage the deployed services](platform-guide/manage-the-deployed-services/README.md)
   * [Upgrade the version of the ZenML server](platform-guide/manage-the-deployed-services/upgrading-the-zenml-version.md)
@@ -150,7 +149,7 @@
 
 ## Reference
 
-* [🤷♀ SDK & CLI reference](https://apidocs.zenml.io/)
+* [🤷 SDK & CLI reference](https://apidocs.zenml.io/)
 * [🤷 Server API reference](https://demoserver.zenml.io/docs)
 * [💜 Community & content](reference/community-and-content.md)
 * [❓ FAQ](learning/faq.md)
