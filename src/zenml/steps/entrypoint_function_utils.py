@@ -45,40 +45,50 @@ logger = get_logger(__name__)
 
 
 def get_step_entrypoint_signature(
-    step: "BaseStep", include_step_context: bool = False
+    step: "BaseStep",
+    include_step_context: bool = False,
+    include_legacy_parameters: bool = False,
 ) -> inspect.Signature:
     """Get the entrypoint signature of a step.
 
     Args:
         step: The step for which to get the entrypoint signature.
         include_step_context: Whether to include the `StepContext` as a
-            parameter of the returned signature. If `True`, the exact signature
-            of the entrypoint function will be returned. If `False`, a potential
+            parameter of the returned signature. If `False`, a potential
             signature parameter of type `StepContext` will be removed before
             returning the signature.
+        include_legacy_parameters: Whether to include the `BaseParameters`
+            subclass as a parameter of the returned signature. If `False`, a
+            potential signature parameter of type `BaseParameters` will be
+            removed before returning the signature.
 
     Returns:
         The entrypoint function signature.
     """
-    from zenml.steps import StepContext
+    from zenml.steps import BaseParameters, StepContext
 
     signature = inspect.signature(step.entrypoint, follow_wrapped=True)
 
-    if include_step_context:
-        return signature
+    def _is_param_of_class(annotation: Any, class_: Type[Any]) -> bool:
+        return inspect.isclass(annotation) and issubclass(annotation, class_)
 
-    def _is_step_context_param(annotation: Any) -> bool:
-        return inspect.isclass(annotation) and issubclass(
-            annotation, StepContext
-        )
+    parameters = list(signature.parameters.values())
 
-    params_without_step_context = [
-        param
-        for param in signature.parameters.values()
-        if not _is_step_context_param(param.annotation)
-    ]
+    if not include_step_context:
+        parameters = [
+            param
+            for param in parameters
+            if not _is_param_of_class(param.annotation, class_=StepContext)
+        ]
 
-    signature = signature.replace(parameters=params_without_step_context)
+    if not include_legacy_parameters:
+        parameters = [
+            param
+            for param in parameters
+            if not _is_param_of_class(param.annotation, class_=BaseParameters)
+        ]
+
+    signature = signature.replace(parameters=parameters)
     return signature
 
 

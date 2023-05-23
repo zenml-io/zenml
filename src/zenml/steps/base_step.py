@@ -498,6 +498,7 @@ class BaseStep(metaclass=BaseStepMeta):
             external_artifacts,
             parameters,
         ) = self._parse_call_args(*args, **kwargs)
+
         upstream_steps = {
             artifact.invocation_id for artifact in input_artifacts.values()
         }
