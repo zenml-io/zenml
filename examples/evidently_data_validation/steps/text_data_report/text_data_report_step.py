@@ -13,13 +13,11 @@
 from zenml.integrations.evidently.metrics import EvidentlyMetricConfig
 from zenml.integrations.evidently.steps import (
     EvidentlyColumnMapping,
-    EvidentlyReportParameters,
     evidently_report_step,
 )
 
-text_data_report = evidently_report_step(
-    step_name="text_data_report",
-    params=EvidentlyReportParameters(
+text_data_report = evidently_report_step.with_options(
+    parameters=dict(
         column_mapping=EvidentlyColumnMapping(
             target="Rating",
             numerical_features=["Age", "Positive_Feedback_Count"],

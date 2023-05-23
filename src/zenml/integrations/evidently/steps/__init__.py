@@ -15,19 +15,11 @@
 
 from zenml.integrations.evidently.column_mapping import EvidentlyColumnMapping
 from zenml.integrations.evidently.steps.evidently_report import (
-    EvidentlyReportParameters,
-    EvidentlyReportStep,
-    EvidentlySingleDatasetReportStep,
     evidently_report_step,
 )
 from zenml.integrations.evidently.steps.evidently_test import (
-    EvidentlyTestParameters,
-    EvidentlySingleDatasetTestStep,
-    EvidentlyTestStep,
     evidently_test_step,
 )
 from zenml.integrations.evidently.steps.evidently_profile import (
-    EvidentlyProfileParameters,
-    EvidentlyProfileStep,
     evidently_profile_step,
 )

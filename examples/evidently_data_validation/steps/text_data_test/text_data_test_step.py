@@ -12,14 +12,12 @@
 #  permissions and limitations under the License.
 from zenml.integrations.evidently.steps import (
     EvidentlyColumnMapping,
-    EvidentlyTestParameters,
     evidently_test_step,
 )
 from zenml.integrations.evidently.tests import EvidentlyTestConfig
 
-text_data_test = evidently_test_step(
-    step_name="text_data_test",
-    params=EvidentlyTestParameters(
+text_data_test = evidently_test_step.with_options(
+    parameters=dict(
         column_mapping=EvidentlyColumnMapping(
             target="Rating",
             numerical_features=["Age", "Positive_Feedback_Count"],
