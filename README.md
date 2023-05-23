@@ -244,10 +244,17 @@ enable collaborative features as the central MLOps interface for teams.
 
 ![ZenML Architecture Diagram.](docs/book/assets/getting_started/Scenario3.2.png)
 
-You can choose to deploy with the ZenML CLI (see `zenml deploy --help`), docker
+You can choose to deploy with the ZenML CLI, docker
 or helm. Check out the
 [docs](https://docs.zenml.io/getting-started/deploying-zenml/deploying-zenml)
 to find out how.
+
+In case you're machine is appropriately authenticated, this command will
+do the full deployment.
+
+```bash
+zenml deploy --provider aws  # aws, gcp and azure are supported providers
+```
 
 ## 👨‍🍳 Deploy Stack Components
 
@@ -262,6 +269,20 @@ for you as well with
 `zenml <STACK_COMPONENT_TYPE> deploy <NAME> --flavor=<FLAVOR_TYPE>`. Learn more
 in the
 docs [here](https://docs.zenml.io/platform-guide/set-up-your-mlops-platform/deploy-and-set-up-a-cloud-stack/deploying-stack-components)
+
+For GCP this might look a bit like this
+
+```bash
+#Deploy and register an orchestrator and an artifact store
+zenml orchestrator deploy my_first_kubeflow --flavor kubeflow --cloud gcp ...
+zenml artifact-store deploy my_first_artifact_store --flavor gcs --cloud gcp ...
+
+# Register this combination of components as a stack
+zenml stack register production_stack --orchestrator my_first_kubeflow --artifact-store my_first_artifact_store --set # Register your production environment
+```
+
+When you run a pipeline with this stack set, it will be running on your deployed
+kubeflow instance.
 
 # 🗺 Roadmap
 
