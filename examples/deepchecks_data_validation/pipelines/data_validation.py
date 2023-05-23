@@ -11,6 +11,13 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+from steps.data_drift_detector import data_drift_detector
+from steps.data_loader import data_loader
+from steps.data_validator import data_validator
+from steps.model_drift_detector import model_drift_detector
+from steps.model_validator import model_validator
+from steps.trainer import trainer
+
 from zenml import pipeline
 from zenml.config import DockerSettings
 from zenml.integrations.constants import DEEPCHECKS, SKLEARN
@@ -19,14 +26,7 @@ docker_settings = DockerSettings(required_integrations=[DEEPCHECKS, SKLEARN])
 
 
 @pipeline(enable_cache=False, settings={"docker": docker_settings})
-def data_validation_pipeline(
-    data_loader,
-    trainer,
-    data_validator,
-    model_validator,
-    data_drift_detector,
-    model_drift_detector,
-):
+def data_validation_pipeline():
     """Links all the steps together in a pipeline."""
     df_train, df_test = data_loader()
     data_validator(dataset=df_train)
