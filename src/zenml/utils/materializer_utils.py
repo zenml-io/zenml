@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Util functions for materializers."""
 
-from typing import TYPE_CHECKING, Any, Sequence, Type
+from typing import TYPE_CHECKING, Any, Optional, Sequence, Type
 
 if TYPE_CHECKING:
     from zenml.materializers.base_materializer import BaseMaterializer
@@ -35,9 +35,16 @@ def select_materializer(
     Returns:
         The first materializer that can handle the given data type.
     """
+    fallback: Optional[Type["BaseMaterializer"]] = None
+
     for class_ in data_type.__mro__:
         for materializer_class in materializer_classes:
-            if materializer_class.can_handle_type(class_):
+            if class_ in materializer_class.ASSOCIATED_TYPES:
                 return materializer_class
+            elif not fallback and materializer_class.can_handle_type(class_):
+                fallback = materializer_class
+
+    if fallback:
+        return fallback
 
     raise RuntimeError(f"No materializer found for type {data_type}.")
