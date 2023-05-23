@@ -950,21 +950,20 @@ class Pipeline:
         Returns:
             The invocation ID.
         """
-        base_id = custom_id or step.name
+        base_id = id_ = custom_id or step.name
 
-        if base_id in self.invocations and not allow_suffix:
+        if id_ not in self.invocations:
+            return id_
+
+        if not allow_suffix:
             raise RuntimeError("Duplicate step ID")
 
-        id_ = base_id
         for index in range(2, 10000):
-            if id_ not in self.invocations:
-                break
-
             id_ = f"{base_id}_{index}"
-        else:
-            raise RuntimeError("Unable to find step ID")
+            if id_ not in self.invocations:
+                return id_
 
-        return id_
+        raise RuntimeError("Unable to find step ID")
 
     def __enter__(self: T) -> T:
         """Activate the pipeline context.
