@@ -4,7 +4,7 @@ description: Using Docker images to run your pipeline.
 
 # Containerize your pipeline
 
-When running locally, ZenML will sequentially execute the steps of your pipeline in the active Python environment. However, when using remote [orchestrators](../component-guide/orchestrators/orchestrators.md) or [step operators](../component-guide/step-operators/step-operators.md), ZenML will build [Docker](https://www.docker.com/) images which are used to run your pipeline code in an isolated and well-defined environment.
+ZenML executes pipeline steps sequentially in the active Python environment when running locally. However, with remote [orchestrators](../component-guide/orchestrators/orchestrators.md) or [step operators](../component-guide/step-operators/step-operators.md), ZenML builds [Docker](https://www.docker.com/) images to run your pipeline in an isolated, well-defined environment.
 
 There are three ways to control this containerization process:
 
@@ -14,11 +14,11 @@ There are three ways to control this containerization process:
 
 ## Define where an image is built
 
-[Image builders](../component-guide/image-builders/image-builders.md) control how and where an image is built. Read more about them [here](manage-environments.md#build-environments).
+[Image builders](../component-guide/image-builders/image-builders.md) determine how and where an image is built. Learn more [here](manage-environments.md#build-environments).
 
 ## Reuse Docker image builds from previous runs
 
-Whenever you run a pipeline on a stack that requires Docker images, ZenML automatically [builds and pushes docker images](manage-environments.md#build-environments) for you to ensure your pipeline can be executed. If you want to run this build step separately without actually running the pipeline, you can do so by calling:
+ZenML automatically [builds and pushes Docker images](manage-environments.md#build-environments) when running a pipeline on a stack requiring Docker images. To run this build step separately without running the pipeline, call:
 
 ```python
 pipeline_instance.build(...)
@@ -56,9 +56,9 @@ zenml pipeline run <PIPELINE_NAME> --build=<BUILD_ID>
 
 ### Utilize the full power of builds by connecting a code repository
 
-Building Docker images without [connecting a git repository](connect-your-git-repository.md) currently includes your step code, which means specifying a custom build when running a pipeline will **not run the code that you have on your client machine**, but will instead use the code that is **included in the Docker images of the build**. That means you can make local changes to your code, but if you reuse a build from before then it will *always* execute the code that is bundled in the docker image, rather than the code you have locally.
+Building Docker images without [connecting a git repository](connect-your-git-repository.md) includes your step code. This means specifying a custom build when running a pipeline will **not run the code on your client machine** but will use the code **included in the Docker images of the build**. This allows you to make local code changes, but reusing a build from before will *always* execute the code bundled in the Docker image, rather than the local code.
 
-To avoid this, one must disconnect your code from the build by [connecting a git repository](connect-your-git-repository.md). By registering a code repository, you can avoid building images each time you run a pipeline, but also quickly iterate on your code.
+To avoid this, disconnect your code from the build by [connecting a git repository](connect-your-git-repository.md). Registering a code repository lets you avoid building images each time you run a pipeline and quickly iterate on your code.
 
 ## Customize the Docker building
 
@@ -83,12 +83,12 @@ from zenml.config import DockerSettings
 
 ZenML determines the root directory of your source files in the following order:
 
-* If you've created a [ZenML repository](broken-reference/) for your project, the repository directory will be used.
+* If you've intialized zenml at your root, the repository directory will be used.
 * Otherwise, the parent directory of the python file you're executing will be the source root. For example, running `python /path/to/file.py`, the source root would be `/path/to`.
 
 You can specify how these files are handled using the `source_files` attribute on the `DockerSettings`:
 
-* The default behavior `download_or_include`: The files will be downloaded if they're inside a registered [code repository](broken-reference/) and the repository has no local changes, otherwise, they will be included in the image.
+* The default behavior `download_or_include`: The files will be downloaded if they're inside a registered [code repository](connect-your-git-repository.md) and the repository has no local changes, otherwise, they will be included in the image.
 * If you want your files to be included in the image in any case, set the `source_files` attribute to `include`.
 * If you want your files to be downloaded in any case, set the `source_files` attribute to `download`. If this is specified, the files must be inside a registered code repository and the repository must have no local changes, otherwise the Docker build will fail.
 * If you want to prevent ZenML from copying or downloading any of your source files, you can do so by setting the `source_files` attribute on the Docker settings to `ignore`. This is an advanced feature and will most likely cause unintended and unanticipated behavior when running your pipelines. If you use this, make sure to copy all the necessary files to the correct paths yourself.
@@ -156,7 +156,7 @@ def my_pipeline(...):
       def my_pipeline(...):
           ...
     ```
-* Specify a list of [ZenML integrations](broken-reference/) that you're using in your pipeline:
+* Specify a list of [ZenML integrations](../component-guide/component-guide.md) that you're using in your pipeline:
 
 ```python
 from zenml.integrations.constants import PYTORCH, EVIDENTLY
