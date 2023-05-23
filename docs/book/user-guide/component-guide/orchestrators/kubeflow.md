@@ -35,7 +35,7 @@ If you want to run your pipelines on a remote cluster instead, you'll need to se
     aws eks --region REGION update-kubeconfig --name CLUSTER_NAME
     ```
 * [Install](https://www.kubeflow.org/docs/components/pipelines/installation/standalone-deployment/#deploying-kubeflow-pipelines) Kubeflow Pipelines onto your cluster.
-* (optional) [set up an AWS Service Connector](../../../platform-guide/set-up-your-mlops-platform/connect-to-your-cloud-provider/aws-service-connector.md) to grant ZenML Stack Components easy and secure access to the remote EKS cluster.
+* (optional) [set up an AWS Service Connector](../../../platform-guide/set-up-your-mlops-platform/connect-zenml-to-infrastructure/aws-service-connector.md) to grant ZenML Stack Components easy and secure access to the remote EKS cluster.
 {% endtab %}
 
 {% tab title="GCP" %}
@@ -47,7 +47,7 @@ If you want to run your pipelines on a remote cluster instead, you'll need to se
     gcloud container clusters get-credentials CLUSTER_NAME
     ```
 * [Install](https://www.kubeflow.org/docs/distributions/gke/deploy/overview/) Kubeflow Pipelines onto your cluster.
-* (optional) [set up a GCP Service Connector](../../../platform-guide/set-up-your-mlops-platform/connect-to-your-cloud-provider/gcp-service-connector.md) to grant ZenML Stack Components easy and secure access to the remote GKE cluster.
+* (optional) [set up a GCP Service Connector](../../../platform-guide/set-up-your-mlops-platform/connect-zenml-to-infrastructure/gcp-service-connector.md) to grant ZenML Stack Components easy and secure access to the remote GKE cluster.
 {% endtab %}
 
 {% tab title="Azure" %}
@@ -111,7 +111,7 @@ To use the Kubeflow orchestrator, we need:
 * [kubectl](https://kubernetes.io/docs/tasks/tools/#kubectl) installed (optional, see below)
 
 {% hint style="info" %}
-If you are using a single-tenant Kubeflow installed in a Kubernetes cluster managed by a cloud provider like AWS, GCP or Azure, it is recommended that you set up [a Service Connector](../../../platform-guide/set-up-your-mlops-platform/connect-to-your-cloud-provider/service-connectors-guide.md) and use it to connect ZenML Stack Components to the remote Kubernetes cluster. This guarantees that your Stack is fully portable on other environments and your pipelines are fully reproducible.
+If you are using a single-tenant Kubeflow installed in a Kubernetes cluster managed by a cloud provider like AWS, GCP or Azure, it is recommended that you set up [a Service Connector](../../../platform-guide/set-up-your-mlops-platform/connect-zenml-to-infrastructure/service-connectors-guide.md) and use it to connect ZenML Stack Components to the remote Kubernetes cluster. This guarantees that your Stack is fully portable on other environments and your pipelines are fully reproducible.
 {% endhint %}
 
 {% tabs %}
@@ -153,13 +153,13 @@ When using the Kubeflow orchestrator with a remote cluster, you'll additionally 
 
 * A remote ZenML server deployed to the cloud. See the [deployment guide](../../getting-started/deploying-zenml/deploying-zenml.md) for more information.
 * Kubeflow pipelines deployed on a remote cluster. See the [deployment section](kubeflow.md#how-to-deploy-it) for more information.
-* The name of your Kubernetes context which points to your remote cluster. Run `kubectl config get-contexts` to see a list of available contexts. **NOTE**: this is no longer required if you are using [a Service Connector ](../../../platform-guide/set-up-your-mlops-platform/connect-to-your-cloud-provider/service-connectors-guide.md)to connect your Kubeflow Orchestrator Stack Component to the remote Kubernetes cluster.
+* The name of your Kubernetes context which points to your remote cluster. Run `kubectl config get-contexts` to see a list of available contexts. **NOTE**: this is no longer required if you are using [a Service Connector ](../../../platform-guide/set-up-your-mlops-platform/connect-zenml-to-infrastructure/service-connectors-guide.md)to connect your Kubeflow Orchestrator Stack Component to the remote Kubernetes cluster.
 * A [remote artifact store](../artifact-stores/artifact-stores.md) as part of your stack.
 * A [remote container registry](../container-registries/container-registries.md) as part of your stack.
 
 We can then register the orchestrator and use it in our active stack. This can be done in two ways:
 
-1. If you have [a Service Connector](../../../platform-guide/set-up-your-mlops-platform/connect-to-your-cloud-provider/service-connectors-guide.md) configured to access the remote Kubernetes cluster, you no longer need to set the `kubernetes_context` attribute to a local `kubectl` context. In fact, you don't need the local Kubernetes CLI at all. You can [connect the stack component to the Service Connector](../../../platform-guide/set-up-your-mlops-platform/connect-to-your-cloud-provider/service-connectors-guide.md#connect-stack-components-to-resources) instead:
+1. If you have [a Service Connector](../../../platform-guide/set-up-your-mlops-platform/connect-zenml-to-infrastructure/service-connectors-guide.md) configured to access the remote Kubernetes cluster, you no longer need to set the `kubernetes_context` attribute to a local `kubectl` context. In fact, you don't need the local Kubernetes CLI at all. You can [connect the stack component to the Service Connector](../../../platform-guide/set-up-your-mlops-platform/connect-zenml-to-infrastructure/service-connectors-guide.md#connect-stack-components-to-resources) instead:
 
 ```
 $ zenml orchestrator register <ORCHESTRATOR_NAME> --flavor kubeflow
@@ -194,7 +194,7 @@ Successfully connected orchestrator `<ORCHESTRATOR_NAME>` to the following resou
 $ zenml stack update -o <ORCHESTRATOR_NAME>
 ```
 
-2. if you don't have a Service Connector on hand and you don't want to [register one](../../../platform-guide/set-up-your-mlops-platform/connect-to-your-cloud-provider/service-connectors-guide.md#register-service-connectors), the local Kubernetes `kubectl` client needs to be configured with a configuration context pointing to the remote cluster. The `kubernetes_context` stack component must also be configured with the value of that context:
+2. if you don't have a Service Connector on hand and you don't want to [register one](../../../platform-guide/set-up-your-mlops-platform/connect-zenml-to-infrastructure/service-connectors-guide.md#register-service-connectors), the local Kubernetes `kubectl` client needs to be configured with a configuration context pointing to the remote cluster. The `kubernetes_context` stack component must also be configured with the value of that context:
 
 ```shell
 zenml orchestrator register <ORCHESTRATOR_NAME> \

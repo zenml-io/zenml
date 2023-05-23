@@ -52,12 +52,12 @@ To use the Kubernetes orchestrator, we need:
 * [kubectl](https://kubernetes.io/docs/tasks/tools/#kubectl) installed and the name of the Kubernetes configuration context which points to the target cluster (i.e. run`kubectl config get-contexts` to see a list of available contexts). This is optional (see below).
 
 {% hint style="info" %}
-It is recommended that you set up [a Service Connector](../../../platform-guide/set-up-your-mlops-platform/connect-to-your-cloud-provider/service-connectors-guide.md) and use it to connect ZenML Stack Components to the remote Kubernetes cluster, especially If you are using a Kubernetes cluster managed by a cloud provider like AWS, GCP or Azure,  This guarantees that your Stack is fully portable on other environments and your pipelines are fully reproducible.
+It is recommended that you set up [a Service Connector](../../../platform-guide/set-up-your-mlops-platform/connect-zenml-to-infrastructure/service-connectors-guide.md) and use it to connect ZenML Stack Components to the remote Kubernetes cluster, especially If you are using a Kubernetes cluster managed by a cloud provider like AWS, GCP or Azure,  This guarantees that your Stack is fully portable on other environments and your pipelines are fully reproducible.
 {% endhint %}
 
 We can then register the orchestrator and use it in our active stack. This can be done in two ways:
 
-1. If you have [a Service Connector](../../../platform-guide/set-up-your-mlops-platform/connect-to-your-cloud-provider/service-connectors-guide.md) configured to access the remote Kubernetes cluster, you no longer need to set the `kubernetes_context` attribute to a local `kubectl` context. In fact, you don't need the local Kubernetes CLI at all. You can [connect the stack component to the Service Connector](../../../platform-guide/set-up-your-mlops-platform/connect-to-your-cloud-provider/service-connectors-guide.md#connect-stack-components-to-resources) instead:
+1. If you have [a Service Connector](../../../platform-guide/set-up-your-mlops-platform/connect-zenml-to-infrastructure/service-connectors-guide.md) configured to access the remote Kubernetes cluster, you no longer need to set the `kubernetes_context` attribute to a local `kubectl` context. In fact, you don't need the local Kubernetes CLI at all. You can [connect the stack component to the Service Connector](../../../platform-guide/set-up-your-mlops-platform/connect-zenml-to-infrastructure/service-connectors-guide.md#connect-stack-components-to-resources) instead:
 
 ```
 $ zenml orchestrator register <ORCHESTRATOR_NAME> --flavor kubernetes
@@ -92,7 +92,7 @@ Successfully connected orchestrator `<ORCHESTRATOR_NAME>` to the following resou
 $ zenml stack register <STACK_NAME> -o <ORCHESTRATOR_NAME> ... --set
 ```
 
-2. if you don't have a Service Connector on hand and you don't want to [register one](../../../platform-guide/set-up-your-mlops-platform/connect-to-your-cloud-provider/service-connectors-guide.md#register-service-connectors), the local Kubernetes `kubectl` client needs to be configured with a configuration context pointing to the remote cluster. The `kubernetes_context` stack component must also be configured with the value of that context:
+2. if you don't have a Service Connector on hand and you don't want to [register one](../../../platform-guide/set-up-your-mlops-platform/connect-zenml-to-infrastructure/service-connectors-guide.md#register-service-connectors), the local Kubernetes `kubectl` client needs to be configured with a configuration context pointing to the remote cluster. The `kubernetes_context` stack component must also be configured with the value of that context:
 
 ```shell
 zenml orchestrator register <ORCHESTRATOR_NAME> \

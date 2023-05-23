@@ -41,7 +41,7 @@ If you already have an existing cluster without an ingress controller, you can j
 
 #### Having an existing NGINX Ingress Controller
 
-The `deploy` command, by default, tries to create an NGINX ingress controller on your cluster. If you already have an existing controller, you can tell ZenML to not re-deploy it through the use of a config file. This file can be found in the [Configuration File Templates](deployment-using-the-cli.md#configuration-file-templates) towards the end of this guide. It offers a host of configuration options that you can leverage for advanced use cases.
+The `deploy` command, by default, tries to create an NGINX ingress controller on your cluster. If you already have an existing controller, you can tell ZenML to not re-deploy it through the use of a config file. This file can be found in the [Configuration File Templates](deploy-with-zenml-cli.md#configuration-file-templates) towards the end of this guide. It offers a host of configuration options that you can leverage for advanced use cases.
 
 *   Check if an ingress controller is running on your cluster by running the following command. You should see an entry in the output with the hostname populated.
 

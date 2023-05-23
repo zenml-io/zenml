@@ -291,7 +291,7 @@ Service connector 'aws-auto' of type 'aws' with id 'ffbec8d7-b931-46c3-bcc5-c625
 ┗━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━┛
 ```
 
-The AWS Service Connector discovered and lifted the AWS Secret Key that was configured on the local machine and securely stored it in the [Secrets Store](../secrets-management/#centralized-secrets-store). Normally, this would be cause for concern, because the AWS Secret Key gives access to any and all AWS resources in your account and should not be distributed to third parties.
+The AWS Service Connector discovered and lifted the AWS Secret Key that was configured on the local machine and securely stored it in the [Secrets Store](../use-the-secret-store/#centralized-secrets-store). Normally, this would be cause for concern, because the AWS Secret Key gives access to any and all AWS resources in your account and should not be distributed to third parties.
 
 However, in this case, _the following security best practice is automatically enforced by the AWS connector_: the AWS Secret Key will be kept hidden and the clients will never use it directly to gain access to any AWS resources. Instead, the AWS Service Connector will generate short-lived security tokens and distribute those to clients. It will also take care of issuing new tokens when those expire. This is identifiable from the `session-token` authentication method and the session duration configuration attributes.
 

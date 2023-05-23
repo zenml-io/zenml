@@ -30,7 +30,7 @@ The command currently uses your local credentials for GCP and AWS to provision r
 
 ### 🍨 Available flavors for stack components
 
-Here's a table of all the flavors that can be deployed through the CLI for every stack component. This is a list that will keep on growing and you can also contribute any flavor or stack component that you feel is missing. Refer to the [Contribution page](contributing-flavors-or-components.md) for steps on how to do that :smile:
+Here's a table of all the flavors that can be deployed through the CLI for every stack component. This is a list that will keep on growing and you can also contribute any flavor or stack component that you feel is missing. Refer to the [Contribution page](contribute-flavors-or-components.md) for steps on how to do that :smile:
 
 | Component Type     | Flavor       |
 | ------------------ | ------------ |
