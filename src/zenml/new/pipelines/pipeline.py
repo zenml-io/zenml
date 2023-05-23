@@ -14,7 +14,6 @@
 """Definition of a ZenML pipeline."""
 import copy
 import hashlib
-import inspect
 from datetime import datetime
 from pathlib import Path
 from types import FunctionType
@@ -32,7 +31,6 @@ from typing import (
     Type,
     TypeVar,
     Union,
-    cast,
 )
 from uuid import UUID
 
@@ -1093,53 +1091,6 @@ class Pipeline:
             # Enter the context manager so we become the active pipeline. This
             # means that all steps that get called while the entrypoint function
             # is executed will be added as invocation to this pipeline instance.
-            entrypoint_outputs = self.entrypoint(*args, **kwargs)
-
-        if entrypoint_outputs is None:
-            entrypoint_outputs = ()
-        elif not isinstance(entrypoint_outputs, tuple):
-            entrypoint_outputs = (entrypoint_outputs,)
-
-        from zenml.config.pipeline_configurations import (
-            ArtifactReference,
-            Parameter,
-            PipelineOutput,
-            StepOutput,
-        )
-
-        signature = inspect.signature(self.entrypoint)
-        bound_args = signature.bind(*args, **kwargs)
-        bound_args.apply_defaults()
-
-        def _convert(value: Any) -> PipelineOutput:
-            if isinstance(value, StepArtifact):
-                return StepOutput(
-                    invocation_id=value.invocation_id,
-                    output_name=value.output_name,
-                )
-            elif isinstance(value, ExternalArtifact):
-                return ArtifactReference(id=value._id)
-            else:
-                if not yaml_utils.is_json_serializable(value):
-                    raise RuntimeError(
-                        f"Pipeline output of type (`{type(value)}`) is not "
-                        "a step output or JSON serializable."
-                    )
-
-                return Parameter(value=value)
-
-        inputs = {}
-        for key, value in bound_args.arguments.items():
-            inputs[key] = _convert(value)
-
-        entrypoint_outputs = cast(Tuple[Any, ...], entrypoint_outputs)
-        outputs = {}
-        for i, output in enumerate(entrypoint_outputs):
-            key = f"output_{i}"
-            outputs[key] = _convert(output)
-
-        self._configuration = self._configuration.copy(
-            update={"inputs": inputs, "outputs": outputs}
-        )
+            self.entrypoint(*args, **kwargs)
 
         return self._run(**self._run_args)
