@@ -12,7 +12,7 @@ In a ZenML deployment, you might have to manage multiple environments, such as y
 
 ## The Client environment
 
-The client environment is the environment in which zenml pipelines are run. This is usually a local development environment but often in production, it can be a [CI runner](../../platform-guide/set-up-your-mlops-platform/productionalize-with-ci-cd-ct.md). To manage dependencies in this environment, you can use your preferred package manager, such as `pip` or `poetry`. You can create a virtual environment and install the necessary packages there. This will help you avoid conflicts with other projects and make it easier to share your environment with your team. Make sure to install the ZenML package and any additional [integrations](../component-galery/) you need for your pipelines.
+The client environment is the environment in which zenml pipelines are run. This is usually a local development environment but often in production, it can be a [CI runner](../../platform-guide/set-up-your-mlops-platform/productionalize-with-ci-cd-ct.md). To manage dependencies in this environment, you can use your preferred package manager, such as `pip` or `poetry`. You can create a virtual environment and install the necessary packages there. This will help you avoid conflicts with other projects and make it easier to share your environment with your team. Make sure to install the ZenML package and any additional [integrations](../component-guide/) you need for your pipelines.
 
 To summarize, the client environment needs the ZenML dependency and all other dependencies that are required to run your pipeline. It often generates the [pipeline build environment](manage-environments.md#the-pipeline-build-environment)
 
@@ -27,7 +27,7 @@ There are two types of build environments:
 * The pipeline build environment:
 * The step build environment:
 
-The `build` environment is the environment that runs within the [orchestrator](../component-galery/orchestrators/). These images need to be configured with the correct dependencies and configurations to ensure that your pipeline runs smoothly.
+The `build` environment is the environment that runs within the [orchestrator](../component-guide/orchestrators/). These images need to be configured with the correct dependencies and configurations to ensure that your pipeline runs smoothly.
 
 ZenML automatically handles most of the Docker image configuration for you. It starts with a base image that has ZenML and Python installed and then installs any additional dependencies required by your pipeline. You can customize the Docker image configuration using the [DockerSettings](containerize-your-pipeline.md) class.
 
@@ -35,4 +35,4 @@ To manage dependencies in the Docker images, you can follow the steps described 
 
 ### Customize the build environment with Image Builders
 
-Link to [image builders](../component-galery/image-builders/)
+Link to [image builders](../component-guide/image-builders/)

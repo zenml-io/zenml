@@ -47,7 +47,7 @@ This is where the docker images for all pipeline code is pushed. The **orchestra
 
 #### Other Tools
 
-Deployments of all the other tools that you need (such as **experiment trackers**, **model registries**, and **feature stores**). Learn more about the options in our [Component Guide](../../user-guide/component-galery/).
+Deployments of all the other tools that you need (such as **experiment trackers**, **model registries**, and **feature stores**). Learn more about the options in our [Component Guide](../../user-guide/component-guide/).
 
 ### Additional Tools
 
