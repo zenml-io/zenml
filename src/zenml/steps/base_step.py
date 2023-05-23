@@ -678,10 +678,10 @@ class BaseStep(metaclass=BaseStepMeta):
                 return source_utils.resolve(value)
 
         def _convert_to_tuple(value: Any) -> Tuple[Source, ...]:
-            if isinstance(value, Sequence):
-                return tuple(_resolve_if_necessary(v) for v in value)
-            else:
+            if isinstance(value, str) or not isinstance(value, Sequence):
                 return (_resolve_if_necessary(value),)
+            else:
+                return tuple(_resolve_if_necessary(v) for v in value)
 
         outputs: Dict[str, Dict[str, Tuple[Source, ...]]] = defaultdict(dict)
         allowed_output_names = set(self.entrypoint_definition.outputs)
