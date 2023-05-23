@@ -40,7 +40,7 @@ In Scenario 2, the `zenml up` command implicitly connects the client to the serv
 {% endhint %}
 
 {% hint style="warning" %}
-In order to use the `zenml connect` command, you need to first deploy a remote ZenML server. If you are the person who is setting up it for your organization and looking for detailed documentation regarding the deployment, head on over to the [Platform Guide](../../platform-guide/set-up-your-mlops-platform/) to set it up on your infrastructure of choice.&#x20;
+In order to use the `zenml connect` command, you need to first deploy a remote ZenML server. If you are the person who is setting up it for your organization and looking for detailed documentation regarding the deployment, head on over to the [Platform Guide](../../platform-guide/set-up-your-mlops-platform/set-up-your-mlops-platform.md) to set it up on your infrastructure of choice.
 
 Alternatively, if you are just getting started and want to try things out along with this starter guide, take a look at the [ZenML Sandbox](switch-to-production.md), which allows you to spin up a remote sandbox ZenML deployment.
 {% endhint %}

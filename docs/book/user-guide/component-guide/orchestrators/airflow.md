@@ -7,7 +7,7 @@ description: Orchestrating your pipelines to run on Airflow.
 The Airflow orchestrator is an [orchestrator](orchestrators.md) flavor provided by the ZenML `airflow` integration that uses [Airflow](https://airflow.apache.org/) to run your pipelines.
 
 {% hint style="warning" %}
-If you're going to use a remote deployment of Airflow, you'll also need a [remote ZenML deployment](../../getting-started/deploying-zenml/deploying-zenml.md).
+If you're going to use a remote deployment of Airflow, you'll also need a [remote ZenML deployment](../../../learning/getting-started/deploying-zenml/deploying-zenml.md).
 {% endhint %}
 
 ### When to use it
@@ -107,7 +107,7 @@ export no_proxy=*
 {% tab title="Remote" %}
 When using the Airflow orchestrator with a remote deployment, you'll additionally need:
 
-* A remote ZenML server deployed to the cloud. See the [deployment guide](../../getting-started/deploying-zenml/deploying-zenml.md) for more information.
+* A remote ZenML server deployed to the cloud. See the [deployment guide](../../../learning/getting-started/deploying-zenml/deploying-zenml.md) for more information.
 * A deployed Airflow server. See the [deployment section](airflow.md#how-to-deploy-it) for more information.
 * A [remote artifact store](../artifact-stores/artifact-stores.md) as part of your stack.
 * A [remote container registry](../container-registries/container-registries.md) as part of your stack.
@@ -133,7 +133,7 @@ orchestrator_url = deployer_step.metadata["orchestrator_url"].value
 
 #### Additional configuration
 
-For additional configuration of the Airflow orchestrator, you can pass `AirflowOrchestratorSettings` when defining or running your pipeline. Check out the [API docs](https://apidocs.zenml.io/latest/integration\_code\_docs/integrations-airflow/#zenml.integrations.airflow.flavors.airflow\_orchestrator\_flavor.AirflowOrchestratorSettings) for a full list of available attributes and [this docs page](../../advanced-guide/pipelines/settings.md) for more information on how to specify settings.
+For additional configuration of the Airflow orchestrator, you can pass `AirflowOrchestratorSettings` when defining or running your pipeline. Check out the [API docs](https://apidocs.zenml.io/latest/integration\_code\_docs/integrations-airflow/#zenml.integrations.airflow.flavors.airflow\_orchestrator\_flavor.AirflowOrchestratorSettings) for a full list of available attributes and [this docs page](../../../learning/advanced-guide/pipelines/settings.md) for more information on how to specify settings.
 
 #### Enabling CUDA for GPU-backed hardware
 

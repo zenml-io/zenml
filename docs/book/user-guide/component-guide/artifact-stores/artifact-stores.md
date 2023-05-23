@@ -14,7 +14,7 @@ Not all objects returned by pipeline steps are physically stored in the Artifact
 If you need to store _a particular type of pipeline artifact_ in a different medium (e.g. use an external model registry to store model artifacts, or an external data lake or data warehouse to store dataset artifacts), you can write your own [Materializer](../../../../old\_book/advanced-guide/pipelines/materializers.md) to implement the custom logic required for it. In contrast, if you need to use an entirely different storage backend to store artifacts, one that isn't already covered by one of the ZenML integrations, you can [extend the Artifact Store abstraction](custom.md) to provide your own Artifact Store implementation.
 {% endhint %}
 
-In addition to pipeline artifacts, the Artifact Store may also be used as storage backed by other specialized stack components that need to store their data in the form of persistent object storage. The [Great Expectations Data Validator](../data-validators/great-expectations.md) is such an example.
+In addition to pipeline artifacts, the Artifact Store may also be used as storage backed by other specialized stack components that need to store their data in the form of persistent object storage. The [Great Expectations Data Validator](../../../learning/component-gallery/data-validators/great-expectations.md) is such an example.
 
 Related concepts:
 

@@ -7,7 +7,7 @@ description: Orchestrating your pipelines to run on Amazon Sagemaker.
 The Sagemaker orchestrator is an [orchestrator](orchestrators.md) flavor provided with the ZenML `aws` integration that uses [Amazon Sagemaker Pipelines](https://sagemaker-examples.readthedocs.io/en/latest/sagemaker-pipelines/index.html) to run your pipelines.
 
 {% hint style="warning" %}
-This component is only meant to be used within the context of a [remote ZenML deployment scenario](../../getting-started/deploying-zenml/deploying-zenml.md). Usage with a local ZenML deployment may lead to unexpected behavior!
+This component is only meant to be used within the context of a [remote ZenML deployment scenario](../../../learning/getting-started/deploying-zenml/deploying-zenml.md). Usage with a local ZenML deployment may lead to unexpected behavior!
 {% endhint %}
 
 ### When to use it
@@ -26,7 +26,7 @@ The ZenML Sagemaker orchestrator works with [Sagemaker Pipelines](https://aws.am
 
 ### How to deploy it
 
-In order to use a Sagemaker AI orchestrator, you need to first deploy [ZenML to the cloud](../../getting-started/deploying-zenml/deploying-zenml.md). It would be recommended to deploy ZenML in the same region as you plan on using for Sagemaker, but it is not necessary to do so. You must ensure that you are [connected to the remote ZenML server](../../../../old\_book/starter-guide/production-fundamentals/production-fundamentals.md) before using this stack component.
+In order to use a Sagemaker AI orchestrator, you need to first deploy [ZenML to the cloud](../../../learning/getting-started/deploying-zenml/deploying-zenml.md). It would be recommended to deploy ZenML in the same region as you plan on using for Sagemaker, but it is not necessary to do so. You must ensure that you are [connected to the remote ZenML server](../../../../old\_book/starter-guide/production-fundamentals/production-fundamentals.md) before using this stack component.
 
 The only other thing necessary to use the ZenML Sagemaker orchestrator is enabling the relevant permissions for your particular role.
 
@@ -114,7 +114,7 @@ They can then be applied to a step as follows:
 
 For example, if your ZenML component is configured to use `ml.c5.xlarge` with 400GB additional storage by default, all steps will use it except for the step above, which will use `ml.t3.medium` with 30GB additional storage.
 
-Check out [this docs page](../../advanced-guide/pipelines/settings.md) for more information on how to specify settings in general.
+Check out [this docs page](../../../learning/advanced-guide/pipelines/settings.md) for more information on how to specify settings in general.
 
 A concrete example of using the Sagemaker orchestrator can be found [here](https://github.com/zenml-io/zenml/tree/main/examples/sagemaker\_orchestration).
 

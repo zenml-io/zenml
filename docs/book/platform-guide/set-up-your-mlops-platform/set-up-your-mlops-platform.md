@@ -21,7 +21,7 @@ The database will act as the central metadata store that tracks all pipeline run
 For a production setting, you should also set up a secret manager as a backend for all the secrets that will be used to configure stacks
 
 {% hint style="info" %}
-See the following section to learn about the different ways of [deploying ZenML](deploy-zenml/).
+See the following section to learn about the different ways of [deploying ZenML](deploy-zenml/deploy-zenml.md).
 {% endhint %}
 
 ## Stacks and their components
@@ -34,7 +34,7 @@ The Compute infrastructure (e.g. Kubernetes or serverless alternatives)
 * Optionally, the same infrastructure can be used for the deployment of models using the **model deployer** stack component
 
 {% hint style="warning" %}
-The **orchestrator** will need to have access to all the other stack components, and an egress path to post to the ZenML Server&#x20;
+The **orchestrator** will need to have access to all the other stack components, and an egress path to post to the ZenML Server
 {% endhint %}
 
 #### Data Storage
@@ -47,7 +47,7 @@ This is where the docker images for all pipeline code is pushed. The **orchestra
 
 #### Other Tools
 
-Deployments of all the other tools that you need (such as **experiment trackers**, **model registries**, and **feature stores**). Learn more about the options in our [Component Guide](../../user-guide/component-guide/).
+Deployments of all the other tools that you need (such as **experiment trackers**, **model registries**, and **feature stores**). Learn more about the options in our [Component Guide](../../user-guide/component-guide/component-guide.md).
 
 ### Additional Tools
 
@@ -62,7 +62,7 @@ Optionally, you can configure an image builder service to build the docker image
 Code Repositories can be configured within the ZenML deployment. With a code repository configured the pipeline code no longer needs to be baked into the docker images. Instead, the code is loaded at runtime within the orchestrator.
 
 {% hint style="info" %}
-#### Coming Soon: True Client-Server Architecture&#x20;
+**Coming Soon: True Client-Server Architecture**
 
-We are hard at work implementing a true client-server architecture where the client no longer needs to have any access to the individual stack components. In the meantime, we recommend using your favorite CI/CD tool to enable using ZenML without the need to configure direct access to stack components from the client machines.&#x20;
+We are hard at work implementing a true client-server architecture where the client no longer needs to have any access to the individual stack components. In the meantime, we recommend using your favorite CI/CD tool to enable using ZenML without the need to configure direct access to stack components from the client machines.
 {% endhint %}

@@ -2,7 +2,7 @@
 description: Learning how to develop a custom artifact store.
 ---
 
-# Develop a Custom Artifact Store
+# Develop a custom artifact store
 
 ZenML comes equipped with [Artifact Store implementations](artifact-stores.md#artifact-store-flavors) that you can use to store artifacts on a local filesystem or in the managed AWS, GCP, or Azure cloud object storage services. However, if you need to use a different type of object storage service as a backend for your ZenML Artifact Store, you can extend ZenML to provide your own custom Artifact Store implementation.
 
@@ -152,7 +152,7 @@ zenml artifact-store flavor register flavors.my_flavor.MyArtifactStoreFlavor
 ```
 
 {% hint style="warning" %}
-ZenML resolves the flavor class by taking the path where you initialized zenml (via `zenml init`) as the starting point of resolution. Therefore, please ensure you follow [the best practice](broken-reference) of initializing zenml at the root of your repository.
+ZenML resolves the flavor class by taking the path where you initialized zenml (via `zenml init`) as the starting point of resolution. Therefore, please ensure you follow [the best practice](../../../learning/component-gallery/artifact-stores/broken-reference/) of initializing zenml at the root of your repository.
 
 If ZenML does not find an initialized ZenML repository in any parent directory, it will default to the current working directory, but usually, it's better to not have to rely on this mechanism and initialize zenml at the root.
 {% endhint %}

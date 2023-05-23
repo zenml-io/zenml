@@ -68,7 +68,7 @@ ZenML will build a Docker image called `<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE
 
 #### Additional configuration
 
-For additional configuration of the AzureML step operator, you can pass `AzureMLStepOperatorSettings` when defining or running your pipeline. Check out the [API docs](https://apidocs.zenml.io/latest/integration\_code\_docs/integrations-azure/#zenml.integrations.azure.flavors.azureml\_step\_operator\_flavor.AzureMLStepOperatorSettings) for a full list of available attributes and [this docs page](../../advanced-guide/pipelines/settings.md) for more information on how to specify settings.
+For additional configuration of the AzureML step operator, you can pass `AzureMLStepOperatorSettings` when defining or running your pipeline. Check out the [API docs](https://apidocs.zenml.io/latest/integration\_code\_docs/integrations-azure/#zenml.integrations.azure.flavors.azureml\_step\_operator\_flavor.AzureMLStepOperatorSettings) for a full list of available attributes and [this docs page](../../../learning/advanced-guide/pipelines/settings.md) for more information on how to specify settings.
 
 A concrete example of using the AzureML step operator can be found [here](https://github.com/zenml-io/zenml/tree/main/examples/step\_operator\_remote\_training).
 

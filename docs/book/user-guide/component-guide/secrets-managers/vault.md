@@ -11,7 +11,7 @@ We are deprecating secrets managers in favor of the [centralized ZenML secrets s
 
 If you already use secrets managers to manage your secrets, please use the provided `zenml secrets-manager secrets migrate` CLI command to migrate your secrets to the centralized secrets store.
 
-To continue using HashiCorp Vault as the service of choice for managing your secrets in the cloud, [configure your ZenML server to connect to and use the HashiCorp Vault service](../../getting-started/deploying-zenml/deploying-zenml.md) directly as a back-end for the centralized secrets store and then use `zenml secret` CLI commands to manage your secrets instead of `zenml secrets-manager secret` CLI commands. You no longer need to register the HashiCorp Vault secrets manager or add it to your active stack.
+To continue using HashiCorp Vault as the service of choice for managing your secrets in the cloud, [configure your ZenML server to connect to and use the HashiCorp Vault service](../../../learning/getting-started/deploying-zenml/deploying-zenml.md) directly as a back-end for the centralized secrets store and then use `zenml secret` CLI commands to manage your secrets instead of `zenml secrets-manager secret` CLI commands. You no longer need to register the HashiCorp Vault secrets manager or add it to your active stack.
 
 Alternatively, you may use any of the other secrets store back-ends that the ZenML server supports, such as Google Secret Manager, Azure Key Vault, AWS Secrets Manager, or even the ZenML SQL database.
 {% endhint %}
