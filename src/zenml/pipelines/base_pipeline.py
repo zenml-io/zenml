@@ -64,15 +64,19 @@ class BasePipeline(Pipeline, ABC):
             *args: Initialization arguments.
             **kwargs: Initialization keyword arguments.
         """
-        self._steps = self._verify_steps(*args, **kwargs)
+        config = self._CLASS_CONFIGURATION or {}
+        pipeline_name = (
+            config.pop(PARAM_PIPELINE_NAME, None) or self.__class__.__name__
+        )
+        self._steps = self._verify_steps(
+            *args, __name__=pipeline_name, **kwargs
+        )
 
         def entrypoint() -> None:
             self.connect(**self._steps)
 
-        config = self._CLASS_CONFIGURATION or {}
         super().__init__(
-            name=config.pop(PARAM_PIPELINE_NAME, None)
-            or self.__class__.__name__,
+            name=pipeline_name,
             entrypoint=entrypoint,
             **config,
         )
@@ -179,7 +183,7 @@ class BasePipeline(Pipeline, ABC):
         )
 
     def _verify_steps(
-        self, *args: Any, **kwargs: Any
+        self, *args: Any, __name__: str, **kwargs: Any
     ) -> Dict[str, "BaseStep"]:
         """Verifies the initialization args and kwargs of this pipeline.
 
@@ -188,6 +192,8 @@ class BasePipeline(Pipeline, ABC):
 
         Args:
             *args: The args passed to the init method of this pipeline.
+            __name__: The pipeline name. The naming of this argument is to avoid
+                conflicts with other arguments.
             **kwargs: The kwargs passed to the init method of this pipeline.
 
         Raises:
@@ -203,7 +209,7 @@ class BasePipeline(Pipeline, ABC):
             bound_args = signature.bind(*args, **kwargs)
         except TypeError as e:
             raise PipelineInterfaceError(
-                f"Wrong arguments when initializing pipeline '{self.name}': {e}"
+                f"Wrong arguments when initializing pipeline '{__name__}': {e}"
             ) from e
 
         steps = {}
@@ -216,7 +222,7 @@ class BasePipeline(Pipeline, ABC):
             ):
                 raise PipelineInterfaceError(
                     f"Wrong argument type (`{step_class}`) for argument "
-                    f"'{key}' of pipeline '{self.name}'. "
+                    f"'{key}' of pipeline '{__name__}'. "
                     f"A `BaseStep` subclass was provided instead of an "
                     f"instance. "
                     f"This might have been caused due to missing brackets of "
@@ -228,7 +234,7 @@ class BasePipeline(Pipeline, ABC):
             if not isinstance(potential_step, BaseStep):
                 raise PipelineInterfaceError(
                     f"Wrong argument type (`{step_class}`) for argument "
-                    f"'{key}' of pipeline '{self.name}'. Only "
+                    f"'{key}' of pipeline '{__name__}'. Only "
                     f"`@step` decorated functions or instances of `BaseStep` "
                     f"subclasses can be used as arguments when creating "
                     f"a pipeline."

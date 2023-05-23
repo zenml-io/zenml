@@ -94,6 +94,7 @@ def get_step_entrypoint_signature(
 
 class StepArtifact:
     """Class to represent step output artifacts."""
+
     def __init__(
         self,
         invocation_id: str,
