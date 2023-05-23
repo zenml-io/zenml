@@ -12,6 +12,12 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+from steps.importer import importer
+from steps.prevalidator import prevalidator
+from steps.profiler import ge_profiler_step
+from steps.splitter import splitter
+from steps.validator import ge_validate_test_step, ge_validate_train_step
+
 from zenml import pipeline
 from zenml.config import DockerSettings
 from zenml.integrations.constants import GREAT_EXPECTATIONS, SKLEARN
@@ -22,9 +28,7 @@ docker_settings = DockerSettings(
 
 
 @pipeline(enable_cache=False, settings={"docker": docker_settings})
-def validation_pipeline(
-    importer, splitter, profiler, prevalidator, train_validator, test_validator
-):
+def validation_pipeline():
     """Data validation pipeline for Great Expectations.
 
     The pipeline imports data from a source, then splits it into training
@@ -37,18 +41,10 @@ def validation_pipeline(
 
     A prevalidator step is used to delay the execution of the validator
     steps until the generated expectation suite is ready.
-
-    Args:
-        importer: data importer step
-        splitter: splitter step
-        profiler: data profiler step
-        prevalidator: dummy step required to enforce ordering
-        train_validator: training dataset validation step
-        test_validator: test dataset validation step
     """
     imported_data = importer()
     train, test = splitter(imported_data)
-    suite = profiler(train)
+    suite = ge_profiler_step(train)
     condition = prevalidator(suite)
-    train_validator(train, condition)
-    test_validator(test, condition)
+    ge_validate_train_step(train, condition)
+    ge_validate_test_step(test, condition)
