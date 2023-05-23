@@ -4,21 +4,65 @@ description: Using Docker images to run your pipeline.
 
 # Containerize your pipeline
 
+When running locally, ZenML will sequentially execute the steps of your pipeline in the active Python environment. However, when using remote [orchestrators](../component-guide/orchestrators/orchestrators.md) or [step operators](../component-guide/step-operators/step-operators.md), ZenML will build [Docker](https://www.docker.com/) images which are used to run your pipeline code in an isolated and well-defined environment.
 
+There are three ways to control this containerization process:
+
+- [Control how and where an image is built](#define-where-an-image-is-built)
+- [Utilize docker images from previous runs](#reuse-docker-image-builds-from-previous-runs)
+- [Customize what gets built into the image](#containerize-your-pipeline)
 
 ## Define where an image is built
 
-TODO: Include reference to managing envioronments and maybe move to the top [managing environments](manage-environments.md)
+[Image builders](../component-guide/image-builders/image-builders.md) control how and where an image is built. Read more about them [here](manage-environments.md#build-environments).
 
-## Reusing Docker images
+## Reuse Docker image builds from previous runs
 
-Link to [code repository](connect-your-git-repository.md)
+Whenever you run a pipeline on a stack that requires Docker images, ZenML automatically [builds and pushes docker images](manage-environments.md#build-environments) for you to ensure your pipeline can be executed. If you want to run this build step separately without actually running the pipeline, you can do so by calling:
+
+```python
+pipeline_instance.build(...)
+```
+
+in Python or using the CLI command:
+
+```shell
+# If running the first time, register pipeline to get name and ID
+zenml pipeline register [OPTIONS] my_module.my_pipeline_instance
+
+# Build docker images using the image builder defined in the stack and push to the container registry defined in the stack
+zenml pipeline build [OPTIONS] PIPELINE_NAME_OR_ID
+```
+
+You can see all pipeline builds with the command:
+
+This will register the build output in the ZenML database and allow you to use the built images when running a pipeline later. 
+
+```bash
+zenml pipeline builds list
+```
+
+To use a registered build when running a pipeline, pass it as an argument in Python
+
+```python
+pipeline_instance.run(build=<BUILD_ID>)
+```
+
+or when running a pipeline from the CLI
+
+```bash
+zenml pipeline run <PIPELINE_NAME> --build=<BUILD_ID>
+```
+
+### Utilize the full power of builds by connecting a code repository
+
+Building Docker images without [connecting a git repository](connect-your-git-repository.md) currently includes your step code, which means specifying a custom build when running a pipeline will **not run the code that you have on your client machine**, but will instead use the code that is **included in the Docker images of the build**. That means you can make local changes to your code, but if you reuse a build from before then it will *always* execute the code that is bundled in the docker image, rather than the code you have locally.
+
+To avoid this, one must disconnect your code from the build by [connecting a git repository](connect-your-git-repository.md). By registering a code repository, you can avoid building images each time you run a pipeline, but also quickly iterate on your code.
 
 ## Customize the Docker building
 
-When running locally, ZenML will sequentially execute the steps of your pipeline in the active Python environment. However, when using remote [orchestrators](broken-reference/) or [step operators](broken-reference/), ZenML will build [Docker](https://www.docker.com/) images which are used to run your pipeline code in an isolated and well-defined environment.
-
-For this purpose, a [Dockerfile](https://docs.docker.com/engine/reference/builder/) is dynamically generated at runtime. It is then used to build the docker image using the [image builder](manage-environments.md) component of your stack. The Dockerfile consists of the following steps:
+When a [pipeline is run with a remote orchestrator](../starter-guide/create-an-ml-pipeline.md) a [Dockerfile](https://docs.docker.com/engine/reference/builder/) is dynamically generated at runtime. It is then used to build the docker image using the [image builder](manage-environments.md#customize-how-a-build-image-is-created-image-builders) component of your stack. The Dockerfile consists of the following steps:
 
 * **Starts from a parent image** that has **ZenML installed**. By default, this will use the [official ZenML image](https://hub.docker.com/r/zenmldocker/zenml/) for the Python and ZenML version that you're using in the active Python environment. If you want to use a different image as the base for the following steps, check out [this guide](containerize-your-pipeline.md#using-a-custom-parent-image).
 * **Installs additional pip dependencies**. ZenML will automatically detect which integrations are used in your stack and install the required dependencies. If your pipeline needs any additional requirements, check out our [guide on including custom dependencies](containerize-your-pipeline.md#how-to-install-additional-pip-dependencies).

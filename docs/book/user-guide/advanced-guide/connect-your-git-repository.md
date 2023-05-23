@@ -13,21 +13,7 @@ Advantages:
 * ...
 * ...
 
-Whenever you run a pipeline on a stack that requires Docker images, ZenML automatically builds these images for you to ensure your pipeline can be executed. If you want to run this build step separately without actually running the pipeline, you can do so by calling `pipeline_instance.build(...)` in Python or using the CLI command `zenml pipeline build`. This will register the build output in the ZenML database and allow you to use the built images when running a pipeline later. To use a registered build when running a pipeline, pass it as an argument in Python
 
-```python
-pipeline_instance.run(build=<BUILD_ID>)
-```
-
-or when running a pipeline from the CLI
-
-```bash
-zenml pipeline run <PIPELINE_NAME> --build=<BUILD_ID>
-```
-
-{% hint style="warning" %}
-Building Docker images currently includes your step code, which means specifying a custom build when running a pipeline will not run the code that you have on your client machine, but will instead use the code that is included in the Docker images of the build.
-{% endhint %}
 
 ## What is a code repository?
 
