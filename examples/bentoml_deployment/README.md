@@ -160,7 +160,6 @@ The example can only be executed with a ZenML stack that has BentoML model
 deployer. Configuring a new stack could look like this:
 
 ```
-zenml integration install bentoml
 zenml model-deployer register bentoml_deployer --flavor=bentoml
 zenml stack register local_bentoml_stack \
   -a default \
