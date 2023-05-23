@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2021. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2023. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -11,8 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Decorator function for ZenML pipelines."""
-
+"""Legacy ZenML pipeline decorator definition."""
 from types import FunctionType
 from typing import (
     TYPE_CHECKING,
@@ -26,8 +25,8 @@ from typing import (
     overload,
 )
 
-from zenml.pipelines.base_pipeline import (
-    INSTANCE_CONFIGURATION,
+from zenml.pipelines.base_pipeline_new import (
+    CLASS_CONFIGURATION,
     PARAM_ENABLE_ARTIFACT_METADATA,
     PARAM_ENABLE_ARTIFACT_VISUALIZATION,
     PARAM_ENABLE_CACHE,
@@ -42,9 +41,8 @@ from zenml.pipelines.base_pipeline import (
 
 if TYPE_CHECKING:
     from zenml.config.base_settings import SettingsOrDict
-    from zenml.config.source import Source
 
-    HookSpecification = Union[str, "Source", FunctionType]
+    HookSpecification = Union[str, FunctionType]
 
 F = TypeVar("F", bound=Callable[..., None])
 
@@ -81,9 +79,6 @@ def pipeline(
 ) -> Union[Type[BasePipeline], Callable[[F], Type[BasePipeline]]]:
     """Outer decorator function for the creation of a ZenML pipeline.
 
-    In order to be able to work with parameters such as "name", it features a
-    nested decorator structure.
-
     Args:
         _func: The decorated function.
         name: The name of the pipeline. If left empty, the name of the
@@ -109,21 +104,12 @@ def pipeline(
     """
 
     def inner_decorator(func: F) -> Type[BasePipeline]:
-        """Inner decorator function for the creation of a ZenML pipeline.
-
-        Args:
-            func: types.FunctionType, this function will be used as the
-                "connect" method of the generated Pipeline
-
-        Returns:
-            the class of a newly generated ZenML Pipeline
-        """
-        return type(  # noqa
+        return type(
             func.__name__,
             (BasePipeline,),
             {
                 PIPELINE_INNER_FUNC_NAME: staticmethod(func),  # type: ignore[arg-type]
-                INSTANCE_CONFIGURATION: {
+                CLASS_CONFIGURATION: {
                     PARAM_PIPELINE_NAME: name,
                     PARAM_ENABLE_CACHE: enable_cache,
                     PARAM_ENABLE_ARTIFACT_METADATA: enable_artifact_metadata,
