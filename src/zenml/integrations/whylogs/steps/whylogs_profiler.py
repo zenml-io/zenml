@@ -19,6 +19,7 @@ from typing import Optional, cast
 import pandas as pd
 from whylogs.core import DatasetProfileView  # type: ignore
 
+from zenml import step
 from zenml.integrations.whylogs.data_validators.whylogs_data_validator import (
     WhylogsDataValidator,
 )
@@ -26,52 +27,35 @@ from zenml.integrations.whylogs.flavors import WhylogsDataValidatorFlavor
 from zenml.integrations.whylogs.flavors.whylogs_data_validator_flavor import (
     WhylogsDataValidatorSettings,
 )
-from zenml.steps.base_parameters import BaseParameters
 from zenml.steps.base_step import BaseStep
 from zenml.utils import settings_utils
 
 
-class WhylogsProfilerParameters(BaseParameters):
-    """Parameters class for the WhylogsProfiler step.
-
-    Attributes:
-        dataset_timestamp: timestamp to associate with the generated
-            dataset profile (Optional). The current time is used if not
-            supplied.
-    """
-
-    dataset_timestamp: Optional[datetime.datetime]
-
-
-class WhylogsProfilerStep(BaseStep):
-    """Generates a whylogs data profile from a given pd.DataFrame."""
-
-    @staticmethod
-    def entrypoint(
-        dataset: pd.DataFrame,
-        params: WhylogsProfilerParameters,
-    ) -> DatasetProfileView:
-        """Main entrypoint function for the whylogs profiler.
-
-        Args:
-            dataset: pd.DataFrame, the given dataset
-            params: the parameters of the step
-
-        Returns:
-            whylogs profile with statistics generated for the input dataset
-        """
-        data_validator = cast(
-            WhylogsDataValidator,
-            WhylogsDataValidator.get_active_data_validator(),
-        )
-        return data_validator.data_profiling(
-            dataset, dataset_timestamp=params.dataset_timestamp
-        )
-
-
+@step
 def whylogs_profiler_step(
-    step_name: str,
-    params: WhylogsProfilerParameters,
+    dataset: pd.DataFrame,
+    dataset_timestamp: Optional[datetime.datetime] = None,
+) -> DatasetProfileView:
+    """Generate a whylogs `DatasetProfileView` from a given `pd.DataFrame`.
+
+    Args:
+        dataset: The dataset to generate the profile for.
+        dataset_timestamp: The timestamp of the dataset.
+
+    Returns:
+        whylogs profile with statistics generated for the input dataset.
+    """
+    data_validator = cast(
+        WhylogsDataValidator,
+        WhylogsDataValidator.get_active_data_validator(),
+    )
+    return data_validator.data_profiling(
+        dataset, dataset_timestamp=dataset_timestamp
+    )
+
+
+def get_whylogs_profiler_step(
+    dataset_timestamp: Optional[datetime.datetime] = None,
     dataset_id: Optional[str] = None,
     enable_whylabs: bool = True,
 ) -> BaseStep:
@@ -90,10 +74,12 @@ def whylogs_profiler_step(
     Returns:
         a WhylogsProfilerStep step instance
     """
-    step_instance = WhylogsProfilerStep(name=step_name, params=params)
     key = settings_utils.get_flavor_setting_key(WhylogsDataValidatorFlavor())
     settings = WhylogsDataValidatorSettings(
         enable_whylabs=enable_whylabs, dataset_id=dataset_id
     )
-    step_instance.configure(settings={key: settings})
+    step_instance = whylogs_profiler_step.with_options(
+        parameters={"dataset_timestamp": dataset_timestamp},
+        settings={key: settings},
+    )
     return step_instance
