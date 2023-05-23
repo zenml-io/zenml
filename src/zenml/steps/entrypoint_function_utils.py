@@ -247,9 +247,18 @@ def validate_entrypoint_function(
 
     inputs = {}
     context: Optional[inspect.Parameter] = None
-    params: Optional[inspect.Parameter] = None
+    legacy_params: Optional[inspect.Parameter] = None
 
-    for key, parameter in signature.parameters.items():
+    signature_parameters = list(signature.parameters.items())
+    if signature_parameters and signature_parameters[0][0] == "self":
+        # TODO: Once we get rid of the old step decorator, we can also remove
+        # the `BaseStepMeta` class which right now calls this function on an
+        # unbound instance method when using the class-based API. If we get rid
+        # of that, this check and removal of the `self` parameter is not
+        # necessary anymore
+        signature_parameters = signature_parameters[1:]
+
+    for key, parameter in signature_parameters:
         if parameter.kind in {parameter.VAR_POSITIONAL, parameter.VAR_KEYWORD}:
             raise StepInterfaceError(
                 f"Variable args or kwargs not allowed for function "
@@ -264,13 +273,13 @@ def validate_entrypoint_function(
         if inspect.isclass(annotation) and issubclass(
             annotation, BaseParameters
         ):
-            if params is not None:
+            if legacy_params is not None:
                 raise StepInterfaceError(
                     f"Found multiple parameter arguments "
-                    f"('{params.name}' and '{key}') "
+                    f"('{legacy_params.name}' and '{key}') "
                     f"for function {func.__name__}."
                 )
-            params = parameter
+            legacy_params = parameter
 
         elif inspect.isclass(annotation) and issubclass(
             annotation, StepContext
@@ -295,5 +304,8 @@ def validate_entrypoint_function(
     )
 
     return EntrypointFunctionDefinition(
-        inputs=inputs, outputs=outputs, context=context, legacy_params=params
+        inputs=inputs,
+        outputs=outputs,
+        context=context,
+        legacy_params=legacy_params,
     )
