@@ -152,8 +152,8 @@
 
 ZenML offers a simple and flexible syntax, is cloud- and tool-agnostic, and has
 interfaces/abstractions catered toward ML workflows.
-With ZenML you centralize the management of all your favorite tools,
-so you can tailor a workflow that caters to your specific needs.
+With ZenML you centralize the management of all your ML pipelines and
+help data scientists write code once, but deploy to any infrastructure target seamlessly
 
 <div align="center">
     <img src="docs/book/assets/stack.gif">
