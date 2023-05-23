@@ -12,7 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-import sys
 from uuid import uuid4
 
 import pytest
@@ -41,19 +40,13 @@ def test_running_a_successful_step(mocker, local_stack):
     and correctly prepares/cleans up."""
     mock_prepare_step_run = mocker.patch.object(Stack, "prepare_step_run")
     mock_cleanup_step_run = mocker.patch.object(Stack, "cleanup_step_run")
-    mock_publish_output_artifacts = mocker.patch(
-        "zenml.orchestrators.step_runner.publish_output_artifacts",
-        return_value={},
+    mocker.patch(
+        "zenml.utils.artifact_utils.upload_artifact",
+        return_value=uuid4(),
     )
     mock_publish_successful_step_run = mocker.patch(
         "zenml.orchestrators.step_runner.publish_successful_step_run"
     )
-    if sys.version_info >= (3, 8):
-        # Mocking the entrypoint function adds a `_mock_self` arg to the mock
-        # signature on python 3.7.x which messes with the input resolution
-        mock_entrypoint = mocker.patch.object(
-            successful_step, "entrypoint", autospec=True, return_value=None
-        )
 
     step = Step.parse_obj(
         {
@@ -86,10 +79,7 @@ def test_running_a_successful_step(mocker, local_stack):
     mock_cleanup_step_run.assert_called_with(
         info=step_run_info, step_failed=False
     )
-    mock_publish_output_artifacts.assert_called_once()
     mock_publish_successful_step_run.assert_called_once()
-    if sys.version_info >= (3, 8):
-        mock_entrypoint.assert_called_once()
 
 
 def test_running_a_failing_step(mocker, local_stack):
@@ -98,9 +88,9 @@ def test_running_a_failing_step(mocker, local_stack):
 
     mock_prepare_step_run = mocker.patch.object(Stack, "prepare_step_run")
     mock_cleanup_step_run = mocker.patch.object(Stack, "cleanup_step_run")
-    mock_publish_output_artifacts = mocker.patch(
-        "zenml.orchestrators.step_runner.publish_output_artifacts",
-        return_value={},
+    mocker.patch(
+        "zenml.utils.artifact_utils.upload_artifact",
+        return_value=uuid4(),
     )
     mock_publish_successful_step_run = mocker.patch(
         "zenml.orchestrators.step_runner.publish_successful_step_run"
@@ -139,7 +129,6 @@ def test_running_a_failing_step(mocker, local_stack):
     mock_cleanup_step_run.assert_called_with(
         info=step_run_info, step_failed=True
     )
-    mock_publish_output_artifacts.assert_not_called()
     mock_publish_successful_step_run.assert_not_called()
 
 

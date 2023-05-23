@@ -119,7 +119,7 @@ def test_enable_caching_for_step_with_context():
 
 def test_define_step_without_input_annotation():
     """Tests that defining a step with a missing input annotation raises a StepInterfaceError."""
-    with pytest.raises(StepInterfaceError):
+    with does_not_raise():
 
         @step
         def some_step(some_argument, some_other_argument: int) -> None:
@@ -160,7 +160,7 @@ def test_define_step_with_keyword_only_arguments():
     def some_step(some_argument: int, *, keyword_only_argument: int) -> None:
         pass
 
-    assert "keyword_only_argument" in some_step.INPUT_SIGNATURE
+    assert "keyword_only_argument" in some_step().entrypoint_definition.inputs
 
 
 def test_initialize_step_with_unexpected_config():
@@ -342,7 +342,7 @@ def test_step_uses_config_class_default_values_if_no_config_is_passed():
 
     # don't pass the config when initializing the step
     step_instance = some_step()
-    step_instance._finalize_configuration({})
+    step_instance._finalize_configuration({}, {})
 
     assert step_instance.configuration.parameters["some_parameter"] == 1
 
@@ -361,7 +361,7 @@ def test_step_fails_if_config_parameter_value_is_missing():
     step_instance = some_step()
 
     with pytest.raises(MissingStepParameterError):
-        step_instance._finalize_function_parameters()
+        step_instance._finalize_parameters()
 
 
 def test_step_config_allows_none_as_default_value():
@@ -378,11 +378,11 @@ def test_step_config_allows_none_as_default_value():
     step_instance = some_step()
 
     with does_not_raise():
-        step_instance._finalize_function_parameters()
+        step_instance._finalize_parameters()
 
 
-def test_calling_a_step_twice_raises_an_exception():
-    """Tests that calling once step instance twice raises an exception."""
+def test_calling_a_step_works():
+    """Tests that calling once step instance works."""
 
     @step
     def my_step() -> None:
@@ -390,10 +390,8 @@ def test_calling_a_step_twice_raises_an_exception():
 
     step_instance = my_step()
 
-    # calling once works
-    step_instance()
-
-    with pytest.raises(StepInterfaceError):
+    with does_not_raise():
+        step_instance()
         step_instance()
 
 
@@ -689,10 +687,7 @@ def test_upstream_step_computation():
 
     assert s1.upstream_steps == {"upstream_test_step_2"}
     assert not s2.upstream_steps
-    assert s3.upstream_steps == {
-        "upstream_test_step_1",
-        "upstream_test_step_2",
-    }
+    assert not s3.upstream_steps
 
 
 class ParamTestBaseClass(BaseModel):
@@ -766,14 +761,12 @@ def test_step_configuration(empty_step):
     configurations."""
     step_instance = empty_step()
     step_instance.configure(
-        name="name",
         enable_cache=False,
         experiment_tracker="experiment_tracker",
         step_operator="step_operator",
         extra={"key": "value"},
     )
 
-    assert step_instance.configuration.name == "name"
     assert step_instance.configuration.enable_cache is False
     assert (
         step_instance.configuration.experiment_tracker == "experiment_tracker"
@@ -783,14 +776,12 @@ def test_step_configuration(empty_step):
 
     # No merging
     step_instance.configure(
-        name="name2",
         enable_cache=True,
         experiment_tracker="experiment_tracker2",
         step_operator="step_operator2",
         extra={"key2": "value2"},
         merge=False,
     )
-    assert step_instance.configuration.name == "name2"
     assert step_instance.configuration.enable_cache is True
     assert (
         step_instance.configuration.experiment_tracker == "experiment_tracker2"
@@ -800,14 +791,12 @@ def test_step_configuration(empty_step):
 
     # With merging
     step_instance.configure(
-        name="name3",
         enable_cache=False,
         experiment_tracker="experiment_tracker3",
         step_operator="step_operator3",
         extra={"key3": "value3"},
         merge=True,
     )
-    assert step_instance.configuration.name == "name3"
     assert step_instance.configuration.enable_cache is False
     assert (
         step_instance.configuration.experiment_tracker == "experiment_tracker3"

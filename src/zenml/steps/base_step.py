@@ -557,7 +557,10 @@ class BaseStep(metaclass=BaseStepMeta):
             self.entrypoint,
             config={"arbitrary_types_allowed": True, "smart_union": True},
         )
-        model = validation_func.init_model_instance(*args, **kwargs)
+        try:
+            model = validation_func.init_model_instance(*args, **kwargs)
+        except ValidationError as e:
+            raise StepInterfaceError("Invalid entrypoint arguments.") from e
 
         validated_args = {
             k: v

@@ -80,14 +80,16 @@ def test_materializer_with_parameter_with_more_than_one_conflicting_baseclass():
 
     step_instance = some_step()
     with does_not_raise():
-        step_instance()
+        step_instance._finalize_configuration(
+            input_artifacts={}, external_artifacts={}
+        )
 
     # The step uses the materializer registered for the earliest class in the
     # python MRO
     assert (
-        step_instance.configuration.outputs[
-            "output"
-        ].materializer_source.attribute
+        step_instance.configuration.outputs["output"]
+        .materializer_source[0]
+        .attribute
         == "MyFirstMaterializer"
     )
 

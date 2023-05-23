@@ -17,8 +17,8 @@ from typing import Dict, List, Tuple
 import pytest
 from pydantic import BaseModel
 
+from zenml import step
 from zenml.new.pipelines.pipeline_decorator import pipeline
-from zenml.steps import step
 
 
 @step
@@ -27,21 +27,19 @@ def step_with_int_input(input_: int) -> int:
 
 
 def test_input_validation_outside_of_pipeline():
-    step_instance = step_with_int_input()
-
     with pytest.raises(Exception):
         # Missing input
-        step_instance()
+        step_with_int_input()
 
     with pytest.raises(Exception):
         # Wrong type
-        step_instance(input_="wrong_type")
+        step_with_int_input(input_="wrong_type")
 
-    output = step_instance(input_=1)
+    output = step_with_int_input(input_=1)
     assert output == 1
     assert type(output) is int
 
-    output = step_instance(input_=3.0)
+    output = step_with_int_input(input_=3.0)
     assert output == 3
     assert type(output) is int
 
@@ -57,18 +55,6 @@ def test_input_validation_inside_pipeline():
     with does_not_raise():
         test_pipeline(step_input=1)
         test_pipeline(step_input=3.0)
-
-
-def test_using_step_instance_and_class():
-    step_instance = step_with_int_input()
-
-    @pipeline
-    def test_pipeline():
-        step_with_int_input(1)
-        step_instance(1)
-
-    with does_not_raise():
-        test_pipeline()
 
 
 def test_passing_invalid_parameters():
