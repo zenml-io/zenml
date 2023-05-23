@@ -1,8 +1,8 @@
 ---
-description: Bring your pipelines into production using ZenML Sandbox
+description: Bringing your pipelines into production using ZenML Sandbox
 ---
 
-# Switch to Production
+# Switch to production
 
 Transitioning your machine learning pipelines to production means deploying your models on real-world data to make predictions that drive business decisions. To achieve this, you need an infrastructure that can handle the demands of running machine learning models at scale. However, setting up such an infrastructure involves careful planning and consideration of various factors, such as data storage, compute resources, monitoring, and security.
 
@@ -18,11 +18,11 @@ This is where ZenML comes in. By providing seamless integration with various [ML
 
 For those who prefer more control over their infrastructure, ZenML offers a more manual approach that still streamlines parts of the deployment process. With the [deploy CLI](../../platform-guide/set-up-your-mlops-platform/deploy-and-set-up-a-cloud-stack/), you can quickly set up a full-fledged MLOps stack with just a few commands. You have the option to deploy individual stack components through the [stack-component CLI](../../platform-guide/set-up-your-mlops-platform/deploy-and-set-up-a-cloud-stack/deploying-stack-components.md) or [deploy a stack with multiple components](../../platform-guide/set-up-your-mlops-platform/deploy-and-set-up-a-cloud-stack/deploying-a-stack-using-stack-recipes.md) together using Terraform stack recipes.
 
-### ZenML Sandbox: A Simple and Easy Starting Point
+### ZenML Sandbox: a simple and easy starting point
 
 To help you get started with moving your pipelines into production, ZenML offers a managed Sandbox environment with a pre-configured remote stack for users to try out its features without setting up their own infrastructure. The ZenML Sandbox provides an isolated environment where you can experiment with different configurations and learn how to switch between remote stacks.
 
-### Getting Started with ZenML Sandbox
+### Getting started with ZenML Sandbox
 
 #### Step 1: Sign up
 
@@ -57,20 +57,20 @@ python run.py
 
 After 8 hours, your sandbox will be automatically deleted. Make sure to save any important data or results before the sandbox is deleted. While the sandbox is active, you can also delete it manually through the ZenML Sandbox interface.
 
-### Sandbox Frequently Asked Questions
+### Sandbox FAQ
 
 **Q: Can I create more than one sandbox at a time?**
 
-A: No, each user can create only one sandbox at a time. Once your current sandbox is deleted, you can create a new one.
+**A:** No, each user can create only one sandbox at a time. Once your current sandbox is deleted, you can create a new one.
 
 **Q: Can I extend the 8-hour limit for my sandbox?**
 
-A: The 8-hour limit is fixed and cannot be extended. However, you can create a new sandbox after your current one is deleted.
+**A:** The 8-hour limit is fixed and cannot be extended. However, you can create a new sandbox after your current one is deleted.
 
-**Q: Can I use my own pipelines in the ZenML Sandbox?**
+Q: **Can I use my own pipelines in the ZenML Sandbox?**
 
-A: The ZenML Sandbox is designed for users to explore ZenML using pre-built example pipelines. While it is possible to use your own pipelines, however, we do not recommend it as the sandbox is not designed for this purpose, since every user is provided with limited resources.
+**A:** The ZenML Sandbox is designed for users to explore ZenML using pre-built example pipelines. While it is possible to use your own pipelines, however, we do not recommend it as the sandbox is not designed for this purpose, since every user is provided with limited resources.
 
 **Q: Are there any model deployment options available in the ZenML Sandbox?**
 
-A: At the moment, there are no model deployment tools available in the ZenML Sandbox. However, we are working on adding this feature in the future.
+**A:** At the moment, there are no model deployment tools available in the ZenML Sandbox. However, we are working on adding this feature in the future.

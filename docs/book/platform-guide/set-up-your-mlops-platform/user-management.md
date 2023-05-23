@@ -2,28 +2,18 @@
 description: Combining your efforts, expertise and resources.
 ---
 
-# Managing multiple users in a ZenML deployment
+# User management
 
-Collaboration is a crucial aspect of any MLOps team as they often need to bring
-together individuals with diverse skills and expertise to create a cohesive and
-effective workflow for machine learning projects. A successful MLOps team
-requires seamless collaboration between data scientists, engineers, and DevOps
-professionals to develop, train, deploy, and maintain machine learning models.
-This can be a challenging task as it requires coordination across different
-tools, processes, and frameworks.
+Collaboration is a crucial aspect of any MLOps team as they often need to bring together individuals with diverse skills and expertise to create a cohesive and effective workflow for machine learning projects. A successful MLOps team requires seamless collaboration between data scientists, engineers, and DevOps professionals to develop, train, deploy, and maintain machine learning models. This can be a challenging task as it requires coordination across different tools, processes, and frameworks.
 
 ![ZenML Overview](.gitbook/assets/intro\_zenml\_overview.png)
 
-Herein lies one of ZenML's most significant strengths: a collaborative platform
-that extends beyond your team and includes the community. With ZenML, you can
-seamlessly work together with others, sharing resources and insights to achieve
-your common goals. Removing barriers to collaboration allows teams to iterate on
-ideas and problems much more efficiently which in turn leads to faster results.
+Herein lies one of ZenML's most significant strengths: a collaborative platform that extends beyond your team and includes the community. With ZenML, you can seamlessly work together with others, sharing resources and insights to achieve your common goals. Removing barriers to collaboration allows teams to iterate on ideas and problems much more efficiently which in turn leads to faster results.
 
 * With a deployed ZenML instance, users have the ability to create their own teams and project structures. They can easily share pipelines, runs, stacks, and other resources, streamlining the workflow and promoting teamwork.
 * On the flip side, there's the ZenML Hub. Here, you can peruse a collection of community-driven solutions, share your own code, and collaborate with fellow members of the community.
 
-This section will center on managing users, their roles, and permissions within a deployed ZenML instance, while the [ZenML Hub](../../user-guide/starter-guide/zenml-hub.md) 
+This section will center on managing users, their roles, and permissions within a deployed ZenML instance, while the [ZenML Hub](../../user-guide/advanced-guide/zenml-hub.md)
 
 {% hint style="warning" %}
 Permissions and roles are an alpha feature of ZenML and are in active development.

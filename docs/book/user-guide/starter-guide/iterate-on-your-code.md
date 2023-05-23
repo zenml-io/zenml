@@ -1,8 +1,8 @@
 ---
-description: Iterating quickly with ZenML through fast caching.
+description: Iterating quickly with ZenML through caching.
 ---
 
-# Caching in ZenML
+# Caching previous executions
 
 Developing machine learning pipelines is very iterative. ZenML speeds you up in this work with the caching feature of steps and pipelines.
 
@@ -19,7 +19,7 @@ Using cached version of step_2.
 {% endtab %}
 
 {% tab title="Dashboard" %}
-<figure><img src="../../.gitbook/assets/cached (1).png" alt=""><figcaption><p>DAG of a cached pipeline run</p></figcaption></figure>
+<figure><img src="broken-reference" alt=""><figcaption><p>DAG of a cached pipeline run</p></figcaption></figure>
 {% endtab %}
 {% endtabs %}
 

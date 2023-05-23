@@ -2,11 +2,11 @@
 description: Birds-eye view on the necessities of your MLOps platform.
 ---
 
-# 🏗 Set up your MLOps Platform
+# 🏗 Set up your MLOps platform
 
 In order to establish your own MLOps platform with ZenML, you need to deploy a few ingredients:
 
-<figure><img src="../../.gitbook/assets/SystemArchitecture (1).png" alt=""><figcaption><p>System architecture with a deployment of ZenML along with a cloud stack</p></figcaption></figure>
+<figure><img src="broken-reference" alt=""><figcaption><p>System architecture with a deployment of ZenML along with a cloud stack</p></figcaption></figure>
 
 ## The ZenML server
 
