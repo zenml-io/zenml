@@ -24,13 +24,11 @@ pip install matplotlib
 zenml integration install sklearn
 ```
 
-In this case, ZenML has an integration with `sklearn` so you can use the ZenML CLI to install the right version
-directly.
+In this case, ZenML has an integration with `sklearn` so you can use the ZenML CLI to install the right version directly.
 
 #### Steps with multiple outputs
 
-Sometimes a step will have multiple outputs. In order to give each output a unique name, use the `Output()` Annotation.
-Here we load an open-source dataset and split it into a train and a test dataset.
+Sometimes a step will have multiple outputs. In order to give each output a unique name, use the `Output()` Annotation. Here we load an open-source dataset and split it into a train and a test dataset.
 
 ```python
 @step
@@ -51,8 +49,7 @@ def training_data_loader() -> Output(
 
 #### Parametrizing a step
 
-Here we are creating a training step for a support vector machine classifier with `sklearn`. As we might want to adjust
-the hyperparameter `gamma` later on, we define it as an input value to the step as well.
+Here we are creating a training step for a support vector machine classifier with `sklearn`. As we might want to adjust the hyperparameter `gamma` later on, we define it as an input value to the step as well.
 
 ```python
 @step(enable_cache=False)
@@ -73,17 +70,14 @@ def svc_trainer(
 ```
 
 {% hint style="info" %}
-If you want to run the step function outside the context of a ZenML pipeline, all you need to do is call
-the `.entrypoint()` method with the same input signature. For example:
+If you want to run the step function outside the context of a ZenML pipeline, all you need to do is call the `.entrypoint()` method with the same input signature. For example:
 
 ```python
 svc_trainer.entrypoint(X_train=..., y_train=...)
 ```
-
 {% endhint %}
 
-Next, we will combine our two steps into a pipeline and run it. As you can see, the parameter gamma is configurable as a
-pipeline input.
+Next, we will combine our two steps into a pipeline and run it. As you can see, the parameter gamma is configurable as a pipeline input.
 
 ```python
 @pipeline
@@ -97,14 +91,12 @@ if __name__ == "__main__":
 ```
 
 {% hint style="info" %}
-Best Practice: Always nest the actual execution of the pipeline inside an `if __name__ == "__main__"` condition. This
-ensures that loading the pipeline from elsewhere does not also run it.
+Best Practice: Always nest the actual execution of the pipeline inside an `if __name__ == "__main__"` condition. This ensures that loading the pipeline from elsewhere does not also run it.
 
 ```python
 if __name__ == "__main__":
     first_pipeline()
 ```
-
 {% endhint %}
 
 Running it like this `python main.py` should look somewhat like this in the terminal.
@@ -116,8 +108,7 @@ Running it like this `python main.py` should look somewhat like this in the term
 Pipeline run `first_pipeline-2023_04_29-09_19_54_273710` has finished in 0.236s.
 </code></pre>
 
-In the dashboard, you should now be able to see this new run, along with its runtime configuration and a visualization
-of the training data.
+In the dashboard, you should now be able to see this new run, along with its runtime configuration and a visualization of the training data.
 
 <figure><img src="../../.gitbook/assets/RunWithVisualization.png" alt=""><figcaption><p>Run created by the code in this section along with a visualization of the ground-truth distribution.</p></figcaption></figure>
 
@@ -129,21 +120,25 @@ In the output logs of a pipeline run you will see the name of the run:
 Pipeline run first_pipeline-2023_05_24-12_41_04_576473 has finished in 3.742s.
 ```
 
-This name is automatically generated based on the current date and time. To change the name for a run, pass `run_name`
-as a parameter to the `run()` function:
+This name is automatically generated based on the current date and time. To change the name for a run, pass `run_name` as a parameter to the `with_options()` method:
 
 ```python
-first_pipeline.run(run_name="custom_pipeline_run_name")
+first_pipeline = first_pipeline.with_options(
+    run_name="custom_pipeline_run_name"
+)
+first_pipeline()
 ```
 
-Pipeline run names must be unique, so if you plan to run your pipelines multiple times or run them on a schedule, make
-sure to either compute the run name dynamically or include one of the following placeholders that ZenML will replace:
+Pipeline run names must be unique, so if you plan to run your pipelines multiple times or run them on a schedule, make sure to either compute the run name dynamically or include one of the following placeholders that ZenML will replace:
 
 * `{{date}}` will resolve to the current date, e.g. `2023_02_19`
 * `{{time}}` will resolve to the current time, e.g. `11_07_09_326492`
 
 ```python
-first_pipeline.run(run_name="custom_pipeline_run_name_{{date}}_{{time}}")
+first_pipeline = first_pipeline.with_options(
+    run_name="custom_pipeline_run_name_{{date}}_{{time}}"
+)
+first_pipeline()
 ```
 
 ## Code Example
