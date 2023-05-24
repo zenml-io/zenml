@@ -1,7 +1,5 @@
 ---
-description: >-
-How to use Great Expectations to run data quality checks in your pipelines and
-document the results
+description: How to use Great Expectations to run data quality checks in your pipelines and document the results
 ---
 
 # Great Expectations
