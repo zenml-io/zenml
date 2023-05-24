@@ -61,10 +61,6 @@ def main() -> None:
     # Parse / extract args.
     args = parse_args()
 
-    # Get Kubernetes Core API for running kubectl commands later.
-    kube_utils.load_kube_config(incluster=True)
-    core_api = k8s_client.CoreV1Api()
-
     orchestrator_run_id = socket.gethostname()
 
     deployment_config = Client().get_deployment(args.deployment_id)
@@ -77,6 +73,14 @@ def main() -> None:
 
     active_stack = Client().active_stack
     mount_local_stores = active_stack.orchestrator.config.is_local
+
+    # Get a Kubernetes client from the active Kubernetes orchestrator, but
+    # override the `incluster` setting to `True` since we are running inside
+    # the Kubernetes cluster.
+    orchestrator = active_stack.orchestrator
+    assert isinstance(orchestrator, KubernetesOrchestrator)
+    kube_client = orchestrator.get_kube_client(incluster=True)
+    core_api = k8s_client.CoreV1Api(kube_client)
 
     def run_step_on_kubernetes(step_name: str) -> None:
         """Run a pipeline step in a separate Kubernetes pod.

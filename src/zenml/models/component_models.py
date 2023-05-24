@@ -36,6 +36,7 @@ from zenml.models.base_models import (
 )
 from zenml.models.constants import STR_FIELD_MAX_LENGTH
 from zenml.models.filter_models import ShareableWorkspaceScopedFilterModel
+from zenml.models.service_connector_models import ServiceConnectorResponseModel
 from zenml.utils import secret_utils
 
 if TYPE_CHECKING:
@@ -55,6 +56,7 @@ class ComponentBaseModel(BaseModel):
         title="The name of the stack component.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
+
     type: StackComponentType = Field(
         title="The type of the stack component.",
     )
@@ -67,6 +69,13 @@ class ComponentBaseModel(BaseModel):
     configuration: Dict[str, Any] = Field(
         title="The stack component configuration.",
     )
+
+    connector_resource_id: Optional[str] = Field(
+        default=None,
+        description="The ID of a specific resource instance to "
+        "gain access to through the connector",
+    )
+
     labels: Optional[Dict[str, Any]] = Field(
         default=None,
         title="The stack component labels.",
@@ -82,6 +91,11 @@ class ComponentResponseModel(ComponentBaseModel, ShareableResponseModel):
     """Response model for stack components."""
 
     ANALYTICS_FIELDS: ClassVar[List[str]] = ["type", "flavor"]
+
+    connector: Optional["ServiceConnectorResponseModel"] = Field(
+        default=None,
+        title="The service connector linked to this stack component.",
+    )
 
 
 # ------ #
@@ -132,6 +146,9 @@ class ComponentFilterModel(ShareableWorkspaceScopedFilterModel):
     user_id: Optional[Union[UUID, str]] = Field(
         default=None, description="User of the stack"
     )
+    connector_id: Optional[Union[UUID, str]] = Field(
+        default=None, description="Connector linked to the stack component"
+    )
 
     def set_scope_type(self, component_type: str) -> None:
         """Set the type of component on which to perform the filtering to scope the response.
@@ -172,6 +189,11 @@ class ComponentRequestModel(ComponentBaseModel, ShareableRequestModel):
     """Request model for stack components."""
 
     ANALYTICS_FIELDS: ClassVar[List[str]] = ["type", "flavor"]
+
+    connector: Optional[UUID] = Field(
+        default=None,
+        title="The service connector linked to this stack component.",
+    )
 
     @validator("name")
     def name_cant_be_a_secret_reference(cls, name: str) -> str:

@@ -518,23 +518,43 @@ class SeldonDeploymentNotFoundError(SeldonClientError):
 class SeldonClient:
     """A client for interacting with Seldon Deployments."""
 
-    def __init__(self, context: Optional[str], namespace: Optional[str]):
+    def __init__(
+        self,
+        context: Optional[str],
+        namespace: Optional[str],
+        kube_client: Optional[k8s_client.ApiClient] = None,
+    ):
         """Initialize a Seldon Core client.
 
         Args:
             context: the Kubernetes context to use.
             namespace: the Kubernetes namespace to use.
+            kube_client: a Kubernetes client to use.
         """
-        self._context = context
         self._namespace = namespace
-        self._initialize_k8s_clients()
+        self._initialize_k8s_clients(context=context, kube_client=kube_client)
 
-    def _initialize_k8s_clients(self) -> None:
+    def _initialize_k8s_clients(
+        self,
+        context: Optional[str],
+        kube_client: Optional[k8s_client.ApiClient] = None,
+    ) -> None:
         """Initialize the Kubernetes clients.
+
+        Args:
+            context: a Kubernetes configuratino context to use.
+            kube_client: a Kubernetes client to use.
 
         Raises:
             SeldonClientError: if Kubernetes configuration could not be loaded
         """
+        if kube_client:
+            # Initialize the Seldon client using the provided Kubernetes
+            # client, if supplied.
+            self._core_api = k8s_client.CoreV1Api(kube_client)
+            self._custom_objects_api = k8s_client.CustomObjectsApi(kube_client)
+            return
+
         try:
             k8s_config.load_incluster_config()
             if not self._namespace:
@@ -551,7 +571,7 @@ class SeldonClient:
                 )
             try:
                 k8s_config.load_kube_config(
-                    context=self._context, persist_config=False
+                    context=context, persist_config=False
                 )
             except k8s_config.config_exception.ConfigException as e:
                 raise SeldonClientError(

@@ -11,7 +11,6 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-import inspect
 from contextlib import ExitStack as does_not_raise
 from unittest.mock import ANY
 from uuid import uuid4
@@ -484,13 +483,14 @@ def test_unique_identifier_considers_spec(empty_step):
     step_2 = empty_step(name="step_2")
     pipeline_instance = p(step_1, step_2)
 
+    pipeline_instance.prepare()
     spec = Compiler().compile_spec(pipeline=pipeline_instance)
     id_ = pipeline_instance._compute_unique_identifier(spec)
 
-    # Change step name -> new spec -> new ID
-    step_1.configure(name="different_name")
-    new_spec = Compiler().compile_spec(pipeline=pipeline_instance)
-    new_id = pipeline_instance._compute_unique_identifier(new_spec)
+    new_instance = p(step_1, step_with_cache_enabled())
+    new_instance.prepare()
+    new_spec = Compiler().compile_spec(pipeline=new_instance)
+    new_id = new_instance._compute_unique_identifier(new_spec)
 
     assert spec != new_spec
     assert id_ != new_id
@@ -503,6 +503,7 @@ def test_unique_identifier_considers_step_source_code(
     step_instance = empty_step()
     pipeline_instance = one_step_pipeline(step_instance)
 
+    pipeline_instance.prepare()
     spec = Compiler().compile_spec(pipeline=pipeline_instance)
     id_ = pipeline_instance._compute_unique_identifier(spec)
 
@@ -617,7 +618,9 @@ def test_reusing_pipeline_version(
     assert result == pipeline_model
 
 
-def test_loading_pipeline_from_model(clean_workspace, create_pipeline_model):
+def test_loading_legacy_pipeline_from_model(
+    clean_workspace, create_pipeline_model
+):
     """Tests loading and running a pipeline from a model."""
     with open("my_steps.py", "w") as f:
         f.write(
@@ -634,6 +637,7 @@ def test_loading_pipeline_from_model(clean_workspace, create_pipeline_model):
 
     spec = PipelineSpec.parse_obj(
         {
+            "version": "0.3",
             "steps": [
                 {
                     "source": "my_steps.s1",
@@ -642,13 +646,13 @@ def test_loading_pipeline_from_model(clean_workspace, create_pipeline_model):
                 },
                 {
                     "source": "my_steps.s2",
-                    "upstream_steps": ["s1"],
+                    "upstream_steps": ["step_1"],
                     "inputs": {
-                        "inp": {"step_name": "s1", "output_name": "output"}
+                        "inp": {"step_name": "step_1", "output_name": "output"}
                     },
                     "pipeline_parameter_name": "step_2",
                 },
-            ]
+            ],
         }
     )
     pipeline_model = create_pipeline_model(spec=spec)
@@ -660,21 +664,17 @@ def test_loading_pipeline_from_model(clean_workspace, create_pipeline_model):
     with does_not_raise():
         pipeline_instance.run()
 
-    # Reconfigure step name
-    pipeline_instance.steps["step_1"].configure(name="new_name")
-    with pytest.raises(RuntimeError):
-        pipeline_instance.run()
-
     # Invalid source
     spec = PipelineSpec.parse_obj(
         {
+            "version": "0.3",
             "steps": [
                 {
                     "source": "WRONG_MODULE.s1",
                     "upstream_steps": [],
                     "pipeline_parameter_name": "step_1",
                 },
-            ]
+            ],
         }
     )
     pipeline_model = create_pipeline_model(spec=spec)
@@ -685,13 +685,14 @@ def test_loading_pipeline_from_model(clean_workspace, create_pipeline_model):
     # Missing upstream step
     spec = PipelineSpec.parse_obj(
         {
+            "version": "0.3",
             "steps": [
                 {
                     "source": "my_steps.s1",
                     "upstream_steps": ["NONEXISTENT"],
                     "pipeline_parameter_name": "step_1",
                 }
-            ]
+            ],
         }
     )
     pipeline_model = create_pipeline_model(spec=spec)
@@ -702,6 +703,7 @@ def test_loading_pipeline_from_model(clean_workspace, create_pipeline_model):
     # Missing output
     spec = PipelineSpec.parse_obj(
         {
+            "version": "0.3",
             "steps": [
                 {
                     "source": "my_steps.s1",
@@ -710,16 +712,16 @@ def test_loading_pipeline_from_model(clean_workspace, create_pipeline_model):
                 },
                 {
                     "source": "my_steps.s2",
-                    "upstream_steps": ["s1"],
+                    "upstream_steps": ["step_1"],
                     "inputs": {
                         "inp": {
-                            "step_name": "s1",
+                            "step_name": "step_1",
                             "output_name": "NONEXISTENT",
                         }
                     },
                     "pipeline_parameter_name": "step_2",
                 },
-            ]
+            ],
         }
     )
     pipeline_model = create_pipeline_model(spec=spec)
@@ -730,6 +732,7 @@ def test_loading_pipeline_from_model(clean_workspace, create_pipeline_model):
     # Wrong inputs
     spec = PipelineSpec.parse_obj(
         {
+            "version": "0.3",
             "steps": [
                 {
                     "source": "my_steps.s1",
@@ -738,16 +741,16 @@ def test_loading_pipeline_from_model(clean_workspace, create_pipeline_model):
                 },
                 {
                     "source": "my_steps.s2",
-                    "upstream_steps": ["s1"],
+                    "upstream_steps": ["step_1"],
                     "inputs": {
                         "WRONG_INPUT_NAME": {
-                            "step_name": "s1",
+                            "step_name": "step_1",
                             "output_name": "output",
                         }
                     },
                     "pipeline_parameter_name": "step_2",
                 },
-            ]
+            ],
         }
     )
     pipeline_model = create_pipeline_model(spec=spec)
@@ -756,73 +759,74 @@ def test_loading_pipeline_from_model(clean_workspace, create_pipeline_model):
         pipeline_instance = BasePipeline.from_model(pipeline_model)
 
 
-def test_connect_method_generation(clean_workspace, create_pipeline_model):
-    """Tests dynamically generating the connect method from a model."""
-    with open("my_steps.py", "w") as f:
-        f.write(
-            (
-                "from zenml import step\n"
-                "@step\n"
-                "def s1() -> int:\n"
-                "  return 1\n\n"
-                "@step\n"
-                "def s2(inp: int) -> None:\n"
-                "  pass"
-            )
-        )
+# TODO: move to deserialization utils tests
+# def test_connect_method_generation(clean_workspace, create_pipeline_model):
+#     """Tests dynamically generating the connect method from a model."""
+#     with open("my_steps.py", "w") as f:
+#         f.write(
+#             (
+#                 "from zenml.steps import step\n"
+#                 "@step\n"
+#                 "def s1() -> int:\n"
+#                 "  return 1\n\n"
+#                 "@step\n"
+#                 "def s2(inp: int) -> None:\n"
+#                 "  pass"
+#             )
+#         )
 
-    spec = PipelineSpec.parse_obj(
-        {
-            "steps": [
-                {
-                    "source": "my_steps.s1",
-                    "upstream_steps": [],
-                    "pipeline_parameter_name": "step_1",
-                },
-                {
-                    "source": "my_steps.s2",
-                    "upstream_steps": ["s1"],
-                    "inputs": {
-                        "inp": {"step_name": "s1", "output_name": "output"}
-                    },
-                    "pipeline_parameter_name": "step_2",
-                },
-            ]
-        }
-    )
-    pipeline_model = create_pipeline_model(spec=spec)
+#     spec = PipelineSpec.parse_obj(
+#         {
+#             "steps": [
+#                 {
+#                     "source": "my_steps.s1",
+#                     "upstream_steps": [],
+#                     "pipeline_parameter_name": "step_1",
+#                 },
+#                 {
+#                     "source": "my_steps.s2",
+#                     "upstream_steps": ["s1"],
+#                     "inputs": {
+#                         "inp": {"step_name": "s1", "output_name": "output"}
+#                     },
+#                     "pipeline_parameter_name": "step_2",
+#                 },
+#             ]
+#         }
+#     )
+#     pipeline_model = create_pipeline_model(spec=spec)
 
-    connect_method = BasePipeline._generate_connect_method(pipeline_model)
+#     connect_method = BasePipeline._generate_connect_method(pipeline_model)
 
-    arg_spec = inspect.getfullargspec(connect_method)
-    assert arg_spec.args == ["step_1", "step_2"]
+#     arg_spec = inspect.getfullargspec(connect_method)
+#     assert arg_spec.args == ["step_1", "step_2"]
 
-    steps = {
-        "step_1": BaseStep.load_from_source("my_steps.s1"),
-        "step_2": BaseStep.load_from_source("my_steps.s2"),
-    }
+#     steps = {
+#         "step_1": BaseStep.load_from_source("my_steps.s1"),
+#         "step_2": BaseStep.load_from_source("my_steps.s2"),
+#     }
 
-    # Missing steps
-    with pytest.raises(TypeError):
-        connect_method()
+#     # Missing steps
+#     with pytest.raises(TypeError):
+#         connect_method()
 
-    # Additional arg
-    wrong_steps = steps.copy()
-    wrong_steps["step_3"] = wrong_steps["step_1"]
-    with pytest.raises(TypeError):
-        connect_method(**wrong_steps)
+#     # Additional arg
+#     wrong_steps = steps.copy()
+#     wrong_steps["step_3"] = wrong_steps["step_1"]
+#     with pytest.raises(TypeError):
+#         connect_method(**wrong_steps)
 
-    with does_not_raise():
-        connect_method(**steps)
+#     with does_not_raise():
+#         connect_method(**steps)
 
-    # Reconfigure step name
-    steps = {
-        "step_1": BaseStep.load_from_source("my_steps.s1"),
-        "step_2": BaseStep.load_from_source("my_steps.s2"),
-    }
-    steps["step_1"].configure(name="new_name")
-    with pytest.raises(RuntimeError):
-        connect_method(**steps)
+#     # Reconfigure step name
+#     steps = {
+#         "step_1": BaseStep.load_from_source("my_steps.s1"),
+#         "step_2": BaseStep.load_from_source("my_steps.s2"),
+#     }
+#     steps["step_1"].configure(name="new_name")
+#     with pytest.raises(RuntimeError):
+#         connect_method(**steps)
 
 
 def test_loading_pipeline_from_old_spec_fails(create_pipeline_model):

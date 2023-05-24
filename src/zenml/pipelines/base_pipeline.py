@@ -24,9 +24,11 @@ from zenml.exceptions import PipelineInterfaceError
 from zenml.logger import get_logger
 from zenml.new.pipelines.pipeline import Pipeline
 from zenml.steps import BaseStep
+from zenml.utils import dict_utils, source_utils
 
 if TYPE_CHECKING:
     from zenml.config.base_settings import SettingsOrDict
+    from zenml.config.source import Source
     from zenml.models.pipeline_build_models import (
         PipelineBuildBaseModel,
     )
@@ -100,6 +102,23 @@ class BasePipeline(Pipeline, ABC):
         """
         raise NotImplementedError
 
+    def resolve(self) -> "Source":
+        """Resolves the pipeline.
+
+        Returns:
+            The pipeline source.
+        """
+        return source_utils.resolve(self.__class__)
+
+    @property
+    def source_object(self) -> Any:
+        """The source object of this pipeline.
+
+        Returns:
+            The source object of this pipeline.
+        """
+        return self.connect
+
     def run(
         self,
         *,
@@ -144,18 +163,23 @@ class BasePipeline(Pipeline, ABC):
         """
         pipeline_copy = self.with_options(
             run_name=run_name,
-            enable_cache=enable_cache,
-            enable_artifact_metadata=enable_artifact_metadata,
-            enable_artifact_visualization=enable_artifact_visualization,
             schedule=schedule,
             build=build,
-            settings=settings,
             step_configurations=step_configurations,
-            extra=extra,
             config_path=config_path,
             unlisted=unlisted,
             prevent_build_reuse=prevent_build_reuse,
         )
+        new_run_args = dict_utils.remove_none_values(
+            {
+                "enable_cache": enable_cache,
+                "enable_artifact_metadata": enable_artifact_metadata,
+                "enable_artifact_visualization": enable_artifact_visualization,
+                "settings": settings,
+                "extra": extra,
+            }
+        )
+        pipeline_copy._run_args.update(new_run_args)
 
         pipeline_copy()
 

@@ -14,6 +14,7 @@
 """Definition of a ZenML pipeline."""
 import copy
 import hashlib
+import inspect
 from datetime import datetime
 from pathlib import Path
 from types import FunctionType
@@ -35,6 +36,8 @@ from typing import (
 from uuid import UUID
 
 import yaml
+from pydantic import ValidationError
+from pydantic.decorator import ValidatedFunction
 
 from zenml import constants
 from zenml.client import Client
@@ -131,6 +134,7 @@ class GetRunsDescriptor:
         if instance is None:
             pipeline_view = get_pipeline(cls)
         else:
+            instance._prepare_if_possible()
             pipeline_view = get_pipeline(instance)
 
         if pipeline_view:
@@ -198,6 +202,7 @@ class Pipeline:
             on_success=on_success,
         )
         self.entrypoint = entrypoint
+        self._parameters: Dict[str, Any] = {}
 
     @property
     def name(self) -> str:
@@ -238,6 +243,32 @@ class Pipeline:
         """
         return self._invocations
 
+    def resolve(self) -> "Source":
+        """Resolves the pipeline.
+
+        Returns:
+            The pipeline source.
+        """
+        return source_utils.resolve(self.entrypoint, skip_validation=True)
+
+    @property
+    def source_object(self) -> Any:
+        """The source object of this pipeline.
+
+        Returns:
+            The source object of this pipeline.
+        """
+        return self.entrypoint
+
+    @property
+    def source_code(self) -> str:
+        """The source code of this pipeline.
+
+        Returns:
+            The source code of this pipeline.
+        """
+        return inspect.getsource(self.source_object)
+
     @classmethod
     def from_model(cls, model: "PipelineResponseModel") -> "Pipeline":
         """Creates a pipeline instance from a model.
@@ -247,9 +278,6 @@ class Pipeline:
 
         Returns:
             The pipeline instance.
-
-        Raises:
-            ValueError: If the spec version of the given model is <0.2
         """
         from zenml.new.pipelines.deserialization_utils import load_pipeline
 
@@ -328,6 +356,48 @@ class Pipeline:
         self._apply_configuration(config, merge=merge)
         return self
 
+    @property
+    def requires_parameters(self) -> bool:
+        """If the pipeline entrypoint requires parameters.
+
+        Returns:
+            If the pipeline entrypoint requires parameters.
+        """
+        signature = inspect.signature(self.entrypoint, follow_wrapped=True)
+        return any(
+            parameter.default is inspect.Parameter.empty
+            for parameter in signature.parameters.values()
+        )
+
+    @property
+    def is_prepared(self) -> bool:
+        """If the pipeline is prepared.
+
+        Prepared means that the pipeline entrypoint has been called and the
+        pipeline is fully defined.
+
+        Returns:
+            If the pipeline is prepared.
+        """
+        return len(self.invocations) > 0
+
+    def prepare(self, *args: Any, **kwargs: Any) -> None:
+        """Prepares the pipeline.
+
+        Args:
+            *args: Pipeline entrypoint input arguments.
+            **kwargs: Pipeline entrypoint input keyword arguments.
+        """
+        # Clear existing parameters and invocations
+        self._parameters = {}
+        self._invocations = {}
+
+        with self:
+            # Enter the context manager so we become the active pipeline. This
+            # means that all steps that get called while the entrypoint function
+            # is executed will be added as invocation to this pipeline instance.
+            self._call_entrypoint(*args, **kwargs)
+
     def register(self) -> "PipelineResponseModel":
         """Register the pipeline in the server.
 
@@ -337,6 +407,7 @@ class Pipeline:
         # Activating the built-in integrations to load all materializers
         from zenml.integrations.registry import integration_registry
 
+        self._prepare_if_possible()
         integration_registry.activate_integrations()
 
         custom_configurations = self.configuration.dict(
@@ -357,7 +428,6 @@ class Pipeline:
 
     def build(
         self,
-        *,
         settings: Optional[Mapping[str, "SettingsOrDict"]] = None,
         step_configurations: Optional[
             Mapping[str, "StepConfigurationUpdateOrDict"]
@@ -380,6 +450,7 @@ class Pipeline:
             The build output.
         """
         with event_handler(event=AnalyticsEvent.BUILD_PIPELINE, v2=True):
+            self._prepare_if_possible()
             deployment, pipeline_spec, _, _ = self._compile(
                 config_path=config_path,
                 steps=step_configurations,
@@ -404,6 +475,7 @@ class Pipeline:
         run_name: Optional[str] = None,
         enable_cache: Optional[bool] = None,
         enable_artifact_metadata: Optional[bool] = None,
+        enable_artifact_visualization: Optional[bool] = None,
         schedule: Optional[Schedule] = None,
         build: Union[str, "UUID", "PipelineBuildBaseModel", None] = None,
         settings: Optional[Mapping[str, "SettingsOrDict"]] = None,
@@ -422,6 +494,8 @@ class Pipeline:
             enable_cache: If caching should be enabled for this pipeline run.
             enable_artifact_metadata: If artifact metadata should be enabled
                 for this pipeline run.
+            enable_artifact_visualization: If artifact visualization should be
+                enabled for this pipeline run.
             schedule: Optional schedule to use for the run.
             build: Optional build to use for the run.
             settings: Settings for this pipeline run.
@@ -458,6 +532,7 @@ class Pipeline:
                 run_name=run_name,
                 enable_cache=enable_cache,
                 enable_artifact_metadata=enable_artifact_metadata,
+                enable_artifact_visualization=enable_artifact_visualization,
                 steps=step_configurations,
                 settings=settings,
                 schedule=schedule,
@@ -608,6 +683,8 @@ class Pipeline:
         from zenml.config.step_configurations import (
             PartialArtifactConfiguration,
         )
+
+        self._prepare_if_possible()
 
         stack = stack or Client().active_stack
 
@@ -826,8 +903,14 @@ class Pipeline:
         Returns:
             The unique identifier of the pipeline.
         """
+        from packaging import version
+
         hash_ = hashlib.md5()
         hash_.update(pipeline_spec.json_with_string_sources.encode())
+
+        if version.parse(pipeline_spec.version) >= version.parse("0.4"):
+            # Only add this for newer versions to keep backwards compatibility
+            hash_.update(self.source_code.encode())
 
         for step_spec in pipeline_spec.steps:
             invocation = self.invocations[step_spec.pipeline_parameter_name]
@@ -859,6 +942,8 @@ class Pipeline:
         Returns:
             The registered pipeline model or None if no model is registered yet.
         """
+        self._prepare_if_possible()
+
         pipeline_spec = Compiler().compile_spec(self)
         version_hash = self._compute_unique_identifier(
             pipeline_spec=pipeline_spec
@@ -1086,11 +1171,57 @@ class Pipeline:
             # pipeline. Is this what we want?
             return self.entrypoint(*args, **kwargs)
 
-        self = self.copy()
-        with self:
-            # Enter the context manager so we become the active pipeline. This
-            # means that all steps that get called while the entrypoint function
-            # is executed will be added as invocation to this pipeline instance.
-            self.entrypoint(*args, **kwargs)
-
+        self.prepare(*args, **kwargs)
         return self._run(**self._run_args)
+
+    def _call_entrypoint(self, *args: Any, **kwargs: Any) -> None:
+        """Calls the pipeline entrypoint function with the given arguments.
+
+        Args:
+            *args: Entrypoint function arguments.
+            **kwargs: Entrypoint function keyword arguments.
+
+        Raises:
+            ValueError: If an input argument is missing or not JSON
+                serializable.
+        """
+        validation_func = ValidatedFunction(
+            self.entrypoint,
+            config={"arbitrary_types_allowed": False, "smart_union": True},
+        )
+        try:
+            model = validation_func.init_model_instance(*args, **kwargs)
+        except ValidationError as e:
+            raise ValueError(
+                "Invalid or missing inputs for pipeline entrypoint function. "
+                "Only JSON serializable inputs are allowed as pipeline inputs."
+            ) from e
+
+        validated_args = {
+            k: v
+            for k, v in model._iter()
+            if k in model.__fields_set__
+            or model.__fields__[k].default_factory
+            or model.__fields__[k].default
+        }
+
+        self._parameters = validated_args
+        self.entrypoint(**validated_args)
+
+    def _prepare_if_possible(self) -> None:
+        """Prepares the pipeline if possible.
+
+        Raises:
+            RuntimeError: If the pipeline is not prepared and the preparation
+                requires parameters.
+        """
+        if not self.is_prepared:
+            if self.requires_parameters:
+                raise RuntimeError(
+                    f"Failed while trying to prepare pipeline {self.name}. "
+                    "The entrypoint function of the pipeline requires "
+                    "arguments. Please prepare the pipeline by calling "
+                    "`pipeline_instance.prepare(...)` and try again."
+                )
+            else:
+                self.prepare()

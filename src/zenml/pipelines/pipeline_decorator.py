@@ -105,7 +105,7 @@ def pipeline(
 
     def inner_decorator(func: F) -> Type[BasePipeline]:
         return type(
-            func.__name__,
+            name or func.__name__,
             (BasePipeline,),
             {
                 PIPELINE_INNER_FUNC_NAME: staticmethod(func),  # type: ignore[arg-type]
