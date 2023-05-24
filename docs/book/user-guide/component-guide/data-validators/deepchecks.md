@@ -420,4 +420,4 @@ if __name__ == "__main__":
     visualize_results("data_validation_pipeline", "data_integrity_check")
 ```
 
-![Deepchecks Visualization Example](../../../assets/deepchecks/data-integrity-results.png)
+![Deepchecks Visualization Example](../../../.gitbook/assets/data-integrity-results.png)
