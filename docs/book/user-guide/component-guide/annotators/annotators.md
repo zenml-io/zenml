@@ -8,7 +8,7 @@ Annotators are a stack component that enables the use of data annotation as part
 
 Data annotation/labeling is a core part of MLOps that is frequently left out of the conversation. ZenML will incrementally start to build features that support an iterative annotation workflow that sees the people doing labeling (and their workflows/behaviors) as integrated parts of their ML process(es).
 
-![When and where to annotate.](../../../assets/annotation/annotation-when-where.png)
+![When and where to annotate.](docs/book/.gitbook/assets/annotation-when-where.png)
 
 There are a number of different places in the ML lifecycle where this can happen:
 
