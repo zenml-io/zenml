@@ -15,7 +15,7 @@ from datasets import DatasetDict
 from steps.configuration import HuggingfaceParameters
 from transformers import PreTrainedTokenizerBase
 
-from zenml import step
+from zenml.steps import step
 
 
 @step

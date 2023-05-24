@@ -14,7 +14,7 @@
 import numpy as np
 import tensorflow as tf
 
-from zenml import step
+from zenml.steps import step
 
 
 @step

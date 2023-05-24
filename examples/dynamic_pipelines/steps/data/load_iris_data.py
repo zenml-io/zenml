@@ -14,7 +14,7 @@
 import numpy as np
 from sklearn import datasets
 
-from zenml import step
+from zenml.steps import step
 from zenml.steps.step_output import Output
 
 

@@ -23,13 +23,13 @@ from rich import print
 from sklearn.base import ClassifierMixin
 from sklearn.linear_model import LogisticRegression
 
-from zenml import pipeline, step
 from zenml.config import DockerSettings
 from zenml.integrations.constants import SELDON, SKLEARN, TENSORFLOW
 from zenml.integrations.seldon.model_deployers import SeldonModelDeployer
 from zenml.integrations.seldon.services import SeldonDeploymentService
 from zenml.logger import get_logger
-from zenml.steps import BaseParameters, Output
+from zenml.pipelines import pipeline
+from zenml.steps import BaseParameters, Output, step
 
 logger = get_logger(__name__)
 

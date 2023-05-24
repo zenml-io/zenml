@@ -24,7 +24,6 @@ from PIL import Image
 from steps.get_or_create_dataset import LABELS
 from torchvision import models, transforms
 
-from zenml import step
 from zenml.integrations.label_studio.label_studio_utils import (
     get_file_extension,
     is_azure_url,
@@ -33,7 +32,7 @@ from zenml.integrations.label_studio.label_studio_utils import (
 )
 from zenml.io import fileio
 from zenml.post_execution import get_pipeline
-from zenml.steps import BaseParameters
+from zenml.steps import BaseParameters, step
 from zenml.steps.step_context import StepContext
 from zenml.utils import io_utils
 

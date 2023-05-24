@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 
 
-from zenml import pipeline
+from zenml.pipelines import pipeline
 
 
 @pipeline()

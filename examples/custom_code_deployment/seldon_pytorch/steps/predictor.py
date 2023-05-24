@@ -14,8 +14,8 @@
 
 from rich import print as rich_print
 
-from zenml import step
 from zenml.integrations.seldon.services import SeldonDeploymentService
+from zenml.steps import step
 
 
 @step

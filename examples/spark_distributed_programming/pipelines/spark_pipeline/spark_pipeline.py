@@ -15,8 +15,8 @@
 
 import os
 
-from zenml import pipeline
 from zenml.config import DockerSettings
+from zenml.pipelines import pipeline
 
 docker_settings = DockerSettings(
     requirements=["zenml"], parent_image=os.getenv("BASE_IMAGE_NAME")

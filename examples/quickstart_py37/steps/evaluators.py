@@ -15,7 +15,7 @@
 import pandas as pd
 from sklearn.base import ClassifierMixin
 
-from zenml import step
+from zenml.steps import step
 
 
 @step
