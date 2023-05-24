@@ -25,6 +25,7 @@ from typing import (
     overload,
 )
 
+from zenml.logger import get_logger
 from zenml.pipelines.base_pipeline import (
     CLASS_CONFIGURATION,
     PARAM_ENABLE_ARTIFACT_METADATA,
@@ -43,6 +44,8 @@ if TYPE_CHECKING:
     from zenml.config.base_settings import SettingsOrDict
 
     HookSpecification = Union[str, FunctionType]
+
+logger = get_logger(__name__)
 
 F = TypeVar("F", bound=Callable[..., None])
 
@@ -102,6 +105,12 @@ def pipeline(
         the inner decorator which creates the pipeline class based on the
         ZenML BasePipeline
     """
+    logger.warning(
+        "The `@pipeline` decorator that you use to define your pipeline is "
+        "deprecated. Check out our docs https://docs.zenml.io for "
+        "information on how to define pipelines in a more intuitive and "
+        "flexible way!"
+    )
 
     def inner_decorator(func: F) -> Type[BasePipeline]:
         return type(
