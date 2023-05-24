@@ -25,11 +25,9 @@ from steps import (
 
 from zenml.integrations.mlflow.mlflow_utils import get_tracking_uri
 from zenml.integrations.mlflow.steps.mlflow_deployer import (
-    MLFlowDeployerParameters,
     mlflow_model_registry_deployer_step,
 )
 from zenml.integrations.mlflow.steps.mlflow_registry import (
-    MLFlowRegistryParameters,
     mlflow_register_model_step,
 )
 from zenml.model_registries.base_model_registry import (
@@ -43,8 +41,8 @@ def main():
         training_data_loader=training_data_loader(),
         trainer=svc_trainer_mlflow(),
         evaluator=evaluator(),
-        model_register=mlflow_register_model_step(
-            params=MLFlowRegistryParameters(
+        model_register=mlflow_register_model_step.with_options(
+            parameters=dict(
                 name="zenml-quickstart-model",
                 metadata=ModelRegistryModelMetadata(gamma=0.01, arch="svc"),
                 description="The first run of the Quickstart pipeline.",

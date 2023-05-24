@@ -11,22 +11,33 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+from steps.dynamic_importer.dynamic_importer_step import dynamic_importer
+from steps.predictor.predictor_step import predictor
+from steps.tf_predict_preprocessor.tf_predict_preprocessor_step import (
+    tf_predict_preprocessor,
+)
+
 from zenml import pipeline
 from zenml.config import DockerSettings
 from zenml.integrations.constants import MLFLOW, TENSORFLOW
+from zenml.integrations.mlflow.steps.mlflow_deployer import (
+    mlflow_model_registry_deployer_step,
+)
 
 docker_settings = DockerSettings(required_integrations=[MLFLOW, TENSORFLOW])
 
 
 @pipeline(enable_cache=True, settings={"docker": docker_settings})
-def deployment_inference_pipeline(
-    mlflow_model_deployer,
-    dynamic_importer,
-    predict_preprocessor,
-    predictor,
-):
+def deployment_inference_pipeline():
     # Link all the steps artifacts together
-    model_deployment_service = mlflow_model_deployer()
+    deployed_model = mlflow_model_registry_deployer_step.with_options(
+        parameters=dict(
+            registry_model_name="tensorflow-mnist-model",
+            registry_model_version="2",
+            # or you can use the model stage if you have set it in the MLflow registry
+            # registered_model_stage="None" # "Staging", "Production", "Archived"
+        )
+    )()
     batch_data = dynamic_importer()
-    inference_data = predict_preprocessor(batch_data)
-    predictor(model_deployment_service, inference_data)
+    inference_data = tf_predict_preprocessor(batch_data)
+    predictor(deployed_model, inference_data)
