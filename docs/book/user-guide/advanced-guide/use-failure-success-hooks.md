@@ -13,7 +13,7 @@ A hook executes right after step execution, within the same environment as the s
 
 Here is a short demo for hooks in ZenML:
 
-{% embed url="https://www.youtube.com/embed/KUW2G3EsqF8" fullWidth="false" %}
+{% embed url="https://www.youtube.com/watch?v=KUW2G3EsqF8" %}
 Failure and Success Hooks in ZenML Short Demo
 {% endembed %}
 
