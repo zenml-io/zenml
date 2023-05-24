@@ -19,6 +19,7 @@
   * [Follow best practices](user-guide/starter-guide/follow-best-practices.md)
 * [🐔 Advanced guide](user-guide/advanced-guide/advanced-guide.md)
   * [Configure steps/pipelines](user-guide/advanced-guide/configure-steps-pipelines.md)
+  * [Visualize artifacts](user-guide/advanced-guide/visualize-artifacts.md)
   * [Manage environments](user-guide/advanced-guide/manage-environments.md)
   * [Containerize your pipeline](user-guide/advanced-guide/containerize-your-pipeline.md)
   * [Connect your git repository](user-guide/advanced-guide/connect-your-git-repository.md)
