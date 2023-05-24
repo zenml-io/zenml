@@ -164,7 +164,7 @@ import numpy as np
 
 import tensorflow as tf
 
-from zenml.steps import step
+from zenml import step
 from zenml.integrations.neptune.experiment_trackers.run_state import (
     get_neptune_run,
 )

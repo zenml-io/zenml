@@ -123,7 +123,8 @@ your secrets for querying APIs from within your step without hard-coding your ac
 appropriate decision regarding caching as it will be disabled by default when the `StepContext` is passed into the step.
 
 ```python
-from zenml.steps import step, StepContext
+from zenml.steps import  StepContext
+from zenml import step
 
 
 @step(enable_cache=True)

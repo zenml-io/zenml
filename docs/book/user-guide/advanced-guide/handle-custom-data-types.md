@@ -323,8 +323,7 @@ import logging
 import os
 from typing import Type
 
-from zenml.steps import step
-from zenml.pipelines import pipeline
+from zenml import step, pipeline
 
 from zenml.enums import ArtifactType
 from zenml.io import fileio
@@ -357,6 +356,7 @@ def my_first_step() -> MyObj:
     """Step that returns an object of type MyObj."""
     return MyObj("my_object")
 
+my_first_step = my_first_step.configure(output_materializers=MyMaterializer)
 
 @step
 def my_second_step(my_obj: MyObj) -> None:
@@ -366,15 +366,12 @@ def my_second_step(my_obj: MyObj) -> None:
 
 
 @pipeline
-def first_pipeline(step_1, step_2):
-    output_1 = step_1()
-    step_2(output_1)
+def first_pipeline():
+    output_1 = my_first_step()
+    my_second_step(output_1)
 
-
-first_pipeline(
-    step_1=my_first_step().configure(output_materializers=MyMaterializer),
-    step_2=my_second_step()
-).run()
+if __name__ == "__main__":
+    first_pipeline()
 ```
 
 </details>

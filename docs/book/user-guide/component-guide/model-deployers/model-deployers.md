@@ -259,7 +259,7 @@ Services can be passed through steps like any other object, and used to interact
 represent:
 
 ```python
-from zenml.steps import step
+from zenml import step
 
 
 @step

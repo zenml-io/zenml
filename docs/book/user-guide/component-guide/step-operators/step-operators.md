@@ -49,13 +49,10 @@ want to use is part of your active [ZenML stack](/docs/book/user-guide/starter-g
 specify it in the `@step` decorator of your step.
 
 ```python
-from zenml.steps import step
+from zenml import step
 
 
-@step(step_operator= < STEP_OPERATOR_NAME >
-
-)
-
+@step(step_operator= <STEP_OPERATOR_NAME>)
 def my_step(...) -> ...:
     ...
 ```

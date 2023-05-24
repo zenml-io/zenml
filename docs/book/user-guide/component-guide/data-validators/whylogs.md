@@ -191,7 +191,7 @@ from zenml.integrations.whylogs.data_validators.whylogs_data_validator import (
 from zenml.integrations.whylogs.flavors.whylogs_data_validator_flavor import (
     WhylogsDataValidatorSettings,
 )
-from zenml.steps import step
+from zenml import step
 
 whylogs_settings = WhylogsDataValidatorSettings(
     enable_whylabs=True, dataset_id="<WHYLABS_DATASET_ID>"
@@ -240,7 +240,7 @@ You can use the whylogs library directly in your custom pipeline steps, and only
 import pandas as pd
 from whylogs.core import DatasetProfileView
 import whylogs as why
-from zenml.steps import step
+from zenml import step
 from zenml.integrations.whylogs.flavors.whylogs_data_validator_flavor import (
     WhylogsDataValidatorSettings,
 )
