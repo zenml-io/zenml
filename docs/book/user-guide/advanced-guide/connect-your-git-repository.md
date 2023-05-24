@@ -69,21 +69,21 @@ After registering the GitHub code repository, ZenML will automatically detect if
 
 <details>
 
-<summary>How To get a token for GitHub</summary>
+<summary>How to get a token for GitHub</summary>
 
 1. Go to your GitHub account settings and click on [Developer settings](https://github.com/settings/tokens?type=beta).
 2. Select "Personal access tokens" and click on "Generate new token".
 3.  Give your token a name and a description.
 
-    ![](broken-reference)
+    ![](../../.gitbook/assets/github-fine-grained-token-name.png)
 4.  We recommend selecting the specific repository and then giving `contents` read-only access.
 
-    ![](broken-reference)
+    ![](../../.gitbook/assets/github-token-set-permissions.png)
 
-    ![](broken-reference)
+    ![](../../.gitbook/assets/github-token-permissions-overview.png)
 5.  Click on "Generate token" and copy the token to a safe place.
 
-    ![](broken-reference)
+    ![](../../.gitbook/assets/copy-github-fine-grained-token.png)
 
 </details>
 
@@ -110,10 +110,10 @@ After registering the GitLab code repository, ZenML will automatically detect if
 1. Go to your GitLab account settings and click on [Access Tokens](https://gitlab.com/-/profile/personal\_access\_tokens).
 2.  Name the token and select the scopes that you need (e.g. `read_repository`, `read_user`, `read_api`)
 
-    ![](broken-reference)
+    ![](../../.gitbook/assets/gitlab-generate-access-token.png)
 3.  Click on "Create personal access token" and copy the token to a safe place.
 
-    ![](broken-reference)
+    ![](../../.gitbook/assets/gitlab-copy-access-token.png)
 
 </details>
 
