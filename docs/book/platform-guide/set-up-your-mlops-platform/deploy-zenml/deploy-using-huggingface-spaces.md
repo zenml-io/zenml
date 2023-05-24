@@ -10,7 +10,7 @@ A quick way to deploy ZenML and get started is to use [HuggingFace Spaces](https
 Note that it is not recommended to use HuggingFace Spaces for production use as by default the data stored there is non-persistent and the underlying machine is not as available to you as a dedicated machine. See our [other deployment options](deploying-zenml.md) if you want to use ZenML in production.
 {% endhint %}
 
-![ZenML on HuggingFace Spaces -- default deployment](docs/book/.gitbook/assets/hf_spaces_chart.png)
+![ZenML on HuggingFace Spaces -- default deployment](../../../.gitbook/assets/hf_spaces_chart.png)
 
 In this diagram, you can see what the default deployment of ZenML on HuggingFace looks like.
 
@@ -22,7 +22,7 @@ You can deploy ZenML on HuggingFace Spaces with just a few clicks:
 
 To set up your ZenML app, you need to specify three main components: the Owner (either your personal account or an organization), a Space name, and the Visibility (a bit lower down the page). Note that the space visibility needs to be set to 'Public' if you wish to connect to the ZenML server from your local machine.
 
-![HuggingFace Spaces SDK interface](docs/book/.gitbook/assets/hf-spaces-sdk.png)
+![HuggingFace Spaces SDK interface](../../../.gitbook/assets/hf-spaces-sdk.png)
 
 You have the option here to select a higher-tier machine to use for your server. The advantage of selecting a paid CPU instance is that it is not subject to auto-shutdown policies and thus will stay up as long as you leave it up. In order to make use of a persistent CPU, you'll likely want to create and set up a MySQL database to connect to (see below).
 
