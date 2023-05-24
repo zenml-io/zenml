@@ -18,7 +18,7 @@ The SQLite database that you can see in this diagram is used to store informatio
 
 In order to move into production, you will need to deploy this server somewhere centrally so that the different cloud stack components can read from and write to the server. Additionally, this also allows all your team members to connect to it and share stacks and pipelines.
 
-<figure><img src="../../.gitbook/assets/Scenario3.2.png" alt="" width="563"><figcaption><p>Scenario 3: Deployed ZenML Server</p></figcaption></figure>
+<figure><img src="../../.gitbook/assets/Scenario3.png" alt="" width="563"><figcaption><p>Scenario 3: Deployed ZenML Server</p></figcaption></figure>
 
 #### Connect your client to the server
 
