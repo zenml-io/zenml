@@ -12,11 +12,13 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Utilities for pydantic models."""
+import inspect
 import json
-from typing import Any, Dict, Optional, Type, TypeVar, Union, cast
+from typing import Any, Callable, Dict, Optional, Type, TypeVar, Union, cast
 
 import yaml
 from pydantic import BaseModel
+from pydantic.decorator import ValidatedFunction
 from pydantic.json import pydantic_encoder
 from pydantic.utils import sequence_like
 
@@ -205,3 +207,61 @@ class YAMLSerializationMixin(BaseModel):
         """
         dict_ = yaml_utils.read_yaml(path)
         return cls.parse_obj(dict_)
+
+
+def validate_function_args(
+    __func: Callable[..., Any],
+    __config: Dict[str, Any],
+    *args: Any,
+    **kwargs: Any,
+) -> Dict[str, Any]:
+    """Validates arguments passed to a function.
+
+    This function validates that all arguments to call the function exist and
+    that the types match.
+
+    It raises a pydantic.ValidationError if the validation fails.
+
+    Args:
+        __func: The function for which the arguments are passed.
+        __config: The pydantic config for the underlying model that is created
+            to validate the types of the arguments.
+        *args: Function arguments.
+        **kwargs: Function keyword arguments.
+
+    Returns:
+        The validated arguments.
+    """
+    parameter_prefix = "zenml__"
+
+    signature = inspect.signature(__func)
+    parameters = [
+        param.replace(name=f"{parameter_prefix}{param.name}")
+        for param in signature.parameters.values()
+    ]
+    signature = signature.replace(parameters=parameters)
+
+    def f() -> None:
+        pass
+
+    # We create a dummy function with the original function signature, but
+    # add a prefix to all arguments to avoid potential clashes with pydantic
+    # BaseModel attributes
+    f.__signature__ = signature  # type: ignore[attr-defined]
+
+    validation_func = ValidatedFunction(f, config=__config)
+
+    kwargs = {
+        f"{parameter_prefix}{key}": value for key, value in kwargs.items()
+    }
+    model = validation_func.init_model_instance(*args, **kwargs)
+
+    validated_args = {
+        k[len(parameter_prefix) :]: v
+        for k, v in model._iter()
+        if k in model.__fields_set__
+        or model.__fields__[k].default_factory
+        or model.__fields__[k].default
+    }
+
+    return validated_args
