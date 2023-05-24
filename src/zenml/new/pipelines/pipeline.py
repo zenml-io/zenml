@@ -1054,9 +1054,6 @@ class Pipeline:
     def __enter__(self: T) -> T:
         """Activate the pipeline context.
 
-        Args:
-            self: The pipeline instance.
-
         Raises:
             RuntimeError: If a different pipeline is already active.
 
@@ -1153,10 +1150,6 @@ class Pipeline:
         Args:
             *args: Entrypoint function arguments.
             **kwargs: Entrypoint function keyword arguments.
-
-        Raises:
-            RuntimeError: If an entrypoint input is not an artifact and not
-                JSON serializable.
 
         Returns:
             The outputs of the entrypoint function call.

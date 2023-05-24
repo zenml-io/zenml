@@ -69,7 +69,6 @@ class PartialArtifactConfiguration(StrictBaseModel):
         """Converts old source strings to tuples of source objects.
 
         Args:
-            cls: The class on which the attributes are defined.
             value: Source string or object.
 
         Returns:
@@ -95,7 +94,6 @@ class ArtifactConfiguration(PartialArtifactConfiguration):
         """Converts old source strings to tuples of source objects.
 
         Args:
-            cls: The class on which the attributes are defined.
             value: Source string or object.
 
         Returns:

@@ -98,9 +98,6 @@ class BaseStepMeta(type):
 
         Returns:
             The new class.
-
-        Raises:
-            StepInterfaceError: When unable to create the step.
         """
         cls = cast(Type["BaseStep"], super().__new__(mcs, name, bases, dct))
         if name not in {"BaseStep", "_DecoratedStep"}:
@@ -567,6 +564,10 @@ class BaseStep(metaclass=BaseStepMeta):
 
         Returns:
             The return value of the entrypoint function.
+
+        Raises:
+            StepInterfaceError: If the arguments to the entrypoint function are
+                invalid.
         """
         try:
             validated_args = pydantic_utils.validate_function_args(
