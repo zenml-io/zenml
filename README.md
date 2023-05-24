@@ -145,7 +145,7 @@ production-ready machine learning pipelines. By decoupling infrastructure from
 code, ZenML enables developers across your organization to collaborate more
 effectively as they develop to production.
 
-- 🧑‍💼 ZenML gives data scientists the freedom to fully focus on modeling and
+-💼ZenML gives data scientists the freedom to fully focus on modeling and
   experimentation while writing code that is production-ready from the get-go.
 
 - 👨‍💻 ZenML empowers ML engineers to take ownership of the entire ML lifecycle
