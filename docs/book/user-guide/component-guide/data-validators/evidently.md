@@ -1,5 +1,7 @@
 ---
-description: How to keep your data quality in check and guard against data and model drift with Evidently profiling
+description: >-
+  How to keep your data quality in check and guard against data and model drift
+  with Evidently profiling
 ---
 
 # Evidently
@@ -650,4 +652,4 @@ if __name__ == "__main__":
     visualize_results("text_data_test_pipeline", "text_test")
 ```
 
-![Evidently metrics report visualization](../../../../../examples/evidently\_data\_validation/assets/evidently-metrics-report.png) ![Evidently test results visualization](../../../../../examples/evidently\_data\_validation/assets/evidently-test-results.png)
+![Evidently metrics report visualization](../../../.gitbook/assets/evidently-metrics-report.png) ![Evidently test results visualization](../../../.gitbook/assets/evidently-test-results.png)

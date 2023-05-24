@@ -1,5 +1,7 @@
 ---
-description: How to collect and visualize statistics to track changes in your pipelines' data with whylogs/WhyLabs profiling.
+description: >-
+  How to collect and visualize statistics to track changes in your pipelines'
+  data with whylogs/WhyLabs profiling.
 ---
 
 # Whylogs
@@ -306,5 +308,4 @@ if __name__ == "__main__":
     visualize_statistics("train_data_profiler", "test_data_profiler")
 ```
 
-![Whylogs Visualization Example 1](../../../.gitbook/assets/whylogs-visualizer-01.png) 
-![Whylogs Visualization Example 2](../../../.gitbook/assets/whylogs-visualizer-02.png)
+![Whylogs Visualization Example 1](<../../../../../examples/whylogs\_data\_profiling/assets/whylogs-visualizer (1) (1) (1) (1) (4).png>) ![Whylogs Visualization Example 2](../../../.gitbook/assets/whylogs-visualizer-02.png)

@@ -1,5 +1,7 @@
 ---
-description: How to use Great Expectations to run data quality checks in your pipelines and document the results
+description: >-
+  How to use Great Expectations to run data quality checks in your pipelines and
+  document the results
 ---
 
 # Great Expectations
@@ -319,4 +321,4 @@ if __name__ == "__main__":
     visualize_results("validation_pipeline", "test_validator")
 ```
 
-![Expectations Suite Visualization](../../../../../examples/great\_expectations\_data\_validation/assets/expectation\_suite.png) ![Validation Results Visualization](../../../../../examples/great\_expectations\_data\_validation/assets/validation\_result.png)
+![Expectations Suite Visualization](../../../.gitbook/assets/expectation\_suite.png) ![Validation Results Visualization](../../../.gitbook/assets/validation\_result.png)

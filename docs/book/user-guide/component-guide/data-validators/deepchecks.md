@@ -1,5 +1,7 @@
 ---
-description: How to test the data and models used in your pipelines with Deepchecks test suites
+description: >-
+  How to test the data and models used in your pipelines with Deepchecks test
+  suites
 ---
 
 # Deepchecks
@@ -424,4 +426,4 @@ if __name__ == "__main__":
     visualize_results("data_validation_pipeline", "data_integrity_check")
 ```
 
-![Deepchecks Visualization Example](<../../../../../examples/deepchecks\_data\_validation/assets/drift\_visualization (1) (1) (1) (1).png>)
+![Deepchecks Visualization Example](<../../../../../examples/deepchecks\_data\_validation/assets/drift\_visualization (1) (1) (1) (2).png>)
