@@ -1550,7 +1550,7 @@ def warn_deprecated_secrets_manager() -> None:
         "migrating all your secrets to the centralized secrets store by means "
         "of the `zenml secrets-manager secret migrate` CLI command. "
         "See the `zenml secret` CLI command and the "
-        "https://docs.zenml.io/starter-guide/production-fundamentals/secrets-management "
+        "https://docs.zenml.io/platform-guide/set-up-your-mlops-platform/use-the-secret-store "
         "documentation page for more information."
     )
 
@@ -1564,7 +1564,7 @@ def fail_secrets_manager_creation() -> None:
         "existing secrets to the centralized secrets store by means of the "
         "`zenml secrets-manager secret migrate` CLI command."
         " See the `zenml secret` CLI command or the "
-        "https://docs.zenml.io/starter-guide/production-fundamentals/secrets-management "
+        "https://docs.zenml.io/platform-guide/set-up-your-mlops-platform/use-the-secret-store "
         "documentation page for more information. "
     )
 
@@ -1577,7 +1577,7 @@ def fail_secret_creation_on_secrets_manager() -> None:
         "Existing secrets managers will be removed in an "
         "upcoming release in favor of the centralized secrets management. "
         "Learn more about this in our documentation:"
-        "https://docs.zenml.io/starter-guide/production-fundamentals/secrets-management "
+        "https://docs.zenml.io/platform-guide/set-up-your-mlops-platform/use-the-secret-store "
         "Please also consider migrating all your existing secrets to the "
         "centralized secrets store by means of the "
         "`zenml secrets-manager secret migrate` CLI command. "
