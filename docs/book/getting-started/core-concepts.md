@@ -16,7 +16,7 @@ First, let's look at the main concepts which play a role during the development 
 
 At its core, ZenML follows a pipeline-based workflow for your projects. A **pipeline** consists of a series of **steps** , organized in any order that makes sense for your use case. Below, you can see four **steps** running one after another in a **pipeline**.
 
-<figure><img src="../.gitbook/assets/01_pipeline (1) (1).png" alt="" width="375"><figcaption></figcaption></figure>
+<figure><img src="../.gitbook/assets/01_pipeline (1) (1) (1).png" alt="" width="375"><figcaption></figcaption></figure>
 
 As seen in the image, a step might use the outputs from a previous step and thus must wait until the previous step completes before starting. This is something you can keep in mind when organizing your steps.
 
