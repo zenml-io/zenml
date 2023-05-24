@@ -12,8 +12,8 @@
 #  permissions and limitations under the License.
 from rich import print
 
-from zenml import step
 from zenml.client import Client
+from zenml.steps import step
 
 SECRET_NAME = "example-secret"
 SECRET_KEY = "example_secret_key"

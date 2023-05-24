@@ -13,10 +13,9 @@
 #  permissions and limitations under the License.
 from typing import cast
 
-from zenml import step
 from zenml.integrations.kserve.model_deployers import KServeModelDeployer
 from zenml.integrations.kserve.services import KServeDeploymentService
-from zenml.steps import BaseParameters
+from zenml.steps import BaseParameters, step
 
 
 class PredictionServiceLoaderStepParameters(BaseParameters):

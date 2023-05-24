@@ -14,7 +14,7 @@
 import numpy as np
 from sklearn.ensemble import RandomForestClassifier
 
-from zenml import step
+from zenml.steps import step
 from zenml.steps.base_parameters import BaseParameters
 
 

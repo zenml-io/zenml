@@ -19,8 +19,7 @@ import torch.optim as optim
 from rich import print
 from torch.utils.data import DataLoader
 
-from zenml import step
-from zenml.steps import BaseParameters
+from zenml.steps import BaseParameters, step
 
 from .mnist import Net
 

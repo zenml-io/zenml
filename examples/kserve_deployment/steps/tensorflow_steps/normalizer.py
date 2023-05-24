@@ -13,8 +13,7 @@
 #  permissions and limitations under the License.
 import numpy as np
 
-from zenml import step
-from zenml.steps import Output
+from zenml.steps import Output, step
 
 
 @step

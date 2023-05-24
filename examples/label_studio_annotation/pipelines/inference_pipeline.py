@@ -13,8 +13,8 @@
 #  permissions and limitations under the License.
 
 
-from zenml import pipeline
 from zenml.logger import get_logger
+from zenml.pipelines import pipeline
 
 logger = get_logger(__name__)
 

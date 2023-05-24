@@ -13,9 +13,8 @@
 #  permissions and limitations under the License.
 from typing import Any, Dict, List
 
-from zenml import step
 from zenml.logger import get_logger
-from zenml.steps import Output
+from zenml.steps import Output, step
 
 logger = get_logger(__name__)
 

@@ -17,9 +17,8 @@ from pyspark.ml.feature import OneHotEncoder, StandardScaler, VectorAssembler
 from pyspark.sql import DataFrame
 from pyspark.sql.functions import col
 
-from zenml import step
 from zenml.client import Client
-from zenml.steps import Output
+from zenml.steps import Output, step
 
 step_operator = Client().active_stack.step_operator
 

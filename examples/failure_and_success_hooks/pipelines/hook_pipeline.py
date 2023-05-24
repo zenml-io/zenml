@@ -14,7 +14,7 @@
 
 from hooks import pipeline_success_hook
 
-from zenml import pipeline
+from zenml.pipelines import pipeline
 
 
 @pipeline(enable_cache=False, on_success=pipeline_success_hook)

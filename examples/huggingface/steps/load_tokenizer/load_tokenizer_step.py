@@ -15,7 +15,7 @@
 from steps.configuration import HuggingfaceParameters
 from transformers import AutoTokenizer, PreTrainedTokenizerBase
 
-from zenml import step
+from zenml.steps import step
 
 
 @step

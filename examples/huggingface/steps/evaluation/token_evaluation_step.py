@@ -7,7 +7,7 @@ from transformers import (
     TFPreTrainedModel,
 )
 
-from zenml import step
+from zenml.steps import step
 
 
 @step

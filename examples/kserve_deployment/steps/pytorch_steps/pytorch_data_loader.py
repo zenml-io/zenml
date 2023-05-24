@@ -17,8 +17,7 @@ import torch
 import torchvision
 from torch.utils.data import DataLoader
 
-from zenml import step
-from zenml.steps import BaseParameters, Output
+from zenml.steps import BaseParameters, Output, step
 
 
 def build_data_loader(
