@@ -134,6 +134,6 @@ def my_step(...):
 
 If you had set up a Slack alerter as your alerter, for example, then you would see a message like this:
 
-![OpenAI ChatGPT Failure Hook](broken-reference)
+![OpenAI ChatGPT Failure Hook](../../.gitbook/assets/failure_alerter.png)
 
 You can use the suggestions as input that can help you fix whatever is going wrong in your code. If you have GPT-4 enabled for your account, you can use the `openai_gpt4_alerter_failure_hook` hook instead (imported from the same module).
