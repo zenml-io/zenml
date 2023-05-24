@@ -15,7 +15,7 @@ can [speed up the Docker image building for containerized stack components](cont
 Check out the diagram below for a visual representation of how the code repository fits into the general ZenML
 architecture.
 
-<figure><img src="../../.gitbook/assets/spaces_WR79yGcpjr5idcfEkXdY_uploads_git-blob-23e202b4590861888a142db7fe5f5b8db8e27ca1_Remote_with_code_repository.png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../../.gitbook/assets/Remote_with_code_repository.png" alt=""><figcaption></figcaption></figure>
 
 {% hint style="info" %}
 Check out our [code repository example](https://github.com/zenml-io/zenml/tree/main/examples/code\_repository) for a
