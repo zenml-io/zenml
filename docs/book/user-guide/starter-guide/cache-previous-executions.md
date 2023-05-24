@@ -6,19 +6,28 @@ description: Iterating quickly with ZenML through caching.
 
 Developing machine learning pipelines is very iterative. ZenML speeds you up in this work with the caching feature of steps and pipelines.
 
-In the logs of your previous runs, you might have noticed at this point that rerunning the pipeline a second time will use caching on the steps:
+In the logs of your previous runs, you might have noticed at this point that rerunning the pipeline a second time will use caching on the first step:
 
 {% tabs %}
 {% tab title="Dashboard" %}
+<div>
+
 <figure><img src="broken-reference" alt=""><figcaption><p>DAG of a cached pipeline run</p></figcaption></figure>
+
+ 
+
+<figure><img src="../../.gitbook/assets/CachedDag.png" alt=""><figcaption></figcaption></figure>
+
+</div>
 {% endtab %}
 
 {% tab title="Logs" %}
 ```bash
-Step step_1 has started.
-Using cached version of step_1.
-Step step_2 has started.
-Using cached version of step_2.
+Step training_data_loader has started.
+Using cached version of training_data_loader.
+Step svc_trainer has started.
+Train accuracy: 0.3416666666666667
+Step svc_trainer has finished in 0.932s.
 ```
 {% endtab %}
 {% endtabs %}

@@ -16,7 +16,7 @@ First, let's look at the main concepts which play a role during the development 
 
 At its core, ZenML follows a pipeline-based workflow for your projects. A **pipeline** consists of a series of **steps**, organized in any order that makes sense for your use case. Below, you can see four **steps** running one after another in a **pipeline**.
 
-<figure><img src="../.gitbook/assets/spaces_WR79yGcpjr5idcfEkXdY_uploads_git-blob-6a1ae1edd85d70dd9e149d953023a412bcc6f21c_01_pipeline.png" alt="" width="375"><figcaption></figcaption></figure>
+<figure><img src="../.gitbook/assets/spaces_WR79yGcpjr5idcfEkXdY_uploads_git-blob-6a1ae1edd85d70dd9e149d953023a412bcc6f21c_01_pipeline (1).png" alt="" width="375"><figcaption></figcaption></figure>
 
 As seen in the image, a step might use the outputs from a previous step and thus must wait until the previous step completes before starting. This is something you can keep in mind when organizing your steps.
 
@@ -34,7 +34,7 @@ All materializers use the base abstraction called the `BaseMaterializer` class. 
 
 #### Parameters & Settings
 
-When we think about steps as functions, we know they receive input in the form of artifacts. We also know that they produce output (in the form of artifacts, stored in the artifact store). But steps also take parameters. The parameters that you pass into the steps are also (helpfully!) stored by ZenML. This helps freeze the iterations of your experimentation workflow in time, so you can return to them exactly as you run them. On top of the parameters that you provide for your steps, you can also use different `Setting`s to configure runtime configurations for your infrastructure and pipelines.&#x20;
+When we think about steps as functions, we know they receive input in the form of artifacts. We also know that they produce output (in the form of artifacts, stored in the artifact store). But steps also take parameters. The parameters that you pass into the steps are also (helpfully!) stored by ZenML. This helps freeze the iterations of your experimentation workflow in time, so you can return to them exactly as you run them. On top of the parameters that you provide for your steps, you can also use different `Setting`s to configure runtime configurations for your infrastructure and pipelines.
 
 ## 2. Execution
 
@@ -74,7 +74,7 @@ When it comes to production-grade solutions, it is rarely enough to just run you
 
 Thanks to the separation between the pipeline code and the stack in ZenML, you can easily switch your stack independently from your code. For instance, all it would take you to switch from an experimental local stack running on your machine to a remote stack that employs a full-fledged cloud infrastructure is a single CLI command.
 
-<figure><img src="../.gitbook/assets/spaces_WR79yGcpjr5idcfEkXdY_uploads_git-blob-2bdd4f6150e1da9155ef35e70b7fa64721048b98_03_multi_stack.png" alt="" width="563"><figcaption></figcaption></figure>
+<figure><img src="../.gitbook/assets/03_multi_stack.png" alt="" width="563"><figcaption></figcaption></figure>
 
 ## 3. Management
 
