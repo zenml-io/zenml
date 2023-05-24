@@ -157,7 +157,7 @@ effectively as they develop to production.
 
 ![The long journey from experimentation to production.](docs/book/.gitbook/assets/intro-zenml-overview.png)
 
-ZenML provides a user-friendly syntax designed for ML workflows, compatible with any cloud or tool. It enables centralized pipeline management, allowing data scientists to write code once and effortlessly deploy it across various infrastructures.
+ZenML provides a user-friendly syntax designed for ML workflows, compatible with any cloud or tool. It enables centralized pipeline management, allowing developers to write code once and effortlessly deploy it across various infrastructures.
 
 <div align="center">
     <img src="docs/book/assets/stack.gif">
