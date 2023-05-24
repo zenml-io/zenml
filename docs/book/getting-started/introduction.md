@@ -58,9 +58,9 @@ production-ready from the get-go.
 
 {% hint style="info" %}
 ZenML integrates seamlessly with many popular open-source tools, so you can also combine ZenML with other popular
-experiment tracking tools like [Weights & Biases](../user-guide/component-guide/experiment-trackers/wandb.md), 
-[MLflow](../user-guide/component-guide/experiment-trackers/mlflow.md), or 
-[Neptune](../user-guide/component-guide/experiment-trackers/neptune.md) for even better reproducibility.
+experiment tracking tools like [Weights & Biases](/docs/book/user-guide/component-guide/experiment-trackers/wandb.md),
+[MLflow](/docs/book/user-guide/component-guide/experiment-trackers/mlflow.md), or
+[Neptune](/docs/book/user-guide/component-guide/experiment-trackers/neptune.md) for even better reproducibility.
 {% endhint %}
 
 :rocket: **Learn More**
@@ -75,8 +75,10 @@ ZenML empowers ML engineers to take ownership of the entire ML lifecycle end-to-
 points and more visibility on what is happening in your organization.
 
 * **ML Lifecycle Management:** ZenML's abstractions enable you to manage sophisticated ML setups with ease. After you
-  define your ML workflows as [Pipelines](core-concepts.md#1-development) and your development, staging, and production
-  infrastructures as [Stacks](core-concepts.md#2-execution), you can move entire ML workflows to different environments
+  define your ML workflows as [Pipelines](/docs/book/getting-started/core-concepts.md#1-development) and your
+  development, staging, and production infrastructures
+  as [Stacks](/docs/book/getting-started/core-concepts.md#2-execution), you can move entire ML workflows to different
+  environments
   in seconds.
 
   ```bash
@@ -97,7 +99,7 @@ points and more visibility on what is happening in your organization.
 * **Automated Deployments:** With ZenML, you no longer need to upload custom Docker images to the cloud whenever you
   want to deploy a new model to production. Simply define your ML workflow as a ZenML pipeline, let ZenML handle the
   containerization, and have your model automatically deployed to a highly scalable Kubernetes deployment service
-  like [Seldon](../user-guide/component-guide/model-deployers/seldon.md).
+  like [Seldon](/docs/book/user-guide/component-guide/model-deployers/seldon.md).
 
   ```python
   from zenml.integrations.seldon.steps import seldon_model_deployer_step
