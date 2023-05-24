@@ -1,7 +1,5 @@
 ---
-description: >-
-Learn how to upgrade your server to a new version of ZenML for the different
-deployment options.
+description: Learn how to upgrade your server to a new version of ZenML for the different deployment options.
 ---
 
 # Upgrade the version of the ZenML server

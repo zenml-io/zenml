@@ -1,7 +1,5 @@
 ---
-description: >-
-  How to collect and visualize statistics to track changes in your pipelines
-  data with whylogs/WhyLabs profiling.
+description: How to collect and visualize statistics to track changes in your pipelines' data with whylogs/WhyLabs profiling.
 ---
 
 # Whylogs

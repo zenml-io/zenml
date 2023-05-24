@@ -1,7 +1,5 @@
 ---
-description: >-
-  Best practices concerning the various authentication methods implemented by
-  Service Connectors.
+description: Best practices concerning the various authentication methods implemented by Service Connectors.
 ---
 
 # Security best practices

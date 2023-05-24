@@ -1,7 +1,5 @@
 ---
-description: >-
-  How to keep your data quality in check and guard against data and model drift
-  with Evidently profiling
+description: How to keep your data quality in check and guard against data and model drift with Evidently profiling
 ---
 
 # Evidently

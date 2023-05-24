@@ -1,7 +1,5 @@
 ---
-description: >-
-  Configuring Kubernetes Service Connectors to connect ZenML to Kubernetes
-  clusters.
+description: Configuring Kubernetes Service Connectors to connect ZenML to Kubernetes clusters.
 ---
 
 # Kubernetes Service Connector

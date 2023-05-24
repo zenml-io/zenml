@@ -1,7 +1,5 @@
 ---
-description: >-
-  The complete guide to managing Service Connectors and connecting ZenML to
-  external resources.
+description: The complete guide to managing Service Connectors and connecting ZenML to external resources.
 ---
 
 # Service Connectors guide

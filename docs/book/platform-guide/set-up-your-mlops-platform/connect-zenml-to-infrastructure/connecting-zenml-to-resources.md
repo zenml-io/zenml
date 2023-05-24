@@ -1,7 +1,5 @@
 ---
-description: >-
-  Understanding the workflow of using Service Connectors to access external
-  resources with ZenML.
+description: Understanding the workflow of using Service Connectors to access external resources with ZenML.
 ---
 
 # Connecting ZenML to resources
