@@ -363,7 +363,11 @@ class Pipeline:
         Returns:
             If the pipeline entrypoint requires parameters.
         """
-        return False
+        signature = inspect.signature(self.entrypoint, follow_wrapped=True)
+        return any(
+            parameter.default is inspect.Parameter.empty
+            for parameter in signature.parameters.values()
+        )
 
     @property
     def is_prepared(self) -> bool:
