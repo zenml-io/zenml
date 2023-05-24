@@ -24,7 +24,7 @@ from zenml.exceptions import PipelineInterfaceError
 from zenml.logger import get_logger
 from zenml.new.pipelines.pipeline import Pipeline
 from zenml.steps import BaseStep
-from zenml.utils import source_utils
+from zenml.utils import dict_utils, source_utils
 
 if TYPE_CHECKING:
     from zenml.config.base_settings import SettingsOrDict
@@ -163,18 +163,23 @@ class BasePipeline(Pipeline, ABC):
         """
         pipeline_copy = self.with_options(
             run_name=run_name,
-            enable_cache=enable_cache,
-            enable_artifact_metadata=enable_artifact_metadata,
-            enable_artifact_visualization=enable_artifact_visualization,
             schedule=schedule,
             build=build,
-            settings=settings,
             step_configurations=step_configurations,
-            extra=extra,
             config_path=config_path,
             unlisted=unlisted,
             prevent_build_reuse=prevent_build_reuse,
         )
+        new_run_args = dict_utils.remove_none_values(
+            {
+                "enable_cache": enable_cache,
+                "enable_artifact_metadata": enable_artifact_metadata,
+                "enable_artifact_visualization": enable_artifact_visualization,
+                "settings": settings,
+                "extra": extra,
+            }
+        )
+        pipeline_copy._run_args.update(new_run_args)
 
         pipeline_copy()
 
