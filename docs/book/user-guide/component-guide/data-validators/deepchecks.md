@@ -1,7 +1,5 @@
 ---
-description: >-
-How to test the data and models used in your pipelines with Deepchecks test
-suites
+description: How to test the data and models used in your pipelines with Deepchecks test suites
 ---
 
 # Deepchecks
