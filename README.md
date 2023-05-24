@@ -183,7 +183,7 @@ how you could set this up for your team:
 For full functionality ZenML should be deployed on the cloud to
 enable collaborative features as the central MLOps interface for teams.
 
-![ZenML Architecture Diagram.](docs/book/.gitbook/assets/assets/getting_started/Scenario3.2.png)
+![ZenML Architecture Diagram.](docs/book/.gitbook/assets/Scenario3.png)
 
 In case you're machine is authenticated with one of the big three cloud 
 providers, this command will do the full deployment for you.
@@ -209,11 +209,11 @@ look a bit like this
 
 ```bash
 #Deploy and register an orchestrator and an artifact store
-zenml orchestrator deploy my_first_kubeflow --flavor kubeflow --cloud aws ...
-zenml artifact-store deploy my_first_artifact_store --flavor s3 --cloud aws ...
+zenml orchestrator deploy my_first_kubernetes --flavor kubernetes --cloud aws
+zenml artifact-store deploy my_first_artifact_store --flavor s3
 
 # Register this combination of components as a stack
-zenml stack register production_stack --orchestrator my_first_kubeflow --artifact-store my_first_artifact_store --set # Register your production environment
+zenml stack register production_stack --orchestrator my_first_kubernetes --artifact-store my_first_artifact_store --set # Register your production environment
 ```
 
 When you run a pipeline with this stack set, it will be running on your deployed
