@@ -128,18 +128,18 @@ def test_initialize_pipeline_with_unexpected_key(
 def test_initialize_pipeline_with_repeated_args(
     unconnected_two_step_pipeline, empty_step
 ):
-    """Test that pipeline initialization fails when same step object is used."""
+    """Test that pipeline initialization works when same step object is used."""
     step_instance = empty_step()
-    with pytest.raises(PipelineInterfaceError):
+    with does_not_raise():
         unconnected_two_step_pipeline(step_instance, step_instance)
 
 
 def test_initialize_pipeline_with_repeated_kwargs(
     unconnected_two_step_pipeline, empty_step
 ):
-    """Test that pipeline initialization fails when same step object is used."""
+    """Test that pipeline initialization works when same step object is used."""
     step_instance = empty_step()
-    with pytest.raises(PipelineInterfaceError):
+    with does_not_raise():
         unconnected_two_step_pipeline(
             step_1=step_instance, step_2=step_instance
         )
@@ -148,9 +148,9 @@ def test_initialize_pipeline_with_repeated_kwargs(
 def test_initialize_pipeline_with_repeated_args_and_kwargs(
     unconnected_two_step_pipeline, empty_step
 ):
-    """Test that pipeline initialization fails when same step object is used."""
+    """Test that pipeline initialization works when same step object is used."""
     step_instance = empty_step()
-    with pytest.raises(PipelineInterfaceError):
+    with does_not_raise():
         unconnected_two_step_pipeline(step_instance, step_2=step_instance)
 
 
@@ -273,19 +273,17 @@ def test_pipeline_decorator_configuration_gets_applied_during_initialization(
     """Tests that the configuration passed to the pipeline decorator gets
     applied when creating an instance of the pipeline."""
     config = {
+        "name": "pipeline_name",
         "extra": {"key": "value"},
-        "settings": {"docker": {"target_repository": "custom_repo"}},
-        "on_failure": None,
-        "on_success": None,
     }
 
     @pipeline(**config)
     def p():
         pass
 
-    mock_configure = mocker.patch.object(BasePipeline, "configure")
-    p()
-    mock_configure.assert_called_with(**config)
+    pipeline_instance = p()
+    assert pipeline_instance.configuration.name == "pipeline_name"
+    assert pipeline_instance.configuration.extra == {"key": "value"}
 
 
 def test_pipeline_configuration(empty_pipeline):
@@ -339,12 +337,11 @@ def test_run_configuration_in_code(
     )
     pipeline_instance = one_step_pipeline(empty_step())
 
-    pipeline_instance.run(
-        run_name="run_name", enable_cache=False, extra={"key": "value"}
-    )
+    schedule = Schedule(cron_expression="5 * * * *")
+    pipeline_instance.run(run_name="run_name", schedule=schedule)
 
     expected_run_config = PipelineRunConfiguration(
-        run_name="run_name", enable_cache=False, extra={"key": "value"}
+        run_name="run_name", schedule=schedule
     )
     mock_compile.assert_called_once_with(
         pipeline=ANY, stack=ANY, run_configuration=expected_run_config
@@ -360,9 +357,11 @@ def test_run_configuration_from_file(
     )
     pipeline_instance = one_step_pipeline(empty_step())
 
+    schedule = Schedule(cron_expression="5 * * * *")
+
     config_path = tmp_path / "config.yaml"
     expected_run_config = PipelineRunConfiguration(
-        run_name="run_name", enable_cache=False, extra={"key": "value"}
+        run_name="run_name", schedule=schedule
     )
     config_path.write_text(expected_run_config.yaml())
 
@@ -382,22 +381,22 @@ def test_run_configuration_from_code_and_file(
     )
     pipeline_instance = one_step_pipeline(empty_step())
 
+    schedule = Schedule(cron_expression="5 * * * *")
+
     config_path = tmp_path / "config.yaml"
     file_config = PipelineRunConfiguration(
-        run_name="run_name_in_file", enable_cache=False, extra={"key": "value"}
+        run_name="run_name_in_file", schedule=schedule
     )
     config_path.write_text(file_config.yaml())
 
     pipeline_instance.run(
         config_path=str(config_path),
         run_name="run_name_in_code",
-        extra={"new_key": "new_value"},
     )
 
     expected_run_config = PipelineRunConfiguration(
         run_name="run_name_in_code",
-        enable_cache=False,
-        extra={"key": "value", "new_key": "new_value"},
+        schedule=Schedule(cron_expression="5 * * * *"),
     )
     mock_compile.assert_called_once_with(
         pipeline=ANY, stack=ANY, run_configuration=expected_run_config
