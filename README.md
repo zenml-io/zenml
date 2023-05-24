@@ -145,14 +145,14 @@ production-ready machine learning pipelines. By decoupling infrastructure from
 code, ZenML enables developers across your organization to collaborate more
 effectively as they develop to production.
 
--💼ZenML gives data scientists the freedom to fully focus on modeling and
+-💼 ZenML gives data scientists the freedom to fully focus on modeling and
   experimentation while writing code that is production-ready from the get-go.
 
 - 👨‍💻 ZenML empowers ML engineers to take ownership of the entire ML lifecycle
   end-to-end. Adopting ZenML means fewer handover points and more visibility on
   what is happening in your organization.
 
--🛫ZenML enables MLOps infrastructure experts to define, deploy, and manage
+-🛫 ZenML enables MLOps infrastructure experts to define, deploy, and manage
   sophisticated production environments that are easy to share with colleagues.
 
 ![The long journey from experimentation to production.](docs/book/.gitbook/assets/intro-zenml-overview.png)
@@ -163,9 +163,7 @@ ZenML provides a user-friendly syntax designed for ML workflows, compatible with
     <img src="docs/book/assets/stack.gif">
 </div>
 
-# 🤸 Getting Started
-
-## 💾 Installation
+# 🤸 Quickstart
 
 [Install ZenML](https://docs.zenml.io/getting-started/installation) via
 [PyPI](https://pypi.org/project/zenml/). Python 3.7 - 3.10 is required:
@@ -180,11 +178,60 @@ Take a tour with the guided quickstart by running:
 zenml go
 ```
 
-## 🏇 Run a pipeline
+# 🖼️ Create your own MLOps Platform
+
+ZenML allows you to create and manage a MLOps platform using best-in-class open-source and
+cloud-based technologies. Here is an example of how you could set this up for your team:
+
+## 🔋 1. Deploy ZenML
+
+For full functionality ZenML should be deployed on the cloud to
+enable collaborative features as the central MLOps interface for teams.
+
+![ZenML Architecture Diagram.](docs/book/.gitbook/assets/assets/getting_started/Scenario3.2.png)
+
+In case you're machine is appropriately authenticated, this command will
+do the full deployment.
+
+```bash
+zenml deploy --provider aws  # aws, gcp and azure are supported providers
+```
+
+You can also choose to deploy with the ZenML CLI, docker
+or helm. Check out the
+[docs](https://docs.zenml.io/getting-started/deploying-zenml/deploying-zenml)
+to find out how.
+
+## 👨‍🍳 2. Deploy Stack Components
+
+Apart from the infrastructure required to run ZenML itself, ZenML also boasts a
+ton of [integrations](https://zenml.io/integrations) into popular MLOps tools.
+The [ZenML Stack](https://docs.zenml.io/starter-guide/stacks/stacks) concept
+ensures that these tools work nicely together, therefore bringing structure and
+standardization into the MLOps workflow.
+
+For AWS, this might look a bit like this
+
+```bash
+#Deploy and register an orchestrator and an artifact store
+zenml orchestrator deploy my_first_kubeflow --flavor kubeflow --cloud aws ...
+zenml artifact-store deploy my_first_artifact_store --flavor s3 --cloud aws ...
+
+# Register this combination of components as a stack
+zenml stack register production_stack --orchestrator my_first_kubeflow --artifact-store my_first_artifact_store --set # Register your production environment
+```
+
+When you run a pipeline with this stack set, it will be running on your deployed
+kubeflow instance.
+
+You can also [deploy your own tooling manually]() or [register existing tooling]().
+
+## 🏇 3. Create a pipeline
 
 Here's an example of a hello world ZenML pipeline in code:
 
 ```python
+# run.py
 from zenml import pipeline, step
 
 
@@ -211,74 +258,19 @@ if __name__ == "__main__":
     my_pipeline()
 ```
 
-## 👭 Start the local Dashboard
-
-Serve the dashboard locally using this command.
-
-```
-zenml up
+```bash
+python run.py
 ```
 
-![ZenML Dashboard](docs/book/.gitbook/assets/landingpage.png")
+## 👭 4. Start the local Dashboard
 
-## 📜 ZenML Projects
-
-Already comfortable with ZenML and wish to elevate your pipeline into production
-mode? Check out [ZenML Projects](https://github.com/zenml-io/zenml-projects).
-
-> ZenML Projects is a collection of production-grade ML use-cases powered by
-> ZenML. They are fully fleshed out, end-to-end projects that showcase ZenML's
-> capabilities. They can also serve as a template from which to start similar
-> projects.
-
-# ☁️ Infrastructure Requirements
-
-## 🔋 Deploy ZenML
-
-For full functionality ZenML should be deployed on the cloud to
-enable collaborative features as the central MLOps interface for teams.
-
-![ZenML Architecture Diagram.](docs/book/assets/getting_started/Scenario3.2.png)
-
-You can choose to deploy with the ZenML CLI, docker
-or helm. Check out the
-[docs](https://docs.zenml.io/getting-started/deploying-zenml/deploying-zenml)
-to find out how.
-
-In case you're machine is appropriately authenticated, this command will
-do the full deployment.
+Open up the ZenML dashboard using this command.
 
 ```bash
-zenml deploy --provider aws  # aws, gcp and azure are supported providers
+zenml show
 ```
 
-## 👨‍🍳 Deploy Stack Components
-
-Apart from the infrastructure required to run ZenML itself, ZenML also boasts a
-ton of [integrations](https://zenml.io/integrations) into popular MLOps tools.
-The [ZenML Stack](https://docs.zenml.io/starter-guide/stacks/stacks) concept
-ensures that these tools work nicely together, therefore bringing structure and
-standardization into the MLOps workflow.
-
-If the infrastructure is not spun up yet, zenml can handle the deployment
-for you as well with
-`zenml <STACK_COMPONENT_TYPE> deploy <NAME> --flavor=<FLAVOR_TYPE>`. Learn more
-in the
-docs [here](https://docs.zenml.io/platform-guide/set-up-your-mlops-platform/deploy-and-set-up-a-cloud-stack/deploying-stack-components)
-
-For GCP this might look a bit like this
-
-```bash
-#Deploy and register an orchestrator and an artifact store
-zenml orchestrator deploy my_first_kubeflow --flavor kubeflow --cloud gcp ...
-zenml artifact-store deploy my_first_artifact_store --flavor gcs --cloud gcp ...
-
-# Register this combination of components as a stack
-zenml stack register production_stack --orchestrator my_first_kubeflow --artifact-store my_first_artifact_store --set # Register your production environment
-```
-
-When you run a pipeline with this stack set, it will be running on your deployed
-kubeflow instance.
+![ZenML Dashboard](docs/book/.gitbook/assets/landingpage.png)
 
 # 🗺 Roadmap
 
