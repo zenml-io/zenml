@@ -42,8 +42,8 @@ be serialized/deserialized, so that the steps are able to load the input data an
 All materializers use the base abstraction called the `BaseMaterializer` class. While ZenML comes built-in with various
 implementations of materializers for different datatypes, if you are using a library or a tool that doesn't work with
 our built-in options, you can
-write [your own custom materializer](/docs/book/user-guide/advanced-guide/handle-custom-data-types.md) to ensure that
-your data can bepassed from step to step.
+write [your own custom materializer](../user-guide/advanced-guide/handle-custom-data-types.md) to ensure that
+your data can be passed from step to step.
 
 #### Parameters & Settings
 
@@ -133,7 +133,7 @@ associated details. This is extremely helpful in troubleshooting.
 #### Secrets
 
 The **ZenML Server** also acts as 
-a [centralized secrets store](/docs/book/platform-guide/set-up-your-mlops-platform/use-the-secret-store/use-the-secret-store.md)
+a [centralized secrets store](../platform-guide/set-up-your-mlops-platform/use-the-secret-store/use-the-secret-store.md)
 that safely and securely stores sensitive data such as credentials used to access the services that are part of your
 stack. It can be configured to use a variety of different backends for this purpose, such as the AWS Secrets Manager,
 GCP Secret Manager, Azure Key Vault, and Hashicorp Vault.
