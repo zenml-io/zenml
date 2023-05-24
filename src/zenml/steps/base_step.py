@@ -421,6 +421,18 @@ class BaseStep(metaclass=BaseStepMeta):
         Dict[str, "ExternalArtifact"],
         Dict[str, Any],
     ]:
+        """Parses the call args for the step entrypoint.
+
+        Args:
+            *args: Entrypoint function arguments.
+            *kwargs: Entrypoint function keyword arguments.
+
+        Raises:
+            StepInterfaceError: If invalid function arguments were passed.
+
+        Returns:
+            The artifacts, external artifacts and parameters for the step.
+        """
         signature = get_step_entrypoint_signature(step=self)
 
         try:
