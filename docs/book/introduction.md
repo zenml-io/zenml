@@ -13,7 +13,7 @@ description: Welcome to ZenML!
 </div>
 
 {% tabs %}
-{% tab title="ZenML for Data Scientists" %}
+{% tab title="For Data Scientists" %}
 ZenML gives data scientists the freedom to fully focus on modeling and experimentation while writing code that is production-ready from the get-go.
 
 *   **Develop Locally:** ZenML allows you to develop ML models in any environment using your favorite tools. This means you can start developing locally, and simply switch to a production environment once you are satisfied with your results.
@@ -59,7 +59,7 @@ Ready to develop production-ready code with ZenML? Here is a collection of pages
 <table data-view="cards"><thead><tr><th></th><th></th><th data-hidden></th><th data-hidden data-card-target data-type="content-ref"></th></tr></thead><tbody><tr><td><span data-gb-custom-inline data-tag="emoji" data-code="1f9f1">🧱</span> <mark style="color:purple;"><strong>Core Concepts</strong></mark></td><td>Understand the core concepts behind ZenML.</td><td></td><td><a href="getting-started/getting-started/getting-started/core-concepts.md">core-concepts.md</a></td></tr><tr><td><span data-gb-custom-inline data-tag="emoji" data-code="1f423">🐣</span> <mark style="color:purple;"><strong>Starter Guide</strong></mark></td><td>Get started with ZenML and learn how to build your first pipeline and stack.</td><td></td><td><a href="getting-started/getting-started/user-guide/starter-guide/">starter-guide</a></td></tr><tr><td><span data-gb-custom-inline data-tag="emoji" data-code="1f3c3">🏃</span> <mark style="color:purple;"><strong>Quickstart (in Colab)</strong></mark></td><td>Build your first ZenML pipeline and deploy it in the cloud.</td><td></td><td><a href="https://colab.research.google.com/github/zenml-io/zenml/blob/main/examples/quickstart/notebooks/quickstart.ipynb">https://colab.research.google.com/github/zenml-io/zenml/blob/main/examples/quickstart/notebooks/quickstart.ipynb</a></td></tr></tbody></table>
 {% endtab %}
 
-{% tab title="ZenML for ML Engineers" %}
+{% tab title="For ML Engineers" %}
 ZenML empowers ML engineers to take ownership of the entire ML lifecycle end-to-end. Adopting ZenML means fewer handover points and more visibility on what is happening in your organization.
 
 *   **ML Lifecycle Management:** ZenML's abstractions enable you to manage sophisticated ML setups with ease. After you define your ML workflows as [Pipelines](getting-started/core-concepts.md#1-development) and your development, staging, and production infrastructures as [Stacks](getting-started/core-concepts.md#2-execution), you can move entire ML workflows to different environments in seconds.
@@ -96,7 +96,7 @@ Ready to manage your ML lifecycles end-to-end with ZenML? Here is a collection o
 <table data-view="cards"><thead><tr><th></th><th></th><th data-hidden></th><th data-hidden data-card-target data-type="content-ref"></th></tr></thead><tbody><tr><td><span data-gb-custom-inline data-tag="emoji" data-code="1f423">🐣</span> <mark style="color:purple;"><strong>Starter Guide</strong></mark></td><td>Get started with ZenML and learn how to build your first pipeline and stack.</td><td></td><td><a href="getting-started/getting-started/user-guide/starter-guide/">starter-guide</a></td></tr><tr><td><span data-gb-custom-inline data-tag="emoji" data-code="1f414">🐔</span> <mark style="color:purple;"><strong>Advanced Guide</strong></mark></td><td>Discover advanced ZenML features like config management and containerization.</td><td></td><td><a href="getting-started/getting-started/user-guide/advanced-guide/">advanced-guide</a></td></tr><tr><td><span data-gb-custom-inline data-tag="emoji" data-code="1f9d1-1f3eb">🧑🏫</span> <mark style="color:purple;"><strong>Examples</strong></mark></td><td>Explore ZenML through practical use-case examples.</td><td></td><td><a href="getting-started/getting-started/learning/examples/">examples</a></td></tr></tbody></table>
 {% endtab %}
 
-{% tab title="ZenML for Platform Engineers" %}
+{% tab title="For MLOps Platform Engineers" %}
 ZenML enables MLOps infrastructure experts to define, deploy, and manage sophisticated production environments that are easy to share with colleagues.
 
 *   **Built-in Deployment:** ZenML can be deployed on any cloud provider and provides many Terraform-based utility functions to deploy other MLOps tools or even entire MLOps stacks:
