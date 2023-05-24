@@ -33,7 +33,6 @@ To figure out the URI for your registry:
 * Go to the [Azure portal](https://portal.azure.com/#home).
 * In the search bar, enter `container registries` and select the container registry you want to use. If you don't have any container registries yet, check out the [deployment section](azure.md#how-to-deploy-it) on how to create one.
 * Use the name of your registry to fill the template `<REGISTRY_NAME>.azurecr.io` and get your URI.
-*
 
 ### How to use it
 
