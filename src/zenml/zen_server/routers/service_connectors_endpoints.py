@@ -234,6 +234,7 @@ def delete_service_connector(
 @handle_exceptions
 def validate_and_verify_service_connector_config(
     connector: ServiceConnectorRequestModel,
+    list_resources: bool = True,
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> ServiceConnectorResourcesModel:
     """Verifies if a service connector configuration has access to resources.
@@ -244,13 +245,16 @@ def validate_and_verify_service_connector_config(
 
     Args:
         connector: The service connector configuration to verify.
+        list_resources: If True, the list of all resources accessible
+            through the service connector is returned.
 
     Returns:
         The list of resources that the service connector configuration has
         access to.
     """
     return zen_store().verify_service_connector_config(
-        service_connector=connector
+        service_connector=connector,
+        list_resources=list_resources,
     )
 
 
@@ -264,6 +268,7 @@ def validate_and_verify_service_connector(
     connector_id: UUID,
     resource_type: Optional[str] = None,
     resource_id: Optional[str] = None,
+    list_resources: bool = True,
     auth_context: AuthContext = Security(
         authorize, scopes=[PermissionType.READ]
     ),
@@ -278,6 +283,9 @@ def validate_and_verify_service_connector(
         connector_id: The ID of the service connector to verify.
         resource_type: The type of resource to verify access to.
         resource_id: The ID of the resource to verify access to.
+        list_resources: If True, the list of all resources accessible
+            through the service connector and matching the supplied resource
+            type and ID are returned.
         auth_context: Authentication context.
 
     Returns:
@@ -300,6 +308,7 @@ def validate_and_verify_service_connector(
             service_connector_id=connector_id,
             resource_type=resource_type,
             resource_id=resource_id,
+            list_resources=list_resources,
         )
 
     raise KeyError(f"Service connector with ID {connector_id} not found.")
