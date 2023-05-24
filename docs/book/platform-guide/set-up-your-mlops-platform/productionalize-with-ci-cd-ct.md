@@ -16,8 +16,6 @@ Here is how such a CI/CD system could exist:
 
 <img src="../../assets/diagrams/Remote_with_git_ops.png" alt="">
 
- 
-
 <figure><img src="../../.gitbook/assets/Remote_with_git_ops.png" alt=""><figcaption><p>How to use ZenML with CI/CD frameworks</p></figcaption></figure>
 
 </div>
