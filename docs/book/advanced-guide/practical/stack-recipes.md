@@ -99,7 +99,9 @@ Available flavors that can currently be deployed in this way include:
 |   | kubeflow |
 |   | tekton |
 |   | sagemaker |
+|   | vertex |
 | Step Operator | sagemaker |
+|   | vertex |
 | Secrets Manager | aws |
 |   | gcp |
 
