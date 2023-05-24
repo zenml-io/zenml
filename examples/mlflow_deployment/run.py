@@ -58,7 +58,7 @@ def main(config: str, epochs: int, lr: float, min_accuracy: float):
 
     if deploy:
         # Initialize a continuous deployment pipeline run
-        deployment = continuous_deployment_pipeline(
+        continuous_deployment_pipeline(
             epochs=epochs,
             lr=lr,
             min_accuracy=min_accuracy,
@@ -66,15 +66,12 @@ def main(config: str, epochs: int, lr: float, min_accuracy: float):
             timeout=60,
         )
 
-        deployment.run()
-
     if predict:
         # Initialize an inference pipeline run
-        inference = inference_pipeline(
+        inference_pipeline(
             pipeline_name="continuous_deployment_pipeline",
             pipeline_step_name="model_deployer",
         )
-        inference.run()
 
     print(
         "You can run:\n "
