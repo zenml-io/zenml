@@ -4,10 +4,13 @@ description: Building container images locally.
 
 # Local Image Builder
 
-The local image builder is an [image builder](image-builders.md) flavor that comes built-in with ZenML and uses the local Docker installation on your client machine to build container images.
+The local image builder is an [image builder](image-builders.md) flavor that comes built-in with ZenML and uses the
+local Docker installation on your client machine to build container images.
 
 {% hint style="info" %}
-ZenML uses the official Docker Python library to build and push your images. This library loads its authentication credentials to push images from the default config location: `$HOME/.docker/config.json`. If your Docker configuration is stored in a different directory, you can use the environment variable `DOCKER_CONFIG` to override this behavior:
+ZenML uses the official Docker Python library to build and push your images. This library loads its authentication
+credentials to push images from the default config location: `$HOME/.docker/config.json`. If your Docker configuration
+is stored in a different directory, you can use the environment variable `DOCKER_CONFIG` to override this behavior:
 
 ```shell
 export DOCKER_CONFIG=/path/to/config_dir
@@ -21,7 +24,8 @@ The directory that you specify here must contain your Docker configuration in a 
 You should use the local image builder if:
 
 * you're able to install and use [Docker](https://www.docker.com) on your client machine.
-* you want to use remote components that require containerization without the additional hassle of configuring infrastructure for an additional component.
+* you want to use remote components that require containerization without the additional hassle of configuring
+  infrastructure for an additional component.
 
 ### How to deploy it
 
@@ -43,4 +47,6 @@ zenml image-builder register <NAME> --flavor=local
 zenml stack register <STACK_NAME> -i <NAME> ... --set
 ```
 
-For more information and a full list of configurable attributes of the local image builder, check out the [API Docs](https://apidocs.zenml.io/latest/core\_code\_docs/core-image\_builders/#zenml.image\_builders.local\_image\_builder.LocalImageBuilder).
+For more information and a full list of configurable attributes of the local image builder, check out
+the [API Docs](https://apidocs.zenml.io/latest/core\_code\_docs/core-image\_builders/#zenml.image\_builders.local\_image\_builder.LocalImageBuilder)
+.

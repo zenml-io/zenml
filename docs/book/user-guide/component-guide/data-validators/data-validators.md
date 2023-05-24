@@ -20,11 +20,11 @@ preventive or correcting actions.
 Related concepts:
 
 * the Data Validator is an optional type of Stack Component that needs to be
-registered as part of your ZenML [Stack](../../../../old_book/starter-guide/stacks/stacks.md).
+registered as part of your ZenML [Stack](/docs/book/user-guide/starter-guide/understand-stacks.md).
 * Data Validators used in ZenML pipelines usually generate data profiles and
 data quality check reports that are versioned and stored in the 
 [Artifact Store](../artifact-stores/artifact-stores.md). They can be retrieved 
-and inspected using [the post-execution workflow API](../../../../old_book/starter-guide/pipelines/fetching-pipelines.md).
+and inspected using [the post-execution workflow API](/docs/book/user-guide/starter-guide/fetch-runs-after-execution.md).
 
 ## When to use it
 
@@ -80,7 +80,7 @@ your own custom pipeline steps and simply return the results (e.g. data
 profiles, test reports) as artifacts that are versioned and stored by ZenML in 
 its Artifact Store.
 * you can access the data validation artifacts in subsequent pipeline steps, or
-you can load them in [the post-execution workflow](../../../../old_book/starter-guide/pipelines/fetching-pipelines.md) 
+you can load them in [the post-execution workflow](/docs/book/user-guide/starter-guide/fetch-runs-after-execution.md) 
 to process them or visualize them as needed.
 
 Consult the documentation for the particular [Data Validator flavor](#data-validator-flavors)

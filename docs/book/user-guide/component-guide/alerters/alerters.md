@@ -4,11 +4,14 @@ description: Sending automated alerts to chat services.
 
 # Alerters
 
-**Alerters** allow you to send messages to chat services (like Slack, Discord, Mattermost, etc.) from within your pipelines. This is useful to immediately get notified when failures happen, for general monitoring/reporting, and also for building human-in-the-loop ML.
+**Alerters** allow you to send messages to chat services (like Slack, Discord, Mattermost, etc.) from within your
+pipelines. This is useful to immediately get notified when failures happen, for general monitoring/reporting, and also
+for building human-in-the-loop ML.
 
 ## Alerter Flavors
 
-Currently, the [SlackAlerter](slack.md) is the only available alerter integration. However, it is straightforward to extend ZenML and [build an alerter for other chat services](custom.md).
+Currently, the [SlackAlerter](slack.md) is the only available alerter integration. However, it is straightforward to
+extend ZenML and [build an alerter for other chat services](custom.md).
 
 | Alerter                            | Flavor   | Integration | Notes                                                              |
 | ---------------------------------- | -------- | ----------- | ------------------------------------------------------------------ |
@@ -21,6 +24,7 @@ If you would like to see the available flavors of alerters in your terminal, you
 ```shell
 zenml alerter flavor list
 ```
+
 {% endhint %}
 
 ## How to use Alerters with ZenML
@@ -39,4 +43,5 @@ Then you can add it to your stack using
 zenml stack register ... -al <ALERTER_NAME>
 ```
 
-Afterward, you can import the alerter standard steps provided by the respective integration and directly use them in your pipelines.
+Afterward, you can import the alerter standard steps provided by the respective integration and directly use them in
+your pipelines.

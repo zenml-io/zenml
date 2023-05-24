@@ -4,11 +4,14 @@ description: Storing container images locally.
 
 # Default Container Registry
 
-The Default container registry is a [container registry](container-registries.md) flavor that comes built-in with ZenML and allows container registry URIs of any format.
+The Default container registry is a [container registry](container-registries.md) flavor that comes built-in with ZenML
+and allows container registry URIs of any format.
 
 ### When to use it
 
-You should use the Default container registry if you want to use a **local** container registry or when using a remote container registry that is not covered by other [container registry flavors](container-registries.md#container-registry-flavors).
+You should use the Default container registry if you want to use a **local** container registry or when using a remote
+container registry that is not covered by
+other [container registry flavors](container-registries.md#container-registry-flavors).
 
 ### Local registry URI format
 
@@ -42,4 +45,6 @@ zenml container-registry register <NAME> \
 zenml stack update -c <NAME>
 ```
 
-For more information and a full list of configurable attributes of the Default container registry, check out the [API Docs](https://apidocs.zenml.io/latest/integration\_code\_docs/integrations-aws/#zenml.integrations.aws.container\_registries.default\_container\_registry.DefaultContainerRegistry).
+For more information and a full list of configurable attributes of the Default container registry, check out
+the [API Docs](https://apidocs.zenml.io/latest/integration\_code\_docs/integrations-aws/#zenml.integrations.aws.container\_registries.default\_container\_registry.DefaultContainerRegistry)
+.

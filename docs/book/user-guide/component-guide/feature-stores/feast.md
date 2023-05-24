@@ -4,7 +4,9 @@ description: Managing data in Feast feature stores.
 
 # Feast
 
-Feast (Feature Store) is an operational data system for managing and serving machine learning features to models in production. Feast is able to serve feature data to models from a low-latency online store (for real-time prediction) or from an offline store (for scale-out batch scoring or model training).
+Feast (Feature Store) is an operational data system for managing and serving machine learning features to models in
+production. Feast is able to serve feature data to models from a low-latency online store (for real-time prediction) or
+from an offline store (for scale-out batch scoring or model training).
 
 ### When would you want to use it?
 
@@ -13,23 +15,32 @@ There are two core functions that feature stores enable:
 * access to data from an offline / batch store for training.
 * access to online data at inference time.
 
-Feast integration currently supports your choice of offline data sources and a [Redis](https://redis.com/) backend for your online feature serving. We encourage users to check out [Feast's documentation](https://docs.feast.dev/) and [guides](https://docs.feast.dev/how-to-guides/) on how to set up your offline and online data sources via the configuration `yaml` file.
+Feast integration currently supports your choice of offline data sources and a [Redis](https://redis.com/) backend for
+your online feature serving. We encourage users to check out [Feast's documentation](https://docs.feast.dev/)
+and [guides](https://docs.feast.dev/how-to-guides/) on how to set up your offline and online data sources via the
+configuration `yaml` file.
 
 {% hint style="info" %}
-COMING SOON: While the ZenML integration has an interface to access online feature store data, it currently is not usable in production settings with deployed models. We will update the docs when we enable this functionality.
+COMING SOON: While the ZenML integration has an interface to access online feature store data, it currently is not
+usable in production settings with deployed models. We will update the docs when we enable this functionality.
 {% endhint %}
 
 ### How to deploy it?
 
-The Feast Feature Store flavor is provided by the Feast ZenML integration, you need to install it, to be able to register it as a Feature Store and add it to your stack:
+The Feast Feature Store flavor is provided by the Feast ZenML integration, you need to install it, to be able to
+register it as a Feature Store and add it to your stack:
 
 ```shell
 zenml integration install feast
 ```
 
-Since this example is built around a Redis use case, a Python package to interact with Redis will get installed alongside Feast, but you will still first need to install Redis yourself. See this page for some instructions on how to do that on your operating system.
+Since this example is built around a Redis use case, a Python package to interact with Redis will get installed
+alongside Feast, but you will still first need to install Redis yourself. See this page for some instructions on how to
+do that on your operating system.
 
-You will then need to run a Redis server in the background in order for this example to work. You can either use the Redis-server command in your terminal (which will run a continuous process until you CTRL-C out of it), or you can run the daemonized version:
+You will then need to run a Redis server in the background in order for this example to work. You can either use the
+Redis-server command in your terminal (which will run a continuous process until you CTRL-C out of it), or you can run
+the daemonized version:
 
 ```shell
 redis-server --daemonize yes
@@ -40,11 +51,16 @@ ps aux | grep redis-server
 
 ### How do you use it?
 
-ZenML assumes that users already have a feature store that they just need to connect with. The ZenML Online data retrieval is currently possible in a local setting, but we don't currently support using the online data serving in the context of a deployed model or as part of model deployment. We will update this documentation as we develop this feature.
+ZenML assumes that users already have a feature store that they just need to connect with. The ZenML Online data
+retrieval is currently possible in a local setting, but we don't currently support using the online data serving in the
+context of a deployed model or as part of model deployment. We will update this documentation as we develop this
+feature.
 
-ZenML supports access to your feature store via a stack component that you can configure via the CLI tool. ( See [here](https://apidocs.zenml.io/latest/cli/) for details on how to do that.)
+ZenML supports access to your feature store via a stack component that you can configure via the CLI tool. (
+See [here](https://apidocs.zenml.io/latest/cli/) for details on how to do that.)
 
-Getting features from a registered and active feature store is possible by creating your own step that interfaces into the feature store:
+Getting features from a registered and active feature store is possible by creating your own step that interfaces into
+the feature store:
 
 ```python
 from datetime import datetime
@@ -52,6 +68,7 @@ from typing import Any, Dict, List, Union
 import pandas as pd
 
 from zenml.steps import BaseParameters, step, StepContext
+
 entity_dict = {…}  # defined in earlier code
 features = […]  # defined in earlier code
 
@@ -106,16 +123,21 @@ def get_historical_features(
 
 historical_features = get_historical_features(
     params=FeastHistoricalFeaturesParameters(
-        entity_dict=entity_dict, 
+        entity_dict=entity_dict,
         features=features
     ),
 )
 ```
 
 {% hint style="warning" %}
-Note that ZenML's use of Pydantic to serialize and deserialize inputs stored in the ZenML metadata means that we are limited to basic data types. Pydantic cannot handle Pandas `DataFrame`s, for example, or `datetime` values, so in the above code you can see that we have to convert them at various points.
+Note that ZenML's use of Pydantic to serialize and deserialize inputs stored in the ZenML metadata means that we are
+limited to basic data types. Pydantic cannot handle Pandas `DataFrame`s, for example, or `datetime` values, so in the
+above code you can see that we have to convert them at various points.
 {% endhint %}
 
-A concrete example of using the Feast feature store can be found [here](https://github.com/zenml-io/zenml/tree/main/examples/feast\_feature\_store).
+A concrete example of using the Feast feature store can be
+found [here](https://github.com/zenml-io/zenml/tree/main/examples/feast\_feature\_store).
 
-For more information and a full list of configurable attributes of the Feast feature store, check out the [API Docs](https://apidocs.zenml.io/latest/integration\_code\_docs/integrations-feast/#zenml.integrations.feast.feature\_stores.feast\_feature\_store.FeastFeatureStore).
+For more information and a full list of configurable attributes of the Feast feature store, check out
+the [API Docs](https://apidocs.zenml.io/latest/integration\_code\_docs/integrations-feast/#zenml.integrations.feast.feature\_stores.feast\_feature\_store.FeastFeatureStore)
+.

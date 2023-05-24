@@ -4,15 +4,21 @@ description: Managing data in feature stores.
 
 # Feature Stores
 
-Feature stores allow data teams to serve data via an offline store and an online low-latency store where data is kept in sync between the two. It also offers a centralized registry where features (and feature schemas) are stored for use within a team or wider organization.
+Feature stores allow data teams to serve data via an offline store and an online low-latency store where data is kept in
+sync between the two. It also offers a centralized registry where features (and feature schemas) are stored for use
+within a team or wider organization.
 
-As a data scientist working on training your model, your requirements for how you access your batch / 'offline' data will almost certainly be different from how you access that data as part of a real-time or online inference setting. Feast solves the problem of developing [train-serve skew](https://ploomber.io/blog/train-serve-skew/) where those two sources of data diverge from each other.
+As a data scientist working on training your model, your requirements for how you access your batch / 'offline' data
+will almost certainly be different from how you access that data as part of a real-time or online inference setting.
+Feast solves the problem of developing [train-serve skew](https://ploomber.io/blog/train-serve-skew/) where those two
+sources of data diverge from each other.
 
 Feature stores are a relatively recent addition to commonly-used machine learning stacks.
 
 ### When to use it
 
-The feature store is an optional stack component in the ZenML Stack. The feature store as a technology should be used to store the features and inject them into the process on the server side. This includes
+The feature store is an optional stack component in the ZenML Stack. The feature store as a technology should be used to
+store the features and inject them into the process on the server side. This includes
 
 * Productionalize new features
 * Reuse existing features across multiple pipelines and models
@@ -21,7 +27,8 @@ The feature store is an optional stack component in the ZenML Stack. The feature
 
 ### List of available feature stores
 
-For production use cases, some more flavors can be found in specific `integrations` modules. In terms of features stores, ZenML features an integration of `feast`.
+For production use cases, some more flavors can be found in specific `integrations` modules. In terms of features
+stores, ZenML features an integration of `feast`.
 
 | Feature Store                      | Flavor   | Integration | Notes                                                                    |
 | ---------------------------------- | -------- | ----------- | ------------------------------------------------------------------------ |
@@ -36,4 +43,5 @@ zenml feature-store flavor list
 
 ### How to use it
 
-The available implementation of the feature store is built on top of the feast integration, which means that using a feature store is no different from what's described on the [feast page: How to use it?](feast.md#how-do-you-use-it).
+The available implementation of the feature store is built on top of the feast integration, which means that using a
+feature store is no different from what's described on the [feast page: How to use it?](feast.md#how-do-you-use-it).

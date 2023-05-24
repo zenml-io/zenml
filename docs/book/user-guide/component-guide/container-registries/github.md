@@ -4,14 +4,18 @@ description: Storing container images in GitHub.
 
 # GitHub Container Registry
 
-The GitHub container registry is a [container registry](container-registries.md) flavor that comes built-in with ZenML and uses the [GitHub Container Registry](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry) to store container images.
+The GitHub container registry is a [container registry](container-registries.md) flavor that comes built-in with ZenML
+and uses
+the [GitHub Container Registry](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry)
+to store container images.
 
 ### When to use it
 
 You should use the GitHub container registry if:
 
 * one or more components of your stack need to pull or push container images.
-* you're using GitHub for your projects. If you're not using GitHub, take a look at the other [container registry flavors](container-registries.md#container-registry-flavors).
+* you're using GitHub for your projects. If you're not using GitHub, take a look at the
+  other [container registry flavors](container-registries.md#container-registry-flavors).
 
 ### How to deploy it
 
@@ -39,8 +43,11 @@ To figure our the URI for your registry:
 To use the GitHub container registry, we need:
 
 * [Docker](https://www.docker.com) installed and running.
-* The registry URI. Check out the [previous section](github.md#how-to-find-the-registry-uri) on the URI format and how to get the URI for your registry.
-* Our Docker client configured, so it can pull and push images. Follow [this guide](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry#authenticating-to-the-container-registry) to create a personal access token and login to the container registry.
+* The registry URI. Check out the [previous section](github.md#how-to-find-the-registry-uri) on the URI format and how
+  to get the URI for your registry.
+* Our Docker client configured, so it can pull and push images.
+  Follow [this guide](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry#authenticating-to-the-container-registry)
+  to create a personal access token and login to the container registry.
 
 We can then register the container registry and use it in our active stack:
 
@@ -53,4 +60,6 @@ zenml container-registry register <NAME> \
 zenml stack update -c <NAME>
 ```
 
-For more information and a full list of configurable attributes of the GitHub container registry, check out the [API Docs](https://apidocs.zenml.io/latest/core\_code\_docs/core-container\_registries/#zenml.container\_registries.github\_container\_registry.GitHubContainerRegistry).
+For more information and a full list of configurable attributes of the GitHub container registry, check out
+the [API Docs](https://apidocs.zenml.io/latest/core\_code\_docs/core-container\_registries/#zenml.container\_registries.github\_container\_registry.GitHubContainerRegistry)
+.
