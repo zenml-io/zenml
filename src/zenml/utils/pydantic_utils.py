@@ -191,7 +191,7 @@ class YAMLSerializationMixin(BaseModel):
             YAML string representation.
         """
         dict_ = json.loads(self.json(**kwargs, sort_keys=sort_keys))
-        return cast(str, yaml.dump(dict_, sort_keys=sort_keys))
+        return yaml.dump(dict_, sort_keys=sort_keys)
 
     @classmethod
     def from_yaml(cls: Type[M], path: str) -> M:

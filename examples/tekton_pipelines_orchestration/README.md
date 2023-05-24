@@ -74,11 +74,13 @@ To get a stack with Tekton Pipelines and potential other components, you can mak
 Run the following command to deploy the local Tekton Pipelines stack:
 
 ```bash
-zenml stack recipe deploy k3d-modular --install tekton
+zenml stack recipe deploy k3d-modular -o tekton
 ```
 
 >**Note**:
-> This recipe comes with MLflow, Kubeflow and Minio enabled by default. If you want any other components like KServe, or Seldon, you can specify that using the `--install/-i` flag.
+> This recipe comes with MLflow, Kubeflow and Minio enabled by default. If you
+> want any other components like Seldon or Tekton, you can specify that using
+> the relevant flag (i.e. `-o` for orchestrators and so on).
 
 This will deploy a local Kubernetes cluster with Tekton Pipelines installed. You can verify this by running `kubectl get pods` and checking if the Tekton Pipelines pods are running.
 It will also generate a stack YAML file that you can import as a ZenML stack by running 
