@@ -307,5 +307,5 @@ if __name__ == "__main__":
     visualize_statistics("train_data_profiler", "test_data_profiler")
 ```
 
-![Whylogs Visualization Example 1](../../assets/whylogs/whylogs-visualizer-01.png)
-![Whylogs Visualization Example 2](../../assets/whylogs/whylogs-visualizer-02.png)
+![Whylogs Visualization Example 1](docs/book/.gitbook/assets/whylogs-visualizer-01.png)
+![Whylogs Visualization Example 2](docs/book/.gitbook/assets/whylogs-visualizer-02.png)
