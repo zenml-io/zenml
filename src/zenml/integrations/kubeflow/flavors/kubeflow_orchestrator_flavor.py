@@ -18,9 +18,11 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, cast
 from pydantic import root_validator
 
 from zenml.config.base_settings import BaseSettings
+from zenml.constants import KUBERNETES_CLUSTER_RESOURCE_TYPE
 from zenml.integrations.kubeflow import KUBEFLOW_ORCHESTRATOR_FLAVOR
 from zenml.integrations.kubernetes.pod_settings import KubernetesPodSettings
 from zenml.logger import get_logger
+from zenml.models.service_connector_models import ServiceConnectorRequirements
 from zenml.orchestrators import BaseOrchestratorConfig, BaseOrchestratorFlavor
 from zenml.utils.secret_utils import SecretField
 
@@ -157,11 +159,15 @@ class KubeflowOrchestratorConfig(  # type: ignore[misc] # https://github.com/pyd
     Attributes:
         kubeflow_hostname: The hostname to use to talk to the Kubeflow Pipelines
             API. If not set, the hostname will be derived from the Kubernetes
-            API proxy.
+            API proxy. Mandatory when connecting to a multi-tenant Kubeflow
+            Pipelines deployment.
         kubeflow_namespace: The Kubernetes namespace in which Kubeflow
             Pipelines is deployed. Defaults to `kubeflow`.
-        kubernetes_context: Optional name of a kubernetes context to run
-            pipelines in. If not set, will try to spin up a local K3d cluster.
+        kubernetes_context: Name of a kubernetes context to run
+            pipelines in. Not applicable when connecting to a multi-tenant
+            Kubeflow Pipelines deployment (i.e. when `kubeflow_hostname` is
+            set) or if the stack component is linked to a Kubernetes service
+            connector.
         local: If `True`, the orchestrator will assume it is connected to a
             local kubernetes cluster and will perform additional validations and
             operations to allow using the orchestrator in combination with other
@@ -174,7 +180,7 @@ class KubeflowOrchestratorConfig(  # type: ignore[misc] # https://github.com/pyd
 
     kubeflow_hostname: Optional[str] = None
     kubeflow_namespace: str = "kubeflow"
-    kubernetes_context: str  # TODO: Potential setting
+    kubernetes_context: Optional[str]  # TODO: Potential setting
     local: bool = False
     skip_local_validations: bool = False
 
@@ -193,9 +199,6 @@ class KubeflowOrchestratorConfig(  # type: ignore[misc] # https://github.com/pyd
 
         Returns:
             Values passed to the object constructor
-
-        Raises:
-            ValueError: If the attributes or their values are not valid.
         """
         provisioning_attrs = [
             "skip_cluster_provisioning",
@@ -203,57 +206,10 @@ class KubeflowOrchestratorConfig(  # type: ignore[misc] # https://github.com/pyd
             "kubeflow_pipelines_ui_port",
         ]
 
-        provisioning_attrs_used = [
-            attr for attr in provisioning_attrs if attr in values
-        ]
-
-        msg_header = (
-            "The ability to automatically provision and manage a Kubeflow "
-            "instance with  `zenml stack up` on top of a local K3D cluster "
-            "is no longer available in the current version of ZenML "
-            "client. Please use the `k3d-modular` ZenML stack recipe to "
-            "achieve the same results (and more). Automatically exposing the "
-            "Kubeflow UI TCP port locally as part of the stack provisioning "
-            "has also been removed in favor of methods better suited for this "
-            "purpose, such as using an Ingress controller in the remote "
-            "cluster. \n"
-            "As a result, the `kubernetes_context` attribute is no longer "
-            "optional and the following Kubeflow orchestrator configuration "
-            "attributes have been deprecated: "
-            f"{provisioning_attrs}.\n"
-        )
-
-        if provisioning_attrs_used:
-            logger.warning(
-                msg_header
-                + "To get rid of this warning, you should remove the deprecated "
-                "attributes from your orchestrator configuration (e.g. by "
-                "using the `zenml orchestrator remove-attribute <attr-name>` "
-                "CLI command)."
-            )
-            # remove deprecated attributes from values dict
-            for attr in provisioning_attrs_used:
+        # remove deprecated attributes from values dict
+        for attr in provisioning_attrs:
+            if attr in values:
                 del values[attr]
-
-        context = values.get("kubernetes_context")
-        if not context:
-            raise ValueError(
-                msg_header
-                + "Please set the `kubernetes_context` attribute to the name "
-                "of the Kubernetes config context pointing to the cluster "
-                "where Kubeflow is installed (e.g. the K3D cluster provisioned "
-                "by the `k3d-modular` ZenML stack recipe) and also set the "
-                "`local` configuration flag."
-            )
-
-        # TODO: remove this in a future release. kept here for backwards
-        # compatibility with old stack configs
-        elif (
-            isinstance(context, str)
-            and context.startswith("k3d-zenml-kubeflow-")
-            and "local" not in values
-        ):
-            values["local"] = True
 
         return values
 
@@ -294,6 +250,23 @@ class KubeflowOrchestratorFlavor(BaseOrchestratorFlavor):
             The name of the flavor.
         """
         return KUBEFLOW_ORCHESTRATOR_FLAVOR
+
+    @property
+    def service_connector_requirements(
+        self,
+    ) -> Optional[ServiceConnectorRequirements]:
+        """Service connector resource requirements for service connectors.
+
+        Specifies resource requirements that are used to filter the available
+        service connector types that are compatible with this flavor.
+
+        Returns:
+            Requirements for compatible service connectors, if a service
+            connector is required for this flavor.
+        """
+        return ServiceConnectorRequirements(
+            resource_type=KUBERNETES_CLUSTER_RESOURCE_TYPE,
+        )
 
     @property
     def docs_url(self) -> Optional[str]:
