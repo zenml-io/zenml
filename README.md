@@ -114,10 +114,10 @@
     <li>
       <a href="#-create-your-own-mlops-platform">Create your own MLOps Platform</a>
       <ul>
-        <li><a href="#-deploy-zenML">Deploy ZenML</a></li>
-        <li><a href="#-deploy-stack-components">Deploy Stack Components</a></li>
-        <li><a href="#-create-a-pipeline">Create a Pipeline</a></li>
-        <li><a href="#-start-the-dashboard">Start the Dashboard</a></li>
+        <li><a href="##-1-deploy-zenml">Deploy ZenML</a></li>
+        <li><a href="#-2-deploy-stack-components">Deploy Stack Components</a></li>
+        <li><a href="#-3-create-a-pipeline">Create a Pipeline</a></li>
+        <li><a href="#-4-start-the-dashboard">Start the Dashboard</a></li>
       </ul>
     </li>
     <li><a href="#-roadmap">Roadmap</a></li>
