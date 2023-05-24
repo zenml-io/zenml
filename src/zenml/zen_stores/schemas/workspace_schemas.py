@@ -36,6 +36,7 @@ if TYPE_CHECKING:
         RunMetadataSchema,
         ScheduleSchema,
         SecretSchema,
+        ServiceConnectorSchema,
         StackComponentSchema,
         StackSchema,
         StepRunSchema,
@@ -108,6 +109,10 @@ class WorkspaceSchema(NamedSchema, table=True):
         sa_relationship_kwargs={"cascade": "delete"},
     )
     code_repositories: List["CodeRepositorySchema"] = Relationship(
+        back_populates="workspace",
+        sa_relationship_kwargs={"cascade": "delete"},
+    )
+    service_connectors: List["ServiceConnectorSchema"] = Relationship(
         back_populates="workspace",
         sa_relationship_kwargs={"cascade": "delete"},
     )

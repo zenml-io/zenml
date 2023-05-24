@@ -112,12 +112,39 @@ class SeldonModelDeployer(BaseModelDeployer):
 
         Returns:
             The Seldon Core client.
+
+        Raises:
+            RuntimeError: If the Kubernetes namespace is not configured when
+                using a service connector to deploy models with Seldon Core.
         """
-        if not self._client:
-            self._client = SeldonClient(
-                context=self.config.kubernetes_context,
-                namespace=self.config.kubernetes_namespace,
-            )
+        from kubernetes import client as k8s_client
+
+        # Refresh the client also if the connector has expired
+        if self._client and not self.connector_has_expired():
+            return self._client
+
+        connector = self.get_connector()
+        kube_client: Optional[k8s_client.ApiClient] = None
+        if connector:
+            if not self.config.kubernetes_namespace:
+                raise RuntimeError(
+                    "The Kubernetes namespace must be explicitly configured in "
+                    "the stack component when using a service connector to "
+                    "deploy models with Seldon Core."
+                )
+            kube_client = connector.connect()
+            if not isinstance(kube_client, k8s_client.ApiClient):
+                raise RuntimeError(
+                    f"Expected a k8s_client.ApiClient while trying to use the "
+                    f"linked connector, but got {type(kube_client)}."
+                )
+
+        self._client = SeldonClient(
+            context=self.config.kubernetes_context,
+            namespace=self.config.kubernetes_namespace,
+            kube_client=kube_client,
+        )
+
         return self._client
 
     @property
@@ -314,19 +341,41 @@ class SeldonModelDeployer(BaseModelDeployer):
             if gcp_credentials:
                 # Convert the credentials into the format expected by Seldon
                 # Core
-                if gcp_credentials.get("type") == "service_account":
+                if isinstance(gcp_credentials, dict):
+                    if gcp_credentials.get("type") == "service_account":
+                        return SeldonGSSecretSchema(
+                            name="",
+                            rclone_config_gs_service_account_credentials=json.dumps(
+                                gcp_credentials
+                            ),
+                        )
+                    elif gcp_credentials.get("type") == "authorized_user":
+                        return SeldonGSSecretSchema(
+                            name="",
+                            rclone_config_gs_client_id=gcp_credentials.get(
+                                "client_id"
+                            ),
+                            rclone_config_gs_client_secret=gcp_credentials.get(
+                                "client_secret"
+                            ),
+                            rclone_config_gs_token=json.dumps(
+                                dict(
+                                    refresh_token=gcp_credentials.get(
+                                        "refresh_token"
+                                    )
+                                )
+                            ),
+                        )
+                else:
+                    # Connector token-based authentication
                     return SeldonGSSecretSchema(
                         name="",
-                        rclone_config_gs_service_account_credentials=json.dumps(
-                            gcp_credentials
+                        rclone_config_gs_token=json.dumps(
+                            dict(
+                                access_token=gcp_credentials.token,
+                            )
                         ),
                     )
-
-                # Assume token-based authentication
-                return SeldonGSSecretSchema(
-                    name="",
-                    rclone_config_gs_token=json.dumps(gcp_credentials),
-                )
 
             logger.warning(
                 "No credentials are configured for the active GCS artifact "
