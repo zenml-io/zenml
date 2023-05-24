@@ -650,7 +650,7 @@ def deploy(
                         "cluster is required for ZenML deployment. "
                         "Please take a look at the "
                         "guide for steps on how to proceed: "
-                        "https://docs.zenml.io/getting-started/deploying-zenml/cli#option-1-starting-from-scratch"
+                        "https://docs.zenml.io/platform-guide/set-up-your-mlops-platform/deploy-zenml/deploy-with-zenml-cli#option-1-starting-from-scratch"
                     )
                     logger.info(
                         "Not attempting to import the generated "
