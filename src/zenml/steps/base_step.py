@@ -568,35 +568,17 @@ class BaseStep(metaclass=BaseStepMeta):
         Returns:
             The return value of the entrypoint function.
         """
-        from pydantic.decorator import ValidatedFunction
-
         try:
-            validation_func = ValidatedFunction(
+            validated_args = pydantic_utils.validate_function_args(
                 self.entrypoint,
-                config={"arbitrary_types_allowed": True, "smart_union": True},
+                {"arbitrary_types_allowed": True, "smart_union": True},
+                *args,
+                **kwargs,
             )
-            model = validation_func.init_model_instance(*args, **kwargs)
-            validated_args = {
-                k: v
-                for k, v in model._iter()
-                if k in model.__fields_set__
-                or model.__fields__[k].default_factory
-                or model.__fields__[k].default
-            }
-            return self.entrypoint(**validated_args)
-
-        # Validation failed because wrong arguments were passed to the step.
         except ValidationError as e:
             raise StepInterfaceError("Invalid entrypoint arguments.") from e
 
-        # Validation failed because the step entrypoint has an argument that is
-        # a reserved keyword in pydantic.
-        except NameError as e:
-            logger.warning(
-                "Could not validate the step entrypoint because it contains "
-                f"an argument that is a reserved keyword in pydantic: {e}. "
-            )
-            return self.entrypoint(*args, **kwargs)
+        return self.entrypoint(**validated_args)
 
     @property
     def name(self) -> str:

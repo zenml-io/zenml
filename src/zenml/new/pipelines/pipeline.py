@@ -37,7 +37,6 @@ from uuid import UUID
 
 import yaml
 from pydantic import ValidationError
-from pydantic.decorator import ValidatedFunction
 
 from zenml import constants
 from zenml.client import Client
@@ -1185,25 +1184,18 @@ class Pipeline:
             ValueError: If an input argument is missing or not JSON
                 serializable.
         """
-        validation_func = ValidatedFunction(
-            self.entrypoint,
-            config={"arbitrary_types_allowed": False, "smart_union": True},
-        )
         try:
-            model = validation_func.init_model_instance(*args, **kwargs)
+            validated_args = pydantic_utils.validate_function_args(
+                self.entrypoint,
+                {"arbitrary_types_allowed": False, "smart_union": True},
+                *args,
+                **kwargs,
+            )
         except ValidationError as e:
             raise ValueError(
                 "Invalid or missing inputs for pipeline entrypoint function. "
                 "Only JSON serializable inputs are allowed as pipeline inputs."
             ) from e
-
-        validated_args = {
-            k: v
-            for k, v in model._iter()
-            if k in model.__fields_set__
-            or model.__fields__[k].default_factory
-            or model.__fields__[k].default
-        }
 
         self._parameters = validated_args
         self.entrypoint(**validated_args)
