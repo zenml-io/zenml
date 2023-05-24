@@ -16,6 +16,7 @@
 from typing import (
     TYPE_CHECKING,
     Any,
+    Dict,
     Mapping,
     NamedTuple,
     Optional,
@@ -173,6 +174,15 @@ class StepContext:
         """
         env = Environment().step_environment
         return env.run_name
+
+    @property
+    def parameters(self) -> Dict[str, Any]:
+        """The step parameters.
+
+        Returns:
+            The step parameters.
+        """
+        return self.step_run_info.config.parameters
 
     @property
     def step_run_info(self) -> "StepRunInfo":
