@@ -109,24 +109,15 @@
 <details>
   <summary>🏁 Table of Contents</summary>
   <ol>
+    <li><a href="#-introduction">Introduction</a></li>
+    <li><a href="#-quickstart">Quickstart</a></li>
     <li>
-      <a href="#-introduction">Introduction</a>
-    </li>
-    <li>
-      <a href="#-getting-started">Getting Started</a>
+      <a href="#-create-your-own-mlops-platform">Create your own MLOps Platform</a>
       <ul>
-        <li><a href="#-installation">Installation</a></li>
-        <li><a href="#-run-a-pipeline">Run a pipeline</a></li>
-        <li><a href="#-start-the-local-dashboard">Start the local Dashboard</a></li>
-        <li><a href="#-zenbytes">ZenBytes</a></li>
-        <li><a href="#-zenml-projects">ZenML Projects</a></li>
-      </ul>
-    </li>
-    <li>
-      <a href="#-infrastructure-requirements">Infrastructure Requirements</a>
-      <ul>
-        <li><a href="#-deploy-zenml">Deploy ZenML</a></li>
+        <li><a href="#-deploy-zenML">Deploy ZenML</a></li>
         <li><a href="#-deploy-stack-components">Deploy Stack Components</a></li>
+        <li><a href="#-create-a-pipeline">Create a Pipeline</a></li>
+        <li><a href="#-start-the-dashboard">Start the Dashboard</a></li>
       </ul>
     </li>
     <li><a href="#-roadmap">Roadmap</a></li>
@@ -145,19 +136,22 @@ production-ready machine learning pipelines. By decoupling infrastructure from
 code, ZenML enables developers across your organization to collaborate more
 effectively as they develop to production.
 
--💼 ZenML gives data scientists the freedom to fully focus on modeling and
-  experimentation while writing code that is production-ready from the get-go.
+- 💼 ZenML gives data scientists the freedom to fully focus on modeling and
+experimentation while writing code that is production-ready from the get-go.
 
 - 👨‍💻 ZenML empowers ML engineers to take ownership of the entire ML lifecycle
   end-to-end. Adopting ZenML means fewer handover points and more visibility on
   what is happening in your organization.
 
--🛫 ZenML enables MLOps infrastructure experts to define, deploy, and manage
-  sophisticated production environments that are easy to share with colleagues.
+- 🛫 ZenML enables MLOps infrastructure experts to define, deploy, and manage
+sophisticated production environments that are easy to use for colleagues.
 
 ![The long journey from experimentation to production.](docs/book/.gitbook/assets/intro-zenml-overview.png)
 
-ZenML provides a user-friendly syntax designed for ML workflows, compatible with any cloud or tool. It enables centralized pipeline management, allowing developers to write code once and effortlessly deploy it across various infrastructures.
+ZenML provides a user-friendly syntax designed for ML workflows, compatible with
+any cloud or tool. It enables centralized pipeline management, enabling
+developers to write code once and effortlessly deploy it to various
+infrastructures.
 
 <div align="center">
     <img src="docs/book/assets/stack.gif">
@@ -180,8 +174,9 @@ zenml go
 
 # 🖼️ Create your own MLOps Platform
 
-ZenML allows you to create and manage a MLOps platform using best-in-class open-source and
-cloud-based technologies. Here is an example of how you could set this up for your team:
+ZenML allows you to create and manage your own MLOps platform using 
+best-in-class open-source and cloud-based technologies. Here is an example of 
+how you could set this up for your team:
 
 ## 🔋 1. Deploy ZenML
 
@@ -190,27 +185,27 @@ enable collaborative features as the central MLOps interface for teams.
 
 ![ZenML Architecture Diagram.](docs/book/.gitbook/assets/assets/getting_started/Scenario3.2.png)
 
-In case you're machine is appropriately authenticated, this command will
-do the full deployment.
+In case you're machine is authenticated with one of the big three cloud 
+providers, this command will do the full deployment for you.
 
 ```bash
 zenml deploy --provider aws  # aws, gcp and azure are supported providers
 ```
 
-You can also choose to deploy with the ZenML CLI, docker
-or helm. Check out the
+You can also choose to deploy with docker or helm with full control over
+the configuration and deployment. Check out the
 [docs](https://docs.zenml.io/getting-started/deploying-zenml/deploying-zenml)
 to find out how.
 
 ## 👨‍🍳 2. Deploy Stack Components
 
-Apart from the infrastructure required to run ZenML itself, ZenML also boasts a
-ton of [integrations](https://zenml.io/integrations) into popular MLOps tools.
-The [ZenML Stack](https://docs.zenml.io/starter-guide/stacks/stacks) concept
-ensures that these tools work nicely together, therefore bringing structure and
-standardization into the MLOps workflow.
+ZenML boasts a ton of [integrations](https://zenml.io/integrations) into 
+popular MLOps tools. The [ZenML Stack](https://docs.zenml.io/starter-guide/stacks/stacks) 
+concept ensures that these tools work nicely together, therefore bringing
+structure and standardization into the MLOps workflow.
 
-For AWS, this might look a bit like this
+Deploying and configuring this is super easy with ZenML. For **AWS**, this might 
+look a bit like this
 
 ```bash
 #Deploy and register an orchestrator and an artifact store
@@ -224,9 +219,10 @@ zenml stack register production_stack --orchestrator my_first_kubeflow --artifac
 When you run a pipeline with this stack set, it will be running on your deployed
 kubeflow instance.
 
-You can also [deploy your own tooling manually]() or [register existing tooling]().
+You can also [deploy your own tooling manually]()
+or [register existing tooling]().
 
-## 🏇 3. Create a pipeline
+## 🏇 3. Create a Pipeline
 
 Here's an example of a hello world ZenML pipeline in code:
 
@@ -262,7 +258,7 @@ if __name__ == "__main__":
 python run.py
 ```
 
-## 👭 4. Start the local Dashboard
+## 👭 4. Start the Dashboard
 
 Open up the ZenML dashboard using this command.
 
