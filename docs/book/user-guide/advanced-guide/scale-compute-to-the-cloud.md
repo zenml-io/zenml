@@ -20,18 +20,22 @@ required resources for steps as follows:
 ```python
 from zenml.steps import step, ResourceSettings
 
+
 @step(settings={"resources": ResourceSettings(cpu_count=8, gpu_count=2, memory="8GB")})
 def training_step(...) -> ...:
     # train a model
 ```
 
-If the underlying [orchestrator](../component-guide/orchestrators/README.md) in your stack then supports specifying resources, this setting will attempt to secure these resources. Please refer to the source code and documentation of each orchestrator to find out which orchestrator supports specifying resources.
+If the underlying [orchestrator](/docs/book/user-guide/component-guide/orchestrators/orchestrators.md) 
+in your stack then supports specifying resources, this setting will attempt to secure these resources. 
+Please refer to the source code and documentation of each orchestrator to find out which orchestrator 
+supports specifying resources.
 
 {% hint style="info" %}
 If you're using an orchestrator which does not support
 this feature or its underlying infrastructure doesn't cover your requirements,
-you can also take a look at [step operators](../component-guide/step-operators/README.md) which allow you to execute individual
-steps of your pipeline in environments independent of your orchestrator.
+you can also take a look at [step operators](/docs/book/user-guide/component-guide/step-operators/step-operators.md) 
+which allow you to execute individual steps of your pipeline in environments independent of your orchestrator.
 {% endhint %}
 
 ### Ensure your container is CUDA-enabled
@@ -46,28 +50,41 @@ be properly utilized. If you don't update the settings, your steps might run,
 but they will not see any boost in performance from the custom hardware.
 {% endhint %}
 
-All steps running on GPU-backed hardware will be executed within a containerized environment, whether you're using the local Docker orchestrator or a cloud instance of Kubeflow. Therefore, you need to make two amendments to your Docker settings for the relevant steps:
+All steps running on GPU-backed hardware will be executed within a containerized environment, whether you're using the
+local Docker orchestrator or a cloud instance of Kubeflow. Therefore, you need to make two amendments to your Docker
+settings for the relevant steps:
 
 #### 1. **Specify a CUDA-enabled parent image in your `DockerSettings`**
 
-For complete details, refer to the [containerization page](containerize-your-pipeline.md) that explains how to do this. As an example, if you want to use the latest CUDA-enabled official PyTorch image for your entire pipeline run, you can include the following code:
+For complete details, refer to the [containerization page](containerize-your-pipeline.md) that explains how to do this.
+As an example, if you want to use the latest CUDA-enabled official PyTorch image for your entire pipeline run, you can
+include the following code:
 
 ```python
 docker_settings = DockerSettings(parent_image="pytorch/pytorch:1.12.1-cuda11.3-cudnn8-runtime")
+
 
 @pipeline(settings={"docker": docker_settings})
 def my_pipeline(...):
     ...
 ```
 
-For TensorFlow, you might use the `tensorflow/tensorflow:latest-gpu` image, as detailed in the [official TensorFlow documentation](https://www.tensorflow.org/install/docker#gpu_support) or their [DockerHub overview](https://hub.docker.com/r/tensorflow/tensorflow).
+For TensorFlow, you might use the `tensorflow/tensorflow:latest-gpu` image, as detailed in
+the [official TensorFlow documentation](https://www.tensorflow.org/install/docker#gpu_support) or
+their [DockerHub overview](https://hub.docker.com/r/tensorflow/tensorflow).
 
 #### 2. **Add ZenML as an explicit pip requirement**
 
-ZenML requires that ZenML itself be installed for the containers running your pipelines and steps. Therefore, you need to explicitly state that ZenML should be installed. There are several ways to specify this, but as an example, you can update the code from above as follows:
+ZenML requires that ZenML itself be installed for the containers running your pipelines and steps. Therefore, you need
+to explicitly state that ZenML should be installed. There are several ways to specify this, but as an example, you can
+update the code from above as follows:
 
 ```python
-docker_settings = DockerSettings(parent_image="pytorch/pytorch:1.12.1-cuda11.3-cudnn8-runtime", requirements=["zenml==0.39.1", "torchvision"])
+docker_settings = DockerSettings(
+    parent_image="pytorch/pytorch:1.12.1-cuda11.3-cudnn8-runtime",
+    requirements=["zenml==0.39.1", "torchvision"]
+)
+
 
 @pipeline(settings={"docker": docker_settings})
 def my_pipeline(...):
@@ -81,7 +98,8 @@ For example, you might have one version of PyTorch installed locally with a
 particular CUDA version, but when you switch to your remote stack or
 environment, you might be forced to use a different CUDA version.
 
-The core cloud operators offer prebuilt Docker images that fit with their hardware. You can find more information on them here:
+The core cloud operators offer prebuilt Docker images that fit with their hardware. You can find more information on
+them here:
 
 * [AWS](https://github.com/aws/deep-learning-containers/blob/master/available_images.md)
 * [GCP](https://cloud.google.com/deep-learning-vm/docs/images)
