@@ -4,8 +4,6 @@ description: Registering and utilizing secrets.
 
 # Use the Secret Store
 
-TODO: Add images of the dashboard to the page!
-
 {% hint style="danger" %}
 The stack component formerly known as Secrets Managers is being deprecated in favor
 of [the centralized ZenML secrets store](use-the-secret-store.md#centralized-secrets-store). Going forward, it is
