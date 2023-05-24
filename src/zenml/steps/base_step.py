@@ -425,7 +425,7 @@ class BaseStep(metaclass=BaseStepMeta):
 
         Args:
             *args: Entrypoint function arguments.
-            *kwargs: Entrypoint function keyword arguments.
+            **kwargs: Entrypoint function keyword arguments.
 
         Raises:
             StepInterfaceError: If invalid function arguments were passed.

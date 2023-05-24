@@ -378,11 +378,11 @@ class Pipeline:
         return len(self.invocations) > 0
 
     def prepare(self, *args: Any, **kwargs: Any) -> None:
-        """Prepares the pipeline
+        """Prepares the pipeline.
 
         Args:
             *args: Pipeline entrypoint input arguments.
-            *kwargs: Pipeline entrypoint input keyword arguments.
+            **kwargs: Pipeline entrypoint input keyword arguments.
         """
         # Clear existing parameters and invocations
         self._parameters = {}
