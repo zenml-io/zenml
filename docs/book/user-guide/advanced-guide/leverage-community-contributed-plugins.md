@@ -131,3 +131,9 @@ zenml hub submit -i
 {% endtabs %}
 
 Once submitted, a wheel will be created and stored based on your plugin. This process might take some time before the plugin is ready to install and use. You can check the status of this process by inspecting the status of the plugin.
+
+## ZenML Hub service status
+
+The status of the ZenML Hub service is being tracked live in [the ZenML status page](https://zenml.statuspage.io/). You can subscribe there to receive notifications about scheduled maintenance windows, unplanned downtime events and more.
+
+<figure><img src="../../.gitbook/assets/statuspage.png" alt=""><figcaption><p>The ZenML public services status page</p></figcaption></figure>
