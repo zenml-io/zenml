@@ -37,7 +37,7 @@ You should include a secrets manager in your ZenML stack if any other component 
 
 Here is an architecture diagram that shows how remote secrets managers fit into the overall story of a remote stack. As you can see the secrets manager is accessed from the client side as well as from the orchestrator/step operator. On the client side, the secret manager could be used to resolve credentials for the orchestrator and container registry. Orchestrators and Step Operators can also query the secrets manager to get credentials for other stack components, data sources, or other environments.
 
-![Secret Manager](../../../assets/diagrams/Remote\_with\_secrets\_manager.png)
+![Secret Manager](../../../.gitbook/assets/Remote_with_secrets_manager.png)
 
 ### Secrets Manager Flavors
 
@@ -173,7 +173,7 @@ All secrets in a backend domain share one global namespace, meaning that all Sec
 
 The following diagram depicts the available secret scopes that you can configure for your Secrets Manager instance if the flavor supports secret scoping. Note how the different secret namespaces are isolated from each other:
 
-![Secret Scoping](../../../assets/secrets-manager/secret-scoping.png)
+![Secret Scoping](../../../.gitbook/assets/secret-scoping.png)
 
 #### Secret Scope Configuration
 

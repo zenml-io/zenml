@@ -10,7 +10,7 @@ For example, you can orchestrate your ML pipeline workflows using [Airflow](orch
 
 There are lots of moving parts for all the MLOps tooling and infrastructure you require for ML in production and ZenML brings them all together and enables you to manage them in one place. This also allows you to delay the decision of which MLOps tool to use in your stack as you have no vendor lock-in with ZenML and can easily switch out tools as soon as your requirements change.
 
-![ZenML is the glue](../../assets/zenml-is-the-glue.jpeg)
+![ZenML is the glue](../../.gitbook/assets/zenml-is-the-glue.jpeg)
 
 ## Available integrations
 
