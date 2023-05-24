@@ -12,8 +12,9 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """CLI functionality to interact with pipelines."""
+import json
 import os
-from typing import Any, Optional, Union
+from typing import Any, Dict, Optional, Union
 
 import click
 
@@ -49,11 +50,22 @@ def pipeline() -> None:
     "`my_module.my_pipeline_instance`.",
 )
 @click.argument("source")
-def register_pipeline(source: str) -> None:
+@click.option(
+    "--parameters",
+    "-p",
+    "parameters_path",
+    type=click.Path(exists=True, dir_okay=False),
+    required=False,
+    help="Path to JSON file containing parameters for the pipeline function.",
+)
+def register_pipeline(
+    source: str, parameters_path: Optional[str] = None
+) -> None:
     """Register a pipeline.
 
     Args:
         source: Importable source resolving to a pipeline instance.
+        parameters_path: Path to pipeline parameters file.
     """
     cli_utils.print_active_config()
 
@@ -88,6 +100,22 @@ def register_pipeline(source: str) -> None:
         cli_utils.error(
             f"The given source path `{source}` does not resolve to a pipeline "
             "object."
+        )
+
+    parameters: Dict[str, Any] = {}
+    if parameters_path:
+        with open(parameters_path, "r") as f:
+            parameters = json.load(f)
+
+    try:
+        pipeline_instance.prepare(**parameters)
+    except ValueError:
+        cli_utils.error(
+            "Pipeline preparation failed. This is most likely due to your "
+            "pipeline entrypoint function requiring arguments that were not "
+            "provided. Please provide a JSON file with the parameters for "
+            f"your pipeline like this: `zenml pipeline register {source} "
+            "--parameters=<PATH_TO_JSON>`."
         )
 
     pipeline_instance.register()

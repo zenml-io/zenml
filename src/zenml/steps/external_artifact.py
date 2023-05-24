@@ -139,7 +139,7 @@ class ExternalArtifact:
                     "reference artifacts stored in your active artifact store."
                 )
         else:
-            assert self._value
+            assert self._value is not None
 
             logger.info("Uploading external artifact...")
             artifact_name = f"external_{uuid4()}"

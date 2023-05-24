@@ -13,7 +13,9 @@
 #  permissions and limitations under the License.
 """Pipeline configuration classes."""
 import json
-from typing import Any, List
+from typing import Any, Dict, List, Optional
+
+from pydantic.json import pydantic_encoder
 
 from zenml.config.source import Source
 from zenml.config.step_configurations import StepSpec
@@ -23,7 +25,17 @@ from zenml.config.strict_base_model import StrictBaseModel
 class PipelineSpec(StrictBaseModel):
     """Specification of a pipeline."""
 
-    version: str = "0.3"
+    # Versions:
+    # - 0.2: Legacy BasePipeline in release <=0.39.1, the upstream steps and
+    #   inputs in the step specs refer to the step names, not the pipeline
+    #   parameter names
+    # - 0.3: Legacy BasePipeline in release >0.39.1, the upstream steps and
+    #   inputs in the step specs refer to the pipeline parameter names
+    # - 0.4: New Pipeline class, the upstream steps and
+    #   inputs in the step specs refer to the pipeline parameter names
+    version: str = "0.4"
+    source: Optional[Source] = None
+    parameters: Dict[str, Any] = {}
     steps: List[StepSpec]
 
     def __eq__(self, other: Any) -> bool:
@@ -46,11 +58,21 @@ class PipelineSpec(StrictBaseModel):
         Returns:
             The JSON representation.
         """
+        from packaging import version
+
         dict_ = self.dict()
+
+        if self.source:
+            dict_["source"] = self.source.import_path
 
         for step_dict in dict_["steps"]:
             step_dict["source"] = Source.parse_obj(
                 step_dict["source"]
             ).import_path
 
-        return json.dumps(dict_, sort_keys=False)
+        if version.parse(self.version) < version.parse("0.4"):
+            # Keep backwards compatibility with old pipeline versions
+            dict_.pop("source")
+            dict_.pop("parameters")
+
+        return json.dumps(dict_, sort_keys=False, default=pydantic_encoder)

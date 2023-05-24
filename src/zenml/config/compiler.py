@@ -106,7 +106,10 @@ class Compiler:
         )
 
         step_specs = [step.spec for step in steps.values()]
-        pipeline_spec = PipelineSpec(steps=step_specs)
+        pipeline_spec = self._compute_pipeline_spec(
+            pipeline=pipeline, step_specs=step_specs
+        )
+
         logger.debug("Compiled pipeline deployment: %s", deployment)
         logger.debug("Compiled pipeline spec: %s", pipeline_spec)
 
@@ -139,7 +142,10 @@ class Compiler:
                 pipeline=pipeline
             )
         ]
-        pipeline_spec = PipelineSpec(steps=invocations)
+
+        pipeline_spec = self._compute_pipeline_spec(
+            pipeline=pipeline, step_specs=invocations
+        )
         logger.debug("Compiled pipeline spec: %s", pipeline_spec)
         return pipeline_spec
 
@@ -502,3 +508,28 @@ class Compiler:
                     f"configured in the stack '{stack.name}'. Available "
                     f"experiment trackers: {available_experiment_trackers}."
                 )
+
+    @staticmethod
+    def _compute_pipeline_spec(
+        pipeline: "Pipeline", step_specs: List["StepSpec"]
+    ) -> "PipelineSpec":
+        """Computes the pipeline spec.
+
+        Args:
+            pipeline: The pipeline for which to compute the spec.
+            step_specs: The step specs for the pipeline.
+
+        Returns:
+            The pipeline spec.
+        """
+        from zenml.pipelines import BasePipeline
+
+        additional_spec_args: Dict[str, Any] = {}
+        if isinstance(pipeline, BasePipeline):
+            # use older spec version for legacy pipelines
+            additional_spec_args["version"] = "0.3"
+        else:
+            additional_spec_args["source"] = pipeline.resolve()
+            additional_spec_args["parameters"] = pipeline._parameters
+
+        return PipelineSpec(steps=step_specs, **additional_spec_args)

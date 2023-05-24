@@ -51,8 +51,10 @@ def load_pipeline(model: "PipelineResponseModel") -> "Pipeline":
         )
     elif model_version == version.parse("0.2"):
         pipeline_instance = load_pipeline_v_0_2(model=model)
-    else:
+    elif model_version == version.parse("0.3"):
         pipeline_instance = load_pipeline_v_0_3(model=model)
+    else:
+        pipeline_instance = load_pipeline_v_0_4(model=model)
 
     version_hash = pipeline_instance._compute_unique_identifier(
         pipeline_spec=model.spec
@@ -68,60 +70,40 @@ def load_pipeline(model: "PipelineResponseModel") -> "Pipeline":
     return pipeline_instance
 
 
+def load_pipeline_v_0_4(model: "PipelineResponseModel") -> "Pipeline":
+    """Load a pipeline from a model with spec version 0.4.
+
+    Args:
+        model: The pipeline model to load.
+
+    Raises:
+        TypeError: If the pipeline source does not refer to a pipeline instance.
+
+    Returns:
+        The loaded pipeline.
+    """
+    pipeline_source = model.spec.source
+    assert pipeline_source
+
+    pipeline = source_utils.load(pipeline_source)
+
+    if not isinstance(pipeline, Pipeline):
+        raise TypeError("Not a pipeline")
+
+    pipeline.prepare(**model.spec.parameters)
+    return pipeline
+
+
 def load_pipeline_v_0_3(model: "PipelineResponseModel") -> "Pipeline":
     """Load a pipeline from a model with spec version 0.3.
 
     Args:
         model: The pipeline model to load.
 
-    Raises:
-        RuntimeError: If an upstream step or output is missing.
-
     Returns:
         The loaded pipeline.
     """
-    outputs = {}
-
-    with Pipeline(name=model.name) as p:
-        for step_spec in model.spec.steps:
-            for upstream_step in step_spec.upstream_steps:
-                if upstream_step not in outputs:
-                    raise RuntimeError(
-                        f"Unable to find upstream step `{upstream_step}`. "
-                        "This is probably because the step was renamed in code."
-                    )
-
-            step_inputs = {}
-            for input_name, input_spec in step_spec.inputs.items():
-                if input_spec.output_name not in outputs[input_spec.step_name]:
-                    raise RuntimeError(
-                        f"Missing output `{input_spec.output_name}` for step "
-                        f"`{input_spec.step_name}`. This is probably because "
-                        "the output of the step was renamed."
-                    )
-                step_inputs[input_name] = outputs[input_spec.step_name][
-                    input_spec.output_name
-                ]
-
-            step_class: Type[BaseStep] = source_utils.load_and_validate_class(
-                step_spec.source, expected_class=BaseStep
-            )
-            step_outputs = step_class(
-                **step_inputs,
-                id=step_spec.pipeline_parameter_name,
-                after=step_spec.upstream_steps,
-            )
-            output_keys = list(step_class.OUTPUT_SIGNATURE.keys())
-
-            if isinstance(step_outputs, StepArtifact):
-                step_outputs = (step_outputs,)
-
-            outputs[step_spec.pipeline_parameter_name] = {
-                key: step_outputs[i] for i, key in enumerate(output_keys)
-            }
-
-    p.__doc__ = model.docstring
-    return p
+    return _load_legacy_pipeline(model=model, use_pipeline_parameter_name=True)
 
 
 def load_pipeline_v_0_2(model: "PipelineResponseModel") -> "Pipeline":
@@ -133,12 +115,36 @@ def load_pipeline_v_0_2(model: "PipelineResponseModel") -> "Pipeline":
     Returns:
         The loaded pipeline.
     """
+    return _load_legacy_pipeline(
+        model=model, use_pipeline_parameter_name=False
+    )
+
+
+def _load_legacy_pipeline(
+    model: "PipelineResponseModel", use_pipeline_parameter_name: bool
+) -> "Pipeline":
+    """Load a legacy pipeline.
+
+    Args:
+        model: The pipeline model to load.
+        use_pipeline_parameter_name: Whether to use the pipeline parameter name
+            when referring to upstream steps. If `False` the step name will be
+            used instead.
+
+    Returns:
+        The loaded pipeline.
+    """
     from zenml.pipelines.base_pipeline import BasePipeline
 
-    steps = _load_and_verify_steps(pipeline_spec=model.spec)
-    connect_method = _generate_connect_method(model=model)
+    steps = _load_and_verify_steps(
+        pipeline_spec=model.spec,
+        use_pipeline_parameter_name=use_pipeline_parameter_name,
+    )
+    connect_method = _generate_connect_method(
+        model=model, use_pipeline_parameter_name=use_pipeline_parameter_name
+    )
 
-    pipeline_class = type(
+    pipeline_class: Type[BasePipeline] = type(
         model.name,
         (BasePipeline,),
         {
@@ -147,16 +153,21 @@ def load_pipeline_v_0_2(model: "PipelineResponseModel") -> "Pipeline":
         },
     )
 
-    return pipeline_class(**steps)
+    pipeline_instance = pipeline_class(**steps)
+    pipeline_instance.prepare()
+    return pipeline_instance
 
 
 def _load_and_verify_steps(
-    pipeline_spec: "PipelineSpec",
+    pipeline_spec: "PipelineSpec", use_pipeline_parameter_name: bool = False
 ) -> Dict[str, BaseStep]:
     """Loads steps and verifies their names and inputs/outputs names.
 
     Args:
         pipeline_spec: The pipeline spec from which to load the steps.
+        use_pipeline_parameter_name: Whether to use the pipeline parameter name
+            when referring to upstream steps. If `False` the step name will be
+            used instead.
 
     Raises:
         RuntimeError: If the step names or input/output names of the
@@ -188,7 +199,7 @@ def _load_and_verify_steps(
                 )
 
         step = BaseStep.load_from_source(step_spec.source)
-        input_names = set(step.INPUT_SIGNATURE)
+        input_names = set(step.entrypoint_definition.inputs)
         spec_input_names = set(step_spec.inputs)
 
         if input_names != spec_input_names:
@@ -199,7 +210,12 @@ def _load_and_verify_steps(
             )
 
         steps[step_spec.pipeline_parameter_name] = step
-        available_outputs[step.name] = set(
+        output_name = (
+            step_spec.pipeline_parameter_name
+            if use_pipeline_parameter_name
+            else step.name
+        )
+        available_outputs[output_name] = set(
             step.entrypoint_definition.outputs.keys()
         )
 
@@ -207,12 +223,15 @@ def _load_and_verify_steps(
 
 
 def _generate_connect_method(
-    model: "PipelineResponseModel",
+    model: "PipelineResponseModel", use_pipeline_parameter_name: bool = False
 ) -> Callable[..., None]:
     """Dynamically generates a connect method for a pipeline model.
 
     Args:
         model: The model for which to generate the method.
+        use_pipeline_parameter_name: Whether to use the pipeline parameter name
+            when referring to upstream steps. If `False` the step name will be
+            used instead.
 
     Returns:
         The generated connect method.
@@ -243,13 +262,18 @@ def _generate_connect_method(
                         "`Pipeline.from_model`."
                     )
 
-            step_output = step(**step_inputs)
+            step_output = step(**step_inputs)  # type: ignore[arg-type]
             output_keys = list(step.entrypoint_definition.outputs.keys())
 
             if isinstance(step_output, StepArtifact):
                 step_output = (step_output,)
 
-            step_outputs[step.name] = {
+            output_name = (
+                step_spec.pipeline_parameter_name
+                if use_pipeline_parameter_name
+                else step.name
+            )
+            step_outputs[output_name] = {
                 key: step_output[i] for i, key in enumerate(output_keys)
             }
 

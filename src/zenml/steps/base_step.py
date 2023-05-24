@@ -1118,7 +1118,7 @@ class BaseStep(metaclass=BaseStepMeta):
             )
 
         if (
-            self.entrypoint_definition.legacy_params.annotation.Config.extra
+            self.entrypoint_definition.legacy_params.annotation.__config__.extra
             == Extra.allow
         ):
             # Add all parameters for the config class for backwards

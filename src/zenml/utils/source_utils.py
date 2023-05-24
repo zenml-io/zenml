@@ -119,7 +119,7 @@ def resolve(
     Returns:
         The source of the resolved object.
     """
-    if obj is NoneType:
+    if obj is NoneType:  # type: ignore[comparison-overlap]
         # The class of the `None` object doesn't exist in the `builtin` module
         # so we need to manually handle it here
         return NoneTypeSource
@@ -128,7 +128,7 @@ def resolve(
         attribute_name = None
     else:
         module = sys.modules[obj.__module__]
-        attribute_name = obj.__name__
+        attribute_name = obj.__name__  # type: ignore[union-attr]
 
     if (
         not skip_validation

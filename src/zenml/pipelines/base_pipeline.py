@@ -24,9 +24,11 @@ from zenml.exceptions import PipelineInterfaceError
 from zenml.logger import get_logger
 from zenml.new.pipelines.pipeline import Pipeline
 from zenml.steps import BaseStep
+from zenml.utils import source_utils
 
 if TYPE_CHECKING:
     from zenml.config.base_settings import SettingsOrDict
+    from zenml.config.source import Source
     from zenml.models.pipeline_build_models import (
         PipelineBuildBaseModel,
     )
@@ -99,6 +101,23 @@ class BasePipeline(Pipeline, ABC):
             **kwargs: Connect method keyword arguments.
         """
         raise NotImplementedError
+
+    def resolve(self) -> "Source":
+        """Resolves the pipeline.
+
+        Returns:
+            The pipeline source.
+        """
+        return source_utils.resolve(self.__class__)
+
+    @property
+    def source_object(self) -> Any:
+        """The source object of this pipeline.
+
+        Returns:
+            The source object of this pipeline.
+        """
+        return self.connect
 
     def run(
         self,
