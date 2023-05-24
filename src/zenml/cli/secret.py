@@ -842,7 +842,8 @@ def create_secret(
         args: The arguments to pass to the secret.
     """
     name, parsed_args = parse_secret_name_and_arguements(  # type: ignore[assignment]
-        list(args) + [name])
+        list(args) + [name]
+    )
 
     if "name" in parsed_args:
         error("You can't use 'name' as the key for one of your secrets.")

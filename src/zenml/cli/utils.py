@@ -13,11 +13,10 @@
 #  permissions and limitations under the License.
 """Utility functions for the CLI."""
 import contextlib
+import json
 import os
 import subprocess
 import sys
-import json
-import yaml
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -36,6 +35,7 @@ from typing import (
 )
 
 import click
+import yaml
 from rich import box, table
 from rich.markup import escape
 from rich.prompt import Confirm
@@ -43,7 +43,11 @@ from rich.style import Style
 
 from zenml.config.global_config import GlobalConfiguration
 from zenml.console import console, zenml_style_defaults
-from zenml.constants import FILTERING_DATETIME_FORMAT, IS_DEBUG_ENV, SECRET_VALUES, SECRET_VALUES_FILE
+from zenml.constants import (
+    FILTERING_DATETIME_FORMAT,
+    IS_DEBUG_ENV,
+    SECRET_VALUES,
+)
 from zenml.enums import GenericFilterOps, StackComponentType, StoreType
 from zenml.logger import get_logger
 from zenml.model_registries.base_model_registry import (
@@ -587,44 +591,34 @@ def convert_str_to_dict(string) -> dict:
     except yaml.YAMLError:
         pass
 
-    error(f"Invalid argument: '{string}'. Please provide the value in Json/Dict/Yaml format")
+    error(
+        f"Invalid argument: '{string}'. Please provide the value in Json/Yaml format"
+    )
 
 
-def read_args_from_file(value: str) -> str:
+def extract_name_from_args(args: List[str], name_mandatory: bool):
     """
-    Read the content from the file path given
-
+    If the name was not supplied as the first argument, we have to
+    search the other arguments for the name.
     Args:
-        value: file path string value where the key value pairs content is stored
+        args: A list of command line arguments from the CLI.
+        name_mandatory: Whether the name argument is mandatory.
 
     Returns:
-        file_content: Returns the content of the file as string
+        name: returns name from the list of arguments
     """
-    filename = os.path.abspath(os.path.expanduser(value))
-    logger.info(
-        f"Reading argument key-value pairs from contents of file `{filename}`."
-    )
-    if not os.path.isfile(filename):
-        raise ValueError(
-            f"Could not load argument key-value pairs: file "
-            f"'{filename}' does not exist or is not readable."
-        )
-    try:
-        if os.path.getsize(filename) > MAX_ARGUMENT_VALUE_SIZE:
-            raise ValueError(
-                f"Could not load argument key-value pairs: file "
-                f"'{filename}' is too large (max size is "
-                f"{MAX_ARGUMENT_VALUE_SIZE} bytes)."
+    for i, arg in enumerate(args):
+        if arg.startswith("--"):
+            continue
+        name = args.pop(i)
+        break
+    else:
+        if name_mandatory:
+            error(
+                "A name must be supplied. Please see the command help for more "
+                "information."
             )
-
-        with open(filename, "r") as f:
-            file_content = f.read()
-            return file_content
-    except OSError as e:
-        raise ValueError(
-            f"Could not load argument key-value pairs: file "
-            f"'{filename}' could not be accessed: {str(e)}"
-        )
+    return name
 
 
 def parse_name_and_extra_arguments(
@@ -660,21 +654,8 @@ def parse_name_and_extra_arguments(
     Returns:
         The name and a dict of parsed args.
     """
-    name: Optional[str] = None
-    # The name was not supplied as the first argument, we have to
-    # search the other arguments for the name.
-    for i, arg in enumerate(args):
-        if arg.startswith("--"):
-            continue
-        name = args.pop(i)
-        break
-    else:
-        if name_mandatory:
-            error(
-                "A name must be supplied. Please see the command help for more "
-                "information."
-            )
 
+    name = extract_name_from_args(args, name_mandatory)
     message = (
         "Please provide args with a proper "
         "identifier as the key and the following structure: "
@@ -702,25 +683,23 @@ def parse_secret_name_and_arguements(
     args: List[str],
     name_mandatory: bool = True,
 ) -> Tuple[Optional[str], Dict[str, str]]:
-    """Parse a name and extra arguments from the CLI.
+    """Parse a secret name and extra arguments from the CLI.
 
-    This is a utility function used to parse a variable list of optional CLI
-    arguments of the form `--values=key:value pairs that can be a dict/JSON/YAML
-    or --values-file=file_path and that must also include one mandatoryfree-form
-    name argument. There is no restriction as to the order of the arguments.
+    This is a utility function used to parse optional CLI
+    arguments of the form `--values=value` where value must be in a JSON/YAML format
+    or file_path and that must also include one mandatory free-form name argument.
+    There is no restriction as to the order of the arguments.
 
     Examples:
-        >>> parse_name_and_value_arguements(['foo']])
+        >>> parse_secret_name_and_arguements(['foo']])
         ('foo', {})
-        >>> parse_name_and_value_arguements(['foo', '--values={"location": "Nevada", "aliens":"many"}'])
+        >>> parse_secret_name_and_arguements(['foo', '--values='{"location": "Nevada", "aliens":"many"}''])
         ('foo', {'location': 'Nevada', 'aliens':'many'})
-        >>> parse_name_and_value_arguements(["--values={'location': 'Nevada', 'aliens':'many'}", 'foo'])
+        >>> parse_secret_name_and_arguements(["--values='location: Nevada\\naliens: many'", 'foo'])
         ('foo', {'location': 'Nevada', 'aliens':'many'})
-        >>> parse_name_and_value_arguements(['--values=location: Nevada\\naliens: many', 'foo'])
+        >>> parse_secret_name_and_arguements(['--values=@val.json', 'foo'])
         ('foo', {'location': 'Nevada', 'aliens':'many'})
-        >>> parse_name_and_value_arguements(['--values-file=val.json', 'foo'])
-        ('foo', {'location': 'Nevada', 'aliens':'many'})
-        >>> parse_name_and_value_arguements(["--values={'location': 'Nevada', 'aliens':'many'}"])
+        >>> parse_secret_name_and_arguements(['--values='{"location": "Nevada", "aliens":"many"}''])
         Traceback (most recent call last):
             ...
             ValueError: Missing required argument: name
@@ -732,39 +711,28 @@ def parse_secret_name_and_arguements(
     Returns:
         The name and a dict of parsed args.
     """
-    name: Optional[str] = None
-    # If the name was not supplied as the first argument, we have to
-    # search the other arguments for the name.
-    for i, arg in enumerate(args):
-        if arg.startswith("--"):
-            continue
-        name = args.pop(i)
-        break
-    else:
-        if name_mandatory:
-            error(
-                "A name must be supplied. Please see the command help for more "
-                "information."
-            )
+    name = extract_name_from_args(args, name_mandatory)
 
     message = (
         "Please provide args with a proper "
         "identifier as the key and the value with the following structure: "
-        '--values="value" (Json/Yaml/Dict) or --values-file=file_path'
+        '--values="value" (Json/Yaml) or --values=@file_path'
     )
-    if len(args) != 1:
+    if (
+        (len(args) != 1)
+        or (not args[0].startswith("--"))
+        or ("=" not in args[0])
+    ):
         error(f"Invalid argument: '{args}'. {message}")
-    value_args = args[0].split('=')
-    value_input_type = value_args[0].split('--')[1]
+    value_args = args[0].split("=")
+    value_input_type = value_args[0].split("--")[1]
     value = value_args[1]
 
     if value_input_type == SECRET_VALUES:
-        pass
-    elif value_input_type == SECRET_VALUES_FILE:
-        value = read_args_from_file(value)
+        value = expand_argument_value_from_file(SECRET_VALUES, value)
+        args_dict = convert_str_to_dict(value)
     else:
         error(f"Invalid argument: '{value_input_type}'. {message}")
-    args_dict = convert_str_to_dict(value)
 
     for key in args_dict:
         if not key.isidentifier():

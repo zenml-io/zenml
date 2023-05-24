@@ -224,7 +224,6 @@ ORCHESTRATOR_DOCKER_IMAGE_KEY = "orchestrator"
 # Secret constants
 ARBITRARY_SECRET_SCHEMA_TYPE = "arbitrary"
 SECRET_VALUES = "values"
-SECRET_VALUES_FILE = "values-file"
 
 # Pagination and filtering defaults
 PAGINATION_STARTING_PAGE: int = 1
