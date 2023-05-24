@@ -1315,7 +1315,6 @@ Active repository stack set to:'aws-demo'
 9. Finally, run a simple pipeline to prove that everything works as expected. We'll use the simplest pipelines possible for this example:
 
 ```python
-from zenml.config import DockerSettings
 from zenml.pipelines import pipeline
 from zenml.steps import step
 

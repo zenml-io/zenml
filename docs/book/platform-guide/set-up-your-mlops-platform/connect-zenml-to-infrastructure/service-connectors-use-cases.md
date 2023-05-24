@@ -21,7 +21,7 @@ Setting up the connections between your code and cloud services can be a dauntin
 * discovering all the resources accessible with a set of credentials (e.g. listing all the EKS Kubernetes clusters that are accessible with an AWS IAM role)&#x20;
 * converting credentials in the format that they are needed by clients, libraries, and your pipeline code (e.g. generating Kubernetes API and `kubectl` credentials from AWS STS tokens)
 * implementing and enforcing security best practices. Notably, automatically generating and refreshing safe-to-distribute, temporary, and access-restricted credentials from long-lived, wide-access credentials (e.g. generating an AWS STS token restricted to accessing a single S3 bucket from IAM user AWS Secret Key credentials).
-* providing pre-authenticated and pre-configured clients for Python libraries (e.g. python-kubernetes clients, python-docker clients, boto3 sessions). Thus decoupling code from configuration and ensuring that your pipelines can just run without being tied to a particular authentication mechanism.
+* providing pre-authenticated and pre-configured clients for Python libraries (e.g. python-kubernetes clients, python-docker clients, boto3 sessions). Thus, decoupling code from configuration and ensuring that your pipelines can just run without being tied to a particular authentication mechanism.
 
 ## Lift-and-shift your local configuration for instant portability
 

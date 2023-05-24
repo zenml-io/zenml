@@ -1,7 +1,5 @@
 ---
-description: >-
-  Connect your ZenML deployment to a cloud provider and other infrastructure
-  services and resources.
+description: Connect your ZenML deployment to a cloud provider and other infrastructure services and resources.
 ---
 
 # Connect ZenML to infrastructure
@@ -32,7 +30,7 @@ store artifacts or needs to access a cloud service like AWS SageMaker, VertexAI,
 or AzureML to run a CPU/GPU intensive task like training a model.
 
 The challenge comes from _setting up and implementing proper authentication and
-authorization_ with best security practices in mind, while at the same time
+authorization_ with the best security practices in mind, while at the same time
 _keeping this complexity away from the day-to-day routines_ of coding and
 running pipelines.
 

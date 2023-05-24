@@ -106,7 +106,7 @@ Service connector 'gcp-implicit' is correctly configured with valid credentials 
 ### Long-lived credentials (API keys, account keys)
 
 {% hint style="success" %}
-This is the magic formula of authentication methods. When paired with another ability, such as [automatically generating short-lived API tokens](best-security-practices.md#issuing-temporary-and-down-scoped-credentials), or [impersonating accounts or assuming roles](best-security-practices.md#impersonating-accounts-and-assuming-roles), this is the ideal authentication mechanism to use, particularly when using ZenML in production and when sharing results with other members of your ZenML team.
+This is the magic formula of authentication methods. When paired with another ability, such as [automatically generating short-lived API tokens](best-security-practices.md#generating-temporary-and-down-scoped-credentials), or [impersonating accounts or assuming roles](best-security-practices.md#impersonating-accounts-and-assuming-roles), this is the ideal authentication mechanism to use, particularly when using ZenML in production and when sharing results with other members of your ZenML team.
 {% endhint %}
 
 As a general best practice, but implemented particularly well for cloud platforms, account passwords are never directly used as a credential when authenticating to the cloud platform APIs. There is always a process in place that exchanges the account/password credential for another type of long-lived credential:

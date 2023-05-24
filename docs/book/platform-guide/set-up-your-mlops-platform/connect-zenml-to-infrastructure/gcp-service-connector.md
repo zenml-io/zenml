@@ -912,7 +912,6 @@ Active global stack set to:'gcp-demo'
 8. Finally, run a simple pipeline to prove that everything works as expected. We'll use the simplest pipelines possible for this example:
 
 ```python
-from zenml.config import DockerSettings
 from zenml.pipelines import pipeline
 from zenml.steps import step
 
@@ -1175,7 +1174,6 @@ Active repository stack set to:'gcp-demo'
 8. Finally, run a simple pipeline to prove that everything works as expected. We'll use the simplest pipelines possible for this example:
 
 ```python
-from zenml.config import DockerSettings
 from zenml.pipelines import pipeline
 from zenml.steps import step
 
