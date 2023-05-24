@@ -6,7 +6,7 @@ description: Combining your efforts, expertise and resources.
 
 Collaboration is a vital aspect of any MLOps team, as it often requires bringing together individuals with diverse skills and expertise to create a cohesive and effective workflow for machine learning projects. A successful MLOps team needs seamless collaboration between data scientists, engineers, and DevOps professionals to develop, train, deploy, and maintain machine learning models. This can be challenging, as it requires coordination across various tools, processes, and frameworks.
 
-![ZenML Overview](docs/book/.gitbook/assets/intro-zenml-overview.png)
+![ZenML Overview](../../.gitbook/assets/intro-zenml-overview.png)
 
 This is where ZenML excels: providing a collaborative platform that goes beyond your team and includes the community. With ZenML, you can effortlessly work together with others, sharing resources and insights to achieve your shared goals. Removing barriers to collaboration enables teams to iterate on ideas and problems more efficiently, leading to faster results.
 
@@ -29,15 +29,15 @@ By default, all users have `Administrator` permissions throughout the ZenML dash
 
 You can go to the settings page from the bottom of the sidebar or top right of the header, and edit your details below:
 
-![Personal Settings](docs/book/.gitbook/assets/01_personal_settings.png)
+![Personal Settings](../../.gitbook/assets/01_personal_settings.png)
 
 ### Workspace Settings
 
-![Workspace Settings](docs/book/.gitbook/assets/02_project_settings.png)
+![Workspace Settings](../../.gitbook/assets/02_project_settings.png)
 
 In the project settings, you can see a list of users who are invited or signed up for this ZenML deployment. You can invite a new user here with a unique username. The dashboard will generate a new token for you in the form of a URL that you can copy and send to your teammate.
 
-![Invite Token](docs/book/.gitbook/assets/03_invite_token.png)
+![Invite Token](../../.gitbook/assets/03_invite_token.png)
 
 You can also mimic this behavior in a connected ZenML with the following commands:
 
@@ -51,7 +51,7 @@ This creates a new user. If an empty password is configured, an activation token
 
 From the invitation URL, a user can sign up as expected:
 
-![Sign up](docs/book/.gitbook/assets/04_sign_up.png)
+![Sign up](../../.gitbook/assets/04_sign_up.png)
 
 And that's it 🚀. We went from a simple ZenML pip install to a fully-fledged multi-user, cloud deployment of ZenML.
 
