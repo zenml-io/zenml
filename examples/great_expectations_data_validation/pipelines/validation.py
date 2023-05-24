@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 
 from steps.importer import importer
-from steps.prevalidator import prevalidator
 from steps.profiler import ge_profiler_step
 from steps.splitter import splitter
 from steps.validator import ge_validate_test_step, ge_validate_train_step
@@ -38,13 +37,9 @@ def validation_pipeline():
 
     Next, that generated expectation suite is used to validate both the training
     dataset and the validation dataset.
-
-    A prevalidator step is used to delay the execution of the validator
-    steps until the generated expectation suite is ready.
     """
     imported_data = importer()
     train, test = splitter(imported_data)
-    suite = ge_profiler_step(train)
-    condition = prevalidator(suite)
-    ge_validate_train_step(train, condition)
-    ge_validate_test_step(test, condition)
+    ge_profiler_step(train)
+    ge_validate_train_step(train, after="great_expectations_profiler_step")
+    ge_validate_test_step(test, after="great_expectations_profiler_step")

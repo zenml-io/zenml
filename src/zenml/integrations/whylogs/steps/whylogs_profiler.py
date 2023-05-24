@@ -66,8 +66,7 @@ def get_whylogs_profiler_step(
     artifact.
 
     Args:
-        step_name: The name of the step
-        params: The step parameters
+        dataset_timestamp: The timestamp of the dataset.
         dataset_id: Optional dataset ID to use to upload the profile to Whylabs.
         enable_whylabs: Whether to upload the generated profile to Whylabs.
 

@@ -29,7 +29,6 @@ from zenml.integrations.great_expectations.data_validators.ge_data_validator imp
 @step
 def great_expectations_validator_step(
     dataset: pd.DataFrame,
-    condition: bool,
     expectation_suite_name: str,
     data_asset_name: Optional[str] = None,
     action_list: Optional[List[Dict[str, Any]]] = None,
@@ -44,11 +43,6 @@ def great_expectations_validator_step(
 
     Args:
         dataset: The dataset to run the expectation suite on.
-            condition: This dummy argument can be used as a condition to enforce
-                that this step is only run after another step has completed. This
-                is useful for example if the Expectation Suite used to validate
-                the data is computed in a `GreatExpectationsProfilerStep` that
-                is part of the same pipeline.
         expectation_suite_name: The name of the expectation suite to use to
             validate the dataset.
         data_asset_name: The name of the data asset to use to identify the
