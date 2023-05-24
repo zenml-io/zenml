@@ -6,7 +6,7 @@
   {{- $_ := set .Values.zenml.ingress.annotations "kubernetes.io/ingress.class" .Values.zenml.ingress.className}}
   {{- end }}
 {{- end }}
-{{- if $.Values.zenml.ingress.tls.enabled }}
+{{- if and $.Values.zenml.ingress.tls.enabled (eq .Values.zenml.ingress.className "nginx") }}
   {{- $_ := set .Values.zenml.ingress.annotations "nginx.ingress.kubernetes.io/ssl-redirect" "true"}}
 {{- end }}
 

@@ -38,6 +38,11 @@ class AWSIntegration(Integration):
         "sagemaker==2.117.0",
     ]
 
+    @staticmethod
+    def activate() -> None:
+        """Activate the AWS integration."""
+        from zenml.integrations.aws import service_connectors  # noqa
+
     @classmethod
     def flavors(cls) -> List[Type[Flavor]]:
         """Declare the stack component flavors for the AWS integration.

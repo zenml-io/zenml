@@ -23,8 +23,9 @@ from zenml.config.build_configuration import BuildConfiguration
 from zenml.config.step_configurations import Step
 from zenml.config.step_run_info import StepRunInfo
 from zenml.enums import StackComponentType
+from zenml.exceptions import AuthorizationException
 from zenml.logger import get_logger
-from zenml.models import ComponentResponseModel
+from zenml.models import ComponentResponseModel, ServiceConnectorRequirements
 from zenml.utils import secret_utils, settings_utils
 
 if TYPE_CHECKING:
@@ -34,6 +35,7 @@ if TYPE_CHECKING:
         PipelineDeploymentBaseModel,
         PipelineDeploymentResponseModel,
     )
+    from zenml.service_connectors.service_connector import ServiceConnector
     from zenml.stack import Stack, StackValidator
 
 logger = get_logger(__name__)
@@ -299,6 +301,9 @@ class StackComponent:
         created: datetime,
         updated: datetime,
         labels: Optional[Dict[str, Any]] = None,
+        connector_requirements: Optional[ServiceConnectorRequirements] = None,
+        connector: Optional[UUID] = None,
+        connector_resource_id: Optional[str] = None,
         *args: Any,
         **kwargs: Any,
     ):
@@ -315,6 +320,10 @@ class StackComponent:
             created: The creation time of the component.
             updated: The last update time of the component.
             labels: The labels of the component.
+            connector_requirements: The requirements for the connector.
+            connector: The ID of a connector linked to the component.
+            connector_resource_id: The custom resource ID to access through
+                the connector.
             *args: Additional positional arguments.
             **kwargs: Additional keyword arguments.
 
@@ -337,6 +346,10 @@ class StackComponent:
         self.created = created
         self.updated = updated
         self.labels = labels
+        self.connector_requirements = connector_requirements
+        self.connector = connector
+        self.connector_resource_id = connector_resource_id
+        self._connector_instance: Optional[ServiceConnector] = None
 
     @classmethod
     def from_model(
@@ -387,6 +400,11 @@ class StackComponent:
             type=component_model.type,
             created=component_model.created,
             updated=component_model.updated,
+            connector_requirements=flavor.service_connector_requirements,
+            connector=component_model.connector.id
+            if component_model.connector
+            else None,
+            connector_resource_id=component_model.connector_resource_id,
         )
 
     @property
@@ -451,6 +469,92 @@ class StackComponent:
             return self.settings_class.parse_obj(all_settings[key])
         else:
             return self.settings_class()
+
+    def connector_has_expired(self) -> bool:
+        """Checks whether the connector linked to this stack component has expired.
+
+        Returns:
+            Whether the connector linked to this stack component has expired, or isn't linked to a connector.
+        """
+        if self.connector is None:
+            # The stack component isn't linked to a connector
+            return False
+
+        if self._connector_instance is None:
+            return True
+
+        return self._connector_instance.has_expired()
+
+    def get_connector(self) -> Optional["ServiceConnector"]:
+        """Returns the connector linked to this stack component.
+
+        Returns:
+            The connector linked to this stack component.
+
+        Raises:
+            RuntimeError: If the stack component does not specify connector
+                requirements or if the connector linked to the component is not
+                compatible or not found.
+        """
+        from zenml.client import Client
+
+        if self.connector is None:
+            return None
+
+        if self._connector_instance is not None:
+            # If the connector instance is still valid, return it. Otherwise,
+            # we'll try to get a new one.
+            if not self._connector_instance.has_expired():
+                return self._connector_instance
+
+        if self.connector_requirements is None:
+            raise RuntimeError(
+                f"Unable to get connector for component {self} because this "
+                "component does not declare any connector requirements in its. "
+                "flavor specification. Override the "
+                "`service_connector_requirements` method in its flavor class "
+                "to return a connector requirements specification and try "
+                "again."
+            )
+
+        if self.connector_requirements.resource_id_attr is not None:
+            # Check if an attribute is set in the component configuration
+            resource_id = getattr(
+                self.config, self.connector_requirements.resource_id_attr
+            )
+        else:
+            # Otherwise, use the resource ID configured in the component
+            resource_id = self.connector_resource_id
+
+        client = Client()
+        try:
+            self._connector_instance = client.get_service_connector_client(
+                name_id_or_prefix=self.connector,
+                resource_type=self.connector_requirements.resource_type,
+                resource_id=resource_id,
+            )
+        except KeyError:
+            raise RuntimeError(
+                f"The connector with ID {self.connector} linked "
+                f"to the '{self.name}' {self.type} stack component could not "
+                f"be found or is not accessible. Please verify that the "
+                f"connector exists and that you have access to it."
+            )
+        except ValueError as e:
+            raise RuntimeError(
+                f"The connector with ID {self.connector} linked "
+                f"to the '{self.name}' {self.type} stack component could not "
+                f"be correctly configured: {e}."
+            )
+        except AuthorizationException as e:
+            raise RuntimeError(
+                f"The connector with ID {self.connector} linked "
+                f"to the '{self.name}' {self.type} stack component could not "
+                f"be accessed due to an authorization error: {e}. Please "
+                f"verify that you have access to the connector and try again."
+            )
+
+        return self._connector_instance
 
     @property
     def log_file(self) -> Optional[str]:

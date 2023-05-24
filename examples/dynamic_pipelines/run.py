@@ -21,6 +21,11 @@ from steps.data.load_breast_cancer_data import load_breast_cancer_data
 from steps.data.load_iris_data import load_iris_data
 from steps.evaluation.accuracy import calc_accuracy
 
+from zenml.config.docker_settings import DockerSettings
+from zenml.integrations.constants import SKLEARN
+
+docker_settings = DockerSettings(required_integrations=[SKLEARN])
+
 if __name__ == "__main__":
     HyperParameterTuning.as_template_of("iris_random_forest")(
         load_data_step=load_iris_data,
@@ -33,7 +38,7 @@ if __name__ == "__main__":
             RandomForestClassifierParameters(n_estimators=300),
             RandomForestClassifierParameters(n_estimators=400),
         ],
-    ).run(enable_cache=False)
+    ).run(enable_cache=False, settings={"docker": docker_settings})
 
     HyperParameterTuning.as_template_of("breast_cancer_random_forest")(
         load_data_step=load_breast_cancer_data,
@@ -47,4 +52,4 @@ if __name__ == "__main__":
                 n_estimators=100, criterion="entropy"
             ),
         ],
-    ).run(enable_cache=False)
+    ).run(enable_cache=False, settings={"docker": docker_settings})
