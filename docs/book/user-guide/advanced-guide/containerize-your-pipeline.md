@@ -4,21 +4,65 @@ description: Using Docker images to run your pipeline.
 
 # Containerize your pipeline
 
-TODO: Introducing the whole containerization process
+ZenML executes pipeline steps sequentially in the active Python environment when running locally. However, with remote [orchestrators](../component-guide/orchestrators/orchestrators.md) or [step operators](../component-guide/step-operators/step-operators.md), ZenML builds [Docker](https://www.docker.com/) images to run your pipeline in an isolated, well-defined environment.
+
+There are three ways to control this containerization process:
+
+- [Control how and where an image is built](#define-where-an-image-is-built)
+- [Utilize docker images from previous runs](#reuse-docker-image-builds-from-previous-runs)
+- [Customize what gets built into the image](#customize-the-docker-building)
 
 ## Define where an image is built
 
-TODO: Include reference to managing envioronments and maybe move to the top [managing environments](manage-environments.md)
+[Image builders](../component-guide/image-builders/image-builders.md) determine how and where an image is built. Learn more [here](manage-environments.md#build-environments).
 
-## Reusing Docker images
+## Reuse Docker image builds from previous runs
 
-Link to [code repository](connect-your-git-repository.md)
+ZenML automatically [builds and pushes Docker images](manage-environments.md#build-environments) when running a pipeline on a stack requiring Docker images. To run this build step separately without running the pipeline, call:
+
+```python
+pipeline_instance.build(...)
+```
+
+in Python or using the CLI command:
+
+```shell
+# If running the first time, register pipeline to get name and ID
+zenml pipeline register [OPTIONS] my_module.my_pipeline_instance
+
+# Build docker images using the image builder defined in the stack and push to the container registry defined in the stack
+zenml pipeline build [OPTIONS] PIPELINE_NAME_OR_ID
+```
+
+You can see all pipeline builds with the command:
+
+This will register the build output in the ZenML database and allow you to use the built images when running a pipeline later. 
+
+```bash
+zenml pipeline builds list
+```
+
+To use a registered build when running a pipeline, pass it as an argument in Python
+
+```python
+pipeline_instance.run(build=<BUILD_ID>)
+```
+
+or when running a pipeline from the CLI
+
+```bash
+zenml pipeline run <PIPELINE_NAME> --build=<BUILD_ID>
+```
+
+### Utilize the full power of builds by connecting a code repository
+
+Building Docker images without [connecting a git repository](connect-your-git-repository.md) includes your step code. This means specifying a custom build when running a pipeline will **not run the code on your client machine** but will use the code **included in the Docker images of the build**. This allows you to make local code changes, but reusing a build from before will *always* execute the code bundled in the Docker image, rather than the local code.
+
+To avoid this, disconnect your code from the build by [connecting a git repository](connect-your-git-repository.md). Registering a code repository lets you avoid building images each time you run a pipeline and quickly iterate on your code.
 
 ## Customize the Docker building
 
-When running locally, ZenML will sequentially execute the steps of your pipeline in the active Python environment. However, when using remote [orchestrators](broken-reference/) or [step operators](broken-reference/), ZenML will build [Docker](https://www.docker.com/) images which are used to run your pipeline code in an isolated and well-defined environment.
-
-For this purpose, a [Dockerfile](https://docs.docker.com/engine/reference/builder/) is dynamically generated at runtime. It is then used to build the docker image using the [image builder](manage-environments.md) component of your stack. The Dockerfile consists of the following steps:
+When a [pipeline is run with a remote orchestrator](../starter-guide/create-an-ml-pipeline.md) a [Dockerfile](https://docs.docker.com/engine/reference/builder/) is dynamically generated at runtime. It is then used to build the docker image using the [image builder](manage-environments.md#customize-how-a-build-image-is-created-image-builders) component of your stack. The Dockerfile consists of the following steps:
 
 * **Starts from a parent image** that has **ZenML installed**. By default, this will use the [official ZenML image](https://hub.docker.com/r/zenmldocker/zenml/) for the Python and ZenML version that you're using in the active Python environment. If you want to use a different image as the base for the following steps, check out [this guide](containerize-your-pipeline.md#using-a-custom-parent-image).
 * **Installs additional pip dependencies**. ZenML will automatically detect which integrations are used in your stack and install the required dependencies. If your pipeline needs any additional requirements, check out our [guide on including custom dependencies](containerize-your-pipeline.md#how-to-install-additional-pip-dependencies).
@@ -39,12 +83,12 @@ from zenml.config import DockerSettings
 
 ZenML determines the root directory of your source files in the following order:
 
-* If you've created a [ZenML repository](broken-reference/) for your project, the repository directory will be used.
+* If you've intialized zenml at your root, the repository directory will be used.
 * Otherwise, the parent directory of the python file you're executing will be the source root. For example, running `python /path/to/file.py`, the source root would be `/path/to`.
 
 You can specify how these files are handled using the `source_files` attribute on the `DockerSettings`:
 
-* The default behavior `download_or_include`: The files will be downloaded if they're inside a registered [code repository](broken-reference/) and the repository has no local changes, otherwise, they will be included in the image.
+* The default behavior `download_or_include`: The files will be downloaded if they're inside a registered [code repository](connect-your-git-repository.md) and the repository has no local changes, otherwise, they will be included in the image.
 * If you want your files to be included in the image in any case, set the `source_files` attribute to `include`.
 * If you want your files to be downloaded in any case, set the `source_files` attribute to `download`. If this is specified, the files must be inside a registered code repository and the repository must have no local changes, otherwise the Docker build will fail.
 * If you want to prevent ZenML from copying or downloading any of your source files, you can do so by setting the `source_files` attribute on the Docker settings to `ignore`. This is an advanced feature and will most likely cause unintended and unanticipated behavior when running your pipelines. If you use this, make sure to copy all the necessary files to the correct paths yourself.
@@ -112,7 +156,7 @@ def my_pipeline(...):
       def my_pipeline(...):
           ...
     ```
-* Specify a list of [ZenML integrations](broken-reference/) that you're using in your pipeline:
+* Specify a list of [ZenML integrations](../component-guide/component-guide.md) that you're using in your pipeline:
 
 ```python
 from zenml.integrations.constants import PYTORCH, EVIDENTLY
