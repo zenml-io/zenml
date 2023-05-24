@@ -1145,8 +1145,14 @@ def generate_stack_component_deploy_command(
             "model_deployer": ["seldon", "kserve"],
             "artifact_store": ["s3", "gcp", "minio"],
             "container_registry": ["gcp", "aws"],
-            "orchestrator": ["kubernetes", "kubeflow", "tekton", "sagemaker"],
-            "step_operator": ["sagemaker"],
+            "orchestrator": [
+                "kubernetes",
+                "kubeflow",
+                "tekton",
+                "sagemaker",
+                "vertex",
+            ],
+            "step_operator": ["sagemaker", "vertex"],
         }
 
         # if the flavor is not allowed for the given component type

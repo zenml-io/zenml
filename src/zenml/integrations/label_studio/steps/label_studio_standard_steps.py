@@ -217,7 +217,6 @@ def sync_new_data_to_label_studio(
         raise ValueError(
             "ZenML only currently supports syncing data passed from other ZenML steps and via the Artifact Store."
         )
-
     # removes the initial forward slash from the prefix attribute by slicing
     params.prefix = urlparse(uri).path.lstrip("/")
     base_uri = urlparse(uri).netloc
@@ -237,6 +236,7 @@ def sync_new_data_to_label_studio(
             filename_reference = TASK_TO_FILENAME_REFERENCE_MAPPING[
                 params.label_config_type
             ]
+
             preds_with_task_ids = convert_pred_filenames_to_task_ids(
                 predictions,
                 dataset.tasks,

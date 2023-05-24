@@ -132,7 +132,9 @@ pod.
 zenml stack recipe deploy k3d-modular
 ```
 >**Note**:
-> This recipe comes with MLflow, Kubeflow and Minio enabled by default. If you want any other components like KServe, Seldon or Tekton, you can specify that using the `--install/-i` flag.
+> This recipe comes with MLflow, Kubeflow and Minio enabled by default. If you
+> want any other components like Seldon or Tekton, you can specify that using
+> the relevant flag (i.e. `-o` for orchestrators and so on).
 
 #### 🏁 Deploy the stack using ZenML CLI
 
@@ -150,7 +152,7 @@ zenml stack recipe pull k3d-modular
 3. Deploy the stack using the ZenML CLI:
 
 ```shell
-zenml stack recipe deploy k3d-modular -i kubeflow -i minio --no-server
+zenml stack recipe deploy k3d-modular -o kubeflow -a minio --no-server
 ```
 
 > **Note**
