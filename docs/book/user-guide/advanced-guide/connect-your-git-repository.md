@@ -1,7 +1,5 @@
 ---
-description: >-
-Tracking your code and avoiding unnecessary docker builds by connecting your
-git repo.
+description: Tracking your code and avoiding unnecessary docker builds by connecting your git repo.
 ---
 
 # Connect your git repository
