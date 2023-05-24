@@ -57,6 +57,12 @@ python run.py
 
 After 8 hours, your sandbox will be automatically deleted. Make sure to save any important data or results before the sandbox is deleted. While the sandbox is active, you can also delete it manually through the ZenML Sandbox interface.
 
+### ZenML Sandbox service status
+
+The status of the ZenML Sandbox service is being tracked live in [the ZenML status page](https://zenml.statuspage.io/). You can subscribe there to receive notifications about scheduled maintenance windows, unplanned downtime events and more.
+
+<figure><img src="../../.gitbook/assets/statuspage.png" alt=""><figcaption><p>The ZenML public services status page</p></figcaption></figure>
+
 ### Sandbox FAQ
 
 **Q: Can I create more than one sandbox at a time?**
