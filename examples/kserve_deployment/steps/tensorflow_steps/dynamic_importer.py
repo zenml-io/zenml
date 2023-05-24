@@ -15,8 +15,7 @@ import numpy as np  # type: ignore [import]
 import pandas as pd  # type: ignore [import]
 import requests  # type: ignore [import]
 
-from zenml import step
-from zenml.steps import Output
+from zenml.steps import Output, step
 
 
 def get_data_from_api():

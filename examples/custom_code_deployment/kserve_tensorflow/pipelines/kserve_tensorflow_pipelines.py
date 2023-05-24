@@ -13,9 +13,9 @@
 #  permissions and limitations under the License.
 
 
-from zenml import pipeline
 from zenml.config import DockerSettings
 from zenml.integrations.constants import KSERVE, TENSORFLOW
+from zenml.pipelines import pipeline
 
 docker_settings = DockerSettings(
     requirements=["Pillow"], required_integrations=[KSERVE, TENSORFLOW]

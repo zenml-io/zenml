@@ -20,8 +20,7 @@ from typing import List, Optional
 from langchain.docstore.document import Document
 from llama_index.readers.slack import SlackReader
 
-from zenml import step
-from zenml.steps import BaseParameters
+from zenml.steps import BaseParameters, step
 
 
 class SlackLoaderParameters(BaseParameters):

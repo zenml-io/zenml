@@ -19,7 +19,7 @@ import torch.nn.functional as F
 from rich import print
 from torch.utils.data import DataLoader
 
-from zenml import step
+from zenml.steps import step
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 

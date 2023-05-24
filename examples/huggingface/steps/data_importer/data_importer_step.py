@@ -15,7 +15,7 @@
 from datasets import DatasetDict, load_dataset
 from steps.configuration import HuggingfaceParameters
 
-from zenml import step
+from zenml.steps import step
 
 
 @step

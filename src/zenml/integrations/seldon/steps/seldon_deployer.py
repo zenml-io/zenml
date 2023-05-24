@@ -18,7 +18,6 @@ from typing import Optional, cast
 
 from pydantic import BaseModel, validator
 
-from zenml import step
 from zenml.client import Client
 from zenml.constants import MLFLOW_MODEL_FORMAT, MODEL_METADATA_YAML_FILE_NAME
 from zenml.environment import Environment
@@ -46,6 +45,7 @@ from zenml.steps import (
     STEP_ENVIRONMENT_NAME,
     BaseParameters,
     StepEnvironment,
+    step,
 )
 from zenml.steps.step_context import StepContext
 from zenml.utils import io_utils, source_utils

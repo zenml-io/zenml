@@ -19,8 +19,7 @@ from typing import Dict
 
 from PIL import Image
 
-from zenml import step
-from zenml.steps import BaseParameters, Output
+from zenml.steps import BaseParameters, Output, step
 from zenml.steps.step_context import StepContext
 
 

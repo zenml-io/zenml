@@ -16,8 +16,7 @@ import json
 from typing import Optional
 from urllib.request import urlopen
 
-from zenml import step
-from zenml.steps import BaseParameters
+from zenml.steps import BaseParameters, step
 
 
 class PyTorchInferenceProcessorStepParameters(BaseParameters):

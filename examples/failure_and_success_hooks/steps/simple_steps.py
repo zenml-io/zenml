@@ -14,9 +14,8 @@
 
 import random
 
-from zenml import step
 from zenml.hooks import alerter_failure_hook, alerter_success_hook
-from zenml.steps import BaseParameters, Output
+from zenml.steps import BaseParameters, Output, step
 
 
 class HookParams(BaseParameters):

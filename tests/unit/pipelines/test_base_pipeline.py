@@ -31,7 +31,7 @@ from zenml.models.page_model import Page
 from zenml.models.pipeline_build_models import PipelineBuildBaseModel
 from zenml.models.pipeline_deployment_models import PipelineDeploymentBaseModel
 from zenml.pipelines import BasePipeline, Schedule
-from zenml.steps import BaseParameters, BaseStep
+from zenml.steps import BaseParameters
 
 
 def create_pipeline_with_param_value(param_value: int):

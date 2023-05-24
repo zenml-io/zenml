@@ -13,14 +13,13 @@
 #  permissions and limitations under the License.
 from typing import cast
 
-from zenml import step
 from zenml.integrations.seldon.model_deployers.seldon_model_deployer import (
     SeldonModelDeployer,
 )
 from zenml.integrations.seldon.services.seldon_deployment import (
     SeldonDeploymentService,
 )
-from zenml.steps import BaseParameters
+from zenml.steps import BaseParameters, step
 
 
 class PredictionServiceLoaderStepParameters(BaseParameters):
