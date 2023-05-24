@@ -248,6 +248,10 @@ def validate_function_args(
     # add a prefix to all arguments to avoid potential clashes with pydantic
     # BaseModel attributes
     f.__signature__ = signature  # type: ignore[attr-defined]
+    f.__annotations__ = {
+        f"{parameter_prefix}{key}": annotation
+        for key, annotation in __func.__annotations__.items()
+    }
 
     validation_func = ValidatedFunction(f, config=__config)
 
