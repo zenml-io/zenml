@@ -152,7 +152,7 @@ effectively as they develop to production.
   end-to-end. Adopting ZenML means fewer handover points and more visibility on
   what is happening in your organization.
 
-- 🧑‍✈️ ZenML enables MLOps infrastructure experts to define, deploy, and manage
+-🛫ZenML enables MLOps infrastructure experts to define, deploy, and manage
   sophisticated production environments that are easy to share with colleagues.
 
 ![The long journey from experimentation to production.](docs/book/.gitbook/assets/intro-zenml-overview.png)
