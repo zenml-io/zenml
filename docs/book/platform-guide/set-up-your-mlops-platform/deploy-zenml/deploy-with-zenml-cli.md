@@ -190,8 +190,8 @@ region: eu-west-1
 
 # The name of the RDS instance to create
 <strong>rds_name: zenmlserver
-</strong><strong>
-</strong><strong># Name of RDS database to create.
+</strong>
+<strong># Name of RDS database to create.
 </strong>db_name: zenmlserver
 
 # Type of RDS database to create.
@@ -262,7 +262,7 @@ The `database_username` and `database_password` from the general config is used 
 
 ## Connecting to deployed ZenML
 
-Once ZenML is deployed, one or multiple users can connect to it with the `zenml connect` command.&#x20;
+Once ZenML is deployed, one or multiple users can connect to it with the `zenml connect` command.
 
 ```bash
 zenml connect
@@ -327,3 +327,11 @@ To disconnect from the current ZenML server and revert to using the local defaul
 ```bash
 zenml disconnect
 ```
+
+## How does it work?
+
+Here's an architecture diagram that shows how the workflow looks like when you do `zenml deploy`.
+
+<figure><img src="broken-reference" alt=""><figcaption><p>Running zenml deploy</p></figcaption></figure>
+
+The deploy CLI makes use of a "recipe" inside the `zenml-io/zenml` repository to deploy the server on the right cloud. Any configuration that you pass with the CLI, is sent to the recipe as input variables.
