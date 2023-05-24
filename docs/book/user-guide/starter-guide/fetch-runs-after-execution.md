@@ -4,7 +4,8 @@ description: Inspecting a finished pipeline run and its outputs.
 
 # Fetch runs after execution
 
-Once a pipeline run has been completed, we can interact with it from code using the post-execution utilities. The Hierarchy is as follows:
+Once a pipeline run has been completed, we can interact with it from code using the post-execution utilities. The
+Hierarchy is as follows:
 
 ```mermaid
 flowchart LR
@@ -14,7 +15,8 @@ flowchart LR
     steps -->|1:N| outputs
 ```
 
-As you can see from the diagram, there are many layers of 1-to-N relationships. To get a specific output you need to know exactly which step in which run of which specific pipeline version to use.
+As you can see from the diagram, there are many layers of 1-to-N relationships. To get a specific output you need to
+know exactly which step in which run of which specific pipeline version to use.
 
 Let us investigate how to traverse this hierarchy level by level:
 
@@ -52,7 +54,8 @@ pipeline_x = get_pipeline(pipeline="first_pipeline")
 ```
 
 {% hint style="info" %}
-Instead of passing the name of the pipeline in, you can also directly use the pipeline instance `get_pipeline(pipeline=first_pipeline)`.
+Instead of passing the name of the pipeline in, you can also directly use the pipeline
+instance `get_pipeline(pipeline=first_pipeline)`.
 {% endhint %}
 
 ## Versions
@@ -76,14 +79,16 @@ latest_version = pipeline_x.versions[0]
 ```
 
 {% hint style="info" %}
-The sorting of **versions** on a PipelineView is from **newest** to **oldest** with the most recent versions at the beginning of the list.
+The sorting of **versions** on a PipelineView is from **newest** to **oldest** with the most recent versions at the
+beginning of the list.
 {% endhint %}
 
 ## Runs
 
 #### Getting runs from a fetched pipeline version
 
-Each pipeline version can be executed many times. You can get a list of all runs using the `runs` attribute of a PiplineVersionView:
+Each pipeline version can be executed many times. You can get a list of all runs using the `runs` attribute of a
+PiplineVersionView:
 
 ```python
 print(latest_version.runs)
@@ -102,7 +107,8 @@ last_run = latest_version.runs[0]
 ```
 
 {% hint style="info" %}
-The sorting of **runs** on a PipelineVersionView is from **newest** to **oldest** with the most recent runs at the beginning of the list.
+The sorting of **runs** on a PipelineVersionView is from **newest** to **oldest** with the most recent runs at the
+beginning of the list.
 {% endhint %}
 
 #### Getting runs from a pipeline instance:
@@ -112,10 +118,12 @@ Alternatively, you can also access the runs from the pipeline class/instance its
 ```python
 from zenml import pipeline
 
+
 # Definition of pipeline
 @pipeline
 def example_pipeline(...):
     ...
+
 
 # Instantiation and execution of pipeline
 pipe = example_pipeline(...)
@@ -155,6 +163,7 @@ zenml pipeline runs list -p <MY_PIPELINE_NAME_OR_ID>
 ```
 
 {% hint style="info" %}
+
 #### Runs configuration
 
 Each run has a collection of useful metadata which you can access to ensure all runs are reproducible.
@@ -162,7 +171,9 @@ Each run has a collection of useful metadata which you can access to ensure all 
 
 #### Git SHA
 
-The [Git commit SHA](https://www.mikestreety.co.uk/blog/the-git-commit-hash/) that the pipeline run was performed on. This will only be set if the pipeline code is in a git repository and there are no uncommitted files when running the pipeline.
+The [Git commit SHA](https://www.mikestreety.co.uk/blog/the-git-commit-hash/) that the pipeline run was performed on.
+This will only be set if the pipeline code is in a git repository and there are no uncommitted files when running the
+pipeline.
 
 ```python
 commit = run.git_sha
@@ -170,7 +181,8 @@ commit = run.git_sha
 
 #### Status
 
-The status of a pipeline run can also be found here. There are four possible states: failed, completed, running, and cached:
+The status of a pipeline run can also be found here. There are four possible states: failed, completed, running, and
+cached:
 
 ```python
 status = run.status
@@ -178,7 +190,9 @@ status = run.status
 
 #### Configuration
 
-The `pipeline_configuration` is an object that contains all configurations of the pipeline and pipeline run, including [pipeline-level `BaseSettings`](broken-reference/), which we will learn more about later. You can also access the settings directly via the `settings` variable.
+The `pipeline_configuration` is an object that contains all configurations of the pipeline and pipeline run,
+including [pipeline-level `BaseSettings`](/docs/book/user-guide/advanced-guide/configure-steps-pipelines.md), 
+which we will learn more about later. You can also access the settings directly via the `settings` variable.
 
 ```python
 pipeline_config = run.pipeline_configuration
@@ -195,7 +209,9 @@ pipeline_docstring = run.docstring
 
 #### Component-specific metadata
 
-Depending on the stack components you use, you might have additional component-specific metadata associated with your run, such as the URL to the UI of a remote orchestrator. You can access this component-specific metadata via the `metadata` attribute:
+Depending on the stack components you use, you might have additional component-specific metadata associated with your
+run, such as the URL to the UI of a remote orchestrator. You can access this component-specific metadata via
+the `metadata` attribute:
 
 ```python
 run_metadata = run.metadata
@@ -205,7 +221,8 @@ orchestrator_url = run_metadata["orchestrator_url"]
 
 ## Steps
 
-Within a given pipeline run you can now further zoom in on individual steps using the `steps` attribute or by querying a specific step using the `get_step(step=...)` method.
+Within a given pipeline run you can now further zoom in on individual steps using the `steps` attribute or by querying a
+specific step using the `get_step(step=...)` method.
 
 ```python
 # get all steps of a pipeline for a given run
@@ -223,7 +240,10 @@ The step `name` refers to the pipeline attribute which might differ from the act
 {% endhint %}
 
 {% hint style="warning" %}
-The steps are ordered by the time of execution. Depending on the [orchestrator](broken-reference/), steps can be run in parallel. Thus, accessing steps by an index is **unreliable** across different runs. You should access steps by the step class, an instance of the class, or even the name of the step as a string: `get_step(step=...)`instead.
+The steps are ordered by the time of execution. Depending on 
+the [orchestrator](/docs/book/user-guide/component-guide/orchestrators/orchestrators.md), steps can be run in
+parallel. Thus, accessing steps by an index is **unreliable** across different runs. You should access steps by the step
+class, an instance of the class, or even the name of the step as a string: `get_step(step=...)`instead.
 {% endhint %}
 
 Similar to the run, for reproducibility, you can use the `step` object to access:
@@ -238,7 +258,8 @@ Similar to the run, for reproducibility, you can use the `step` object to access
 Finally, this is how you can inspect the output of a step:
 
 * If there only is a single output, use the `output` attribute
-* If there are multiple outputs, use the `outputs` attribute, which is a dictionary that can be indexed using the name of an output:
+* If there are multiple outputs, use the `outputs` attribute, which is a dictionary that can be indexed using the name
+  of an output:
 
 ```python
 # The outputs of a step
@@ -246,7 +267,7 @@ Finally, this is how you can inspect the output of a step:
 output = step.outputs["output_name"]
 
 # If there is only one output, use the `.output` property instead 
-output = step.output 
+output = step.output
 
 # read the value into memory
 output.read()  
@@ -258,36 +279,44 @@ The names of the outputs can be found in the `Output` typing of your steps:
 ```python
 from zenml.steps import step, Output
 
+
 @step
 def some_step() -> Output(output_name=int):
     ...
 ```
+
 {% endhint %}
 
 #### Visualizing Artifacts
 
-ZenML automatically saves visualizations for many common data types. For instance, 3D NumPy Arrays with three channels are automatically visualized as images and data validation reports as embedded HTML visualizations. In Jupyter Notebooks, you can view the visualization of an artifact using the `visualize()` method:
+ZenML automatically saves visualizations for many common data types. For instance, 3D NumPy Arrays with three channels
+are automatically visualized as images and data validation reports as embedded HTML visualizations. In Jupyter
+Notebooks, you can view the visualization of an artifact using the `visualize()` method:
 
 ```python
 output.visualize()
 ```
 
-![output.visualize() Output](../../.gitbook/assets/artifact_visualization_evidently.png)
+![output.visualize() Output](/docs/book/.gitbook/assets/artifact_visualization_evidently.png)
 
-If you want to visualize multiple artifacts generated by the same step or pipeline run, you can also call `visualize()` on the step or run directly:
+If you want to visualize multiple artifacts generated by the same step or pipeline run, you can also call `visualize()`
+on the step or run directly:
 
 ```python
 step.visualize()  # visualizes all outputs of the step
 run.visualize()  # visualizes all artifacts produced by this run
 ```
 
-![run.visualize() Output](../../.gitbook/assets/run_visualization.png)
+![run.visualize() Output](/docs/book/.gitbook/assets/run_visualization.png)
 
-In all other runtime environments, please open your ZenML dashboard using `zenml up` and view the visualizations by clicking on the respective artifact in the pipeline run DAG.
+In all other runtime environments, please open your ZenML dashboard using `zenml up` and view the visualizations by
+clicking on the respective artifact in the pipeline run DAG.
 
 #### Output Artifact Metadata
 
-All output artifacts saved through ZenML will automatically have certain datatype-specific metadata saved with them. NumPy Arrays, for instance, always have their storage size, `shape`, `dtype`, and some statistical properties saved with them. You can access such metadata via the `metadata` attribute of an output, e.g.:
+All output artifacts saved through ZenML will automatically have certain datatype-specific metadata saved with them.
+NumPy Arrays, for instance, always have their storage size, `shape`, `dtype`, and some statistical properties saved with
+them. You can access such metadata via the `metadata` attribute of an output, e.g.:
 
 ```python
 output_metadata = output.metadata
@@ -296,7 +325,8 @@ storage_size = output_metadata["storage_size"]
 
 ## Code Example
 
-Putting it all together, this is how we can access the output of the last step of our example pipeline from the previous sections:
+Putting it all together, this is how we can access the output of the last step of our example pipeline from the previous
+sections:
 
 ```python
 from zenml.post_execution import get_pipeline
@@ -314,6 +344,8 @@ or alternatively:
 @pipeline
 def example_pipeline(step_1, step_2):
     ...
+
+
 # Initialize a new pipeline run
 pipe = example_pipeline(step_1=first_step(), step_2=second_step())
 pipe.run()
@@ -325,15 +357,18 @@ output = step_1.output.read()
 
 ## Final note
 
-While most of this document has been focusing on the so-called post-execution workflow (i.e. fetching objects after a pipeline has been completed), it can also be used within the context of a running pipeline.
+While most of this document has been focusing on the so-called post-execution workflow (i.e. fetching objects after a
+pipeline has been completed), it can also be used within the context of a running pipeline.
 
-This is often desirable in cases where a pipeline is running continuously over time and decisions have to be made according to older runs.
+This is often desirable in cases where a pipeline is running continuously over time and decisions have to be made
+according to older runs.
 
 E.g., we can fetch from within a step the last pipeline run for the same pipeline:
 
 ```python
 from zenml.post_execution import get_pipeline
 from zenml.environment import Environment
+
 
 @step
 def my_step():
@@ -347,4 +382,5 @@ def my_step():
     ...
 ```
 
-You can get a lot more metadata within a step as well, something we'll learn in more detail in the [advanced docs](broken-reference/).
+You can get a lot more metadata within a step as well, something we'll learn in more detail in
+the [advanced docs](/docs/book/user-guide/advanced-guide/fetch-metadata-within-steps.md).

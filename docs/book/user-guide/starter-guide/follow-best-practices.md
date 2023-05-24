@@ -4,7 +4,8 @@ description: Recommended repository structure and best practices.
 
 # Follow best practices
 
-Until now, you probably have kept all your code in one single file. In production, it is recommended to split up your steps and pipelines into separate files.
+Until now, you probably have kept all your code in one single file. In production, it is recommended to split up your
+steps and pipelines into separate files.
 
 ```markdown
 .
@@ -36,29 +37,38 @@ Until now, you probably have kept all your code in one single file. In productio
 
 #### Steps
 
-Keep your steps in separate Python files. This allows you to optionally keep their utils, dependencies, and Dockerfiles separate.
+Keep your steps in separate Python files. This allows you to optionally keep their utils, dependencies, and Dockerfiles
+separate.
 
 #### Pipelines
 
-Just like steps, keep your pipelines in separate Python files. This allows you to optionally keep their utils, dependencies, and Dockerfiles separate.&#x20;
+Just like steps, keep your pipelines in separate Python files. This allows you to optionally keep their utils,
+dependencies, and Dockerfiles separate.&#x20;
 
-It is recommended that you separate the pipeline execution from the pipeline definition so that importing the pipeline does not immediately run it. See [run.py](follow-best-practices.md#run.py) for more details.
+It is recommended that you separate the pipeline execution from the pipeline definition so that importing the pipeline
+does not immediately run it. See [run.py](follow-best-practices.md) for more details.
 
 {% hint style="warning" %}
-Do not give pipelines or pipeline instances the name "pipeline". Doing this will overwrite the imported `pipeline` and decorator and lead to failures at later stages if more pipelines are decorated there.
+Do not give pipelines or pipeline instances the name "pipeline". Doing this will overwrite the imported `pipeline` and
+decorator and lead to failures at later stages if more pipelines are decorated there.
 {% endhint %}
 
 {% hint style="info" %}
-Pipeline names are their unique identifiers, so using the same name for different pipelines will create a mixed history where two versions of a pipeline are two very different entities.
+Pipeline names are their unique identifiers, so using the same name for different pipelines will create a mixed history
+where two versions of a pipeline are two very different entities.
 {% endhint %}
 
-#### .dockerignore&#x20;
+#### .dockerignore
 
-Containerized orchestrators and step operators load your complete project files into a Docker image for execution. To speed up the process and reduce Docker image sizes, exclude all unnecessary files (like data, virtual environments, git repos, etc.) within the `.dockerignore`.
+Containerized orchestrators and step operators load your complete project files into a Docker image for execution. To
+speed up the process and reduce Docker image sizes, exclude all unnecessary files (like data, virtual environments, git
+repos, etc.) within the `.dockerignore`.
 
 #### Dockerfile (optional)
 
-By default, ZenML uses the official[ zenml docker image](https://hub.docker.com/r/zenmldocker/zenml) as a base for all pipeline and step builds. You can use your own Dockerfile to overwrite this behavior. Learn more [here](../advanced-guide/containerize-your-pipeline.md).
+By default, ZenML uses the official[ zenml docker image](https://hub.docker.com/r/zenmldocker/zenml) as a base for all
+pipeline and step builds. You can use your own Dockerfile to overwrite this behavior. Learn
+more [here](../advanced-guide/containerize-your-pipeline.md).
 
 #### Notebooks
 
@@ -66,7 +76,8 @@ Collect all your notebooks in one place.&#x20;
 
 #### .zen
 
-By running `zenml init` at the root of your project, you define the project scope for ZenML. In ZenML terms, this will be called your `sources root` . This will be used to resolve import paths and store configurations.&#x20;
+By running `zenml init` at the root of your project, you define the project scope for ZenML. In ZenML terms, this will
+be called your `sources root` . This will be used to resolve import paths and store configurations.&#x20;
 
 Although this is optional, it is recommended that you do this for all of your projects.
 
@@ -76,4 +87,6 @@ All of your import paths should be relative to the source's root.
 
 #### run.py
 
-Putting your pipeline runners in the root of the repository ensures that all imports that are defined relative to the project root resolve for the pipeline runner. In case there is no `.zen` defined this also defines the implicit `sources root` .
+Putting your pipeline runners in the root of the repository ensures that all imports that are defined relative to the
+project root resolve for the pipeline runner. In case there is no `.zen` defined this also defines the
+implicit `sources root` .

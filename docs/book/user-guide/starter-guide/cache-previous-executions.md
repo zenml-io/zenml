@@ -4,9 +4,11 @@ description: Iterating quickly with ZenML through caching.
 
 # Cache previous executions
 
-Developing machine learning pipelines is very iterative. ZenML speeds you up in this work with the caching feature of steps and pipelines.
+Developing machine learning pipelines is very iterative. ZenML speeds you up in this work with the caching feature of
+steps and pipelines.
 
-In the logs of your previous runs, you might have noticed at this point that rerunning the pipeline a second time will use caching on the first step:
+In the logs of your previous runs, you might have noticed at this point that rerunning the pipeline a second time will
+use caching on the first step:
 
 {% tabs %}
 {% tab title="Dashboard" %}
@@ -14,14 +16,13 @@ In the logs of your previous runs, you might have noticed at this point that rer
 
 <figure><img src="broken-reference" alt=""><figcaption><p>DAG of a cached pipeline run</p></figcaption></figure>
 
- 
-
 <figure><img src="../../.gitbook/assets/CachedDag.png" alt=""><figcaption></figcaption></figure>
 
 </div>
 {% endtab %}
 
 {% tab title="Logs" %}
+
 ```bash
 Step training_data_loader has started.
 Using cached version of training_data_loader.
@@ -29,15 +30,22 @@ Step svc_trainer has started.
 Train accuracy: 0.3416666666666667
 Step svc_trainer has finished in 0.932s.
 ```
+
 {% endtab %}
 {% endtabs %}
 
-ZenML understands that nothing has changed between subsequent runs, so it re-uses the output of the previous run (the outputs are persisted in the [artifact store](broken-reference/)). This behavior is known as **caching**.
+ZenML understands that nothing has changed between subsequent runs, so it re-uses the output of the previous run (the
+outputs are persisted in the [artifact store](/docs/book/user-guide/component-guide/artifact-stores/artifact-stores.md))
+. This behavior is known as **caching**.
 
-In ZenML, caching is enabled by default. Since ZenML automatically tracks and versions all inputs, outputs, and parameters of steps and pipelines, steps will not be re-executed within the **same** **pipeline** on subsequent pipeline runs as long as there is **no change** in the inputs, parameters, or code of a step.
+In ZenML, caching is enabled by default. Since ZenML automatically tracks and versions all inputs, outputs, and
+parameters of steps and pipelines, steps will not be re-executed within the **same pipeline** on subsequent pipeline
+runs as long as there is **no change** in the inputs, parameters, or code of a step.
 
 {% hint style="warning" %}
-Currently, the caching does not automatically detect changes within the file system or on external APIs. Make sure to **manually** set caching to `False` on steps that depend on **external inputs, file-system changes,** or if the step should run regardless of caching.
+Currently, the caching does not automatically detect changes within the file system or on external APIs. Make sure to 
+**manually** set caching to `False` on steps that depend on **external inputs, file-system changes,** or if the step
+should run regardless of caching.
 {% endhint %}
 
 ### Configuring caching behavior of your pipelines
@@ -62,21 +70,25 @@ def first_pipeline(....):
     """Pipeline with cache disabled"""
 ```
 
-The setting above will disable caching for all steps in the pipeline unless a step explicitly sets `enable_cache=True` (see below).
+The setting above will disable caching for all steps in the pipeline unless a step explicitly sets `enable_cache=True` (
+see below).
 
 {% hint style="info" %}
-When writing your pipelines, be explicit. This makes it clear when looking at the code if caching is enabled or disabled for any given pipeline.
+When writing your pipelines, be explicit. This makes it clear when looking at the code if caching is enabled or disabled
+for any given pipeline.
 {% endhint %}
 
 #### Dynamically configuring caching for a pipeline run
 
-Sometimes you want to have control over caching at runtime instead of defaulting to the hard-coded pipeline and step decorator settings. ZenML offers a way to override all caching settings at runtime:
+Sometimes you want to have control over caching at runtime instead of defaulting to the hard-coded pipeline and step
+decorator settings. ZenML offers a way to override all caching settings at runtime:
 
 ```python
 first_pipeline(step_1=..., step_2=...).run(enable_cache=False)
 ```
 
-The code above disables caching for all steps of your pipeline, no matter what you have configured in the `@step` or `@parameter` decorators.
+The code above disables caching for all steps of your pipeline, no matter what you have configured in the `@step`
+or `@parameter` decorators.
 
 #### Caching at a step-level
 
@@ -90,7 +102,3 @@ def import_data_from_api(...):
 ```
 
 The code above turns caching off for this step only.
-
-{% hint style="info" %}
-You can get a graphical visualization of which steps were cached using the [ZenML Dashboard](broken-reference/).
-{% endhint %}
