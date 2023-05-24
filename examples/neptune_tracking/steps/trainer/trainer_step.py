@@ -28,7 +28,6 @@ from zenml.integrations.neptune.flavors import NeptuneExperimentTrackerSettings
 from zenml.integrations.tensorflow.materializers.keras_materializer import (
     KerasMaterializer,
 )
-from zenml.steps import BaseParameters
 
 experiment_tracker = Client().active_stack.experiment_tracker
 
@@ -41,13 +40,6 @@ if not experiment_tracker or not isinstance(
     )
 
 
-class TrainerParameters(BaseParameters):
-    """Trainer params."""
-
-    epochs: int = 1
-    lr: float = 0.001
-
-
 settings = NeptuneExperimentTrackerSettings(tags={"keras", "mnist"})
 
 
@@ -58,14 +50,15 @@ settings = NeptuneExperimentTrackerSettings(tags={"keras", "mnist"})
     settings={"experiment_tracker.neptune": settings},
 )
 def tf_trainer(
-    params: TrainerParameters,
     x_train: np.ndarray,
     y_train: np.ndarray,
+    epochs: int = 1,
+    lr: float = 0.001,
 ) -> tf.keras.Model:
     """Train a neural net from scratch to recognize MNIST digits return our
     model or the learner."""
     neptune_run = get_neptune_run()
-    neptune_run["params/lr"] = params.lr
+    neptune_run["params/lr"] = lr
 
     neptune_cbk = NeptuneCallback(run=neptune_run, base_namespace="metrics")
 
@@ -77,7 +70,7 @@ def tf_trainer(
     )
 
     model.compile(
-        optimizer=tf.keras.optimizers.Adam(params.lr),
+        optimizer=tf.keras.optimizers.Adam(lr),
         loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
         metrics=["accuracy"],
     )
@@ -85,7 +78,7 @@ def tf_trainer(
     model.fit(
         x_train,
         y_train,
-        epochs=params.epochs,
+        epochs=epochs,
         batch_size=64,
         callbacks=[neptune_cbk],
     )
