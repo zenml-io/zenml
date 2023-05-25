@@ -1023,8 +1023,8 @@ def update_secret(
         interactive: Whether to use interactive mode to update the secret.
         remove_keys: The keys to remove from the secret.
     """
-    name, parsed_args = parse_name_and_extra_arguments(
-        list(extra_args) + [name_or_id], expand_args=True
+    name, parsed_args = parse_secret_name_and_arguements(
+        list(extra_args) + [name_or_id]
     )
 
     client = Client()
