@@ -113,11 +113,10 @@ def create_entity_docs(
                     out_path=api_doc_file_dir,
                 )
 
-                relative_base_path = "/".join(item.parts[1:-1])
                 if index_file_contents:
                     index_entry = (
                         f"# [{item_name}]"
-                        f"({relative_base_path}/{item.stem})\n\n"
+                        f"({API_DOCS}/{md_prefix}-{item.stem})\n\n"
                         f"::: {zenml_import_path}.{item.stem}\n"
                         f"    handler: python\n"
                         f"    selection:\n"
