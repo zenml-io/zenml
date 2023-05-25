@@ -26,7 +26,7 @@ practical tutorial on how to use a ZenML code repository.
 
 As [discussed before](containerize-your-pipeline.md#reuse-docker-image-builds-from-previous-runs), when using
 containerized components in your stack, ZenML needs
-to [build Docker images to remotely execute your code](manage-environments.md#build-environments). If you're not using a
+to [build Docker images to remotely execute your code](manage-environments.md#execution-environments). If you're not using a
 code repository, this code will be included in the Docker images that ZenML builds. This, however, means that new Docker
 images will be built and pushed whenever you make changes to any of your source files. When running a pipeline that is
 part of a [local code repository checkout](connect-your-git-repository.md#detecting-local-code-repository-checkouts),

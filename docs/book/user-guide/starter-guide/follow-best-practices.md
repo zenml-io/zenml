@@ -77,7 +77,7 @@ Collect all your notebooks in one place.&#x20;
 #### .zen
 
 By running `zenml init` at the root of your project, you define the project scope for ZenML. In ZenML terms, this will
-be called your `sources root` . This will be used to resolve import paths and store configurations.&#x20;
+be called your "source's root" . This will be used to resolve import paths and store configurations.&#x20;
 
 Although this is optional, it is recommended that you do this for all of your projects.
 
@@ -89,4 +89,4 @@ All of your import paths should be relative to the source's root.
 
 Putting your pipeline runners in the root of the repository ensures that all imports that are defined relative to the
 project root resolve for the pipeline runner. In case there is no `.zen` defined this also defines the
-implicit `sources root` .
+implicit source's root .
