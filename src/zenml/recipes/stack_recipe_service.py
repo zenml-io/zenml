@@ -746,7 +746,7 @@ class StackRecipeService(TerraformService):
                 PROJECT_ID_OUTPUT, full_value=True
             )
 
-        return cast(str, yaml.dump(config))
+        return yaml.dump(config)
 
     @classmethod
     def get_version(cls) -> Optional[str]:

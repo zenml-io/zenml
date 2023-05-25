@@ -47,26 +47,26 @@ with the legacy recipes.
 Detailed steps are available [in the README](https://github.com/zenml-io/mlops-stacks#-list-of-recipes) of the
 respective stack recipes but here's what a simple flow could look like:
 
-1. 📃 List all available recipes in the repository.\
+1. 📃 List all available recipes in the repository.
 
     <pre><code><strong>zenml stack recipe list
     </strong></code></pre>
 
-2. Pull the recipe that you wish to deploy to your local system.\
+2. Pull the recipe that you wish to deploy to your local system.
 
     ```
     zenml stack recipe pull <STACK_RECIPE_NAME>
     ```
 
 3. 🎨 Customize your deployment by editing the default values in the `locals.tf` file. This file holds all the
-   configurable parameters for each of the stack components.\
+   configurable parameters for each of the stack components.
 
 4. 🔐 Enable services and add your secret information like keys and passwords into the `values.tfvars.json` file which
    is not committed and only exists locally. You can learn what values can be configured here by taking a look at
-   the `variables.tf` file.\
+   the `variables.tf` file.
 
 5. 🚀 Deploy the recipe with the following command. Let's take the example of deploying a **Kubeflow, MLflow and Seldon
-   stack on GCP**.\
+   stack on GCP**.
 
     {% code overflow="wrap" %}
     ```

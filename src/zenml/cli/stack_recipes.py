@@ -1059,7 +1059,7 @@ def get_outputs(
                     elif format == "yaml":
                         outputs_yaml = yaml.dump(outputs, indent=4)
                         cli_utils.declare(outputs_yaml)
-                        return cast(str, outputs_yaml)
+                        return outputs_yaml
                     else:
                         cli_utils.declare(str(outputs))
                         return outputs
