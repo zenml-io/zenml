@@ -15,7 +15,6 @@
   * [Fetch runs after execution](user-guide/starter-guide/fetch-runs-after-execution.md)
   * [Understand stacks](user-guide/starter-guide/understand-stacks.md)
   * [Connect to a deployed ZenML](user-guide/starter-guide/connect-to-a-deployed-zenml.md)
-  * [Switch to production](user-guide/starter-guide/switch-to-production.md)
   * [Follow best practices](user-guide/starter-guide/follow-best-practices.md)
 * [🐔 Advanced guide](user-guide/advanced-guide/advanced-guide.md)
   * [Configure steps/pipelines](user-guide/advanced-guide/configure-steps-pipelines.md)
