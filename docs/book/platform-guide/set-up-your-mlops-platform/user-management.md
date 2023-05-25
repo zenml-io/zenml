@@ -25,10 +25,6 @@ results.
 This section will center on managing users, their roles, and permissions within a deployed ZenML instance, while
 the [ZenML Hub](../../user-guide/advanced-guide/leverage-community-contributed-plugins.md)
 
-{% hint style="warning" %}
-Permissions and roles are an alpha feature of ZenML and are in active development.
-{% endhint %}
-
 ## Team administration and user management
 
 After you have [deployed ZenML and connected your local client with the deployment](/docs/book/platform-guide/set-up-your-mlops-platform/deploy-zenml/deploy-zenml.md), 
