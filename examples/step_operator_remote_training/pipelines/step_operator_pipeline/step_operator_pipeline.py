@@ -11,20 +11,18 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+from steps import digits_data_loader, evaluator, remote_trainer
+
+from zenml import pipeline
 from zenml.config import DockerSettings
 from zenml.integrations.constants import SKLEARN
-from zenml.pipelines import pipeline
 
 docker_settings = DockerSettings(required_integrations=[SKLEARN])
 
 
 @pipeline(settings={"docker": docker_settings})
-def step_operator_pipeline(
-    importer,
-    trainer,
-    evaluator,
-):
+def step_operator_pipeline():
     """Links all the steps together in a pipeline."""
-    X_train, X_test, y_train, y_test = importer()
-    model = trainer(X_train=X_train, y_train=y_train)
+    X_train, X_test, y_train, y_test = digits_data_loader()
+    model = remote_trainer(X_train=X_train, y_train=y_train)
     evaluator(X_test=X_test, y_test=y_test, model=model)

@@ -11,20 +11,22 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+from steps import (
+    data_loader,
+    data_splitter,
+    test_data_profiler,
+    train_data_profiler,
+)
+
+from zenml import pipeline
 from zenml.config import DockerSettings
 from zenml.integrations.constants import SKLEARN, WHYLOGS
-from zenml.pipelines import pipeline
 
 docker_settings = DockerSettings(required_integrations=[SKLEARN, WHYLOGS])
 
 
 @pipeline(enable_cache=True, settings={"docker": docker_settings})
-def data_profiling_pipeline(
-    data_loader,
-    data_splitter,
-    train_data_profiler,
-    test_data_profiler,
-):
+def data_profiling_pipeline():
     """Links all the steps together in a pipeline."""
     data, _ = data_loader()
     train, test = data_splitter(data)

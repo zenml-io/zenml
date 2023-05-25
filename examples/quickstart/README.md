@@ -62,7 +62,7 @@ workflows by linking different steps together. For instance, the training
 pipeline that we will use in this example looks like this:
 
 ```python
-from zenml.pipelines import pipeline
+from zenml import pipeline
 
 @pipeline(enable_cache=False)
 def training_pipeline(

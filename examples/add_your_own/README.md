@@ -30,6 +30,7 @@ from typing import Type
 
 from zenml import step, pipeline
 
+from zenml import step, pipeline
 from zenml.enums import ArtifactType
 from zenml.io import fileio
 from zenml.materializers.base_materializer import BaseMaterializer
@@ -62,6 +63,12 @@ def my_first_step() -> MyObj:
     return MyObj("my_object")
 
 my_first_step = my_first_step.configure(output_materializers=MyMaterializer)
+
+# (Optional) tell ZenML to use your custom materializer for this step.
+# This is usually not needed since ZenML automatically discovers materializers
+# and determines which one to use based on the data type of your output
+step1.configure(output_materializers=MyMaterializer)
+
 
 @step
 def my_second_step(my_obj: MyObj) -> None:

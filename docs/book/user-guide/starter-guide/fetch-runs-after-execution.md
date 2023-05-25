@@ -83,7 +83,7 @@ The sorting of **versions** on a `PipelineView` is from **newest** to **oldest**
 
 #### Getting runs from a fetched pipeline version
 
-Each pipeline version can be executed many times. You can get a list of all runs using the `runs` attribute of a `PiplineVersionView`:
+Each pipeline version can be executed many times. You can get a list of all runs using the `runs` attribute of a `PipelineVersionView`:
 
 ```python
 print(latest_version.runs)

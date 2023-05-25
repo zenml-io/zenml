@@ -10,9 +10,15 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+from steps.data_loader.data_loader_step import data_loader
+from steps.data_splitter.data_splitter_step import data_splitter
+from steps.text_data_analyzer.text_analyzer_step import text_analyzer
+from steps.text_data_report.text_data_report_step import text_data_report
+from steps.text_data_test.text_data_test_step import text_data_test
+
+from zenml import pipeline
 from zenml.config import DockerSettings
 from zenml.integrations.constants import SKLEARN
-from zenml.pipelines import pipeline
 
 docker_settings = DockerSettings(
     required_integrations=[SKLEARN],
@@ -21,21 +27,15 @@ docker_settings = DockerSettings(
 
 
 @pipeline(enable_cache=False, settings={"docker": docker_settings})
-def text_data_report_test_pipeline(
-    data_loader,
-    data_splitter,
-    text_report,
-    text_test,
-    text_analyzer,
-):
+def text_data_report_test_pipeline():
     """Links all the steps together in a pipeline."""
     data = data_loader()
     reference_dataset, comparison_dataset = data_splitter(data)
-    report, _ = text_report(
+    report, _ = text_data_report(
         reference_dataset=reference_dataset,
         comparison_dataset=comparison_dataset,
     )
-    test_report, _ = text_test(
+    test_report, _ = text_data_test(
         reference_dataset=reference_dataset,
         comparison_dataset=comparison_dataset,
     )
