@@ -58,7 +58,7 @@ zenml pipeline run <PIPELINE_NAME> --build=<BUILD_ID>
 
 Building Docker images without [connecting a git repository](connect-your-git-repository.md) includes your step code. This means specifying a custom build when running a pipeline will **not run the code on your client machine** but will use the code **included in the Docker images of the build**. This allows you to make local code changes, but reusing a build from before will _always_ execute the code bundled in the Docker image, rather than the local code. This is why you also have to explicitly specify the `build_id` when running a pipeline.
 
-To avoid this, disconnect your code from the build by [connecting a git repository](connect-your-git-repository.md). Registering a code repository lets you avoid building images each time you run a pipeline and quickly iterate on your code. Also, ZenML will automatically figure out which builds match your pipeline and reuse the appropriate execution enviornment. This approach is highly recommended. Read more [here](connect-your-git-repository.md).
+To avoid this, disconnect your code from the build by [connecting a git repository](connect-your-git-repository.md). Registering a code repository lets you avoid building images each time you run a pipeline and quickly iterate on your code. Also, ZenML will automatically figure out which builds match your pipeline and reuse the appropriate execution environment. This approach is highly recommended. Read more [here](connect-your-git-repository.md).
 
 ## Customize the Docker building
 
