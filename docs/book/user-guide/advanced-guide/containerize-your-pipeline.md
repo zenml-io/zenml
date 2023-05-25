@@ -83,7 +83,7 @@ from zenml.config import DockerSettings
 
 ZenML determines the root directory of your source files in the following order:
 
-* If you've intialized zenml (`zenml init`), the repository root directory will be used.
+* If you've initialized zenml (`zenml init`), the repository root directory will be used.
 * Otherwise, the parent directory of the python file you're executing will be the source root. For example, running `python /path/to/file.py`, the source root would be `/path/to`.
 
 You can specify how these files are handled using the `source_files` attribute on the `DockerSettings`:
