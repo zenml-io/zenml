@@ -76,7 +76,9 @@ def test_example(request: pytest.FixtureRequest) -> None:
         artifacts = client.list_artifacts(mlflow_run.info.run_id)
         assert len(artifacts) == 3
 
-        service = deployment_run.get_step("mlflow_model_deployer_step").output.read()
+        service = deployment_run.get_step(
+            "mlflow_model_deployer_step"
+        ).output.read()
         assert isinstance(service, MLFlowDeploymentService)
 
         if service.is_running:
