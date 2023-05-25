@@ -13,4 +13,4 @@
 from pipelines.lgbm_pipeline.lgbm_pipeline import lgbm_pipeline
 
 if __name__ == "__main__":
-    pipeline = lgbm_pipeline()
+    lgbm_pipeline()
