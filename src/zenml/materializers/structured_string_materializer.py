@@ -20,24 +20,25 @@ from zenml.enums import ArtifactType, VisualizationType
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
-from zenml.types import HTMLString, MarkdownString
+from zenml.types import CSVString, HTMLString, MarkdownString
 
 logger = get_logger(__name__)
 
 
-HTML_OR_MARKDOWN = Union[HTMLString, MarkdownString]
+STRUCTURED_STRINGS = Union[CSVString, HTMLString, MarkdownString]
 
 HTML_FILENAME = "output.html"
 MARKDOWN_FILENAME = "output.md"
+CSV_FILENAME = "output.csv"
 
 
-class HTMLMarkdownMaterializer(BaseMaterializer):
+class StructuredStringMaterializer(BaseMaterializer):
     """Materializer for HTML or Markdown strings."""
 
-    ASSOCIATED_TYPES = (HTMLString, MarkdownString)
+    ASSOCIATED_TYPES = (CSVString, HTMLString, MarkdownString)
     ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATA_ANALYSIS
 
-    def load(self, data_type: Type[HTML_OR_MARKDOWN]) -> HTML_OR_MARKDOWN:
+    def load(self, data_type: Type[STRUCTURED_STRINGS]) -> STRUCTURED_STRINGS:
         """Loads the data from the HTML or Markdown file.
 
         Args:
@@ -49,7 +50,7 @@ class HTMLMarkdownMaterializer(BaseMaterializer):
         with fileio.open(self._get_filepath(data_type), "r") as f:
             return data_type(f.read())
 
-    def save(self, data: HTML_OR_MARKDOWN) -> None:
+    def save(self, data: STRUCTURED_STRINGS) -> None:
         """Save data as an HTML or Markdown file.
 
         Args:
@@ -59,7 +60,7 @@ class HTMLMarkdownMaterializer(BaseMaterializer):
             f.write(data)
 
     def save_visualizations(
-        self, data: HTML_OR_MARKDOWN
+        self, data: STRUCTURED_STRINGS
     ) -> Dict[str, VisualizationType]:
         """Save visualizations for the given data.
 
@@ -73,7 +74,7 @@ class HTMLMarkdownMaterializer(BaseMaterializer):
         visualization_type = self._get_visualization_type(type(data))
         return {filepath: visualization_type}
 
-    def _get_filepath(self, data_type: Type[HTML_OR_MARKDOWN]) -> str:
+    def _get_filepath(self, data_type: Type[STRUCTURED_STRINGS]) -> str:
         """Get the file path for the given data type.
 
         Args:
@@ -85,7 +86,9 @@ class HTMLMarkdownMaterializer(BaseMaterializer):
         Raises:
             ValueError: If the data type is not supported.
         """
-        if issubclass(data_type, HTMLString):
+        if issubclass(data_type, CSVString):
+            filename = CSV_FILENAME
+        elif issubclass(data_type, HTMLString):
             filename = HTML_FILENAME
         elif issubclass(data_type, MarkdownString):
             filename = MARKDOWN_FILENAME
@@ -96,7 +99,7 @@ class HTMLMarkdownMaterializer(BaseMaterializer):
         return os.path.join(self.uri, filename)
 
     def _get_visualization_type(
-        self, data_type: Type[HTML_OR_MARKDOWN]
+        self, data_type: Type[STRUCTURED_STRINGS]
     ) -> VisualizationType:
         """Get the visualization type for the given data type.
 
@@ -109,7 +112,9 @@ class HTMLMarkdownMaterializer(BaseMaterializer):
         Raises:
             ValueError: If the data type is not supported.
         """
-        if issubclass(data_type, HTMLString):
+        if issubclass(data_type, CSVString):
+            return VisualizationType.CSV
+        elif issubclass(data_type, HTMLString):
             return VisualizationType.HTML
         elif issubclass(data_type, MarkdownString):
             return VisualizationType.MARKDOWN
