@@ -146,7 +146,7 @@ class LocalDockerOrchestrator(ContainerizedOrchestrator):
                     "Specifying step resources is not supported for the local "
                     "Docker orchestrator, ignoring resource configuration for "
                     "step %s.",
-                    step.config.name,
+                    step_name,
                 )
 
             arguments = StepEntrypointConfiguration.get_entrypoint_arguments(

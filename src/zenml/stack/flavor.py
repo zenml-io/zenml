@@ -207,7 +207,7 @@ class Flavor:
         docs_component_name = component_name or name
         base = f"https://docs.zenml.io/v/{__version__}"
         return (
-            f"{base}/component-gallery/{component_type}/{docs_component_name}"
+            f"{base}/user-guide/component-guide/{component_type}/{docs_component_name}"
         )
 
     def generate_default_sdk_docs_url(self) -> str:
