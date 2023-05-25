@@ -13,9 +13,8 @@
 #  permissions and limitations under the License.
 import numpy as np
 import tensorflow as tf
-from zenml.steps import step
 
-from zenml.steps import BaseParameters
+from zenml.steps import BaseParameters, step
 
 
 class TensorflowTrainerParameters(BaseParameters):

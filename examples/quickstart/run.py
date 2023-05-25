@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from pipelines import inference_pipeline
+from pipelines import inference_pipeline, training_pipeline
 from rich import print
 
 from zenml.integrations.mlflow.mlflow_utils import get_tracking_uri
@@ -20,7 +20,7 @@ from zenml.integrations.mlflow.mlflow_utils import get_tracking_uri
 
 def main():
     # initialize and run the training pipeline
-    # training_pipeline()
+    training_pipeline()
 
     # initialize and run the inference pipeline
     inference_pipeline()
