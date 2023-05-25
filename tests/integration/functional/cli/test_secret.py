@@ -35,7 +35,10 @@ def test_create_secret():
     with cleanup_secrets() as secret_name:
         result = runner.invoke(
             secret_create_command,
-            [secret_name, "--test_value=aria", "--test_value2=axl"],
+            [
+                secret_name,
+                '--values={"test_value":"aria","test_value2":"axl"}',
+            ],
         )
         assert result.exit_code == 0
         client = Client()
@@ -51,7 +54,11 @@ def test_create_secret_with_scope():
     with cleanup_secrets() as secret_name:
         result = runner.invoke(
             secret_create_command,
-            [secret_name, "--test_value=aria", f"--scope={SecretScope.USER}"],
+            [
+                secret_name,
+                '--values={"test_value":"aria"}',
+                f"--scope={SecretScope.USER}",
+            ],
         )
         assert result.exit_code == 0
         client = Client()
@@ -67,7 +74,11 @@ def test_create_fails_with_bad_scope():
     with cleanup_secrets() as secret_name:
         result = runner.invoke(
             secret_create_command,
-            [secret_name, "--test_value=aria", "--scope=axl_scope"],
+            [
+                secret_name,
+                '--values={"test_value":"aria"}',
+                "--scope=axl_scope",
+            ],
         )
         assert result.exit_code != 0
         client = Client()
@@ -88,7 +99,10 @@ def test_list_secret_works():
         runner = CliRunner()
         runner.invoke(
             secret_create_command,
-            [secret_name, "--test_value=aria", "--test_value2=axl"],
+            [
+                secret_name,
+                '--values={"test_value":"aria","test_value2":"axl"}',
+            ],
         )
 
         result2 = runner.invoke(
@@ -111,7 +125,10 @@ def test_get_secret_works():
 
         runner.invoke(
             secret_create_command,
-            [secret_name, "--test_value=aria", "--test_value2=axl"],
+            [
+                secret_name,
+                '--values={"test_value":"aria","test_value2":"axl"}',
+            ],
         )
 
         result2 = runner.invoke(
@@ -139,8 +156,7 @@ def test_get_secret_with_prefix_works():
             secret_create_command,
             [
                 sample_name(secret_name_prefix),
-                "--test_value=aria",
-                "--test_value2=axl",
+                '--values={"test_value":"aria","test_value2":"axl"}',
             ],
         )
 
@@ -168,8 +184,7 @@ def test_get_secret_with_scope_works():
             secret_create_command,
             [
                 secret_name,
-                "--test_value=aria",
-                "--test_value2=axl",
+                '--values={"test_value":"aria","test_value2":"axl"}'
                 "--scope=user",
             ],
         )
@@ -208,7 +223,10 @@ def test_delete_secret_works():
 
         runner.invoke(
             secret_create_command,
-            [secret_name, "--test_value=aria", "--test_value2=axl"],
+            [
+                secret_name,
+                '--values={"test_value":"aria","test_value2":"axl"}',
+            ],
         )
 
         result2 = runner.invoke(
@@ -237,7 +255,10 @@ def test_rename_secret_works():
 
             runner.invoke(
                 secret_create_command,
-                [secret_name, "--test_value=aria", "--test_value2=axl"],
+                [
+                    secret_name,
+                    '--values={"test_value":"aria","test_value2":"axl"}',
+                ],
             )
 
             result2 = runner.invoke(
@@ -271,19 +292,28 @@ def test_update_secret_works():
     with cleanup_secrets() as secret_name:
         result1 = runner.invoke(
             secret_update_command,
-            [secret_name, "--test_value=aria", "--test_value2=axl"],
+            [
+                secret_name,
+                '--values={"test_value":"aria","test_value2":"axl"}',
+            ],
         )
         assert result1.exit_code != 0
         assert "not exist" in result1.output
 
         runner.invoke(
             secret_create_command,
-            [secret_name, "--test_value=aria", "--test_value2=axl"],
+            [
+                secret_name,
+                '--values={"test_value":"aria","test_value2":"axl"}',
+            ],
         )
 
         result2 = runner.invoke(
             secret_update_command,
-            [secret_name, "--test_value=blupus", "--test_value2=kami"],
+            [
+                secret_name,
+                '--values={"test_value":"blupus","test_value2":"kami"}',
+            ],
         )
         assert result2.exit_code == 0
         assert "updated" in result2.output

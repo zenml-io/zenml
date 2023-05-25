@@ -586,6 +586,7 @@ def convert_str_to_dict(string) -> dict:
         pass
 
     try:
+        # Here, Dict type in str is implicitly supported by yaml.safe_load()
         dict_ = yaml.safe_load(string)
         return dict_
     except yaml.YAMLError:
@@ -716,7 +717,7 @@ def parse_secret_name_and_arguements(
     message = (
         "Please provide args with a proper "
         "identifier as the key and the value with the following structure: "
-        '--values="value" (Json/Yaml) or --values=@file_path'
+        "--values='value' (Json/Yaml) or --values=@file_path"
     )
     if (
         (len(args) != 1)
@@ -727,7 +728,6 @@ def parse_secret_name_and_arguements(
     value_args = args[0].split("=")
     value_input_type = value_args[0].split("--")[1]
     value = value_args[1]
-
     if value_input_type == SECRET_VALUES:
         value = expand_argument_value_from_file(SECRET_VALUES, value)
         args_dict = convert_str_to_dict(value)
@@ -737,7 +737,11 @@ def parse_secret_name_and_arguements(
     for key in args_dict:
         if not key.isidentifier():
             error(f"Invalid argument: '{key}'. {message}")
-
+        value = args_dict[key]
+        if not isinstance(value, str):
+            error(
+                f"Argument '{value}' has incorrect type: (expected str, got {type(value).__name__})"
+            )
     return name, args_dict
 
 
