@@ -140,7 +140,7 @@
 ## Learning
 
 * [🚀 Quickstart](https://github.com/zenml-io/zenml/blob/main/examples/quickstart/README.md)
-* [🧩 Examples](learning/examples/examples.md)
+* [🧩 Projects](learning/projects/projects.md)
   * [Build an LLM-powered community Slack bot](https://github.com/zenml-io/zenml-projects/tree/main/langchain-llamaindex-slackbot)
   * [Summarize news articles with NLP](https://github.com/zenml-io/zenml-projects/tree/main/zen-news-summarization)
   * [Use ZenML seamlessly with GitHub Actions](https://github.com/zenml-io/zenml-gitflow)
