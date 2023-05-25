@@ -199,8 +199,10 @@ class Compiler:
 
         # Override `enable_step_logs` if set at run level
         if config.enable_step_logs is not None:
-            for step_ in pipeline.steps.values():
-                step_.configure(enable_step_logs=config.enable_step_logs)
+            for invocation in pipeline.invocations.values():
+                invocation.step.configure(
+                    enable_step_logs=config.enable_step_logs
+                )
 
     def _apply_stack_default_settings(
         self, pipeline: "Pipeline", stack: "Stack"
