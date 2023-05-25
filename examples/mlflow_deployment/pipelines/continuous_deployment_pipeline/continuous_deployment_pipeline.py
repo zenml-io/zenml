@@ -16,9 +16,6 @@ from steps.deployment_trigger.deployment_trigger_step import (
 )
 from steps.importer.importer_step import importer_mnist
 from steps.normalizer.normalizer_step import normalizer
-from steps.prediction_service_loader.prediction_service_loader_step import (
-    model_deployer,
-)
 from steps.tf_evaluator.tf_evaluator_step import tf_evaluator
 from steps.tf_trainer.tf_trainer_step import tf_trainer
 
@@ -26,6 +23,7 @@ from zenml import pipeline
 from zenml.config import DockerSettings
 from zenml.constants import DEFAULT_SERVICE_START_STOP_TIMEOUT
 from zenml.integrations.constants import MLFLOW, TENSORFLOW
+from zenml.integrations.mlflow.steps import mlflow_model_deployer_step
 
 docker_settings = DockerSettings(required_integrations=[MLFLOW, TENSORFLOW])
 
@@ -50,7 +48,7 @@ def continuous_deployment_pipeline(
     deployment_decision = deployment_trigger(
         accuracy=accuracy, min_accuracy=min_accuracy
     )
-    model_deployer(
+    mlflow_model_deployer_step(
         model=model,
         deploy_decision=deployment_decision,
         workers=workers,
