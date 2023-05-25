@@ -81,7 +81,7 @@ def on_failure(context: StepContext, exception: BaseException):
 
 
 @step(on_failure=on_failure)
-def my_step(some_parameter: int=1)
+def my_step(some_parameter: int = 1)
     raise ValueError("My exception")
 ```
 
