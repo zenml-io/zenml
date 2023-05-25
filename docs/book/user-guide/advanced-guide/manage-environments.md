@@ -2,7 +2,7 @@
 description: Navigating multiple development environments.
 ---
 
-# Manage multiple environments through which code propogates
+# Manage multiple environments through which code propagates
 
 {% hint style="warning" %}
 **Note:** This page is a work in progress (WIP) and is currently under development. If you have any questions or need

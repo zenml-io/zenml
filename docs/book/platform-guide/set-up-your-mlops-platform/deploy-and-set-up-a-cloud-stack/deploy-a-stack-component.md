@@ -8,7 +8,7 @@ If you have used ZenML before, you must be familiar with the flow of registering
 like this:
 
 ```
-zenml artifact-store regsiter my_store --flavor=s3 --path=s3://my_bucket
+zenml artifact-store register my_store --flavor=s3 --path=s3://my_bucket
 ```
 
 Commands like these assume that you already have the stack component deployed. In this case, it would mean that you must

@@ -11,32 +11,36 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+
+import mlflow
 import numpy as np
-import tensorflow as tf
-import wandb
+from sklearn.base import ClassifierMixin
+from sklearn.svm import SVC
 
 from zenml import step
 from zenml.client import Client
-from zenml.integrations.wandb.experiment_trackers import WandbExperimentTracker
+from zenml.integrations.mlflow.experiment_trackers import (
+    MLFlowExperimentTracker,
+)
 
 experiment_tracker = Client().active_stack.experiment_tracker
 
 if not experiment_tracker or not isinstance(
-    experiment_tracker, WandbExperimentTracker
+    experiment_tracker, MLFlowExperimentTracker
 ):
     raise RuntimeError(
-        "Your active stack needs to contain a WandB experiment tracker for "
+        "Your active stack needs to contain a MLFlow experiment tracker for "
         "this example to work."
     )
 
 
-@step(experiment_tracker=experiment_tracker.name)
-def tf_evaluator(
-    x_test: np.ndarray,
-    y_test: np.ndarray,
-    model: tf.keras.Model,
-) -> float:
-    """Calculate the loss for the model for each epoch in a graph."""
-    _, test_acc = model.evaluate(x_test, y_test, verbose=2)
-    wandb.log({"val_accuracy": test_acc})
-    return test_acc
+@step(enable_cache=False, experiment_tracker=experiment_tracker.name)
+def svc_trainer_mlflow(
+    X_train: np.ndarray,
+    y_train: np.ndarray,
+) -> ClassifierMixin:
+    """Train a sklearn SVC classifier and log to MLflow."""
+    mlflow.sklearn.autolog()
+    model = SVC(gamma=0.001)
+    model.fit(X_train, y_train)
+    return model

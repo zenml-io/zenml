@@ -17,7 +17,7 @@ import logging
 import numpy as np
 import tensorflow as tf
 
-from zenml.steps import step
+from zenml import step
 
 
 @step

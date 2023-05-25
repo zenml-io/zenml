@@ -600,7 +600,7 @@ The following output shows three different Service Connectors configured from th
 
 * a multi-type GCP Service Connector that allows access to every possible resource accessible with the configured credentials
 * a multi-instance GCS Service Connector that allows access to multiple GCS buckets
-* a single-instance GCS Serice Connector that only permits access to one GCS bucket
+* a single-instance GCS Service Connector that only permits access to one GCS bucket
 
 ```
 $ zenml service-connector list

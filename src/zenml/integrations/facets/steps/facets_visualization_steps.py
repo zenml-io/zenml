@@ -17,8 +17,8 @@ from typing import Dict, List, Union
 
 import pandas as pd
 
+from zenml import step
 from zenml.integrations.facets.models import FacetsComparison
-from zenml.steps import step
 
 
 @step

@@ -56,38 +56,30 @@ def my_pipeline(...):
 
 ## Accessing step information inside a hook
 
-A hook function signature can optionally take three type-annotated arguments of
+A hook function signature can optionally take two type-annotated arguments of
 the following types:
 
-- `StepContext`: You can pass an object inside a hook of type `StepContext` to
-get access to information such as pipeline name, run name, step name etc
-- `BaseParameters`: You can pass a `BaseParameters` inside the step
+- `StepContext`: You can pass an object inside a hook of type StepContext to get
+access to information such as pipeline name, run name, step name, the parameters of your step and more.
 - `BaseException`: In case of failure hooks, if you add an `BaseException` argument to the hook,
 then ZenML passes the BaseException that caused your step to fail.
 
-Please note that in case of `BaseParameters` and `BaseException` the concrete class
-defined by the step will be passed. For example, if a step's parameters class is
-called `MyParameters`, that will be the object that is passed into the hook. Also,
-if a `ValueError` is raised inside a step, the exception would also be of type
-`BaseException`.
-
 ```python
 import logging
-from zenml.steps import BaseParameters, StepContext, step
+
+from zenml.steps import step
+from zenml.steps import BaseParameters, StepContext
 
 # Use one or any of these in the signature
-def on_failure(context: StepContext, params: BaseParameters, exception: BaseException):
+def on_failure(context: StepContext, exception: BaseException):
     logging.info(context.step_name)  # Output will be `my_step`
-    logging.info(type(params))  # Of type MyParameters
+    print(context.parameters)  # Use this to access the parameters of the step
     logging.info(type(exception))  # Of type ValueError
     logging.info("Step failed!")
 
 
-class MyParameters(BaseParameters):
-    a: int = 1
-
 @step(on_failure=on_failure)
-def my_step(params: MyParameters)
+def my_step(some_parameter: int = 1)
     raise ValueError("My exception")
 ```
 

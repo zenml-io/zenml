@@ -22,6 +22,6 @@ def test_example(request: pytest.FixtureRequest) -> None:
     with run_example(
         request=request,
         name="great_expectations_data_validation",
-        pipelines={"validation_pipeline": (1, 6)},
+        pipelines={"validation_pipeline": (1, 5)},
     ):
         pass

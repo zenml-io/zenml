@@ -103,8 +103,9 @@ deployment = continuous_deployment_pipeline(
 ### ↩️ Prediction against deployed model
 
 ```python
+from zenml import step
 from zenml.integrations.mlflow.services import MLFlowDeploymentService
-from zenml.steps import BaseParameters, Output, StepContext, step
+from zenml.steps import BaseParameters, Output, StepContext
 from zenml.services import load_last_service_from_step
 
 ...
