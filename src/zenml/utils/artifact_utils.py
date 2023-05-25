@@ -16,9 +16,8 @@
 import base64
 import os
 import tempfile
-from typing import TYPE_CHECKING, Any, Optional, Union, cast
-from uuid import UUID
 from typing import TYPE_CHECKING, Any, List, Optional, Union, cast
+from uuid import UUID
 
 from zenml.client import Client
 from zenml.constants import MODEL_METADATA_YAML_FILE_NAME
@@ -36,8 +35,6 @@ from zenml.utils import source_utils
 from zenml.utils.yaml_utils import read_yaml, write_yaml
 
 if TYPE_CHECKING:
-    from uuid import UUID
-
     from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
     from zenml.config.source import Source
     from zenml.materializers.base_materializer import BaseMaterializer
