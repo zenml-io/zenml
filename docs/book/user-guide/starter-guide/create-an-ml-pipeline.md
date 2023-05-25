@@ -70,10 +70,10 @@ def svc_trainer(
 ```
 
 {% hint style="info" %}
-If you want to run the step function outside the context of a ZenML pipeline, all you need to do is call the `.entrypoint()` method with the same input signature. For example:
+If you want to run the step function outside the context of a ZenML pipeline, all you need to do is call the step function outside of a ZenML pipeline. For example:
 
 ```python
-svc_trainer.entrypoint(X_train=..., y_train=...)
+svc_trainer(X_train=..., y_train=...)
 ```
 {% endhint %}
 
@@ -99,7 +99,7 @@ if __name__ == "__main__":
 ```
 {% endhint %}
 
-Running `python main.py` should look somewhat like this in the terminal:
+Running `python run.py` should look somewhat like this in the terminal:
 
 <pre class="language-sh" data-line-numbers><code class="lang-sh"><strong>Registered new pipeline with name `first_pipeline`.
 </strong>.
@@ -198,7 +198,10 @@ def first_pipeline(gamma: float = 0.002):
 if __name__ == "__main__":
     first_pipeline()
 
-    # Step one will use cache, step two will rerun due to the decorator config
+    # Step one will use cache, step two will rerun due to caching
+    # being disabled on the @step decorator. Even if caching was
+    # enabled though, ZenML would detect a different value for the
+    # `gamma` input of the second step and disable caching
     first_pipeline(gamma=0.0001)
 ```
 
