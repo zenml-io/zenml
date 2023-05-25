@@ -103,7 +103,7 @@ class CloudpickleMaterializer(BaseMaterializer):
                 f"cannot be loaded under different Python versions. Please "
                 f"consider implementing a custom materializer for type "
                 f"`{type(data)}` according to the instructions at "
-                "https://docs.zenml.io/advanced-guide/pipelines/materializers."
+                "https://docs.zenml.io/user-guide/advanced-guide/handle-custom-data-types."
             )
 
         # save python version for validation on loading

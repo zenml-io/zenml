@@ -135,7 +135,7 @@ certain custom requirements, you can specify them using the step decorator as
 follows:
 
 ```python
-from zenml.steps import step
+from zenml import step
 from zenml.integrations.aws.flavors.sagemaker_orchestrator_flavor import (
     SagemakerOrchestratorSettings,
 )
