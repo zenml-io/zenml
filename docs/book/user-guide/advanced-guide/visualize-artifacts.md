@@ -80,7 +80,7 @@ def my_pipeline():
     ...
 ```
 
-## Trouble Shooting
+## Troubleshooting
 
 ### Configuring Artifact Stores
 If all visualizations of a certain pipeline run are not showing up in the
