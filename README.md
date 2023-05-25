@@ -185,7 +185,7 @@ enable collaborative features as the central MLOps interface for teams.
 
 ![ZenML Architecture Diagram.](docs/book/.gitbook/assets/Scenario3.png)
 
-In case you're machine is authenticated with one of the big three cloud 
+In case your machine is authenticated with one of the big three cloud 
 providers, this command will do the full deployment for you.
 
 ```bash
