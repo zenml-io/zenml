@@ -14,4 +14,4 @@
 from pipelines.data_validation import data_validation_pipeline
 
 if __name__ == "__main__":
-    pipeline_instance = data_validation_pipeline()
+    data_validation_pipeline()
