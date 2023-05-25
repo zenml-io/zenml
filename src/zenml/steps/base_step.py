@@ -98,9 +98,6 @@ class BaseStepMeta(type):
 
         Returns:
             The new class.
-
-        Raises:
-            StepInterfaceError: When unable to create the step.
         """
         cls = cast(Type["BaseStep"], super().__new__(mcs, name, bases, dct))
         if name not in {"BaseStep", "_DecoratedStep"}:
@@ -567,6 +564,10 @@ class BaseStep(metaclass=BaseStepMeta):
 
         Returns:
             The return value of the entrypoint function.
+
+        Raises:
+            StepInterfaceError: If the arguments to the entrypoint function are
+                invalid.
         """
         try:
             validated_args = pydantic_utils.validate_function_args(
@@ -1080,6 +1081,16 @@ class BaseStep(metaclass=BaseStepMeta):
         """
         if not self.entrypoint_definition.legacy_params:
             return {}
+
+        logger.warning(
+            "The `BaseParameters` class to define step parameters is "
+            "deprecated. Check out our docs "
+            "https://docs.zenml.io/user-guide/advanced-guide/configure-steps-pipelines "
+            "for information on how to parameterize your steps. As a quick "
+            "fix to get rid of this warning, make sure your parameter class "
+            "inherits from `pydantic.BaseModel` instead of the "
+            "`BaseParameters` class."
+        )
 
         # parameters for the `BaseParameters` class specified in the "new" way
         # by specifying a dict of parameters for the corresponding key

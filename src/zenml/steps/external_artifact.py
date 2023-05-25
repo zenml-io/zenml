@@ -184,6 +184,9 @@ class ExternalArtifact:
         registry, falling back to the Cloudpickle materializer if no concrete
         materializer is registered for the type of value.
 
+        Args:
+            value: The value for which to get the materializer class.
+
         Returns:
             The materializer class.
         """

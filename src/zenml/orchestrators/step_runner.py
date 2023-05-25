@@ -252,6 +252,9 @@ class StepRunner:
 
         Returns:
             The parsed inputs for the step entrypoint function.
+
+        Raises:
+            RuntimeError: If a function argument value is missing.
         """
         function_params: Dict[str, Any] = {}
 

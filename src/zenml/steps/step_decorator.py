@@ -29,6 +29,7 @@ from typing import (
     overload,
 )
 
+from zenml.logger import get_logger
 from zenml.steps import BaseStep
 
 if TYPE_CHECKING:
@@ -61,6 +62,7 @@ PARAM_EXTRA_OPTIONS = "extra"
 PARAM_ON_FAILURE = "on_failure"
 PARAM_ON_SUCCESS = "on_success"
 
+logger = get_logger(__name__)
 
 F = TypeVar("F", bound=Callable[..., Any])
 
@@ -161,6 +163,12 @@ def step(
         The inner decorator which creates the step class based on the
         ZenML BaseStep
     """
+    logger.warning(
+        "The `@step` decorator that you use to define your step is "
+        "deprecated. Check out our docs https://docs.zenml.io for "
+        "information on how to define steps in a more intuitive and "
+        "flexible way!"
+    )
 
     def inner_decorator(func: F) -> Type[BaseStep]:
         """Inner decorator function for the creation of a ZenML Step.
