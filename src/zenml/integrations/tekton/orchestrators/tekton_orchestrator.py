@@ -406,7 +406,7 @@ class TektonOrchestrator(ContainerizedOrchestrator):
                 )
 
                 container_op = dsl.ContainerOp(
-                    name=step.config.name,
+                    name=step_name,
                     image=image,
                     command=command,
                     arguments=arguments,
@@ -455,7 +455,7 @@ class TektonOrchestrator(ContainerizedOrchestrator):
                     container_op.after(upstream_container_op)
 
                 # Update dictionary of container ops with the current one
-                step_name_to_container_op[step.config.name] = container_op
+                step_name_to_container_op[step_name] = container_op
 
         # Get a filepath to use to save the finished yaml to
         fileio.makedirs(self.pipeline_directory)

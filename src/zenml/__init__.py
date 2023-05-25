@@ -34,5 +34,7 @@ __path__ = extend_path(__path__, __name__)
 
 # Define public Python API
 from zenml.api import show
+from zenml.new.pipelines.pipeline_decorator import pipeline
+from zenml.new.steps.step_decorator import step
 
-__all__ = ["show"]
+__all__ = ["show", "pipeline", "step"]

@@ -53,25 +53,6 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 
-def _get_step_name_in_pipeline(
-    step: "Step", deployment: "PipelineDeploymentResponseModel"
-) -> str:
-    """Gets the step name of a step inside a pipeline.
-
-    Args:
-        step: The step for which to get the name.
-        deployment: The pipeline deployment that contains the step.
-
-    Returns:
-        The name of the step inside the pipeline.
-    """
-    step_name_mapping = {
-        step_.config.name: key
-        for key, step_ in deployment.step_configurations.items()
-    }
-    return step_name_mapping[step.config.name]
-
-
 def _get_step_operator(
     stack: "Stack", step_operator_name: str
 ) -> "BaseStepOperator":
@@ -149,9 +130,7 @@ class StepLauncher:
             )
 
         self._stack = Stack.from_model(deployment.stack)
-        self._step_name = _get_step_name_in_pipeline(
-            step=step, deployment=deployment
-        )
+        self._step_name = step.spec.pipeline_parameter_name
 
     def launch(self) -> None:
         """Launches the step."""

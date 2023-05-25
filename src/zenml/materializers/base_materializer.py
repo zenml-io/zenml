@@ -211,14 +211,15 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
         Raises:
             TypeError: If the materializer cannot read/write the given type.
         """
-        if not self._can_handle_type(data_type):
+        if not self.can_handle_type(data_type):
             raise TypeError(
                 f"Unable to handle type {data_type}. {self.__class__.__name__} "
                 f"can only read/write artifacts of the following types: "
                 f"{self.ASSOCIATED_TYPES}."
             )
 
-    def _can_handle_type(self, data_type: Type[Any]) -> bool:
+    @classmethod
+    def can_handle_type(cls, data_type: Type[Any]) -> bool:
         """Whether the materializer can read/write a certain type.
 
         Args:
@@ -229,7 +230,7 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
         """
         return any(
             issubclass(data_type, associated_type)
-            for associated_type in self.ASSOCIATED_TYPES
+            for associated_type in cls.ASSOCIATED_TYPES
         )
 
     def extract_full_metadata(self, data: Any) -> Dict[str, "MetadataType"]:
