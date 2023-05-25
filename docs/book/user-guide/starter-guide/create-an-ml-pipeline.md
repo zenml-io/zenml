@@ -28,7 +28,7 @@ In this case, ZenML has an integration with `sklearn` so you can use the ZenML C
 
 #### Steps with multiple outputs
 
-Sometimes a step will have multiple outputs. In order to give each output a unique name, use the `Output()` Annotation. Here we load an open-source dataset and split it into a train and a test dataset.
+Sometimes a step will have multiple outputs. In order to give each output a unique name, use the `Output()` annotation. Here we load an open-source dataset and split it into a train and a test dataset.
 
 ```python
 @step
@@ -99,7 +99,7 @@ if __name__ == "__main__":
 ```
 {% endhint %}
 
-Running it like this `python main.py` should look somewhat like this in the terminal.
+Running `python main.py` should look somewhat like this in the terminal:
 
 <pre class="language-sh" data-line-numbers><code class="lang-sh"><strong>Registered new pipeline with name `first_pipeline`.
 </strong>.
