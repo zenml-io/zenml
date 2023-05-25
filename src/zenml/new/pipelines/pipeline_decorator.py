@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Legacy ZenML pipeline decorator definition."""
+"""ZenML pipeline decorator definition."""
 from types import FunctionType
 from typing import (
     TYPE_CHECKING,
@@ -19,39 +19,21 @@ from typing import (
     Callable,
     Dict,
     Optional,
-    Type,
     TypeVar,
     Union,
     overload,
 )
 
-from zenml.logger import get_logger
-from zenml.pipelines.base_pipeline import (
-    CLASS_CONFIGURATION,
-    PARAM_ENABLE_ARTIFACT_METADATA,
-    PARAM_ENABLE_ARTIFACT_VISUALIZATION,
-    PARAM_ENABLE_CACHE,
-    PARAM_EXTRA_OPTIONS,
-    PARAM_ON_FAILURE,
-    PARAM_ON_SUCCESS,
-    PARAM_PIPELINE_NAME,
-    PARAM_SETTINGS,
-    PIPELINE_INNER_FUNC_NAME,
-    BasePipeline,
-)
-
 if TYPE_CHECKING:
     from zenml.config.base_settings import SettingsOrDict
+    from zenml.new.pipelines.pipeline import Pipeline
 
     HookSpecification = Union[str, FunctionType]
-
-logger = get_logger(__name__)
-
-F = TypeVar("F", bound=Callable[..., None])
+    F = TypeVar("F", bound=Callable[..., None])
 
 
 @overload
-def pipeline(_func: F) -> Type[BasePipeline]:
+def pipeline(_func: "F") -> "Pipeline":
     ...
 
 
@@ -61,26 +43,24 @@ def pipeline(
     name: Optional[str] = None,
     enable_cache: Optional[bool] = None,
     enable_artifact_metadata: Optional[bool] = None,
-    enable_artifact_visualization: Optional[bool] = None,
     settings: Optional[Dict[str, "SettingsOrDict"]] = None,
     extra: Optional[Dict[str, Any]] = None,
-) -> Callable[[F], Type[BasePipeline]]:
+) -> Callable[["F"], "Pipeline"]:
     ...
 
 
 def pipeline(
-    _func: Optional[F] = None,
+    _func: Optional["F"] = None,
     *,
     name: Optional[str] = None,
     enable_cache: Optional[bool] = None,
     enable_artifact_metadata: Optional[bool] = None,
-    enable_artifact_visualization: Optional[bool] = None,
     settings: Optional[Dict[str, "SettingsOrDict"]] = None,
     extra: Optional[Dict[str, Any]] = None,
     on_failure: Optional["HookSpecification"] = None,
     on_success: Optional["HookSpecification"] = None,
-) -> Union[Type[BasePipeline], Callable[[F], Type[BasePipeline]]]:
-    """Outer decorator function for the creation of a ZenML pipeline.
+) -> Union["Pipeline", Callable[["F"], "Pipeline"]]:
+    """Decorator to create a pipeline.
 
     Args:
         _func: The decorated function.
@@ -88,7 +68,6 @@ def pipeline(
             decorated function will be used as a fallback.
         enable_cache: Whether to use caching or not.
         enable_artifact_metadata: Whether to enable artifact metadata or not.
-        enable_artifact_visualization: Whether to enable artifact visualization.
         settings: Settings for this pipeline.
         extra: Extra configurations for this pipeline.
         on_failure: Callback function in event of failure of the step. Can be
@@ -102,36 +81,25 @@ def pipeline(
             (e.g. `module.my_function`).
 
     Returns:
-        the inner decorator which creates the pipeline class based on the
-        ZenML BasePipeline
+        A pipeline instance.
     """
-    logger.warning(
-        "The `@pipeline` decorator that you use to define your pipeline is "
-        "deprecated. Check out our docs https://docs.zenml.io for "
-        "information on how to define pipelines in a more intuitive and "
-        "flexible way!"
-    )
 
-    def inner_decorator(func: F) -> Type[BasePipeline]:
-        return type(
-            name or func.__name__,
-            (BasePipeline,),
-            {
-                PIPELINE_INNER_FUNC_NAME: staticmethod(func),  # type: ignore[arg-type]
-                CLASS_CONFIGURATION: {
-                    PARAM_PIPELINE_NAME: name,
-                    PARAM_ENABLE_CACHE: enable_cache,
-                    PARAM_ENABLE_ARTIFACT_METADATA: enable_artifact_metadata,
-                    PARAM_ENABLE_ARTIFACT_VISUALIZATION: enable_artifact_visualization,
-                    PARAM_SETTINGS: settings,
-                    PARAM_EXTRA_OPTIONS: extra,
-                    PARAM_ON_FAILURE: on_failure,
-                    PARAM_ON_SUCCESS: on_success,
-                },
-                "__module__": func.__module__,
-                "__doc__": func.__doc__,
-            },
+    def inner_decorator(func: "F") -> "Pipeline":
+        from zenml.new.pipelines.pipeline import Pipeline
+
+        p = Pipeline(
+            name=name or func.__name__,
+            enable_cache=enable_cache,
+            enable_artifact_metadata=enable_artifact_metadata,
+            settings=settings,
+            extra=extra,
+            on_failure=on_failure,
+            on_success=on_success,
+            entrypoint=func,
         )
+
+        p.__doc__ = func.__doc__
+        return p
 
     if _func is None:
         return inner_decorator

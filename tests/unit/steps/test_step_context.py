@@ -23,7 +23,7 @@ from zenml.steps import StepContext
 
 def test_initialize_step_context_with_mismatched_keys():
     """Tests that initializing a step context with mismatched keys for materializers and artifacts raises an Exception."""
-    materializers = {"some_output_name": BaseMaterializer}
+    materializers = {"some_output_name": (BaseMaterializer,)}
     artifact_uris = {"some_different_output_name": ""}
 
     with pytest.raises(StepContextError):
@@ -36,7 +36,7 @@ def test_initialize_step_context_with_mismatched_keys():
 
 def test_initialize_step_context_with_matching_keys():
     """Tests that initializing a step context with matching keys for materializers and artifacts works."""
-    materializers = {"some_output_name": BaseMaterializer}
+    materializers = {"some_output_name": (BaseMaterializer,)}
     artifact_uris = {"some_output_name": ""}
 
     with does_not_raise():

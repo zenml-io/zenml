@@ -1,0 +1,321 @@
+#  Copyright (c) ZenML GmbH 2023. All Rights Reserved.
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at:
+#
+#       https://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+#  or implied. See the License for the specific language governing
+#  permissions and limitations under the License.
+"""Util functions for step and pipeline entrypoint functions."""
+import inspect
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Dict,
+    NamedTuple,
+    Optional,
+    Sequence,
+    Type,
+    Union,
+)
+
+from pydantic import BaseConfig, ValidationError, create_model
+
+from zenml.exceptions import StepInterfaceError
+from zenml.logger import get_logger
+from zenml.materializers.base_materializer import BaseMaterializer
+from zenml.steps.external_artifact import ExternalArtifact
+from zenml.steps.utils import parse_return_type_annotations
+from zenml.utils import yaml_utils
+
+if TYPE_CHECKING:
+    from zenml.config.source import Source
+    from zenml.new.pipelines.pipeline import Pipeline
+    from zenml.steps import BaseStep
+
+    MaterializerClassOrSource = Union[str, "Source", Type["BaseMaterializer"]]
+
+logger = get_logger(__name__)
+
+
+def get_step_entrypoint_signature(
+    step: "BaseStep",
+    include_step_context: bool = False,
+    include_legacy_parameters: bool = False,
+) -> inspect.Signature:
+    """Get the entrypoint signature of a step.
+
+    Args:
+        step: The step for which to get the entrypoint signature.
+        include_step_context: Whether to include the `StepContext` as a
+            parameter of the returned signature. If `False`, a potential
+            signature parameter of type `StepContext` will be removed before
+            returning the signature.
+        include_legacy_parameters: Whether to include the `BaseParameters`
+            subclass as a parameter of the returned signature. If `False`, a
+            potential signature parameter of type `BaseParameters` will be
+            removed before returning the signature.
+
+    Returns:
+        The entrypoint function signature.
+    """
+    from zenml.steps import BaseParameters, StepContext
+
+    signature = inspect.signature(step.entrypoint, follow_wrapped=True)
+
+    def _is_param_of_class(annotation: Any, class_: Type[Any]) -> bool:
+        return inspect.isclass(annotation) and issubclass(annotation, class_)
+
+    parameters = list(signature.parameters.values())
+
+    if not include_step_context:
+        parameters = [
+            param
+            for param in parameters
+            if not _is_param_of_class(param.annotation, class_=StepContext)
+        ]
+
+    if not include_legacy_parameters:
+        parameters = [
+            param
+            for param in parameters
+            if not _is_param_of_class(param.annotation, class_=BaseParameters)
+        ]
+
+    signature = signature.replace(parameters=parameters)
+    return signature
+
+
+class StepArtifact:
+    """Class to represent step output artifacts."""
+
+    def __init__(
+        self,
+        invocation_id: str,
+        output_name: str,
+        annotation: Any,
+        pipeline: "Pipeline",
+    ) -> None:
+        """Initialize a step artifact.
+
+        Args:
+            invocation_id: The ID of the invocation that produces this artifact.
+            output_name: The name of the output that produces this artifact.
+            annotation: The output type annotation.
+            pipeline: The pipeline which the invocation is part of.
+        """
+        self.invocation_id = invocation_id
+        self.output_name = output_name
+        self.annotation = annotation
+        self.pipeline = pipeline
+
+
+def validate_reserved_arguments(
+    signature: inspect.Signature, reserved_arguments: Sequence[str]
+) -> None:
+    """Validates that the signature does not contain any reserved arguments.
+
+    Args:
+        signature: The signature to validate.
+        reserved_arguments: The reserved arguments for the signature.
+
+    Raises:
+        RuntimeError: If the signature contains a reserved argument.
+    """
+    for arg in reserved_arguments:
+        if arg in signature.parameters:
+            raise RuntimeError(f"Reserved argument name '{arg}'.")
+
+
+class EntrypointFunctionDefinition(NamedTuple):
+    """Class representing a step entrypoint function.
+
+    Attributes:
+        inputs: The entrypoint function inputs.
+        outputs: The entrypoint function outputs. This dictionary maps output
+            names to output annotations.
+        context: Optional parameter representing the `StepContext` input.
+        legacy_params: Optional parameter representing the `BaseParameters`
+            input.
+    """
+
+    inputs: Dict[str, inspect.Parameter]
+    outputs: Dict[str, Any]
+    context: Optional[inspect.Parameter]
+    legacy_params: Optional[inspect.Parameter]
+
+    def validate_input(self, key: str, value: Any) -> None:
+        """Validates an input to the step entrypoint function.
+
+        Args:
+            key: The key for which the input was passed
+            value: The input value.
+
+        Raises:
+            KeyError: If the function has no input for the given key.
+            RuntimeError: If a parameter is passed for an input that is
+                annotated as an `UnmaterializedArtifact`.
+            StepInterfaceError: If the input is a parameter and not JSON
+                serializable.
+        """
+        from zenml.materializers import UnmaterializedArtifact
+
+        if key not in self.inputs:
+            raise KeyError(
+                f"Received step entrypoint input for invalid key {key}."
+            )
+
+        parameter = self.inputs[key]
+
+        if isinstance(value, (StepArtifact, ExternalArtifact)):
+            # If we were to do any type validation for artifacts here, we
+            # would not be able to leverage pydantics type coercion (e.g.
+            # providing an `int` artifact for a `float` input)
+            return
+
+        # Not an artifact -> This is a parameter
+        if parameter.annotation is UnmaterializedArtifact:
+            raise RuntimeError(
+                "Passing parameter for input of type `UnmaterializedArtifact` "
+                "is not allowed."
+            )
+
+        self._validate_input_value(parameter=parameter, value=value)
+
+        if not yaml_utils.is_json_serializable(value):
+            raise StepInterfaceError(
+                f"Argument type (`{type(value)}`) for argument "
+                f"'{key}' is not JSON "
+                "serializable."
+            )
+
+    def _validate_input_value(
+        self, parameter: inspect.Parameter, value: Any
+    ) -> None:
+        """Validates an input value to the step entrypoint function.
+
+        Args:
+            parameter: The function parameter for which the value was provided.
+            value: The input value.
+
+        Raises:
+            RuntimeError: If the input value is not valid for the type
+                annotation provided for the function parameter.
+        """
+
+        class ModelConfig(BaseConfig):
+            arbitrary_types_allowed = False
+
+        # Create a pydantic model with just a single required field with the
+        # type annotation of the parameter to verify the input type including
+        # pydantics type coercion
+        validation_model_class = create_model(
+            "input_validation_model",
+            __config__=ModelConfig,
+            value=(parameter.annotation, ...),
+        )
+
+        try:
+            validation_model_class(value=value)
+        except ValidationError as e:
+            raise RuntimeError("Input validation failed.") from e
+
+
+def validate_entrypoint_function(
+    func: Callable[..., Any], reserved_arguments: Sequence[str] = ()
+) -> EntrypointFunctionDefinition:
+    """Validates a step entrypoint function.
+
+    Args:
+        func: The step entrypoint function to validate.
+        reserved_arguments: The reserved arguments for the entrypoint function.
+
+    Raises:
+        StepInterfaceError: If the entrypoint function has variable arguments
+            or keyword arguments.
+        StepInterfaceError: If the entrypoint function has multiple
+            `BaseParameter` arguments.
+        StepInterfaceError: If the entrypoint function has multiple
+            `StepContext` arguments.
+        StepInterfaceError: If the entrypoint function has no return annotation.
+
+    Returns:
+        A validated definition of the entrypoint function.
+    """
+    from zenml.steps import BaseParameters, StepContext
+
+    signature = inspect.signature(func, follow_wrapped=True)
+    validate_reserved_arguments(
+        signature=signature, reserved_arguments=reserved_arguments
+    )
+
+    inputs = {}
+    context: Optional[inspect.Parameter] = None
+    legacy_params: Optional[inspect.Parameter] = None
+
+    signature_parameters = list(signature.parameters.items())
+    if signature_parameters and signature_parameters[0][0] == "self":
+        # TODO: Once we get rid of the old step decorator, we can also remove
+        # the `BaseStepMeta` class which right now calls this function on an
+        # unbound instance method when using the class-based API. If we get rid
+        # of that, this check and removal of the `self` parameter is not
+        # necessary anymore
+        signature_parameters = signature_parameters[1:]
+
+    for key, parameter in signature_parameters:
+        if parameter.kind in {parameter.VAR_POSITIONAL, parameter.VAR_KEYWORD}:
+            raise StepInterfaceError(
+                f"Variable args or kwargs not allowed for function "
+                f"{func.__name__}."
+            )
+
+        annotation = parameter.annotation
+        if annotation is parameter.empty:
+            # If a type annotation is missing, use `Any` instead
+            parameter = parameter.replace(annotation=Any)
+
+        if inspect.isclass(annotation) and issubclass(
+            annotation, BaseParameters
+        ):
+            if legacy_params is not None:
+                raise StepInterfaceError(
+                    f"Found multiple parameter arguments "
+                    f"('{legacy_params.name}' and '{key}') "
+                    f"for function {func.__name__}."
+                )
+            legacy_params = parameter
+
+        elif inspect.isclass(annotation) and issubclass(
+            annotation, StepContext
+        ):
+            if context is not None:
+                raise StepInterfaceError(
+                    f"Found multiple context arguments "
+                    f"('{context.name}' and '{key}') "
+                    f"for function {func.__name__}."
+                )
+            context = parameter
+        else:
+            inputs[key] = parameter
+
+    if signature.return_annotation is signature.empty:
+        raise StepInterfaceError(
+            f"Missing return type annotation for function {func.__name__}."
+        )
+
+    outputs = parse_return_type_annotations(
+        return_annotation=signature.return_annotation
+    )
+
+    return EntrypointFunctionDefinition(
+        inputs=inputs,
+        outputs=outputs,
+        context=context,
+        legacy_params=legacy_params,
+    )
