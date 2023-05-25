@@ -33,6 +33,7 @@ class ServerDeploymentType(StrEnum):
     ALPHA = "alpha"
     OTHER = "other"
     HF_SPACES = "hf_spaces"
+    SANDBOX = "sandbox"
 
 
 class ServerDatabaseType(StrEnum):
