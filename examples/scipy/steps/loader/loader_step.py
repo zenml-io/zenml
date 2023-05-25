@@ -17,7 +17,8 @@ import re
 import numpy as np
 import pandas as pd
 
-from zenml.steps import Output, step
+from zenml import step
+from zenml.steps import Output
 
 TRAIN_PATH = os.path.join(os.path.dirname(__file__), "../../data", "train.csv")
 TEST_PATH = os.path.join(os.path.dirname(__file__), "../../data", "test.csv")

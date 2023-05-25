@@ -46,7 +46,7 @@ Suite that we later on use to check that the validation dataset is not skewed.
 ```python
 from zenml.config import DockerSettings
 from zenml.integrations.constants import GREAT_EXPECTATIONS, SKLEARN
-from zenml.pipelines import pipeline
+from zenml import pipeline
 
 docker_settings = DockerSettings(
     required_integrations=[SKLEARN, GREAT_EXPECTATIONS]

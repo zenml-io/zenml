@@ -480,7 +480,7 @@ zenml artifact-store deploy s3_artifact_store --flavor=s3
 ```
 
 For full documentation on this functionality, please refer to [the dedicated
-documentation on stack component deploy](https://docs.zenml.io/advanced-guide/practical-mlops/stack-recipes#deploying-stack-components-directly).
+documentation on stack component deploy](https://docs.zenml.io/platform-guide/set-up-your-mlops-platform/deploy-and-set-up-a-cloud-stack/deploy-a-stack-component).
 
 Secrets Management
 ------------------
@@ -960,7 +960,7 @@ in your Python code. Let's say you have a Python file called `run.py` and
 it contains the following code:
 
 ```python
-from zenml.pipelines import pipeline
+from zenml import pipeline
 
 @pipeline
 def my_pipeline(...):
@@ -1577,6 +1577,7 @@ from zenml.cli.feature import *  # noqa
 from zenml.cli.hub import *  # noqa
 from zenml.cli.integration import *  # noqa
 from zenml.cli.served_model import *  # noqa
+from zenml.cli.service_connectors import *  # noqa
 from zenml.cli.model import *  # noqa
 from zenml.cli.pipeline import *  # noqa
 from zenml.cli.workspace import *  # noqa

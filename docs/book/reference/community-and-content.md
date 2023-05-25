@@ -2,66 +2,55 @@
 description: All possible ways for our community to get in touch with ZenML.
 ---
 
-The ZenML team and community have put together a list of references
-that can be used to get in touch with the development team of ZenML and 
-develop a deeper understanding of the framework.
+# 💜 Community & content
 
-## Slack Channel: Get help from the community 
+The ZenML team and community have put together a list of references that can be used to get in touch with the
+development team of ZenML and develop a deeper understanding of the framework.
 
-The ZenML [Slack Channel](https://zenml.io/slack-invite) is the main gathering 
-point for the community. Not only is it the best place to get in touch with the 
-core team of ZenML, but it is also a great way to discuss new ideas and share 
-your ZenML projects with the community. If you have a question, there is 
-a high chance someone else might have already answered it on Slack!
+### Slack Channel: Get help from the community
 
-## Social Media: Bite-sized updates
+The ZenML [Slack channel](https://zenml.io/slack-invite) is the main gathering point for the community. Not only is it
+the best place to get in touch with the core team of ZenML, but it is also a great way to discuss new ideas and share
+your ZenML projects with the community. If you have a question, there is a high chance someone else might have already
+answered it on Slack!
 
-We are active on [LinkedIn](https://www.linkedin.com/company/zenml) and 
-[Twitter](https://twitter.com/zenml_io) where we post bite-sized updates on releases, 
-events, and MLOps in general. Follow us to interact and stay up to date!
-We would appreciate it if you could comment on and share our posts 
-so more people can benefit from our work at ZenML!
+### Social Media: Bite-sized updates
 
-## YouTube Channel: Video tutorials, workshops, and more
+We are active on [LinkedIn](https://www.linkedin.com/company/zenml) and [Twitter](https://twitter.com/zenml\_io) where
+we post bite-sized updates on releases, events, and MLOps in general. Follow us to interact and stay up to date! We
+would appreciate it if you could comment on and share our posts so more people can benefit from our work at ZenML!
 
-Our [YouTube Channel](https://www.youtube.com/c/ZenML)
-features a growing set of videos that take you through the entire framework. 
-Go here if you are a visual learner, and follow along with some tutorials.
+### YouTube Channel: Video tutorials, workshops, and more
 
-## Public Roadmap
+Our [YouTube channel](https://www.youtube.com/c/ZenML) features a growing set of videos that take you through the entire
+framework. Go here if you are a visual learner, and follow along with some tutorials.
 
-The feedback from our community plays a significant role in the development
-of ZenML. That's why we have a [Public Roadmap](https://zenml.hellonext.co/roadmap) 
-that serves as a bridge between our users and our development team. If you 
-have ideas regarding any new features or want to prioritize one over 
-the other, feel free to share your thoughts here or vote on existing ideas.
+### Public roadmap
 
-## Blog
+The feedback from our community plays a significant role in the development of ZenML. That's why we have
+a [public roadmap](https://zenml.hellonext.co/roadmap) that serves as a bridge between our users and our development
+team. If you have ideas regarding any new features or want to prioritize one over the other, feel free to share your
+thoughts here or vote on existing ideas.
 
-On our [Blog](https://blog.zenml.io/) page, you can find various articles written by our team. We use 
-it as a platform to share our thoughts and explain the implementation process 
-of our tool, its new features, and the thought process behind them.
+### Blog
 
-## Podcast
+On our [Blog](https://blog.zenml.io/) page, you can find various articles written by our team. We use it as a platform
+to share our thoughts and explain the implementation process of our tool, its new features, and the thought process
+behind them.
 
-We also have a [Podcast](https://podcast.zenml.io/) series that brings you 
-interviews and discussions with industry leaders, top technology professionals 
-and others. We discuss the latest developments in machine learning, deep 
-learning, artificial intelligence, with a particular focus on MLOps, or how 
-trained models are used in production.
+### Podcast
 
-## Newsletter
+We also have a [Podcast](https://podcast.zenml.io/) series that brings you interviews and discussions with industry
+leaders, top technology professionals, and others. We discuss the latest developments in machine learning, deep
+learning, and artificial intelligence, with a particular focus on MLOps, or how trained models are used in production.
 
-You can also subscribe to our [Newsletter](https://zenml.substack.com/) where
-we share what we learn as we develop open-source tooling for production 
-machine learning. You will also get all the exciting news about ZenML in 
-general.
+### Newsletter
 
-## Community Meetup
+You can also subscribe to our [Newsletter](https://zenml.substack.com/) where we share what we learn as we develop
+open-source tooling for production machine learning. You will also get all the exciting news about ZenML in general.
 
-Every week, we pop in a session for 30 minutes to interact directly with the 
-community. Sometimes we'll be presenting a feature, other times just taking 
-questions and having fun. Join us if you are curious about ZenML or just want 
-to talk shop about MLOps. The session is free and open to everyone, 
-[sign up](https://zenml.io/meet) now.
+### Community meetup
 
+Every week, we pop in a session for 30 minutes to interact directly with the community. Sometimes we'll be presenting a
+feature, other times just taking questions and having fun. Join us if you are curious about ZenML or just want to talk
+shop about MLOps. The session is free and open to everyone, [sign up](https://zenml.io/meet) now.
