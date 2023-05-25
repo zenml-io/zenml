@@ -15,7 +15,6 @@
   * [Fetch runs after execution](user-guide/starter-guide/fetch-runs-after-execution.md)
   * [Understand stacks](user-guide/starter-guide/understand-stacks.md)
   * [Connect to a deployed ZenML](user-guide/starter-guide/connect-to-a-deployed-zenml.md)
-  * [Switch to production](user-guide/starter-guide/switch-to-production.md)
   * [Follow best practices](user-guide/starter-guide/follow-best-practices.md)
 * [🐔 Advanced guide](user-guide/advanced-guide/advanced-guide.md)
   * [Configure steps/pipelines](user-guide/advanced-guide/configure-steps-pipelines.md)
@@ -140,7 +139,7 @@
 ## Learning
 
 * [🚀 Quickstart](https://github.com/zenml-io/zenml/blob/main/examples/quickstart/README.md)
-* [🧩 Examples](learning/examples/examples.md)
+* [🧩 Projects](learning/projects/projects.md)
   * [Build an LLM-powered community Slack bot](https://github.com/zenml-io/zenml-projects/tree/main/langchain-llamaindex-slackbot)
   * [Summarize news articles with NLP](https://github.com/zenml-io/zenml-projects/tree/main/zen-news-summarization)
   * [Use ZenML seamlessly with GitHub Actions](https://github.com/zenml-io/zenml-gitflow)

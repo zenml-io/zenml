@@ -4,7 +4,7 @@ description: Inspecting a finished pipeline run and its outputs.
 
 # Fetch runs after execution
 
-Once a pipeline run has been completed, we can interact with it from code using the post-execution utilities. The Hierarchy is as follows:
+Once a pipeline run has been completed, we can interact with it from code using the post-execution utilities. The hierarchy is as follows:
 
 ```mermaid
 flowchart LR
@@ -57,7 +57,7 @@ Instead of passing the name of the pipeline in, you can also directly use the pi
 
 ## Versions
 
-Each pipeline can have many versions. Let's print out the contents of the PipelineView:
+Each pipeline can have many versions. Let's print out the contents of the `PipelineView`:
 
 ```python
 print(pipeline_x.versions)
@@ -76,14 +76,14 @@ latest_version = pipeline_x.versions[0]
 ```
 
 {% hint style="info" %}
-The sorting of **versions** on a PipelineView is from **newest** to **oldest** with the most recent versions at the beginning of the list.
+The sorting of **versions** on a `PipelineView` is from **newest** to **oldest** with the most recent versions at the beginning of the list.
 {% endhint %}
 
 ## Runs
 
 #### Getting runs from a fetched pipeline version
 
-Each pipeline version can be executed many times. You can get a list of all runs using the `runs` attribute of a PiplineVersionView:
+Each pipeline version can be executed many times. You can get a list of all runs using the `runs` attribute of a `PiplineVersionView`:
 
 ```python
 print(latest_version.runs)
@@ -102,7 +102,7 @@ last_run = latest_version.runs[0]
 ```
 
 {% hint style="info" %}
-The sorting of **runs** on a PipelineVersionView is from **newest** to **oldest** with the most recent runs at the beginning of the list.
+The sorting of **runs** on a `PipelineVersionView` is from **newest** to **oldest** with the most recent runs at the beginning of the list.
 {% endhint %}
 
 #### Getting runs from a pipeline instance:
