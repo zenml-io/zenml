@@ -13,8 +13,8 @@
 #  permissions and limitations under the License.
 from contextlib import ExitStack as does_not_raise
 
-from zenml import step
 from zenml.materializers.base_materializer import BaseMaterializer
+from zenml.steps import step
 
 
 def test_materializer_with_subclassing_parameter():

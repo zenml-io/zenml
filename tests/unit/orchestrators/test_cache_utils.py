@@ -18,7 +18,6 @@ from uuid import uuid4
 
 import pytest
 
-from zenml import step
 from zenml.config.compiler import Compiler
 from zenml.config.source import Source
 from zenml.config.step_configurations import Step
@@ -26,7 +25,7 @@ from zenml.enums import ExecutionStatus, SorterOps
 from zenml.models.page_model import Page
 from zenml.new.pipelines.pipeline import Pipeline
 from zenml.orchestrators import cache_utils
-from zenml.steps import Output
+from zenml.steps import Output, step
 from zenml.steps.base_step import BaseStep
 from zenml.steps.step_invocation import StepInvocation
 

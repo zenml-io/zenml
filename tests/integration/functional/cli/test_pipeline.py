@@ -18,7 +18,6 @@ from uuid import uuid4
 import pytest
 from click.testing import CliRunner
 
-from zenml import pipeline, step
 from zenml.cli.cli import cli
 from zenml.client import Client
 from zenml.config import DockerSettings
@@ -28,7 +27,9 @@ from zenml.models.pipeline_build_models import (
     PipelineBuildBaseModel,
     PipelineBuildRequestModel,
 )
+from zenml.pipelines import pipeline
 from zenml.stack import Stack
+from zenml.steps import step
 from zenml.utils.pipeline_docker_image_builder import (
     PipelineDockerImageBuilder,
 )
