@@ -27,8 +27,8 @@ from zenml.materializers.built_in_materializer import (
 from zenml.materializers.cloudpickle_materializer import (
     CloudpickleMaterializer,
 )
-from zenml.materializers.special_string_materializer import (
-    SpecialStringMaterializer,
+from zenml.materializers.structured_string_materializer import (
+    StructuredStringMaterializer,
 )
 from zenml.materializers.numpy_materializer import NumpyMaterializer
 from zenml.materializers.pandas_materializer import PandasMaterializer
@@ -41,7 +41,7 @@ __all__ = [
     "BuiltInMaterializer",
     "BytesMaterializer",
     "CloudpickleMaterializer",
-    "SpecialStringMaterializer",
+    "StructuredStringMaterializer",
     "NumpyMaterializer",
     "PandasMaterializer",
     "PydanticMaterializer",

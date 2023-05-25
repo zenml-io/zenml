@@ -25,20 +25,20 @@ from zenml.types import CSVString, HTMLString, MarkdownString
 logger = get_logger(__name__)
 
 
-SPECIAL_STRINGS = Union[CSVString, HTMLString, MarkdownString]
+STRUCTURED_STRINGS = Union[CSVString, HTMLString, MarkdownString]
 
 HTML_FILENAME = "output.html"
 MARKDOWN_FILENAME = "output.md"
 CSV_FILENAME = "output.csv"
 
 
-class SpecialStringMaterializer(BaseMaterializer):
+class StructuredStringMaterializer(BaseMaterializer):
     """Materializer for HTML or Markdown strings."""
 
     ASSOCIATED_TYPES = (CSVString, HTMLString, MarkdownString)
     ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATA_ANALYSIS
 
-    def load(self, data_type: Type[SPECIAL_STRINGS]) -> SPECIAL_STRINGS:
+    def load(self, data_type: Type[STRUCTURED_STRINGS]) -> STRUCTURED_STRINGS:
         """Loads the data from the HTML or Markdown file.
 
         Args:
@@ -50,7 +50,7 @@ class SpecialStringMaterializer(BaseMaterializer):
         with fileio.open(self._get_filepath(data_type), "r") as f:
             return data_type(f.read())
 
-    def save(self, data: SPECIAL_STRINGS) -> None:
+    def save(self, data: STRUCTURED_STRINGS) -> None:
         """Save data as an HTML or Markdown file.
 
         Args:
@@ -60,7 +60,7 @@ class SpecialStringMaterializer(BaseMaterializer):
             f.write(data)
 
     def save_visualizations(
-        self, data: SPECIAL_STRINGS
+        self, data: STRUCTURED_STRINGS
     ) -> Dict[str, VisualizationType]:
         """Save visualizations for the given data.
 
@@ -74,7 +74,7 @@ class SpecialStringMaterializer(BaseMaterializer):
         visualization_type = self._get_visualization_type(type(data))
         return {filepath: visualization_type}
 
-    def _get_filepath(self, data_type: Type[SPECIAL_STRINGS]) -> str:
+    def _get_filepath(self, data_type: Type[STRUCTURED_STRINGS]) -> str:
         """Get the file path for the given data type.
 
         Args:
@@ -99,7 +99,7 @@ class SpecialStringMaterializer(BaseMaterializer):
         return os.path.join(self.uri, filename)
 
     def _get_visualization_type(
-        self, data_type: Type[SPECIAL_STRINGS]
+        self, data_type: Type[STRUCTURED_STRINGS]
     ) -> VisualizationType:
         """Get the visualization type for the given data type.
 

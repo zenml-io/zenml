@@ -14,37 +14,37 @@
 """Unit tests for the `HTMLMarkdownMaterializer`."""
 
 from tests.unit.test_general import _test_materializer
-from zenml.materializers.special_string_materializer import (
-    SpecialStringMaterializer,
+from zenml.materializers.structured_string_materializer import (
+    StructuredStringMaterializer,
 )
 from zenml.types import CSVString, HTMLString, MarkdownString
 
 
-def test_special_string_materializer_for_csv_strings(clean_client):
-    """Test the `SpecialStringMaterializer` for CSV strings."""
+def test_structured_string_materializer_for_csv_strings(clean_client):
+    """Test the `StructuredStringMaterializer` for CSV strings."""
 
     _test_materializer(
         step_output=CSVString("a,b,c\n1,2,3"),
-        materializer_class=SpecialStringMaterializer,
+        materializer_class=StructuredStringMaterializer,
         assert_visualization_exists=True,
     )
 
 
-def test_special_string_materializer_for_html_strings(clean_client):
-    """Test the `SpecialStringMaterializer` for HTML strings."""
+def test_structured_string_materializer_for_html_strings(clean_client):
+    """Test the `StructuredStringMaterializer` for HTML strings."""
 
     _test_materializer(
         step_output=HTMLString("<h1>ARIA</h1>"),
-        materializer_class=SpecialStringMaterializer,
+        materializer_class=StructuredStringMaterializer,
         assert_visualization_exists=True,
     )
 
 
-def test_special_string_materializer_for_markdown_strings(clean_client):
-    """Test the `SpecialStringMaterializer` for Markdown strings."""
+def test_structured_string_materializer_for_markdown_strings(clean_client):
+    """Test the `StructuredStringMaterializer` for Markdown strings."""
 
     _test_materializer(
         step_output=MarkdownString("# ARIA"),
-        materializer_class=SpecialStringMaterializer,
+        materializer_class=StructuredStringMaterializer,
         assert_visualization_exists=True,
     )
