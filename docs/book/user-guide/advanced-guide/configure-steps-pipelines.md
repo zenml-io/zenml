@@ -61,7 +61,7 @@ Settings are categorized into two types:
   * [`WandbExperimentTrackerSettings`](../component-guide/experiment-trackers/wandb.md) to specify W\&B settings.
   * [`WhylogsDataValidatorSettings`](../component-guide/data-validators/whylogs.md) to specify Whylogs settings.
 
-For stack-component-specific settings, you might be wondering what the difference is between these and the configuration passed in while doing `zenml stack-component register <NAME> --config1=configvalue --config2=configvalue` , etc. The answer is that the configuration passed in at registration time is static and fixed throughout all pipeline runs, while the settings can change.
+For stack-component-specific settings, you might be wondering what the difference is between these and the configuration passed in while doing `zenml stack-component register <NAME> --config1=configvalue --config2=configvalue`, etc. The answer is that the configuration passed in at registration time is static and fixed throughout all pipeline runs, while the settings can change.
 
 A good example of this is the [`MLflow Experiment Tracker`](../component-guide/experiment-trackers/mlflow.md), where configuration which remains static such as the `tracking_url` is sent through at registration time, while runtime configuration such as the `experiment_name` (which might change every pipeline run) is sent through as runtime settings.
 
