@@ -14,4 +14,4 @@
 from pipelines.facets_pipeline.facets_pipeline import facets_pipeline
 
 if __name__ == "__main__":
-    pipeline_instance = facets_pipeline()
+    facets_pipeline()
