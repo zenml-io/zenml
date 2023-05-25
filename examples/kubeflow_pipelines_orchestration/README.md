@@ -368,7 +368,8 @@ If you're using the Kubeflow orchestrator and some of your pipelines steps have 
 hardware requirements, you can specify them using the step decorator as follows:
 
 ```python
-from zenml import step, ResourceSettings
+from zenml.steps import ResourceSettings
+from zenml import step
 
 @step(settings={"resources": ResourceSettings(cpu_count=8, memory="16GB")})
 def my_step(...) -> ...:
