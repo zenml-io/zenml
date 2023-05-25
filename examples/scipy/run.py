@@ -14,4 +14,4 @@
 from pipelines import scipy_example_pipeline
 
 if __name__ == "__main__":
-    run = scipy_example_pipeline()
+    scipy_example_pipeline()

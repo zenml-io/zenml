@@ -15,4 +15,4 @@
 from pipelines import step_operator_pipeline
 
 if __name__ == "__main__":
-    pipeline = step_operator_pipeline()
+    step_operator_pipeline()

@@ -22,6 +22,7 @@ prepending = "prepending"
 prev = "prev"
 creat = "creat"
 ret = "ret"
+daa = "daa"
 
 [default]
 locale = "en-us"
