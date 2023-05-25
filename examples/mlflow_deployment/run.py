@@ -70,7 +70,7 @@ def main(config: str, epochs: int, lr: float, min_accuracy: float):
         # Initialize an inference pipeline run
         inference_pipeline(
             pipeline_name="continuous_deployment_pipeline",
-            pipeline_step_name="model_deployer",
+            pipeline_step_name="mlflow_model_deployer_step",
         )
 
     print(
@@ -85,7 +85,7 @@ def main(config: str, epochs: int, lr: float, min_accuracy: float):
     # fetch existing services with same pipeline name, step name and model name
     existing_services = mlflow_model_deployer_component.find_model_server(
         pipeline_name="continuous_deployment_pipeline",
-        pipeline_step_name="model_deployer",
+        pipeline_step_name="mlflow_model_deployer_step",
         model_name="model",
     )
 
