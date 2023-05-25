@@ -15,4 +15,4 @@
 from pipelines import vertex_example_pipeline
 
 if __name__ == "__main__":
-    pipeline_instance = vertex_example_pipeline()
+    vertex_example_pipeline()
