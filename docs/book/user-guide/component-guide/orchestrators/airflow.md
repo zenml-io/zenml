@@ -200,8 +200,7 @@ operators that support this:
 You can specify which operator to use and additional arguments to it as follows:
 
 ```python
-from zenml.pipelines import pipeline
-from zenml.steps import step
+from zenml import pipeline, step
 from zenml.integrations.airflow.flavors.airflow_orchestrator_flavor import AirflowOrchestratorSettings
 
 airflow_settings = AirflowOrchestratorSettings(

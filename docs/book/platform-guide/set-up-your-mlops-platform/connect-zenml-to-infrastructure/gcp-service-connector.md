@@ -910,35 +910,30 @@ Active global stack set to:'gcp-demo'
 8. Finally, run a simple pipeline to prove that everything works as expected. We'll use the simplest pipelines possible for this example:
 
 ```python
-from zenml.pipelines import pipeline
-from zenml.steps import step
+from zenml import pipeline, step
+
+
+@step
+def step_1() -> str:
+    """Returns the `world` string."""
+    return "world"
+
+
+@step(enable_cache=False)
+def step_2(input_one: str, input_two: str) -> None:
+    """Combines the two strings at its input and prints them."""
+    combined_str = f"{input_one} {input_two}"
+    print(combined_str)
+
 
 @pipeline
-def simple_pipeline(simple_step_one, simple_step_two):
-    """Define single step pipeline."""
-    message = simple_step_one()
-    simple_step_two(msg=message)
-
-
-@step
-def simple_step_one() -> str:
-    """Simple step one."""
-
-    return "Hello World!"
-
-
-@step
-def simple_step_two(msg: str) -> None:
-    """Simple step two."""
-
-    print(msg)
+def my_pipeline():
+    output_step_one = step_1()
+    step_2(input_one="hello", input_two=output_step_one)
 
 
 if __name__ == "__main__":
-    pipeline = simple_pipeline(
-        simple_step_one=simple_step_one(), simple_step_two=simple_step_two()
-    )
-    pipeline.run(enable_cache=False)
+    my_pipeline()
 ```
 
 Saving that to a `run.py` file and running it gives us:
@@ -964,18 +959,15 @@ Finished building Docker image(s).
 Running pipeline simple_pipeline on stack gcp-demo (caching disabled)
 Waiting for Kubernetes orchestrator pod...
 Kubernetes orchestrator pod started.
-Could not import AWS service connector: No module named 'boto3'.
-Waiting for pod of step simple_step_one to start...
-Step simple_step_one has started.
-Could not import AWS service connector: No module named 'boto3'.
-Step simple_step_one has finished in 1.357s.
-Pod of step simple_step_one completed.
+Waiting for pod of step step_1 to start...
+Step step_1 has started.
+Step step_1 has finished in 1.357s.
+Pod of step step_1 completed.
 Waiting for pod of step simple_step_two to start...
-Step simple_step_two has started.
-Could not import AWS service connector: No module named 'boto3'.
+Step step_2 has started.
 Hello World!
-Step simple_step_two has finished in 3.136s.
-Pod of step simple_step_two completed.
+Step step_2 has finished in 3.136s.
+Pod of step step_2 completed.
 Orchestration pod completed.
 Dashboard URL: http://34.148.132.191/workspaces/default/pipelines/cec118d1-d90a-44ec-8bd7-d978f726b7aa/runs
 ```
@@ -1172,35 +1164,30 @@ Active repository stack set to:'gcp-demo'
 8. Finally, run a simple pipeline to prove that everything works as expected. We'll use the simplest pipelines possible for this example:
 
 ```python
-from zenml.pipelines import pipeline
-from zenml.steps import step
+from zenml import pipeline, step
+
+
+@step
+def step_1() -> str:
+    """Returns the `world` string."""
+    return "world"
+
+
+@step(enable_cache=False)
+def step_2(input_one: str, input_two: str) -> None:
+    """Combines the two strings at its input and prints them."""
+    combined_str = f"{input_one} {input_two}"
+    print(combined_str)
+
 
 @pipeline
-def simple_pipeline(simple_step_one, simple_step_two):
-    """Define single step pipeline."""
-    message = simple_step_one()
-    simple_step_two(msg=message)
-
-
-@step
-def simple_step_one() -> str:
-    """Simple step one."""
-
-    return "Hello World!"
-
-
-@step
-def simple_step_two(msg: str) -> None:
-    """Simple step two."""
-
-    print(msg)
+def my_pipeline():
+    output_step_one = step_1()
+    step_2(input_one="hello", input_two=output_step_one)
 
 
 if __name__ == "__main__":
-    pipeline = simple_pipeline(
-        simple_step_one=simple_step_one(), simple_step_two=simple_step_two()
-    )
-    pipeline.run(enable_cache=False)
+    my_pipeline()
 ```
 
 Saving that to a `run.py` file and running it gives us:

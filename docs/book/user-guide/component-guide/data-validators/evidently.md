@@ -574,7 +574,8 @@ import evidently.metric_preset as metric_preset
 from evidently.test_suite import TestSuite
 import evidently.test_preset as test_preset
 from evidently.pipeline.column_mapping import ColumnMapping
-from zenml.steps import step
+from zenml import step
+from zenml.steps import Output
 
 
 @step

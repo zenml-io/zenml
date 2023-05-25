@@ -310,7 +310,7 @@ import pandas as pd
 from deepchecks.core.suite import SuiteResult
 from zenml.integrations.deepchecks.data_validators import DeepchecksDataValidator
 from zenml.integrations.deepchecks.validation_checks import DeepchecksDataIntegrityCheck
-from zenml.steps import step
+from zenml import step
 
 
 @step
@@ -357,7 +357,7 @@ import deepchecks.tabular.checks as tabular_checks
 from deepchecks.core.suite import SuiteResult
 from deepchecks.tabular import Suite
 from deepchecks.tabular import Dataset
-from zenml.steps import step
+from zenml import step
 
 
 @step

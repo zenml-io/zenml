@@ -90,8 +90,7 @@ As an example, adding `slack_alerter_ask_step()` to your pipeline could look lik
 
 ```python
 from zenml.integrations.slack.steps.slack_alerter_ask_step import slack_alerter_ask_step
-from zenml.steps import step
-from zenml.pipelines import pipeline
+from zenml import step, pipeline
 
 
 @step
@@ -100,19 +99,15 @@ def my_formatter_step(artifact_to_be_communicated) -> str:
 
 
 @pipeline
-def my_pipeline(..., formatter, alerter):
+def my_pipeline(...):
     ...
     artifact_to_be_communicated = ...
-    message = formatter(artifact_to_be_communicated)
-    approved = alerter(message)
+    message = my_formatter_step(artifact_to_be_communicated)
+    approved = slack_alerter_ask_step(message)
     ... # Potentially have different behavior in subsequent steps if `approved`
 
-
-my_pipeline(
-    ...
-    formatter=my_formatter_step(),
-    alerter=slack_alerter_ask_step(),
-).run()
+if __name__ == "__main__":
+    my_pipeline()
 ```
 
 For complete code examples of both Slack alerter steps, see

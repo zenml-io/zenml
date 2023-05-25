@@ -219,13 +219,10 @@ Once you added the step operator to your active stack, you can use it to execute
 specifying it in the `@step` decorator as follows:
 
 ```python
-from zenml.steps import step
+from zenml import step
 
 
-@step(step_operator= < NAME >
-
-)
-
+@step(step_operator= <NAME>)
 def preprocess(...) -> ...:
     """Preprocess your dataset."""
     # This step will be executed with Spark on Kubernetes.

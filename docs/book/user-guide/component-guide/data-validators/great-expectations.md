@@ -266,7 +266,7 @@ from zenml.integrations.great_expectations.data_validators import (
 
 import pandas as pd
 from great_expectations.core import ExpectationSuite
-from zenml.steps import step
+from zenml import step
 
 
 @step

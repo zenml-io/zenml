@@ -137,7 +137,7 @@ If you have secrets registered through both the [centralized secrets management]
 If you are using [centralized secrets management](interact-with-secrets.md), you can access secrets directly from within your steps through the ZenML `Client` API. This allows you to use your secrets for querying APIs from within your step without hard-coding your access keys:
 
 ```python
-from zenml.steps import step
+from zenml import step
 from zenml.client import Client
 
 
