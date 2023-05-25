@@ -2,7 +2,7 @@
 description: Navigating multiple development environments.
 ---
 
-# Manage multiple environments through which code propogates
+# Manage multiple environments through which code propagates
 
 {% hint style="warning" %}
 **Note:** This page is a work in progress (WIP) and is currently under development. If you have any questions or need
@@ -67,4 +67,5 @@ special [stack component](../starter-guide/understand-stacks.md), allowing users
 pushing.
 
 Note that even if you don't configure an image builder in your stack, ZenML still uses
-the [local image builder](../component-guide/image-builders/local.md) to retain consistency across all builds.
+the [local image builder](../component-guide/image-builders/local.md) to retain
+consistency across all builds.
