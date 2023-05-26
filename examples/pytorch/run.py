@@ -13,13 +13,6 @@
 #  permissions and limitations under the License.
 
 from pipelines.fashion_mnist_pipeline import fashion_mnist_pipeline
-from steps.evaluators import evaluator
-from steps.importers import importer_mnist
-from steps.trainers import trainer
 
 if __name__ == "__main__":
-    fashion_mnist_pipeline(
-        importer=importer_mnist(),
-        trainer=trainer(),
-        evaluator=evaluator(),
-    ).run()
+    fashion_mnist_pipeline()

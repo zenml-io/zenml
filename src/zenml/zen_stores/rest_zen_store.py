@@ -56,6 +56,11 @@ from zenml.constants import (
     RUN_METADATA,
     RUNS,
     SCHEDULES,
+    SERVICE_CONNECTOR_CLIENT,
+    SERVICE_CONNECTOR_RESOURCES,
+    SERVICE_CONNECTOR_TYPES,
+    SERVICE_CONNECTOR_VERIFY,
+    SERVICE_CONNECTORS,
     STACK_COMPONENTS,
     STACKS,
     STEPS,
@@ -112,6 +117,12 @@ from zenml.models import (
     ScheduleRequestModel,
     ScheduleResponseModel,
     ScheduleUpdateModel,
+    ServiceConnectorFilterModel,
+    ServiceConnectorRequestModel,
+    ServiceConnectorResourcesModel,
+    ServiceConnectorResponseModel,
+    ServiceConnectorTypeModel,
+    ServiceConnectorUpdateModel,
     StackFilterModel,
     StackRequestModel,
     StackResponseModel,
@@ -147,6 +158,9 @@ from zenml.models.run_metadata_models import RunMetadataFilterModel
 from zenml.models.schedule_model import ScheduleFilterModel
 from zenml.models.server_models import ServerModel
 from zenml.models.team_models import TeamFilterModel, TeamUpdateModel
+from zenml.service_connectors.service_connector_registry import (
+    service_connector_registry,
+)
 from zenml.utils.analytics_utils import AnalyticsEvent, track
 from zenml.utils.networking_utils import (
     replace_localhost_with_internal_hostname,
@@ -1879,6 +1893,425 @@ class RestZenStore(BaseZenStore):
             resource_id=code_repository_id, route=CODE_REPOSITORIES
         )
 
+    # ------------------
+    # Service Connectors
+    # ------------------
+
+    def _populate_connector_type(
+        self,
+        *connector_models: Union[
+            ServiceConnectorResponseModel, ServiceConnectorResourcesModel
+        ],
+    ) -> None:
+        """Populates or updates the connector type of the given connector or resource models.
+
+        If the connector type is not locally available, the connector type
+        field is left as is. The local and remote flags of the connector type
+        are updated accordingly.
+
+        Args:
+            connector_models: The service connector or resource models to
+                populate.
+        """
+        for service_connector in connector_models:
+            # Mark the remote connector type as being only remotely available
+            if not isinstance(service_connector.connector_type, str):
+                service_connector.connector_type.local = False
+                service_connector.connector_type.remote = True
+
+            if not service_connector_registry.is_registered(
+                service_connector.type
+            ):
+                continue
+
+            connector_type = (
+                service_connector_registry.get_service_connector_type(
+                    service_connector.type
+                )
+            )
+            connector_type.local = True
+            if not isinstance(service_connector.connector_type, str):
+                connector_type.remote = True
+            service_connector.connector_type = connector_type
+
+    def create_service_connector(
+        self, service_connector: ServiceConnectorRequestModel
+    ) -> ServiceConnectorResponseModel:
+        """Creates a new service connector.
+
+        Args:
+            service_connector: Service connector to be created.
+
+        Returns:
+            The newly created service connector.
+        """
+        connector_model = self._create_workspace_scoped_resource(
+            resource=service_connector,
+            route=SERVICE_CONNECTORS,
+            response_model=ServiceConnectorResponseModel,
+        )
+        self._populate_connector_type(connector_model)
+        return connector_model
+
+    def get_service_connector(
+        self, service_connector_id: UUID
+    ) -> ServiceConnectorResponseModel:
+        """Gets a specific service connector.
+
+        Args:
+            service_connector_id: The ID of the service connector to get.
+
+        Returns:
+            The requested service connector, if it was found.
+        """
+        connector_model = self._get_resource(
+            resource_id=service_connector_id,
+            route=SERVICE_CONNECTORS,
+            response_model=ServiceConnectorResponseModel,
+            params={"expand_secrets": False},
+        )
+        self._populate_connector_type(connector_model)
+        return connector_model
+
+    def list_service_connectors(
+        self, filter_model: ServiceConnectorFilterModel
+    ) -> Page[ServiceConnectorResponseModel]:
+        """List all service connectors.
+
+        Args:
+            filter_model: All filter parameters including pagination
+                params.
+
+        Returns:
+            A page of all service connectors.
+        """
+        connector_models = self._list_paginated_resources(
+            route=SERVICE_CONNECTORS,
+            response_model=ServiceConnectorResponseModel,
+            filter_model=filter_model,
+            params={"expand_secrets": False},
+        )
+        self._populate_connector_type(*connector_models.items)
+        return connector_models
+
+    def update_service_connector(
+        self, service_connector_id: UUID, update: ServiceConnectorUpdateModel
+    ) -> ServiceConnectorResponseModel:
+        """Updates an existing service connector.
+
+        The update model contains the fields to be updated. If a field value is
+        set to None in the model, the field is not updated, but there are
+        special rules concerning some fields:
+
+        * the `configuration` and `secrets` fields together represent a full
+        valid configuration update, not just a partial update. If either is
+        set (i.e. not None) in the update, their values are merged together and
+        will replace the existing configuration and secrets values.
+        * the `resource_id` field value is also a full replacement value: if set
+        to `None`, the resource ID is removed from the service connector.
+        * the `expiration_seconds` field value is also a full replacement value:
+        if set to `None`, the expiration is removed from the service connector.
+        * the `secret_id` field value in the update is ignored, given that
+        secrets are managed internally by the ZenML store.
+        * the `labels` field is also a full labels update: if set (i.e. not
+        `None`), all existing labels are removed and replaced by the new labels
+        in the update.
+
+        Args:
+            service_connector_id: The ID of the service connector to update.
+            update: The update to be applied to the service connector.
+
+        Returns:
+            The updated service connector.
+        """
+        connector_model = self._update_resource(
+            resource_id=service_connector_id,
+            resource_update=update,
+            response_model=ServiceConnectorResponseModel,
+            route=SERVICE_CONNECTORS,
+        )
+        self._populate_connector_type(connector_model)
+        return connector_model
+
+    def delete_service_connector(self, service_connector_id: UUID) -> None:
+        """Deletes a service connector.
+
+        Args:
+            service_connector_id: The ID of the service connector to delete.
+        """
+        self._delete_resource(
+            resource_id=service_connector_id, route=SERVICE_CONNECTORS
+        )
+
+    def verify_service_connector_config(
+        self,
+        service_connector: ServiceConnectorRequestModel,
+    ) -> ServiceConnectorResourcesModel:
+        """Verifies if a service connector configuration has access to resources.
+
+        Args:
+            service_connector: The service connector configuration to verify.
+
+        Returns:
+            The list of resources that the service connector configuration has
+            access to.
+        """
+        response_body = self.post(
+            f"{SERVICE_CONNECTORS}{SERVICE_CONNECTOR_VERIFY}",
+            body=service_connector,
+        )
+
+        resources = ServiceConnectorResourcesModel.parse_obj(response_body)
+        self._populate_connector_type(resources)
+        return resources
+
+    def verify_service_connector(
+        self,
+        service_connector_id: UUID,
+        resource_type: Optional[str] = None,
+        resource_id: Optional[str] = None,
+    ) -> ServiceConnectorResourcesModel:
+        """Verifies if a service connector instance has access to one or more resources.
+
+        Args:
+            service_connector_id: The ID of the service connector to verify.
+            resource_type: The type of resource to verify access to.
+            resource_id: The ID of the resource to verify access to.
+
+        Returns:
+            The list of resources that the service connector has access to,
+            scoped to the supplied resource type and ID, if provided.
+        """
+        params = {}
+        if resource_type:
+            params["resource_type"] = resource_type
+        if resource_id:
+            params["resource_id"] = resource_id
+        response_body = self.put(
+            f"{SERVICE_CONNECTORS}/{str(service_connector_id)}{SERVICE_CONNECTOR_VERIFY}",
+            params=params,
+        )
+
+        resources = ServiceConnectorResourcesModel.parse_obj(response_body)
+        self._populate_connector_type(resources)
+        return resources
+
+    def get_service_connector_client(
+        self,
+        service_connector_id: UUID,
+        resource_type: Optional[str] = None,
+        resource_id: Optional[str] = None,
+    ) -> ServiceConnectorResponseModel:
+        """Get a service connector client for a service connector and given resource.
+
+        Args:
+            service_connector_id: The ID of the base service connector to use.
+            resource_type: The type of resource to get a client for.
+            resource_id: The ID of the resource to get a client for.
+
+        Returns:
+            A service connector client that can be used to access the given
+            resource.
+        """
+        params = {}
+        if resource_type:
+            params["resource_type"] = resource_type
+        if resource_id:
+            params["resource_id"] = resource_id
+        response_body = self.get(
+            f"{SERVICE_CONNECTORS}/{str(service_connector_id)}{SERVICE_CONNECTOR_CLIENT}",
+            params=params,
+        )
+
+        connector = ServiceConnectorResponseModel.parse_obj(response_body)
+        self._populate_connector_type(connector)
+        return connector
+
+    def list_service_connector_resources(
+        self,
+        user_name_or_id: Union[str, UUID],
+        workspace_name_or_id: Union[str, UUID],
+        connector_type: Optional[str] = None,
+        resource_type: Optional[str] = None,
+        resource_id: Optional[str] = None,
+    ) -> List[ServiceConnectorResourcesModel]:
+        """List resources that can be accessed by service connectors.
+
+        Args:
+            user_name_or_id: The name or ID of the user to scope to.
+            workspace_name_or_id: The name or ID of the workspace to scope to.
+            connector_type: The type of service connector to scope to.
+            resource_type: The type of resource to scope to.
+            resource_id: The ID of the resource to scope to.
+
+        Returns:
+            The matching list of resources that available service
+            connectors have access to.
+        """
+        params = {}
+        if connector_type:
+            params["connector_type"] = connector_type
+        if resource_type:
+            params["resource_type"] = resource_type
+        if resource_id:
+            params["resource_id"] = resource_id
+        response_body = self.get(
+            f"{WORKSPACES}/{workspace_name_or_id}{SERVICE_CONNECTORS}{SERVICE_CONNECTOR_RESOURCES}",
+            params=params,
+        )
+
+        assert isinstance(response_body, list)
+        resource_list = [
+            ServiceConnectorResourcesModel.parse_obj(item)
+            for item in response_body
+        ]
+
+        self._populate_connector_type(*resource_list)
+
+        # For service connectors with types that are only locally available,
+        # we need to retrieve the resource list locally
+        for idx, resources in enumerate(resource_list):
+            if isinstance(resources.connector_type, str):
+                # Skip connector types that are neither locally nor remotely
+                # available
+                continue
+            if resources.connector_type.remote:
+                # Skip connector types that are remotely available
+                continue
+
+            # Retrieve the resource list locally
+            assert resources.id is not None
+            connector = self.get_service_connector(resources.id)
+            connector_instance = (
+                service_connector_registry.instantiate_connector(
+                    model=connector
+                )
+            )
+
+            try:
+                local_resources = connector_instance.verify(
+                    resource_type=resource_type,
+                    resource_id=resource_id,
+                )
+            except (ValueError, AuthorizationException) as e:
+                logger.error(
+                    f'Failed to fetch {resource_type or "available"} '
+                    f"resources from service connector {connector.name}/"
+                    f"{connector.id}: {e}"
+                )
+                continue
+
+            resource_list[idx] = local_resources
+
+        return resource_list
+
+    def list_service_connector_types(
+        self,
+        connector_type: Optional[str] = None,
+        resource_type: Optional[str] = None,
+        auth_method: Optional[str] = None,
+    ) -> List[ServiceConnectorTypeModel]:
+        """Get a list of service connector types.
+
+        Args:
+            connector_type: Filter by connector type.
+            resource_type: Filter by resource type.
+            auth_method: Filter by authentication method.
+
+        Returns:
+            List of service connector types.
+        """
+        params = {}
+        if connector_type:
+            params["connector_type"] = connector_type
+        if resource_type:
+            params["resource_type"] = resource_type
+        if auth_method:
+            params["auth_method"] = auth_method
+        response_body = self.get(
+            SERVICE_CONNECTOR_TYPES,
+            params=params,
+        )
+
+        assert isinstance(response_body, list)
+        remote_connector_types = [
+            ServiceConnectorTypeModel.parse_obj(item) for item in response_body
+        ]
+
+        # Mark the remote connector types as being only remotely available
+        for c in remote_connector_types:
+            c.local = False
+            c.remote = True
+
+        local_connector_types = (
+            service_connector_registry.list_service_connector_types(
+                connector_type=connector_type,
+                resource_type=resource_type,
+                auth_method=auth_method,
+            )
+        )
+
+        # Add the connector types in the local registry to the list of
+        # connector types available remotely. Overwrite those that have
+        # the same connector type but mark them as being remotely available.
+        connector_types_map = {
+            connector_type.connector_type: connector_type
+            for connector_type in remote_connector_types
+        }
+
+        for connector in local_connector_types:
+            if connector.connector_type in connector_types_map:
+                connector.remote = True
+            connector_types_map[connector.connector_type] = connector
+
+        return list(connector_types_map.values())
+
+    def get_service_connector_type(
+        self,
+        connector_type: str,
+    ) -> ServiceConnectorTypeModel:
+        """Returns the requested service connector type.
+
+        Args:
+            connector_type: the service connector type identifier.
+
+        Returns:
+            The requested service connector type.
+        """
+        # Use the local registry to get the service connector type, if it
+        # exists.
+        local_connector_type: Optional[ServiceConnectorTypeModel] = None
+        if service_connector_registry.is_registered(connector_type):
+            local_connector_type = (
+                service_connector_registry.get_service_connector_type(
+                    connector_type
+                )
+            )
+        try:
+            response_body = self.get(
+                f"{SERVICE_CONNECTOR_TYPES}/{connector_type}",
+            )
+            remote_connector_type = ServiceConnectorTypeModel.parse_obj(
+                response_body
+            )
+            if local_connector_type:
+                # If locally available, return the local connector type but
+                # mark it as being remotely available.
+                local_connector_type.remote = True
+                return local_connector_type
+
+            # Mark the remote connector type as being only remotely available
+            remote_connector_type.local = False
+            remote_connector_type.remote = True
+
+            return remote_connector_type
+        except KeyError:
+            # If the service connector type is not found, check the local
+            # registry.
+            return service_connector_registry.get_service_connector_type(
+                connector_type
+            )
+
     # =======================
     # Internal helper methods
     # =======================
@@ -2106,7 +2539,7 @@ class RestZenStore(BaseZenStore):
     def put(
         self,
         path: str,
-        body: BaseModel,
+        body: Optional[BaseModel] = None,
         params: Optional[Dict[str, Any]] = None,
         **kwargs: Any,
     ) -> Json:
@@ -2122,10 +2555,11 @@ class RestZenStore(BaseZenStore):
             The response body.
         """
         logger.debug(f"Sending PUT request to {path}...")
+        data = body.json(exclude_unset=True) if body else None
         return self._request(
             "PUT",
             self.url + API + VERSION_1 + path,
-            data=body.json(exclude_unset=True),
+            data=data,
             params=params,
             **kwargs,
         )
@@ -2260,6 +2694,7 @@ class RestZenStore(BaseZenStore):
         resource_id: Union[str, UUID],
         route: str,
         response_model: Type[AnyResponseModel],
+        params: Optional[Dict[str, Any]] = None,
     ) -> AnyResponseModel:
         """Retrieve a single resource.
 
@@ -2267,11 +2702,12 @@ class RestZenStore(BaseZenStore):
             resource_id: The ID of the resource to retrieve.
             route: The resource REST API route to use.
             response_model: Model to use to serialize the response body.
+            params: Optional query parameters to pass to the endpoint.
 
         Returns:
             The retrieved resource.
         """
-        body = self.get(f"{route}/{str(resource_id)}")
+        body = self.get(f"{route}/{str(resource_id)}", params=params)
         return response_model.parse_obj(body)
 
     def _list_paginated_resources(
@@ -2279,6 +2715,7 @@ class RestZenStore(BaseZenStore):
         route: str,
         response_model: Type[AnyResponseModel],
         filter_model: BaseFilterModel,
+        params: Optional[Dict[str, Any]] = None,
     ) -> Page[AnyResponseModel]:
         """Retrieve a list of resources filtered by some criteria.
 
@@ -2286,6 +2723,7 @@ class RestZenStore(BaseZenStore):
             route: The resource REST API route to use.
             response_model: Model to use to serialize the response body.
             filter_model: The filter model to use for the list query.
+            params: Optional query parameters to pass to the endpoint.
 
         Returns:
             List of retrieved resources matching the filter criteria.
@@ -2294,9 +2732,9 @@ class RestZenStore(BaseZenStore):
             ValueError: If the value returned by the server is not a list.
         """
         # leave out filter params that are not supplied
-        body = self.get(
-            f"{route}", params=filter_model.dict(exclude_none=True)
-        )
+        params = params or {}
+        params.update(filter_model.dict(exclude_none=True))
+        body = self.get(f"{route}", params=params)
         if not isinstance(body, dict):
             raise ValueError(
                 f"Bad API Response. Expected list, got {type(body)}"

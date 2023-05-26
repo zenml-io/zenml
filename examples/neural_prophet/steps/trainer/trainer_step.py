@@ -14,33 +14,27 @@
 import pandas as pd
 from neuralprophet import NeuralProphet
 
+from zenml import step
 from zenml.logger import get_logger
-from zenml.steps import BaseParameters, step
 
 logger = get_logger(__name__)
 
 
-class NeuralProphetParameters(BaseParameters):
-    """Tracks parameters for a NeuralProphet model."""
-
-    weekly_seasonality: int = 6
-    daily_seasonality: int = 10
-    trend_reg: int = 1
-    learning_rate: int = 0.01
-
-
 @step
 def trainer(
-    params: NeuralProphetParameters,
     df_train: pd.DataFrame,
     df_test: pd.DataFrame,
+    weekly_seasonality: int = 6,
+    daily_seasonality: int = 10,
+    trend_reg: int = 1,
+    learning_rate: float = 0.01,
 ) -> NeuralProphet:
     """Trains a NeuralProphet model on the data."""
     m = NeuralProphet(
-        weekly_seasonality=params.weekly_seasonality,
-        daily_seasonality=params.daily_seasonality,
-        trend_reg=params.trend_reg,
-        learning_rate=params.learning_rate,
+        weekly_seasonality=weekly_seasonality,
+        daily_seasonality=daily_seasonality,
+        trend_reg=trend_reg,
+        learning_rate=learning_rate,
     )
     metrics = m.fit(df_train, freq="H", validation_df=df_test)
     logger.info(f"Metrics: {metrics}")

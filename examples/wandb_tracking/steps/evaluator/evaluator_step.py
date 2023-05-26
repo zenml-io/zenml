@@ -15,9 +15,9 @@ import numpy as np
 import tensorflow as tf
 import wandb
 
+from zenml import step
 from zenml.client import Client
 from zenml.integrations.wandb.experiment_trackers import WandbExperimentTracker
-from zenml.steps import step
 
 experiment_tracker = Client().active_stack.experiment_tracker
 

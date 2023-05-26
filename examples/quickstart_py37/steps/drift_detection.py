@@ -14,14 +14,9 @@
 
 from zenml.integrations.evidently.metrics import EvidentlyMetricConfig
 from zenml.integrations.evidently.steps import (
-    EvidentlyReportParameters,
     evidently_report_step,
 )
 
-# configure the Evidently step
-evidently_report_params = EvidentlyReportParameters(
-    metrics=[EvidentlyMetricConfig.metric("DataDriftPreset")]
-)
-drift_detector = evidently_report_step(
-    step_name="drift_detector", params=evidently_report_params
+drift_detector = evidently_report_step.with_options(
+    parameters=dict(metrics=[EvidentlyMetricConfig.metric("DataDriftPreset")])
 )
