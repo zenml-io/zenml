@@ -26,7 +26,10 @@ class LabelStudioIntegration(Integration):
     """Definition of Label Studio integration for ZenML."""
 
     NAME = LABEL_STUDIO
-    REQUIREMENTS = ["label-studio==1.6.0", "label-studio-sdk>=0.0.17"]
+    REQUIREMENTS = [
+        "label-studio>=1.6.0,<=1.7.3",
+        "label-studio-sdk>=0.0.17,<=0.0.24",
+    ]
 
     @classmethod
     def flavors(cls) -> List[Type[Flavor]]:

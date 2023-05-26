@@ -46,6 +46,8 @@ class GcpIntegration(Integration):
         "kfp==1.8.16",
         "gcsfs",
         "google-cloud-secret-manager",
+        "google-cloud-container>=2.21.0",
+        "google-cloud-storage>=2.9.0",
         "google-cloud-aiplatform>=1.11.0",
         "google-cloud-scheduler>=2.7.3",
         "google-cloud-functions>=1.8.3",
@@ -55,6 +57,11 @@ class GcpIntegration(Integration):
         # google-cloud-bigquery is updated.
         "shapely<2.0",
     ]
+
+    @staticmethod
+    def activate() -> None:
+        """Activate the GCP integration."""
+        from zenml.integrations.gcp import service_connectors  # noqa
 
     @classmethod
     def flavors(cls) -> List[Type[Flavor]]:

@@ -46,7 +46,7 @@ def generate_artifact_uri(
     """
     return os.path.join(
         artifact_store.path,
-        step_run.step.config.name,
+        step_run.name,
         output_name,
         str(step_run.id),
     )

@@ -13,30 +13,18 @@
 #  permissions and limitations under the License.
 
 from pipelines.fashion_mnist_pipeline import fashion_mnist_pipeline
-from steps.evaluators import evaluator
-from steps.importers import importer_mnist
-from steps.trainers import trainer
 
 if __name__ == "__main__":
-    pipeline_instance = fashion_mnist_pipeline(
-        importer=importer_mnist(),
-        trainer=trainer(),
-        evaluator=evaluator(),
-    )
-
-    pipeline_instance.run()
+    fashion_mnist_pipeline()
 
     # In case you want to run this on a schedule uncomment the following lines.
     # Note that Airflow schedules need to be set in the past:
 
     # from datetime import datetime, timedelta
 
-    # from zenml.integrations.airflow.flavors.airflow_orchestrator_flavor import (
-    #     AirflowOrchestratorSettings,
-    # )
     # from zenml.pipelines import Schedule
 
-    # pipeline_instance.run(
+    # scheduled_pipeline = fashion_mnist_pipeline.with_options(
     #     schedule=Schedule(
     #         start_time=datetime.now() - timedelta(hours=1),
     #         end_time=datetime.now() + timedelta(hours=1),
@@ -44,3 +32,4 @@ if __name__ == "__main__":
     #         catchup=False,
     #     )
     # )
+    # scheduled_pipeline()

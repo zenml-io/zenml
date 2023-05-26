@@ -14,7 +14,7 @@
 import lightgbm as lgb
 import numpy as np
 
-from zenml.steps import step
+from zenml import step
 
 
 @step

@@ -12,9 +12,21 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+from steps import (
+    evaluator,
+    svc_trainer_mlflow,
+    training_data_loader,
+)
+
+from zenml import pipeline
 from zenml.config import DockerSettings
 from zenml.integrations.constants import SKLEARN
-from zenml.pipelines import pipeline
+from zenml.integrations.mlflow.steps.mlflow_registry import (
+    mlflow_register_model_step,
+)
+from zenml.model_registries.base_model_registry import (
+    ModelRegistryModelMetadata,
+)
 
 docker_settings = DockerSettings(
     required_integrations=[SKLEARN],
@@ -22,14 +34,15 @@ docker_settings = DockerSettings(
 
 
 @pipeline(enable_cache=False, settings={"docker": docker_settings})
-def training_pipeline(
-    training_data_loader,
-    trainer,
-    evaluator,
-    model_register,
-):
+def training_pipeline():
     """Train, evaluate, and deploy a model."""
     X_train, X_test, y_train, y_test = training_data_loader()
-    model = trainer(X_train=X_train, y_train=y_train)
+    model = svc_trainer_mlflow(X_train=X_train, y_train=y_train)
     evaluator(X_test=X_test, y_test=y_test, model=model)
-    model_register(model)
+    mlflow_register_model_step.with_options(
+        parameters=dict(
+            name="zenml-quickstart-model",
+            metadata=ModelRegistryModelMetadata(gamma=0.01, arch="svc"),
+            description="The first run of the Quickstart pipeline.",
+        )
+    )(model)

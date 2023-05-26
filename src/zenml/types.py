@@ -20,3 +20,7 @@ class HTMLString(str):
 
 class MarkdownString(str):
     """Special string class to indicate a Markdown string."""
+
+
+class CSVString(str):
+    """Special string class to indicate a CSV string."""

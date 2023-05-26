@@ -12,15 +12,26 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Pipeline configuration classes."""
-from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    List,
+    Mapping,
+    Optional,
+    Tuple,
+    Union,
+)
+from uuid import UUID
 
-from pydantic import root_validator
+from pydantic import root_validator, validator
 
 from zenml.config.base_settings import BaseSettings, SettingsOrDict
 from zenml.config.constants import DOCKER_SETTINGS_KEY, RESOURCE_SETTINGS_KEY
 from zenml.config.source import Source, convert_source_validator
 from zenml.config.strict_base_model import StrictBaseModel
 from zenml.logger import get_logger
+from zenml.utils import deprecation_utils
 
 if TYPE_CHECKING:
     from zenml.config import DockerSettings, ResourceSettings
@@ -31,7 +42,7 @@ logger = get_logger(__name__)
 class PartialArtifactConfiguration(StrictBaseModel):
     """Class representing a partial input/output artifact configuration."""
 
-    materializer_source: Optional[Source] = None
+    materializer_source: Optional[Tuple[Source, ...]] = None
 
     @root_validator(pre=True)
     def _remove_deprecated_attributes(
@@ -51,15 +62,49 @@ class PartialArtifactConfiguration(StrictBaseModel):
                 values.pop(deprecated_attribute)
         return values
 
-    _convert_source = convert_source_validator("materializer_source")
+    @validator("materializer_source", pre=True)
+    def _convert_source(
+        cls, value: Union[None, Source, str, Tuple[Source, ...]]
+    ) -> Optional[Tuple[Source, ...]]:
+        """Converts old source strings to tuples of source objects.
+
+        Args:
+            value: Source string or object.
+
+        Returns:
+            The converted source.
+        """
+        if isinstance(value, str):
+            value = (Source.from_import_path(value),)
+        elif isinstance(value, Source):
+            value = (value,)
+
+        return value
 
 
 class ArtifactConfiguration(PartialArtifactConfiguration):
     """Class representing a complete input/output artifact configuration."""
 
-    materializer_source: Source
+    materializer_source: Tuple[Source, ...]
 
-    _convert_source = convert_source_validator("materializer_source")
+    @validator("materializer_source", pre=True)
+    def _convert_source(
+        cls, value: Union[Source, str, Tuple[Source, ...]]
+    ) -> Tuple[Source, ...]:
+        """Converts old source strings to tuples of source objects.
+
+        Args:
+            value: Source string or object.
+
+        Returns:
+            The converted source.
+        """
+        if isinstance(value, str):
+            value = (Source.from_import_path(value),)
+        elif isinstance(value, Source):
+            value = (value,)
+
+        return value
 
 
 class StepConfigurationUpdate(StrictBaseModel):
@@ -82,6 +127,9 @@ class StepConfigurationUpdate(StrictBaseModel):
     _convert_source = convert_source_validator(
         "failure_hook_source", "success_hook_source"
     )
+    _deprecation_validator = deprecation_utils.deprecate_pydantic_attributes(
+        "name"
+    )
 
 
 class PartialStepConfiguration(StepConfigurationUpdate):
@@ -89,8 +137,12 @@ class PartialStepConfiguration(StepConfigurationUpdate):
 
     name: str
     caching_parameters: Mapping[str, Any] = {}
-    inputs: Mapping[str, PartialArtifactConfiguration] = {}
+    external_input_artifacts: Mapping[str, UUID] = {}
     outputs: Mapping[str, PartialArtifactConfiguration] = {}
+
+    # Override the deprecation validator as we do not want to deprecate the
+    # `name`` attribute on this class.
+    _deprecation_validator = deprecation_utils.deprecate_pydantic_attributes()
 
     @root_validator(pre=True)
     def _remove_deprecated_attributes(
@@ -104,7 +156,7 @@ class PartialStepConfiguration(StepConfigurationUpdate):
         Returns:
             The values dict without deprecated attributes.
         """
-        deprecated_attributes = ["docstring"]
+        deprecated_attributes = ["docstring", "inputs"]
         for deprecated_attribute in deprecated_attributes:
             if deprecated_attribute in values:
                 values.pop(deprecated_attribute)
@@ -114,7 +166,6 @@ class PartialStepConfiguration(StepConfigurationUpdate):
 class StepConfiguration(PartialStepConfiguration):
     """Step configuration class."""
 
-    inputs: Mapping[str, ArtifactConfiguration] = {}
     outputs: Mapping[str, ArtifactConfiguration] = {}
 
     @property

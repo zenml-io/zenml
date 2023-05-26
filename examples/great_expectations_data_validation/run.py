@@ -14,19 +14,6 @@
 
 
 from pipelines.validation import validation_pipeline
-from steps.importer import importer
-from steps.prevalidator import prevalidator
-from steps.profiler import ge_profiler_step
-from steps.splitter import splitter
-from steps.validator import ge_validate_test_step, ge_validate_train_step
 
 if __name__ == "__main__":
-    pipeline = validation_pipeline(
-        importer(),
-        splitter(),
-        ge_profiler_step,
-        prevalidator(),
-        ge_validate_train_step,
-        ge_validate_test_step,
-    )
-    pipeline.run()
+    validation_pipeline()

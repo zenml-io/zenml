@@ -12,7 +12,8 @@
 #  permissions and limitations under the License.
 import json
 
-from zenml.steps import Output, step
+from zenml import step
+from zenml.steps import Output
 
 
 @step

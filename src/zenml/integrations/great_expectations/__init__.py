@@ -33,6 +33,8 @@ class GreatExpectationsIntegration(Integration):
     NAME = GREAT_EXPECTATIONS
     REQUIREMENTS = [
         "great-expectations>=0.15.0,<=0.15.47",
+        # typing_extensions 4.6.0 and above doesn't work with GE
+        "typing_extensions<4.6.0",
     ]
 
     @staticmethod

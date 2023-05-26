@@ -11,26 +11,45 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+from steps.evaluator.evaluator_step import tf_evaluator
+from steps.loader.loader_step import loader_mnist
+from steps.normalizer.normalizer_step import normalizer
+from steps.trainer.trainer_step import tf_trainer
+
+from zenml import pipeline
 from zenml.config import DockerSettings
 from zenml.integrations.constants import MLFLOW, TENSORFLOW
-from zenml.pipelines import pipeline
+from zenml.integrations.mlflow.steps.mlflow_registry import (
+    mlflow_register_model_step,
+)
+from zenml.model_registries.base_model_registry import (
+    ModelRegistryModelMetadata,
+)
 
 docker_settings = DockerSettings(required_integrations=[MLFLOW, TENSORFLOW])
 
 
 @pipeline(enable_cache=False, settings={"docker": docker_settings})
 def mlflow_training_pipeline(
-    importer,
-    normalizer,
-    trainer,
-    evaluator,
-    model_register,
+    epochs: int = 1,
+    lr: float = 0.001,
+    num_run: int = 1,
 ):
     # Link all the steps artifacts together
-    x_train, y_train, x_test, y_test = importer()
+    x_train, y_train, x_test, y_test = loader_mnist()
     x_trained_normed, x_test_normed = normalizer(
         x_train=x_train, x_test=x_test
     )
-    model = trainer(x_train=x_trained_normed, y_train=y_train)
-    evaluator(x_test=x_test_normed, y_test=y_test, model=model)
-    model_register(model)
+    model = tf_trainer(
+        x_train=x_trained_normed, y_train=y_train, epochs=epochs, lr=lr
+    )
+    tf_evaluator(x_test=x_test_normed, y_test=y_test, model=model)
+    mlflow_register_model_step.with_options(
+        parameters=dict(
+            name="tensorflow-mnist-model",
+            metadata=ModelRegistryModelMetadata(
+                lr=lr, epochs=epochs, optimizer="Adam"
+            ),
+            description=f"Run #{num_run} of the mlflow_training_pipeline.",
+        )
+    )(model)
