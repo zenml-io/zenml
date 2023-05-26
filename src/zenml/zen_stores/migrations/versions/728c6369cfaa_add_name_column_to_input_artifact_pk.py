@@ -6,6 +6,7 @@ Create Date: 2023-03-20 13:37:51.215760
 
 """
 from alembic import op
+from sqlalchemy import text
 
 # revision identifiers, used by Alembic.
 revision = "728c6369cfaa"
@@ -28,9 +29,19 @@ def upgrade() -> None:
         constraint_name = "PRIMARY"
         server_version_info = op.get_bind().engine.dialect.server_version_info
         if server_version_info and server_version_info >= (8, 0, 13):
-            # Temporarily disable this MySQL setting so we can update the
-            # primary key
-            op.execute("SET SESSION sql_require_primary_key = 0;")
+            potential_session_var = (
+                op.get_bind()
+                .execute(
+                    text(
+                        'SHOW SESSION VARIABLES LIKE "sql_require_primary_key";'
+                    )
+                )
+                .fetchone()
+            )
+            if potential_session_var and potential_session_var[1] == "ON":
+                # Temporarily disable this MySQL setting so we can update the
+                # primary key
+                op.execute("SET SESSION sql_require_primary_key = 0;")
     else:
         raise NotImplementedError(f"Unsupported engine: {engine_name}")
 
@@ -84,9 +95,19 @@ def downgrade() -> None:
     if op.get_bind().engine.name == "mysql":
         server_version_info = op.get_bind().engine.dialect.server_version_info
         if server_version_info and server_version_info >= (8, 0, 13):
-            # Temporarily disable this MySQL setting so we can update the
-            # primary key
-            op.execute("SET SESSION sql_require_primary_key = 0;")
+            potential_session_var = (
+                op.get_bind()
+                .execute(
+                    text(
+                        'SHOW SESSION VARIABLES LIKE "sql_require_primary_key";'
+                    )
+                )
+                .fetchone()
+            )
+            if potential_session_var and potential_session_var[1] == "ON":
+                # Temporarily disable this MySQL setting so we can update the
+                # primary key
+                op.execute("SET SESSION sql_require_primary_key = 0;")
 
     with op.batch_alter_table(
         "step_run_input_artifact",
