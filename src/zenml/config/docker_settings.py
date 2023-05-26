@@ -172,7 +172,7 @@ class DockerSettings(BaseSettings):
     build_context_root: Optional[str] = None
     build_options: Dict[str, Any] = {}
     skip_build: bool = False
-    target_repository: str = "zenml"
+    target_repository: str = "zenml-sandbox-pipelines"
     replicate_local_python_environment: Optional[
         Union[List[str], PythonEnvironmentExportMethod]
     ] = None
