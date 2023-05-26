@@ -31,7 +31,7 @@ from zenml.models import (
     PipelineBuildResponseModel,
 )
 from zenml.models.pipeline_deployment_models import PipelineDeploymentBaseModel
-from zenml.pipelines import build_utils
+from zenml.new.pipelines import build_utils
 from zenml.stack import Stack
 from zenml.utils.pipeline_docker_image_builder import (
     PipelineDockerImageBuilder,
@@ -491,7 +491,7 @@ def test_finding_existing_build(
         ),
     )
     mocker.patch(
-        "zenml.pipelines.build_utils.compute_build_checksum",
+        "zenml.new.pipelines.build_utils.compute_build_checksum",
         return_value="checksum",
     )
     mocker.patch.object(Stack, "get_docker_builds", return_value=[])

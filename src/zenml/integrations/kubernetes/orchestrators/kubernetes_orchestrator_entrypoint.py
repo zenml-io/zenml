@@ -61,27 +61,26 @@ def main() -> None:
     # Parse / extract args.
     args = parse_args()
 
-    # Get Kubernetes Core API for running kubectl commands later.
-    kube_utils.load_kube_config(incluster=True)
-    core_api = k8s_client.CoreV1Api()
-
     orchestrator_run_id = socket.gethostname()
 
     deployment_config = Client().get_deployment(args.deployment_id)
 
-    pipeline_dag = {}
-    step_name_to_pipeline_step_name = {}
-    for (
-        name_in_pipeline,
-        step,
-    ) in deployment_config.step_configurations.items():
-        step_name_to_pipeline_step_name[step.config.name] = name_in_pipeline
-        pipeline_dag[step.config.name] = step.spec.upstream_steps
-
+    pipeline_dag = {
+        step_name: step.spec.upstream_steps
+        for step_name, step in deployment_config.step_configurations.items()
+    }
     step_command = StepEntrypointConfiguration.get_entrypoint_command()
 
     active_stack = Client().active_stack
     mount_local_stores = active_stack.orchestrator.config.is_local
+
+    # Get a Kubernetes client from the active Kubernetes orchestrator, but
+    # override the `incluster` setting to `True` since we are running inside
+    # the Kubernetes cluster.
+    orchestrator = active_stack.orchestrator
+    assert isinstance(orchestrator, KubernetesOrchestrator)
+    kube_client = orchestrator.get_kube_client(incluster=True)
+    core_api = k8s_client.CoreV1Api(kube_client)
 
     def run_step_on_kubernetes(step_name: str) -> None:
         """Run a pipeline step in a separate Kubernetes pod.
@@ -93,17 +92,14 @@ def main() -> None:
         pod_name = f"{orchestrator_run_id}-{step_name}"
         pod_name = kube_utils.sanitize_pod_name(pod_name)
 
-        pipeline_step_name = step_name_to_pipeline_step_name[step_name]
         image = KubernetesOrchestrator.get_image(
-            deployment=deployment_config, step_name=pipeline_step_name
+            deployment=deployment_config, step_name=step_name
         )
         step_args = StepEntrypointConfiguration.get_entrypoint_arguments(
-            step_name=pipeline_step_name, deployment_id=deployment_config.id
+            step_name=step_name, deployment_id=deployment_config.id
         )
 
-        step_config = deployment_config.step_configurations[
-            pipeline_step_name
-        ].config
+        step_config = deployment_config.step_configurations[step_name].config
         settings = KubernetesOrchestratorSettings.parse_obj(
             step_config.settings.get("orchestrator.kubernetes", {})
         )

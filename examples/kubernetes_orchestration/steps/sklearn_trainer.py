@@ -18,7 +18,7 @@ import numpy as np
 from sklearn.base import ClassifierMixin
 from sklearn.svm import SVC
 
-from zenml.steps import step
+from zenml import step
 
 
 @step

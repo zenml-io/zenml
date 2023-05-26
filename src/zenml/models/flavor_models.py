@@ -26,6 +26,9 @@ from zenml.models.base_models import (
 )
 from zenml.models.constants import STR_FIELD_MAX_LENGTH
 from zenml.models.filter_models import WorkspaceScopedFilterModel
+from zenml.models.service_connector_models import (
+    ServiceConnectorRequirements,
+)
 
 if TYPE_CHECKING:
     from zenml.models import UserResponseModel, WorkspaceResponseModel
@@ -46,6 +49,22 @@ class FlavorBaseModel(BaseModel):
     type: StackComponentType = Field(title="The type of the Flavor.")
     config_schema: Dict[str, Any] = Field(
         title="The JSON schema of this flavor's corresponding configuration.",
+    )
+    connector_type: Optional[str] = Field(
+        default=None,
+        title="The type of the connector that this flavor uses.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
+    connector_resource_type: Optional[str] = Field(
+        default=None,
+        title="The resource type of the connector that this flavor uses.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
+    connector_resource_id_attr: Optional[str] = Field(
+        default=None,
+        title="The name of an attribute in the stack component configuration "
+        "that plays the role of resource ID when linked to a service connector.",
+        max_length=STR_FIELD_MAX_LENGTH,
     )
     source: str = Field(
         title="The path to the module which contains this Flavor.",
@@ -73,6 +92,22 @@ class FlavorBaseModel(BaseModel):
         title="Whether or not this flavor is a custom, user created flavor.",
         default=True,
     )
+
+    @property
+    def connector_requirements(self) -> Optional[ServiceConnectorRequirements]:
+        """Returns the connector requirements for the flavor.
+
+        Returns:
+            The connector requirements for the flavor.
+        """
+        if not self.connector_resource_type:
+            return None
+
+        return ServiceConnectorRequirements(
+            connector_type=self.connector_type,
+            resource_type=self.connector_resource_type,
+            resource_id_attr=self.connector_resource_id_attr,
+        )
 
 
 # -------- #

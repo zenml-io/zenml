@@ -82,14 +82,16 @@ To get a stack with Seldon Core and potential other components, you can make use
 Run the following command to deploy the local Seldon stack:
 
 ```bash
-zenml stack recipe deploy k3d-modular --install seldon
+zenml stack recipe deploy k3d-modular -d seldon
 ```
 
 >**Note**:
-> This recipe comes with MLflow, Kubeflow and Minio enabled by default. If you want any other components like KServe or Tekton, you can specify that using the `--install/-i` flag.
+> This recipe comes with MLflow, Kubeflow and Minio enabled by default. If you
+> want any other components like Seldon or Tekton, you can specify that using
+> the relevant flag (i.e. `-o` for orchestrators and so on).
 
-This will deploy a local Kubernetes cluster with Seldon installed. 
-It will also generate a stack YAML file that you can import as a ZenML stack by running 
+This will deploy a local Kubernetes cluster with Seldon installed.
+It will also generate a stack YAML file that you can import as a ZenML stack by running:
 
 ```bash
 zenml stack import -f <path-to-stack-yaml>

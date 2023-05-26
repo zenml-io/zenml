@@ -14,9 +14,10 @@
 
 import pandas as pd
 
+from zenml import step
 from zenml.client import Client
 from zenml.services import BaseService
-from zenml.steps import Output, step
+from zenml.steps import Output
 
 
 @step(enable_cache=False)

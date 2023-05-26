@@ -70,13 +70,13 @@ class LocalOrchestrator(BaseOrchestrator):
         start_time = time.time()
 
         # Run each step
-        for step in deployment.step_configurations.values():
+        for step_name, step in deployment.step_configurations.items():
             if self.requires_resources_in_orchestration_environment(step):
                 logger.warning(
                     "Specifying step resources is not supported for the local "
                     "orchestrator, ignoring resource configuration for "
                     "step %s.",
-                    step.config.name,
+                    step_name,
                 )
 
             self.run_step(
