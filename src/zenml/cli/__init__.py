@@ -1115,7 +1115,16 @@ zenml up
 ```
 
 This will start the dashboard on your local machine where you can access it at
-the URL printed to the console. If you want to stop the dashboard, simply run:
+the URL printed to the console. 
+
+If you have closed the dashboard in your browser and want to open it again, 
+you can run:
+
+```bash
+zenml show
+```
+
+If you want to stop the dashboard, simply run:
 
 ```bash
 zenml down
@@ -1251,6 +1260,13 @@ recommended that you supply the password only as a command line argument:
 
 ```bash
 zenml connect --username zenml --password=Pa@#$#word --config=/path/to/zenml_server_config.yaml
+```
+
+You can open the ZenML dashboard of your currently connected ZenML server using
+the following command:
+
+```bash
+zenml show
 ```
 
 To disconnect from the current ZenML server and revert to using the local
