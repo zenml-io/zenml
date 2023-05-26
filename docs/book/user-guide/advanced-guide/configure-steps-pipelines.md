@@ -25,7 +25,7 @@ def my_pipeline():
     # `input_2` as a parameter
     my_step(input_1=int_artifact, input_2=17)
     # We could also call the step with two artifacts or two
-    # parameters instead
+    # parameters instead:
     # my_step(input_1=int_artifact, input_2=int_artifact)
     # my_step(input_1=1, input_2=2)
 ```
@@ -37,6 +37,46 @@ When an input is passed as a parameter, the step will only be cached if all para
 **Artifacts and caching**
 
 When an artifact is used as a step function input, the step will only be cached if all the artifacts are exactly the same as for previous executions of the step. This means that if any of the upstream steps that produce the input artifacts for a step were not cached, the step itself will always be executed.
+
+## Pass any kind of data to your steps
+
+**External artifacts** can be used to pass values to steps that are neither JSON serializable nor produced by
+an upstream step.
+
+```python
+import numpy as np
+from zenml import pipeline, step
+from zenml.steps.external_artifact import ExternalArtifact
+
+@step
+def trainer(data: np.ndarray) -> ...:
+    ...
+
+@pipeline
+def my_pipeline():
+    trainer(data=ExternalArtifact(np.array([1, 2, 3])))
+
+    # This would not work, as only JSON serializable values
+    # or artifacts can be passed as a step input:
+    # trainer(data=np.array([1, 2, 3]))
+```
+Optionally, you can configure the `ExternalArtifact` to use a custom
+[materializer](./handle-custom-data-types.md) for your data or disabled artifact metadata and visualizations.
+Check out the
+[API docs](https://apidocs.zenml.io/latest/core_code_docs/core-steps/#zenml.steps.external_artifact.ExternalArtifact)
+for all available options.
+
+{% hint style="info" %}
+Using an `ExternalArtifact` with input data for your step automatically disables caching for the
+step.
+{% endhint %}
+
+You can also use an `ExternalArtifact` to pass an artifact stored in the ZenML database:
+```python
+from uuid import UUID
+
+artifact = ExternalArtifact(id=UUID("3a92ae32-a764-4420-98ba-07da8f742b76"))
+```
 
 ## Settings in ZenML
 
