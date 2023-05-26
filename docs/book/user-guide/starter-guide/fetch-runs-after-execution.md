@@ -119,21 +119,14 @@ def example_pipeline(...):
     ...
 
 
-# Instantiation and execution of pipeline
-pipe = example_pipeline(...)
-pipe.run()
+# Run the pipeline
+example_pipeline(...)
 
-# get all runs of the defined pipeline chronologically ordered
-runs = example_pipeline.get_runs()
-
-# get all runs of the instantiated pipeline chronologically ordered
+# get all runs of the pipeline chronologically ordered
 runs = pipe.get_runs()
 
 # get the last run by index, runs are ordered by execution time in ascending order
 last_run = runs[0]
-
-# or get a specific run by name
-run = example_pipeline.get_run(run_name=...)
 ```
 
 #### Directly getting a run
@@ -320,7 +313,7 @@ def example_pipeline(...):
     ...
 
 
-# Initialize a new pipeline run
+# Run the pipeline
 example_pipeline()
 
 # Get the first step
