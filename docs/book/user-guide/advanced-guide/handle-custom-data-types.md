@@ -9,7 +9,7 @@ A ZenML pipeline is built in a data-centric way. The outputs and inputs of steps
 A materializer dictates how a given artifact can be written to and retrieved from the artifact store and also contains all serialization and deserialization logic. Whenever you pass artifacts as outputs from one pipeline step to other steps as inputs, the corresponding materializer for the respective data type defines how this artifact is first serialized and written to the artifact store, and then deserialized and read in the next step.
 
 {% hint style="info" %}
-ZenML already includes built-in materializers for many common data types. However, if you want to pass custom objects between pipeline steps, these objects are by default saved using [cloudpickle](https://github.com/cloudpipe/cloudpickle) , which is not production-ready because the resulting artifacts cannot be loaded under different Python versions. In such cases, you should consider building a custom Materializer to save your objects in a more robust and efficient format.
+ZenML already includes built-in materializers for many common data types. However, if you want to pass custom objects between pipeline steps, these objects are by default saved using [cloudpickle](https://github.com/cloudpipe/cloudpickle) , which is not production-ready because the resulting artifacts cannot be loaded when running with a different Python version. In such cases, you should consider building a custom Materializer to save your objects in a more robust and efficient format.
 {% endhint %}
 
 ## Custom materializers
@@ -184,14 +184,12 @@ def my_first_step(...) -> ...:
 or you can use the `configure()` method of the step. E.g.:
 
 ```python
-my_first_step().configure(output_materializers=MyMaterializer)
+my_first_step.configure(output_materializers=MyMaterializer)
 ```
 
-When there are multiple outputs, a dictionary of type `{<OUTPUT_NAME>:<MATERIALIZER_CLASS>}` can be supplied to the `.configure(output_materializers=...)`.
+When there are multiple outputs, a dictionary of type `{<OUTPUT_NAME>: <MATERIALIZER_CLASS>}` can be supplied to the decorator or the
+`.configure(...)` method.
 
-{% hint style="info" %}
-Note that `.configure(output_materializers=...)` only needs to be called for the output of the first step that produced an artifact of a given data type, all downstream steps will use the same materializer by default.
-{% endhint %}
 
 #### Configuring materializers at runtime
 
@@ -206,12 +204,11 @@ steps:
     ...
     outputs:
       <OUTPUT_NAME>:
-        materializer_source: __main__.MyMaterializer # or full source path to materializer class
+        materializer_source: run.MyMaterializer
 ```
 
 The name of the output can be found in the function declaration, e.g. `my_step() -> Output(a: int, b: float)` has `a` and `b` as available output names.
 
-Similar to other configuration entries, the materializer `name` refers to the class name of your materializer, and the `file` should contain a path to the module where the materializer is defined.
 
 ## Basic example
 
@@ -250,11 +247,11 @@ def first_pipeline():
 first_pipeline()
 ```
 
-Running the above without a custom materializer will result in the following error:
+Running the above without a custom materializer will work but print the following warning:
 
-`zenml.exceptions.StepInterfaceError: Unable to find materializer for output 'output' of type <class '__main__.MyObj'> in step 'step1'. Please make sure to either explicitly set a materializer for step outputs using step.configure(output_materializers=...) or registering a default materializer for specific types by subclassing BaseMaterializer and setting its ASSOCIATED_TYPES class variable. For more information, visit https://docs.zenml.io/advanced-guide/pipelines/materializers`
+`No materializer is registered for type MyObj, so the default Pickle materializer was used. Pickle is not production ready and should only be used for prototyping as the artifacts cannot be loaded when running with a different Python version. Please consider implementing a custom materializer for type MyObj according to the instructions at https://docs.zenml.io/user-guide/advanced-guide/handle-custom-data-types`
 
-The error message basically says that ZenML does not know how to persist the object of type `MyObj` (how could it? We just created this!). Therefore, we have to create our own materializer. To do this, you can extend the `BaseMaterializer` by sub-classing it, listing `MyObj` in `ASSOCIATED_TYPES`, and overwriting `load()` and `save()`:
+To get rid of this warning and make our pipeline more robust, we will subclass the `BaseMaterializer` class, listing `MyObj` in `ASSOCIATED_TYPES`, and overwriting `load()` and `save()`:
 
 ```python
 import os
@@ -352,13 +349,14 @@ def my_first_step() -> MyObj:
     """Step that returns an object of type MyObj."""
     return MyObj("my_object")
 
-my_first_step = my_first_step.configure(output_materializers=MyMaterializer)
+my_first_step.configure(output_materializers=MyMaterializer)
 
 @step
 def my_second_step(my_obj: MyObj) -> None:
     """Step that log the input object and returns nothing."""
     logging.info(
-        f"The following object was passed to this step: `{my_obj.name}`")
+        f"The following object was passed to this step: `{my_obj.name}`"
+    )
 
 
 @pipeline

@@ -966,13 +966,11 @@ from zenml import pipeline
 def my_pipeline(...):
    # Connect your pipeline steps here
    pass
-
-pipeline_instance = my_pipeline(...)
 ```
 
 You can register your pipeline like this:
 ```bash
-zenml pipeline register run.pipeline_instance
+zenml pipeline register my_pipeline
 ```
 
 To list all registered pipelines, use:

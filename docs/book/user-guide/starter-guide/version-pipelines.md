@@ -15,31 +15,20 @@ def first_pipeline(gamma: float = 0.002):
 
 
 if __name__ == "__main__":
-    first_pipeline(gamma=0.002)
+    first_pipeline()
 ```
 
 Running this the first time will create a single `run` for `version 1` of the pipeline called `first_pipeline`.
 
 ```
-$python main.py
+$python run.py
 ...
 Registered pipeline first_pipeline (version 1).
 ...
 ```
 
-If you now do it again with different runtime parameters:
-
-<pre class="language-python"><code class="lang-python">@pipeline
-def first_pipeline(gamma: float = 0.002):
-    X_train, X_test, y_train, y_test = digits_data_loader()
-    svc_trainer(gamma=gamma, X_train=X_train, y_train=y_train)
-    
-<strong>if __name__ == "__main__":
-</strong>    first_pipeline(gamma=0.0016)
-</code></pre>
-
-This will create _yet another_ `run` for `version 1` of the pipeline called `first_pipeline`. So now the same pipeline
-has two runs. You can also verify this in the dashboard.
+Running it again (`python run.py`) will create _yet another_ `run` for `version 1` of the pipeline called
+`first_pipeline`. So now the same pipeline has two runs. You can also verify this in the dashboard.
 
 However, now let's change the pipeline configuration itself. You can do this by modifying the step connections within
 the `@pipeline` function or by replacing a concrete step with another one. For example, let's create an alternative step
@@ -70,11 +59,11 @@ def first_pipeline(gamma: float = 0.002):
 
 
 if __name__ == "__main__":
-    first_pipeline(gamma=0.0015)
+    first_pipeline()
 ```
 
 ```bash
-python main.py
+python run.py
 ...
 Registered pipeline first_pipeline (version 2).
 ...
