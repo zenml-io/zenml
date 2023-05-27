@@ -758,7 +758,7 @@ def create_secret(
                         warning(
                             f"Key {k} already in this secret. Please restart "
                             f"this process or use 'zenml "
-                            f"secret update {name} --{k}=...' to update this "
+                            f'secret update {name} --values=\'{{"{k}":"value"}}\' to update this '
                             f"key after the secret is registered. Skipping ..."
                         )
                     else:

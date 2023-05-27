@@ -13,8 +13,8 @@
 #  permissions and limitations under the License.
 """Utility functions for the CLI."""
 import contextlib
-import json
 import datetime
+import json
 import os
 import subprocess
 import sys
@@ -630,6 +630,7 @@ def extract_name_from_args(args: List[str], name_mandatory: bool):
 
     Returns:
         name: returns name from the list of arguments
+        args: returns args that contains only the secret key value paris
     """
     for i, arg in enumerate(args):
         if not arg:
@@ -645,7 +646,7 @@ def extract_name_from_args(args: List[str], name_mandatory: bool):
                 "A name must be supplied. Please see the command help for more "
                 "information."
             )
-    return name
+    return name, args
 
 
 def parse_name_and_extra_arguments(
@@ -682,7 +683,7 @@ def parse_name_and_extra_arguments(
         The name and a dict of parsed args.
     """
 
-    name = extract_name_from_args(args, name_mandatory)
+    name, args = extract_name_from_args(args, name_mandatory)
     message = (
         "Please provide args with a proper "
         "identifier as the key and the following structure: "
@@ -741,36 +742,35 @@ def parse_secret_name_and_arguements(
     Returns:
         The name and a dict of parsed args.
     """
-    name = extract_name_from_args(args, name_mandatory)
-
+    name, args = extract_name_from_args(args, name_mandatory)
     message = (
         "Please provide args with a proper "
         "identifier as the key and the value with the following structure: "
         "--values='value' (Json/Yaml) or --values=@file_path"
     )
-    if (
-        (len(args) != 1)
-        or (not args[0].startswith("--"))
-        or ("=" not in args[0])
-    ):
+    args_dict: Dict[str, str] = {}
+    if len(args) > 1:
         error(f"Invalid argument: '{args}'. {message}")
-    value_args = args[0].split("=")
-    value_input_type = value_args[0].split("--")[1]
-    value = value_args[1]
-    if value_input_type == SECRET_VALUES:
-        value = expand_argument_value_from_file(SECRET_VALUES, value)
-        args_dict = convert_str_to_dict(value)
-    else:
-        error(f"Invalid argument: '{value_input_type}'. {message}")
+    for a in args:
+        if (not a.startswith("--")) or ("=" not in a):
+            error(f"Invalid argument: '{a}'. {message}")
+        value_args = a.split("=")
+        value_input_type = value_args[0].split("--")[1]
+        value = value_args[1]
+        if value_input_type == SECRET_VALUES:
+            value = expand_argument_value_from_file(SECRET_VALUES, value)
+            args_dict = convert_str_to_dict(value)
+        else:
+            error(f"Invalid argument: '{value_input_type}'. {message}")
 
-    for key in args_dict:
-        if not key.isidentifier():
-            error(f"Invalid argument: '{key}'. {message}")
-        value = args_dict[key]
-        if not isinstance(value, str):
-            error(
-                f"Argument '{value}' has incorrect type: (expected str, got {type(value).__name__})"
-            )
+        for key in args_dict:
+            if not key.isidentifier():
+                error(f"Invalid argument: '{key}'. {message}")
+            value = args_dict[key]
+            if not isinstance(value, str):
+                error(
+                    f"Argument '{value}' has incorrect type: (expected str, got {type(value).__name__})"
+                )
     return name, args_dict
 
 
