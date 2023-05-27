@@ -164,9 +164,9 @@ whylogs data validation) is just a bit more complicated, as you
 also need to configure a secret for the whylogs Data Validator component.:
 
 ```shell
-zenml secret create whylabs_secret \
-    --whylabs_default_org_id=<your-whylogs-organization-id> \
-    --whylabs_api_key=<your-whylogs-api-key>
+zenml secret create whylabs_secret --values= \
+    '{"whylabs_default_org_id":"<your-whylogs-organization-id>",' \
+    '"whylabs_api_key":"<your-whylogs-api-key>"}'
 
 zenml data-validator register whylogs -f whylogs --authentication_secret=whylabs_secret --enable_whylabs=True
 zenml stack register whylogs_stack -o default -a default -dv whylogs --set

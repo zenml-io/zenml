@@ -81,9 +81,9 @@ You can create the secret using the `zenml secret create` command:
 
 ```shell
 zenml secret create wandb_secret \
-    --entity=<ENTITY> \
-    --project_name=<PROJECT_NAME>
-    --api_key=<API_KEY>
+    --values='{"entity":"<ENTITY>",' \
+    '"project_name":"<PROJECT_NAME>",' \
+    '"api_key":"<API_KEY>"}'
 ```
 
 Once the secret is created, you can use it to configure the wandb Experiment Tracker:

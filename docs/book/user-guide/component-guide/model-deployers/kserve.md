@@ -153,33 +153,34 @@ the [KServe documentation for various providers](https://kserve.github.io/websit
 Example of configuring a KServe secret for AWS S3:
 
 ```shell
-zenml secret create s3-kserve-secret \
---aws_access_key_id="<AWS-ACCESS-KEY-ID>" \ # AWS Access Key ID.
---aws_secret_access_key="<AWS-SECRET-ACCESS-KEY>" \ # AWS Secret Access Key.
---s3_region="<AWS_REGION>" \ # region to connect to.
---s3_endpoint="<S3_ENDPOINT>" \ # S3 API endpoint.
---s3_use_https="1" \ # set to 0 to disable https.
---s3_verify_ssl="1" \ # set to 0 to disable SSL certificate verification.
+zenml secret create s3-kserve-secret --values= \
+'{"aws_access_key_id":"<AWS-ACCESS-KEY-ID>",' \ # AWS Access Key ID.
+'"aws_secret_access_key":"<AWS-SECRET-ACCESS-KEY>",' \ # AWS Secret Access Key.
+'"s3_region":"<AWS_REGION>",' \ # region to connect to.
+'"s3_endpoint":"<S3_ENDPOINT>",' \ # S3 API endpoint.
+'"s3_use_https":"1",' \ # set to 0 to disable https.
+'"s3_verify_ssl":"1"}' \ # set to 0 to disable SSL certificate verification.
 ```
 
 Example of configuring a KServe secret for GCS:
 
 ```shell
+# File content example: {"google_application_credentials":"<secret-value>"}
 zenml secret create gs-kserve-secret \
---google_application_credentials=@path/to/credentials.json \ # service account credentials JSON blob.
+--values=@path/to/credentials.json \ # service account credentials JSON blob.
 ```
 
 Example of configuring a KServe secret for Azure Blob Storage:
 
 ```shell
-zenml secret create az-kserve-secret \
---azure_subscription_id="" \ # subscription ID of the service
+zenml secret create az-kserve-secret --values= \
+'{"azure_subscription_id":"",' \ # subscription ID of the service
 # principal to use for authentication.
---azure_client_id="" \ # client ID of the service principal
+'"azure_client_id":"",' \ # client ID of the service principal
 # to use for authentication.
---azure_client_secret="" \ # client secret of the service
+'"azure_client_secret:"",' \ # client secret of the service
 # principal to use for authentication.
---azure_tenant_id="" \ # tenant ID of the service principal
+'"azure_tenant_id":""}' \ # tenant ID of the service principal
 # to use for authentication.
 ```
 

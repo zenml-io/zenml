@@ -18,8 +18,7 @@ To create a secret with a name `<SECRET_NAME>` and a key-value pair, you can run
 
 ```shell
 zenml secret create <SECRET_NAME> \
-    --<KEY_1>=<VALUE_1> \
-    --<KEY_2>=<VALUE_2>
+    --values='{"key1":"value2","key2":"value2"}'
 ```
 
 Alternatively, you can create the secret in an interactive session (in which ZenML will query you for the secret keys and values) by passing the `--interactive/-i` parameter:
@@ -28,12 +27,11 @@ Alternatively, you can create the secret in an interactive session (in which Zen
 zenml secret create <SECRET_NAME> -i
 ```
 
-For secret values that are too big to pass as a command line argument, or have special characters, you can also use the special `@` syntax to indicate to ZenML that the value needs to be read from a file:
+For secret key-value pairs that are too big to pass as a command line argument, or have special characters, you can also use the special `@` syntax to indicate to ZenML that the key-value pair (Json/Yaml) needs to be read from a file:
 
 ```bash
 zenml secret create <SECRET_NAME> \
-   --key=@path/to/file.txt \
-   ...
+   --values=@path/to/file.txt
 ```
 
 The CLI also includes commands that can be used to list, update and delete secrets. A full guide on using the CLI to create, access, update and delete secrets is available [here](https://apidocs.zenml.io/latest/cli/#zenml.cli--secrets-management).
@@ -76,8 +74,7 @@ By default, all created secrets are scoped to the active workspace. To create a 
 ```shell
 zenml secret create <SECRET_NAME> \
     --scope user \
-    --<KEY_1>=<VALUE_1> \
-    --<KEY_2>=<VALUE_2>
+    --values='{"key1":"value2","key2":"value2"}'
 ```
 
 Scopes also act as individual namespaces. When you are referencing a secret by name in your pipelines and stacks, ZenML will first look for a secret with that name scoped to the active user, and if it doesn't find one, it will look for one in the active workspace.
@@ -104,8 +101,7 @@ In the dashboard values that are considered `Secret` can be set using registered
 
 # Using central secrets management
 zenml secret create mlflow_secret \
-    --username=admin \
-    --password=abc123
+    --values='{"username":"admin","password":"abc123"}'
 
 
 # Then reference the username and password in our experiment tracker component

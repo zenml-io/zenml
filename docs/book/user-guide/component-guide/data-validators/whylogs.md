@@ -45,8 +45,8 @@ Then, you can register the whylogs Data Validator with WhyLabs logging capabilit
 ```shell
 # Create the secret referenced in the data validator
 zenml secret create whylabs_secret \
-    --whylabs_default_org_id=<YOUR-WHYLOGS-ORGANIZATION-ID> \
-    --whylabs_api_key=<YOUR-WHYLOGS-API-KEY>
+    --values='{"whylabs_default_org_id":"<YOUR-WHYLOGS-ORGANIZATION-ID>",' \
+    '"whylabs_api_key":"<YOUR-WHYLOGS-API-KEY>"}'
 
 # Register the whylogs data validator
 zenml data-validator register whylogs_data_validator --flavor=whylogs \

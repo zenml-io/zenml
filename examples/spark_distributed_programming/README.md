@@ -250,9 +250,9 @@ will also use a ZenML secret to store the credentials for the S3 bucket.
 
 ```bash
 # Register the authentication secret for s3
-zenml secret create s3_authentication \
-    --aws_access_key_id=<ACCESS_KEY_ID> \
-    --aws_secret_access_key=<SECRET_ACCESS_KEY>
+zenml secret create s3_authentication --values= \
+    '{"aws_access_key_id":"<ACCESS_KEY_ID>",' \
+    '"aws_secret_access_key":"<SECRET_ACCESS_KEY>"}'
 
 # Register the artifact store using the secret
 zenml artifact-store register spark_artifact_store \

@@ -153,50 +153,50 @@ the [`rclone` documentation for various providers](https://rclone.org/).
 Example of configuring a Seldon Core secret for AWS S3:
 
 ```shell
-zenml secret create s3-seldon-secret \
---rclone_config_s3_type="s3" \ # set to 's3' for S3 storage.
---rclone_config_s3_provider="aws" \ # the S3 provider (e.g. aws, Ceph, Minio).
---rclone_config_s3_env_auth=False \ # set to true to use implicit AWS authentication from EC2/ECS meta data
+zenml secret create s3-seldon-secret --values= \
+'{"rclone_config_s3_type":"s3",' \ # set to 's3' for S3 storage.
+'"rclone_config_s3_provider":"aws",' \ # the S3 provider (e.g. aws, Ceph, Minio).
+'"rclone_config_s3_env_auth":false,' \ # set to true to use implicit AWS authentication from EC2/ECS meta data
 # (i.e. with IAM roles configuration). Only applies if access_key_id and secret_access_key are blank.
---rclone_config_s3_access_key_id="<AWS-ACCESS-KEY-ID>" \ # AWS Access Key ID.
---rclone_config_s3_secret_access_key="<AWS-SECRET-ACCESS-KEY>" \ # AWS Secret Access Key.
---rclone_config_s3_session_token="" \ # AWS Session Token.
---rclone_config_s3_region="" \ # region to connect to.
---rclone_config_s3_endpoint="" \ # S3 API endpoint.
+'"rclone_config_s3_access_key_id":"<AWS-ACCESS-KEY-ID>",' \ # AWS Access Key ID.
+'"rclone_config_s3_secret_access_key":"<AWS-SECRET-ACCESS-KEY>",' \ # AWS Secret Access Key.
+'"rclone_config_s3_session_token":"",' \ # AWS Session Token.
+'"rclone_config_s3_region":"",' \ # region to connect to.
+'"rclone_config_s3_endpoint":""}' \ # S3 API endpoint.
 ```
 
 Example of configuring a Seldon Core secret for GCS:
 
 ```shell
-zenml secret create gs-seldon-secret \
---rclone_config_gs_type="google cloud storage" \ # set to 'google cloud storage' for GCS storage.
---rclone_config_gs_client_secret="" \  # OAuth client secret. 
---rclone_config_gs_token="" \ # OAuth Access Token as a JSON blob.
---rclone_config_gs_project_number="" \ # project number.
---rclone_config_gs_service_account_credentials="" \ #service account credentials JSON blob.
---rclone_config_gs_anonymous=False \ # Access public buckets and objects without credentials. 
-# Set to True if you just want to download files and don't configure credentials.
---rclone_config_gs_auth_url="" \ # auth server URL.
+zenml secret create gs-seldon-secret --values= \
+'{"rclone_config_gs_type":"google cloud storage",' \ # set to 'google cloud storage' for GCS storage.
+'"rclone_config_gs_client_secret":"",' \  # OAuth client secret. 
+'"rclone_config_gs_token":"",' \ # OAuth Access Token as a JSON blob.
+'"rclone_config_gs_project_number":"",' \ # project number.
+'"rclone_config_gs_service_account_credentials":"",' \ #service account credentials JSON blob.
+'"rclone_config_gs_anonymous":false,' \ # Access public buckets and objects without credentials. 
+# Set to True if you just want to download files and dont configure credentials.
+'"rclone_config_gs_auth_url":""}' \ # auth server URL.
 ```
 
 Example of configuring a Seldon Core secret for Azure Blob Storage:
 
 ```shell
-zenml secret create az-seldon-secret \
---rclone_config_az_type="azureblob" \ # set to 'azureblob' for Azure Blob Storage.
---rclone_config_az_account="" \ # storage Account Name. Leave blank to
+zenml secret create az-seldon-secret --values= \
+'{"rclone_config_az_type":"azureblob",' \ # set to "azureblob" for Azure Blob Storage.
+'"rclone_config_az_account":"",' \ # storage Account Name. Leave blank to
 # use SAS URL or MSI.
---rclone_config_az_key="" \ # storage Account Key. Leave blank to
+'"rclone_config_az_key":"",' \ # storage Account Key. Leave blank to
 # use SAS URL or MSI.
---rclone_config_az_sas_url="" \ # SAS URL for container level access
+'"rclone_config_az_sas_url":"",' \ # SAS URL for container level access
 # only. Leave blank if using account/key or MSI.
---rclone_config_az_use_msi="" \ # use a managed service identity to
+'"rclone_config_az_use_msi":"",' \ # use a managed service identity to
 # authenticate (only works in Azure).
---rclone_config_az_client_id="" \ # client ID of the service principal
+'"rclone_config_az_client_id":"",' \ # client ID of the service principal
 # to use for authentication.
---rclone_config_az_client_secret="" \ # client secret of the service
+'"rclone_config_az_client_secret":"",' \ # client secret of the service
 # principal to use for authentication.
---rclone_config_az_tenant="" \ # tenant ID of the service principal
+'"rclone_config_az_tenant":""}' \ # tenant ID of the service principal
 # to use for authentication.
 ```
 

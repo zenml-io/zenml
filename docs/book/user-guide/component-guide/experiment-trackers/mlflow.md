@@ -132,11 +132,10 @@ store the MLflow tracking service credentials securely.
 You can create the secret using the `zenml secret create` command:
 
 ```shell
-# Create a secret called `mlflow_secret` with key-value pairs for the
+# Create a secret called `mlflow_secret` with key-value pairs in Json/Yaml format for the
 # username and password to authenticate with the MLflow tracking server
 zenml secret create mlflow_secret \
-    --username=<USERNAME> \
-    --password=<PASSWORD>
+    --values='{"username":"<USERNAME>","password":"<PASSWORD>"}'
 ```
 
 Once the secret is created, you can use it to configure the MLflow Experiment Tracker:
