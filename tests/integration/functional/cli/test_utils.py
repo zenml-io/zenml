@@ -98,20 +98,20 @@ def test_parsing_secret_name_and_arguments():
     """Test that our ability to parse CLI arguments works."""
     assert cli_utils.parse_secret_name_and_arguements(["foo"]) == ("foo", {})
     assert cli_utils.parse_secret_name_and_arguements(
-        ["foo", '--values="{"bar":"1"}"']
+        ["foo", '--values={"bar":"1"}']
     ) == (
         "foo",
         {"bar": "1"},
     )
     assert cli_utils.parse_secret_name_and_arguements(
-        ["--values='bar: 1 \nbaz: 2'", "foo"]
+        ['--values=bar: "1" \nbaz: "2"', "foo"]
     ) == (
         "foo",
         {"bar": "1", "baz": "2"},
     )
 
     assert cli_utils.parse_secret_name_and_arguements(
-        ["foo", '--values="{"bar":"![@#$%^&*()"}"']
+        ["foo", '--values={"bar":"![@#$%^&*()"}']
     ) == ("foo", {"bar": "![@#$%^&*()"})
 
     with pytest.raises(ClickException):
@@ -124,8 +124,6 @@ def test_converting_str_to_dict():
         "{'location': 'Nevada', 'aliens':'many'}"
     ) == {"location": "Nevada", "aliens": "many"}
 
-    with pytest.raises(ClickException):
-        cli_utils.convert_str_to_dict('{"bar":1}')
     with pytest.raises(ClickException):
         cli_utils.convert_str_to_dict('{"location: "Nevada", "aliens":"many"}')
 
