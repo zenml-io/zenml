@@ -201,8 +201,6 @@ def build_pipeline(
                 f.write(
                     build.yaml(
                         exclude={
-                            "pipeline",
-                            "stack",
                             "workspace",
                             "user",
                             "created",
