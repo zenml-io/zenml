@@ -9,13 +9,17 @@ Global Config Directory** or the **ZenML Config Path**. The location of this fol
 and the current system user, but is usually located in the following locations:
 
 * Linux: `~/.config/zenml`
-* Mac: `~/Library/Application Support/ZenML`
-* Windows: `C:\Users\%USERNAME%\AppData\Local\ZenML`
+* Mac: `~/Library/Application Support/zenml`
+* Windows: `C:\Users\%USERNAME%\AppData\Local\zenml`
 
 The default location may be overridden by setting the `ZENML_CONFIG_PATH` environment variable to a custom value. The
-current location of the global config directory used on a system can be retrieved by running the following command:
+current location of the global config directory used on a system can be retrieved by running one the following commands:
 
 ```shell
+# The output will tell you something like this:
+# Using configuration from: '/home/stefan/.config/zenml'
+zenml status
+
 python -c 'from zenml.utils.io_utils import get_global_config_directory; print(get_global_config_directory())'
 ```
 

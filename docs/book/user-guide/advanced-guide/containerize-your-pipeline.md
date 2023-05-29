@@ -21,14 +21,14 @@ There are three ways to control this containerization process:
 ZenML automatically [builds and pushes Docker images](manage-environments.md#execution-environments) when running a pipeline on a stack requiring Docker images. To run this build step separately without running the pipeline, call:
 
 ```python
-pipeline_instance.build(...)
+my_pipeline.build(...)
 ```
 
 in Python or using the CLI command:
 
 ```shell
 # If running the first time, register pipeline to get name and ID
-zenml pipeline register [OPTIONS] my_module.my_pipeline_instance
+zenml pipeline register [OPTIONS] my_module.my_pipeline
 
 # Build docker images using the image builder defined in the stack and push to the container registry defined in the stack
 zenml pipeline build [OPTIONS] PIPELINE_NAME_OR_ID
@@ -45,7 +45,7 @@ zenml pipeline builds list
 To use a registered build when running a pipeline, pass it as an argument in Python
 
 ```python
-pipeline_instance = pipeline_instance.with_options(build=<BUILD_ID>)
+my_pipeline = my_pipeline.with_options(build=<BUILD_ID>)
 ```
 
 or when running a pipeline from the CLI
@@ -79,6 +79,29 @@ For the configuration examples described below, you'll need to import the `Docke
 from zenml.config import DockerSettings
 ```
 
+Instead of defining the `DockerSettings` on the `@pipeline` decorator like all code snippets below, you can also 
+define them on the `@step` decorator of your steps if you need more control, or by using the `with_options(...)`
+method on your steps and pipelines:
+```python
+docker_settings = DockerSettings()
+
+@step(settings={"docker": docker_settings})
+def my_step() -> None:
+    pass
+
+my_step = my_step.with_options(
+    settings={"docker": docker_settings}
+)
+
+@pipeline(settings={"docker": docker_settings})
+def my_pipeline() -> None:
+    my_step()
+
+my_pipeline = my_pipeline.with_options(
+    settings={"docker": docker_settings}
+)
+```
+
 ### Handling source files
 
 ZenML determines the root directory of your source files in the following order:
@@ -106,12 +129,6 @@ When including files in the image, ZenML copies all contents of the root directo
     @pipeline(settings={"docker": docker_settings})
     def my_pipeline(...):
         ...
-        
-    # You can also define the DockerSettings by using the `with_options(...)
-    # method on your steps and pipelines
-    my_pipeline = my_pipeline.with_options(
-        settings={"docker": docker_settings}
-    )
     ```
 
 ### Installing additional pip dependencies or apt packages
