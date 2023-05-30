@@ -12,11 +12,13 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from zenml.integrations.evidently.metrics import EvidentlyMetricConfig
-from zenml.integrations.evidently.steps import (
-    evidently_report_step,
-)
+from zenml import step
 
-drift_detector = evidently_report_step.with_options(
-    parameters=dict(metrics=[EvidentlyMetricConfig.metric("DataDriftPreset")])
-)
+from ..dataset import UrlTokenDataset
+
+
+@step
+def url_dataset_loader_step() -> UrlTokenDataset:
+    """Data loader step."""
+    # TODO: parametrize URLs and choose a cooler use case
+    return UrlTokenDataset(["https://zenml.io"])

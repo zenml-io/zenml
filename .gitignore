@@ -174,9 +174,15 @@ zenml_examples/
 # pyenv local version file
 .python-version
 
+# mlflow
+**mlruns/
+
 # wandb
 **wandb/
 !src/zenml/integrations/wandb
+
+#neptune
+*.neptune/
 
 # some examples have yamls; don't ignore them
 !examples/**/*.yaml
@@ -186,6 +192,3 @@ test_terraform/
 
 # feast registry database
 examples/feast_feature_store/feast_feature_repo/data/registry.db
-
-#neptune
-*.neptune/
