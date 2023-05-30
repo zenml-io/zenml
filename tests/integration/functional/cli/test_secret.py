@@ -184,8 +184,7 @@ def test_get_secret_with_scope_works():
             secret_create_command,
             [
                 secret_name,
-                "--values=test_value: aria \ntest_value2: axl"
-                "--scope=user",
+                "--values=test_value: aria \ntest_value2: axl" "--scope=user",
             ],
         )
 
