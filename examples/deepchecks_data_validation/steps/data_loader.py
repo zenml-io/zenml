@@ -15,7 +15,8 @@ import pandas as pd
 from deepchecks.tabular.datasets.classification import iris
 from sklearn.model_selection import train_test_split
 
-from zenml.steps import Output, step
+from zenml import step
+from zenml.steps import Output
 
 
 @step

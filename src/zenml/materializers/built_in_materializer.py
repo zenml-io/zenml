@@ -45,6 +45,7 @@ BASIC_TYPES = (
     float,
     int,
     str,
+    type(None),
 )  # complex/bytes are not JSON serializable
 
 

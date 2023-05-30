@@ -26,7 +26,7 @@ def test_input_resolution(mocker, sample_artifact_model, create_step_run):
     """Tests that input resolution works if the correct models exist in the
     zen store."""
     step_run = create_step_run(
-        step_name="upstream_step",
+        step_run_name="upstream_step",
         output_artifacts={"output_name": sample_artifact_model},
     )
 

@@ -12,12 +12,13 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from zenml.pipelines import pipeline
+from steps import get_first_num, get_random_int, subtract_numbers
+
+from zenml import pipeline
 
 
 @pipeline
-def vertex_example_pipeline(first_step, second_step, third_step):
-    # Link all the steps artifacts together
-    first_num = first_step()
-    random_num = second_step()
-    third_step(first_num, random_num)
+def vertex_example_pipeline():
+    first_num = get_first_num()
+    random_num = get_random_int()
+    subtract_numbers(first_num, random_num)

@@ -263,3 +263,20 @@ class SourceContextTypes(StrEnum):
     DASHBOARD = "dashboard"
     API = "api"
     UNKNOWN = "unknown"
+
+class EnvironmentType(StrEnum):
+    """Enum for environment types."""
+
+    BITBUCKET_CI = "bitbucket_ci"
+    CIRCLE_CI = "circle_ci"
+    COLAB = "colab"
+    CONTAINER = "container"
+    DOCKER = "docker"
+    GENERIC_CI = "generic_ci"
+    GITHUB_ACTION = "github_action"
+    GITLAB_CI = "gitlab_ci"
+    KUBERNETES = "kubernetes"
+    NATIVE = "native"
+    NOTEBOOK = "notebook"
+    PAPERSPACE = "paperspace"
+    WSL = "wsl"

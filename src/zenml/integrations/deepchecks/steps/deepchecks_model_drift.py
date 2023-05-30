@@ -17,25 +17,36 @@ from typing import Any, Dict, Optional, Sequence, cast
 
 import pandas as pd
 from deepchecks.core.suite import SuiteResult
-from pydantic import Field
 from sklearn.base import ClassifierMixin
 
+from zenml import step
 from zenml.integrations.deepchecks.data_validators.deepchecks_data_validator import (
     DeepchecksDataValidator,
 )
 from zenml.integrations.deepchecks.validation_checks import (
     DeepchecksModelDriftCheck,
 )
-from zenml.steps import BaseParameters, BaseStep
 
 
-class DeepchecksModelDriftCheckStepParameters(BaseParameters):
-    """Parameters class for the Deepchecks model drift validator step.
+@step
+def deepchecks_model_drift_check_step(
+    reference_dataset: pd.DataFrame,
+    target_dataset: pd.DataFrame,
+    model: ClassifierMixin,
+    check_list: Optional[Sequence[DeepchecksModelDriftCheck]] = None,
+    dataset_kwargs: Optional[Dict[str, Any]] = None,
+    check_kwargs: Optional[Dict[str, Any]] = None,
+    run_kwargs: Optional[Dict[str, Any]] = None,
+) -> SuiteResult:
+    """Run model drift checks on two pandas DataFrames and an sklearn model.
 
-    Attributes:
-        check_list: Optional list of DeepchecksModelDriftCheck identifiers
-            specifying the subset of Deepchecks model drift checks to be
-            performed. If not supplied, the entire set of model drift checks
+    Args:
+        reference_dataset: Reference dataset for the model drift check.
+        target_dataset: Target dataset to be used for the model drift check.
+        model: a scikit-learn model to validate
+        check_list: Optional list of DeepchecksDataIntegrityCheck identifiers
+            specifying the subset of Deepchecks data integrity checks to be
+            performed. If not supplied, the entire set of data integrity checks
             will be performed.
         dataset_kwargs: Additional keyword arguments to be passed to the
             Deepchecks `tabular.Dataset` or `vision.VisionData` constructor.
@@ -45,67 +56,21 @@ class DeepchecksModelDriftCheckStepParameters(BaseParameters):
             check enum value as dictionary keys.
         run_kwargs: Additional keyword arguments to be passed to the
             Deepchecks Suite `run` method.
-    """
-
-    check_list: Optional[Sequence[DeepchecksModelDriftCheck]] = None
-    dataset_kwargs: Dict[str, Any] = Field(default_factory=dict)
-    check_kwargs: Dict[str, Dict[str, Any]] = Field(default_factory=dict)
-    run_kwargs: Dict[str, Any] = Field(default_factory=dict)
-
-
-class DeepchecksModelDriftCheckStep(BaseStep):
-    """Deepchecks model drift step."""
-
-    def entrypoint(
-        self,
-        reference_dataset: pd.DataFrame,
-        target_dataset: pd.DataFrame,
-        model: ClassifierMixin,
-        params: DeepchecksModelDriftCheckStepParameters,
-    ) -> SuiteResult:
-        """Main entrypoint for the Deepchecks model drift step.
-
-        Args:
-            reference_dataset: Reference dataset for the model drift check.
-            target_dataset: Target dataset to be used for the model drift check.
-            model: a scikit-learn model to validate
-            params: the parameters for the step
-
-        Returns:
-            A Deepchecks suite result with the validation results.
-        """
-        data_validator = cast(
-            DeepchecksDataValidator,
-            DeepchecksDataValidator.get_active_data_validator(),
-        )
-
-        return data_validator.model_validation(
-            dataset=reference_dataset,
-            comparison_dataset=target_dataset,
-            model=model,
-            check_list=cast(Optional[Sequence[str]], params.check_list),
-            dataset_kwargs=params.dataset_kwargs,
-            check_kwargs=params.check_kwargs,
-            run_kwargs=params.run_kwargs,
-        )
-
-
-def deepchecks_model_drift_check_step(
-    step_name: str,
-    params: DeepchecksModelDriftCheckStepParameters,
-) -> BaseStep:
-    """Shortcut function to create a new instance of the DeepchecksModelDriftCheckStep step.
-
-    The returned DeepchecksModelDriftCheckStep can be used in a pipeline to
-    run model drift checks on two input pd.DataFrame datasets and an input
-    scikit-learn ClassifierMixin model and return the results as a Deepchecks
-    SuiteResult object.
-
-    Args:
-        step_name: The name of the step
-        params: The parameters for the step
 
     Returns:
-        a DeepchecksModelDriftCheckStep step instance
+        A Deepchecks suite result with the validation results.
     """
-    return DeepchecksModelDriftCheckStep(name=step_name, params=params)
+    data_validator = cast(
+        DeepchecksDataValidator,
+        DeepchecksDataValidator.get_active_data_validator(),
+    )
+
+    return data_validator.model_validation(
+        dataset=reference_dataset,
+        comparison_dataset=target_dataset,
+        model=model,
+        check_list=cast(Optional[Sequence[str]], check_list),
+        dataset_kwargs=dataset_kwargs or {},
+        check_kwargs=check_kwargs or {},
+        run_kwargs=run_kwargs or {},
+    )

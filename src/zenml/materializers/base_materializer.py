@@ -64,7 +64,7 @@ class BaseMaterializerMeta(type):
                 f"Invalid materializer class '{name}'. When creating a "
                 f"custom materializer, make sure to specify at least one "
                 f"type in its ASSOCIATED_TYPES class variable.",
-                url="https://docs.zenml.io/advanced-guide/pipelines/materializers",
+                url="https://docs.zenml.io/user-guide/advanced-guide/handle-custom-data-types",
             )
 
         # Validate associated artifact type.
@@ -79,7 +79,7 @@ class BaseMaterializerMeta(type):
                     f"custom materializer, make sure to specify a valid "
                     f"artifact type in its ASSOCIATED_ARTIFACT_TYPE class "
                     f"variable.",
-                    url="https://docs.zenml.io/advanced-guide/pipelines/materializers",
+                    url="https://docs.zenml.io/user-guide/advanced-guide/handle-custom-data-types",
                 )
 
         # Validate associated data types.
@@ -88,7 +88,7 @@ class BaseMaterializerMeta(type):
                 raise MaterializerInterfaceError(
                     f"Associated type {associated_type} for materializer "
                     f"{name} is not a class.",
-                    url="https://docs.zenml.io/advanced-guide/pipelines/materializers",
+                    url="https://docs.zenml.io/user-guide/advanced-guide/handle-custom-data-types",
                 )
 
         # Register the materializer.
@@ -211,14 +211,15 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
         Raises:
             TypeError: If the materializer cannot read/write the given type.
         """
-        if not self._can_handle_type(data_type):
+        if not self.can_handle_type(data_type):
             raise TypeError(
                 f"Unable to handle type {data_type}. {self.__class__.__name__} "
                 f"can only read/write artifacts of the following types: "
                 f"{self.ASSOCIATED_TYPES}."
             )
 
-    def _can_handle_type(self, data_type: Type[Any]) -> bool:
+    @classmethod
+    def can_handle_type(cls, data_type: Type[Any]) -> bool:
         """Whether the materializer can read/write a certain type.
 
         Args:
@@ -229,7 +230,7 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
         """
         return any(
             issubclass(data_type, associated_type)
-            for associated_type in self.ASSOCIATED_TYPES
+            for associated_type in cls.ASSOCIATED_TYPES
         )
 
     def extract_full_metadata(self, data: Any) -> Dict[str, "MetadataType"]:

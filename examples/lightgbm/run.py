@@ -11,12 +11,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 from pipelines.lgbm_pipeline.lgbm_pipeline import lgbm_pipeline
-from steps.data_loader.data_loader_step import data_loader
-from steps.predictor.predictor_step import predictor
-from steps.trainer.trainer_step import trainer
 
 if __name__ == "__main__":
-    pipeline = lgbm_pipeline(
-        data_loader=data_loader(), trainer=trainer(), predictor=predictor()
-    )
-    pipeline.run()
+    lgbm_pipeline()
