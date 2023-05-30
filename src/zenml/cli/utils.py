@@ -648,7 +648,9 @@ def parse_name_and_extra_arguments(
     Returns:
         The name and a dict of parsed args.
     """
-
+    name: Optional[str] = None
+    # The name was not supplied as the first argument, we have to
+    # search the other arguments for the name.
     for i, arg in enumerate(args):
         if not arg:
             # Skip empty arguments.
@@ -663,6 +665,7 @@ def parse_name_and_extra_arguments(
                 "A name must be supplied. Please see the command help for more "
                 "information."
             )
+
     message = (
         "Please provide args with a proper "
         "identifier as the key and the following structure: "
