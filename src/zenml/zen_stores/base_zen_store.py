@@ -38,6 +38,7 @@ from zenml.constants import (
     ENV_ZENML_DEFAULT_WORKSPACE_NAME,
     ENV_ZENML_SERVER_DEPLOYMENT_TYPE,
 )
+from zenml.constants import IS_DEBUG_ENV
 from zenml.enums import (
     PermissionType,
     SecretsStoreType,
@@ -451,6 +452,7 @@ class BaseZenStore(
                 ENV_ZENML_SERVER_DEPLOYMENT_TYPE, ServerDeploymentType.OTHER
             ),
             database_type=ServerDatabaseType.OTHER,
+            debug=IS_DEBUG_ENV,
             secrets_store_type=self.secrets_store.type
             if self.secrets_store
             else SecretsStoreType.NONE,
