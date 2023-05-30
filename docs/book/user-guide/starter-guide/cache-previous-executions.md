@@ -11,7 +11,7 @@ In the logs of your previous runs, you might have noticed at this point that rer
 {% tabs %}
 {% tab title="Dashboard" %}
 
-![Representation of a pipeline dag.](../../.gitbook/assets/CachedDag.png)
+![DAG of a cached pipeline run](../../.gitbook/assets/CachedDag.png)
 
 {% endtab %}
 
