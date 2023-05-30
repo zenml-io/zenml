@@ -12,25 +12,6 @@
 #  permissions and limitations under the License.
 
 from pipelines.data_validation import data_validation_pipeline
-from steps.data_drift_detector import data_drift_detector
-from steps.data_loader import data_loader
-from steps.data_validator import data_validator
-from steps.model_drift_detector import model_drift_detector
-from steps.model_validator import model_validator
-from steps.trainer import trainer
-
-from zenml.logger import get_logger
-
-logger = get_logger(__name__)
-
 
 if __name__ == "__main__":
-    pipeline_instance = data_validation_pipeline(
-        data_loader=data_loader(),
-        trainer=trainer(),
-        data_validator=data_validator,
-        model_validator=model_validator,
-        data_drift_detector=data_drift_detector,
-        model_drift_detector=model_drift_detector,
-    )
-    pipeline_instance.run()
+    data_validation_pipeline()

@@ -190,6 +190,14 @@ zenml integration install INTEGRATION_NAME
 Note that if you don't specify a specific integration to be installed, the
 ZenML CLI will install **all** available integrations.
 
+If you want to install all integrations apart from one or multiple integrations,
+use the following syntax, for example, which will install all integrations
+except `feast` and `aws`:
+
+```shell
+zenml integration install -i feast -i aws
+```
+
 Uninstalling a specific integration is as simple as typing:
 
 ```bash
@@ -472,7 +480,7 @@ zenml artifact-store deploy s3_artifact_store --flavor=s3
 ```
 
 For full documentation on this functionality, please refer to [the dedicated
-documentation on stack component deploy](https://docs.zenml.io/advanced-guide/practical-mlops/stack-recipes#deploying-stack-components-directly).
+documentation on stack component deploy](https://docs.zenml.io/platform-guide/set-up-your-mlops-platform/deploy-and-set-up-a-cloud-stack/deploy-a-stack-component).
 
 Secrets Management
 ------------------
@@ -952,19 +960,17 @@ in your Python code. Let's say you have a Python file called `run.py` and
 it contains the following code:
 
 ```python
-from zenml.pipelines import pipeline
+from zenml import pipeline
 
 @pipeline
 def my_pipeline(...):
    # Connect your pipeline steps here
    pass
-
-pipeline_instance = my_pipeline(...)
 ```
 
 You can register your pipeline like this:
 ```bash
-zenml pipeline register run.pipeline_instance
+zenml pipeline register my_pipeline
 ```
 
 To list all registered pipelines, use:
@@ -1569,6 +1575,7 @@ from zenml.cli.feature import *  # noqa
 from zenml.cli.hub import *  # noqa
 from zenml.cli.integration import *  # noqa
 from zenml.cli.served_model import *  # noqa
+from zenml.cli.service_connectors import *  # noqa
 from zenml.cli.model import *  # noqa
 from zenml.cli.pipeline import *  # noqa
 from zenml.cli.workspace import *  # noqa

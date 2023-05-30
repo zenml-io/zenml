@@ -17,7 +17,11 @@ from abc import abstractmethod
 from typing import Any, Dict, Optional, Type, cast
 
 from zenml.enums import StackComponentType
-from zenml.models import FlavorRequestModel, FlavorResponseModel
+from zenml.models import (
+    FlavorRequestModel,
+    FlavorResponseModel,
+    ServiceConnectorRequirements,
+)
 from zenml.stack.stack_component import StackComponent, StackComponentConfig
 from zenml.utils import source_utils
 
@@ -100,6 +104,21 @@ class Flavor:
         )
         return config_schema
 
+    @property
+    def service_connector_requirements(
+        self,
+    ) -> Optional[ServiceConnectorRequirements]:
+        """Service connector resource requirements for service connectors.
+
+        Specifies resource requirements that are used to filter the available
+        service connector types that are compatible with this flavor.
+
+        Returns:
+            Requirements for compatible service connectors, if a service
+            connector is required for this flavor.
+        """
+        return None
+
     @classmethod
     def from_model(cls, flavor_model: FlavorResponseModel) -> "Flavor":
         """Loads a flavor from a model.
@@ -134,6 +153,22 @@ class Flavor:
         from zenml.client import Client
 
         client = Client()
+        connector_requirements = self.service_connector_requirements
+        connector_type = (
+            connector_requirements.connector_type
+            if connector_requirements
+            else None
+        )
+        resource_type = (
+            connector_requirements.resource_type
+            if connector_requirements
+            else None
+        )
+        resource_id_attr = (
+            connector_requirements.resource_id_attr
+            if connector_requirements
+            else None
+        )
         model = FlavorRequestModel(
             user=client.active_user.id if is_custom else None,
             workspace=client.active_workspace.id if is_custom else None,
@@ -141,6 +176,9 @@ class Flavor:
             type=self.type,
             source=source_utils.resolve(self.__class__).import_path,
             config_schema=self.config_schema,
+            connector_type=connector_type,
+            connector_resource_type=resource_type,
+            connector_resource_id_attr=resource_id_attr,
             integration=integration,
             logo_url=self.logo_url,
             docs_url=self.docs_url,
@@ -168,9 +206,7 @@ class Flavor:
         name = self.name.replace("_", "-")
         docs_component_name = component_name or name
         base = f"https://docs.zenml.io/v/{__version__}"
-        return (
-            f"{base}/component-gallery/{component_type}/{docs_component_name}"
-        )
+        return f"{base}/user-guide/component-guide/{component_type}/{docs_component_name}"
 
     def generate_default_sdk_docs_url(self) -> str:
         """Generate SDK docs url for a flavor.

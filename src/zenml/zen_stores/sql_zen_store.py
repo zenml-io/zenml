@@ -37,7 +37,7 @@ from typing import (
 from uuid import UUID
 
 import pymysql
-from pydantic import root_validator, validator
+from pydantic import SecretStr, root_validator, validator
 from sqlalchemy import asc, desc, func, text
 from sqlalchemy.engine import URL, Engine, make_url
 from sqlalchemy.exc import (
@@ -60,12 +60,14 @@ from zenml.constants import (
 from zenml.enums import (
     ExecutionStatus,
     LoggingLevels,
+    SecretScope,
     SorterOps,
     StackComponentType,
     StoreType,
     StrEnum,
 )
 from zenml.exceptions import (
+    AuthorizationException,
     EntityExistsError,
     IllegalOperationError,
     StackComponentExistsError,
@@ -114,6 +116,14 @@ from zenml.models import (
     ScheduleRequestModel,
     ScheduleResponseModel,
     ScheduleUpdateModel,
+    SecretFilterModel,
+    SecretRequestModel,
+    ServiceConnectorFilterModel,
+    ServiceConnectorRequestModel,
+    ServiceConnectorResourcesModel,
+    ServiceConnectorResponseModel,
+    ServiceConnectorTypeModel,
+    ServiceConnectorUpdateModel,
     StackFilterModel,
     StackRequestModel,
     StackResponseModel,
@@ -147,13 +157,18 @@ from zenml.models.constants import TEXT_FIELD_MAX_LENGTH
 from zenml.models.page_model import Page
 from zenml.models.run_metadata_models import RunMetadataFilterModel
 from zenml.models.schedule_model import ScheduleFilterModel
+from zenml.models.secret_models import SecretUpdateModel
 from zenml.models.server_models import ServerDatabaseType, ServerModel
+from zenml.service_connectors.service_connector_registry import (
+    service_connector_registry,
+)
 from zenml.stack.flavor_registry import FlavorRegistry
 from zenml.utils import uuid_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track
 from zenml.utils.networking_utils import (
     replace_localhost_with_internal_hostname,
 )
+from zenml.utils.string_utils import random_str
 from zenml.zen_stores.base_zen_store import (
     DEFAULT_ADMIN_ROLE,
     DEFAULT_GUEST_ROLE,
@@ -182,6 +197,7 @@ from zenml.zen_stores.schemas import (
     RoleSchema,
     RunMetadataSchema,
     ScheduleSchema,
+    ServiceConnectorSchema,
     StackComponentSchema,
     StackCompositionSchema,
     StackSchema,
@@ -691,6 +707,16 @@ class SqlZenStore(BaseZenStore):
         custom_schema_to_model_conversion: Optional[
             Callable[[AnySchema], B]
         ] = None,
+        custom_fetch: Optional[
+            Callable[
+                [
+                    Session,
+                    Union[Select[AnySchema], SelectOfScalar[AnySchema]],
+                    BaseFilterModel,
+                ],
+                List[AnySchema],
+            ]
+        ] = None,
     ) -> Page[B]:
         """Given a query, return a Page instance with a list of filtered Models.
 
@@ -703,6 +729,12 @@ class SqlZenStore(BaseZenStore):
                 into a model. This is used if the Model contains additional
                 data that is not explicitly stored as a field or relationship
                 on the model.
+            custom_fetch: Custom callable to use to fetch items from the
+                database for a given query. This is used if the items fetched
+                from the database need to be processed differently (e.g. to
+                perform additional filtering). The callable should take a
+                `Session`, a `Select` query and a `BaseFilterModel` filter as
+                arguments and return a `List` of items.
 
         Returns:
             The Domain Model representation of the DB resource
@@ -714,11 +746,14 @@ class SqlZenStore(BaseZenStore):
         query = filter_model.apply_filter(query=query, table=table)
 
         # Get the total amount of items in the database for a given query
-        total = session.scalar(
-            select([func.count("*")]).select_from(
-                query.options(noload("*")).subquery()
+        if custom_fetch:
+            total = len(custom_fetch(session, query, filter_model))
+        else:
+            total = session.scalar(
+                select([func.count("*")]).select_from(
+                    query.options(noload("*")).subquery()
+                )
             )
-        )
 
         # Sorting
         column, operand = filter_model.sorting_params
@@ -742,13 +777,21 @@ class SqlZenStore(BaseZenStore):
             )
 
         # Get a page of the actual data
-        item_schemas: List[AnySchema] = (
-            session.exec(
-                query.limit(filter_model.size).offset(filter_model.offset)
+        item_schemas: List[AnySchema]
+        if custom_fetch:
+            item_schemas = custom_fetch(session, query, filter_model)
+            # select the items in the current page
+            item_schemas = item_schemas[
+                filter_model.offset : filter_model.offset + filter_model.size
+            ]
+        else:
+            item_schemas = (
+                session.exec(
+                    query.limit(filter_model.size).offset(filter_model.offset)
+                )
+                .unique()
+                .all()
             )
-            .unique()
-            .all()
-        )
 
         # Convert this page of items from schemas to models.
         items: List[B] = []
@@ -1252,6 +1295,10 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The created stack component.
+
+        Raises:
+            KeyError: if the stack component references a non-existent
+                connector.
         """
         with Session(self.engine) as session:
             self._fail_if_component_with_name_type_exists_for_user(
@@ -1270,6 +1317,20 @@ class SqlZenStore(BaseZenStore):
                     session=session,
                 )
 
+            service_connector: Optional[ServiceConnectorSchema] = None
+            if component.connector:
+                service_connector = session.exec(
+                    select(ServiceConnectorSchema).where(
+                        ServiceConnectorSchema.id == component.connector
+                    )
+                ).first()
+
+                if service_connector is None:
+                    raise KeyError(
+                        f"Service connector with ID {component.connector} not "
+                        "found."
+                    )
+
             # Create the component
             new_component = StackComponentSchema(
                 name=component.name,
@@ -1284,6 +1345,8 @@ class SqlZenStore(BaseZenStore):
                 labels=base64.b64encode(
                     json.dumps(component.labels).encode("utf-8")
                 ),
+                connector=service_connector,
+                connector_resource_id=component.connector_resource_id,
             )
 
             session.add(new_component)
@@ -1420,6 +1483,24 @@ class SqlZenStore(BaseZenStore):
                     )
 
             existing_component.update(component_update=component_update)
+
+            service_connector: Optional[ServiceConnectorSchema] = None
+            if component_update.connector:
+                service_connector = session.exec(
+                    select(ServiceConnectorSchema).where(
+                        ServiceConnectorSchema.id == component_update.connector
+                    )
+                ).first()
+
+                if service_connector is None:
+                    raise KeyError(
+                        "Service connector with ID "
+                        f"{component_update.connector} not found."
+                    )
+
+            if service_connector:
+                existing_component.connector = service_connector
+
             session.add(existing_component)
             session.commit()
 
@@ -1545,12 +1626,13 @@ class SqlZenStore(BaseZenStore):
         """
         # Check if component with the same name, type is already shared
         # within the workspace
+        is_shared = True
         existing_shared_component = session.exec(
             select(StackComponentSchema)
             .where(StackComponentSchema.name == name)
             .where(StackComponentSchema.workspace_id == workspace_id)
             .where(StackComponentSchema.type == component_type)
-            .where(StackComponentSchema.is_shared is True)
+            .where(StackComponentSchema.is_shared == is_shared)
         ).first()
         if existing_shared_component is not None:
             raise StackComponentExistsError(
@@ -1614,6 +1696,9 @@ class SqlZenStore(BaseZenStore):
                     source=flavor.source,
                     config_schema=config_schema,
                     integration=flavor.integration,
+                    connector_type=flavor.connector_type,
+                    connector_resource_type=flavor.connector_resource_type,
+                    connector_resource_id_attr=flavor.connector_resource_id_attr,
                     workspace_id=flavor.workspace,
                     user_id=flavor.user,
                     logo_url=flavor.logo_url,
@@ -4053,6 +4138,913 @@ class SqlZenStore(BaseZenStore):
 
             session.delete(existing_repo)
             session.commit()
+
+    # ------------------
+    # Service Connectors
+    # ------------------
+
+    @staticmethod
+    def _fail_if_service_connector_with_name_exists_for_user(
+        name: str,
+        workspace_id: UUID,
+        user_id: UUID,
+        session: Session,
+    ) -> None:
+        """Raise an exception if a service connector with same name exists.
+
+        Args:
+            name: The name of the service connector
+            workspace_id: The ID of the workspace
+            user_id: The ID of the user
+            session: The Session
+
+        Returns:
+            None
+
+        Raises:
+            EntityExistsError: If a service connector with the given name is
+                already owned by the user
+        """
+        assert user_id
+        # Check if service connector with the same domain key (name, workspace,
+        # owner) already exists
+        existing_domain_connector = session.exec(
+            select(ServiceConnectorSchema)
+            .where(ServiceConnectorSchema.name == name)
+            .where(ServiceConnectorSchema.workspace_id == workspace_id)
+            .where(ServiceConnectorSchema.user_id == user_id)
+        ).first()
+        if existing_domain_connector is not None:
+            # Theoretically the user schema is optional, in this case there is
+            #  no way that it will be None
+            assert existing_domain_connector.user
+            raise EntityExistsError(
+                f"Unable to register service connector with name '{name}': "
+                "Found an existing service connector with the same name in the "
+                f"same workspace, '{existing_domain_connector.workspace.name}', "
+                "owned by the same user, "
+                f"{existing_domain_connector.user.name}'."
+            )
+        return None
+
+    @staticmethod
+    def _fail_if_service_connector_with_name_already_shared(
+        name: str,
+        workspace_id: UUID,
+        session: Session,
+    ) -> None:
+        """Raise an exception if a service connector with same name is already shared.
+
+        Args:
+            name: The name of the service connector
+            workspace_id: The ID of the workspace
+            session: The Session
+
+        Raises:
+            EntityExistsError: If a service connector with the given name is
+                already shared by another user
+        """
+        # Check if a service connector with the same name is already shared
+        # within the workspace
+        is_shared = True
+        existing_shared_connector = session.exec(
+            select(ServiceConnectorSchema)
+            .where(ServiceConnectorSchema.name == name)
+            .where(ServiceConnectorSchema.workspace_id == workspace_id)
+            .where(ServiceConnectorSchema.is_shared == is_shared)
+        ).first()
+        if existing_shared_connector is not None:
+            raise EntityExistsError(
+                f"Unable to share service connector with name '{name}': Found "
+                "an existing shared service connector with the same name in "
+                f"workspace '{workspace_id}'."
+            )
+
+    def _create_connector_secret(
+        self,
+        connector_name: str,
+        user: UUID,
+        workspace: UUID,
+        is_shared: bool,
+        secrets: Optional[Dict[str, Optional[SecretStr]]],
+    ) -> Optional[UUID]:
+        """Creates a new secret to store the service connector secret credentials.
+
+        Args:
+            connector_name: The name of the service connector for which to
+                create a secret.
+            user: The ID of the user who owns the service connector.
+            workspace: The ID of the workspace in which the service connector
+                is registered.
+            is_shared: Whether the service connector is shared.
+            secrets: The secret credentials to store.
+
+        Returns:
+            The ID of the newly created secret or None, if the service connector
+            does not contain any secret credentials.
+
+        Raises:
+            NotImplementedError: If a secrets store is not configured or
+                supported.
+        """
+        if not secrets:
+            return None
+
+        if not self.secrets_store:
+            raise NotImplementedError(
+                "A secrets store is not configured or supported."
+            )
+
+        # Generate a unique name for the secret
+        # Replace all non-alphanumeric characters with a dash because
+        # the secret name must be a valid DNS subdomain name in some
+        # secrets stores
+        connector_name = re.sub(r"[^a-zA-Z0-9-]", "-", connector_name)
+        # Generate unique names using a random suffix until we find a name
+        # that is not already in use
+        while True:
+            secret_name = f"connector-{connector_name}-{random_str(4)}"
+            existing_secrets = self.secrets_store.list_secrets(
+                SecretFilterModel(
+                    name=secret_name,
+                )
+            )
+            if not existing_secrets.size:
+                try:
+                    return self.secrets_store.create_secret(
+                        SecretRequestModel(
+                            name=secret_name,
+                            user=user,
+                            workspace=workspace,
+                            scope=SecretScope.WORKSPACE
+                            if is_shared
+                            else SecretScope.USER,
+                            values=secrets,
+                        )
+                    ).id
+                except KeyError:
+                    # The secret already exists, try again
+                    continue
+
+    def _populate_connector_type(
+        self, *service_connectors: ServiceConnectorResponseModel
+    ) -> None:
+        """Populates the connector type of the given service connectors.
+
+        If the connector type is not locally available, the connector type
+        field is left as is.
+
+        Args:
+            service_connectors: The service connectors to populate.
+        """
+        for service_connector in service_connectors:
+            if not service_connector_registry.is_registered(
+                service_connector.type
+            ):
+                continue
+            service_connector.connector_type = (
+                service_connector_registry.get_service_connector_type(
+                    service_connector.type
+                )
+            )
+
+    @track(AnalyticsEvent.CREATED_SERVICE_CONNECTOR, v1=False, v2=True)
+    def create_service_connector(
+        self, service_connector: ServiceConnectorRequestModel
+    ) -> ServiceConnectorResponseModel:
+        """Creates a new service connector.
+
+        Args:
+            service_connector: Service connector to be created.
+
+        Returns:
+            The newly created service connector.
+
+        Raises:
+            Exception: If anything goes wrong during the creation of the
+                service connector.
+        """
+        # If the connector type is locally available, we validate the request
+        # against the connector type schema before storing it in the database
+        if service_connector_registry.is_registered(service_connector.type):
+            connector_type = (
+                service_connector_registry.get_service_connector_type(
+                    service_connector.type
+                )
+            )
+            service_connector.validate_and_configure_resources(
+                connector_type=connector_type,
+                resource_types=service_connector.resource_types,
+                resource_id=service_connector.resource_id,
+                configuration=service_connector.configuration,
+                secrets=service_connector.secrets,
+            )
+
+        with Session(self.engine) as session:
+            self._fail_if_service_connector_with_name_exists_for_user(
+                name=service_connector.name,
+                user_id=service_connector.user,
+                workspace_id=service_connector.workspace,
+                session=session,
+            )
+
+            if service_connector.is_shared:
+                self._fail_if_service_connector_with_name_already_shared(
+                    name=service_connector.name,
+                    workspace_id=service_connector.workspace,
+                    session=session,
+                )
+
+            # Create the secret
+            secret_id = self._create_connector_secret(
+                connector_name=service_connector.name,
+                user=service_connector.user,
+                workspace=service_connector.workspace,
+                is_shared=service_connector.is_shared,
+                secrets=service_connector.secrets,
+            )
+            try:
+                # Create the service connector
+                new_service_connector = ServiceConnectorSchema.from_request(
+                    service_connector,
+                    secret_id=secret_id,
+                )
+
+                session.add(new_service_connector)
+                session.commit()
+
+                session.refresh(new_service_connector)
+            except Exception:
+                # Delete the secret if it was created
+                if secret_id and self.secrets_store:
+                    try:
+                        self.secrets_store.delete_secret(secret_id)
+                    except Exception:
+                        # Ignore any errors that occur while deleting the
+                        # secret
+                        pass
+
+                raise
+
+            connector = new_service_connector.to_model()
+            self._populate_connector_type(connector)
+            return connector
+
+    def get_service_connector(
+        self, service_connector_id: UUID
+    ) -> ServiceConnectorResponseModel:
+        """Gets a specific service connector.
+
+        Args:
+            service_connector_id: The ID of the service connector to get.
+
+        Returns:
+            The requested service connector, if it was found.
+
+        Raises:
+            KeyError: If no service connector with the given ID exists.
+        """
+        with Session(self.engine) as session:
+            service_connector = session.exec(
+                select(ServiceConnectorSchema).where(
+                    ServiceConnectorSchema.id == service_connector_id
+                )
+            ).first()
+
+            if service_connector is None:
+                raise KeyError(
+                    f"Service connector with ID {service_connector_id} not "
+                    "found."
+                )
+
+            connector = service_connector.to_model()
+            self._populate_connector_type(connector)
+            return connector
+
+    def _list_filtered_service_connectors(
+        self,
+        session: Session,
+        query: Union[
+            Select[ServiceConnectorSchema],
+            SelectOfScalar[ServiceConnectorSchema],
+        ],
+        filter_model: ServiceConnectorFilterModel,
+    ) -> List[ServiceConnectorSchema]:
+        """Refine a service connector query.
+
+        Applies resource type and label filters to the query.
+
+        Args:
+            session: The database session.
+            query: The query to filter.
+            filter_model: The filter model.
+
+        Returns:
+            The filtered list of service connectors.
+        """
+        items: List[ServiceConnectorSchema] = (
+            session.exec(query).unique().all()
+        )
+
+        # filter out items that don't match the resource type
+        if filter_model.resource_type:
+            items = [
+                item
+                for item in items
+                if filter_model.resource_type in item.resource_types_list
+            ]
+
+        # filter out items that don't match the labels
+        if filter_model.labels:
+            items = [
+                item for item in items if item.has_labels(filter_model.labels)
+            ]
+
+        return items
+
+    def list_service_connectors(
+        self, filter_model: ServiceConnectorFilterModel
+    ) -> Page[ServiceConnectorResponseModel]:
+        """List all service connectors.
+
+        Args:
+            filter_model: All filter parameters including pagination
+                params.
+
+        Returns:
+            A page of all service connectors.
+        """
+
+        def fetch_connectors(
+            session: Session,
+            query: Union[
+                Select[ServiceConnectorSchema],
+                SelectOfScalar[ServiceConnectorSchema],
+            ],
+            filter_model: BaseFilterModel,
+        ) -> List[ServiceConnectorSchema]:
+            """Custom fetch function for connector filtering and pagination.
+
+            Applies resource type and label filters to the query.
+
+            Args:
+                session: The database session.
+                query: The query to filter.
+                filter_model: The filter model.
+
+            Returns:
+                The filtered and paginated results.
+            """
+            assert isinstance(filter_model, ServiceConnectorFilterModel)
+            items = self._list_filtered_service_connectors(
+                session=session, query=query, filter_model=filter_model
+            )
+
+            return items
+
+        with Session(self.engine) as session:
+            query = select(ServiceConnectorSchema)
+            paged_connectors: Page[
+                ServiceConnectorResponseModel
+            ] = self.filter_and_paginate(
+                session=session,
+                query=query,
+                table=ServiceConnectorSchema,
+                filter_model=filter_model,
+                custom_fetch=fetch_connectors,
+            )
+
+            self._populate_connector_type(*paged_connectors.items)
+            return paged_connectors
+
+    def _update_connector_secret(
+        self,
+        existing_connector: ServiceConnectorResponseModel,
+        updated_connector: ServiceConnectorUpdateModel,
+    ) -> Optional[UUID]:
+        """Updates the secret for a service connector.
+
+        If the secrets field in the service connector update is set (i.e. not
+        None), the existing secret, if any, is replaced. If the secrets field is
+        set to an empty dict, the existing secret is deleted.
+
+        Args:
+            existing_connector: Existing service connector for which to update a
+                secret.
+            updated_connector: Updated service connector.
+
+        Returns:
+            The ID of the updated secret or None, if the new service connector
+            does not contain any secret credentials.
+
+        Raises:
+            NotImplementedError: If a secrets store is not configured or
+                supported.
+        """
+        if not self.secrets_store:
+            raise NotImplementedError(
+                "A secrets store is not configured or supported."
+            )
+
+        is_shared = (
+            existing_connector.is_shared
+            if updated_connector.is_shared is None
+            else updated_connector.is_shared
+        )
+        scope_changed = is_shared != existing_connector.is_shared
+
+        if updated_connector.secrets is None:
+            if scope_changed and existing_connector.secret_id:
+                # Update the scope of the existing secret
+                self.secrets_store.update_secret(
+                    secret_id=existing_connector.secret_id,
+                    secret_update=SecretUpdateModel(  # type: ignore[call-arg]
+                        scope=SecretScope.WORKSPACE
+                        if is_shared
+                        else SecretScope.USER,
+                    ),
+                )
+
+            # If the connector update does not contain a secrets update, keep
+            # the existing secret (if any)
+            return existing_connector.secret_id
+
+        # Delete the existing secret (if any), to be replaced by the new secret
+        if existing_connector.secret_id:
+            try:
+                self.secrets_store.delete_secret(existing_connector.secret_id)
+            except KeyError:
+                # Ignore if the secret no longer exists
+                pass
+
+        # If the new service connector does not contain any secret credentials,
+        # return None
+        if not updated_connector.secrets:
+            return None
+
+        assert existing_connector.user is not None
+        # A secret does not exist yet, create a new one
+        return self._create_connector_secret(
+            connector_name=updated_connector.name or existing_connector.name,
+            user=existing_connector.user.id,
+            workspace=existing_connector.workspace.id,
+            is_shared=is_shared,
+            secrets=updated_connector.secrets,
+        )
+
+    def update_service_connector(
+        self, service_connector_id: UUID, update: ServiceConnectorUpdateModel
+    ) -> ServiceConnectorResponseModel:
+        """Updates an existing service connector.
+
+        The update model contains the fields to be updated. If a field value is
+        set to None in the model, the field is not updated, but there are
+        special rules concerning some fields:
+
+        * the `configuration` and `secrets` fields together represent a full
+        valid configuration update, not just a partial update. If either is
+        set (i.e. not None) in the update, their values are merged together and
+        will replace the existing configuration and secrets values.
+        * the `resource_id` field value is also a full replacement value: if set
+        to `None`, the resource ID is removed from the service connector.
+        * the `expiration_seconds` field value is also a full replacement value:
+        if set to `None`, the expiration is removed from the service connector.
+        * the `secret_id` field value in the update is ignored, given that
+        secrets are managed internally by the ZenML store.
+        * the `labels` field is also a full labels update: if set (i.e. not
+        `None`), all existing labels are removed and replaced by the new labels
+        in the update.
+
+        Args:
+            service_connector_id: The ID of the service connector to update.
+            update: The update to be applied to the service connector.
+
+        Returns:
+            The updated service connector.
+
+        Raises:
+            KeyError: If no service connector with the given ID exists.
+            IllegalOperationError: If the service connector is referenced by
+                one or more stack components and the update would change the
+                connector type, resource type or resource ID.
+        """
+        with Session(self.engine) as session:
+            existing_connector = session.exec(
+                select(ServiceConnectorSchema).where(
+                    ServiceConnectorSchema.id == service_connector_id
+                )
+            ).first()
+
+            if existing_connector is None:
+                raise KeyError(
+                    f"Unable to update service connector with ID "
+                    f"'{service_connector_id}': Found no existing service "
+                    "connector with this ID."
+                )
+
+            # In case of a renaming update, make sure no service connector uses
+            # that name already
+            if update.name:
+                if (
+                    existing_connector.name != update.name
+                    and existing_connector.user_id is not None
+                ):
+                    self._fail_if_service_connector_with_name_exists_for_user(
+                        name=update.name,
+                        workspace_id=existing_connector.workspace_id,
+                        user_id=existing_connector.user_id,
+                        session=session,
+                    )
+
+            # Check if service connector update makes the service connector a
+            # shared service connector
+            # In that case, check if a service connector with the same name is
+            # already shared within the workspace
+            if update.is_shared is not None:
+                if not existing_connector.is_shared and update.is_shared:
+                    self._fail_if_service_connector_with_name_already_shared(
+                        name=update.name or existing_connector.name,
+                        workspace_id=existing_connector.workspace_id,
+                        session=session,
+                    )
+
+            existing_connector_model = existing_connector.to_model()
+
+            if len(existing_connector.components):
+                # If the service connector is already used in one or more
+                # stack components, the update is no longer allowed to change
+                # the service connector's authentication method, connector type,
+                # resource type, or resource ID
+                if (
+                    update.connector_type
+                    and update.type != existing_connector_model.connector_type
+                ):
+                    raise IllegalOperationError(
+                        "The service type of a service connector that is "
+                        "already actively used in one or more stack components "
+                        "cannot be changed."
+                    )
+
+                if (
+                    update.auth_method
+                    and update.auth_method
+                    != existing_connector_model.auth_method
+                ):
+                    raise IllegalOperationError(
+                        "The authentication method of a service connector that "
+                        "is already actively used in one or more stack "
+                        "components cannot be changed."
+                    )
+
+                if (
+                    update.resource_types
+                    and update.resource_types
+                    != existing_connector_model.resource_types
+                ):
+                    raise IllegalOperationError(
+                        "The resource type of a service connector that is "
+                        "already actively used in one or more stack components "
+                        "cannot be changed."
+                    )
+
+                # The resource ID field cannot be used as a partial update: if
+                # set to None, the existing resource ID is also removed
+                if update.resource_id != existing_connector_model.resource_id:
+                    raise IllegalOperationError(
+                        "The resource ID of a service connector that is "
+                        "already actively used in one or more stack components "
+                        "cannot be changed."
+                    )
+
+            # If the connector type is locally available, we validate the update
+            # against the connector type schema before storing it in the
+            # database
+            if service_connector_registry.is_registered(
+                existing_connector.connector_type
+            ):
+                connector_type = (
+                    service_connector_registry.get_service_connector_type(
+                        existing_connector.connector_type
+                    )
+                )
+                # We need the auth method to be set to be able to validate the
+                # configuration
+                update.auth_method = (
+                    update.auth_method or existing_connector_model.auth_method
+                )
+                # Validate the configuration update. If the configuration or
+                # secrets fields are set, together they are merged into a
+                # full configuration that is validated against the connector
+                # type schema and replaces the existing configuration and
+                # secrets values
+                update.validate_and_configure_resources(
+                    connector_type=connector_type,
+                    resource_types=update.resource_types,
+                    resource_id=update.resource_id,
+                    configuration=update.configuration,
+                    secrets=update.secrets,
+                )
+
+            # Update secret
+            secret_id = self._update_connector_secret(
+                existing_connector=existing_connector_model,
+                updated_connector=update,
+            )
+
+            existing_connector.update(
+                connector_update=update, secret_id=secret_id
+            )
+            session.add(existing_connector)
+            session.commit()
+
+            connector = existing_connector.to_model()
+            self._populate_connector_type(connector)
+            return connector
+
+    def delete_service_connector(self, service_connector_id: UUID) -> None:
+        """Deletes a service connector.
+
+        Args:
+            service_connector_id: The ID of the service connector to delete.
+
+        Raises:
+            KeyError: If no service connector with the given ID exists.
+            IllegalOperationError: If the service connector is still referenced
+                by one or more stack components.
+        """
+        with Session(self.engine) as session:
+            try:
+                service_connector = session.exec(
+                    select(ServiceConnectorSchema).where(
+                        ServiceConnectorSchema.id == service_connector_id
+                    )
+                ).one()
+
+                if service_connector is None:
+                    raise KeyError(
+                        f"Service connector with ID {service_connector_id} not "
+                        "found."
+                    )
+
+                if len(service_connector.components) > 0:
+                    raise IllegalOperationError(
+                        f"Service connector with ID {service_connector_id} "
+                        f"cannot be deleted as it is still referenced by "
+                        f"{len(service_connector.components)} "
+                        "stack components. Before deleting this service "
+                        "connector, make sure to remove it from all stack "
+                        "components."
+                    )
+                else:
+                    session.delete(service_connector)
+
+                if service_connector.secret_id and self.secrets_store:
+                    try:
+                        self.secrets_store.delete_secret(
+                            service_connector.secret_id
+                        )
+                    except KeyError:
+                        # If the secret doesn't exist anymore, we can ignore
+                        # this error
+                        pass
+            except NoResultFound as error:
+                raise KeyError from error
+
+            session.commit()
+
+    def verify_service_connector_config(
+        self,
+        service_connector: ServiceConnectorRequestModel,
+    ) -> ServiceConnectorResourcesModel:
+        """Verifies if a service connector configuration has access to resources.
+
+        Args:
+            service_connector: The service connector configuration to verify.
+
+        Returns:
+            The list of resources that the service connector configuration has
+            access to.
+        """
+        connector_instance = service_connector_registry.instantiate_connector(
+            model=service_connector
+        )
+
+        return connector_instance.verify()
+
+    def verify_service_connector(
+        self,
+        service_connector_id: UUID,
+        resource_type: Optional[str] = None,
+        resource_id: Optional[str] = None,
+    ) -> ServiceConnectorResourcesModel:
+        """Verifies if a service connector instance has access to one or more resources.
+
+        Args:
+            service_connector_id: The ID of the service connector to verify.
+            resource_type: The type of resource to verify access to.
+            resource_id: The ID of the resource to verify access to.
+
+        Returns:
+            The list of resources that the service connector has access to,
+            scoped to the supplied resource type and ID, if provided.
+        """
+        connector = self.get_service_connector(service_connector_id)
+
+        connector_instance = service_connector_registry.instantiate_connector(
+            model=connector
+        )
+
+        return connector_instance.verify(
+            resource_type=resource_type, resource_id=resource_id
+        )
+
+    def get_service_connector_client(
+        self,
+        service_connector_id: UUID,
+        resource_type: Optional[str] = None,
+        resource_id: Optional[str] = None,
+    ) -> ServiceConnectorResponseModel:
+        """Get a service connector client for a service connector and given resource.
+
+        Args:
+            service_connector_id: The ID of the base service connector to use.
+            resource_type: The type of resource to get a client for.
+            resource_id: The ID of the resource to get a client for.
+
+        Returns:
+            A service connector client that can be used to access the given
+            resource.
+        """
+        connector = self.get_service_connector(service_connector_id)
+
+        connector_instance = service_connector_registry.instantiate_connector(
+            model=connector
+        )
+
+        # Fetch the connector client
+        connector_client = connector_instance.get_connector_client(
+            resource_type=resource_type,
+            resource_id=resource_id,
+        )
+
+        # Return the model for the connector client
+        connector = connector_client.to_response_model(
+            user=connector.user,
+            workspace=connector.workspace,
+            is_shared=connector.is_shared,
+            description=connector.description,
+            labels=connector.labels,
+        )
+
+        self._populate_connector_type(connector)
+
+        return connector
+
+    def list_service_connector_resources(
+        self,
+        user_name_or_id: Union[str, UUID],
+        workspace_name_or_id: Union[str, UUID],
+        connector_type: Optional[str] = None,
+        resource_type: Optional[str] = None,
+        resource_id: Optional[str] = None,
+    ) -> List[ServiceConnectorResourcesModel]:
+        """List resources that can be accessed by service connectors.
+
+        Args:
+            user_name_or_id: The name or ID of the user to scope to.
+            workspace_name_or_id: The name or ID of the workspace to scope to.
+            connector_type: The type of service connector to scope to.
+            resource_type: The type of resource to scope to.
+            resource_id: The ID of the resource to scope to.
+
+        Returns:
+            The matching list of resources that available service
+            connectors have access to.
+        """
+        user = self.get_user(user_name_or_id)
+        workspace = self.get_workspace(workspace_name_or_id)
+        connector_filter_model = ServiceConnectorFilterModel(
+            connector_type=connector_type,
+            resource_type=resource_type,
+            is_shared=True,
+            workspace_id=workspace.id,
+        )
+
+        shared_connectors = self.list_service_connectors(
+            filter_model=connector_filter_model
+        ).items
+
+        connector_filter_model = ServiceConnectorFilterModel(
+            connector_type=connector_type,
+            resource_type=resource_type,
+            is_shared=False,
+            user_id=user.id,
+            workspace_id=workspace.id,
+        )
+
+        private_connectors = self.list_service_connectors(
+            filter_model=connector_filter_model
+        ).items
+
+        resource_list: List[ServiceConnectorResourcesModel] = []
+
+        for connector in list(shared_connectors) + list(private_connectors):
+            if not service_connector_registry.is_registered(connector.type):
+                # For connectors that we can instantiate, i.e. those that have a
+                # connector type available locally, we return complete
+                # information about the resources that they have access to.
+                #
+                # For those that are not locally available, we only return
+                # rudimentary information extracted from the connector model
+                # without actively trying to discover the resources that they
+                # have access to.
+                resources = (
+                    ServiceConnectorResourcesModel.from_connector_model(
+                        connector,
+                        resource_type=resource_type,
+                    )
+                )
+                if resources.resource_type and not resources.resource_ids:
+                    resources.error = (
+                        f"The service '{connector.type}' connector type is not "
+                        f"available."
+                    )
+
+                if resource_id:
+                    # If an explicit resource ID is required, the connector
+                    # has to be configured with it.
+                    if (
+                        not resources.resource_ids
+                        or resource_id not in resources.resource_ids
+                    ):
+                        continue
+
+            else:
+                try:
+                    connector_instance = (
+                        service_connector_registry.instantiate_connector(
+                            model=connector
+                        )
+                    )
+
+                    resources = connector_instance.verify(
+                        resource_type=resource_type,
+                        resource_id=resource_id,
+                    )
+                except (ValueError, AuthorizationException) as e:
+                    error = (
+                        f'Failed to fetch {resource_type or "available"} '
+                        f"resources from service connector {connector.name}/"
+                        f"{connector.id}: {e}"
+                    )
+                    # Log an exception if debug logging is enabled
+                    if logger.isEnabledFor(logging.DEBUG):
+                        logger.exception(error)
+                    else:
+                        logger.error(error)
+                    continue
+
+            resource_list.append(resources)
+
+        return resource_list
+
+    def list_service_connector_types(
+        self,
+        connector_type: Optional[str] = None,
+        resource_type: Optional[str] = None,
+        auth_method: Optional[str] = None,
+    ) -> List[ServiceConnectorTypeModel]:
+        """Get a list of service connector types.
+
+        Args:
+            connector_type: Filter by connector type.
+            resource_type: Filter by resource type.
+            auth_method: Filter by authentication method.
+
+        Returns:
+            List of service connector types.
+        """
+        return service_connector_registry.list_service_connector_types(
+            connector_type=connector_type,
+            resource_type=resource_type,
+            auth_method=auth_method,
+        )
+
+    def get_service_connector_type(
+        self,
+        connector_type: str,
+    ) -> ServiceConnectorTypeModel:
+        """Returns the requested service connector type.
+
+        Args:
+            connector_type: the service connector type identifier.
+
+        Returns:
+            The requested service connector type.
+        """
+        return service_connector_registry.get_service_connector_type(
+            connector_type
+        )
 
     # =======================
     # Internal helper methods

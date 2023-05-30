@@ -72,6 +72,18 @@ class SecretBaseModel(BaseModel):
             if v is not None
         }
 
+    @property
+    def has_missing_values(self) -> bool:
+        """Returns True if the secret has missing values (i.e. None).
+
+        Values can be missing from a secret for example if the user retrieves a
+        secret but does not have the permission to view the secret values.
+
+        Returns:
+            True if the secret has any values set to None.
+        """
+        return any(v is None for v in self.values.values())
+
     def add_secret(self, key: str, value: str) -> None:
         """Adds a secret value to the secret.
 
@@ -133,7 +145,7 @@ class SecretFilterModel(WorkspaceScopedFilterModel):
     )
 
     user_id: Optional[Union[UUID, str]] = Field(
-        None, description="User that created the Secret"
+        default=None, description="User that created the Secret"
     )
 
     @staticmethod

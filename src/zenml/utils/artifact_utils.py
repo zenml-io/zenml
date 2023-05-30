@@ -16,7 +16,7 @@
 import base64
 import os
 import tempfile
-from typing import TYPE_CHECKING, Any, Optional, Union, cast
+from typing import TYPE_CHECKING, Any, List, Optional, Union, cast
 
 from zenml.client import Client
 from zenml.constants import MODEL_METADATA_YAML_FILE_NAME
@@ -24,16 +24,21 @@ from zenml.enums import StackComponentType, VisualizationType
 from zenml.exceptions import DoesNotExistException
 from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.models.visualization_models import LoadedVisualizationModel
+from zenml.models import ArtifactRequestModel, ArtifactResponseModel
+from zenml.models.visualization_models import (
+    LoadedVisualizationModel,
+    VisualizationModel,
+)
 from zenml.stack import StackComponent
 from zenml.utils import source_utils
 from zenml.utils.yaml_utils import read_yaml, write_yaml
 
 if TYPE_CHECKING:
+    from uuid import UUID
+
     from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
     from zenml.config.source import Source
     from zenml.materializers.base_materializer import BaseMaterializer
-    from zenml.models import ArtifactResponseModel
     from zenml.zen_stores.base_zen_store import BaseZenStore
 
 
@@ -160,6 +165,8 @@ def _load_artifact(
     Raises:
         ModuleNotFoundError: If the materializer or data type cannot be found.
     """
+    from zenml.materializers.base_materializer import BaseMaterializer
+
     # Resolve the materializer class
     try:
         materializer_class = source_utils.load(materializer)
@@ -284,7 +291,7 @@ def _load_artifact_store_of_artifact(
             StackComponent.from_model(artifact_store_model),
         )
     except ImportError:
-        link = "https://docs.zenml.io/component-gallery/artifact-stores/custom#enabling-artifact-visualizations-with-custom-artifact-stores"
+        link = "https://docs.zenml.io/user-guide/component-guide/artifact-stores/custom#enabling-artifact-visualizations-with-custom-artifact-stores"
         raise NotImplementedError(
             f"Artifact '{artifact.id}' could not be loaded because the "
             f"underlying artifact store '{artifact_store_model.name}' "
@@ -324,10 +331,81 @@ def _load_file_from_artifact_store(
         )
     except Exception as e:
         logger.exception(e)
-        link = "https://docs.zenml.io/component-gallery/artifact-stores/custom#enabling-artifact-visualizations-with-custom-artifact-stores"
+        link = "https://docs.zenml.io/user-guide/component-guide/artifact-stores/custom#enabling-artifact-visualizations-with-custom-artifact-stores"
         raise NotImplementedError(
             f"File '{uri}' could not be loaded because the underlying artifact "
             f"store '{artifact_store.name}' could not open the file. This is "
             f"likely because the authentication credentials are not configured "
             f"in the artifact store itself. For more information, see {link}."
         )
+
+
+def upload_artifact(
+    name: str,
+    data: Any,
+    materializer: "BaseMaterializer",
+    artifact_store_id: "UUID",
+    extract_metadata: bool,
+    include_visualizations: bool,
+) -> "UUID":
+    """Upload and publish an artifact.
+
+    Args:
+        name: The name of the artifact.
+        data: The artifact data.
+        materializer: The materializer to store the artifact.
+        artifact_store_id: ID of the artifact store in which the artifact should
+            be stored.
+        extract_metadata: If artifact metadata should be extracted and returned.
+        include_visualizations: If artifact visualizations should be generated.
+
+    Returns:
+        The ID of the published artifact.
+    """
+    data_type = type(data)
+    materializer.validate_type_compatibility(data_type)
+    materializer.save(data)
+
+    visualizations: List[VisualizationModel] = []
+    if include_visualizations:
+        try:
+            vis_data = materializer.save_visualizations(data)
+            for vis_uri, vis_type in vis_data.items():
+                vis_model = VisualizationModel(
+                    type=vis_type,
+                    uri=vis_uri,
+                )
+                visualizations.append(vis_model)
+        except Exception as e:
+            logger.warning(
+                f"Failed to save visualization for output artifact '{name}': "
+                f"{e}"
+            )
+
+    artifact_metadata = {}
+    if extract_metadata:
+        try:
+            artifact_metadata = materializer.extract_full_metadata(data)
+        except Exception as e:
+            logger.warning(
+                f"Failed to extract metadata for output artifact '{name}': {e}"
+            )
+
+    artifact = ArtifactRequestModel(
+        name=name,
+        type=materializer.ASSOCIATED_ARTIFACT_TYPE,
+        uri=materializer.uri,
+        materializer=source_utils.resolve(materializer.__class__),
+        data_type=source_utils.resolve(data_type),
+        user=Client().active_user.id,
+        workspace=Client().active_workspace.id,
+        artifact_store_id=artifact_store_id,
+        visualizations=visualizations,
+    )
+    response = Client().zen_store.create_artifact(artifact=artifact)
+    if artifact_metadata:
+        Client().create_run_metadata(
+            metadata=artifact_metadata, artifact_id=response.id
+        )
+
+    return response.id

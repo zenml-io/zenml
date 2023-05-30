@@ -19,35 +19,22 @@ from zenml.config.compiler import Compiler
 from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
 from zenml.config.pipeline_spec import PipelineSpec
 from zenml.config.step_configurations import StepConfigurationUpdate
-from zenml.exceptions import PipelineInterfaceError, StackValidationError
+from zenml.exceptions import StackValidationError
 from zenml.hooks.hook_validators import resolve_and_validate_hook
 from zenml.pipelines import pipeline
 from zenml.steps import step
-
-
-def test_compiling_pipeline_with_duplicate_step_names_fails(
-    unconnected_two_step_pipeline, empty_step, local_stack
-):
-    """Tests that compiling a pipeline with two steps with the same name
-    fails."""
-    pipeline_instance = unconnected_two_step_pipeline(
-        empty_step(), empty_step()
-    )
-    with pytest.raises(PipelineInterfaceError):
-        Compiler().compile(
-            pipeline=pipeline_instance,
-            stack=local_stack,
-            run_configuration=PipelineRunConfiguration(),
-        )
 
 
 def test_compiling_pipeline_with_invalid_run_name_fails(
     empty_pipeline, local_stack
 ):
     """Tests that compiling a pipeline with an invalid run name fails."""
+    pipeline_instance = empty_pipeline()
+    with pipeline_instance:
+        pipeline_instance.entrypoint()
     with pytest.raises(ValueError):
         Compiler().compile(
-            pipeline=empty_pipeline(),
+            pipeline=pipeline_instance,
             stack=local_stack,
             run_configuration=PipelineRunConfiguration(
                 run_name="{invalid_placeholder}"
@@ -62,6 +49,8 @@ def test_compiling_pipeline_with_missing_step_operator(
     pipeline_instance = one_step_pipeline(
         empty_step().configure(step_operator="s")
     )
+    with pipeline_instance:
+        pipeline_instance.entrypoint()
     with pytest.raises(StackValidationError):
         Compiler().compile(
             pipeline=pipeline_instance,
@@ -78,6 +67,8 @@ def test_compiling_pipeline_with_missing_experiment_tracker(
     pipeline_instance = one_step_pipeline(
         empty_step().configure(experiment_tracker="e")
     )
+    with pipeline_instance:
+        pipeline_instance.entrypoint()
     with pytest.raises(StackValidationError):
         Compiler().compile(
             pipeline=pipeline_instance,
@@ -90,20 +81,22 @@ def test_pipeline_and_steps_dont_get_modified_during_compilation(
     one_step_pipeline, empty_step, local_stack
 ):
     """Tests that the pipeline and step don't get modified during compilation."""
-    step_instance = empty_step().configure(name="original_step_name")
+    step_instance = empty_step().configure(extra={"key": "value"})
     pipeline_instance = one_step_pipeline(step_instance).configure(
         enable_cache=True
     )
     run_config = PipelineRunConfiguration(
         enable_cache=False,
-        steps={"step_": StepConfigurationUpdate(name="new_step_name")},
+        steps={"step_": StepConfigurationUpdate(extra={"key": "new_value"})},
     )
+    with pipeline_instance:
+        pipeline_instance.entrypoint()
     Compiler().compile(
         pipeline=pipeline_instance,
         stack=local_stack,
         run_configuration=run_config,
     )
-    assert step_instance.name == "original_step_name"
+    assert step_instance.configuration.extra == {"key": "value"}
     assert pipeline_instance.enable_cache is True
 
 
@@ -141,6 +134,8 @@ def test_step_sorting(empty_step, local_stack):
     pipeline_instance = sequential_pipeline(
         step_2=empty_step(name="step_2"), step_1=empty_step(name="step_1")
     )
+    with pipeline_instance:
+        pipeline_instance.entrypoint()
     deployment, _ = Compiler().compile(
         pipeline=pipeline_instance,
         stack=local_stack,
@@ -195,7 +190,8 @@ def test_stack_component_settings_merging(
             )
         },
     )
-
+    with pipeline_instance:
+        pipeline_instance.entrypoint()
     deployment, _ = Compiler().compile(
         pipeline=pipeline_instance,
         stack=local_stack,
@@ -240,7 +236,8 @@ def test_general_settings_merging(one_step_pipeline, empty_step, local_stack):
             )
         },
     )
-
+    with pipeline_instance:
+        pipeline_instance.entrypoint()
     deployment, _ = Compiler().compile(
         pipeline=pipeline_instance,
         stack=local_stack,
@@ -281,6 +278,9 @@ def test_extra_merging(one_step_pipeline, empty_step, local_stack):
         extra=run_pipeline_extra,
         steps={"step_": StepConfigurationUpdate(extra=run_step_extra)},
     )
+
+    with pipeline_instance:
+        pipeline_instance.entrypoint()
 
     deployment, _ = Compiler().compile(
         pipeline=pipeline_instance,
@@ -336,6 +336,8 @@ def test_success_hook_merging(
         },
     )
 
+    with pipeline_instance:
+        pipeline_instance.entrypoint()
     deployment, _ = Compiler().compile(
         pipeline=pipeline_instance,
         stack=local_stack,
@@ -386,6 +388,8 @@ def test_failure_hook_merging(
         },
     )
 
+    with pipeline_instance:
+        pipeline_instance.entrypoint()
     deployment, _ = Compiler().compile(
         pipeline=pipeline_instance,
         stack=local_stack,
@@ -429,6 +433,8 @@ def test_stack_component_settings_for_missing_component_are_ignored(
         steps={"step_": StepConfigurationUpdate(settings=settings)},
     )
 
+    with pipeline_instance:
+        pipeline_instance.entrypoint()
     deployment, _ = Compiler().compile(
         pipeline=pipeline_instance,
         stack=local_stack,
@@ -463,7 +469,8 @@ def test_spec_compilation(local_stack):
         step_2(step_1())
 
     pipeline_instance = p(step_1=s1(), step_2=s2())
-
+    with pipeline_instance:
+        pipeline_instance.entrypoint()
     _, spec = Compiler().compile(
         pipeline=pipeline_instance,
         stack=local_stack,
@@ -481,10 +488,10 @@ def test_spec_compilation(local_stack):
                 },
                 {
                     "source": "tests.unit.config.test_compiler.s2",
-                    "upstream_steps": ["s1"],
+                    "upstream_steps": ["step_1"],
                     "inputs": {
                         "input": {
-                            "step_name": "s1",
+                            "step_name": "step_1",
                             "output_name": "output",
                         }
                     },

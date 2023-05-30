@@ -43,7 +43,7 @@ def resolve_step_inputs(
         current step.
     """
     current_run_steps = {
-        run_step.step.config.name: run_step
+        run_step.name: run_step
         for run_step in Client()
         .zen_store.list_run_steps(StepRunFilterModel(pipeline_run_id=run_id))
         .items
@@ -67,6 +67,9 @@ def resolve_step_inputs(
             )
 
         input_artifacts[name] = artifact
+
+    for name, artifact_id in step.config.external_input_artifacts.items():
+        input_artifacts[name] = Client().get_artifact(artifact_id=artifact_id)
 
     parent_step_ids = [
         current_run_steps[upstream_step].id
