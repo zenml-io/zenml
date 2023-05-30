@@ -4,7 +4,7 @@ description: Configuring pipelines, steps, and stack components in ZenML.
 
 # Configure steps/pipelines
 
-## Parameters for your Steps
+## Parameters for your steps
 
 When calling a step in a pipeline, the inputs provided to the step function can either be an **artifact** or a **parameter**. An artifact represents the output of another step that was executed as part of the same pipeline and serves as a means to share data between steps. Parameters, on the other hand, are values provided explicitly when invoking a step. They are not dependent on the output of other steps and allow you to parameterize the behavior of your steps.
 
@@ -40,8 +40,7 @@ When an artifact is used as a step function input, the step will only be cached 
 
 ## Pass any kind of data to your steps
 
-**External artifacts** can be used to pass values to steps that are neither JSON serializable nor produced by
-an upstream step.
+**External artifacts** can be used to pass values to steps that are neither JSON serializable nor produced by an upstream step.
 
 ```python
 import numpy as np
@@ -60,18 +59,15 @@ def my_pipeline():
     # or artifacts can be passed as a step input:
     # trainer(data=np.array([1, 2, 3]))
 ```
-Optionally, you can configure the `ExternalArtifact` to use a custom
-[materializer](./handle-custom-data-types.md) for your data or disabled artifact metadata and visualizations.
-Check out the
-[API docs](https://apidocs.zenml.io/latest/core_code_docs/core-steps/#zenml.steps.external_artifact.ExternalArtifact)
-for all available options.
+
+Optionally, you can configure the `ExternalArtifact` to use a custom [materializer](handle-custom-data-types.md) for your data or disabled artifact metadata and visualizations. Check out the [API docs](https://apidocs.zenml.io/latest/core\_code\_docs/core-steps/#zenml.steps.external\_artifact.ExternalArtifact) for all available options.
 
 {% hint style="info" %}
-Using an `ExternalArtifact` with input data for your step automatically disables caching for the
-step.
+Using an `ExternalArtifact` with input data for your step automatically disables caching for the step.
 {% endhint %}
 
 You can also use an `ExternalArtifact` to pass an artifact stored in the ZenML database:
+
 ```python
 from uuid import UUID
 
@@ -115,7 +111,7 @@ Stack Component Config vs Settings in ZenML
 
 #### Using objects or dicts
 
-Settings can be passed in directly as BaseSettings-subclassed objects, or a dictionary-representation of the object. For example, a Docker configuration can be passed in as follows:
+Settings can be passed in directly as BaseSettings-subclassed objects, or a dictionary representation of the object. For example, a Docker configuration can be passed in as follows:
 
 ```python
 from zenml.config import DockerSettings

@@ -1,14 +1,16 @@
 ---
-description: Configuring AWS Service Connectors to connect ZenML to AWS resources like S3 buckets, EKS Kubernetes clusters and ECR container registries.
+description: >-
+  Configuring AWS Service Connectors to connect ZenML to AWS resources like S3
+  buckets, EKS Kubernetes clusters and ECR container registries.
 ---
 
 # AWS Service Connector
 
-The ZenML AWS Service Connector facilitates the authentication and access to managed AWS services and resources. These encompass a range of resources, including S3 buckets, ECR container repositories and EKS clusters. The connector provides support for various authentication methods, including explicit long-lived AWS secret keys, IAM roles, short-lived STS tokens and implicit authentication.
+The ZenML AWS Service Connector facilitates the authentication and access to managed AWS services and resources. These encompass a range of resources, including S3 buckets, ECR container repositories, and EKS clusters. The connector provides support for various authentication methods, including explicit long-lived AWS secret keys, IAM roles, short-lived STS tokens, and implicit authentication.
 
-To ensure heightened security measures, this connector also enables [the generation of temporary STS security tokens that are scoped down to the minimum permissions necessary](best-security-practices.md#generating-temporary-and-down-scoped-credentials) for accessing the intended resource. Furthermore, it includes [automatic configuration and detection of  credentials locally configured through the AWS CLI](service-connectors-guide.md#auto-configuration).
+To ensure heightened security measures, this connector also enables [the generation of temporary STS security tokens that are scoped down to the minimum permissions necessary](best-security-practices.md#generating-temporary-and-down-scoped-credentials) for accessing the intended resource. Furthermore, it includes [automatic configuration and detection of credentials locally configured through the AWS CLI](service-connectors-guide.md#auto-configuration).
 
-This connector serves as a general means of accessing any AWS service by issuing pre-authenticated boto3 sessions. Additionally, the connector can handle specialized authentication for S3, Docker and Kubernetes Python clients. It also allows for the configuration of local Docker and Kubernetes CLIs.
+This connector serves as a general means of accessing any AWS service by issuing pre-authenticated boto3 sessions. Additionally, the connector can handle specialized authentication for S3, Docker, and Kubernetes Python clients. It also allows for the configuration of local Docker and Kubernetes CLIs.
 
 ```
 $ zenml service-connector list-types --type aws
@@ -27,7 +29,7 @@ $ zenml service-connector list-types --type aws
 
 ## Prerequisites
 
-The AWS Service Connector is part of the AWS ZenML integration. You can either install the entire integration or use a pypi extra to install it independently of the integration:
+The AWS Service Connector is part of the AWS ZenML integration. You can either install the entire integration or use a PyPI extra to install it independently of the integration:
 
 * `pip install zenml[connectors-aws]` installs only prerequisites for the AWS Service Connector Type
 * `zenml integration install aws` installs the entire AWS ZenML integration
@@ -48,7 +50,7 @@ zenml service-connector register -i --type aws
 
 This resource type allows consumers to use the AWS Service Connector to connect to any AWS service or resource. When used by connector clients, they are provided a generic Python boto3 session instance pre-configured with AWS credentials. This session can then be used to create boto3 clients for any particular AWS service.
 
-This generic AWS resource type is meant to be used with Stack Components that are not represented by other, more specific resource type, like S3 buckets, Kubernetes clusters or Docker registries. It should be accompanied by a matching set of AWS permissions that allow access to the set of remote resources required by the client(s).
+This generic AWS resource type is meant to be used with Stack Components that are not represented by other, more specific resource types, like S3 buckets, Kubernetes clusters, or Docker registries. It should be accompanied by a matching set of AWS permissions that allow access to the set of remote resources required by the client(s).
 
 The resource name represents the AWS region that the connector is authorized to access.
 
@@ -58,14 +60,14 @@ Allows users to connect to S3 buckets. When used by connector consumers, they ar
 
 The configured credentials must have at least the following [AWS IAM permissions](https://docs.aws.amazon.com/IAM/latest/UserGuide/access\_policies.html) associated with [the ARNs of S3 buckets ](https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-arn-format.html)that the connector will be allowed to access (e.g. `arn:aws:s3:::*` and `arn:aws:s3:::*/*` represent all the available S3 buckets).
 
-* s3:ListBucket
-* s3:GetObject
-* s3:PutObject
-* s3:DeleteObject
-* s3:ListAllMyBuckets
+* `s3:ListBucket`
+* `s3:GetObject`
+* `s3:PutObject`
+* `s3:DeleteObject`
+* `s3:ListAllMyBuckets`
 
 {% hint style="info" %}
-If you are using the [AWS IAM role](aws-service-connector.md#aws-iam-role), [Session Token](aws-service-connector.md#aws-session-token) or [Federation Token](aws-service-connector.md#aws-federation-token) authentication methods, you don't have to worry too much about restricting the permissions of the AWS credentials that you use to access the AWS cloud resources. These authentication methods already support [automatically generating temporary tokens](best-security-practices.md#generating-temporary-and-down-scoped-credentials) with permissions down-scoped to the minimum required to access the target resource.
+If you are using the [AWS IAM role](aws-service-connector.md#aws-iam-role), [Session Token](aws-service-connector.md#aws-session-token), or [Federation Token](aws-service-connector.md#aws-federation-token) authentication methods, you don't have to worry too much about restricting the permissions of the AWS credentials that you use to access the AWS cloud resources. These authentication methods already support [automatically generating temporary tokens](best-security-practices.md#generating-temporary-and-down-scoped-credentials) with permissions down-scoped to the minimum required to access the target resource.
 {% endhint %}
 
 If set, the resource name must identify an S3 bucket using one of the following formats:
@@ -80,8 +82,8 @@ Allows users to access an EKS cluster as a standard Kubernetes cluster resource.
 
 The configured credentials must have at least the following [AWS IAM permissions](https://docs.aws.amazon.com/IAM/latest/UserGuide/access\_policies.html) associated with the [ARNs of EKS clusters](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference-arns.html) that the connector will be allowed to access (e.g. `arn:aws:eks:{region_id}:{project_id}:cluster/*` represents all the EKS clusters available in the target AWS region).
 
-* eks:ListClusters
-* eks:DescribeCluster
+* `eks:ListClusters`
+* `eks:DescribeCluster`
 
 {% hint style="info" %}
 If you are using the [AWS IAM role](aws-service-connector.md#aws-iam-role), [Session Token](aws-service-connector.md#aws-session-token) or [Federation Token](aws-service-connector.md#aws-federation-token) authentication methods, you don't have to worry too much about restricting the permissions of the AWS credentials that you use to access the AWS cloud resources. These authentication methods already support [automatically generating temporary tokens](best-security-practices.md#generating-temporary-and-down-scoped-credentials) with permissions down-scoped to the minimum required to access the target resource.
@@ -102,21 +104,21 @@ Allows Stack Components to access one or more ECR repositories as a standard Doc
 
 The configured credentials must have at least the following [AWS IAM permissions](https://docs.aws.amazon.com/IAM/latest/UserGuide/access\_policies.html) associated with the [ARNs of one or more ECR repositories](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference-arns.html) that the connector will be allowed to access (e.g. `arn:aws:ecr:{region}:{account}:repository/*` represents all the ECR repositories available in the target AWS region).
 
-* ecr:DescribeRegistry
-* ecr:DescribeRepositories
-* ecr:ListRepositories
-* ecr:BatchGetImage
-* ecr:DescribeImages
-* ecr:BatchCheckLayerAvailability
-* ecr:GetDownloadUrlForLayer
-* ecr:InitiateLayerUpload
-* ecr:UploadLayerPart
-* ecr:CompleteLayerUpload
-* ecr:PutImage
-* ecr:GetAuthorizationToken
+* `ecr:DescribeRegistry`
+* `ecr:DescribeRepositories`
+* `ecr:ListRepositories`
+* `ecr:BatchGetImage`
+* `ecr:DescribeImages`
+* `ecr:BatchCheckLayerAvailability`
+* `ecr:GetDownloadUrlForLayer`
+* `ecr:InitiateLayerUpload`
+* `ecr:UploadLayerPart`
+* `ecr:CompleteLayerUpload`
+* `ecr:PutImage`
+* `ecr:GetAuthorizationToken`
 
 {% hint style="info" %}
-If you are using the [AWS IAM role](aws-service-connector.md#aws-iam-role), [Session Token](aws-service-connector.md#aws-session-token) or [Federation Token](aws-service-connector.md#aws-federation-token) authentication methods, you don't have to worry too much about restricting the permissions of the AWS credentials that you use to access the AWS cloud resources. These authentication methods already support [automatically generating temporary tokens](best-security-practices.md#generating-temporary-and-down-scoped-credentials) with permissions down-scoped to the minimum required to access the target resource.
+If you are using the [AWS IAM role](aws-service-connector.md#aws-iam-role), [Session Token](aws-service-connector.md#aws-session-token), or [Federation Token](aws-service-connector.md#aws-federation-token) authentication methods, you don't have to worry too much about restricting the permissions of the AWS credentials that you use to access the AWS cloud resources. These authentication methods already support [automatically generating temporary tokens](best-security-practices.md#generating-temporary-and-down-scoped-credentials) with permissions down-scoped to the minimum required to access the target resource.
 {% endhint %}
 
 This resource type is not scoped to a single ECR repository. Instead, a connector configured with this resource type will grant access to all the ECR repositories that the credentials are allowed to access under the configured AWS region (i.e. all repositories under the Docker registry URL `https://{account-id}.dkr.ecr.{region}.amazonaws.com`).
@@ -145,15 +147,15 @@ This authentication method doesn't require any credentials to be explicitly conf
 * local configuration files [set up through the AWS CLI ](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-configure.html)(\~/aws/credentials, \~/.aws/config)
 * IAM roles for Amazon EC2, ECS, EKS, Lambda, etc. Only works when running the ZenML server on an AWS resource with an IAM role attached to it.
 
-This is the quickest and easiest way to authenticate to AWS services. However, the results depend on how ZenML is deployed and the environment where it is used and are thus not fully reproducible:
+This is the quickest and easiest way to authenticate to AWS services. However, the results depend on how ZenML is deployed and the environment where it is used and is thus not fully reproducible:
 
 * when used with the default local ZenML deployment or a local ZenML server, the credentials are the same as those used by the AWS CLI or extracted from local environment variables
-* when connected to a ZenML server, this method only works if the ZenML server is deployed in AWS and will use the IAM role attached to the AWS resource where the ZenML server is running (e.g. an EKS cluster). The IAM role permissions may need to be adjusted to allows listing and accessing/describing the AWS resources that the connector is configured to access.
+* when connected to a ZenML server, this method only works if the ZenML server is deployed in AWS and will use the IAM role attached to the AWS resource where the ZenML server is running (e.g. an EKS cluster). The IAM role permissions may need to be adjusted to allow listing and accessing/describing the AWS resources that the connector is configured to access.
 
-Note that the discovered credentials inherit the full set of permissions of the local AWS client configuration, environment variables or remote AWS IAM role. Depending on the extent of those permissions, this authentication method might not be recommended for production use, as it can lead to accidental privilege escalation. Instead, it is recommended to use the [AWS IAM Role](aws-service-connector.md#aws-iam-role), [AWS Session Token](aws-service-connector.md#aws-session-token) or [AWS Federation Token](aws-service-connector.md#aws-federation-token) authentication methods to limit the validity and/or permissions of the credentials being issued to connector clients.
+Note that the discovered credentials inherit the full set of permissions of the local AWS client configuration, environment variables, or remote AWS IAM role. Depending on the extent of those permissions, this authentication method might not be recommended for production use, as it can lead to accidental privilege escalation. Instead, it is recommended to use the [AWS IAM Role](aws-service-connector.md#aws-iam-role), [AWS Session Token](aws-service-connector.md#aws-session-token), or [AWS Federation Token](aws-service-connector.md#aws-federation-token) authentication methods to limit the validity and/or permissions of the credentials being issued to connector clients.
 
 {% hint style="info" %}
-If you need to access an EKS kubernetes cluster with this authentication method, please be advised that the EKS cluster's `aws-auth` ConfigMap may need to be manually configured to allow authentication with the implicit IAM user or role picked up by the Service Connector. For more information, [see this documentation](https://docs.aws.amazon.com/eks/latest/userguide/add-user-role.html).
+If you need to access an EKS Kubernetes cluster with this authentication method, please be advised that the EKS cluster's `aws-auth` ConfigMap may need to be manually configured to allow authentication with the implicit IAM user or role picked up by the Service Connector. For more information, [see this documentation](https://docs.aws.amazon.com/eks/latest/userguide/add-user-role.html).
 {% endhint %}
 
 An AWS region is required and the connector may only be used to access AWS resources in the specified region. When used with a remote IAM role, the region has to be the same as the region where the IAM role is configured.
@@ -359,7 +361,7 @@ Service connector 'aws-implicit (s3-bucket | s3://sagemaker-studio-d8a14tvjsmb c
 
 [Long-lived AWS credentials](best-security-practices.md#long-lived-credentials-api-keys-account-keys) consisting of an AWS access key ID and secret access key associated with an AWS IAM user or AWS account root user (not recommended).
 
-This method is preferred during development and testing due to its simplicity and ease of use. It is not recommended as a direct authentication method for production use cases because the clients have direct access to long-lived credentials and are granted the full set of permissions of the IAM user or AWS account root user associated with the credentials. For production, it is recommended to use [the AWS IAM Role](aws-service-connector.md#aws-iam-role), [AWS Session Token](aws-service-connector.md#aws-session-token) or [AWS Federation Token](aws-service-connector.md#aws-federation-token) authentication method instead.
+This method is preferred during development and testing due to its simplicity and ease of use. It is not recommended as a direct authentication method for production use cases because the clients have direct access to long-lived credentials and are granted the full set of permissions of the IAM user or AWS account root user associated with the credentials. For production, it is recommended to use [the AWS IAM Role](aws-service-connector.md#aws-iam-role), [AWS Session Token](aws-service-connector.md#aws-session-token), or [AWS Federation Token](aws-service-connector.md#aws-federation-token) authentication method instead.
 
 An AWS region is required and the connector may only be used to access AWS resources in the specified region.
 
@@ -434,8 +436,6 @@ Service connector 'aws-secret-key' of type 'aws' with id 'a1b07c5a-13af-4571-8e6
 ┗━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━┛
 ```
 
-
-
 </details>
 
 ### AWS STS Token
@@ -444,7 +444,7 @@ Uses [temporary STS tokens](best-security-practices.md#short-lived-credentials) 
 
 This method has the major limitation that the user must regularly generate new tokens and update the connector configuration as STS tokens expire. On the other hand, this method is ideal in cases where the connector only needs to be used for a short period of time, such as sharing access temporarily with someone else in your team.
 
-Using other authentication methods like [IAM role](aws-service-connector.md#aws-iam-role), [Session Token](aws-service-connector.md#aws-session-token) or [Federation Token](aws-service-connector.md#aws-federation-token) will automatically generate and refresh STS tokens for clients upon request.
+Using other authentication methods like [IAM role](aws-service-connector.md#aws-iam-role), [Session Token](aws-service-connector.md#aws-session-token), or [Federation Token](aws-service-connector.md#aws-federation-token) will automatically generate and refresh STS tokens for clients upon request.
 
 An AWS region is required and the connector may only be used to access AWS resources in the specified region.
 
@@ -535,9 +535,9 @@ $ zenml service-connector list --name aws-sts-token
 
 Generates [temporary STS credentials](best-security-practices.md#impersonating-accounts-and-assuming-roles) by assuming an AWS IAM role.
 
-The connector needs to be configured with the IAM role to be assumed accompanied by an AWS secret key associated with an IAM user or an STS token associated with another IAM role. The IAM user or IAM role must have permissions to assume the target IAM role. The connector will [generate temporary STS tokens](best-security-practices.md#generating-temporary-and-down-scoped-credentials) upon request by [calling the AssumeRole STS API](https://docs.aws.amazon.com/IAM/latest/UserGuide/id\_credentials\_temp\_request.html#api\_assumerole).
+The connector needs to be configured with the IAM role to be assumed accompanied by an AWS secret key associated with an IAM user or an STS token associated with another IAM role. The IAM user or IAM role must have permission to assume the target IAM role. The connector will [generate temporary STS tokens](best-security-practices.md#generating-temporary-and-down-scoped-credentials) upon request by [calling the AssumeRole STS API](https://docs.aws.amazon.com/IAM/latest/UserGuide/id\_credentials\_temp\_request.html#api\_assumerole).
 
-[The best practice implemented with this authentication scheme](best-security-practices.md#impersonating-accounts-and-assuming-roles) is to keep the set of permissions associated with the primary IAM user or IAM role down to the bare minimum and grant permissions to the privilege bearing IAM role instead.
+[The best practice implemented with this authentication scheme](best-security-practices.md#impersonating-accounts-and-assuming-roles) is to keep the set of permissions associated with the primary IAM user or IAM role down to the bare minimum and grant permissions to the privilege-bearing IAM role instead.
 
 An AWS region is required and the connector may only be used to access AWS resources in the specified region.
 
@@ -547,7 +547,7 @@ The default expiration period for generated STS tokens is 1 hour with a minimum 
 
 For more information on IAM roles and the AssumeRole AWS API, see [the official AWS documentation on the subject](https://docs.aws.amazon.com/IAM/latest/UserGuide/id\_credentials\_temp\_request.html#api\_assumerole).
 
-For more information about the difference between this method and the AWS Federation Token authentication method, [consult this AWS documentation page](https://aws.amazon.com/blogs/security/understanding-the-api-options-for-securely-delegating-access-to-your-aws-account/).&#x20;
+For more information about the difference between this method and the AWS Federation Token authentication method, [consult this AWS documentation page](https://aws.amazon.com/blogs/security/understanding-the-api-options-for-securely-delegating-access-to-your-aws-account/).
 
 <details>
 
@@ -616,7 +616,7 @@ Service connector 'aws-iam-role' of type 'aws' with id '8e499202-57fd-478e-9d2f-
 ┗━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 ```
 
-The following is just to show that clients receive temporary STS tokens instead of the AWS Secret Key configured in the connector (note the authentication method, expiration time and credentials):
+The following is just to show that clients receive temporary STS tokens instead of the AWS Secret Key configured in the connector (note the authentication method, expiration time, and credentials):
 
 ```
 $ zenml service-connector describe aws-iam-role --resource-type s3-bucket --resource-id zenfiles --client
@@ -677,7 +677,7 @@ Generates [temporary session STS tokens](best-security-practices.md#generating-t
 
 The connector needs to be configured with an AWS secret key associated with an IAM user or AWS account root user (not recommended). The connector will [generate temporary STS tokens](best-security-practices.md#generating-temporary-and-down-scoped-credentials) upon request by calling [the GetSessionToken STS API](https://docs.aws.amazon.com/IAM/latest/UserGuide/id\_credentials\_temp\_request.html#api\_getsessiontoken).
 
-The STS tokens have an expiration period longer that those issued through the [AWS IAM Role authentication method](aws-service-connector.md#aws-iam-role) and are more suitable for long-running processes that cannot automatically re-generate credentials upon expiration.
+The STS tokens have an expiration period longer than those issued through the [AWS IAM Role authentication method](aws-service-connector.md#aws-iam-role) and are more suitable for long-running processes that cannot automatically re-generate credentials upon expiration.
 
 An AWS region is required and the connector may only be used to access AWS resources in the specified region.
 
@@ -754,7 +754,7 @@ Service connector 'aws-session-token' of type 'aws' with id '3ae3e595-5cbc-446e-
 ┗━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━┛
 ```
 
-The following is just to show that clients receive temporary STS tokens instead of the AWS Secret Key configured in the connector (note the authentication method, expiration time and credentials):
+The following is just to show that clients receive temporary STS tokens instead of the AWS Secret Key configured in the connector (note the authentication method, expiration time, and credentials):
 
 ```
 $ zenml service-connector describe aws-session-token --resource-type s3-bucket --resource-id zenfiles --client
@@ -812,25 +812,25 @@ Service connector 'aws-session-token (s3-bucket | s3://zenfiles client)' of type
 
 Generates [temporary STS tokens](best-security-practices.md#generating-temporary-and-down-scoped-credentials) for federated users by [impersonating another user](best-security-practices.md#impersonating-accounts-and-assuming-roles).
 
-The connector needs to be configured with an AWS secret key associated with an IAM user or AWS account root user (not recommended). The IAM user must have permissions to call [the GetFederationToken STS API](https://docs.aws.amazon.com/IAM/latest/UserGuide/id\_credentials\_temp\_request.html#api\_getfederationtoken) (i.e. allow the `sts:GetFederationToken` action on the `*` IAM resource). The connector will generate temporary STS tokens upon request by calling the GetFederationToken STS API.
+The connector needs to be configured with an AWS secret key associated with an IAM user or AWS account root user (not recommended). The IAM user must have permission to call [the GetFederationToken STS API](https://docs.aws.amazon.com/IAM/latest/UserGuide/id\_credentials\_temp\_request.html#api\_getfederationtoken) (i.e. allow the `sts:GetFederationToken` action on the `*` IAM resource). The connector will generate temporary STS tokens upon request by calling the GetFederationToken STS API.
 
-These STS tokens have an expiration period longer that those issued through [the AWS IAM Role authentication method](aws-service-connector.md#aws-iam-role) and are more suitable for long-running processes that cannot automatically re-generate credentials upon expiration.
+These STS tokens have an expiration period longer than those issued through [the AWS IAM Role authentication method](aws-service-connector.md#aws-iam-role) and are more suitable for long-running processes that cannot automatically re-generate credentials upon expiration.
 
 An AWS region is required and the connector may only be used to access AWS resources in the specified region.
 
 One or more optional [IAM session policies](https://docs.aws.amazon.com/IAM/latest/UserGuide/access\_policies.html#policies\_session) may also be configured to further restrict the permissions of the generated STS tokens. If not specified, IAM session policies are automatically configured for the generated STS tokens [to restrict them to the minimum set of permissions required to access the target resource](best-security-practices.md#generating-temporary-and-down-scoped-credentials). Refer to the documentation for each supported Resource Type for the complete list of AWS permissions automatically granted to the generated STS tokens.
 
 {% hint style="warning" %}
-If this authentication method is used with [the generic AWS resource type](aws-service-connector.md#generic-aws-resource), a session policy MUST be explicitly specified, otherwise the generated STS tokens will not have any permissions.
+If this authentication method is used with [the generic AWS resource type](aws-service-connector.md#generic-aws-resource), a session policy MUST be explicitly specified, otherwise, the generated STS tokens will not have any permissions.
 {% endhint %}
 
 The default expiration period for generated STS tokens is 12 hours with a minimum of 15 minutes and a maximum of 36 hours. Temporary credentials obtained by using the AWS account root user credentials (not recommended) have a maximum duration of 1 hour.
 
 {% hint style="info" %}
-If you need to access an EKS kubernetes cluster with this authentication method, please be advised that the EKS cluster's `aws-auth` ConfigMap may need to be manually configured to allow authentication with the federated user. For more information, [see this documentation](https://docs.aws.amazon.com/eks/latest/userguide/add-user-role.html).
+If you need to access an EKS Kubernetes cluster with this authentication method, please be advised that the EKS cluster's `aws-auth` ConfigMap may need to be manually configured to allow authentication with the federated user. For more information, [see this documentation](https://docs.aws.amazon.com/eks/latest/userguide/add-user-role.html).
 {% endhint %}
 
-For more information on user federation tokens, session policies and the GetFederationToken AWS API, see [the official AWS documentation on the subject](https://docs.aws.amazon.com/IAM/latest/UserGuide/id\_credentials\_temp\_request.html#api\_getfederationtoken).
+For more information on user federation tokens, session policies, and the GetFederationToken AWS API, see [the official AWS documentation on the subject](https://docs.aws.amazon.com/IAM/latest/UserGuide/id\_credentials\_temp\_request.html#api\_getfederationtoken).
 
 For more information about the difference between this method and [the AWS IAM Role authentication method](aws-service-connector.md#aws-iam-role), [consult this AWS documentation page](https://aws.amazon.com/blogs/security/understanding-the-api-options-for-securely-delegating-access-to-your-aws-account/).
 
@@ -899,7 +899,7 @@ Service connector 'aws-federation-token' of type 'aws' with id '868b17d4-b950-4d
 ┗━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━┛
 ```
 
-The following is just to show that clients receive temporary STS tokens instead of the AWS Secret Key configured in the connector (note the authentication method, expiration time and credentials):
+The following is just to show that clients receive temporary STS tokens instead of the AWS Secret Key configured in the connector (note the authentication method, expiration time, and credentials):
 
 ```
 $ zenml service-connector describe aws-federation-token --resource-type s3-bucket --resource-id zenfiles --client
@@ -955,7 +955,7 @@ Service connector 'aws-federation-token (s3-bucket | s3://zenfiles client)' of t
 
 ## Auto-configuration
 
-The AWS Service Connector allows [auto-discovering and fetching credentials](service-connectors-guide.md#auto-configuration) and configuration set up [by the AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-configure.html) during registration. The default AWS CLI profile is used, unless the AWS\_PROFILE environment points to a different profile.
+The AWS Service Connector allows [auto-discovering and fetching credentials](service-connectors-guide.md#auto-configuration) and configuration set up [by the AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-configure.html) during registration. The default AWS CLI profile is used unless the AWS\_PROFILE environment points to a different profile.
 
 <details>
 
@@ -1051,7 +1051,7 @@ Service connector 'aws-auto' is correctly configured with valid credentials and 
 
 ## Local client provisioning
 
-The local Kubernetes `kubectl` CLI and the Docker CLI can be [configured with credentials extracted from or generated by a compatible AWS Service Connector](service-connectors-guide.md#configure-local-clients). Please note that unlike the configuration made possible through the AWS CLI, the credentials issued by the AWS Service Connector have a short lifetime and will need to be regularly refreshed. This is a byproduct of implementing a high security profile. &#x20;
+The local Kubernetes `kubectl` CLI and the Docker CLI can be [configured with credentials extracted from or generated by a compatible AWS Service Connector](service-connectors-guide.md#configure-local-clients). Please note that unlike the configuration made possible through the AWS CLI, the credentials issued by the AWS Service Connector have a short lifetime and will need to be regularly refreshed. This is a byproduct of implementing a high-security profile.
 
 <details>
 
@@ -1138,7 +1138,7 @@ This Service Connector does not support configuring the local AWS CLI with crede
 
 The [S3 Artifact Store Stack Component](../../../user-guide/component-guide/artifact-stores/s3.md) can be connected to a remote AWS S3 bucket through an AWS Service Connector.
 
-The AWS Service Connector can also be used any Orchestrator or Model Deployer stack component flavor that relies on a Kubernetes clusters to manage workloads. This allows EKS Kubernetes container workloads to be managed without the need to configure and maintain explicit AWS or Kubernetes `kubectl` configuration contexts and credentials in the target environment and in the Stack Component.
+The AWS Service Connector can also be used with any Orchestrator or Model Deployer stack component flavor that relies on Kubernetes clusters to manage workloads. This allows EKS Kubernetes container workloads to be managed without the need to configure and maintain explicit AWS or Kubernetes `kubectl` configuration contexts and credentials in the target environment and in the Stack Component.
 
 Similarly, Container Registry Stack Components can be connected to an ECR Container Registry through an AWS Service Connector. This allows container images to be built and published to ECR container registries without the need to configure explicit AWS credentials in the target environment or the Stack Component.
 
@@ -1148,7 +1148,7 @@ Similarly, Container Registry Stack Components can be connected to an ECR Contai
 
 <summary>EKS Kubernetes Orchestrator, S3 Artifact Store and ECR Container Registry with a multi-type AWS Service Connector</summary>
 
-This is an example of an end-to-end workflow involving Service Connectors that uses a single multi-type AWS Service Connector to give access to multiple resources for multiple Stack Components. A complete ZenML Stack is registered composed of the following Stack Components, all connected through the same Service Connector:
+This is an example of an end-to-end workflow involving Service Connectors that use a single multi-type AWS Service Connector to give access to multiple resources for multiple Stack Components. A complete ZenML Stack is registered and composed of the following Stack Components, all connected through the same Service Connector:
 
 * a [Kubernetes Orchestrator](../../../user-guide/component-guide/orchestrators/kubernetes.md) connected to an EKS Kubernetes cluster
 * an [S3 Artifact Store](../../../user-guide/component-guide/artifact-stores/s3.md) connected to an S3 bucket
@@ -1157,7 +1157,7 @@ This is an example of an end-to-end workflow involving Service Connectors that u
 
 As a last step, a simple pipeline is run on the resulting Stack.
 
-1. [Configure the local AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html) with valid IAM user account credentials with a wide range of permissions (i.e. by running `aws configure`) and install ZenML integration prerequisites:
+1.  [Configure the local AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html) with valid IAM user account credentials with a wide range of permissions (i.e. by running `aws configure`) and install ZenML integration prerequisites:
 
     ```
     $ aws configure --profile connectors
@@ -1165,12 +1165,11 @@ As a last step, a simple pipeline is run on the resulting Stack.
     AWS Secret Access Key [None]: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
     Default region name [None]: us-east-1
     Default output format [None]: json
-    
-    $ zenml integration install -y aws s3
-    
-    ```
 
-2. Make sure the AWS Service Connector Type is available
+    $ zenml integration install -y aws s3
+
+    ```
+2.  Make sure the AWS Service Connector Type is available
 
     ```
     $ zenml service-connector list-types --type aws
@@ -1185,9 +1184,8 @@ As a last step, a simple pipeline is run on the resulting Stack.
     ┃                       │        │                       │ federation-token │       │        ┃
     ┗━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━┷━━━━━━━┷━━━━━━━━┛
     ```
+3.  Register a multi-type AWS Service Connector using auto-configuration
 
-3. Register a multi-type AWS Service Connector using auto-configuration
-    
     ```
     $ AWS_PROFILE=connectors zenml service-connector register aws-demo-multi --type aws --auto-configure
     ⠼ Registering service connector 'aws-demo-multi'...
@@ -1201,10 +1199,9 @@ As a last step, a simple pipeline is run on the resulting Stack.
     ┃                                      │                │                │ 🐳 docker-registry    │                ┃
     ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┛
     ```
-    
-    **NOTE**: from this point forward, we don't need the local AWS CLI credentials or the local AWS CLI at all. The steps that follow can be run on any machine regardless of whether it has been configured and authorized to access the AWS platform or not.
 
-4. find out which S3 buckets, ECR registries and EKS Kubernetes clusters we can gain access to. We'll use this information to configure the Stack Components in our minimal AWS stack: an S3 Artifact Store, a Kubernetes Orchestrator and an ECR Container Registry.
+    **NOTE**: from this point forward, we don't need the local AWS CLI credentials or the local AWS CLI at all. The steps that follow can be run on any machine regardless of whether it has been configured and authorized to access the AWS platform or not.
+4.  find out which S3 buckets, ECR registries, and EKS Kubernetes clusters we can gain access to. We'll use this information to configure the Stack Components in our minimal AWS stack: an S3 Artifact Store, a Kubernetes Orchestrator, and an ECR Container Registry.
 
     ```
     $ zenml service-connector list-resources --resource-type s3-bucket
@@ -1220,7 +1217,7 @@ As a last step, a simple pipeline is run on the resulting Stack.
     ┃                                      │                     │                │               │ s3://zenml-public-swagger-spec        ┃
     ┃                                      │                     │                │               │ s3://zenml-terraform-ci               ┃
     ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
-    
+
     $ zenml service-connector list-resources --resource-type kubernetes-cluster
     The following 'kubernetes-cluster' resources can be accessed by service connectors configured in your workspace:
     ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━┓
@@ -1228,7 +1225,7 @@ As a last step, a simple pipeline is run on the resulting Stack.
     ┠──────────────────────────────────────┼───────────────────────┼────────────────┼───────────────────────┼─────────────────────┨
     ┃ bf073e06-28ce-4a4a-8100-32e7cb99dced │ aws-demo-multi        │ 🔶 aws         │ 🌀 kubernetes-cluster │ zenhacks-cluster    ┃
     ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━┛
-    
+
     $ zenml service-connector list-resources --resource-type docker-registry
     The following 'docker-registry' resources can be accessed by service connectors configured in your workspace:
     ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
@@ -1237,15 +1234,14 @@ As a last step, a simple pipeline is run on the resulting Stack.
     ┃ bf073e06-28ce-4a4a-8100-32e7cb99dced │ aws-demo-multi     │ 🔶 aws         │ 🐳 docker-registry │ 715803424590.dkr.ecr.us-east-1.amazonaws.com    ┃
     ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
     ```
-
-5. register and connect an S3 Artifact Store Stack Component to an S3 bucket:
+5.  register and connect an S3 Artifact Store Stack Component to an S3 bucket:
 
     ```
     $ zenml artifact-store register s3-zenfiles --flavor s3 --path=s3://zenfiles
     Running with active workspace: 'default' (repository)
     Running with active stack: 'default' (repository)
     Successfully registered artifact_store `s3-zenfiles`.
-    
+
     $ zenml artifact-store connect s3-zenfiles --connector aws-demo-multi
     Running with active workspace: 'default' (repository)
     Running with active stack: 'default' (repository)
@@ -1256,15 +1252,14 @@ As a last step, a simple pipeline is run on the resulting Stack.
     ┃ bf073e06-28ce-4a4a-8100-32e7cb99dced │ aws-demo-multi │ 🔶 aws         │ 📦 s3-bucket  │ s3://zenfiles  ┃
     ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┛
     ```
+6.  register and connect a Kubernetes Orchestrator Stack Component to an EKS cluster:
 
-6. register and connect a Kubernetes Orchestrator Stack Component to an EKS cluster:
-    
     ```
     $ zenml orchestrator register eks-zenml-zenhacks --flavor kubernetes --synchronous=true --kubernetes_namespace=zenml-workloads
     Running with active workspace: 'default' (repository)
     Running with active stack: 'default' (repository)
     Successfully registered orchestrator `eks-zenml-zenhacks`.
-    
+
     $ zenml orchestrator connect eks-zenml-zenhacks --connector aws-demo-multi
     Running with active workspace: 'default' (repository)
     Running with active stack: 'default' (repository)
@@ -1275,15 +1270,14 @@ As a last step, a simple pipeline is run on the resulting Stack.
     ┃ bf073e06-28ce-4a4a-8100-32e7cb99dced │ aws-demo-multi │ 🔶 aws         │ 🌀 kubernetes-cluster │ zenhacks-cluster ┃
     ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━┛
     ```
-
-7. Register and connect an EC GCP Container Registry Stack Component to an ECR container registry:
+7.  Register and connect an EC GCP Container Registry Stack Component to an ECR container registry:
 
     ```
     $ zenml container-registry register ecr-us-east-1 --flavor aws --uri=715803424590.dkr.ecr.us-east-1.amazonaws.com
     Running with active workspace: 'default' (repository)
     Running with active stack: 'default' (repository)
     Successfully registered container_registry `ecr-us-east-1`.
-    
+
     $ zenml container-registry connect ecr-us-east-1 --connector aws-demo-multi
     Running with active workspace: 'default' (repository)
     Running with active stack: 'default' (repository)
@@ -1294,47 +1288,45 @@ As a last step, a simple pipeline is run on the resulting Stack.
     ┃ bf073e06-28ce-4a4a-8100-32e7cb99dced │ aws-demo-multi │ 🔶 aws         │ 🐳 docker-registry │ 715803424590.dkr.ecr.us-east-1.amazonaws.com ┃
     ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
     ```
-
-8. Combine all Stack Components together into a Stack and set it as active (also throw in a local Image Builder for completion):
+8.  Combine all Stack Components together into a Stack and set it as active (also throw in a local Image Builder for completion):
 
     ```
     $ zenml image-builder register local --flavor local
     Running with active workspace: 'default' (global)
     Running with active stack: 'default' (global)
     Successfully registered image_builder `local`.
-    
+
     $ zenml stack register aws-demo -a s3-zenfiles -o eks-zenml-zenhacks -c ecr-us-east-1 -i local --set
     Connected to the ZenML server: 'https://stefan.develaws.zenml.io'
     Running with active workspace: 'default' (repository)
     Stack 'aws-demo' successfully registered!
     Active repository stack set to:'aws-demo'
     ```
-
-9. Finally, run a simple pipeline to prove that everything works as expected. We'll use the simplest pipelines possible for this example:
+9.  Finally, run a simple pipeline to prove that everything works as expected. We'll use the simplest pipelines possible for this example:
 
     ```python
     from zenml import pipeline, step
-    
-    
+
+
     @step
     def step_1() -> str:
         """Returns the `world` string."""
         return "world"
-    
-    
+
+
     @step(enable_cache=False)
     def step_2(input_one: str, input_two: str) -> None:
         """Combines the two strings at its input and prints them."""
         combined_str = f"{input_one} {input_two}"
         print(combined_str)
-    
-    
+
+
     @pipeline
     def my_pipeline():
         output_step_one = step_1()
         step_2(input_one="hello", input_two=output_step_one)
-    
-    
+
+
     if __name__ == "__main__":
         my_pipeline()
     ```
@@ -1380,4 +1372,3 @@ Dashboard URL: https://stefan.develaws.zenml.io/workspaces/default/pipelines/be5
 ```
 
 </details>
-
