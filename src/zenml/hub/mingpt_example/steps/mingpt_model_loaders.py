@@ -1,16 +1,14 @@
-from zenml.steps import step
+from zenml import step
 
 from ..mingpt.model import GPT
 
 
 @step
-def gpt_nano_loader_step() -> GPT:
+def mingpt_model_loader_step(model_type="gpt-nano") -> GPT:
     model_config = GPT.get_default_config()
-    model_config.model_type = "gpt-nano"
+    model_config.model_type = model_type
     model_config.vocab_size = 50257  # openai's model vocabulary
-    model_config.block_size = (
-        1024  # openai's model block_size (i.e. input context length)
-    )
+    model_config.block_size = 1024  # openai's model block_size
     model = GPT(model_config)
     return model
 

@@ -18,7 +18,5 @@ from ..dataset import UrlTokenDataset
 
 
 @step
-def url_dataset_loader_step() -> UrlTokenDataset:
-    """Data loader step."""
-    # TODO: parametrize URLs and choose a cooler use case
-    return UrlTokenDataset(["https://zenml.io"])
+def url_dataset_loader_step(urls=["https://www.bbc.com/"]) -> UrlTokenDataset:
+    return UrlTokenDataset(urls=urls)
