@@ -79,52 +79,52 @@ We can then register the orchestrator and use it in our active stack. This can b
    can [connect the stack component to the Service Connector](../../../platform-guide/set-up-your-mlops-platform/connect-zenml-to-infrastructure/service-connectors-guide.md#connect-stack-components-to-resources)
    instead:
 
-```
-$ zenml orchestrator register <ORCHESTRATOR_NAME> --flavor kubernetes
-Running with active workspace: 'default' (repository)
-Running with active stack: 'default' (repository)
-Successfully registered orchestrator `<ORCHESTRATOR_NAME>`.
-
-$ zenml service-connector list-resources --resource-type kubernetes-cluster -e
-The following 'kubernetes-cluster' resources can be accessed by service connectors configured in your workspace:
-┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━┓
-┃             CONNECTOR ID             │ CONNECTOR NAME        │ CONNECTOR TYPE │ RESOURCE TYPE         │ RESOURCE NAMES      ┃
-┠──────────────────────────────────────┼───────────────────────┼────────────────┼───────────────────────┼─────────────────────┨
-┃ e33c9fac-5daa-48b2-87bb-0187d3782cde │ aws-iam-multi-eu      │ 🔶 aws         │ 🌀 kubernetes-cluster │ kubeflowmultitenant ┃
-┃                                      │                       │                │                       │ zenbox              ┃
-┠──────────────────────────────────────┼───────────────────────┼────────────────┼───────────────────────┼─────────────────────┨
-┃ ed528d5a-d6cb-4fc4-bc52-c3d2d01643e5 │ aws-iam-multi-us      │ 🔶 aws         │ 🌀 kubernetes-cluster │ zenhacks-cluster    ┃
-┠──────────────────────────────────────┼───────────────────────┼────────────────┼───────────────────────┼─────────────────────┨
-┃ 1c54b32a-4889-4417-abbd-42d3ace3d03a │ gcp-sa-multi          │ 🔵 gcp         │ 🌀 kubernetes-cluster │ zenml-test-cluster  ┃
-┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━┛
-
-$ zenml orchestrator connect <ORCHESTRATOR_NAME> --connector aws-iam-multi-us
-Running with active workspace: 'default' (repository)
-Running with active stack: 'default' (repository)
-Successfully connected orchestrator `<ORCHESTRATOR_NAME>` to the following resources:
-┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━┓
-┃             CONNECTOR ID             │ CONNECTOR NAME   │ CONNECTOR TYPE │ RESOURCE TYPE         │ RESOURCE NAMES   ┃
-┠──────────────────────────────────────┼──────────────────┼────────────────┼───────────────────────┼──────────────────┨
-┃ ed528d5a-d6cb-4fc4-bc52-c3d2d01643e5 │ aws-iam-multi-us │ 🔶 aws         │ 🌀 kubernetes-cluster │ zenhacks-cluster ┃
-┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━┛
-
-# Register and activate a stack with the new orchestrator
-$ zenml stack register <STACK_NAME> -o <ORCHESTRATOR_NAME> ... --set
-```
+    ```
+    $ zenml orchestrator register <ORCHESTRATOR_NAME> --flavor kubernetes
+    Running with active workspace: 'default' (repository)
+    Running with active stack: 'default' (repository)
+    Successfully registered orchestrator `<ORCHESTRATOR_NAME>`.
+    
+    $ zenml service-connector list-resources --resource-type kubernetes-cluster -e
+    The following 'kubernetes-cluster' resources can be accessed by service connectors configured in your workspace:
+    ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━┓
+    ┃             CONNECTOR ID             │ CONNECTOR NAME        │ CONNECTOR TYPE │ RESOURCE TYPE         │ RESOURCE NAMES      ┃
+    ┠──────────────────────────────────────┼───────────────────────┼────────────────┼───────────────────────┼─────────────────────┨
+    ┃ e33c9fac-5daa-48b2-87bb-0187d3782cde │ aws-iam-multi-eu      │ 🔶 aws         │ 🌀 kubernetes-cluster │ kubeflowmultitenant ┃
+    ┃                                      │                       │                │                       │ zenbox              ┃
+    ┠──────────────────────────────────────┼───────────────────────┼────────────────┼───────────────────────┼─────────────────────┨
+    ┃ ed528d5a-d6cb-4fc4-bc52-c3d2d01643e5 │ aws-iam-multi-us      │ 🔶 aws         │ 🌀 kubernetes-cluster │ zenhacks-cluster    ┃
+    ┠──────────────────────────────────────┼───────────────────────┼────────────────┼───────────────────────┼─────────────────────┨
+    ┃ 1c54b32a-4889-4417-abbd-42d3ace3d03a │ gcp-sa-multi          │ 🔵 gcp         │ 🌀 kubernetes-cluster │ zenml-test-cluster  ┃
+    ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━┛
+    
+    $ zenml orchestrator connect <ORCHESTRATOR_NAME> --connector aws-iam-multi-us
+    Running with active workspace: 'default' (repository)
+    Running with active stack: 'default' (repository)
+    Successfully connected orchestrator `<ORCHESTRATOR_NAME>` to the following resources:
+    ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━┓
+    ┃             CONNECTOR ID             │ CONNECTOR NAME   │ CONNECTOR TYPE │ RESOURCE TYPE         │ RESOURCE NAMES   ┃
+    ┠──────────────────────────────────────┼──────────────────┼────────────────┼───────────────────────┼──────────────────┨
+    ┃ ed528d5a-d6cb-4fc4-bc52-c3d2d01643e5 │ aws-iam-multi-us │ 🔶 aws         │ 🌀 kubernetes-cluster │ zenhacks-cluster ┃
+    ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━┛
+    
+    # Register and activate a stack with the new orchestrator
+    $ zenml stack register <STACK_NAME> -o <ORCHESTRATOR_NAME> ... --set
+    ```
 
 2. if you don't have a Service Connector on hand and you don't want
    to [register one](../../../platform-guide/set-up-your-mlops-platform/connect-zenml-to-infrastructure/service-connectors-guide.md#register-service-connectors)
    , the local Kubernetes `kubectl` client needs to be configured with a configuration context pointing to the remote
    cluster. The `kubernetes_context` stack component must also be configured with the value of that context:
 
-```shell
-zenml orchestrator register <ORCHESTRATOR_NAME> \
-    --flavor=kubernetes \
-    --kubernetes_context=<KUBERNETES_CONTEXT>
-
-# Register and activate a stack with the new orchestrator
-zenml stack register <STACK_NAME> -o <ORCHESTRATOR_NAME> ... --set
-```
+    ```shell
+    zenml orchestrator register <ORCHESTRATOR_NAME> \
+        --flavor=kubernetes \
+        --kubernetes_context=<KUBERNETES_CONTEXT>
+    
+    # Register and activate a stack with the new orchestrator
+    zenml stack register <STACK_NAME> -o <ORCHESTRATOR_NAME> ... --set
+    ```
 
 {% hint style="info" %}
 ZenML will build a Docker image called `<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE_NAME>` which includes your code and use
