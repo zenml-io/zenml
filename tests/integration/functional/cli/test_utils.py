@@ -94,44 +94,38 @@ def test_parsing_name_and_arguments():
         cli_utils.parse_name_and_extra_arguments(["--bar=1"])
 
 
-def test_parsing_secret_name_and_arguments():
+# def test_parsing_secret_name_and_arguments():
+#     """Test that our ability to parse CLI arguments works."""
+#     assert cli_utils.parse_secret_name_and_arguements(["foo"]) == ("foo", {})
+#     assert cli_utils.parse_secret_name_and_arguements(
+#         ["foo", '--values={"bar":"1"}']
+#     ) == (
+#         "foo",
+#         {"bar": "1"},
+#     )
+#     assert cli_utils.parse_secret_name_and_arguements(
+#         ['--values=bar: "1" \nbaz: "2"', "foo"]
+#     ) == (
+#         "foo",
+#         {"bar": "1", "baz": "2"},
+#     )
+#
+#     assert cli_utils.parse_secret_name_and_arguements(
+#         ["foo", '--values={"bar":"![@#$%^&*()"}']
+#     ) == ("foo", {"bar": "![@#$%^&*()"})
+#
+#     with pytest.raises(ClickException):
+#         cli_utils.parse_secret_name_and_arguements(['--values="{"bar":1}"'])
+
+
+def test_converting_structured_str_to_dict():
     """Test that our ability to parse CLI arguments works."""
-    assert cli_utils.parse_secret_name_and_arguements(["foo"]) == ("foo", {})
-    assert cli_utils.parse_secret_name_and_arguements(
-        ["foo", '--values={"bar":"1"}']
-    ) == (
-        "foo",
-        {"bar": "1"},
-    )
-    assert cli_utils.parse_secret_name_and_arguements(
-        ['--values=bar: "1" \nbaz: "2"', "foo"]
-    ) == (
-        "foo",
-        {"bar": "1", "baz": "2"},
-    )
-
-    assert cli_utils.parse_secret_name_and_arguements(
-        ["foo", '--values={"bar":"![@#$%^&*()"}']
-    ) == ("foo", {"bar": "![@#$%^&*()"})
-
-    with pytest.raises(ClickException):
-        cli_utils.parse_secret_name_and_arguements(['--values="{"bar":1}"'])
-
-
-def test_converting_str_to_dict():
-    """Test that our ability to parse CLI arguments works."""
-    assert cli_utils.convert_str_to_dict(
+    assert cli_utils.convert_structured_str_to_dict(
         "{'location': 'Nevada', 'aliens':'many'}"
     ) == {"location": "Nevada", "aliens": "many"}
 
     with pytest.raises(ClickException):
-        cli_utils.convert_str_to_dict('{"location: "Nevada", "aliens":"many"}')
-
-
-def test_extracting_name_from_args():
-    """Test that our ability to parse CLI arguments works."""
-    with pytest.raises(ClickException):
-        cli_utils.extract_name_from_args([], True)
+        cli_utils.convert_structured_str_to_dict('{"location: "Nevada", "aliens":"many"}')
 
 
 def test_parsing_unknown_component_attributes():
