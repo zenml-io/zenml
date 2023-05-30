@@ -21,9 +21,9 @@ The ZenML Hub revolves around the concept of **plugins**, which can be made up o
 
 Users can create a ZenML Hub account to contribute, rate, and star these plugins. To ensure uniqueness and versioning, each submitted plugin is named after the user who created it and is automatically versioned. Plugins authored or approved by the ZenML core developers will have a "verified" badge, as well as a stability/maturity rating.
 
-### What is already built-in? <a href="#what-is-already-built-in" id="what-is-already-built-in"></a>
+### What is already built in? <a href="#what-is-already-built-in" id="what-is-already-built-in"></a>
 
-With the release of ZenML version 0.38.0, the ZenML Hub will make its first appearance and be equipped with a set of plugins that feature ZenML-verified steps (with a heavy-emphasis on data loader steps). In future iterations, the ZenML team is actively working on expanding the Hub's capabilities and plans to introduce additional entities, such as materializers and flavors.
+With the release of ZenML version 0.38.0, the ZenML Hub will make its first appearance and be equipped with a set of plugins that feature ZenML-verified steps (with a heavy emphasis on data loader steps). In future iterations, the ZenML team is actively working on expanding the Hub's capabilities and plans to introduce additional entities, such as materializers and flavors.
 
 ## How do I use it?
 
@@ -58,7 +58,7 @@ zenml hub clone <PLUGIN_NAME>
 {% tab title="Dashboard" %}
 You can see the available plugins on the `Plugins` page:
 
-![Dashboard List Plugin](/docs/book/.gitbook/assets/plugins_dashboard.png)
+![Dashboard List Plugin](../../.gitbook/assets/plugins\_dashboard.png)
 
 You can browse through the plugins to see more details.
 {% endtab %}
@@ -72,7 +72,7 @@ zenml hub list
 
 You should see a table similar to:
 
-![CLI List Plugin](/docs/book/.gitbook/assets/plugins_cli.png)
+![CLI List Plugin](../../.gitbook/assets/plugins\_cli.png)
 {% endtab %}
 {% endtabs %}
 
@@ -88,7 +88,7 @@ If you haven't used the ZenML Hub before, this process will create a ZenML Hub a
 {% tab title="Dashboard" %}
 In order to log in through the dashboard, you can use the connect button on the Plugins page.
 
-![Dashboard Login](/docs/book/.gitbook/assets/login_dashboard.png)
+![Dashboard Login](../../.gitbook/assets/login\_dashboard.png)
 
 Similar to the CLI, you can disconnect your account using the Disconnect button.
 {% endtab %}
@@ -116,7 +116,7 @@ After logging in, you can start submitting your own plugins. The submitted plugi
 {% tab title="Dashboard" %}
 If you are submitting your plugin through the dashboard, you need to provide the required metadata about your plugin.
 
-![Dashboard Create Plugin](/docs/book/.gitbook/assets/create_plugin_dashboard.png)
+![Dashboard Create Plugin](../../.gitbook/assets/create\_plugin\_dashboard.png)
 {% endtab %}
 
 {% tab title="CLI" %}
@@ -132,6 +132,6 @@ Once submitted, a wheel will be created and stored based on your plugin. This pr
 
 ## ZenML Hub service status
 
-The status of the ZenML Hub service is being tracked live in [the ZenML status page](https://zenml.statuspage.io/). You can subscribe there to receive notifications about scheduled maintenance windows, unplanned downtime events and more.
+The status of the ZenML Hub service is being tracked live on [the ZenML status page](https://zenml.statuspage.io/). You can subscribe here to receive notifications about scheduled maintenance windows, unplanned downtime events, and more.
 
 <figure><img src="../../.gitbook/assets/statuspage.png" alt=""><figcaption><p>The ZenML public services status page</p></figcaption></figure>
