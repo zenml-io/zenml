@@ -8,8 +8,7 @@ The easiest and fastest way to get running on the cloud is by using the `deploy`
 deploying to Kubernetes on managed cloud services. You can check the [overview page](deploy-zenml.md) to learn about
 other options that you have.
 
-Before we begin, it will help to understand
-the [architecture](deploying-zenml.md#scenario-3-server-and-database-hosted-in-the-cloud) around the ZenML server and
+Before we begin, it will help to understand the [architecture](deploy-zenml.md) around the ZenML server and
 the database that it uses. Now, depending on your setup, you may find one of the following scenarios relevant.
 
 ## Option 1: Starting from scratch
@@ -365,7 +364,7 @@ zenml disconnect
 
 Here's an architecture diagram that shows how the workflow looks like when you do `zenml deploy`.
 
-<figure><img src="broken-reference" alt=""><figcaption><p>Running zenml deploy</p></figcaption></figure>
+![Running `zenml deploy`](/docs/book/.gitbook/assets/zenml_deploy.png)
 
 The deploy CLI makes use of a "recipe" inside the `zenml-io/zenml` repository to deploy the server on the right cloud.
 Any configuration that you pass with the CLI, is sent to the recipe as input variables.

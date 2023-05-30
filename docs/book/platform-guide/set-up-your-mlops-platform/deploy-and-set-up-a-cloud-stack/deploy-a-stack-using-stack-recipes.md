@@ -107,7 +107,7 @@ the `-var-file` flag to the terraform CLI.
 
 </details>
 
-<figure><img src="broken-reference" alt=""><figcaption><p>Workflow behind using the stack recipe CLI</p></figcaption></figure>
+![Workflow behind using the stack recipe CLI](/docs/book/.gitbook/assets/zenml_stack_recipe_deploy.png)
 
 ### Deleting resources
 

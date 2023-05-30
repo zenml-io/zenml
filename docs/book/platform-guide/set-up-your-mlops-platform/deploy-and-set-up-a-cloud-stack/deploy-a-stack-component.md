@@ -49,7 +49,7 @@ A successful execution of this command does the following:
 * It also automatically registers the deployed stack component with your ZenML server, so you don't have to worry about
   manually configuring components after the deployment! 🤩
 
-<figure><img src="broken-reference" alt=""><figcaption><p>Deploying an artifact store</p></figcaption></figure>
+![Deploying an artifact store](/docs/book/.gitbook/assets/artifact_store_deploy.png)
 
 {% hint style="info" %}
 The command currently uses your local credentials for GCP and AWS to provision resources. Integration with your ZenML
@@ -72,7 +72,7 @@ The recipe files live in the Global Config directory under the `deployed_stack_c
 
 </details>
 
-<figure><img src="broken-reference" alt="" width="563"><figcaption><p>The workflow behind running a stack-component deploy command</p></figcaption></figure>
+![The workflow behind running a stack-component deploy command](/docs/book/.gitbook/assets/zenml_stack-component_deploy.png)
 
 ### 🍨 Available flavors for stack components
 
