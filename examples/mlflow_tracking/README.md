@@ -212,6 +212,17 @@ rm -rf zenml_examples
 rm -rf <SPECIFIC_MLRUNS_PATH_GOES_HERE>
 ```
 
+# Run it on the sandbox
+
+ZenML has a sandbox environment that you can use to run your pipelines on a
+Kubernetes cluster. This sandbox is a free service that is provided by ZenML
+and is a great way to get started.
+
+This example can be run on the sandbox by simply running few commands. Read
+more about the sandbox [here](https://docs.zenml.io/user-guide/advanced-guide/sandbox).
+or go to the [sandbox page](https://sandbox.zenml.io/).
+
+
 # 📜 Learn more
 
 Our docs regarding the MLflow experiment tracker integration can be found 
