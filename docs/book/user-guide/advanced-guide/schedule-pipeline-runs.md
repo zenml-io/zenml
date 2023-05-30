@@ -53,7 +53,7 @@ Here's [a handy guide](https://medium.com/nerd-for-tech/airflow-catchup-backfill
 ### Supported orchestrators
 
 | Orchestrator            | Scheduling Support |
-| ----------------------- | ------------------ |
+|-------------------------|--------------------|
 | LocalOrchestrator       | ⛔️                 |
 | LocalDockerOrchestrator | ⛔️                 |
 | KubernetesOrchestrator  | ✅                  |
