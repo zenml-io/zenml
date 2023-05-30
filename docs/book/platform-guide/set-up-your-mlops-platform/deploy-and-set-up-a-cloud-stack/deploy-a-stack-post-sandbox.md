@@ -34,7 +34,7 @@ our `zenml deploy` CLI command as a simple but opinionated way to deploy a ZenML
 server. This will deploy to Kubernetes on one of the three big managed cloud
 platforms (i.e. AWS, GCP, Azure). You can read more about this in our [full
 deployment
-guide](../../../platform-guide/set-up-your-mlops-platform/deploy-zenml/deploy-with-zenml-cli.md).
+guide](../set-up-your-mlops-platform/deploy-zenml/deploy-with-zenml-cli.md).
 
 For a bit more control over what gets deployed where, or for deploying to a
 pre-existing Kubernetes cluster you can [follow our Helm installation
@@ -42,11 +42,31 @@ guide](../deploy-zenml/deploy-with-helm.md). You can follow this guide to deploy
 ZenML in any Kubernetes cluster using the Helm chart provided in our repository.
 
 Once your server is deployed, you'll need to connect your client to it. You can connect to your deployed server using the `zenml connect` command. Read
-[this documentation
-page](../../../user-guide/starter-guide/connect-to-a-deployed-zenml.md#connect-your-client-to-the-server)
+[this documentation page](../../../user-guide/starter-guide/connect-to-a-deployed-zenml.md#connect-your-client-to-the-server)
 for more information on how to do this.
 
 ## Deploy relevant cloud stacks
 
+Once your ZenML server is deployed, you may want to run your pipelines on the cloud or deployed infrastructure. This requires the deployment of cloud stacks. In the ZenML Sandbox, some of these stacks were pre-deployed for you. To deploy individual stack components, [ZenML provides stack recipes]() that can be easily deployed via the Command Line Interface (CLI) using the `zenml <stack-component> deploy ...` syntax.
+
+### Deploying Stack Components
+
+The `zenml deploy` command allows you to deploy individual components of your MLOps stack with a single command. For example, to deploy an MLflow tracking server on a GCP account, you can run:
+
+```shell
+zenml experiment-tracker deploy my_tracker --flavor=mlflow --cloud=gcp --project_id="zenml"
+```
+
+This will deploy an MLflow tracking server on your GCP account with the name
+`my_tracker`. You can then use this tracker to track your experiments. For more
+information on how to deploy individual stack components in this way, please refer to the
+[dedicated documentation page](./deploy-a-stack-component.md).
+
 ## Use those stacks / where go from here
 
+Once you have the server and stacks deployed, you can use them to run your
+pipelines. If you've done all this, now's probably also a good time to read [our
+'Best Practices'
+guide](../../../user-guide/starter-guide/follow-best-practices.md) to get a
+sense of how to use ZenML in a production
+setting.
