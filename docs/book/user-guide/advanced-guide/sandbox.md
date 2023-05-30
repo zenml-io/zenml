@@ -26,3 +26,15 @@ show you how to do this.
 ## More...
 
 ... other things to bo?
+
+## What do do when your sandbox runs out?
+
+The sandbox is only available for 8 hours. After that, it will be deleted. If
+you want to continue to use ZenML in a cloud deployment you can either:
+
+- [Register a new sandbox](https://sandbox.zenml.io/)
+- [Deploy your own cloud stack](../../platform-guide/set-up-your-mlops-platform/deploy-and-set-up-a-cloud-stack/deploy-a-stack-post-sandbox.md)
+
+For the second option you can use ZenML's Stack Recipes to deploy a stack that
+suits your custom use cases. For more information on how to do this, please
+[visit our guide to get going](../../platform-guide/set-up-your-mlops-platform/deploy-and-set-up-a-cloud-stack/deploy-a-stack-post-sandbox.md) with this.
