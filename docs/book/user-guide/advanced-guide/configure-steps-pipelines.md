@@ -74,6 +74,37 @@ from uuid import UUID
 artifact = ExternalArtifact(id=UUID("3a92ae32-a764-4420-98ba-07da8f742b76"))
 ```
 
+## Control the execution order
+
+By default, ZenML uses the data flowing between steps of your pipeline to determine the order in which steps get executed.&#x20;
+
+The following example shows a pipeline in which `step_3` depends on the outputs of `step_1` and `step_2`. This means that ZenML can execute both `step_1` and `step_2` in parallel but needs to wait until both are finished before `step_3` can be started.
+
+```python
+from zenml.pipelines import pipeline
+
+@pipeline
+def example_pipeline():
+    step_1_output = step_1()
+    step_2_output = step_2()
+    step_3(step_1_output, step_2_output)
+```
+
+If you have additional constraints on the order in which steps get executed, you can specify non-data dependencies by calling `step.after(some_other_step)`:
+
+```python
+from zenml.pipelines import pipeline
+
+@pipeline
+def example_pipeline():
+    step_1.after(step_2)
+    step_1_output = step_1()
+    step_2_output = step_2()
+    step_3(step_1_output, step_2_output)
+```
+
+This pipeline is similar to the one explained above, but this time ZenML will make sure to only start `step_1` after `step_2` has finished.
+
 ## Settings in ZenML
 
 Settings in ZenML allow you to configure runtime configurations for stack components and pipelines. Concretely, they allow you to configure:

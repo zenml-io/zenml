@@ -10,15 +10,15 @@ Although the basic functionalities of ZenML work perfectly on your local machine
 
 When you first get started with ZenML, it is based on the following architecture on your machine.
 
-![Scenario 1: ZenML default local configuration](/docs/book/.gitbook/assets/Scenario1.png)
+![Scenario 1: ZenML default local configuration](../../.gitbook/assets/Scenario1.png)
 
 The SQLite database that you can see in this diagram is used to store information about pipelines, pipeline runs, stacks, and other configurations. In the previous pages, we used the `zenml up` command to spin up a local rest server to serve the dashboard as well. The diagram for this will look as follows:
 
-![Scenario 2: ZenML with a local REST Server](/docs/book/.gitbook/assets/Scenario2.png)
+![Scenario 2: ZenML with a local REST Server](../../.gitbook/assets/Scenario2.png)
 
 In order to move into production, you will need to deploy this server somewhere centrally so that the different cloud stack components can read from and write to the server. Additionally, this also allows all your team members to connect to it and share stacks and pipelines.
 
-![Scenario 3: Deployed ZenML Server](/docs/book/.gitbook/assets/Scenario3.png)
+![Scenario 3: Deployed ZenML Server](../../.gitbook/assets/Scenario3.2.png)
 
 #### Connect your client to the server
 
