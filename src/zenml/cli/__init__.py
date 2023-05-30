@@ -1267,8 +1267,8 @@ the following command:
 
 ```bash
 zenml show
-```
 
+Note that if you have set your `AUTO_OPEN_DASHBOARD` environment variable to `false` then this will not open the dashboard until you set it back to `true`.
 To disconnect from the current ZenML server and revert to using the local
 default database, use the following command:
 
