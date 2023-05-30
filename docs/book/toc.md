@@ -150,6 +150,6 @@
 ## Reference
 
 * [🤷 SDK & CLI reference](https://apidocs.zenml.io/)
-* [🤷 Server API reference](https://demoserver.zenml.io/docs)
+* [🤷♂ Server API reference](https://demoserver.zenml.io/docs)
 * [💜 Community & content](reference/community-and-content.md)
 * [❓ FAQ](reference/faq.md)
