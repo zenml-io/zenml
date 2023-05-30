@@ -52,15 +52,15 @@ Here's [a handy guide](https://medium.com/nerd-for-tech/airflow-catchup-backfill
 
 ### Supported orchestrators
 
-| Orchestrator            | Scheduling Support |
-|-------------------------|--------------------|
-| LocalOrchestrator       | ⛔️                 |
-| LocalDockerOrchestrator | ⛔️                 |
-| KubernetesOrchestrator  | ✅                  |
-| KubeflowOrchestrator    | ✅                  |
-| VertexOrchestrator      | ✅                  |
-| TektonOrchestrator      | ⛔️                 |
-| AirflowOrchestrator     | ✅                  |
+| Orchestrator                                                                | Scheduling Support |
+| --------------------------------------------------------------------------- | ------------------ |
+| [LocalOrchestrator](../component-guide/orchestrators/local.md)              | ⛔️                 |
+| [LocalDockerOrchestrator](../component-guide/orchestrators/local-docker.md) | ⛔️                 |
+| [KubernetesOrchestrator](../component-guide/orchestrators/kubernetes.md)    | ✅                  |
+| [KubeflowOrchestrator](../component-guide/orchestrators/kubeflow.md)        | ✅                  |
+| [VertexOrchestrator](../component-guide/orchestrators/vertex.md)            | ✅                  |
+| [TektonOrchestrator](../component-guide/orchestrators/tekton.md)            | ⛔️                 |
+| [AirflowOrchestrator](../component-guide/orchestrators/airflow.md)          | ✅                  |
 
 {% hint style="info" %}
 We maintain a public roadmap for ZenML, which you can find [here](https://zenml.io/roadmap). We welcome community contributions (see more [here](https://github.com/zenml-io/zenml/blob/main/CONTRIBUTING.md)) so if you want to enable scheduling for an unsupported orchestrator, please [do let us know](https://zenml.io/slack-invite)!
