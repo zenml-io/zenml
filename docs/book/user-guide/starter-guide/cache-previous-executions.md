@@ -10,15 +10,9 @@ In the logs of your previous runs, you might have noticed at this point that rer
 
 {% tabs %}
 {% tab title="Dashboard" %}
-<div>
 
-<figure><img src="broken-reference" alt=""><figcaption><p>DAG of a cached pipeline run</p></figcaption></figure>
+![Representation of a pipeline dag.](../../.gitbook/assets/CachedDag.png)
 
- 
-
-<figure><img src="../../.gitbook/assets/CachedDag.png" alt=""><figcaption></figcaption></figure>
-
-</div>
 {% endtab %}
 
 {% tab title="Logs" %}
