@@ -2,7 +2,7 @@
 description: Bringing your pipelines into production using ZenML Sandbox
 ---
 
-# Switch to production
+# ZenML gets you to production
 
 Transitioning your machine learning pipelines to production means deploying your models on real-world data to make
 predictions that drive business decisions. To achieve this, you need an infrastructure that can handle the demands of
@@ -24,7 +24,10 @@ the needed infrastructure.
 This is where ZenML comes in. By providing seamless integration with
 various [MLOps tools](/docs/book/user-guide/component-guide/integration-overview.md) and platforms, ZenML simplifies the
 process of moving your pipelines into production. One way it does this is by offering a free, limited, and easy-to-use 
-Sandbox environment that allows you to experiment with remote stacks without any setup or configuration.
+Sandbox environment that allows you to experiment with remote stacks without any
+setup or configuration.
+
+### Alternative: Build your own infrastructure
 
 For those who prefer more control over their infrastructure, ZenML offers a more manual approach that still streamlines
 parts of the deployment process. With
@@ -33,7 +36,8 @@ the [deploy CLI](/docs/book/platform-guide/set-up-your-mlops-platform/deploy-and
 stack components through
 the [stack-component CLI](/docs/book/platform-guide/set-up-your-mlops-platform/deploy-and-set-up-a-cloud-stack/deploy-a-stack-component.md)
 or [deploy a stack with multiple components](/docs/book/platform-guide/set-up-your-mlops-platform/deploy-and-set-up-a-cloud-stack/deploy-a-stack-using-stack-recipes.md)
-together using Terraform stack recipes.
+together using Terraform stack recipes. For more information on how to do this,
+see our [post-sandbox platform guide](../advanced-guide/sandbox.md).
 
 ### ZenML Sandbox: a simple and easy starting point
 
@@ -46,7 +50,7 @@ between remote stacks.
 
 #### Step 1: Sign up
 
-To start using the ZenML Sandbox, sign up with your Google account. This will create a new sandbox environment for you
+To start using the ZenML Sandbox, [sign up with your Google account](https://sandbox.zenml.io/). This will create a new sandbox environment for you
 to explore ZenML and its features.
 
 #### Step 2: Access credentials
@@ -85,8 +89,8 @@ python run.py
 
 #### Step 6: Sandbox deletion
 
-After 8 hours, your sandbox will be automatically deleted. Make sure to save any important data or results before the
-sandbox is deleted. While the sandbox is active, you can also delete it manually through the ZenML Sandbox interface.
+Eight hours after registration, your sandbox will be automatically deleted. Make sure to save any important data or results before the
+sandbox is deleted. While the sandbox is active, you can also manually delete it through the ZenML Sandbox interface.
 
 ### ZenML Sandbox service status
 
@@ -100,7 +104,7 @@ more.
 
 **Q: Can I create more than one sandbox at a time?**
 
-**A:** No, each user can create only one sandbox at a time. Once your current sandbox is deleted, you can create a new
+**A:** No. Each user can create only one sandbox at a time. Once your current sandbox is deleted, you can create a new
 one.
 
 **Q: Can I extend the 8-hour limit for my sandbox?**
@@ -111,8 +115,9 @@ deleted.
 Q: **Can I use my own pipelines in the ZenML Sandbox?**
 
 **A:** The ZenML Sandbox is designed for users to explore ZenML using pre-built example pipelines. While it is possible
-to use your own pipelines, however, we do not recommend it as the sandbox is not designed for this purpose, since every
-user is provided with limited resources.
+to use your own pipelines, we do not recommend it as the sandbox is not designed for this purpose, since every
+user is provided with limited resources. (See [this guide](../advanced-guide/sandbox.md) to learn more about
+running your own pipelines in the sandbox.)
 
 **Q: Are there any model deployment options available in the ZenML Sandbox?**
 
