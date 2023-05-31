@@ -1,5 +1,17 @@
 <!-- markdown-link-check-disable -->
 
+# 0.40.1
+
+Small bug and docs fixes following the 0.40.0 release.
+
+## What's Changed
+* Convert dict to tuple in ArtifactConfiguration validator by @schustmi in https://github.com/zenml-io/zenml/pull/1571
+* Docs cleanup by @schustmi in https://github.com/zenml-io/zenml/pull/1569
+* Fix `boto3<=1.24.59`  by @safoinme in https://github.com/zenml-io/zenml/pull/1572
+
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.40.0...0.40.1
+
 # 0.40.0
 
 ZenML release 0.40.0 introduces two big updates: a fresh and more flexible pipeline interface and a new way to connect and authenticate with external services in ZenML Connectors. See below for full details on these two major new sets of functionality.

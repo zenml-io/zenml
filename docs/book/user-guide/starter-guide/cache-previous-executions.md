@@ -76,7 +76,7 @@ Sometimes you want to have control over caching at runtime instead of defaulting
 first_pipeline = first_pipeline.with_options(enable_cache=False)
 ```
 
-The code above disables caching for all steps of your pipeline, no matter what you have configured in the `@step` or `@parameter` decorators.
+The code above disables caching for all steps of your pipeline, no matter what you have configured in the `@step` or `@pipeline` decorators.
 
 #### Caching at a step-level
 
