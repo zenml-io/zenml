@@ -40,7 +40,7 @@ server. Additional model deployers that can be used to deploy models on producti
 integrations:
 
 | Model Deployer                     | Flavor    | Integration   | Notes                                                                        |
-| ---------------------------------- | --------- | ------------- | ---------------------------------------------------------------------------- |
+|------------------------------------|-----------|---------------|------------------------------------------------------------------------------|
 | [MLflow](mlflow.md)                | `mlflow`  | `mlflow`      | Deploys ML Model locally                                                     |
 | [BentoML](bentoml.md)              | `bentoml` | `bentoml`     | Build and Deploy ML models locally or for production grade (Cloud, K8s)      |
 | [Seldon Core](seldon.md)           | `seldon`  | `seldon Core` | Built on top of Kubernetes to deploy models for production grade environment |
