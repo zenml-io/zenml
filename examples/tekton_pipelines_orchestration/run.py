@@ -14,10 +14,6 @@
 
 import click
 from pipelines.mnist_pipeline import mnist_pipeline
-from steps.evaluators import evaluator
-from steps.importers import importer
-from steps.normalizers import normalizer
-from steps.trainers import TrainerParameters, trainer
 
 
 @click.command()
@@ -25,14 +21,7 @@ from steps.trainers import TrainerParameters, trainer
 @click.option("--lr", default=0.001, help="Learning rate for training")
 def main(epochs: int, lr: float):
     """Run the mnist example pipeline."""
-    # Run the pipeline
-    pipeline_instance = mnist_pipeline(
-        importer=importer(),
-        normalizer=normalizer(),
-        trainer=trainer(params=TrainerParameters(epochs=epochs, lr=lr)),
-        evaluator=evaluator(),
-    )
-    pipeline_instance.run()
+    mnist_pipeline(epochs=epochs, lr=lr)
 
 
 if __name__ == "__main__":

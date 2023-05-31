@@ -15,35 +15,14 @@
 from pipelines.training_pipeline.training_pipeline import (
     mlflow_example_pipeline,
 )
-from steps.evaluator.evaluator_step import tf_evaluator
-from steps.loader.loader_step import loader_mnist
-from steps.normalizer.normalizer_step import normalizer
-from steps.trainer.trainer_step import TrainerParameters, tf_trainer
 
 from zenml.constants import METADATA_EXPERIMENT_TRACKER_URL
 
 if __name__ == "__main__":
-    # Initialize a pipeline run
-    run_1 = mlflow_example_pipeline(
-        importer=loader_mnist(),
-        normalizer=normalizer(),
-        trainer=tf_trainer(params=TrainerParameters(epochs=5, lr=0.0003)),
-        evaluator=tf_evaluator(),
-    )
+    mlflow_example_pipeline(epochs=5, lr=0.0003)
+    mlflow_example_pipeline(epochs=5, lr=0.0001)
 
-    run_1.run()
-
-    # Initialize a pipeline run again
-    run_2 = mlflow_example_pipeline(
-        importer=loader_mnist(),
-        normalizer=normalizer(),
-        trainer=tf_trainer(params=TrainerParameters(epochs=5, lr=0.0001)),
-        evaluator=tf_evaluator(),
-    )
-
-    run_2.run()
-
-    trainer_step = run_2.get_runs()[0].get_step("trainer")
+    trainer_step = mlflow_example_pipeline.get_runs()[0].get_step("trainer")
     tracking_uri = trainer_step.metadata[METADATA_EXPERIMENT_TRACKER_URL]
     print(
         "Now run \n "

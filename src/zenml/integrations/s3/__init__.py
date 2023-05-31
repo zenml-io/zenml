@@ -30,7 +30,9 @@ class S3Integration(Integration):
     """Definition of S3 integration for ZenML."""
 
     NAME = S3
-    REQUIREMENTS = ["s3fs>2022.3.0,<=2022.11.0"]
+    # boto3 isn't required for the filesystem to work, but it is required
+    # for the AWS/S3 connector that can be used with the artifact store.
+    REQUIREMENTS = ["s3fs>2022.3.0,<=2023.4.0", "boto3<=1.24.59"]
 
     @classmethod
     def flavors(cls) -> List[Type[Flavor]]:

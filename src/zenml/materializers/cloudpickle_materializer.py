@@ -97,13 +97,13 @@ class CloudpickleMaterializer(BaseMaterializer):
         # the given data type.
         if type(self) == CloudpickleMaterializer:
             logger.warning(
-                f"No materializer is registered for type `{type(data)}`, so the "
-                f"default Pickle materializer was used. Pickle is not production "
-                f"ready and should only be used for prototyping as the artifacts "
-                f"cannot be loaded under different Python versions. Please "
-                f"consider implementing a custom materializer for type "
-                f"`{type(data)}` according to the instructions at "
-                "https://docs.zenml.io/advanced-guide/pipelines/materializers."
+                f"No materializer is registered for type `{type(data)}`, so "
+                "the default Pickle materializer was used. Pickle is not "
+                "production ready and should only be used for prototyping as "
+                "the artifacts cannot be loaded when running with a different "
+                "Python version. Please consider implementing a custom "
+                f"materializer for type `{type(data)}` according to the "
+                "instructions at https://docs.zenml.io/user-guide/advanced-guide/handle-custom-data-types."
             )
 
         # save python version for validation on loading

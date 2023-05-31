@@ -34,4 +34,4 @@ def training_pipeline(
     model = trainer(X_train=X_train, y_train=y_train)
     test_acc = evaluator(X_test=X_test, y_test=y_test, model=model)
     deployment_decision = deployment_trigger(test_acc)
-    model_deployer(deployment_decision, model)
+    model_deployer(model, deployment_decision)

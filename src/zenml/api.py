@@ -46,4 +46,5 @@ def show(ngrok_token: Optional[str] = None) -> None:
         logger.debug(f"Tunneling dashboard from {url} to {ngrok_url}.")
         url = ngrok_url
 
+    url = f"{url}:{port}" if port else url
     show_dashboard(url)

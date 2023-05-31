@@ -144,6 +144,14 @@ zenml annotator register <YOUR_LABEL_STUDIO_ANNOTATOR> --flavor label_studio --a
 zenml stack update <YOUR_ANNOTATION_STACK_NAME> -an <YOUR_LABEL_STUDIO_ANNOTATOR>
 ```
 
+Be sure also to set the environment variable for your GCP credentials and then
+restart Label Studio:
+
+```shell
+export GOOGLE_APPLICATION_CREDENTIALS="<PATH_TO_YOUR_CREDENTIALS>"
+label-studio start -p 8093
+```
+
 ### 🥞 Set up your stack for AWS
 
 You should install the relevant integrations:

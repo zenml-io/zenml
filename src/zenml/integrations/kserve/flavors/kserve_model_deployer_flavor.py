@@ -15,11 +15,13 @@
 
 from typing import TYPE_CHECKING, Optional, Type
 
+from zenml.constants import KUBERNETES_CLUSTER_RESOURCE_TYPE
 from zenml.integrations.kserve import KSERVE_MODEL_DEPLOYER_FLAVOR
 from zenml.model_deployers.base_model_deployer import (
     BaseModelDeployerConfig,
     BaseModelDeployerFlavor,
 )
+from zenml.models.service_connector_models import ServiceConnectorRequirements
 
 if TYPE_CHECKING:
     from zenml.integrations.kserve.model_deployers import KServeModelDeployer
@@ -34,6 +36,8 @@ class KServeModelDeployerConfig(BaseModelDeployerConfig):
             configuration is used. Depending on where the KServe model deployer
             is being used, this can be either a locally active context or an
             in-cluster Kubernetes configuration (if running inside a pod).
+            If the model deployer stack component is linked to a Kubernetes
+            service connector, this field is ignored.
         kubernetes_namespace: the Kubernetes namespace where the KServe
             inference service CRDs are provisioned and managed by ZenML. If not
             specified, the namespace set in the current configuration is used.
@@ -47,8 +51,8 @@ class KServeModelDeployerConfig(BaseModelDeployerConfig):
             KServe inference services.
     """
 
-    kubernetes_context: Optional[str]  # TODO: Potential setting
-    kubernetes_namespace: Optional[str]
+    kubernetes_context: Optional[str] = None
+    kubernetes_namespace: Optional[str] = None
     base_url: str  # TODO: unused?
     secret: Optional[str]
     custom_domain: Optional[str]  # TODO: unused?
@@ -65,6 +69,23 @@ class KServeModelDeployerFlavor(BaseModelDeployerFlavor):
             Name of the flavor.
         """
         return KSERVE_MODEL_DEPLOYER_FLAVOR
+
+    @property
+    def service_connector_requirements(
+        self,
+    ) -> Optional[ServiceConnectorRequirements]:
+        """Service connector resource requirements for service connectors.
+
+        Specifies resource requirements that are used to filter the available
+        service connector types that are compatible with this flavor.
+
+        Returns:
+            Requirements for compatible service connectors, if a service
+            connector is required for this flavor.
+        """
+        return ServiceConnectorRequirements(
+            resource_type=KUBERNETES_CLUSTER_RESOURCE_TYPE,
+        )
 
     @property
     def docs_url(self) -> Optional[str]:

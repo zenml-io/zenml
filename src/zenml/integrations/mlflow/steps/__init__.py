@@ -14,6 +14,5 @@
 """Initialization of the MLflow standard interface steps."""
 
 from zenml.integrations.mlflow.steps.mlflow_deployer import (
-    MLFlowDeployerParameters,
     mlflow_model_deployer_step,
 )

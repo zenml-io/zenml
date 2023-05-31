@@ -11,19 +11,17 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+from steps import data_loader, predictor, trainer
+
+from zenml import pipeline
 from zenml.config import DockerSettings
 from zenml.integrations.constants import XGBOOST
-from zenml.pipelines import pipeline
 
 docker_settings = DockerSettings(required_integrations=[XGBOOST])
 
 
 @pipeline(enable_cache=True, settings={"docker": docker_settings})
-def xgboost_pipeline(
-    data_loader,
-    trainer,
-    predictor,
-):
+def xgboost_pipeline():
     """Links all the steps together in a pipeline."""
     mat_train, mat_test = data_loader()
     model = trainer(mat_train)

@@ -59,7 +59,9 @@ def test_example(request: pytest.FixtureRequest) -> None:
 
         training_run = get_pipeline("inference_pipeline").runs[0]
 
-        service = training_run.get_step("mlflow_model_deployer").output.read()
+        service = training_run.get_step(
+            "mlflow_model_registry_deployer_step"
+        ).output.read()
         assert isinstance(service, MLFlowDeploymentService)
 
         if service.is_running:

@@ -13,24 +13,6 @@
 
 
 from pipelines import data_profiling_pipeline
-from steps import (
-    data_loader,
-    data_splitter,
-    test_data_profiler,
-    train_data_profiler,
-)
-
-from zenml.logger import get_logger
-
-logger = get_logger(__name__)
-
 
 if __name__ == "__main__":
-    pipeline_instance = data_profiling_pipeline(
-        data_loader=data_loader(),
-        data_splitter=data_splitter(),
-        train_data_profiler=train_data_profiler,
-        test_data_profiler=test_data_profiler,
-    )
-
-    pipeline_instance.run()
+    data_profiling_pipeline()

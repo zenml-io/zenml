@@ -14,30 +14,16 @@
 
 """Utility functions and classes to run ZenML steps."""
 
-import sys
-import typing
-from typing import Any, Dict
+from typing import Any, Dict, Tuple
+
+import pydantic.typing as pydantic_typing
 
 from zenml.logger import get_logger
 from zenml.steps.step_output import Output
 
 logger = get_logger(__name__)
 
-STEP_INNER_FUNC_NAME = "entrypoint"
 SINGLE_RETURN_OUT_NAME = "output"
-PARAM_STEP_NAME = "name"
-PARAM_ENABLE_CACHE = "enable_cache"
-PARAM_ENABLE_ARTIFACT_METADATA = "enable_artifact_metadata"
-PARAM_ENABLE_ARTIFACT_VISUALIZATION = "enable_artifact_visualization"
-PARAM_CREATED_BY_FUNCTIONAL_API = "created_by_functional_api"
-PARAM_STEP_OPERATOR = "step_operator"
-PARAM_EXPERIMENT_TRACKER = "experiment_tracker"
-INSTANCE_CONFIGURATION = "INSTANCE_CONFIGURATION"
-PARAM_OUTPUT_MATERIALIZERS = "output_materializers"
-PARAM_SETTINGS = "settings"
-PARAM_EXTRA_OPTIONS = "extra"
-PARAM_ON_FAILURE = "on_failure"
-PARAM_ON_SUCCESS = "on_success"
 
 
 def resolve_type_annotation(obj: Any) -> Any:
@@ -54,43 +40,55 @@ def resolve_type_annotation(obj: Any) -> Any:
     Returns:
         The non-generic class for generic aliases of the typing module.
     """
-    from typing import _GenericAlias  # type: ignore[attr-defined]
+    origin = pydantic_typing.get_origin(obj) or obj
 
-    if sys.version_info >= (3, 8):
-        return typing.get_origin(obj) or obj
-    else:
-        # python 3.7
-        if isinstance(obj, _GenericAlias):
-            return obj.__origin__
-        else:
-            return obj
+    if pydantic_typing.is_union(origin):
+        return obj
+
+    return origin
 
 
-def parse_return_type_annotations(
-    step_annotations: Dict[str, Any]
-) -> Dict[str, Any]:
+def get_args(obj: Any) -> Tuple[Any, ...]:
+    """Get arguments of a Union type annotation.
+
+    Example:
+        `get_args(Union[int, str]) == (int, str)`
+
+    Args:
+        obj: The annotation.
+
+    Returns:
+        The args of the Union annotation.
+    """
+    return tuple(
+        pydantic_typing.get_origin(v) or v
+        for v in pydantic_typing.get_args(obj)
+    )
+
+
+def parse_return_type_annotations(return_annotation: Any) -> Dict[str, Any]:
     """Parse the returns of a step function into a dict of resolved types.
 
     Called within `BaseStepMeta.__new__()` to define `cls.OUTPUT_SIGNATURE`.
-    Called within `Do()` to resolve type annotations.
 
     Args:
-        step_annotations: Type annotations of the step function.
+        return_annotation: Return annotation of the step function.
 
     Returns:
         Output signature of the new step class.
     """
-    return_type = step_annotations.get("return", None)
-    if return_type is None:
+    if return_annotation is None:
         return {}
 
     # Cast simple output types to `Output`.
-    if not isinstance(return_type, Output):
-        return_type = Output(**{SINGLE_RETURN_OUT_NAME: return_type})
+    if not isinstance(return_annotation, Output):
+        return_annotation = Output(
+            **{SINGLE_RETURN_OUT_NAME: return_annotation}
+        )
 
     # Resolve type annotations of all outputs and save in new dict.
     output_signature = {
         output_name: resolve_type_annotation(output_type)
-        for output_name, output_type in return_type.items()
+        for output_name, output_type in return_annotation.items()
     }
     return output_signature

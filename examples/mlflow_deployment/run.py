@@ -16,31 +16,12 @@ from typing import cast
 import click
 from pipelines import continuous_deployment_pipeline, inference_pipeline
 from rich import print
-from steps.deployment_trigger.deployment_trigger_step import (
-    DeploymentTriggerParameters,
-    deployment_trigger,
-)
-from steps.dynamic_importer.dynamic_importer_step import dynamic_importer
-from steps.importer.importer_step import importer_mnist
-from steps.normalizer.normalizer_step import normalizer
-from steps.prediction_service_loader.prediction_service_loader_step import (
-    MLFlowDeploymentLoaderStepParameters,
-    model_deployer,
-    prediction_service_loader,
-)
-from steps.predictor.predictor_step import predictor
-from steps.tf_evaluator.tf_evaluator_step import tf_evaluator
-from steps.tf_predict_preprocessor.tf_predict_preprocessor_step import (
-    tf_predict_preprocessor,
-)
-from steps.tf_trainer.tf_trainer_step import TrainerParameters, tf_trainer
 
 from zenml.constants import METADATA_EXPERIMENT_TRACKER_URL
 from zenml.integrations.mlflow.model_deployers.mlflow_model_deployer import (
     MLFlowModelDeployer,
 )
 from zenml.integrations.mlflow.services import MLFlowDeploymentService
-from zenml.integrations.mlflow.steps import MLFlowDeployerParameters
 
 DEPLOY = "deploy"
 PREDICT = "predict"
@@ -77,24 +58,17 @@ def main(config: str, epochs: int, lr: float, min_accuracy: float):
 
     if deploy:
         # Initialize a continuous deployment pipeline run
-        deployment = continuous_deployment_pipeline(
-            importer=importer_mnist(),
-            normalizer=normalizer(),
-            trainer=tf_trainer(params=TrainerParameters(epochs=epochs, lr=lr)),
-            evaluator=tf_evaluator(),
-            deployment_trigger=deployment_trigger(
-                params=DeploymentTriggerParameters(
-                    min_accuracy=min_accuracy,
-                )
-            ),
-            model_deployer=model_deployer(
-                params=MLFlowDeployerParameters(workers=3, timeout=60)
-            ),
+        continuous_deployment_pipeline(
+            epochs=epochs,
+            lr=lr,
+            min_accuracy=min_accuracy,
+            workers=3,
+            timeout=60,
         )
 
-        deployment.run()
-
-        trainer_step = deployment.get_runs()[0].get_step("trainer")
+        trainer_step = continuous_deployment_pipeline.get_runs()[0].get_step(
+            "trainer"
+        )
         tracking_uri = trainer_step.metadata[METADATA_EXPERIMENT_TRACKER_URL]
         print(
             "You can run:\n "
@@ -107,25 +81,15 @@ def main(config: str, epochs: int, lr: float, min_accuracy: float):
 
     if predict:
         # Initialize an inference pipeline run
-        inference = inference_pipeline(
-            dynamic_importer=dynamic_importer(),
-            predict_preprocessor=tf_predict_preprocessor(),
-            prediction_service_loader=prediction_service_loader(
-                MLFlowDeploymentLoaderStepParameters(
-                    pipeline_name="continuous_deployment_pipeline",
-                    pipeline_step_name="model_deployer",
-                    running=False,
-                )
-            ),
-            predictor=predictor(),
+        inference_pipeline(
+            pipeline_name="continuous_deployment_pipeline",
+            pipeline_step_name="mlflow_model_deployer_step",
         )
-
-        inference.run()
 
     # fetch existing services with same pipeline name, step name and model name
     existing_services = mlflow_model_deployer_component.find_model_server(
         pipeline_name="continuous_deployment_pipeline",
-        pipeline_step_name="model_deployer",
+        pipeline_step_name="mlflow_model_deployer_step",
         model_name="model",
     )
 

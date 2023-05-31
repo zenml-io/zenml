@@ -12,15 +12,13 @@
 #  permissions and limitations under the License.
 
 from zenml.integrations.deepchecks.steps import (
-    DeepchecksModelValidationCheckStepParameters,
     deepchecks_model_validation_check_step,
 )
 
 LABEL_COL = "target"
 
-model_validator = deepchecks_model_validation_check_step(
-    step_name="model_validator",
-    params=DeepchecksModelValidationCheckStepParameters(
+model_validator = deepchecks_model_validation_check_step.with_options(
+    parameters=dict(
         dataset_kwargs=dict(label=LABEL_COL, cat_features=[]),
     ),
 )

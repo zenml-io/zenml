@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "zenml"
-version = "0.39.1"
+version = "0.40.1"
 packages = [
     { include = "zenml", from = "src" },
 ]
@@ -55,7 +55,7 @@ click = "^8.0.1"
 click-params = "^0.3.0"
 cloudpickle = ">=2.0.0,<3"
 distro = "^1.6.0"
-docker = "~6.0.0"
+docker = "~6.1.0"
 httplib2 = "<0.20,>=0.19.1"
 gitpython = "^3.1.18"
 pandas = ">=1.1.5"
@@ -99,6 +99,13 @@ azure-keyvault-secrets = { version=">=4.0.0", optional = true }
 
 # Optional dependencies for the HashiCorp Vault secrets store
 hvac = { version=">=0.11.2", optional = true }
+
+# Optional dependencies for the Kubernetes connector
+kubernetes = { version=">=18.20.0", optional = true }
+
+# Optional dependencies for the GCP connector
+google-cloud-container = { version=">=2.21.0", optional = true }
+google-cloud-storage = { version=">=2.9.0", optional = true }
 
 # Optional dependencies for the S3 artifact store
 s3fs = {version = "2022.11.0", optional = true}
@@ -159,6 +166,9 @@ secrets-hashicorp = ["hvac"]
 s3fs = ["s3fs"]
 gcsfs = ["gcsfs"]
 adlfs = ["adlfs"]
+connectors-kubernetes = ["kubernetes"]
+connectors-aws = ["boto3", "kubernetes"]
+connectors-gcp = ["google-cloud-container", "google-cloud-storage", "kubernetes"]
 dev = ["black", "ruff", "coverage", "pytest", "mypy", "pre-commit", "pyment", "tox", "hypothesis", "typing-extensions", "darglint", "pytest-randomly", "pytest-mock", "pytest-clarity", "mkdocs", "mkdocs-material", "mkdocs-awesome-pages-plugin", "mkdocstrings", "mike", "types-certifi", "types-croniter", "types-futures", "types-Markdown", "types-Pillow", "types-protobuf", "types-PyMySQL", "types-python-dateutil", "types-python-slugify", "types-PyYAML", "types-redis", "types-requests", "types-setuptools", "types-six", "types-termcolor", "types-psutil", "docker-compose"]
 
 [build-system]

@@ -12,14 +12,22 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from zenml.pipelines import pipeline
+from steps.data_loader import digits_data_loader
+from steps.evaluator import evaluator
+from steps.formatter import test_acc_post_formatter
+from steps.trainer import svc_trainer
+
+from zenml import pipeline
+from zenml.integrations.slack.steps.slack_alerter_post_step import (
+    slack_alerter_post_step,
+)
 
 
 @pipeline
-def slack_post_pipeline(data_loader, trainer, evaluator, formatter, alerter):
+def slack_post_pipeline():
     """Train and evaluate a model and post the test accuracy to slack."""
-    X_train, X_test, y_train, y_test = data_loader()
-    model = trainer(X_train=X_train, y_train=y_train)
+    X_train, X_test, y_train, y_test = digits_data_loader()
+    model = svc_trainer(X_train=X_train, y_train=y_train)
     test_acc = evaluator(X_test=X_test, y_test=y_test, model=model)
-    message = formatter(test_acc)
-    alerter(message)
+    message = test_acc_post_formatter(test_acc)
+    slack_alerter_post_step(message)
