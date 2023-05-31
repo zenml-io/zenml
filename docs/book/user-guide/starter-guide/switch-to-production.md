@@ -37,7 +37,7 @@ stack components through
 the [stack-component CLI](/docs/book/platform-guide/set-up-your-mlops-platform/deploy-and-set-up-a-cloud-stack/deploy-a-stack-component.md)
 or [deploy a stack with multiple components](/docs/book/platform-guide/set-up-your-mlops-platform/deploy-and-set-up-a-cloud-stack/deploy-a-stack-using-stack-recipes.md)
 together using Terraform stack recipes. For more information on how to do this,
-see our [post-sandbox platform guide](../advanced-guide/use-the-sandbox.md).
+see our [post-sandbox platform guide](../advanced-guide/sandbox.md).
 
 ### MLOps Platform Sandbox: a simple and easy starting point
 
@@ -117,7 +117,7 @@ Q: **Can I use my own pipelines in the MLOps Platform Sandbox?**
 
 **A:** The MLOps Platform Sandbox is designed for users to explore ZenML using pre-built example pipelines. While it is possible
 to use your own pipelines, we do not recommend it as the sandbox is not designed for this purpose, since every
-user is provided with limited resources. (See [this guide](../advanced-guide/use-the-sandbox.md) to learn more about
+user is provided with limited resources. (See [this guide](../advanced-guide/sandbox.md) to learn more about
 running your own pipelines in the sandbox.)
 
 **Q: Are there any model deployment options available in the ZenML Sandbox?**
