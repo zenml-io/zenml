@@ -95,7 +95,6 @@ def mlflow_model_deployer_step(
     model_uri = model_deployer.find_or_log_mlflow_model(
         experiment_name=experiment_name,
         run_name=run_name,
-        step_name=step_name,
         model_name=model_name,
         model=model,
     )

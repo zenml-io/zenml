@@ -256,7 +256,6 @@ class MLFlowStackComponentMixin(StackComponent):
         self,
         experiment_name: str,
         run_name: str,
-        step_name: str,
         model_name: str,
         model: Any,
     ) -> str:
@@ -273,7 +272,6 @@ class MLFlowStackComponentMixin(StackComponent):
             experiment_name: Name of the experiment in which to search for the
                 model.
             run_name: Name of the run in which to search for the model.
-            step_name: Name of the step in which to search for the model.
             model_name: Name of the model to search for.
             model: The model to log if it was not found.
 
@@ -312,7 +310,6 @@ class MLFlowStackComponentMixin(StackComponent):
         mlflow_run_id = self.start_mlflow_run(
             experiment_name=experiment_name,
             run_name=run_name,
-            nested_run_name=step_name,
         )
         self.log_model_to_mlflow(model=model, artifact_path=model_name)
         artifact_uri = mlflow_get_artifact_uri(
