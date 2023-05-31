@@ -27,26 +27,36 @@ In order to run the example pipelines, users need to download the repository loc
 
 ## How do I use the Sandbox to run custom pipelines?
 
-As discussed above, the sandbox provides pre-built pipelines for users to run. If you want to try running these pipelines first, please [visit this page](../starter-guide/switch-to-production.md) in the starter guide to learn how to do this. This limitation is in place to control costs and demonstrate how MLOps engineers can enforce rules through a central control plane.
+As discussed above, the sandbox provides pre-built pipelines for users to run.
+If you want to try running these pipelines first, please [visit this
+page](../starter-guide/switch-to-production.md) in the starter guide to learn
+how to do this. The limitation on running custom pipelines is in place to
+control costs and demonstrate how MLOps engineers can enforce rules through a
+central control plane.
 
-You might be interested in using the resources provisioned in the Sandbox to run your own pipelines. There are two ways to do this:
+You might nevertheless be interested in using the resources provisioned in the Sandbox to run your own pipelines. There are two ways to do this:
 
 ### Run code and re-use execution environments from example pipelines (no new dependencies needed)
 
-In order to update the code, you need to be able to push to the code repository. In order to do that, you can either:
+In order to update the code, you need to be able to push to the code repository. You can either:
 
 * Fork the zenml repository, so that the examples directory is within your code, and you can edit it in your fork, or
 * Create a new code repository with a new token that allows you to push. You can then copy the examples code into your new code repository, and edit it.
 
-Read more about how to connect a git repository to ZenML [here](connect-your-git-repository.md).&#x20;
+Read more about how to connect a git repository to ZenML [here](connect-your-git-repository.md).
 
 After that is done, you can change the code and run the pipeline with your chosen execution environment build. Learn more about reusing execution environments [here](containerize-your-pipeline.md#reuse-docker-image-builds-from-previous-runs).
 
 ### Run pipelines with custom dependencies
 
-If you have code with custom dependencies than the ones in the sandbox examples, you need to copy the stack provided in the sandbox and swap the container registry with a public container registry that you have `write` access to. The [container registry stack component](../component-guide/container-registries/container-registries.md) docs talk more about how to do this.
+If you have code with custom dependencies than the ones in the sandbox examples,
+you need to copy the stack provided in the sandbox and swap the container
+registry with a public container registry that you have `write` access to. The
+[container registry stack component
+pages](../component-guide/container-registries/container-registries.md) talk
+more about how to do this.
 
-In order to register a new stack, you can execute the following:
+To register a new stack, you can execute the following:
 
 ```shell
 zenml stack register my_stack \
@@ -58,10 +68,10 @@ zenml stack register my_stack \
   --set
 ```
 
-With the above stack, you can run whatever code you'd like without tying it to a container registry because ZenML will just build and push docker images to your container registry from your local client.
+With the above stack, you can run whatever code you'd like without tying it to a container registry because ZenML will just build and push Docker images to your container registry from your local client.
 
 ## What to do when your sandbox runs out?
 
-The sandbox is only available for 8 hours. After that, it will be deleted. If you want to continue to use ZenML in a cloud deployment you can either:
+The Sandbox will only run for 8 hours. After that, it will be deleted. If you want to continue to use ZenML in a cloud deployment you can either:
 
 <table data-view="cards"><thead><tr><th></th><th></th><th data-hidden data-card-target data-type="content-ref"></th></tr></thead><tbody><tr><td><mark style="color:purple;"><strong>Register a new Sandbox</strong></mark></td><td>Create and utilize a brand new Sandbox instance</td><td><a href="https://sandbox.zenml.io">https://sandbox.zenml.io</a></td></tr><tr><td><mark style="color:purple;"><strong>Extend your Sandbox time limit</strong></mark></td><td>Fill out a form to extend the time limit of your Sandbox instances</td><td><a href="https://zenml.io/extend-sandbox">https://zenml.io/extend-sandbox</a></td></tr><tr><td><mark style="color:purple;"><strong>Deploy your own cloud stack</strong></mark></td><td>Deploy and use a stack on a cloud environment</td><td><a href="../../platform-guide/set-up-your-mlops-platform/deploy-and-set-up-a-cloud-stack/deploy-a-stack-post-sandbox.md">deploy-a-stack-post-sandbox.md</a></td></tr></tbody></table>

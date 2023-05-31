@@ -45,7 +45,8 @@ In order to use the `zenml connect` command, you need to first deploy a remote Z
 Alternatively, if you are just getting started and want to try things out along with this starter guide, take a look at the [MLOps Platform Sandbox](switch-to-production.md), which allows you to spin up a remote sandbox ZenML deployment.
 {% endhint %}
 
-And just like that, your client should be connected to the server. You can simply verify this by running `zenml status`:
+And just like that, your client should be connected to the server. 
+You can verify this by running `zenml status`:
 
 ```bash
 Using configuration from: '/home/apenner/.config/zenml'
@@ -56,6 +57,8 @@ The active workspace is: 'default' (global)
 The active stack is: 'default' (global)
 ```
 
-{% hint style="info" %}
-Similarly, you can **disconnect** from a server using `zenml disconnect`
-{% endhint %}
+Similar to the local case, you can now run `zenml show` to open the dashboard
+of the server that you are currently connected to.
+
+Finally, if you would like to **disconnect** from the current ZenML server and 
+revert to using the local default database, simply run `zenml disconnect`.
