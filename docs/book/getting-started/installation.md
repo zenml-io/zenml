@@ -19,7 +19,7 @@ supported Python version.
 
 ZenML comes bundled with a web dashboard that lives inside
 a [sister repository](https://github.com/zenml-io/zenml-dashboard). In order to get access to the dashboard **locally**,
-you need to launch the [ZenML Server and Dashboard locally](../platform-guide/set-up-your-mlops-platform/deploy-zenml/deploy-zenml.md).
+you need to launch the [ZenML Server and Dashboard locally](/docs/book/platform-guide/set-up-your-mlops-platform/deploy-zenml/deploy-zenml.md).
 For this, you need to install the optional dependencies for the ZenML Server:
 
 ```shell
@@ -34,8 +34,7 @@ or [pyenv-virtualenv](https://github.com/pyenv/pyenv-virtualenv) to manage our P
 
 ## Verifying installations
 
-Once the installation is completed, you can check whether the installation was
-successful either through Bash:
+Once the installation is completed, you can check whether the installation was successful either through Bash:
 
 ```bash
 zenml version
