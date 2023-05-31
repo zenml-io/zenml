@@ -19,8 +19,7 @@ from pipelines.training_pipeline.training_pipeline import (
 from zenml.integrations.mlflow.mlflow_utils import get_tracking_uri
 
 if __name__ == "__main__":
-    mlflow_example_pipeline(epochs=5, lr=0.0003)
-    mlflow_example_pipeline(epochs=5, lr=0.0001)
+    mlflow_example_pipeline()
 
     print(
         "Now run \n "
