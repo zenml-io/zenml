@@ -18,7 +18,7 @@ The SQLite database that you can see in this diagram is used to store informatio
 
 In order to move into production, you will need to deploy this server somewhere centrally so that the different cloud stack components can read from and write to the server. Additionally, this also allows all your team members to connect to it and share stacks and pipelines.
 
-<figure><img src="../../.gitbook/assets/Scenario3.2.png" alt="" width="563"><figcaption><p>Scenario 3: Deployed ZenML Server</p></figcaption></figure>
+<figure><img src="../../.gitbook/assets/Scenario3.png" alt="" width="563"><figcaption><p>Scenario 3: Deployed ZenML Server</p></figcaption></figure>
 
 #### Connect your client to the server
 
@@ -42,10 +42,7 @@ In Scenario 2, the `zenml up` command implicitly connects the client to the serv
 {% hint style="warning" %}
 In order to use the `zenml connect` command, you need to first deploy a remote ZenML server. If you are the person who is setting up it for your organization and looking for detailed documentation regarding the deployment, head on over to the [Platform Guide](../../platform-guide/set-up-your-mlops-platform/set-up-your-mlops-platform.md) to set it up on your infrastructure of choice.
 
-Alternatively, if you are just getting started and want to try things out along
-with this starter guide, take a look at the [MLOps
-Platform Sandbox](switch-to-production.md), which allows you to spin up a remote sandbox
-ZenML deployment.
+Alternatively, if you are just getting started and want to try things out along with this starter guide, take a look at the [MLOps Platform Sandbox](switch-to-production.md), which allows you to spin up a remote sandbox ZenML deployment.
 {% endhint %}
 
 And just like that, your client should be connected to the server. You can simply verify this by running `zenml status`:

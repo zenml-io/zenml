@@ -2,9 +2,9 @@
 
 ## Getting Started
 
-* [⭐ Introduction](introduction.md)
-* [🧙 Installation](getting-started/installation.md)
-* [🪄 Core concepts](getting-started/core-concepts.md)
+* [Introduction](introduction.md)
+* [Installation](getting-started/installation.md)
+* [Core concepts](getting-started/core-concepts.md)
 
 ## User Guide
 
@@ -130,7 +130,7 @@
   * [Deploy & set up a cloud stack](platform-guide/set-up-your-mlops-platform/deploy-and-set-up-a-cloud-stack/deploy-and-set-up-a-cloud-stack.md)
     * [Deploy a stack component](platform-guide/set-up-your-mlops-platform/deploy-and-set-up-a-cloud-stack/deploy-a-stack-component.md)
     * [Deploy a stack using Stack Recipes](platform-guide/set-up-your-mlops-platform/deploy-and-set-up-a-cloud-stack/deploy-a-stack-using-stack-recipes.md)
-    * [Deploy a stack after using the Sandbox](platform-guide/set-up-your-mlops-platform/deploy-and-set-up-a-cloud-stack/deploy-a-stack-post-sandbox.md)
+    * [Deploy a stack after using the Sandbox](platform-guide/set-up-your-mlops-platform/deploy-and-set-up-a-cloud-stack/deploy-a-stack-after-using-the-sandbox.md)
     * [Contribute flavors or components](platform-guide/set-up-your-mlops-platform/deploy-and-set-up-a-cloud-stack/contribute-flavors-or-components.md)
   * [Productionalize with CI/CD/CT](platform-guide/set-up-your-mlops-platform/productionalize-with-ci-cd-ct.md)
   * [Implement a custom stack component](platform-guide/set-up-your-mlops-platform/implement-a-custom-stack-component.md)
@@ -154,5 +154,5 @@
 
 * [🤷 SDK & CLI reference](https://apidocs.zenml.io/)
 * [🤷 Server API reference](https://demoserver.zenml.io/docs)
-* [💜 Community & content](reference/community-and-content.md)
-* [❓ FAQ](reference/faq.md)
+* [Community & content](reference/community-and-content.md)
+* [FAQ](reference/faq.md)
