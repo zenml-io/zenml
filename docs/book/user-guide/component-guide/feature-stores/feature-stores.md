@@ -31,7 +31,7 @@ For production use cases, some more flavors can be found in specific `integratio
 stores, ZenML features an integration of `feast`.
 
 | Feature Store                      | Flavor   | Integration | Notes                                                                    |
-| ---------------------------------- | -------- | ----------- | ------------------------------------------------------------------------ |
+|------------------------------------|----------|-------------|--------------------------------------------------------------------------|
 | [FeastFeatureStore](feast.md)      | `feast`  | `feast`     | Connect ZenML with already existing Feast                                |
 | [Custom Implementation](custom.md) | _custom_ |             | Extend the feature store abstraction and provide your own implementation |
 

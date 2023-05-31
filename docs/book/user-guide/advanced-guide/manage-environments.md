@@ -28,7 +28,7 @@ In all the environments, you should use your preferred package manager (e.g., `p
 The client environment typically follows these key steps when starting a pipeline:
 
 1. Generating an intermediate pipeline representation.
-2. Creating or triggering [pipeline and step build environments](manage-environments.md#build-environments) if running
+2. Creating or triggering [pipeline and step build environments](manage-environments.md#image-builder-environment) if running
    remotely.
 3. Triggering a run in the [orchestrator](../component-guide/orchestrators/orchestrators.md).
 
@@ -59,7 +59,7 @@ can [reuse builds from previous runs to save time](containerize-your-pipeline.md
 
 By default, execution environments are created locally in the [client environment](#client-environment) using the local
 Docker client. However, this requires Docker installation and permissions. ZenML
-offers [image builders](../component-guide/image-builders/), a
+offers [image builders](../component-guide/image-builders/image-builders.md), a
 special [stack component](../starter-guide/understand-stacks.md), allowing users to build and push docker images in a different specialized *image builder environment*.
 
 Note that even if you don't configure an image builder in your stack, ZenML still uses
