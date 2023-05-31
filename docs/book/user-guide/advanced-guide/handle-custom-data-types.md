@@ -4,7 +4,7 @@ description: Using materializers to pass custom data types through steps.
 
 # Handle custom data types
 
-A ZenML pipeline is built in a data-centric way. The outputs and inputs of steps define how steps are connected and the order in which they are executed. Each step should be considered as its very own process that reads and writes its inputs and outputs from and to the [artifact store](broken-reference/). This is where **materializers** come into play.
+A ZenML pipeline is built in a data-centric way. The outputs and inputs of steps define how steps are connected and the order in which they are executed. Each step should be considered as its very own process that reads and writes its inputs and outputs from and to the [artifact store](../component-guide/artifact-stores/artifact-stores.md). This is where **materializers** come into play.
 
 A materializer dictates how a given artifact can be written to and retrieved from the artifact store and also contains all serialization and deserialization logic. Whenever you pass artifacts as outputs from one pipeline step to other steps as inputs, the corresponding materializer for the respective data type defines how this artifact is first serialized and written to the artifact store, and then deserialized and read in the next step.
 
@@ -133,8 +133,6 @@ Optionally, you can override the `save_visualizations()` method to automatically
 
 ![Evidently Artifact Visualization Example](../../.gitbook/assets/artifact\_visualization\_dashboard.png)
 
-They can also be displayed in Jupyter notebooks via [post-execution visualization](../../starter-guide/pipelines/fetching-pipelines.md#visualizing-artifacts).
-
 Currently, artifacts can be visualized either as CSV table, embedded HTML, image or Markdown. For more information, see [zenml.enums.VisualizationType](https://github.com/zenml-io/zenml/blob/main/src/zenml/enums.py).
 
 To create visualizations, you need to:
@@ -149,19 +147,19 @@ As an example, check out the implementation of the [zenml.materializers.NumpyMat
 
 Optionally, you can override the `extract_metadata()` method to track custom metadata for all artifacts saved by your materializer. Anything you extract here will be displayed in the dashboard next to your artifacts.
 
-To extract metadata, define and return a dictionary of values you want to track. The only requirement is that all your values are built-in types (like `str`, `int`, `list`, `dict`, ...) or among the special types defined in [zenml.metadata.metadata\_types](https://github.com/zenml-io/zenml/blob/main/src/zenml/metadata/metadata\_types.py) that are displayed in a dedicated way in the dashboard. See [zenml.metadata.metadata\_types.MetadataType](https://github.com/zenml-io/zenml/blob/main/src/zenml/metadata/metadata\_types.py) for more details.
+To extract metadata, define and return a dictionary of values you want to track. The only requirement is that all your values are built-in types ( like `str`, `int`, `list`, `dict`, ...) or among the special types defined in [zenml.metadata.metadata\_types](https://github.com/zenml-io/zenml/blob/main/src/zenml/metadata/metadata\_types.py) that are displayed in a dedicated way in the dashboard. See [zenml.metadata.metadata\_types.MetadataType](https://github.com/zenml-io/zenml/blob/main/src/zenml/metadata/metadata\_types.py) for more details.
 
 By default, this method will only extract the storage size of an artifact, but you can override it to track anything you wish. E.g., the [zenml.materializers.NumpyMaterializer](https://github.com/zenml-io/zenml/blob/main/src/zenml/materializers/numpy\_materializer.py) overrides this method to track the `shape`, `dtype`, and some statistical properties of each `np.ndarray` that it saves.
 
 {% hint style="info" %}
-If you would like to disable artifact visualization altogether, you can set `enable_artifact_visualization` at either pipeline, or step level via `@pipeline(enable_artifact_visualization=False)` or `@step(enable_artifact_visualization=False)`.
+If you would like to disable artifact visualization altogether, you can set `enable_artifact_visualization` at either pipeline or step level via `@pipeline(enable_artifact_visualization=False)` or `@step(enable_artifact_visualization=False)`.
 {% endhint %}
 
 #### (Optional) Which Metadata to Extract for the Artifact
 
 Optionally, you can override the `extract_metadata()` method to track custom metadata for all artifacts saved by your materializer. Anything you extract here will be displayed in the dashboard next to your artifacts.
 
-To extract metadata, define and return a dictionary of values you want to track. The only requirement is that all your values are built-in types (like `str`, `int`, `list`, `dict`, ...) or among the special types defined in [src.zenml.metadata.metadata\_types](https://github.com/zenml-io/zenml/blob/main/src/zenml/metadata/metadata\_types.py) that are displayed in a dedicated way in the dashboard. See [src.zenml.metadata.metadata\_types.MetadataType](https://github.com/zenml-io/zenml/blob/main/src/zenml/metadata/metadata\_types.py) for more details.
+To extract metadata, define and return a dictionary of values you want to track. The only requirement is that all your values are built-in types ( like `str`, `int`, `list`, `dict`, ...) or among the special types defined in [src.zenml.metadata.metadata\_types](https://github.com/zenml-io/zenml/blob/main/src/zenml/metadata/metadata\_types.py) that are displayed in a dedicated way in the dashboard. See [src.zenml.metadata.metadata\_types.MetadataType](https://github.com/zenml-io/zenml/blob/main/src/zenml/metadata/metadata\_types.py) for more details.
 
 By default, this method will only extract the storage size of an artifact, but you can overwrite it to track anything you wish. E.g., the `zenml.materializers.NumpyMaterializer` overwrites this method to track the `shape`, `dtype`, and some statistical properties of each `np.ndarray` that it saves.
 
@@ -187,9 +185,7 @@ or you can use the `configure()` method of the step. E.g.:
 my_first_step.configure(output_materializers=MyMaterializer)
 ```
 
-When there are multiple outputs, a dictionary of type `{<OUTPUT_NAME>: <MATERIALIZER_CLASS>}` can be supplied to the decorator or the
-`.configure(...)` method.
-
+When there are multiple outputs, a dictionary of type `{<OUTPUT_NAME>: <MATERIALIZER_CLASS>}` can be supplied to the decorator or the `.configure(...)` method.
 
 #### Configuring materializers at runtime
 
@@ -208,7 +204,6 @@ steps:
 ```
 
 The name of the output can be found in the function declaration, e.g. `my_step() -> Output(a: int, b: float)` has `a` and `b` as available output names.
-
 
 ## Basic example
 
@@ -349,7 +344,9 @@ def my_first_step() -> MyObj:
     """Step that returns an object of type MyObj."""
     return MyObj("my_object")
 
+
 my_first_step.configure(output_materializers=MyMaterializer)
+
 
 @step
 def my_second_step(my_obj: MyObj) -> None:
@@ -363,6 +360,7 @@ def my_second_step(my_obj: MyObj) -> None:
 def first_pipeline():
     output_1 = my_first_step()
     my_second_step(output_1)
+
 
 if __name__ == "__main__":
     first_pipeline()
@@ -552,7 +550,7 @@ class PandasMaterializer(BaseMaterializer):
                 The data if it is a `pd.DataFrame` or `pd.Series`.
             """
             if issubclass(data_type, pd.Series):
-                # Taking the first column if its a series as the assumption
+                # Taking the first column if it's a series as the assumption
                 # is that there will only be one
                 assert len(df.columns) == 1
                 df = df[df.columns[0]]

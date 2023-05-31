@@ -66,14 +66,13 @@ sources, or other environments.
 Out of the box, ZenML comes with a `local` secrets manager that stores secrets in local files. Additional cloud secrets
 managers are provided by integrations:
 
-| Secrets Manager                                                          | Flavor   | Integration | Scoping Support | Notes                                  |
-| ------------------------------------------------------------------------ | -------- | ----------- | --------------- | -------------------------------------- |
-| [Local](local.md)                                                        | `local`  | _built-in_  | No              | Uses local files to store secrets      |
-| [AWS](aws.md)                                                            | `aws`    | `aws`       | Yes             | Uses AWS to store secrets              |
-| [GCP](gcp.md)                                                            | `gcp`    | `gcp`       | Yes             | Uses GCP to store secretes             |
-| [Azure](azure.md)                                                        | `azure`  | `azure`     | Yes             | Uses Azure Key Vaults to store secrets |
-| [GitHub](../../../learning/component-gallery/secrets-managers/github.md) | `github` | `github`    | No              | Uses GitHub to store secrets           |
-| [HashiCorp Vault](vault.md)                                              | `vault`  | `vault`     | Yes             | Uses HashiCorp Vault to store secrets  |
+| Secrets Manager             | Flavor  | Integration | Scoping Support | Notes                                  |
+|-----------------------------|---------|-------------|-----------------|----------------------------------------|
+| [Local](local.md)           | `local` | _built-in_  | No              | Uses local files to store secrets      |
+| [AWS](aws.md)               | `aws`   | `aws`       | Yes             | Uses AWS to store secrets              |
+| [GCP](gcp.md)               | `gcp`   | `gcp`       | Yes             | Uses GCP to store secretes             |
+| [Azure](azure.md)           | `azure` | `azure`     | Yes             | Uses Azure Key Vaults to store secrets |
+| [HashiCorp Vault](vault.md) | `vault` | `vault`     | Yes             | Uses HashiCorp Vault to store secrets  |
 
 If you would like to see the available flavors of secrets managers, you can use the command:
 
