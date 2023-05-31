@@ -52,7 +52,7 @@ def main():
     inference_pipeline_instance.run()
 
     trainer_step = training_pipeline_instance.get_runs()[0].get_step("trainer")
-    tracking_uri = trainer_step.metadata[METADATA_EXPERIMENT_TRACKER_URL]
+    tracking_uri = trainer_step.metadata[METADATA_EXPERIMENT_TRACKER_URL].value
     print(
         "You can run:\n "
         "[italic green]    mlflow ui --backend-store-uri "

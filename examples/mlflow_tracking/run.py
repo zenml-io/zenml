@@ -23,7 +23,7 @@ if __name__ == "__main__":
     mlflow_example_pipeline(epochs=5, lr=0.0001)
 
     trainer_step = mlflow_example_pipeline.get_runs()[0].get_step("trainer")
-    tracking_uri = trainer_step.metadata[METADATA_EXPERIMENT_TRACKER_URL]
+    tracking_uri = trainer_step.metadata[METADATA_EXPERIMENT_TRACKER_URL].value
     print(
         "Now run \n "
         f"    mlflow ui --backend-store-uri '{tracking_uri}'\n"
