@@ -19,8 +19,7 @@ from pipelines.training_pipeline.training_pipeline import (
 from zenml.constants import METADATA_EXPERIMENT_TRACKER_URL
 
 if __name__ == "__main__":
-    mlflow_example_pipeline(epochs=5, lr=0.0003)
-    mlflow_example_pipeline(epochs=5, lr=0.0001)
+    mlflow_example_pipeline()
 
     trainer_step = mlflow_example_pipeline.get_runs()[0].get_step("trainer")
     tracking_uri = trainer_step.metadata[METADATA_EXPERIMENT_TRACKER_URL].value

@@ -4,8 +4,7 @@ description: Understanding how and when the version of a pipeline is incremented
 
 # Version pipelines
 
-You might have noticed that when you run a pipeline in ZenML with the same name, but with different steps, it creates a
-new **version** of the pipeline. Consider our example pipeline:
+You might have noticed that when you run a pipeline in ZenML with the same name, but with different steps, it creates a new **version** of the pipeline. Consider our example pipeline:
 
 ```python
 @pipeline
@@ -27,12 +26,9 @@ Registered pipeline first_pipeline (version 1).
 ...
 ```
 
-Running it again (`python run.py`) will create _yet another_ `run` for `version 1` of the pipeline called
-`first_pipeline`. So now the same pipeline has two runs. You can also verify this in the dashboard.
+Running it again (`python run.py`) will create _yet another_ `run` for `version 1` of the pipeline called `first_pipeline`. So now the same pipeline has two runs. You can also verify this in the dashboard.
 
-However, now let's change the pipeline configuration itself. You can do this by modifying the step connections within
-the `@pipeline` function or by replacing a concrete step with another one. For example, let's create an alternative step
-called `digits_data_loader` which loads a different dataset.
+However, now let's change the pipeline configuration itself. You can do this by modifying the step connections within the `@pipeline` function or by replacing a concrete step with another one. For example, let's create an alternative step called `digits_data_loader` which loads a different dataset.
 
 ```python
 @step
@@ -45,7 +41,7 @@ def digits_data_loader() -> Output(
     """Loads the digits dataset and splits it into train and test data."""
     # Load data from the digits dataset
     digits = load_digits(as_frame=True)
-    # split into datasets
+    # Split into datasets
     X_train, X_test, y_train, y_test = train_test_split(
         digits.data, digits.target, test_size=0.2, shuffle=True
     )
@@ -69,6 +65,6 @@ Registered pipeline first_pipeline (version 2).
 ...
 ```
 
-This will now create a single `run` for `version 2` of the pipeline called `first_pipeline`.&#x20;
+This will now create a single `run` for `version 2` of the pipeline called `first_pipeline`.
 
 <figure><img src="../../.gitbook/assets/PipelineVersion.png" alt=""><figcaption></figcaption></figure>

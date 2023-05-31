@@ -38,7 +38,7 @@ def training_data_loader() -> Output(
     y_train=pd.Series,
     y_test=pd.Series,
 ):
-    """Load the iris dataset as tuple of Pandas DataFrame / Series."""
+    """Load the iris dataset as a tuple of Pandas DataFrame / Series."""
     iris = load_iris(as_frame=True)
     X_train, X_test, y_train, y_test = train_test_split(
         iris.data, iris.target, test_size=0.2, shuffle=True, random_state=42
