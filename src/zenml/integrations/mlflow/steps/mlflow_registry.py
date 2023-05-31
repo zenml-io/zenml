@@ -13,9 +13,7 @@
 #  permissions and limitations under the License.
 """Implementation of the MLflow model registration pipeline step."""
 
-from typing import Optional, cast
-
-from mlflow.tracking import artifact_utils
+from typing import Any, Optional, cast
 
 from zenml import __version__, step
 from zenml.client import Client
@@ -24,7 +22,6 @@ from zenml.integrations.mlflow.model_registries.mlflow_model_registry import (
     MLFlowModelRegistry,
 )
 from zenml.logger import get_logger
-from zenml.materializers.unmaterialized_artifact import UnmaterializedArtifact
 from zenml.model_registries.base_model_registry import (
     ModelRegistryModelMetadata,
 )
@@ -38,11 +35,11 @@ logger = get_logger(__name__)
 
 @step(enable_cache=True)
 def mlflow_register_model_step(
-    model: UnmaterializedArtifact,
+    model: Any,
     name: str,
     version: Optional[str] = None,
-    trained_model_name: Optional[str] = "model",
-    model_source_uri: Optional[str] = None,
+    model_name: str = "model",
+    model_uri: Optional[str] = None,
     experiment_name: Optional[str] = None,
     run_name: Optional[str] = None,
     run_id: Optional[str] = None,
@@ -51,25 +48,30 @@ def mlflow_register_model_step(
 ) -> None:
     """MLflow model registry step.
 
+    Searches or logs a model to MLflow and registers it in the MLflow model
+    registry with the following precedence order:
+    1. If `model_uri` is set, register this file directly.
+    2. Else, check if the model was already logged to MLflow and register that.
+    3. If no model was found, start a new MLflow run, log the model, and
+        register it.
+
     Args:
-        model: Model to be registered, This is not used in the step, but is
-            required to trigger the step when the model is trained.
-        name: Name of the registered model.
-        version: Version of the registered model.
-        trained_model_name: Name of the model to be deployed.
-        experiment_name: Name of the experiment to be used for the run.
-        run_name: Name of the run to be created.
-        run_id: ID of the run to be used.
-        model_source_uri: URI of the model source. If not provided, the model
-            will be fetched from the MLflow tracking server.
-        description: Description of the model.
-        metadata: Metadata of the model version to be added to the model registry.
+        model: Model to be registered.
+        name: Name of the new model in the model registry.
+        version: Version of the new model in the model registry.
+        model_name: Name of the model artifact to search or log.
+        model_uri: MLflow URI of the model. If provided, register the model
+            from this URI instead of searching the model artifact in MLflow.
+        experiment_name: Name of the MLflow experiment in which to search or
+            log the model.
+        run_name: Name of the MLflow run in which to search or log the model.
+        run_id: ID of the MLflow run in which to search the model. Overrides
+            `experiment_name` and `run_name` if provided.
+        description: Description of the model for the model registry.
+        metadata: Metadata of the model version for the model registry.
 
     Raises:
         ValueError: If the model registry is not an MLflow model registry.
-        ValueError: If the experiment tracker is not an MLflow experiment tracker.
-        RuntimeError: If no model source URI is provided and no model is found.
-        RuntimeError: If no run ID is provided and no run is found.
     """
     # fetch the MLflow model registry
     model_registry = Client().active_stack.model_registry
@@ -87,43 +89,15 @@ def mlflow_register_model_step(
     pipeline_run_uuid = str(step_env.step_run_info.run_id)
     zenml_workspace = str(model_registry.workspace)
 
-    # Get MLflow run ID either from params or from experiment tracker using
-    # pipeline name and run name
-    mlflow_run_id = run_id or model_registry.get_mlflow_run_id(
-        experiment_name=experiment_name,
-        run_name=run_name,
-    )
-    # If no value was set at all, raise an error
-    if not mlflow_run_id:
-        raise RuntimeError(
-            f"Could not find MLflow run for experiment {pipeline_name} "
-            f"and run {run_name}."
-        )
-
-    # Get MLflow client
-    client = model_registry.mlflow_client
-    # Lastly, check if the run ID is valid
-    try:
-        client.get_run(run_id=mlflow_run_id).info.run_id
-    except Exception:
-        raise RuntimeError(
-            f"Could not find MLflow run with ID {mlflow_run_id}."
-        )
-
-    # Set model source URI
-    model_source_uri = model_source_uri or None
-
-    # Check if the run ID have a model artifact if no model source URI is set.
-    if not model_source_uri and client.list_artifacts(
-        mlflow_run_id, trained_model_name
-    ):
-        model_source_uri = artifact_utils.get_artifact_uri(
-            run_id=mlflow_run_id, artifact_path=trained_model_name
-        )
-    if not model_source_uri:
-        raise RuntimeError(
-            "No model source URI provided or no model found in the "
-            "MLflow tracking server for the given inputs."
+    # If no run ID was set, try to get it from the model registry
+    if not model_uri:
+        assert model_name is not None
+        model_uri = model_registry.find_or_log_mlflow_model(
+            model=model,
+            model_name=model_name,
+            experiment_name=experiment_name,
+            run_name=run_name,
+            run_id=run_id,
         )
 
     # Check metadata
@@ -144,7 +118,7 @@ def mlflow_register_model_step(
     model_version = model_registry.register_model_version(
         name=name,
         version=version or "1",
-        model_source_uri=model_source_uri,
+        model_source_uri=model_uri,
         description=description,
         metadata=metadata,
     )
@@ -152,5 +126,5 @@ def mlflow_register_model_step(
     logger.info(
         f"Registered model {name} "
         f"with version {model_version.version} "
-        f"from source {model_source_uri}."
+        f"from source {model_uri}."
     )

@@ -93,10 +93,10 @@ def mlflow_model_deployer_step(
 
     # find or log the model in MLflow
     model_uri = model_deployer.find_or_log_mlflow_model(
+        model=model,
+        model_name=model_name,
         experiment_name=experiment_name,
         run_name=run_name,
-        model_name=model_name,
-        model=model,
     )
 
     # Create a config for the new model service

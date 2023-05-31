@@ -223,57 +223,74 @@ class MLFlowStackComponentMixin(StackComponent):
 
     def find_mlflow_artifact(
         self,
-        experiment_name: str,
-        run_name: str,
         artifact_name: str,
+        run_id: Optional[str] = None,
+        experiment_name: Optional[str] = None,
+        run_name: Optional[str] = None,
     ) -> Optional[str]:
         """Find the given artifact in MLflow.
 
         Args:
-            experiment_name: Name of the experiment in which to search for the
-                artifact.
-            run_name: Name of the run in which to search for the artifact.
             artifact_name: Name of the artifact to search.
+            run_id: ID of the MLflow run in which to search the artifact.
+                If set, `experiment_name` and `run_name` will be ignored.
+            experiment_name: Name of the experiment in which to search for the
+                artifact. Will be ignored if `run_id` is set.
+            run_name: Name of the run in which to search for the artifact. Will
+                be ignored if `run_id` is set.
+
 
         Returns:
             The URI of the artifact if it exists, else None.
+
+        Raises:
+            ValueError: If `run_id` is not set and either `experiment_name` or
+                `run_name` is missing.
         """
         mlflow_client = self.mlflow_client  # configure mlflow if necessary
-        mlflow_run_id = self.get_mlflow_run_id(
-            experiment_name=experiment_name,
-            run_name=run_name,
-        )
-        if mlflow_run_id and mlflow_client.list_artifacts(
-            run_id=mlflow_run_id, path=artifact_name
+        if not run_id:
+            if not experiment_name or not run_name:
+                raise ValueError(
+                    "Either `run_id` or `experiment_name` and `run_name` need "
+                    "to be provided to find an artifact in MLflow."
+                )
+            run_id = self.get_mlflow_run_id(
+                experiment_name=experiment_name,
+                run_name=run_name,
+            )
+        if run_id and mlflow_client.list_artifacts(
+            run_id=run_id, path=artifact_name
         ):
             artifact_uri = mlflow_get_artifact_uri(
-                run_id=mlflow_run_id, artifact_path=artifact_name
+                run_id=run_id, artifact_path=artifact_name
             )
             return cast(str, artifact_uri)
         return None
 
     def find_or_log_mlflow_model(
         self,
+        model: Any,
+        model_name: str,
         experiment_name: str,
         run_name: str,
-        model_name: str,
-        model: Any,
+        run_id: Optional[str] = None,
     ) -> str:
         """Find or log the given model in MLflow.
 
         We try to find the model in the following order:
         1. Search for the model using own MLflow config
         2. Search for the model using the MLflow config of the experiment
-            tracker
+            tracker of the active stack
         3. If the model was not found, start a new MLflow run and log the
             model
 
         Args:
+            model: The model to log if it was not found.
+            model_name: Name of the model to search for.
             experiment_name: Name of the experiment in which to search for the
                 model.
             run_name: Name of the run in which to search for the model.
-            model_name: Name of the model to search for.
-            model: The model to log if it was not found.
+            run_id: If provided, try to find the model in this run first.
 
         Returns:
             The URI of the model.
@@ -282,9 +299,10 @@ class MLFlowStackComponentMixin(StackComponent):
 
         # 1. Search for the artifact using own MLflow config
         artifact_uri = self.find_mlflow_artifact(
+            artifact_name=model_name,
+            run_id=run_id,
             experiment_name=experiment_name,
             run_name=run_name,
-            artifact_name=model_name,
         )
         if artifact_uri:
             return artifact_uri
@@ -299,11 +317,21 @@ class MLFlowStackComponentMixin(StackComponent):
             experiment_tracker = Client().active_stack.experiment_tracker
             if isinstance(experiment_tracker, MLFlowExperimentTracker):
                 artifact_uri = experiment_tracker.find_mlflow_artifact(
+                    artifact_name=model_name,
+                    run_id=run_id,
                     experiment_name=experiment_name,
                     run_name=run_name,
-                    artifact_name=model_name,
                 )
                 if artifact_uri:
+                    logger.warning(
+                        f"Your MLflow {self.type} '{self.name}' is configured "
+                        "differently than your MLflow experiment tracker "
+                        f"'{experiment_tracker.name}'. Loading models through "
+                        "the experiment tracker is deprecated and will be "
+                        "removed in a future release. Please configure your "
+                        f"MLflow connection credentials on your '{self.name}' "
+                        f"{self.type} as well."
+                    )
                     return artifact_uri
 
         # 3. Start a new MLflow run and log the artifact
