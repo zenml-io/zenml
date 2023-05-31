@@ -23,7 +23,7 @@ Each sandbox comes with limited computing and storage resources. The ZenML servi
 
 In order to run the example pipelines, users need to download the repository locally and execute a pipeline with a supported build. The Sandbox UI offers a convenient interface for copying the relevant commands. The [starter guide](../starter-guide/switch-to-production.md) also provides more details on running these example pipelines.
 
-\[ADD SCREENSHOT HERE]
+![ZenML Sandbox Gitbook commands](/docs/book/.gitbook/assets/zenml_sandbox_step_3_commands.png)
 
 ## How do I use the Sandbox to run custom pipelines?
 
@@ -36,9 +36,11 @@ central control plane.
 
 You might nevertheless be interested in using the resources provisioned in the Sandbox to run your own pipelines. There are two ways to do this:
 
-### Run code and re-use execution environments from example pipelines (no new dependencies needed)
+### Run pipelines without custom dependencies
 
-In order to update the code, you need to be able to push to the code repository. You can either:
+If you have code that uses the same dependencies as the ones provided in the examples docs, you can simply update the example pipeline code (or even add new pipelines) by pushing to a git repository, and reusing existing [environment builds](containerize-your-pipeline.md#reuse-docker-image-builds-from-previous-runs) of the example pipelines.
+
+Of course, in order to be able to do that, you need to be able to push to the code repository. You can either:
 
 * Fork the zenml repository, so that the examples directory is within your code, and you can edit it in your fork, or
 * Create a new code repository with a new token that allows you to push. You can then copy the examples code into your new code repository, and edit it.

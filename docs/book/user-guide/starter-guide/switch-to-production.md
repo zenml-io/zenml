@@ -24,15 +24,23 @@ For those who prefer more control over their infrastructure, ZenML offers a more
 
 To help you get started with moving your pipelines into production, ZenML offers a managed Sandbox environment with a pre-configured remote stack for users to try out its features without setting up their own infrastructure. The MLOps Platform Sandbox provides an isolated environment where you can experiment with different configurations and learn how to switch between remote stacks.
 
+{% embed url="https://www.youtube.com/watch?v=4oGF_utgJtE" %}
+MLOps Platform Sandbox Demo
+{% endembed %}
+
 ### Getting started with the MLOps Platform Sandbox
 
 #### Step 1: Sign up
 
 To start using the MLOps Platform Sandbox, [sign up with your Google account](https://sandbox.zenml.io/). This will create a new sandbox environment for you to explore ZenML and its features.
 
+![ZenML Sandbox Step 1](/docs/book/.gitbook/assets/zenml_sandbox_step_1.png)
+
 #### Step 2: Access credentials
 
 After signing up and creating your sandbox, you will be provided with credentials for [Kubeflow](../component-guide/orchestrators/kubeflow.md), [MinIO](../component-guide/artifact-stores/s3.md), [MLflow](../component-guide/experiment-trackers/mlflow.md), and [ZenML Server](connect-to-a-deployed-zenml.md). These credentials will allow you to access and interact with the various applications and services within the sandbox.
+
+![ZenML Sandbox Step 2](/docs/book/.gitbook/assets/zenml_sandbox_step_3_zenml_creds.png)
 
 #### Step 3: Connect and set the stack
 
@@ -43,9 +51,13 @@ zenml connect --url <sandbox_url> --username <username>
 zenml stack set <stack_name>
 ```
 
+![ZenML Sandbox Step 3](/docs/book/.gitbook/assets/zenml_sandbox_step_3_mlflow_creds.png)
+
 #### Step 4: Explore pre-built pipelines
 
 The MLOps Platform Sandbox provides a repository of pre-built pipelines that users can choose from to run on their sandbox. Users can access these pipelines through the MLOps Platform Sandbox interface and run them using the provided credentials for Kubeflow, MLflow, and ZenML.
+
+![ZenML Sandbox Step 4](/docs/book/.gitbook/assets/zenml_sandbox_step_3_commands.png)
 
 #### Step 5: Run pipelines
 
