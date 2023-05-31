@@ -39,10 +39,9 @@ def training_pipeline():
     X_train, X_test, y_train, y_test = training_data_loader()
     model = svc_trainer_mlflow(X_train=X_train, y_train=y_train)
     evaluator(X_test=X_test, y_test=y_test, model=model)
-    mlflow_register_model_step.with_options(
-        parameters=dict(
-            name="zenml-quickstart-model",
-            metadata=ModelRegistryModelMetadata(gamma=0.01, arch="svc"),
-            description="The first run of the Quickstart pipeline.",
-        )
-    )(model)
+    mlflow_register_model_step(
+        model,
+        name="zenml-quickstart-model",
+        metadata=ModelRegistryModelMetadata(gamma=0.01, arch="svc"),
+        description="The first run of the Quickstart pipeline.",
+    )

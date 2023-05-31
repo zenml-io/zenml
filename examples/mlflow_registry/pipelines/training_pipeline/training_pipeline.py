@@ -44,12 +44,11 @@ def mlflow_training_pipeline(
         x_train=x_trained_normed, y_train=y_train, epochs=epochs, lr=lr
     )
     tf_evaluator(x_test=x_test_normed, y_test=y_test, model=model)
-    mlflow_register_model_step.with_options(
-        parameters=dict(
-            name="tensorflow-mnist-model",
-            metadata=ModelRegistryModelMetadata(
-                lr=lr, epochs=epochs, optimizer="Adam"
-            ),
-            description=f"Run #{num_run} of the mlflow_training_pipeline.",
-        )
-    )(model)
+    mlflow_register_model_step(
+        model,
+        name="tensorflow-mnist-model",
+        metadata=ModelRegistryModelMetadata(
+            lr=lr, epochs=epochs, optimizer="Adam"
+        ),
+        description=f"Run #{num_run} of the mlflow_training_pipeline.",
+    )
