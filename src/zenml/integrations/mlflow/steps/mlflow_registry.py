@@ -89,7 +89,7 @@ def mlflow_register_model_step(
 
     # Get MLflow run ID either from params or from experiment tracker using
     # pipeline name and run name
-    mlflow_run_id = run_id or model_registry.get_run_id(
+    mlflow_run_id = run_id or model_registry.get_mlflow_run_id(
         experiment_name=experiment_name,
         run_name=run_name,
     )

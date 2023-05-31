@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Mixin classes for configs of MLflow components."""
 
-from typing import TYPE_CHECKING, Any, Dict, Optional
+from typing import Any, Dict, Optional
 
 from pydantic import root_validator
 
@@ -23,9 +23,6 @@ from zenml.integrations.mlflow.mlflow_utils import (
 )
 from zenml.stack.stack_component import StackComponentConfig
 from zenml.utils.secret_utils import SecretField
-
-if TYPE_CHECKING:
-    pass
 
 
 class MLFlowConfigMixin(StackComponentConfig):

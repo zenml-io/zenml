@@ -99,7 +99,7 @@ def mlflow_model_deployer_step(
 
     # Configure Mlflow so the client points to the correct store
     client = model_deployer.mlflow_client
-    mlflow_run_id = model_deployer.get_run_id(
+    mlflow_run_id = model_deployer.get_mlflow_run_id(
         experiment_name=experiment_name,
         run_name=run_name,
     )

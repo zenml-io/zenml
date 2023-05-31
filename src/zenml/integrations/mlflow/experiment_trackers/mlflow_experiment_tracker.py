@@ -29,12 +29,6 @@ from zenml.integrations.mlflow.flavors.mlflow_experiment_tracker_flavor import (
 from zenml.integrations.mlflow.mixins.mlflow_stack_component_mixin import (
     MLFlowStackComponentMixin,
 )
-from zenml.integrations.mlflow.mlflow_utils import (
-    end_mlflow_runs,
-    get_internal_tags,
-    is_databricks_tracking_uri,
-    set_active_experiment,
-)
 from zenml.logger import get_logger
 from zenml.metadata.metadata_types import Uri
 
@@ -79,29 +73,13 @@ class MLFlowExperimentTracker(
             self.get_settings(info),
         )
 
-        experiment_name = settings.experiment_name or info.pipeline.name
-        experiment = set_active_experiment(
-            experiment_name=experiment_name,
-            in_databricks=is_databricks_tracking_uri(self.tracking_uri),
-        )
-        run_id = self.get_run_id(
-            experiment_name=experiment_name, run_name=info.run_name
-        )
-
-        tags = settings.tags.copy()
-        tags.update(get_internal_tags())
-
-        mlflow.start_run(
-            run_id=run_id,
+        nested_run_name = info.pipeline_step_name if settings.nested else None
+        self.start_mlflow_run(
+            experiment_name=settings.experiment_name or info.pipeline.name,
             run_name=info.run_name,
-            experiment_id=experiment.experiment_id,
-            tags=tags,
+            nested_run_name=nested_run_name,
+            tags=settings.tags,
         )
-
-        if settings.nested:
-            mlflow.start_run(
-                run_name=info.pipeline_step_name, nested=True, tags=tags
-            )
 
     def get_step_run_metadata(
         self, info: "StepRunInfo"
@@ -135,4 +113,4 @@ class MLFlowExperimentTracker(
             step_failed: Whether the step failed or not.
         """
         status = "FAILED" if step_failed else "FINISHED"
-        end_mlflow_runs(status=status)
+        self.end_mlflow_runs(status=status)
