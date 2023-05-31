@@ -47,7 +47,12 @@ for more information on how to do this.
 
 ## Deploy relevant cloud stacks
 
-Once your ZenML server is deployed, you may want to run your pipelines on the cloud or deployed infrastructure. This requires the deployment of cloud stacks. In the ZenML Sandbox, some of these stacks were pre-deployed for you. To deploy individual stack components, [ZenML provides stack recipes]() that can be easily deployed via the Command Line Interface (CLI) using the `zenml <stack-component> deploy ...` syntax.
+Once your ZenML server is deployed, you may want to run your pipelines on the
+cloud or deployed infrastructure. This requires the deployment of cloud stacks.
+In the MLOps Platform Sandbox, some of these stacks were pre-deployed for you. To deploy
+individual stack components, [ZenML provides stack recipes]() that can be easily
+deployed via the Command Line Interface (CLI) using the `zenml <stack-component>
+deploy ...` syntax.
 
 ### Deploying Stack Components
 

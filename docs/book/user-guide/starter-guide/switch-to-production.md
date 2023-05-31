@@ -1,5 +1,5 @@
 ---
-description: Bringing your pipelines into production using ZenML Sandbox
+description: Bringing your pipelines into production using the MLOps Platform Sandbox
 ---
 
 # ZenML gets you to production
@@ -39,18 +39,19 @@ or [deploy a stack with multiple components](/docs/book/platform-guide/set-up-yo
 together using Terraform stack recipes. For more information on how to do this,
 see our [post-sandbox platform guide](../advanced-guide/sandbox.md).
 
-### ZenML Sandbox: a simple and easy starting point
+### MLOps Platform Sandbox: a simple and easy starting point
 
 To help you get started with moving your pipelines into production, ZenML offers a managed Sandbox environment with a
-pre-configured remote stack for users to try out its features without setting up their own infrastructure. The ZenML
-Sandbox provides an isolated environment where you can experiment with different configurations and learn how to switch
-between remote stacks.
+pre-configured remote stack for users to try out its features without setting up
+their own infrastructure. The MLOps Platform Sandbox provides an isolated
+environment where you can experiment with different configurations and learn how
+to switch between remote stacks.
 
-### Getting started with ZenML Sandbox
+### Getting started with the MLOps Platform Sandbox
 
 #### Step 1: Sign up
 
-To start using the ZenML Sandbox, [sign up with your Google account](https://sandbox.zenml.io/). This will create a new sandbox environment for you
+To start using the MLOps Platform Sandbox, [sign up with your Google account](https://sandbox.zenml.io/). This will create a new sandbox environment for you
 to explore ZenML and its features.
 
 #### Step 2: Access credentials
@@ -74,8 +75,8 @@ zenml stack set <stack_name>
 
 #### Step 4: Explore pre-built pipelines
 
-The ZenML Sandbox provides a repository of pre-built pipelines that users can choose from to run on their sandbox. Users
-can access these pipelines through the ZenML Sandbox interface and run them using the provided credentials for Kubeflow,
+The MLOps Platform Sandbox provides a repository of pre-built pipelines that users can choose from to run on their sandbox. Users
+can access these pipelines through the MLOps Platform Sandbox interface and run them using the provided credentials for Kubeflow,
 MLflow, and ZenML.
 
 #### Step 5: Run pipelines
@@ -90,11 +91,11 @@ python run.py
 #### Step 6: Sandbox deletion
 
 Eight hours after registration, your sandbox will be automatically deleted. Make sure to save any important data or results before the
-sandbox is deleted. While the sandbox is active, you can also manually delete it through the ZenML Sandbox interface.
+sandbox is deleted. While the sandbox is active, you can also manually delete it through the MLOps Platform Sandbox interface.
 
-### ZenML Sandbox service status
+### MLOps Platform Sandbox service status
 
-The status of the ZenML Sandbox service is being tracked live in [the ZenML status page](https://zenml.statuspage.io/).
+The status of the MLOps Platform Sandbox service is being tracked live in [the ZenML status page](https://zenml.statuspage.io/).
 You can subscribe there to receive notifications about scheduled maintenance windows, unplanned downtime events and
 more.
 
@@ -112,14 +113,14 @@ one.
 **A:** The 8-hour limit is fixed and cannot be extended. However, you can create a new sandbox after your current one is
 deleted.
 
-Q: **Can I use my own pipelines in the ZenML Sandbox?**
+Q: **Can I use my own pipelines in the MLOps Platform Sandbox?**
 
-**A:** The ZenML Sandbox is designed for users to explore ZenML using pre-built example pipelines. While it is possible
+**A:** The MLOps Platform Sandbox is designed for users to explore ZenML using pre-built example pipelines. While it is possible
 to use your own pipelines, we do not recommend it as the sandbox is not designed for this purpose, since every
 user is provided with limited resources. (See [this guide](../advanced-guide/sandbox.md) to learn more about
 running your own pipelines in the sandbox.)
 
 **Q: Are there any model deployment options available in the ZenML Sandbox?**
 
-**A:** At the moment, there are no model deployment tools available in the ZenML Sandbox. However, we are working on
+**A:** At the moment, there are no model deployment tools available in the MLOps Platform Sandbox. However, we are working on
 adding this feature in the future.
