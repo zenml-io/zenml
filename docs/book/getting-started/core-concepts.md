@@ -18,6 +18,7 @@ At its core, ZenML follows a pipeline-based workflow for your projects. A **pipe
 
 ![Representation of a pipeline dag.](../.gitbook/assets/01_pipeline.png)
 
+
 As seen in the image, a step might use the outputs from a previous step and thus must wait until the previous step completes before starting. This is something you can keep in mind when organizing your steps.
 
 Pipelines and steps are defined in code using Python _decorators_ or _classes_. This is where the core business logic and value of your work lives, and you will spend most of your time defining these two things.
@@ -48,6 +49,7 @@ For instance, if you take a close look at the default local stack of ZenML, you 
 
 ![ZenML running code on the Local Stack.](../.gitbook/assets/02_pipeline_local_stack.png)
 
+
 {% hint style="info" %}
 Keep in mind, that each one of these components is built on top of base abstractions and is completely extensible.
 {% endhint %}
@@ -74,7 +76,7 @@ When it comes to production-grade solutions, it is rarely enough to just run you
 
 Thanks to the separation between the pipeline code and the stack in ZenML, you can easily switch your stack independently from your code. For instance, all it would take you to switch from an experimental local stack running on your machine to a remote stack that employs a full-fledged cloud infrastructure is a single CLI command.
 
- ![Switching between stacks with ZenML.](../.gitbook/assets/03_multi_stack.png)
+![Switching between stacks with ZenML.](../.gitbook/assets/03_multi_stack.png)
 
 ## 3. Management
 
