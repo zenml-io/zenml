@@ -8,7 +8,7 @@ Once your sandbox has run out or you want to work on real projects in a non-temp
 
 In order to deploy the equivalent of your own cloud stack and server as you were able to use in the Sandbox, you'll need two main things:
 
-1. **A ZenML server** to run your pipelines on and to use as the central point of call for your deployment.
+1. **A ZenML server** to run your pipelines on and to use as the central point-of-call for your deployment.
 2. **A cloud stack** (or multiple stacks) on which to run your pipelines.
 
 You'll have some options to consider along the way depending on whether you want to simply play around with ZenML a bit more versus getting serious for a production use-case. We'll cover these options in this guide.
