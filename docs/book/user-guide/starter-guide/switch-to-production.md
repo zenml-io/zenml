@@ -79,13 +79,39 @@ The status of the MLOps Platform Sandbox service is being tracked live on [the Z
 
 ## Sandbox FAQ
 
+**Q: Is the sandbox free?**
+
+**A:** Yes, the sandbox is free but time-boxed to 8 hours as we also have to
+watch our costs!
+
+**Q: Is it possible to extend the duration of the sandbox?**
+
+**A:** The MLOps Platform Sandbox has an 8-hour limit. You can [create your own sandbox using ZenML stack recipes](https://docs.zenml.io/advanced-guide/practical-mlops/stack-recipes) or integrate ZenML into your existing infrastructure for similar functionality.
+If you'd like us to host the MLOps Platform Sandbox for you for longer, [fill out this form](https://zenml.io/extend-sandbox).
+
+**Q: Why use ZenML with MLflow, Kubeflow and Minio?**
+
+**A:** ZenML is an MLOps framework that enables you to manage your MLOps platform using a variety of open-source tools. Kubeflow, MLflow, and Minio were selected to showcase an optimal toolset combination. ZenML offers the flexibility to replace any specific tool based on your needs.
+
+**Q: What are the limitations of the MLOps Platform Sandbox?**
+
+**A:** The Sandbox provides pre-built pipelines for users to run or modify.
+However, creating new pipeline builds is not permitted due to the container
+registry's read-only access. This limitation is in place to control costs and
+demonstrate how MLOps engineers can enforce rules through a central control
+plane.
+
+**Q: How can I move from the MLOps Platform Sandbox to deploying my own MLOps Stack?**
+
+**A:** After experimenting with the Sandbox, you can deploy your own MLOps stack tailored to your requirements using [ZenML Stack Recipes](https://docs.zenml.io/advanced-guide/practical-mlops/stack-recipes). These recipes give you a starting point for deploying various MLOps stacks on different cloud providers and with different components. Follow the instructions provided for your desired stack configuration to build a robust, production-ready MLOps platform.
+
+**Q: What kind of support is available for users of the MLOps Platform Sandbox?**
+
+**A:** Our community is here to help you! If you have any questions or need assistance while using the Sandbox, [join our Slack community](https://zenml.io/slack) where you can interact with the team and other users. You can also [consult our GitHub repository](https://github.com/zenml-io/zenml) for further information and updates.
+
 **Q: Can I create more than one sandbox at a time?**
 
 **A:** No. Each user can create only one sandbox at a time. Once your current sandbox is deleted, you can create a new one.
-
-**Q: Can I extend the 8-hour limit for my sandbox?**
-
-**A:** The 8-hour limit is fixed and cannot be extended. However, you can create a new sandbox after your current one is deleted.
 
 **Q:** **Can I use my own pipelines in the MLOps Platform Sandbox?**
 
