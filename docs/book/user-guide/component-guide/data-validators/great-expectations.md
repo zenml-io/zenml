@@ -321,4 +321,4 @@ if __name__ == "__main__":
     visualize_results("validation_pipeline", "test_validator")
 ```
 
-![Expectations Suite Visualization](<../../../.gitbook/assets/expectation\_suite (2).png>) ![Validation Results Visualization](<../../../.gitbook/assets/validation\_result (1).png>)
+![Expectations Suite Visualization](../../../.gitbook/assets/expectation\_suite.png) ![Validation Results Visualization](../../../.gitbook/assets/validation\_result.png)
