@@ -40,7 +40,7 @@ To start using the MLOps Platform Sandbox, [sign up with your Google account](ht
 
 After signing up and creating your sandbox, you will be provided with credentials for [Kubeflow](../component-guide/orchestrators/kubeflow.md), [MinIO](../component-guide/artifact-stores/s3.md), [MLflow](../component-guide/experiment-trackers/mlflow.md), and [ZenML Server](connect-to-a-deployed-zenml.md). These credentials will allow you to access and interact with the various applications and services within the sandbox.
 
-![ZenML Sandbox Step 2](/docs/book/.gitbook/assets/zenml_sandbox_step_3_zenml_creds.png)
+![ZenML Sandbox Step 2](/docs/book/.gitbook/assets/zenml_sandbox_step_3_mlflow_creds.png)
 
 #### Step 3: Connect and set the stack
 
@@ -51,7 +51,7 @@ zenml connect --url <sandbox_url> --username <username>
 zenml stack set <stack_name>
 ```
 
-![ZenML Sandbox Step 3](/docs/book/.gitbook/assets/zenml_sandbox_step_3_mlflow_creds.png)
+![ZenML Sandbox Step 3](/docs/book/.gitbook/assets/zenml_sandbox_step_3_zenml_creds.png)
 
 #### Step 4: Explore pre-built pipelines
 
