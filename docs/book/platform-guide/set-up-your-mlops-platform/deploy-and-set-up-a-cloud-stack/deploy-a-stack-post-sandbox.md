@@ -25,7 +25,7 @@ Once your server is deployed, you'll need to connect your client to it. You can 
 
 ## Deploy the relevant cloud stacks
 
-Once your ZenML server is deployed, you may want to run your pipelines on the cloud or deployed infrastructure. This requires the deployment of cloud stacks. In the MLOps Platform Sandbox, some of these stacks were pre-deployed for you. To deploy individual stack components, [ZenML provides stack recipes](deploy-a-stack-after-using-the-sandbox.md) that can be easily deployed via the Command Line Interface (CLI) using the `zenml <stack-component> deploy ...` syntax.
+Once your ZenML server is deployed, you may want to run your pipelines on the cloud or deployed infrastructure. This requires the deployment of cloud stacks. In the MLOps Platform Sandbox, some of these stacks were pre-deployed for you. To deploy individual stack components, [ZenML provides stack recipes](deploy-a-stack-post-sandbox.md) that can be easily deployed via the Command Line Interface (CLI) using the `zenml <stack-component> deploy ...` syntax.
 
 ### Deploying individual components
 

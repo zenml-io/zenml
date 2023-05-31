@@ -130,7 +130,7 @@
   * [Deploy & set up a cloud stack](platform-guide/set-up-your-mlops-platform/deploy-and-set-up-a-cloud-stack/deploy-and-set-up-a-cloud-stack.md)
     * [Deploy a stack component](platform-guide/set-up-your-mlops-platform/deploy-and-set-up-a-cloud-stack/deploy-a-stack-component.md)
     * [Deploy a stack using Stack Recipes](platform-guide/set-up-your-mlops-platform/deploy-and-set-up-a-cloud-stack/deploy-a-stack-using-stack-recipes.md)
-    * [Deploy a stack after using the Sandbox](platform-guide/set-up-your-mlops-platform/deploy-and-set-up-a-cloud-stack/deploy-a-stack-after-using-the-sandbox.md)
+    * [Deploy a stack after using the Sandbox](platform-guide/set-up-your-mlops-platform/deploy-and-set-up-a-cloud-stack/deploy-a-stack-post-sandbox.md)
     * [Contribute flavors or components](platform-guide/set-up-your-mlops-platform/deploy-and-set-up-a-cloud-stack/contribute-flavors-or-components.md)
   * [Productionalize with CI/CD/CT](platform-guide/set-up-your-mlops-platform/productionalize-with-ci-cd-ct.md)
   * [Implement a custom stack component](platform-guide/set-up-your-mlops-platform/implement-a-custom-stack-component.md)
