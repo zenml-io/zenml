@@ -87,7 +87,7 @@ The status of the MLOps Platform Sandbox service is being tracked live on [the Z
 
 **A:** The 8-hour limit is fixed and cannot be extended. However, you can create a new sandbox after your current one is deleted.
 
-Q: **Can I use my own pipelines in the MLOps Platform Sandbox?**
+**Q:** **Can I use my own pipelines in the MLOps Platform Sandbox?**
 
 **A:** The MLOps Platform Sandbox is designed for users to explore ZenML using pre-built example pipelines. While it is possible to use your own pipelines, we do not recommend it as the sandbox is not designed for this purpose, since every user is provided with limited resources. (See [this guide](../advanced-guide/sandbox.md) to learn more about running your own pipelines in the sandbox.)
 
