@@ -27,9 +27,9 @@ track their performance over time. This tool is useful in the following scenario
 
 ### How do you deploy it?
 
-The MLflow Experiment Tracker flavor is provided by the MLflow ZenML integration, so you need to install it on your
-local machine to be able to register an MLflow Model Registry component. Note that the MLFlow model registry
-requires [MLFlow Experiment Tracker](../experiment-trackers/mlflow.md) to be present in the stack.
+The MLflow Model Registry flavor is provided by the MLflow ZenML integration, 
+so you need to install it on your local machine to be able to register an 
+MLflow Model Registry component:
 
 ```shell
 zenml integration install mlflow -y
@@ -44,16 +44,24 @@ zenml model-registry register mlflow_model_registry --flavor=mlflow
 zenml stack register custom_stack -r mlflow_model_registry ... --set
 ```
 
-{% hint style="info" %}
-The MLFlow Model Registry will automatically use the same configuration as the MLFlow Experiment Tracker. So if you have
-a remote MLFlow tracking server configured in your stack, the MLFlow Model Registry will also use the same
-configuration.
-{% endhint %}
+#### Authentication Methods
 
-{% hint style="warning" %}
-Due to a [critical severity vulnerability](https://github.com/advisories/GHSA-xg73-94fp-g449) found in older versions of
-MLflow, we recommend using MLflow version 2.2.1 or higher.
-{% endhint %}
+To register models from a remote MLflow tracking server, you need to configure 
+the following authentication credentials:
+
+* `tracking_uri`: The URL pointing to the MLflow tracking server. If using an MLflow Tracking Server managed by
+  Databricks, then the value of this attribute should be `"databricks"`.
+* `tracking_username`: Username for authenticating with the MLflow tracking server.
+* `tracking_password`: Password for authenticating with the MLflow tracking server.
+* `tracking_token` (in place of `tracking_username` and `tracking_password`): Token for authenticating with the MLflow
+  tracking server.
+* `tracking_insecure_tls` (optional): Set to skip verifying the MLflow tracking server SSL certificate.
+* `databricks_host`: The host of the Databricks workspace with the MLflow-managed server to connect to. This is only
+  required if the `tracking_uri` value is set to `"databricks"`. More
+  information: [Access the MLflow tracking server from outside Databricks](https://docs.databricks.com/applications/mlflow/access-hosted-tracking-server.html)
+
+See the [MLflow Experiment Tracker Documentation](../experiment-trackers/mlflow.md#authentication-methods)
+for more information on these credentials.
 
 ### How do you use it?
 
@@ -66,24 +74,30 @@ the ZenML CLI:
 
 After registering the MLflow Model Registry component in your stack, you can use it in a pipeline by using
 the `mlflow_model_registry_step` which is a built-in step that is provided by the MLflow ZenML integration. This step
-automatically registers the model that was produced by the previous step in the pipeline.
+automatically registers the model that was produced by the previous step in the pipeline:
 
 ```python
-mlflow_training_pipeline(
-    importer=loader_mnist(),
-    normalizer=normalizer(),
-    trainer=tf_trainer(params=TrainerParameters(epochs=5, lr=0.003)),
-    evaluator=tf_evaluator(),
-    model_register=mlflow_register_model_step(
-        params=MLFlowRegistryParameters(
-            name="tensorflow-mnist-model",
-            metadata=ModelRegistryModelMetadata(
-                lr=lr, epochs=5, optimizer="Adam"
-            ),
-            description=f"Run #{i + 1} of the mlflow_training_pipeline.",
-        )
-    ),
-).run()
+@step
+def training_data_loader():
+    ...
+  
+@step
+def svc_trainer():
+    ...
+
+from zenml.integrations.mlflow.steps.mlflow_registry import mlflow_register_model_step
+
+@pipeline
+def training_pipeline():
+    """Train, evaluate, and deploy a model."""
+    X_train, X_test, y_train, y_test = training_data_loader()
+    model = svc_trainer(X_train=X_train, y_train=y_train)
+    mlflow_register_model_step(
+        model,
+        name="zenml-quickstart-model",
+        metadata=ModelRegistryModelMetadata(gamma=0.01, arch="svc"),
+        description="The first run of the Quickstart pipeline.",
+    )
 ```
 
 #### Model Registry CLI Commands

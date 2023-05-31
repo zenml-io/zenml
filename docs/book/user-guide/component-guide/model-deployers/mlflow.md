@@ -49,110 +49,47 @@ zenml model-deployer register mlflow_deployer --flavor=mlflow
 The ZenML integration will provision a local MLflow deployment server as a daemon process that will continue to run in
 the background to serve the latest MLflow model.
 
+#### Authentication Methods
+
+To deploy models from a remote MLflow tracking server, you need to configure 
+the following authentication credentials:
+
+* `tracking_uri`: The URL pointing to the MLflow tracking server. If using an MLflow Tracking Server managed by
+  Databricks, then the value of this attribute should be `"databricks"`.
+* `tracking_username`: Username for authenticating with the MLflow tracking server.
+* `tracking_password`: Password for authenticating with the MLflow tracking server.
+* `tracking_token` (in place of `tracking_username` and `tracking_password`): Token for authenticating with the MLflow
+  tracking server.
+* `tracking_insecure_tls` (optional): Set to skip verifying the MLflow tracking server SSL certificate.
+* `databricks_host`: The host of the Databricks workspace with the MLflow-managed server to connect to. This is only
+  required if the `tracking_uri` value is set to `"databricks"`. More
+  information: [Access the MLflow tracking server from outside Databricks](https://docs.databricks.com/applications/mlflow/access-hosted-tracking-server.html)
+
+See the [MLflow Experiment Tracker Documentation](../experiment-trackers/mlflow.md#authentication-methods)
+for more information on these credentials.
+
 ### How do you use it?
 
-The first step to being able to deploy and use your MLflow model is to create Service deployment from code, this is done
-by setting the different parameters that the MLflow deployment step requires.
+After registering the MLflow Model Deloyer component in your stack, you can use it in a pipeline by using
+the `mlflow_model_deployer_step` which is a built-in step that is provided by the MLflow ZenML integration. This step
+automatically deploys the model that was produced by the previous step in the pipeline:
 
 ```python
-from zenml.integrations.mlflow.steps import mlflow_deployer_step
-from zenml.integrations.mlflow.steps import MLFlowDeployerParameters
-
-...
-
-model_deployer = mlflow_deployer_step(name="model_deployer")
-
-...
-
-# Initialize a continuous deployment pipeline run
-deployment = continuous_deployment_pipeline(
-    ...,
-    # as a last step to our pipeline the model deployer step is run with it config in place
-    model_deployer=model_deployer(params=MLFlowDeployerParameters(workers=3)),
-)
-```
-
-You can run predictions on the deployed model with something like:
-
-```python
-from zenml.integrations.mlflow.services import MLFlowDeploymentService
-from zenml.steps import BaseParameters, Output, StepContext, step
-from zenml.services.utils import load_last_service_from_step
-
-...
-
-
-class MLFlowDeploymentLoaderStepParams(BaseParameters):
-    """MLflow deployment getter configuration.
-
-    Attributes:
-        pipeline_name: name of the pipeline that deployed the MLflow prediction
-            server
-        step_name: the name of the step that deployed the MLflow prediction
-            server
-        running: when this flag is set, the step only returns a running service
-    """
-
-    pipeline_name: str
-    step_name: str
-    running: bool = True
+@step
+def training_data_loader():
+    ...
+  
+@step
+def svc_trainer():
     ...
 
-
-# Step to retrieve the service associated with the last pipeline run
-@step(enable_cache=False)
-def prediction_service_loader(
-        params: MLFlowDeploymentLoaderStepParams, context: StepContext
-) -> MLFlowDeploymentService:
-    """Get the prediction service started by the deployment pipeline"""
-
-    service = load_last_service_from_step(
-        pipeline_name=params.pipeline_name,
-        step_name=params.step_name,
-        running=params.running,
-    )
-    if not service:
-        raise RuntimeError(
-            f"No MLflow prediction service deployed by the "
-            f"{params.step_name} step in the {params.pipeline_name} pipeline "
-            f"is currently running."
-        )
-
-    return service
+from zenml.integrations.mlflow.steps.mlflow_deployer import mlflow_model_deployer_step
 
 
-# Use the service for inference
-@step
-def predictor(
-        service: MLFlowDeploymentService,
-        data: np.ndarray,
-) -> Output(predictions=np.ndarray):
-    """Run a inference request against a prediction service"""
-
-    service.start(timeout=10)  # should be a NOP if already started
-    prediction = service.predict(data)
-    prediction = prediction.argmax(axis=-1)
-
-    return prediction
-
-
-# Initialize an inference pipeline run
-inference = inference_pipeline(
-    ...,
-    prediction_service_loader=prediction_service_loader(
-        MLFlowDeploymentLoaderStepParams(
-            pipeline_name="continuous_deployment_pipeline",
-            step_name="model_deployer",
-        )
-    ),
-    predictor=predictor(),
-)
+@pipeline
+def training_pipeline():
+    """Train, evaluate, and deploy a model."""
+    X_train, X_test, y_train, y_test = training_data_loader()
+    model = svc_trainer(X_train=X_train, y_train=y_train)
+    mlflow_model_deployer_step(model)
 ```
-
-You can check the MLflow deployment example for more details.
-
-* [Model Deployer with MLflow](https://github.com/zenml-io/zenml/tree/main/examples/mlflow\_deployment)
-
-For more information and a full list of configurable attributes of the MLflow Model Deployer, check out
-the [API Docs](https://apidocs.zenml.io/latest/integration\_code\_docs/integrations-mlflow/#zenml.integrations.mlflow.model\_deployers)
-.
