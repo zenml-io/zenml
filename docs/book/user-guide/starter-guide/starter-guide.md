@@ -86,6 +86,9 @@ As you can see, the dashboard shows you that there is 1 pipeline and 1 pipeline 
 
 If you navigate to the run that you just executed, you will see a diagram view of the pipeline run, including a visualization of the data that is passed between the steps. Feel free to explore the Run, its steps, and its artifacts.
 
+If you have closed the browser tab with the ZenML dashboard, you can always
+reopen it by running `zenml show` in your terminal.
+
 ## Recap
 
 #### Step
