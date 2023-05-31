@@ -21,7 +21,11 @@ from typing import Any, Dict, Optional, Tuple, cast
 import mlflow
 from mlflow import MlflowClient
 from mlflow.entities import Experiment, Run
+from mlflow.exceptions import MlflowException
 from mlflow.store.db.db_types import DATABASE_ENGINES
+from mlflow.tracking.artifact_utils import (
+    get_artifact_uri as mlflow_get_artifact_uri,
+)
 
 from zenml.integrations.mlflow.mixins.mlflow_config_mixin import (
     MLFlowConfigMixin,
@@ -216,6 +220,138 @@ class MLFlowStackComponentMixin(StackComponent):
         self._stop_zenml_mlflow_runs(status)
         mlflow.set_tracking_uri("")
         mlflow.set_registry_uri("")
+
+    def find_mlflow_artifact(
+        self,
+        experiment_name: str,
+        run_name: str,
+        artifact_name: str,
+    ) -> Optional[str]:
+        """Find the given artifact in MLflow.
+
+        Args:
+            experiment_name: Name of the experiment in which to search for the
+                artifact.
+            run_name: Name of the run in which to search for the artifact.
+            artifact_name: Name of the artifact to search.
+
+        Returns:
+            The URI of the artifact if it exists, else None.
+        """
+        mlflow_client = self.mlflow_client  # configure mlflow if necessary
+        mlflow_run_id = self.get_mlflow_run_id(
+            experiment_name=experiment_name,
+            run_name=run_name,
+        )
+        if mlflow_run_id and mlflow_client.list_artifacts(
+            run_id=mlflow_run_id, path=artifact_name
+        ):
+            artifact_uri = mlflow_get_artifact_uri(
+                run_id=mlflow_run_id, artifact_path=artifact_name
+            )
+            return cast(str, artifact_uri)
+        return None
+
+    def find_or_log_mlflow_model(
+        self,
+        experiment_name: str,
+        run_name: str,
+        step_name: str,
+        model_name: str,
+        model: Any,
+    ) -> str:
+        """Find or log the given model in MLflow.
+
+        We try to find the model in the following order:
+        1. Search for the model using own MLflow config
+        2. Search for the model using the MLflow config of the experiment
+            tracker
+        3. If the model was not found, start a new MLflow run and log the
+            model
+
+        Args:
+            experiment_name: Name of the experiment in which to search for the
+                model.
+            run_name: Name of the run in which to search for the model.
+            step_name: Name of the step in which to search for the model.
+            model_name: Name of the model to search for.
+            model: The model to log if it was not found.
+
+        Returns:
+            The URI of the model.
+        """
+        self.mlflow_client  # configure mlflow if necessary
+
+        # 1. Search for the artifact using own MLflow config
+        artifact_uri = self.find_mlflow_artifact(
+            experiment_name=experiment_name,
+            run_name=run_name,
+            artifact_name=model_name,
+        )
+        if artifact_uri:
+            return artifact_uri
+
+        # 2. Search for the artifact using the experiment tracker (if not self)
+        from zenml.client import Client
+        from zenml.integrations.mlflow.experiment_trackers.mlflow_experiment_tracker import (
+            MLFlowExperimentTracker,
+        )
+
+        if not isinstance(self, MLFlowExperimentTracker):
+            experiment_tracker = Client().active_stack.experiment_tracker
+            if isinstance(experiment_tracker, MLFlowExperimentTracker):
+                artifact_uri = experiment_tracker.find_mlflow_artifact(
+                    experiment_name=experiment_name,
+                    run_name=run_name,
+                    artifact_name=model_name,
+                )
+                if artifact_uri:
+                    return artifact_uri
+
+        # 3. Start a new MLflow run and log the artifact
+        mlflow_run_id = self.start_mlflow_run(
+            experiment_name=experiment_name,
+            run_name=run_name,
+            nested_run_name=step_name,
+        )
+        self.log_model_to_mlflow(model=model, artifact_path=model_name)
+        artifact_uri = mlflow_get_artifact_uri(
+            run_id=mlflow_run_id, artifact_path=model_name
+        )
+        self.end_mlflow_runs(status="FINISHED")
+        return cast(str, artifact_uri)
+
+    def log_model_to_mlflow(self, model: Any, artifact_path: str) -> None:
+        """Log the given model to MLflow.
+
+        Args:
+            model: The model to log.
+            artifact_path: The path to the model artifact in MLflow.
+
+        Raises:
+            NotImplementedError: If the model type is not supported.
+        """
+        self.mlflow_client  # configure mlflow if necessary
+
+        # There is no way to log a generic model to MLflow. Therefore, the only
+        # thing we can do is try all supported frameworks until we find one
+        # that works.
+        for flavor in self._get_mlflow_flavors():
+            try:
+                flavor.log_model(model, artifact_path)
+                return
+            except (
+                AttributeError,
+                MlflowException,
+                ModuleNotFoundError,
+                NotImplementedError,
+                TypeError,
+            ):
+                continue
+
+        raise NotImplementedError(
+            f"Could not log model of type {type(model)} to MLflow."
+        )
 
     # ================
     # Internal Methods

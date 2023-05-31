@@ -13,11 +13,7 @@
 #  permissions and limitations under the License.
 """Implementation of the MLflow model deployer pipeline step."""
 
-from typing import Optional, cast
-
-from mlflow.tracking.artifact_utils import (
-    get_artifact_uri as mlflow_get_artifact_uri,
-)
+from typing import Any, Optional, cast
 
 from zenml import step
 from zenml.client import Client
@@ -37,7 +33,6 @@ from zenml.integrations.mlflow.services.mlflow_deployment import (
     MLFlowDeploymentService,
 )
 from zenml.logger import get_logger
-from zenml.materializers import UnmaterializedArtifact
 from zenml.model_registries.base_model_registry import (
     ModelRegistryModelMetadata,
     ModelVersionStage,
@@ -46,14 +41,13 @@ from zenml.steps import (
     STEP_ENVIRONMENT_NAME,
     StepEnvironment,
 )
-from zenml.utils.artifact_utils import load_artifact
 
 logger = get_logger(__name__)
 
 
 @step(enable_cache=False)
 def mlflow_model_deployer_step(
-    model: UnmaterializedArtifact,
+    model: Any,
     deploy_decision: bool = True,
     experiment_name: Optional[str] = None,
     run_name: Optional[str] = None,
@@ -70,8 +64,8 @@ def mlflow_model_deployer_step(
     registr either manually or by using the `mlflow_model_registry_step`.
 
     Args:
+        model: the model to deploy
         deploy_decision: whether to deploy the model or not
-        model: the model artifact to deploy
         experiment_name: Name of the MLflow experiment in which the model was
             logged.
         run_name: Name of the MLflow run in which the model was logged.
@@ -85,9 +79,6 @@ def mlflow_model_deployer_step(
 
     Returns:
         MLflow deployment service
-
-    Raises:
-        ValueError: if the MLflow experiment tracker is not found
     """
     model_deployer = cast(
         MLFlowModelDeployer, MLFlowModelDeployer.get_active_model_deployer()
@@ -101,15 +92,12 @@ def mlflow_model_deployer_step(
     step_name = step_env.step_name
 
     # find or log the model in MLflow
-    mlflow_run_id = _find_or_log_model_in_mlflow(
+    model_uri = model_deployer.find_or_log_mlflow_model(
         experiment_name=experiment_name,
         run_name=run_name,
         step_name=step_name,
         model_name=model_name,
         model=model,
-    )
-    model_uri = mlflow_get_artifact_uri(
-        run_id=mlflow_run_id, artifact_path=model_name
     )
 
     # Create a config for the new model service
@@ -160,65 +148,6 @@ def mlflow_model_deployer_step(
         return service
 
     return MLFlowDeploymentService(predictor_cfg)
-
-
-def _find_or_log_model_in_mlflow(
-    experiment_name: str,
-    run_name: str,
-    step_name: str,
-    model_name: str,
-    model: UnmaterializedArtifact,
-) -> str:
-    """Find or log the given model in MLflow.
-
-    We try to find the model in the following order:
-    1. Search for the model using the MLflow config of the model deployer
-    2. Search for the model using the MLflow config of the experiment tracker
-    3. If no model was found, start a new MLflow run and log the model
-
-    Returns:
-        The ID of the MLflow run in which the model was logged.
-    """
-    # 1. Search for the model using the MLflow config of the model deployer
-    model_deployer = cast(
-        MLFlowModelDeployer, MLFlowModelDeployer.get_active_model_deployer()
-    )
-    mlflow_run_id = model_deployer.get_mlflow_run_id(
-        experiment_name=experiment_name,
-        run_name=run_name,
-    )
-    if mlflow_run_id and model_deployer.mlflow_client.list_artifacts(
-        mlflow_run_id, model_name
-    ):
-        return mlflow_run_id
-
-    # 2. Search for the model using the MLflow config of the experiment tracker
-    from zenml.integrations.mlflow.experiment_trackers.mlflow_experiment_tracker import (
-        MLFlowExperimentTracker,
-    )
-
-    experiment_tracker = Client().active_stack.experiment_tracker
-    if isinstance(experiment_tracker, MLFlowExperimentTracker):
-        mlflow_run_id = experiment_tracker.get_mlflow_run_id(
-            experiment_name=experiment_name,
-            run_name=run_name,
-        )
-        if mlflow_run_id and experiment_tracker.mlflow_client.list_artifacts(
-            mlflow_run_id, model_name
-        ):
-            return mlflow_run_id
-
-    # 3. If no model was found, start a new MLflow run and log the model
-    mlflow_run_id = model_deployer.start_mlflow_run(
-        experiment_name=experiment_name,
-        run_name=run_name,
-        nested_run_name=step_name,
-    )
-    materialized_model = load_artifact(model)
-    model_deployer.log_model(
-        model=materialized_model, artifact_path=model_name
-    )
-    return mlflow_run_id
 
 
 @step(enable_cache=False)

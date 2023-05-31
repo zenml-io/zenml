@@ -16,7 +16,7 @@
 import os
 import shutil
 from pathlib import Path
-from typing import Any, ClassVar, Dict, List, Optional, Type, cast
+from typing import ClassVar, Dict, List, Optional, Type, cast
 from uuid import UUID
 
 from zenml.config.global_config import GlobalConfiguration
@@ -124,38 +124,6 @@ class MLFlowModelDeployer(BaseModelDeployer, MLFlowStackComponentMixin):
             "SERVICE_PATH": service_instance.status.runtime_path,
             "DAEMON_PID": str(service_instance.status.pid),
         }
-
-    def log_model(self, model: Any, artifact_path: str) -> None:
-        """Log the given model to MLflow.
-
-        Args:
-            model: The model to log.
-            artifact_path: The path to the model artifact in MLflow.
-
-        Raises:
-            NotImplementedError: If the model type is not supported.
-        """
-        from mlflow.exceptions import MlflowException
-
-        # There is no way to log a generic model to MLflow. Therefore, the only
-        # thing we can do is try all supported frameworks until we find one
-        # that works.
-        for flavor in self._get_mlflow_flavors():
-            try:
-                flavor.log_model(model, artifact_path)
-                return
-            except (
-                AttributeError,
-                MlflowException,
-                ModuleNotFoundError,
-                NotImplementedError,
-                TypeError,
-            ):
-                continue
-
-        raise NotImplementedError(
-            f"Could not log model of type {type(model)} to MLflow."
-        )
 
     def deploy_model(
         self,
