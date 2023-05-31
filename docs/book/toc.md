@@ -24,7 +24,7 @@
   * [Containerize your pipeline](user-guide/advanced-guide/containerize-your-pipeline.md)
   * [Connect your git repository](user-guide/advanced-guide/connect-your-git-repository.md)
   * [Leverage community-contributed plugins](user-guide/advanced-guide/leverage-community-contributed-plugins.md)
-  * [Use the Sandbox](user-guide/advanced-guide/sandbox.md)
+  * [Use the Sandbox](user-guide/advanced-guide/use-the-sandbox.md)
   * [Data versioning and artifacts management](user-guide/advanced-guide/data-versioning-and-artifacts-lineage.md)
   * [Schedule pipeline runs](user-guide/advanced-guide/schedule-pipeline-runs.md)
   * [Fetch metadata within steps](user-guide/advanced-guide/fetch-metadata-within-steps.md)
