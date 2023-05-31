@@ -15,7 +15,8 @@
 
 
 import os
-from typing import Any, Dict, Optional, cast
+from types import ModuleType
+from typing import Any, Dict, Optional, Tuple, cast
 
 import mlflow
 from mlflow import MlflowClient
@@ -119,7 +120,7 @@ class MLFlowStackComponentMixin(StackComponent):
         run_name: str,
         nested_run_name: Optional[str] = None,
         tags: Optional[Dict[str, Any]] = None,
-    ) -> None:
+    ) -> str:
         """Starts a new MLflow run.
 
         Args:
@@ -128,6 +129,9 @@ class MLFlowStackComponentMixin(StackComponent):
             run_name: Name of the run to start.
             nested_run_name: Optional name of a nested run to start.
             tags: Optional tags to add to the runs.
+
+        Returns:
+            The MLflow ID of the started run.
         """
         self.mlflow_client  # configure mlflow if necessary
         experiment = self._set_active_experiment(experiment_name)
@@ -138,7 +142,7 @@ class MLFlowStackComponentMixin(StackComponent):
         tags = tags.copy() if tags else {}
         tags.update(self._get_internal_tags())
 
-        mlflow.start_run(
+        run = mlflow.start_run(
             run_id=run_id,
             run_name=run_name,
             experiment_id=experiment.experiment_id,
@@ -146,7 +150,25 @@ class MLFlowStackComponentMixin(StackComponent):
         )
 
         if nested_run_name:
-            mlflow.start_run(run_name=nested_run_name, nested=True, tags=tags)
+            run = mlflow.start_run(
+                run_name=nested_run_name, nested=True, tags=tags
+            )
+
+        return cast(str, run.info.run_id)
+
+    def get_active_mlflow_run_id(self) -> Optional[str]:
+        """Gets the active run id.
+
+        Returns:
+            The active run id, if it exists and is a ZenML run, else None.
+        """
+        self.mlflow_client  # configure mlflow if necessary
+        active_run = mlflow.active_run()
+        if active_run:
+            run_id = active_run.info.run_id
+            if run_id and self._is_zenml_run(run_id):
+                return cast(str, run_id)
+        return None
 
     def get_mlflow_run_id(
         self, experiment_name: str, run_name: str
@@ -365,6 +387,21 @@ class MLFlowStackComponentMixin(StackComponent):
     @staticmethod
     def _disable_autologging() -> None:
         """Disables MLflow autologging."""
+        # There is no way to disable auto-logging for all frameworks at once.
+        # If auto-logging is explicitly enabled for a framework by calling its
+        # autolog() method, it cannot be disabled by calling
+        # `mlflow.autolog(disable=True)`. Therefore, we need to disable
+        # auto-logging for all frameworks explicitly.
+        for flavor in MLFlowStackComponentMixin._get_mlflow_flavors():
+            flavor.autolog(disable=True)
+
+    @staticmethod
+    def _get_mlflow_flavors() -> Tuple[ModuleType, ...]:
+        """Gets all MLflow flavors.
+
+        Returns:
+            All MLflow flavors, as a list of modules.
+        """
         from mlflow import (
             fastai,
             gluon,
@@ -377,21 +414,17 @@ class MLFlowStackComponentMixin(StackComponent):
             xgboost,
         )
 
-        # There is no way to disable auto-logging for all frameworks at once.
-        # If auto-logging is explicitly enabled for a framework by calling its
-        # autolog() method, it cannot be disabled by calling
-        # `mlflow.autolog(disable=True)`. Therefore, we need to disable
-        # auto-logging for all frameworks explicitly.
-
-        tensorflow.autolog(disable=True)
-        gluon.autolog(disable=True)
-        xgboost.autolog(disable=True)
-        lightgbm.autolog(disable=True)
-        statsmodels.autolog(disable=True)
-        spark.autolog(disable=True)
-        sklearn.autolog(disable=True)
-        fastai.autolog(disable=True)
-        pytorch.autolog(disable=True)
+        return (
+            fastai,
+            gluon,
+            lightgbm,
+            pytorch,
+            sklearn,
+            spark,
+            statsmodels,
+            tensorflow,
+            xgboost,
+        )
 
     @staticmethod
     def _stop_zenml_mlflow_runs(status: str) -> None:

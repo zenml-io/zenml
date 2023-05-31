@@ -15,7 +15,9 @@
 
 from typing import Optional, cast
 
-from mlflow.tracking import artifact_utils
+from mlflow.tracking.artifact_utils import (
+    get_artifact_uri as mlflow_get_artifact_uri,
+)
 
 from zenml import step
 from zenml.client import Client
@@ -44,6 +46,7 @@ from zenml.steps import (
     STEP_ENVIRONMENT_NAME,
     StepEnvironment,
 )
+from zenml.utils.artifact_utils import load_artifact
 
 logger = get_logger(__name__)
 
@@ -106,7 +109,20 @@ def mlflow_model_deployer_step(
 
     model_uri = ""
     if mlflow_run_id and client.list_artifacts(mlflow_run_id, model_name):
-        model_uri = artifact_utils.get_artifact_uri(
+        model_uri = mlflow_get_artifact_uri(
+            run_id=mlflow_run_id, artifact_path=model_name
+        )
+
+    if not model_uri:
+        if not mlflow_run_id:
+            mlflow_run_id = model_deployer.start_mlflow_run(
+                experiment_name=experiment_name, run_name=run_name
+            )
+        materialized_model = load_artifact(model)
+        model_deployer.log_model(
+            model=materialized_model, artifact_path=model_name
+        )
+        model_uri = mlflow_get_artifact_uri(
             run_id=mlflow_run_id, artifact_path=model_name
         )
 
@@ -134,34 +150,6 @@ def mlflow_model_deployer_step(
     service = MLFlowDeploymentService(predictor_cfg)
     if existing_services:
         service = cast(MLFlowDeploymentService, existing_services[0])
-
-    # check for conditions to deploy the model
-    if not model_uri:
-        # an MLflow model was not trained in the current run, so we simply reuse
-        # the currently running service created for the same model, if any
-        if not existing_services:
-            logger.warning(
-                f"An MLflow model with name `{model_name}` was not "
-                f"logged in the current pipeline run and no running MLflow "
-                f"model server was found. Please ensure that your pipeline "
-                f"includes a step with a MLflow experiment configured that "
-                "trains a model and logs it to MLflow. This could also happen "
-                "if the current pipeline run did not log an MLflow model  "
-                f"because the training step was cached."
-            )
-            # return an inactive service just because we have to return
-            # something
-            return service
-        logger.info(
-            f"An MLflow model with name `{model_name}` was not "
-            f"trained in the current pipeline run. Reusing the existing "
-            f"MLflow model server."
-        )
-        if not service.is_running:
-            service.start(timeout)
-
-        # return the existing service
-        return service
 
     # even when the deploy decision is negative, if an existing model server
     # is not running for this pipeline/step, we still have to serve the
