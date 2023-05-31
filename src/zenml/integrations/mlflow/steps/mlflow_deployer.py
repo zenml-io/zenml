@@ -93,47 +93,26 @@ def mlflow_model_deployer_step(
         MLFlowModelDeployer, MLFlowModelDeployer.get_active_model_deployer()
     )
 
-    # get pipeline name, step name and run id
+    # get the pipeline name, step name and run id
     step_env = cast(StepEnvironment, Environment()[STEP_ENVIRONMENT_NAME])
     pipeline_name = step_env.pipeline_name
     experiment_name = experiment_name or pipeline_name
     run_name = run_name or step_env.run_name
     step_name = step_env.step_name
 
-    # Configure Mlflow so the client points to the correct store
-    client = model_deployer.mlflow_client
-    mlflow_run_id = model_deployer.get_mlflow_run_id(
+    # find or log the model in MLflow
+    mlflow_run_id = _find_or_log_model_in_mlflow(
         experiment_name=experiment_name,
         run_name=run_name,
-    )
-
-    model_uri = ""
-    if mlflow_run_id and client.list_artifacts(mlflow_run_id, model_name):
-        model_uri = mlflow_get_artifact_uri(
-            run_id=mlflow_run_id, artifact_path=model_name
-        )
-
-    if not model_uri:
-        if not mlflow_run_id:
-            mlflow_run_id = model_deployer.start_mlflow_run(
-                experiment_name=experiment_name, run_name=run_name
-            )
-        materialized_model = load_artifact(model)
-        model_deployer.log_model(
-            model=materialized_model, artifact_path=model_name
-        )
-        model_uri = mlflow_get_artifact_uri(
-            run_id=mlflow_run_id, artifact_path=model_name
-        )
-
-    # fetch existing services with same pipeline name, step name and model name
-    existing_services = model_deployer.find_model_server(
-        pipeline_name=pipeline_name,
-        pipeline_step_name=step_name,
+        step_name=step_name,
         model_name=model_name,
+        model=model,
+    )
+    model_uri = mlflow_get_artifact_uri(
+        run_id=mlflow_run_id, artifact_path=model_name
     )
 
-    # create a config for the new model service
+    # Create a config for the new model service
     predictor_cfg = MLFlowDeploymentConfig(
         model_name=model_name or "",
         model_uri=model_uri,
@@ -146,44 +125,100 @@ def mlflow_model_deployer_step(
         timeout=timeout,
     )
 
-    # Creating a new service with inactive state and status by default
-    service = MLFlowDeploymentService(predictor_cfg)
-    if existing_services:
-        service = cast(MLFlowDeploymentService, existing_services[0])
-
-    # even when the deploy decision is negative, if an existing model server
-    # is not running for this pipeline/step, we still have to serve the
-    # current model, to ensure that a model server is available at all times
-    if not deploy_decision and existing_services:
-        logger.info(
-            f"Skipping model deployment because the model quality does not "
-            f"meet the criteria. Reusing last model server deployed by step "
-            f"'{step_name}' and pipeline '{pipeline_name}' for model "
-            f"'{model_name}'..."
+    # Create or replace the service if the user wants to deploy
+    if deploy_decision:
+        new_service = cast(
+            MLFlowDeploymentService,
+            model_deployer.deploy_model(
+                replace=True,
+                config=predictor_cfg,
+                timeout=timeout,
+            ),
         )
-        # even when the deploy decision is negative, we still need to start
-        # the previous model server if it is no longer running, to ensure
-        # that a model server is available at all times
+        logger.info(
+            f"MLflow deployment service started and reachable at:\n"
+            f"    {new_service.prediction_url}\n"
+        )
+        return new_service
+
+    logger.info("Skipping model deployment.")
+
+    # Else try to resume a service with same pipeline, step, and model name
+    existing_services = model_deployer.find_model_server(
+        pipeline_name=pipeline_name,
+        pipeline_step_name=step_name,
+        model_name=model_name,
+    )
+    if existing_services:
+        logger.info(
+            f"Reusing last model server deployed by step '{step_name}' and "
+            f"pipeline '{pipeline_name}' for model '{model_name}'..."
+        )
+        service = cast(MLFlowDeploymentService, existing_services[0])
         if not service.is_running:
             service.start(timeout)
         return service
 
-    # create a new model deployment and replace an old one if it exists
-    new_service = cast(
-        MLFlowDeploymentService,
-        model_deployer.deploy_model(
-            replace=True,
-            config=predictor_cfg,
-            timeout=timeout,
-        ),
+    return MLFlowDeploymentService(predictor_cfg)
+
+
+def _find_or_log_model_in_mlflow(
+    experiment_name: str,
+    run_name: str,
+    step_name: str,
+    model_name: str,
+    model: UnmaterializedArtifact,
+) -> str:
+    """Find or log the given model in MLflow.
+
+    We try to find the model in the following order:
+    1. Search for the model using the MLflow config of the model deployer
+    2. Search for the model using the MLflow config of the experiment tracker
+    3. If no model was found, start a new MLflow run and log the model
+
+    Returns:
+        The ID of the MLflow run in which the model was logged.
+    """
+    # 1. Search for the model using the MLflow config of the model deployer
+    model_deployer = cast(
+        MLFlowModelDeployer, MLFlowModelDeployer.get_active_model_deployer()
+    )
+    mlflow_run_id = model_deployer.get_mlflow_run_id(
+        experiment_name=experiment_name,
+        run_name=run_name,
+    )
+    if mlflow_run_id and model_deployer.mlflow_client.list_artifacts(
+        mlflow_run_id, model_name
+    ):
+        return mlflow_run_id
+
+    # 2. Search for the model using the MLflow config of the experiment tracker
+    from zenml.integrations.mlflow.experiment_trackers.mlflow_experiment_tracker import (
+        MLFlowExperimentTracker,
     )
 
-    logger.info(
-        f"MLflow deployment service started and reachable at:\n"
-        f"    {new_service.prediction_url}\n"
-    )
+    experiment_tracker = Client().active_stack.experiment_tracker
+    if isinstance(experiment_tracker, MLFlowExperimentTracker):
+        mlflow_run_id = experiment_tracker.get_mlflow_run_id(
+            experiment_name=experiment_name,
+            run_name=run_name,
+        )
+        if mlflow_run_id and experiment_tracker.mlflow_client.list_artifacts(
+            mlflow_run_id, model_name
+        ):
+            return mlflow_run_id
 
-    return new_service
+    # 3. If no model was found, start a new MLflow run and log the model
+    mlflow_run_id = model_deployer.start_mlflow_run(
+        experiment_name=experiment_name,
+        run_name=run_name,
+        nested_run_name=step_name,
+    )
+    materialized_model = load_artifact(model)
+    model_deployer.log_model(
+        model=materialized_model, artifact_path=model_name
+    )
+    return mlflow_run_id
 
 
 @step(enable_cache=False)
