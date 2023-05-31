@@ -75,7 +75,7 @@ class MLFlowModelRegistry(BaseModelRegistry, MLFlowStackComponentMixin):
                 A tuple of (is_valid, error_message).
             """
             mlflow_version = mlflow.version.VERSION
-            if not mlflow_version >= "2.1.1" and self.config.is_local:
+            if mlflow_version < "2.1.1" and self.config.is_local:
                 return False, (
                     "The MLflow model registry requires MLflow version "
                     f"2.1.1 or higher to use a local MLflow registry. "
