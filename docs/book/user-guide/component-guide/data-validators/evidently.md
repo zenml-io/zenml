@@ -653,4 +653,6 @@ if __name__ == "__main__":
     visualize_results("text_data_test_pipeline", "text_test")
 ```
 
-![Evidently metrics report visualization](../../../.gitbook/assets/evidently-metrics-report.png) ![Evidently test results visualization](../../../.gitbook/assets/evidently-test-results.png)
+![Evidently metrics report visualization](../../../.gitbook/assets/evidently-metrics-report.png)
+
+![Evidently test results visualization](../../../.gitbook/assets/evidently-test-results.png)

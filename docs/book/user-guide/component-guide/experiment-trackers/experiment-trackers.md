@@ -42,7 +42,7 @@ Here is an architecture diagram that shows how experiment trackers fit into the 
 Experiment Trackers are optional stack components provided by integrations:
 
 | Experiment Tracker                 | Flavor    | Integration | Notes                                                                                           |
-| ---------------------------------- | --------- | ----------- | ----------------------------------------------------------------------------------------------- |
+|------------------------------------|-----------|-------------|-------------------------------------------------------------------------------------------------|
 | [MLflow](mlflow.md)                | `mlflow`  | `mlflow`    | Add MLflow experiment tracking and visualization capabilities to your ZenML pipelines           |
 | [Weights & Biases](wandb.md)       | `wandb`   | `wandb`     | Add Weights & Biases experiment tracking and visualization capabilities to your ZenML pipelines |
 | [Neptune](neptune.md)              | `neptune` | `neptune`   | Add Neptune experiment tracking and visualization capabilities to your ZenML pipelines          |

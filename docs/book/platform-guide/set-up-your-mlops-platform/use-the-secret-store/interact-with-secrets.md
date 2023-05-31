@@ -129,7 +129,7 @@ You can use the environment variable `ZENML_SECRET_VALIDATION_LEVEL` to disable 
 * Setting it to `SECRET_AND_KEY_EXISTS` (the default) validates both the secret existence as well as the existence of the exact key-value pair.
 
 {% hint style="warning" %}
-If you have secrets registered through both the [centralized secrets management](interact-with-secrets.md) and [a secrets manager](interact-with-secrets.md#description-managing-your-secrets-with-zenml), ZenML will first try to fetch the secret from the centralized secrets management and only fall back to the secrets manager if the secret is not found. This means that if you have a secret registered with the same name in both the centralized secrets store and the secrets manager, the secret registered in the secrets store will take precedence.
+If you have secrets registered through both the [centralized secrets management](interact-with-secrets.md) and [a secrets manager](/docs/book/user-guide/component-guide/secrets-managers/secrets-managers.md), ZenML will first try to fetch the secret from the centralized secrets management and only fall back to the secrets manager if the secret is not found. This means that if you have a secret registered with the same name in both the centralized secrets store and the secrets manager, the secret registered in the secrets store will take precedence.
 {% endhint %}
 
 ### Fetch secret values in a step
