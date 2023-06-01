@@ -30,7 +30,7 @@ if __name__ == "__main__":
         "experiment. Here you'll also be able to compare the two runs.)"
     )
 
-    run_metadata = get_pipeline("validation_pipeline").runs[0].metadata
+    run_metadata = get_pipeline("mlflow_example_pipeline").runs[0].metadata
     orchestrator_url = run_metadata.orchestrator_url
 
     print(f"\n\n*See your run in the orchestrator:*\n{orchestrator_url}")
