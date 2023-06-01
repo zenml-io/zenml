@@ -2,9 +2,9 @@
 
 ## Getting Started
 
-* [Introduction](introduction.md)
-* [Installation](getting-started/installation.md)
-* [Core concepts](getting-started/core-concepts.md)
+* [⭐ Introduction](introduction.md)
+* [🧙 Installation](getting-started/installation.md)
+* [🪄 Core concepts](getting-started/core-concepts.md)
 
 ## User Guide
 
@@ -154,5 +154,5 @@
 
 * [🤷 SDK & CLI reference](https://apidocs.zenml.io/)
 * [🤷 Server API reference](https://demoserver.zenml.io/docs)
-* [Community & content](reference/community-and-content.md)
-* [FAQ](reference/faq.md)
+* [💜 Community & content](reference/community-and-content.md)
+* [❓ FAQ](reference/faq.md)
