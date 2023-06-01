@@ -16,6 +16,7 @@ from pipelines.training_pipeline.training_pipeline import (
     mlflow_example_pipeline,
 )
 
+from zenml.client import Client
 from zenml.integrations.mlflow.mlflow_utils import get_tracking_uri
 
 if __name__ == "__main__":
@@ -28,3 +29,9 @@ if __name__ == "__main__":
         "You can find your runs tracked within the `mlflow_example_pipeline`"
         "experiment. Here you'll also be able to compare the two runs.)"
     )
+
+    c = Client()
+    orchestrator = c.active_stack.orchestrator
+    orchestrator_config = orchestrator.config
+    if orchestrator_config.get("kubeflow_hostname"):
+        print("Kubeflow URL: `{orchestrator_config.kubeflow_hostname}`")

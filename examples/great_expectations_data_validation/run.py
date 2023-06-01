@@ -12,8 +12,18 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-
 from pipelines.validation import validation_pipeline
+
+from zenml.client import Client
 
 if __name__ == "__main__":
     validation_pipeline()
+
+    c = Client()
+    orchestrator = c.active_stack.orchestrator
+    orchestrator_config = orchestrator.config
+    if orchestrator_config.get("kubeflow_hostname"):
+        print("Kubeflow URL: `{orchestrator_config.kubeflow_hostname}`")
+
+    data_validator = c.active_stack.data_validator
+    data_validator_config = data_validator.config
