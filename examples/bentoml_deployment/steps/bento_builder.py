@@ -26,7 +26,7 @@ bento_builder = bento_builder_step(
         labels={
             "framework": "pytorch",
             "dataset": "mnist",
-            "zenml_version": "0.21.1",
+            "zenml_version": "0.40.1",
         },
         exclude=["data"],
         python={
