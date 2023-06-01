@@ -20,6 +20,7 @@ if __name__ == "__main__":
     validation_pipeline()
 
     run_metadata = get_pipeline("validation_pipeline").runs[0].metadata
-    orchestrator_url = run_metadata.orchestrator_url
+    orchestrator_url = run_metadata.get("orchestrator_url")
 
-    print(f"\n\n*See your run in the orchestrator:*\n{orchestrator_url}")
+    if orchestrator_url:
+        print(f"\n\n*See your run in the orchestrator:*\n{orchestrator_url}")
