@@ -56,7 +56,7 @@ if __name__ == "__main__":
 
     if tracking_url:
         logger.info(
-            f"\n****See your run directly in the experiment tracker:****"
+            "\n****See your run directly in the experiment tracker:****"
         )
         logger.info(
             "Run this command in your terminal: \n "
