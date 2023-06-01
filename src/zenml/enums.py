@@ -235,6 +235,7 @@ class SourceContextTypes(StrEnum):
     API = "api"
     UNKNOWN = "unknown"
 
+
 class EnvironmentType(StrEnum):
     """Enum for environment types."""
 

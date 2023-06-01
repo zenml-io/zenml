@@ -34,13 +34,13 @@ from zenml.constants import (
     REPOSITORY_DIRECTORY_NAME,
 )
 from zenml.enums import AnalyticsEventSource
-from zenml.utils.enum_utils import StrEnum
 from zenml.environment import Environment, get_environment
 from zenml.exceptions import GitNotFoundError, InitializationException
 from zenml.integrations.registry import integration_registry
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.utils.analytics_utils import AnalyticsEvent, event_handler
+from zenml.utils.enum_utils import StrEnum
 from zenml.utils.io_utils import copy_dir, get_global_config_directory
 from zenml.utils.yaml_utils import write_yaml
 
