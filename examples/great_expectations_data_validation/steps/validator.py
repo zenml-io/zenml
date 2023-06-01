@@ -13,22 +13,18 @@
 #  permissions and limitations under the License.
 
 from zenml.integrations.great_expectations.steps import (
-    GreatExpectationsValidatorParameters,
     great_expectations_validator_step,
 )
 
-ge_validate_train_params = GreatExpectationsValidatorParameters(
-    expectation_suite_name="steel_plates_suite",
-    data_asset_name="steel_plates_train_df",
+ge_validate_train_step = great_expectations_validator_step.with_options(
+    parameters={
+        "expectation_suite_name": "steel_plates_suite",
+        "data_asset_name": "steel_plates_train_df",
+    }
 )
-ge_validate_test_params = GreatExpectationsValidatorParameters(
-    expectation_suite_name="steel_plates_suite",
-    data_asset_name="steel_plates_test_df",
-)
-
-ge_validate_train_step = great_expectations_validator_step(
-    step_name="ge_validate_train_step_class", params=ge_validate_train_params
-)
-ge_validate_test_step = great_expectations_validator_step(
-    step_name="ge_validate_test_step_class", params=ge_validate_test_params
+ge_validate_test_step = great_expectations_validator_step.with_options(
+    parameters={
+        "expectation_suite_name": "steel_plates_suite",
+        "data_asset_name": "steel_plates_test_df",
+    }
 )

@@ -650,7 +650,7 @@ def deploy(
                         "cluster is required for ZenML deployment. "
                         "Please take a look at the "
                         "guide for steps on how to proceed: "
-                        "https://docs.zenml.io/getting-started/deploying-zenml/cli#option-1-starting-from-scratch"
+                        "https://docs.zenml.io/platform-guide/set-up-your-mlops-platform/deploy-zenml/deploy-with-zenml-cli#option-1-starting-from-scratch"
                     )
                     logger.info(
                         "Not attempting to import the generated "
@@ -1059,7 +1059,7 @@ def get_outputs(
                     elif format == "yaml":
                         outputs_yaml = yaml.dump(outputs, indent=4)
                         cli_utils.declare(outputs_yaml)
-                        return cast(str, outputs_yaml)
+                        return outputs_yaml
                     else:
                         cli_utils.declare(str(outputs))
                         return outputs

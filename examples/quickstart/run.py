@@ -14,61 +14,16 @@
 
 from pipelines import inference_pipeline, training_pipeline
 from rich import print
-from steps import (
-    drift_detector,
-    evaluator,
-    inference_data_loader,
-    predictor,
-    svc_trainer_mlflow,
-    training_data_loader,
-)
 
 from zenml.integrations.mlflow.mlflow_utils import get_tracking_uri
-from zenml.integrations.mlflow.steps.mlflow_deployer import (
-    MLFlowDeployerParameters,
-    mlflow_model_registry_deployer_step,
-)
-from zenml.integrations.mlflow.steps.mlflow_registry import (
-    MLFlowRegistryParameters,
-    mlflow_register_model_step,
-)
-from zenml.model_registries.base_model_registry import (
-    ModelRegistryModelMetadata,
-)
 
 
 def main():
     # initialize and run the training pipeline
-    training_pipeline_instance = training_pipeline(
-        training_data_loader=training_data_loader(),
-        trainer=svc_trainer_mlflow(),
-        evaluator=evaluator(),
-        model_register=mlflow_register_model_step(
-            params=MLFlowRegistryParameters(
-                name="zenml-quickstart-model",
-                metadata=ModelRegistryModelMetadata(gamma=0.01, arch="svc"),
-                description="The first run of the Quickstart pipeline.",
-            )
-        ),
-    )
-    training_pipeline_instance.run()
+    training_pipeline()
 
     # initialize and run the inference pipeline
-    inference_pipeline_instance = inference_pipeline(
-        inference_data_loader=inference_data_loader(),
-        mlflow_model_deployer=mlflow_model_registry_deployer_step(
-            params=MLFlowDeployerParameters(
-                registry_model_name="zenml-quickstart-model",
-                registry_model_version="1",
-                # or you can use the model stage if you have set it in the MLflow registry
-                # registered_model_stage="None" # "Staging", "Production", "Archived"
-            )
-        ),
-        predictor=predictor(),
-        training_data_loader=training_data_loader(),
-        drift_detector=drift_detector,
-    )
-    inference_pipeline_instance.run()
+    inference_pipeline()
 
     print(
         "You can run:\n "

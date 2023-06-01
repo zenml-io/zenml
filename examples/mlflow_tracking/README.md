@@ -175,7 +175,9 @@ zenml stack recipe deploy k3d-modular
 ```
 
 >**Note**:
-> This recipe comes with MLflow, Kubeflow and Minio enabled by default. If you want any other components like KServe, Seldon or Tekton, you can specify that using the `--install/-i` flag.
+> This recipe comes with MLflow, Kubeflow and Minio enabled by default. If you
+> want any other components like Seldon or Tekton, you can specify that using
+> the relevant flag (i.e. `-o` for orchestrators and so on).
 
 This will deploy a local Kubernetes cluster with MLflow installed. 
 It will also generate a stack YAML file that you can import as a ZenML stack by running 
@@ -209,6 +211,13 @@ In order to clean up, delete the remaining ZenML references.
 rm -rf zenml_examples
 rm -rf <SPECIFIC_MLRUNS_PATH_GOES_HERE>
 ```
+
+# Run it on the sandbox
+
+ZenML offers a sandbox environment where you can effortlessly run your pipelines on a Kubernetes cluster. This complimentary service is an excellent way to try out a production deployment.
+
+You can execute this example in the sandbox by following a few simple commands. Learn more about the sandbox in the [official documentation](https://docs.zenml.io/user-guide/advanced-guide/sandbox), or visit the [sandbox homepage](https://sandbox.zenml.io/).
+
 
 # 📜 Learn more
 

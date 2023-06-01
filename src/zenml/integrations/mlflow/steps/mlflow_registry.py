@@ -16,9 +16,8 @@
 from typing import Optional, cast
 
 from mlflow.tracking import artifact_utils
-from pydantic import Field
 
-from zenml import __version__
+from zenml import __version__, step
 from zenml.client import Client
 from zenml.environment import Environment
 from zenml.integrations.mlflow.experiment_trackers.mlflow_experiment_tracker import (
@@ -34,18 +33,30 @@ from zenml.model_registries.base_model_registry import (
 )
 from zenml.steps import (
     STEP_ENVIRONMENT_NAME,
-    BaseParameters,
     StepEnvironment,
-    step,
 )
 
 logger = get_logger(__name__)
 
 
-class MLFlowRegistryParameters(BaseParameters):
-    """Model registry step parameters for MLflow.
+@step(enable_cache=True)
+def mlflow_register_model_step(
+    model: UnmaterializedArtifact,
+    name: str,
+    version: Optional[str] = None,
+    trained_model_name: Optional[str] = "model",
+    model_source_uri: Optional[str] = None,
+    experiment_name: Optional[str] = None,
+    run_name: Optional[str] = None,
+    run_id: Optional[str] = None,
+    description: Optional[str] = None,
+    metadata: Optional[ModelRegistryModelMetadata] = None,
+) -> None:
+    """MLflow model registry step.
 
     Args:
+        model: Model to be registered, This is not used in the step, but is
+            required to trigger the step when the model is trained.
         name: Name of the registered model.
         version: Version of the registered model.
         trained_model_name: Name of the model to be deployed.
@@ -56,32 +67,6 @@ class MLFlowRegistryParameters(BaseParameters):
             will be fetched from the MLflow tracking server.
         description: Description of the model.
         metadata: Metadata of the model version to be added to the model registry.
-    """
-
-    name: str
-    version: Optional[str] = None
-    trained_model_name: Optional[str] = "model"
-    model_source_uri: Optional[str] = None
-    experiment_name: Optional[str] = None
-    run_name: Optional[str] = None
-    run_id: Optional[str] = None
-    description: Optional[str] = None
-    metadata: ModelRegistryModelMetadata = Field(
-        default_factory=ModelRegistryModelMetadata
-    )
-
-
-@step(enable_cache=True)
-def mlflow_register_model_step(
-    model: UnmaterializedArtifact,
-    params: MLFlowRegistryParameters,
-) -> None:
-    """MLflow model registry step.
-
-    Args:
-        model: Model to be registered, This is not used in the step, but is
-            required to trigger the step when the model is trained.
-        params: Parameters for the step.
 
     Raises:
         ValueError: If the model registry is not an MLflow model registry.
@@ -115,9 +100,9 @@ def mlflow_register_model_step(
 
     # Get MLflow run ID either from params or from experiment tracker using
     # pipeline name and run name
-    mlflow_run_id = params.run_id or experiment_tracker.get_run_id(
-        experiment_name=params.experiment_name or pipeline_name,
-        run_name=params.run_name or run_name,
+    mlflow_run_id = run_id or experiment_tracker.get_run_id(
+        experiment_name=experiment_name or pipeline_name,
+        run_name=run_name or run_name,
     )
     # If no value was set at all, raise an error
     if not mlflow_run_id:
@@ -137,14 +122,14 @@ def mlflow_register_model_step(
         )
 
     # Set model source URI
-    model_source_uri = params.model_source_uri or None
+    model_source_uri = model_source_uri or None
 
     # Check if the run ID have a model artifact if no model source URI is set.
-    if not params.model_source_uri and client.list_artifacts(
-        mlflow_run_id, params.trained_model_name
+    if not model_source_uri and client.list_artifacts(
+        mlflow_run_id, trained_model_name
     ):
         model_source_uri = artifact_utils.get_artifact_uri(
-            run_id=mlflow_run_id, artifact_path=params.trained_model_name
+            run_id=mlflow_run_id, artifact_path=trained_model_name
         )
     if not model_source_uri:
         raise RuntimeError(
@@ -153,28 +138,30 @@ def mlflow_register_model_step(
         )
 
     # Check metadata
-    if params.metadata.zenml_version is None:
-        params.metadata.zenml_version = __version__
-    if params.metadata.zenml_pipeline_name is None:
-        params.metadata.zenml_pipeline_name = pipeline_name
-    if params.metadata.zenml_run_name is None:
-        params.metadata.zenml_run_name = run_name
-    if params.metadata.zenml_pipeline_run_uuid is None:
-        params.metadata.zenml_pipeline_run_uuid = pipeline_run_uuid
-    if params.metadata.zenml_workspace is None:
-        params.metadata.zenml_workspace = zenml_workspace
+    if not metadata:
+        metadata = ModelRegistryModelMetadata()
+    if metadata.zenml_version is None:
+        metadata.zenml_version = __version__
+    if metadata.zenml_pipeline_name is None:
+        metadata.zenml_pipeline_name = pipeline_name
+    if metadata.zenml_run_name is None:
+        metadata.zenml_run_name = run_name
+    if metadata.zenml_pipeline_run_uuid is None:
+        metadata.zenml_pipeline_run_uuid = pipeline_run_uuid
+    if metadata.zenml_workspace is None:
+        metadata.zenml_workspace = zenml_workspace
 
     # Register model version
     model_version = model_registry.register_model_version(
-        name=params.name,
-        version=params.version or "1",
+        name=name,
+        version=version or "1",
         model_source_uri=model_source_uri,
-        description=params.description,
-        metadata=params.metadata,
+        description=description,
+        metadata=metadata,
     )
 
     logger.info(
-        f"Registered model {params.name} "
+        f"Registered model {name} "
         f"with version {model_version.version} "
         f"from source {model_source_uri}."
     )

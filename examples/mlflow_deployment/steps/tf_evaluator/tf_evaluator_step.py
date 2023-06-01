@@ -15,11 +15,11 @@ import mlflow  # type: ignore [import]
 import numpy as np  # type: ignore [import]
 import tensorflow as tf  # type: ignore [import]
 
+from zenml import step
 from zenml.client import Client
 from zenml.integrations.mlflow.experiment_trackers import (
     MLFlowExperimentTracker,
 )
-from zenml.steps import step
 
 experiment_tracker = Client().active_stack.experiment_tracker
 

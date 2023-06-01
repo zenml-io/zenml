@@ -15,28 +15,7 @@
 from pipelines.training_pipeline.training_pipeline import (
     wandb_example_pipeline,
 )
-from steps.evaluator.evaluator_step import tf_evaluator
-from steps.importer.importer_step import importer_mnist
-from steps.normalizer.normalizer_step import normalizer
-from steps.trainer.trainer_step import TrainerParameters, tf_trainer
 
 if __name__ == "__main__":
-    # Initialize a pipeline run
-    run_1 = wandb_example_pipeline(
-        importer=importer_mnist(),
-        normalizer=normalizer(),
-        trainer=tf_trainer(params=TrainerParameters(epochs=5, lr=0.0003)),
-        evaluator=tf_evaluator(),
-    )
-
-    run_1.run()
-
-    # Initialize a pipeline run again
-    run_2 = wandb_example_pipeline(
-        importer=importer_mnist(),
-        normalizer=normalizer(),
-        trainer=tf_trainer(params=TrainerParameters(epochs=5, lr=0.0001)),
-        evaluator=tf_evaluator(),
-    )
-
-    run_2.run()
+    wandb_example_pipeline(epochs=5, lr=0.0003)
+    wandb_example_pipeline(epochs=5, lr=0.0001)

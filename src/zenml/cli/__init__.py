@@ -480,7 +480,7 @@ zenml artifact-store deploy s3_artifact_store --flavor=s3
 ```
 
 For full documentation on this functionality, please refer to [the dedicated
-documentation on stack component deploy](https://docs.zenml.io/advanced-guide/practical-mlops/stack-recipes#deploying-stack-components-directly).
+documentation on stack component deploy](https://docs.zenml.io/platform-guide/set-up-your-mlops-platform/deploy-and-set-up-a-cloud-stack/deploy-a-stack-component).
 
 Secrets Management
 ------------------
@@ -960,19 +960,17 @@ in your Python code. Let's say you have a Python file called `run.py` and
 it contains the following code:
 
 ```python
-from zenml.pipelines import pipeline
+from zenml import pipeline
 
 @pipeline
 def my_pipeline(...):
    # Connect your pipeline steps here
    pass
-
-pipeline_instance = my_pipeline(...)
 ```
 
 You can register your pipeline like this:
 ```bash
-zenml pipeline register run.pipeline_instance
+zenml pipeline register my_pipeline
 ```
 
 To list all registered pipelines, use:
@@ -1115,7 +1113,16 @@ zenml up
 ```
 
 This will start the dashboard on your local machine where you can access it at
-the URL printed to the console. If you want to stop the dashboard, simply run:
+the URL printed to the console. 
+
+If you have closed the dashboard in your browser and want to open it again, 
+you can run:
+
+```bash
+zenml show
+```
+
+If you want to stop the dashboard, simply run:
 
 ```bash
 zenml down
@@ -1253,6 +1260,13 @@ recommended that you supply the password only as a command line argument:
 zenml connect --username zenml --password=Pa@#$#word --config=/path/to/zenml_server_config.yaml
 ```
 
+You can open the ZenML dashboard of your currently connected ZenML server using
+the following command:
+
+```bash
+zenml show
+
+Note that if you have set your `AUTO_OPEN_DASHBOARD` environment variable to `false` then this will not open the dashboard until you set it back to `true`.
 To disconnect from the current ZenML server and revert to using the local
 default database, use the following command:
 

@@ -343,13 +343,13 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                 "orchestrator."
             )
 
-        for step in deployment.step_configurations.values():
+        for step_name, step in deployment.step_configurations.items():
             if self.requires_resources_in_orchestration_environment(step):
                 logger.warning(
                     "Specifying step resources is not yet supported for "
                     "the Kubernetes orchestrator, ignoring resource "
                     "configuration for step %s.",
-                    step.config.name,
+                    step_name,
                 )
 
         pipeline_name = deployment.pipeline_configuration.name

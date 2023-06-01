@@ -713,15 +713,33 @@ class LabelStudioAnnotator(BaseAnnotator, AuthenticationMixin):
                     "Please update the storage synchronization settings in the "
                     "Label Studio web UI as per your needs."
                 )
-            storage = dataset.connect_s3_import_storage(
-                bucket=uri,
-                aws_access_key_id=params.aws_access_key_id,
-                aws_secret_access_key=params.aws_secret_access_key,
-                aws_session_token=params.aws_session_token,
-                region_name=params.s3_region_name,
-                s3_endpoint=params.s3_endpoint,
-                **storage_connection_args,
+
+            # temporary fix using client method until LS supports
+            # recursive_scan in their SDK
+            # (https://github.com/heartexlabs/label-studio-sdk/pull/130)
+            ls_client = self._get_client()
+            payload = {
+                "bucket": uri,
+                "prefix": params.prefix,
+                "regex_filter": params.regex_filter,
+                "use_blob_urls": params.use_blob_urls,
+                "aws_access_key_id": params.aws_access_key_id,
+                "aws_secret_access_key": params.aws_secret_access_key,
+                "aws_session_token": params.aws_session_token,
+                "region_name": params.s3_region_name,
+                "s3_endpoint": params.s3_endpoint,
+                "presign": params.presign,
+                "presign_ttl": params.presign_ttl,
+                "title": dataset.get_params()["title"],
+                "description": params.description,
+                "project": dataset.id,
+                "recursive_scan": True,
+            }
+            response = ls_client.make_request(
+                "POST", "/api/storages/s3", json=payload
             )
+            storage = response.json()
+
         elif params.storage_type == "local":
             if not params.prefix:
                 raise ValueError(

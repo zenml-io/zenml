@@ -28,11 +28,12 @@ def test_is_secret_reference(name, key):
 
     # invalid references
     for value in [
-        f"{{{{ {name}.{key} }}}}",  # spaces
+        f"{{{{{name} . {key}}}}}",  # spaces
         f"{{{name}.{key}}}",  # single {}
         f"${name}.{key}",
         f"${{{{{name}.{key}}}}}",  # leading dollar
         "{{namekeynodot}}",  # no dot
+        f"${{{{{name}.{key}}}}}",  # leading dollar
     ]:
         assert not secret_utils.is_secret_reference(value)
 
@@ -40,10 +41,14 @@ def test_is_secret_reference(name, key):
 @given(name=strategy, key=strategy)
 def test_secret_reference_parsing(name, key):
     """Tests that secret reference parsing works correctly."""
-    value = "{{" + f"{name}.{key}" + "}}"
-    ref = secret_utils.parse_secret_reference(value)
-    assert ref.name == name
-    assert ref.key == key
+    for value in [
+        f"{{{{{name}.{key}}}}}",  # no spaces
+        f"{{{{ {name}.{key} }}}}",  # spaces
+        f"{{{{   {name}.{key}     }}}}",  # more spaces
+    ]:
+        ref = secret_utils.parse_secret_reference(value)
+        assert ref.name == name
+        assert ref.key == key
 
 
 def test_secret_field():

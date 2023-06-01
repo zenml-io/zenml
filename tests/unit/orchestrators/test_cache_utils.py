@@ -23,19 +23,28 @@ from zenml.config.source import Source
 from zenml.config.step_configurations import Step
 from zenml.enums import ExecutionStatus, SorterOps
 from zenml.models.page_model import Page
+from zenml.new.pipelines.pipeline import Pipeline
 from zenml.orchestrators import cache_utils
 from zenml.steps import Output, step
 from zenml.steps.base_step import BaseStep
+from zenml.steps.step_invocation import StepInvocation
 
 
 def _compile_step(step: BaseStep) -> Step:
-    # Call the step here to finalize the configuration
-    step()
+    pipeline = Pipeline(name="test_pipeline", entrypoint=lambda: None)
+    invocation = StepInvocation(
+        id="",
+        step=step,
+        input_artifacts={},
+        external_artifacts={},
+        parameters={},
+        upstream_steps=set(),
+        pipeline=pipeline,
+    )
 
     compiler = Compiler()
-    return compiler._compile_step(
-        pipeline_parameter_name="",
-        step=step,
+    return compiler._compile_step_invocation(
+        invocation=invocation,
         pipeline_settings={},
         pipeline_extra={},
         stack=None,

@@ -26,7 +26,7 @@ from zenml.utils.analytics_utils import AnalyticsEvent, track
 from zenml.utils.pagination_utils import depaginate
 
 if TYPE_CHECKING:
-    from zenml.pipelines.base_pipeline import BasePipeline
+    from zenml.new.pipelines.pipeline import Pipeline
 
 logger = get_logger(__name__)
 
@@ -48,7 +48,7 @@ def get_pipelines() -> List["PipelineVersionView"]:
 
 @track(event=AnalyticsEvent.GET_PIPELINE)
 def get_pipeline(
-    pipeline: Union["BasePipeline", Type["BasePipeline"], str],
+    pipeline: Union["Pipeline", Type["Pipeline"], str],
     version: Optional[str] = None,
 ) -> Optional[Union["PipelineView", "PipelineVersionView"]]:
     """Fetches a post-execution pipeline view.
@@ -86,10 +86,10 @@ def get_pipeline(
     Raises:
         RuntimeError: If the pipeline was not specified correctly.
     """
-    from zenml.pipelines.base_pipeline import BasePipeline
+    from zenml.new.pipelines.pipeline import Pipeline
 
     # Pipeline instance: find the corresponding pipeline version in the DB.
-    if isinstance(pipeline, BasePipeline):
+    if isinstance(pipeline, Pipeline):
         pipeline_model = pipeline._get_registered_model()
         if pipeline_model:
             return PipelineVersionView(model=pipeline_model)
@@ -100,7 +100,7 @@ def get_pipeline(
     if isinstance(pipeline, str):
         pipeline_name = pipeline
 
-    elif isinstance(pipeline, type) and issubclass(pipeline, BasePipeline):
+    elif isinstance(pipeline, type) and issubclass(pipeline, Pipeline):
         pipeline_name = pipeline.__name__
     else:
         raise RuntimeError(

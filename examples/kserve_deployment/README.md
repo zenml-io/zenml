@@ -103,11 +103,13 @@ To get a stack with KServe and potential other components, you can make use of Z
 Run the following command to deploy the local KServe stack:
 
 ```bash
-zenml stack recipe deploy k3d-modular --install kserve
+zenml stack recipe deploy k3d-modular -d kserve
 ```
 
 >**Note**:
-> This recipe comes with MLflow, Kubeflow and Minio enabled by default. If you want any other components like Seldon or Tekton, you can specify that using the `--install/-i` flag.
+> This recipe comes with MLflow, Kubeflow and Minio enabled by default. If you
+> want any other components like Seldon or Tekton, you can specify that using
+> the relevant flag (i.e. `-o` for orchestrators and so on).
 
 This will deploy a local Kubernetes cluster with KServe installed. 
 It will also generate a stack YAML file that you can import as a ZenML stack by running 

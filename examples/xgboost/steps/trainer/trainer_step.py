@@ -13,26 +13,21 @@
 #  permissions and limitations under the License.
 import xgboost as xgb
 
-from zenml.steps import BaseParameters, step
-
-
-class XGBoostParameters(BaseParameters):
-    max_depth: int = 1
-    eta: int = 1
-    objective: str = "binary:logistic"
-    num_round: int = 2
+from zenml import step
 
 
 @step
 def trainer(
-    params: XGBoostParameters,
     mat_train: xgb.DMatrix,
+    max_depth: int = 1,
+    eta: int = 1,
+    objective: str = "binary:logistic",
+    num_round: int = 2,
 ) -> xgb.Booster:
     """Trains a XGBoost model on the data."""
-    num_round = 2
     params = {
-        "max_depth": params.max_depth,
-        "eta": params.eta,
-        "objective": params.objective,
+        "max_depth": max_depth,
+        "eta": eta,
+        "objective": objective,
     }
     return xgb.train(params, mat_train, num_round)

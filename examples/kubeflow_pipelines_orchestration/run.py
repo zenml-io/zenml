@@ -14,10 +14,6 @@
 
 import click
 from pipelines.mnist_pipeline import mnist_pipeline
-from steps.evaluators import evaluator
-from steps.importers import importer
-from steps.normalizers import normalizer
-from steps.trainers import TrainerParameters, trainer
 
 from zenml.integrations.tensorboard.visualizers import (
     stop_tensorboard_server,
@@ -44,13 +40,7 @@ def main(epochs: int, lr: float, stop_tensorboard: bool):
         return
 
     # Run the pipeline
-    pipeline_instance = mnist_pipeline(
-        importer=importer(),
-        normalizer=normalizer(),
-        trainer=trainer(params=TrainerParameters(epochs=epochs, lr=lr)),
-        evaluator=evaluator(),
-    )
-    pipeline_instance.run()
+    mnist_pipeline(epochs=epochs, lr=lr)
 
     visualize_tensorboard(
         pipeline_name="mnist_pipeline",
@@ -59,16 +49,17 @@ def main(epochs: int, lr: float, stop_tensorboard: bool):
 
     # In case you want to run this on a schedule run it in the following way:
     # from datetime import datetime, timedelta
-    #
+
     # from zenml.pipelines import Schedule
-    #
-    # pipeline_instance.run(
+
+    # scheduled_pipeline = mnist_pipeline.with_options(
     #     schedule=Schedule(
     #         start_time=datetime.now(),
     #         end_time=datetime.now() + timedelta(minutes=10),
     #         interval_second=60,
     #     )
     # )
+    # scheduled_pipeline()
 
 
 if __name__ == "__main__":

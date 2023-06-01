@@ -15,38 +15,49 @@
 from pipelines.training_pipeline.training_pipeline import (
     mlflow_example_pipeline,
 )
-from steps.evaluator.evaluator_step import tf_evaluator
-from steps.loader.loader_step import loader_mnist
-from steps.normalizer.normalizer_step import normalizer
-from steps.trainer.trainer_step import TrainerParameters, tf_trainer
 
+from zenml.client import Client
+from zenml.enums import StoreType
 from zenml.integrations.mlflow.mlflow_utils import get_tracking_uri
+from zenml.logger import get_logger
+from zenml.post_execution import get_pipeline
+
+logger = get_logger(__name__)
+
 
 if __name__ == "__main__":
-    # Initialize a pipeline run
-    run_1 = mlflow_example_pipeline(
-        importer=loader_mnist(),
-        normalizer=normalizer(),
-        trainer=tf_trainer(params=TrainerParameters(epochs=5, lr=0.0003)),
-        evaluator=tf_evaluator(),
-    )
+    mlflow_example_pipeline()
 
-    run_1.run()
+    p = get_pipeline("mlflow_example_pipeline")
+    run_metadata = p.runs[0].metadata
+    orchestrator_url = run_metadata.get("orchestrator_url")
+    experiment_tracker_url = get_tracking_uri()
 
-    # Initialize a pipeline run again
-    run_2 = mlflow_example_pipeline(
-        importer=loader_mnist(),
-        normalizer=normalizer(),
-        trainer=tf_trainer(params=TrainerParameters(epochs=5, lr=0.0001)),
-        evaluator=tf_evaluator(),
-    )
+    client = Client()
 
-    run_2.run()
+    if client.zen_store.type == StoreType.REST:
+        url = client.zen_store.url
+        url = (
+            url
+            + f"/workspaces/{client.active_workspace.name}/all-runs/{str(p.runs[0].id)}/dag"
+        )
+        logger.info(
+            f"\n\n****Check out the ZenML dashboard to see your run:****\n{url}"
+        )
 
-    print(
-        "Now run \n "
-        f"    mlflow ui --backend-store-uri '{get_tracking_uri()}'\n"
-        "To inspect your experiment runs within the mlflow UI.\n"
-        "You can find your runs tracked within the `mlflow_example_pipeline`"
-        "experiment. Here you'll also be able to compare the two runs.)"
-    )
+    if orchestrator_url:
+        logger.info(
+            f"\n\n****See your run directly in the orchestrator:****\n{orchestrator_url}"
+        )
+
+    if experiment_tracker_url:
+        logger.info(
+            f"\n\n****See your run directly in the experiment tracker:****\n"
+        )
+        logger.info(
+            "Now run \n "
+            f"    mlflow ui --backend-store-uri '{experiment_tracker_url}'\n"
+            "To inspect your experiment runs within the mlflow UI.\n"
+            "You can find your runs tracked within the `mlflow_example_pipeline` "
+            "experiment."
+        )
