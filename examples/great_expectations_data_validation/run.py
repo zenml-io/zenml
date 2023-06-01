@@ -14,13 +14,12 @@
 
 from pipelines.validation import validation_pipeline
 
-from zenml.client import Client
+from zenml.post_execution import get_pipeline
 
 if __name__ == "__main__":
     validation_pipeline()
 
-    c = Client()
-    orchestrator = c.active_stack.orchestrator
-    orchestrator_config = orchestrator.config
-    if orchestrator_config.get("kubeflow_hostname"):
-        print("Kubeflow URL: `{orchestrator_config.kubeflow_hostname}`")
+    run_metadata = get_pipeline("validation_pipeline").runs[0].metadata
+    orchestrator_url = run_metadata.orchestrator_url
+
+    print(f"\n\n*See your run in the orchestrator:*\n{orchestrator_url}")
