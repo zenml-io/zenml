@@ -21,7 +21,7 @@ from zenml.constants import METADATA_EXPERIMENT_TRACKER_URL
 if __name__ == "__main__":
     mlflow_example_pipeline()
 
-    trainer_step = mlflow_example_pipeline.get_runs()[0].get_step("trainer")
+    trainer_step = mlflow_example_pipeline.get_runs()[0].get_step("tf_trainer")
     tracking_uri = trainer_step.metadata[METADATA_EXPERIMENT_TRACKER_URL].value
     print(
         "Now run \n "

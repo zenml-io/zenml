@@ -67,7 +67,7 @@ def main(config: str, epochs: int, lr: float, min_accuracy: float):
         )
 
         trainer_step = continuous_deployment_pipeline.get_runs()[0].get_step(
-            "trainer"
+            "tf_trainer"
         )
         tracking_uri = trainer_step.metadata[
             METADATA_EXPERIMENT_TRACKER_URL
