@@ -33,7 +33,8 @@ from zenml.constants import (
     ENV_ZENML_ENABLE_REPO_INIT_WARNINGS,
     REPOSITORY_DIRECTORY_NAME,
 )
-from zenml.enums import AnalyticsEventSource, StrEnum
+from zenml.enums import AnalyticsEventSource
+from zenml.utils.enum_utils import StrEnum
 from zenml.environment import Environment, get_environment
 from zenml.exceptions import GitNotFoundError, InitializationException
 from zenml.integrations.registry import integration_registry

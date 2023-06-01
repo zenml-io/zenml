@@ -36,7 +36,7 @@ from zenml.service_connectors.service_connector import (
     AuthenticationConfig,
     ServiceConnector,
 )
-from zenml.enums import StrEnum
+from zenml.utils.enum_utils import StrEnum
 
 logger = get_logger(__name__)
 

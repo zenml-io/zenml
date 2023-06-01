@@ -31,7 +31,7 @@ from uuid import UUID
 from pydantic import BaseModel, Field, SecretStr, root_validator
 
 from zenml.config.global_config import GlobalConfiguration
-from zenml.enums import StrEnum
+from zenml.utils.enum_utils import StrEnum
 from zenml.exceptions import AuthorizationException
 from zenml.logger import get_logger
 from zenml.models import BaseFilterModel, RoleResponseModel

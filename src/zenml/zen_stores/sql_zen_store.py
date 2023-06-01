@@ -64,8 +64,8 @@ from zenml.enums import (
     SorterOps,
     StackComponentType,
     StoreType,
-    StrEnum,
 )
+from zenml.utils.enum_utils import StrEnum
 from zenml.exceptions import (
     AuthorizationException,
     EntityExistsError,

@@ -15,7 +15,7 @@
 
 from typing import Any, Dict, List, Set, Tuple, Union
 
-from zenml.enums import StrEnum
+from zenml.utils.enum_utils import StrEnum
 
 
 class Uri(str):

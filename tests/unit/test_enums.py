@@ -12,10 +12,10 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from zenml.enums import StrEnum
+from zenml.utils.enum_utils import StrEnum
 
 
-def test_enums():
+def test_enum_utils():
     """Test that `StrEnum` works as expected."""
 
     class TestEnum(StrEnum):

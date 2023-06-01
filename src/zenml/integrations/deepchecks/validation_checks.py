@@ -23,7 +23,7 @@ from deepchecks.core.checks import BaseCheck
 # not part of deepchecks.tabular.checks
 from deepchecks.tabular.checks.data_integrity import FeatureFeatureCorrelation
 
-from zenml.enums import StrEnum
+from zenml.utils.enum_utils import StrEnum
 from zenml.logger import get_logger
 from zenml.utils import source_utils
 

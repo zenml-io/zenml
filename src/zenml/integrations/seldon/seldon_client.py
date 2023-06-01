@@ -23,7 +23,7 @@ from kubernetes import client as k8s_client
 from kubernetes import config as k8s_config
 from pydantic import BaseModel, Field, ValidationError
 
-from zenml.enums import StrEnum
+from zenml.utils.enum_utils import StrEnum
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
