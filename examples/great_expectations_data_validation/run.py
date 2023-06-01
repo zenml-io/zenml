@@ -24,6 +24,3 @@ if __name__ == "__main__":
     orchestrator_config = orchestrator.config
     if orchestrator_config.get("kubeflow_hostname"):
         print("Kubeflow URL: `{orchestrator_config.kubeflow_hostname}`")
-
-    data_validator = c.active_stack.data_validator
-    data_validator_config = data_validator.config
