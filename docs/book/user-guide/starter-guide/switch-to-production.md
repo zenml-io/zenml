@@ -67,6 +67,22 @@ To run a pipeline in the sandbox, use the `python run.py` command. You can eithe
 python run.py
 ```
 
+After you have run the pipelines, you can open the ZenML dashboard to see their status:
+
+![Sandbox pipelines running on ZenML](/docs/book/.gitbook/assets/zenml_sandbox_zenml.png)
+
+You can also check the corresponding stack components to see the various services used. For example, Kubeflow would show you a similar DAG as ZenML running on a Kubernetes cluster:
+
+![Sandbox pipelines running on Kubeflow](/docs/book/.gitbook/assets/zenml_sandbox_kubeflow.png)
+
+Minio will show you the artifacts used:
+
+![Sandbox pipelines running on Minio](/docs/book/.gitbook/assets/zenml_sandbox_minio.png)
+
+And MLflow will show you the experiment metadata tracked as the pipeline ran through:
+
+![Sandbox pipelines running on MLflow](/docs/book/.gitbook/assets/zenml_sandbox_mlflow.png)
+
 #### Step 6: Sandbox deletion
 
 Eight hours after registration, your sandbox will be automatically deleted. Make sure to save any important data or results before the sandbox is deleted. While the sandbox is active, you can also manually delete it through the MLOps Platform Sandbox interface.
