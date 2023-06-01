@@ -34,7 +34,9 @@ if __name__ == "__main__":
     tracking_url = trainer_step.metadata.get(
         METADATA_EXPERIMENT_TRACKER_URL
     ).value
-    orchestrator_url = trainer_step.get(METADATA_ORCHESTRATOR_URL).value
+    orchestrator_url = trainer_step.metadata.get(
+        METADATA_ORCHESTRATOR_URL
+    ).value
 
     client = Client()
 
