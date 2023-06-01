@@ -15,7 +15,7 @@
 from zenml.enums import StrEnum
 
 
-def test_enum_utils():
+def test_enums():
     """Test that `StrEnum` works as expected."""
 
     class TestEnum(StrEnum):
