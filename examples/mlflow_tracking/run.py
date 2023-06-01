@@ -46,12 +46,12 @@ if __name__ == "__main__":
             + f"/workspaces/{client.active_workspace.name}/all-runs/{str(runs[0].id)}/dag"
         )
         logger.info(
-            f"\n\n****Check out the ZenML dashboard to see your run:****\n{url}"
+            f"\n****Check out the ZenML dashboard to see your run:****\n{url}"
         )
 
     if orchestrator_url:
         logger.info(
-            f"\n\n****See your run directly in the orchestrator:****\n{orchestrator_url}"
+            f"\n****See your run directly in the orchestrator:****\n{orchestrator_url}"
         )
 
     if tracking_url:
@@ -60,8 +60,7 @@ if __name__ == "__main__":
         )
         logger.info(
             "Run this command in your terminal: \n "
-            f"    mlflow ui --backend-store-uri '{tracking_url}'\n"
-            "To inspect your experiment runs within the mlflow UI.\n"
+            f"    mlflow ui --backend-store-uri '{tracking_url}'\n\n"
             "You can find your runs tracked within the `mlflow_example_pipeline` "
             "experiment."
         )
