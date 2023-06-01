@@ -54,7 +54,7 @@ Out of the box, ZenML comes with a `local` artifact store already part of the de
 your local filesystem. Additional Artifact Stores are provided by integrations:
 
 | Artifact Store                     | Flavor   | Integration | URI Schema(s)      | Notes                                                                                                                            |
-| ---------------------------------- | -------- | ----------- | ------------------ | -------------------------------------------------------------------------------------------------------------------------------- |
+|------------------------------------|----------|-------------|--------------------|----------------------------------------------------------------------------------------------------------------------------------|
 | [Local](local.md)                  | `local`  | _built-in_  | None               | This is the default Artifact Store. It stores artifacts on your local filesystem. Should be used only for running ZenML locally. |
 | [Amazon S3](s3.md)                 | `s3`     | `s3`        | `s3://`            | Uses AWS S3 as an object store backend                                                                                           |
 | [Google Cloud Storage](gcp.md)     | `gcp`    | `gcp`       | `gs://`            | Uses Google Cloud Storage as an object store backend                                                                             |

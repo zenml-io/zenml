@@ -140,10 +140,10 @@
 
 * [🚀 Quickstart](https://github.com/zenml-io/zenml/blob/main/examples/quickstart/README.md)
 * [🧩 Projects](learning/projects/projects.md)
+  * [Using ZenML with LLMs to Analyze and Version Data from Databases](https://github.com/zenml-io/zenml-projects/tree/main/supabase-openai-summary)
   * [Build an LLM-powered community Slack bot](https://github.com/zenml-io/zenml-projects/tree/main/langchain-llamaindex-slackbot)
   * [Summarize news articles with NLP](https://github.com/zenml-io/zenml-projects/tree/main/zen-news-summarization)
   * [Use ZenML seamlessly with GitHub Actions](https://github.com/zenml-io/zenml-gitflow)
-  * [Using ZenML with LLMs to Analyze and Version Data from Databases](https://github.com/zenml-io/zenml-projects/tree/main/supabase-openai-summary)
   * [Detect Sign Language alphabet in real-time images using Yolov5](https://github.com/zenml-io/zenml-projects/tree/main/sign-language-detection-yolov5)
   * [Forecasting wind power generation](https://github.com/zenml-io/zenml-projects/tree/main/time-series-forecast)
 
