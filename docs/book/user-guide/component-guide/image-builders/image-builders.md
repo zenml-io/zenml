@@ -21,7 +21,7 @@ Out of the box, ZenML comes with a `local` image builder that builds Docker imag
 image builders are provided by integrations:
 
 | Image Builder                      | Flavor   | Integration | Notes                                                                    |
-| ---------------------------------- | -------- | ----------- | ------------------------------------------------------------------------ |
+|------------------------------------|----------|-------------|--------------------------------------------------------------------------|
 | [LocalImageBuilder](local.md)      | `local`  | _built-in_  | Builds your Docker images locally.                                       |
 | [KanikoImageBuilder](kaniko.md)    | `kaniko` | `kaniko`    | Builds your Docker images in Kubernetes using Kaniko.                    |
 | [GCPImageBuilder](gcp.md)          | `gcp`    | `gcp`       | Builds your Docker images using Google Cloud Build.                      |

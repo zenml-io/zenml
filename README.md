@@ -89,7 +89,7 @@
     ·
     <a href="#-meet-the-team">Meet the Team</a>
     <br />
-    🎉 Version 0.40.0 is out. Check out the release notes
+    🎉 Version 0.40.1 is out. Check out the release notes
     <a href="https://github.com/zenml-io/zenml/releases">here</a>.
     <br />
     <br />
@@ -208,19 +208,21 @@ Deploying and configuring this is super easy with ZenML. For **AWS**, this might
 look a bit like this
 
 ```bash
-#Deploy and register an orchestrator and an artifact store
-zenml orchestrator deploy my_first_kubernetes --flavor kubernetes --cloud aws
-zenml artifact-store deploy my_first_artifact_store --flavor s3
+# Deploy and register an orchestrator and an artifact store
+zenml orchestrator deploy kubernetes_orchestrator --flavor kubernetes --cloud aws
+zenml artifact-store deploy s3_artifact_store --flavor s3
 
 # Register this combination of components as a stack
-zenml stack register production_stack --orchestrator my_first_kubernetes --artifact-store my_first_artifact_store --set # Register your production environment
+zenml stack register production_stack --orchestrator kubernetes_orchestrator --artifact-store s3_artifact_store --set # Register your production environment
 ```
 
 When you run a pipeline with this stack set, it will be running on your deployed
-kubeflow instance.
+Kubernetes cluster.
 
-You can also [deploy your own tooling manually]()
-or [register existing tooling]().
+You can also [deploy your own tooling manually](https://docs.zenml.io/platform-guide/set-up-your-mlops-platform/deploy-and-set-up-a-cloud-stack)
+or [**create your own MLOps Platform Sandbox**](https://docs.zenml.io/user-guide/advanced-guide/sandbox), 
+a one-click deployment platform for an ephemeral MLOps stack that you can use 
+to run production-ready MLOps pipelines in the cloud.
 
 ## 🏇 3. Create a Pipeline
 
