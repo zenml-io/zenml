@@ -34,10 +34,14 @@ if __name__ == "__main__":
 
     runs = client.get_pipeline("mlflow_example_pipeline").runs
     trainer_step = mlflow_example_pipeline.get_runs()[0].get_step("tf_trainer")
-    tracking_url = trainer_step.metadata.get(
-        METADATA_EXPERIMENT_TRACKER_URL
-    ).value
-    orchestrator_url = trainer_step.metadata.get(METADATA_ORCHESTRATOR_URL)
+    if trainer_step.metadata.get(METADATA_EXPERIMENT_TRACKER_URL):
+        tracking_url = trainer_step.metadata.get(
+            METADATA_EXPERIMENT_TRACKER_URL
+        ).value
+    if trainer_step.metadata.get(METADATA_ORCHESTRATOR_URL):
+        orchestrator_url = trainer_step.metadata.get(
+            METADATA_ORCHESTRATOR_URL
+        ).value
 
     if client.zen_store.type == StoreType.REST:
         url = client.zen_store.url
