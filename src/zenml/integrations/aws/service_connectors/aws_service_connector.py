@@ -79,6 +79,7 @@ class AWSSecretKey(AuthenticationConfig):
 
     aws_access_key_id: SecretStr = Field(
         title="AWS Access Key ID",
+        description="An AWS access key ID associated with an AWS account or IAM user.",
     )
     aws_secret_access_key: SecretStr = Field(
         title="AWS Secret Access Key",

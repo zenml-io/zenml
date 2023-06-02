@@ -255,9 +255,14 @@ class KubernetesServiceConnector(ServiceConnector):
                     client_cert.encode("utf-8")
                 )
 
-                with tempfile.NamedTemporaryFile(delete=False) as fp:
+                fd, temp_path = tempfile.mkstemp()
+                fp = os.fdopen(fd, "wb")
+                try:
                     fp.write(client_cert_bs)
-                    k8s_conf.cert_file = fp.name
+                    fp.flush()
+                finally:
+                    fp.close()
+                k8s_conf.cert_file = temp_path
 
             if cfg.client_key is not None:
                 client_key = cfg.client_key.get_secret_value()
@@ -265,9 +270,14 @@ class KubernetesServiceConnector(ServiceConnector):
                     client_key.encode("utf-8")
                 )
 
-                with tempfile.NamedTemporaryFile(delete=False) as fp:
+                fd, temp_path = tempfile.mkstemp()
+                fp = os.fdopen(fd, "wb")
+                try:
                     fp.write(client_key_bs)
-                    k8s_conf.key_file = fp.name
+                    fp.flush()
+                finally:
+                    fp.close()
+                k8s_conf.key_file = temp_path
 
         k8s_conf.host = cfg.server
 
@@ -275,9 +285,14 @@ class KubernetesServiceConnector(ServiceConnector):
             ssl_ca_cert = cfg.certificate_authority.get_secret_value()
             cert_bs = base64.urlsafe_b64decode(ssl_ca_cert.encode("utf-8"))
 
-            with tempfile.NamedTemporaryFile(delete=False) as fp:
+            fd, temp_path = tempfile.mkstemp()
+            fp = os.fdopen(fd, "wb")
+            try:
                 fp.write(cert_bs)
-                k8s_conf.ssl_ca_cert = fp.name
+                fp.flush()
+            finally:
+                fp.close()
+            k8s_conf.ssl_ca_cert = temp_path
 
         return k8s_client.ApiClient(k8s_conf)
 
@@ -342,26 +357,37 @@ class KubernetesServiceConnector(ServiceConnector):
                     client_cert.encode("utf-8")
                 )
 
-                with tempfile.NamedTemporaryFile(delete=False) as fp:
+                fd, temp_path = tempfile.mkstemp()
+                fp = os.fdopen(fd, "wb")
+                try:
                     fp.write(client_cert_bs)
-                    add_user_cmd += [
-                        "--client-certificate",
-                        fp.name,
-                    ]
-                    delete_files.append(fp.name)
+                    fp.flush()
+                finally:
+                    fp.close()
+                add_user_cmd += [
+                    "--client-certificate",
+                    temp_path,
+                ]
+                delete_files.append(temp_path)
 
                 client_key = cfg.client_key.get_secret_value()
                 client_key_bs = base64.urlsafe_b64decode(
                     client_key.encode("utf-8")
                 )
 
-                with tempfile.NamedTemporaryFile(delete=False) as fp:
+                fd, temp_path = tempfile.mkstemp()
+                fp = os.fdopen(fd, "wb")
+                try:
                     fp.write(client_key_bs)
-                    add_user_cmd += [
-                        "--client-key",
-                        fp.name,
-                    ]
-                    delete_files.append(fp.name)
+                    fp.flush()
+                finally:
+                    fp.close()
+
+                add_user_cmd += [
+                    "--client-key",
+                    temp_path,
+                ]
+                delete_files.append(temp_path)
 
         # add the cluster config to the default kubeconfig
         add_cluster_cmd = [
@@ -377,14 +403,20 @@ class KubernetesServiceConnector(ServiceConnector):
             ssl_ca_cert = cfg.certificate_authority.get_secret_value()
             cert_bs = base64.urlsafe_b64decode(ssl_ca_cert.encode("utf-8"))
 
-            with tempfile.NamedTemporaryFile(delete=False) as fp:
+            fd, temp_path = tempfile.mkstemp()
+            fp = os.fdopen(fd, "wb")
+            try:
                 fp.write(cert_bs)
-                add_cluster_cmd += [
-                    "--embed-certs",
-                    "--certificate-authority",
-                    fp.name,
-                ]
-                delete_files.append(fp.name)
+                fp.flush()
+            finally:
+                fp.close()
+
+            add_cluster_cmd += [
+                "--embed-certs",
+                "--certificate-authority",
+                temp_path,
+            ]
+            delete_files.append(temp_path)
 
         add_context_cmd = [
             "kubectl",
