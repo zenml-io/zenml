@@ -66,7 +66,8 @@ def run_example(
     request: pytest.FixtureRequest,
     name: str,
     example_args: Optional[List[str]] = None,
-    pipelines: Optional[Dict[str, Tuple[int, int]]] = None
+    pipelines: Optional[Dict[str, Tuple[int, int]]] = None,
+    timeout_limit: int = DEFAULT_PIPELINE_RUN_FINISH_TIMEOUT,
     # pipeline_name: Optional[str] = None,
     # run_count: Optional[int] = None,
     # step_count: Optional[int] = None,
@@ -82,6 +83,7 @@ def run_example(
         pipelines: Validate that the pipelines were executed during the example
             run. Maps pipeline names to a Tuple (run_count, step_count) that
             specifies the expected number of runs (and their steps) to validate.
+        timeout_limit: The maximum time to wait for the pipeline run to finish.
 
     Yields:
         The example and the pipeline runs that were executed and validated.
@@ -120,6 +122,7 @@ def run_example(
             run_count=run_count,
             step_count=step_count,
             older_than=now,
+            finish_timeout=timeout_limit,
         )
 
     yield example, runs
