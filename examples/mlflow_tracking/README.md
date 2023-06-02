@@ -149,12 +149,6 @@ Now we're ready. Execute:
 python run.py
 ```
 
-Alternatively, if you want to run based on the config.yaml you can run with:
-
-```bash
-zenml pipeline run pipelines/training_pipeline/training_pipeline.py -c config.yaml
-```
-
 ## Running on a local Kubernetes cluster
 
 
