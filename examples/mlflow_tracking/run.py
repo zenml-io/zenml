@@ -34,14 +34,8 @@ if __name__ == "__main__":
 
     runs = client.get_pipeline("mlflow_example_pipeline").runs
     trainer_step = mlflow_example_pipeline.get_runs()[0].get_step("tf_trainer")
-    if trainer_step.metadata.get(METADATA_EXPERIMENT_TRACKER_URL):
-        tracking_url = trainer_step.metadata.get(
-            METADATA_EXPERIMENT_TRACKER_URL
-        ).value
-    if trainer_step.metadata.get(METADATA_ORCHESTRATOR_URL):
-        orchestrator_url = trainer_step.metadata.get(
-            METADATA_ORCHESTRATOR_URL
-        ).value
+    tracking_url = trainer_step.metadata.get(METADATA_EXPERIMENT_TRACKER_URL)
+    orchestrator_url = trainer_step.metadata.get(METADATA_ORCHESTRATOR_URL)
 
     if client.zen_store.type == StoreType.REST:
         url = client.zen_store.url
@@ -55,7 +49,7 @@ if __name__ == "__main__":
 
     if orchestrator_url:
         logger.info(
-            f"\n****See your run directly in the orchestrator:****\n{orchestrator_url}"
+            f"\n****See your run directly in the orchestrator:****\n{orchestrator_url.value}"
         )
 
     if tracking_url:
@@ -64,7 +58,7 @@ if __name__ == "__main__":
         )
         logger.info(
             "Run this command in your terminal: \n "
-            f"    mlflow ui --backend-store-uri '{tracking_url}'\n\n"
+            f"    mlflow ui --backend-store-uri '{tracking_url.value}'\n\n"
             "You can find your runs tracked within the `mlflow_example_pipeline` "
             "experiment."
         )
