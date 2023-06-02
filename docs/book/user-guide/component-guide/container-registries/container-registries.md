@@ -33,7 +33,7 @@ additional URI validations.
 {% endhint %}
 
 | Container Registry                         | Flavor      | Integration | URI example                               |
-| ------------------------------------------ | ----------- | ----------- | ----------------------------------------- |
+|--------------------------------------------|-------------|-------------|-------------------------------------------|
 | [DefaultContainerRegistry](default.md)     | `default`   | _built-in_  | -                                         |
 | [DockerHubContainerRegistry](dockerhub.md) | `dockerhub` | _built-in_  | docker.io/zenml                           |
 | [GCPContainerRegistry](gcp.md)             | `gcp`       | _built-in_  | gcr.io/zenml                              |

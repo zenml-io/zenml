@@ -17,17 +17,11 @@ def my_pipeline(step_count: int) -> None:
     model = select_model_step(..., after=after)
 ```
 
-This is an implementation of a basic grid search (across a single dimension) that would allow for a different learning
-rate to be used across the same `train_step`. Once that step has been run for all the different learning rates,
-the `select_model_step` is a way to decide which of the hyper-parameters gave the best results or performance.
+This is an implementation of a basic grid search (across a single dimension) that would allow for a different learning rate to be used across the same `train_step`. Once that step has been run for all the different learning rates, the `select_model_step` is a way to decide which of the hyper-parameters gave the best results or performance.
 
-Grid search involves defining a grid of possible values for each hyperparameter and then systematically searching
-through this grid to find the best combination of hyper-parameters that yields the highest performance metric, such as
-accuracy or F1 score.
+Grid search involves defining a grid of possible values for each hyperparameter and then systematically searching through this grid to find the best combination of hyperparameters that yields the highest performance metric, such as accuracy or F1 score.
 
-The key thing to know here is that the `select_model_step` is a way to decide which step offers the best results (as you
-have defined them). Internally, such a step would need to access the outputs of the previous steps. For example, you can
-access the outputs of the current run with the following code:
+The key thing to know here is that the `select_model_step` is a way to decide which step offers the best results (as you have defined them). Internally, such a step would need to access the outputs of the previous steps. For example, you can access the outputs of the current run with the following code:
 
 ```python
 from zenml.environment import Environment
@@ -42,11 +36,6 @@ outputs = [
 ]
 ```
 
-The outputs of the steps themselves can be accessed from the `.steps` property of the `run` object, and you can filter
-those in whatever way is appropriate for your use case. For a more sophisticated example of how to implement
-hyper-parameter tuning,
-see [our Dynamic Pipelines example](https://github.com/zenml-io/zenml/tree/main/examples/dynamic\_pipelines).
+The outputs of the steps themselves can be accessed from the `.steps` property of the `run` object, and you can filter those in whatever way is appropriate for your use case. For a more sophisticated example of how to implement hyper-parameter tuning, see [our Dynamic Pipelines example](https://github.com/zenml-io/zenml/tree/main/examples/dynamic\_pipelines).
 
-Hyper-parameter tuning is not yet a first-class citizen in ZenML, but it
-is [(high up) on our roadmap of features](https://zenml.hellonext.co/p/enable-hyper-parameter-tuning) that are due for
-implementation in an integrated way. In the meantime, the above is a way to achieve the same functionality.
+Hyper-parameter tuning is not yet a first-class citizen in ZenML, but it is [(high up) on our roadmap of features](https://zenml.hellonext.co/p/enable-hyper-parameter-tuning) that are due for implementation in an integrated way. In the meantime, the above is a way to achieve the same functionality.

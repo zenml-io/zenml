@@ -55,7 +55,7 @@ Here is an architecture diagram that shows how a model registry fits into the ov
 Model Registries are optional stack components provided by integrations:
 
 | Model Registry                     | Flavor   | Integration | Notes                                      |
-| ---------------------------------- | -------- | ----------- | ------------------------------------------ |
+|------------------------------------|----------|-------------|--------------------------------------------|
 | [MLflow](mlflow.md)                | `mlflow` | `mlflow`    | Add MLflow as Model Registry to your stack |
 | [Custom Implementation](custom.md) | _custom_ |             | _custom_                                   |
 
