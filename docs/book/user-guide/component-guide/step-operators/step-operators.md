@@ -29,7 +29,7 @@ or [AzureML](azureml.md) to execute the training step with a GPU.
 Step operators to execute steps on one of the big cloud providers are provided by the following ZenML integrations:
 
 | Step Operator                      | Flavor      | Integration | Notes                                                                    |
-| ---------------------------------- | ----------- | ----------- | ------------------------------------------------------------------------ |
+|------------------------------------|-------------|-------------|--------------------------------------------------------------------------|
 | [SageMaker](sagemaker.md)          | `sagemaker` | `aws`       | Uses SageMaker to execute steps                                          |
 | [Vertex](vertex.md)                | `vertex`    | `gcp`       | Uses Vertex AI to execute steps                                          |
 | [AzureML](azureml.md)              | `azureml`   | `azure`     | Uses AzureML to execute steps                                            |
