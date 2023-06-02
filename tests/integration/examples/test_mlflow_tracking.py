@@ -31,7 +31,7 @@ def test_example(request: pytest.FixtureRequest) -> None:
     with run_example(
         request=request,
         name="mlflow_tracking",
-        pipelines={"mlflow_example_pipeline": (2, 4)},
+        pipelines={"mlflow_example_pipeline": (1, 4)},
         timeout_limit=750,
     ) as (example, runs):
         pipeline = get_pipeline("mlflow_example_pipeline")
