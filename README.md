@@ -220,7 +220,9 @@ When you run a pipeline with this stack set, it will be running on your deployed
 Kubernetes cluster.
 
 You can also [deploy your own tooling manually](https://docs.zenml.io/platform-guide/set-up-your-mlops-platform/deploy-and-set-up-a-cloud-stack)
-or [register existing tooling](https://docs.zenml.io/platform-guide/set-up-your-mlops-platform/connect-to-your-cloud-provider).
+or [**create your own MLOps Platform Sandbox**](https://docs.zenml.io/user-guide/advanced-guide/sandbox), 
+a one-click deployment platform for an ephemeral MLOps stack that you can use 
+to run production-ready MLOps pipelines in the cloud.
 
 ## 🏇 3. Create a Pipeline
 
