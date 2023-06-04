@@ -314,7 +314,10 @@ def test_update_secret_works():
 
         result3 = runner.invoke(
             secret_update_command,
-            [secret_name, '--values={"test_value":"json", "test_value2":"yaml"}'],
+            [
+                secret_name,
+                '--values={"test_value":"json", "test_value2":"yaml"}',
+            ],
         )
         assert result3.exit_code == 0
         assert "updated" in result3.output

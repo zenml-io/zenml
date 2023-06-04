@@ -101,7 +101,9 @@ def test_converting_structured_str_to_dict():
     ) == {"location": "Nevada", "aliens": "many"}
 
     with pytest.raises(ClickException):
-        cli_utils.convert_structured_str_to_dict('{"location: "Nevada", "aliens":"many"}')
+        cli_utils.convert_structured_str_to_dict(
+            '{"location: "Nevada", "aliens":"many"}'
+        )
 
 
 def test_parsing_unknown_component_attributes():

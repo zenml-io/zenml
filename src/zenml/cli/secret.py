@@ -22,13 +22,13 @@ from pydantic import ValidationError
 from zenml.cli.cli import TagGroup, cli
 from zenml.cli.utils import (
     confirmation,
+    convert_structured_str_to_dict,
     declare,
     error,
+    expand_argument_value_from_file,
     fail_secret_creation_on_secrets_manager,
     list_options,
     parse_name_and_extra_arguments,
-    expand_argument_value_from_file,
-    convert_structured_str_to_dict,
     pretty_print_secret,
     print_list_items,
     print_page_info,
@@ -727,7 +727,7 @@ def secret() -> None:
     "-v",
     "values",
     help="Pass one or more values using JSON or YAML format or reference a file by prefixing the filename with the @ "
-         "special character.",
+    "special character.",
     required=False,
     type=str,
 )
@@ -917,7 +917,7 @@ def get_secret(name_id_or_prefix: str, scope: str) -> None:
     "-v",
     "values",
     help="Pass one or more values using JSON or YAML format or reference a file by prefixing the filename with the @ "
-         "special character.",
+    "special character.",
     required=False,
     type=str,
 )
