@@ -297,9 +297,9 @@ secret to store them securely. You will reference the secret when you configure
 the S3 Artifact Store stack component in the next sections:
 
 ```bash
-zenml secret create s3-store --values= \
-   '{"aws_access_key_id":"<YOUR-AWS-ACCESS-KEY-ID>",' \
-   '"aws_secret_access_key":"<YOUR-AWS-SECRET-ACCESS-KEY>"}'
+zenml secret create s3-store \
+   --aws_access_key_id=<YOUR-AWS-ACCESS-KEY-ID> \
+   --aws_secret_access_key=<YOUR-AWS-SECRET-ACCESS-KEY>
 ```
 
 This is how you would register a ZenML S3 Artifact Store with explicit

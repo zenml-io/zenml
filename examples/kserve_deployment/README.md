@@ -405,9 +405,8 @@ secret to store it securely. You will reference the secret when you configure
 the GCS Artifact Store stack component in the next sections:
 
 ```bash
-# File content example: {"token":"<secret-value>"}
 zenml secret create gcp_secret \
-    --values=@path/to/service_account_key.json
+    --token=@path/to/service_account_key.json
 ```
 
 This is how you would register a ZenML GCS Artifact Store with explicit

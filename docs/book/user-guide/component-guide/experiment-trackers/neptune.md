@@ -78,7 +78,8 @@ You can create the secret using the `zenml secret create` command:
 
 ```shell
 zenml secret create neptune_secret \
-    --values='{"project":"<PROJECT>","api_token":"<API_TOKEN>"}'
+    --project=<PROJECT>
+    --api_token=<API_TOKEN>
 ```
 
 Once the secret is created, you can use it to configure the `neptune` Experiment Tracker:

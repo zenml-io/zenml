@@ -429,8 +429,9 @@ Kubeflow versions. In this case, please reach out to us on [Slack](https://zenml
 The above example encoded the username and password in plain text as settings. You can also set them as secrets.
 
 ```shell
-zenml secret create kubeflow_secret --values= \
-    '{"username":"admin","password":"abc123"}'
+zenml secret create kubeflow_secret \
+    --username=admin \
+    --password=abc123
 ```
 
 And then you can use them in code:

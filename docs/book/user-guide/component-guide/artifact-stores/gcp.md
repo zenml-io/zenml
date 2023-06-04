@@ -142,9 +142,8 @@ Artifact Store configuration as follows:
 
 ```shell
 # Store the GCP credentials in a ZenML
-# File content example: {"token":"<secret-value>"}
 zenml secret create gcp_secret \
-    --values=@path/to/service_account_key.json
+    --token=@path/to/service_account_key.json
 
 # Register the GCS artifact store and reference the ZenML secret
 zenml artifact-store register gcs_store -f gcp \

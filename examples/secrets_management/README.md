@@ -48,7 +48,7 @@ key-value pair: `{example_secret_key: example_secret_value}`. We'll access this
 secret in the pipeline step.
 
 ```shell
-zenml secret create example-secret --values='{"example_secret_key":"example_secret_value"}'
+zenml secret create example-secret --example_secret_key=example_secret_value
 ```
 
 ### ▶️ Run the Code

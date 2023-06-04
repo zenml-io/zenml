@@ -72,11 +72,10 @@ cd zenml_examples/sagemaker_orchestration
 zenml init
 
 # You'll need to register a secret to use for your artifact-store authentication
-zenml secret create s3_secret --values='{"aws_access_key_id":"<YOUR_ACCESS_KEY_ID>","aws_secret_access_key":"<YOUR_SECRET_ACCESS_KEY>"}'
+zenml secret create s3_secret --aws_access_key_id=<YOUR_ACCESS_KEY_ID> --aws_secret_access_key=<YOUR_SECRET_ACCESS_KEY>
 
 # or this if you are using a session token
-# zenml secret create s3_secret --values='{"aws_access_key_id":"<YOUR_ACCESS_KEY_ID>","aws_secret_access_key":"<YOUR_SECRET_ACCESS_KEY>","aws_session_token":"<YOUR_AWS_SESSION_TOKEN>"}'
-
+# zenml secret create s3_secret --aws_access_key_id=<YOUR_ACCESS_KEY_ID> --aws_secret_access_key=<YOUR_SECRET_ACCESS_KEY> --aws_session_token=<YOUR_AWS_SESSION_TOKEN>
 # The CONTAINER_REGISTRY_URI will have a format like this: xxx.dkr.ecr.REGION.amazonaws.com
 zenml container-registry register aws_registry --flavor=aws --uri=<CONTAINER_REGISTRY_URI>
 
