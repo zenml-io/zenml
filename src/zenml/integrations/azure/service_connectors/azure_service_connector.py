@@ -233,10 +233,10 @@ discovers and uses credentials from one of the following sources:
 
 - [environment variables](https://learn.microsoft.com/en-us/python/api/overview/azure/identity-readme?view=azure-python#environment-variables)
 - workload identity - if the application is deployed to an Azure Kubernetes
-Service with Managed Identity enabled. Only works when running
+Service with Managed Identity enabled. This option can only be used when running
 the ZenML server on an AKS cluster.
 - managed identity - if the application is deployed to an Azure host with
-Managed Identity enabled. Only works when running the ZenML client or server on
+Managed Identity enabled. This option can only be used when running the ZenML client or server on
 an Azure host.
 - Azure CLI - if a user has signed in via the Azure CLI `az login` command.
 
@@ -407,7 +407,7 @@ If a resource group is configured in the connector, only AKS clusters in that
 resource group will be accessible.
 """,
             auth_methods=AzureAuthenticationMethods.values(),
-            # Request an EKS cluster name to be configured in the
+            # Request an AKS cluster name to be configured in the
             # connector or provided by the consumer
             supports_instances=True,
             logo_url="https://public-flavor-logos.s3.eu-central-1.amazonazure.com/orchestrator/kubernetes.png",
