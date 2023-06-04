@@ -314,20 +314,32 @@ def test_update_secret_works():
 
         result3 = runner.invoke(
             secret_update_command,
-            [secret_name, "-r", "test_value2"],
+            [secret_name, '--values={"test_value":"json", "test_value2":"yaml"}'],
         )
         assert result3.exit_code == 0
         assert "updated" in result3.output
+
+        updated_secret = client.get_secret(secret_name)
+        assert updated_secret is not None
+        assert updated_secret.secret_values["test_value"] == "json"
+        assert updated_secret.secret_values["test_value2"] == "yaml"
+
+        result4 = runner.invoke(
+            secret_update_command,
+            [secret_name, "-r", "test_value2"],
+        )
+        assert result4.exit_code == 0
+        assert "updated" in result4.output
         newly_updated_secret = client.get_secret(secret_name)
         assert newly_updated_secret is not None
         assert "test_value2" not in newly_updated_secret.secret_values
 
-        result4 = runner.invoke(
+        result5 = runner.invoke(
             secret_update_command,
             [secret_name, "-s", "user"],
         )
-        assert result4.exit_code == 0
-        assert "updated" in result4.output
+        assert result5.exit_code == 0
+        assert "updated" in result5.output
         final_updated_secret = client.get_secret(secret_name)
         assert final_updated_secret is not None
         assert final_updated_secret.scope == SecretScope.USER
