@@ -57,6 +57,10 @@ class AzureArtifactStore(BaseArtifactStore, AuthenticationMixin):
 
         Returns:
             The credentials.
+
+        Raises:
+            RuntimeError: If the connector is not configured with Azure service
+                principal credentials.
         """
         connector = self.get_connector()
         if connector:
