@@ -161,7 +161,8 @@ zenml secret create s3-kserve-secret \
     --s3_use_https="1" \ # set to 0 to disable https.
     --s3_verify_ssl="1" \ # set to 0 to disable SSL certificate verification.
     
-# Alternatively, you can utilize the '--values' option by specifying a file path containing key-value pairs in either JSON or YAML format.
+# Alternatively for providing key-value pairs, you can utilize the '--values' option by specifying a file path containing 
+# key-value pairs in either JSON or YAML format.
 # File content example: {"aws_access_key_id":"<AWS-ACCESS-KEY-ID>",...}
 zenml secret create s3-kserve-secret \
     --values=@path/to/file.json
@@ -187,7 +188,8 @@ zenml secret create az-kserve-secret \
 --azure_tenant_id="" \ # tenant ID of the service principal
 # to use for authentication.
 
-# Alternatively, you can utilize the '--values' option by specifying a file path containing key-value pairs in either JSON or YAML format.
+# Alternatively for providing key-value pairs, you can utilize the '--values' option by specifying a file path containing 
+# key-value pairs in either JSON or YAML format.
 # File content example: {"azure_subscription_id":"",...}
 zenml secret create az-kserve-secret \
     --values=@path/to/file.json

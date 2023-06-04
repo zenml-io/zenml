@@ -177,14 +177,9 @@ zenml secret create az_secret \
     --client_id='<YOUR_AZURE_CLIENT_ID>' \
     --client_secret='<YOUR_AZURE_CLIENT_SECRET>'
 
-# For a larger number of key-value pairs, there are two alternative approaches you can take to specify secrets. 
-# The first option is to use the --values option and provide the key-value pairs directly in JSON or YAML format.
-zenml secret create az_secret \
-    --values='{"account_name":"<YOUR_AZURE_ACCOUNT_NAME>",' \
-    '"tenant_id":"<YOUR_AZURE_TENANT_ID>",' \
-    '"client_id":"<YOUR_AZURE_CLIENT_ID>",' \
-    '"client_secret":"<YOUR_AZURE_CLIENT_SECRET>"}' \
-# The second option is to store the key-value pairs in a file, either in JSON or YAML format, and specify the file path using '@' at the beginning.
+# Alternatively for providing key-value pairs, you can utilize the '--values' option by specifying a file path containing 
+# key-value pairs in either JSON or YAML format.
+# File content example: {"account_name":"<YOUR_AZURE_ACCOUNT_NAME>",...}
 zenml secret create az_secret \
     --values=@path/to/file.txt
 

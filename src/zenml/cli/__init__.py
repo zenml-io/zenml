@@ -530,7 +530,7 @@ zenml secret create SECRET_NAME \
    --aws_secret_access_key=abcdefghij \
    --aws_session_token=@/path/to/token.txt
 
-# Alternatively, you can utilize the '--values' option by specifying a file path containing
+# Alternatively for providing key-value pairs, you can utilize the '--values' option by specifying a file path containing
 # key-value pairs in either JSON or YAML format.
 zenml secret create SECRET_NAME --values=@/path/to/token.txt
 ```
