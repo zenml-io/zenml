@@ -1203,7 +1203,7 @@ class AzureServiceConnector(ServiceConnector):
             if container_name:
                 if container_name not in account_containers:
                     continue
-                containers = {storage_account: container_name}
+                containers = {container_name: storage_account}
                 break
 
             containers.update(

@@ -82,6 +82,8 @@ class AzureArtifactStore(BaseArtifactStore, AuthenticationMixin):
                 name="",
                 client_id=credentials._client_id,
                 client_secret=credentials._client_credential,
+                tenant_id=credentials._tenant_id,
+                account_name=client.account_name,
             )
 
         secret = self.get_authentication_secret(

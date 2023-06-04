@@ -18,6 +18,7 @@ from zenml.container_registries.base_container_registry import (
     BaseContainerRegistryFlavor,
 )
 from zenml.enums import ContainerRegistryFlavor
+from zenml.models.service_connector_models import ServiceConnectorRequirements
 
 
 class AzureContainerRegistryFlavor(BaseContainerRegistryFlavor):
@@ -31,6 +32,25 @@ class AzureContainerRegistryFlavor(BaseContainerRegistryFlavor):
             The name of the flavor.
         """
         return ContainerRegistryFlavor.AZURE.value
+
+    @property
+    def service_connector_requirements(
+        self,
+    ) -> Optional[ServiceConnectorRequirements]:
+        """Service connector resource requirements for service connectors.
+
+        Specifies resource requirements that are used to filter the available
+        service connector types that are compatible with this flavor.
+
+        Returns:
+            Requirements for compatible service connectors, if a service
+            connector is required for this flavor.
+        """
+        return ServiceConnectorRequirements(
+            connector_type="azure",
+            resource_type="docker-registry",
+            resource_id_attr="uri",
+        )
 
     @property
     def docs_url(self) -> Optional[str]:
