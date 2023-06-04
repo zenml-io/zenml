@@ -162,20 +162,31 @@ like this:
 
 ```shell
 # Store the Azure storage account key in a ZenML secret
-zenml secret create az_secret --values= \
-    '{"account_name":"<YOUR_AZURE_ACCOUNT_NAME>",
-    "account_key":"<YOUR_AZURE_ACCOUNT_KEY>"}' \
+zenml secret create az_secret \
+    --account_name='<YOUR_AZURE_ACCOUNT_NAME>' \
+    --account_key='<YOUR_AZURE_ACCOUNT_KEY>'
 
 # or if you want to use a connection string
 zenml secret create az_secret \
-    --values='{"connection_string":"<YOUR_AZURE_CONNECTION_STRING>"}'
+    --connection_string='<YOUR_AZURE_CONNECTION_STRING>'
 
 # or if you want to use Azure ServicePrincipal credentials
 zenml secret create az_secret \
-    --values='{"account_name":"<YOUR_AZURE_ACCOUNT_NAME>",
-    "tenant_id":"<YOUR_AZURE_TENANT_ID>",
-    "client_id":"<YOUR_AZURE_CLIENT_ID>",
-    "client_secret":"<YOUR_AZURE_CLIENT_SECRET>"}'
+    --account_name='<YOUR_AZURE_ACCOUNT_NAME>' \
+    --tenant_id='<YOUR_AZURE_TENANT_ID>' \
+    --client_id='<YOUR_AZURE_CLIENT_ID>' \
+    --client_secret='<YOUR_AZURE_CLIENT_SECRET>'
+
+# For a larger number of key-value pairs, there are two alternative approaches you can take to specify secrets. 
+# The first option is to use the --values option and provide the key-value pairs directly in JSON or YAML format.
+zenml secret create az_secret \
+    --values='{"account_name":"<YOUR_AZURE_ACCOUNT_NAME>",' \
+    '"tenant_id":"<YOUR_AZURE_TENANT_ID>",' \
+    '"client_id":"<YOUR_AZURE_CLIENT_ID>",' \
+    '"client_secret":"<YOUR_AZURE_CLIENT_SECRET>"}' \
+# The second option is to store the key-value pairs in a file, either in JSON or YAML format, and specify the file path using '@' at the beginning.
+zenml secret create az_secret \
+    --values=@path/to/file.txt
 
 # Register the Azure artifact store and reference the ZenML secret
 zenml artifact-store register az_store -f azure \

@@ -912,6 +912,15 @@ def get_secret(name_id_or_prefix: str, scope: str) -> None:
     help="Use interactive mode to update the secret values.",
     type=click.BOOL,
 )
+@click.option(
+    "--values",
+    "-v",
+    "values",
+    help="Pass one or more values using JSON or YAML format or reference a file by prefixing the filename with the @ "
+         "special character.",
+    required=False,
+    type=str,
+)
 @click.option("--remove-keys", "-r", type=click.STRING, multiple=True)
 @click.argument("extra_args", nargs=-1, type=click.UNPROCESSED)
 def update_secret(
@@ -920,6 +929,7 @@ def update_secret(
     new_scope: Optional[str] = None,
     remove_keys: List[str] = [],
     interactive: bool = False,
+    values: str = None,
 ) -> None:
     """Update a secret for a given name or id.
 
@@ -929,10 +939,15 @@ def update_secret(
         extra_args: The arguments to pass to the secret.
         interactive: Whether to use interactive mode to update the secret.
         remove_keys: The keys to remove from the secret.
+        values: Secret key-value pairs to be passed as JSON or YAML.
     """
     name, parsed_args = parse_name_and_extra_arguments(
         list(extra_args) + [name_or_id], expand_args=True
     )
+    if values:
+        inline_values = expand_argument_value_from_file(SECRET_VALUES, values)
+        inline_values_dict = convert_structured_str_to_dict(inline_values)
+        parsed_args.update(inline_values_dict)
 
     client = Client()
 

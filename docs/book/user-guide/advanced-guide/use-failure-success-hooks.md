@@ -119,7 +119,7 @@ First, ensure that you have the OpenAI integration installed and have stored you
 
 ```shell
 zenml integration install openai
-zenml secret create openai --values='{"api_key":"<YOUR_API_KEY>"}'
+zenml secret create openai --api_key=<YOUR_API_KEY>
 ```
 
 Then, you can use the hook in your pipeline:

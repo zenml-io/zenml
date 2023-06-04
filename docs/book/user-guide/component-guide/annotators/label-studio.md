@@ -84,7 +84,7 @@ At this point you should register the API key under a custom secret name, making
 with whatever you choose:
 
 ```shell
-zenml secret create <LABEL_STUDIO_SECRET_NAME> --values='{"api_key":"<your_label_studio_api_key>"}'
+zenml secret create <LABEL_STUDIO_SECRET_NAME> --api_key="<your_label_studio_api_key>"
 ```
 
 Then register your annotator with ZenML:

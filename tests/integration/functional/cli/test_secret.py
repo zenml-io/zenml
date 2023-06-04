@@ -290,28 +290,19 @@ def test_update_secret_works():
     with cleanup_secrets() as secret_name:
         result1 = runner.invoke(
             secret_update_command,
-            [
-                secret_name,
-                [secret_name, "--test_value=aria", "--test_value2=axl"],
-            ],
+            [secret_name, "--test_value=aria", "--test_value2=axl"],
         )
         assert result1.exit_code != 0
         assert "not exist" in result1.output
 
         runner.invoke(
             secret_create_command,
-            [
-                secret_name,
-                [secret_name, "--test_value=aria", "--test_value2=axl"],
-            ],
+            [secret_name, "--test_value=aria", "--test_value2=axl"],
         )
 
         result2 = runner.invoke(
             secret_update_command,
-            [
-                secret_name,
-                [secret_name, "--test_value=blupus", "--test_value2=kami"],
-            ],
+            [secret_name, "--test_value=blupus", "--test_value2=kami"],
         )
         assert result2.exit_code == 0
         assert "updated" in result2.output

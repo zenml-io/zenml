@@ -94,30 +94,6 @@ def test_parsing_name_and_arguments():
         cli_utils.parse_name_and_extra_arguments(["--bar=1"])
 
 
-# def test_parsing_secret_name_and_arguments():
-#     """Test that our ability to parse CLI arguments works."""
-#     assert cli_utils.parse_secret_name_and_arguements(["foo"]) == ("foo", {})
-#     assert cli_utils.parse_secret_name_and_arguements(
-#         ["foo", '--values={"bar":"1"}']
-#     ) == (
-#         "foo",
-#         {"bar": "1"},
-#     )
-#     assert cli_utils.parse_secret_name_and_arguements(
-#         ['--values=bar: "1" \nbaz: "2"', "foo"]
-#     ) == (
-#         "foo",
-#         {"bar": "1", "baz": "2"},
-#     )
-#
-#     assert cli_utils.parse_secret_name_and_arguements(
-#         ["foo", '--values={"bar":"![@#$%^&*()"}']
-#     ) == ("foo", {"bar": "![@#$%^&*()"})
-#
-#     with pytest.raises(ClickException):
-#         cli_utils.parse_secret_name_and_arguements(['--values="{"bar":1}"'])
-
-
 def test_converting_structured_str_to_dict():
     """Test that our ability to parse CLI arguments works."""
     assert cli_utils.convert_structured_str_to_dict(
