@@ -377,6 +377,8 @@ class PipelineDockerImageBuilder:
         Raises:
             RuntimeError: If the command to export the local python packages
                 failed.
+            FileNotFoundError: If the specified requirements file does not
+                exist.
 
         Returns:
             List of tuples (filename, file_content, pip_options) of all
