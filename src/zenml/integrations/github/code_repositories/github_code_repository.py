@@ -48,7 +48,7 @@ class GitHubCodeRepositoryConfig(BaseCodeRepositoryConfig):
     owner: str
     repository: str
     host: Optional[str] = "github.com"
-    token: str = SecretField()
+    token: Optional[str] = SecretField()
 
 
 class GitHubCodeRepository(BaseCodeRepository):
@@ -70,9 +70,15 @@ class GitHubCodeRepository(BaseCodeRepository):
         Returns:
             The GitHub repository.
         """
-        return self._github_session.get_repo(
-            f"{self.config.owner}/{self.config.repository}"
-        )
+        try:
+            github_repository = self._github_session.get_repo(
+                f"{self.config.owner}/{self.config.repository}"
+            )
+        except GithubException as e:
+            raise RuntimeError(
+                f"An error occurred while getting the repository: {str(e)}"
+            )
+        return github_repository
 
     def login(
         self,
@@ -84,8 +90,13 @@ class GitHubCodeRepository(BaseCodeRepository):
         """
         try:
             self._github_session = Github(self.config.token)
-            user = self._github_session.get_user().login
-            logger.debug(f"Logged in as {user}")
+            if self.config.token:
+                user = self._github_session.get_user().login
+                logger.debug(f"Logged in as {user}")
+            else:
+                logger.info(
+                    "No token provided. Access is possible to public repositories only."
+                )
         except Exception as e:
             raise RuntimeError(f"An error occurred while logging in: {str(e)}")
 
