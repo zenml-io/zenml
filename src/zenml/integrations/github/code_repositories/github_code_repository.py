@@ -16,6 +16,7 @@ import os
 import re
 from typing import List, Optional
 
+import requests
 from github import Github, GithubException
 from github.Repository import Repository
 
@@ -80,6 +81,21 @@ class GitHubCodeRepository(BaseCodeRepository):
             )
         return github_repository
 
+    def check_github_repo_public(self, owner, repo) -> None:
+        url = f"https://api.github.com/repos/{owner}/{repo}"
+        response = requests.get(url)
+
+        try:
+            if response.status_code == 200:
+                response.json()
+                logger.info(f"Repository {repo} is public")
+            else:
+                raise RuntimeError(f"Repository {repo} is not public")
+        except Exception as e:
+            raise RuntimeError(
+                f"An error occurred while checking if repository is public: {str(e)}"
+            )
+
     def login(
         self,
     ) -> None:
@@ -96,6 +112,9 @@ class GitHubCodeRepository(BaseCodeRepository):
             else:
                 logger.info(
                     "No token provided. Access is possible to public repositories only."
+                )
+                self.check_github_repo_public(
+                    self.config.owner, self.config.repository
                 )
         except Exception as e:
             raise RuntimeError(f"An error occurred while logging in: {str(e)}")
