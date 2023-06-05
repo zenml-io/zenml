@@ -194,12 +194,11 @@ The ZenML Azure Service Connector facilitates the authentication and access to
 managed Azure services and resources. These encompass a range of resources,
 including blob storage containers, ACR repositories, and AKS clusters.
 
-This connector also supports the generation of temporary security tokens and
-automatic configuration and detection of credentials locally configured through
-the Azure CLI.
+This connector also supports automatic configuration and detection of
+credentials locally configured through the Azure CLI.
 
 This connector serves as a general means of accessing any Azure service by
-issuing token credentials to clients. Additionally, the connector can handle
+issuing credentials to clients. Additionally, the connector can handle
 specialized authentication for Azure blob storage, Docker and Kubernetes Python
 clients. It also allows for the configuration of local Docker and Kubernetes
 CLIs.
@@ -238,7 +237,7 @@ the ZenML server on an AKS cluster.
 - managed identity - if the application is deployed to an Azure host with
 Managed Identity enabled. This option can only be used when running the ZenML client or server on
 an Azure host.
-- Azure CLI - if a user has signed in via the Azure CLI `az login` command.
+- Azure CLI - if a user has signed in via [the Azure CLI `az login` command](https://learn.microsoft.com/en-us/cli/azure/authenticate-azure-cli).
 
 This is the quickest and easiest way to authenticate to Azure services. However,
 the results depend on how ZenML is deployed and the environment where it is used
@@ -269,8 +268,8 @@ credentials being issued to connector clients.
             auth_method=AzureAuthenticationMethods.SERVICE_PRINCIPAL,
             description="""
 Azure service principal credentials consisting of an Azure client ID and
-client secret. These credentials are used to generate temporary security tokens
-for clients to access Azure resources.
+client secret. These credentials are used to authenticate clients to Azure
+services.
 
 For this authentication method, the Azure Service Connector requires
 [an Azure service principal to be created](https://learn.microsoft.com/en-us/azure/developer/python/sdk/authentication-on-premises-apps?tabs=azure-portal)
@@ -289,18 +288,16 @@ configuration as API tokens expire. On the other hand, this method is ideal in
 cases where the connector only needs to be used for a short period of time, such
 as sharing access temporarily with someone else in your team.
 
-Using other authentication methods like Azure service principal or implicit
-authentication will automatically generate and refresh API tokens for clients
-upon request.
-
 This is the authentication method used during auto-configuration, if you have
-the local Azure CLI set up with credentials. The connector will generate an
-access token from the Azure CLI credentials and store it in the connector
-configuration. Given that Azure access tokens are scoped to a particular Azure
-resource and the access token generated during auto-configuration is scoped to
-the Azure Management API, this method does not work with Azure blob storage
-resources. For those, use the Azure service principal authentication method
-instead.
+[the local Azure CLI set up with credentials](https://learn.microsoft.com/en-us/cli/azure/authenticate-azure-cli).
+The connector will generate an access token from the Azure CLI credentials and
+store it in the connector configuration.
+
+Given that Azure access tokens are scoped to a particular Azure resource and the
+access token generated during auto-configuration is scoped to the Azure
+Management API, this method does not work with Azure blob storage resources. You
+should use the Azure service principal authentication method for blob storage
+resources instead.
 """,
             config_class=AzureAccessTokenConfig,
         ),
@@ -334,8 +331,8 @@ connector is authorized to access.
             name="Azure Blob Storage Container",
             resource_type=BLOB_RESOURCE_TYPE,
             description="""
-Allows users to connect to Azure Blob containers. When used by Stack Components,
-they are provided a pre-configured Azure Blob Storage client.
+Allows Stack Components to connect to Azure Blob containers. When used by Stack
+Components, they are provided a pre-configured Azure Blob Storage client.
 
 The configured credentials must have at least the following
 Azure IAM permissions associated with the blob storage account or containers
@@ -363,9 +360,8 @@ neither a storage account nor a resource group is configured in the connector,
 all blob storage containers in all accessible storage accounts will be
 accessible.
 
-The Azure access token authentication method does not work with Azure blob
-storage resources. For those, use the Azure service principal authentication
-method instead.
+The only Azure authentication method that works with Azure blob storage
+resources is the service principal authentication method.
 """,
             auth_methods=AzureAuthenticationMethods.values(),
             # Request a blob container to be configured in the
@@ -378,8 +374,8 @@ method instead.
             name="Azure AKS Kubernetes cluster",
             resource_type=KUBERNETES_CLUSTER_RESOURCE_TYPE,
             description="""
-Allows users to access an AKS cluster as a standard Kubernetes cluster
-resource. When used by Stack Components, they are provided a
+Allows Stack Components to access an AKS cluster as a standard Kubernetes
+cluster resource. When used by Stack Components, they are provided a
 pre-authenticated python-kubernetes client instance.
 
 The configured credentials must have at least the following
@@ -392,11 +388,11 @@ that the connector that the connector will be allowed to access:
 If set, the resource name must identify an EKS cluster using one of the
 following formats:
 
-- resource group scoped AKS cluster name (canonical): `{resource-group}/{cluster-name}`
+- resource group scoped AKS cluster name (canonical): `[{resource-group}/]{cluster-name}`
 - AKS cluster name: `{cluster-name}`
 
 Given that the AKS cluster name is unique within a resource group, the
-resource group name is included in the resource name to avoid ambiguity. If
+resource group name may be included in the resource name to avoid ambiguity. If
 a resource group is configured in the connector, the resource group name
 in the resource name must match the configured resource group. If no resource
 group is configured in the connector and a resource group name is not included
@@ -417,8 +413,8 @@ resource group will be accessible.
             name="Azure ACR container registry",
             resource_type=DOCKER_REGISTRY_RESOURCE_TYPE,
             description="""
-Allows users to access one or more ACR registries as a standard Docker
-registry resource. When used by Stack Components, they are provided a
+Allows Stack Components to access one or more ACR registries as a standard
+Docker registry resource. When used by Stack Components, they are provided a
 pre-authenticated python-docker client instance.
 
 The configured credentials must have at least the following
