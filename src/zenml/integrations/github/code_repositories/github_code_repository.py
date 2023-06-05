@@ -84,7 +84,7 @@ class GitHubCodeRepository(BaseCodeRepository):
             )
         return github_repository
 
-    def check_github_repo_public(self, owner, repo) -> None:
+    def check_github_repo_public(self, owner: str, repo: str) -> None:
         """Checks if a GitHub repository is public.
 
         Args:
@@ -99,10 +99,12 @@ class GitHubCodeRepository(BaseCodeRepository):
 
         try:
             if response.status_code == 200:
-                response.json()
-                logger.info(f"Repository {repo} is public")
+                pass
             else:
-                raise RuntimeError(f"Repository {repo} is not public")
+                raise RuntimeError(
+                    "It is not possible to access this repository as it does not appear to be public."
+                    "Access to private repositories is only possible when a token is provided. Please provide a token and try again"
+                )
         except Exception as e:
             raise RuntimeError(
                 f"An error occurred while checking if repository is public: {str(e)}"
@@ -122,9 +124,6 @@ class GitHubCodeRepository(BaseCodeRepository):
                 user = self._github_session.get_user().login
                 logger.debug(f"Logged in as {user}")
             else:
-                logger.info(
-                    "No token provided. Access is possible to public repositories only."
-                )
                 self.check_github_repo_public(
                     self.config.owner, self.config.repository
                 )
