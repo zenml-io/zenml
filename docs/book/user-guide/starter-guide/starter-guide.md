@@ -42,11 +42,11 @@ if __name__ == "__main__":
 * **`@pipeline`** defines a function as a pipeline and within this function, the steps are called and their outputs are routed
 {% endhint %}
 
-Copy this code into a file `main.py` and run it.
+Copy this code into a file `run.py` and run it.
 
 {% code overflow="wrap" %}
 ```bash
-$ python main.py
+$ python run.py
 
 Registered pipeline my_pipeline (version 1).
 Running pipeline my_pipeline on stack default (caching enabled)
@@ -86,6 +86,9 @@ As you can see, the dashboard shows you that there is 1 pipeline and 1 pipeline 
 
 If you navigate to the run that you just executed, you will see a diagram view of the pipeline run, including a visualization of the data that is passed between the steps. Feel free to explore the Run, its steps, and its artifacts.
 
+If you have closed the browser tab with the ZenML dashboard, you can always
+reopen it by running `zenml show` in your terminal.
+
 ## Recap
 
 #### Step
@@ -106,7 +109,7 @@ The inputs and outputs of a step are called _artifacts._ They are automatically 
 
 #### Pipeline
 
-Pipelines are also functions. However, you are only allowed to call steps within this function. The inputs for steps within a function can either be the outputs of previous steps or alternatively, you can pass in values directly.
+Pipelines are also functions. However, you are only allowed to call steps within this function. The inputs for steps called within a pipeline can either be the outputs of previous steps or alternatively, you can pass in values directly (as long as they're JSON serializable).
 
 ```python
 @pipeline
@@ -117,7 +120,7 @@ def my_pipeline():
 
 #### Executing the Code
 
-Executing the Pipeline is as easy as just calling the function that you decorated with the `@pipeline()` decorator.
+Executing the Pipeline is as easy as just calling the function that you decorated with the `@pipeline` decorator.
 
 ```python
 if __name__ == "__main__":
