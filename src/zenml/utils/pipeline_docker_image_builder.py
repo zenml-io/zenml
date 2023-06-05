@@ -252,7 +252,7 @@ class PipelineDockerImageBuilder:
                 or None
             )
 
-            apt_packages = docker_settings.apt_packages
+            apt_packages = docker_settings.apt_packages.copy()
             if docker_settings.install_stack_requirements:
                 apt_packages += stack.apt_packages
 
