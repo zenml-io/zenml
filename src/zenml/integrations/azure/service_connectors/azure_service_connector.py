@@ -687,6 +687,13 @@ class AzureServiceConnector(ServiceConnector):
     def _parse_blob_container_resource_id(self, resource_id: str) -> str:
         """Validate and convert an Azure blob resource ID to a container name.
 
+        The resource ID could mean different things:
+
+        - Azure blob container URI: `{az|abfs}://{container-name}`
+        - Azure blob container name: `{container-name}`
+
+        This method extracts the container name from the provided resource ID.
+
         Args:
             resource_id: The resource ID to convert.
 
@@ -697,12 +704,6 @@ class AzureServiceConnector(ServiceConnector):
             ValueError: If the provided resource ID is not a valid Azure blob
                 resource ID.
         """
-        # The resource ID could mean different things:
-        #
-        # - Azure blob container URI: `{az|abfs}://{container-name}`
-        # - Azure blob container name: `{container-name}`
-        #
-        # We need to extract the container name from the provided resource ID
         container_name: Optional[str] = None
         if re.match(
             r"^(az|abfs)://[a-z0-9](?!.*--)[a-z0-9-]{1,61}[a-z0-9](/.*)*$",
@@ -733,6 +734,13 @@ class AzureServiceConnector(ServiceConnector):
     ) -> str:
         """Validate and convert an ACR resource ID to an ACR registry name.
 
+        The resource ID could mean different things:
+
+        - ACR registry URI: `[https://]{registry-name}.azurecr.io`
+        - ACR registry name: `{registry-name}`
+
+        This method extracts the registry name from the provided resource ID.
+
         Args:
             resource_id: The resource ID to convert.
 
@@ -743,12 +751,6 @@ class AzureServiceConnector(ServiceConnector):
             ValueError: If the provided resource ID is not a valid ACR
                 resource ID.
         """
-        # The resource ID could mean different things:
-        #
-        # - ACR registry URI: `[https://]{registry-name}.azurecr.io`
-        # - ACR registry name: `{registry-name}`
-        #
-        # We need to extract the registry name from the provided resource ID
         registry_name: Optional[str] = None
         if re.match(
             r"^(https?://)?[a-zA-Z0-9]+\.azurecr\.io(/.+)*$",
@@ -777,6 +779,14 @@ class AzureServiceConnector(ServiceConnector):
     ) -> Tuple[Optional[str], str]:
         """Validate and convert an AKS resource ID to an AKS cluster name.
 
+        The resource ID could mean different things:
+
+        - resource group scoped AKS cluster name (canonical): `{resource-group}/{cluster-name}`
+        - AKS cluster name: `{cluster-name}`
+
+        This method extracts the resource group name and cluster name from the
+        provided resource ID.
+
         Args:
             resource_id: The resource ID to convert.
 
@@ -787,13 +797,6 @@ class AzureServiceConnector(ServiceConnector):
             ValueError: If the provided resource ID is not a valid AKS cluster
                 name.
         """
-        # The resource ID could mean different things:
-        #
-        # - resource group scoped AKS cluster name (canonical): `{resource-group}/{cluster-name}`
-        # - AKS cluster name: `{cluster-name}`
-        #
-        # We need to extract the resource group name and cluster name from the
-        # provided resource ID
         resource_group: Optional[str] = self.config.resource_group
         if re.match(
             r"^[a-zA-Z0-9_.()-]+/[a-zA-Z0-9]+[a-zA-Z0-9_-]*[a-zA-Z0-9]+$",
