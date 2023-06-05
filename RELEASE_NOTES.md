@@ -95,7 +95,7 @@ Here are just a few ways you could use ZenML Service Connectors:
 - Assisted setup with security in mind: Our Service Connectors come with features for configuration validation and verification, the generation of temporary, low-privilege credentials, and pre-authenticated and pre-configured clients for Python libraries.
 - Easy local configuration transfer: ZenML's Service Connectors aim to resolve the reproducibility issue in ML pipelines. They do this by automatically transferring authentication configurations and credentials from your local machine, storing them securely, and allowing for effortless sharing across different environments.
 
-[Visit our documentation pages](https://docs.zenml.io/platform-guide/set-up-your-mlops-platform/connect-to-your-cloud-provider) to learn more about ZenML Connectors and how you can use them in a way that supports your ML workflows.
+[Visit our documentation pages](https://docs.zenml.io/platform-guide/set-up-your-mlops-platform/connect-zenml-to-infrastructure) to learn more about ZenML Connectors and how you can use them in a way that supports your ML workflows.
 
 ## What's Changed
 
