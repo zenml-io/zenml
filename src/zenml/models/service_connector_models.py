@@ -979,6 +979,7 @@ class ServiceConnectorResourcesModel(BaseModel):
             self.error = error
             for resource in self.resources:
                 resource.error = error
+                resource.resource_ids = None
 
     def set_resource_ids(
         self, resource_type: str, resource_ids: List[str]
