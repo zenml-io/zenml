@@ -70,6 +70,9 @@ class GitHubCodeRepository(BaseCodeRepository):
 
         Returns:
             The GitHub repository.
+
+        Raises:
+            RuntimeError: If the repository cannot be found.
         """
         try:
             github_repository = self._github_session.get_repo(
@@ -82,6 +85,15 @@ class GitHubCodeRepository(BaseCodeRepository):
         return github_repository
 
     def check_github_repo_public(self, owner, repo) -> None:
+        """Checks if a GitHub repository is public.
+
+        Args:
+            owner: The owner of the repository.
+            repo: The name of the repository.
+
+        Raises:
+            RuntimeError: If the repository is not public.
+        """
         url = f"https://api.github.com/repos/{owner}/{repo}"
         response = requests.get(url)
 
