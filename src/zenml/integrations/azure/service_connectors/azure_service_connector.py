@@ -249,7 +249,7 @@ environment variables.
 - when connected to a ZenML server, this method only works if the ZenML server
 is deployed in Azure and will use the workload identity attached to the Azure
 resource where the ZenML server is running (e.g. an AKS cluster). The
-permissions of the managed identity may need to be adjusted to allows listing
+permissions of the managed identity may need to be adjusted to allow listing
 and accessing/describing the Azure resources that the connector is configured to
 access.
 
@@ -313,7 +313,7 @@ are provided generic azure-identity credentials that can be used to create
 Azure python clients for any particular Azure service.
 
 This generic Azure resource type is meant to be used with Stack Components that
-are not represented by other, more specific resource type, like Azure blob
+are not represented by other, more specific resource types, like Azure blob
 storage containers, Kubernetes clusters or Docker registries. It should be
 accompanied by a matching set of Azure permissions that allow access to the set
 of remote resources required by the client(s).
