@@ -421,13 +421,17 @@ class PipelineDockerImageBuilder:
 
         # Generate/Read requirements file for user-defined requirements
         if isinstance(docker_settings.requirements, str):
-            user_requirements = io_utils.read_file_contents_as_string(
-                docker_settings.requirements
-            )
+            path = os.path.abspath(docker_settings.requirements)
+            try:
+                user_requirements = io_utils.read_file_contents_as_string(path)
+            except FileNotFoundError as e:
+                raise FileNotFoundError(
+                    f"Requirements file {path} does not exist."
+                ) from e
             if log:
                 logger.info(
                     "- Including user-defined requirements from file `%s`",
-                    os.path.abspath(docker_settings.requirements),
+                    path,
                 )
         elif isinstance(docker_settings.requirements, List):
             user_requirements = "\n".join(docker_settings.requirements)
