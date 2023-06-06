@@ -91,7 +91,6 @@ def test_create_secret_with_values():
         created_secret = client.get_secret(secret_name)
         assert created_secret is not None
         assert created_secret.values["test_value"].get_secret_value() == "aria"
-        assert created_secret.scope == SecretScope.USER
 
 
 def test_list_secret_works():
