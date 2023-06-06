@@ -211,7 +211,7 @@ looking for a quick setup that includes using the auto-configuration Service
 Connector features.
 """,
     supports_auto_configuration=True,
-    logo_url="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/container_registry/aws.png",
+    logo_url="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/connectors/aws/aws.png",
     emoji=":large_orange_diamond:",
     auth_methods=[
         AuthenticationMethodModel(
@@ -468,7 +468,7 @@ access.
             # Don't request an AWS specific resource instance ID, given that
             # the connector provides a generic boto3 session instance.
             supports_instances=False,
-            logo_url="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/container_registry/aws.png",
+            logo_url="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/connectors/aws/aws.png",
             emoji=":large_orange_diamond:",
         ),
         ResourceTypeModel(
@@ -501,7 +501,7 @@ formats:
             # Request an S3 bucket to be configured in the
             # connector or provided by the consumer
             supports_instances=True,
-            logo_url="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/container_registry/aws.png",
+            logo_url="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/artifact_store/aws.png",
             emoji=":package:",
         ),
         ResourceTypeModel(

@@ -218,7 +218,7 @@ if you are looking for a quick setup that includes using the auto-configuration
 Service Connector features.
 """,
     supports_auto_configuration=True,
-    logo_url="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/connectors/azure/azure.svg",
+    logo_url="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/connectors/azure/azure.png",
     emoji=":regional_indicator_a: ",
     auth_methods=[
         AuthenticationMethodModel(
@@ -324,7 +324,7 @@ connector is authorized to access.
             auth_methods=AzureAuthenticationMethods.values(),
             # Don't request an Azure specific resource instance ID.
             supports_instances=False,
-            logo_url="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/connectors/azure/azure.svg",
+            logo_url="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/connectors/azure/azure.png",
             emoji=":regional_indicator_a: ",
         ),
         ResourceTypeModel(
@@ -406,7 +406,7 @@ resource group will be accessible.
             # Request an AKS cluster name to be configured in the
             # connector or provided by the consumer
             supports_instances=True,
-            logo_url="https://public-flavor-logos.s3.eu-central-1.amazonazure.com/orchestrator/kubernetes.png",
+            logo_url="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/orchestrator/kubernetes.png",
             emoji=":cyclone:",
         ),
         ResourceTypeModel(
@@ -442,7 +442,7 @@ for more information.
 """,
             auth_methods=AzureAuthenticationMethods.values(),
             supports_instances=True,
-            logo_url="https://public-flavor-logos.s3.eu-central-1.amazonazure.com/container_registry/docker.png",
+            logo_url="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/container_registry/docker.png",
             emoji=":whale:",
         ),
     ],
