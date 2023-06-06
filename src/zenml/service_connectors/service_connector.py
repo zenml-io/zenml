@@ -1100,7 +1100,8 @@ class ServiceConnector(BaseModel, metaclass=ServiceConnectorMeta):
         If `list_resources` is set, the list of resources that the connector can
         access, scoped to the supplied resource type and resource ID is included
         in the response, otherwise the connector only verifies that it can
-        globally authenticate and doesn't verify or return resource information.
+        globally authenticate and doesn't verify or return resource information
+        (i.e. the `resource_ids` fields in the response are empty).
 
         Args:
             resource_type: The type of the resource to verify. If the connector
@@ -1197,7 +1198,6 @@ class ServiceConnector(BaseModel, metaclass=ServiceConnectorMeta):
                     resource_id=resource_id,
                 )
             except ValueError as exc:
-                logger.debug(f"connector verification failed: {exc}")
                 raise ValueError(
                     f"The connector configuration is incomplete or invalid: "
                     f"{exc}",
