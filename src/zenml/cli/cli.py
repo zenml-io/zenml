@@ -20,7 +20,8 @@ import click
 import rich
 from click import Command, Context, formatting
 
-from zenml import __version__, source_context
+from zenml import __version__
+from zenml.analytics import source_context
 from zenml.cli.formatter import ZenFormatter
 from zenml.client import Client
 from zenml.enums import CliCategories, SourceContextTypes

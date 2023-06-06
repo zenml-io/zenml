@@ -229,6 +229,8 @@ class OperatingSystemType(StrEnum):
 
 
 class SourceContextTypes(StrEnum):
+    """Enum for event source types."""
+
     CLI = "cli"
     PYTHON = "python"
     DASHBOARD = "dashboard"
