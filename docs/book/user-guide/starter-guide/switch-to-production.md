@@ -97,7 +97,7 @@ The status of the MLOps Platform Sandbox service is being tracked live on [the Z
 
 **Q: Is the sandbox free?**
 
-**A:** Yes, the sandbox is free but time-boxed to 8 hours as we also have to
+**A:** Yes, the sandbox is free but time-boxed to 4 hours as we also have to
 watch our costs!
 
 **Q: Is it possible to extend the duration of the sandbox?**
