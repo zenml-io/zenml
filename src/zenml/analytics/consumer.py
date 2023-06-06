@@ -54,6 +54,8 @@ class Consumer(Thread):
 
         Args:
             queue: The list of messages in the queue.
+            base_source_context: the context type which will be set for the
+                thread as this consumer runs.
             upload_size: The maximum size for messages a consumer can send
                 if the 'sync_mode' is set to False.
             on_error: Function to call if an error occurs.

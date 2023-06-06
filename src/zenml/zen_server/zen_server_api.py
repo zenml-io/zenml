@@ -107,7 +107,13 @@ app.add_middleware(
 
 
 @app.middleware("http")
-async def infer_source_context(request: Request, call_next):
+async def infer_source_context(request: Request, call_next: Any) -> Any:
+    """A middleware to track the source of an event.
+
+    It extracts the source context from the header of incoming requests
+    and applies it to the ZenML source context on the API side. This way, the
+    outgoing analytics request can append it as an additional field.
+    """
     try:
         s = request.headers.get(
             source_context.name,
