@@ -38,7 +38,7 @@ from typing import (
 import click
 from pydantic import SecretStr
 from rich import box, table
-from rich.emoji import Emoji
+from rich.emoji import Emoji, NoEmoji
 from rich.markdown import Markdown
 from rich.markup import escape
 from rich.prompt import Confirm
@@ -1196,7 +1196,11 @@ def replace_emojis(text: str) -> str:
     emoji_pattern = r":(\w+):"
     emojis = re.findall(emoji_pattern, text)
     for emoji in emojis:
-        text = text.replace(f":{emoji}:", str(Emoji(emoji)))
+        try:
+            text = text.replace(f":{emoji}:", str(Emoji(emoji)))
+        except NoEmoji:
+            # If the emoji text is not a valid emoji, just ignore it
+            pass
     return text
 
 

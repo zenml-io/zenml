@@ -70,7 +70,8 @@ class AzureArtifactStore(BaseArtifactStore, AuthenticationMixin):
             client = connector.connect()
             if not isinstance(client, BlobServiceClient):
                 raise RuntimeError(
-                    f"Expected a azure.storage.blob.BlobServiceClient while "
+                    f"Expected a {BlobServiceClient.__module__}."
+                    f"{BlobServiceClient.__name__} object while "
                     f"trying to use the linked connector, but got "
                     f"{type(client)}."
                 )

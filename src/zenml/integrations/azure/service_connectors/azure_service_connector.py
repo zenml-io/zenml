@@ -63,6 +63,7 @@ AZURE_RESOURCE_TYPE = "azure-generic"
 BLOB_RESOURCE_TYPE = "blob-container"
 
 AZURE_MANAGEMENT_TOKEN_SCOPE = "https://management.azure.com/.default"
+AZURE_SESSION_TOKEN_DEFAULT_EXPIRATION_TIME = 60 * 60  # 1 hour
 
 
 class AzureBaseConfig(AuthenticationConfig):
@@ -300,6 +301,7 @@ should use the Azure service principal authentication method for blob storage
 resources instead.
 """,
             config_class=AzureAccessTokenConfig,
+            default_expiration_seconds=AZURE_SESSION_TOKEN_DEFAULT_EXPIRATION_TIME,
         ),
     ],
     resource_types=[
@@ -1105,6 +1107,19 @@ class AzureServiceConnector(ServiceConnector):
             config=auth_config,
         )
 
+    @classmethod
+    def _get_resource_group(cls, resource_id: str) -> str:
+        """Get the resource group of an Azure resource.
+
+        Args:
+            resource_id: The ID of the Azure resource.
+
+        Returns:
+            The resource group of the Azure resource.
+        """
+        # The resource group is the fourth component of the resource ID.
+        return resource_id.split("/")[4]
+
     def _list_blob_containers(
         self, credential: TokenCredential, container_name: Optional[str] = None
     ) -> Dict[str, str]:
@@ -1163,7 +1178,8 @@ class AzureServiceConnector(ServiceConnector):
                 accounts = [
                     account
                     for account in accounts
-                    if account.id.split("/")[4] == self.config.resource_group
+                    if self._get_resource_group(account.id)
+                    == self.config.resource_group
                 ]
                 if not accounts:
                     raise AuthorizationException(
@@ -1311,7 +1327,8 @@ class AzureServiceConnector(ServiceConnector):
                 registries = [
                     registry
                     for registry in registries
-                    if registry.id.split("/")[4] == self.config.resource_group
+                    if self._get_resource_group(registry.id)
+                    == self.config.resource_group
                 ]
 
                 if not registries:
@@ -1325,7 +1342,7 @@ class AzureServiceConnector(ServiceConnector):
                     )
 
             container_registries = {
-                registry.name: registry.id.split("/")[4]
+                registry.name: self._get_resource_group(registry.id)
                 for registry in registries
                 if registry.name
             }
@@ -1429,7 +1446,8 @@ class AzureServiceConnector(ServiceConnector):
                 aks_clusters = [
                     cluster
                     for cluster in aks_clusters
-                    if cluster.id.split("/")[4] == self.config.resource_group
+                    if self._get_resource_group(cluster.id)
+                    == self.config.resource_group
                 ]
 
                 if not aks_clusters:
@@ -1443,7 +1461,7 @@ class AzureServiceConnector(ServiceConnector):
                     )
 
             clusters = [
-                (cluster.name, cluster.id.split("/")[4])
+                (cluster.name, self._get_resource_group(cluster.id))
                 for cluster in aks_clusters
                 if cluster.name
                 and (not cluster_name or cluster.name == cluster_name)
@@ -1658,7 +1676,6 @@ class AzureServiceConnector(ServiceConnector):
         resource_group: Optional[str] = None
 
         if resource_type == DOCKER_REGISTRY_RESOURCE_TYPE:
-            assert resource_id is not None
             registry_name = self._parse_acr_resource_id(resource_id)
 
             # If a service principal is used for authentication, the client ID
@@ -1719,7 +1736,6 @@ class AzureServiceConnector(ServiceConnector):
             )
 
         if resource_type == KUBERNETES_CLUSTER_RESOURCE_TYPE:
-            assert resource_id is not None
 
             resource_group, cluster_name = self._parse_aks_resource_id(
                 resource_id

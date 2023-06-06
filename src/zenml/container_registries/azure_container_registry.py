@@ -14,6 +14,7 @@
 """Implementation of an Azure Container Registry class."""
 from typing import Optional
 
+from zenml.constants import DOCKER_REGISTRY_RESOURCE_TYPE
 from zenml.container_registries.base_container_registry import (
     BaseContainerRegistryFlavor,
 )
@@ -48,7 +49,7 @@ class AzureContainerRegistryFlavor(BaseContainerRegistryFlavor):
         """
         return ServiceConnectorRequirements(
             connector_type="azure",
-            resource_type="docker-registry",
+            resource_type=DOCKER_REGISTRY_RESOURCE_TYPE,
             resource_id_attr="uri",
         )
 
