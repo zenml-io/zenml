@@ -580,7 +580,7 @@ def expand_argument_value_from_file(name: str, value: str) -> str:
         )
 
 
-def convert_structured_str_to_dict(string) -> dict:
+def convert_structured_str_to_dict(string: str) -> Dict[str, str]:
     """Convert a structured string (JSON or YAML) into a dict.
 
     Examples:

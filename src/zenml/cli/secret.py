@@ -929,7 +929,7 @@ def update_secret(
     new_scope: Optional[str] = None,
     remove_keys: List[str] = [],
     interactive: bool = False,
-    values: str = None,
+    values: str = "",
 ) -> None:
     """Update a secret for a given name or id.
 
