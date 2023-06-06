@@ -1736,7 +1736,6 @@ class AzureServiceConnector(ServiceConnector):
             )
 
         if resource_type == KUBERNETES_CLUSTER_RESOURCE_TYPE:
-
             resource_group, cluster_name = self._parse_aks_resource_id(
                 resource_id
             )
