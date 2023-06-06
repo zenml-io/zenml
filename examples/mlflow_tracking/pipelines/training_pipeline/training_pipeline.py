@@ -24,7 +24,7 @@ docker_settings = DockerSettings(required_integrations=[MLFLOW, TENSORFLOW])
 
 
 @pipeline(enable_cache=False, settings={"docker": docker_settings})
-def mlflow_example_pipeline(epochs: int = 5, lr: float = 0.0001):
+def mlflow_example_pipeline(epochs: int = 2, lr: float = 0.0001):
     # Link all the steps artifacts together
     x_train, y_train, x_test, y_test = loader_mnist()
     x_trained_normed, x_test_normed = normalizer(
