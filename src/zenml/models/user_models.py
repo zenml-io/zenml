@@ -31,7 +31,6 @@ from uuid import UUID
 from pydantic import BaseModel, Field, SecretStr, root_validator
 
 from zenml.config.global_config import GlobalConfiguration
-from zenml.enums import StrEnum
 from zenml.exceptions import AuthorizationException
 from zenml.logger import get_logger
 from zenml.models import BaseFilterModel, RoleResponseModel
@@ -41,6 +40,7 @@ from zenml.models.base_models import (
     update_model,
 )
 from zenml.models.constants import STR_FIELD_MAX_LENGTH
+from zenml.utils.enum_utils import StrEnum
 
 if TYPE_CHECKING:
     from passlib.context import CryptContext  # type: ignore[import]
