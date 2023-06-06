@@ -22,10 +22,16 @@ from typing import TYPE_CHECKING, Dict, Optional, Tuple
 from uuid import UUID
 
 from zenml.enums import SourceContextTypes
-from zenml.analytics.client import Client
 
 if TYPE_CHECKING:
     from zenml.utils.analytics_utils import AnalyticsEvent
+
+source_context: ContextVar[SourceContextTypes] = ContextVar(
+    "Source-Context", default=SourceContextTypes.PYTHON
+)
+
+# Set up the client / needs to happen after the source context declaration
+from zenml.analytics.client import Client
 
 on_error = Client.DefaultConfig.on_error
 debug = Client.DefaultConfig.debug
@@ -114,8 +120,3 @@ def group(
     return default_client.group(
         user_id=user_id, group_id=group_id, traits=traits
     )
-
-
-source_context: ContextVar[SourceContextTypes] = ContextVar(
-    "Source-Context", default=SourceContextTypes.PYTHON
-)
