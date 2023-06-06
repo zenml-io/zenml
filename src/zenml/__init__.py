@@ -27,14 +27,6 @@ from zenml.logger import init_logging  # noqa
 
 init_logging()
 
-# Initialize source context
-from zenml.enums import SourceContextTypes
-from contextvars import ContextVar
-
-source_context: ContextVar[SourceContextTypes] = ContextVar(
-    "Source-Context", default=SourceContextTypes.PYTHON
-)
-
 # The following code is needed for `zenml.hub` subpackages to be found
 from pkgutil import extend_path
 

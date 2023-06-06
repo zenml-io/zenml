@@ -26,6 +26,7 @@ from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import FileResponse
 
 import zenml
+from zenml.analytics import source_context
 from zenml.constants import API, HEALTH
 from zenml.enums import SourceContextTypes
 from zenml.zen_server.exceptions import error_detail
@@ -109,16 +110,16 @@ app.add_middleware(
 async def infer_source_context(request: Request, call_next):
     try:
         s = request.headers.get(
-            zenml.source_context.name,
+            source_context.name,
             default=SourceContextTypes.API.value,
         )
-        zenml.source_context.set(SourceContextTypes(s))
+        source_context.set(SourceContextTypes(s))
     except Exception as e:
         logger.warning(
             f"An unexpected error occurred while getting the source "
             f"context: {e}"
         )
-        zenml.source_context.set(SourceContextTypes.API)
+        source_context.set(SourceContextTypes.API)
 
     return await call_next(request)
 

@@ -87,7 +87,7 @@ class Consumer(Thread):
     def run(self) -> None:
         """Runs the consumer."""
         # Set the base context for each thread
-        from zenml import source_context
+        from zenml.analytics import source_context
 
         source_context.set(self.base_source_context)
 

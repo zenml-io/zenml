@@ -16,10 +16,12 @@
 This module is based on the 'analytics-python' package created by Segment.
 The base functionalities are adapted to work with the ZenML analytics server.
 """
+from contextvars import ContextVar
 from typing import Any
 from typing import TYPE_CHECKING, Dict, Optional, Tuple
 from uuid import UUID
 
+from zenml.enums import SourceContextTypes
 from zenml.analytics.client import Client
 
 if TYPE_CHECKING:
@@ -112,3 +114,8 @@ def group(
     return default_client.group(
         user_id=user_id, group_id=group_id, traits=traits
     )
+
+
+source_context: ContextVar[SourceContextTypes] = ContextVar(
+    "Source-Context", default=SourceContextTypes.PYTHON
+)
