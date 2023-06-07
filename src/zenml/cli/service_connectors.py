@@ -646,6 +646,15 @@ def register_service_connector(
                     active_status=False,
                     show_secrets=show_secrets,
                 )
+                cli_utils.declare(
+                    "The service connector configuration has access to the "
+                    "following resources:"
+                )
+                cli_utils.print_service_connector_resource_table(
+                    [connector_resources],
+                    show_resources_only=True,
+                )
+
                 # Ask the user whether to continue with the auto configuration
                 choice = click.prompt(
                     "Would you like to continue with the auto-discovered "
@@ -777,10 +786,12 @@ def register_service_connector(
                 resource_type
             ]
             if resource_type_spec.supports_instances:
-                assert connector_resources.resource_ids is not None
+                assert len(connector_resources.resources) == 1
+                resource_ids = connector_resources.resources[0].resource_ids
+                assert resource_ids is not None
                 resource_id = prompt_resource_id(
                     resource_name=resource_type_spec.name,
-                    resource_ids=connector_resources.resource_ids,
+                    resource_ids=resource_ids,
                 )
             else:
                 resource_id = None
@@ -845,7 +856,10 @@ def register_service_connector(
             "to the following resources:"
         )
 
-        cli_utils.print_service_connector_resource_table([connector_resources])
+        cli_utils.print_service_connector_resource_table(
+            [connector_resources],
+            show_resources_only=True,
+        )
 
     else:
         cli_utils.declare(
@@ -1418,10 +1432,12 @@ def update_service_connector(
                 resource_type
             ]
             if resource_type_spec.supports_instances:
-                assert connector_resources.resource_ids is not None
+                assert len(connector_resources.resources) == 1
+                resource_ids = connector_resources.resources[0].resource_ids
+                assert resource_ids is not None
                 resource_id = prompt_resource_id(
                     resource_name=resource_type_spec.name,
-                    resource_ids=connector_resources.resource_ids,
+                    resource_ids=resource_ids,
                 )
             else:
                 resource_id = None
@@ -1503,7 +1519,10 @@ def update_service_connector(
             "can now be used to access the following resources:"
         )
 
-        cli_utils.print_service_connector_resource_table([connector_resources])
+        cli_utils.print_service_connector_resource_table(
+            [connector_resources],
+            show_resources_only=True,
+        )
 
     else:
         cli_utils.declare(
@@ -1637,11 +1656,20 @@ access to a particular S3 bucket:
     required=False,
     type=str,
 )
+@click.option(
+    "--verify-only",
+    "-v",
+    "verify_only",
+    help="Only verify the service connector, do not list resources.",
+    required=False,
+    is_flag=True,
+)
 @click.argument("name_id_or_prefix", type=str, required=True)
 def verify_service_connector(
     name_id_or_prefix: str,
     resource_type: Optional[str] = None,
     resource_id: Optional[str] = None,
+    verify_only: bool = False,
 ) -> None:
     """Verifies if a service connector has access to one or more resources.
 
@@ -1649,6 +1677,7 @@ def verify_service_connector(
         name_id_or_prefix: The name or id of the service connector to verify.
         resource_type: The type of resource for which to verify access.
         resource_id: The ID of the resource for which to verify access.
+        verify_only: Only verify the service connector, do not list resources.
     """
     client = Client()
 
@@ -1660,6 +1689,7 @@ def verify_service_connector(
                 name_id_or_prefix=name_id_or_prefix,
                 resource_type=resource_type,
                 resource_id=resource_id,
+                list_resources=not verify_only,
             )
         except (
             KeyError,
@@ -1680,17 +1710,8 @@ def verify_service_connector(
 
     cli_utils.print_service_connector_resource_table(
         resources=[resources],
+        show_resources_only=True,
     )
-
-    if not resources.resource_type:
-        click.echo(
-            f"The '{resources.id}' service connector is a multi-type connector "
-            "- i.e. configured to provide access to multiple types of "
-            "resources. A list of resources is not included for multi-type "
-            "connectors. You can use the `--resource-type` argument to show a "
-            "full list of resources it can access for a particular resource "
-            "type."
-        )
 
 
 @service_connector.command(
@@ -1863,6 +1884,15 @@ def list_service_connector_resources(
     """
     client = Client()
 
+    if not resource_type and not resource_id:
+        cli_utils.warning(
+            "Fetching all service connector resources can take a long time, "
+            "depending on the number of connectors configured in your "
+            "workspace. Consider using the '--connector-type', "
+            "'--resource-type' and '--resource-id' options to narrow down the "
+            "list of resources to fetch."
+        )
+
     with console.status(
         "Fetching all service connector resources (this could take a while)...\n"
     ):
@@ -1911,18 +1941,6 @@ def list_service_connector_resources(
     cli_utils.print_service_connector_resource_table(
         resources=resource_list,
     )
-
-    multi_type = [r for r in resource_list if r.resource_type is None]
-    if not resource_type and multi_type:
-        click.echo(
-            "\n"
-            f"{len(multi_type)} connectors in your results are multi-type "
-            "connectors - i.e. are configured to provide access to multiple "
-            "types of resources. A list of resources is not included for "
-            "these connectors. Use the '--resource-type' option to filter by "
-            "resource type and display the resources that can be accessed by "
-            "these connectors."
-        )
 
 
 @service_connector.command(
