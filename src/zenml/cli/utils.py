@@ -16,6 +16,7 @@ import contextlib
 import datetime
 import json
 import os
+import re
 import subprocess
 import sys
 from typing import (
@@ -39,7 +40,7 @@ import click
 import yaml
 from pydantic import SecretStr
 from rich import box, table
-from rich.emoji import Emoji
+from rich.emoji import Emoji, NoEmoji
 from rich.markdown import Markdown
 from rich.markup import escape
 from rich.prompt import Confirm
@@ -1220,6 +1221,26 @@ def get_shared_emoji(is_shared: bool) -> str:
     return ":white_heavy_check_mark:" if is_shared else ":heavy_minus_sign:"
 
 
+def replace_emojis(text: str) -> str:
+    """Replaces emoji shortcuts with their unicode equivalent.
+
+    Args:
+        text: Text to expand.
+
+    Returns:
+        Text with expanded emojis.
+    """
+    emoji_pattern = r":(\w+):"
+    emojis = re.findall(emoji_pattern, text)
+    for emoji in emojis:
+        try:
+            text = text.replace(f":{emoji}:", str(Emoji(emoji)))
+        except NoEmoji:
+            # If the emoji text is not a valid emoji, just ignore it
+            pass
+    return text
+
+
 def print_stacks_table(
     client: "Client", stacks: Sequence["StackResponseModel"]
 ) -> None:
@@ -1663,9 +1684,7 @@ def print_service_connector_resource_type(
         The MarkDown resource type details as a string.
     """
     message = f"{title}\n" if title else ""
-    emoji = (
-        Emoji(resource_type.emoji.strip(":")) if resource_type.emoji else ""
-    )
+    emoji = replace_emojis(resource_type.emoji) if resource_type.emoji else ""
     supported_auth_methods = [
         f'{Emoji("lock")} {a}' for a in resource_type.auth_methods
     ]
@@ -1794,14 +1813,14 @@ def print_service_connector_type(
         f'{Emoji("lock")} {a.auth_method}' for a in connector_type.auth_methods
     ]
     supported_resource_types = [
-        f'{Emoji(r.emoji.strip(":"))} {r.resource_type}'
+        f"{replace_emojis(r.emoji)} {r.resource_type}"
         if r.emoji
         else r.resource_type
         for r in connector_type.resource_types
     ]
 
     emoji = (
-        Emoji(connector_type.emoji.strip(":")) if connector_type.emoji else ""
+        replace_emojis(connector_type.emoji) if connector_type.emoji else ""
     )
 
     message += (

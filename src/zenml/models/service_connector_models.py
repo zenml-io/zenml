@@ -860,7 +860,7 @@ class ServiceConnectorRequirements(BaseModel):
 class ServiceConnectorTypedResourcesModel(BaseModel):
     """Service connector typed resources list.
 
-    Lists the resource instance that a service connector can provide
+    Lists the resource instances that a service connector can provide
     access to.
     """
 
