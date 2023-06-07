@@ -19,8 +19,8 @@ from zenml.integrations.spark.step_operators.spark_step_operator import (
     SparkStepOperator,
 )
 
-from .importer_step.importer_step import ImporterParameters, importer_step
-from .split_step.split_step import SplitParameters, split_step
+from .importer_step.importer_step import importer_step
+from .split_step.split_step import split_step
 from .statistics_step.statistics_step import statistics_step
 from .trainer_step.trainer_step import trainer_step
 from .transformer_step.transformer_step import transformer_step
@@ -36,9 +36,7 @@ if not step_operator or not isinstance(step_operator, SparkStepOperator):
 
 __all__ = [
     "importer_step",
-    "ImporterParameters",
     "split_step",
-    "SplitParameters",
     "statistics_step",
     "transformer_step",
     "trainer_step",

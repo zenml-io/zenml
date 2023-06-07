@@ -14,26 +14,24 @@
 
 from pyspark.sql import DataFrame
 
+from zenml import step
 from zenml.client import Client
-from zenml.steps import BaseParameters, Output, step
+from zenml.steps import Output
 
 step_operator = Client().active_stack.step_operator
 
 
-class SplitParameters(BaseParameters):
-    train_ratio: float
-    test_ratio: float
-    eval_ratio: float
-
-
 @step(step_operator=step_operator.name)
 def split_step(
-    dataset: DataFrame, params: SplitParameters
-) -> Output(train=DataFrame, test=DataFrame, eval=DataFrame,):
+    dataset: DataFrame,
+    train_ratio: float = 0.7,
+    test_ratio: float = 0.2,
+    eval_ratio: float = 0.1,
+) -> Output(train=DataFrame, test=DataFrame, eval=DataFrame):
     return dataset.randomSplit(
         [
-            params.train_ratio,
-            params.test_ratio,
-            params.eval_ratio,
+            train_ratio,
+            test_ratio,
+            eval_ratio,
         ]
     )

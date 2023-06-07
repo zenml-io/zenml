@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2023. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -15,8 +15,16 @@
 
 import os
 
+from steps import (
+    importer_step,
+    split_step,
+    statistics_step,
+    trainer_step,
+    transformer_step,
+)
+
+from zenml import pipeline
 from zenml.config import DockerSettings
-from zenml.pipelines import pipeline
 
 docker_settings = DockerSettings(
     requirements=["zenml"], parent_image=os.getenv("BASE_IMAGE_NAME")
@@ -24,15 +32,9 @@ docker_settings = DockerSettings(
 
 
 @pipeline(enable_cache=True, settings={"docker": docker_settings})
-def spark_pipeline(
-    importer,
-    analyzer,
-    splitter,
-    processor,
-    trainer,
-):
-    dataset = importer()
-    analyzer(dataset)
-    train, test, evaluation = splitter(dataset)
-    train_xf, _, _ = processor(train)
-    _ = trainer(train_xf)
+def spark_pipeline():
+    dataset = importer_step(path=os.getenv("SPARK_DEMO_DATASET"))
+    statistics_step(dataset)
+    train, test, evaluation = split_step(dataset)
+    train_xf, _, _ = transformer_step(train)
+    trainer_step(train_xf)
