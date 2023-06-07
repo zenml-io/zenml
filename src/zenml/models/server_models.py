@@ -54,8 +54,7 @@ class ServerModel(BaseModel):
     )
 
     debug: bool = Field(
-        False,
-        title="Flag to indicate whether ZenML is running on debug mode."
+        False, title="Flag to indicate whether ZenML is running on debug mode."
     )
 
     deployment_type: ServerDeploymentType = Field(

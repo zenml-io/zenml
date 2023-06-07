@@ -18,16 +18,15 @@ from typing import Any, Dict, List, Optional
 
 import requests
 
-from zenml.analytics import source_context
 from zenml._hub.constants import (
     ZENML_HUB_ADMIN_USERNAME,
     ZENML_HUB_CLIENT_TIMEOUT,
     ZENML_HUB_CLIENT_VERIFY,
     ZENML_HUB_DEFAULT_URL,
 )
+from zenml.analytics import source_context
 from zenml.client import Client
-from zenml.constants import ENV_ZENML_HUB_URL
-from zenml.constants import IS_DEBUG_ENV
+from zenml.constants import ENV_ZENML_HUB_URL, IS_DEBUG_ENV
 from zenml.logger import get_logger
 from zenml.models.hub_plugin_models import (
     HubPluginRequestModel,
@@ -257,8 +256,8 @@ class HubClient:
         headers = {
             "Accept": "application/json",
             "Content-Type": content_type,
-            "Debug-Context": IS_DEBUG_ENV,
-            "Source-Context": source_context.get().value,
+            "Debug-Context": str(IS_DEBUG_ENV),
+            "Source-Context": str(source_context.get().value),
         }
         if self.auth_token:
             headers["Authorization"] = f"Bearer {self.auth_token}"

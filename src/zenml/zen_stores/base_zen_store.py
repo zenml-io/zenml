@@ -37,8 +37,8 @@ from zenml.constants import (
     ENV_ZENML_DEFAULT_USER_PASSWORD,
     ENV_ZENML_DEFAULT_WORKSPACE_NAME,
     ENV_ZENML_SERVER_DEPLOYMENT_TYPE,
+    IS_DEBUG_ENV,
 )
-from zenml.constants import IS_DEBUG_ENV
 from zenml.enums import (
     PermissionType,
     SecretsStoreType,
