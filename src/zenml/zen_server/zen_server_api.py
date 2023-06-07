@@ -119,7 +119,7 @@ async def infer_source_context(request: Request, call_next: Any) -> Any:
         call_next: a function that will receive the request as a parameter and
             pass it to the corresponding path operation.
 
-    Return:
+    Returns:
         the response to the request.
     """
     try:
