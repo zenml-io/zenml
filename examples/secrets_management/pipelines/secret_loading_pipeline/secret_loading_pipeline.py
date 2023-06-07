@@ -10,16 +10,12 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from zenml.config import DockerSettings
-from zenml.integrations.constants import AWS
-from zenml.pipelines import pipeline
+from steps.secret_loader.secret_loader_step import secret_loader
 
-docker_settings = DockerSettings(required_integrations=[AWS])
+from zenml import pipeline
 
 
-@pipeline(settings={"docker": docker_settings})
-def secret_loading_pipeline(
-    secret_loader,
-):
+@pipeline
+def secret_loading_pipeline():
     """Define single step pipeline."""
     secret_loader()

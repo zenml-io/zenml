@@ -13,10 +13,6 @@
 from pipelines.secret_loading_pipeline.secret_loading_pipeline import (
     secret_loading_pipeline,
 )
-from steps.secret_loader.secret_loader_step import secret_loader
 
 if __name__ == "__main__":
-    pipeline = secret_loading_pipeline(
-        secret_loader=secret_loader(),
-    )
-    pipeline.run()
+    secret_loading_pipeline()
