@@ -1,7 +1,7 @@
 """Added logs table [ade72effebaf].
 
 Revision ID: ade72effebaf
-Revises: 0.39.1
+Revises: 0.40.2
 Create Date: 2023-05-10 17:26:03.716357
 
 """
@@ -11,7 +11,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "ade72effebaf"
-down_revision = "0.39.1"
+down_revision = "0.40.2"
 branch_labels = None
 depends_on = None
 
