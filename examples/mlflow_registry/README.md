@@ -199,17 +199,7 @@ Now we're ready. Execute:
 python run.py
 ```
 
-Alternatively, if you want to run based on the `config.yaml` you can run with:
-
-```bash
-# For Training pipeline Use:
-zenml pipeline run pipelines/training_pipeline/training_pipeline.py -c training_pipeline_config.yaml
-# For Deployment pipeline Use:
-zenml pipeline run pipelines/deployment_inference_pipeline/deployment_inference_pipeline.py -c deployment_pipeline_config.yaml
-```
-
 ## Running on a local Kubernetes cluster
-
 
 ## 📄 Infrastructure Requirements (Pre-requisites)
 

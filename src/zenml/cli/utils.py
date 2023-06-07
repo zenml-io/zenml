@@ -1357,48 +1357,71 @@ def print_service_connectors_table(
 
 def print_service_connector_resource_table(
     resources: List["ServiceConnectorResourcesModel"],
+    show_resources_only: bool = False,
 ) -> None:
     """Prints a table with details for a list of service connector resources.
 
     Args:
         resources: List of service connector resources to print.
+        show_resources_only: If True, only the resources will be printed.
     """
     resource_table = []
     for resource_model in resources:
-        resource_types = resource_model.emojified_resource_types
-        if not resource_model.resource_type:
-            # Multi-type connector
-            if resource_types:
-                resource_type = "\n".join(resource_types)
-            else:
-                resource_type = "<multiple>"
-            if resource_model.error:
-                resource_ids = [f":collision: error: {resource_model.error}"]
-            elif resource_model.resource_ids:
-                resource_ids = resource_model.resource_ids
-            else:
-                resource_ids = [":person_shrugging: none listed"]
-        else:
-            # Single-type connector
-            assert resource_types
-            resource_type = resource_types[0]
+        printed_connector = False
+        resource_row: Dict[str, Any] = {}
 
-            if resource_model.error:
+        if resource_model.error:
+            # Global error
+            if not show_resources_only:
+                resource_row = {
+                    "CONNECTOR ID": str(resource_model.id),
+                    "CONNECTOR NAME": resource_model.name,
+                    "CONNECTOR TYPE": resource_model.emojified_connector_type,
+                }
+            resource_row.update(
+                {
+                    "RESOURCE TYPE": "\n".join(
+                        resource_model.get_emojified_resource_types()
+                    ),
+                    "RESOURCE NAMES": f":collision: error: {resource_model.error}",
+                }
+            )
+            resource_table.append(resource_row)
+            continue
+
+        for resource in resource_model.resources:
+            resource_type = resource_model.get_emojified_resource_types(
+                resource.resource_type
+            )[0]
+            if resource.error:
                 # Error fetching resources
-                resource_ids = [f":collision: error: {resource_model.error}"]
-            elif resource_model.resource_ids:
-                resource_ids = resource_model.resource_ids
+                resource_ids = [f":collision: error: {resource.error}"]
+            elif resource.resource_ids:
+                resource_ids = resource.resource_ids
             else:
                 resource_ids = [":person_shrugging: none listed"]
 
-        resource_row: Dict[str, Any] = {
-            "CONNECTOR ID": str(resource_model.id),
-            "CONNECTOR NAME": resource_model.name,
-            "CONNECTOR TYPE": resource_model.emojified_connector_type,
-            "RESOURCE TYPE": resource_type,
-            "RESOURCE NAMES": "\n".join(resource_ids),
-        }
-        resource_table.append(resource_row)
+            resource_row = {}
+            if not show_resources_only:
+                resource_row = {
+                    "CONNECTOR ID": str(resource_model.id)
+                    if not printed_connector
+                    else "",
+                    "CONNECTOR NAME": resource_model.name
+                    if not printed_connector
+                    else "",
+                    "CONNECTOR TYPE": resource_model.emojified_connector_type
+                    if not printed_connector
+                    else "",
+                }
+            resource_row.update(
+                {
+                    "RESOURCE TYPE": resource_type,
+                    "RESOURCE NAMES": "\n".join(resource_ids),
+                }
+            )
+            resource_table.append(resource_row)
+            printed_connector = True
     print_table(resource_table)
 
 

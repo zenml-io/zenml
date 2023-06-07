@@ -37,6 +37,9 @@ from zenml.models import (
     UserResponseModel,
     WorkspaceResponseModel,
 )
+from zenml.models.service_connector_models import (
+    ServiceConnectorTypedResourcesModel,
+)
 
 logger = get_logger(__name__)
 
@@ -1087,21 +1090,18 @@ class ServiceConnector(BaseModel, metaclass=ServiceConnectorMeta):
         self,
         resource_type: Optional[str] = None,
         resource_id: Optional[str] = None,
+        list_resources: bool = True,
     ) -> ServiceConnectorResourcesModel:
-        """Verify and list all the resources that the connector can access.
+        """Verify and optionally list all the resources that the connector can access.
 
         This method uses the connector's configuration to verify that it can
         authenticate and access the indicated resource(s).
 
-        The list of resources that the connector can access, scoped to the
-        supplied resource type and resource ID is returned, with the following
-        exception: no resources are listed for multi-type connectors unless a
-        resource type is provided as argument, because listing all resources for
-        all supported resource types can be a very expensive operation,
-        especially with cloud provider connectors that have many resource types.
-
-        If a resource type is not supplied, this method verifies that the
-        connector can authenticate and connect to any of the supported resource.
+        If `list_resources` is set, the list of resources that the connector can
+        access, scoped to the supplied resource type and resource ID is included
+        in the response, otherwise the connector only verifies that it can
+        globally authenticate and doesn't verify or return resource information
+        (i.e. the `resource_ids` fields in the response are empty).
 
         Args:
             resource_type: The type of the resource to verify. If the connector
@@ -1112,6 +1112,8 @@ class ServiceConnector(BaseModel, metaclass=ServiceConnectorMeta):
                 already configured with a resource ID that is not the same or
                 equivalent to the one requested, a `ValueError` exception is
                 raised.
+            list_resources: Whether to list the resources that the connector can
+                access.
 
         Returns:
             A list of resources that the connector can access.
@@ -1128,98 +1130,148 @@ class ServiceConnector(BaseModel, metaclass=ServiceConnectorMeta):
             name=self.name,
         )
 
-        try:
-            resource_type, resource_id = self.validate_runtime_args(
-                resource_type=resource_type,
-                resource_id=resource_id,
-                require_resource_type=False,
-                require_resource_id=False,
+        name_msg = f" '{self.name}'" if self.name else ""
+
+        resource_types = self.supported_resource_types
+        if resource_type:
+            if resource_type not in resource_types:
+                raise ValueError(
+                    f"connector{name_msg} does not support resource type: "
+                    f"'{resource_type}'. Supported resource types are: "
+                    f"{', '.join(resource_types)}"
+                )
+            resource_types = [resource_type]
+
+        # Pre-populate the list of resources with entries corresponding to the
+        # supported resource types and scoped to the supplied resource type
+        resources.resources = [
+            ServiceConnectorTypedResourcesModel(
+                resource_type=rt,
             )
-        except ValueError as exc:
-            logger.debug(f"connector verification failed: {exc}")
-            raise ValueError(
-                f"The connector configuration is incomplete or invalid: {exc}",
-            )
-        except AuthorizationException as exc:
-            resources.error = (
-                f"connector {self.name} authorization failure: {exc}"
-            )
-            # Log an exception if debug logging is enabled
-            if logger.isEnabledFor(logging.DEBUG):
-                logger.exception(resources.error)
-            else:
-                logger.warning(resources.error)
-            return resources
+            for rt in resource_types
+        ]
 
         if self.has_expired():
-            resources.error = (
-                "the connector's authentication credentials have expired."
-            )
+            error = "the connector's authentication credentials have expired."
+            # Log the error in the resources object
+            resources.set_error(error)
             return resources
 
-        resources.resource_type = resource_type
-
-        try:
-            resource_ids = self._verify(
-                resource_type=resource_type,
-                resource_id=resource_id,
-            )
-        except AuthorizationException as exc:
-            resources.error = (
-                f"connector '{self.name}' authorization failure: {exc}"
-            )
-            # Log an exception if debug logging is enabled
-            if logger.isEnabledFor(logging.DEBUG):
-                logger.exception(resources.error)
-            else:
-                logger.warning(resources.error)
-            return resources
-        except Exception as exc:
-            error = (
-                f"connector {self.name} verification failed with unexpected "
-                f"error: {exc}"
-            )
-            # Log an exception if debug logging is enabled
-            if logger.isEnabledFor(logging.DEBUG):
-                logger.exception(error)
-            else:
-                logger.warning(error)
-            resources.error = (
-                "an unexpected error occurred while verifying the connector."
-            )
-            return resources
-
-        if not resource_type:
-            # For multi-type connectors, if a resource type is not provided
-            # as argument, we don't expect any resources to be listed
-            return resources
-
-        resource_type_spec = spec.resource_type_dict[resource_type]
-
-        if resource_id:
-            # A single resource was requested, so we expect a single resource
-            # to be listed
-            if [resource_id] != resource_ids:
-                logger.error(
-                    f"a different resource ID '{resource_ids}' was returned "
-                    f"than the one requested: {resource_ids}. This is likely a "
-                    f"bug in the {self.__class__} connector implementation."
-                )
-            resources.resource_ids = [resource_id]
-        elif not resource_ids:
-            # If no resources were listed, signal this as an error that the
-            # connector cannot access any resources.
-            resources.error = (
-                f"The connector didn't list any {resource_type_spec.name} "
-                "resources. This is likely caused by the connector credentials "
-                "not being valid or not having sufficient permissions to list "
-                "or access resources of this type. Please check the connector "
-                "configuration and its credentials and try again."
-            )
-            logger.debug(resources.error)
-            return resources
+        verify_resource_types: List[Optional[str]] = []
+        verify_resource_id = None
+        if not list_resources and not resource_id:
+            # If we're not listing resources, we're only verifying that the
+            # connector can authenticate globally (i.e. without supplying a
+            # resource type or resource ID). This is the same as if no resource
+            # type or resource ID was supplied. The only exception is when the
+            # verification scope is already set to a single resource ID, in
+            # which case we still perform the verification on that resource ID.
+            verify_resource_types = [None]
+            verify_resource_id = None
         else:
-            resources.resource_ids = resource_ids
+            if len(resource_types) > 1:
+                # This forces the connector to verify that it can authenticate
+                # globally (i.e. without supplying a resource type or resource
+                # ID) before listing individual resources in the case of
+                # multi-type service connectors.
+                verify_resource_types = [None]
+
+            verify_resource_types.extend(resource_types)
+            if len(verify_resource_types) == 1:
+                verify_resource_id = resource_id
+
+        # Here we go through each resource type and attempt to verify and list
+        # the resources that the connector can access for that resource type.
+        # This list may start with a `None` resource type, which indicates that
+        # the connector should verify that it can authenticate globally.
+        for resource_type in verify_resource_types:
+            try:
+                resource_type, resource_id = self.validate_runtime_args(
+                    resource_type=resource_type,
+                    resource_id=verify_resource_id,
+                    require_resource_type=False,
+                    require_resource_id=False,
+                )
+
+                resource_ids = self._verify(
+                    resource_type=resource_type,
+                    resource_id=resource_id,
+                )
+            except ValueError as exc:
+                raise ValueError(
+                    f"The connector configuration is incomplete or invalid: "
+                    f"{exc}",
+                )
+            except AuthorizationException as exc:
+                error = f"connector{name_msg} authorization failure: {exc}"
+                # Log an exception if debug logging is enabled
+                if logger.isEnabledFor(logging.DEBUG):
+                    logger.exception(error)
+                else:
+                    logger.warning(error)
+
+                # Log the error in the resources object
+                resources.set_error(error, resource_type=resource_type)
+                if resource_type:
+                    continue
+                else:
+                    # We stop on a global failure
+                    break
+            except Exception as exc:
+                error = (
+                    f"connector{name_msg} verification failed with "
+                    f"unexpected error: {exc}"
+                )
+                # Log an exception if debug logging is enabled
+                if logger.isEnabledFor(logging.DEBUG):
+                    logger.exception(error)
+                else:
+                    logger.warning(error)
+                error = (
+                    "an unexpected error occurred while verifying the "
+                    "connector."
+                )
+                # Log the error in the resources object
+                resources.set_error(error, resource_type=resource_type)
+                if resource_type:
+                    continue
+                else:
+                    # We stop on a global failure
+                    break
+
+            if not resource_type:
+                # If a resource type is not provided as argument, we don't
+                # expect any resources to be listed
+                continue
+
+            resource_type_spec = spec.resource_type_dict[resource_type]
+
+            if resource_id:
+                # A single resource was requested, so we expect a single
+                # resource to be listed
+                if [resource_id] != resource_ids:
+                    logger.error(
+                        f"a different resource ID '{resource_ids}' was "
+                        f"returned than the one requested: {resource_ids}. "
+                        f"This is likely a bug in the {self.__class__} "
+                        "connector implementation."
+                    )
+                resources.set_resource_ids(resource_type, [resource_id])
+            elif not resource_ids:
+                # If no resources were listed, signal this as an error that the
+                # connector cannot access any resources.
+                error = (
+                    f"connector{name_msg} didn't list any "
+                    f"{resource_type_spec.name} resources. This is likely "
+                    "caused by the connector credentials not being valid or "
+                    "not having sufficient permissions to list or access "
+                    "resources of this type. Please check the connector "
+                    "configuration and its credentials and try again."
+                )
+                logger.debug(error)
+                resources.set_error(error, resource_type=resource_type)
+            else:
+                resources.set_resource_ids(resource_type, resource_ids)
 
         return resources
 

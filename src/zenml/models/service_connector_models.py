@@ -857,6 +857,39 @@ class ServiceConnectorRequirements(BaseModel):
         return True, ""
 
 
+class ServiceConnectorTypedResourcesModel(BaseModel):
+    """Service connector typed resources list.
+
+    Lists the resource instance that a service connector can provide
+    access to.
+    """
+
+    resource_type: str = Field(
+        title="The type of resource that the service connector instance can "
+        "be used to access.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
+
+    resource_ids: Optional[List[str]] = Field(
+        default=None,
+        title="The resource IDs of all resource instances that the service "
+        "connector instance can be used to access. Omitted (set to None) for "
+        "multi-type service connectors that didn't explicitly request to "
+        "fetch resources for all resource types. Also omitted if an error "
+        "occurred while listing the resource instances or if no resources are "
+        "listed due to authorization issues or lack of permissions (in both "
+        "cases the 'error' field is set to an error message). For resource "
+        "types that do not support multiple instances, a single resource ID is "
+        "listed.",
+    )
+
+    error: Optional[str] = Field(
+        default=None,
+        title="An error message describing why the service connector instance "
+        "could not list the resources that it is configured to access.",
+    )
+
+
 class ServiceConnectorResourcesModel(BaseModel):
     """Service connector resources list.
 
@@ -882,29 +915,92 @@ class ServiceConnectorResourcesModel(BaseModel):
         max_length=STR_FIELD_MAX_LENGTH,
     )
 
-    resource_type: Optional[str] = Field(
-        default=None,
-        title="The type of resource that the service connector instance can "
-        "be used to access. Omitted for multi-type service connectors.",
-        max_length=STR_FIELD_MAX_LENGTH,
-    )
-
-    resource_ids: Optional[List[str]] = Field(
-        default=None,
-        title="The resource IDs of all resource instances that the service "
-        "connector instance can be used to access. Omitted (set to None) for "
-        "multi-type service connectors. Also omitted if an error occurred "
-        "while listing the resource instances or if no resources are listed "
-        "due to authorization issues or lack of permissions (in both cases the "
-        "'error' field is set to an error message). For resource types that "
-        "do not support multiple instances, a single resource ID is listed.",
+    resources: List[ServiceConnectorTypedResourcesModel] = Field(
+        default_factory=list,
+        title="The list of resources that the service connector instance can "
+        "give access to. Contains one entry for every resource type "
+        "that the connector is configured for.",
     )
 
     error: Optional[str] = Field(
         default=None,
-        title="An error message describing why the service connector instance "
-        "could not list the resources that it is configured to access.",
+        title="A global error message describing why the service connector "
+        "instance could not authenticate to the remote service.",
     )
+
+    @property
+    def resources_dict(self) -> Dict[str, ServiceConnectorTypedResourcesModel]:
+        """Get the resources as a dictionary indexed by resource type.
+
+        Returns:
+            The resources as a dictionary indexed by resource type.
+        """
+        return {
+            resource.resource_type: resource for resource in self.resources
+        }
+
+    @property
+    def resource_types(self) -> List[str]:
+        """Get the resource types.
+
+        Returns:
+            The resource types.
+        """
+        return [resource.resource_type for resource in self.resources]
+
+    def set_error(
+        self, error: str, resource_type: Optional[str] = None
+    ) -> None:
+        """Set a global error message or an error for a single resource type.
+
+        Args:
+            error: The error message.
+            resource_type: The resource type to set the error message for. If
+                omitted, or if there is only one resource type involved, the
+                error message is (also) set globally.
+
+        Raises:
+            KeyError: If the resource type is not found in the resources list.
+        """
+        if resource_type:
+            resource = self.resources_dict.get(resource_type)
+            if not resource:
+                raise KeyError(
+                    f"resource type '{resource_type}' not found in "
+                    "service connector resources list"
+                )
+            resource.error = error
+            resource.resource_ids = None
+            if len(self.resources) == 1:
+                # If there is only one resource type involved, set the global
+                # error message as well.
+                self.error = error
+        else:
+            self.error = error
+            for resource in self.resources:
+                resource.error = error
+                resource.resource_ids = None
+
+    def set_resource_ids(
+        self, resource_type: str, resource_ids: List[str]
+    ) -> None:
+        """Set the resource IDs for a resource type.
+
+        Args:
+            resource_type: The resource type to set the resource IDs for.
+            resource_ids: The resource IDs to set.
+
+        Raises:
+            KeyError: If the resource type is not found in the resources list.
+        """
+        resource = self.resources_dict.get(resource_type)
+        if not resource:
+            raise KeyError(
+                f"resource type '{resource_type}' not found in "
+                "service connector resources list"
+            )
+        resource.resource_ids = resource_ids
+        resource.error = None
 
     @property
     def type(self) -> str:
@@ -929,46 +1025,36 @@ class ServiceConnectorResourcesModel(BaseModel):
 
         return self.connector_type
 
-    @property
-    def emojified_resource_types(self) -> Optional[List[str]]:
-        """Get the emojified resource types.
+    def get_emojified_resource_types(
+        self, resource_type: Optional[str] = None
+    ) -> List[str]:
+        """Get the emojified resource type.
+
+        Args:
+            resource_type: The resource type to get the emojified resource type
+                for. If omitted, the emojified resource type for all resource
+                types is returned.
+
 
         Returns:
-            The emojified resource types.
+            The list of emojified resource types.
         """
         if not isinstance(self.connector_type, str):
-            if self.resource_type:
+            if resource_type:
                 return [
                     self.connector_type.resource_type_dict[
-                        self.resource_type
+                        resource_type
                     ].emojified_resource_type
                 ]
-            else:
-                return [
-                    resource_type_spec.emojified_resource_type
-                    for resource_type_spec in self.connector_type.resource_type_dict.values()
-                ]
-
-        return [self.resource_type] if self.resource_type else None
-
-    @property
-    def supports_instances(self) -> bool:
-        """Check if the configured resource type supports multiple instances.
-
-        Returns:
-            True if the resource type is configured and supports multiple
-            instances, False otherwise.
-        """
-        if not self.resource_type:
-            return False
-
-        if isinstance(self.connector_type, str):
-            return False
-
-        resource_type_spec = self.connector_type.resource_type_dict[
-            self.resource_type
-        ]
-        return resource_type_spec.supports_instances
+            return [
+                self.connector_type.resource_type_dict[
+                    resource_type
+                ].emojified_resource_type
+                for resource_type in self.resources_dict.keys()
+            ]
+        if resource_type:
+            return [resource_type]
+        return list(self.resources_dict.keys())
 
     def get_default_resource_id(self) -> Optional[str]:
         """Get the default resource ID, if included in the resource list.
@@ -980,13 +1066,28 @@ class ServiceConnectorResourcesModel(BaseModel):
         Returns:
             The default resource ID, or None if no resource ID is set.
         """
-        if not self.resource_ids or len(self.resource_ids) != 1:
+        if len(self.resources) != 1:
+            # multi-type connectors do not have a default resource ID
             return None
 
-        if self.supports_instances:
+        if isinstance(self.connector_type, str):
+            # can't determine default resource ID for unknown connector types
             return None
 
-        return self.resource_ids[0]
+        resource_type_spec = self.connector_type.resource_type_dict[
+            self.resources[0].resource_type
+        ]
+        if resource_type_spec.supports_instances:
+            # resource types that support multiple instances do not have a
+            # default resource ID
+            return None
+
+        resource_ids = self.resources[0].resource_ids
+
+        if not resource_ids or len(resource_ids) != 1:
+            return None
+
+        return resource_ids[0]
 
     @classmethod
     def from_connector_model(
@@ -1011,22 +1112,16 @@ class ServiceConnectorResourcesModel(BaseModel):
             connector_type=connector_model.type,
         )
 
-        if resource_type:
-            resources.resource_type = resource_type
-        else:
-            # Multi-type resources do not have a resource type set
-            resources.resource_type = (
-                connector_model.resource_types[0]
-                if len(connector_model.resource_types) == 1
-                else None
+        resource_types = resource_type or connector_model.resource_types
+        for resource_type in resource_types:
+            resources.resources.append(
+                ServiceConnectorTypedResourcesModel(
+                    resource_type=resource_type,
+                    resource_ids=[connector_model.resource_id]
+                    if connector_model.resource_id
+                    else None,
+                )
             )
-
-        # Multi-type and multi-instance resources do not have resource IDs set
-        resources.resource_ids = (
-            [connector_model.resource_id]
-            if connector_model.resource_id and resources.resource_type
-            else []
-        )
 
         return resources
 
