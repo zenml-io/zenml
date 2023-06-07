@@ -18,7 +18,7 @@ from typing import Any, Dict, List, Optional
 
 import requests
 
-from zenml import source_context
+from zenml.analytics import source_context
 from zenml._hub.constants import (
     ZENML_HUB_ADMIN_USERNAME,
     ZENML_HUB_CLIENT_TIMEOUT,
