@@ -1143,7 +1143,7 @@ def test_artifacts_are_not_deleted_with_run():
 # '---------'
 
 
-def test_logs_are_recorded_properly():
+def test_logs_are_recorded_properly(clean_client):
     """Tests if logs are stored in the artifact store."""
     client = Client()
     store = client.zen_store
