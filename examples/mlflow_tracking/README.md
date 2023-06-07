@@ -149,12 +149,6 @@ Now we're ready. Execute:
 python run.py
 ```
 
-Alternatively, if you want to run based on the config.yaml you can run with:
-
-```bash
-zenml pipeline run pipelines/training_pipeline/training_pipeline.py -c config.yaml
-```
-
 ## Running on a local Kubernetes cluster
 
 
@@ -211,6 +205,13 @@ In order to clean up, delete the remaining ZenML references.
 rm -rf zenml_examples
 rm -rf <SPECIFIC_MLRUNS_PATH_GOES_HERE>
 ```
+
+# Run it on the sandbox
+
+ZenML offers a sandbox environment where you can effortlessly run your pipelines on a Kubernetes cluster. This complimentary service is an excellent way to try out a production deployment.
+
+You can execute this example in the sandbox by following a few simple commands. Learn more about the sandbox in the [official documentation](https://docs.zenml.io/user-guide/advanced-guide/sandbox), or visit the [sandbox homepage](https://sandbox.zenml.io/).
+
 
 # 📜 Learn more
 

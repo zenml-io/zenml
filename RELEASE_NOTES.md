@@ -1,5 +1,40 @@
 <!-- markdown-link-check-disable -->
 
+# 0.40.2
+
+Documentation and example updates.
+
+## What's Changed
+* Update Example for sandbox by @safoinme in https://github.com/zenml-io/zenml/pull/1576
+* Document `zenml show` by @fa9r in https://github.com/zenml-io/zenml/pull/1570
+* Clean up for the new docs by @bcdurak in https://github.com/zenml-io/zenml/pull/1575
+* Add orchestrator outputs for sandbox examples by @strickvl in https://github.com/zenml-io/zenml/pull/1579
+* Docs: Added some adjustments to the code repository page. by @bcdurak in https://github.com/zenml-io/zenml/pull/1582
+* Sandbox documentation (and other docs updates) by @strickvl in https://github.com/zenml-io/zenml/pull/1574
+* Minor README update regarding the sandbox. by @bcdurak in https://github.com/zenml-io/zenml/pull/1586
+* Fix failing `mlflow_tracking` example test by @strickvl in https://github.com/zenml-io/zenml/pull/1581
+* Bump `ruff` and `mypy` by @strickvl in https://github.com/zenml-io/zenml/pull/1590
+* Remove `config.yaml` references in example docs by @strickvl in https://github.com/zenml-io/zenml/pull/1585
+* update mlflow tracking example and reduce number of epochs by @safoinme in https://github.com/zenml-io/zenml/pull/1598
+* Improve error message when requirements file does not exist by @schustmi in https://github.com/zenml-io/zenml/pull/1596
+* Fix build reuse for integrations with apt packages by @schustmi in https://github.com/zenml-io/zenml/pull/1594
+* make the `Github` repo token optional by @safoinme in https://github.com/zenml-io/zenml/pull/1593
+
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.40.1...0.40.2
+
+# 0.40.1
+
+Small bug and docs fixes following the 0.40.0 release.
+
+## What's Changed
+* Convert dict to tuple in ArtifactConfiguration validator by @schustmi in https://github.com/zenml-io/zenml/pull/1571
+* Docs cleanup by @schustmi in https://github.com/zenml-io/zenml/pull/1569
+* Fix `boto3<=1.24.59`  by @safoinme in https://github.com/zenml-io/zenml/pull/1572
+
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.40.0...0.40.1
+
 # 0.40.0
 
 ZenML release 0.40.0 introduces two big updates: a fresh and more flexible pipeline interface and a new way to connect and authenticate with external services in ZenML Connectors. See below for full details on these two major new sets of functionality.

@@ -4,7 +4,7 @@ description: Ensuring your pipelines or steps run on GPU-backed hardware.
 
 # Scale compute to the cloud
 
-There are several reasons why you may want to scale your machine learning pipelines to the cloud, such as utilizing more powerful hardware or distributing tasks across multiple nodes. In order to achieve this with ZenML you'll need to run your steps on GPU-backed hardware using `ResourceSettings` to allocate greater resources on an orchestrator node and/or and make some adjustments to the container environment.
+There are several reasons why you may want to scale your machine learning pipelines to the cloud, such as utilizing more powerful hardware or distributing tasks across multiple nodes. In order to achieve this with ZenML you'll need to run your steps on GPU-backed hardware using `ResourceSettings` to allocate greater resources on an orchestrator node and/or make some adjustments to the container environment.
 
 ## Specify resource requirements for steps
 

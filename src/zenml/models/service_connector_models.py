@@ -860,7 +860,7 @@ class ServiceConnectorRequirements(BaseModel):
 class ServiceConnectorTypedResourcesModel(BaseModel):
     """Service connector typed resources list.
 
-    Lists the resource instances belonging that a service connector can provide
+    Lists the resource instances that a service connector can provide
     access to.
     """
 
@@ -874,7 +874,7 @@ class ServiceConnectorTypedResourcesModel(BaseModel):
         default=None,
         title="The resource IDs of all resource instances that the service "
         "connector instance can be used to access. Omitted (set to None) for "
-        "multi-type service connectors that didn't explicitly requested to "
+        "multi-type service connectors that didn't explicitly request to "
         "fetch resources for all resource types. Also omitted if an error "
         "occurred while listing the resource instances or if no resources are "
         "listed due to authorization issues or lack of permissions (in both "
@@ -918,7 +918,7 @@ class ServiceConnectorResourcesModel(BaseModel):
     resources: List[ServiceConnectorTypedResourcesModel] = Field(
         default_factory=list,
         title="The list of resources that the service connector instance can "
-        "be used to access. Contains one entry for every resource type "
+        "give access to. Contains one entry for every resource type "
         "that the connector is configured for.",
     )
 
@@ -979,6 +979,7 @@ class ServiceConnectorResourcesModel(BaseModel):
             self.error = error
             for resource in self.resources:
                 resource.error = error
+                resource.resource_ids = None
 
     def set_resource_ids(
         self, resource_type: str, resource_ids: List[str]
