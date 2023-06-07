@@ -97,12 +97,12 @@ The status of the MLOps Platform Sandbox service is being tracked live on [the Z
 
 **Q: Is the sandbox free?**
 
-**A:** Yes, the sandbox is free but time-boxed to 8 hours as we also have to
+**A:** Yes, the sandbox is free but time-boxed to 4 hours as we also have to
 watch our costs!
 
 **Q: Is it possible to extend the duration of the sandbox?**
 
-**A:** The MLOps Platform Sandbox has an 8-hour limit. You can [create your own sandbox using ZenML stack recipes](https://docs.zenml.io/advanced-guide/practical-mlops/stack-recipes) or integrate ZenML into your existing infrastructure for similar functionality.
+**A:** The MLOps Platform Sandbox has a 4-hour limit. You can [create your own sandbox using ZenML stack recipes](https://docs.zenml.io/advanced-guide/practical-mlops/stack-recipes) or integrate ZenML into your existing infrastructure for similar functionality.
 If you'd like us to host the MLOps Platform Sandbox for you for longer, [fill out this form](https://zenml.io/extend-sandbox).
 
 **Q: Why use ZenML with MLflow, Kubeflow and Minio?**

@@ -1303,14 +1303,14 @@ def generate_stack_component_destroy_command(
 
 
 def prompt_select_resource_id(
-    resources: ServiceConnectorResourcesModel,
+    resource_ids: List[str],
     resource_name: str,
     interactive: bool = True,
 ) -> str:
     """Prompts the user to select a resource ID from a list of available IDs.
 
     Args:
-        resources: A list of available resource IDs.
+        resource_ids: A list of available resource IDs.
         resource_name: The name of the resource type to select.
         interactive: Whether to prompt the user for input or error out if
             user input is required.
@@ -1318,7 +1318,6 @@ def prompt_select_resource_id(
     Returns:
         The selected resource ID.
     """
-    resource_ids = resources.resource_ids or []
     if len(resource_ids) == 1:
         # Only one resource ID is available, so we can select it
         # without prompting the user
@@ -1416,16 +1415,16 @@ def prompt_select_resource(
     connector_uuid = resources.id
     assert connector_uuid is not None
 
-    assert resources.resource_type is not None
-    resource_name = resources.resource_type
+    assert len(resources.resources) == 1
+    resource_name = resources.resources[0].resource_type
     if not isinstance(resources.connector_type, str):
         resource_type_spec = resources.connector_type.resource_type_dict[
-            resources.resource_type
+            resource_name
         ]
         resource_name = resource_type_spec.name
 
     resource_id = prompt_select_resource_id(
-        resources, resource_name=resource_name
+        resources.resources[0].resource_ids or [], resource_name=resource_name
     )
 
     return connector_uuid, resource_id
@@ -1568,13 +1567,15 @@ def generate_stack_component_connect_command(
                 )
 
             resource_list = [
-                resource for resource in resource_list if resource.resource_ids
+                resource
+                for resource in resource_list
+                if resource.resources[0].resource_ids
             ]
 
             error_resource_list = [
                 resource
                 for resource in resource_list
-                if not resource.resource_ids
+                if not resource.resources[0].resource_ids
             ]
 
             if not resource_list:
@@ -1670,9 +1671,9 @@ def generate_stack_component_connect_command(
                     cli_utils.error(
                         f"Access to the resource could not be verified: {e}"
                     )
-
-            if connector_resources.resource_ids:
-                if len(connector_resources.resource_ids) > 1:
+            resources = connector_resources.resources[0]
+            if resources.resource_ids:
+                if len(resources.resource_ids) > 1:
                     cli_utils.error(
                         f"Multiple {resource_type} resources are available for "
                         "the selected connector. Please use the "
@@ -1681,7 +1682,7 @@ def generate_stack_component_connect_command(
                         "to select a resource interactively."
                     )
                 else:
-                    resource_id = connector_resources.resource_ids[0]
+                    resource_id = resources.resource_ids[0]
 
         with console.status(
             f"Updating {display_name} '{name_id_or_prefix}'...\n"
