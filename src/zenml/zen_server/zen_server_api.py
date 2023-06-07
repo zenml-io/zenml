@@ -113,6 +113,14 @@ async def infer_source_context(request: Request, call_next: Any) -> Any:
     It extracts the source context from the header of incoming requests
     and applies it to the ZenML source context on the API side. This way, the
     outgoing analytics request can append it as an additional field.
+
+    Args:
+        request: the incoming request object.
+        call_next: a function that will receive the request as a parameter and
+            pass it to the corresponding path operation.
+
+    Return:
+        the response to the request.
     """
     try:
         s = request.headers.get(
