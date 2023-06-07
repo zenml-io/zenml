@@ -141,7 +141,7 @@ With the service account key downloaded to a local file, you can register a ZenM
 Artifact Store configuration as follows:
 
 ```shell
-# Store the GCP credentials in a ZenML  
+# Store the GCP credentials in a ZenML
 zenml secret create gcp_secret \
     --token=@path/to/service_account_key.json
 

@@ -94,6 +94,18 @@ def test_parsing_name_and_arguments():
         cli_utils.parse_name_and_extra_arguments(["--bar=1"])
 
 
+def test_converting_structured_str_to_dict():
+    """Test that our ability to parse CLI arguments works."""
+    assert cli_utils.convert_structured_str_to_dict(
+        "{'location': 'Nevada', 'aliens':'many'}"
+    ) == {"location": "Nevada", "aliens": "many"}
+
+    with pytest.raises(ClickException):
+        cli_utils.convert_structured_str_to_dict(
+            '{"location: "Nevada", "aliens":"many"}'
+        )
+
+
 def test_parsing_unknown_component_attributes():
     """Test that our ability to parse CLI arguments works."""
     assert cli_utils.parse_unknown_component_attributes(
