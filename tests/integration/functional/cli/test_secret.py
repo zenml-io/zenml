@@ -75,6 +75,24 @@ def test_create_fails_with_bad_scope():
             client.get_secret(secret_name)
 
 
+def test_create_secret_with_values():
+    """Tests creating a secret with a scope."""
+    runner = CliRunner()
+    with cleanup_secrets() as secret_name:
+        result = runner.invoke(
+            secret_create_command,
+            [
+                secret_name,
+                '--values={"test_value":"aria","test_value2":"axl"}',
+            ],
+        )
+        assert result.exit_code == 0
+        client = Client()
+        created_secret = client.get_secret(secret_name)
+        assert created_secret is not None
+        assert created_secret.values["test_value"].get_secret_value() == "aria"
+
+
 def test_list_secret_works():
     """Test that the secret list command works."""
     runner = CliRunner()
@@ -295,20 +313,35 @@ def test_update_secret_works():
 
         result3 = runner.invoke(
             secret_update_command,
-            [secret_name, "-r", "test_value2"],
+            [
+                secret_name,
+                '--values={"test_value":"json", "test_value2":"yaml"}',
+            ],
         )
         assert result3.exit_code == 0
         assert "updated" in result3.output
+
+        updated_secret = client.get_secret(secret_name)
+        assert updated_secret is not None
+        assert updated_secret.secret_values["test_value"] == "json"
+        assert updated_secret.secret_values["test_value2"] == "yaml"
+
+        result4 = runner.invoke(
+            secret_update_command,
+            [secret_name, "-r", "test_value2"],
+        )
+        assert result4.exit_code == 0
+        assert "updated" in result4.output
         newly_updated_secret = client.get_secret(secret_name)
         assert newly_updated_secret is not None
         assert "test_value2" not in newly_updated_secret.secret_values
 
-        result4 = runner.invoke(
+        result5 = runner.invoke(
             secret_update_command,
             [secret_name, "-s", "user"],
         )
-        assert result4.exit_code == 0
-        assert "updated" in result4.output
+        assert result5.exit_code == 0
+        assert "updated" in result5.output
         final_updated_secret = client.get_secret(secret_name)
         assert final_updated_secret is not None
         assert final_updated_secret.scope == SecretScope.USER

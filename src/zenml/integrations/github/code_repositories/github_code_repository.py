@@ -16,6 +16,7 @@ import os
 import re
 from typing import List, Optional
 
+import requests
 from github import Github, GithubException
 from github.Repository import Repository
 
@@ -48,7 +49,7 @@ class GitHubCodeRepositoryConfig(BaseCodeRepositoryConfig):
     owner: str
     repository: str
     host: Optional[str] = "github.com"
-    token: str = SecretField()
+    token: Optional[str] = SecretField()
 
 
 class GitHubCodeRepository(BaseCodeRepository):
@@ -69,10 +70,45 @@ class GitHubCodeRepository(BaseCodeRepository):
 
         Returns:
             The GitHub repository.
+
+        Raises:
+            RuntimeError: If the repository cannot be found.
         """
-        return self._github_session.get_repo(
-            f"{self.config.owner}/{self.config.repository}"
-        )
+        try:
+            github_repository = self._github_session.get_repo(
+                f"{self.config.owner}/{self.config.repository}"
+            )
+        except GithubException as e:
+            raise RuntimeError(
+                f"An error occurred while getting the repository: {str(e)}"
+            )
+        return github_repository
+
+    def check_github_repo_public(self, owner: str, repo: str) -> None:
+        """Checks if a GitHub repository is public.
+
+        Args:
+            owner: The owner of the repository.
+            repo: The name of the repository.
+
+        Raises:
+            RuntimeError: If the repository is not public.
+        """
+        url = f"https://api.github.com/repos/{owner}/{repo}"
+        response = requests.get(url)
+
+        try:
+            if response.status_code == 200:
+                pass
+            else:
+                raise RuntimeError(
+                    "It is not possible to access this repository as it does not appear to be public."
+                    "Access to private repositories is only possible when a token is provided. Please provide a token and try again"
+                )
+        except Exception as e:
+            raise RuntimeError(
+                f"An error occurred while checking if repository is public: {str(e)}"
+            )
 
     def login(
         self,
@@ -84,8 +120,13 @@ class GitHubCodeRepository(BaseCodeRepository):
         """
         try:
             self._github_session = Github(self.config.token)
-            user = self._github_session.get_user().login
-            logger.debug(f"Logged in as {user}")
+            if self.config.token:
+                user = self._github_session.get_user().login
+                logger.debug(f"Logged in as {user}")
+            else:
+                self.check_github_repo_public(
+                    self.config.owner, self.config.repository
+                )
         except Exception as e:
             raise RuntimeError(f"An error occurred while logging in: {str(e)}")
 
