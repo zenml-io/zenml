@@ -36,6 +36,7 @@ class AWSIntegration(Integration):
     NAME = AWS
     REQUIREMENTS = [
         "sagemaker==2.117.0",
+        "kubernetes",
     ]
 
     @staticmethod

@@ -14,7 +14,7 @@ Currently, the [SlackAlerter](slack.md) is the only available alerter integratio
 extend ZenML and [build an alerter for other chat services](custom.md).
 
 | Alerter                            | Flavor   | Integration | Notes                                                              |
-| ---------------------------------- | -------- | ----------- | ------------------------------------------------------------------ |
+|------------------------------------|----------|-------------|--------------------------------------------------------------------|
 | [Slack](slack.md)                  | `slack`  | `slack`     | Interacts with a Slack channel                                     |
 | [Custom Implementation](custom.md) | _custom_ |             | Extend the alerter abstraction and provide your own implementation |
 
