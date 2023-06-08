@@ -4475,6 +4475,7 @@ class Client(metaclass=ClientMetaClass):
         labels: Optional[Dict[str, str]] = None,
         auto_configure: bool = False,
         verify: bool = True,
+        list_resources: bool = True,
         register: bool = True,
     ) -> Tuple[
         Optional[
@@ -4505,6 +4506,8 @@ class Client(metaclass=ClientMetaClass):
                 connector from the local environment.
             verify: Whether to verify that the service connector configuration
                 and credentials can be used to gain access to the resource.
+            list_resources: Whether to also list the resources that the service
+                connector can give access to (if verify is True).
             register: Whether to register the service connector or not.
 
         Returns:
@@ -4538,8 +4541,9 @@ class Client(metaclass=ClientMetaClass):
                 "Python packages and ZenML integrations and try again."
             )
 
-        if not resource_type and len(connector.resource_types) == 1:
-            resource_type = connector.resource_types[0].resource_type
+        if not resource_type:
+            if len(connector.resource_types) == 1:
+                resource_type = connector.resource_types[0].resource_type
 
         # If auto_configure is set, we will try to automatically configure the
         # service connector from the local environment
@@ -4565,7 +4569,6 @@ class Client(metaclass=ClientMetaClass):
                 auth_method=auth_method,
                 resource_id=resource_id,
             )
-
             assert connector_instance is not None
             connector_request = connector_instance.to_model(
                 name=name,
@@ -4585,11 +4588,18 @@ class Client(metaclass=ClientMetaClass):
                 if connector.remote:
                     connector_resources = (
                         self.zen_store.verify_service_connector_config(
-                            connector_request
+                            connector_request,
+                            list_resources=list_resources,
                         )
                     )
                 else:
-                    connector_resources = connector_instance.verify()
+                    connector_resources = connector_instance.verify(
+                        list_resources=list_resources,
+                    )
+
+                if connector_resources.error:
+                    # Raise an exception if the connector verification failed
+                    raise AuthorizationException(connector_resources.error)
 
         else:
             if not auth_method:
@@ -4631,7 +4641,8 @@ class Client(metaclass=ClientMetaClass):
                 if connector.remote:
                     connector_resources = (
                         self.zen_store.verify_service_connector_config(
-                            connector_request
+                            connector_request,
+                            list_resources=list_resources,
                         )
                     )
                 else:
@@ -4640,23 +4651,25 @@ class Client(metaclass=ClientMetaClass):
                             model=connector_request
                         )
                     )
-                    connector_resources = connector_instance.verify()
+                    connector_resources = connector_instance.verify(
+                        list_resources=list_resources,
+                    )
 
                 if connector_resources.error:
+                    # Raise an exception if the connector verification failed
                     raise AuthorizationException(connector_resources.error)
+
+                # For resource types that don't support multi-instances, it's
+                # better to save the default resource ID in the connector, if
+                # available. Otherwise, we'll need to instantiate the connector
+                # again to get the default resource ID.
+                connector_request.resource_id = (
+                    connector_request.resource_id
+                    or connector_resources.get_default_resource_id()
+                )
 
         if not register:
             return connector_request, connector_resources
-
-        # For resource types that don't support multi-instances, it's
-        # better to save the default resource ID in the connector, if
-        # available. Otherwise, we'll need to instantiate the connector
-        # again to get the default resource ID.
-        if connector_resources:
-            connector_request.resource_id = (
-                connector_request.resource_id
-                or connector_resources.get_default_resource_id()
-            )
 
         # Register the new model
         connector_response = self.zen_store.create_service_connector(
@@ -4685,6 +4698,7 @@ class Client(metaclass=ClientMetaClass):
         is_shared: Optional[bool] = None,
         labels: Optional[Dict[str, Optional[str]]] = None,
         verify: bool = True,
+        list_resources: bool = True,
         update: bool = True,
     ) -> Tuple[
         Optional[
@@ -4730,6 +4744,8 @@ class Client(metaclass=ClientMetaClass):
                 is set to None, the label will be removed.
             verify: Whether to verify that the service connector configuration
                 and credentials can be used to gain access to the resource.
+            list_resources: Whether to also list the resources that the service
+                connector can give access to (if verify is True).
             update: Whether to update the service connector or not.
 
         Returns:
@@ -4768,8 +4784,9 @@ class Client(metaclass=ClientMetaClass):
         else:
             resource_types = resource_type
 
-        if not resource_type and len(connector.resource_types) == 1:
-            resource_types = connector.resource_types[0].resource_type
+        if not resource_type:
+            if len(connector.resource_types) == 1:
+                resource_types = connector.resource_types[0].resource_type
 
         if resource_id == "":
             resource_id = None
@@ -4840,7 +4857,8 @@ class Client(metaclass=ClientMetaClass):
             if connector.remote:
                 connector_resources = (
                     self.zen_store.verify_service_connector_config(
-                        connector_update
+                        connector_update,
+                        list_resources=list_resources,
                     )
                 )
             else:
@@ -4849,23 +4867,24 @@ class Client(metaclass=ClientMetaClass):
                         model=connector_update
                     )
                 )
-                connector_resources = connector_instance.verify()
+                connector_resources = connector_instance.verify(
+                    list_resources=list_resources
+                )
 
             if connector_resources.error:
                 raise AuthorizationException(connector_resources.error)
 
-        if not update:
-            return connector_update, connector_resources
-
-        # For resource types that don't support multi-instances, it's
-        # better to save the default resource ID in the connector, if
-        # available. Otherwise, we'll need to instantiate the connector
-        # again to get the default resource ID.
-        if connector_resources:
+            # For resource types that don't support multi-instances, it's
+            # better to save the default resource ID in the connector, if
+            # available. Otherwise, we'll need to instantiate the connector
+            # again to get the default resource ID.
             connector_update.resource_id = (
                 connector_update.resource_id
                 or connector_resources.get_default_resource_id()
             )
+
+        if not update:
+            return connector_update, connector_resources
 
         # Update the model
         connector_response = self.zen_store.update_service_connector(
@@ -4910,6 +4929,7 @@ class Client(metaclass=ClientMetaClass):
         name_id_or_prefix: Union[UUID, str],
         resource_type: Optional[str] = None,
         resource_id: Optional[str] = None,
+        list_resources: bool = True,
     ) -> "ServiceConnectorResourcesModel":
         """Verifies if a service connector has access to one or more resources.
 
@@ -4922,6 +4942,8 @@ class Client(metaclass=ClientMetaClass):
             resource_id: The ID of the resource for which to verify access. If
                 not provided, the resource ID from the service connector
                 configuration will be used.
+            list_resources: Whether to list the resources that the service
+                connector has access to.
 
         Returns:
             The list of resources that the service connector has access to,
@@ -4955,6 +4977,7 @@ class Client(metaclass=ClientMetaClass):
                 service_connector_id=service_connector.id,
                 resource_type=resource_type,
                 resource_id=resource_id,
+                list_resources=list_resources,
             )
         else:
             connector_instance = (
@@ -4963,7 +4986,9 @@ class Client(metaclass=ClientMetaClass):
                 )
             )
             connector_resources = connector_instance.verify(
-                resource_type=resource_type, resource_id=resource_id
+                resource_type=resource_type,
+                resource_id=resource_id,
+                list_resources=list_resources,
             )
 
         if connector_resources.error:

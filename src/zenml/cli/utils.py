@@ -14,7 +14,9 @@
 """Utility functions for the CLI."""
 import contextlib
 import datetime
+import json
 import os
+import re
 import subprocess
 import sys
 from typing import (
@@ -35,9 +37,10 @@ from typing import (
 )
 
 import click
+import yaml
 from pydantic import SecretStr
 from rich import box, table
-from rich.emoji import Emoji
+from rich.emoji import Emoji, NoEmoji
 from rich.markdown import Markdown
 from rich.markup import escape
 from rich.prompt import Confirm
@@ -576,6 +579,41 @@ def expand_argument_value_from_file(name: str, value: str) -> str:
             f"Could not load argument '{name}' value: file "
             f"'{filename}' could not be accessed: {str(e)}"
         )
+
+
+def convert_structured_str_to_dict(string: str) -> Dict[str, str]:
+    """Convert a structured string (JSON or YAML) into a dict.
+
+    Examples:
+        >>> convert_structured_str_to_dict('{"location": "Nevada", "aliens":"many"}')
+        {'location': 'Nevada', 'aliens': 'many'}
+        >>> convert_structured_str_to_dict('location: Nevada \\naliens: many')
+        {'location': 'Nevada', 'aliens': 'many'}
+        >>> convert_structured_str_to_dict("{'location': 'Nevada', 'aliens': 'many'}")
+        {'location': 'Nevada', 'aliens': 'many'}
+
+    Args:
+        string: JSON or YAML string value
+
+    Returns:
+        dict_: dict from structured JSON or YAML str
+    """
+    try:
+        dict_: Dict[str, str] = json.loads(string)
+        return dict_
+    except ValueError:
+        pass
+
+    try:
+        # Here, Dict type in str is implicitly supported by yaml.safe_load()
+        dict_ = yaml.safe_load(string)
+        return dict_
+    except yaml.YAMLError:
+        pass
+
+    error(
+        f"Invalid argument: '{string}'. Please provide the value in JSON or YAML format."
+    )
 
 
 def parse_name_and_extra_arguments(
@@ -1183,6 +1221,26 @@ def get_shared_emoji(is_shared: bool) -> str:
     return ":white_heavy_check_mark:" if is_shared else ":heavy_minus_sign:"
 
 
+def replace_emojis(text: str) -> str:
+    """Replaces emoji shortcuts with their unicode equivalent.
+
+    Args:
+        text: Text to expand.
+
+    Returns:
+        Text with expanded emojis.
+    """
+    emoji_pattern = r":(\w+):"
+    emojis = re.findall(emoji_pattern, text)
+    for emoji in emojis:
+        try:
+            text = text.replace(f":{emoji}:", str(Emoji(emoji)))
+        except NoEmoji:
+            # If the emoji text is not a valid emoji, just ignore it
+            pass
+    return text
+
+
 def print_stacks_table(
     client: "Client", stacks: Sequence["StackResponseModel"]
 ) -> None:
@@ -1357,48 +1415,71 @@ def print_service_connectors_table(
 
 def print_service_connector_resource_table(
     resources: List["ServiceConnectorResourcesModel"],
+    show_resources_only: bool = False,
 ) -> None:
     """Prints a table with details for a list of service connector resources.
 
     Args:
         resources: List of service connector resources to print.
+        show_resources_only: If True, only the resources will be printed.
     """
     resource_table = []
     for resource_model in resources:
-        resource_types = resource_model.emojified_resource_types
-        if not resource_model.resource_type:
-            # Multi-type connector
-            if resource_types:
-                resource_type = "\n".join(resource_types)
-            else:
-                resource_type = "<multiple>"
-            if resource_model.error:
-                resource_ids = [f":collision: error: {resource_model.error}"]
-            elif resource_model.resource_ids:
-                resource_ids = resource_model.resource_ids
-            else:
-                resource_ids = [":person_shrugging: none listed"]
-        else:
-            # Single-type connector
-            assert resource_types
-            resource_type = resource_types[0]
+        printed_connector = False
+        resource_row: Dict[str, Any] = {}
 
-            if resource_model.error:
+        if resource_model.error:
+            # Global error
+            if not show_resources_only:
+                resource_row = {
+                    "CONNECTOR ID": str(resource_model.id),
+                    "CONNECTOR NAME": resource_model.name,
+                    "CONNECTOR TYPE": resource_model.emojified_connector_type,
+                }
+            resource_row.update(
+                {
+                    "RESOURCE TYPE": "\n".join(
+                        resource_model.get_emojified_resource_types()
+                    ),
+                    "RESOURCE NAMES": f":collision: error: {resource_model.error}",
+                }
+            )
+            resource_table.append(resource_row)
+            continue
+
+        for resource in resource_model.resources:
+            resource_type = resource_model.get_emojified_resource_types(
+                resource.resource_type
+            )[0]
+            if resource.error:
                 # Error fetching resources
-                resource_ids = [f":collision: error: {resource_model.error}"]
-            elif resource_model.resource_ids:
-                resource_ids = resource_model.resource_ids
+                resource_ids = [f":collision: error: {resource.error}"]
+            elif resource.resource_ids:
+                resource_ids = resource.resource_ids
             else:
                 resource_ids = [":person_shrugging: none listed"]
 
-        resource_row: Dict[str, Any] = {
-            "CONNECTOR ID": str(resource_model.id),
-            "CONNECTOR NAME": resource_model.name,
-            "CONNECTOR TYPE": resource_model.emojified_connector_type,
-            "RESOURCE TYPE": resource_type,
-            "RESOURCE NAMES": "\n".join(resource_ids),
-        }
-        resource_table.append(resource_row)
+            resource_row = {}
+            if not show_resources_only:
+                resource_row = {
+                    "CONNECTOR ID": str(resource_model.id)
+                    if not printed_connector
+                    else "",
+                    "CONNECTOR NAME": resource_model.name
+                    if not printed_connector
+                    else "",
+                    "CONNECTOR TYPE": resource_model.emojified_connector_type
+                    if not printed_connector
+                    else "",
+                }
+            resource_row.update(
+                {
+                    "RESOURCE TYPE": resource_type,
+                    "RESOURCE NAMES": "\n".join(resource_ids),
+                }
+            )
+            resource_table.append(resource_row)
+            printed_connector = True
     print_table(resource_table)
 
 
@@ -1603,9 +1684,7 @@ def print_service_connector_resource_type(
         The MarkDown resource type details as a string.
     """
     message = f"{title}\n" if title else ""
-    emoji = (
-        Emoji(resource_type.emoji.strip(":")) if resource_type.emoji else ""
-    )
+    emoji = replace_emojis(resource_type.emoji) if resource_type.emoji else ""
     supported_auth_methods = [
         f'{Emoji("lock")} {a}' for a in resource_type.auth_methods
     ]
@@ -1734,14 +1813,14 @@ def print_service_connector_type(
         f'{Emoji("lock")} {a.auth_method}' for a in connector_type.auth_methods
     ]
     supported_resource_types = [
-        f'{Emoji(r.emoji.strip(":"))} {r.resource_type}'
+        f"{replace_emojis(r.emoji)} {r.resource_type}"
         if r.emoji
         else r.resource_type
         for r in connector_type.resource_types
     ]
 
     emoji = (
-        Emoji(connector_type.emoji.strip(":")) if connector_type.emoji else ""
+        replace_emojis(connector_type.emoji) if connector_type.emoji else ""
     )
 
     message += (

@@ -508,6 +508,9 @@ as command-line arguments:
 
 ```bash
 zenml secret create SECRET_NAME --key1=value1 --key2=value2 --key3=value3 ...
+
+# Another option is to use the '--values' option and provide key-value pairs in either JSON or YAML format.
+zenml secret create SECRET_NAME --values='{"key1":"value2","key2":"value2","key3":"value3"}'
 ```
 
 Note that when using the previous command the keys and values will be preserved in your `bash_history` file, so
@@ -526,6 +529,10 @@ zenml secret create SECRET_NAME \
    --aws_access_key_id=1234567890 \
    --aws_secret_access_key=abcdefghij \
    --aws_session_token=@/path/to/token.txt
+
+# Alternatively for providing key-value pairs, you can utilize the '--values' option by specifying a file path containing
+# key-value pairs in either JSON or YAML format.
+zenml secret create SECRET_NAME --values=@/path/to/token.txt
 ```
 
 To list all the secrets available, use the `list` command:
@@ -544,6 +551,9 @@ To update a secret, use the `update` command:
 
 ```bash
 zenml secret update SECRET_NAME --key1=value1 --key2=value2 --key3=value3 ...
+
+# Another option is to use the '--values' option and provide key-value pairs in either JSON or YAML format.
+zenml secret update SECRET_NAME --values='{"key1":"value2","key2":"value2","key3":"value3"}'
 ```
 
 Note that when using the previous command the keys and values will be preserved in your `bash_history` file, so
