@@ -15,5 +15,5 @@
 
 MODEL_NAME = "pytorch_mnist"
 SERVICE_NAME = "pytorch_mnist_service"
-PIPELINE_STEP_NAME = "bentoml_model_deployer_step"
+PIPELINE_STEP_NAME = "deployer"
 PIPELINE_NAME = "training_fashion_mnist"

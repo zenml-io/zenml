@@ -24,5 +24,6 @@ bentoml_model_deployer = bentoml_model_deployer_step(
         model_name=MODEL_NAME,
         port=3001,
         production=False,
+        timeout=1000,
     )
 )
