@@ -58,7 +58,7 @@ For production use cases, some more flavors can be found in specific `integratio
 ZenML features an integration with `label_studio`.
 
 | Annotator                               | Flavor         | Integration    | Notes                                                                |
-| --------------------------------------- | -------------- | -------------- | -------------------------------------------------------------------- |
+|-----------------------------------------|----------------|----------------|----------------------------------------------------------------------|
 | [LabelStudioAnnotator](label-studio.md) | `label_studio` | `label_studio` | Connect ZenML with Label Studio                                      |
 | [Custom Implementation](custom.md)      | _custom_       |                | Extend the annotator abstraction and provide your own implementation |
 

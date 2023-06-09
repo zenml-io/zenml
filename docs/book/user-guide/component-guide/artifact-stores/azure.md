@@ -164,7 +164,7 @@ like this:
 # Store the Azure storage account key in a ZenML secret
 zenml secret create az_secret \
     --account_name='<YOUR_AZURE_ACCOUNT_NAME>' \
-    --account_key='<YOUR_AZURE_ACCOUNT_KEY>' \
+    --account_key='<YOUR_AZURE_ACCOUNT_KEY>'
 
 # or if you want to use a connection string
 zenml secret create az_secret \
@@ -176,6 +176,12 @@ zenml secret create az_secret \
     --tenant_id='<YOUR_AZURE_TENANT_ID>' \
     --client_id='<YOUR_AZURE_CLIENT_ID>' \
     --client_secret='<YOUR_AZURE_CLIENT_SECRET>'
+
+# Alternatively for providing key-value pairs, you can utilize the '--values' option by specifying a file path containing 
+# key-value pairs in either JSON or YAML format.
+# File content example: {"account_name":"<YOUR_AZURE_ACCOUNT_NAME>",...}
+zenml secret create az_secret \
+    --values=@path/to/file.txt
 
 # Register the Azure artifact store and reference the ZenML secret
 zenml artifact-store register az_store -f azure \

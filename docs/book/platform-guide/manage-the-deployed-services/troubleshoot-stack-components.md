@@ -48,8 +48,7 @@ kubectl get nodes
    \
    `zenml stack recipe output gke-cluster-name`\\
 2. Figure out the region that the cluster is deployed to. By default, the region is set to `europe-west1`, which you should use in the next step if you haven't supplied a custom value while creating the cluster.\\
-3. Figure out the project that the cluster is deployed to. You must have passed in a project ID while creating a GCP resource for the first time.\
-
+3. Figure out the project that the cluster is deployed to. You must have passed in a project ID while creating a GCP resource for the first time.\\
 4. Run the following command.\
    `gcloud container clusters get-credentials <NAME> --region <REGION> --project <PROJECT_ID>`
 {% endtab %}
@@ -62,7 +61,7 @@ You may already have your `kubectl` client configured with your cluster. Check b
 1. Get the name of the deployed cluster.\
    \
    `zenml stack recipe output k3d-cluster-name`\\
-2. Set the `KUBECONFIG` env variable to the kubeconfig file from the cluster.\
+2. Set the `KUBECONFIG` env variable to the `kubeconfig` file from the cluster.\
    \
    `export KUBECONFIG=$(k3d kubeconfig get <NAME>)`\\
 3. You can now use the `kubectl` client to talk to the cluster.
