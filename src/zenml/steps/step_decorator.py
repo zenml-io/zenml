@@ -163,9 +163,10 @@ def step(
         The inner decorator which creates the step class based on the
         ZenML BaseStep
     """
+    step_name = name or _func.__name__ if _func else ""
     logger.warning(
-        "The `@step` decorator that you use to define your step is "
-        "deprecated. Check out our docs https://docs.zenml.io for "
+        f"The `@step` decorator that you used to define your {step_name} step "
+        "is deprecated. Check out our docs https://docs.zenml.io for "
         "information on how to define steps in a more intuitive and "
         "flexible way!"
     )
