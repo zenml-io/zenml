@@ -93,7 +93,6 @@ def get_flavor(
     "",
     response_model=FlavorResponseModel,
     responses={401: error_response, 409: error_response, 422: error_response},
-    deprecated=True,
 )
 @handle_exceptions
 def create_flavor(
