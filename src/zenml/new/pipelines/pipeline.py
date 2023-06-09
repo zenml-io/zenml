@@ -666,7 +666,7 @@ class Pipeline:
                 pipeline_id=pipeline_id,
             )
 
-    get_runs = GetRunsDescriptor()
+    # get_runs = GetRunsDescriptor()
 
     def write_run_configuration_template(
         self, path: str, stack: Optional["Stack"] = None
