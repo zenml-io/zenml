@@ -149,11 +149,6 @@ It also assumes you have already created a service account key for this service 
 This setup is portable and reproducible, but it throws all the permissions in a single service account, which is not recommended if you are conscious about security. The principle of least privilege is not applied here and the environment in which the pipeline steps are running has too many permissions that it doesn't need.
 {% endhint %}
 
-* you can't run pipelines on a schedule.
-* the setup is not portable on other machines and reproducible by other users.
-* it uses the Compute Engine default service account, which is not recommended, given that it has a lot of permissions by default and is used by many other GCP services.
-{% endhint %}
-
 We can then register [the GCP Service Connector](../../../platform-guide/set-up-your-mlops-platform/connect-zenml-to-infrastructure/gcp-service-connector.md) and Vertex AI orchestrator as follows:
 
 ```shell
@@ -189,8 +184,8 @@ The following GCP service accounts are needed:
 2. a "workload" service account that has permissions to run a Vertex AI pipeline, (e.g. [the `Vertex AI Service Agent` role](https://cloud.google.com/vertex-ai/docs/general/access-control#aiplatform.serviceAgent)).
 
 3. a "function" service account that has the folllowing permissions:
-  * permissions to create a job in Vertex Pipelines, (e.g. [the `Vertex AI User` role](https://cloud.google.com/vertex-ai/docs/general/access-control#aiplatform.user)).
-  * the [Storage Object Viewer Role](https://cloud.google.com/iam/docs/understanding-roles#storage.objectViewer) to be able to read the pipeline JSON file from the artifact store.
+    * permissions to create a job in Vertex Pipelines, (e.g. [the `Vertex AI User` role](https://cloud.google.com/vertex-ai/docs/general/access-control#aiplatform.user)).
+    * the [Storage Object Viewer Role](https://cloud.google.com/iam/docs/understanding-roles#storage.objectViewer) to be able to read the pipeline JSON file from the artifact store.
 
 The "client" service account also needs to be granted the `iam.serviceaccounts.actAs` permission on this service account (i.e. the "client" service account needs [the `Service Account User` role](https://cloud.google.com/iam/docs/service-account-permissions#user-role) on the "function" service account). Similarly, the "function" service account also needs to be granted the `iam.serviceaccounts.actAs` permission on the "workload" service account.
 
