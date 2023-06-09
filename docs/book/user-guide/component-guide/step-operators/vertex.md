@@ -42,16 +42,51 @@ To use the Vertex step operator, we need:
   your orchestration environment and VertexAI can read and write step artifacts. Check out the documentation page of the
   artifact store you want to use for more information on how to set that up and configure authentication for it.
 
-We can then register the step operator and use it in our active stack:
+You have three different options to provide GCP credentials to the step operator:
+
+* use the [`gcloud` CLI](https://cloud.google.com/sdk/gcloud) to authenticate locally with GCP. This only works in combination with the local orchestrator.
+
+    ```shell
+    gcloud auth login
+
+    zenml step-operator register <STEP_OPERATOR_NAME> \
+        --flavor=vertex \
+        --project=<GCP_PROJECT> \
+        --region=<REGION> \
+    #   --machine_type=<MACHINE_TYPE> # optionally specify the type of machine to run on
+    ```
+
+* configure the orchestrator to use a [service account key file](https://cloud.google.com/iam/docs/creating-managing-service-account-keys) to authenticate with GCP by setting the `service_account_path` parameter in the orchestrator configuration to point to a service account key file. This also works only in combination with the local orchestrator.
+
+    ```shell
+    zenml step-operator register <STEP_OPERATOR_NAME> \
+        --flavor=vertex \
+        --project=<GCP_PROJECT> \
+        --region=<REGION> \
+        --service_account_path=<SERVICE_ACCOUNT_PATH> \
+    #   --machine_type=<MACHINE_TYPE> # optionally specify the type of machine to run on
+    ```
+
+* (recommended) configure [a GCP Service Connector](../../../platform-guide/set-up-your-mlops-platform/connect-zenml-to-infrastructure/gcp-service-connector.md) with GCP credentials coming from a [service account key file](https://cloud.google.com/iam/docs/creating-managing-service-account-keys) or the local `gcloud` CLI set up with user account credentials and then link the Vertex AI Step Operator stack component to the Service Connector. This option works with any orchestrator.
+
+    ```shell
+    zenml service-connector register <CONNECTOR_NAME> --type gcp --auth-method=service-account --project_id=<PROJECT_ID> --service_account_json=@<SERVICE_ACCOUNT_PATH> --resource-type gcp-generic
+
+    # Or, as an alternative, you could use the GCP user account locally set up with gcloud
+    # zenml service-connector register <CONNECTOR_NAME> --type gcp --resource-type gcp-generic --auto-configure
+
+    zenml step-operator register <STEP_OPERATOR_NAME> \
+        --flavor=vertex \
+        --region=<REGION> \
+    #   --machine_type=<MACHINE_TYPE> # optionally specify the type of machine to run on
+
+    zenml step-operator connect <STEP_OPERATOR_NAME> --connector <CONNECTOR_NAME>
+    ```
+
+
+We can then use the registered step operator in our active stack:
 
 ```shell
-zenml step-operator register <NAME> \
-    --flavor=vertex \
-    --project=<GCP_PROJECT> \
-    --region=<REGION> \
-    --service_account_path=<SERVICE_ACCOUNT_PATH> \
-#   --machine_type=<MACHINE_TYPE> # optionally specify the type of machine to run on
-
 # Add the step operator to the active stack
 zenml stack update -s <NAME>
 ```

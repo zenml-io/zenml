@@ -214,6 +214,14 @@ class GCPServiceAccountConfig(GCPBaseConfig, GCPServiceAccountCredentials):
 class GCPOAuth2TokenConfig(GCPBaseConfig, GCPOAuth2Token):
     """GCP OAuth 2.0 configuration."""
 
+    service_account_email: Optional[str] = Field(
+        default=None,
+        title="GCP Service Account Email",
+        description="The email address of the service account that signed the "
+        "token. If not provided, the token is assumed to be issued for a user "
+        "account.",
+    )
+
 
 class GCPServiceAccountImpersonationConfig(GCPServiceAccountConfig):
     """GCP service account impersonation configuration."""
@@ -681,6 +689,9 @@ class GCPServiceConnector(ServiceConnector):
                 expiry=expires_at,
                 scopes=scopes,
             )
+
+            if cfg.service_account_email:
+                credentials.signer_email = cfg.service_account_email
         else:
             if auth_method == GCPAuthenticationMethods.USER_ACCOUNT:
                 assert isinstance(cfg, GCPUserAccountConfig)
@@ -1090,8 +1101,10 @@ class GCPServiceConnector(ServiceConnector):
             auth_config = GCPOAuth2TokenConfig(
                 project_id=project_id,
                 token=credentials.token,
+                service_account_email=credentials.signer_email
+                if hasattr(credentials, "signer_email")
+                else None,
             )
-
             if credentials.expiry:
                 # Add the UTC timezone to the expiration time
                 expires_at = credentials.expiry.replace(
@@ -1322,10 +1335,13 @@ class GCPServiceConnector(ServiceConnector):
         )
 
         if resource_type in [GCP_RESOURCE_TYPE, GCS_RESOURCE_TYPE]:
-            # Use the temporary credentials extracted from the boto3 session
+            # Use the token extracted from the google credentials object
             config = GCPOAuth2TokenConfig(
                 project_id=self.config.project_id,
                 token=credentials.token,
+                service_account_email=credentials.signer_email
+                if hasattr(credentials, "signer_email")
+                else None,
             )
 
             # Create a client-side GCP connector instance that is fully formed
