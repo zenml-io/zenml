@@ -93,7 +93,7 @@ class Client(object):
         on_error: Optional[Callable[..., Any]] = None
         debug: bool = False
         send: bool = True
-        sync_mode: bool = False
+        sync_mode: bool = True
         max_queue_size: int = 10000
         timeout: int = 15
         max_retries: int = 1
