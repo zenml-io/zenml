@@ -269,7 +269,7 @@ looking for a quick setup that includes using the auto-configuration Service
 Connector features.
 """,
     supports_auto_configuration=True,
-    logo_url="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/artifact_store/gcp.png",
+    logo_url="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/connectors/gcp/gcp.png",
     emoji=":blue_circle:",
     auth_methods=[
         AuthenticationMethodModel(
@@ -445,7 +445,7 @@ access.
             # Don't request a GCP specific resource instance ID, given that
             # the connector provides a generic OAuth2 token.
             supports_instances=False,
-            logo_url="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/artifact_store/gcp.png",
+            logo_url="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/connectors/gcp/gcp.png",
             emoji=":blue_circle:",
         ),
         ResourceTypeModel(
@@ -513,7 +513,7 @@ GKE clusters in the GCP project that it is configured to use.
             # Request an GKE cluster name to be configured in the
             # connector or provided by the consumer
             supports_instances=True,
-            logo_url="https://public-flavor-logos.gcs.eu-central-1.amazongcp.com/orchestrator/kubernetes.png",
+            logo_url="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/orchestrator/kubernetes.png",
             emoji=":cyclone:",
         ),
         ResourceTypeModel(
@@ -549,7 +549,7 @@ optional):
             # provides access to the entire GCR container registry
             # for the configured GCP project.
             supports_instances=False,
-            logo_url="https://public-flavor-logos.gcs.eu-central-1.amazongcp.com/container_registry/docker.png",
+            logo_url="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/container_registry/docker.png",
             emoji=":whale:",
         ),
     ],

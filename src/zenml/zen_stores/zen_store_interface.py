@@ -1553,11 +1553,14 @@ class ZenStoreInterface(ABC):
     def verify_service_connector_config(
         self,
         service_connector: ServiceConnectorRequestModel,
+        list_resources: bool = True,
     ) -> ServiceConnectorResourcesModel:
         """Verifies if a service connector configuration has access to resources.
 
         Args:
             service_connector: The service connector configuration to verify.
+            list_resources: If True, the list of all resources accessible
+                through the service connector is returned.
 
         Returns:
             The list of resources that the service connector configuration has
@@ -1574,6 +1577,7 @@ class ZenStoreInterface(ABC):
         service_connector_id: UUID,
         resource_type: Optional[str] = None,
         resource_id: Optional[str] = None,
+        list_resources: bool = True,
     ) -> ServiceConnectorResourcesModel:
         """Verifies if a service connector instance has access to one or more resources.
 
@@ -1581,6 +1585,9 @@ class ZenStoreInterface(ABC):
             service_connector_id: The ID of the service connector to verify.
             resource_type: The type of resource to verify access to.
             resource_id: The ID of the resource to verify access to.
+            list_resources: If True, the list of all resources accessible
+                through the service connector and matching the supplied resource
+                type and ID are returned.
 
         Returns:
             The list of resources that the service connector has access to,
