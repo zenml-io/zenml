@@ -51,14 +51,15 @@ After that is done, you can change the code and run the pipeline with your chose
 
 ### Run pipelines with custom dependencies
 
-If you have code with custom dependencies than the ones in the sandbox examples,
-you need to copy the stack provided in the sandbox and swap the container
-registry with a public container registry that you have `write` access to. The
-[container registry stack component
-pages](../component-guide/container-registries/container-registries.md) talk
-more about how to do this.
+If you want to run your own code with custom dependencies in the sandbox environment, you need to follow one of the following two options:
 
-To register a new stack, you can execute the following:
+#### Path 1: Register a new public container registry and use it in your stack
+
+The sandbox provides a pre-registered stack that utilizes ZenML's public container registry. This allows you to execute pipelines using the provided example code and dependencies, eliminating the need to build and push Docker images to a container registry on your own. However, if you wish to run your own code with custom dependencies, you must register a new stack that utilizes a public container registry where you have `write` access.
+
+Let's take the dockerhub registry as an example. To proceed, create a dockerhub account and establish a new repository. Next, create a new stack component that utilizes this container registry. You can refer to the [container registry stack component guide](../component-guide/container-registries/container-registries.md) for detailed instructions.
+
+Once the stack component is created, you can register a new stack that incorporates this component. Execute the following command:
 
 ```shell
 zenml stack register my_stack \
@@ -70,7 +71,25 @@ zenml stack register my_stack \
   --set
 ```
 
-With the above stack, you can run whatever code you'd like without tying it to a container registry because ZenML will just build and push Docker images to your container registry from your local client.
+Replace <MY_CONTAINER_REGISTRY> with the specific name of your container registry stack
+
+#### Path 2: register a new code repository and reuse the builds from the other code repository
+
+With ZenML, you have the flexibility to register and utilize multiple code repositories. This means that you can register a new code repository containing your own code and leverage the existing builds from the example code repository to execute your code without the need to independently build and push Docker images to a container registry.
+
+To achieve this, follow the steps outlined below:
+
+1. Fork an existing Github repository or create a new one.
+
+2. Push your code to the repository. Alternatively, you can copy the example code from the ZenML repository to your new repository and make the necessary modifications.
+
+3. Register the new code repository with ZenML by following [code repository guide](../component-guide/code-repositories/code-repositories.md).
+
+4. Reuse the builds from the example code repository to execute your own code using the [reuse builds guide](containerize-your-pipeline.md#reuse-docker-image-builds-from-previous-runs).
+
+{% hint style="warning" %}
+Please note that the second approach will only work if you are utilizing the same dependencies as the example code. If you are using different dependencies, such as a different framework or stack components, you will need to build and push your own Docker images to a container registry. In such cases, please follow the first approach.
+{% endhint %}
 
 ## What to do when your sandbox runs out?
 
