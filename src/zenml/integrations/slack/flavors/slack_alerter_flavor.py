@@ -67,7 +67,8 @@ class SlackAlerterConfig(BaseAlerterConfig):
                 response = client.conversations_info(
                     channel=self.default_slack_channel_id
                 )
-            return response["ok"]
+            valid: bool = response["ok"]
+            return valid
 
         except SlackApiError as e:
             logger.error("Slack API Error:", e.response["error"])
