@@ -15,9 +15,6 @@
 
 from typing import TYPE_CHECKING, Optional, Type
 
-from slack_sdk import WebClient
-from slack_sdk.errors import SlackApiError
-
 from zenml.alerter.base_alerter import BaseAlerterConfig, BaseAlerterFlavor
 from zenml.integrations.slack import SLACK_ALERTER_FLAVOR
 from zenml.logger import get_logger
@@ -44,11 +41,20 @@ class SlackAlerterConfig(BaseAlerterConfig):
 
     @property
     def is_valid(self) -> bool:
-        """
-        #TODO: add doc
-        Returns:
+        """Check if the stack component is valid.
 
+        Returns:
+            True if the stack component is valid, False otherwise.
         """
+        try:
+
+            from slack_sdk import WebClient
+            from slack_sdk.errors import SlackApiError
+        except ImportError:
+            logger.warning(
+                "Unable to validate Slack alerter credentials because the Slack integration is not installed."
+            )
+            return False
         client = WebClient(token=self.slack_token)
         try:
             # Check slack token validity
