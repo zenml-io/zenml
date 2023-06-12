@@ -13,13 +13,10 @@
 #  permissions and limitations under the License.
 from constants import MODEL_NAME
 
-from zenml.integrations.bentoml.steps import (
-    BentoMLBuilderParameters,
-    bento_builder_step,
-)
+from zenml.integrations.bentoml.steps import bento_builder_step
 
-bento_builder = bento_builder_step(
-    params=BentoMLBuilderParameters(
+bento_builder = bento_builder_step.with_options(
+    parameters=dict(
         model_name=MODEL_NAME,
         model_type="pytorch",
         service="service.py:svc",
