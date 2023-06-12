@@ -1403,20 +1403,29 @@ def print_service_connectors_table(
     if len(connectors) == 0:
         return
 
-    active_stack = client.active_stack_model
-    active_connector_ids: List["UUID"] = []
-    for components in active_stack.components.values():
-        active_connector_ids.extend(
-            [
-                component.connector.id
-                for component in components
-                if component.connector
-            ]
-        )
+    active_connectors: List["ServiceConnectorResponseModel"] = []
+    for components in client.active_stack_model.components.values():
+        for component in components:
+            if component.connector:
+                connector = component.connector
+                if connector.id not in [c.id for c in active_connectors]:
+                    # TODO: The connector embedded within the stack component
+                    #   do not have the emojified types. We only use the
+                    #   client here to get the service connector with
+                    #   emojified types.
+                    emojified_connector = client.get_service_connector(
+                        name_id_or_prefix=connector.id
+                    )
+                    active_connectors.append(emojified_connector)
 
     configurations = []
+
+    connectors = active_connectors + [
+        c for c in connectors if c.id not in [a.id for a in active_connectors]
+    ]
+
     for connector in connectors:
-        is_active = connector.id in active_connector_ids
+        is_active = connector.id in [c.id for c in active_connectors]
         labels = [
             f"{label}:{value}" for label, value in connector.labels.items()
         ]
