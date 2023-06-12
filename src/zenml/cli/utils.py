@@ -226,7 +226,7 @@ def print_pydantic_models(
     models: Union[Page[T], List[T]],
     columns: Optional[List[str]] = None,
     exclude_columns: Optional[List[str]] = None,
-    is_active: Optional[Callable[[T], bool]] = None,
+    active_models: Optional[List[T]] = None,
 ) -> None:
     """Prints the list of Pydantic models in a table.
 
@@ -236,8 +236,7 @@ def print_pydantic_models(
         columns: Optionally specify subset and order of columns to display.
         exclude_columns: Optionally specify columns to exclude. (Note: `columns`
             takes precedence over `exclude_columns`.)
-        is_active: Optional function that marks as row as active.
-
+        active_models: Optional list of active models of the given type T.
     """
     if exclude_columns is None:
         exclude_columns = list()
@@ -291,16 +290,37 @@ def print_pydantic_models(
         if marker in items:
             marker = "current"
         return (
-            {marker: ":point_right:" if is_active(model) else "", **items}
-            if is_active is not None
+            {
+                marker: ":point_right:"
+                if any(model.id == a.id for a in active_models)
+                else "",
+                **items,
+            }
+            if active_models is not None
             else items
         )
 
     if isinstance(models, Page):
-        print_table([__dictify(model) for model in models.items])
+        table_items = models.items
+
+        if active_models is not None:
+            table_items = active_models + [
+                i for i in table_items
+                if all(i.id != a.id for a in active_models)
+            ]
+
+        print_table([__dictify(model) for model in table_items])
         print_page_info(models)
     else:
-        print_table([__dictify(model) for model in models])
+        table_items = models
+
+        if active_models is not None:
+            table_items = active_models + [
+                i for i in table_items
+                if all(i.id != a.id for a in active_models)
+            ]
+
+        print_table([__dictify(model) for model in table_items])
 
 
 def format_integration_list(
@@ -1306,9 +1326,7 @@ def print_components_table(
     active_component = None
     if component_type in active_stack.components.keys():
         active_components = active_stack.components[component_type]
-        active_component = (
-            active_components[0] if active_components else None
-        )
+        active_component = active_components[0] if active_components else None
 
     components = [active_component] + [
         c for c in components if c.id != active_component.id

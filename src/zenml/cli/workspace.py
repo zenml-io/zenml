@@ -48,14 +48,10 @@ def list_workspaces(**kwargs: Any) -> None:
     with console.status("Listing workspaces...\n"):
         workspaces = client.list_workspaces(**kwargs)
         if workspaces:
-            active_workspace = Client().active_workspace
-            active_workspace_id = (
-                active_workspace.id if active_workspace else None
-            )
             cli_utils.print_pydantic_models(
                 workspaces,
                 exclude_columns=["id", "created", "updated"],
-                is_active=(lambda p: p.id == active_workspace_id),
+                active_models=[Client().active_workspace],
             )
         else:
             cli_utils.declare("No workspaces found for the given filter.")

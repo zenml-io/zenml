@@ -97,7 +97,7 @@ def list_users(**kwargs: Any) -> None:
                 "email_opted_in",
                 "activation_token",
             ],
-            is_active=lambda u: u.name == Client().active_user.name,
+            active_models=[Client().active_user],
         )
 
 
