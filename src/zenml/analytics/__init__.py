@@ -16,14 +16,22 @@
 This module is based on the 'analytics-python' package created by Segment.
 The base functionalities are adapted to work with the ZenML analytics server.
 """
+from contextvars import ContextVar
 from typing import Any
 from typing import TYPE_CHECKING, Dict, Optional, Tuple
 from uuid import UUID
 
-from zenml.analytics.client import Client
+from zenml.enums import SourceContextTypes
 
 if TYPE_CHECKING:
     from zenml.utils.analytics_utils import AnalyticsEvent
+
+source_context: ContextVar[SourceContextTypes] = ContextVar(
+    "Source-Context", default=SourceContextTypes.PYTHON
+)
+
+# Set up the client / needs to happen after the source context declaration
+from zenml.analytics.client import Client
 
 on_error = Client.DefaultConfig.on_error
 debug = Client.DefaultConfig.debug
