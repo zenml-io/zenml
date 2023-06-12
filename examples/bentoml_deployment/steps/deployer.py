@@ -21,5 +21,6 @@ bentoml_model_deployer = bentoml_model_deployer_step.with_options(
         model_name=MODEL_NAME,  # Name of the model
         port=3001,  # Port to be used by the http server
         production=False,  # Deploy the model in production mode
+        timeout=1000,
     )
 )

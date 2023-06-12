@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 from constants import MODEL_NAME
 
+from zenml import __version__ as zenml_version
 from zenml.integrations.bentoml.steps import bento_builder_step
 
 bento_builder = bento_builder_step.with_options(
@@ -23,7 +24,7 @@ bento_builder = bento_builder_step.with_options(
         labels={
             "framework": "pytorch",
             "dataset": "mnist",
-            "zenml_version": "0.21.1",
+            "zenml_version": zenml_version,
         },
         exclude=["data"],
         python={
