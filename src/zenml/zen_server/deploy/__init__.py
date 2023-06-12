@@ -13,8 +13,18 @@
 #  permissions and limitations under the License.
 """ZenML server deployments."""
 
-# DO NOT REMOVE THIS INITIAL IMPORT. It is needed for the ZenML server to work.
-from zenml.zen_server.deploy import docker, local, terraform  # noqa
+# DO NOT REMOVE THESE IMPORTS. They are needed so the ZenML server deployment
+# providers get registered.
+from zenml.zen_server.deploy import docker, local  # noqa
+
+try:
+    from zenml.zen_server.deploy import terraform  # noqa
+except ImportError:
+    # If ZenML is installed without the `terraform` extra, all terraform based
+    # providers won't be available as the `python_terraform` library is not
+    # installed
+    pass
+
 from zenml.zen_server.deploy.deployer import ServerDeployer
 from zenml.zen_server.deploy.deployment import (
     ServerDeployment,

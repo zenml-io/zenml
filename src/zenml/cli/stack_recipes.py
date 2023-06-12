@@ -13,26 +13,26 @@
 #  permissions and limitations under the License.
 """Functionality to handle downloading ZenML stacks via the CLI."""
 
+import json
 import os
 import subprocess
 from pathlib import Path
 from typing import Any, Dict, Optional, Union, cast
 
 import click
+import yaml
 from rich.text import Text
 
-import zenml
 from zenml.cli import utils as cli_utils
 from zenml.cli.stack import import_stack, stack
 from zenml.config.global_config import GlobalConfiguration
 from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.recipes import GitStackRecipesHandler
-from zenml.recipes.stack_recipe_service import (
-    STACK_RECIPES_GITHUB_REPO,
-    LocalStackRecipe,
+from zenml.recipes.git_stack_recipes_handler import (
+    GitStackRecipesHandler,
 )
-from zenml.utils import yaml_utils
+from zenml.recipes.models import STACK_RECIPES_GITHUB_REPO, LocalStackRecipe
+from zenml.utils import terraform_utils, yaml_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, event_handler
 
 logger = get_logger(__name__)
@@ -42,12 +42,6 @@ ALPHA_MESSAGE = (
     "Please avoid running mission-critical workloads on resources deployed "
     "through these commands. If you encounter any problems, create an issue "
     f"on the repository {STACK_RECIPES_GITHUB_REPO} and we'll help you out!"
-)
-NOT_INSTALLED_MESSAGE = (
-    "The stack recipe commands seem to be unavailable on your machine. This "
-    "is probably because ZenML was installed without the optional terraform "
-    "dependencies. To install the missing dependencies: \n\n"
-    f'`pip install "zenml[stacks]=={zenml.__version__}"`.'
 )
 
 pass_git_stack_recipes_handler = click.make_pass_decorator(
@@ -249,9 +243,14 @@ def pull(
             folder.
         path: The path at which you want to install the stack_recipe(s).
     """
+    try:
+        terraform_utils.verify_terraform_installation()
+    except RuntimeError as e:
+        cli_utils.error(str(e))
+
     cli_utils.warning(ALPHA_MESSAGE)
 
-    from zenml.recipes import (
+    from zenml.recipes.stack_recipe_service import (
         StackRecipeService,
         StackRecipeServiceConfig,
     )
@@ -479,6 +478,11 @@ def deploy(
         metadata={"stack_recipe_name": stack_recipe_name},
         v2=True,
     ) as handler:
+        try:
+            terraform_utils.verify_terraform_installation()
+        except RuntimeError as e:
+            cli_utils.error(str(e))
+
         # build a dict of all stack component options that have non-null values
         stack_component_options = {
             "artifact_store": artifact_store,
@@ -498,7 +502,6 @@ def deploy(
         handler.metadata.update(stack_component_options)
 
         import python_terraform
-        import yaml
 
         # get input variables
         variables_dict: Dict[str, Any] = {}
@@ -542,7 +545,7 @@ def deploy(
         except KeyError as e:
             cli_utils.error(str(e))
         else:
-            from zenml.recipes import (
+            from zenml.recipes.stack_recipe_service import (
                 StackRecipeService,
                 StackRecipeServiceConfig,
             )
@@ -816,6 +819,11 @@ def destroy(
         event=AnalyticsEvent.DESTROY_STACK_RECIPE,
         metadata={"stack_recipe_name": stack_recipe_name},
     ) as handler:
+        try:
+            terraform_utils.verify_terraform_installation()
+        except RuntimeError as e:
+            cli_utils.error(str(e))
+
         # build a dict of all stack component options that have non-null values
         stack_component_options = {
             "artifact_store": artifact_store,
@@ -864,7 +872,7 @@ def destroy(
         else:
             import python_terraform
 
-            from zenml.recipes import (
+            from zenml.recipes.stack_recipe_service import (
                 StackRecipeService,
             )
 
@@ -988,14 +996,15 @@ def get_outputs(
     Raises:
         ModuleNotFoundError: If the recipe is found at the given path.
     """
-    import json
-
-    import yaml
-
     with event_handler(
         event=AnalyticsEvent.GET_STACK_RECIPE_OUTPUTS,
         metadata={"stack_recipe_name": stack_recipe_name},
     ):
+        try:
+            terraform_utils.verify_terraform_installation()
+        except RuntimeError as e:
+            cli_utils.error(str(e))
+
         import python_terraform
 
         cli_utils.warning(ALPHA_MESSAGE)
@@ -1025,7 +1034,9 @@ def get_outputs(
 
             try:
                 # use the stack recipe directory path to find the service instance
-                from zenml.recipes import StackRecipeService
+                from zenml.recipes.stack_recipe_service import (
+                    StackRecipeService,
+                )
 
                 stack_recipe_service = StackRecipeService.get_service(
                     str(local_stack_recipe.path)

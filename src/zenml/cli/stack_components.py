@@ -1196,7 +1196,9 @@ def generate_stack_component_deploy_command(
                     "have already done so."
                 )
 
-        from zenml.recipes import GitStackRecipesHandler
+        from zenml.recipes.git_stack_recipes_handler import (
+            GitStackRecipesHandler,
+        )
 
         try:
             stack_recipe = GitStackRecipesHandler().get_stack_recipes(
@@ -1256,7 +1258,9 @@ def generate_stack_component_destroy_command(
             name_id_or_prefix: Name, ID or prefix of the component to destroy.
         """
         client = Client()
-        from zenml.recipes import GitStackRecipesHandler
+        from zenml.recipes.git_stack_recipes_handler import (
+            GitStackRecipesHandler,
+        )
 
         try:
             component = client.get_stack_component(

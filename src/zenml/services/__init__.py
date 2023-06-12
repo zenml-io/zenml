@@ -54,11 +54,6 @@ from zenml.services.service_monitor import (
 from zenml.services.service_registry import ServiceRegistry
 from zenml.services.service_status import ServiceState, ServiceStatus
 from zenml.services.service_type import ServiceType
-from zenml.services.terraform.terraform_service import (
-    TerraformService,
-    TerraformServiceConfig,
-    TerraformServiceStatus,
-)
 from zenml.services.utils import load_last_service_from_step
 
 __all__ = [
@@ -90,7 +85,4 @@ __all__ = [
     "LocalDaemonServiceEndpointStatus",
     "LocalDaemonServiceEndpoint",
     "ServiceRegistry",
-    "TerraformService",
-    "TerraformServiceConfig",
-    "TerraformServiceStatus",
 ]

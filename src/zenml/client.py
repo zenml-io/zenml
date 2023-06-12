@@ -140,7 +140,7 @@ from zenml.models.schedule_model import (
     ScheduleFilterModel,
     ScheduleResponseModel,
 )
-from zenml.utils import io_utils, source_utils
+from zenml.utils import io_utils, source_utils, terraform_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, event_handler, track
 from zenml.utils.filesync_model import FileSyncModel
 from zenml.utils.pagination_utils import depaginate
@@ -2345,9 +2345,11 @@ class Client(metaclass=ClientMetaClass):
         ) as handler:
             handler.metadata.update({component_type.value: flavor})
 
+            terraform_utils.verify_terraform_installation()
+
             import python_terraform
 
-            from zenml.recipes import (
+            from zenml.recipes.stack_recipe_service import (
                 StackRecipeService,
                 StackRecipeServiceConfig,
             )
@@ -2495,9 +2497,11 @@ class Client(metaclass=ClientMetaClass):
         ) as handler:
             handler.metadata.update({component.type.value: component.flavor})
 
+            terraform_utils.verify_terraform_installation()
+
             import python_terraform
 
-            from zenml.recipes import (
+            from zenml.recipes.stack_recipe_service import (
                 StackRecipeService,
             )
 
