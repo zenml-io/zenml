@@ -1251,6 +1251,11 @@ def print_stacks_table(
         stacks: List of stacks
     """
     stack_dicts = []
+
+    stacks = [client.active_stack_model] + [
+        s for s in stacks if s.id != client.active_stack_model.id
+    ]
+
     active_stack_model_id = client.active_stack_model.id
     for stack in stacks:
         is_active = stack.id == active_stack_model_id
@@ -1292,20 +1297,26 @@ def print_components_table(
         components: List of stack components to print.
     """
     display_name = _component_display_name(component_type, plural=True)
+
     if len(components) == 0:
         warning(f"No {display_name} registered.")
         return
+
     active_stack = client.active_stack_model
-    active_component_id = None
+    active_component = None
     if component_type in active_stack.components.keys():
         active_components = active_stack.components[component_type]
-        active_component_id = (
-            active_components[0].id if active_components else None
+        active_component = (
+            active_components[0] if active_components else None
         )
+
+    components = [active_component] + [
+        c for c in components if c.id != active_component.id
+    ]
 
     configurations = []
     for component in components:
-        is_active = component.id == active_component_id
+        is_active = component.id == active_component.id
         component_config = {
             "ACTIVE": ":point_right:" if is_active else "",
             "NAME": component.name,
@@ -1319,7 +1330,7 @@ def print_components_table(
 
 
 def seconds_to_human_readable(time_seconds: int) -> str:
-    """Converts seconds to human readable format.
+    """Converts seconds to human-readable format.
 
     Args:
         time_seconds: Seconds to convert.
