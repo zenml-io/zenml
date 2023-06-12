@@ -11,18 +11,4 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Recipes for ZenML stacks."""
-
-from zenml.recipes.stack_recipe_service import (
-    GitStackRecipesHandler,
-    StackRecipe,
-    StackRecipeService,
-    StackRecipeServiceConfig,
-)
-
-__all__ = [
-    "GitStackRecipesHandler",
-    "StackRecipeService",
-    "StackRecipeServiceConfig",
-    "StackRecipe",
-]
+"""ZenML stack recipes."""
