@@ -20,7 +20,7 @@ from zenml.artifact_stores import (
     BaseArtifactStoreFlavor,
 )
 from zenml.integrations.azure import AZURE_ARTIFACT_STORE_FLAVOR
-from zenml.integrations.azure.service_connectors.azure_service_connector import (
+from zenml.integrations.azure.constants import (
     AZURE_CONNECTOR_TYPE,
     BLOB_RESOURCE_TYPE,
 )
