@@ -119,6 +119,7 @@ class BaseStep(metaclass=BaseStepMeta):
         enable_cache: Optional[bool] = None,
         enable_artifact_metadata: Optional[bool] = None,
         enable_artifact_visualization: Optional[bool] = None,
+        enable_step_logs: Optional[bool] = None,
         experiment_tracker: Optional[str] = None,
         step_operator: Optional[str] = None,
         parameters: Optional["ParametersOrDict"] = None,
@@ -141,6 +142,7 @@ class BaseStep(metaclass=BaseStepMeta):
                 for this step.
             enable_artifact_visualization: If artifact visualization should be
                 enabled for this step.
+            enable_step_logs: Enable step logs for this step.
             experiment_tracker: The experiment tracker to use for this step.
             step_operator: The step operator to use for this step.
             parameters: Function parameters for this step
@@ -198,11 +200,18 @@ class BaseStep(metaclass=BaseStepMeta):
             else "disabled",
         )
 
+        logger.debug(
+            "Step '%s': logs %s.",
+            name,
+            "enabled" if enable_step_logs is not False else "disabled",
+        )
+
         self._configuration = PartialStepConfiguration(
             name=name,
             enable_cache=enable_cache,
             enable_artifact_metadata=enable_artifact_metadata,
             enable_artifact_visualization=enable_artifact_visualization,
+            enable_step_logs=enable_step_logs,
         )
         self.configure(
             experiment_tracker=experiment_tracker,
@@ -614,6 +623,7 @@ class BaseStep(metaclass=BaseStepMeta):
         enable_cache: Optional[bool] = None,
         enable_artifact_metadata: Optional[bool] = None,
         enable_artifact_visualization: Optional[bool] = None,
+        enable_step_logs: Optional[bool] = None,
         experiment_tracker: Optional[str] = None,
         step_operator: Optional[str] = None,
         parameters: Optional["ParametersOrDict"] = None,
@@ -645,6 +655,7 @@ class BaseStep(metaclass=BaseStepMeta):
                 for this step.
             enable_artifact_visualization: If artifact visualization should be
                 enabled for this step.
+            enable_step_logs: If step logs should be enabled for this step.
             experiment_tracker: The experiment tracker to use for this step.
             step_operator: The step operator to use for this step.
             parameters: Function parameters for this step
@@ -725,6 +736,7 @@ class BaseStep(metaclass=BaseStepMeta):
                 "enable_cache": enable_cache,
                 "enable_artifact_metadata": enable_artifact_metadata,
                 "enable_artifact_visualization": enable_artifact_visualization,
+                "enable_step_logs": enable_step_logs,
                 "experiment_tracker": experiment_tracker,
                 "step_operator": step_operator,
                 "parameters": parameters,
@@ -744,6 +756,7 @@ class BaseStep(metaclass=BaseStepMeta):
         enable_cache: Optional[bool] = None,
         enable_artifact_metadata: Optional[bool] = None,
         enable_artifact_visualization: Optional[bool] = None,
+        enable_step_logs: Optional[bool] = None,
         experiment_tracker: Optional[str] = None,
         step_operator: Optional[str] = None,
         parameters: Optional["ParametersOrDict"] = None,
@@ -764,6 +777,7 @@ class BaseStep(metaclass=BaseStepMeta):
                 for this step.
             enable_artifact_visualization: If artifact visualization should be
                 enabled for this step.
+            enable_step_logs: If step logs should be enabled for this step.
             experiment_tracker: The experiment tracker to use for this step.
             step_operator: The step operator to use for this step.
             parameters: Function parameters for this step
@@ -795,6 +809,7 @@ class BaseStep(metaclass=BaseStepMeta):
             enable_cache=enable_cache,
             enable_artifact_metadata=enable_artifact_metadata,
             enable_artifact_visualization=enable_artifact_visualization,
+            enable_step_logs=enable_step_logs,
             experiment_tracker=experiment_tracker,
             step_operator=step_operator,
             parameters=parameters,

@@ -160,6 +160,15 @@ class PipelineRunView(BaseView):
         return self.model.pipeline_configuration.enable_artifact_visualization
 
     @property
+    def enable_step_logs(self) -> Optional[bool]:
+        """Returns whether step logs are enabled for this pipeline run.
+
+        Returns:
+            True if step logs are enabled for this pipeline run.
+        """
+        return self.model.pipeline_configuration.enable_step_logs
+
+    @property
     def commit(self) -> Optional[str]:
         """Returns the code repository commit of the pipeline run.
 
