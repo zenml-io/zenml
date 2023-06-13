@@ -228,6 +228,16 @@ class OperatingSystemType(StrEnum):
     MACOS = "Darwin"
 
 
+class SourceContextTypes(StrEnum):
+    """Enum for event source types."""
+
+    CLI = "cli"
+    PYTHON = "python"
+    DASHBOARD = "dashboard"
+    API = "api"
+    UNKNOWN = "unknown"
+
+
 class EnvironmentType(StrEnum):
     """Enum for environment types."""
 
