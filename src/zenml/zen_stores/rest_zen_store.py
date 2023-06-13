@@ -35,6 +35,7 @@ import urllib3
 from pydantic import BaseModel, root_validator, validator
 
 import zenml
+from zenml.analytics import source_context
 from zenml.config.global_config import GlobalConfiguration
 from zenml.config.secrets_store_config import SecretsStoreConfiguration
 from zenml.config.store_config import StoreConfiguration
@@ -2453,6 +2454,11 @@ class RestZenStore(BaseZenStore):
             The parsed response.
         """
         params = {k: str(v) for k, v in params.items()} if params else {}
+
+        self.session.headers.update(
+            {source_context.name: source_context.get().value}
+        )
+
         try:
             return self._handle_response(
                 self.session.request(
