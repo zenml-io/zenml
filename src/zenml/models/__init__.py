@@ -140,6 +140,11 @@ from zenml.models.code_repository_models import (
     CodeReferenceRequestModel,
     CodeReferenceResponseModel,
 )
+from zenml.models.logs_models import (
+    LogsBaseModel,
+    LogsRequestModel,
+    LogsResponseModel,
+)
 
 ComponentResponseModel.update_forward_refs(
     UserResponseModel=UserResponseModel,
@@ -337,4 +342,7 @@ __all__ = [
     "UserUpdateModel",
     "UserFilterModel",
     "UserAuthModel",
+    "LogsBaseModel",
+    "LogsRequestModel",
+    "LogsResponseModel",
 ]
