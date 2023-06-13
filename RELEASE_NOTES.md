@@ -130,7 +130,7 @@ Here are just a few ways you could use ZenML Service Connectors:
 - Assisted setup with security in mind: Our Service Connectors come with features for configuration validation and verification, the generation of temporary, low-privilege credentials, and pre-authenticated and pre-configured clients for Python libraries.
 - Easy local configuration transfer: ZenML's Service Connectors aim to resolve the reproducibility issue in ML pipelines. They do this by automatically transferring authentication configurations and credentials from your local machine, storing them securely, and allowing for effortless sharing across different environments.
 
-[Visit our documentation pages](https://docs.zenml.io/platform-guide/set-up-your-mlops-platform/connect-to-your-cloud-provider) to learn more about ZenML Connectors and how you can use them in a way that supports your ML workflows.
+[Visit our documentation pages](https://docs.zenml.io/platform-guide/set-up-your-mlops-platform/connect-zenml-to-infrastructure) to learn more about ZenML Connectors and how you can use them in a way that supports your ML workflows.
 
 ## What's Changed
 
@@ -1065,7 +1065,7 @@ further slim down the `zenml` package.
 
 ## Breaking Changes
 
-The following changes introduces with this release mey require some manual
+The following changes introduces with this release may require some manual
 intervention to update your current installations:
 
 - If your code calls some methods of our `Client` class, it might need to be
@@ -1147,7 +1147,7 @@ deployed) instances. For more information see [the Label Studiodocs](https://doc
 
 ## Breaking Changes
 
-The following changes introduces with this release mey require some manual
+The following changes introduces with this release may require some manual
 intervention to update your current installations:
 
 * the Airflow orchestrator now requires a newer version of Airflow
@@ -1243,7 +1243,7 @@ Kubernetes based orchestrators with the new Kubernetes Pod settings feature.
 
 ## Breaking Changes
 
-The following changes introduces with this release mey require some manual
+The following changes introduces with this release may require some manual
 intervention to update your current installations:
 
 * the zenml server helm chart `values.yaml` file has been restructured to make

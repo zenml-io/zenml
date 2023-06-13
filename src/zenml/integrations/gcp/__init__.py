@@ -52,6 +52,7 @@ class GcpIntegration(Integration):
         "google-cloud-scheduler>=2.7.3",
         "google-cloud-functions>=1.8.3",
         "google-cloud-build>=3.11.0",
+        "kubernetes",
         # google-cloud-bigquery 2.34.4 is not compatible with shapely 2.0.0
         # which was released on 2021-12-21. This is a temporary fix until
         # google-cloud-bigquery is updated.

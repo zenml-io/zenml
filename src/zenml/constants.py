@@ -197,6 +197,7 @@ PIPELINE_CONFIGURATION = "/pipeline-configuration"
 STEP_CONFIGURATION = "/step-configuration"
 GRAPH = "/graph"
 STEPS = "/steps"
+LOGS = "/logs"
 ARTIFACTS = "/artifacts"
 COMPONENT_TYPES = "/component-types"
 REPOSITORIES = "/repositories"
@@ -228,6 +229,7 @@ ORCHESTRATOR_DOCKER_IMAGE_KEY = "orchestrator"
 
 # Secret constants
 ARBITRARY_SECRET_SCHEMA_TYPE = "arbitrary"
+SECRET_VALUES = "values"
 
 # Pagination and filtering defaults
 PAGINATION_STARTING_PAGE: int = 1

@@ -20,10 +20,16 @@ from zenml.artifact_stores import (
     BaseArtifactStoreFlavor,
 )
 from zenml.integrations.azure import AZURE_ARTIFACT_STORE_FLAVOR
+from zenml.models.service_connector_models import ServiceConnectorRequirements
 from zenml.stack.authentication_mixin import AuthenticationConfigMixin
 
 if TYPE_CHECKING:
     from zenml.integrations.azure.artifact_stores import AzureArtifactStore
+
+
+AZURE_CONNECTOR_TYPE = "azure"
+AZURE_RESOURCE_TYPE = "azure-generic"
+BLOB_RESOURCE_TYPE = "blob-container"
 
 
 class AzureArtifactStoreConfig(
@@ -45,6 +51,25 @@ class AzureArtifactStoreFlavor(BaseArtifactStoreFlavor):
             The name of the flavor.
         """
         return AZURE_ARTIFACT_STORE_FLAVOR
+
+    @property
+    def service_connector_requirements(
+        self,
+    ) -> Optional[ServiceConnectorRequirements]:
+        """Service connector resource requirements for service connectors.
+
+        Specifies resource requirements that are used to filter the available
+        service connector types that are compatible with this flavor.
+
+        Returns:
+            Requirements for compatible service connectors, if a service
+            connector is required for this flavor.
+        """
+        return ServiceConnectorRequirements(
+            connector_type=AZURE_CONNECTOR_TYPE,
+            resource_type=BLOB_RESOURCE_TYPE,
+            resource_id_attr="path",
+        )
 
     @property
     def docs_url(self) -> Optional[str]:

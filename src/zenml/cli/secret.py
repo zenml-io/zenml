@@ -22,8 +22,10 @@ from pydantic import ValidationError
 from zenml.cli.cli import TagGroup, cli
 from zenml.cli.utils import (
     confirmation,
+    convert_structured_str_to_dict,
     declare,
     error,
+    expand_argument_value_from_file,
     fail_secret_creation_on_secrets_manager,
     list_options,
     parse_name_and_extra_arguments,
@@ -36,7 +38,7 @@ from zenml.cli.utils import (
 )
 from zenml.client import Client
 from zenml.console import console
-from zenml.constants import ARBITRARY_SECRET_SCHEMA_TYPE
+from zenml.constants import ARBITRARY_SECRET_SCHEMA_TYPE, SECRET_VALUES
 from zenml.enums import (
     CliCategories,
     SecretScope,
@@ -720,9 +722,18 @@ def secret() -> None:
     help="Use interactive mode to enter the secret values.",
     type=click.BOOL,
 )
+@click.option(
+    "--values",
+    "-v",
+    "values",
+    help="Pass one or more values using JSON or YAML format or reference a file by prefixing the filename with the @ "
+    "special character.",
+    required=False,
+    type=str,
+)
 @click.argument("args", nargs=-1, type=click.UNPROCESSED)
 def create_secret(
-    name: str, scope: str, interactive: bool, args: List[str]
+    name: str, scope: str, interactive: bool, values: str, args: List[str]
 ) -> None:
     """Create a secret.
 
@@ -730,11 +741,16 @@ def create_secret(
         name: The name of the secret to create.
         scope: The scope of the secret to create.
         interactive: Whether to use interactive mode to enter the secret values.
+        values: Secret key-value pairs to be passed as JSON or YAML.
         args: The arguments to pass to the secret.
     """
     name, parsed_args = parse_name_and_extra_arguments(  # type: ignore[assignment]
         list(args) + [name], expand_args=True
     )
+    if values:
+        inline_values = expand_argument_value_from_file(SECRET_VALUES, values)
+        inline_values_dict = convert_structured_str_to_dict(inline_values)
+        parsed_args.update(inline_values_dict)
 
     if "name" in parsed_args:
         error("You can't use 'name' as the key for one of your secrets.")
@@ -757,7 +773,7 @@ def create_secret(
                         warning(
                             f"Key {k} already in this secret. Please restart "
                             f"this process or use 'zenml "
-                            f"secret update {name} --{k}=...' to update this "
+                            f"secret update {name} --values=<JSON/YAML> or --{k}=...' to update this "
                             f"key after the secret is registered. Skipping ..."
                         )
                     else:
@@ -896,6 +912,15 @@ def get_secret(name_id_or_prefix: str, scope: str) -> None:
     help="Use interactive mode to update the secret values.",
     type=click.BOOL,
 )
+@click.option(
+    "--values",
+    "-v",
+    "values",
+    help="Pass one or more values using JSON or YAML format or reference a file by prefixing the filename with the @ "
+    "special character.",
+    required=False,
+    type=str,
+)
 @click.option("--remove-keys", "-r", type=click.STRING, multiple=True)
 @click.argument("extra_args", nargs=-1, type=click.UNPROCESSED)
 def update_secret(
@@ -904,6 +929,7 @@ def update_secret(
     new_scope: Optional[str] = None,
     remove_keys: List[str] = [],
     interactive: bool = False,
+    values: str = "",
 ) -> None:
     """Update a secret for a given name or id.
 
@@ -913,10 +939,15 @@ def update_secret(
         extra_args: The arguments to pass to the secret.
         interactive: Whether to use interactive mode to update the secret.
         remove_keys: The keys to remove from the secret.
+        values: Secret key-value pairs to be passed as JSON or YAML.
     """
     name, parsed_args = parse_name_and_extra_arguments(
         list(extra_args) + [name_or_id], expand_args=True
     )
+    if values:
+        inline_values = expand_argument_value_from_file(SECRET_VALUES, values)
+        inline_values_dict = convert_structured_str_to_dict(inline_values)
+        parsed_args.update(inline_values_dict)
 
     client = Client()
 
