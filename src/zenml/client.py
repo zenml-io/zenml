@@ -2567,9 +2567,8 @@ class Client(metaclass=ClientMetaClass):
             )
         if not configuration.is_valid:
             raise StackComponentValidationError(
-                f"Invalid stack component configuration or uninstalled integration. please verify "
-                f"the configurations set for {component_type} "
-                f"and Please ensure that the necessary integration is installed."
+                f"Invalid stack component configuration. please verify "
+                f"the configurations set for {component_type}."
             )
 
     # .---------.

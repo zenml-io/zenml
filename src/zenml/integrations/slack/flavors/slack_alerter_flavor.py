@@ -54,7 +54,7 @@ class SlackAlerterConfig(BaseAlerterConfig):
             logger.warning(
                 "Unable to validate Slack alerter credentials because the Slack integration is not installed."
             )
-            return False
+            return True
         client = WebClient(token=self.slack_token)
         try:
             # Check slack token validity
