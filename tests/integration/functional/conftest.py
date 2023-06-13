@@ -12,6 +12,8 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import logging
+
 import pytest
 
 from zenml.pipelines import pipeline
@@ -61,6 +63,13 @@ def int_plus_two_test_step(input: int) -> int:
 def visualizable_step() -> HTMLString:
     """A step that returns a visualizable artifact."""
     return HTMLString("<h1>Test</h1>")
+
+
+@step
+def step_with_logs() -> int:
+    """A step that has some logs"""
+    logging.info("Hello World!")
+    return 1
 
 
 @pytest.fixture
