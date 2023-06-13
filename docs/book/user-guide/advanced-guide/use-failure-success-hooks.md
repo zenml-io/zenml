@@ -57,7 +57,7 @@ def my_pipeline(...):
 ```
 
 {% hint style="info" %}
-Note, that **step-level** defined hooks take **precedence** over **pipeline-leve**l defined hooks.
+Note, that **step-level** defined hooks take **precedence** over **pipeline-level** defined hooks.
 {% endhint %}
 
 ## Accessing step information inside a hook

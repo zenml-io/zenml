@@ -17,10 +17,17 @@ from typing import TYPE_CHECKING, Any, Dict, Optional, Type, cast
 
 from zenml.client import Client
 from zenml.enums import ExecutionStatus
-from zenml.models import StepRunResponseModel
+from zenml.exceptions import DoesNotExistException
+from zenml.models import (
+    StepRunResponseModel,
+)
 from zenml.models.base_models import BaseResponseModel
 from zenml.post_execution.artifact import ArtifactView
 from zenml.post_execution.base_view import BaseView
+from zenml.utils.artifact_utils import (
+    _load_artifact_store,
+    _load_file_from_artifact_store,
+)
 
 if TYPE_CHECKING:
     from zenml.config.base_settings import BaseSettings
@@ -146,7 +153,39 @@ class StepView(BaseView):
         Returns:
             Whether artifact visualization is enabled for this step.
         """
+        # Consider changing this to logic of `step_logs_enabled`
         return self.step_configuration.enable_artifact_visualization
+
+    @property
+    def step_logs_enabled(self) -> bool:
+        """Returns whether step logs are enabled for this step.
+
+        Returns:
+            Whether step logs are enabled for this step.
+        """
+        # This won't consider pipeline specific values
+        return True if self.step_configuration.enable_step_logs else False
+
+    @property
+    def logs(self) -> Optional[str]:
+        """Get logs for the step.
+
+        Returns:
+            The logs for the step, None if no logs are available.
+        """
+        logs = self.model.logs
+        if logs is None:
+            return None
+
+        artifact_store = _load_artifact_store(logs.artifact_store_id)
+        try:
+            return str(
+                _load_file_from_artifact_store(
+                    logs.uri, artifact_store=artifact_store, mode="r"
+                )
+            )
+        except DoesNotExistException:
+            return None
 
     @property
     def step_operator(self) -> Optional[str]:

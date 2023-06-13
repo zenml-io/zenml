@@ -52,6 +52,11 @@ class ServerModel(BaseModel):
     version: str = Field(
         title="The ZenML version that the server is running.",
     )
+
+    debug: bool = Field(
+        False, title="Flag to indicate whether ZenML is running on debug mode."
+    )
+
     deployment_type: ServerDeploymentType = Field(
         ServerDeploymentType.OTHER,
         title="The ZenML server deployment type.",
