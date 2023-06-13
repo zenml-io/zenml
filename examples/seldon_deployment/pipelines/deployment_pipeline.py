@@ -54,19 +54,6 @@ def continuous_deployment_pipeline(
         seldon_implementation = "TENSORFLOW_SERVER"
     else:
         seldon_implementation = "SKLEARN_SERVER"
-    configured_deployer = seldon_model_deployer_step.with_options(
-        parameters=dict(
-            service_config=SeldonDeploymentConfig(
-                model_name=model_name,
-                replicas=1,
-                implementation=seldon_implementation,
-                resources=SeldonResourceRequirements(
-                    limits={"cpu": "200m", "memory": "250Mi"}
-                ),
-            ),
-            timeout=120,
-        )
-    )
 
     # Link all the steps artifacts together
     x_train, y_train, x_test, y_test = importer_mnist()
@@ -95,4 +82,16 @@ def continuous_deployment_pipeline(
     deployment_decision = deployment_trigger(
         accuracy=accuracy, min_accuracy=min_accuracy
     )
-    configured_deployer(deployment_decision, model)
+    seldon_model_deployer_step(
+        model=model,
+        deploy_decision=deployment_decision,
+        service_config=SeldonDeploymentConfig(
+            model_name=model_name,
+            replicas=1,
+            implementation=seldon_implementation,
+            resources=SeldonResourceRequirements(
+                limits={"cpu": "200m", "memory": "250Mi"}
+            ),
+        ),
+        timeout=120,
+    )
