@@ -16,9 +16,16 @@
 from typing import Any, Dict
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Security
+from fastapi import APIRouter, Depends, HTTPException, Security
 
-from zenml.constants import API, STATUS, STEP_CONFIGURATION, STEPS, VERSION_1
+from zenml.constants import (
+    API,
+    LOGS,
+    STATUS,
+    STEP_CONFIGURATION,
+    STEPS,
+    VERSION_1,
+)
 from zenml.enums import ExecutionStatus, PermissionType
 from zenml.models import (
     StepRunFilterModel,
@@ -27,6 +34,10 @@ from zenml.models import (
     StepRunUpdateModel,
 )
 from zenml.models.page_model import Page
+from zenml.utils.artifact_utils import (
+    _load_artifact_store,
+    _load_file_from_artifact_store,
+)
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.utils import (
@@ -175,3 +186,38 @@ def get_step_status(
         The status of the step.
     """
     return zen_store().get_run_step(step_id).status
+
+
+@router.get(
+    "/{step_id}" + LOGS,
+    response_model=str,
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@handle_exceptions
+def get_step_logs(
+    step_id: UUID,
+    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+) -> str:
+    """Get the logs of a specific step.
+
+    Args:
+        step_id: ID of the step for which to get the logs.
+
+    Returns:
+        The logs of the step.
+
+    Raises:
+        HTTPException: If no logs are available for this step.
+    """
+    store = zen_store()
+    logs = store.get_run_step(step_id).logs
+    if logs is None:
+        raise HTTPException(
+            status_code=404, detail="No logs available for this step"
+        )
+    artifact_store = _load_artifact_store(logs.artifact_store_id, store)
+    return str(
+        _load_file_from_artifact_store(
+            logs.uri, artifact_store=artifact_store, mode="r"
+        )
+    )
