@@ -878,6 +878,9 @@ def _get_secret(
     Args:
         name_id_or_prefix: The name of the secret to get.
         scope: The scope of the secret to get.
+
+    Returns:
+        The secret response model.
     """
     client = Client()
     try:
