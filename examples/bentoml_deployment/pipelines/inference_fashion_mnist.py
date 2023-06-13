@@ -12,6 +12,10 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+from steps.inference_loader import inference_loader
+from steps.prediction_service_loader import bentoml_prediction_service_loader
+from steps.predictor import predictor
+
 from zenml import pipeline
 from zenml.config import DockerSettings
 from zenml.integrations.constants import BENTOML, PYTORCH

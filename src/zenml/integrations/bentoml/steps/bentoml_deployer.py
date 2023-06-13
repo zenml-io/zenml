@@ -71,6 +71,13 @@ def bentoml_model_deployer_step(
         production: whether to deploy the service in production mode.
         working_dir: the working directory to use for the prediction service.
         host: the host to use for the prediction service.
+        ssl_certfile: the path to the ssl cert file.
+        ssl_keyfile: the path to the ssl key file.
+        ssl_keyfile_password: the password for the ssl key file.
+        ssl_version: the ssl version to use.
+        ssl_cert_reqs: the ssl cert requirements.
+        ssl_ca_certs: the path to the ssl ca certs.
+        ssl_ciphers: the ssl ciphers to use.
         timeout: the number of seconds to wait for the service to start/stop.
 
     Returns:

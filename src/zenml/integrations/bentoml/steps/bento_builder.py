@@ -65,6 +65,7 @@ def bento_builder_step(
         exclude: the files to be excluded from the BentoML bundle.
         python: dictionary for configuring Bento's python dependencies,
         docker: dictionary for configuring Bento's docker image.
+        working_dir: the working directory of the BentoML bundle.
 
     Returns:
         the BentoML Bento object.
