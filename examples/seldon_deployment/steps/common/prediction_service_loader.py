@@ -17,19 +17,6 @@ from typing import cast
 from zenml import step
 from zenml.integrations.seldon.model_deployers import SeldonModelDeployer
 from zenml.integrations.seldon.services import SeldonDeploymentService
-from zenml.steps import BaseParameters
-
-
-class SeldonDeploymentLoaderStepParameters(BaseParameters):
-    """Seldon deployment loader parameters.
-
-    Attributes:
-        pipeline_name: name of the pipeline that deployed the Seldon prediction
-            server
-        step_name: the name of the step that deployed the Seldon prediction
-            server
-        model_name: the name of the model that was deployed
-    """
 
 
 @step(enable_cache=False)
