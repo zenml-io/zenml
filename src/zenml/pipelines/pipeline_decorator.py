@@ -109,11 +109,12 @@ def pipeline(
         the inner decorator which creates the pipeline class based on the
         ZenML BasePipeline
     """
+    pipeline_name = name or _func.__name__ if _func else ""
     logger.warning(
-        "The `@pipeline` decorator that you use to define your pipeline is "
-        "deprecated. Check out our docs https://docs.zenml.io for "
-        "information on how to define pipelines in a more intuitive and "
-        "flexible way!"
+        "The `@pipeline` decorator that you used to define your "
+        f"{pipeline_name} pipeline is deprecated. "
+        "Check out our docs https://docs.zenml.io for information on how to "
+        "define pipelines in a more intuitive and flexible way!"
     )
 
     def inner_decorator(func: F) -> Type[BasePipeline]:
