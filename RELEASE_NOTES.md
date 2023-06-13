@@ -1065,7 +1065,7 @@ further slim down the `zenml` package.
 
 ## Breaking Changes
 
-The following changes introduces with this release mey require some manual
+The following changes introduces with this release may require some manual
 intervention to update your current installations:
 
 - If your code calls some methods of our `Client` class, it might need to be
@@ -1147,7 +1147,7 @@ deployed) instances. For more information see [the Label Studiodocs](https://doc
 
 ## Breaking Changes
 
-The following changes introduces with this release mey require some manual
+The following changes introduces with this release may require some manual
 intervention to update your current installations:
 
 * the Airflow orchestrator now requires a newer version of Airflow
@@ -1243,7 +1243,7 @@ Kubernetes based orchestrators with the new Kubernetes Pod settings feature.
 
 ## Breaking Changes
 
-The following changes introduces with this release mey require some manual
+The following changes introduces with this release may require some manual
 intervention to update your current installations:
 
 * the zenml server helm chart `values.yaml` file has been restructured to make

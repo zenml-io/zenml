@@ -154,9 +154,9 @@ def prepare_torch_service_config(
     """
     deployment_folder_uri = os.path.join(output_artifact_uri, "kserve")
     served_model_uri = os.path.join(deployment_folder_uri, "model-store")
-    config_propreties_uri = os.path.join(deployment_folder_uri, "config")
+    config_properties_uri = os.path.join(deployment_folder_uri, "config")
     fileio.makedirs(served_model_uri)
-    fileio.makedirs(config_propreties_uri)
+    fileio.makedirs(config_properties_uri)
 
     if params.torch_serve_parameters is None:
         raise RuntimeError("No torch serve parameters provided")
@@ -205,7 +205,7 @@ def prepare_torch_service_config(
             # Copy the torch model config to the model store
             fileio.copy(
                 params.torch_serve_parameters.torch_config,
-                os.path.join(config_propreties_uri, "config.properties"),
+                os.path.join(config_properties_uri, "config.properties"),
             )
         else:
             # Generate the config file
@@ -216,7 +216,7 @@ def prepare_torch_service_config(
             # Copy the torch model config to the model store
             fileio.copy(
                 config_file_uri,
-                os.path.join(config_propreties_uri, "config.properties"),
+                os.path.join(config_properties_uri, "config.properties"),
             )
 
     service_config = params.service_config.copy()
