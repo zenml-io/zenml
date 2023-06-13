@@ -24,9 +24,6 @@
 #     from zenml.integrations.kserve.services.kserve_deployment import (
 #         KServeDeploymentConfig,
 #     )
-#     from zenml.integrations.kserve.steps.kserve_deployer import (
-#         KServeDeployerStepParameters,
-#     )
 #     from zenml.integrations.kserve.steps.kserve_step_utils import (
 #         is_valid_model_name,
 #         prepare_service_config,
@@ -65,9 +62,7 @@
 #         prepare_service_config(
 #             model_uri="",
 #             output_artifact_uri="",
-#             params=KServeDeployerStepParameters(
-#                 service_config=KServeDeploymentConfig(
-#                     model_name="aria_loves_blupus", predictor="pytorch"
-#                 )
+#             service_config=KServeDeploymentConfig(
+#                 model_name="aria_loves_blupus", predictor="pytorch"
 #             ),
 #         )

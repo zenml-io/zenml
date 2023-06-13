@@ -14,15 +14,14 @@
 
 from zenml.integrations.kserve.services import KServeDeploymentConfig
 from zenml.integrations.kserve.steps import (
-    KServeDeployerStepParameters,
     kserve_model_deployer_step,
 )
 
 MODEL_NAME = "mnist-tensorflow"
 
 
-kserve_tensorflow_deployer = kserve_model_deployer_step(
-    params=KServeDeployerStepParameters(
+kserve_tensorflow_deployer = kserve_model_deployer_step.with_options(
+    parameters=dict(
         service_config=KServeDeploymentConfig(
             model_name=MODEL_NAME,
             replicas=1,

@@ -13,6 +13,8 @@
 #  permissions and limitations under the License.
 """Implementation for the KServe inference service."""
 
+from __future__ import annotations
+
 import json
 import os
 import re

@@ -13,14 +13,10 @@
 #  permissions and limitations under the License.
 
 from zenml.integrations.kserve.services import KServeDeploymentConfig
-from zenml.integrations.kserve.steps import (
-    CustomDeployParameters,
-    KServeDeployerStepParameters,
-    kserve_custom_model_deployer_step,
-)
+from zenml.integrations.kserve.steps import kserve_custom_model_deployer_step
 
-kserve_pytorch_custom_deployment = kserve_custom_model_deployer_step(
-    params=KServeDeployerStepParameters(
+kserve_pytorch_custom_deployment = kserve_custom_model_deployer_step.with_options(
+    parameters=dict(
         service_config=KServeDeploymentConfig(
             model_name="kserve-pytorch-custom-model",
             replicas=1,
@@ -28,8 +24,6 @@ kserve_pytorch_custom_deployment = kserve_custom_model_deployer_step(
             resources={"requests": {"cpu": "200m", "memory": "500m"}},
         ),
         timeout=240,
-        custom_deploy_parameters=CustomDeployParameters(
-            predict_function="kserve_pytorch.steps.pytorch_custom_deploy_code.custom_predict"
-        ),
+        predict_function="kserve_pytorch.steps.pytorch_custom_deploy_code.custom_predict",
     )
 )

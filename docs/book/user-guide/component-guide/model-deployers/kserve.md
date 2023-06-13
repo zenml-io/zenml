@@ -254,15 +254,14 @@ An example of how to use the model deployment step is shown below.
 ```python
 from zenml.integrations.kserve.services import KServeDeploymentConfig
 from zenml.integrations.kserve.steps import (
-    KServeDeployerStepParameters,
     TorchServeParameters,
     kserve_model_deployer_step,
 )
 
 MODEL_NAME = "mnist-pytorch"
 
-pytorch_model_deployer = kserve_model_deployer_step(
-    params=KServeDeployerStepParameters(
+pytorch_model_deployer = kserve_model_deployer_step.with_options(
+    parameters=dict(
         service_config=KServeDeploymentConfig(
             model_name=MODEL_NAME,
             replicas=1,
@@ -326,10 +325,7 @@ def post_process(prediction: torch.Tensor) -> str:
     pass
 
 
-def custom_predict(
-        model: Any,
-        request: dict,
-) -> dict:
+def custom_predict(model: Any, request: dict) -> dict:
     """Custom Prediction function.
 
     The custom predict function is the core of the custom deployment. The function
@@ -349,17 +345,13 @@ def custom_predict(
 Then this `custom_predict` function `path` can be passed to the custom deployment parameters.
 
 ```python
-from zenml.integrations.kserve.steps import (
-    kserve_custom_model_deployer_step,
-    KServeDeployerStepParameters,
-    CustomDeployParameters
-)
+from zenml.integrations.kserve.steps import kserve_custom_model_deployer_step
 from zenml.integrations.kserve.services.kserve_deployment import (
     KServeDeploymentConfig
 )
 
-kserve_pytorch_custom_deployment = kserve_custom_model_deployer_step(
-    params=KServeDeployerStepParameters(
+kserve_pytorch_custom_deployment = kserve_custom_model_deployer_step.with_options(
+    parameters=dict(
         service_config=KServeDeploymentConfig(
             model_name="kserve-pytorch-custom-model",
             replicas=1,
@@ -367,9 +359,7 @@ kserve_pytorch_custom_deployment = kserve_custom_model_deployer_step(
             resources={"requests": {"cpu": "200m", "memory": "500m"}},
         ),
         timeout=240,
-        custom_deploy_parameters=CustomDeployParameters(
-            predict_function="kserve_pytorch.steps.pytorch_custom_deploy_code.custom_predict"
-        ),
+        predict_function="kserve_pytorch.steps.pytorch_custom_deploy_code.custom_predict",
     )
 )
 ```

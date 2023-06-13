@@ -17,6 +17,7 @@ from typing import List, Optional, cast
 
 from pydantic import BaseModel, validator
 
+from zenml import step
 from zenml.client import Client
 from zenml.constants import MODEL_METADATA_YAML_FILE_NAME
 from zenml.environment import Environment
@@ -36,12 +37,7 @@ from zenml.integrations.kserve.services.kserve_deployment import (
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.materializers import UnmaterializedArtifact
-from zenml.steps import (
-    STEP_ENVIRONMENT_NAME,
-    BaseParameters,
-    StepEnvironment,
-    step,
-)
+from zenml.steps import STEP_ENVIRONMENT_NAME, StepEnvironment
 from zenml.steps.step_context import StepContext
 from zenml.utils import io_utils, source_utils
 from zenml.utils.artifact_utils import save_model_metadata
@@ -57,7 +53,7 @@ TORCH_HANDLERS = [
 
 
 class TorchServeParameters(BaseModel):
-    """KServe PyTorch model deployer step configuration.
+    """KServe PyTorch model deployer configuration.
 
     Attributes:
         model_class: Path to Python file containing model architecture.
@@ -173,70 +169,24 @@ class TorchServeParameters(BaseModel):
         return v
 
 
-class CustomDeployParameters(BaseModel):
-    """Custom model deployer step extra parameters.
-
-    Attributes:
-        predict_function: Path to Python file containing predict function.
-    """
-
-    predict_function: str
-
-    @validator("predict_function")
-    def predict_function_validate(cls, predict_func_path: str) -> str:
-        """Validate predict function.
-
-        Args:
-            predict_func_path: predict function path
-
-        Returns:
-            predict function path
-
-        Raises:
-            ValueError: if predict function path is not valid
-            TypeError: if predict function path is not a callable function
-        """
-        try:
-            predict_function = source_utils.load(predict_func_path)
-        except AttributeError:
-            raise ValueError("Predict function can't be found.")
-        if not callable(predict_function):
-            raise TypeError("Predict function must be callable.")
-        return predict_func_path
-
-
-class KServeDeployerStepParameters(BaseParameters):
-    """KServe model deployer step parameters.
-
-    Attributes:
-        service_config: KServe deployment service configuration.
-        torch_serve_params: TorchServe set of parameters to deploy model.
-        timeout: Timeout for model deployment.
-    """
-
-    service_config: KServeDeploymentConfig
-    custom_deploy_parameters: Optional[CustomDeployParameters] = None
-    torch_serve_parameters: Optional[TorchServeParameters] = None
-    timeout: int = DEFAULT_KSERVE_DEPLOYMENT_START_STOP_TIMEOUT
-
-
 @step(enable_cache=False)
 def kserve_model_deployer_step(
-    deploy_decision: bool,
-    params: KServeDeployerStepParameters,
     context: StepContext,
     model: UnmaterializedArtifact,
+    service_config: KServeDeploymentConfig,
+    deploy_decision: bool = True,
+    torch_serve_parameters: Optional[TorchServeParameters] = None,
+    timeout: int = DEFAULT_KSERVE_DEPLOYMENT_START_STOP_TIMEOUT,
 ) -> KServeDeploymentService:
-    """KServe model deployer pipeline step.
-
-    This step can be used in a pipeline to implement continuous
-    deployment for an ML model with KServe.
+    """KServe model deployer step.
 
     Args:
-        deploy_decision: whether to deploy the model or not
-        params: parameters for the deployer step
-        model: the model artifact to deploy
         context: the step context
+        model: the model artifact to deploy
+        service_config: KServe deployment service configuration.
+        deploy_decision: whether to deploy the model or not
+        torch_serve_parameters: TorchServe set of parameters to deploy model.
+        timeout: Timeout for model deployment.
 
     Returns:
         KServe deployment service
@@ -252,16 +202,16 @@ def kserve_model_deployer_step(
     step_name = step_env.step_name
 
     # update the step configuration with the real pipeline runtime information
-    params.service_config.pipeline_name = pipeline_name
-    params.service_config.run_name = run_name
-    params.service_config.pipeline_step_name = step_name
+    service_config.pipeline_name = pipeline_name
+    service_config.run_name = run_name
+    service_config.pipeline_step_name = step_name
 
     # fetch existing services with same pipeline name, step name and
     # model name
     existing_services = model_deployer.find_model_server(
         pipeline_name=pipeline_name,
         pipeline_step_name=step_name,
-        model_name=params.service_config.model_name,
+        model_name=service_config.model_name,
     )
 
     # even when the deploy decision is negative if an existing model server
@@ -272,20 +222,20 @@ def kserve_model_deployer_step(
             f"Skipping model deployment because the model quality does not "
             f"meet the criteria. Reusing the last model server deployed by step "
             f"'{step_name}' and pipeline '{pipeline_name}' for model "
-            f"'{params.service_config.model_name}'..."
+            f"'{service_config.model_name}'..."
         )
         service = cast(KServeDeploymentService, existing_services[0])
         # even when the deploy decision is negative, we still need to start
         # the previous model server if it is no longer running, to ensure that
         # a model server is available at all times
         if not service.is_running:
-            service.start(timeout=params.timeout)
+            service.start(timeout=timeout)
         return service
 
     # invoke the KServe model deployer to create a new service
     # or update an existing one that was previously deployed for the same
     # model
-    if params.service_config.predictor == "pytorch":
+    if service_config.predictor == "pytorch":
         # import the prepare function from the step utils
         from zenml.integrations.kserve.steps.kserve_step_utils import (
             prepare_torch_service_config,
@@ -295,7 +245,8 @@ def kserve_model_deployer_step(
         service_config = prepare_torch_service_config(
             model_uri=model.uri,
             output_artifact_uri=context.get_output_artifact_uri(),
-            params=params,
+            service_config=service_config,
+            torch_serve_parameters=torch_serve_parameters,
         )
     else:
         # import the prepare function from the step utils
@@ -307,12 +258,12 @@ def kserve_model_deployer_step(
         service_config = prepare_service_config(
             model_uri=model.uri,
             output_artifact_uri=context.get_output_artifact_uri(),
-            params=params,
+            service_config=service_config,
         )
     service = cast(
         KServeDeploymentService,
         model_deployer.deploy_model(
-            service_config, replace=True, timeout=params.timeout
+            service_config, replace=True, timeout=timeout
         ),
     )
 
@@ -327,36 +278,38 @@ def kserve_model_deployer_step(
 
 @step(enable_cache=False, extra={KSERVE_CUSTOM_DEPLOYMENT: True})
 def kserve_custom_model_deployer_step(
-    deploy_decision: bool,
-    params: KServeDeployerStepParameters,
     context: StepContext,
     model: UnmaterializedArtifact,
+    service_config: KServeDeploymentConfig,
+    predict_function: str,
+    deploy_decision: bool = True,
+    timeout: int = DEFAULT_KSERVE_DEPLOYMENT_START_STOP_TIMEOUT,
 ) -> KServeDeploymentService:
-    """KServe custom model deployer pipeline step.
-
-    This step can be used in a pipeline to implement the
-    process required to deploy a custom model with KServe.
+    """KServe custom model deployer step.
 
     Args:
-        deploy_decision: whether to deploy the model or not
-        params: parameters for the deployer step
-        model: the model artifact to deploy
         context: the step context
+        model: the model artifact to deploy
+        predict_function: Path to Python file containing predict function.
+        service_config: KServe deployment service configuration.
+        deploy_decision: whether to deploy the model or not
+        timeout: Timeout for model deployment.
 
     Raises:
-        ValueError: if the custom deployer parameters is not defined
+        ValueError: if predict function path is not valid
+        TypeError: if predict function path is not a callable function
         DoesNotExistException: if no active stack is found
-
 
     Returns:
         KServe deployment service
     """
-    # verify that a custom deployer is defined
-    if not params.custom_deploy_parameters:
-        raise ValueError(
-            "Custom deploy parameter which contains the path of the",
-            "custom predict function is required for custom model deployment.",
-        )
+    # Verify that the predict function is valid
+    try:
+        loaded_predict_function = source_utils.load(predict_function)
+    except AttributeError:
+        raise ValueError("Predict function can't be found.")
+    if not callable(loaded_predict_function):
+        raise TypeError("Predict function must be callable.")
 
     # get the active model deployer
     model_deployer = cast(
@@ -370,16 +323,16 @@ def kserve_custom_model_deployer_step(
     step_name = step_env.step_name
 
     # update the step configuration with the real pipeline runtime information
-    params.service_config.pipeline_name = pipeline_name
-    params.service_config.run_name = run_name
-    params.service_config.pipeline_step_name = step_name
+    service_config.pipeline_name = pipeline_name
+    service_config.run_name = run_name
+    service_config.pipeline_step_name = step_name
 
     # fetch existing services with same pipeline name, step name and
     # model name
     existing_services = model_deployer.find_model_server(
         pipeline_name=pipeline_name,
         pipeline_step_name=step_name,
-        model_name=params.service_config.model_name,
+        model_name=service_config.model_name,
     )
 
     # even when the deploy decision is negative if an existing model server
@@ -390,14 +343,14 @@ def kserve_custom_model_deployer_step(
             f"Skipping model deployment because the model quality does not "
             f"meet the criteria. Reusing the last model server deployed by step "
             f"'{step_name}' and pipeline '{pipeline_name}' for model "
-            f"'{params.service_config.model_name}'..."
+            f"'{service_config.model_name}'..."
         )
         service = cast(KServeDeploymentService, existing_services[0])
         # even when the deploy decision is negative, we still need to start
         # the previous model server if it is no longer running, to ensure that
         # a model server is available at all times
         if not service.is_running:
-            service.start(timeout=params.timeout)
+            service.start(timeout=timeout)
         return service
 
     # entrypoint for starting KServe server deployment for custom model
@@ -406,9 +359,9 @@ def kserve_custom_model_deployer_step(
         "-m",
         "zenml.integrations.kserve.custom_deployer.zenml_custom_model",
         "--model_name",
-        params.service_config.model_name,
+        service_config.model_name,
         "--predict_func",
-        params.custom_deploy_parameters.predict_function,
+        predict_function,
     ]
 
     # verify if there is an active stack before starting the service
@@ -436,7 +389,7 @@ def kserve_custom_model_deployer_step(
     )
 
     # prepare the service configuration for the deployment
-    service_config = params.service_config.copy()
+    service_config = service_config.copy()
     service_config.model_uri = served_model_uri
 
     # Prepare container config for custom model deployment
@@ -451,7 +404,7 @@ def kserve_custom_model_deployer_step(
     service = cast(
         KServeDeploymentService,
         model_deployer.deploy_model(
-            service_config, replace=True, timeout=params.timeout
+            service_config, replace=True, timeout=timeout
         ),
     )
 
