@@ -26,7 +26,9 @@ from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import FileResponse
 
 import zenml
+from zenml.analytics import source_context
 from zenml.constants import API, HEALTH
+from zenml.enums import SourceContextTypes
 from zenml.zen_server.exceptions import error_detail
 from zenml.zen_server.routers import (
     artifacts_endpoints,
@@ -102,6 +104,38 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.middleware("http")
+async def infer_source_context(request: Request, call_next: Any) -> Any:
+    """A middleware to track the source of an event.
+
+    It extracts the source context from the header of incoming requests
+    and applies it to the ZenML source context on the API side. This way, the
+    outgoing analytics request can append it as an additional field.
+
+    Args:
+        request: the incoming request object.
+        call_next: a function that will receive the request as a parameter and
+            pass it to the corresponding path operation.
+
+    Returns:
+        the response to the request.
+    """
+    try:
+        s = request.headers.get(
+            source_context.name,
+            default=SourceContextTypes.API.value,
+        )
+        source_context.set(SourceContextTypes(s))
+    except Exception as e:
+        logger.warning(
+            f"An unexpected error occurred while getting the source "
+            f"context: {e}"
+        )
+        source_context.set(SourceContextTypes.API)
+
+    return await call_next(request)
 
 
 @app.on_event("startup")
