@@ -170,9 +170,9 @@ def step(
     step_name = name or _func.__name__ if _func else ""
     logger.warning(
         f"The `@step` decorator that you used to define your {step_name} step "
-        "is deprecated. Check out our docs https://docs.zenml.io for "
-        "information on how to define steps in a more intuitive and "
-        "flexible way!"
+        "is deprecated. Check out our docs "
+        "https://docs.zenml.io/user-guide/advanced-guide/migrate-pipelines-steps "
+        "for information on how to migrate your steps to the new syntax."
     )
 
     def inner_decorator(func: F) -> Type[BaseStep]:
