@@ -34,6 +34,7 @@
   * [Hyper-parameter tuning](user-guide/advanced-guide/hyper-parameter-tuning.md)
   * [Scale compute to the cloud](user-guide/advanced-guide/scale-compute-to-the-cloud.md)
   * [Global settings of ZenML](user-guide/advanced-guide/global-settings-of-zenml.md)
+  * [Migrate your old pipelines and steps](user-guide/advanced-guide/migrate-pipelines-steps.md)
 * [📜 Component guide](user-guide/component-guide/component-guide.md)
   * [Integration overview](user-guide/component-guide/integration-overview.md)
   * [Orchestrators](user-guide/component-guide/orchestrators/orchestrators.md)
