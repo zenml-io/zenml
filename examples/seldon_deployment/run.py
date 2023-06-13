@@ -110,7 +110,7 @@ def main(
 
     model_name = "mnist"
     deployment_pipeline_name = "continuous_deployment_pipeline"
-    deployer_step_name = "model_deployer"
+    deployer_step_name = "seldon_model_deployer_step"
 
     if deploy:
         continuous_deployment_pipeline(
