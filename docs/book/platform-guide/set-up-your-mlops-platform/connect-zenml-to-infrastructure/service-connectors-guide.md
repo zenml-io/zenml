@@ -1160,3 +1160,6 @@ To get an idea of what a complete end-to-end journey looks like, from registerin
 * [the AWS Service Connector end-to-end examples](aws-service-connector.md#end-to-end-examples)
 * [the GCP Service Connector end-to-end examples](gcp-service-connector.md#end-to-end-examples)
 * [the Azure Service Connector end-to-end examples](azure-service-connector.md#end-to-end-examples)
+
+<!-- For scarf -->
+<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>

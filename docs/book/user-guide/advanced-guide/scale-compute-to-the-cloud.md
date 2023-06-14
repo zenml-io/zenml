@@ -76,3 +76,6 @@ The core cloud operators offer prebuilt Docker images that fit with their hardwa
 * [Azure](https://learn.microsoft.com/en-us/azure/machine-learning/concept-prebuilt-docker-images-inference)
 
 Not all of these images are available on DockerHub, so ensure that the orchestrator environment your pipeline runs in has sufficient permissions to pull images from registries if you are using one of those.
+
+<!-- For scarf -->
+<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>

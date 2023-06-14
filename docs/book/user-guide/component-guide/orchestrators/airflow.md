@@ -265,3 +265,6 @@ found [here](https://github.com/zenml-io/zenml/tree/main/examples/airflow\_orche
 For more information and a full list of configurable attributes of the Airflow orchestrator, check out
 the [API Docs](https://apidocs.zenml.io/latest/api\_docs/integration\_code\_docs/integrations-airflow/#zenml.integrations.airflow.orchestrators.airflow\_orchestrator.AirflowOrchestrator)
 .
+
+<!-- For scarf -->
+<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
