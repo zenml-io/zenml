@@ -41,11 +41,6 @@ from zenml.constants import (
     KUBERNETES_CLUSTER_RESOURCE_TYPE,
 )
 from zenml.exceptions import AuthorizationException
-from zenml.integrations.kubernetes.service_connectors.kubernetes_service_connector import (
-    KubernetesAuthenticationMethods,
-    KubernetesServiceConnector,
-    KubernetesTokenConfig,
-)
 from zenml.logger import get_logger
 from zenml.models import (
     AuthenticationMethodModel,
@@ -1960,6 +1955,13 @@ class AWSServiceConnector(ServiceConnector):
 
             # Create a client-side Kubernetes connector instance with the
             # temporary Kubernetes credentials
+            # Import libraries only when needed
+            from zenml.integrations.kubernetes.service_connectors.kubernetes_service_connector import (
+                KubernetesAuthenticationMethods,
+                KubernetesServiceConnector,
+                KubernetesTokenConfig,
+            )
+
             return KubernetesServiceConnector(
                 id=self.id,
                 name=connector_name,
