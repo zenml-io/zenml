@@ -55,9 +55,9 @@ If you want to run your own code with custom dependencies in the sandbox environ
 
 #### Path 1: Register a new public container registry and use it in your stack
 
-The sandbox provides a pre-registered stack that utilizes ZenML's public container registry. This allows you to execute pipelines using the provided example code and dependencies, eliminating the need to build and push Docker images to a container registry on your own. However, if you wish to run your own code with custom dependencies, you must register a new stack that utilizes a public container registry where you have `write` access.
+The sandbox is a pre-configured stack that connects to and uses ZenML's public container registry. This allows you to execute pipelines using the provided example code and dependencies, eliminating the need to build and push Docker images to a container registry on your own. However, if you wish to run your own code with custom dependencies, you must register a new stack that uses a public container registry where you have `write` access.
 
-Let's take the dockerhub registry as an example. To proceed, create a dockerhub account and establish a new repository. Next, create a new stack component that utilizes this container registry. You can refer to the [container registry stack component guide](../component-guide/container-registries/container-registries.md) for detailed instructions.
+Let's take [the Docker Hub registry](https://hub.docker.com/) as an example. To proceed, create a Docker Hub account and establish a new repository. Next, create a new stack component that uses this container registry. You can refer to the [container registry stack component guide](../component-guide/container-registries/container-registries.md) for detailed instructions.
 
 Once the stack component is created, you can register a new stack that incorporates this component. Execute the following command:
 
@@ -71,11 +71,11 @@ zenml stack register my_stack \
   --set
 ```
 
-Replace <MY_CONTAINER_REGISTRY> with the specific name of your container registry stack
+Replace `<MY_CONTAINER_REGISTRY>` with the specific name of the container registry used in your stack
 
-#### Path 2: register a new code repository and reuse the builds from the other code repository
+#### Path 2: Register a new code repository and reuse the builds from the other code repository
 
-With ZenML, you have the flexibility to register and utilize multiple code repositories. This means that you can register a new code repository containing your own code and leverage the existing builds from the example code repository to execute your code without the need to independently build and push Docker images to a container registry.
+With ZenML, you have the flexibility to register and use multiple code repositories. This means that you can register a new code repository containing your own code and leverage the existing builds from the example code repository to execute your code without the need to independently build and push Docker images to a container registry.
 
 To achieve this, follow the steps outlined below:
 
@@ -85,10 +85,10 @@ To achieve this, follow the steps outlined below:
 
 3. Register the new code repository with ZenML by following [code repository guide](../component-guide/code-repositories/code-repositories.md).
 
-4. Reuse the builds from the example code repository to execute your own code using the [reuse builds guide](containerize-your-pipeline.md#reuse-docker-image-builds-from-previous-runs).
+4. Reuse the builds from the example code repository to execute your own code using the [guide to build reuse](containerize-your-pipeline.md#reuse-docker-image-builds-from-previous-runs).
 
 {% hint style="warning" %}
-Please note that the second approach will only work if you are utilizing the same dependencies as the example code. If you are using different dependencies, such as a different framework or stack components, you will need to build and push your own Docker images to a container registry. In such cases, please follow the first approach.
+Please note that the second path will only work if you are using the same dependencies as the example code. If you are using different dependencies, such as a different framework or stack components, you will need to build and push your own Docker images to a container registry as described in Path 1.
 {% endhint %}
 
 ## What to do when your sandbox runs out?

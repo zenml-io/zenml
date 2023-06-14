@@ -68,9 +68,9 @@ python run.py
 ```
 
 {% hint style="warning" %}
-To ensure a seamless sandbox experience, we have included a [code repository](https://docs.zenml.io/user-guide/advanced-guide/connect-your-git-repository) in each sandbox. This repository will track the changes made to the pipelines you run. Therefore, we recommend avoiding any modifications to the pipelines you intend to execute, as doing so will render the use of the pre-built docker images invalid. If the pipeline triggers the creation of a new docker image, it indicates that you have local changes that conflict with the pre-built images. You can use the git status command to check for any local changes.
+To ensure a seamless sandbox experience, we have included a [code repository](https://docs.zenml.io/user-guide/advanced-guide/connect-your-git-repository) in each sandbox. This repository will track the changes made to the pipelines you run. Therefore, we recommend that you don't change the pipelines you intend to execute, as doing so will render the use of the pre-built docker images invalid. If the pipeline triggers the creation of a new docker image, it indicates that you have local changes that conflict with the pre-built images. You can use the `git status` command to check for any local changes.
 
-If you want to make changes to the pipelines, please follow the instructions in the sandbox advanced guide [Run pipelines with custom dependencies](https://docs.zenml.io/user-guide/advanced-guide/sandbox#run-pipelines-with-custom-dependencies)
+If you want to make changes to the pipelines, please follow the advanced instructions for sandbox use [here](https://docs.zenml.io/user-guide/advanced-guide/sandbox#run-pipelines-with-custom-dependencies).
 {% endhint %}
 
 After you have run the pipelines, you can open the ZenML dashboard to see their status:
