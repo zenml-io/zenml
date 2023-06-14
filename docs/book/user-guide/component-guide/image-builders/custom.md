@@ -133,3 +133,6 @@ The `BaseImageBuilder` abstraction uses the `build_context_class` to provide a c
 context. In case your custom image builder requires a different build context than the default Docker build context, you
 can subclass the `BuildContext` class to customize the structure of your build context. In your image builder
 implementation, you can then overwrite the `build_context_class` property to specify your build context subclass.
+
+<!-- For scarf -->
+<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>

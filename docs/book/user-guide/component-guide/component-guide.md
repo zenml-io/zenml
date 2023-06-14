@@ -38,3 +38,6 @@ component in the MLOps process:
 Each pipeline run that you execute with ZenML will require a **stack** and each **stack** will be required to include at
 least an orchestrator and an artifact store. Apart from these two, the other components are optional and to be added as
 your pipeline evolves in MLOps maturity.
+
+<!-- For scarf -->
+<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>

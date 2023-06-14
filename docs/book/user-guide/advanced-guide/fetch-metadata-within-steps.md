@@ -113,3 +113,6 @@ def my_step(...):
 {% hint style="info" %}
 In order to explore all possible operations that can be performed via the `Environment`, please consult the API docs section on [Environment](https://apidocs.zenml.io/latest/core_code_docs/core-environment/#zenml.environment.Environment).
 {% endhint %}
+
+<!-- For scarf -->
+<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
