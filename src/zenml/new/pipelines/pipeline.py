@@ -680,7 +680,7 @@ class Pipeline:
                     # Log the dashboard URL
                     dashboard_utils.print_run_url(
                         run_name=deployment.run_name_template,
-                        pipeline_id=runs[0].id,
+                        pipeline_id=runs[0].pipeline.id,
                     )
                 else:
                     logger.warning(
