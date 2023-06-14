@@ -42,7 +42,7 @@ class SlackAlerterPayload(BaseModel):
     stack_name: Optional[str] = None
 
 
-class SlackAlerterParameters(BaseAlerterStepParameters):
+class SlackAlerterParameters(BaseModel):
     """Slack alerter parameters."""
 
     # The ID of the Slack channel to use for communication.
@@ -70,7 +70,7 @@ class SlackAlerter(BaseAlerter):
         return cast(SlackAlerterConfig, self._config)
 
     def _get_channel_id(
-        self, params: Optional[BaseAlerterStepParameters] = None
+        self, params: Optional[SlackAlerterParameters] = None
     ) -> str:
         """Get the Slack channel ID to be used by post/ask.
 
@@ -143,7 +143,7 @@ class SlackAlerter(BaseAlerter):
         return DEFAULT_DISAPPROVE_MSG_OPTIONS
 
     def _create_blocks(
-        self, message: str, params: Optional[BaseAlerterStepParameters]
+        self, message: str, params: Optional[SlackAlerterParameters]
     ) -> List[Dict]:  # type: ignore
         """Helper function to create slack blocks.
 
@@ -196,7 +196,7 @@ class SlackAlerter(BaseAlerter):
         return []
 
     def post(
-        self, message: str, params: Optional[BaseAlerterStepParameters] = None
+        self, message: str, params: Optional[SlackAlerterParameters] = None
     ) -> bool:
         """Post a message to a Slack channel.
 
@@ -221,7 +221,7 @@ class SlackAlerter(BaseAlerter):
             return False
 
     def ask(
-        self, message: str, params: Optional[BaseAlerterStepParameters] = None
+        self, message: str, params: Optional[SlackAlerterParameters] = None
     ) -> bool:
         """Post a message to a Slack channel and wait for approval.
 

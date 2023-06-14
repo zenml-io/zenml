@@ -19,15 +19,10 @@ from typing import Optional, Type, cast
 from zenml.enums import StackComponentType
 from zenml.stack import Flavor, StackComponent
 from zenml.stack.stack_component import StackComponentConfig
-from zenml.steps import BaseParameters
 
 
 class BaseAlerterConfig(StackComponentConfig):
     """Base config for alerters."""
-
-
-class BaseAlerterStepParameters(BaseParameters):
-    """Step parameters definition for all alerters."""
 
 
 class BaseAlerter(StackComponent, ABC):
