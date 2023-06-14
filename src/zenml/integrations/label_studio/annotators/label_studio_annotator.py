@@ -28,7 +28,6 @@ from zenml.integrations.label_studio.flavors.label_studio_annotator_flavor impor
     LabelStudioAnnotatorConfig,
 )
 from zenml.integrations.label_studio.steps.label_studio_standard_steps import (
-    LabelStudioDatasetRegistrationParameters,
     LabelStudioDatasetSyncParameters,
 )
 from zenml.io import fileio
@@ -317,23 +316,25 @@ class LabelStudioAnnotator(BaseAnnotator, AuthenticationMixin):
 
     def register_dataset_for_annotation(
         self,
-        params: LabelStudioDatasetRegistrationParameters,
+        label_config: str,
+        dataset_name: str,
     ) -> Any:
         """Registers a dataset for annotation.
 
         Args:
-            params: Parameters for the dataset.
+            label_config: The label config to use for the annotation interface.
+            dataset_name: Name of the dataset to register.
 
         Returns:
             A Label Studio Project object.
         """
-        project_id = self.get_id_from_name(params.dataset_name)
+        project_id = self.get_id_from_name(dataset_name)
         if project_id:
             dataset = self._get_client().get_project(project_id)
         else:
             dataset = self.add_dataset(
-                dataset_name=params.dataset_name,
-                label_config=params.label_config,
+                dataset_name=dataset_name,
+                label_config=label_config,
             )
 
         return dataset

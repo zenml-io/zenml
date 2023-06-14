@@ -14,20 +14,15 @@
 from zenml.integrations.label_studio.label_config_generators import (
     generate_image_classification_label_config,
 )
-from zenml.integrations.label_studio.steps import (
-    LabelStudioDatasetRegistrationParameters,
-    get_or_create_dataset,
-)
+from zenml.integrations.label_studio.steps import get_or_create_dataset
 
 LABELS = ["aria", "not_aria"]
 
 label_config, _ = generate_image_classification_label_config(LABELS)
 
-label_studio_registration_params = LabelStudioDatasetRegistrationParameters(
-    label_config=label_config,
-    dataset_name="aria_detector",
-)
-
-get_or_create_the_dataset = get_or_create_dataset(
-    label_studio_registration_params
+get_or_create_the_dataset = get_or_create_dataset.with_options(
+    parameters=dict(
+        label_config=label_config,
+        dataset_name="aria_detector",
+    )
 )

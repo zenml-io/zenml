@@ -16,6 +16,9 @@
 from typing import Any, Dict, List, Optional, cast
 from urllib.parse import urlparse
 
+from pydantic import BaseModel
+
+from zenml import step
 from zenml.exceptions import StackComponentInterfaceError
 from zenml.integrations.label_studio.label_config_generators import (
     TASK_TO_FILENAME_REFERENCE_MAPPING,
@@ -24,24 +27,12 @@ from zenml.integrations.label_studio.label_studio_utils import (
     convert_pred_filenames_to_task_ids,
 )
 from zenml.logger import get_logger
-from zenml.steps import BaseParameters, StepContext, step
+from zenml.steps import StepContext
 
 logger = get_logger(__name__)
 
 
-class LabelStudioDatasetRegistrationParameters(BaseParameters):
-    """Step parameters when registering a dataset with Label Studio.
-
-    Attributes:
-        label_config: The label config to use for the annotation interface.
-        dataset_name: Name of the dataset to register.
-    """
-
-    label_config: str
-    dataset_name: str
-
-
-class LabelStudioDatasetSyncParameters(BaseParameters):
+class LabelStudioDatasetSyncParameters(BaseModel):
     """Step parameters when syncing data to Label Studio.
 
     Attributes:
@@ -85,25 +76,27 @@ class LabelStudioDatasetSyncParameters(BaseParameters):
     description: Optional[str] = ""
 
     # credentials specific to the main cloud providers
-    azure_account_name: Optional[str]
-    azure_account_key: Optional[str]
-    google_application_credentials: Optional[str]
-    aws_access_key_id: Optional[str]
-    aws_secret_access_key: Optional[str]
-    aws_session_token: Optional[str]
-    s3_region_name: Optional[str]
-    s3_endpoint: Optional[str]
+    azure_account_name: Optional[str] = None
+    azure_account_key: Optional[str] = None
+    google_application_credentials: Optional[str] = None
+    aws_access_key_id: Optional[str] = None
+    aws_secret_access_key: Optional[str] = None
+    aws_session_token: Optional[str] = None
+    s3_region_name: Optional[str] = None
+    s3_endpoint: Optional[str] = None
 
 
 @step(enable_cache=False)
 def get_or_create_dataset(
-    params: LabelStudioDatasetRegistrationParameters,
+    label_config: str,
+    dataset_name: str,
     context: StepContext,
 ) -> str:
     """Gets preexisting dataset or creates a new one.
 
     Args:
-        params: Step parameters.
+        label_config: The label config to use for the annotation interface.
+        dataset_name: Name of the dataset to register.
         context: Step context.
 
     Returns:
@@ -126,10 +119,13 @@ def get_or_create_dataset(
 
     if annotator and annotator._connection_available():
         for dataset in annotator.get_datasets():
-            if dataset.get_params()["title"] == params.dataset_name:
+            if dataset.get_params()["title"] == dataset_name:
                 return cast(str, dataset.get_params()["title"])
 
-        dataset = annotator.register_dataset_for_annotation(params)
+        dataset = annotator.register_dataset_for_annotation(
+            label_config=label_config,
+            dataset_name=dataset_name,
+        )
         return cast(str, dataset.get_params()["title"])
 
     raise StackComponentInterfaceError("No active annotator.")
