@@ -31,6 +31,8 @@ In this case, ZenML has an integration with `sklearn` so you can use the ZenML C
 Sometimes a step will have multiple outputs. In order to give each output a unique name, use the `Output()` annotation. Here we load an open-source dataset and split it into a train and a test dataset.
 
 ```python
+import logging
+
 @step
 def training_data_loader() -> Output(
     X_train=pd.DataFrame,
@@ -39,13 +41,19 @@ def training_data_loader() -> Output(
     y_test=pd.Series,
 ):
     """Load the iris dataset as a tuple of Pandas DataFrame / Series."""
+    logging.info("Loading iris...")
     iris = load_iris(as_frame=True)
+    logging.info("Splitting train and test...")
     X_train, X_test, y_train, y_test = train_test_split(
         iris.data, iris.target, test_size=0.2, shuffle=True, random_state=42
     )
     return X_train, X_test, y_train, y_test
 
 ```
+
+{% hint style="info" %}
+ZenML records the root python logging handler's output into the artifact store as a side-effect of running a step. Therefore, when writing steps, use the `logging` module to record logs, to ensure that these logs then show up in the ZenML dashboard.
+{% endhint %}
 
 #### Parametrizing a step
 
@@ -206,3 +214,6 @@ if __name__ == "__main__":
 ```
 
 </details>
+
+<!-- For scarf -->
+<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>

@@ -171,3 +171,6 @@ classification, and OCR. See the `integrations.label_studio.label_config_generat
 
 A concrete example of using the Label Studio annotator can be
 found [here](https://github.com/zenml-io/zenml/tree/develop/examples/label\_studio\_annotation).
+
+<!-- For scarf -->
+<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>

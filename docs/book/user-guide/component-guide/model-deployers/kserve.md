@@ -394,3 +394,6 @@ the [custom model class](https://apidocs.zenml.io/0.13.0/api\_docs/integrations/
 
 The built-in KServe custom deployment step responsible for packaging, preparing, and deploying to KServe can be
 found [here](https://apidocs.zenml.io/0.13.0/api\_docs/integrations/#zenml.integrations.kserve.steps.kserve\_deployer.kserve\_model\_deployer\_step)
+
+<!-- For scarf -->
+<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>

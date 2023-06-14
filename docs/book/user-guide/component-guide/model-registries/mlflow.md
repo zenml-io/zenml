@@ -132,3 +132,6 @@ the [API docs](https://apidocs.zenml.io/latest/integration\_code\_docs/integrati
 to see more about the interface and implementation. You can
 also [check out our examples page](https://github.com/zenml-io/zenml/tree/main/examples/mlflow\_registry) for a working
 example that uses the MLflow Model Registry.
+
+<!-- For scarf -->
+<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>

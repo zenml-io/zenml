@@ -57,7 +57,7 @@ def my_pipeline(...):
 ```
 
 {% hint style="info" %}
-Note, that **step-level** defined hooks take **precedence** over **pipeline-leve**l defined hooks.
+Note, that **step-level** defined hooks take **precedence** over **pipeline-level** defined hooks.
 {% endhint %}
 
 ## Accessing step information inside a hook
@@ -138,3 +138,6 @@ If you had set up a Slack alerter as your alerter, for example, then you would s
 ![OpenAI ChatGPT Failure Hook](/docs/book/.gitbook/assets/failure_alerter.png)
 
 You can use the suggestions as input that can help you fix whatever is going wrong in your code. If you have GPT-4 enabled for your account, you can use the `openai_gpt4_alerter_failure_hook` hook instead (imported from the same module).
+
+<!-- For scarf -->
+<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>

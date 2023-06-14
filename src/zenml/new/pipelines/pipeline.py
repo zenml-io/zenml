@@ -159,6 +159,7 @@ class Pipeline:
         enable_cache: Optional[bool] = None,
         enable_artifact_metadata: Optional[bool] = None,
         enable_artifact_visualization: Optional[bool] = None,
+        enable_step_logs: Optional[bool] = None,
         settings: Optional[Mapping[str, "SettingsOrDict"]] = None,
         extra: Optional[Dict[str, Any]] = None,
         on_failure: Optional["HookSpecification"] = None,
@@ -174,6 +175,7 @@ class Pipeline:
                 this pipeline.
             enable_artifact_visualization: If artifact visualization should be
                 enabled for this pipeline.
+            enable_step_logs: If step logs should be enabled for this pipeline.
             settings: settings for this pipeline.
             extra: Extra configurations for this pipeline.
             on_failure: Callback function in event of failure of the step. Can
@@ -195,6 +197,7 @@ class Pipeline:
             enable_cache=enable_cache,
             enable_artifact_metadata=enable_artifact_metadata,
             enable_artifact_visualization=enable_artifact_visualization,
+            enable_step_logs=enable_step_logs,
             settings=settings,
             extra=extra,
             on_failure=on_failure,
@@ -287,6 +290,7 @@ class Pipeline:
         enable_cache: Optional[bool] = None,
         enable_artifact_metadata: Optional[bool] = None,
         enable_artifact_visualization: Optional[bool] = None,
+        enable_step_logs: Optional[bool] = None,
         settings: Optional[Mapping[str, "SettingsOrDict"]] = None,
         extra: Optional[Dict[str, Any]] = None,
         on_failure: Optional["HookSpecification"] = None,
@@ -311,6 +315,7 @@ class Pipeline:
                 this pipeline.
             enable_artifact_visualization: If artifact visualization should be
                 enabled for this pipeline.
+            enable_step_logs: If step logs should be enabled for this pipeline.
             settings: settings for this pipeline.
             extra: Extra configurations for this pipeline.
             on_failure: Callback function in event of failure of the step. Can
@@ -345,6 +350,7 @@ class Pipeline:
                 "enable_cache": enable_cache,
                 "enable_artifact_metadata": enable_artifact_metadata,
                 "enable_artifact_visualization": enable_artifact_visualization,
+                "enable_step_logs": enable_step_logs,
                 "settings": settings,
                 "extra": extra,
                 "failure_hook_source": failure_hook_source,
@@ -475,6 +481,7 @@ class Pipeline:
         enable_cache: Optional[bool] = None,
         enable_artifact_metadata: Optional[bool] = None,
         enable_artifact_visualization: Optional[bool] = None,
+        enable_step_logs: Optional[bool] = None,
         schedule: Optional[Schedule] = None,
         build: Union[str, "UUID", "PipelineBuildBaseModel", None] = None,
         settings: Optional[Mapping[str, "SettingsOrDict"]] = None,
@@ -495,6 +502,7 @@ class Pipeline:
                 for this pipeline run.
             enable_artifact_visualization: If artifact visualization should be
                 enabled for this pipeline run.
+            enable_step_logs: If step logs should be enabled for this pipeline.
             schedule: Optional schedule to use for the run.
             build: Optional build to use for the run.
             settings: Settings for this pipeline run.
@@ -532,6 +540,7 @@ class Pipeline:
                 enable_cache=enable_cache,
                 enable_artifact_metadata=enable_artifact_metadata,
                 enable_artifact_visualization=enable_artifact_visualization,
+                enable_step_logs=enable_step_logs,
                 steps=step_configurations,
                 settings=settings,
                 schedule=schedule,
@@ -660,11 +669,27 @@ class Pipeline:
             finally:
                 constants.SHOULD_PREVENT_PIPELINE_EXECUTION = False
 
-            # Log the dashboard URL
-            dashboard_utils.print_run_url(
-                run_name=deployment.run_name_template,
-                pipeline_id=pipeline_id,
-            )
+            if deployment_model:
+                runs = Client().list_runs(
+                    deployment_id=deployment_model.id,
+                    sort_by="asc:start_time",
+                    size=1,
+                )
+
+                if runs.items:
+                    # Log the dashboard URL
+                    dashboard_utils.print_run_url(
+                        run_name=deployment.run_name_template,
+                        pipeline_id=runs[0].id,
+                    )
+                else:
+                    logger.warning(
+                        f"Your orchestrator '{stack.orchestrator.name}' is "
+                        f"running remotely. Note that the pipeline run will "
+                        f"only show up on the ZenML dashboard once the first "
+                        f"step has started executing on the remote "
+                        f"infrastructure.",
+                    )
 
     get_runs = GetRunsDescriptor()
 
