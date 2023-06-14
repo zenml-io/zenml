@@ -97,3 +97,6 @@ Downgrading the server to an older version is not supported and can lead to unex
 {% hint style="info" %}
 The version of the Python client that connects to the server should be kept at the same version as the server.
 {% endhint %}
+
+<!-- For scarf -->
+<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>

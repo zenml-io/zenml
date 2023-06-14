@@ -226,6 +226,7 @@ class StepLauncher:
             if zenml_handler:
                 # Still write the logs to the artifact store regardless if we fail or not
                 zenml_handler.flush()
+                zenml_handler.close()
                 root_logger.removeHandler(zenml_handler)
 
     def _get_step_docstring_and_source_code(self) -> Tuple[Optional[str], str]:

@@ -427,3 +427,6 @@ if __name__ == "__main__":
 ```
 
 ![Deepchecks Visualization Example](<../../../../../examples/deepchecks\_data\_validation/assets/drift\_visualization (1).png>)
+
+<!-- For scarf -->
+<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>

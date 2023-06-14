@@ -64,3 +64,6 @@ or specific use cases and someone from the core team will respond.
 ZenML is distributed under the terms of the Apache License Version 2.0. A complete version of the license is available
 in the [LICENSE.md](https://github.com/zenml-io/zenml/blob/main/LICENSE) in this repository. Any contribution made to
 this project will be licensed under the Apache License Version 2.0.
+
+<!-- For scarf -->
+<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>

@@ -73,3 +73,6 @@ as described [here](/docs/book/user-guide/advanced-guide/configure-steps-pipelin
 
 If your orchestrator of choice or the underlying hardware doesn't support this, you can also take a look
 at [step operators](../step-operators/step-operators.md).
+
+<!-- For scarf -->
+<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>

@@ -40,25 +40,31 @@ You might nevertheless be interested in using the resources provisioned in the S
 
 If you have code that uses the same dependencies as the ones provided in the examples docs, you can simply update the example pipeline code (or even add new pipelines) by pushing to a git repository, and reusing existing [environment builds](containerize-your-pipeline.md#reuse-docker-image-builds-from-previous-runs) of the example pipelines.
 
-Of course, in order to be able to do that, you need to be able to push to the code repository. You can either:
+Of course, in order to be able to do that, you need to be able to push to the code repository. You can do this by following these steps:
 
-* Fork the zenml repository, so that the examples directory is within your code, and you can edit it in your fork, or
-* Create a new code repository with a new token that allows you to push. You can then copy the examples code into your new code repository, and edit it.
+1. Fork an existing Github repository or create a new one.
+
+2. Push your code to the repository. Alternatively, you can copy the example code from the ZenML repository to your new repository and make the necessary modifications.
+
+3. Register the new code repository with ZenML by following [code repository guide](../component-guide/code-repositories/code-repositories.md).
+
+4. Reuse the builds from the example code repository to execute your own code using the [guide to build reuse](containerize-your-pipeline.md#reuse-docker-image-builds-from-previous-runs).
 
 Read more about how to connect a git repository to ZenML [here](connect-your-git-repository.md).
 
 After that is done, you can change the code and run the pipeline with your chosen execution environment build. Learn more about reusing execution environments [here](containerize-your-pipeline.md#reuse-docker-image-builds-from-previous-runs).
 
+{% hint style="warning" %}
+Please note that this will only work if you are using the same dependencies as the example code. If you are using different dependencies, such as a different framework or stack components, you will need to build and push your own Docker images to a container registry as described in the next section.
+{% endhint %}
+
 ### Run pipelines with custom dependencies
 
-If you have code with custom dependencies than the ones in the sandbox examples,
-you need to copy the stack provided in the sandbox and swap the container
-registry with a public container registry that you have `write` access to. The
-[container registry stack component
-pages](../component-guide/container-registries/container-registries.md) talk
-more about how to do this.
+The sandbox is a pre-configured stack that connects to and uses ZenML's public container registry. This allows you to execute pipelines using the provided example code and dependencies, eliminating the need to build and push Docker images to a container registry on your own. However, if you wish to run your own code with custom dependencies, you must register a new stack that uses a public container registry where you have `write` access and the repository is `publicly accessible` so that Kubeflow can pull the images.
 
-To register a new stack, you can execute the following:
+Let's take [the Docker Hub registry](https://hub.docker.com/) as an example. To proceed, create a Docker Hub account and establish a new repository. Next, create a new stack component that uses this container registry. You can refer to the [container registry stack component guide](../component-guide/container-registries/container-registries.md) for detailed instructions.
+
+Once the stack component is created, you can register a new stack that incorporates this component. Execute the following command:
 
 ```shell
 zenml stack register my_stack \
@@ -69,11 +75,13 @@ zenml stack register my_stack \
   -c <MY_CONTAINER_REGISTRY> \
   --set
 ```
-
-With the above stack, you can run whatever code you'd like without tying it to a container registry because ZenML will just build and push Docker images to your container registry from your local client.
+Replace `<MY_CONTAINER_REGISTRY>` with the specific name of the container registry used in your stack
 
 ## What to do when your sandbox runs out?
 
 The Sandbox will only run for 4 hours. After that, it will be deleted. If you want to continue to use ZenML in a cloud deployment you can either:
 
 <table data-view="cards"><thead><tr><th></th><th></th><th data-hidden data-card-target data-type="content-ref"></th></tr></thead><tbody><tr><td><mark style="color:purple;"><strong>Register a new Sandbox</strong></mark></td><td>Create and utilize a brand new Sandbox instance</td><td><a href="https://sandbox.zenml.io">https://sandbox.zenml.io</a></td></tr><tr><td><mark style="color:purple;"><strong>Extend your Sandbox time limit</strong></mark></td><td>Fill out a form to extend the time limit of your Sandbox instances</td><td><a href="https://zenml.io/extend-sandbox">https://zenml.io/extend-sandbox</a></td></tr><tr><td><mark style="color:purple;"><strong>Deploy your own cloud stack</strong></mark></td><td>Deploy and use a stack on a cloud environment</td><td><a href="../../platform-guide/set-up-your-mlops-platform/deploy-and-set-up-a-cloud-stack/deploy-a-stack-post-sandbox.md">deploy-a-stack-post-sandbox.md</a></td></tr></tbody></table>
+
+<!-- For scarf -->
+<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>

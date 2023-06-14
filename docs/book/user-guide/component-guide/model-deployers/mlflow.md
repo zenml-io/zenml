@@ -156,3 +156,6 @@ You can check the MLflow deployment example for more details.
 For more information and a full list of configurable attributes of the MLflow Model Deployer, check out
 the [API Docs](https://apidocs.zenml.io/latest/integration\_code\_docs/integrations-mlflow/#zenml.integrations.mlflow.model\_deployers)
 .
+
+<!-- For scarf -->
+<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>

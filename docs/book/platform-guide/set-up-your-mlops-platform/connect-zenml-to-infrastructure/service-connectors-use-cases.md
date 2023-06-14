@@ -36,3 +36,6 @@ The dynamic composition of skill sets and responsibilities within a machine lear
 On top of all that, we'll add avoiding vendor lock-in, not just because it's a neat thing to mention, but because Service Connectors really deliver it. By design, Service Connectors decouple the authentication mechanisms of cloud platforms from access to the standard services that they offer, such as Kubernetes clusters and container registries. This decoupling ensures that you can access these services independently of the underlying cloud provider and authentication schemes. Switching to another equivalent on-prem technology or cloud provider requires no changes to your ML pipeline code.
 
 Service Connectors, in combination with the other abstractions powering ZenML and represented as Stack Components, deliver the promise of fully portable, truly infrastructure-agnostic pipelines.
+
+<!-- For scarf -->
+<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>

@@ -33,6 +33,11 @@ from zenml.constants import (
     KUBERNETES_CLUSTER_RESOURCE_TYPE,
 )
 from zenml.exceptions import AuthorizationException
+from zenml.integrations.azure.flavors.azure_artifact_store_flavor import (
+    AZURE_CONNECTOR_TYPE,
+    AZURE_RESOURCE_TYPE,
+    BLOB_RESOURCE_TYPE,
+)
 from zenml.integrations.kubernetes.service_connectors.kubernetes_service_connector import (
     KubernetesAuthenticationMethods,
     KubernetesServiceConnector,
@@ -57,10 +62,6 @@ from zenml.utils.enum_utils import StrEnum
 
 logger = get_logger(__name__)
 
-
-AZURE_CONNECTOR_TYPE = "azure"
-AZURE_RESOURCE_TYPE = "azure-generic"
-BLOB_RESOURCE_TYPE = "blob-container"
 
 AZURE_MANAGEMENT_TOKEN_SCOPE = "https://management.azure.com/.default"
 AZURE_SESSION_TOKEN_DEFAULT_EXPIRATION_TIME = 60 * 60  # 1 hour

@@ -64,3 +64,6 @@ special [stack component](../starter-guide/understand-stacks.md), allowing users
 
 Note that even if you don't configure an image builder in your stack, ZenML still uses
 the [local image builder](../component-guide/image-builders/local.md) to retain consistency across all builds. In this case, the image builder environment is the same as the client environment.
+
+<!-- For scarf -->
+<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>

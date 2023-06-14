@@ -135,3 +135,6 @@ Once submitted, a wheel will be created and stored based on your plugin. This pr
 The status of the ZenML Hub service is being tracked live on [the ZenML status page](https://zenml.statuspage.io/). You can subscribe here to receive notifications about scheduled maintenance windows, unplanned downtime events, and more.
 
 <figure><img src="../../.gitbook/assets/statuspage.png" alt=""><figcaption><p>The ZenML public services status page</p></figcaption></figure>
+
+<!-- For scarf -->
+<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
