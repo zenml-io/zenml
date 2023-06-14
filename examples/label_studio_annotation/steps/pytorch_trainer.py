@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 import os
 import tempfile
-from typing import Dict, List
+from typing import Dict, List, Optional
 from urllib.parse import urlparse
 
 import numpy as np
@@ -24,6 +24,7 @@ from PIL import Image
 from steps.get_or_create_dataset import LABELS
 from torchvision import models, transforms
 
+from zenml import step
 from zenml.integrations.label_studio.label_studio_utils import (
     get_file_extension,
     is_azure_url,
@@ -32,14 +33,13 @@ from zenml.integrations.label_studio.label_studio_utils import (
 )
 from zenml.io import fileio
 from zenml.post_execution import get_pipeline
-from zenml.steps import BaseParameters, step
 from zenml.steps.step_context import StepContext
 from zenml.utils import io_utils
 
 LABEL_MAPPING = {label: idx for idx, label in enumerate(LABELS)}
 
 PIPELINE_NAME = "training_pipeline"
-PIPELINE_STEP_NAME = "model_trainer"
+PIPELINE_STEP_NAME = "pytorch_model_trainer"
 
 
 def train_model(
@@ -119,6 +119,8 @@ class CustomDataset:
                 url_scheme = "gs"
                 url_path = urlparse(image_url).path
                 file_url = f"{url_scheme}://{url_path}"
+            else:
+                file_url = image_url
             file_extension = get_file_extension(urlparse(image_url).path)
             path = os.path.join(temp_dir.name, f"{i}{file_extension}")
             io_utils.copy(file_url, path)
@@ -140,7 +142,7 @@ class CustomDataset:
         return len(self.images)
 
 
-def _find_last_successful_run(context: StepContext) -> int:
+def _find_last_successful_run() -> Optional[int]:
     """Get the index of the last successful run of this pipeline and step."""
     pipeline = get_pipeline(PIPELINE_NAME)
     if pipeline is not None:
@@ -153,20 +155,16 @@ def _find_last_successful_run(context: StepContext) -> int:
     return None
 
 
-def _load_last_model(context: StepContext) -> nn.Module:
+def _load_last_model() -> Optional[nn.Module]:
     """Return the most recently trained model from this pipeline, or None."""
-    idx = _find_last_successful_run(context=context)
+    idx = _find_last_successful_run()
     if idx is None:
         return None
     last_run = get_pipeline(PIPELINE_NAME).runs[idx]
     return last_run.get_step(PIPELINE_STEP_NAME).output.read()
 
 
-def _is_new_data_available(
-    image_urls: List[str],
-    labels: List[Dict[str, str]],
-    context: StepContext,
-) -> bool:
+def _is_new_data_available(image_urls: List[str]) -> bool:
     """Find whether new data is available since the last run."""
     # If there are no samples, nothing can be new.
     num_samples = len(image_urls)
@@ -174,7 +172,7 @@ def _is_new_data_available(
         return False
 
     # Otherwise, if there was no previous run, the data is for sure new.
-    idx = _find_last_successful_run(context=context)
+    idx = _find_last_successful_run()
     if idx is None:
         return True
 
@@ -201,31 +199,27 @@ def load_mobilenetv3_transforms():
     return transforms.Compose([transforms.ToTensor(), weights.transforms()])
 
 
-class PytorchModelTrainerParameters(BaseParameters):
-    batch_size = 1
-    num_epochs = 2
-    learning_rate = 5e-3
-    device = "cpu"
-    shuffle = True
-    num_workers = 1
-    seed = 42  # don't change: this seed ensures a good train/val split
-
-
 @step(enable_cache=False)
 def pytorch_model_trainer(
     image_urls: List[str],
     labels: List[Dict[str, str]],
-    params: PytorchModelTrainerParameters,
     context: StepContext,
+    batch_size=1,
+    num_epochs=2,
+    learning_rate=5e-3,
+    device="cpu",
+    shuffle=True,
+    num_workers=1,
+    seed=42,  # don't change: this seed ensures a good train/val split
 ) -> nn.Module:
     """ZenML step which finetunes or loads a pretrained mobilenetv3 model."""
     # Try to load a model from a previous run, otherwise use a pretrained net
-    model = _load_last_model(context=context)
+    model = _load_last_model()
     if model is None:
         model = load_pretrained_mobilenetv3()
 
     # If there is no new data, just return the model
-    if not _is_new_data_available(image_urls, labels, context):
+    if not _is_new_data_available(image_urls):
         return model
 
     artifact_store_path = context.stack.artifact_store.path
@@ -245,7 +239,7 @@ def pytorch_model_trainer(
     train_dataset, val_dataset = torch.utils.data.random_split(
         dataset=dataset,
         lengths=[train_size, val_size],
-        generator=torch.Generator().manual_seed(params.seed),
+        generator=torch.Generator().manual_seed(seed),
     )
     dataset_dict = {
         "train": train_dataset,
@@ -256,16 +250,16 @@ def pytorch_model_trainer(
     dataloaders_dict = {
         dataset_type: torch.utils.data.DataLoader(
             dataset,
-            batch_size=params.batch_size,
-            shuffle=params.shuffle,
-            num_workers=params.num_workers,
+            batch_size=batch_size,
+            shuffle=shuffle,
+            num_workers=num_workers,
         )
         for dataset_type, dataset in dataset_dict.items()
     }
 
     # Define optimizer
     optimizer_ft = optim.Adam(
-        params=model.classifier[-1].parameters(), lr=params.learning_rate
+        params=model.classifier[-1].parameters(), lr=learning_rate
     )
 
     # Define loss
@@ -277,7 +271,7 @@ def pytorch_model_trainer(
         dataloaders_dict,
         criterion,
         optimizer_ft,
-        num_epochs=params.num_epochs,
-        device=params.device,
+        num_epochs=num_epochs,
+        device=device,
     )
     return model
