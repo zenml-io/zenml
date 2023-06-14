@@ -250,3 +250,6 @@ secrets with other Secrets Manager instances connected to the same back-end doma
       backend and have the same `namespace` attribute value configured (see below). Use a namespace scope when you want
       to fine-tune the visibility of secrets across stacks and projects.
 * `namespace` is a scope namespace value to use with the namespace scope
+
+<!-- For scarf -->
+<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>

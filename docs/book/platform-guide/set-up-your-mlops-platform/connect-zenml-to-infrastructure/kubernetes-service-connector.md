@@ -126,3 +126,6 @@ The 'kube-auto' Kubernetes Service Connector connector was used to successfully 
 ## Stack Components use
 
 The Kubernetes Service Connector can be used in Orchestrator and Model Deployer stack component flavors that rely on Kubernetes clusters to manage their workloads. This allows Kubernetes container workloads to be managed without the need to configure and maintain explicit Kubernetes `kubectl` configuration contexts and credentials in the target environment and in the Stack Component.
+
+<!-- For scarf -->
+<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>

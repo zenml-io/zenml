@@ -133,3 +133,6 @@ If you want to inspect which roles have been assigned to which users, simply run
 * Permissions and roles only become relevant if you are running through
   a [deployed ZenML Server](https://docs.zenml.io/getting-started/deploying-zenml). In local settings with a direct
   connection to a SQLite Database user access is not limited/granted by roles.
+
+<!-- For scarf -->
+<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
