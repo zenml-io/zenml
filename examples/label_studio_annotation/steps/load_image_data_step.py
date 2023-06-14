@@ -15,31 +15,30 @@
 import glob
 import os
 from pathlib import Path
-from typing import Dict
+from typing import Dict, Optional
 
 from PIL import Image
 
+from zenml import step
 from zenml.integrations.pillow.materializers.pillow_image_materializer import (
     DEFAULT_IMAGE_FILENAME,
 )
-from zenml.steps import BaseParameters, Output, step
+from zenml.steps import Output
 from zenml.steps.step_context import StepContext
-
-
-class LoadImageDataParameters(BaseParameters):
-    base_path = str(
-        Path(__file__).parent.absolute().parent.absolute() / "data"
-    )
-    dir_name = "batch_1"
 
 
 @step(enable_cache=False)
 def load_image_data(
-    params: LoadImageDataParameters,
     context: StepContext,
+    base_path: Optional[str] = None,
+    dir_name: str = "batch_1",
 ) -> Output(images=Dict, uri=str):
     """Gets images from a cloud artifact store directory."""
-    image_dir_path = os.path.join(params.base_path, params.dir_name)
+    if base_path is None:
+        base_path = str(
+            Path(__file__).parent.absolute().parent.absolute() / "data"
+        )
+    image_dir_path = os.path.join(base_path, dir_name)
     image_files = glob.glob(f"{image_dir_path}/*.jpeg")
     uri = context.get_output_artifact_uri("images")
 
