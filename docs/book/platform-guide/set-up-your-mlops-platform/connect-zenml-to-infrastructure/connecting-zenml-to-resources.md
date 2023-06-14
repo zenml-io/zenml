@@ -433,3 +433,6 @@ These are some of the advantages of linking an S3 Artifact Store, or any Stack C
 </details>
 
 Of course, the stack component we just connected to the infrastructure is not really useful on its own. We need to _<mark style="color:purple;">make it part of a Stack, set the Stack as active, and finally run some pipelines on it</mark>_. But Service Connectors no longer play any visible role in this part, which is why they're so useful: they do all the heavy lifting in the background so you can focus on what matters.
+
+<!-- For scarf -->
+<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>

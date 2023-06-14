@@ -63,3 +63,6 @@ zenml stack update -c <NAME>
 For more information and a full list of configurable attributes of the GitHub container registry, check out
 the [API Docs](https://apidocs.zenml.io/latest/core\_code\_docs/core-container\_registries/#zenml.container\_registries.github\_container\_registry.GitHubContainerRegistry)
 .
+
+<!-- For scarf -->
+<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
