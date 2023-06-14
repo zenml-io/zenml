@@ -40,3 +40,6 @@ This will deploy an MLflow tracking server on your GCP account with the name `my
 ## Where to go from here?
 
 Once you have the server and stacks deployed, you can use them to run your pipelines. If you've done all this, now's probably also a good time to read [our 'Best Practices' guide](../../../user-guide/starter-guide/follow-best-practices.md) to get a sense of how to use ZenML in a production setting.
+
+<!-- For scarf -->
+<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>

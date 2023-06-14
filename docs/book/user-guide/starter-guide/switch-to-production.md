@@ -67,6 +67,12 @@ To run a pipeline in the sandbox, use the `python run.py` command. You can eithe
 python run.py
 ```
 
+{% hint style="warning" %}
+To ensure a seamless sandbox experience, we have included a [code repository](https://docs.zenml.io/user-guide/advanced-guide/connect-your-git-repository) in each sandbox. This repository will track the changes made to the pipelines you run. Therefore, we recommend that you don't change the pipelines you intend to execute, as doing so will render the use of the pre-built docker images invalid. If the pipeline triggers the creation of a new docker image, it indicates that you have local changes that conflict with the pre-built images. You can use the `git status` command to check for any local changes.
+
+If you want to make changes to the pipelines, please follow the advanced instructions for sandbox use [here](https://docs.zenml.io/user-guide/advanced-guide/sandbox#run-pipelines-with-custom-dependencies).
+{% endhint %}
+
 After you have run the pipelines, you can open the ZenML dashboard to see their status:
 
 ![Sandbox pipelines running on ZenML](/docs/book/.gitbook/assets/zenml_sandbox_zenml.png)
@@ -136,3 +142,6 @@ plane.
 **Q: Are there any model deployment options available in the ZenML Sandbox?**
 
 **A:** At the moment, there are no model deployment tools available in the MLOps Platform Sandbox. However, we are working on adding this feature in the future.
+
+<!-- For scarf -->
+<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>

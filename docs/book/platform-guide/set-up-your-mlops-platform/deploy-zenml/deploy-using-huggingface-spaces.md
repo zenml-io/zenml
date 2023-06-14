@@ -112,3 +112,6 @@ select the 'Factory reboot' option within the 'Settings' tab of the space. Note 
 within the space and so if you are not using a MySQL persistent database (as described above) you will lose any data
 contained within your ZenML deployment on the space. You can also configure the space to use an earlier version by
 updating the `Dockerfile`'s `FROM` import statement at the very top.
+
+<!-- For scarf -->
+<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>

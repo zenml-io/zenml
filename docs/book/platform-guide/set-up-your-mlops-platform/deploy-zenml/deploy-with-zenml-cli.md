@@ -335,3 +335,6 @@ Here's an architecture diagram that shows how the workflow looks like when you d
 ![Running zenml deploy](../../../.gitbook/assets/zenml\_deploy.png)
 
 The deploy CLI makes use of a "recipe" inside the `zenml-io/zenml` repository to deploy the server on the right cloud. Any configuration that you pass with the CLI, is sent to the recipe as input variables.
+
+<!-- For scarf -->
+<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
