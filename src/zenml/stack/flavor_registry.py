@@ -135,25 +135,31 @@ class FlavorRegistry:
             store: The instance of the zen_store to use
         """
         for name, integration in integration_registry.integrations.items():
-            integrated_flavors = integration.flavors()
-            for flavor in integrated_flavors:
-                flavor_request_model = flavor().to_model(
-                    integration=name,
-                    scoped_by_workspace=False,
-                    is_custom=False,
+            try:
+                integrated_flavors = integration.flavors()
+                for flavor in integrated_flavors:
+                    flavor_request_model = flavor().to_model(
+                        integration=name,
+                        scoped_by_workspace=False,
+                        is_custom=False,
+                    )
+                    existing_flavor = store.list_flavors(
+                        FlavorFilterModel(
+                            name=flavor_request_model.name,
+                            type=flavor_request_model.type,
+                        )
+                    )
+                    if len(existing_flavor) == 0:
+                        store.create_flavor(flavor_request_model)
+                    else:
+                        flavor_update_model = FlavorUpdateModel.parse_obj(
+                            flavor_request_model
+                        )
+                        store.update_flavor(
+                            existing_flavor[0].id, flavor_update_model
+                        )
+            except Exception as e:
+                logger.warning(
+                    f"Integration {name} failed to register flavors. "
+                    f"Error: {e}"
                 )
-                existing_flavor = store.list_flavors(
-                    FlavorFilterModel(
-                        name=flavor_request_model.name,
-                        type=flavor_request_model.type,
-                    )
-                )
-                if len(existing_flavor) == 0:
-                    store.create_flavor(flavor_request_model)
-                else:
-                    flavor_update_model = FlavorUpdateModel.parse_obj(
-                        flavor_request_model
-                    )
-                    store.update_flavor(
-                        existing_flavor[0].id, flavor_update_model
-                    )

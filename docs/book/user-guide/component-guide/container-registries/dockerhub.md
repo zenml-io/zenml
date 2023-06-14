@@ -77,3 +77,6 @@ docker login
 For more information and a full list of configurable attributes of the `dockerhub` container registry, check out
 the [API Docs](https://apidocs.zenml.io/latest/core\_code\_docs/core-container\_registries/#zenml.container\_registries.dockerhub\_container\_registry.DockerHubContainerRegistry)
 .
+
+<!-- For scarf -->
+<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>

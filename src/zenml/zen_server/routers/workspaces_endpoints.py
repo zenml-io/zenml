@@ -90,11 +90,6 @@ from zenml.zen_server.utils import (
     zen_store,
 )
 
-# This is a workaround to slowly deprecate the workspaces routes. This along with
-#  all the decorators using it, can be removed in a few releases.
-PROJECTS = "/projects"
-
-
 router = APIRouter(
     prefix=API + VERSION_1,
     tags=["workspaces"],
@@ -106,12 +101,6 @@ router = APIRouter(
     WORKSPACES,
     response_model=Page[WorkspaceResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
-)
-@router.get(
-    PROJECTS,
-    response_model=Page[WorkspaceResponseModel],
-    responses={401: error_response, 404: error_response, 422: error_response},
-    deprecated=True,
 )
 @handle_exceptions
 def list_workspaces(
@@ -139,12 +128,6 @@ def list_workspaces(
     response_model=WorkspaceResponseModel,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
-@router.post(
-    PROJECTS,
-    response_model=WorkspaceResponseModel,
-    responses={401: error_response, 409: error_response, 422: error_response},
-    deprecated=True,
-)
 @handle_exceptions
 def create_workspace(
     workspace: WorkspaceRequestModel,
@@ -168,12 +151,6 @@ def create_workspace(
     response_model=WorkspaceResponseModel,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@router.get(
-    PROJECTS + "/{workspace_name_or_id}",
-    response_model=WorkspaceResponseModel,
-    responses={401: error_response, 404: error_response, 422: error_response},
-    deprecated=True,
-)
 @handle_exceptions
 def get_workspace(
     workspace_name_or_id: Union[str, UUID],
@@ -196,12 +173,6 @@ def get_workspace(
     WORKSPACES + "/{workspace_name_or_id}",
     response_model=WorkspaceResponseModel,
     responses={401: error_response, 404: error_response, 422: error_response},
-)
-@router.put(
-    PROJECTS + "/{workspace_name_or_id}",
-    response_model=WorkspaceResponseModel,
-    responses={401: error_response, 404: error_response, 422: error_response},
-    deprecated=True,
 )
 @handle_exceptions
 def update_workspace(
@@ -230,11 +201,6 @@ def update_workspace(
     WORKSPACES + "/{workspace_name_or_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@router.delete(
-    PROJECTS + "/{workspace_name_or_id}",
-    responses={401: error_response, 404: error_response, 422: error_response},
-    deprecated=True,
-)
 @handle_exceptions
 def delete_workspace(
     workspace_name_or_id: Union[str, UUID],
@@ -252,12 +218,6 @@ def delete_workspace(
     WORKSPACES + "/{workspace_name_or_id}" + USER_ROLE_ASSIGNMENTS,
     response_model=Page[UserRoleAssignmentResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
-)
-@router.get(
-    PROJECTS + "/{workspace_name_or_id}" + USER_ROLE_ASSIGNMENTS,
-    response_model=Page[UserRoleAssignmentResponseModel],
-    responses={401: error_response, 404: error_response, 422: error_response},
-    deprecated=True,
 )
 @handle_exceptions
 def list_user_role_assignments_for_workspace(
@@ -289,12 +249,6 @@ def list_user_role_assignments_for_workspace(
     response_model=Page[TeamRoleAssignmentResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@router.get(
-    PROJECTS + "/{workspace_name_or_id}" + TEAM_ROLE_ASSIGNMENTS,
-    response_model=Page[TeamRoleAssignmentResponseModel],
-    responses={401: error_response, 404: error_response, 422: error_response},
-    deprecated=True,
-)
 @handle_exceptions
 def list_team_role_assignments_for_workspace(
     workspace_name_or_id: Union[str, UUID],
@@ -324,12 +278,6 @@ def list_team_role_assignments_for_workspace(
     WORKSPACES + "/{workspace_name_or_id}" + STACKS,
     response_model=Page[StackResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
-)
-@router.get(
-    PROJECTS + "/{workspace_name_or_id}" + STACKS,
-    response_model=Page[StackResponseModel],
-    responses={401: error_response, 404: error_response, 422: error_response},
-    deprecated=True,
 )
 @handle_exceptions
 def list_workspace_stacks(
@@ -363,12 +311,6 @@ def list_workspace_stacks(
     WORKSPACES + "/{workspace_name_or_id}" + STACKS,
     response_model=StackResponseModel,
     responses={401: error_response, 409: error_response, 422: error_response},
-)
-@router.post(
-    PROJECTS + "/{workspace_name_or_id}" + STACKS,
-    response_model=StackResponseModel,
-    responses={401: error_response, 409: error_response, 422: error_response},
-    deprecated=True,
 )
 @handle_exceptions
 def create_stack(
@@ -414,12 +356,6 @@ def create_stack(
     response_model=Page[ComponentResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@router.get(
-    PROJECTS + "/{workspace_name_or_id}" + STACK_COMPONENTS,
-    response_model=Page[ComponentResponseModel],
-    responses={401: error_response, 404: error_response, 422: error_response},
-    deprecated=True,
-)
 @handle_exceptions
 def list_workspace_stack_components(
     workspace_name_or_id: Union[str, UUID],
@@ -455,12 +391,6 @@ def list_workspace_stack_components(
     WORKSPACES + "/{workspace_name_or_id}" + STACK_COMPONENTS,
     response_model=ComponentResponseModel,
     responses={401: error_response, 409: error_response, 422: error_response},
-)
-@router.post(
-    PROJECTS + "/{workspace_name_or_id}" + STACK_COMPONENTS,
-    response_model=ComponentResponseModel,
-    responses={401: error_response, 409: error_response, 422: error_response},
-    deprecated=True,
 )
 @handle_exceptions
 def create_stack_component(
@@ -510,12 +440,6 @@ def create_stack_component(
     response_model=Page[PipelineResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@router.get(
-    PROJECTS + "/{workspace_name_or_id}" + PIPELINES,
-    response_model=Page[PipelineResponseModel],
-    responses={401: error_response, 404: error_response, 422: error_response},
-    deprecated=True,
-)
 @handle_exceptions
 def list_workspace_pipelines(
     workspace_name_or_id: Union[str, UUID],
@@ -547,12 +471,6 @@ def list_workspace_pipelines(
     WORKSPACES + "/{workspace_name_or_id}" + PIPELINES,
     response_model=PipelineResponseModel,
     responses={401: error_response, 409: error_response, 422: error_response},
-)
-@router.post(
-    PROJECTS + "/{workspace_name_or_id}" + PIPELINES,
-    response_model=PipelineResponseModel,
-    responses={401: error_response, 409: error_response, 422: error_response},
-    deprecated=True,
 )
 @handle_exceptions
 def create_pipeline(
@@ -749,12 +667,6 @@ def create_deployment(
     response_model=Page[PipelineRunResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@router.get(
-    PROJECTS + "/{workspace_name_or_id}" + RUNS,
-    response_model=Page[PipelineRunResponseModel],
-    responses={401: error_response, 404: error_response, 422: error_response},
-    deprecated=True,
-)
 @handle_exceptions
 def list_runs(
     workspace_name_or_id: Union[str, UUID],
@@ -783,12 +695,6 @@ def list_runs(
     WORKSPACES + "/{workspace_name_or_id}" + SCHEDULES,
     response_model=ScheduleResponseModel,
     responses={401: error_response, 409: error_response, 422: error_response},
-)
-@router.post(
-    PROJECTS + "/{workspace_name_or_id}" + SCHEDULES,
-    response_model=ScheduleResponseModel,
-    responses={401: error_response, 409: error_response, 422: error_response},
-    deprecated=True,
 )
 @handle_exceptions
 def create_schedule(
@@ -832,12 +738,6 @@ def create_schedule(
     WORKSPACES + "/{workspace_name_or_id}" + RUNS,
     response_model=PipelineRunResponseModel,
     responses={401: error_response, 409: error_response, 422: error_response},
-)
-@router.post(
-    PROJECTS + "/{workspace_name_or_id}" + RUNS,
-    response_model=PipelineRunResponseModel,
-    responses={401: error_response, 409: error_response, 422: error_response},
-    deprecated=True,
 )
 @handle_exceptions
 def create_pipeline_run(
@@ -1093,11 +993,6 @@ def create_code_repository(
 
 @router.get(
     WORKSPACES + "/{workspace_name_or_id}" + STATISTICS,
-    response_model=Dict[str, str],
-    responses={401: error_response, 404: error_response, 422: error_response},
-)
-@router.get(
-    PROJECTS + "/{workspace_name_or_id}" + STATISTICS,
     response_model=Dict[str, str],
     responses={401: error_response, 404: error_response, 422: error_response},
 )

@@ -78,3 +78,6 @@ found [here](https://github.com/zenml-io/zenml/tree/main/examples/cloud\_secrets
 For more information and a full list of configurable attributes of the Azure secrets manager, check out
 the [API Docs](https://apidocs.zenml.io/latest/integration\_code\_docs/integrations-azure/#zenml.integrations.azure.secrets\_managers.azure\_secrets\_manager.AzureSecretsManager)
 .
+
+<!-- For scarf -->
+<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>

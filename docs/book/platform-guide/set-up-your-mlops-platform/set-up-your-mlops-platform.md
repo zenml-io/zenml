@@ -78,3 +78,6 @@ We are hard at work implementing a true client-server architecture where the cli
 to the individual stack components. In the meantime, we recommend using your favorite CI/CD tool to enable using ZenML
 without the need to configure direct access to stack components from the client machines.
 {% endhint %}
+
+<!-- For scarf -->
+<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
