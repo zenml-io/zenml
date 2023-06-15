@@ -67,32 +67,27 @@ from datetime import datetime
 from typing import Any, Dict, List, Union
 import pandas as pd
 
-from zenml.steps import BaseParameters, step, StepContext
+from zenml import step
+from zenml.steps import StepContext
 
 entity_dict = {…}  # defined in earlier code
 features = […]  # defined in earlier code
 
-class FeastHistoricalFeaturesParameters(BaseParameters):
-    """Feast Feature Store historical data step configuration."""
 
-    entity_dict: Union[Dict[str, Any], str]
-    features: List[str]
-    full_feature_names: bool = False
-
-    class Config:
-        arbitrary_types_allowed = True
-
-
-@step
+@step(enable_cache=False)
 def get_historical_features(
-        params: FeastHistoricalFeaturesParameters,
-        context: StepContext,
+    context: StepContext,
+    entity_dict: Dict[str, Any],
+    features: List[str],
+    full_feature_names: bool = False,
 ) -> pd.DataFrame:
-    """Feast Feature Store historical data step
+    """Feast Feature Store historical data step.
 
     Args:
-        config: The step configuration.
         context: The step context.
+        entity_dict: The entity dictionary.
+        features: The list of features to retrieve.
+        full_feature_names: Whether to use full feature names.
 
     Returns:
         The historical features as a DataFrame.
@@ -108,24 +103,21 @@ def get_historical_features(
         )
 
     feature_store_component = context.stack.feature_store
-    params.entity_dict["event_timestamp"] = [
-        datetime.fromisoformat(val)
-        for val in params.entity_dict["event_timestamp"]
+    entity_dict["event_timestamp"] = [
+        datetime.fromisoformat(val) for val in entity_dict["event_timestamp"]
     ]
-    entity_df = pd.DataFrame.from_dict(params.entity_dict)
+    entity_df = pd.DataFrame.from_dict(entity_dict)
 
     return feature_store_component.get_historical_features(
         entity_df=entity_df,
-        features=params.features,
-        full_feature_names=params.full_feature_names,
+        features=features,
+        full_feature_names=full_feature_names,
     )
 
 
 historical_features = get_historical_features(
-    params=FeastHistoricalFeaturesParameters(
-        entity_dict=entity_dict,
-        features=features
-    ),
+    entity_dict=entity_dict,
+    features=features
 )
 ```
 

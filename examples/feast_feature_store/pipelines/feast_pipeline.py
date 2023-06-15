@@ -12,18 +12,18 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+from steps.getter.get_features_step import get_features
+from steps.printer.printer_step import feature_printer
+
+from zenml import pipeline
 from zenml.config import DockerSettings
 from zenml.integrations.constants import FEAST
-from zenml.pipelines import pipeline
 
 docker_settings = DockerSettings(required_integrations=[FEAST])
 
 
 @pipeline(enable_cache=False, settings={"docker": docker_settings})
-def feast_pipeline(
-    get_features,
-    feature_printer,
-):
+def feast_pipeline():
     """Links all the steps together in a pipeline."""
     features = get_features()
     feature_printer(features)

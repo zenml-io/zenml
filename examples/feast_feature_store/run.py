@@ -13,8 +13,6 @@
 #  permissions and limitations under the License.
 
 from pipelines import feast_pipeline
-from steps.getter.get_features_step import get_features
-from steps.printer.printer_step import feature_printer
 
 from zenml.logger import get_logger
 
@@ -22,12 +20,7 @@ logger = get_logger(__name__)
 
 
 if __name__ == "__main__":
-    pipeline_instance = feast_pipeline(
-        get_features=get_features,
-        feature_printer=feature_printer(),
-    )
-
-    pipeline_instance.run()
+    pipeline_instance = feast_pipeline()
 
     last_run = pipeline_instance.get_runs()[0]
     historical_features_step = last_run.get_step(step="feature_printer")
