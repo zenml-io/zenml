@@ -1,5 +1,5 @@
 ---
-description: Compose your ZenML pipelines.
+description: Composing your ZenML pipelines.
 ---
 
 # Compose pipelines

@@ -91,7 +91,7 @@ def my_step() -> None:
 @pipeline
 def example_pipeline():
     # When calling a step for the first time inside a pipeline,
-    # the invocation ID will be equal to the step name -> `my_step`
+    # the invocation ID will be equal to the step name -> `my_step`.
     my_step()
     # When calling the same step again, the suffix `_2`, `_3`, ... will
     # be appended to the step name to generate a unique invocation ID.
@@ -99,7 +99,7 @@ def example_pipeline():
     my_step()
     # If you want to use a custom invocation ID when calling a step, you can
     # do so by passing it like this. If you pass a custom ID, it needs to be
-    # unique for all the step invocations that happen as part of this pipeline
+    # unique for all the step invocations that happen as part of this pipeline.
     my_step(id="my_custom_invocation_id")
 ```
 
