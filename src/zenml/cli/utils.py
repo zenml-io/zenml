@@ -305,7 +305,8 @@ def print_pydantic_models(
 
         if active_models is not None:
             table_items = active_models + [
-                i for i in table_items
+                i
+                for i in table_items
                 if all(i.id != a.id for a in active_models)
             ]
 
@@ -316,7 +317,8 @@ def print_pydantic_models(
 
         if active_models is not None:
             table_items = active_models + [
-                i for i in table_items
+                i
+                for i in table_items
                 if all(i.id != a.id for a in active_models)
             ]
 
@@ -1409,14 +1411,16 @@ def print_service_connectors_table(
             if component.connector:
                 connector = component.connector
                 if connector.id not in [c.id for c in active_connectors]:
-                    # TODO: The connector embedded within the stack component
-                    #   do not have the emojified types. We only use the
-                    #   client here to get the service connector with
-                    #   emojified types.
-                    emojified_connector = client.get_service_connector(
-                        name_id_or_prefix=connector.id
-                    )
-                    active_connectors.append(emojified_connector)
+                    if isinstance(connector.connector_type, str):
+                        # The connector embedded within the stack component
+                        # does not include a hydrated connector type. We need
+                        # that to print its emojis.
+                        connector.connector_type = (
+                            client.get_service_connector_type(
+                                connector.connector_type
+                            )
+                        )
+                    active_connectors.append(connector)
 
     configurations = []
 
