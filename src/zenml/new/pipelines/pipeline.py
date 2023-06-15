@@ -677,11 +677,7 @@ class Pipeline:
                 )
 
                 if runs.items:
-                    # Log the dashboard URL
-                    dashboard_utils.print_run_url(
-                        run_name=deployment.run_name_template,
-                        pipeline_id=runs[0].pipeline.id,
-                    )
+                    dashboard_utils.print_run_url(runs[0])
                 else:
                     logger.warning(
                         f"Your orchestrator '{stack.orchestrator.name}' is "
