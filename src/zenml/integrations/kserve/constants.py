@@ -13,5 +13,5 @@
 #  permissions and limitations under the License.
 """KServe constants."""
 
-KSERVE_DOCKER_IMAGE_KEY = "kserve_docker_image"
+KSERVE_DOCKER_IMAGE_KEY = "kserve_model_deployer"
 KSERVE_CUSTOM_DEPLOYMENT = "kserve_custom_deployment"

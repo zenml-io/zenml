@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2021. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2023. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ from zenml.stack import Flavor
 
 MLFLOW_MODEL_DEPLOYER_FLAVOR = "mlflow"
 MLFLOW_MODEL_EXPERIMENT_TRACKER_FLAVOR = "mlflow"
+MLFLOW_MODEL_REGISTRY_FLAVOR = "mlflow"
 
 
 class MlflowIntegration(Integration):
@@ -34,10 +35,9 @@ class MlflowIntegration(Integration):
     # does not pin it. They fixed this in a later version, so we can probably
     # remove this once we update the mlflow version.
     REQUIREMENTS = [
-        "mlflow>=1.2.0,<1.26.0",
+        "mlflow>=1.24.0,<=2.2.2",
         "mlserver>=0.5.3",
         "mlserver-mlflow>=0.5.3",
-        "protobuf>=3.7.0,<4.0.0",
     ]
 
     @classmethod
@@ -55,9 +55,14 @@ class MlflowIntegration(Integration):
         from zenml.integrations.mlflow.flavors import (
             MLFlowExperimentTrackerFlavor,
             MLFlowModelDeployerFlavor,
+            MLFlowModelRegistryFlavor,
         )
 
-        return [MLFlowModelDeployerFlavor, MLFlowExperimentTrackerFlavor]
+        return [
+            MLFlowModelDeployerFlavor,
+            MLFlowExperimentTrackerFlavor,
+            MLFlowModelRegistryFlavor,
+        ]
 
 
 MlflowIntegration.check_installation()

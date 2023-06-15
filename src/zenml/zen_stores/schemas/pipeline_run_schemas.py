@@ -21,18 +21,28 @@ from uuid import UUID
 from sqlalchemy import TEXT, Column
 from sqlmodel import Field, Relationship
 
+from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.enums import ExecutionStatus
-from zenml.models import PipelineRunResponseModel
-from zenml.models.pipeline_run_models import PipelineRunRequestModel
+from zenml.models import (
+    PipelineRunRequestModel,
+    PipelineRunResponseModel,
+    PipelineRunUpdateModel,
+)
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
+from zenml.zen_stores.schemas.pipeline_build_schemas import PipelineBuildSchema
+from zenml.zen_stores.schemas.pipeline_deployment_schemas import (
+    PipelineDeploymentSchema,
+)
 from zenml.zen_stores.schemas.pipeline_schemas import PipelineSchema
-from zenml.zen_stores.schemas.project_schemas import ProjectSchema
+from zenml.zen_stores.schemas.schedule_schema import ScheduleSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.stack_schemas import StackSchema
 from zenml.zen_stores.schemas.user_schemas import UserSchema
+from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
 
 if TYPE_CHECKING:
-    from zenml.models import PipelineRunUpdateModel
+    from zenml.zen_stores.schemas.logs_schemas import LogsSchema
+    from zenml.zen_stores.schemas.run_metadata_schemas import RunMetadataSchema
     from zenml.zen_stores.schemas.step_run_schemas import StepRunSchema
 
 
@@ -49,7 +59,7 @@ class PipelineRunSchema(NamedSchema, table=True):
         ondelete="SET NULL",
         nullable=True,
     )
-    stack: "StackSchema" = Relationship(back_populates="runs")
+    stack: Optional["StackSchema"] = Relationship(back_populates="runs")
 
     pipeline_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
@@ -59,7 +69,41 @@ class PipelineRunSchema(NamedSchema, table=True):
         ondelete="SET NULL",
         nullable=True,
     )
-    pipeline: "PipelineSchema" = Relationship(back_populates="runs")
+    pipeline: Optional["PipelineSchema"] = Relationship(back_populates="runs")
+
+    build_id: Optional[UUID] = build_foreign_key_field(
+        source=__tablename__,
+        target=PipelineBuildSchema.__tablename__,
+        source_column="build_id",
+        target_column="id",
+        ondelete="SET NULL",
+        nullable=True,
+    )
+    build: Optional["PipelineBuildSchema"] = Relationship(
+        back_populates="runs"
+    )
+
+    deployment_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target=PipelineDeploymentSchema.__tablename__,
+        source_column="deployment_id",
+        target_column="id",
+        ondelete="SET NULL",
+        nullable=True,
+    )
+    deployment: Optional["PipelineDeploymentSchema"] = Relationship(
+        back_populates="runs"
+    )
+
+    schedule_id: Optional[UUID] = build_foreign_key_field(
+        source=__tablename__,
+        target=ScheduleSchema.__tablename__,
+        source_column="schedule_id",
+        target_column="id",
+        ondelete="SET NULL",
+        nullable=True,
+    )
+    schedule: Optional[ScheduleSchema] = Relationship(back_populates="runs")
 
     user_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
@@ -71,36 +115,47 @@ class PipelineRunSchema(NamedSchema, table=True):
     )
     user: Optional["UserSchema"] = Relationship(back_populates="runs")
 
-    project_id: UUID = build_foreign_key_field(
+    workspace_id: UUID = build_foreign_key_field(
         source=__tablename__,
-        target=ProjectSchema.__tablename__,
-        source_column="project_id",
+        target=WorkspaceSchema.__tablename__,
+        source_column="workspace_id",
         target_column="id",
         ondelete="CASCADE",
         nullable=False,
     )
-    project: "ProjectSchema" = Relationship(back_populates="runs")
+    workspace: "WorkspaceSchema" = Relationship(back_populates="runs")
 
     orchestrator_run_id: Optional[str] = Field(nullable=True)
 
     enable_cache: Optional[bool] = Field(nullable=True)
+    enable_artifact_metadata: Optional[bool] = Field(nullable=True)
     start_time: Optional[datetime] = Field(nullable=True)
     end_time: Optional[datetime] = Field(nullable=True)
     status: ExecutionStatus
     pipeline_configuration: str = Field(sa_column=Column(TEXT, nullable=False))
     num_steps: Optional[int]
-    zenml_version: str
+    client_version: str
+    server_version: Optional[str] = Field(nullable=True)
     client_environment: Optional[str] = Field(
         sa_column=Column(TEXT, nullable=True)
     )
     orchestrator_environment: Optional[str] = Field(
         sa_column=Column(TEXT, nullable=True)
     )
+    # This is deprecated, The warning is on the associated model class
     git_sha: Optional[str] = Field(nullable=True)
 
+    run_metadata: List["RunMetadataSchema"] = Relationship(
+        back_populates="pipeline_run",
+        sa_relationship_kwargs={"cascade": "delete"},
+    )
     step_runs: List["StepRunSchema"] = Relationship(
         back_populates="pipeline_run",
         sa_relationship_kwargs={"cascade": "delete"},
+    )
+    logs: Optional["LogsSchema"] = Relationship(
+        back_populates="pipeline_run",
+        sa_relationship_kwargs={"cascade": "delete", "uselist": False},
     )
 
     @classmethod
@@ -115,7 +170,7 @@ class PipelineRunSchema(NamedSchema, table=True):
         Returns:
             The created `PipelineRunSchema`.
         """
-        configuration = json.dumps(request.pipeline_configuration)
+        config = request.pipeline_configuration
         client_environment = json.dumps(request.client_environment)
         orchestrator_environment = json.dumps(request.orchestrator_environment)
 
@@ -124,16 +179,21 @@ class PipelineRunSchema(NamedSchema, table=True):
             name=request.name,
             orchestrator_run_id=request.orchestrator_run_id,
             stack_id=request.stack,
-            project_id=request.project,
+            workspace_id=request.workspace,
             user_id=request.user,
             pipeline_id=request.pipeline,
-            enable_cache=request.enable_cache,
+            build_id=request.build,
+            deployment_id=request.deployment,
+            schedule_id=request.schedule_id,
+            enable_cache=config.enable_cache,
+            enable_artifact_metadata=config.enable_artifact_metadata,
             start_time=request.start_time,
             status=request.status,
-            pipeline_configuration=configuration,
+            pipeline_configuration=config.json(sort_keys=True),
             num_steps=request.num_steps,
             git_sha=request.git_sha,
-            zenml_version=request.zenml_version,
+            client_version=request.client_version,
+            server_version=request.server_version,
             client_environment=client_environment,
             orchestrator_environment=orchestrator_environment,
         )
@@ -142,6 +202,9 @@ class PipelineRunSchema(NamedSchema, table=True):
         self, _block_recursion: bool = False
     ) -> PipelineRunResponseModel:
         """Convert a `PipelineRunSchema` to a `PipelineRunResponseModel`.
+
+        Args:
+            _block_recursion: If other models should be recursively filled
 
         Returns:
             The created `PipelineRunResponseModel`.
@@ -156,53 +219,63 @@ class PipelineRunSchema(NamedSchema, table=True):
             if self.orchestrator_environment
             else {}
         )
+        metadata = {
+            metadata_schema.key: metadata_schema.to_model()
+            for metadata_schema in self.run_metadata
+        }
+        config = PipelineConfiguration.parse_raw(self.pipeline_configuration)
 
         if _block_recursion:
             return PipelineRunResponseModel(
                 id=self.id,
                 name=self.name,
-                stack=self.stack.to_model() if self.stack else None,
-                project=self.project.to_model(),
-                user=self.user.to_model() if self.user else None,
+                workspace=self.workspace.to_model(),
+                user=self.user.to_model(True) if self.user else None,
+                schedule_id=self.schedule_id,
                 orchestrator_run_id=self.orchestrator_run_id,
-                enable_cache=self.enable_cache,
                 start_time=self.start_time,
                 end_time=self.end_time,
                 status=self.status,
-                pipeline_configuration=json.loads(self.pipeline_configuration),
+                pipeline_configuration=config,
                 num_steps=self.num_steps,
                 git_sha=self.git_sha,
-                zenml_version=self.zenml_version,
+                client_version=self.client_version,
+                server_version=self.server_version,
                 client_environment=client_environment,
                 orchestrator_environment=orchestrator_environment,
                 created=self.created,
                 updated=self.updated,
+                metadata=metadata,
             )
         else:
             return PipelineRunResponseModel(
                 id=self.id,
                 name=self.name,
                 stack=self.stack.to_model() if self.stack else None,
-                project=self.project.to_model(),
-                user=self.user.to_model() if self.user else None,
+                workspace=self.workspace.to_model(),
+                user=self.user.to_model(True) if self.user else None,
                 orchestrator_run_id=self.orchestrator_run_id,
-                enable_cache=self.enable_cache,
                 start_time=self.start_time,
                 end_time=self.end_time,
                 status=self.status,
                 pipeline=(
-                    self.pipeline.to_model(not _block_recursion)
-                    if self.pipeline
-                    else None
+                    self.pipeline.to_model(False) if self.pipeline else None
                 ),
-                pipeline_configuration=json.loads(self.pipeline_configuration),
+                build=self.build.to_model() if self.build else None,
+                deployment=self.deployment.to_model()
+                if self.deployment
+                else None,
+                schedule_id=self.schedule_id,
+                pipeline_configuration=config,
                 num_steps=self.num_steps,
                 git_sha=self.git_sha,
-                zenml_version=self.zenml_version,
+                client_version=self.client_version,
+                server_version=self.server_version,
                 client_environment=client_environment,
                 orchestrator_environment=orchestrator_environment,
                 created=self.created,
                 updated=self.updated,
+                metadata=metadata,
             )
 
     def update(

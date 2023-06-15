@@ -13,9 +13,13 @@
 #  permissions and limitations under the License.
 """Tekton orchestrator flavor."""
 
-from typing import TYPE_CHECKING, Optional, Type
+from typing import TYPE_CHECKING, Any, Dict, Optional, Type
 
+from pydantic import root_validator
+
+from zenml.constants import KUBERNETES_CLUSTER_RESOURCE_TYPE
 from zenml.integrations.tekton import TEKTON_ORCHESTRATOR_FLAVOR
+from zenml.models.service_connector_models import ServiceConnectorRequirements
 from zenml.orchestrators import BaseOrchestratorConfig, BaseOrchestratorFlavor
 
 if TYPE_CHECKING:
@@ -23,8 +27,9 @@ if TYPE_CHECKING:
 
 from zenml.config.base_settings import BaseSettings
 from zenml.integrations.kubernetes.pod_settings import KubernetesPodSettings
+from zenml.logger import get_logger
 
-DEFAULT_TEKTON_UI_PORT = 8080
+logger = get_logger(__name__)
 
 
 class TektonOrchestratorSettings(BaseSettings):
@@ -44,18 +49,54 @@ class TektonOrchestratorConfig(  # type: ignore[misc] # https://github.com/pydan
 
     Attributes:
         kubernetes_context: Name of a kubernetes context to run
-            pipelines in.
+            pipelines in. If the stack component is linked to a Kubernetes
+            service connector, this field is ignored. Otherwise, it is
+            mandatory.
         kubernetes_namespace: Name of the kubernetes namespace in which the
             pods that run the pipeline steps should be running.
-        tekton_ui_port: A local port to which the Tekton UI will be forwarded.
-        skip_ui_daemon_provisioning: If `True`, provisioning the Tekton UI
-            daemon will be skipped.
+        local: If `True`, the orchestrator will assume it is connected to a
+            local kubernetes cluster and will perform additional validations and
+            operations to allow using the orchestrator in combination with other
+            local stack components that store data in the local filesystem
+            (i.e. it will mount the local stores directory into the pipeline
+            containers).
+        skip_local_validations: If `True`, the local validations will be
+            skipped.
     """
 
-    kubernetes_context: str  # TODO: Potential setting
+    kubernetes_context: Optional[str] = None
     kubernetes_namespace: str = "zenml"
-    tekton_ui_port: int = DEFAULT_TEKTON_UI_PORT
-    skip_ui_daemon_provisioning: bool = False
+    local: bool = False
+    skip_local_validations: bool = False
+
+    @root_validator(pre=True)
+    def _validate_deprecated_attrs(
+        cls, values: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Pydantic root_validator for deprecated attributes.
+
+        This root validator is used for backwards compatibility purposes. E.g.
+        it handles attributes that are no longer available or that have become
+        mandatory in the meantime.
+
+        Args:
+            values: Values passed to the object constructor
+
+        Returns:
+            Values passed to the object constructor
+
+        """
+        provisioning_attrs = [
+            "tekton_ui_port",
+            "skip_ui_daemon_provisioning",
+        ]
+
+        # remove deprecated attributes from values dict
+        for attr in provisioning_attrs:
+            if attr in values:
+                del values[attr]
+
+        return values
 
     @property
     def is_remote(self) -> bool:
@@ -68,7 +109,19 @@ class TektonOrchestratorConfig(  # type: ignore[misc] # https://github.com/pydan
         Returns:
             True if this config is for a remote component, False otherwise.
         """
-        return True
+        return not self.local
+
+    @property
+    def is_local(self) -> bool:
+        """Checks if this stack component is running locally.
+
+        This designation is used to determine if the stack component can be
+        shared with other users or if it is only usable on the local host.
+
+        Returns:
+            True if this config is for a local component, False otherwise.
+        """
+        return self.local
 
 
 class TektonOrchestratorFlavor(BaseOrchestratorFlavor):
@@ -82,6 +135,50 @@ class TektonOrchestratorFlavor(BaseOrchestratorFlavor):
             Name of the orchestrator flavor.
         """
         return TEKTON_ORCHESTRATOR_FLAVOR
+
+    @property
+    def service_connector_requirements(
+        self,
+    ) -> Optional[ServiceConnectorRequirements]:
+        """Service connector resource requirements for service connectors.
+
+        Specifies resource requirements that are used to filter the available
+        service connector types that are compatible with this flavor.
+
+        Returns:
+            Requirements for compatible service connectors, if a service
+            connector is required for this flavor.
+        """
+        return ServiceConnectorRequirements(
+            resource_type=KUBERNETES_CLUSTER_RESOURCE_TYPE,
+        )
+
+    @property
+    def docs_url(self) -> Optional[str]:
+        """A url to point at docs explaining this flavor.
+
+        Returns:
+            A flavor docs url.
+        """
+        return self.generate_default_docs_url()
+
+    @property
+    def sdk_docs_url(self) -> Optional[str]:
+        """A url to point at SDK docs explaining this flavor.
+
+        Returns:
+            A flavor SDK docs url.
+        """
+        return self.generate_default_sdk_docs_url()
+
+    @property
+    def logo_url(self) -> str:
+        """A url to represent the flavor in the dashboard.
+
+        Returns:
+            The flavor logo.
+        """
+        return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/orchestrator/tekton.png"
 
     @property
     def config_class(self) -> Type[TektonOrchestratorConfig]:

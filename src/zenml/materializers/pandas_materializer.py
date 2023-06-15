@@ -14,14 +14,15 @@
 """Materializer for Pandas."""
 
 import os
-from typing import Any, Type, Union
+from typing import Any, ClassVar, Dict, Tuple, Type, Union
 
 import pandas as pd
 
-from zenml.enums import ArtifactType
+from zenml.enums import ArtifactType, VisualizationType
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
+from zenml.metadata.metadata_types import DType, MetadataType
 
 logger = get_logger(__name__)
 
@@ -34,8 +35,11 @@ CSV_FILENAME = "df.csv"
 class PandasMaterializer(BaseMaterializer):
     """Materializer to read data to and from pandas."""
 
-    ASSOCIATED_TYPES = (pd.DataFrame, pd.Series)
-    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATA
+    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (
+        pd.DataFrame,
+        pd.Series,
+    )
+    ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.DATA
 
     def __init__(self, uri: str):
         """Define `self.data_path`.
@@ -45,7 +49,7 @@ class PandasMaterializer(BaseMaterializer):
         """
         super().__init__(uri)
         try:
-            import pyarrow  # type: ignore
+            import pyarrow  # type: ignore # noqa
 
             self.pyarrow_exists = True
         except ImportError:
@@ -73,7 +77,6 @@ class PandasMaterializer(BaseMaterializer):
         Returns:
             The pandas dataframe or series.
         """
-        super().load(data_type)
         if fileio.exists(self.parquet_path):
             if self.pyarrow_exists:
                 with fileio.open(self.parquet_path, mode="rb") as f:
@@ -119,10 +122,7 @@ class PandasMaterializer(BaseMaterializer):
         Args:
             df: The pandas dataframe or series to write.
         """
-        super().save(df)
-
         if isinstance(df, pd.Series):
-
             df = df.to_frame(name="series")
 
         if self.pyarrow_exists:
@@ -131,3 +131,56 @@ class PandasMaterializer(BaseMaterializer):
         else:
             with fileio.open(self.csv_path, mode="wb") as f:
                 df.to_csv(f, index=True)
+
+    def save_visualizations(
+        self, df: Union[pd.DataFrame, pd.Series]
+    ) -> Dict[str, VisualizationType]:
+        """Save visualizations of the given pandas dataframe or series.
+
+        Args:
+            df: The pandas dataframe or series to visualize.
+
+        Returns:
+            A dictionary of visualization URIs and their types.
+        """
+        describe_uri = os.path.join(self.uri, "describe.csv")
+        with fileio.open(describe_uri, mode="wb") as f:
+            df.describe().to_csv(f)
+        return {describe_uri: VisualizationType.CSV}
+
+    def extract_metadata(
+        self, df: Union[pd.DataFrame, pd.Series]
+    ) -> Dict[str, "MetadataType"]:
+        """Extract metadata from the given pandas dataframe or series.
+
+        Args:
+            df: The pandas dataframe or series to extract metadata from.
+
+        Returns:
+            The extracted metadata as a dictionary.
+        """
+        pandas_metadata: Dict[str, "MetadataType"] = {"shape": df.shape}
+
+        if isinstance(df, pd.Series):
+            pandas_metadata["dtype"] = DType(df.dtype.type)
+            pandas_metadata["mean"] = float(df.mean().item())
+            pandas_metadata["std"] = float(df.std().item())
+            pandas_metadata["min"] = float(df.min().item())
+            pandas_metadata["max"] = float(df.max().item())
+
+        else:
+            pandas_metadata["dtype"] = {
+                str(key): DType(value.type) for key, value in df.dtypes.items()
+            }
+            for stat_name, stat in {
+                "mean": df.mean,
+                "std": df.std,
+                "min": df.min,
+                "max": df.max,
+            }.items():
+                pandas_metadata[stat_name] = {
+                    str(key): float(value)
+                    for key, value in stat(numeric_only=True).to_dict().items()
+                }
+
+        return pandas_metadata

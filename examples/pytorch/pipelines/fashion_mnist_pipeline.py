@@ -12,9 +12,13 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+from steps.evaluators import evaluator
+from steps.importers import importer_mnist
+from steps.trainers import trainer
+
+from zenml import pipeline
 from zenml.config import DockerSettings
 from zenml.integrations.constants import PYTORCH
-from zenml.pipelines import pipeline
 
 docker_settings = DockerSettings(
     required_integrations=[PYTORCH],
@@ -23,12 +27,8 @@ docker_settings = DockerSettings(
 
 
 @pipeline(settings={"docker": docker_settings})
-def fashion_mnist_pipeline(
-    importer,
-    trainer,
-    evaluator,
-):
+def fashion_mnist_pipeline():
     """Link all the steps and artifacts together."""
-    train_dataloader, test_dataloader = importer()
+    train_dataloader, test_dataloader = importer_mnist()
     model = trainer(train_dataloader)
     evaluator(test_dataloader=test_dataloader, model=model)

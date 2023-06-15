@@ -29,35 +29,40 @@ from typing import (
     Type,
     cast,
 )
+from uuid import UUID
 
 from zenml.config.global_config import GlobalConfiguration
-from zenml.constants import ORCHESTRATOR_DOCKER_IMAGE_KEY
+from zenml.constants import (
+    METADATA_ORCHESTRATOR_URL,
+)
 from zenml.entrypoints import StepEntrypointConfiguration
 from zenml.enums import StackComponentType
 from zenml.integrations.airflow.flavors.airflow_orchestrator_flavor import (
     AirflowOrchestratorConfig,
     AirflowOrchestratorSettings,
+    OperatorType,
 )
 from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.orchestrators import BaseOrchestrator
+from zenml.metadata.metadata_types import Uri
+from zenml.orchestrators import ContainerizedOrchestrator
 from zenml.orchestrators.utils import get_orchestrator_run_name
 from zenml.stack import StackValidator
 from zenml.utils import daemon, io_utils
-from zenml.utils.pipeline_docker_image_builder import (
-    PipelineDockerImageBuilder,
-)
 
 if TYPE_CHECKING:
+    from zenml.config import ResourceSettings
     from zenml.config.base_settings import BaseSettings
-    from zenml.config.pipeline_deployment import PipelineDeployment
     from zenml.integrations.airflow.orchestrators.dag_generator import (
         DagConfiguration,
         TaskConfiguration,
     )
+    from zenml.metadata.metadata_types import MetadataType
+    from zenml.models.pipeline_deployment_models import (
+        PipelineDeploymentResponseModel,
+    )
     from zenml.pipelines import Schedule
     from zenml.stack import Stack
-
 
 logger = get_logger(__name__)
 
@@ -100,7 +105,7 @@ def get_dag_generator_values(
     )
 
 
-class AirflowOrchestrator(BaseOrchestrator):
+class AirflowOrchestrator(ContainerizedOrchestrator):
     """Orchestrator responsible for running pipelines using Airflow."""
 
     def __init__(self, **values: Any):
@@ -184,13 +189,16 @@ class AirflowOrchestrator(BaseOrchestrator):
                 return True, ""
 
             return StackValidator(
-                required_components={StackComponentType.CONTAINER_REGISTRY},
+                required_components={
+                    StackComponentType.CONTAINER_REGISTRY,
+                    StackComponentType.IMAGE_BUILDER,
+                },
                 custom_validation_function=_validate_remote_components,
             )
 
     def prepare_pipeline_deployment(
         self,
-        deployment: "PipelineDeployment",
+        deployment: "PipelineDeploymentResponseModel",
         stack: "Stack",
     ) -> None:
         """Builds a Docker image to run pipeline steps.
@@ -202,36 +210,20 @@ class AirflowOrchestrator(BaseOrchestrator):
         if self.config.local:
             stack.check_local_paths()
 
-        docker_image_builder = PipelineDockerImageBuilder()
-        if stack.container_registry:
-            repo_digest = docker_image_builder.build_and_push_docker_image(
-                deployment=deployment, stack=stack
-            )
-            deployment.add_extra(ORCHESTRATOR_DOCKER_IMAGE_KEY, repo_digest)
-        else:
-            # If there is no container registry, we only build the image
-            target_image_name = docker_image_builder.get_target_image_name(
-                deployment=deployment
-            )
-            docker_image_builder.build_docker_image(
-                target_image_name=target_image_name,
-                deployment=deployment,
-                stack=stack,
-            )
-            deployment.add_extra(
-                ORCHESTRATOR_DOCKER_IMAGE_KEY, target_image_name
-            )
-
     def prepare_or_run_pipeline(
         self,
-        deployment: "PipelineDeployment",
+        deployment: "PipelineDeploymentResponseModel",
         stack: "Stack",
+        environment: Dict[str, str],
     ) -> Any:
         """Creates and writes an Airflow DAG zip file.
 
         Args:
             deployment: The pipeline deployment to prepare or run.
             stack: The stack the pipeline will run on.
+            environment: Environment variables to set in the orchestration
+                environment.
+
         """
         pipeline_settings = cast(
             AirflowOrchestratorSettings, self.get_settings(deployment)
@@ -244,21 +236,39 @@ class AirflowOrchestrator(BaseOrchestrator):
         command = StepEntrypointConfiguration.get_entrypoint_command()
 
         tasks = []
-        for step_name, step in deployment.steps.items():
+        for step_name, step in deployment.step_configurations.items():
             settings = cast(
                 AirflowOrchestratorSettings, self.get_settings(step)
             )
+            image = self.get_image(deployment=deployment, step_name=step_name)
             arguments = StepEntrypointConfiguration.get_entrypoint_arguments(
-                step_name=step_name
+                step_name=step_name, deployment_id=deployment.id
             )
+            operator_args = settings.operator_args.copy()
+            if self.requires_resources_in_orchestration_environment(step=step):
+                if settings.operator == OperatorType.KUBERNETES_POD.source:
+                    self._apply_resource_settings(
+                        resource_settings=step.config.resource_settings,
+                        operator_args=operator_args,
+                    )
+                else:
+                    logger.warning(
+                        "Specifying step resources is only supported when "
+                        "using KubernetesPodOperators, ignoring resource "
+                        "configuration for step %s.",
+                        step_name,
+                    )
+
             task = dag_generator_values.task_configuration_class(
                 id=step_name,
-                zenml_step_name=step.config.name,
+                zenml_step_name=step_name,
                 upstream_steps=step.spec.upstream_steps,
+                docker_image=image,
                 command=command,
                 arguments=arguments,
+                environment=environment,
                 operator_source=settings.operator,
-                operator_args=settings.operator_args,
+                operator_args=operator_args,
             )
             tasks.append(task)
 
@@ -267,13 +277,12 @@ class AirflowOrchestrator(BaseOrchestrator):
             if self.config.local
             else None
         )
-        docker_image = deployment.pipeline.extra[ORCHESTRATOR_DOCKER_IMAGE_KEY]
+
         dag_id = pipeline_settings.dag_id or get_orchestrator_run_name(
-            pipeline_name=deployment.pipeline.name
+            pipeline_name=deployment.pipeline_configuration.name
         )
         dag_config = dag_generator_values.dag_configuration_class(
             id=dag_id,
-            docker_image=docker_image,
             local_stores_path=local_stores_path,
             tasks=tasks,
             tags=pipeline_settings.dag_tags,
@@ -286,6 +295,43 @@ class AirflowOrchestrator(BaseOrchestrator):
             dag_generator_values=dag_generator_values,
             output_dir=pipeline_settings.dag_output_dir or self.dags_directory,
         )
+
+    def _apply_resource_settings(
+        self,
+        resource_settings: "ResourceSettings",
+        operator_args: Dict[str, Any],
+    ) -> None:
+        """Adds resource settings to the operator args.
+
+        Args:
+            resource_settings: The resource settings to add.
+            operator_args: The operator args which will get modified in-place.
+        """
+        if "container_resources" in operator_args:
+            logger.warning(
+                "Received duplicate resources from ResourceSettings: `%s`"
+                "and operator_args: `%s`. Ignoring the resources defined by "
+                "the ResourceSettings.",
+                resource_settings,
+                operator_args["container_resources"],
+            )
+        else:
+            limits = {}
+
+            if resource_settings.cpu_count is not None:
+                limits["cpu"] = str(resource_settings.cpu_count)
+
+            if resource_settings.memory is not None:
+                memory_limit = resource_settings.memory[:-1]
+                limits["memory"] = memory_limit
+
+            if resource_settings.gpu_count is not None:
+                logger.warning(
+                    "Specifying GPU resources is not supported for the Airflow "
+                    "orchestrator."
+                )
+
+            operator_args["container_resources"] = {"limits": limits}
 
     def _write_dag(
         self,
@@ -533,6 +579,12 @@ class AirflowOrchestrator(BaseOrchestrator):
                 "official Airflow quickstart guide for running Airflow locally."
             )
             self.deprovision()
+        finally:
+            logger.warning(
+                "Airflow provisioning using `zenml stack up` is "
+                "deprecated. Please follow the new Airflow quickstart guide "
+                "to run Airflow locally."
+            )
 
     def deprovision(self) -> None:
         """Stops the airflow daemon if necessary and tears down resources."""
@@ -601,3 +653,20 @@ class AirflowOrchestrator(BaseOrchestrator):
             "with username: `admin` password: `%s`",
             password,
         )
+
+    def get_pipeline_run_metadata(
+        self, run_id: UUID
+    ) -> Dict[str, "MetadataType"]:
+        """Get general component-specific metadata for a pipeline run.
+
+        Args:
+            run_id: The ID of the pipeline run.
+
+        Returns:
+            A dictionary of metadata.
+        """
+        if self.config.local:
+            return {
+                METADATA_ORCHESTRATOR_URL: Uri("http://localhost:8080"),
+            }
+        return {}

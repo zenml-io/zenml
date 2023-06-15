@@ -24,14 +24,16 @@ object and a step that consumes the
 object.
 
 ```python
-from typing import Type
+import logging
 import os
+from typing import Type
 
+from zenml import step, pipeline
+
+from zenml import step, pipeline
 from zenml.enums import ArtifactType
-from zenml.steps import step
-from zenml.pipelines import pipeline
-from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.io import fileio
+from zenml.materializers.base_materializer import BaseMaterializer
 
 
 class MyObj:
@@ -44,38 +46,44 @@ class MyMaterializer(BaseMaterializer):
     ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATA
 
     def load(self, data_type: Type[MyObj]) -> MyObj:
-        """Read from artifact store"""
-        super().load(data_type)
-        with fileio.open(os.path.join(self.uri, "data.txt"), "r") as f:
+        """Read from artifact store."""
+        with fileio.open(os.path.join(self.uri, 'data.txt'), 'r') as f:
             name = f.read()
         return MyObj(name=name)
 
     def save(self, my_obj: MyObj) -> None:
-        """Write to artifact store"""
-        super().save(my_obj)
-        with fileio.open(os.path.join(self.uri, "data.txt"), "w") as f:
+        """Write to artifact store."""
+        with fileio.open(os.path.join(self.uri, 'data.txt'), 'w') as f:
             f.write(my_obj.name)
 
 
 @step
-def step1() -> MyObj:
-    return MyObj("jk")
+def my_first_step() -> MyObj:
+    """Step that returns an object of type MyObj."""
+    return MyObj("my_object")
+
+my_first_step = my_first_step.configure(output_materializers=MyMaterializer)
+
+# (Optional) tell ZenML to use your custom materializer for this step.
+# This is usually not needed since ZenML automatically discovers materializers
+# and determines which one to use based on the data type of your output
+step1.configure(output_materializers=MyMaterializer)
 
 
 @step
-def step2(my_obj: MyObj):
-    print(my_obj.name)
+def my_second_step(my_obj: MyObj) -> None:
+    """Step that log the input object and returns nothing."""
+    logging.info(
+        f"The following object was passed to this step: `{my_obj.name}`")
 
 
 @pipeline
-def pipe(step1, step2):
-    step2(step1())
-
+def first_pipeline():
+    output_1 = my_first_step()
+    my_second_step(output_1)
 
 if __name__ == "__main__":
-    pipe(
-        step1=step1().with_return_materializers(MyMaterializer), step2=step2()
-    ).run()
+    first_pipeline()
 ```
 
 ## 📰 Write the Readme

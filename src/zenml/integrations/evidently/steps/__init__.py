@@ -13,9 +13,13 @@
 #  permissions and limitations under the License.
 """Initialization of the Evidently Standard Steps."""
 
+from zenml.integrations.evidently.column_mapping import EvidentlyColumnMapping
+from zenml.integrations.evidently.steps.evidently_report import (
+    evidently_report_step,
+)
+from zenml.integrations.evidently.steps.evidently_test import (
+    evidently_test_step,
+)
 from zenml.integrations.evidently.steps.evidently_profile import (
-    EvidentlyColumnMapping,
-    EvidentlyProfileParameters,
-    EvidentlyProfileStep,
     evidently_profile_step,
 )

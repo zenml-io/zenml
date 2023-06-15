@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Utility functions used by the KServe deployer step."""
 import os
+import re
 import tempfile
 from typing import List, Optional
 
@@ -20,6 +21,7 @@ from model_archiver.model_packaging import package_model
 from model_archiver.model_packaging_utils import ModelExportUtils
 from pydantic import BaseModel
 
+from zenml.exceptions import ValidationError
 from zenml.integrations.kserve.services.kserve_deployment import (
     KServeDeploymentConfig,
 )
@@ -28,6 +30,19 @@ from zenml.integrations.kserve.steps.kserve_deployer import (
 )
 from zenml.io import fileio
 from zenml.utils import io_utils
+
+
+def is_valid_model_name(model_name: str) -> bool:
+    """Checks if the model name is valid.
+
+    Args:
+        model_name: the model name to check
+
+    Returns:
+        True if the model name is valid, False otherwise.
+    """
+    pattern = re.compile("^[a-z0-9-]+$")
+    return pattern.match(model_name) is not None
 
 
 def prepare_service_config(
@@ -51,6 +66,7 @@ def prepare_service_config(
 
     Raises:
         RuntimeError: if the model files cannot be prepared.
+        ValidationError: if the model name is invalid.
     """
     served_model_uri = os.path.join(output_artifact_uri, "kserve")
     fileio.makedirs(served_model_uri)
@@ -91,6 +107,12 @@ def prepare_service_config(
         )
         fileio.makedirs(served_model_uri)
         fileio.copy(model_uri, os.path.join(served_model_uri, "model.joblib"))
+    elif not is_valid_model_name(params.service_config.model_name):
+        raise ValidationError(
+            f"Model name '{params.service_config.model_name}' is invalid. "
+            f"The model name can only include lowercase alphanumeric "
+            "characters and hyphens. Please rename your model and try again."
+        )
     else:
         # default treatment for all other server implementations is to
         # simply reuse the model from the artifact store path where it
@@ -132,9 +154,9 @@ def prepare_torch_service_config(
     """
     deployment_folder_uri = os.path.join(output_artifact_uri, "kserve")
     served_model_uri = os.path.join(deployment_folder_uri, "model-store")
-    config_propreties_uri = os.path.join(deployment_folder_uri, "config")
+    config_properties_uri = os.path.join(deployment_folder_uri, "config")
     fileio.makedirs(served_model_uri)
-    fileio.makedirs(config_propreties_uri)
+    fileio.makedirs(config_properties_uri)
 
     if params.torch_serve_parameters is None:
         raise RuntimeError("No torch serve parameters provided")
@@ -183,7 +205,7 @@ def prepare_torch_service_config(
             # Copy the torch model config to the model store
             fileio.copy(
                 params.torch_serve_parameters.torch_config,
-                os.path.join(config_propreties_uri, "config.properties"),
+                os.path.join(config_properties_uri, "config.properties"),
             )
         else:
             # Generate the config file
@@ -194,7 +216,7 @@ def prepare_torch_service_config(
             # Copy the torch model config to the model store
             fileio.copy(
                 config_file_uri,
-                os.path.join(config_propreties_uri, "config.properties"),
+                os.path.join(config_properties_uri, "config.properties"),
             )
 
     service_config = params.service_config.copy()

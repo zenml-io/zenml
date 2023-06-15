@@ -13,25 +13,25 @@
 #  permissions and limitations under the License.
 """Implementation of Deepchecks dataset materializer."""
 
-from typing import Any, Type
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, Tuple, Type
 
 from deepchecks.tabular import Dataset
 
-from zenml.enums import ArtifactType
-from zenml.materializers.base_materializer import BaseMaterializer
+from zenml.enums import ArtifactType, VisualizationType
 from zenml.materializers.pandas_materializer import PandasMaterializer
 
-DEFAULT_FILENAME = "data.binary"
+if TYPE_CHECKING:
+    from zenml.metadata.metadata_types import MetadataType
 
 
-class DeepchecksDatasetMaterializer(BaseMaterializer):
+class DeepchecksDatasetMaterializer(PandasMaterializer):
     """Materializer to read data to and from Deepchecks dataset."""
 
-    ASSOCIATED_TYPES = (Dataset,)
-    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATA
+    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (Dataset,)
+    ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.DATA
 
     def load(self, data_type: Type[Any]) -> Dataset:
-        """Reads pandas dataframes and creates deepchecks.Dataset from it.
+        """Reads pandas dataframes and creates `deepchecks.Dataset` from it.
 
         Args:
             data_type: The type of the data to read.
@@ -39,23 +39,37 @@ class DeepchecksDatasetMaterializer(BaseMaterializer):
         Returns:
             A Deepchecks Dataset.
         """
-        super().load(data_type)
-
-        # Outsource to pandas
-        pandas_materializer = PandasMaterializer(self.uri)
-        df = pandas_materializer.load(data_type)
-
-        # Recreate from pandas dataframe
+        df = super().load(data_type)
         return Dataset(df)
 
-    def save(self, df: Dataset) -> None:
-        """Serializes pandas dataframe within a Dataset object.
+    def save(self, dataset: Dataset) -> None:
+        """Serializes pandas dataframe within a `Dataset` object.
 
         Args:
-            df: A deepchecks.Dataset object.
+            dataset: A deepchecks.Dataset object.
         """
-        super().save(df)
+        super().save(dataset.data)
 
-        # Outsource to pandas
-        pandas_materializer = PandasMaterializer(self.uri)
-        pandas_materializer.save(df.data)
+    def save_visualizations(
+        self, dataset: Dataset
+    ) -> Dict[str, VisualizationType]:
+        """Saves visualizations for the given Deepchecks dataset.
+
+        Args:
+            dataset: The Deepchecks dataset to save visualizations for.
+
+        Returns:
+            A dictionary of visualization URIs and their types.
+        """
+        return super().save_visualizations(dataset.data)
+
+    def extract_metadata(self, dataset: Dataset) -> Dict[str, "MetadataType"]:
+        """Extract metadata from the given `Dataset` object.
+
+        Args:
+            dataset: The `Dataset` object to extract metadata from.
+
+        Returns:
+            The extracted metadata as a dictionary.
+        """
+        return super().extract_metadata(dataset.data)

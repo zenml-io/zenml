@@ -16,7 +16,16 @@
 import re
 from datetime import datetime, timedelta
 from secrets import token_hex
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional, cast
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    ClassVar,
+    Dict,
+    List,
+    Optional,
+    Union,
+    cast,
+)
 from uuid import UUID
 
 from pydantic import BaseModel, Field, SecretStr, root_validator
@@ -24,6 +33,7 @@ from pydantic import BaseModel, Field, SecretStr, root_validator
 from zenml.config.global_config import GlobalConfiguration
 from zenml.exceptions import AuthorizationException
 from zenml.logger import get_logger
+from zenml.models import BaseFilterModel, RoleResponseModel
 from zenml.models.base_models import (
     BaseRequestModel,
     BaseResponseModel,
@@ -163,9 +173,16 @@ class UserBaseModel(BaseModel):
     )
 
     email_opted_in: Optional[bool] = Field(
+        default=None,
         title="Whether the user agreed to share their email.",
         description="`null` if not answered, `true` if agreed, "
         "`false` if skipped.",
+    )
+
+    hub_token: Optional[str] = Field(
+        default=None,
+        title="JWT Token for the connected Hub account.",
+        max_length=STR_FIELD_MAX_LENGTH,
     )
 
     active: bool = Field(default=False, title="Active account.")
@@ -207,7 +224,10 @@ class UserResponseModel(UserBaseModel, BaseResponseModel):
         default=None, max_length=STR_FIELD_MAX_LENGTH
     )
     teams: Optional[List["TeamResponseModel"]] = Field(
-        title="The list of teams for this user."
+        default=None, title="The list of teams for this user."
+    )
+    roles: Optional[List["RoleResponseModel"]] = Field(
+        default=None, title="The list of roles for this user."
     )
     email: Optional[str] = Field(
         default="",
@@ -245,7 +265,7 @@ class UserAuthModel(UserBaseModel, BaseResponseModel):
     activation_token: Optional[SecretStr] = Field(default=None, exclude=True)
     password: Optional[SecretStr] = Field(default=None, exclude=True)
     teams: Optional[List["TeamResponseModel"]] = Field(
-        title="The list of teams for this user."
+        default=None, title="The list of teams for this user."
     )
 
     def generate_access_token(self, permissions: List[str]) -> str:
@@ -405,6 +425,36 @@ class UserAuthModel(UserBaseModel, BaseResponseModel):
             token_hash = user.get_hashed_activation_token()
         pwd_context = cls._get_crypt_context()
         return cast(bool, pwd_context.verify(activation_token, token_hash))
+
+
+# ------ #
+# FILTER #
+# ------ #
+
+
+class UserFilterModel(BaseFilterModel):
+    """Model to enable advanced filtering of all Users."""
+
+    name: Optional[str] = Field(
+        default=None,
+        description="Name of the user",
+    )
+    full_name: Optional[str] = Field(
+        default=None,
+        description="Full Name of the user",
+    )
+    email: Optional[str] = Field(
+        default=None,
+        description="Full Name of the user",
+    )
+    active: Optional[Union[bool, str]] = Field(
+        default=None,
+        description="Full Name of the user",
+    )
+    email_opted_in: Optional[Union[bool, str]] = Field(
+        default=None,
+        description="Full Name of the user",
+    )
 
 
 # ------- #

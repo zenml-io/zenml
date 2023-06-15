@@ -11,12 +11,14 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+import os
 from datetime import datetime
 from uuid import uuid4
 
 import pytest
 
 from zenml.artifact_stores import BaseArtifactStore
+from zenml.constants import ENV_ZENML_SKIP_IMAGE_BUILDER_DEFAULT
 from zenml.enums import StackComponentType
 from zenml.orchestrators import BaseOrchestrator
 from zenml.stack import Stack, StackComponent, StackValidator
@@ -28,6 +30,9 @@ MOCK_FLAVOR = "mock_flavor"
 @pytest.fixture
 def stack_with_mock_components(mocker):
     """Returns a stack instance with mocked components."""
+    mocker.patch.dict(
+        os.environ, {ENV_ZENML_SKIP_IMAGE_BUILDER_DEFAULT: "True"}
+    )
     orchestrator = mocker.Mock(
         spec=BaseOrchestrator,
         type=StackComponentType.ORCHESTRATOR,
@@ -42,10 +47,12 @@ def stack_with_mock_components(mocker):
     orchestrator.config.required_secrets = set()
     orchestrator.settings_class = None
     orchestrator.config.is_remote = False
+    orchestrator.get_docker_builds.return_value = []
 
     artifact_store.config.required_secrets = set()
     artifact_store.settings_class = None
     artifact_store.config.path = "/"
+    artifact_store.get_docker_builds.return_value = []
 
     return Stack(
         id=uuid4(),
@@ -90,7 +97,7 @@ def stub_component():
         flavor=MOCK_FLAVOR,
         type=StackComponentType.ORCHESTRATOR,
         user=uuid4(),
-        project=uuid4(),
+        workspace=uuid4(),
         created=datetime.now(),
         updated=datetime.now(),
     )

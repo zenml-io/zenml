@@ -15,7 +15,7 @@
 
 import os
 import tempfile
-from typing import Any, Type
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, Tuple, Type
 
 import lightgbm as lgb
 
@@ -23,14 +23,17 @@ from zenml.enums import ArtifactType
 from zenml.io import fileio
 from zenml.materializers.base_materializer import BaseMaterializer
 
+if TYPE_CHECKING:
+    from zenml.metadata.metadata_types import MetadataType
+
 DEFAULT_FILENAME = "data.binary"
 
 
 class LightGBMDatasetMaterializer(BaseMaterializer):
     """Materializer to read data to and from lightgbm.Dataset."""
 
-    ASSOCIATED_TYPES = (lgb.Dataset,)
-    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATA
+    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (lgb.Dataset,)
+    ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.DATA
 
     def load(self, data_type: Type[Any]) -> lgb.Dataset:
         """Reads a lightgbm.Dataset binary file and loads it.
@@ -41,7 +44,6 @@ class LightGBMDatasetMaterializer(BaseMaterializer):
         Returns:
             A lightgbm.Dataset object.
         """
-        super().load(data_type)
         filepath = os.path.join(self.uri, DEFAULT_FILENAME)
 
         # Create a temporary folder
@@ -61,7 +63,6 @@ class LightGBMDatasetMaterializer(BaseMaterializer):
         Args:
             matrix: A lightgbm.Dataset object.
         """
-        super().save(matrix)
         filepath = os.path.join(self.uri, DEFAULT_FILENAME)
 
         # Make a temporary phantom artifact
@@ -72,3 +73,16 @@ class LightGBMDatasetMaterializer(BaseMaterializer):
         # Copy it into artifact store
         fileio.copy(temp_file, filepath)
         fileio.rmtree(temp_dir)
+
+    def extract_metadata(
+        self, matrix: lgb.Dataset
+    ) -> Dict[str, "MetadataType"]:
+        """Extract metadata from the given `Dataset` object.
+
+        Args:
+            matrix: The `Dataset` object to extract metadata from.
+
+        Returns:
+            The extracted metadata as a dictionary.
+        """
+        return {"shape": (matrix.num_data(), matrix.num_feature())}

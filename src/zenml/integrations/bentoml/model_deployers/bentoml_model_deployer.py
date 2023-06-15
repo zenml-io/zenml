@@ -132,7 +132,7 @@ class BentoMLModelDeployer(BaseModelDeployer):
             "BENTO_URI": service_instance.config.bento_uri,
             "SERVICE_PATH": service_instance.status.runtime_path,
             "DAEMON_PID": str(service_instance.status.pid),
-            "PREDICITON_APIS_URLS": predictions_apis_urls,
+            "PREDICTION_APIS_URLS": predictions_apis_urls,
         }
 
     def deploy_model(
@@ -271,7 +271,7 @@ class BentoMLModelDeployer(BaseModelDeployer):
         running: bool = False,
         service_uuid: Optional[UUID] = None,
         pipeline_name: Optional[str] = None,
-        pipeline_run_id: Optional[str] = None,
+        run_name: Optional[str] = None,
         pipeline_step_name: Optional[str] = None,
         model_name: Optional[str] = None,
         model_uri: Optional[str] = None,
@@ -285,7 +285,7 @@ class BentoMLModelDeployer(BaseModelDeployer):
                 to deploy the model.
             pipeline_name: Name of the pipeline that the deployed model was part
                 of.
-            pipeline_run_id: ID of the pipeline run which the deployed model
+            run_name: ID of the pipeline run which the deployed model
                 was part of.
             pipeline_step_name: The name of the pipeline model deployment step
                 that deployed the model.
@@ -309,7 +309,8 @@ class BentoMLModelDeployer(BaseModelDeployer):
             model_uri=model_uri or "",
             working_dir="",
             pipeline_name=pipeline_name or "",
-            pipeline_run_id=pipeline_run_id or "",
+            pipeline_run_id=run_name or "",
+            run_name=run_name or "",
             pipeline_step_name=pipeline_step_name or "",
         )
 
@@ -388,9 +389,8 @@ class BentoMLModelDeployer(BaseModelDeployer):
                 == config.pipeline_step_name
             )
             and (
-                not config.pipeline_run_id
-                or existing_service_config.pipeline_run_id
-                == config.pipeline_run_id
+                not config.run_name
+                or existing_service_config.run_name == config.run_name
             )
         ):
             return True

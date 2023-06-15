@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2020. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2023. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -11,126 +11,115 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from contextlib import contextmanager
-from typing import Generator, Optional, Tuple
+import pytest
+from click import ClickException
 
-from tests.harness.harness import TestHarness
-from zenml.cli import cli
-from zenml.cli.utils import parse_name_and_extra_arguments
+from zenml import __version__ as current_zenml_version
+from zenml.cli import utils as cli_utils
 from zenml.client import Client
-from zenml.enums import PermissionType
-from zenml.models import (
-    ProjectResponseModel,
-    RoleResponseModel,
-    TeamResponseModel,
-    UserResponseModel,
-)
-from zenml.utils.string_utils import random_str
-
-SAMPLE_CUSTOM_ARGUMENTS = [
-    '--custom_argument="value"',
-    '--food="chicken biryani"',
-    "axl",
-    '--best_cat="aria"',
-]
 
 
-# ----- #
-# USERS #
-# ----- #
-user_create_command = cli.commands["user"].commands["create"]
-user_update_command = cli.commands["user"].commands["update"]
-user_delete_command = cli.commands["user"].commands["delete"]
+def test_temporarily_setting_the_active_stack():
+    """Tests the context manager to temporarily activate a stack."""
+    initial_stack = Client().active_stack_model
+    components = {
+        key: components[0].id
+        for key, components in initial_stack.components.items()
+    }
+    new_stack = Client().create_stack(name="new", components=components)
+
+    with cli_utils.temporary_active_stack():
+        assert Client().active_stack_model == initial_stack
+
+    with cli_utils.temporary_active_stack(stack_name_or_id=new_stack.id):
+        assert Client().active_stack_model == new_stack
+
+    assert Client().active_stack_model == initial_stack
 
 
-def sample_user_name(prefix: str = "aria") -> str:
-    """Function to get random username."""
-    return f"{prefix}_{random_str(4)}"
+def test_error_raises_exception():
+    """Tests that the error method raises an exception."""
+    with pytest.raises(Exception):
+        cli_utils.error()
 
 
-def create_sample_user(
-    prefix: Optional[str] = None,
-    password: Optional[str] = None,
-    initial_role: Optional[str] = None,
-) -> UserResponseModel:
-    """Function to create a sample user."""
-    return Client().create_user(
-        name=sample_user_name(prefix),
-        password=password if password is not None else random_str(16),
-        initial_role=initial_role,
+def test_file_expansion_works(tmp_path):
+    """Tests that we can get the contents of a file."""
+    sample_text_value = "aria, blupus and axl are the best friends ever"
+    not_from_file_value = "this is not from a file"
+    file_path = tmp_path / "test.txt"
+    file_path.write_text(sample_text_value)
+
+    # test that the file contents are returned
+    assert (
+        cli_utils.expand_argument_value_from_file(
+            name="sample_text", value=f"@{file_path}"
+        )
+        == sample_text_value
     )
 
-
-@contextmanager
-def create_sample_user_and_login(
-    prefix: Optional[str] = None,
-    initial_role: Optional[str] = None,
-) -> Generator[Tuple[UserResponseModel, Client], None, None]:
-    """Context manager to create a sample user and login with it."""
-    password = random_str(16)
-    user = create_sample_user(prefix, password, initial_role)
-
-    deployment = TestHarness().active_deployment
-    with deployment.connect(
-        custom_username=user.name,
-        custom_password=password,
-    ) as client:
-        yield user, client
-
-
-# ----- #
-# TEAMS #
-# ----- #
-team_create_command = cli.commands["team"].commands["create"]
-team_update_command = cli.commands["team"].commands["update"]
-team_list_command = cli.commands["team"].commands["list"]
-team_describe_command = cli.commands["team"].commands["describe"]
-team_delete_command = cli.commands["team"].commands["delete"]
-
-
-def sample_team_name() -> str:
-    """Function to get random team name."""
-    return f"felines_{random_str(4)}"
-
-
-def create_sample_team() -> TeamResponseModel:
-    """Fixture to get a clean global configuration and repository for an individual test."""
-    return Client().create_team(name=sample_team_name())
-
-
-def test_parse_name_and_extra_arguments_returns_a_dict_of_known_options() -> None:
-    """Check that parse_name_and_extra_arguments returns a dict of known options."""
-    name, parsed_sample_args = parse_name_and_extra_arguments(
-        SAMPLE_CUSTOM_ARGUMENTS
-    )
-    assert isinstance(parsed_sample_args, dict)
-    assert len(parsed_sample_args.values()) == 3
-    assert parsed_sample_args["best_cat"] == '"aria"'
-    assert isinstance(name, str)
-    assert name == "axl"
-
-
-def sample_role_name() -> str:
-    """Function to get random role name."""
-    return f"cat_feeder_{random_str(4)}"
-
-
-def create_sample_role() -> RoleResponseModel:
-    """Fixture to get a global configuration with a  role."""
-    return Client().create_role(
-        name=sample_role_name(), permissions_list=[PermissionType.READ]
+    assert (
+        cli_utils.expand_argument_value_from_file(
+            name="text_not_from_file", value=not_from_file_value
+        )
+        == not_from_file_value
     )
 
+    non_existent_file = tmp_path / "non_existent_file.txt"
+    with pytest.raises(ValueError):
+        cli_utils.expand_argument_value_from_file(
+            name="non_existent_file", value=f"@{non_existent_file}"
+        )
 
-def sample_project_name() -> str:
-    """Function to get random project name."""
-    return f"cat_prj_{random_str(4)}"
+
+def test_parsing_name_and_arguments():
+    """Test that our ability to parse CLI arguments works."""
+    assert cli_utils.parse_name_and_extra_arguments(["foo"]) == ("foo", {})
+    assert cli_utils.parse_name_and_extra_arguments(["foo", "--bar=1"]) == (
+        "foo",
+        {"bar": "1"},
+    )
+    assert cli_utils.parse_name_and_extra_arguments(
+        ["--bar=1", "foo", "--baz=2"]
+    ) == (
+        "foo",
+        {"bar": "1", "baz": "2"},
+    )
+
+    assert cli_utils.parse_name_and_extra_arguments(
+        ["foo", "--bar=![@#$%^&*()"]
+    ) == ("foo", {"bar": "![@#$%^&*()"})
+
+    with pytest.raises(ClickException):
+        cli_utils.parse_name_and_extra_arguments(["--bar=1"])
 
 
-def create_sample_project() -> ProjectResponseModel:
-    """Fixture to get a global configuration with a  role."""
-    return Client().create_project(
-        name=sample_project_name(),
-        description="This project aims to ensure world domination for all "
-        "cat-kind.",
+def test_converting_structured_str_to_dict():
+    """Test that our ability to parse CLI arguments works."""
+    assert cli_utils.convert_structured_str_to_dict(
+        "{'location': 'Nevada', 'aliens':'many'}"
+    ) == {"location": "Nevada", "aliens": "many"}
+
+    with pytest.raises(ClickException):
+        cli_utils.convert_structured_str_to_dict(
+            '{"location: "Nevada", "aliens":"many"}'
+        )
+
+
+def test_parsing_unknown_component_attributes():
+    """Test that our ability to parse CLI arguments works."""
+    assert cli_utils.parse_unknown_component_attributes(
+        ["--foo", "--bar", "--baz", "--qux"]
+    ) == ["foo", "bar", "baz", "qux"]
+    with pytest.raises(AssertionError):
+        cli_utils.parse_unknown_component_attributes(["foo"])
+    with pytest.raises(AssertionError):
+        cli_utils.parse_unknown_component_attributes(["foo=bar=qux"])
+
+
+def test_get_package_information_works():
+    """Test that the package information is returned."""
+    assert (
+        cli_utils.get_package_information("zenml")["zenml"]
+        == current_zenml_version
     )

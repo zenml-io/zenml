@@ -15,15 +15,18 @@
 
 import os
 import tempfile
-from typing import Type
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, Tuple, Type
 
 from PIL import Image
 
-from zenml.enums import ArtifactType
+from zenml.enums import ArtifactType, VisualizationType
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.utils import io_utils
+
+if TYPE_CHECKING:
+    from zenml.metadata.metadata_types import MetadataType
 
 logger = get_logger(__name__)
 
@@ -39,8 +42,8 @@ class PillowImageMaterializer(BaseMaterializer):
     https://pillow.readthedocs.io/en/stable/handbook/image-file-formats.html.
     """
 
-    ASSOCIATED_TYPES = (Image.Image,)
-    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATA
+    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (Image.Image,)
+    ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.DATA
 
     def load(self, data_type: Type[Image.Image]) -> Image.Image:
         """Read from artifact store.
@@ -51,7 +54,6 @@ class PillowImageMaterializer(BaseMaterializer):
         Returns:
             An Image.Image object.
         """
-        super().load(data_type)
         files = io_utils.find_files(self.uri, f"{DEFAULT_IMAGE_FILENAME}.*")
         filepath = [file for file in files if not fileio.isdir(file)][0]
 
@@ -72,7 +74,6 @@ class PillowImageMaterializer(BaseMaterializer):
         Args:
             image: An Image.Image object.
         """
-        super().save(image)
         temp_dir = tempfile.TemporaryDirectory(prefix="zenml-temp-")
         file_extension = image.format or DEFAULT_IMAGE_EXTENSION
         full_filename = f"{DEFAULT_IMAGE_FILENAME}.{file_extension}"
@@ -85,3 +86,39 @@ class PillowImageMaterializer(BaseMaterializer):
         artifact_store_path = os.path.join(self.uri, full_filename)
         io_utils.copy(temp_image_path, artifact_store_path, overwrite=True)  # type: ignore[attr-defined]
         temp_dir.cleanup()
+
+    def save_visualizations(
+        self, image: Image.Image
+    ) -> Dict[str, VisualizationType]:
+        """Finds and saves the given image as a visualization.
+
+        Args:
+            image: The image to save as a visualization.
+
+        Returns:
+            A dictionary of visualization URIs and their types.
+        """
+        file_extension = image.format or DEFAULT_IMAGE_EXTENSION
+        full_filename = f"{DEFAULT_IMAGE_FILENAME}.{file_extension}"
+        artifact_store_path = os.path.join(self.uri, full_filename)
+        return {artifact_store_path: VisualizationType.IMAGE}
+
+    def extract_metadata(
+        self, image: Image.Image
+    ) -> Dict[str, "MetadataType"]:
+        """Extract metadata from the given `Image` object.
+
+        Args:
+            image: The `Image` object to extract metadata from.
+
+        Returns:
+            The extracted metadata as a dictionary.
+        """
+        metadata = {
+            "width": image.width,
+            "height": image.height,
+            "mode": str(image.mode),
+        }
+        if hasattr(image, "filename"):
+            metadata["original_filename"] = str(image.filename)
+        return metadata  # type: ignore[return-value]

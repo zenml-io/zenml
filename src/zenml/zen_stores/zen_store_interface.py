@@ -13,45 +13,86 @@
 #  permissions and limitations under the License.
 """ZenML Store interface."""
 from abc import ABC, abstractmethod
-from typing import List, Optional, Union
+from typing import List, Optional, Tuple, Union
 from uuid import UUID
 
-from zenml.enums import ExecutionStatus, StackComponentType
 from zenml.models import (
+    ArtifactFilterModel,
     ArtifactRequestModel,
     ArtifactResponseModel,
+    CodeRepositoryFilterModel,
+    CodeRepositoryRequestModel,
+    CodeRepositoryResponseModel,
+    CodeRepositoryUpdateModel,
+    ComponentFilterModel,
     ComponentRequestModel,
     ComponentResponseModel,
     ComponentUpdateModel,
+    FlavorFilterModel,
     FlavorRequestModel,
     FlavorResponseModel,
+    FlavorUpdateModel,
+    PipelineBuildFilterModel,
+    PipelineBuildRequestModel,
+    PipelineBuildResponseModel,
+    PipelineDeploymentFilterModel,
+    PipelineDeploymentRequestModel,
+    PipelineDeploymentResponseModel,
+    PipelineFilterModel,
     PipelineRequestModel,
     PipelineResponseModel,
+    PipelineRunFilterModel,
     PipelineRunRequestModel,
     PipelineRunResponseModel,
     PipelineRunUpdateModel,
     PipelineUpdateModel,
-    ProjectRequestModel,
-    ProjectResponseModel,
-    ProjectUpdateModel,
-    RoleAssignmentRequestModel,
-    RoleAssignmentResponseModel,
+    RoleFilterModel,
     RoleRequestModel,
     RoleResponseModel,
     RoleUpdateModel,
+    RunMetadataRequestModel,
+    RunMetadataResponseModel,
+    ScheduleRequestModel,
+    ScheduleResponseModel,
+    ServiceConnectorFilterModel,
+    ServiceConnectorRequestModel,
+    ServiceConnectorResourcesModel,
+    ServiceConnectorResponseModel,
+    ServiceConnectorTypeModel,
+    ServiceConnectorUpdateModel,
+    StackFilterModel,
     StackRequestModel,
     StackResponseModel,
     StackUpdateModel,
+    StepRunFilterModel,
     StepRunRequestModel,
     StepRunResponseModel,
     StepRunUpdateModel,
+    TeamFilterModel,
     TeamRequestModel,
     TeamResponseModel,
+    TeamRoleAssignmentFilterModel,
+    TeamRoleAssignmentRequestModel,
+    TeamRoleAssignmentResponseModel,
     TeamUpdateModel,
     UserAuthModel,
+    UserFilterModel,
     UserRequestModel,
     UserResponseModel,
+    UserRoleAssignmentFilterModel,
+    UserRoleAssignmentRequestModel,
+    UserRoleAssignmentResponseModel,
     UserUpdateModel,
+    WorkspaceFilterModel,
+    WorkspaceRequestModel,
+    WorkspaceResponseModel,
+    WorkspaceUpdateModel,
+)
+from zenml.models.page_model import Page
+from zenml.models.run_metadata_models import RunMetadataFilterModel
+from zenml.models.schedule_model import (
+    ScheduleFilterModel,
+    ScheduleUpdateModel,
 )
 from zenml.models.server_models import ServerModel
 
@@ -99,22 +140,22 @@ class ZenStoreInterface(ABC):
       them call the generic get or list method in this interface.
       * keep the logic required to convert between ZenML domain Model classes
       and internal store representations outside the ZenML domain Model classes
-      * methods for resources that have two or more unique keys (e.g. a Project
+      * methods for resources that have two or more unique keys (e.g. a Workspace
       is uniquely identified by its name as well as its UUID) should reflect
       that in the method variants and/or method arguments:
         * methods that take in a resource identifier as argument should accept
-        all variants of the identifier (e.g. `project_name_or_uuid` for methods
-        that get/list/update/delete Projects)
+        all variants of the identifier (e.g. `workspace_name_or_uuid` for methods
+        that get/list/update/delete Workspaces)
         * if a compound key is involved, separate get methods should be
         implemented (e.g. `get_pipeline` to get a pipeline by ID and
-        `get_pipeline_in_project` to get a pipeline by its name and the ID of
-        the project it belongs to)
+        `get_pipeline_in_workspace` to get a pipeline by its name and the ID of
+        the workspace it belongs to)
       * methods for resources that are scoped as children of other resources
-      (e.g. a Stack is always owned by a Project) should reflect the
+      (e.g. a Stack is always owned by a Workspace) should reflect the
       key(s) of the parent resource in the provided methods and method
       arguments:
         * create methods should take the parent resource UUID(s) as an argument
-        (e.g. `create_stack` takes in the project ID)
+        (e.g. `create_stack` takes in the workspace ID)
         * get methods should be provided to retrieve a resource by the compound
         key that includes the parent resource key(s)
         * list methods should feature optional filter arguments that reflect
@@ -157,7 +198,7 @@ class ZenStoreInterface(ABC):
 
         Raises:
             StackExistsError: If a stack with the same name is already owned
-                by this user in this project.
+                by this user in this workspace.
         """
 
     @abstractmethod
@@ -176,30 +217,16 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def list_stacks(
-        self,
-        project_name_or_id: Optional[Union[str, UUID]] = None,
-        user_name_or_id: Optional[Union[str, UUID]] = None,
-        component_id: Optional[UUID] = None,
-        name: Optional[str] = None,
-        is_shared: Optional[bool] = None,
-    ) -> List[StackResponseModel]:
+        self, stack_filter_model: StackFilterModel
+    ) -> Page[StackResponseModel]:
         """List all stacks matching the given filter criteria.
 
         Args:
-            project_name_or_id: ID or name of the Project containing the stack
-            user_name_or_id: Optionally filter stacks by their owner
-            component_id: Optionally filter for stacks that contain the
-                          component
-            name: Optionally filter stacks by their name
-            is_shared: Optionally filter out stacks by whether they are shared
-                or not
-
+            stack_filter_model: All filter parameters including pagination
+                params
 
         Returns:
             A list of all stacks matching the filter criteria.
-
-        Raises:
-            KeyError: if the project doesn't exist.
         """
 
     @abstractmethod
@@ -248,36 +275,21 @@ class ZenStoreInterface(ABC):
 
         Raises:
             StackComponentExistsError: If a stack component with the same name
-                and type is already owned by this user in this project.
+                and type is already owned by this user in this workspace.
         """
 
     @abstractmethod
     def list_stack_components(
-        self,
-        project_name_or_id: Optional[Union[str, UUID]] = None,
-        user_name_or_id: Optional[Union[str, UUID]] = None,
-        type: Optional[str] = None,
-        flavor_name: Optional[str] = None,
-        name: Optional[str] = None,
-        is_shared: Optional[bool] = None,
-    ) -> List[ComponentResponseModel]:
+        self, component_filter_model: ComponentFilterModel
+    ) -> Page[ComponentResponseModel]:
         """List all stack components matching the given filter criteria.
 
         Args:
-            project_name_or_id: The ID or name of the Project to which the stack
-                components belong
-            user_name_or_id: Optionally filter stack components by the owner
-            type: Optionally filter by type of stack component
-            flavor_name: Optionally filter by flavor
-            name: Optionally filter stack component by name
-            is_shared: Optionally filter out stack component by whether they are
-                shared or not
+            component_filter_model: All filter parameters including pagination
+                params.
 
         Returns:
             A list of all stack components matching the filter criteria.
-
-        Raises:
-            KeyError: if the project doesn't exist.
         """
 
     @abstractmethod
@@ -346,7 +358,21 @@ class ZenStoreInterface(ABC):
 
         Raises:
             EntityExistsError: If a flavor with the same name and type
-                is already owned by this user in this project.
+                is already owned by this user in this workspace.
+        """
+
+    @abstractmethod
+    def update_flavor(
+        self, flavor_id: UUID, flavor_update: FlavorUpdateModel
+    ) -> FlavorResponseModel:
+        """Updates an existing user.
+
+        Args:
+            flavor_id: The id of the flavor to update.
+            flavor_update: The update to be applied to the flavor.
+
+        Returns:
+            The updated flavor.
         """
 
     @abstractmethod
@@ -365,29 +391,16 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def list_flavors(
-        self,
-        project_name_or_id: Optional[Union[str, UUID]] = None,
-        user_name_or_id: Optional[Union[str, UUID]] = None,
-        component_type: Optional[StackComponentType] = None,
-        name: Optional[str] = None,
-        is_shared: Optional[bool] = None,
-    ) -> List[FlavorResponseModel]:
+        self, flavor_filter_model: FlavorFilterModel
+    ) -> Page[FlavorResponseModel]:
         """List all stack component flavors matching the given filter criteria.
 
         Args:
-            project_name_or_id: Optionally filter by the Project to which the
-                component flavors belong
-            user_name_or_id: Optionally filter by the owner
-            component_type: Optionally filter by type of stack component
-            name: Optionally filter flavors by name
-            is_shared: Optionally filter out flavors by whether they are
-                shared or not
+            flavor_filter_model: All filter parameters including pagination
+                params.
 
         Returns:
             List of all the stack component flavors matching the given criteria.
-
-        Raises:
-            KeyError: if the project doesn't exist.
         """
 
     @abstractmethod
@@ -453,12 +466,13 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def list_users(
-        self, name: Optional[str] = None
-    ) -> List[UserResponseModel]:
+        self, user_filter_model: UserFilterModel
+    ) -> Page[UserResponseModel]:
         """List all users.
 
         Args:
-            name: Optionally filter by name
+            user_filter_model: All filter parameters including pagination
+                params.
 
         Returns:
             A list of all users.
@@ -523,15 +537,16 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def list_teams(
-        self, name: Optional[str] = None
-    ) -> List[TeamResponseModel]:
-        """List all teams.
+        self, team_filter_model: TeamFilterModel
+    ) -> Page[TeamResponseModel]:
+        """List all teams matching the given filter criteria.
 
         Args:
-            name: Optionally filter by name
+            team_filter_model: All filter parameters including pagination
+                params.
 
         Returns:
-            A list of all teams.
+            A list of all teams matching the filter criteria.
         """
 
     @abstractmethod
@@ -596,15 +611,16 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def list_roles(
-        self, name: Optional[str] = None
-    ) -> List[RoleResponseModel]:
-        """List all roles.
+        self, role_filter_model: RoleFilterModel
+    ) -> Page[RoleResponseModel]:
+        """List all roles matching the given filter criteria.
 
         Args:
-            name: Optionally filter by name
+            role_filter_model: All filter parameters including pagination
+                params.
 
         Returns:
-            A list of all roles.
+            A list of all roles matching the filter criteria.
         """
 
     @abstractmethod
@@ -635,30 +651,30 @@ class ZenStoreInterface(ABC):
             KeyError: If no role with the given ID exists.
         """
 
-    # ----------------
-    # Role assignments
-    # ----------------
+    # ---------------------
+    # User Role assignments
+    # ---------------------
     @abstractmethod
-    def create_role_assignment(
-        self, role_assignment: RoleAssignmentRequestModel
-    ) -> RoleAssignmentResponseModel:
+    def create_user_role_assignment(
+        self, user_role_assignment: UserRoleAssignmentRequestModel
+    ) -> UserRoleAssignmentResponseModel:
         """Creates a new role assignment.
 
         Args:
-            role_assignment: The role assignment model to create.
+            user_role_assignment: The role assignment model to create.
 
         Returns:
             The newly created role assignment.
         """
 
     @abstractmethod
-    def get_role_assignment(
-        self, role_assignment_id: UUID
-    ) -> RoleAssignmentResponseModel:
+    def get_user_role_assignment(
+        self, user_role_assignment_id: UUID
+    ) -> UserRoleAssignmentResponseModel:
         """Gets a specific role assignment.
 
         Args:
-            role_assignment_id: ID of the role assignment to get.
+            user_role_assignment_id: ID of the role assignment to get.
 
         Returns:
             The requested role assignment.
@@ -668,123 +684,173 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
-    def delete_role_assignment(self, role_assignment_id: UUID) -> None:
+    def delete_user_role_assignment(
+        self, user_role_assignment_id: UUID
+    ) -> None:
         """Delete a specific role assignment.
 
         Args:
-            role_assignment_id: The ID of the specific role assignment
+            user_role_assignment_id: The ID of the specific role assignment
         """
 
     @abstractmethod
-    def list_role_assignments(
-        self,
-        project_name_or_id: Optional[Union[str, UUID]] = None,
-        role_name_or_id: Optional[Union[str, UUID]] = None,
-        team_name_or_id: Optional[Union[str, UUID]] = None,
-        user_name_or_id: Optional[Union[str, UUID]] = None,
-    ) -> List[RoleAssignmentResponseModel]:
-        """List all role assignments.
+    def list_user_role_assignments(
+        self, user_role_assignment_filter_model: UserRoleAssignmentFilterModel
+    ) -> Page[UserRoleAssignmentResponseModel]:
+        """List all roles assignments matching the given filter criteria.
 
         Args:
-            project_name_or_id: If provided, only list assignments for the given
-                project
-            role_name_or_id: If provided, only list assignments of the given
-                role
-            team_name_or_id: If provided, only list assignments for the given
-                team
-            user_name_or_id: If provided, only list assignments for the given
-                user
+            user_role_assignment_filter_model: All filter parameters including
+                pagination params.
 
         Returns:
-            A list of all role assignments.
+            A list of all roles assignments matching the filter criteria.
+        """
+
+    # ---------------------
+    # Team Role assignments
+    # ---------------------
+    @abstractmethod
+    def create_team_role_assignment(
+        self, team_role_assignment: TeamRoleAssignmentRequestModel
+    ) -> TeamRoleAssignmentResponseModel:
+        """Creates a new team role assignment.
+
+        Args:
+            team_role_assignment: The role assignment model to create.
+
+        Returns:
+            The newly created role assignment.
+        """
+
+    @abstractmethod
+    def get_team_role_assignment(
+        self, team_role_assignment_id: UUID
+    ) -> TeamRoleAssignmentResponseModel:
+        """Gets a specific role assignment.
+
+        Args:
+            team_role_assignment_id: ID of the role assignment to get.
+
+        Returns:
+            The requested role assignment.
+
+        Raises:
+            KeyError: If no role assignment with the given ID exists.
+        """
+
+    @abstractmethod
+    def delete_team_role_assignment(
+        self, team_role_assignment_id: UUID
+    ) -> None:
+        """Delete a specific role assignment.
+
+        Args:
+            team_role_assignment_id: The ID of the specific role assignment
+        """
+
+    @abstractmethod
+    def list_team_role_assignments(
+        self, team_role_assignment_filter_model: TeamRoleAssignmentFilterModel
+    ) -> Page[TeamRoleAssignmentResponseModel]:
+        """List all roles assignments matching the given filter criteria.
+
+        Args:
+            team_role_assignment_filter_model: All filter parameters including
+                pagination params.
+
+        Returns:
+            A list of all roles assignments matching the filter criteria.
         """
 
     # --------
-    # Projects
+    # Workspaces
     # --------
 
     @abstractmethod
-    def create_project(
-        self, project: ProjectRequestModel
-    ) -> ProjectResponseModel:
-        """Creates a new project.
+    def create_workspace(
+        self, workspace: WorkspaceRequestModel
+    ) -> WorkspaceResponseModel:
+        """Creates a new workspace.
 
         Args:
-            project: The project to create.
+            workspace: The workspace to create.
 
         Returns:
-            The newly created project.
+            The newly created workspace.
 
         Raises:
-            EntityExistsError: If a project with the given name already exists.
+            EntityExistsError: If a workspace with the given name already exists.
         """
 
     @abstractmethod
-    def get_project(
-        self, project_name_or_id: Union[UUID, str]
-    ) -> ProjectResponseModel:
-        """Get an existing project by name or ID.
+    def get_workspace(
+        self, workspace_name_or_id: Union[UUID, str]
+    ) -> WorkspaceResponseModel:
+        """Get an existing workspace by name or ID.
 
         Args:
-            project_name_or_id: Name or ID of the project to get.
+            workspace_name_or_id: Name or ID of the workspace to get.
 
         Returns:
-            The requested project.
+            The requested workspace.
 
         Raises:
-            KeyError: If there is no such project.
+            KeyError: If there is no such workspace.
         """
 
     @abstractmethod
-    def list_projects(
-        self, name: Optional[str] = None
-    ) -> List[ProjectResponseModel]:
-        """List all projects.
+    def list_workspaces(
+        self, workspace_filter_model: WorkspaceFilterModel
+    ) -> Page[WorkspaceResponseModel]:
+        """List all workspace matching the given filter criteria.
 
         Args:
-            name: Optionally filter by name
+            workspace_filter_model: All filter parameters including pagination
+                params.
 
         Returns:
-            A list of all projects.
+            A list of all workspace matching the filter criteria.
         """
 
     @abstractmethod
-    def update_project(
-        self, project_id: UUID, project_update: ProjectUpdateModel
-    ) -> ProjectResponseModel:
-        """Update an existing project.
+    def update_workspace(
+        self, workspace_id: UUID, workspace_update: WorkspaceUpdateModel
+    ) -> WorkspaceResponseModel:
+        """Update an existing workspace.
 
         Args:
-            project_id: The ID of the project to be updated.
-            project_update: The update to be applied to the project.
+            workspace_id: The ID of the workspace to be updated.
+            workspace_update: The update to be applied to the workspace.
 
         Returns:
-            The updated project.
+            The updated workspace.
 
         Raises:
-            KeyError: if the project does not exist.
+            KeyError: if the workspace does not exist.
         """
 
     @abstractmethod
-    def delete_project(self, project_name_or_id: Union[str, UUID]) -> None:
-        """Deletes a project.
+    def delete_workspace(self, workspace_name_or_id: Union[str, UUID]) -> None:
+        """Deletes a workspace.
 
         Args:
-            project_name_or_id: Name or ID of the project to delete.
+            workspace_name_or_id: Name or ID of the workspace to delete.
 
         Raises:
-            KeyError: If no project with the given name exists.
+            KeyError: If no workspace with the given name exists.
         """
 
     # ---------
     # Pipelines
     # ---------
+
     @abstractmethod
     def create_pipeline(
         self,
         pipeline: PipelineRequestModel,
     ) -> PipelineResponseModel:
-        """Creates a new pipeline in a project.
+        """Creates a new pipeline in a workspace.
 
         Args:
             pipeline: The pipeline to create.
@@ -793,7 +859,7 @@ class ZenStoreInterface(ABC):
             The newly created pipeline.
 
         Raises:
-            KeyError: if the project does not exist.
+            KeyError: if the workspace does not exist.
             EntityExistsError: If an identical pipeline already exists.
         """
 
@@ -813,24 +879,16 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def list_pipelines(
-        self,
-        project_name_or_id: Optional[Union[str, UUID]] = None,
-        user_name_or_id: Optional[Union[str, UUID]] = None,
-        name: Optional[str] = None,
-    ) -> List[PipelineResponseModel]:
-        """List all pipelines in the project.
+        self, pipeline_filter_model: PipelineFilterModel
+    ) -> Page[PipelineResponseModel]:
+        """List all pipelines matching the given filter criteria.
 
         Args:
-            project_name_or_id: If provided, only list pipelines in this
-                project.
-            user_name_or_id: If provided, only list pipelines from this user.
-            name: If provided, only list pipelines with this name.
+            pipeline_filter_model: All filter parameters including pagination
+                params.
 
         Returns:
-            A list of pipelines.
-
-        Raises:
-            KeyError: if the project does not exist.
+            A list of all pipelines matching the filter criteria.
         """
 
     @abstractmethod
@@ -861,6 +919,205 @@ class ZenStoreInterface(ABC):
 
         Raises:
             KeyError: if the pipeline doesn't exist.
+        """
+
+    # ---------
+    # Builds
+    # ---------
+
+    @abstractmethod
+    def create_build(
+        self,
+        build: PipelineBuildRequestModel,
+    ) -> PipelineBuildResponseModel:
+        """Creates a new build in a workspace.
+
+        Args:
+            build: The build to create.
+
+        Returns:
+            The newly created build.
+
+        Raises:
+            KeyError: If the workspace does not exist.
+            EntityExistsError: If an identical build already exists.
+        """
+
+    @abstractmethod
+    def get_build(self, build_id: UUID) -> PipelineBuildResponseModel:
+        """Get a build with a given ID.
+
+        Args:
+            build_id: ID of the build.
+
+        Returns:
+            The build.
+
+        Raises:
+            KeyError: If the build does not exist.
+        """
+
+    @abstractmethod
+    def list_builds(
+        self, build_filter_model: PipelineBuildFilterModel
+    ) -> Page[PipelineBuildResponseModel]:
+        """List all builds matching the given filter criteria.
+
+        Args:
+            build_filter_model: All filter parameters including pagination
+                params.
+
+        Returns:
+            A page of all builds matching the filter criteria.
+        """
+
+    @abstractmethod
+    def delete_build(self, build_id: UUID) -> None:
+        """Deletes a build.
+
+        Args:
+            build_id: The ID of the build to delete.
+
+        Raises:
+            KeyError: if the build doesn't exist.
+        """
+
+    # ----------------------
+    # Pipeline Deployments
+    # ----------------------
+
+    @abstractmethod
+    def create_deployment(
+        self,
+        deployment: PipelineDeploymentRequestModel,
+    ) -> PipelineDeploymentResponseModel:
+        """Creates a new deployment in a workspace.
+
+        Args:
+            deployment: The deployment to create.
+
+        Returns:
+            The newly created deployment.
+
+        Raises:
+            KeyError: If the workspace does not exist.
+            EntityExistsError: If an identical deployment already exists.
+        """
+
+    @abstractmethod
+    def get_deployment(
+        self, deployment_id: UUID
+    ) -> PipelineDeploymentResponseModel:
+        """Get a deployment with a given ID.
+
+        Args:
+            deployment_id: ID of the deployment.
+
+        Returns:
+            The deployment.
+
+        Raises:
+            KeyError: If the deployment does not exist.
+        """
+
+    @abstractmethod
+    def list_deployments(
+        self, deployment_filter_model: PipelineDeploymentFilterModel
+    ) -> Page[PipelineDeploymentResponseModel]:
+        """List all deployments matching the given filter criteria.
+
+        Args:
+            deployment_filter_model: All filter parameters including pagination
+                params.
+
+        Returns:
+            A page of all deployments matching the filter criteria.
+        """
+
+    @abstractmethod
+    def delete_deployment(self, deployment_id: UUID) -> None:
+        """Deletes a deployment.
+
+        Args:
+            deployment_id: The ID of the deployment to delete.
+
+        Raises:
+            KeyError: If the deployment doesn't exist.
+        """
+
+    # ---------
+    # Schedules
+    # ---------
+
+    @abstractmethod
+    def create_schedule(
+        self, schedule: ScheduleRequestModel
+    ) -> ScheduleResponseModel:
+        """Creates a new schedule.
+
+        Args:
+            schedule: The schedule to create.
+
+        Returns:
+            The newly created schedule.
+        """
+
+    @abstractmethod
+    def get_schedule(self, schedule_id: UUID) -> ScheduleResponseModel:
+        """Get a schedule with a given ID.
+
+        Args:
+            schedule_id: ID of the schedule.
+
+        Returns:
+            The schedule.
+
+        Raises:
+            KeyError: if the schedule does not exist.
+        """
+
+    @abstractmethod
+    def list_schedules(
+        self, schedule_filter_model: ScheduleFilterModel
+    ) -> Page[ScheduleResponseModel]:
+        """List all schedules in the workspace.
+
+        Args:
+            schedule_filter_model: All filter parameters including pagination
+                params
+
+        Returns:
+            A list of schedules.
+        """
+
+    @abstractmethod
+    def update_schedule(
+        self,
+        schedule_id: UUID,
+        schedule_update: ScheduleUpdateModel,
+    ) -> ScheduleResponseModel:
+        """Updates a schedule.
+
+        Args:
+            schedule_id: The ID of the schedule to be updated.
+            schedule_update: The update to be applied.
+
+        Returns:
+            The updated schedule.
+
+        Raises:
+            KeyError: if the schedule doesn't exist.
+        """
+
+    @abstractmethod
+    def delete_schedule(self, schedule_id: UUID) -> None:
+        """Deletes a schedule.
+
+        Args:
+            schedule_id: The ID of the schedule to delete.
+
+        Raises:
+            KeyError: if the schedule doesn't exist.
         """
 
     # --------------
@@ -903,7 +1160,7 @@ class ZenStoreInterface(ABC):
     @abstractmethod
     def get_or_create_run(
         self, pipeline_run: PipelineRunRequestModel
-    ) -> PipelineRunResponseModel:
+    ) -> Tuple[PipelineRunResponseModel, bool]:
         """Gets or creates a pipeline run.
 
         If a run with the same ID or name already exists, it is returned.
@@ -913,35 +1170,22 @@ class ZenStoreInterface(ABC):
             pipeline_run: The pipeline run to get or create.
 
         Returns:
-            The pipeline run.
+            The pipeline run, and a boolean indicating whether the run was
+            created or not.
         """
 
     @abstractmethod
     def list_runs(
-        self,
-        name: Optional[str] = None,
-        project_name_or_id: Optional[Union[str, UUID]] = None,
-        stack_id: Optional[UUID] = None,
-        component_id: Optional[UUID] = None,
-        user_name_or_id: Optional[Union[str, UUID]] = None,
-        pipeline_id: Optional[UUID] = None,
-        unlisted: bool = False,
-    ) -> List[PipelineRunResponseModel]:
-        """Gets all pipeline runs.
+        self, runs_filter_model: PipelineRunFilterModel
+    ) -> Page[PipelineRunResponseModel]:
+        """List all pipeline runs matching the given filter criteria.
 
         Args:
-            name: Run name if provided
-            project_name_or_id: If provided, only return runs for this project.
-            stack_id: If provided, only return runs for this stack.
-            component_id: Optionally filter for runs that used the
-                          component
-            user_name_or_id: If provided, only return runs for this user.
-            pipeline_id: If provided, only return runs for this pipeline.
-            unlisted: If True, only return unlisted runs that are not
-                associated with any pipeline (filter by `pipeline_id==None`).
+            runs_filter_model: All filter parameters including pagination
+                params.
 
         Returns:
-            A list of all pipeline runs.
+            A list of all pipeline runs matching the filter criteria.
         """
 
     @abstractmethod
@@ -1009,22 +1253,16 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def list_run_steps(
-        self,
-        run_id: Optional[UUID] = None,
-        project_id: Optional[UUID] = None,
-        cache_key: Optional[str] = None,
-        status: Optional[ExecutionStatus] = None,
-    ) -> List[StepRunResponseModel]:
-        """Get all step runs.
+        self, step_run_filter_model: StepRunFilterModel
+    ) -> Page[StepRunResponseModel]:
+        """List all step runs matching the given filter criteria.
 
         Args:
-            run_id: If provided, only return steps for this pipeline run.
-            project_id: If provided, only return step runs in this project.
-            cache_key: If provided, only return steps with this cache key.
-            status: If provided, only return steps with this status.
+            step_run_filter_model: All filter parameters including pagination
+                params.
 
         Returns:
-            A list of step runs.
+            A list of all step runs matching the filter criteria.
         """
 
     @abstractmethod
@@ -1079,26 +1317,16 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def list_artifacts(
-        self,
-        project_name_or_id: Optional[Union[str, UUID]] = None,
-        artifact_uri: Optional[str] = None,
-        artifact_store_id: Optional[UUID] = None,
-        only_unused: bool = False,
-    ) -> List[ArtifactResponseModel]:
-        """Lists all artifacts.
+        self, artifact_filter_model: ArtifactFilterModel
+    ) -> Page[ArtifactResponseModel]:
+        """List all artifacts matching the given filter criteria.
 
         Args:
-            project_name_or_id: If specified, only artifacts from the given
-                project will be returned.
-            artifact_uri: If specified, only artifacts with the given URI will
-                be returned.
-            artifact_store_id: If specified, only artifacts from the given
-                artifact store will be returned.
-            only_unused: If True, only return artifacts that are not used in
-                any runs.
+            artifact_filter_model: All filter parameters including pagination
+                params.
 
         Returns:
-            A list of all artifacts.
+            A list of all artifacts matching the filter criteria.
         """
 
     @abstractmethod
@@ -1110,4 +1338,345 @@ class ZenStoreInterface(ABC):
 
         Raises:
             KeyError: if the artifact doesn't exist.
+        """
+
+    # ------------
+    # Run Metadata
+    # ------------
+
+    @abstractmethod
+    def create_run_metadata(
+        self, run_metadata: RunMetadataRequestModel
+    ) -> RunMetadataResponseModel:
+        """Creates run metadata.
+
+        Args:
+            run_metadata: The run metadata to create.
+
+        Returns:
+            The created run metadata.
+        """
+
+    @abstractmethod
+    def list_run_metadata(
+        self,
+        run_metadata_filter_model: RunMetadataFilterModel,
+    ) -> Page[RunMetadataResponseModel]:
+        """List run metadata.
+
+        Args:
+            run_metadata_filter_model: All filter parameters including
+                pagination params.
+
+        Returns:
+            The run metadata.
+        """
+
+    # -----------------
+    # Code Repositories
+    # -----------------
+
+    @abstractmethod
+    def create_code_repository(
+        self, code_repository: CodeRepositoryRequestModel
+    ) -> CodeRepositoryResponseModel:
+        """Creates a new code repository.
+
+        Args:
+            code_repository: Code repository to be created.
+
+        Returns:
+            The newly created code repository.
+
+        Raises:
+            EntityExistsError: If a code repository with the given name already
+                exists.
+        """
+
+    @abstractmethod
+    def get_code_repository(
+        self, code_repository_id: UUID
+    ) -> CodeRepositoryResponseModel:
+        """Gets a specific code repository.
+
+        Args:
+            code_repository_id: The ID of the code repository to get.
+
+        Returns:
+            The requested code repository, if it was found.
+
+        Raises:
+            KeyError: If no code repository with the given ID exists.
+        """
+
+    @abstractmethod
+    def list_code_repositories(
+        self, filter_model: CodeRepositoryFilterModel
+    ) -> Page[CodeRepositoryResponseModel]:
+        """List all code repositories.
+
+        Args:
+            filter_model: All filter parameters including pagination
+                params.
+
+        Returns:
+            A page of all code repositories.
+        """
+
+    @abstractmethod
+    def update_code_repository(
+        self, code_repository_id: UUID, update: CodeRepositoryUpdateModel
+    ) -> CodeRepositoryResponseModel:
+        """Updates an existing code repository.
+
+        Args:
+            code_repository_id: The ID of the code repository to update.
+            update: The update to be applied to the code repository.
+
+        Returns:
+            The updated code repository.
+
+        Raises:
+            KeyError: If no code repository with the given name exists.
+        """
+
+    @abstractmethod
+    def delete_code_repository(self, code_repository_id: UUID) -> None:
+        """Deletes a code repository.
+
+        Args:
+            code_repository_id: The ID of the code repository to delete.
+
+        Raises:
+            KeyError: If no code repository with the given ID exists.
+        """
+
+    # ------------------
+    # Service Connectors
+    # ------------------
+
+    @abstractmethod
+    def create_service_connector(
+        self,
+        service_connector: ServiceConnectorRequestModel,
+    ) -> ServiceConnectorResponseModel:
+        """Creates a new service connector.
+
+        Args:
+            service_connector: Service connector to be created.
+
+        Returns:
+            The newly created service connector.
+
+        Raises:
+            EntityExistsError: If a service connector with the given name
+                is already owned by this user in this workspace.
+        """
+
+    @abstractmethod
+    def get_service_connector(
+        self, service_connector_id: UUID
+    ) -> ServiceConnectorResponseModel:
+        """Gets a specific service connector.
+
+        Args:
+            service_connector_id: The ID of the service connector to get.
+
+        Returns:
+            The requested service connector, if it was found.
+
+        Raises:
+            KeyError: If no service connector with the given ID exists.
+        """
+
+    @abstractmethod
+    def list_service_connectors(
+        self, filter_model: ServiceConnectorFilterModel
+    ) -> Page[ServiceConnectorResponseModel]:
+        """List all service connectors.
+
+        Args:
+            filter_model: All filter parameters including pagination
+                params.
+
+        Returns:
+            A page of all service connectors.
+        """
+
+    @abstractmethod
+    def update_service_connector(
+        self, service_connector_id: UUID, update: ServiceConnectorUpdateModel
+    ) -> ServiceConnectorResponseModel:
+        """Updates an existing service connector.
+
+        The update model contains the fields to be updated. If a field value is
+        set to None in the model, the field is not updated, but there are
+        special rules concerning some fields:
+
+        * the `configuration` and `secrets` fields together represent a full
+        valid configuration update, not just a partial update. If either is
+        set (i.e. not None) in the update, their values are merged together and
+        will replace the existing configuration and secrets values.
+        * the `resource_id` field value is also a full replacement value: if set
+        to `None`, the resource ID is removed from the service connector.
+        * the `expiration_seconds` field value is also a full replacement value:
+        if set to `None`, the expiration is removed from the service connector.
+        * the `secret_id` field value in the update is ignored, given that
+        secrets are managed internally by the ZenML store.
+        * the `labels` field is also a full labels update: if set (i.e. not
+        `None`), all existing labels are removed and replaced by the new labels
+        in the update.
+
+        Args:
+            service_connector_id: The ID of the service connector to update.
+            update: The update to be applied to the service connector.
+
+        Returns:
+            The updated service connector.
+
+        Raises:
+            KeyError: If no service connector with the given name exists.
+        """
+
+    @abstractmethod
+    def delete_service_connector(self, service_connector_id: UUID) -> None:
+        """Deletes a service connector.
+
+        Args:
+            service_connector_id: The ID of the service connector to delete.
+
+        Raises:
+            KeyError: If no service connector with the given ID exists.
+        """
+
+    @abstractmethod
+    def verify_service_connector_config(
+        self,
+        service_connector: ServiceConnectorRequestModel,
+        list_resources: bool = True,
+    ) -> ServiceConnectorResourcesModel:
+        """Verifies if a service connector configuration has access to resources.
+
+        Args:
+            service_connector: The service connector configuration to verify.
+            list_resources: If True, the list of all resources accessible
+                through the service connector is returned.
+
+        Returns:
+            The list of resources that the service connector configuration has
+            access to.
+
+        Raises:
+            NotImplementError: If the service connector cannot be verified
+                on the store e.g. due to missing package dependencies.
+        """
+
+    @abstractmethod
+    def verify_service_connector(
+        self,
+        service_connector_id: UUID,
+        resource_type: Optional[str] = None,
+        resource_id: Optional[str] = None,
+        list_resources: bool = True,
+    ) -> ServiceConnectorResourcesModel:
+        """Verifies if a service connector instance has access to one or more resources.
+
+        Args:
+            service_connector_id: The ID of the service connector to verify.
+            resource_type: The type of resource to verify access to.
+            resource_id: The ID of the resource to verify access to.
+            list_resources: If True, the list of all resources accessible
+                through the service connector and matching the supplied resource
+                type and ID are returned.
+
+        Returns:
+            The list of resources that the service connector has access to,
+            scoped to the supplied resource type and ID, if provided.
+
+        Raises:
+            KeyError: If no service connector with the given name exists.
+            NotImplementError: If the service connector cannot be verified
+                e.g. due to missing package dependencies.
+        """
+
+    @abstractmethod
+    def get_service_connector_client(
+        self,
+        service_connector_id: UUID,
+        resource_type: Optional[str] = None,
+        resource_id: Optional[str] = None,
+    ) -> ServiceConnectorResponseModel:
+        """Get a service connector client for a service connector and given resource.
+
+        Args:
+            service_connector_id: The ID of the base service connector to use.
+            resource_type: The type of resource to get a client for.
+            resource_id: The ID of the resource to get a client for.
+
+        Returns:
+            A service connector client that can be used to access the given
+            resource.
+
+        Raises:
+            KeyError: If no service connector with the given name exists.
+            NotImplementError: If the service connector cannot be instantiated
+                on the store e.g. due to missing package dependencies.
+        """
+
+    @abstractmethod
+    def list_service_connector_resources(
+        self,
+        user_name_or_id: Union[str, UUID],
+        workspace_name_or_id: Union[str, UUID],
+        connector_type: Optional[str] = None,
+        resource_type: Optional[str] = None,
+        resource_id: Optional[str] = None,
+    ) -> List[ServiceConnectorResourcesModel]:
+        """List resources that can be accessed by service connectors.
+
+        Args:
+            user_name_or_id: The name or ID of the user to scope to.
+            workspace_name_or_id: The name or ID of the workspace to scope to.
+            connector_type: The type of service connector to scope to.
+            resource_type: The type of resource to scope to.
+            resource_id: The ID of the resource to scope to.
+
+        Returns:
+            The matching list of resources that available service
+            connectors have access to.
+        """
+
+    @abstractmethod
+    def list_service_connector_types(
+        self,
+        connector_type: Optional[str] = None,
+        resource_type: Optional[str] = None,
+        auth_method: Optional[str] = None,
+    ) -> List[ServiceConnectorTypeModel]:
+        """Get a list of service connector types.
+
+        Args:
+            connector_type: Filter by connector type.
+            resource_type: Filter by resource type.
+            auth_method: Filter by authentication method.
+
+        Returns:
+            List of service connector types.
+        """
+
+    @abstractmethod
+    def get_service_connector_type(
+        self,
+        connector_type: str,
+    ) -> ServiceConnectorTypeModel:
+        """Returns the requested service connector type.
+
+        Args:
+            connector_type: the service connector type identifier.
+
+        Returns:
+            The requested service connector type.
+
+        Raises:
+            KeyError: If no service connector type with the given ID exists.
         """

@@ -26,6 +26,8 @@ from typing import (
 )
 
 import gcsfs
+from google.cloud import storage
+from google.oauth2 import credentials as gcp_credentials
 
 from zenml.artifact_stores import BaseArtifactStore
 from zenml.integrations.gcp.flavors.gcp_artifact_store_flavor import (
@@ -53,6 +55,33 @@ class GCPArtifactStore(BaseArtifactStore, AuthenticationMixin):
         """
         return cast(GCPArtifactStoreConfig, self._config)
 
+    def get_credentials(
+        self,
+    ) -> Optional[Union[Dict[str, Any], gcp_credentials.Credentials]]:
+        """Returns the credentials for the GCP Artifact Store if configured.
+
+        Returns:
+            The credentials.
+
+        Raises:
+            RuntimeError: If the linked connector returns the wrong type of
+                client.
+        """
+        connector = self.get_connector()
+        if connector:
+            client = connector.connect()
+            if not isinstance(client, storage.Client):
+                raise RuntimeError(
+                    f"Expected a google.cloud.storage.Client while trying to "
+                    f"use the linked connector, but got {type(client)}."
+                )
+            return client._credentials
+
+        secret = self.get_authentication_secret(
+            expected_schema_type=GCPSecretSchema
+        )
+        return secret.get_credential_dict() if secret else None
+
     @property
     def filesystem(self) -> gcsfs.GCSFileSystem:
         """The gcsfs filesystem to access this artifact store.
@@ -60,12 +89,12 @@ class GCPArtifactStore(BaseArtifactStore, AuthenticationMixin):
         Returns:
             The gcsfs filesystem to access this artifact store.
         """
-        if not self._filesystem:
-            secret = self.get_authentication_secret(
-                expected_schema_type=GCPSecretSchema
-            )
-            token = secret.get_credential_dict() if secret else None
-            self._filesystem = gcsfs.GCSFileSystem(token=token)
+        # Refresh the credentials also if the connector has expired
+        if self._filesystem and not self.connector_has_expired():
+            return self._filesystem
+
+        token = self.get_credentials()
+        self._filesystem = gcsfs.GCSFileSystem(token=token)
 
         return self._filesystem
 
@@ -254,6 +283,17 @@ class GCPArtifactStore(BaseArtifactStore, AuthenticationMixin):
             A dictionary with the stat info.
         """
         return self.filesystem.stat(path=path)  # type: ignore[no-any-return]
+
+    def size(self, path: PathType) -> int:
+        """Get the size of a file in bytes.
+
+        Args:
+            path: The path to the file.
+
+        Returns:
+            The size of the file in bytes.
+        """
+        return self.filesystem.size(path=path)  # type: ignore[no-any-return]
 
     def walk(
         self,

@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Class for lineage graph generation."""
 
-from typing import List, Optional, Union
+from typing import List, Optional, Tuple, Union
 
 from pydantic import BaseModel
 
@@ -37,7 +37,8 @@ class LineageGraph(BaseModel):
 
     nodes: List[Union[StepNode, ArtifactNode]] = []
     edges: List[Edge] = []
-    root_step_id: Optional[str]
+    root_step_id: Optional[str] = None
+    run_metadata: List[Tuple[str, str, str]] = []
 
     def generate_step_nodes_and_edges(self, step: StepView) -> None:
         """Generates the step nodes and the edges between them.
@@ -67,6 +68,10 @@ class LineageGraph(BaseModel):
                     configuration=step_config,
                     inputs={k: v.uri for k, v in step.inputs.items()},
                     outputs={k: v.uri for k, v in step.outputs.items()},
+                    metadata=[
+                        (m.key, str(m.value), str(m.type))
+                        for m in step.metadata.values()
+                    ],
                 ),
             )
         )
@@ -82,10 +87,14 @@ class LineageGraph(BaseModel):
                         status=step.status,
                         is_cached=step.status == ExecutionStatus.CACHED,
                         artifact_type=artifact.type,
-                        artifact_data_type=artifact.data_type,
+                        artifact_data_type=artifact.data_type.import_path,
                         parent_step_id=str(step.id),
-                        producer_step_id=str(artifact.producer_step_id),
+                        producer_step_id=str(artifact.producer_step_run_id),
                         uri=artifact.uri,
+                        metadata=[
+                            (m.key, str(m.value), str(m.type))
+                            for m in artifact.metadata.values()
+                        ],
                     ),
                 )
             )
@@ -113,5 +122,8 @@ class LineageGraph(BaseModel):
         Args:
             run: The PipelineRunView to generate the lineage graph for.
         """
+        self.run_metadata = [
+            (m.key, str(m.value), str(m.type)) for m in run.metadata.values()
+        ]
         for step in run.steps:
             self.generate_step_nodes_and_edges(step)

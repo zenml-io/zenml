@@ -16,70 +16,28 @@
 import ipaddress
 import os
 import sys
-from typing import TYPE_CHECKING, Any, Dict, Optional, Union
+from typing import Any, Dict, Optional, Union
 
 import click
 import yaml
 from rich.errors import MarkupError
 
+import zenml
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import cli
 from zenml.client import Client
 from zenml.config.global_config import GlobalConfiguration
 from zenml.console import console
-from zenml.constants import ENV_AUTO_OPEN_DASHBOARD, handle_bool_env_var
 from zenml.enums import ServerProviderType, StoreType
+from zenml.exceptions import IllegalOperationError
 from zenml.logger import get_logger
 from zenml.utils import yaml_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, event_handler
+from zenml.zen_server.utils import get_active_deployment
 
 logger = get_logger(__name__)
 
 LOCAL_ZENML_SERVER_NAME = "local"
-
-if TYPE_CHECKING:
-    from zenml.zen_server.deploy.deployment import ServerDeployment
-
-
-def get_active_deployment(local: bool = False) -> Optional["ServerDeployment"]:
-    """Get the active local or remote server deployment.
-
-    Call this function to retrieve the local or remote server deployment that
-    was last provisioned on this machine.
-
-    Args:
-        local: Whether to return the local active deployment or the remote one.
-
-    Returns:
-        The local or remote active server deployment or None, if no deployment
-        was found.
-    """
-    from zenml.zen_server.deploy.deployer import ServerDeployer
-
-    deployer = ServerDeployer()
-    if local:
-        servers = deployer.list_servers(provider_type=ServerProviderType.LOCAL)
-        if not servers:
-            servers = deployer.list_servers(
-                provider_type=ServerProviderType.DOCKER
-            )
-    else:
-        servers = deployer.list_servers()
-
-    if not servers:
-        return None
-
-    for server in servers:
-        if server.config.provider in [
-            ServerProviderType.LOCAL,
-            ServerProviderType.DOCKER,
-        ]:
-            if local:
-                return server
-        elif not local:
-            return server
-
-    return None
 
 
 @cli.command("up", help="Start the ZenML dashboard locally.")
@@ -127,6 +85,12 @@ def get_active_deployment(local: bool = False) -> Optional["ServerDeployment"]:
     help="Use a custom Docker image for the ZenML server. Only used when "
     "`--docker` is set.",
 )
+@click.option(
+    "--ngrok-token",
+    type=str,
+    default=None,
+    help="Specify an ngrok auth token to use for exposing the ZenML server.",
+)
 def up(
     docker: bool = False,
     ip_address: Union[
@@ -136,6 +100,7 @@ def up(
     blocking: bool = False,
     connect: bool = False,
     image: Optional[str] = None,
+    ngrok_token: Optional[str] = None,
 ) -> None:
     """Start the ZenML dashboard locally and connect the client to it.
 
@@ -148,6 +113,9 @@ def up(
             connected to a remote ZenML server.
         image: A custom Docker image to use for the server, when the
             `--docker` flag is set.
+        ngrok_token: An ngrok auth token to use for exposing the ZenML dashboard
+            on a public domain. Primarily used for accessing the dashboard in
+            Colab.
     """
     with event_handler(
         AnalyticsEvent.ZENML_SERVER_STARTED
@@ -195,7 +163,10 @@ def up(
             config_attrs["image"] = image
         if port is not None:
             config_attrs["port"] = port
-        if ip_address is not None and provider == ServerProviderType.DOCKER:
+        if ip_address is not None and provider in [
+            ServerProviderType.LOCAL,
+            ServerProviderType.DOCKER,
+        ]:
             config_attrs["ip_address"] = ip_address
 
         from zenml.zen_server.deploy.deployment import ServerDeploymentConfig
@@ -225,7 +196,6 @@ def up(
                 and gc.store.type == StoreType.REST
                 and not connect
             ):
-
                 try:
                     if gc.zen_store.is_local_store():
                         connect = True
@@ -260,22 +230,29 @@ def up(
                     f"The local ZenML dashboard is available at "
                     f"'{server.status.url}'. You can connect to it using the "
                     f"'{DEFAULT_USERNAME}' username and an empty password. "
-                    f"To open the dashboard in a browser automatically, "
-                    f"set the env variable AUTO_OPEN_DASHBOARD=true."
                 )
+                zenml.show(ngrok_token=ngrok_token)
 
-                if handle_bool_env_var(ENV_AUTO_OPEN_DASHBOARD, default=True):
-                    try:
-                        import webbrowser
 
-                        webbrowser.open(server.status.url)
-                        cli_utils.declare(
-                            "Automatically opening the dashboard in your "
-                            "browser. To disable this, set the env variable "
-                            "AUTO_OPEN_DASHBOARD=false."
-                        )
-                    except Exception as e:
-                        logger.error(e)
+@click.option(
+    "--ngrok-token",
+    type=str,
+    default=None,
+    help="Specify an ngrok auth token to use for exposing the ZenML server.",
+)
+@cli.command("show", help="Show the ZenML dashboard.")
+def show(ngrok_token: Optional[str] = None) -> None:
+    """Show the ZenML dashboard.
+
+    Args:
+        ngrok_token: An ngrok auth token to use for exposing the ZenML dashboard
+            on a public domain. Primarily used for accessing the dashboard in
+            Colab.
+    """
+    try:
+        zenml.show(ngrok_token=ngrok_token)
+    except RuntimeError as e:
+        cli_utils.error(str(e))
 
 
 @cli.command("down", help="Shut down the local ZenML dashboard.")
@@ -388,7 +365,8 @@ def deploy(
         gcp_project_id: The project in GCP to deploy the server to.
     """
     with event_handler(
-        AnalyticsEvent.ZENML_SERVER_DEPLOYED
+        event=AnalyticsEvent.ZENML_SERVER_DEPLOYED,
+        v2=True,
     ) as analytics_handler:
         config_dict: Dict[str, Any] = {}
 
@@ -542,6 +520,9 @@ def status() -> None:
     store_cfg = gc.store
 
     cli_utils.declare(f"Using configuration from: '{gc.config_directory}'")
+    cli_utils.declare(
+        f"Local store files are located at: '{gc.local_stores_path}'"
+    )
     if client.root:
         cli_utils.declare(f"Active repository root: {client.root}")
     if store_cfg is not None:
@@ -555,7 +536,8 @@ def status() -> None:
     scope = "repository" if client.uses_local_configuration else "global"
     cli_utils.declare(f"The current user is: '{client.active_user.name}'")
     cli_utils.declare(
-        f"The active project is: '{client.active_project.name}' " f"({scope})"
+        f"The active workspace is: '{client.active_workspace.name}' "
+        f"({scope})"
     )
     cli_utils.declare(
         f"The active stack is: '{client.active_stack_model.name}' ({scope})"
@@ -577,7 +559,7 @@ def status() -> None:
 @cli.command(
     "connect",
     help=(
-        """Configure your client to connect to a remote ZenML server.
+        """Connect to a remote ZenML server.
 
     Examples:
 
@@ -650,8 +632,8 @@ def status() -> None:
     type=str,
 )
 @click.option(
-    "--project",
-    help="The project to use when connecting to the ZenML server.",
+    "--workspace",
+    help="The workspace to use when connecting to the ZenML server.",
     required=False,
     type=str,
 )
@@ -685,7 +667,7 @@ def connect(
     url: Optional[str] = None,
     username: Optional[str] = None,
     password: Optional[str] = None,
-    project: Optional[str] = None,
+    workspace: Optional[str] = None,
     no_verify_ssl: bool = False,
     ssl_ca_cert: Optional[str] = None,
     config: Optional[str] = None,
@@ -699,7 +681,7 @@ def connect(
             server.
         password: The password that is used to authenticate with the ZenML
             server.
-        project: The active project that is used to connect to the ZenML
+        workspace: The active workspace that is used to connect to the ZenML
             server.
         no_verify_ssl: Whether to verify the server's TLS certificate.
         ssl_ca_cert: A path to a CA bundle to use to verify the server's TLS
@@ -715,7 +697,6 @@ def connect(
     verify_ssl = ssl_ca_cert if ssl_ca_cert is not None else not no_verify_ssl
 
     if config:
-
         if os.path.isfile(config):
             store_dict = yaml_utils.read_yaml(config)
         else:
@@ -780,16 +761,24 @@ def connect(
     assert store_config_class is not None
 
     store_config = store_config_class.parse_obj(store_dict)
-    GlobalConfiguration().set_store(store_config)
+    try:
+        GlobalConfiguration().set_store(store_config)
+    except IllegalOperationError as e:
+        cli_utils.warning(
+            f"User '{username}' does not have sufficient permissions to "
+            f"to access the server at '{url}'. Please ask the server "
+            f"administrator to assign a role with permissions to your "
+            f"username: {str(e)}"
+        )
 
-    if project:
+    if workspace:
         try:
-            Client().set_active_project(project_name_or_id=project)
+            Client().set_active_workspace(workspace_name_or_id=workspace)
         except KeyError:
             cli_utils.warning(
-                f"The project {project} does not exist or is not accessible. "
-                f"Please set another project by running `zenml "
-                f"project set`."
+                f"The workspace {workspace} does not exist or is not accessible. "
+                f"Please set another workspace by running `zenml "
+                f"workspace set`."
             )
 
 

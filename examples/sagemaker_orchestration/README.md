@@ -13,7 +13,6 @@ within AWS to create all the required resources and permissions. In total, you w
 
 - [ECR container registry](https://docs.zenml.io/component-gallery/container-registries/amazon-ecr)
 - [S3 artifact store](https://docs.zenml.io/component-gallery/artifact-stores/amazon-s3)
-- [AWS Secrets Manager](https://docs.zenml.io/component-gallery/secrets-managers/aws).
 
 On top of having these resources and setting them up for ZenML, you will also
 need to do some permission tuning.
@@ -31,17 +30,11 @@ To handle the relevant permissions, you will need to create an IAM role that
 has access to the relevant parts of your AWS account. You can do this directly
 in the AWS console, or using the AWS CLI.
 
-![Create a role](assets/sagemaker/sagemaker0.png)
+![Create a role](assets/sagemaker0.png)
 
 When creating the role, make sure to add Sagemaker-specific permissions:
 
-![Add permissions](assets/sagemaker/sagemaker1.png)
-
-Once you've created the role, you will need to add permissions to allow access
-to your secrets in the AWS Secrets Manager. You can do this by attaching a
-`SecretsManagerReadWrite` policy to the role:
-
-![Add secrets manager permissions](assets/sagemaker/sagemaker2.png)
+![Add permissions](assets/sagemaker1.png)
 
 ## 🥞 Create a Sagemaker stack
 
@@ -57,8 +50,8 @@ stack with all of these components.
   **container registry**.
 * The **Sagemaker orchestrator** is responsible for running your ZenML pipeline
   in Sagemaker.
-* The **secrets manager** contains the secrets to allow access to the artifact
-  store.
+* An **Image Builder** is responsible for building the Docker images that are
+  used to run your pipeline steps.
 
 When running the upcoming commands, make sure to
 replace all the <PLACEHOLDERS> with the correct values from how you set things
@@ -69,7 +62,7 @@ up with AWS.
 pip install "zenml[server]"
 
 # install ZenML integrations
-zenml integration install aws s3
+zenml integration install aws pytorch s3
 
 # pull example
 zenml example pull sagemaker_orchestration
@@ -78,24 +71,41 @@ cd zenml_examples/sagemaker_orchestration
 # Create a zenml repository
 zenml init
 
+# You'll need to register a secret to use for your artifact-store authentication
+zenml secret create s3_secret --aws_access_key_id=<YOUR_ACCESS_KEY_ID> --aws_secret_access_key=<YOUR_SECRET_ACCESS_KEY>
+
+# or this if you are using a session token
+# zenml secret create s3_secret --aws_access_key_id=<YOUR_ACCESS_KEY_ID> --aws_secret_access_key=<YOUR_SECRET_ACCESS_KEY> --aws_session_token=<YOUR_AWS_SESSION_TOKEN>
+
 # The CONTAINER_REGISTRY_URI will have a format like this: xxx.dkr.ecr.REGION.amazonaws.com
 zenml container-registry register aws_registry --flavor=aws --uri=<CONTAINER_REGISTRY_URI>
-
-# For the secrets manager, all we'll need it the gcp PROJECT_ID
-zenml secrets-manager register aws_secrets_manager --flavor=aws --region=<YOUR_AWS_REGION>
-
-# You'll need to register a secret to use for your artifact-store authentication
-zenml secrets-manager secret register s3_secret --aws_access_key_id=<YOUR_ACCESS_KEY_ID> --aws_secret_access_key=<YOUR_SECRET_ACCESS_KEY> --schema=aws
 
 # The PATH_TO_YOUR_S3_BUCKET is the path to your S3 bucket: s3://xxx
 zenml artifact-store register aws_artifact_store --flavor=s3 --path=<PATH_TO_YOUR_S3_BUCKET> --authentication_secret=s3_secret
 
 # register the orchestrator
-zenml orchestrator register sagemaker_orchestrator --flavor=sagemaker --execution_role=<NAME_OF_AWS_ROLE_CREATED_EARLIER>
+zenml orchestrator register sagemaker_orchestrator --flavor=sagemaker --execution_role=<AWS_ROLE_ARN_CREATED_EARLIER>
+
+# register the image builder
+zenml image-builder register local_builder --flavor=local
 
 # Now we're ready to assemble our stack
-zenml stack register sagemaker_stack -a aws_artifact_store -o sagemaker_orchestrator -c aws_registry -x aws_secrets_manager --set
+zenml stack register sagemaker_stack -a aws_artifact_store -o sagemaker_orchestrator -c aws_registry -i local_builder --set
 ```
+
+Note that if you want an easy way to deploy the required cloud resources for
+this example via the ZenML CLI, you can do so using the `zenml <STACK_COMPONENT>
+deploy` command. For example, to deploy the S3 artifact store, you can
+run:
+
+```shell
+zenml artifact-store deploy aws_artifact_store --flavor=s3
+```
+
+You could also deploy the Sagemaker orchestrator itself as well as the ECR
+container registry. For more information on this `deploy` subcommand, please
+refer to the
+[documentation](https://docs.zenml.io/advanced-guide/practical-mlops/stack-recipes#deploying-stack-components-directly).
 
 ### ▶️ Run the pipeline
 
@@ -110,13 +120,13 @@ the cloud! To access the Sagemaker Pipelines UI, you will have to launch
 Sagemaker Studio via the AWS Sagemaker UI. Make sure that you are launching it
 from within your desired AWS region.
 
-![Sagemaker Studio launch](assets/sagemaker/sagemaker3.png)
+![Sagemaker Studio launch](assets/sagemaker3.png)
 
 Once the Studio UI is launched, click on the 'Pipeline' button on the left-hand
 side and from there you can view the pipelines that have been launched via
 ZenML:
 
-![Sagemaker Studio Pipelines](assets/sagemaker/sagemaker4.png)
+![Sagemaker Studio Pipelines](assets/sagemaker4.png)
 
 ### 💻 Specifying per-step resources
 
@@ -125,7 +135,7 @@ certain custom requirements, you can specify them using the step decorator as
 follows:
 
 ```python
-from zenml.steps import step
+from zenml import step
 from zenml.integrations.aws.flavors.sagemaker_orchestrator_flavor import (
     SagemakerOrchestratorSettings,
 )
@@ -147,7 +157,16 @@ rm -rf zenml_examples
 ```
 
 Additionally, you might have to clean up your cloud resources to avoid running 
-costs for storage of artifacts, containers or secrets.
+costs for storage of artifacts or containers.
+
+To destroy any resources deployed using the ZenML `deploy` subcommand, use the
+`destroy` subcommand to delete each individual stack component, as in the
+following example:
+
+```shell
+# replace with the name of the component you want to destroy
+zenml artifact-store destroy s3_artifact_store
+```
 
 # 📜 Learn more
 

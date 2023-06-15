@@ -20,11 +20,14 @@ from pydantic import root_validator
 from zenml.enums import StackComponentType
 from zenml.logger import get_logger
 from zenml.orchestrators.step_launcher import StepLauncher
+from zenml.orchestrators.utils import get_config_environment_vars
 from zenml.stack import Flavor, Stack, StackComponent, StackComponentConfig
 
 if TYPE_CHECKING:
-    from zenml.config.pipeline_deployment import PipelineDeployment
     from zenml.config.step_configurations import Step
+    from zenml.models.pipeline_deployment_models import (
+        PipelineDeploymentResponseModel,
+    )
 
 logger = get_logger(__name__)
 
@@ -49,7 +52,7 @@ class BaseOrchestratorConfig(StackComponentConfig):
                     "The 'custom_docker_base_image_name' field has been "
                     "deprecated. To use a custom base container image with your "
                     "orchestrators, please use the DockerSettings in your "
-                    "pipeline (see https://docs.zenml.io/advanced-guide/pipelines/containerization)."
+                    "pipeline (see https://docs.zenml.io/user-guide/advanced-guide/containerize-your-pipeline)."
                 )
 
         return values
@@ -73,7 +76,7 @@ class BaseOrchestrator(StackComponent, ABC):
     the pipeline to some remote infrastructure.
     """
 
-    _active_deployment: Optional["PipelineDeployment"] = None
+    _active_deployment: Optional["PipelineDeploymentResponseModel"] = None
 
     @property
     def config(self) -> BaseOrchestratorConfig:
@@ -98,8 +101,9 @@ class BaseOrchestrator(StackComponent, ABC):
     @abstractmethod
     def prepare_or_run_pipeline(
         self,
-        deployment: "PipelineDeployment",
+        deployment: "PipelineDeploymentResponseModel",
         stack: "Stack",
+        environment: Dict[str, str],
     ) -> Any:
         """The method needs to be implemented by the respective orchestrator.
 
@@ -133,13 +137,19 @@ class BaseOrchestrator(StackComponent, ABC):
         Args:
             deployment: The pipeline deployment to prepare or run.
             stack: The stack the pipeline will run on.
+            environment: Environment variables to set in the orchestration
+                environment. These don't need to be set if running locally.
 
         Returns:
             The optional return value from this method will be returned by the
             `pipeline_instance.run()` call when someone is running a pipeline.
         """
 
-    def run(self, deployment: "PipelineDeployment", stack: "Stack") -> Any:
+    def run(
+        self,
+        deployment: "PipelineDeploymentResponseModel",
+        stack: "Stack",
+    ) -> Any:
         """Runs a pipeline on a stack.
 
         Args:
@@ -150,9 +160,11 @@ class BaseOrchestrator(StackComponent, ABC):
             Orchestrator-specific return value.
         """
         self._prepare_run(deployment=deployment)
+
+        environment = get_config_environment_vars()
         try:
             result = self.prepare_or_run_pipeline(
-                deployment=deployment, stack=stack
+                deployment=deployment, stack=stack, environment=environment
             )
         finally:
             self._cleanup_run()
@@ -194,7 +206,9 @@ class BaseOrchestrator(StackComponent, ABC):
 
         return not step.config.resource_settings.empty
 
-    def _prepare_run(self, deployment: "PipelineDeployment") -> None:
+    def _prepare_run(
+        self, deployment: "PipelineDeploymentResponseModel"
+    ) -> None:
         """Prepares a run.
 
         Args:

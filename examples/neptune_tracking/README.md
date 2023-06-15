@@ -1,9 +1,9 @@
 # 🏋️ Track your runs with Neptune
 
-[Neptune](https://neptune.ai/product/experiment-tracking) is a
-popular platform that you would normally use in the iterative ML experimentation
-phase to track and visualize experiment results. Neptune can also
-track and visualize the results produced by your
+[Neptune](https://neptune.ai/product/experiment-tracking) is a popular tool that
+you would normally use in the iterative ML experimentation phase to track and
+visualize experiment results or as a model registry for your production-ready
+models. Neptune can also track and visualize the results produced by your
 automated pipeline runs, as you make the transition towards a more production
 oriented workflow.
 
@@ -37,7 +37,7 @@ pip install "zenml[server]"
 
 # install ZenML integrations
 zenml integration install tensorflow neptune
-pip install neptune-client[tensorflow-keras]
+pip install "neptune-client[tensorflow-keras]"
 
 # pull example
 zenml example pull neptune_tracking
@@ -106,7 +106,7 @@ import numpy as np
 
 import tensorflow as tf
 
-from zenml.steps import step
+from zenml import step
 from zenml.integrations.neptune.experiment_trackers.run_state import (
     get_neptune_run,
 )

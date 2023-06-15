@@ -42,15 +42,15 @@ class ServiceConfig(BaseTypedModel):
         name: name for the service instance
         description: description of the service
         pipeline_name: name of the pipeline that spun up the service
-        pipeline_run_id: ID of the pipeline run that spun up the service
         pipeline_step_name: name of the pipeline step that spun up the service
+        run_name: name of the pipeline run that spun up the service.
     """
 
     name: str = ""
     description: str = ""
     pipeline_name: str = ""
-    pipeline_run_id: str = ""
     pipeline_step_name: str = ""
+    run_name: str = ""
 
 
 class BaseServiceMeta(BaseTypedModelMeta):
@@ -443,3 +443,16 @@ class BaseService(BaseTypedModel, metaclass=BaseServiceMeta):
         # all attributes with leading underscore are private and therefore
         # are mutable and not included in serialization
         underscore_attrs_are_private = True
+
+
+class BaseDeploymentService(BaseService):
+    """Base class for deployment services."""
+
+    @property
+    def prediction_url(self) -> Optional[str]:
+        """Gets the prediction URL for the endpoint.
+
+        Returns:
+            the prediction URL for the endpoint
+        """
+        return None

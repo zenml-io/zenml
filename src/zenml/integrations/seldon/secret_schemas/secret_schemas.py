@@ -51,11 +51,16 @@ class SeldonS3SecretSchema(BaseSecretSchema):
     rclone_config_s3_type: Literal["s3"] = "s3"
     rclone_config_s3_provider: str = "aws"
     rclone_config_s3_env_auth: bool = False
-    rclone_config_s3_access_key_id: Optional[str]
-    rclone_config_s3_secret_access_key: Optional[str]
-    rclone_config_s3_session_token: Optional[str]
-    rclone_config_s3_region: Optional[str]
-    rclone_config_s3_endpoint: Optional[str]
+    rclone_config_s3_access_key_id: Optional[str] = None
+    rclone_config_s3_secret_access_key: Optional[str] = None
+    rclone_config_s3_session_token: Optional[str] = None
+    rclone_config_s3_region: Optional[str] = None
+    rclone_config_s3_endpoint: Optional[str] = None
+
+    class Config:
+        """Pydantic config."""
+
+        extra = "forbid"
 
 
 @register_secret_schema_class
@@ -84,14 +89,19 @@ class SeldonGSSecretSchema(BaseSecretSchema):
     rclone_config_gs_type: Literal[
         "google cloud storage"
     ] = "google cloud storage"
-    rclone_config_gs_client_id: Optional[str]
-    rclone_config_gs_client_secret: Optional[str]
-    rclone_config_gs_project_number: Optional[str]
-    rclone_config_gs_service_account_credentials: Optional[str]
+    rclone_config_gs_client_id: Optional[str] = None
+    rclone_config_gs_client_secret: Optional[str] = None
+    rclone_config_gs_project_number: Optional[str] = None
+    rclone_config_gs_service_account_credentials: Optional[str] = None
     rclone_config_gs_anonymous: bool = False
-    rclone_config_gs_token: Optional[str]
-    rclone_config_gs_auth_url: Optional[str]
-    rclone_config_gs_token_url: Optional[str]
+    rclone_config_gs_token: Optional[str] = None
+    rclone_config_gs_auth_url: Optional[str] = None
+    rclone_config_gs_token_url: Optional[str] = None
+
+    class Config:
+        """Pydantic config."""
+
+        extra = "forbid"
 
 
 @register_secret_schema_class
@@ -101,22 +111,39 @@ class SeldonAzureSecretSchema(BaseSecretSchema):
     Based on: https://rclone.org/azureblob/
 
     Attributes:
-        rclone_config_azureblob_type: the rclone config type. Must be set to
+        rclone_config_az_type: the rclone config type. Must be set to
             "azureblob" for this schema.
-        rclone_config_azureblob_account: storage Account Name. Leave blank to
+        rclone_config_az_env_auth: read credentials from runtime
+            (environment variables or MSI).
+        rclone_config_az_account: storage Account Name. Leave blank to
             use SAS URL or MSI.
-        rclone_config_azureblob_key: storage Account Key. Leave blank to
+        rclone_config_az_key: storage Account Key. Leave blank to
             use SAS URL or MSI.
-        rclone_config_azureblob_sas_url: SAS URL for container level access
+        rclone_config_az_sas_url: SAS URL for container level access
             only. Leave blank if using account/key or MSI.
-        rclone_config_azureblob_use_msi: use a managed service identity to
+        rclone_config_az_use_msi: use a managed service identity to
             authenticate (only works in Azure).
+        rclone_config_az_client_secret: client secret for service
+            principal authentication.
+        rclone_config_az_client_id: client id for service principal
+            authentication.
+        rclone_config_az_tenant: tenant id for service principal
+            authentication.
     """
 
     TYPE: ClassVar[str] = SELDON_AZUREBLOB_SECRET_SCHEMA_TYPE
 
-    rclone_config_azureblob_type: Literal["azureblob"] = "azureblob"
-    rclone_config_azureblob_account: Optional[str]
-    rclone_config_azureblob_key: Optional[str]
-    rclone_config_azureblob_sas_url: Optional[str]
-    rclone_config_azureblob_use_msi: bool = False
+    rclone_config_az_type: Literal["azureblob"] = "azureblob"
+    rclone_config_az_env_auth: bool = False
+    rclone_config_az_account: Optional[str] = None
+    rclone_config_az_key: Optional[str] = None
+    rclone_config_az_sas_url: Optional[str] = None
+    rclone_config_az_use_msi: bool = False
+    rclone_config_az_client_secret: Optional[str] = None
+    rclone_config_az_client_id: Optional[str] = None
+    rclone_config_az_tenant: Optional[str] = None
+
+    class Config:
+        """Pydantic config."""
+
+        extra = "forbid"

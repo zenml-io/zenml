@@ -43,8 +43,8 @@ environments:
     requirements:
       - data-validators
       - mlflow-local-tracker
+      - mlflow-local-registry
       - mlflow-local-deployer
-      - local-secrets-manager
     capabilities:
       synchronized: true
 
@@ -56,23 +56,10 @@ environments:
     requirements:
       - data-validators
       - mlflow-local-tracker
+      - mlflow-local-registry
       - mlflow-local-deployer
-      - local-secrets-manager
     mandatory_requirements:
       - docker-local
-
-  - name: default-kubeflow-orchestrator
-    description: >-
-      Default deployment with local kubeflow orchestrator and all local
-      components.
-    deployment: default
-    requirements:
-      - data-validators
-      - mlflow-local-tracker
-      - mlflow-local-deployer
-      - local-secrets-manager
-    mandatory_requirements:
-      - kubeflow-local
 
   - name: default-airflow-orchestrator
     description: >-
@@ -83,7 +70,7 @@ environments:
       - data-validators
       - mlflow-local-tracker
       - mlflow-local-deployer
-      - local-secrets-manager
+      - mlflow-local-registry
     mandatory_requirements:
       - airflow-local
 
@@ -99,8 +86,8 @@ environments:
     requirements:
       - data-validators
       - mlflow-local-tracker
+      - mlflow-local-registry
       - mlflow-local-deployer
-      - local-secrets-manager
     capabilities:
       synchronized: true
 
@@ -116,27 +103,10 @@ environments:
     requirements:
       - data-validators
       - mlflow-local-tracker
+      - mlflow-local-registry
       - mlflow-local-deployer
-      - local-secrets-manager
     mandatory_requirements:
       - docker-local
-
-    # IMPORTANT: don't use this with pytest auto-provisioning. Running forked
-    # daemons in pytest leads to serious issues because the whole test process
-    # is forked. As a workaround, the deployment can be started separately,
-    # before pytest is invoked.
-  - name: local-server-kubeflow-orchestrator
-    description: >-
-      Local server deployment with local kubeflow orchestrator and all local
-      components.
-    deployment: local-server
-    requirements:
-      - data-validators
-      - mlflow-local-tracker
-      - mlflow-local-deployer
-      - local-secrets-manager
-    mandatory_requirements:
-      - kubeflow-local
 
     # IMPORTANT: don't use this with pytest auto-provisioning. Running forked
     # daemons in pytest leads to serious issues because the whole test process
@@ -150,8 +120,8 @@ environments:
     requirements:
       - data-validators
       - mlflow-local-tracker
+      - mlflow-local-registry
       - mlflow-local-deployer
-      - local-secrets-manager
     mandatory_requirements:
       - airflow-local
 
@@ -163,8 +133,10 @@ environments:
     requirements:
       - data-validators
       - mlflow-local-tracker
+      - mlflow-local-registry
       - mlflow-local-deployer
-      - local-secrets-manager
+    capabilities:
+      synchronized: true
 
   - name: docker-server-docker-orchestrator
     description: >-
@@ -174,23 +146,10 @@ environments:
     requirements:
       - data-validators
       - mlflow-local-tracker
+      - mlflow-local-registry
       - mlflow-local-deployer
-      - local-secrets-manager
     mandatory_requirements:
       - docker-local
-
-  - name: docker-server-kubeflow-orchestrator
-    description: >-
-      Server docker-compose deployment with local kubeflow orchestrator and all
-      local components.
-    deployment: docker-compose-server
-    requirements:
-      - data-validators
-      - mlflow-local-tracker
-      - mlflow-local-deployer
-      - local-secrets-manager
-    mandatory_requirements:
-      - kubeflow-local
 
   - name: docker-server-airflow-orchestrator
     description: >-
@@ -200,7 +159,7 @@ environments:
     requirements:
       - data-validators
       - mlflow-local-tracker
+      - mlflow-local-registry
       - mlflow-local-deployer
-      - local-secrets-manager
     mandatory_requirements:
       - airflow-local

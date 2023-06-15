@@ -25,9 +25,16 @@ from zenml.zen_stores.schemas.team_schemas import TeamAssignmentSchema
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas import (
         ArtifactSchema,
+        CodeRepositorySchema,
         FlavorSchema,
+        PipelineBuildSchema,
+        PipelineDeploymentSchema,
         PipelineRunSchema,
         PipelineSchema,
+        RunMetadataSchema,
+        ScheduleSchema,
+        SecretSchema,
+        ServiceConnectorSchema,
         StackComponentSchema,
         StackSchema,
         StepRunSchema,
@@ -46,7 +53,7 @@ class UserSchema(NamedSchema, table=True):
     active: bool
     password: Optional[str] = Field(nullable=True)
     activation_token: Optional[str] = Field(nullable=True)
-
+    hub_token: Optional[str] = Field(nullable=True)
     email_opted_in: Optional[bool] = Field(nullable=True)
 
     teams: List["TeamSchema"] = Relationship(
@@ -61,9 +68,29 @@ class UserSchema(NamedSchema, table=True):
     )
     flavors: List["FlavorSchema"] = Relationship(back_populates="user")
     pipelines: List["PipelineSchema"] = Relationship(back_populates="user")
+    schedules: List["ScheduleSchema"] = Relationship(
+        back_populates="user",
+    )
     runs: List["PipelineRunSchema"] = Relationship(back_populates="user")
     step_runs: List["StepRunSchema"] = Relationship(back_populates="user")
+    builds: List["PipelineBuildSchema"] = Relationship(back_populates="user")
     artifacts: List["ArtifactSchema"] = Relationship(back_populates="user")
+    run_metadata: List["RunMetadataSchema"] = Relationship(
+        back_populates="user"
+    )
+    secrets: List["SecretSchema"] = Relationship(
+        back_populates="user",
+        sa_relationship_kwargs={"cascade": "delete"},
+    )
+    deployments: List["PipelineDeploymentSchema"] = Relationship(
+        back_populates="user",
+    )
+    code_repositories: List["CodeRepositorySchema"] = Relationship(
+        back_populates="user",
+    )
+    service_connectors: List["ServiceConnectorSchema"] = Relationship(
+        back_populates="user",
+    )
 
     @classmethod
     def from_request(cls, model: UserRequestModel) -> "UserSchema":
@@ -126,6 +153,7 @@ class UserSchema(NamedSchema, table=True):
                 active=self.active,
                 email_opted_in=self.email_opted_in,
                 email=self.email if include_private else None,
+                hub_token=self.hub_token if include_private else None,
                 full_name=self.full_name,
                 created=self.created,
                 updated=self.updated,
@@ -137,8 +165,10 @@ class UserSchema(NamedSchema, table=True):
                 active=self.active,
                 email_opted_in=self.email_opted_in,
                 email=self.email if include_private else None,
+                hub_token=self.hub_token if include_private else None,
                 teams=[t.to_model(_block_recursion=True) for t in self.teams],
                 full_name=self.full_name,
                 created=self.created,
                 updated=self.updated,
+                roles=[ra.role.to_model() for ra in self.assigned_roles],
             )

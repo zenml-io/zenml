@@ -24,15 +24,13 @@ def test_example(request: pytest.FixtureRequest) -> None:
     with run_example(
         request=request,
         name="whylogs_data_profiling",
-        pipeline_name="data_profiling_pipeline",
-        step_count=4,
-        run_count=1,
+        pipelines={"data_profiling_pipeline": (1, 4)},
     ) as (example, runs):
-
+        runs = runs["data_profiling_pipeline"]
         profiles = [
             runs[0].get_step("data_loader").outputs["profile"].read(),
-            runs[0].get_step("train_data_profiler").output.read(),
-            runs[0].get_step("test_data_profiler").output.read(),
+            runs[0].get_step("whylogs_profiler_step").output.read(),
+            runs[0].get_step("whylogs_profiler_step_2").output.read(),
         ]
 
         for profile in profiles:

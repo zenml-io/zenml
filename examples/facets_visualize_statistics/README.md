@@ -1,36 +1,17 @@
 # 📊 Visualize statistics
-This examples show-cases the built-in `FacetStatisticsVisualizer` using the 
+This examples show-cases the built-in `FacetsMaterializer` using the 
 [Facets Overview](https://pypi.org/project/facets-overview/) integration. 
 [Facets](https://pair-code.github.io/facets/) is an awesome project that 
 helps users visualize large amounts of data in a coherent way.
 
 ## 🗺 Overview
-Here, we are using the [Boston Housing Price Regression](https://keras.io/api/datasets/boston_housing/) 
-dataset. We create a simple pipeline that returns two pd.DataFrames, one for 
-the training data and one for the test data. In the post-execution workflow 
-we then plug in the visualization class that visualizes the statistics of these 
-DataFrames for us. 
-
-This visualization is produced with the following code:
-
-```python
-from zenml.post_execution import get_pipelines
-from zenml.integrations.facets.visualizers.facet_statistics_visualizer import (
-    FacetStatisticsVisualizer,
-)
-
-def visualize_statistics():
-    pipe = get_pipelines()[-1]
-    importer_outputs = pipe.runs[-1].get_step(step="importer")
-    FacetStatisticsVisualizer().visualize(importer_outputs)
-
-visualize_statistics()
-```
+We create a simple pipeline that returns two `pd.DataFrames`, one for training
+data and one for the test data. Then we use the `facets_visualization_step` to
+compare the summary statistics of the two datasets using Facets.
 
 It produces the following visualization:
 
-![Statistics for Boston housing dataset](assets/statistics-boston-housing.png)
-
+![Facets Visualization](assets/facets_visualization.png)
 
 # 🖥 Run it locally
 
@@ -44,6 +25,10 @@ configuration steps, just run the following:
 zenml example run facets_visualize_statistics
 ```
 
+Then, open your ZenML dashboard using `zenml up`, navigate to the details page
+of the pipeline run and click on the output of the `facets_visualization_step`
+to see the Facets visualization.
+
 ## 👣 Step-by-Step
 ### 📄 Prerequisites 
 In order to run this example, you need to install and initialize ZenML:
@@ -53,7 +38,7 @@ In order to run this example, you need to install and initialize ZenML:
 pip install "zenml[server]"
 
 # install ZenML integrations
-zenml integration install tensorflow facets
+zenml integration install sklearn facets
 
 # pull example
 zenml example pull facets_visualize_statistics
@@ -67,16 +52,27 @@ zenml up
 ```
 
 ### ▶️ Run the Code
-Now we're ready. Execute:
+
+#### Option 1 (*Recommended*) - Interactively explore the example using Jupyter Notebook
+
+```bash
+pip install notebook
+jupyter notebook
+# open notebooks/facets_visualize_statistics.ipynb
+```
+
+With this option, the Facets visualizations can be viewed directly inside the 
+Jupyter notebook.
+
+#### Option 2 - Execute the whole ML pipeline from a Python script
 
 ```bash
 python run.py
 ```
-Alternatively, if you want to run based on the config.yaml you can run with:
 
-```bash
-zenml pipeline run pipelines/facets_pipeline/facets_pipeline.py -c config.yaml
-```
+With this option, you can view the Facets visualizations in the dashboard by
+navigating to the details page of the pipeline run and clicking on the output 
+of the `facets_visualization_step`.
 
 ### 🧽 Clean up
 In order to clean up, delete the remaining ZenML references.

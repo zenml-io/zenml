@@ -12,21 +12,28 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Endpoint definitions for pipelines."""
-from typing import List, Optional, Union
 from uuid import UUID
 
-from fastapi import APIRouter, Security
+from fastapi import APIRouter, Depends, Security
 
-from zenml.config.pipeline_configurations import PipelineSpec
+from zenml.config.pipeline_spec import PipelineSpec
 from zenml.constants import API, PIPELINE_SPEC, PIPELINES, RUNS, VERSION_1
 from zenml.enums import PermissionType
 from zenml.models import (
+    PipelineFilterModel,
     PipelineResponseModel,
+    PipelineRunFilterModel,
     PipelineRunResponseModel,
     PipelineUpdateModel,
 )
+from zenml.models.page_model import Page
 from zenml.zen_server.auth import AuthContext, authorize
-from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
+from zenml.zen_server.exceptions import error_response
+from zenml.zen_server.utils import (
+    handle_exceptions,
+    make_dependable,
+    zen_store,
+)
 
 router = APIRouter(
     prefix=API + VERSION_1 + PIPELINES,
@@ -37,30 +44,27 @@ router = APIRouter(
 
 @router.get(
     "",
-    response_model=List[PipelineResponseModel],
+    response_model=Page[PipelineResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def list_pipelines(
-    project_name_or_id: Optional[Union[str, UUID]] = None,
-    user_name_or_id: Optional[Union[str, UUID]] = None,
-    name: Optional[str] = None,
+    pipeline_filter_model: PipelineFilterModel = Depends(
+        make_dependable(PipelineFilterModel)
+    ),
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> List[PipelineResponseModel]:
+) -> Page[PipelineResponseModel]:
     """Gets a list of pipelines.
 
     Args:
-        project_name_or_id: Name or ID of the project to get pipelines for.
-        user_name_or_id: Optionally filter by name or ID of the user.
-        name: Optionally filter by pipeline name
+        pipeline_filter_model: Filter model used for pagination, sorting,
+            filtering
 
     Returns:
         List of pipeline objects.
     """
     return zen_store().list_pipelines(
-        project_name_or_id=project_name_or_id,
-        user_name_or_id=user_name_or_id,
-        name=name,
+        pipeline_filter_model=pipeline_filter_model
     )
 
 
@@ -122,47 +126,33 @@ def delete_pipeline(
     """Deletes a specific pipeline.
 
     Args:
-        pipeline_id: ID of the pipeline to get.
+        pipeline_id: ID of the pipeline to delete.
     """
     zen_store().delete_pipeline(pipeline_id=pipeline_id)
 
 
 @router.get(
     "/{pipeline_id}" + RUNS,
-    response_model=PipelineRunResponseModel,
+    response_model=Page[PipelineRunResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def list_pipeline_runs(
-    pipeline_id: UUID,
-    project_name_or_id: Optional[Union[str, UUID]] = None,
-    stack_id: Optional[UUID] = None,
-    run_name: Optional[str] = None,
-    user_name_or_id: Optional[Union[str, UUID]] = None,
-    component_id: Optional[UUID] = None,
+    pipeline_run_filter_model: PipelineRunFilterModel = Depends(
+        make_dependable(PipelineRunFilterModel)
+    ),
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> List[PipelineRunResponseModel]:
+) -> Page[PipelineRunResponseModel]:
     """Get pipeline runs according to query filters.
 
     Args:
-        pipeline_id: ID of the pipeline for which to list runs.
-        project_name_or_id: Name or ID of the project for which to filter runs.
-        stack_id: ID of the stack for which to filter runs.
-        run_name: Filter by run name if provided
-        user_name_or_id: If provided, only return runs for this user.
-        component_id: Filter by ID of a component that was used in the run.
+        pipeline_run_filter_model: Filter model used for pagination, sorting,
+            filtering
 
     Returns:
         The pipeline runs according to query filters.
     """
-    return zen_store().list_runs(
-        project_name_or_id=project_name_or_id,
-        name=run_name,
-        stack_id=stack_id,
-        component_id=component_id,
-        user_name_or_id=user_name_or_id,
-        pipeline_id=pipeline_id,
-    )
+    return zen_store().list_runs(pipeline_run_filter_model)
 
 
 @router.get(

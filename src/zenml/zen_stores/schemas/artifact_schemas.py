@@ -17,17 +17,22 @@
 from typing import TYPE_CHECKING, List, Optional
 from uuid import UUID
 
-from sqlmodel import Relationship
+from pydantic import ValidationError
+from sqlalchemy import TEXT, Column
+from sqlmodel import Field, Relationship
 
-from zenml.enums import ArtifactType
+from zenml.config.source import Source
+from zenml.enums import ArtifactType, VisualizationType
 from zenml.models import ArtifactRequestModel, ArtifactResponseModel
-from zenml.zen_stores.schemas.base_schemas import NamedSchema
+from zenml.models.visualization_models import VisualizationModel
+from zenml.zen_stores.schemas.base_schemas import BaseSchema, NamedSchema
 from zenml.zen_stores.schemas.component_schemas import StackComponentSchema
-from zenml.zen_stores.schemas.project_schemas import ProjectSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.user_schemas import UserSchema
+from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
 
 if TYPE_CHECKING:
+    from zenml.zen_stores.schemas.run_metadata_schemas import RunMetadataSchema
     from zenml.zen_stores.schemas.step_run_schemas import (
         StepRunInputArtifactSchema,
         StepRunOutputArtifactSchema,
@@ -35,7 +40,7 @@ if TYPE_CHECKING:
 
 
 class ArtifactSchema(NamedSchema, table=True):
-    """SQL Model for artifacts of steps."""
+    """SQL Model for artifacts."""
 
     __tablename__ = "artifact"
 
@@ -58,26 +63,34 @@ class ArtifactSchema(NamedSchema, table=True):
     )
     user: Optional["UserSchema"] = Relationship(back_populates="artifacts")
 
-    project_id: UUID = build_foreign_key_field(
+    workspace_id: UUID = build_foreign_key_field(
         source=__tablename__,
-        target=ProjectSchema.__tablename__,
-        source_column="project_id",
+        target=WorkspaceSchema.__tablename__,
+        source_column="workspace_id",
         target_column="id",
         ondelete="CASCADE",
         nullable=False,
     )
-    project: "ProjectSchema" = Relationship(back_populates="artifacts")
+    workspace: "WorkspaceSchema" = Relationship(back_populates="artifacts")
 
     type: ArtifactType
-    uri: str
-    materializer: str
-    data_type: str
+    uri: str = Field(sa_column=Column(TEXT, nullable=False))
+    materializer: str = Field(sa_column=Column(TEXT, nullable=False))
+    data_type: str = Field(sa_column=Column(TEXT, nullable=False))
 
+    run_metadata: List["RunMetadataSchema"] = Relationship(
+        back_populates="artifact",
+        sa_relationship_kwargs={"cascade": "delete"},
+    )
     input_to_step_runs: List["StepRunInputArtifactSchema"] = Relationship(
         back_populates="artifact",
         sa_relationship_kwargs={"cascade": "delete"},
     )
     output_of_step_runs: List["StepRunOutputArtifactSchema"] = Relationship(
+        back_populates="artifact",
+        sa_relationship_kwargs={"cascade": "delete"},
+    )
+    visualizations: List["ArtifactVisualizationSchema"] = Relationship(
         back_populates="artifact",
         sa_relationship_kwargs={"cascade": "delete"},
     )
@@ -97,12 +110,12 @@ class ArtifactSchema(NamedSchema, table=True):
         return cls(
             name=artifact_request.name,
             artifact_store_id=artifact_request.artifact_store_id,
-            project_id=artifact_request.project,
+            workspace_id=artifact_request.workspace,
             user_id=artifact_request.user,
             type=artifact_request.type,
             uri=artifact_request.uri,
-            materializer=artifact_request.materializer,
-            data_type=artifact_request.data_type,
+            materializer=artifact_request.materializer.json(),
+            data_type=artifact_request.data_type.json(),
         )
 
     def to_model(
@@ -117,17 +130,82 @@ class ArtifactSchema(NamedSchema, table=True):
         Returns:
             The created `ArtifactModel`.
         """
+        metadata = {
+            metadata_schema.key: metadata_schema.to_model()
+            for metadata_schema in self.run_metadata
+        }
+
+        try:
+            materializer = Source.parse_raw(self.materializer)
+        except ValidationError:
+            # This is an old source which was simply an importable source path
+            materializer = Source.from_import_path(self.materializer)
+
+        try:
+            data_type = Source.parse_raw(self.data_type)
+        except ValidationError:
+            # This is an old source which was simply an importable source path
+            data_type = Source.from_import_path(self.data_type)
+
         return ArtifactResponseModel(
             id=self.id,
             name=self.name,
             artifact_store_id=self.artifact_store_id,
             user=self.user.to_model() if self.user else None,
-            project=self.project.to_model(),
+            workspace=self.workspace.to_model(),
             type=self.type,
             uri=self.uri,
-            materializer=self.materializer,
-            data_type=self.data_type,
+            materializer=materializer,
+            data_type=data_type,
             created=self.created,
             updated=self.updated,
             producer_step_run_id=producer_step_run_id,
+            metadata=metadata,
+            visualizations=[vis.to_model() for vis in self.visualizations],
         )
+
+
+class ArtifactVisualizationSchema(BaseSchema, table=True):
+    """SQL Model for visualizations of artifacts."""
+
+    __tablename__ = "artifact_visualization"
+
+    type: VisualizationType
+    uri: str = Field(sa_column=Column(TEXT, nullable=False))
+
+    artifact_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target=ArtifactSchema.__tablename__,
+        source_column="artifact_id",
+        target_column="id",
+        ondelete="CASCADE",
+        nullable=False,
+    )
+    artifact: ArtifactSchema = Relationship(back_populates="visualizations")
+
+    @classmethod
+    def from_model(
+        cls, visualization: VisualizationModel, artifact_id: UUID
+    ) -> "ArtifactVisualizationSchema":
+        """Convert a `Visualization` to a `ArtifactVisualizationSchema`.
+
+        Args:
+            visualization: The visualization.
+            artifact_id: The ID of the artifact this visualization belongs to.
+
+        Returns:
+            The `ArtifactVisualizationSchema`.
+        """
+        return cls(
+            type=visualization.type,
+            uri=visualization.uri,
+            artifact_id=artifact_id,
+        )
+
+    def to_model(self) -> VisualizationModel:
+        """Convert an `ArtifactVisualizationSchema` to a `Visualization`.
+
+        Returns:
+            The `Visualization`.
+        """
+        return VisualizationModel(type=self.type, uri=self.uri)

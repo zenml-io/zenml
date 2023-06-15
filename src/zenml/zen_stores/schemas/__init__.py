@@ -15,17 +15,31 @@
 
 from zenml.zen_stores.schemas.artifact_schemas import ArtifactSchema
 from zenml.zen_stores.schemas.base_schemas import BaseSchema, NamedSchema
+from zenml.zen_stores.schemas.code_repository_schemas import (
+    CodeRepositorySchema,
+    CodeReferenceSchema,
+)
+from zenml.zen_stores.schemas.pipeline_build_schemas import PipelineBuildSchema
 from zenml.zen_stores.schemas.component_schemas import StackComponentSchema
 from zenml.zen_stores.schemas.flavor_schemas import FlavorSchema
 from zenml.zen_stores.schemas.identity_schemas import IdentitySchema
+from zenml.zen_stores.schemas.pipeline_deployment_schemas import (
+    PipelineDeploymentSchema,
+)
 from zenml.zen_stores.schemas.pipeline_run_schemas import PipelineRunSchema
 from zenml.zen_stores.schemas.pipeline_schemas import PipelineSchema
-from zenml.zen_stores.schemas.project_schemas import ProjectSchema
+from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
 from zenml.zen_stores.schemas.role_schemas import (
     RolePermissionSchema,
     RoleSchema,
     TeamRoleAssignmentSchema,
     UserRoleAssignmentSchema,
+)
+from zenml.zen_stores.schemas.run_metadata_schemas import RunMetadataSchema
+from zenml.zen_stores.schemas.schedule_schema import ScheduleSchema
+from zenml.zen_stores.schemas.secret_schemas import SecretSchema
+from zenml.zen_stores.schemas.service_connector_schemas import (
+    ServiceConnectorSchema,
 )
 from zenml.zen_stores.schemas.stack_schemas import (
     StackCompositionSchema,
@@ -42,18 +56,28 @@ from zenml.zen_stores.schemas.team_schemas import (
     TeamSchema,
 )
 from zenml.zen_stores.schemas.user_schemas import UserSchema
+from zenml.zen_stores.schemas.logs_schemas import LogsSchema
 
 __all__ = [
     "ArtifactSchema",
     "BaseSchema",
     "NamedSchema",
+    "CodeRepositorySchema",
+    "CodeReferenceSchema",
     "FlavorSchema",
     "IdentitySchema",
+    "ServiceConnectorLabelSchema",
+    "PipelineBuildSchema",
+    "PipelineDeploymentSchema",
     "PipelineRunSchema",
     "PipelineSchema",
-    "ProjectSchema",
+    "WorkspaceSchema",
     "RoleSchema",
     "RolePermissionSchema",
+    "RunMetadataSchema",
+    "ScheduleSchema",
+    "SecretSchema",
+    "ServiceConnectorSchema",
     "StackSchema",
     "StackComponentSchema",
     "StackCompositionSchema",
@@ -66,4 +90,5 @@ __all__ = [
     "TeamAssignmentSchema",
     "UserRoleAssignmentSchema",
     "UserSchema",
+    "LogsSchema",
 ]

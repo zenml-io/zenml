@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Amazon SageMaker orchestrator flavor."""
 
-from typing import TYPE_CHECKING, Dict, Optional, Type
+from typing import TYPE_CHECKING, Any, Dict, Optional, Type, Union
 
 from zenml.config.base_settings import BaseSettings
 from zenml.integrations.aws import AWS_SAGEMAKER_STEP_OPERATOR_FLAVOR
@@ -35,6 +35,36 @@ class SagemakerOrchestratorSettings(BaseSettings):
         max_runtime_in_seconds: The maximum runtime in seconds for the
             processing job.
         processor_tags: Tags to apply to the Processor assigned to the step.
+        processor_args: Arguments that are directly passed to the SageMaker
+            Processor for a specific step, allowing for overriding the default
+            settings provided when configuring the component. See
+            https://sagemaker.readthedocs.io/en/stable/api/training/processing.html#sagemaker.processing.Processor
+            for a full list of arguments.
+            For processor_args.instance_type, check
+            https://docs.aws.amazon.com/sagemaker/latest/dg/notebooks-available-instance-types.html
+            for a list of available instance types.
+        input_data_s3_mode: How data is made available to the container.
+            Two possible input modes: File, Pipe.
+        input_data_s3_uri: S3 URI where data is located if not locally,
+            e.g. s3://my-bucket/my-data/train. How data will be made available
+            to the container is configured with input_data_s3_mode. Two possible
+            input types:
+                - str: S3 location where training data is saved.
+                - Dict[str, str]: (ChannelName, S3Location) which represent
+                    channels (e.g. training, validation, testing) where
+                    specific parts of the data are saved in S3.
+        output_data_s3_mode: How data is uploaded to the S3 bucket.
+            Two possible output modes: EndOfJob, Continuous.
+        output_data_s3_uri: S3 URI where data is uploaded after or during processing run.
+            e.g. s3://my-bucket/my-data/output. How data will be made available
+            to the container is configured with output_data_s3_mode. Two possible
+            input types:
+                - str: S3 location where data will be uploaded from a local folder
+                    named /opt/ml/processing/output/data.
+                - Dict[str, str]: (ChannelName, S3Location) which represent
+                    channels (e.g. output_one, output_two) where
+                    specific parts of the data are stored locally for S3 upload.
+                    Data must be available locally in /opt/ml/processing/output/data/<ChannelName>.
     """
 
     instance_type: str = "ml.t3.medium"
@@ -42,6 +72,13 @@ class SagemakerOrchestratorSettings(BaseSettings):
     volume_size_in_gb: int = 30
     max_runtime_in_seconds: int = 86400
     processor_tags: Dict[str, str] = {}
+
+    processor_args: Dict[str, Any] = {}
+    input_data_s3_mode: str = "File"
+    input_data_s3_uri: Optional[Union[str, Dict[str, str]]] = None
+
+    output_data_s3_mode: str = "EndOfJob"
+    output_data_s3_uri: Optional[Union[str, Dict[str, str]]] = None
 
 
 class SagemakerOrchestratorConfig(  # type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173
@@ -52,7 +89,7 @@ class SagemakerOrchestratorConfig(  # type: ignore[misc] # https://github.com/py
     Attributes:
         synchronous: Whether to run the processing job synchronously or
             asynchronously. Defaults to False.
-        execution_role: The IAM role to use for the pipeline.
+        execution_role: The IAM role ARN to use for the pipeline.
         bucket: Name of the S3 bucket to use for storing artifacts
             from the job run. If not provided, a default bucket will be created
             based on the following format:
@@ -88,6 +125,33 @@ class SagemakerOrchestratorFlavor(BaseOrchestratorFlavor):
             The name of the flavor.
         """
         return AWS_SAGEMAKER_STEP_OPERATOR_FLAVOR
+
+    @property
+    def docs_url(self) -> Optional[str]:
+        """A url to point at docs explaining this flavor.
+
+        Returns:
+            A flavor docs url.
+        """
+        return self.generate_default_docs_url()
+
+    @property
+    def sdk_docs_url(self) -> Optional[str]:
+        """A url to point at SDK docs explaining this flavor.
+
+        Returns:
+            A flavor SDK docs url.
+        """
+        return self.generate_default_sdk_docs_url()
+
+    @property
+    def logo_url(self) -> str:
+        """A url to represent the flavor in the dashboard.
+
+        Returns:
+            The flavor logo.
+        """
+        return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/orchestrator/sagemaker.png"
 
     @property
     def config_class(self) -> Type[SagemakerOrchestratorConfig]:

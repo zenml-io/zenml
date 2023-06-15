@@ -13,17 +13,23 @@
 #  permissions and limitations under the License.
 """Azure artifact store flavor."""
 
-from typing import TYPE_CHECKING, ClassVar, Set, Type
+from typing import TYPE_CHECKING, ClassVar, Optional, Set, Type
 
 from zenml.artifact_stores import (
     BaseArtifactStoreConfig,
     BaseArtifactStoreFlavor,
 )
 from zenml.integrations.azure import AZURE_ARTIFACT_STORE_FLAVOR
+from zenml.models.service_connector_models import ServiceConnectorRequirements
 from zenml.stack.authentication_mixin import AuthenticationConfigMixin
 
 if TYPE_CHECKING:
     from zenml.integrations.azure.artifact_stores import AzureArtifactStore
+
+
+AZURE_CONNECTOR_TYPE = "azure"
+AZURE_RESOURCE_TYPE = "azure-generic"
+BLOB_RESOURCE_TYPE = "blob-container"
 
 
 class AzureArtifactStoreConfig(
@@ -45,6 +51,52 @@ class AzureArtifactStoreFlavor(BaseArtifactStoreFlavor):
             The name of the flavor.
         """
         return AZURE_ARTIFACT_STORE_FLAVOR
+
+    @property
+    def service_connector_requirements(
+        self,
+    ) -> Optional[ServiceConnectorRequirements]:
+        """Service connector resource requirements for service connectors.
+
+        Specifies resource requirements that are used to filter the available
+        service connector types that are compatible with this flavor.
+
+        Returns:
+            Requirements for compatible service connectors, if a service
+            connector is required for this flavor.
+        """
+        return ServiceConnectorRequirements(
+            connector_type=AZURE_CONNECTOR_TYPE,
+            resource_type=BLOB_RESOURCE_TYPE,
+            resource_id_attr="path",
+        )
+
+    @property
+    def docs_url(self) -> Optional[str]:
+        """A url to point at docs explaining this flavor.
+
+        Returns:
+            A flavor docs url.
+        """
+        return self.generate_default_docs_url()
+
+    @property
+    def sdk_docs_url(self) -> Optional[str]:
+        """A url to point at SDK docs explaining this flavor.
+
+        Returns:
+            A flavor SDK docs url.
+        """
+        return self.generate_default_sdk_docs_url()
+
+    @property
+    def logo_url(self) -> str:
+        """A url to represent the flavor in the dashboard.
+
+        Returns:
+            The flavor logo.
+        """
+        return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/artifact_store/azure.png"
 
     @property
     def config_class(self) -> Type[AzureArtifactStoreConfig]:

@@ -13,34 +13,16 @@
 #  permissions and limitations under the License.
 
 from pipelines.kubernetes_example_pipeline import kubernetes_example_pipeline
-from steps import digits_data_loader, evaluator, skew_comparison, svc_trainer
-
-from zenml.integrations.facets.visualizers.facet_statistics_visualizer import (
-    FacetStatisticsVisualizer,
-)
 
 if __name__ == "__main__":
-    pipeline_instance = kubernetes_example_pipeline(
-        importer=digits_data_loader(),
-        trainer=svc_trainer(),
-        evaluator=evaluator(),
-        skew_comparison=skew_comparison(),
-    )
-    pipeline_instance.run()
+    kubernetes_example_pipeline()
 
-    last_run = pipeline_instance.get_runs()[-1]
-    train_test_skew_step = last_run.get_step(step="skew_comparison")
-    FacetStatisticsVisualizer().visualize(train_test_skew_step)
+    # In case you want to run this on a schedule uncomment the following lines.
 
-    # In case you want to run the pipeline on a schedule, run the following:
-    #
     # from zenml.pipelines import Schedule
-    #
+
     # schedule = Schedule(cron_expression="*/5 * * * *")  # every 5 minutes
-    #
-    # kubernetes_example_pipeline(
-    #     importer=digits_data_loader(),
-    #     trainer=svc_trainer(),
-    #     evaluator=evaluator(),
-    #     skew_comparison=skew_comparison(),
-    # ).run(schedule=schedule)
+    # scheduled_pipeline = kubernetes_example_pipeline.with_options(
+    #     schedule=schedule
+    # )
+    # scheduled_pipeline()

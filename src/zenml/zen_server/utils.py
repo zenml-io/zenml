@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2023. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -13,24 +13,26 @@
 #  permissions and limitations under the License.
 """Util functions for the ZenML Server."""
 
+import inspect
 import os
 from functools import wraps
-from typing import Any, Callable, List, Optional, TypeVar, cast
+from typing import Any, Callable, Optional, Tuple, Type, TypeVar, cast
+from urllib.parse import urlparse
 
-from fastapi import HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 
 from zenml.config.global_config import GlobalConfiguration
-from zenml.constants import ENV_ZENML_SERVER_ROOT_URL_PATH
-from zenml.enums import StoreType
-from zenml.exceptions import (
-    EntityExistsError,
-    IllegalOperationError,
-    NotAuthorizedError,
-    StackComponentExistsError,
-    StackExistsError,
+from zenml.constants import (
+    ENV_ZENML_SERVER,
+    ENV_ZENML_SERVER_ROOT_URL_PATH,
 )
+from zenml.enums import ServerProviderType, StoreType
 from zenml.logger import get_logger
+from zenml.zen_server.deploy.deployment import ServerDeployment
+from zenml.zen_server.deploy.local.local_zen_server import (
+    LocalServerDeploymentConfig,
+)
+from zenml.zen_server.exceptions import http_exception_from_error
 from zenml.zen_stores.base_zen_store import BaseZenStore
 
 logger = get_logger(__name__)
@@ -72,6 +74,9 @@ def initialize_zen_store() -> None:
     # want to track anything server side.
     _zen_store.track_analytics = False
 
+    # Use an environment variable to flag the instance as a server
+    os.environ[ENV_ZENML_SERVER] = "true"
+
     if _zen_store.type == StoreType.REST:
         raise ValueError(
             "Server cannot be started with a REST store type. Make sure you "
@@ -80,85 +85,86 @@ def initialize_zen_store() -> None:
         )
 
 
-class ErrorModel(BaseModel):
-    """Base class for error responses."""
+def get_active_deployment(local: bool = False) -> Optional["ServerDeployment"]:
+    """Get the active local or remote server deployment.
 
-    detail: Any
-
-
-error_response = dict(model=ErrorModel)
-
-
-def error_detail(error: Exception) -> List[str]:
-    """Convert an Exception to API representation.
+    Call this function to retrieve the local or remote server deployment that
+    was last provisioned on this machine.
 
     Args:
-        error: Exception to convert.
+        local: Whether to return the local active deployment or the remote one.
 
     Returns:
-        List of strings representing the error.
+        The local or remote active server deployment or None, if no deployment
+        was found.
     """
-    return [type(error).__name__] + [str(a) for a in error.args]
+    from zenml.zen_server.deploy.deployer import ServerDeployer
+
+    deployer = ServerDeployer()
+    if local:
+        servers = deployer.list_servers(provider_type=ServerProviderType.LOCAL)
+        if not servers:
+            servers = deployer.list_servers(
+                provider_type=ServerProviderType.DOCKER
+            )
+    else:
+        servers = deployer.list_servers()
+
+    if not servers:
+        return None
+
+    for server in servers:
+        if server.config.provider in [
+            ServerProviderType.LOCAL,
+            ServerProviderType.DOCKER,
+        ]:
+            if local:
+                return server
+        elif not local:
+            return server
+
+    return None
 
 
-def not_authorized(error: Exception) -> HTTPException:
-    """Convert an Exception to a HTTP 401 response.
+def get_active_server_details() -> Tuple[str, Optional[int]]:
+    """Get the URL of the current ZenML Server.
 
-    Args:
-        error: Exception to convert.
+    When multiple servers are present, the following precedence is used to
+    determine which server to use:
+    - If the client is connected to a server, that server has precedence.
+    - If no server is connected, a server that was deployed remotely has
+        precedence over a server that was deployed locally.
 
     Returns:
-        HTTPException with status code 401.
+        The URL and port of the currently active server.
+
+    Raises:
+        RuntimeError: If no server is active.
     """
-    return HTTPException(status_code=401, detail=error_detail(error))
+    # Check for connected servers first
+    gc = GlobalConfiguration()
+    if not gc.uses_default_store() and gc.store is not None:
+        logger.debug("Getting URL of connected server.")
+        parsed_url = urlparse(gc.store.url)
+        return f"{parsed_url.scheme}://{parsed_url.hostname}", parsed_url.port
+    # Else, check for deployed servers
+    server = get_active_deployment(local=False)
+    if server:
+        logger.debug("Getting URL of remote server.")
+    else:
+        server = get_active_deployment(local=True)
+        logger.debug("Getting URL of local server.")
 
+    if server and server.status and server.status.url:
+        if isinstance(server.config, LocalServerDeploymentConfig):
+            return server.status.url, server.config.port
+        return server.status.url, None
 
-def forbidden(error: Exception) -> HTTPException:
-    """Convert an Exception to a HTTP 403 response.
-
-    Args:
-        error: Exception to convert.
-
-    Returns:
-        HTTPException with status code 403.
-    """
-    return HTTPException(status_code=403, detail=error_detail(error))
-
-
-def not_found(error: Exception) -> HTTPException:
-    """Convert an Exception to a HTTP 404 response.
-
-    Args:
-        error: Exception to convert.
-
-    Returns:
-        HTTPException with status code 404.
-    """
-    return HTTPException(status_code=404, detail=error_detail(error))
-
-
-def conflict(error: Exception) -> HTTPException:
-    """Convert an Exception to a HTTP 409 response.
-
-    Args:
-        error: Exception to convert.
-
-    Returns:
-        HTTPException with status code 409.
-    """
-    return HTTPException(status_code=409, detail=error_detail(error))
-
-
-def unprocessable(error: Exception) -> HTTPException:
-    """Convert an Exception to a HTTP 409 response.
-
-    Args:
-        error: Exception to convert.
-
-    Returns:
-        HTTPException with status code 422.
-    """
-    return HTTPException(status_code=422, detail=error_detail(error))
+    raise RuntimeError(
+        "ZenML is not connected to any server right now. Please use "
+        "`zenml connect` to connect to a server or spin up a new local server "
+        "via `zenml up`."
+    )
 
 
 F = TypeVar("F", bound=Callable[..., Any])
@@ -176,26 +182,61 @@ def handle_exceptions(func: F) -> F:
 
     @wraps(func)
     def decorated(*args: Any, **kwargs: Any) -> Any:
+        from zenml.zen_server.auth import AuthContext, set_auth_context
+
+        for arg in args:
+            if isinstance(arg, AuthContext):
+                set_auth_context(arg)
+                break
+        else:
+            for _, arg in kwargs.items():
+                if isinstance(arg, AuthContext):
+                    set_auth_context(arg)
+                    break
+
         try:
             return func(*args, **kwargs)
-        except NotAuthorizedError as error:
-            logger.exception("Authorization error")
-            raise not_authorized(error) from error
-        except KeyError as error:
-            logger.exception("Entity not found")
-            raise not_found(error) from error
-        except (
-            StackExistsError,
-            StackComponentExistsError,
-            EntityExistsError,
-        ) as error:
-            logger.exception("Entity already exists")
-            raise conflict(error) from error
-        except IllegalOperationError as error:
-            logger.exception("Illegal operation")
-            raise forbidden(error) from error
-        except ValueError as error:
-            logger.exception("Validation error")
-            raise unprocessable(error) from error
+        except Exception as error:
+            logger.exception("API error")
+            http_exception = http_exception_from_error(error)
+            raise http_exception
 
     return cast(F, decorated)
+
+
+# Code from https://github.com/tiangolo/fastapi/issues/1474#issuecomment-1160633178
+# to send 422 response when receiving invalid query parameters
+def make_dependable(cls: Type[BaseModel]) -> Callable[..., Any]:
+    """This function makes a pydantic model usable for fastapi query parameters.
+
+    Additionally, it converts `InternalServerError`s that would happen due to
+    `pydantic.ValidationError` into 422 responses that signal an invalid
+    request.
+
+    Check out https://github.com/tiangolo/fastapi/issues/1474 for context.
+
+    Usage:
+        def f(model: Model = Depends(make_dependable(Model))):
+            ...
+
+    Args:
+        cls: The model class.
+
+    Returns:
+        Function to use in FastAPI `Depends`.
+    """
+
+    def init_cls_and_handle_errors(*args: Any, **kwargs: Any) -> BaseModel:
+        from fastapi import HTTPException
+
+        try:
+            inspect.signature(init_cls_and_handle_errors).bind(*args, **kwargs)
+            return cls(*args, **kwargs)
+        except ValidationError as e:
+            for error in e.errors():
+                error["loc"] = tuple(["query"] + list(error["loc"]))
+            raise HTTPException(422, detail=e.errors())
+
+    init_cls_and_handle_errors.__signature__ = inspect.signature(cls)  # type: ignore[attr-defined]
+
+    return init_cls_and_handle_errors

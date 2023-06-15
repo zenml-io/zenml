@@ -14,9 +14,7 @@
 """Base class for ZenML step operators."""
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, Dict, List, Type, cast
-
-from pydantic import root_validator
+from typing import TYPE_CHECKING, Dict, List, Type, cast
 
 from zenml.enums import StackComponentType
 from zenml.logger import get_logger
@@ -31,28 +29,6 @@ logger = get_logger(__name__)
 
 class BaseStepOperatorConfig(StackComponentConfig):
     """Base config for step operators."""
-
-    @root_validator(pre=True)
-    def _deprecations(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        """Validate and/or remove deprecated fields.
-
-        Args:
-            values: The values to validate.
-
-        Returns:
-            The validated values.
-        """
-        if "base_image" in values:
-            image_name = values.pop("base_image", None)
-            if image_name:
-                logger.warning(
-                    "The 'base_image' field has been deprecated. To use a "
-                    "custom base container image with your "
-                    "step operators, please use the DockerSettings in your "
-                    "pipeline (see https://docs.zenml.io/advanced-guide/pipelines/containerization)."
-                )
-
-        return values
 
 
 class BaseStepOperator(StackComponent, ABC):
@@ -72,6 +48,7 @@ class BaseStepOperator(StackComponent, ABC):
         self,
         info: "StepRunInfo",
         entrypoint_command: List[str],
+        environment: Dict[str, str],
     ) -> None:
         """Abstract method to execute a step.
 
@@ -81,6 +58,8 @@ class BaseStepOperator(StackComponent, ABC):
         Args:
             info: Information about the step run.
             entrypoint_command: Command that executes the step.
+            environment: Environment variables to set in the step operator
+                environment.
         """
 
 

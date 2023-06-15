@@ -17,15 +17,18 @@ import pandas as pd
 from sklearn.datasets import load_iris
 from sklearn.model_selection import train_test_split
 
-from zenml.steps import Output, step
+from zenml import step
+from zenml.steps import Output
 
 
 @step
-def training_data_loader() -> Output(
-    X_train=pd.DataFrame,
-    X_test=pd.DataFrame,
-    y_train=pd.Series,
-    y_test=pd.Series,
+def training_data_loader() -> (
+    Output(
+        X_train=pd.DataFrame,
+        X_test=pd.DataFrame,
+        y_train=pd.Series,
+        y_test=pd.Series,
+    )
 ):
     """Load the iris dataset as tuple of Pandas DataFrame / Series."""
     iris = load_iris(as_frame=True)

@@ -14,7 +14,7 @@
 """Implementation of the Spark Step Operator."""
 
 import subprocess
-from typing import TYPE_CHECKING, List, Optional, Type, cast
+from typing import TYPE_CHECKING, Dict, List, Optional, Type, cast
 
 from pyspark.conf import SparkConf
 
@@ -33,7 +33,6 @@ logger = get_logger(__name__)
 if TYPE_CHECKING:
     from zenml.config import ResourceSettings
     from zenml.config.base_settings import BaseSettings
-    from zenml.config.step_configurations import StepConfiguration
     from zenml.config.step_run_info import StepRunInfo
 
 
@@ -111,14 +110,16 @@ class SparkStepOperator(BaseStepOperator):
     def _backend_configuration(
         self,
         spark_config: SparkConf,
-        step_config: "StepConfiguration",
+        info: "StepRunInfo",
+        environment: Dict[str, str],
     ) -> None:
         """Configures Spark to handle backends like YARN, Mesos or Kubernetes.
 
         Args:
             spark_config: a SparkConf object which collects all the
                 configuration parameters
-            step_config: Configuration of the step to run.
+            info: Information about the step run.
+            environment: Environment variables to set.
         """
 
     def _io_configuration(self, spark_config: SparkConf) -> None:
@@ -269,12 +270,15 @@ class SparkStepOperator(BaseStepOperator):
         self,
         info: "StepRunInfo",
         entrypoint_command: List[str],
+        environment: Dict[str, str],
     ) -> None:
         """Launches a step on Spark.
 
         Args:
             info: Information about the step run.
             entrypoint_command: Command that executes the step.
+            environment: Environment variables to set in the step operator
+                environment.
         """
         settings = cast(SparkStepOperatorSettings, self.get_settings(info))
         # Start off with an empty configuration
@@ -287,7 +291,9 @@ class SparkStepOperator(BaseStepOperator):
         )
 
         # Add the backend configuration such as namespace, docker images names.
-        self._backend_configuration(spark_config=conf, step_config=info.config)
+        self._backend_configuration(
+            spark_config=conf, info=info, environment=environment
+        )
 
         # Add the IO configuration for the inputs and the outputs
         self._io_configuration(

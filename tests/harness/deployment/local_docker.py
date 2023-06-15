@@ -92,7 +92,6 @@ class LocalDockerTestDeployment(BaseTestDeployment):
         from zenml.utils.networking_utils import scan_for_available_port
 
         if self.is_running:
-
             logging.info(
                 f"Deployment '{self.config.name}' is already running. "
                 f"Skipping provisioning."
@@ -111,6 +110,9 @@ class LocalDockerTestDeployment(BaseTestDeployment):
             image=MYSQL_DOCKER_IMAGE,
             detach=True,
             environment={"MYSQL_ROOT_PASSWORD": MYSQL_DEFAULT_PASSWORD},
+            # Enable the primary key requirement for MySQL to catch errors related to
+            # missing primary keys.
+            command=["--sql_require_primary_key=on"],
             remove=True,
             auto_remove=True,
             ports={MYSQL_DEFAULT_PORT: port},

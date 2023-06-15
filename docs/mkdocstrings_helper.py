@@ -75,7 +75,7 @@ def create_entity_docs(
     entity.
 
     Args:
-        api_doc_file_dir: Directory in which to save teh api/docs
+        api_doc_file_dir: Directory in which to save the api/docs
         ignored_modules: List of entities to ignore
         sources_path: Path to the zenml src directory
         index_file_contents: Contents of the index file to append to
@@ -113,11 +113,10 @@ def create_entity_docs(
                     out_path=api_doc_file_dir,
                 )
 
-                relative_base_path = "/".join(item.parts[1:-1])
                 if index_file_contents:
                     index_entry = (
                         f"# [{item_name}]"
-                        f"({relative_base_path}/{item.stem})\n\n"
+                        f"({API_DOCS}/{md_prefix}-{item.stem})\n\n"
                         f"::: {zenml_import_path}.{item.stem}\n"
                         f"    handler: python\n"
                         f"    selection:\n"
@@ -205,7 +204,7 @@ def generate_docs(
     )
 
     integration_file_contents = [INTEGRATION_DOCS_TITLE]
-    integrations_file_content = create_entity_docs(
+    create_entity_docs(
         api_doc_file_dir=integrations_dev_doc_file_dir,
         ignored_modules=["__init__.py", "__pycache__"],
         sources_path=path / "integrations",

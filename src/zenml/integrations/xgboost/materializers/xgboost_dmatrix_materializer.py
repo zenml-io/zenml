@@ -15,7 +15,7 @@
 
 import os
 import tempfile
-from typing import Any, Type
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, Tuple, Type
 
 import xgboost as xgb
 
@@ -23,14 +23,17 @@ from zenml.enums import ArtifactType
 from zenml.io import fileio
 from zenml.materializers.base_materializer import BaseMaterializer
 
+if TYPE_CHECKING:
+    from zenml.metadata.metadata_types import MetadataType
+
 DEFAULT_FILENAME = "data.binary"
 
 
 class XgboostDMatrixMaterializer(BaseMaterializer):
     """Materializer to read data to and from xgboost.DMatrix."""
 
-    ASSOCIATED_TYPES = (xgb.DMatrix,)
-    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATA
+    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (xgb.DMatrix,)
+    ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.DATA
 
     def load(self, data_type: Type[Any]) -> xgb.DMatrix:
         """Reads a xgboost.DMatrix binary file and loads it.
@@ -41,7 +44,6 @@ class XgboostDMatrixMaterializer(BaseMaterializer):
         Returns:
             Materialized xgboost matrix.
         """
-        super().load(data_type)
         filepath = os.path.join(self.uri, DEFAULT_FILENAME)
 
         # Create a temporary folder
@@ -62,7 +64,6 @@ class XgboostDMatrixMaterializer(BaseMaterializer):
         Args:
             matrix: A xgboost.DMatrix object.
         """
-        super().save(matrix)
         filepath = os.path.join(self.uri, DEFAULT_FILENAME)
 
         # Make a temporary phantom artifact
@@ -74,3 +75,16 @@ class XgboostDMatrixMaterializer(BaseMaterializer):
         # Close and remove the temporary file
         f.close()
         fileio.remove(f.name)
+
+    def extract_metadata(
+        self, dataset: xgb.DMatrix
+    ) -> Dict[str, "MetadataType"]:
+        """Extract metadata from the given `Dataset` object.
+
+        Args:
+            dataset: The `Dataset` object to extract metadata from.
+
+        Returns:
+            The extracted metadata as a dictionary.
+        """
+        return {"shape": (dataset.num_row(), dataset.num_col())}

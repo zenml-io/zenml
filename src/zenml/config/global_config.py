@@ -22,14 +22,16 @@ from typing import TYPE_CHECKING, Any, Dict, Optional, cast
 from uuid import UUID
 
 from packaging import version
-from pydantic import BaseModel, Field, ValidationError, validator
+from pydantic import BaseModel, Field, SecretStr, ValidationError, validator
 from pydantic.main import ModelMetaclass
 
 from zenml import __version__
+from zenml.config.secrets_store_config import SecretsStoreConfiguration
 from zenml.config.store_config import StoreConfiguration
 from zenml.constants import (
     DEFAULT_STORE_DIRECTORY_NAME,
     ENV_ZENML_LOCAL_STORES_PATH,
+    ENV_ZENML_SECRETS_STORE_PREFIX,
     ENV_ZENML_STORE_PREFIX,
     LOCAL_STORES_DIRECTORY_NAME,
 )
@@ -47,7 +49,7 @@ from zenml.utils.analytics_utils import (
 )
 
 if TYPE_CHECKING:
-    from zenml.models import ProjectResponseModel, StackResponseModel
+    from zenml.models import StackResponseModel, WorkspaceResponseModel
     from zenml.zen_stores.base_zen_store import BaseZenStore
 
 logger = get_logger(__name__)
@@ -133,26 +135,24 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
             global config.
         store: Store configuration.
         active_stack_id: The ID of the active stack.
-        active_project_name: The name of the active project.
+        active_workspace_name: The name of the active workspace.
         jwt_secret_key: The secret key used to sign and verify JWT tokens.
         _config_path: Directory where the global config file is stored.
     """
 
-    user_id: uuid.UUID = Field(
-        default_factory=uuid.uuid4, allow_mutation=False
-    )
+    user_id: uuid.UUID = Field(default_factory=uuid.uuid4)
     user_email: Optional[str] = None
     user_email_opt_in: Optional[bool] = None
     analytics_opt_in: bool = True
     version: Optional[str]
     store: Optional[StoreConfiguration]
     active_stack_id: Optional[uuid.UUID]
-    active_project_name: Optional[str]
+    active_workspace_name: Optional[str]
     jwt_secret_key: str = Field(default_factory=generate_jwt_secret_key)
 
     _config_path: str
     _zen_store: Optional["BaseZenStore"] = None
-    _active_project: Optional["ProjectResponseModel"] = None
+    _active_workspace: Optional["WorkspaceResponseModel"] = None
 
     def __init__(
         self, config_path: Optional[str] = None, **kwargs: Any
@@ -213,6 +213,8 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
                 reset to an empty value.
         """
         cls._global_config = config
+        if config:
+            config._write_config()
 
     @validator("version")
     def _validate_version(cls, v: Optional[str]) -> Optional[str]:
@@ -304,13 +306,8 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
                 logger.error(
                     "The ZenML global configuration version (%s) is higher "
                     "than the version of ZenML currently being used (%s). "
-                    "This may happen if you recently downgraded ZenML to an "
-                    "earlier version, or if you have already used a more "
-                    "recent ZenML version on the same machine. "
-                    "It is highly recommended that you update ZenML to at "
-                    "least match the global configuration version, otherwise "
-                    "you may run into unexpected issues such as model schema "
-                    "validation failures or even loss of information.",
+                    "Read more about this issue and how to solve it here: "
+                    "`https://docs.zenml.io/user-guide/advanced-guide/global-settings-of-zenml#version-mismatch-downgrading`",
                     config_version,
                     curr_version,
                 )
@@ -388,45 +385,57 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         """
         from zenml.zen_stores.base_zen_store import BaseZenStore
 
-        store = BaseZenStore.create_store(
-            config, skip_default_registrations, **kwargs
-        )
-        if self.store != store.config or not self._zen_store:
-            logger.debug(f"Configuring the global store to {store.config}")
-            self.store = store.config
+        if self.store == config and self._zen_store:
+            # TODO: Do we actually need to create/initialize the store here
+            #   or can we just return instead? We think this is just getting
+            #   called for default registrations.
+            BaseZenStore.create_store(
+                config, skip_default_registrations, **kwargs
+            )
+            return
 
-            # We want to check if the active user has opted in or out for using
-            # an email address for marketing purposes and if so, record it in
-            # the analytics.
-            active_user = store.get_user(include_private=True)
-            if active_user.email_opted_in is not None:
-                self.record_email_opt_in_out(
-                    opted_in=active_user.email_opted_in,
-                    email=active_user.email,
-                    source=AnalyticsEventSource.ZENML_SERVER,
-                )
-            self._zen_store = store
+        # TODO: Revisit the flow regarding the registration of the default
+        #  entities once the analytics v1 is removed.
+        store = BaseZenStore.create_store(config, True, **kwargs)
 
-            # Sanitize the global configuration to reflect the new store
-            self._sanitize_config()
-            self._write_config()
+        logger.debug(f"Configuring the global store to {store.config}")
+        self.store = store.config
+        self._zen_store = store
 
-            local_stores_path = Path(self.local_stores_path)
-            local_stores_path.mkdir(parents=True, exist_ok=True)
+        if not skip_default_registrations:
+            store._initialize_database()
+
+        # We want to check if the active user has opted in or out for using
+        # an email address for marketing purposes and if so, record it in
+        # the analytics.
+        active_user = store.get_user(include_private=True)
+        if active_user.email_opted_in is not None:
+            self.record_email_opt_in_out(
+                opted_in=active_user.email_opted_in,
+                email=active_user.email,
+                source=AnalyticsEventSource.ZENML_SERVER,
+            )
+
+        # Sanitize the global configuration to reflect the new store
+        self._sanitize_config()
+        self._write_config()
+
+        local_stores_path = Path(self.local_stores_path)
+        local_stores_path.mkdir(parents=True, exist_ok=True)
 
     def _sanitize_config(self) -> None:
         """Sanitize and save the global configuration.
 
-        This method is called to ensure that the active stack and project
+        This method is called to ensure that the active stack and workspace
         are set to their default values, if possible.
         """
-        active_project, active_stack = self.zen_store.validate_active_config(
-            self.active_project_name,
+        active_workspace, active_stack = self.zen_store.validate_active_config(
+            self.active_workspace_name,
             self.active_stack_id,
             config_name="global",
         )
-        self.active_project_name = active_project.name
-        self._active_project = active_project
+        self.active_workspace_name = active_workspace.name
+        self._active_workspace = active_workspace
         self.set_active_stack(active_stack)
 
     @staticmethod
@@ -550,29 +559,51 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         """
         from zenml.zen_stores.base_zen_store import BaseZenStore
 
-        env_config: Dict[str, str] = {}
+        env_store_config: Dict[str, str] = {}
+        env_secrets_store_config: Dict[str, str] = {}
         for k, v in os.environ.items():
             if v == "":
                 continue
             if k.startswith(ENV_ZENML_STORE_PREFIX):
-                env_config[k[len(ENV_ZENML_STORE_PREFIX) :].lower()] = v
-        if len(env_config):
-            if "type" not in env_config and "url" in env_config:
-                env_config["type"] = BaseZenStore.get_store_type(
-                    env_config["url"]
+                env_store_config[k[len(ENV_ZENML_STORE_PREFIX) :].lower()] = v
+            elif k.startswith(ENV_ZENML_SECRETS_STORE_PREFIX):
+                env_secrets_store_config[
+                    k[len(ENV_ZENML_SECRETS_STORE_PREFIX) :].lower()
+                ] = v
+        if len(env_store_config):
+            if "type" not in env_store_config and "url" in env_store_config:
+                env_store_config["type"] = BaseZenStore.get_store_type(
+                    env_store_config["url"]
                 )
 
             logger.debug(
                 "Using environment variables to configure the default store"
             )
-            return StoreConfiguration(**env_config)
 
-        return BaseZenStore.get_default_store_config(
-            path=os.path.join(
-                self.local_stores_path,
-                DEFAULT_STORE_DIRECTORY_NAME,
+            config = StoreConfiguration(
+                **env_store_config,
             )
-        )
+        else:
+            config = BaseZenStore.get_default_store_config(
+                path=os.path.join(
+                    self.local_stores_path,
+                    DEFAULT_STORE_DIRECTORY_NAME,
+                )
+            )
+
+        if len(env_secrets_store_config):
+            if "type" not in env_secrets_store_config:
+                env_secrets_store_config["type"] = config.type.value
+
+            logger.debug(
+                "Using environment variables to configure the secrets store"
+            )
+
+            config.secrets_store = SecretsStoreConfiguration(
+                **env_secrets_store_config
+            )
+
+        return config
 
     def set_default_store(self) -> None:
         """Creates and sets the default store configuration.
@@ -585,7 +616,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         ) as analytics_handler:
             default_store_cfg = self.get_default_store()
             self._configure_store(default_store_cfg)
-            logger.info("Using the default store for the global config.")
+            logger.debug("Using the default store for the global config.")
             analytics_handler.metadata = {
                 "store_type": default_store_cfg.type.value
             }
@@ -639,7 +670,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
 
                     identify_group(
                         AnalyticsGroup.ZENML_SERVER_GROUP,
-                        group_id=str(server_info.id),
+                        group_id=server_info.id,
                         group_metadata={
                             "version": server_info.version,
                             "deployment_type": str(
@@ -647,6 +678,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
                             ),
                             "database_type": str(server_info.database_type),
                         },
+                        v2=True,
                     )
 
     @property
@@ -668,22 +700,22 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
 
         return self._zen_store
 
-    def set_active_project(
-        self, project: "ProjectResponseModel"
-    ) -> "ProjectResponseModel":
-        """Set the project for the local client.
+    def set_active_workspace(
+        self, workspace: "WorkspaceResponseModel"
+    ) -> "WorkspaceResponseModel":
+        """Set the workspace for the local client.
 
         Args:
-            project: The project to set active.
+            workspace: The workspace to set active.
 
         Returns:
-            The project that was set active.
+            The workspace that was set active.
         """
-        self.active_project_name = project.name
-        self._active_project = project
-        # Sanitize the global configuration to reflect the new project
+        self.active_workspace_name = workspace.name
+        self._active_workspace = workspace
+        # Sanitize the global configuration to reflect the new workspace
         self._sanitize_config()
-        return project
+        return workspace
 
     def set_active_stack(self, stack: "StackResponseModel") -> None:
         """Set the active stack for the local client.
@@ -693,35 +725,35 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         """
         self.active_stack_id = stack.id
 
-    def get_active_project(self) -> "ProjectResponseModel":
-        """Get a model of the active project for the local client.
+    def get_active_workspace(self) -> "WorkspaceResponseModel":
+        """Get a model of the active workspace for the local client.
 
         Returns:
-            The model of the active project.
+            The model of the active workspace.
         """
-        project_name = self.get_active_project_name()
+        workspace_name = self.get_active_workspace_name()
 
-        if self._active_project is not None:
-            return self._active_project
+        if self._active_workspace is not None:
+            return self._active_workspace
 
-        project = self.zen_store.get_project(
-            project_name_or_id=project_name,
+        workspace = self.zen_store.get_workspace(
+            workspace_name_or_id=workspace_name,
         )
-        return self.set_active_project(project)
+        return self.set_active_workspace(workspace)
 
-    def get_active_project_name(self) -> str:
-        """Get the name of the active project.
+    def get_active_workspace_name(self) -> str:
+        """Get the name of the active workspace.
 
-        If the active project doesn't exist yet, the ZenStore is reinitialized.
+        If the active workspace doesn't exist yet, the ZenStore is reinitialized.
 
         Returns:
-            The name of the active project.
+            The name of the active workspace.
         """
-        if self.active_project_name is None:
+        if self.active_workspace_name is None:
             _ = self.zen_store
-            assert self.active_project_name is not None
+            assert self.active_workspace_name is not None
 
-        return self.active_project_name
+        return self.active_workspace_name
 
     def get_active_stack_id(self) -> UUID:
         """Get the ID of the active stack.
@@ -755,10 +787,8 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         # been changed, we also want to update the information.
         if opted_in and email and self.user_email != email:
             identify_user(
-                {
-                    "email": email,
-                    "source": source,
-                }
+                user_metadata={"email": email, "source": source},
+                v2=True,
             )
             self.user_email = email
 
@@ -774,6 +804,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
             track_event(
                 AnalyticsEvent.OPT_IN_OUT_EMAIL,
                 {"opted_in": opted_in, "source": source},
+                v2=True,
             )
 
             self.user_email_opt_in = opted_in
@@ -790,3 +821,9 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         # all attributes with leading underscore are private and therefore
         # are mutable and not included in serialization
         underscore_attrs_are_private = True
+
+        # This is needed to allow correct handling of SecretStr values during
+        # serialization.
+        json_encoders = {
+            SecretStr: lambda v: v.get_secret_value() if v else None
+        }

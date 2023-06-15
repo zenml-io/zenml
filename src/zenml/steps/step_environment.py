@@ -41,7 +41,7 @@ class StepEnvironment(BaseEnvironmentComponent):
     @step
     def my_step(...)
         env = Environment().step_environment
-        do_something_with(env.pipeline_name, env.pipeline_run_id, env.step_name)
+        do_something_with(env.pipeline_name, env.run_name, env.step_name)
     ```
     """
 
@@ -50,14 +50,17 @@ class StepEnvironment(BaseEnvironmentComponent):
     def __init__(
         self,
         step_run_info: "StepRunInfo",
+        cache_enabled: bool,
     ):
         """Initialize the environment of the currently running step.
 
         Args:
             step_run_info: Info about the currently running step.
+            cache_enabled: Whether caching is enabled for the current step run.
         """
         super().__init__()
         self._step_run_info = step_run_info
+        self._cache_enabled = cache_enabled
 
     @property
     def pipeline_name(self) -> str:
@@ -78,26 +81,13 @@ class StepEnvironment(BaseEnvironmentComponent):
         return self._step_run_info.run_name
 
     @property
-    def pipeline_run_id(self) -> str:
-        """The ID of the current pipeline run.
-
-        Returns:
-            The ID of the current pipeline run.
-        """
-        logger.warning(
-            "`StepContext.pipeline_run_id` is deprecated. Use "
-            "`StepContext.run_name` instead."
-        )
-        return self.run_name
-
-    @property
     def step_name(self) -> str:
         """The name of the currently running step.
 
         Returns:
             The name of the currently running step.
         """
-        return self._step_run_info.config.name
+        return self._step_run_info.pipeline_step_name
 
     @property
     def step_run_info(self) -> "StepRunInfo":
@@ -115,8 +105,4 @@ class StepEnvironment(BaseEnvironmentComponent):
         Returns:
             True if cache is enabled for the step, otherwise False.
         """
-        cache_enabled = (
-            self._step_run_info.pipeline.enable_cache
-            and self._step_run_info.config.enable_cache
-        )
-        return cache_enabled
+        return self._cache_enabled

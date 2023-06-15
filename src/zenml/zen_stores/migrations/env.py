@@ -37,7 +37,7 @@ def run_migrations() -> None:
     if store_cfg is None or store_cfg.type != StoreType.SQL:
         store_cfg = GlobalConfiguration().get_default_store()
 
-    store = SqlZenStore(
+    store = SqlZenStore(  # type: ignore
         config=store_cfg,
         skip_default_registrations=True,
         skip_migrations=True,

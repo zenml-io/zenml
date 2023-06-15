@@ -52,6 +52,50 @@ class AzureArtifactStore(BaseArtifactStore, AuthenticationMixin):
         """
         return cast(AzureArtifactStoreConfig, self._config)
 
+    def get_credentials(self) -> Optional[AzureSecretSchema]:
+        """Returns the credentials for the Azure Artifact Store if configured.
+
+        Returns:
+            The credentials.
+
+        Raises:
+            RuntimeError: If the connector is not configured with Azure service
+                principal credentials.
+        """
+        connector = self.get_connector()
+        if connector:
+            from azure.identity import ClientSecretCredential
+            from azure.storage.blob import BlobServiceClient
+
+            client = connector.connect()
+            if not isinstance(client, BlobServiceClient):
+                raise RuntimeError(
+                    f"Expected a {BlobServiceClient.__module__}."
+                    f"{BlobServiceClient.__name__} object while "
+                    f"trying to use the linked connector, but got "
+                    f"{type(client)}."
+                )
+            # Get the credentials from the client
+            credentials = client.credential
+            if not isinstance(credentials, ClientSecretCredential):
+                raise RuntimeError(
+                    "The Azure Artifact Store connector can only be used "
+                    "with a service connector that is configured with "
+                    "Azure service principal credentials."
+                )
+            return AzureSecretSchema(
+                name="",
+                client_id=credentials._client_id,
+                client_secret=credentials._client_credential,
+                tenant_id=credentials._tenant_id,
+                account_name=client.account_name,
+            )
+
+        secret = self.get_authentication_secret(
+            expected_schema_type=AzureSecretSchema
+        )
+        return secret
+
     @property
     def filesystem(self) -> adlfs.AzureBlobFileSystem:
         """The adlfs filesystem to access this artifact store.
@@ -60,9 +104,7 @@ class AzureArtifactStore(BaseArtifactStore, AuthenticationMixin):
             The adlfs filesystem to access this artifact store.
         """
         if not self._filesystem:
-            secret = self.get_authentication_secret(
-                expected_schema_type=AzureSecretSchema
-            )
+            secret = self.get_credentials()
             credentials = secret.content if secret else {}
 
             self._filesystem = adlfs.AzureBlobFileSystem(
@@ -278,6 +320,17 @@ class AzureArtifactStore(BaseArtifactStore, AuthenticationMixin):
             Stat info.
         """
         return self.filesystem.stat(path=path)  # type: ignore[no-any-return]
+
+    def size(self, path: PathType) -> int:
+        """Get the size of a file in bytes.
+
+        Args:
+            path: The path to the file.
+
+        Returns:
+            The size of the file in bytes.
+        """
+        return self.filesystem.size(path=path)  # type: ignore[no-any-return]
 
     def walk(
         self,

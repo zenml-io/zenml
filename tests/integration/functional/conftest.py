@@ -1,3 +1,4 @@
+#  Copyright (c) ZenML GmbH 2023. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -11,20 +12,24 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import logging
+
 import pytest
 
 from zenml.pipelines import pipeline
 from zenml.steps import step
+from zenml.types import HTMLString
 
 
-@step
-def constant_int_output_test_step() -> int:
-    return 7
+@pytest.fixture
+def one_step_pipeline():
+    """Pytest fixture that returns a pipeline which takes a single step named `step_`."""
 
+    @pipeline
+    def _pipeline(step_):
+        step_()
 
-@step
-def int_plus_one_test_step(input: int) -> int:
-    return input + 1
+    return _pipeline
 
 
 @pytest.fixture
@@ -37,3 +42,41 @@ def connected_two_step_pipeline():
         step_2(step_1())
 
     return _pipeline
+
+
+@step
+def constant_int_output_test_step() -> int:
+    return 7
+
+
+@step
+def int_plus_one_test_step(input: int) -> int:
+    return input + 1
+
+
+@step
+def int_plus_two_test_step(input: int) -> int:
+    return input + 2
+
+
+@step
+def visualizable_step() -> HTMLString:
+    """A step that returns a visualizable artifact."""
+    return HTMLString("<h1>Test</h1>")
+
+
+@step
+def step_with_logs() -> int:
+    """A step that has some logs"""
+    logging.info("Hello World!")
+    return 1
+
+
+@pytest.fixture
+def clean_client_with_run(clean_client, connected_two_step_pipeline):
+    """Fixture to get a clean client with an existing pipeline run in it."""
+    connected_two_step_pipeline(
+        step_1=constant_int_output_test_step(),
+        step_2=int_plus_one_test_step(),
+    ).run()
+    return clean_client

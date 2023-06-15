@@ -19,12 +19,14 @@ from typing import TYPE_CHECKING, Dict, List, Optional
 from uuid import UUID
 
 from pydantic.json import pydantic_encoder
-from sqlalchemy import TEXT, Column
+from sqlalchemy import TEXT, Column, String
+from sqlalchemy.dialects.mysql import MEDIUMTEXT
 from sqlmodel import Field, Relationship, SQLModel
 
 from zenml.config.step_configurations import Step
 from zenml.constants import STEP_SOURCE_PARAMETER_NAME
 from zenml.enums import ExecutionStatus
+from zenml.models.constants import MEDIUMTEXT_MAX_LENGTH
 from zenml.models.step_run_models import (
     StepRunRequestModel,
     StepRunResponseModel,
@@ -33,12 +35,14 @@ from zenml.models.step_run_models import (
 from zenml.zen_stores.schemas.artifact_schemas import ArtifactSchema
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.pipeline_run_schemas import PipelineRunSchema
-from zenml.zen_stores.schemas.project_schemas import ProjectSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.user_schemas import UserSchema
+from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
 
 if TYPE_CHECKING:
     from zenml.models import ArtifactResponseModel
+    from zenml.zen_stores.schemas.logs_schemas import LogsSchema
+    from zenml.zen_stores.schemas.run_metadata_schemas import RunMetadataSchema
 
 
 class StepRunSchema(NamedSchema, table=True):
@@ -76,25 +80,40 @@ class StepRunSchema(NamedSchema, table=True):
     )
     user: Optional["UserSchema"] = Relationship(back_populates="step_runs")
 
-    project_id: UUID = build_foreign_key_field(
+    workspace_id: UUID = build_foreign_key_field(
         source=__tablename__,
-        target=ProjectSchema.__tablename__,
-        source_column="project_id",
+        target=WorkspaceSchema.__tablename__,
+        source_column="workspace_id",
         target_column="id",
         ondelete="CASCADE",
         nullable=False,
     )
-    project: "ProjectSchema" = Relationship(back_populates="step_runs")
+    workspace: "WorkspaceSchema" = Relationship(back_populates="step_runs")
 
     enable_cache: Optional[bool] = Field(nullable=True)
+    enable_artifact_metadata: Optional[bool] = Field(nullable=True)
     code_hash: Optional[str] = Field(nullable=True)
     cache_key: Optional[str] = Field(nullable=True)
     start_time: Optional[datetime] = Field(nullable=True)
     end_time: Optional[datetime] = Field(nullable=True)
     status: ExecutionStatus
     entrypoint_name: str
-    parameters: str = Field(sa_column=Column(TEXT, nullable=False))
-    step_configuration: str = Field(sa_column=Column(TEXT, nullable=False))
+    parameters: str = Field(
+        sa_column=Column(
+            String(length=MEDIUMTEXT_MAX_LENGTH).with_variant(
+                MEDIUMTEXT, "mysql"
+            ),
+            nullable=False,
+        )
+    )
+    step_configuration: str = Field(
+        sa_column=Column(
+            String(length=MEDIUMTEXT_MAX_LENGTH).with_variant(
+                MEDIUMTEXT, "mysql"
+            ),
+            nullable=False,
+        )
+    )
     caching_parameters: Optional[str] = Field(
         sa_column=Column(TEXT, nullable=True)
     )
@@ -102,11 +121,18 @@ class StepRunSchema(NamedSchema, table=True):
     source_code: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
     num_outputs: Optional[int]
 
+    run_metadata: List["RunMetadataSchema"] = Relationship(
+        back_populates="step_run", sa_relationship_kwargs={"cascade": "delete"}
+    )
     input_artifacts: List["StepRunInputArtifactSchema"] = Relationship(
         back_populates="step_run", sa_relationship_kwargs={"cascade": "delete"}
     )
     output_artifacts: List["StepRunOutputArtifactSchema"] = Relationship(
         back_populates="step_run", sa_relationship_kwargs={"cascade": "delete"}
+    )
+    logs: Optional["LogsSchema"] = Relationship(
+        back_populates="step_run",
+        sa_relationship_kwargs={"cascade": "delete", "uselist": False},
     )
     parents: List["StepRunParentsSchema"] = Relationship(
         back_populates="child",
@@ -138,9 +164,10 @@ class StepRunSchema(NamedSchema, table=True):
             name=request.name,
             pipeline_run_id=request.pipeline_run_id,
             original_step_run_id=request.original_step_run_id,
-            project_id=request.project,
+            workspace_id=request.workspace,
             user_id=request.user,
             enable_cache=step_config.enable_cache,
+            enable_artifact_metadata=step_config.enable_artifact_metadata,
             code_hash=step_config.caching_parameters.get(
                 STEP_SOURCE_PARAMETER_NAME
             ),
@@ -181,12 +208,16 @@ class StepRunSchema(NamedSchema, table=True):
         Returns:
             The created StepRunModel.
         """
+        metadata = {
+            metadata_schema.key: metadata_schema.to_model()
+            for metadata_schema in self.run_metadata
+        }
         return StepRunResponseModel(
             id=self.id,
             name=self.name,
             pipeline_run_id=self.pipeline_run_id,
             original_step_run_id=self.original_step_run_id,
-            project=self.project.to_model(),
+            workspace=self.workspace.to_model(),
             user=self.user.to_model() if self.user else None,
             parent_step_ids=parent_step_ids,
             cache_key=self.cache_key,
@@ -200,6 +231,8 @@ class StepRunSchema(NamedSchema, table=True):
             updated=self.updated,
             input_artifacts=input_artifacts,
             output_artifacts=output_artifacts,
+            metadata=metadata,
+            logs=self.logs.to_model() if self.logs else None,
         )
 
     def update(self, step_update: StepRunUpdateModel) -> "StepRunSchema":
@@ -288,7 +321,7 @@ class StepRunInputArtifactSchema(SQLModel, table=True):
     artifact: ArtifactSchema = Relationship(
         back_populates="input_to_step_runs"
     )
-    name: str
+    name: str = Field(nullable=False, primary_key=True)
 
 
 class StepRunOutputArtifactSchema(SQLModel, table=True):

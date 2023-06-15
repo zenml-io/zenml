@@ -39,7 +39,6 @@ class BentoMLIntegration(Integration):
         from zenml.integrations.bentoml import materializers  # noqa
         from zenml.integrations.bentoml import model_deployers  # noqa
         from zenml.integrations.bentoml import services  # noqa
-        from zenml.integrations.bentoml import steps  # noqa
 
     @classmethod
     def flavors(cls) -> List[Type[Flavor]]:

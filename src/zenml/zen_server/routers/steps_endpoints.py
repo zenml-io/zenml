@@ -13,20 +13,38 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for steps (and artifacts) of pipeline runs."""
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict
 from uuid import UUID
 
-from fastapi import APIRouter, Security
+from fastapi import APIRouter, Depends, HTTPException, Security
 
-from zenml.constants import API, STATUS, STEP_CONFIGURATION, STEPS, VERSION_1
+from zenml.constants import (
+    API,
+    LOGS,
+    STATUS,
+    STEP_CONFIGURATION,
+    STEPS,
+    VERSION_1,
+)
 from zenml.enums import ExecutionStatus, PermissionType
 from zenml.models import (
+    StepRunFilterModel,
     StepRunRequestModel,
     StepRunResponseModel,
     StepRunUpdateModel,
 )
+from zenml.models.page_model import Page
+from zenml.utils.artifact_utils import (
+    _load_artifact_store,
+    _load_file_from_artifact_store,
+)
 from zenml.zen_server.auth import AuthContext, authorize
-from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
+from zenml.zen_server.exceptions import error_response
+from zenml.zen_server.utils import (
+    handle_exceptions,
+    make_dependable,
+    zen_store,
+)
 
 router = APIRouter(
     prefix=API + VERSION_1 + STEPS,
@@ -37,33 +55,27 @@ router = APIRouter(
 
 @router.get(
     "",
-    response_model=List[StepRunResponseModel],
+    response_model=Page[StepRunResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def list_run_steps(
-    run_id: Optional[UUID] = None,
-    project_id: Optional[UUID] = None,
-    cache_key: Optional[str] = None,
-    status: Optional[ExecutionStatus] = None,
+    step_run_filter_model: StepRunFilterModel = Depends(
+        make_dependable(StepRunFilterModel)
+    ),
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> List[StepRunResponseModel]:
+) -> Page[StepRunResponseModel]:
     """Get run steps according to query filters.
 
     Args:
-        run_id: The ID of the pipeline run by which to filter.
-        project_id: The ID of the project by which to filter.
-        cache_key: The cache key by which to filter.
-        status: The status by which to filter.
+        step_run_filter_model: Filter model used for pagination, sorting,
+                                   filtering
 
     Returns:
         The run steps according to query filters.
     """
     return zen_store().list_run_steps(
-        run_id=run_id,
-        project_id=project_id,
-        cache_key=cache_key,
-        status=status,
+        step_run_filter_model=step_run_filter_model
     )
 
 
@@ -174,3 +186,38 @@ def get_step_status(
         The status of the step.
     """
     return zen_store().get_run_step(step_id).status
+
+
+@router.get(
+    "/{step_id}" + LOGS,
+    response_model=str,
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@handle_exceptions
+def get_step_logs(
+    step_id: UUID,
+    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+) -> str:
+    """Get the logs of a specific step.
+
+    Args:
+        step_id: ID of the step for which to get the logs.
+
+    Returns:
+        The logs of the step.
+
+    Raises:
+        HTTPException: If no logs are available for this step.
+    """
+    store = zen_store()
+    logs = store.get_run_step(step_id).logs
+    if logs is None:
+        raise HTTPException(
+            status_code=404, detail="No logs available for this step"
+        )
+    artifact_store = _load_artifact_store(logs.artifact_store_id, store)
+    return str(
+        _load_file_from_artifact_store(
+            logs.uri, artifact_store=artifact_store, mode="r"
+        )
+    )

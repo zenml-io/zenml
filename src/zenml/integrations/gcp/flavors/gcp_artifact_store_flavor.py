@@ -13,13 +13,14 @@
 #  permissions and limitations under the License.
 """GCP artifact store flavor."""
 
-from typing import TYPE_CHECKING, ClassVar, Set, Type
+from typing import TYPE_CHECKING, ClassVar, Optional, Set, Type
 
 from zenml.artifact_stores import (
     BaseArtifactStoreConfig,
     BaseArtifactStoreFlavor,
 )
 from zenml.integrations.gcp import GCP_ARTIFACT_STORE_FLAVOR
+from zenml.models.service_connector_models import ServiceConnectorRequirements
 from zenml.stack.authentication_mixin import AuthenticationConfigMixin
 
 if TYPE_CHECKING:
@@ -48,6 +49,51 @@ class GCPArtifactStoreFlavor(BaseArtifactStoreFlavor):
             The name of the flavor.
         """
         return GCP_ARTIFACT_STORE_FLAVOR
+
+    @property
+    def service_connector_requirements(
+        self,
+    ) -> Optional[ServiceConnectorRequirements]:
+        """Service connector resource requirements for service connectors.
+
+        Specifies resource requirements that are used to filter the available
+        service connector types that are compatible with this flavor.
+
+        Returns:
+            Requirements for compatible service connectors, if a service
+            connector is required for this flavor.
+        """
+        return ServiceConnectorRequirements(
+            resource_type="gcs-bucket",
+            resource_id_attr="path",
+        )
+
+    @property
+    def docs_url(self) -> Optional[str]:
+        """A url to point at docs explaining this flavor.
+
+        Returns:
+            A flavor docs url.
+        """
+        return self.generate_default_docs_url()
+
+    @property
+    def sdk_docs_url(self) -> Optional[str]:
+        """A url to point at SDK docs explaining this flavor.
+
+        Returns:
+            A flavor SDK docs url.
+        """
+        return self.generate_default_sdk_docs_url()
+
+    @property
+    def logo_url(self) -> str:
+        """A url to represent the flavor in the dashboard.
+
+        Returns:
+            The flavor logo.
+        """
+        return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/artifact_store/gcp.png"
 
     @property
     def config_class(self) -> Type[GCPArtifactStoreConfig]:

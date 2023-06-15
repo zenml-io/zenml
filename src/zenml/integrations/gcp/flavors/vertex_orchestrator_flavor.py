@@ -21,6 +21,7 @@ from zenml.integrations.gcp.google_credentials_mixin import (
     GoogleCredentialsConfigMixin,
 )
 from zenml.integrations.kubernetes.pod_settings import KubernetesPodSettings
+from zenml.models.service_connector_models import ServiceConnectorRequirements
 from zenml.orchestrators import BaseOrchestratorConfig, BaseOrchestratorFlavor
 from zenml.utils import deprecation_utils
 
@@ -71,12 +72,9 @@ class VertexOrchestratorConfig(  # type: ignore[misc] # https://github.com/pydan
     """Configuration for the Vertex orchestrator.
 
     Attributes:
-        project: GCP project name. If `None`, the project will be inferred from
-            the environment.
         location: Name of GCP region where the pipeline job will be executed.
             Vertex AI Pipelines is available in the following regions:
-            https://cloud.google.com/vertex-ai/docs/general/locations#feature
-            -availability
+            https://cloud.google.com/vertex-ai/docs/general/locations#feature-availability
         pipeline_root: a Cloud Storage URI that will be used by the Vertex AI
             Pipelines. If not provided but the artifact store in the stack used
             to execute the pipeline is a
@@ -90,6 +88,10 @@ class VertexOrchestratorConfig(  # type: ignore[misc] # https://github.com/pydan
         workload_service_account: the service account for workload run-as
             account. Users submitting jobs must have act-as permission on this
             run-as account.
+            If not provided, the default service account will be used.
+        function_service_account: the service account for cloud function run-as
+            account, for scheduled pipelines. This service account must have
+            the act-as permission on the workload_service_account.
             If not provided, the default service account will be used.
         network: the full name of the Compute Engine Network to which the job
             should be peered. For example, `projects/12345/global/networks/myVPC`
@@ -107,11 +109,11 @@ class VertexOrchestratorConfig(  # type: ignore[misc] # https://github.com/pydan
             https://cloud.google.com/vertex-ai/docs/training/configure-compute#specifying_gpus
     """
 
-    project: Optional[str] = None
     location: str
     pipeline_root: Optional[str] = None
     encryption_spec_key_name: Optional[str] = None
     workload_service_account: Optional[str] = None
+    function_service_account: Optional[str] = None
     network: Optional[str] = None
 
     cpu_limit: Optional[str] = None
@@ -147,6 +149,50 @@ class VertexOrchestratorFlavor(BaseOrchestratorFlavor):
             Name of the orchestrator flavor.
         """
         return GCP_VERTEX_ORCHESTRATOR_FLAVOR
+
+    @property
+    def service_connector_requirements(
+        self,
+    ) -> Optional[ServiceConnectorRequirements]:
+        """Service connector resource requirements for service connectors.
+
+        Specifies resource requirements that are used to filter the available
+        service connector types that are compatible with this flavor.
+
+        Returns:
+            Requirements for compatible service connectors, if a service
+            connector is required for this flavor.
+        """
+        return ServiceConnectorRequirements(
+            resource_type="gcp-generic",
+        )
+
+    @property
+    def docs_url(self) -> Optional[str]:
+        """A url to point at docs explaining this flavor.
+
+        Returns:
+            A flavor docs url.
+        """
+        return self.generate_default_docs_url()
+
+    @property
+    def sdk_docs_url(self) -> Optional[str]:
+        """A url to point at SDK docs explaining this flavor.
+
+        Returns:
+            A flavor SDK docs url.
+        """
+        return self.generate_default_sdk_docs_url()
+
+    @property
+    def logo_url(self) -> str:
+        """A url to represent the flavor in the dashboard.
+
+        Returns:
+            The flavor logo.
+        """
+        return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/orchestrator/vertexai.png"
 
     @property
     def config_class(self) -> Type[VertexOrchestratorConfig]:

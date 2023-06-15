@@ -14,16 +14,21 @@
 """Implementation of the Huggingface datasets materializer."""
 
 import os
+from collections import defaultdict
 from tempfile import TemporaryDirectory, mkdtemp
-from typing import Any, Type
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, Tuple, Type, Union
 
-from datasets import Dataset, load_from_disk  # type: ignore[attr-defined]
+from datasets import Dataset, load_from_disk
 from datasets.dataset_dict import DatasetDict
 
 from zenml.enums import ArtifactType
 from zenml.io import fileio
 from zenml.materializers.base_materializer import BaseMaterializer
+from zenml.materializers.pandas_materializer import PandasMaterializer
 from zenml.utils import io_utils
+
+if TYPE_CHECKING:
+    from zenml.metadata.metadata_types import MetadataType
 
 DEFAULT_DATASET_DIR = "hf_datasets"
 
@@ -31,10 +36,14 @@ DEFAULT_DATASET_DIR = "hf_datasets"
 class HFDatasetMaterializer(BaseMaterializer):
     """Materializer to read data to and from huggingface datasets."""
 
-    ASSOCIATED_TYPES = (Dataset, DatasetDict)
-    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATA_ANALYSIS
+    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (Dataset, DatasetDict)
+    ASSOCIATED_ARTIFACT_TYPE: ClassVar[
+        ArtifactType
+    ] = ArtifactType.DATA_ANALYSIS
 
-    def load(self, data_type: Type[Any]) -> Dataset:
+    def load(
+        self, data_type: Union[Type[Dataset], Type[DatasetDict]]
+    ) -> Union[Dataset, DatasetDict]:
         """Reads Dataset.
 
         Args:
@@ -43,7 +52,6 @@ class HFDatasetMaterializer(BaseMaterializer):
         Returns:
             The dataset read from the specified dir.
         """
-        super().load(data_type)
         temp_dir = mkdtemp()
         io_utils.copy_dir(
             os.path.join(self.uri, DEFAULT_DATASET_DIR),
@@ -51,13 +59,12 @@ class HFDatasetMaterializer(BaseMaterializer):
         )
         return load_from_disk(temp_dir)
 
-    def save(self, ds: Type[Any]) -> None:
+    def save(self, ds: Union[Dataset, DatasetDict]) -> None:
         """Writes a Dataset to the specified dir.
 
         Args:
             ds: The Dataset to write.
         """
-        super().save(ds)
         temp_dir = TemporaryDirectory()
         path = os.path.join(temp_dir.name, DEFAULT_DATASET_DIR)
         try:
@@ -68,3 +75,31 @@ class HFDatasetMaterializer(BaseMaterializer):
             )
         finally:
             fileio.rmtree(temp_dir.name)
+
+    def extract_metadata(
+        self, ds: Union[Dataset, DatasetDict]
+    ) -> Dict[str, "MetadataType"]:
+        """Extract metadata from the given `Dataset` object.
+
+        Args:
+            ds: The `Dataset` object to extract metadata from.
+
+        Returns:
+            The extracted metadata as a dictionary.
+
+        Raises:
+            ValueError: If the given object is not a `Dataset` or `DatasetDict`.
+        """
+        pandas_materializer = PandasMaterializer(self.uri)
+        if isinstance(ds, Dataset):
+            return pandas_materializer.extract_metadata(ds.to_pandas())
+        elif isinstance(ds, DatasetDict):
+            metadata: Dict[str, Dict[str, "MetadataType"]] = defaultdict(dict)
+            for dataset_name, dataset in ds.items():
+                dataset_metadata = pandas_materializer.extract_metadata(
+                    dataset.to_pandas()
+                )
+                for key, value in dataset_metadata.items():
+                    metadata[key][dataset_name] = value
+            return dict(metadata)
+        raise ValueError(f"Unsupported type {type(ds)}")

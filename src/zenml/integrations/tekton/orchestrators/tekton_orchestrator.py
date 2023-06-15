@@ -13,39 +13,41 @@
 #  permissions and limitations under the License.
 """Implementation of the Tekton orchestrator."""
 import os
-import subprocess
 import sys
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, cast
 
+import yaml
 from kfp import dsl
 from kfp_tekton.compiler import TektonCompiler
 from kfp_tekton.compiler.pipeline_utils import TektonPipelineConf
 from kubernetes import client as k8s_client
 from kubernetes import config as k8s_config
 
-from zenml.constants import ORCHESTRATOR_DOCKER_IMAGE_KEY
+from zenml.client import Client
+from zenml.config.global_config import GlobalConfiguration
+from zenml.constants import (
+    ENV_ZENML_LOCAL_STORES_PATH,
+)
 from zenml.entrypoints import StepEntrypointConfiguration
 from zenml.enums import StackComponentType
 from zenml.environment import Environment
 from zenml.integrations.kubeflow.utils import apply_pod_settings
 from zenml.integrations.tekton.flavors.tekton_orchestrator_flavor import (
-    DEFAULT_TEKTON_UI_PORT,
     TektonOrchestratorConfig,
     TektonOrchestratorSettings,
 )
 from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.orchestrators import BaseOrchestrator
+from zenml.orchestrators import ContainerizedOrchestrator
 from zenml.orchestrators.utils import get_orchestrator_run_name
 from zenml.stack import StackValidator
-from zenml.utils import io_utils, networking_utils
-from zenml.utils.pipeline_docker_image_builder import (
-    PipelineDockerImageBuilder,
-)
+from zenml.utils import io_utils
 
 if TYPE_CHECKING:
     from zenml.config.base_settings import BaseSettings
-    from zenml.config.pipeline_deployment import PipelineDeployment
+    from zenml.models.pipeline_deployment_models import (
+        PipelineDeploymentResponseModel,
+    )
     from zenml.stack import Stack
     from zenml.steps import ResourceSettings
 
@@ -55,8 +57,39 @@ logger = get_logger(__name__)
 ENV_ZENML_TEKTON_RUN_ID = "ZENML_TEKTON_RUN_ID"
 
 
-class TektonOrchestrator(BaseOrchestrator):
+class TektonOrchestrator(ContainerizedOrchestrator):
     """Orchestrator responsible for running pipelines using Tekton."""
+
+    _k8s_client: Optional[k8s_client.ApiClient] = None
+
+    @property
+    def kube_client(self) -> k8s_client.ApiClient:
+        """Getter for the Kubernetes API client.
+
+        Returns:
+            The Kubernetes API client.
+
+        Raises:
+            RuntimeError: if the Kubernetes connector behaves unexpectedly.
+        """
+        # Refresh the client also if the connector has expired
+        if self._k8s_client and not self.connector_has_expired():
+            return self._k8s_client
+
+        connector = self.get_connector()
+        if connector:
+            client = connector.connect()
+            if not isinstance(client, k8s_client.ApiClient):
+                raise RuntimeError(
+                    f"Expected a k8s_client.ApiClient while trying to use the "
+                    f"linked connector, but got {type(client)}."
+                )
+            self._k8s_client = client
+        else:
+            k8s_config.load_kube_config(context=self.config.kubernetes_context)
+            self._k8s_client = k8s_client.ApiClient()
+
+        return self._k8s_client
 
     @property
     def config(self) -> TektonOrchestratorConfig:
@@ -107,79 +140,183 @@ class TektonOrchestrator(BaseOrchestrator):
             # this, but just in case
             assert container_registry is not None
 
-            contexts, _ = self.get_kubernetes_contexts()
+            kubernetes_context = self.config.kubernetes_context
+            connector = self.get_connector()
+            msg = f"'{self.name}' Tekton orchestrator error: "
 
-            if self.config.kubernetes_context not in contexts:
-                return False, (
-                    f"Could not find a Kubernetes context named "
-                    f"'{self.config.kubernetes_context}' in the local "
-                    f"Kubernetes configuration. Please make sure that the "
-                    f"Kubernetes cluster is running and that the kubeconfig "
-                    f"file is configured correctly. To list all configured "
-                    f"contexts, run:\n\n"
-                    f"  `kubectl config get-contexts`\n"
-                )
+            if not connector:
+                if not kubernetes_context:
+                    return False, (
+                        f"{msg}you must either link this stack component to a "
+                        "Kubernetes service connector (see the 'zenml "
+                        "orchestrator connect' CLI command) or explicitly set "
+                        "the `kubernetes_context` attribute to the name of the "
+                        "Kubernetes config context pointing to the cluster "
+                        "where you would like to run pipelines."
+                    )
 
-            # go through all stack components and identify those that
-            # advertise a local path where they persist information that
-            # they need to be available when running pipelines.
-            for stack_component in stack.components.values():
-                local_path = stack_component.local_path
-                if local_path is None:
-                    continue
-                return False, (
-                    f"The Tekton orchestrator is configured to run "
-                    f"pipelines in a remote Kubernetes cluster designated "
-                    f"by the '{self.config.kubernetes_context}' configuration "
-                    f"context, but the '{stack_component.name}' "
-                    f"{stack_component.type.value} is a local stack component "
-                    f"and will not be available in the Tekton pipeline "
-                    f"step.\nPlease ensure that you always use non-local "
-                    f"stack components with a Tekton orchestrator, "
-                    f"otherwise you may run into pipeline execution "
-                    f"problems. You should use a flavor of "
-                    f"{stack_component.type.value} other than "
-                    f"'{stack_component.flavor}'."
-                )
+                contexts, active_context = self.get_kubernetes_contexts()
 
-            if container_registry.config.is_local:
-                return False, (
-                    f"The Tekton orchestrator is configured to run "
-                    f"pipelines in a remote Kubernetes cluster designated "
-                    f"by the '{self.config.kubernetes_context}' configuration "
-                    f"context, but the '{container_registry.name}' "
-                    f"container registry URI '{container_registry.config.uri}' "
-                    f"points to a local container registry. Please ensure "
-                    f"that you always use non-local stack components with "
-                    f"a Tekton orchestrator, otherwise you will "
-                    f"run into problems. You should use a flavor of "
-                    f"container registry other than "
-                    f"'{container_registry.flavor}'."
-                )
+                if kubernetes_context not in contexts:
+                    return False, (
+                        f"{msg}could not find a Kubernetes context named "
+                        f"'{kubernetes_context}' in the local "
+                        "Kubernetes configuration. Please make sure that the "
+                        "Kubernetes cluster is running and that the kubeconfig "
+                        "file is configured correctly. To list all configured "
+                        "contexts, run:\n\n"
+                        "  `kubectl config get-contexts`\n"
+                    )
+                if kubernetes_context != active_context:
+                    logger.warning(
+                        f"{msg}the Kubernetes context '{kubernetes_context}' "
+                        f"configured for the Tekton orchestrator is not "
+                        f"the same as the active context in the local "
+                        f"Kubernetes configuration. If this is not deliberate,"
+                        f" you should update the orchestrator's "
+                        f"`kubernetes_context` field by running:\n\n"
+                        f"  `zenml orchestrator update {self.name} "
+                        f"--kubernetes_context={active_context}`\n"
+                        f"To list all configured contexts, run:\n\n"
+                        f"  `kubectl config get-contexts`\n"
+                        f"To set the active context to be the same as the one "
+                        f"configured in the Tekton orchestrator and "
+                        f"silence this warning, run:\n\n"
+                        f"  `kubectl config use-context "
+                        f"{kubernetes_context}`\n"
+                    )
+
+            silence_local_validations_msg = (
+                f"To silence this warning, set the "
+                f"`skip_local_validations` attribute to True in the "
+                f"orchestrator configuration by running:\n\n"
+                f"  'zenml orchestrator update {self.name} "
+                f"--skip_local_validations=True'\n"
+            )
+
+            if (
+                not self.config.skip_local_validations
+                and not self.config.is_local
+            ):
+                # if the orchestrator is not running in a local k3d cluster,
+                # we cannot have any other local components in our stack,
+                # because we cannot mount the local path into the container.
+                # This may result in problems when running the pipeline, because
+                # the local components will not be available inside the
+                # Tekton containers.
+
+                # go through all stack components and identify those that
+                # advertise a local path where they persist information that
+                # they need to be available when running pipelines.
+                for stack_comp in stack.components.values():
+                    local_path = stack_comp.local_path
+                    if not local_path:
+                        continue
+                    return False, (
+                        f"{msg}the Tekton orchestrator is configured to run "
+                        f"pipelines in a remote Kubernetes cluster, but the "
+                        f"'{stack_comp.name}' {stack_comp.type.value} is a "
+                        f"local stack component and will not be available in "
+                        f"the Tekton pipeline step.\n"
+                        f"Please ensure that you always use non-local "
+                        f"stack components with a remote Tekton orchestrator, "
+                        f"otherwise you may run into pipeline execution "
+                        f"problems. You should use a flavor of "
+                        f"{stack_comp.type.value} other than "
+                        f"'{stack_comp.flavor}'.\n"
+                        + silence_local_validations_msg
+                    )
+
+                # if the orchestrator is remote, the container registry must
+                # also be remote.
+                if container_registry.config.is_local:
+                    return False, (
+                        f"{msg}the Tekton orchestrator is configured to run "
+                        f"pipelines in a remote Kubernetes cluster, but the "
+                        f"'{container_registry.name}' container registry URI "
+                        f"'{container_registry.config.uri}' "
+                        f"points to a local container registry. Please ensure "
+                        f"that you always use non-local stack components with "
+                        f"a remote Tekton orchestrator, otherwise you will "
+                        f"run into problems. You should use a flavor of "
+                        f"container registry other than "
+                        f"'{container_registry.flavor}'.\n"
+                        + silence_local_validations_msg
+                    )
 
             return True, ""
 
         return StackValidator(
-            required_components={StackComponentType.CONTAINER_REGISTRY},
+            required_components={
+                StackComponentType.CONTAINER_REGISTRY,
+                StackComponentType.IMAGE_BUILDER,
+            },
             custom_validation_function=_validate,
         )
 
-    def prepare_pipeline_deployment(
+    def _configure_container_op(
         self,
-        deployment: "PipelineDeployment",
-        stack: "Stack",
+        container_op: dsl.ContainerOp,
     ) -> None:
-        """Build a Docker image and push it to the container registry.
+        """Makes changes in place to the configuration of the container op.
+
+        Configures persistent mounted volumes for each stack component that
+        writes to a local path.
 
         Args:
-            deployment: The pipeline deployment configuration.
-            stack: The stack on which the pipeline will be deployed.
+            container_op: The Tekton container operation to configure.
         """
-        docker_image_builder = PipelineDockerImageBuilder()
-        repo_digest = docker_image_builder.build_and_push_docker_image(
-            deployment=deployment, stack=stack
-        )
-        deployment.add_extra(ORCHESTRATOR_DOCKER_IMAGE_KEY, repo_digest)
+        volumes: Dict[str, k8s_client.V1Volume] = {}
+
+        stack = Client().active_stack
+
+        if self.config.is_local:
+            stack.check_local_paths()
+
+            local_stores_path = GlobalConfiguration().local_stores_path
+
+            host_path = k8s_client.V1HostPathVolumeSource(
+                path=local_stores_path, type="Directory"
+            )
+
+            volumes[local_stores_path] = k8s_client.V1Volume(
+                name="local-stores",
+                host_path=host_path,
+            )
+            logger.debug(
+                "Adding host path volume for the local ZenML stores (path: %s) "
+                "in Tekton pipelines container.",
+                local_stores_path,
+            )
+
+            if sys.platform == "win32":
+                # File permissions are not checked on Windows. This if clause
+                # prevents mypy from complaining about unused 'type: ignore'
+                # statements
+                pass
+            else:
+                # Run KFP containers in the context of the local UID/GID
+                # to ensure that the artifact and metadata stores can be shared
+                # with the local pipeline runs.
+                container_op.container.security_context = (
+                    k8s_client.V1SecurityContext(
+                        run_as_user=os.getuid(),
+                        run_as_group=os.getgid(),
+                    )
+                )
+                logger.debug(
+                    "Setting security context UID and GID to local user/group "
+                    "in Tekton pipelines container."
+                )
+
+            container_op.container.add_env_variable(
+                k8s_client.V1EnvVar(
+                    name=ENV_ZENML_LOCAL_STORES_PATH,
+                    value=local_stores_path,
+                )
+            )
+
+        container_op.add_pvolumes(volumes)
 
     @staticmethod
     def _configure_container_resources(
@@ -209,8 +346,9 @@ class TektonOrchestrator(BaseOrchestrator):
 
     def prepare_or_run_pipeline(
         self,
-        deployment: "PipelineDeployment",
+        deployment: "PipelineDeploymentResponseModel",
         stack: "Stack",
+        environment: Dict[str, str],
     ) -> Any:
         """Runs the pipeline on Tekton.
 
@@ -220,6 +358,8 @@ class TektonOrchestrator(BaseOrchestrator):
         Args:
             deployment: The pipeline deployment to prepare or run.
             stack: The stack the pipeline will run on.
+            environment: Environment variables to set in the orchestration
+                environment.
 
         Raises:
             RuntimeError: If you try to run the pipelines in a notebook environment.
@@ -235,9 +375,10 @@ class TektonOrchestrator(BaseOrchestrator):
                 "orchestrator."
             )
 
-        image_name = deployment.pipeline.extra[ORCHESTRATOR_DOCKER_IMAGE_KEY]
+        assert stack.container_registry
+
         orchestrator_run_name = get_orchestrator_run_name(
-            pipeline_name=deployment.pipeline.name
+            pipeline_name=deployment.pipeline_configuration.name
         )
 
         def _construct_kfp_pipeline() -> None:
@@ -252,17 +393,21 @@ class TektonOrchestrator(BaseOrchestrator):
             # Dictionary of container_ops index by the associated step name
             step_name_to_container_op: Dict[str, dsl.ContainerOp] = {}
 
-            for step_name, step in deployment.steps.items():
+            for step_name, step in deployment.step_configurations.items():
+                image = self.get_image(
+                    deployment=deployment, step_name=step_name
+                )
+
                 command = StepEntrypointConfiguration.get_entrypoint_command()
                 arguments = (
                     StepEntrypointConfiguration.get_entrypoint_arguments(
-                        step_name=step_name,
+                        step_name=step_name, deployment_id=deployment.id
                     )
                 )
 
                 container_op = dsl.ContainerOp(
-                    name=step.config.name,
-                    image=image_name,
+                    name=step_name,
+                    image=image,
                     command=command,
                     arguments=arguments,
                 )
@@ -270,6 +415,10 @@ class TektonOrchestrator(BaseOrchestrator):
                 settings = cast(
                     TektonOrchestratorSettings, self.get_settings(step)
                 )
+                self._configure_container_op(
+                    container_op=container_op,
+                )
+
                 if settings.pod_settings:
                     apply_pod_settings(
                         container_op=container_op,
@@ -282,6 +431,14 @@ class TektonOrchestrator(BaseOrchestrator):
                         value="$(context.pipelineRun.name)",
                     )
                 )
+
+                for key, value in environment.items():
+                    container_op.container.add_env_variable(
+                        k8s_client.V1EnvVar(
+                            name=key,
+                            value=value,
+                        )
+                    )
 
                 if self.requires_resources_in_orchestration_environment(step):
                     self._configure_container_resources(
@@ -298,7 +455,7 @@ class TektonOrchestrator(BaseOrchestrator):
                     container_op.after(upstream_container_op)
 
                 # Update dictionary of container ops with the current one
-                step_name_to_container_op[step.config.name] = container_op
+                step_name_to_container_op[step_name] = container_op
 
         # Get a filepath to use to save the finished yaml to
         fileio.makedirs(self.pipeline_directory)
@@ -333,31 +490,46 @@ class TektonOrchestrator(BaseOrchestrator):
                 "and the pipeline will be run immediately."
             )
 
-        logger.info(
-            "Running Tekton pipeline in kubernetes context '%s' and namespace "
-            "'%s'.",
-            self.config.kubernetes_context,
-            self.config.kubernetes_namespace,
-        )
-        try:
-            subprocess.check_call(
-                [
-                    "kubectl",
-                    "--context",
-                    self.config.kubernetes_context,
-                    "--namespace",
-                    self.config.kubernetes_namespace,
-                    "apply",
-                    "-f",
-                    pipeline_file_path,
-                ]
+        kubernetes_context = self.config.kubernetes_context
+        if kubernetes_context:
+            logger.info(
+                "Running Tekton pipeline in kubernetes context '%s' and "
+                "namespace '%s'.",
+                kubernetes_context,
+                self.config.kubernetes_namespace,
             )
-        except subprocess.CalledProcessError as e:
+        elif self.connector:
+            connector = self.get_connector()
+            assert connector is not None
+            logger.info(
+                "Running Tekton pipeline with Kubernetes credentials from "
+                "connector '%s'.",
+                connector.name or str(connector),
+            )
+
+        # Read the Tekton pipeline resource from the generated YAML file
+        with open(pipeline_file_path, "r") as f:
+            tekton_resource = yaml.safe_load(f)
+
+        # Upload the Tekton pipeline to the Kubernetes cluster
+        custom_objects_api = k8s_client.CustomObjectsApi(self.kube_client)
+
+        try:
+            logger.debug("Creating Tekton resource ...")
+            response = custom_objects_api.create_namespaced_custom_object(
+                group=tekton_resource["apiVersion"].split("/")[0],
+                version=tekton_resource["apiVersion"].split("/")[1],
+                namespace=self.config.kubernetes_namespace,
+                plural=tekton_resource["kind"].lower() + "s",
+                body=tekton_resource,
+            )
+            logger.debug("Tekton API response: %s", response)
+        except k8s_client.rest.ApiException as e:
+            logger.error("Exception when creating Tekton resource: %s", str(e))
             raise RuntimeError(
                 f"Failed to upload Tekton pipeline: {str(e)}. "
-                f"Please make sure your kubernetes config is present and the "
-                f"{self.config.kubernetes_context} kubernetes context is "
-                f"configured correctly.",
+                f"Please make sure your Kubernetes cluster is running and "
+                f"accessible.",
             )
 
     def get_orchestrator_run_id(self) -> str:
@@ -417,135 +589,3 @@ class TektonOrchestrator(BaseOrchestrator):
             Path of the daemon log file.
         """
         return os.path.join(self.root_directory, "tekton_daemon.log")
-
-    @property
-    def is_provisioned(self) -> bool:
-        """Returns if a local k3d cluster for this orchestrator exists.
-
-        Returns:
-            True if a local k3d cluster exists, False otherwise.
-        """
-        return fileio.exists(self.root_directory)
-
-    @property
-    def is_running(self) -> bool:
-        """Checks if the local UI daemon is running.
-
-        Returns:
-            True if the local UI daemon for this orchestrator is running.
-        """
-        if self.config.skip_ui_daemon_provisioning:
-            return True
-
-        if sys.platform != "win32":
-            from zenml.utils.daemon import check_if_daemon_is_running
-
-            return check_if_daemon_is_running(self._pid_file_path)
-        else:
-            return True
-
-    def provision(self) -> None:
-        """Provisions resources for the orchestrator."""
-        fileio.makedirs(self.root_directory)
-
-    def deprovision(self) -> None:
-        """Deprovisions the orchestrator resources."""
-        if self.is_running:
-            self.suspend()
-
-        if fileio.exists(self.log_file):
-            fileio.remove(self.log_file)
-
-    def resume(self) -> None:
-        """Starts the UI forwarding daemon if necessary."""
-        if self.is_running:
-            logger.info("Tekton UI forwarding is already running.")
-            return
-
-        self.start_ui_daemon()
-
-    def suspend(self) -> None:
-        """Stops the UI forwarding daemon if it's running."""
-        if not self.is_running:
-            logger.info("Tekton UI forwarding not running.")
-            return
-
-        self.stop_ui_daemon()
-
-    def start_ui_daemon(self) -> None:
-        """Starts the UI forwarding daemon if possible."""
-        port = self.config.tekton_ui_port
-        if (
-            port == DEFAULT_TEKTON_UI_PORT
-            and not networking_utils.port_available(port)
-        ):
-            # if the user didn't specify a specific port and the default
-            # port is occupied, fallback to a random open port
-            port = networking_utils.find_available_port()
-
-        command = [
-            "kubectl",
-            "--context",
-            self.config.kubernetes_context,
-            "--namespace",
-            "tekton-pipelines",
-            "port-forward",
-            "svc/tekton-dashboard",
-            f"{port}:9097",
-        ]
-
-        if not networking_utils.port_available(port):
-            modified_command = command.copy()
-            modified_command[-1] = "<PORT>:9097"
-            logger.warning(
-                "Unable to port-forward Tekton UI to local port %d "
-                "because the port is occupied. In order to access the Tekton "
-                "UI at http://localhost:<PORT>/, please run '%s' in a "
-                "separate command line shell (replace <PORT> with a free port "
-                "of your choice).",
-                port,
-                " ".join(modified_command),
-            )
-        elif sys.platform == "win32":
-            logger.warning(
-                "Daemon functionality not supported on Windows. "
-                "In order to access the Tekton UI at "
-                "http://localhost:%d/, please run '%s' in a separate command "
-                "line shell.",
-                port,
-                " ".join(command),
-            )
-        else:
-            from zenml.utils import daemon
-
-            def _daemon_function() -> None:
-                """Port-forwards the Tekton UI pod."""
-                subprocess.check_call(command)
-
-            daemon.run_as_daemon(
-                _daemon_function,
-                pid_file=self._pid_file_path,
-                log_file=self.log_file,
-            )
-            logger.info(
-                "Started Tekton UI daemon (check the daemon logs at %s "
-                "in case you're not able to view the UI). The Tekton "
-                "UI should now be accessible at http://localhost:%d/.",
-                self.log_file,
-                port,
-            )
-
-    def stop_ui_daemon(self) -> None:
-        """Stops the UI forwarding daemon if it's running."""
-        if fileio.exists(self._pid_file_path):
-            if sys.platform == "win32":
-                # Daemon functionality is not supported on Windows, so the PID
-                # file won't exist. This if clause exists just for mypy to not
-                # complain about missing functions
-                pass
-            else:
-                from zenml.utils import daemon
-
-                daemon.stop_daemon(self._pid_file_path)
-                fileio.remove(self._pid_file_path)
-                logger.info("Stopped Tektion UI daemon.")

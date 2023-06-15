@@ -14,23 +14,29 @@
 """Implementation of the ZenML Stack Component class."""
 from abc import ABC
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, List, Optional, Set, Type, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set, Type, Union
 from uuid import UUID
 
 from pydantic import BaseModel, Extra
 
-from zenml.config.pipeline_deployment import PipelineDeployment
+from zenml.config.build_configuration import BuildConfiguration
 from zenml.config.step_configurations import Step
 from zenml.config.step_run_info import StepRunInfo
 from zenml.enums import StackComponentType
+from zenml.exceptions import AuthorizationException
 from zenml.logger import get_logger
-from zenml.models import ComponentResponseModel
+from zenml.models import ComponentResponseModel, ServiceConnectorRequirements
 from zenml.utils import secret_utils, settings_utils
 
 if TYPE_CHECKING:
     from zenml.config.base_settings import BaseSettings
+    from zenml.metadata.metadata_types import MetadataType
+    from zenml.models.pipeline_deployment_models import (
+        PipelineDeploymentBaseModel,
+        PipelineDeploymentResponseModel,
+    )
+    from zenml.service_connectors.service_connector import ServiceConnector
     from zenml.stack import Stack, StackValidator
-
 
 logger = get_logger(__name__)
 
@@ -38,7 +44,9 @@ logger = get_logger(__name__)
 class StackComponentConfig(BaseModel, ABC):
     """Base class for all ZenML stack component configs."""
 
-    def __init__(self, **kwargs: Any) -> None:
+    def __init__(
+        self, warn_about_plain_text_secrets: bool = False, **kwargs: Any
+    ) -> None:
         """Ensures that secret references don't clash with pydantic validation.
 
         StackComponents allow the specification of all their string attributes
@@ -51,6 +59,7 @@ class StackComponentConfig(BaseModel, ABC):
         custom pydantic validation are set as secret references.
 
         Args:
+            warn_about_plain_text_secrets: If true, then warns about using plain-text secrets.
             **kwargs: Arguments to initialize this stack component.
 
         Raises:
@@ -70,7 +79,10 @@ class StackComponentConfig(BaseModel, ABC):
                 continue
 
             if not secret_utils.is_secret_reference(value):
-                if secret_utils.is_secret_field(field):
+                if (
+                    secret_utils.is_secret_field(field)
+                    and warn_about_plain_text_secrets
+                ):
                     logger.warning(
                         "You specified a plain-text value for the sensitive "
                         f"attribute `{key}` for a `{self.__class__.__name__}` "
@@ -79,7 +91,7 @@ class StackComponentConfig(BaseModel, ABC):
                         "in sensitive information as secrets. Check out the "
                         "documentation on how to configure your stack "
                         "components with secrets here: "
-                        "https://docs.zenml.io/advanced-guide/practical/secrets-management"
+                        "https://docs.zenml.io/platform-guide/set-up-your-mlops-platform/use-the-secret-store"
                     )
                 continue
 
@@ -169,10 +181,33 @@ class StackComponentConfig(BaseModel, ABC):
         Returns:
             The (potentially resolved) attribute value.
         """
+        from zenml.client import Client
+
         value = super().__getattribute__(key)
 
         if not secret_utils.is_secret_reference(value):
             return value
+
+        secret_ref = secret_utils.parse_secret_reference(value)
+
+        # Try to resolve the secret using the secret store first
+        try:
+            store_secret = Client().get_secret_by_name_and_scope(
+                name=secret_ref.name,
+            )
+        except (KeyError, NotImplementedError):
+            pass
+        else:
+            if secret_ref.key in store_secret.values:
+                return store_secret.secret_values[secret_ref.key]
+            else:
+                raise KeyError(
+                    f"Failed to resolve secret reference for attribute {key} "
+                    f"of stack component `{self}`. "
+                    f"The secret {secret_ref.name} does not contain a value "
+                    f"for key {secret_ref.key}. Available keys: "
+                    f"{set(store_secret.values)}."
+                )
 
         # A stack component can be part of many stacks, and currently a
         # secrets manager is associated with a stack. This means we're
@@ -190,8 +225,6 @@ class StackComponentConfig(BaseModel, ABC):
                 "your active stack: `zenml stack set <STACK_NAME>`."
             )
 
-        from zenml.client import Client
-
         secrets_manager = Client().active_stack.secrets_manager
         if not secrets_manager:
             raise RuntimeError(
@@ -200,7 +233,6 @@ class StackComponentConfig(BaseModel, ABC):
                 "have a secrets manager."
             )
 
-        secret_ref = secret_utils.parse_secret_reference(value)
         try:
             secret = secrets_manager.get_secret(secret_ref.name)
         except KeyError:
@@ -265,9 +297,13 @@ class StackComponent:
         flavor: str,
         type: StackComponentType,
         user: Optional[UUID],
-        project: UUID,
+        workspace: UUID,
         created: datetime,
         updated: datetime,
+        labels: Optional[Dict[str, Any]] = None,
+        connector_requirements: Optional[ServiceConnectorRequirements] = None,
+        connector: Optional[UUID] = None,
+        connector_resource_id: Optional[str] = None,
         *args: Any,
         **kwargs: Any,
     ):
@@ -280,9 +316,14 @@ class StackComponent:
             flavor: The flavor of the component.
             type: The type of the component.
             user: The ID of the user who created the component.
-            project: The ID of the project the component belongs to.
+            workspace: The ID of the workspace the component belongs to.
             created: The creation time of the component.
             updated: The last update time of the component.
+            labels: The labels of the component.
+            connector_requirements: The requirements for the connector.
+            connector: The ID of a connector linked to the component.
+            connector_resource_id: The custom resource ID to access through
+                the connector.
             *args: Additional positional arguments.
             **kwargs: Additional keyword arguments.
 
@@ -301,9 +342,14 @@ class StackComponent:
         self.flavor = flavor
         self.type = type
         self.user = user
-        self.project = project
+        self.workspace = workspace
         self.created = created
         self.updated = updated
+        self.labels = labels
+        self.connector_requirements = connector_requirements
+        self.connector = connector
+        self.connector_resource_id = connector_resource_id
+        self._connector_instance: Optional[ServiceConnector] = None
 
     @classmethod
     def from_model(
@@ -345,14 +391,20 @@ class StackComponent:
 
         return flavor.implementation_class(
             user=user_id,
-            project=component_model.project.id,
+            workspace=component_model.workspace.id,
             name=component_model.name,
             id=component_model.id,
             config=configuration,
+            labels=component_model.labels,
             flavor=component_model.flavor,
             type=component_model.type,
             created=component_model.created,
             updated=component_model.updated,
+            connector_requirements=flavor.service_connector_requirements,
+            connector=component_model.connector.id
+            if component_model.connector
+            else None,
+            connector_resource_id=component_model.connector_resource_id,
         )
 
     @property
@@ -377,7 +429,8 @@ class StackComponent:
         return None
 
     def get_settings(
-        self, container: Union["Step", "StepRunInfo", "PipelineDeployment"]
+        self,
+        container: Union["Step", "StepRunInfo", "PipelineDeploymentBaseModel"],
     ) -> "BaseSettings":
         """Gets settings for this stack component.
 
@@ -409,13 +462,99 @@ class StackComponent:
         all_settings = (
             container.config.settings
             if isinstance(container, (Step, StepRunInfo))
-            else container.pipeline.settings
+            else container.pipeline_configuration.settings
         )
 
         if key in all_settings:
             return self.settings_class.parse_obj(all_settings[key])
         else:
             return self.settings_class()
+
+    def connector_has_expired(self) -> bool:
+        """Checks whether the connector linked to this stack component has expired.
+
+        Returns:
+            Whether the connector linked to this stack component has expired, or isn't linked to a connector.
+        """
+        if self.connector is None:
+            # The stack component isn't linked to a connector
+            return False
+
+        if self._connector_instance is None:
+            return True
+
+        return self._connector_instance.has_expired()
+
+    def get_connector(self) -> Optional["ServiceConnector"]:
+        """Returns the connector linked to this stack component.
+
+        Returns:
+            The connector linked to this stack component.
+
+        Raises:
+            RuntimeError: If the stack component does not specify connector
+                requirements or if the connector linked to the component is not
+                compatible or not found.
+        """
+        from zenml.client import Client
+
+        if self.connector is None:
+            return None
+
+        if self._connector_instance is not None:
+            # If the connector instance is still valid, return it. Otherwise,
+            # we'll try to get a new one.
+            if not self._connector_instance.has_expired():
+                return self._connector_instance
+
+        if self.connector_requirements is None:
+            raise RuntimeError(
+                f"Unable to get connector for component {self} because this "
+                "component does not declare any connector requirements in its. "
+                "flavor specification. Override the "
+                "`service_connector_requirements` method in its flavor class "
+                "to return a connector requirements specification and try "
+                "again."
+            )
+
+        if self.connector_requirements.resource_id_attr is not None:
+            # Check if an attribute is set in the component configuration
+            resource_id = getattr(
+                self.config, self.connector_requirements.resource_id_attr
+            )
+        else:
+            # Otherwise, use the resource ID configured in the component
+            resource_id = self.connector_resource_id
+
+        client = Client()
+        try:
+            self._connector_instance = client.get_service_connector_client(
+                name_id_or_prefix=self.connector,
+                resource_type=self.connector_requirements.resource_type,
+                resource_id=resource_id,
+            )
+        except KeyError:
+            raise RuntimeError(
+                f"The connector with ID {self.connector} linked "
+                f"to the '{self.name}' {self.type} stack component could not "
+                f"be found or is not accessible. Please verify that the "
+                f"connector exists and that you have access to it."
+            )
+        except ValueError as e:
+            raise RuntimeError(
+                f"The connector with ID {self.connector} linked "
+                f"to the '{self.name}' {self.type} stack component could not "
+                f"be correctly configured: {e}."
+            )
+        except AuthorizationException as e:
+            raise RuntimeError(
+                f"The connector with ID {self.connector} linked "
+                f"to the '{self.name}' {self.type} stack component could not "
+                f"be accessed due to an authorization error: {e}. Please "
+                f"verify that you have access to the connector and try again."
+            )
+
+        return self._connector_instance
 
     @property
     def log_file(self) -> Optional[str]:
@@ -486,9 +625,22 @@ class StackComponent:
         """
         return None
 
+    def get_docker_builds(
+        self, deployment: "PipelineDeploymentBaseModel"
+    ) -> List["BuildConfiguration"]:
+        """Gets the Docker builds required for the component.
+
+        Args:
+            deployment: The pipeline deployment for which to get the builds.
+
+        Returns:
+            The required Docker builds.
+        """
+        return []
+
     def prepare_pipeline_deployment(
         self,
-        deployment: "PipelineDeployment",
+        deployment: "PipelineDeploymentResponseModel",
         stack: "Stack",
     ) -> None:
         """Prepares deploying the pipeline.
@@ -502,12 +654,38 @@ class StackComponent:
             stack: The stack on which the pipeline will be deployed.
         """
 
+    def get_pipeline_run_metadata(
+        self, run_id: UUID
+    ) -> Dict[str, "MetadataType"]:
+        """Get general component-specific metadata for a pipeline run.
+
+        Args:
+            run_id: The ID of the pipeline run.
+
+        Returns:
+            A dictionary of metadata.
+        """
+        return {}
+
     def prepare_step_run(self, info: "StepRunInfo") -> None:
         """Prepares running a step.
 
         Args:
             info: Info about the step that will be executed.
         """
+
+    def get_step_run_metadata(
+        self, info: "StepRunInfo"
+    ) -> Dict[str, "MetadataType"]:
+        """Get component- and step-specific metadata after a step ran.
+
+        Args:
+            info: Info about the step that was executed.
+
+        Returns:
+            A dictionary of metadata.
+        """
+        return {}
 
     def cleanup_step_run(self, info: "StepRunInfo", step_failed: bool) -> None:
         """Cleans up resources after the step run is finished.

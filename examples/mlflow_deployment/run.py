@@ -16,31 +16,12 @@ from typing import cast
 import click
 from pipelines import continuous_deployment_pipeline, inference_pipeline
 from rich import print
-from steps.deployment_trigger.deployment_trigger_step import (
-    DeploymentTriggerParameters,
-    deployment_trigger,
-)
-from steps.dynamic_importer.dynamic_importer_step import dynamic_importer
-from steps.importer.importer_step import importer_mnist
-from steps.normalizer.normalizer_step import normalizer
-from steps.prediction_service_loader.prediction_service_loader_step import (
-    MLFlowDeploymentLoaderStepParameters,
-    model_deployer,
-    prediction_service_loader,
-)
-from steps.predictor.predictor_step import predictor
-from steps.tf_evaluator.tf_evaluator_step import tf_evaluator
-from steps.tf_predict_preprocessor.tf_predict_preprocessor_step import (
-    tf_predict_preprocessor,
-)
-from steps.tf_trainer.tf_trainer_step import TrainerParameters, tf_trainer
 
 from zenml.integrations.mlflow.mlflow_utils import get_tracking_uri
 from zenml.integrations.mlflow.model_deployers.mlflow_model_deployer import (
     MLFlowModelDeployer,
 )
 from zenml.integrations.mlflow.services import MLFlowDeploymentService
-from zenml.integrations.mlflow.steps import MLFlowDeployerParameters
 
 DEPLOY = "deploy"
 PREDICT = "predict"
@@ -52,7 +33,7 @@ DEPLOY_AND_PREDICT = "deploy_and_predict"
     "--config",
     "-c",
     type=click.Choice([DEPLOY, PREDICT, DEPLOY_AND_PREDICT]),
-    default="deploy_and_predict",
+    default=DEPLOY_AND_PREDICT,
     help="Optionally you can choose to only run the deployment "
     "pipeline to train and deploy a model (`deploy`), or to "
     "only run a prediction against the deployed model "
@@ -77,43 +58,24 @@ def main(config: str, epochs: int, lr: float, min_accuracy: float):
 
     if deploy:
         # Initialize a continuous deployment pipeline run
-        deployment = continuous_deployment_pipeline(
-            importer=importer_mnist(),
-            normalizer=normalizer(),
-            trainer=tf_trainer(params=TrainerParameters(epochs=epochs, lr=lr)),
-            evaluator=tf_evaluator(),
-            deployment_trigger=deployment_trigger(
-                params=DeploymentTriggerParameters(
-                    min_accuracy=min_accuracy,
-                )
-            ),
-            model_deployer=model_deployer(
-                params=MLFlowDeployerParameters(workers=3, timeout=10)
-            ),
+        continuous_deployment_pipeline(
+            epochs=epochs,
+            lr=lr,
+            min_accuracy=min_accuracy,
+            workers=3,
+            timeout=60,
         )
-
-        deployment.run()
 
     if predict:
         # Initialize an inference pipeline run
-        inference = inference_pipeline(
-            dynamic_importer=dynamic_importer(),
-            predict_preprocessor=tf_predict_preprocessor(),
-            prediction_service_loader=prediction_service_loader(
-                MLFlowDeploymentLoaderStepParameters(
-                    pipeline_name="continuous_deployment_pipeline",
-                    pipeline_step_name="mlflow_model_deployer_step",
-                    running=False,
-                )
-            ),
-            predictor=predictor(),
+        inference_pipeline(
+            pipeline_name="continuous_deployment_pipeline",
+            pipeline_step_name="mlflow_model_deployer_step",
         )
-
-        inference.run()
 
     print(
         "You can run:\n "
-        f"[italic green]    mlflow ui --backend-store-uri {get_tracking_uri()}"
+        f"[italic green]    mlflow ui --backend-store-uri '{get_tracking_uri()}"
         "[/italic green]\n ...to inspect your experiment runs within the MLflow"
         " UI.\nYou can find your runs tracked within the "
         "`mlflow_example_pipeline` experiment. There you'll also be able to "

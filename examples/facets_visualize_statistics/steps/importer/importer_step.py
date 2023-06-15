@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2021. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2023. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -11,42 +11,27 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+
 import pandas as pd
-import tensorflow as tf
+from sklearn.datasets import load_iris
+from sklearn.model_selection import train_test_split
 
-from zenml.steps import Output, step
-
-FEATURE_COLS = [
-    "CRIM",
-    "ZN",
-    "INDUS",
-    "CHAS",
-    "NOX",
-    "RM",
-    "AGE",
-    "DIS",
-    "RAD",
-    "TAX",
-    "PTRATIO",
-    "B",
-    "STAT",
-]
-TARGET_COL_NAME = "target"
-
-
-def convert_np_to_pandas(X, y):
-    df = pd.DataFrame(X, columns=FEATURE_COLS)
-    df[TARGET_COL_NAME] = y
-    return df
+from zenml import step
+from zenml.steps import Output
 
 
 @step
-def importer() -> Output(train_df=pd.DataFrame, test_df=pd.DataFrame):
-    """Download the MNIST data store it as numpy arrays."""
-    (X_train, y_train), (
-        X_test,
-        y_test,
-    ) = tf.keras.datasets.boston_housing.load_data()
-    train_df = convert_np_to_pandas(X_train, y_train)
-    test_df = convert_np_to_pandas(X_test, y_test)
-    return train_df, test_df
+def importer() -> (
+    Output(
+        X_train=pd.DataFrame,
+        X_test=pd.DataFrame,
+        y_train=pd.Series,
+        y_test=pd.Series,
+    )
+):
+    """Load the iris dataset as tuple of Pandas DataFrame / Series."""
+    iris = load_iris(as_frame=True)
+    X_train, X_test, y_train, y_test = train_test_split(
+        iris.data, iris.target, test_size=0.2, shuffle=True, random_state=42
+    )
+    return X_train, X_test, y_train, y_test

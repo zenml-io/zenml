@@ -36,13 +36,12 @@ class EvidentlyIntegration(Integration):
     """[Evidently](https://github.com/evidentlyai/evidently) integration for ZenML."""
 
     NAME = EVIDENTLY
-    REQUIREMENTS = ["evidently==0.1.54dev0"]
+    REQUIREMENTS = ["evidently==0.2.2"]
 
     @staticmethod
     def activate() -> None:
-        """Activate the Deepchecks integration."""
+        """Activate the Evidently integration."""
         from zenml.integrations.evidently import materializers  # noqa
-        from zenml.integrations.evidently import visualizers  # noqa
 
     @classmethod
     def flavors(cls) -> List[Type[Flavor]]:

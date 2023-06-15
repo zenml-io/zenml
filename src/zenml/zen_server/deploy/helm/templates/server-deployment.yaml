@@ -5,8 +5,12 @@ metadata:
   labels:
     {{- include "zenml.labels" . | nindent 4 }}
 spec:
+  {{- if .Values.zenml.database.url }}
   {{- if not .Values.autoscaling.enabled }}
   replicas: {{ .Values.zenml.replicaCount }}
+  {{- end }}
+  {{- else }}
+  replicas: 1
   {{- end }}
   selector:
     matchLabels:
@@ -28,13 +32,24 @@ spec:
       serviceAccountName: {{ include "zenml.serviceAccountName" . }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      {{- if and (eq .Values.zenml.secretsStore.type "gcp") .Values.zenml.secretsStore.gcp.google_application_credentials }}
+      volumes:
+        - name: gcp-credentials
+          secret:
+            secretName: {{ include "zenml.fullname" . }}
+            items:
+              - key: GOOGLE_APPLICATION_CREDENTIALS_FILE
+                path: credentials.json
+      {{- end }}
+      {{- if .Values.zenml.database.url }}
       initContainers:
         - name: {{ .Chart.Name }}-db-init
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
-          image: "{{ .Values.zenml.initImage.repository }}:{{ .Values.zenml.initImage.tag | default .Chart.AppVersion }}"
-          imagePullPolicy: {{ .Values.zenml.initImage.pullPolicy }}
-          command: ['zenml', 'init']
+          image: "{{ .Values.zenml.image.repository }}:{{ .Values.zenml.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.zenml.image.pullPolicy }}
+          args: ["status"]
+          command: ['zenml']
           env:
             {{- if .Values.zenml.debug }}
             - name: ZENML_LOGGING_VERBOSITY
@@ -52,9 +67,59 @@ spec:
             - name: ZENML_STORE_SSL_VERIFY_SERVER_CERT
               value: {{ .Values.zenml.database.sslVerifyServerCert | default "false" | quote }}
             {{- end }}
+            {{- if .Values.zenml.secretsStore.enabled }}
+            - name: ZENML_SECRETS_STORE_TYPE
+              value: {{ .Values.zenml.secretsStore.type | quote }}
+            {{- if eq .Values.zenml.secretsStore.type "aws" }}
+            - name: ZENML_SECRETS_STORE_REGION_NAME
+              value: {{ .Values.zenml.secretsStore.aws.region_name | quote }}
+            - name: ZENML_SECRETS_STORE_SECRET_LIST_REFRESH_TIMEOUT
+              value: {{ .Values.zenml.secretsStore.aws.secret_list_refresh_timeout | quote }}
+            {{- else if eq .Values.zenml.secretsStore.type "gcp" }}
+            - name: ZENML_SECRETS_STORE_PROJECT_ID
+              value: {{ .Values.zenml.secretsStore.gcp.project_id | quote }}
+            {{- if .Values.zenml.secretsStore.gcp.google_application_credentials }}
+            - name: GOOGLE_APPLICATION_CREDENTIALS
+              value: /gcp-credentials/credentials.json
+            {{- end }}
+            {{- else if eq .Values.zenml.secretsStore.type "azure" }}
+            - name: ZENML_SECRETS_STORE_KEY_VAULT_NAME
+              value: {{ .Values.zenml.secretsStore.azure.key_vault_name | quote }}
+            {{- else if eq .Values.zenml.secretsStore.type "hashicorp" }}
+            - name: ZENML_SECRETS_STORE_VAULT_ADDR
+              value: {{ .Values.zenml.secretsStore.hashicorp.vault_addr | quote }}
+            {{- if .Values.zenml.secretsStore.hashicorp.vault_namespace }}
+            - name: ZENML_SECRETS_STORE_VAULT_NAMESPACE
+              value: {{ .Values.zenml.secretsStore.hashicorp.vault_namespace | quote }}
+            {{- end }}
+            {{- if .Values.zenml.secretsStore.hashicorp.max_versions }}
+            - name: ZENML_SECRETS_STORE_MAX_VERSIONS
+              value: {{ .Values.zenml.secretsStore.hashicorp.max_versions | quote }}
+            {{- end }}
+            {{- else if eq .Values.zenml.secretsStore.type "custom" }}
+            - name: ZENML_SECRETS_STORE_CLASS_PATH
+              value: {{ .Values.zenml.secretsStore.custom.class_path | quote }}
+            {{- end }}
+            {{- else }}
+            - name: ZENML_SECRETS_STORE_TYPE
+              value: none
+            {{- end }}
+            {{- if .Values.zenml.environment }}
+            {{- range $key, $value := .Values.zenml.environment }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
+            {{- end }}
           envFrom:
           - secretRef:
               name: {{ include "zenml.fullname" . }}
+          {{- if and (eq .Values.zenml.secretsStore.type "gcp") .Values.zenml.secretsStore.gcp.google_application_credentials }}
+          volumeMounts:
+            - name: gcp-credentials
+              mountPath: /gcp-credentials
+              readOnly: true
+          {{- end }}
+      {{- end }}
       containers:
         - name: {{ .Chart.Name }}
           securityContext:
@@ -66,8 +131,13 @@ spec:
             - name: ZENML_LOGGING_VERBOSITY
               value: "DEBUG"
             {{- end }}
+            {{- if .Values.zenml.analyticsOptIn }}
+            - name: ZENML_ANALYTICS_OPT_IN
+              value: "True"
+            {{- else if not .Values.zenml.analyticsOptIn }}
             - name: ZENML_ANALYTICS_OPT_IN
               value: "False"
+            {{- end }}
             - name: ZENML_AUTH_TYPE
               value: {{ .Values.zenml.authType | quote }}
             {{- if .Values.zenml.rootUrlPath }}
@@ -86,14 +156,63 @@ spec:
             - name: ZENML_STORE_SSL_VERIFY_SERVER_CERT
               value: {{ .Values.zenml.database.sslVerifyServerCert | default "false" | quote }}
             {{- end }}
+            {{- if .Values.zenml.secretsStore.enabled }}
+            - name: ZENML_SECRETS_STORE_TYPE
+              value: {{ .Values.zenml.secretsStore.type | quote }}
+            {{- if eq .Values.zenml.secretsStore.type "aws" }}
+            - name: ZENML_SECRETS_STORE_REGION_NAME
+              value: {{ .Values.zenml.secretsStore.aws.region_name | quote }}
+            - name: ZENML_SECRETS_STORE_SECRET_LIST_REFRESH_TIMEOUT
+              value: {{ .Values.zenml.secretsStore.aws.secret_list_refresh_timeout | quote }}
+            {{- else if eq .Values.zenml.secretsStore.type "gcp" }}
+            - name: ZENML_SECRETS_STORE_PROJECT_ID
+              value: {{ .Values.zenml.secretsStore.gcp.project_id | quote }}
+            {{- if .Values.zenml.secretsStore.gcp.google_application_credentials }}
+            - name: GOOGLE_APPLICATION_CREDENTIALS
+              value: /gcp-credentials/credentials.json
+            {{- end }}
+            {{- else if eq .Values.zenml.secretsStore.type "azure" }}
+            - name: ZENML_SECRETS_STORE_KEY_VAULT_NAME
+              value: {{ .Values.zenml.secretsStore.azure.key_vault_name | quote }}
+            {{- else if eq .Values.zenml.secretsStore.type "hashicorp" }}
+            - name: ZENML_SECRETS_STORE_VAULT_ADDR
+              value: {{ .Values.zenml.secretsStore.hashicorp.vault_addr | quote }}
+            {{- if .Values.zenml.secretsStore.hashicorp.vault_namespace }}
+            - name: ZENML_SECRETS_STORE_VAULT_NAMESPACE
+              value: {{ .Values.zenml.secretsStore.hashicorp.vault_namespace | quote }}
+            {{- end }}
+            {{- if .Values.zenml.secretsStore.hashicorp.max_versions }}
+            - name: ZENML_SECRETS_STORE_MAX_VERSIONS
+              value: {{ .Values.zenml.secretsStore.hashicorp.max_versions | quote }}
+            {{- end }}
+            {{- else if eq .Values.zenml.secretsStore.type "custom" }}
+            - name: ZENML_SECRETS_STORE_CLASS_PATH
+              value: {{ .Values.zenml.secretsStore.custom.class_path | quote }}
+            {{- end }}
+            {{- else }}
+            - name: ZENML_SECRETS_STORE_TYPE
+              value: none
+            {{- end }}
             - name: ZENML_SERVER_DEPLOYMENT_TYPE
               value: {{ .Values.zenml.deploymentType | default "kubernetes" }}
+            {{- if .Values.zenml.environment }}
+            {{- range $key, $value := .Values.zenml.environment }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
+            {{- end }}
           envFrom:
           - secretRef:
               name: {{ include "zenml.fullname" . }}
+          {{- if and (eq .Values.zenml.secretsStore.type "gcp") .Values.zenml.secretsStore.gcp.google_application_credentials }}
+          volumeMounts:
+            - name: gcp-credentials
+              mountPath: /gcp-credentials
+              readOnly: true
+          {{- end }}
           ports:
             - name: http
-              containerPort: 80
+              containerPort: 8080
               protocol: TCP
           livenessProbe:
             httpGet:

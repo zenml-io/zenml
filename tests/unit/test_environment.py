@@ -74,11 +74,13 @@ def test_step_is_running():
         config=StepConfiguration(enable_cache=True, name="step"),
         pipeline=PipelineConfiguration(enable_cache=True, name="pipeline"),
         run_name="run_name",
+        pipeline_step_name="step_name",
         run_id=uuid4(),
         step_run_id=uuid4(),
     )
     with StepEnvironment(
         step_run_info=step_run_info,
+        cache_enabled=True,
     ):
         assert Environment().step_is_running is True
 

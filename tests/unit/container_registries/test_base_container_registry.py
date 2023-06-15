@@ -43,7 +43,7 @@ def test_base_container_registry_requires_authentication_if_secret_provided():
             flavor="default",
             type=StackComponentType.CONTAINER_REGISTRY,
             user=uuid4(),
-            project=uuid4(),
+            workspace=uuid4(),
             created=datetime.now(),
             updated=datetime.now(),
         ).requires_authentication
@@ -60,7 +60,7 @@ def test_base_container_registry_requires_authentication_if_secret_provided():
             flavor="default",
             type=StackComponentType.CONTAINER_REGISTRY,
             user=uuid4(),
-            project=uuid4(),
+            workspace=uuid4(),
             created=datetime.now(),
             updated=datetime.now(),
         ).requires_authentication
@@ -80,7 +80,7 @@ def test_base_container_registry_local_property():
             flavor="default",
             type=StackComponentType.CONTAINER_REGISTRY,
             user=uuid4(),
-            project=uuid4(),
+            workspace=uuid4(),
             created=datetime.now(),
             updated=datetime.now(),
         ).config.is_local
@@ -96,7 +96,7 @@ def test_base_container_registry_local_property():
             flavor="default",
             type=StackComponentType.CONTAINER_REGISTRY,
             user=uuid4(),
-            project=uuid4(),
+            workspace=uuid4(),
             created=datetime.now(),
             updated=datetime.now(),
         ).config.is_local
@@ -107,6 +107,10 @@ def test_base_container_registry_local_property():
 def test_base_container_registry_prevents_push_if_uri_does_not_match(mocker):
     """Tests the base container registry push only works if the URI matches."""
     mocker.patch("zenml.utils.docker_utils.push_image")
+    mocker.patch(
+        "zenml.container_registries.base_container_registry.BaseContainerRegistry.docker_client",
+        return_value=(None),
+    )
 
     registry = StubContainerRegistry(
         name="",
@@ -117,7 +121,7 @@ def test_base_container_registry_prevents_push_if_uri_does_not_match(mocker):
         flavor="default",
         type=StackComponentType.CONTAINER_REGISTRY,
         user=uuid4(),
-        project=uuid4(),
+        workspace=uuid4(),
         created=datetime.now(),
         updated=datetime.now(),
     )

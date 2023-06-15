@@ -15,7 +15,7 @@
 
 import os
 import tempfile
-from typing import Any, Type
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, Tuple, Type
 
 import tensorflow as tf
 
@@ -24,14 +24,17 @@ from zenml.io import fileio
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.utils import io_utils
 
+if TYPE_CHECKING:
+    from zenml.metadata.metadata_types import MetadataType
+
 DEFAULT_FILENAME = "saved_data"
 
 
 class TensorflowDatasetMaterializer(BaseMaterializer):
     """Materializer to read data to and from tf.data.Dataset."""
 
-    ASSOCIATED_TYPES = (tf.data.Dataset,)
-    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATA
+    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (tf.data.Dataset,)
+    ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.DATA
 
     def load(self, data_type: Type[Any]) -> Any:
         """Reads data into tf.data.Dataset.
@@ -42,7 +45,6 @@ class TensorflowDatasetMaterializer(BaseMaterializer):
         Returns:
             A tf.data.Dataset object.
         """
-        super().load(data_type)
         temp_dir = tempfile.mkdtemp()
         io_utils.copy_dir(self.uri, temp_dir)
         path = os.path.join(temp_dir, DEFAULT_FILENAME)
@@ -57,7 +59,6 @@ class TensorflowDatasetMaterializer(BaseMaterializer):
         Args:
             dataset: The dataset to persist.
         """
-        super().save(dataset)
         temp_dir = tempfile.TemporaryDirectory()
         path = os.path.join(temp_dir.name, DEFAULT_FILENAME)
         try:
@@ -67,3 +68,16 @@ class TensorflowDatasetMaterializer(BaseMaterializer):
             io_utils.copy_dir(temp_dir.name, self.uri)
         finally:
             fileio.rmtree(temp_dir.name)
+
+    def extract_metadata(
+        self, dataset: tf.data.Dataset
+    ) -> Dict[str, "MetadataType"]:
+        """Extract metadata from the given `Dataset` object.
+
+        Args:
+            dataset: The `Dataset` object to extract metadata from.
+
+        Returns:
+            The extracted metadata as a dictionary.
+        """
+        return {"length": len(dataset)}

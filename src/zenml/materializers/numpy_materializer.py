@@ -14,14 +14,16 @@
 """Implementation of the ZenML NumPy materializer."""
 
 import os
-from typing import TYPE_CHECKING, Any, Type, cast
+from collections import Counter
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, Tuple, Type, cast
 
 import numpy as np
 
-from zenml.enums import ArtifactType
+from zenml.enums import ArtifactType, VisualizationType
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
+from zenml.metadata.metadata_types import DType, MetadataType
 
 if TYPE_CHECKING:
     from numpy.typing import NDArray
@@ -39,8 +41,8 @@ DATA_VAR = "data_var"
 class NumpyMaterializer(BaseMaterializer):
     """Materializer to read data to and from pandas."""
 
-    ASSOCIATED_TYPES = (np.ndarray,)
-    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATA
+    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (np.ndarray,)
+    ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.DATA
 
     def load(self, data_type: Type[Any]) -> "Any":
         """Reads a numpy array from a `.npy` file.
@@ -55,8 +57,6 @@ class NumpyMaterializer(BaseMaterializer):
         Returns:
             The numpy array.
         """
-        super().load(data_type)
-
         numpy_file = os.path.join(self.uri, NUMPY_FILENAME)
 
         if fileio.exists(numpy_file):
@@ -107,7 +107,6 @@ class NumpyMaterializer(BaseMaterializer):
         Args:
             arr: The numpy array to write.
         """
-        super().save(arr)
         with fileio.open(os.path.join(self.uri, NUMPY_FILENAME), "wb") as f:
             # This function is untyped for numpy versions supporting python
             # 3.7, but typed for numpy versions installed on python 3.8+.
@@ -115,3 +114,162 @@ class NumpyMaterializer(BaseMaterializer):
             # about either an untyped function call or an unused ignore
             # statement
             cast(Any, np.save)(f, arr)
+
+    def save_visualizations(
+        self, arr: "NDArray[Any]"
+    ) -> Dict[str, VisualizationType]:
+        """Saves visualizations for a numpy array.
+
+        If the array is 1D, a histogram is saved. If the array is 2D or 3D with
+        3 or 4 channels, an image is saved.
+
+        Args:
+            arr: The numpy array to visualize.
+
+        Returns:
+            A dictionary of visualization URIs and their types.
+        """
+        if not np.issubdtype(arr.dtype, np.number):
+            return {}
+
+        try:
+            # Save histogram for 1D arrays
+            if len(arr.shape) == 1:
+                histogram_path = os.path.join(self.uri, "histogram.png")
+                self._save_histogram(histogram_path, arr)
+                return {histogram_path: VisualizationType.IMAGE}
+
+            # Save as image for 2D or 3D arrays with 3 or 4 channels
+            if self._array_can_be_saved_as_image(arr):
+                image_path = os.path.join(self.uri, "image.png")
+                self._save_image(image_path, arr)
+                return {image_path: VisualizationType.IMAGE}
+
+        except ImportError:
+            logger.info(
+                "Skipping visualization of numpy array because matplotlib "
+                "is not installed. To install matplotlib, run "
+                "`pip install matplotlib`."
+            )
+
+        return {}
+
+    def _save_histogram(self, output_path: str, arr: "NDArray[Any]") -> None:
+        """Saves a histogram of a numpy array.
+
+        Args:
+            output_path: The path to save the histogram to.
+            arr: The numpy array of which to save the histogram.
+        """
+        import matplotlib.pyplot as plt  # type: ignore
+
+        plt.hist(arr)
+        with fileio.open(output_path, "wb") as f:
+            plt.savefig(f)
+        plt.close()
+
+    @staticmethod
+    def _array_can_be_saved_as_image(arr: "NDArray[Any]") -> bool:
+        """Checks if a numpy array can be saved as an image.
+
+        This is the case if the array is 2D or 3D with 3 or 4 channels.
+
+        Args:
+            arr: The numpy array to check.
+
+        Returns:
+            True if the array can be saved as an image, False otherwise.
+        """
+        if len(arr.shape) == 2:
+            return True
+        if len(arr.shape) == 3 and arr.shape[2] in [3, 4]:
+            return True
+        return False
+
+    def _save_image(self, output_path: str, arr: "NDArray[Any]") -> None:
+        """Saves a numpy array as an image.
+
+        Args:
+            output_path: The path to save the image to.
+            arr: The numpy array to save.
+        """
+        from matplotlib.image import imsave  # type: ignore
+
+        with fileio.open(output_path, "wb") as f:
+            imsave(f, arr)
+
+    def extract_metadata(
+        self, arr: "NDArray[Any]"
+    ) -> Dict[str, "MetadataType"]:
+        """Extract metadata from the given numpy array.
+
+        Args:
+            arr: The numpy array to extract metadata from.
+
+        Returns:
+            The extracted metadata as a dictionary.
+        """
+        if np.issubdtype(arr.dtype, np.number):
+            return self._extract_numeric_metadata(arr)
+        elif np.issubdtype(arr.dtype, np.unicode_) or np.issubdtype(
+            arr.dtype, np.object_
+        ):
+            return self._extract_text_metadata(arr)
+        else:
+            return {}
+
+    def _extract_numeric_metadata(
+        self, arr: "NDArray[Any]"
+    ) -> Dict[str, "MetadataType"]:
+        """Extracts numeric metadata from a numpy array.
+
+        Args:
+            arr: The numpy array to extract metadata from.
+
+        Returns:
+            A dictionary of metadata.
+        """
+        # These functions are untyped for numpy versions supporting python
+        # 3.7, but typed for numpy versions installed on python 3.8+.
+        # We need to cast them to Any here so that numpy doesn't complain
+        # about either an untyped function call or an unused ignore statement.
+        min_val = cast(Any, np.min)(arr).item()
+        max_val = cast(Any, np.max)(arr).item()
+
+        numpy_metadata: Dict[str, "MetadataType"] = {
+            "shape": tuple(arr.shape),
+            "dtype": DType(arr.dtype.type),
+            "mean": np.mean(arr).item(),
+            "std": np.std(arr).item(),
+            "min": min_val,
+            "max": max_val,
+        }
+        return numpy_metadata
+
+    def _extract_text_metadata(
+        self, arr: "NDArray[Any]"
+    ) -> Dict[str, "MetadataType"]:
+        """Extracts text metadata from a numpy array.
+
+        Args:
+            arr: The numpy array to extract metadata from.
+
+        Returns:
+            A dictionary of metadata.
+        """
+        text = " ".join(arr)
+        words = text.split()
+        word_counts = Counter(words)
+        unique_words = len(word_counts)
+        total_words = len(words)
+        most_common_word, most_common_count = word_counts.most_common(1)[0]
+
+        text_metadata: Dict[str, "MetadataType"] = {
+            "shape": tuple(arr.shape),
+            "dtype": DType(arr.dtype.type),
+            "unique_words": unique_words,
+            "total_words": total_words,
+            "most_common_word": most_common_word,
+            "most_common_count": most_common_count,
+        }
+        return text_metadata

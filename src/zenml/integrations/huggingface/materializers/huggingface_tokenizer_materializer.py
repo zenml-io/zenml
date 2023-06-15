@@ -15,7 +15,7 @@
 
 import os
 from tempfile import TemporaryDirectory
-from typing import Any, Type
+from typing import Any, ClassVar, Tuple, Type
 
 from transformers import AutoTokenizer  # type: ignore [import]
 from transformers.tokenization_utils_base import (  # type: ignore [import]
@@ -32,8 +32,10 @@ DEFAULT_TOKENIZER_DIR = "hf_tokenizer"
 class HFTokenizerMaterializer(BaseMaterializer):
     """Materializer to read tokenizer to and from huggingface tokenizer."""
 
-    ASSOCIATED_TYPES = (PreTrainedTokenizerBase,)
-    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.MODEL
+    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (
+        PreTrainedTokenizerBase,
+    )
+    ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.MODEL
 
     def load(self, data_type: Type[Any]) -> PreTrainedTokenizerBase:
         """Reads Tokenizer.
@@ -44,11 +46,12 @@ class HFTokenizerMaterializer(BaseMaterializer):
         Returns:
             The tokenizer read from the specified dir.
         """
-        super().load(data_type)
-
-        return AutoTokenizer.from_pretrained(
-            os.path.join(self.uri, DEFAULT_TOKENIZER_DIR)
+        temp_dir = TemporaryDirectory()
+        io_utils.copy_dir(
+            os.path.join(self.uri, DEFAULT_TOKENIZER_DIR), temp_dir.name
         )
+
+        return AutoTokenizer.from_pretrained(temp_dir.name)
 
     def save(self, tokenizer: Type[Any]) -> None:
         """Writes a Tokenizer to the specified dir.
@@ -56,7 +59,6 @@ class HFTokenizerMaterializer(BaseMaterializer):
         Args:
             tokenizer: The HFTokenizer to write.
         """
-        super().save(tokenizer)
         temp_dir = TemporaryDirectory()
         tokenizer.save_pretrained(temp_dir.name)
         io_utils.copy_dir(

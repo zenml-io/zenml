@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """AWS container registry flavor."""
 
-from typing import TYPE_CHECKING, Type
+from typing import TYPE_CHECKING, Optional, Type
 
 from pydantic import validator
 
@@ -22,6 +22,7 @@ from zenml.container_registries.base_container_registry import (
     BaseContainerRegistryFlavor,
 )
 from zenml.integrations.aws import AWS_CONTAINER_REGISTRY_FLAVOR
+from zenml.models.service_connector_models import ServiceConnectorRequirements
 
 if TYPE_CHECKING:
     from zenml.integrations.aws.container_registries import (
@@ -65,6 +66,52 @@ class AWSContainerRegistryFlavor(BaseContainerRegistryFlavor):
             The name of the flavor.
         """
         return AWS_CONTAINER_REGISTRY_FLAVOR
+
+    @property
+    def service_connector_requirements(
+        self,
+    ) -> Optional[ServiceConnectorRequirements]:
+        """Service connector resource requirements for service connectors.
+
+        Specifies resource requirements that are used to filter the available
+        service connector types that are compatible with this flavor.
+
+        Returns:
+            Requirements for compatible service connectors, if a service
+            connector is required for this flavor.
+        """
+        return ServiceConnectorRequirements(
+            connector_type="aws",
+            resource_type="docker-registry",
+            resource_id_attr="uri",
+        )
+
+    @property
+    def docs_url(self) -> Optional[str]:
+        """A url to point at docs explaining this flavor.
+
+        Returns:
+            A flavor docs url.
+        """
+        return self.generate_default_docs_url()
+
+    @property
+    def sdk_docs_url(self) -> Optional[str]:
+        """A url to point at SDK docs explaining this flavor.
+
+        Returns:
+            A flavor SDK docs url.
+        """
+        return self.generate_default_sdk_docs_url()
+
+    @property
+    def logo_url(self) -> str:
+        """A url to represent the flavor in the dashboard.
+
+        Returns:
+            The flavor logo.
+        """
+        return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/container_registry/aws.png"
 
     @property
     def config_class(self) -> Type[AWSContainerRegistryConfig]:

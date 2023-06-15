@@ -18,9 +18,11 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, cast
 from pydantic import root_validator
 
 from zenml.config.base_settings import BaseSettings
+from zenml.constants import KUBERNETES_CLUSTER_RESOURCE_TYPE
 from zenml.integrations.kubeflow import KUBEFLOW_ORCHESTRATOR_FLAVOR
 from zenml.integrations.kubernetes.pod_settings import KubernetesPodSettings
 from zenml.logger import get_logger
+from zenml.models.service_connector_models import ServiceConnectorRequirements
 from zenml.orchestrators import BaseOrchestratorConfig, BaseOrchestratorFlavor
 from zenml.utils.secret_utils import SecretField
 
@@ -155,43 +157,61 @@ class KubeflowOrchestratorConfig(  # type: ignore[misc] # https://github.com/pyd
     """Configuration for the Kubeflow orchestrator.
 
     Attributes:
-        kubeflow_pipelines_ui_port: A local port to which the KFP UI will be
-            forwarded.
         kubeflow_hostname: The hostname to use to talk to the Kubeflow Pipelines
             API. If not set, the hostname will be derived from the Kubernetes
-            API proxy.
+            API proxy. Mandatory when connecting to a multi-tenant Kubeflow
+            Pipelines deployment.
         kubeflow_namespace: The Kubernetes namespace in which Kubeflow
             Pipelines is deployed. Defaults to `kubeflow`.
-        kubernetes_context: Optional name of a kubernetes context to run
-            pipelines in. If not set, will try to spin up a local K3d cluster.
+        kubernetes_context: Name of a kubernetes context to run
+            pipelines in. Not applicable when connecting to a multi-tenant
+            Kubeflow Pipelines deployment (i.e. when `kubeflow_hostname` is
+            set) or if the stack component is linked to a Kubernetes service
+            connector.
+        local: If `True`, the orchestrator will assume it is connected to a
+            local kubernetes cluster and will perform additional validations and
+            operations to allow using the orchestrator in combination with other
+            local stack components that store data in the local filesystem
+            (i.e. it will mount the local stores directory into the pipeline
+            containers).
         skip_local_validations: If `True`, the local validations will be
             skipped.
-        skip_cluster_provisioning: If `True`, the k3d cluster provisioning will
-            be skipped.
-        skip_ui_daemon_provisioning: If `True`, provisioning the KFP UI daemon
-            will be skipped.
-        container_registry_name: The name of the container registry stack
-            component to use. If not specified, the container registry
-            in the active stack is used.
     """
 
-    kubeflow_pipelines_ui_port: int = DEFAULT_KFP_UI_PORT
     kubeflow_hostname: Optional[str] = None
     kubeflow_namespace: str = "kubeflow"
-    kubernetes_context: Optional[str] = None  # TODO: Potential setting
+    kubernetes_context: Optional[str]  # TODO: Potential setting
+    local: bool = False
     skip_local_validations: bool = False
-    skip_cluster_provisioning: bool = False
-    skip_ui_daemon_provisioning: bool = False
 
-    # IMPORTANT: This is a temporary solution to allow the Kubeflow orchestrator
-    # to be provisioned as an individual component (i.e. same as running
-    # `zenml orchestrator kubeflow up`) rather than needing it to be part of the
-    # active stack (i.e. instead of running `zenml stack up`). This is required
-    # by the test framework because the way it works is that it first provisions
-    # the stack components individually, then each test gets a different stack
-    # with the components it requires.
-    # Do not use for anything else! This will be removed in the near future.
-    container_registry_name: Optional[str] = None
+    @root_validator(pre=True)
+    def _validate_deprecated_attrs(
+        cls, values: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Pydantic root_validator for deprecated attributes.
+
+        This root validator is used for backwards compatibility purposes. E.g.
+        it handles attributes that are no longer available or that have become
+        mandatory in the meantime.
+
+        Args:
+            values: Values passed to the object constructor
+
+        Returns:
+            Values passed to the object constructor
+        """
+        provisioning_attrs = [
+            "skip_cluster_provisioning",
+            "skip_ui_daemon_provisioning",
+            "kubeflow_pipelines_ui_port",
+        ]
+
+        # remove deprecated attributes from values dict
+        for attr in provisioning_attrs:
+            if attr in values:
+                del values[attr]
+
+        return values
 
     @property
     def is_remote(self) -> bool:
@@ -204,12 +224,7 @@ class KubeflowOrchestratorConfig(  # type: ignore[misc] # https://github.com/pyd
         Returns:
             True if this config is for a remote component, False otherwise.
         """
-        if (
-            self.kubernetes_context is not None
-            and not self.kubernetes_context.startswith("k3d-zenml-kubeflow-")
-        ):
-            return True
-        return False
+        return not self.local
 
     @property
     def is_local(self) -> bool:
@@ -221,12 +236,7 @@ class KubeflowOrchestratorConfig(  # type: ignore[misc] # https://github.com/pyd
         Returns:
             True if this config is for a local component, False otherwise.
         """
-        if (
-            self.kubernetes_context is None
-            or self.kubernetes_context.startswith("k3d-zenml-kubeflow-")
-        ):
-            return True
-        return False
+        return self.local
 
 
 class KubeflowOrchestratorFlavor(BaseOrchestratorFlavor):
@@ -240,6 +250,50 @@ class KubeflowOrchestratorFlavor(BaseOrchestratorFlavor):
             The name of the flavor.
         """
         return KUBEFLOW_ORCHESTRATOR_FLAVOR
+
+    @property
+    def service_connector_requirements(
+        self,
+    ) -> Optional[ServiceConnectorRequirements]:
+        """Service connector resource requirements for service connectors.
+
+        Specifies resource requirements that are used to filter the available
+        service connector types that are compatible with this flavor.
+
+        Returns:
+            Requirements for compatible service connectors, if a service
+            connector is required for this flavor.
+        """
+        return ServiceConnectorRequirements(
+            resource_type=KUBERNETES_CLUSTER_RESOURCE_TYPE,
+        )
+
+    @property
+    def docs_url(self) -> Optional[str]:
+        """A url to point at docs explaining this flavor.
+
+        Returns:
+            A flavor docs url.
+        """
+        return self.generate_default_docs_url()
+
+    @property
+    def sdk_docs_url(self) -> Optional[str]:
+        """A url to point at SDK docs explaining this flavor.
+
+        Returns:
+            A flavor SDK docs url.
+        """
+        return self.generate_default_sdk_docs_url()
+
+    @property
+    def logo_url(self) -> str:
+        """A url to represent the flavor in the dashboard.
+
+        Returns:
+            The flavor logo.
+        """
+        return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/orchestrator/kubeflow.png"
 
     @property
     def config_class(self) -> Type[KubeflowOrchestratorConfig]:

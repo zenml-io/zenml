@@ -59,6 +59,37 @@ python run.py --lr=0.02
 python run.py --epochs=10
 ```
 
+## Run the same pipeline on a local Tekton Pipelines deployment
+
+### 📄 Infrastructure Requirements (Pre-requisites)
+
+You don't need to set up any infrastructure to run the pipeline locally. However, you need the following tools installed:
+  * Docker must be installed on your local machine.
+  * Install k3d by running `curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | bash`.
+
+## Create a local Tekton Pipelines Stack
+
+To get a stack with Tekton Pipelines and potential other components, you can make use of ZenML's Stack Recipes that are a set of terraform based modules that take care of setting up a cluster with Tekton among other things.
+
+Run the following command to deploy the local Tekton Pipelines stack:
+
+```bash
+zenml stack recipe deploy k3d-modular -o tekton
+```
+
+>**Note**:
+> This recipe comes with MLflow, Kubeflow and Minio enabled by default. If you
+> want any other components like Seldon or Tekton, you can specify that using
+> the relevant flag (i.e. `-o` for orchestrators and so on).
+
+This will deploy a local Kubernetes cluster with Tekton Pipelines installed. You can verify this by running `kubectl get pods` and checking if the Tekton Pipelines pods are running.
+It will also generate a stack YAML file that you can import as a ZenML stack by running 
+
+```bash
+zenml stack import -f <path-to-stack-yaml>
+```
+Once the stack is set, you can then simply proceed to running your pipelines.
+
 ## 🏃️ Run the same pipeline on a cloud-based Tekton Pipelines deployment
 
 ### 📄 Infrastructure Requirements (Pre-requisites)
@@ -79,6 +110,11 @@ to access the GCP container registry.
 * Kubectl can [access](https://cloud.google.com/kubernetes-engine/docs/how-to/cluster-access-for-kubectl) your GCP 
 Kubernetes cluster.
 
+Note that you can deploy the GCP container
+registry, the artifact store and the Tekton orchestrator using the ZenML CLI as
+well, using the `zenml <STACK_COMPONENT> deploy` command. For more information
+on this `deploy` subcommand, please refer to the
+[documentation](https://docs.zenml.io/advanced-guide/practical-mlops/stack-recipes#deploying-stack-components-directly).
 
 ### 🥞 Create a Tekton Pipelines Stack
 
@@ -91,6 +127,7 @@ GCP **container registry**.
 * The **Tekton orchestrator** is responsible for running your ZenML pipeline 
 in Tekton Pipelines. We need to configure it with the right kubernetes context 
 so ZenML can run pipelines in your GCP cluster. 
+* An **Image Builder** that builds Docker images for your pipeline steps.
 
 When running the upcoming commands, make sure to replace 
 `<PATH_TO_YOUR_CONTAINER_REGISTRY>` and `<PATH_TO_YOUR_GCP_BUCKET>` with the 
@@ -109,28 +146,24 @@ zenml artifact-store register gcp_artifact_store --flavor=gcp --path=<PATH_TO_YO
 
 zenml orchestrator register gcp_tekton_orchestrator --flavor=tekton --kubernetes_context=<NAME_OF_GCP_KUBERNETES_CONTEXT>
 
+zenml image-builder register local_builder --flavor=local
+
 zenml stack register gcp_tekton_stack \
     -a gcp_artifact_store \
     -o gcp_tekton_orchestrator \
     -c gcr_registry \
+    -i local_builder \
     --set
-
-# Forward the Tekton pipelines UI so we can access it locally
-zenml stack up
 ```
 
 ### 🏁 See the Tekton Pipelines UI locally
 
-ZenML takes care of forwarding the right ports locally to see the UI. All we 
-need to do is run:
+To get the Tekton Pipelines UI endpoint, we can use the following command:
 
 ```bash
-zenml stack up
+kubectl get ingress -n tekton-pipelines  -o jsonpath='{.items[0].spec.rules[0].host}'
 ```
 
-When the setup is finished, you should see a local URL which you can access in
-your browser and take a look at the Tekton Pipelines UI 
-(usually at http://localhost:8080)
 
 ![Tekton 00](assets/tekton_ui.png)
 
@@ -157,7 +190,8 @@ certain hardware requirements, you can specify them using the step decorator as
 follows:
 
 ```python
-from zenml.steps import step, ResourceSettings
+from zenml import step
+from zenml.steps import ResourceSettings
 
 @step(settings={"resources": ResourceSettings(cpu_count=8, memory="16GB")})
 def my_step(...) -> ...:
@@ -170,12 +204,19 @@ you're using.
 
 ### 🧽 Clean up
 
-Once you're done experimenting, you can stop the port forwarding and delete 
-the example files by calling:
+Once you're done experimenting, you can delete the example files by calling:
 
 ```bash
-zenml stack down --force
 rm -rf zenml_examples
+```
+
+To destroy any resources deployed using the ZenML `deploy` subcommand, use the
+`destroy` subcommand to delete each individual stack component, as in the
+following example:
+
+```shell
+# replace with the name of the component you want to destroy
+zenml artifact-store destroy gcp_artifact_store
 ```
 
 # 📜 Learn more

@@ -25,13 +25,16 @@ logger = get_logger(__name__)
 class SecretReferenceMixin(BaseModel):
     """Mixin class for secret references in pydantic model attributes."""
 
-    def __init__(self, **kwargs: Any) -> None:
+    def __init__(
+        self, warn_about_plain_text_secrets: bool = False, **kwargs: Any
+    ) -> None:
         """Ensures that secret references are only passed for valid fields.
 
         This method ensures that secret references are not passed for fields
         that explicitly prevent them or require pydantic validation.
 
         Args:
+            warn_about_plain_text_secrets: If true, then warns about using plain-text secrets.
             **kwargs: Arguments to initialize this object.
 
         Raises:
@@ -51,14 +54,17 @@ class SecretReferenceMixin(BaseModel):
                 continue
 
             if not secret_utils.is_secret_reference(value):
-                if secret_utils.is_secret_field(field):
+                if (
+                    secret_utils.is_secret_field(field)
+                    and warn_about_plain_text_secrets
+                ):
                     logger.warning(
                         "You specified a plain-text value for the sensitive "
                         f"attribute `{key}`. This is currently only a warning, "
                         "but future versions of ZenML will require you to pass "
                         "in sensitive information as secrets. Check out the "
                         "documentation on how to configure values with secrets "
-                        "here: https://docs.zenml.io/advanced-guide/practical/secrets-management"
+                        "here: https://docs.zenml.io/platform-guide/set-up-your-mlops-platform/use-the-secret-store"
                     )
                 continue
 
@@ -102,6 +108,26 @@ class SecretReferenceMixin(BaseModel):
 
         from zenml.client import Client
 
+        secret_ref = secret_utils.parse_secret_reference(value)
+
+        # Try to resolve the secret using the secret store first
+        try:
+            store_secret = Client().get_secret_by_name_and_scope(
+                name=secret_ref.name,
+            )
+        except (KeyError, NotImplementedError):
+            pass
+        else:
+            if secret_ref.key in store_secret.values:
+                return store_secret.secret_values[secret_ref.key]
+            else:
+                raise KeyError(
+                    f"Failed to resolve secret reference for attribute {key}: "
+                    f"The secret {secret_ref.name} does not contain a value "
+                    f"for key {secret_ref.key}. Available keys: "
+                    f"{set(store_secret.values)}."
+                )
+
         secrets_manager = Client().active_stack.secrets_manager
         if not secrets_manager:
             raise RuntimeError(
@@ -109,7 +135,6 @@ class SecretReferenceMixin(BaseModel):
                 "The active stack does not have a secrets manager."
             )
 
-        secret_ref = secret_utils.parse_secret_reference(value)
         try:
             secret = secrets_manager.get_secret(secret_ref.name)
         except KeyError:

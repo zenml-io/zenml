@@ -17,6 +17,8 @@ from asyncio.log import logger
 from typing import Any, List
 
 from fastapi import FastAPI, HTTPException, Request
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import ORJSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from genericpath import isfile
@@ -24,22 +26,33 @@ from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import FileResponse
 
 import zenml
+from zenml.analytics import source_context
 from zenml.constants import API, HEALTH
+from zenml.enums import SourceContextTypes
+from zenml.zen_server.exceptions import error_detail
 from zenml.zen_server.routers import (
     artifacts_endpoints,
     auth_endpoints,
+    code_repositories_endpoints,
     flavors_endpoints,
+    pipeline_builds_endpoints,
+    pipeline_deployments_endpoints,
     pipelines_endpoints,
-    projects_endpoints,
     role_assignments_endpoints,
     roles_endpoints,
+    run_metadata_endpoints,
     runs_endpoints,
+    schedule_endpoints,
+    secrets_endpoints,
     server_endpoints,
+    service_connectors_endpoints,
     stack_components_endpoints,
     stacks_endpoints,
     steps_endpoints,
+    team_role_assignments_endpoints,
     teams_endpoints,
     users_endpoints,
+    workspaces_endpoints,
 )
 from zenml.zen_server.utils import ROOT_URL_PATH, initialize_zen_store
 
@@ -62,7 +75,27 @@ app = FastAPI(
     title="ZenML",
     version=zenml.__version__,
     root_path=ROOT_URL_PATH,
+    default_response_class=ORJSONResponse,
 )
+
+
+# Customize the default request validation handler that comes with FastAPI
+# to return a JSON response that matches the ZenML API spec.
+@app.exception_handler(RequestValidationError)
+def validation_exception_handler(
+    request: Any, exc: Exception
+) -> ORJSONResponse:
+    """Custom validation exception handler.
+
+    Args:
+        request: The request.
+        exc: The exception.
+
+    Returns:
+        The error response formatted using the ZenML API conventions.
+    """
+    return ORJSONResponse(error_detail(exc, ValueError), status_code=422)
+
 
 app.add_middleware(
     CORSMiddleware,
@@ -71,6 +104,38 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.middleware("http")
+async def infer_source_context(request: Request, call_next: Any) -> Any:
+    """A middleware to track the source of an event.
+
+    It extracts the source context from the header of incoming requests
+    and applies it to the ZenML source context on the API side. This way, the
+    outgoing analytics request can append it as an additional field.
+
+    Args:
+        request: the incoming request object.
+        call_next: a function that will receive the request as a parameter and
+            pass it to the corresponding path operation.
+
+    Returns:
+        the response to the request.
+    """
+    try:
+        s = request.headers.get(
+            source_context.name,
+            default=SourceContextTypes.API.value,
+        )
+        source_context.set(SourceContextTypes(s))
+    except Exception as e:
+        logger.warning(
+            f"An unexpected error occurred while getting the source "
+            f"context: {e}"
+        )
+        source_context.set(SourceContextTypes.API)
+
+    return await call_next(request)
 
 
 @app.on_event("startup")
@@ -131,12 +196,18 @@ def dashboard(request: Request) -> Any:
 
 app.include_router(auth_endpoints.router)
 app.include_router(pipelines_endpoints.router)
-app.include_router(projects_endpoints.router)
+app.include_router(workspaces_endpoints.router)
 app.include_router(flavors_endpoints.router)
 app.include_router(roles_endpoints.router)
 app.include_router(role_assignments_endpoints.router)
+app.include_router(team_role_assignments_endpoints.router)
 app.include_router(runs_endpoints.router)
+app.include_router(run_metadata_endpoints.router)
+app.include_router(schedule_endpoints.router)
+app.include_router(secrets_endpoints.router)
 app.include_router(server_endpoints.router)
+app.include_router(service_connectors_endpoints.router)
+app.include_router(service_connectors_endpoints.types_router)
 app.include_router(stacks_endpoints.router)
 app.include_router(stack_components_endpoints.router)
 app.include_router(stack_components_endpoints.types_router)
@@ -146,6 +217,9 @@ app.include_router(teams_endpoints.router)
 app.include_router(users_endpoints.router)
 app.include_router(users_endpoints.current_user_router)
 app.include_router(users_endpoints.activation_router)
+app.include_router(pipeline_builds_endpoints.router)
+app.include_router(pipeline_deployments_endpoints.router)
+app.include_router(code_repositories_endpoints.router)
 
 
 def get_root_static_files() -> List[str]:

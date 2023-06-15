@@ -120,14 +120,14 @@ def comment_out_yaml(yaml_string: str) -> str:
 
 def write_json(
     file_path: str,
-    contents: Dict[str, Any],
+    contents: Any,
     encoder: Optional[Type[json.JSONEncoder]] = None,
 ) -> None:
     """Write contents as JSON format to file_path.
 
     Args:
         file_path: Path to JSON file.
-        contents: Contents of JSON file as dict.
+        contents: Contents of JSON file.
         encoder: Custom JSON encoder to use when saving json.
 
     Raises:
@@ -182,3 +182,21 @@ class UUIDEncoder(json.JSONEncoder):
             # if the obj is uuid, we simply return the value of uuid
             return obj.hex
         return json.JSONEncoder.default(self, obj)
+
+
+def is_json_serializable(obj: Any) -> bool:
+    """Checks whether an object is JSON serializable.
+
+    Args:
+        obj: The object to check.
+
+    Returns:
+        Whether the object is JSON serializable using pydantics encoder class.
+    """
+    from pydantic.json import pydantic_encoder
+
+    try:
+        json.dumps(obj, default=pydantic_encoder)
+        return True
+    except TypeError:
+        return False

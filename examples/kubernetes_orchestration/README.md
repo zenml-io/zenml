@@ -67,6 +67,11 @@ to have the following additional software installed on your local machine:
 * [kubectl](https://kubernetes.io/docs/tasks/tools/)
 * [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html)
 
+Note that the Kubernetes orchestrator, the ECR container registry and the S3
+artifact store can be deployed using the ZenML CLI as well (in other words, as an
+alternative to the instructions below), using the `zenml <STACK_COMPONENT> deploy` command. For more information on this `deploy` subcommand, please refer to the 
+[documentation](https://docs.zenml.io/advanced-guide/practical-mlops/stack-recipes#deploying-stack-components-directly).
+
 #### Setup and Register Kubernetes Orchestrator
 
 After spinning up your Kubernetes cluster in the cloud, you will first need
@@ -128,6 +133,16 @@ zenml artifact-store register s3_store
     --path=<REMOTE_ARTIFACT_STORE_PATH>
 ```
 
+#### Setup Image Builder
+
+In order to build the Docker images for the Kubernetes pods, we will use the
+`local` image builder.
+
+```bash
+zenml image-builder register local_builder 
+    --flavor=local
+```
+
 #### Register and Spin Up Stack
 
 Finally, let us bring everything together and register our stack:
@@ -137,6 +152,7 @@ zenml stack register k8s_stack
     -a s3_store 
     -o k8s_orchestrator 
     -c ecr_registry
+    -i local_builder
 ```
 
 Let's set this stack as active, so we use it by default for the remainder of

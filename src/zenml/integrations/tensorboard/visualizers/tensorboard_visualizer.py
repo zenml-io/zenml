@@ -33,12 +33,11 @@ from zenml.integrations.tensorboard.services.tensorboard_service import (
 )
 from zenml.logger import get_logger
 from zenml.post_execution import StepView, get_pipeline
-from zenml.visualizers import BaseVisualizer
 
 logger = get_logger(__name__)
 
 
-class TensorboardVisualizer(BaseVisualizer):
+class TensorboardVisualizer:
     """The implementation of a TensorBoard Visualizer."""
 
     @classmethod
@@ -132,7 +131,6 @@ class TensorboardVisualizer(BaseVisualizer):
             height: Height of the generated visualization.
         """
         if Environment.in_notebook():
-
             notebook.display(port, height=height)
             return
 
@@ -197,7 +195,7 @@ def get_step(pipeline_name: str, step_name: str) -> StepView:
             f"No pipeline with name `{pipeline_name}` was found"
         )
 
-    last_run = pipeline.runs[-1]
+    last_run = pipeline.runs[0]
     step = last_run.get_step(step=step_name)
     if step is None:
         raise RuntimeError(

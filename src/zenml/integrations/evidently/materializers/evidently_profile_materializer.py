@@ -14,7 +14,7 @@
 """Implementation of Evidently profile materializer."""
 
 import os
-from typing import Any, Type
+from typing import Any, ClassVar, Tuple, Type
 
 from evidently.model_profile import Profile  # type: ignore
 from evidently.utils import NumpyEncoder  # type: ignore
@@ -22,8 +22,7 @@ from evidently.utils import NumpyEncoder  # type: ignore
 from zenml.enums import ArtifactType
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
-from zenml.utils import yaml_utils
-from zenml.utils.source_utils import import_class_by_path, resolve_class
+from zenml.utils import source_utils, yaml_utils
 
 logger = get_logger(__name__)
 
@@ -33,8 +32,10 @@ DEFAULT_FILENAME = "profile.json"
 class EvidentlyProfileMaterializer(BaseMaterializer):
     """Materializer to read data to and from an Evidently Profile."""
 
-    ASSOCIATED_TYPES = (Profile,)
-    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATA_ANALYSIS
+    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (Profile,)
+    ASSOCIATED_ARTIFACT_TYPE: ClassVar[
+        ArtifactType
+    ] = ArtifactType.DATA_ANALYSIS
 
     def load(self, data_type: Type[Any]) -> Profile:
         """Reads an Evidently Profile object from a json file.
@@ -48,7 +49,6 @@ class EvidentlyProfileMaterializer(BaseMaterializer):
         Raises:
             TypeError: if the json file contains an invalid data type.
         """
-        super().load(data_type)
         filepath = os.path.join(self.uri, DEFAULT_FILENAME)
         contents = yaml_utils.read_json(filepath)
         if type(contents) != dict:
@@ -60,7 +60,7 @@ class EvidentlyProfileMaterializer(BaseMaterializer):
         section_types = contents.pop("section_types", [])
         sections = []
         for section_type in section_types:
-            section_cls = import_class_by_path(section_type)
+            section_cls = source_utils.load(section_type)
             section = section_cls()
             section._result = contents[section.part_id()]
             sections.append(section)
@@ -73,13 +73,12 @@ class EvidentlyProfileMaterializer(BaseMaterializer):
         Args:
             data: The Evidently Profile to be serialized.
         """
-        super().save(data)
-
         contents = data.object()
         # include the list of profile sections in the serialized dictionary,
         # so we'll be able to re-create them during de-serialization
         contents["section_types"] = [
-            resolve_class(stage.__class__) for stage in data.stages
+            source_utils.resolve(stage.__class__).import_path
+            for stage in data.stages
         ]
 
         filepath = os.path.join(self.uri, DEFAULT_FILENAME)

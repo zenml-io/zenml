@@ -24,6 +24,7 @@ from zenml.models.base_models import (
     update_model,
 )
 from zenml.models.constants import STR_FIELD_MAX_LENGTH
+from zenml.models.filter_models import BaseFilterModel
 
 if TYPE_CHECKING:
     from zenml.models.user_models import UserResponseModel
@@ -80,6 +81,20 @@ class TeamResponseModel(TeamBaseModel, BaseResponseModel):
             return []
 
 
+# ------ #
+# FILTER #
+# ------ #
+
+
+class TeamFilterModel(BaseFilterModel):
+    """Model to enable advanced filtering of all Teams."""
+
+    name: Optional[str] = Field(
+        default=None,
+        description="Name of the team",
+    )
+
+
 # ------- #
 # REQUEST #
 # ------- #
@@ -89,7 +104,7 @@ class TeamRequestModel(TeamBaseModel, BaseRequestModel):
     """Request model for teams."""
 
     users: Optional[List[UUID]] = Field(
-        title="The list of users within this team."
+        default=None, title="The list of users within this team."
     )
 
 

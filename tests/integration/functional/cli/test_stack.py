@@ -20,7 +20,7 @@ from uuid import UUID, uuid4
 import pytest
 from click.testing import CliRunner
 
-from tests.integration.functional.cli.test_utils import (
+from tests.integration.functional.cli.utils import (
     create_sample_user_and_login,
 )
 from zenml.artifact_stores.local_artifact_store import (
@@ -37,11 +37,11 @@ from zenml.secrets_managers.local.local_secrets_manager import (
     LocalSecretsManagerConfig,
 )
 
-NOT_STACKS = ["abc", "my_other_cat_is_called_blupus", "stack123"]
+NOT_STACKS = ["abc_def", "my_other_cat_is_called_blupus", "stack123"]
 
 
 def _create_local_orchestrator(
-    repo: Client, user: Optional[UUID] = None, project: Optional[UUID] = None
+    repo: Client, user: Optional[UUID] = None, workspace: Optional[UUID] = None
 ):
     """Returns a local orchestrator."""
     return LocalOrchestrator(
@@ -51,14 +51,14 @@ def _create_local_orchestrator(
         flavor="local",
         type=StackComponentType.ORCHESTRATOR,
         user=user or repo.active_user.id,
-        project=project or repo.active_project.id,
+        workspace=workspace or repo.active_workspace.id,
         created=datetime.now(),
         updated=datetime.now(),
     )
 
 
 def _create_local_artifact_store(
-    repo: Client, user: Optional[UUID] = None, project: Optional[UUID] = None
+    repo: Client, user: Optional[UUID] = None, workspace: Optional[UUID] = None
 ):
     """Fixture that creates a local artifact store for testing."""
     return LocalArtifactStore(
@@ -68,7 +68,7 @@ def _create_local_artifact_store(
         flavor="local",
         type=StackComponentType.ARTIFACT_STORE,
         user=user or repo.active_user.id,
-        project=project or repo.active_project.id,
+        workspace=workspace or repo.active_workspace.id,
         created=datetime.now(),
         updated=datetime.now(),
     )
@@ -82,7 +82,7 @@ def _create_local_secrets_manager(client: Client):
         flavor="local",
         type=StackComponentType.SECRETS_MANAGER,
         user=client.active_user.id,
-        project=client.active_project.id,
+        workspace=client.active_workspace.id,
         created=datetime.now(),
         updated=datetime.now(),
     )
@@ -108,14 +108,14 @@ def test_describe_stack_bad_input_fails(
     assert result.exit_code == 1
 
 
-def test_update_stack_update_on_default_fails(clean_project) -> None:
+def test_update_stack_update_on_default_fails(clean_workspace) -> None:
     """Test stack update of default stack is prohibited."""
     # first we set the active stack to a non-default stack
-    original_stack = clean_project.active_stack_model
+    original_stack = clean_workspace.active_stack_model
 
-    new_artifact_store = _create_local_artifact_store(clean_project)
+    new_artifact_store = _create_local_artifact_store(clean_workspace)
 
-    clean_project.create_stack_component(
+    clean_workspace.create_stack_component(
         name=new_artifact_store.name,
         flavor=new_artifact_store.flavor,
         component_type=new_artifact_store.type,
@@ -129,17 +129,17 @@ def test_update_stack_update_on_default_fails(clean_project) -> None:
     )
     assert result.exit_code == 1
 
-    default_stack = clean_project.get_stack("default")
+    default_stack = clean_workspace.get_stack("default")
     assert (
         default_stack.components[StackComponentType.ARTIFACT_STORE][0].id
         == original_stack.components[StackComponentType.ARTIFACT_STORE][0].id
     )
 
 
-def test_update_stack_active_stack_succeeds(clean_project) -> None:
+def test_update_stack_active_stack_succeeds(clean_workspace) -> None:
     """Test stack update of active stack succeeds."""
     # first we set the active stack to a non-default stack
-    registered_stack = clean_project.active_stack_model
+    registered_stack = clean_workspace.active_stack_model
 
     artifact_store_name = registered_stack.components[
         StackComponentType.ARTIFACT_STORE
@@ -148,7 +148,7 @@ def test_update_stack_active_stack_succeeds(clean_project) -> None:
     orchestrator_name = registered_stack.components[
         StackComponentType.ORCHESTRATOR
     ][0].name
-    new_stack = clean_project.create_stack(
+    new_stack = clean_workspace.create_stack(
         name="arias_new_stack",
         components={
             StackComponentType.ARTIFACT_STORE: artifact_store_name,
@@ -156,11 +156,11 @@ def test_update_stack_active_stack_succeeds(clean_project) -> None:
         },
     )
 
-    clean_project.activate_stack(stack_name_id_or_prefix=new_stack.id)
+    clean_workspace.activate_stack(stack_name_id_or_prefix=new_stack.id)
 
-    new_artifact_store = _create_local_artifact_store(clean_project)
+    new_artifact_store = _create_local_artifact_store(clean_workspace)
 
-    clean_project.create_stack_component(
+    clean_workspace.create_stack_component(
         name=new_artifact_store.name,
         flavor=new_artifact_store.flavor,
         component_type=new_artifact_store.type,
@@ -174,16 +174,16 @@ def test_update_stack_active_stack_succeeds(clean_project) -> None:
     assert result.exit_code == 0
 
     assert (
-        clean_project.active_stack_model.components[
+        clean_workspace.active_stack_model.components[
             StackComponentType.ARTIFACT_STORE
         ][0].name
         == new_artifact_store.name
     )
 
 
-def test_updating_non_active_stack_succeeds(clean_project) -> None:
+def test_updating_non_active_stack_succeeds(clean_workspace) -> None:
     """Test if stack update of existing stack of non-active stack succeeds."""
-    registered_stack = clean_project.active_stack_model
+    registered_stack = clean_workspace.active_stack_model
 
     artifact_store_name = registered_stack.components[
         StackComponentType.ARTIFACT_STORE
@@ -193,7 +193,7 @@ def test_updating_non_active_stack_succeeds(clean_project) -> None:
         StackComponentType.ORCHESTRATOR
     ][0].name
 
-    new_stack = clean_project.create_stack(
+    new_stack = clean_workspace.create_stack(
         name="arias_new_stack",
         components={
             StackComponentType.ARTIFACT_STORE: artifact_store_name,
@@ -201,9 +201,9 @@ def test_updating_non_active_stack_succeeds(clean_project) -> None:
         },
     )
 
-    orchestrator = _create_local_orchestrator(clean_project)
+    orchestrator = _create_local_orchestrator(clean_workspace)
 
-    new_orchestrator = clean_project.create_stack_component(
+    new_orchestrator = clean_workspace.create_stack_component(
         name=orchestrator.name,
         flavor=orchestrator.flavor,
         component_type=orchestrator.type,
@@ -220,17 +220,17 @@ def test_updating_non_active_stack_succeeds(clean_project) -> None:
     assert result.exit_code == 0
 
     assert (
-        clean_project.get_stack(str(new_stack.id))
+        clean_workspace.get_stack(str(new_stack.id))
         .components.get(StackComponentType.ORCHESTRATOR)[0]
         .name
         == new_orchestrator.name
     )
 
 
-def test_update_stack_adding_component_succeeds(clean_project) -> None:
+def test_update_stack_adding_component_succeeds(clean_workspace) -> None:
     """Test stack update by adding a new component to a stack succeeds."""
     # first we create and activate a non-default stack
-    registered_stack = clean_project.active_stack_model
+    registered_stack = clean_workspace.active_stack_model
 
     artifact_store_name = registered_stack.components[
         StackComponentType.ARTIFACT_STORE
@@ -240,18 +240,18 @@ def test_update_stack_adding_component_succeeds(clean_project) -> None:
         StackComponentType.ORCHESTRATOR
     ][0].name
 
-    new_stack = clean_project.create_stack(
+    new_stack = clean_workspace.create_stack(
         name="arias_new_stack",
         components={
             StackComponentType.ARTIFACT_STORE: artifact_store_name,
             StackComponentType.ORCHESTRATOR: orchestrator_name,
         },
     )
-    clean_project.activate_stack(new_stack.id)
+    clean_workspace.activate_stack(new_stack.id)
 
-    local_secrets_manager = _create_local_secrets_manager(clean_project)
+    local_secrets_manager = _create_local_secrets_manager(clean_workspace)
 
-    local_secrets_manager_model = clean_project.create_stack_component(
+    local_secrets_manager_model = clean_workspace.create_stack_component(
         name=local_secrets_manager.name,
         flavor=local_secrets_manager.flavor,
         component_type=local_secrets_manager.type,
@@ -262,7 +262,7 @@ def test_update_stack_adding_component_succeeds(clean_project) -> None:
     update_command = cli.commands["stack"].commands["update"]
     result = runner.invoke(update_command, ["-x", local_secrets_manager.name])
 
-    new_stack = clean_project.get_stack(new_stack.id)
+    new_stack = clean_workspace.get_stack(new_stack.id)
 
     assert result.exit_code == 0
     assert StackComponentType.SECRETS_MANAGER in new_stack.components.keys()
@@ -273,10 +273,10 @@ def test_update_stack_adding_component_succeeds(clean_project) -> None:
     )
 
 
-def test_update_stack_adding_to_default_stack_fails(clean_project) -> None:
+def test_update_stack_adding_to_default_stack_fails(clean_workspace) -> None:
     """Test stack update by adding a new component to the default stack is prohibited."""
     # first we set the active stack to a non-default stack
-    registered_stack = clean_project.active_stack_model
+    registered_stack = clean_workspace.active_stack_model
 
     artifact_store_name = registered_stack.components[
         StackComponentType.ARTIFACT_STORE
@@ -286,18 +286,18 @@ def test_update_stack_adding_to_default_stack_fails(clean_project) -> None:
         StackComponentType.ORCHESTRATOR
     ][0].name
 
-    new_stack = clean_project.create_stack(
+    new_stack = clean_workspace.create_stack(
         name="arias_new_stack",
         components={
             StackComponentType.ARTIFACT_STORE: artifact_store_name,
             StackComponentType.ORCHESTRATOR: orchestrator_name,
         },
     )
-    clean_project.activate_stack(new_stack.id)
+    clean_workspace.activate_stack(new_stack.id)
 
-    local_secrets_manager = _create_local_secrets_manager(clean_project)
+    local_secrets_manager = _create_local_secrets_manager(clean_workspace)
 
-    local_secrets_manager_model = clean_project.create_stack_component(
+    local_secrets_manager_model = clean_workspace.create_stack_component(
         name=local_secrets_manager.name,
         flavor=local_secrets_manager.flavor,
         component_type=local_secrets_manager.type,
@@ -311,18 +311,18 @@ def test_update_stack_adding_to_default_stack_fails(clean_project) -> None:
     )
     assert result.exit_code == 1
 
-    default_stack = clean_project.get_stack("default")
+    default_stack = clean_workspace.get_stack("default")
     assert (
         StackComponentType.SECRETS_MANAGER
         not in default_stack.components.keys()
     )
 
 
-def test_update_stack_nonexistent_stack_fails(clean_project) -> None:
+def test_update_stack_nonexistent_stack_fails(clean_workspace) -> None:
     """Test stack update of nonexistent stack fails."""
-    local_secrets_manager = _create_local_secrets_manager(clean_project)
+    local_secrets_manager = _create_local_secrets_manager(clean_workspace)
 
-    local_secrets_manager_model = clean_project.create_stack_component(
+    local_secrets_manager_model = clean_workspace.create_stack_component(
         name=local_secrets_manager.name,
         flavor=local_secrets_manager.flavor,
         component_type=local_secrets_manager.type,
@@ -336,10 +336,10 @@ def test_update_stack_nonexistent_stack_fails(clean_project) -> None:
     )
 
     assert result.exit_code == 1
-    assert clean_project.active_stack.secrets_manager is None
+    assert clean_workspace.active_stack.secrets_manager is None
 
 
-def test_rename_stack_nonexistent_stack_fails(clean_project) -> None:
+def test_rename_stack_nonexistent_stack_fails(clean_workspace) -> None:
     """Test stack rename of nonexistent stack fails."""
     runner = CliRunner()
     rename_command = cli.commands["stack"].commands["rename"]
@@ -347,26 +347,28 @@ def test_rename_stack_nonexistent_stack_fails(clean_project) -> None:
     assert result.exit_code == 1
 
 
-def test_rename_stack_new_name_with_existing_name_fails(clean_project) -> None:
+def test_rename_stack_new_name_with_existing_name_fails(
+    clean_workspace,
+) -> None:
     runner = CliRunner()
     rename_command = cli.commands["stack"].commands["rename"]
     result = runner.invoke(rename_command, ["not_a_stack", "default"])
     assert result.exit_code == 1
 
 
-def test_rename_stack_default_stack_fails(clean_project) -> None:
+def test_rename_stack_default_stack_fails(clean_workspace) -> None:
     """Test stack rename of default stack fails."""
     runner = CliRunner()
     rename_command = cli.commands["stack"].commands["rename"]
     result = runner.invoke(rename_command, ["default", "axls_new_stack"])
     assert result.exit_code == 1
-    assert len(clean_project.list_stacks(name="default")) == 1
+    assert len(clean_workspace.list_stacks(name="default")) == 1
 
 
-def test_rename_stack_active_stack_succeeds(clean_project) -> None:
+def test_rename_stack_active_stack_succeeds(clean_workspace) -> None:
     """Test stack rename of active stack fails."""
     # first we set the active stack to a non-default stack
-    registered_stack = clean_project.active_stack_model
+    registered_stack = clean_workspace.active_stack_model
 
     artifact_store_name = registered_stack.components[
         StackComponentType.ARTIFACT_STORE
@@ -376,25 +378,25 @@ def test_rename_stack_active_stack_succeeds(clean_project) -> None:
         StackComponentType.ORCHESTRATOR
     ][0].name
 
-    new_stack = clean_project.create_stack(
+    new_stack = clean_workspace.create_stack(
         name="arias_stack",
         components={
             StackComponentType.ARTIFACT_STORE: artifact_store_name,
             StackComponentType.ORCHESTRATOR: orchestrator_name,
         },
     )
-    clean_project.activate_stack(new_stack.id)
+    clean_workspace.activate_stack(new_stack.id)
 
     runner = CliRunner()
     rename_command = cli.commands["stack"].commands["rename"]
     result = runner.invoke(rename_command, ["arias_stack", "axls_stack"])
     assert result.exit_code == 0
-    assert clean_project.active_stack_model.name == "axls_stack"
+    assert clean_workspace.active_stack_model.name == "axls_stack"
 
 
-def test_rename_stack_non_active_stack_succeeds(clean_project) -> None:
+def test_rename_stack_non_active_stack_succeeds(clean_workspace) -> None:
     """Test stack rename of non-active stack succeeds."""
-    registered_stack = clean_project.active_stack_model
+    registered_stack = clean_workspace.active_stack_model
 
     artifact_store_name = registered_stack.components[
         StackComponentType.ARTIFACT_STORE
@@ -404,7 +406,7 @@ def test_rename_stack_non_active_stack_succeeds(clean_project) -> None:
         StackComponentType.ORCHESTRATOR
     ][0].name
 
-    new_stack = clean_project.create_stack(
+    new_stack = clean_workspace.create_stack(
         name="arias_stack",
         components={
             StackComponentType.ARTIFACT_STORE: artifact_store_name,
@@ -416,10 +418,10 @@ def test_rename_stack_non_active_stack_succeeds(clean_project) -> None:
     rename_command = cli.commands["stack"].commands["rename"]
     result = runner.invoke(rename_command, ["arias_stack", "axls_stack"])
     assert result.exit_code == 0
-    assert clean_project.get_stack(new_stack.id).name == "axls_stack"
+    assert clean_workspace.get_stack(new_stack.id).name == "axls_stack"
 
 
-def test_sharing_nonexistent_stack_fails(clean_project: Client) -> None:
+def test_sharing_nonexistent_stack_fails(clean_workspace: Client) -> None:
     """Test stack rename of nonexistent stack fails."""
     runner = CliRunner()
     share_command = cli.commands["stack"].commands["share"]
@@ -427,22 +429,22 @@ def test_sharing_nonexistent_stack_fails(clean_project: Client) -> None:
     assert result.exit_code == 1
 
 
-def test_sharing_default_stack_fails(clean_project: Client) -> None:
+def test_sharing_default_stack_fails(clean_workspace: Client) -> None:
     runner = CliRunner()
     share_command = cli.commands["stack"].commands["share"]
     result = runner.invoke(share_command, ["default"])
     assert result.exit_code == 1
 
-    default_stack = clean_project.get_stack("default")
+    default_stack = clean_workspace.get_stack("default")
     assert default_stack.is_shared is False
 
 
 def test_share_stack_that_is_already_shared_fails(
-    clean_project: Client,
+    clean_workspace: Client,
 ) -> None:
-    new_artifact_store = _create_local_artifact_store(clean_project)
+    new_artifact_store = _create_local_artifact_store(clean_workspace)
 
-    new_artifact_store_model = clean_project.create_stack_component(
+    new_artifact_store_model = clean_workspace.create_stack_component(
         name=new_artifact_store.name,
         flavor=new_artifact_store.flavor,
         component_type=new_artifact_store.type,
@@ -450,9 +452,9 @@ def test_share_stack_that_is_already_shared_fails(
         is_shared=True,
     )
 
-    new_orchestrator = _create_local_orchestrator(clean_project)
+    new_orchestrator = _create_local_orchestrator(clean_workspace)
 
-    new_orchestrator_model = clean_project.create_stack_component(
+    new_orchestrator_model = clean_workspace.create_stack_component(
         name=new_orchestrator.name,
         flavor=new_orchestrator.flavor,
         component_type=new_orchestrator.type,
@@ -460,7 +462,7 @@ def test_share_stack_that_is_already_shared_fails(
         is_shared=True,
     )
 
-    new_stack = clean_project.create_stack(
+    new_stack = clean_workspace.create_stack(
         name="arias_new_stack",
         components={
             StackComponentType.ARTIFACT_STORE: new_artifact_store_model.name,
@@ -474,70 +476,14 @@ def test_share_stack_that_is_already_shared_fails(
     result = runner.invoke(share_command, ["arias_new_stack"])
     assert result.exit_code == 1
 
-    arias_stack = clean_project.get_stack(new_stack.name)
+    arias_stack = clean_workspace.get_stack(new_stack.name)
     assert arias_stack.is_shared is True
 
 
-def test_share_stack_when_component_is_already_shared_by_other_user_fails(
-    clean_project: Client,
-) -> None:
-    """When sharing a stack all the components are also shared, so if a component with the same name is already shared this should fail."""
-    if clean_project.zen_store.type != StoreType.REST:
-        pytest.skip("Only supported on ZenML server")
-
-    new_artifact_store = _create_local_artifact_store(clean_project)
-
-    new_artifact_store_model = clean_project.create_stack_component(
-        name=new_artifact_store.name,
-        flavor=new_artifact_store.flavor,
-        component_type=new_artifact_store.type,
-        configuration=new_artifact_store.config.dict(),
-    )
-
-    new_orchestrator = _create_local_orchestrator(clean_project)
-
-    new_orchestrator_model = clean_project.create_stack_component(
-        name=new_orchestrator.name,
-        flavor=new_orchestrator.flavor,
-        component_type=new_orchestrator.type,
-        configuration=new_orchestrator.config.dict(),
-    )
-
-    clean_project.create_stack(
-        name="arias_new_stack",
-        components={
-            StackComponentType.ARTIFACT_STORE: new_artifact_store_model.name,
-            StackComponentType.ORCHESTRATOR: new_orchestrator_model.name,
-        },
-    )
-
-    with create_sample_user_and_login(
-        prefix="Arias_Evil_Twin", initial_role="admin"
-    ) as (
-        other_user,
-        other_client,
-    ):
-        other_client.create_stack_component(
-            name=new_orchestrator.name,
-            is_shared=True,
-            component_type=StackComponentType.ORCHESTRATOR,
-            flavor="local",
-            configuration={},
-        )
-
-    runner = CliRunner()
-    share_command = cli.commands["stack"].commands["share"]
-    result = runner.invoke(share_command, ["arias_new_stack"])
-    assert result.exit_code == 1
-
-    arias_stack = clean_project.get_stack("arias_new_stack")
-    assert arias_stack.is_shared is False
-
-
 def test_create_shared_stack_when_component_is_private_fails(
-    clean_project: Client,
+    clean_workspace: Client,
 ) -> None:
-    """When sharing a stack all the components should also be shared, so if a component is not shared this should fail."""
+    """When creating a shared stack all the components should also be shared, so if a component is not shared this should fail."""
     runner = CliRunner()
     register_command = cli.commands["stack"].commands["register"]
     result = runner.invoke(
@@ -547,15 +493,15 @@ def test_create_shared_stack_when_component_is_private_fails(
     assert result.exit_code == 1
 
 
-def test_add_private_component_to_shared_stack_fails(
-    clean_project: Client,
+def test_share_stack_when_component_is_already_shared_by_other_user_fails(
+    clean_workspace: Client,
 ) -> None:
     """When sharing a stack all the components are also shared, so if a component with the same name is already shared this should fail."""
-    if clean_project.zen_store.type != StoreType.REST:
+    if clean_workspace.zen_store.type != StoreType.REST:
         pytest.skip("Only supported on ZenML server")
 
     # Shared component
-    shared_artifact_store = _create_local_artifact_store(clean_project)
+    shared_artifact_store = _create_local_artifact_store(clean_workspace)
 
     with create_sample_user_and_login(
         prefix="Arias_Evil_Twin", initial_role="admin"
@@ -563,7 +509,6 @@ def test_add_private_component_to_shared_stack_fails(
         other_user,
         other_client,
     ):
-
         other_client.create_stack_component(
             name=shared_artifact_store.name,
             is_shared=True,
@@ -573,18 +518,18 @@ def test_add_private_component_to_shared_stack_fails(
         )
 
     # Non-shared components
-    new_artifact_store = _create_local_artifact_store(clean_project)
+    new_artifact_store = _create_local_artifact_store(clean_workspace)
 
-    new_artifact_store_model = clean_project.create_stack_component(
+    new_artifact_store_model = clean_workspace.create_stack_component(
         name=new_artifact_store.name,
         flavor=new_artifact_store.flavor,
         component_type=new_artifact_store.type,
         configuration=new_artifact_store.config.dict(),
     )
 
-    new_orchestrator = _create_local_orchestrator(clean_project)
+    new_orchestrator = _create_local_orchestrator(clean_workspace)
 
-    new_orchestrator_model = clean_project.create_stack_component(
+    new_orchestrator_model = clean_workspace.create_stack_component(
         name=new_orchestrator.name,
         flavor=new_orchestrator.flavor,
         component_type=new_orchestrator.type,
@@ -592,7 +537,7 @@ def test_add_private_component_to_shared_stack_fails(
     )
 
     # Register non-shared stack with non-shared components
-    new_stack = clean_project.create_stack(
+    new_stack = clean_workspace.create_stack(
         name="arias_new_stack",
         components={
             StackComponentType.ARTIFACT_STORE: new_artifact_store_model.id,
@@ -608,22 +553,22 @@ def test_add_private_component_to_shared_stack_fails(
 
 
 def test_share_stack_when_component_is_private_fails(
-    clean_project: Client,
+    clean_workspace: Client,
 ) -> None:
     """When sharing a stack all the components are also shared, so if a component with the same name is already shared this should fail."""
     # Non-shared components
-    new_artifact_store = _create_local_artifact_store(clean_project)
+    new_artifact_store = _create_local_artifact_store(clean_workspace)
 
-    new_artifact_store_model = clean_project.create_stack_component(
+    new_artifact_store_model = clean_workspace.create_stack_component(
         name=new_artifact_store.name,
         flavor=new_artifact_store.flavor,
         component_type=new_artifact_store.type,
         configuration=new_artifact_store.config.dict(),
     )
 
-    new_orchestrator = _create_local_orchestrator(clean_project)
+    new_orchestrator = _create_local_orchestrator(clean_workspace)
 
-    new_orchestrator_model = clean_project.create_stack_component(
+    new_orchestrator_model = clean_workspace.create_stack_component(
         name=new_orchestrator.name,
         flavor=new_orchestrator.flavor,
         component_type=new_orchestrator.type,
@@ -631,7 +576,7 @@ def test_share_stack_when_component_is_private_fails(
     )
 
     # Register non-shared stack with non-shared components
-    new_stack = clean_project.create_stack(
+    new_stack = clean_workspace.create_stack(
         name="arias_new_stack",
         components={
             StackComponentType.ARTIFACT_STORE: new_artifact_store_model.name,
@@ -646,7 +591,9 @@ def test_share_stack_when_component_is_private_fails(
     assert result.exit_code == 1
 
 
-def test_remove_component_from_nonexistent_stack_fails(clean_project) -> None:
+def test_remove_component_from_nonexistent_stack_fails(
+    clean_workspace,
+) -> None:
     """Test stack remove-component of nonexistent stack fails."""
     runner = CliRunner()
     remove_command = cli.commands["stack"].commands["remove-component"]
@@ -654,28 +601,28 @@ def test_remove_component_from_nonexistent_stack_fails(clean_project) -> None:
     assert result.exit_code == 1
 
 
-def test_remove_component_core_component_fails(clean_project) -> None:
+def test_remove_component_core_component_fails(clean_workspace) -> None:
     """Test stack remove-component of core component fails."""
     # first we create a non-default stack
-    new_artifact_store = _create_local_artifact_store(clean_project)
+    new_artifact_store = _create_local_artifact_store(clean_workspace)
 
-    new_artifact_store_model = clean_project.create_stack_component(
+    new_artifact_store_model = clean_workspace.create_stack_component(
         name=new_artifact_store.name,
         flavor=new_artifact_store.flavor,
         component_type=new_artifact_store.type,
         configuration=new_artifact_store.config.dict(),
     )
 
-    new_orchestrator = _create_local_orchestrator(clean_project)
+    new_orchestrator = _create_local_orchestrator(clean_workspace)
 
-    new_orchestrator_model = clean_project.create_stack_component(
+    new_orchestrator_model = clean_workspace.create_stack_component(
         name=new_orchestrator.name,
         flavor=new_orchestrator.flavor,
         component_type=new_orchestrator.type,
         configuration=new_orchestrator.config.dict(),
     )
 
-    new_stack = clean_project.create_stack(
+    new_stack = clean_workspace.create_stack(
         name="arias_new_stack",
         components={
             StackComponentType.ARTIFACT_STORE: new_artifact_store_model.name,
@@ -688,40 +635,40 @@ def test_remove_component_core_component_fails(clean_project) -> None:
     result = runner.invoke(remove_command, [new_stack.name, "-o"])
     assert result.exit_code != 0
 
-    arias_stack = clean_project.get_stack(new_stack.name)
+    arias_stack = clean_workspace.get_stack(new_stack.name)
     assert StackComponentType.ORCHESTRATOR in arias_stack.components
 
 
-def test_remove_component_non_core_component_succeeds(clean_project) -> None:
+def test_remove_component_non_core_component_succeeds(clean_workspace) -> None:
     """Test stack remove-component of non-core component succeeds."""
     # first we create a non-default stack
-    new_artifact_store = _create_local_artifact_store(clean_project)
+    new_artifact_store = _create_local_artifact_store(clean_workspace)
 
-    new_artifact_store_model = clean_project.create_stack_component(
+    new_artifact_store_model = clean_workspace.create_stack_component(
         name=new_artifact_store.name,
         flavor=new_artifact_store.flavor,
         component_type=new_artifact_store.type,
         configuration=new_artifact_store.config.dict(),
     )
 
-    new_orchestrator = _create_local_orchestrator(clean_project)
+    new_orchestrator = _create_local_orchestrator(clean_workspace)
 
-    new_orchestrator_model = clean_project.create_stack_component(
+    new_orchestrator_model = clean_workspace.create_stack_component(
         name=new_orchestrator.name,
         flavor=new_orchestrator.flavor,
         component_type=new_orchestrator.type,
         configuration=new_orchestrator.config.dict(),
     )
 
-    new_secrets_manager = _create_local_secrets_manager(clean_project)
+    new_secrets_manager = _create_local_secrets_manager(clean_workspace)
 
-    new_secrets_manager_model = clean_project.create_stack_component(
+    new_secrets_manager_model = clean_workspace.create_stack_component(
         name=new_secrets_manager.name,
         flavor=new_secrets_manager.flavor,
         component_type=new_secrets_manager.type,
         configuration=new_secrets_manager.config.dict(),
     )
-    new_stack = clean_project.create_stack(
+    new_stack = clean_workspace.create_stack(
         name="arias_new_stack",
         components={
             StackComponentType.ARTIFACT_STORE: new_artifact_store_model.name,
@@ -729,7 +676,7 @@ def test_remove_component_non_core_component_succeeds(clean_project) -> None:
             StackComponentType.SECRETS_MANAGER: new_secrets_manager_model.name,
         },
     )
-    clean_project.activate_stack(new_stack.id)
+    clean_workspace.activate_stack(new_stack.id)
 
     runner = CliRunner()
     remove_command = cli.commands["stack"].commands["remove-component"]
@@ -737,13 +684,13 @@ def test_remove_component_non_core_component_succeeds(clean_project) -> None:
     assert result.exit_code == 0
     assert (
         StackComponentType.SECRETS_MANAGER
-        not in clean_project.active_stack_model.components
+        not in clean_workspace.active_stack_model.components
     )
 
 
-def test_delete_stack_with_flag_succeeds(clean_project) -> None:
+def test_delete_stack_with_flag_succeeds(clean_workspace) -> None:
     """Test stack delete with flag succeeds."""
-    registered_stack = clean_project.active_stack_model
+    registered_stack = clean_workspace.active_stack_model
 
     artifact_store_name = registered_stack.components[
         StackComponentType.ARTIFACT_STORE
@@ -753,7 +700,7 @@ def test_delete_stack_with_flag_succeeds(clean_project) -> None:
         StackComponentType.ORCHESTRATOR
     ][0].name
 
-    new_stack = clean_project.create_stack(
+    new_stack = clean_workspace.create_stack(
         name="arias_new_stack",
         components={
             StackComponentType.ARTIFACT_STORE: artifact_store_name,
@@ -765,13 +712,13 @@ def test_delete_stack_with_flag_succeeds(clean_project) -> None:
     result = runner.invoke(delete_command, [new_stack.name, "-y"])
     assert result.exit_code == 0
     with pytest.raises(KeyError):
-        clean_project.get_stack(new_stack.id)
+        clean_workspace.get_stack(new_stack.id)
 
 
-def test_delete_stack_default_stack_fails(clean_project) -> None:
+def test_delete_stack_default_stack_fails(clean_workspace) -> None:
     """Test stack delete default stack fails."""
     # first we set the active stack to a non-default stack
-    registered_stack = clean_project.active_stack_model
+    registered_stack = clean_workspace.active_stack_model
 
     artifact_store_name = registered_stack.components[
         StackComponentType.ARTIFACT_STORE
@@ -781,23 +728,70 @@ def test_delete_stack_default_stack_fails(clean_project) -> None:
         StackComponentType.ORCHESTRATOR
     ][0].name
 
-    new_stack = clean_project.create_stack(
+    new_stack = clean_workspace.create_stack(
         name="arias_new_stack",
         components={
             StackComponentType.ARTIFACT_STORE: artifact_store_name,
             StackComponentType.ORCHESTRATOR: orchestrator_name,
         },
     )
-    clean_project.activate_stack(new_stack.name)
+    clean_workspace.activate_stack(new_stack.name)
 
     runner = CliRunner()
     delete_command = cli.commands["stack"].commands["delete"]
     result = runner.invoke(delete_command, ["default", "-y"])
     assert result.exit_code == 1
-    assert clean_project.get_stack("default")
+    assert clean_workspace.get_stack("default")
 
 
-def test_stack_export(clean_project) -> None:
+def test_delete_stack_recursively_with_flag_succeeds(clean_workspace) -> None:
+    """Test recursively delete stack delete with flag succeeds."""
+    registered_stack = clean_workspace.active_stack_model
+
+    artifact_store_name = registered_stack.components[
+        StackComponentType.ARTIFACT_STORE
+    ][0].name
+
+    orchestrator_name = registered_stack.components[
+        StackComponentType.ORCHESTRATOR
+    ][0].name
+
+    new_secrets_manager = _create_local_secrets_manager(clean_workspace)
+
+    new_secrets_manager_model = clean_workspace.create_stack_component(
+        name=new_secrets_manager.name,
+        flavor=new_secrets_manager.flavor,
+        component_type=new_secrets_manager.type,
+        configuration=new_secrets_manager.config.dict(),
+    )
+    new_stack = clean_workspace.create_stack(
+        name="arias_new_stack",
+        components={
+            StackComponentType.ARTIFACT_STORE: artifact_store_name,
+            StackComponentType.ORCHESTRATOR: orchestrator_name,
+            StackComponentType.SECRETS_MANAGER: new_secrets_manager_model.name,
+        },
+    )
+
+    runner = CliRunner()
+    delete_command = cli.commands["stack"].commands["delete"]
+    result = runner.invoke(delete_command, [new_stack.name, "-y", "-r"])
+    assert result.exit_code == 0
+    with pytest.raises(KeyError):
+        clean_workspace.get_stack(new_stack.id)
+    with pytest.raises(KeyError):
+        clean_workspace.get_stack_component(
+            StackComponentType.SECRETS_MANAGER, new_secrets_manager_model.name
+        )
+    assert clean_workspace.get_stack_component(
+        StackComponentType.ARTIFACT_STORE, artifact_store_name
+    )
+    assert clean_workspace.get_stack_component(
+        StackComponentType.ORCHESTRATOR, orchestrator_name
+    )
+
+
+def test_stack_export(clean_workspace) -> None:
     """Test exporting default stack succeeds."""
     runner = CliRunner()
     export_command = cli.commands["stack"].commands["export"]
@@ -806,28 +800,28 @@ def test_stack_export(clean_project) -> None:
     assert os.path.exists("default.yaml")
 
 
-def test_stack_export_delete_import(clean_project) -> None:
+def test_stack_export_delete_import(clean_workspace) -> None:
     """Test exporting, deleting, then importing a stack succeeds."""
     # create new stack
-    new_artifact_store = _create_local_artifact_store(clean_project)
+    new_artifact_store = _create_local_artifact_store(clean_workspace)
 
-    new_artifact_store_model = clean_project.create_stack_component(
+    new_artifact_store_model = clean_workspace.create_stack_component(
         name=new_artifact_store.name,
         flavor=new_artifact_store.flavor,
         component_type=new_artifact_store.type,
         configuration=new_artifact_store.config.dict(),
     )
 
-    new_orchestrator = _create_local_orchestrator(clean_project)
+    new_orchestrator = _create_local_orchestrator(clean_workspace)
 
-    new_orchestrator_model = clean_project.create_stack_component(
+    new_orchestrator_model = clean_workspace.create_stack_component(
         name=new_orchestrator.name,
         flavor=new_orchestrator.flavor,
         component_type=new_orchestrator.type,
         configuration=new_orchestrator.config.dict(),
     )
 
-    new_stack_model = clean_project.create_stack(
+    new_stack_model = clean_workspace.create_stack(
         name="arias_new_stack",
         components={
             StackComponentType.ARTIFACT_STORE: new_artifact_store_model.name,
@@ -845,17 +839,17 @@ def test_stack_export_delete_import(clean_project) -> None:
     assert os.path.exists("arias_new_stack.yaml")
 
     # delete stack and corresponding components
-    clean_project.delete_stack(name_id_or_prefix=new_stack_model.name)
-    clean_project.deregister_stack_component(
+    clean_workspace.delete_stack(name_id_or_prefix=new_stack_model.name)
+    clean_workspace.delete_stack_component(
         name_id_or_prefix=new_orchestrator_model.name,
         component_type=StackComponentType.ORCHESTRATOR,
     )
-    clean_project.deregister_stack_component(
+    clean_workspace.delete_stack_component(
         name_id_or_prefix=new_artifact_store_model.name,
         component_type=StackComponentType.ARTIFACT_STORE,
     )
     with pytest.raises(KeyError):
-        clean_project.get_stack(new_stack_model.id)
+        clean_workspace.get_stack(new_stack_model.id)
 
     # import stack
     import_command = cli.commands["stack"].commands["import"]
@@ -863,24 +857,24 @@ def test_stack_export_delete_import(clean_project) -> None:
         import_command, [new_stack_model.name, "--filename", file_name]
     )
     assert result.exit_code == 0
-    assert clean_project.get_stack(new_stack_model.name)
+    assert clean_workspace.get_stack(new_stack_model.name)
 
 
-def test_stack_export_import_reuses_components(clean_project) -> None:
+def test_stack_export_import_reuses_components(clean_workspace) -> None:
     """Test exporting and then importing a stack reuses existing components."""
     # create new stack
-    new_artifact_store = _create_local_artifact_store(clean_project)
+    new_artifact_store = _create_local_artifact_store(clean_workspace)
 
-    new_artifact_store_model = clean_project.create_stack_component(
+    new_artifact_store_model = clean_workspace.create_stack_component(
         name=new_artifact_store.name,
         flavor=new_artifact_store.flavor,
         component_type=new_artifact_store.type,
         configuration=new_artifact_store.config.dict(),
     )
 
-    new_orchestrator = _create_local_orchestrator(clean_project)
+    new_orchestrator = _create_local_orchestrator(clean_workspace)
 
-    new_orchestrator_model = clean_project.create_stack_component(
+    new_orchestrator_model = clean_workspace.create_stack_component(
         name=new_orchestrator.name,
         flavor=new_orchestrator.flavor,
         component_type=new_orchestrator.type,
@@ -888,7 +882,7 @@ def test_stack_export_import_reuses_components(clean_project) -> None:
     )
 
     stack_name = "arias_new_stack"
-    old_stack_model = clean_project.create_stack(
+    old_stack_model = clean_workspace.create_stack(
         name=stack_name,
         components={
             StackComponentType.ARTIFACT_STORE: new_artifact_store_model.name,
@@ -906,13 +900,13 @@ def test_stack_export_import_reuses_components(clean_project) -> None:
     assert os.path.exists("arias_new_stack.yaml")
 
     # delete stack but no components
-    clean_project.delete_stack(name_id_or_prefix=stack_name)
+    clean_workspace.delete_stack(name_id_or_prefix=stack_name)
 
     # import stack
     import_command = cli.commands["stack"].commands["import"]
     result = runner.invoke(import_command, [stack_name])
     assert result.exit_code == 0
-    new_stack_model = clean_project.get_stack(stack_name)
+    new_stack_model = clean_workspace.get_stack(stack_name)
 
     # new stack but with the same, reused components
     assert old_stack_model.id != new_stack_model.id

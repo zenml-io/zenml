@@ -14,12 +14,13 @@
 """Implementation of the Spark Dataframe Materializer."""
 
 import os.path
-from typing import Any, Type
+from typing import Any, ClassVar, Dict, Tuple, Type
 
 from pyspark.sql import DataFrame, SparkSession
 
 from zenml.enums import ArtifactType
 from zenml.materializers.base_materializer import BaseMaterializer
+from zenml.metadata.metadata_types import MetadataType
 
 DEFAULT_FILEPATH = "data"
 
@@ -27,8 +28,8 @@ DEFAULT_FILEPATH = "data"
 class SparkDataFrameMaterializer(BaseMaterializer):
     """Materializer to read/write Spark dataframes."""
 
-    ASSOCIATED_TYPES = (DataFrame,)
-    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATA
+    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (DataFrame,)
+    ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.DATA
 
     def load(self, data_type: Type[Any]) -> DataFrame:
         """Reads and returns a spark dataframe.
@@ -39,7 +40,6 @@ class SparkDataFrameMaterializer(BaseMaterializer):
         Returns:
             A loaded spark dataframe.
         """
-        super().load(data_type)
         # Create the Spark session
         spark = SparkSession.builder.getOrCreate()
 
@@ -53,8 +53,19 @@ class SparkDataFrameMaterializer(BaseMaterializer):
         Args:
             df: A spark dataframe object.
         """
-        super().save(df)
-
         # Write the dataframe to the artifact store
         path = os.path.join(self.uri, DEFAULT_FILEPATH)
         df.write.parquet(path)
+
+    def extract_metadata(self, df: DataFrame) -> Dict[str, "MetadataType"]:
+        """Extract metadata from the given `DataFrame` object.
+
+        Args:
+            df: The `DataFrame` object to extract metadata from.
+
+        Returns:
+            The extracted metadata as a dictionary.
+        """
+        return {
+            "shape": (df.count(), len(df.columns)),
+        }

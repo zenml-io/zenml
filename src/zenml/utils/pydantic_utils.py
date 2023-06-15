@@ -12,14 +12,17 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Utilities for pydantic models."""
+import inspect
 import json
-from typing import Any, Dict, Optional, Type, TypeVar, Union, cast
+from typing import Any, Callable, Dict, Optional, Type, TypeVar, Union, cast
 
+import yaml
 from pydantic import BaseModel
+from pydantic.decorator import ValidatedFunction
 from pydantic.json import pydantic_encoder
 from pydantic.utils import sequence_like
 
-from zenml.utils import dict_utils
+from zenml.utils import dict_utils, yaml_utils
 
 M = TypeVar("M", bound="BaseModel")
 
@@ -174,3 +177,95 @@ class TemplateGenerator:
             If the value is a pydantic model class.
         """
         return isinstance(value, type) and issubclass(value, BaseModel)
+
+
+class YAMLSerializationMixin(BaseModel):
+    """Class to serialize/deserialize pydantic models to/from YAML."""
+
+    def yaml(self, sort_keys: bool = False, **kwargs: Any) -> str:
+        """YAML string representation..
+
+        Args:
+            sort_keys: Whether to sort the keys in the YAML representation.
+            **kwargs: Kwargs to pass to the pydantic json(...) method.
+
+        Returns:
+            YAML string representation.
+        """
+        dict_ = json.loads(self.json(**kwargs, sort_keys=sort_keys))
+        return yaml.dump(dict_, sort_keys=sort_keys)
+
+    @classmethod
+    def from_yaml(cls: Type[M], path: str) -> M:
+        """Creates an instance from a YAML file.
+
+        Args:
+            path: Path to a YAML file.
+
+        Returns:
+            The model instance.
+        """
+        dict_ = yaml_utils.read_yaml(path)
+        return cls.parse_obj(dict_)
+
+
+def validate_function_args(
+    __func: Callable[..., Any],
+    __config: Dict[str, Any],
+    *args: Any,
+    **kwargs: Any,
+) -> Dict[str, Any]:
+    """Validates arguments passed to a function.
+
+    This function validates that all arguments to call the function exist and
+    that the types match.
+
+    It raises a pydantic.ValidationError if the validation fails.
+
+    Args:
+        __func: The function for which the arguments are passed.
+        __config: The pydantic config for the underlying model that is created
+            to validate the types of the arguments.
+        *args: Function arguments.
+        **kwargs: Function keyword arguments.
+
+    Returns:
+        The validated arguments.
+    """
+    parameter_prefix = "zenml__"
+
+    signature = inspect.signature(__func)
+    parameters = [
+        param.replace(name=f"{parameter_prefix}{param.name}")
+        for param in signature.parameters.values()
+    ]
+    signature = signature.replace(parameters=parameters)
+
+    def f() -> None:
+        pass
+
+    # We create a dummy function with the original function signature, but
+    # add a prefix to all arguments to avoid potential clashes with pydantic
+    # BaseModel attributes
+    f.__signature__ = signature  # type: ignore[attr-defined]
+    f.__annotations__ = {
+        f"{parameter_prefix}{key}": annotation
+        for key, annotation in __func.__annotations__.items()
+    }
+
+    validation_func = ValidatedFunction(f, config=__config)
+
+    kwargs = {
+        f"{parameter_prefix}{key}": value for key, value in kwargs.items()
+    }
+    model = validation_func.init_model_instance(*args, **kwargs)
+
+    validated_args = {
+        k[len(parameter_prefix) :]: v
+        for k, v in model._iter()
+        if k in model.__fields_set__
+        or model.__fields__[k].default_factory
+        or model.__fields__[k].default
+    }
+
+    return validated_args

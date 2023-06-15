@@ -13,18 +13,23 @@
 #  permissions and limitations under the License.
 """Models representing artifacts."""
 
-from typing import Optional
+from typing import TYPE_CHECKING, ClassVar, Dict, List, Optional, Union
 from uuid import UUID
 
 from pydantic import BaseModel, Field
 
+from zenml.config.source import Source, convert_source_validator
 from zenml.enums import ArtifactType
 from zenml.models.base_models import (
-    ProjectScopedRequestModel,
-    ProjectScopedResponseModel,
-    update_model,
+    WorkspaceScopedRequestModel,
+    WorkspaceScopedResponseModel,
 )
 from zenml.models.constants import STR_FIELD_MAX_LENGTH
+from zenml.models.filter_models import WorkspaceScopedFilterModel
+from zenml.models.visualization_models import VisualizationModel
+
+if TYPE_CHECKING:
+    from zenml.models.run_metadata_models import RunMetadataResponseModel
 
 # ---- #
 # BASE #
@@ -38,20 +43,22 @@ class ArtifactBaseModel(BaseModel):
         title="Name of the output in the parent step.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-
     artifact_store_id: Optional[UUID]
     type: ArtifactType
     uri: str = Field(
         title="URI of the artifact.", max_length=STR_FIELD_MAX_LENGTH
     )
-    materializer: str = Field(
+    materializer: Source = Field(
         title="Materializer class to use for this artifact.",
-        max_length=STR_FIELD_MAX_LENGTH,
     )
-    data_type: str = Field(
+    data_type: Source = Field(
         title="Data type of the artifact.",
-        max_length=STR_FIELD_MAX_LENGTH,
     )
+    visualizations: Optional[List[VisualizationModel]] = Field(
+        default=None, title="Visualizations of the artifact."
+    )
+
+    _convert_source = convert_source_validator("materializer", "data_type")
 
 
 # -------- #
@@ -59,10 +66,63 @@ class ArtifactBaseModel(BaseModel):
 # -------- #
 
 
-class ArtifactResponseModel(ArtifactBaseModel, ProjectScopedResponseModel):
+class ArtifactResponseModel(ArtifactBaseModel, WorkspaceScopedResponseModel):
     """Response model for artifacts."""
 
     producer_step_run_id: Optional[UUID]
+    metadata: Dict[str, "RunMetadataResponseModel"] = Field(
+        default={}, title="Metadata of the artifact."
+    )
+
+
+# ------ #
+# FILTER #
+# ------ #
+
+
+class ArtifactFilterModel(WorkspaceScopedFilterModel):
+    """Model to enable advanced filtering of all Artifacts."""
+
+    # `only_unused` refers to a property of the artifacts relationship
+    #  rather than a field in the db, hence it needs to be handled
+    #  explicitly
+    FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
+        *WorkspaceScopedFilterModel.FILTER_EXCLUDE_FIELDS,
+        "only_unused",
+    ]
+
+    name: Optional[str] = Field(
+        default=None,
+        description="Name of the artifact",
+    )
+    uri: Optional[str] = Field(
+        default=None,
+        description="Uri of the artifact",
+    )
+    materializer: Optional[str] = Field(
+        default=None,
+        description="Materializer used to produce the artifact",
+    )
+    type: Optional[str] = Field(
+        default=None,
+        description="Type of the artifact",
+    )
+    data_type: Optional[str] = Field(
+        default=None,
+        description="Datatype of the artifact",
+    )
+    artifact_store_id: Optional[Union[UUID, str]] = Field(
+        default=None, description="Artifact store for this artifact"
+    )
+    workspace_id: Optional[Union[UUID, str]] = Field(
+        default=None, description="Workspace for this artifact"
+    )
+    user_id: Optional[Union[UUID, str]] = Field(
+        default=None, description="User that produced this artifact"
+    )
+    only_unused: Optional[bool] = Field(
+        default=False, description="Filter only for unused artifacts"
+    )
 
 
 # ------- #
@@ -70,15 +130,5 @@ class ArtifactResponseModel(ArtifactBaseModel, ProjectScopedResponseModel):
 # ------- #
 
 
-class ArtifactRequestModel(ArtifactBaseModel, ProjectScopedRequestModel):
+class ArtifactRequestModel(ArtifactBaseModel, WorkspaceScopedRequestModel):
     """Request model for artifacts."""
-
-
-# ------ #
-# UPDATE #
-# ------ #
-
-
-@update_model
-class ArtifactUpdateModel(ArtifactRequestModel):
-    """Update model for artifacts."""

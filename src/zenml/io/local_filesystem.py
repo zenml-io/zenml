@@ -65,7 +65,8 @@ class LocalFilesystem(BaseFilesystem):
         Returns:
             Any: The file object.
         """
-        return open(name, mode=mode)
+        encoding = "utf-8" if "b" not in mode else None
+        return open(name, mode=mode, encoding=encoding)
 
     @staticmethod
     def copyfile(
@@ -205,6 +206,18 @@ class LocalFilesystem(BaseFilesystem):
             Any: The stat descriptor for the file.
         """
         return os.stat(path)
+
+    @staticmethod
+    def size(path: PathType) -> int:
+        """Get the size of a file in bytes.
+
+        Args:
+            path: The path to the file.
+
+        Returns:
+            The size of the file in bytes.
+        """
+        return os.path.getsize(path)
 
     @staticmethod
     def walk(

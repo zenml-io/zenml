@@ -42,7 +42,14 @@ class AzureIntegration(Integration):
         "azure-identity==1.10.0",
         "azureml-core==1.48.0",
         "azure-ai-ml==1.2.0",
+        "azure-mgmt-containerservice>=20.0.0",
+        "kubernetes",
     ]
+
+    @staticmethod
+    def activate() -> None:
+        """Activate the Azure integration."""
+        from zenml.integrations.azure import service_connectors  # noqa
 
     @classmethod
     def flavors(cls) -> List[Type[Flavor]]:

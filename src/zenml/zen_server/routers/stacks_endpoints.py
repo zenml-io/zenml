@@ -13,16 +13,21 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for stacks."""
 
-from typing import List, Optional, Union
 from uuid import UUID
 
-from fastapi import APIRouter, Security
+from fastapi import APIRouter, Depends, Security
 
 from zenml.constants import API, STACKS, VERSION_1
 from zenml.enums import PermissionType
-from zenml.models import StackResponseModel, StackUpdateModel
+from zenml.models import StackFilterModel, StackResponseModel, StackUpdateModel
+from zenml.models.page_model import Page
 from zenml.zen_server.auth import AuthContext, authorize
-from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
+from zenml.zen_server.exceptions import error_response
+from zenml.zen_server.utils import (
+    handle_exceptions,
+    make_dependable,
+    zen_store,
+)
 
 router = APIRouter(
     prefix=API + VERSION_1 + STACKS,
@@ -33,59 +38,30 @@ router = APIRouter(
 
 @router.get(
     "",
-    response_model=List[StackResponseModel],
+    response_model=Page[StackResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def list_stacks(
-    project_name_or_id: Optional[Union[str, UUID]] = None,
-    user_name_or_id: Optional[Union[str, UUID]] = None,
-    component_id: Optional[UUID] = None,
-    name: Optional[str] = None,
-    is_shared: Optional[bool] = None,
+    stack_filter_model: StackFilterModel = Depends(
+        make_dependable(StackFilterModel)
+    ),
     auth_context: AuthContext = Security(
         authorize, scopes=[PermissionType.READ]
     ),
-) -> List[StackResponseModel]:
+) -> Page[StackResponseModel]:
     """Returns all stacks.
 
     Args:
-        project_name_or_id: Name or ID of the project
-        user_name_or_id: Optionally filter by name or ID of the user.
-        component_id: Optionally filter by component that is part of the stack.
-        name: Optionally filter by stack name
-        is_shared: Defines whether to return shared stacks or the private stacks
-            of the user. If not set, both are returned.
+        stack_filter_model: Filter model used for pagination, sorting, filtering
         auth_context: Authentication Context
 
     Returns:
         All stacks.
     """
-    stacks: List[StackResponseModel] = []
+    stack_filter_model.set_scope_user(user_id=auth_context.user.id)
 
-    # Get private stacks unless `is_shared` is set to True
-    if is_shared is None or not is_shared:
-        own_stacks = zen_store().list_stacks(
-            project_name_or_id=project_name_or_id,
-            user_name_or_id=user_name_or_id or auth_context.user.id,
-            component_id=component_id,
-            is_shared=False,
-            name=name,
-        )
-        stacks += own_stacks
-
-    # Get shared stacks unless `is_shared` is set to False
-    if is_shared is None or is_shared:
-        shared_stacks = zen_store().list_stacks(
-            project_name_or_id=project_name_or_id,
-            user_name_or_id=user_name_or_id,
-            component_id=component_id,
-            is_shared=True,
-            name=name,
-        )
-        stacks += shared_stacks
-
-    return stacks
+    return zen_store().list_stacks(stack_filter_model=stack_filter_model)
 
 
 @router.get(
