@@ -183,7 +183,7 @@ The following GCP service accounts are needed:
 
 2. a "workload" service account that has permissions to run a Vertex AI pipeline, (e.g. [the `Vertex AI Service Agent` role](https://cloud.google.com/vertex-ai/docs/general/access-control#aiplatform.serviceAgent)).
 
-3. a "function" service account that has the folllowing permissions:
+3. a "function" service account that has the following permissions:
     * permissions to create a job in Vertex Pipelines, (e.g. [the `Vertex AI User` role](https://cloud.google.com/vertex-ai/docs/general/access-control#aiplatform.user)).
     * the [Storage Object Viewer Role](https://cloud.google.com/iam/docs/understanding-roles#storage.objectViewer) to be able to read the pipeline JSON file from the artifact store.
 
