@@ -19,7 +19,6 @@ from functools import wraps
 from typing import Any, Callable, Optional, Tuple, Type, TypeVar, cast
 from urllib.parse import urlparse
 
-from fastapi import HTTPException
 from pydantic import BaseModel, ValidationError
 
 from zenml.config.global_config import GlobalConfiguration
@@ -228,6 +227,8 @@ def make_dependable(cls: Type[BaseModel]) -> Callable[..., Any]:
     """
 
     def init_cls_and_handle_errors(*args: Any, **kwargs: Any) -> BaseModel:
+        from fastapi import HTTPException
+
         try:
             inspect.signature(init_cls_and_handle_errors).bind(*args, **kwargs)
             return cls(*args, **kwargs)
