@@ -4,6 +4,10 @@ description: Deploying models to Kubernetes with KServe.
 
 # KServe
 
+{% hint style="warning" %}
+The KServe model deployer is deprecated and is no longer being maintained by the ZenML core team. If you are looking for a scalable Kubernetes-based model deployment solution, consider using [Seldon](./seldon.md) instead.
+{% endhint %}
+
 The KServe Model Deployer is one of the available flavors of the [Model Deployer](model-deployers.md) stack component.
 Provided with the MLflow and Seldon Core integration, it can be used to deploy and manage models on an inference server
 running on top of a Kubernetes cluster.

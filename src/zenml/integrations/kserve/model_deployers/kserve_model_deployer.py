@@ -115,6 +115,14 @@ class KServeModelDeployer(BaseModelDeployer):
         Returns:
             A `StackValidator` instance.
         """
+        # Log deprecation warning
+        logger.warning(
+            "The KServe model deployer is deprecated and is no longer "
+            "being maintained by the ZenML core team. If you are looking for a "
+            "scalable Kubernetes-based model deployment solution, consider "
+            "using Seldon instead: "
+            "https://docs.zenml.io/user-guide/component-guide/model-deployers/seldon",
+        )
         return StackValidator(
             required_components={
                 StackComponentType.IMAGE_BUILDER,
