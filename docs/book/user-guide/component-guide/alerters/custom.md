@@ -45,69 +45,69 @@ Creating your own custom alerter can be done in three steps:
 
 1. Create a class that inherits from the `BaseAlerter` and implement the `post()` and `ask()` methods.
 
-```python
-from typing import Optional
-
-from zenml.alerter import BaseAlerter, BaseAlerterStepParameters
-
-
-class MyAlerter(BaseAlerter):
-    """My alerter class."""
-
-    def post(
-        self, message: str, config: Optional[BaseAlerterStepParameters]
-    ) -> bool:
-        """Post a message to a chat service."""
-        ...
-        return "Hey, I implemented an alerter."
-
-    def ask(
-        self, question: str, config: Optional[BaseAlerterStepParameters]
-    ) -> bool:
-        """Post a message to a chat service and wait for approval."""
-        ...
-        return True
-```
+    ```python
+    from typing import Optional
+    
+    from zenml.alerter import BaseAlerter, BaseAlerterStepParameters
+    
+    
+    class MyAlerter(BaseAlerter):
+        """My alerter class."""
+    
+        def post(
+            self, message: str, config: Optional[BaseAlerterStepParameters]
+        ) -> bool:
+            """Post a message to a chat service."""
+            ...
+            return "Hey, I implemented an alerter."
+    
+        def ask(
+            self, question: str, config: Optional[BaseAlerterStepParameters]
+        ) -> bool:
+            """Post a message to a chat service and wait for approval."""
+            ...
+            return True
+    ```
 
 2. If you need to configure your custom alerter, you can also implement a config object.
 
-```python
-from zenml.alerter.base_alerter import BaseAlerterConfig
-
-
-class MyAlerterConfig(BaseAlerterConfig):
-    my_param: str 
-```
+    ```python
+    from zenml.alerter.base_alerter import BaseAlerterConfig
+    
+    
+    class MyAlerterConfig(BaseAlerterConfig):
+        my_param: str 
+    ```
 
 3. Finally, you can bring the implementation and the configuration together in a new flavor object.
 
-```python
-from typing import Type, TYPE_CHECKING
-
-from zenml.alerter import BaseAlerterFlavor
-
-if TYPE_CHECKING:
-    from zenml.stack import StackComponent, StackComponentConfig
-
-
-class MyAlerterFlavor(BaseAlerterFlavor):
-    @property
-    def name(self) -> str:
-        return "my_alerter"
-
-    @property
-    def config_class(self) -> Type[StackComponentConfig]:
-        from my_alerter_config import MyAlerterConfig
-
-        return MyAlerterConfig
-
-    @property
-    def implementation_class(self) -> Type[StackComponent]:
-        from my_alerter import MyAlerter
-
-        return MyAlerter
-
-```
+    ```python
+    from typing import Type, TYPE_CHECKING
+    
+    from zenml.alerter import BaseAlerterFlavor
+    
+    if TYPE_CHECKING:
+        from zenml.stack import StackComponent, StackComponentConfig
+    
+    
+    class MyAlerterFlavor(BaseAlerterFlavor):
+        @property
+        def name(self) -> str:
+            return "my_alerter"
+    
+        @property
+        def config_class(self) -> Type[StackComponentConfig]:
+            from my_alerter_config import MyAlerterConfig
+    
+            return MyAlerterConfig
+    
+        @property
+        def implementation_class(self) -> Type[StackComponent]:
+            from my_alerter import MyAlerter
+    
+            return MyAlerter
+    
+    ```
 
 Once you are done with the implementation, you can register your new flavor through the CLI. Please ensure you **point
 to the flavor class via dot notation**:
@@ -152,3 +152,6 @@ can register flavors and components even when the major dependencies behind thei
 our local setting (assuming the `MyAlerterFlavor` and the `MyAlerterConfig` are implemented in a different module/path
 than the actual `MyAlerter`).
 {% endhint %}
+
+<!-- For scarf -->
+<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>

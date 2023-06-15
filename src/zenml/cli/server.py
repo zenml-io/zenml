@@ -249,7 +249,10 @@ def show(ngrok_token: Optional[str] = None) -> None:
             on a public domain. Primarily used for accessing the dashboard in
             Colab.
     """
-    zenml.show(ngrok_token=ngrok_token)
+    try:
+        zenml.show(ngrok_token=ngrok_token)
+    except RuntimeError as e:
+        cli_utils.error(str(e))
 
 
 @cli.command("down", help="Shut down the local ZenML dashboard.")

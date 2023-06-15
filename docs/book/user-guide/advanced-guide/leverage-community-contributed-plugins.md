@@ -21,9 +21,9 @@ The ZenML Hub revolves around the concept of **plugins**, which can be made up o
 
 Users can create a ZenML Hub account to contribute, rate, and star these plugins. To ensure uniqueness and versioning, each submitted plugin is named after the user who created it and is automatically versioned. Plugins authored or approved by the ZenML core developers will have a "verified" badge, as well as a stability/maturity rating.
 
-### What is already built-in? <a href="#what-is-already-built-in" id="what-is-already-built-in"></a>
+### What is already built in? <a href="#what-is-already-built-in" id="what-is-already-built-in"></a>
 
-With the release of ZenML version 0.38.0, the ZenML Hub will make its first appearance and be equipped with a set of plugins that feature ZenML-verified steps (with a heavy-emphasis on data loader steps). In future iterations, the ZenML team is actively working on expanding the Hub's capabilities and plans to introduce additional entities, such as materializers and flavors.
+With the release of ZenML version 0.38.0, the ZenML Hub will make its first appearance and be equipped with a set of plugins that feature ZenML-verified steps (with a heavy emphasis on data loader steps). In future iterations, the ZenML team is actively working on expanding the Hub's capabilities and plans to introduce additional entities, such as materializers and flavors.
 
 ## How do I use it?
 
@@ -132,6 +132,9 @@ Once submitted, a wheel will be created and stored based on your plugin. This pr
 
 ## ZenML Hub service status
 
-The status of the ZenML Hub service is being tracked live in [the ZenML status page](https://zenml.statuspage.io/). You can subscribe there to receive notifications about scheduled maintenance windows, unplanned downtime events and more.
+The status of the ZenML Hub service is being tracked live on [the ZenML status page](https://zenml.statuspage.io/). You can subscribe here to receive notifications about scheduled maintenance windows, unplanned downtime events, and more.
 
 <figure><img src="../../.gitbook/assets/statuspage.png" alt=""><figcaption><p>The ZenML public services status page</p></figcaption></figure>
+
+<!-- For scarf -->
+<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>

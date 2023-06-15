@@ -115,3 +115,6 @@ When you start working with ZenML, you'll start with a local ZenML setup, and wh
 The **ZenML Hub** is a central platform that enables our users to search, share and discover community-contributed code, such as flavors, materializers, and steps, that can be used across organizations. The goal is to allow our users to extend their ZenML experience by leveraging the community's diverse range of implementations.
 
 The ZenML Hub revolves around the concept of **plugins**, which can be made up of one or multiple ZenML entities, including flavors, materializers, and steps. Aside from the implementation of these entities, every plugin in the hub is also equipped with
+
+<!-- For scarf -->
+<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>

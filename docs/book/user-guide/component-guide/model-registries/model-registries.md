@@ -55,7 +55,7 @@ Here is an architecture diagram that shows how a model registry fits into the ov
 Model Registries are optional stack components provided by integrations:
 
 | Model Registry                     | Flavor   | Integration | Notes                                      |
-| ---------------------------------- | -------- | ----------- | ------------------------------------------ |
+|------------------------------------|----------|-------------|--------------------------------------------|
 | [MLflow](mlflow.md)                | `mlflow` | `mlflow`    | Add MLflow as Model Registry to your stack |
 | [Custom Implementation](custom.md) | _custom_ |             | _custom_                                   |
 
@@ -80,3 +80,6 @@ experiment tracker. Then, you can register your trained model in the model regis
 * (2) using the ZenML CLI to register the model from the command line.
 * (3) registering the model from the model registry UI. Finally, you can use the model registry to retrieve and load
   your models for deployment or further experimentation.
+
+<!-- For scarf -->
+<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>

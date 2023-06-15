@@ -33,7 +33,7 @@ additional URI validations.
 {% endhint %}
 
 | Container Registry                         | Flavor      | Integration | URI example                               |
-| ------------------------------------------ | ----------- | ----------- | ----------------------------------------- |
+|--------------------------------------------|-------------|-------------|-------------------------------------------|
 | [DefaultContainerRegistry](default.md)     | `default`   | _built-in_  | -                                         |
 | [DockerHubContainerRegistry](dockerhub.md) | `dockerhub` | _built-in_  | docker.io/zenml                           |
 | [GCPContainerRegistry](gcp.md)             | `gcp`       | _built-in_  | gcr.io/zenml                              |
@@ -46,3 +46,6 @@ If you would like to see the available flavors of container registries, you can 
 ```shell
 zenml container-registry flavor list
 ```
+
+<!-- For scarf -->
+<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>

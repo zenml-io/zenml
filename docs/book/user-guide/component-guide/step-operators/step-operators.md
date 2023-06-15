@@ -29,7 +29,7 @@ or [AzureML](azureml.md) to execute the training step with a GPU.
 Step operators to execute steps on one of the big cloud providers are provided by the following ZenML integrations:
 
 | Step Operator                      | Flavor      | Integration | Notes                                                                    |
-| ---------------------------------- | ----------- | ----------- | ------------------------------------------------------------------------ |
+|------------------------------------|-------------|-------------|--------------------------------------------------------------------------|
 | [SageMaker](sagemaker.md)          | `sagemaker` | `aws`       | Uses SageMaker to execute steps                                          |
 | [Vertex](vertex.md)                | `vertex`    | `gcp`       | Uses Vertex AI to execute steps                                          |
 | [AzureML](azureml.md)              | `azureml`   | `azure`     | Uses AzureML to execute steps                                            |
@@ -68,3 +68,6 @@ Note that if you wish to use step operators to run steps on a GPU, you will need
 follow [the instructions on this page](/docs/book/user-guide/advanced-guide/scale-compute-to-the-cloud.md) to ensure 
 that it works. It requires adding some extra settings customization and is essential to enable CUDA for the GPU to 
 give its full acceleration.
+
+<!-- For scarf -->
+<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>

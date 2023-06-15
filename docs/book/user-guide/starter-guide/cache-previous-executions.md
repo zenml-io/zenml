@@ -10,15 +10,7 @@ In the logs of your previous runs, you might have noticed at this point that rer
 
 {% tabs %}
 {% tab title="Dashboard" %}
-<div>
-
-<figure><img src="broken-reference" alt=""><figcaption><p>DAG of a cached pipeline run</p></figcaption></figure>
-
- 
-
-<figure><img src="../../.gitbook/assets/CachedDag.png" alt=""><figcaption></figcaption></figure>
-
-</div>
+![DAG of a cached pipeline run](../../.gitbook/assets/CachedDag.png)
 {% endtab %}
 
 {% tab title="Logs" %}
@@ -32,7 +24,7 @@ Step svc_trainer has finished in 0.932s.
 {% endtab %}
 {% endtabs %}
 
-ZenML understands that nothing has changed between subsequent runs, so it re-uses the output of the previous run (the outputs are persisted in the [artifact store](../component-guide/artifact-stores/artifact-stores.md)) . This behavior is known as **caching**.
+ZenML understands that nothing has changed between subsequent runs, so it re-uses the output of the previous run (the outputs are persisted in the [artifact store](../component-guide/artifact-stores/artifact-stores.md)). This behavior is known as **caching**.
 
 In ZenML, caching is enabled by default. Since ZenML automatically tracks and versions all inputs, outputs, and parameters of steps and pipelines, steps will not be re-executed within the **same pipeline** on subsequent pipeline runs as long as there is **no change** in the inputs, parameters, or code of a step.
 
@@ -76,7 +68,7 @@ Sometimes you want to have control over caching at runtime instead of defaulting
 first_pipeline = first_pipeline.with_options(enable_cache=False)
 ```
 
-The code above disables caching for all steps of your pipeline, no matter what you have configured in the `@step` or `@parameter` decorators.
+The code above disables caching for all steps of your pipeline, no matter what you have configured in the `@step` or `@pipeline` decorators.
 
 #### Caching at a step-level
 
@@ -90,3 +82,6 @@ def import_data_from_api(...):
 ```
 
 The code above turns caching off for this step only.
+
+<!-- For scarf -->
+<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>

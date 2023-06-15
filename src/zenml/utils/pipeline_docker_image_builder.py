@@ -120,6 +120,7 @@ class PipelineDockerImageBuilder:
             # pipeline?
             return docker_settings.parent_image, dockerfile, requirements
 
+        stack.validate_image_builder()
         image_builder = stack.image_builder
         if not image_builder:
             raise RuntimeError(
@@ -252,7 +253,7 @@ class PipelineDockerImageBuilder:
                 or None
             )
 
-            apt_packages = docker_settings.apt_packages
+            apt_packages = docker_settings.apt_packages.copy()
             if docker_settings.install_stack_requirements:
                 apt_packages += stack.apt_packages
 
@@ -377,6 +378,8 @@ class PipelineDockerImageBuilder:
         Raises:
             RuntimeError: If the command to export the local python packages
                 failed.
+            FileNotFoundError: If the specified requirements file does not
+                exist.
 
         Returns:
             List of tuples (filename, file_content, pip_options) of all
@@ -421,13 +424,17 @@ class PipelineDockerImageBuilder:
 
         # Generate/Read requirements file for user-defined requirements
         if isinstance(docker_settings.requirements, str):
-            user_requirements = io_utils.read_file_contents_as_string(
-                docker_settings.requirements
-            )
+            path = os.path.abspath(docker_settings.requirements)
+            try:
+                user_requirements = io_utils.read_file_contents_as_string(path)
+            except FileNotFoundError as e:
+                raise FileNotFoundError(
+                    f"Requirements file {path} does not exist."
+                ) from e
             if log:
                 logger.info(
                     "- Including user-defined requirements from file `%s`",
-                    os.path.abspath(docker_settings.requirements),
+                    path,
                 )
         elif isinstance(docker_settings.requirements, List):
             user_requirements = "\n".join(docker_settings.requirements)

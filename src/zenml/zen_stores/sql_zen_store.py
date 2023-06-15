@@ -214,6 +214,7 @@ from zenml.zen_stores.schemas import (
 from zenml.zen_stores.schemas.artifact_schemas import (
     ArtifactVisualizationSchema,
 )
+from zenml.zen_stores.schemas.logs_schemas import LogsSchema
 from zenml.zen_stores.secrets_stores.sql_secrets_store import (
     SqlSecretsStoreConfiguration,
 )
@@ -3470,6 +3471,15 @@ class SqlZenStore(BaseZenStore):
             step_schema = StepRunSchema.from_request(step_run)
             session.add(step_schema)
 
+            # Add logs entry for the step if exists
+            if step_run.logs is not None:
+                log_entry = LogsSchema(
+                    uri=step_run.logs.uri,
+                    step_run_id=step_schema.id,
+                    artifact_store_id=step_run.logs.artifact_store_id,
+                )
+                session.add(log_entry)
+
             # Save parent step IDs into the database.
             for parent_step_id in step_run.parent_step_ids:
                 self._set_run_step_parent_step(
@@ -4815,11 +4825,14 @@ class SqlZenStore(BaseZenStore):
     def verify_service_connector_config(
         self,
         service_connector: ServiceConnectorRequestModel,
+        list_resources: bool = True,
     ) -> ServiceConnectorResourcesModel:
         """Verifies if a service connector configuration has access to resources.
 
         Args:
             service_connector: The service connector configuration to verify.
+            list_resources: If True, the list of all resources accessible
+                through the service connector is returned.
 
         Returns:
             The list of resources that the service connector configuration has
@@ -4828,14 +4841,14 @@ class SqlZenStore(BaseZenStore):
         connector_instance = service_connector_registry.instantiate_connector(
             model=service_connector
         )
-
-        return connector_instance.verify()
+        return connector_instance.verify(list_resources=list_resources)
 
     def verify_service_connector(
         self,
         service_connector_id: UUID,
         resource_type: Optional[str] = None,
         resource_id: Optional[str] = None,
+        list_resources: bool = True,
     ) -> ServiceConnectorResourcesModel:
         """Verifies if a service connector instance has access to one or more resources.
 
@@ -4843,6 +4856,9 @@ class SqlZenStore(BaseZenStore):
             service_connector_id: The ID of the service connector to verify.
             resource_type: The type of resource to verify access to.
             resource_id: The ID of the resource to verify access to.
+            list_resources: If True, the list of all resources accessible
+                through the service connector and matching the supplied resource
+                type and ID are returned.
 
         Returns:
             The list of resources that the service connector has access to,
@@ -4855,7 +4871,9 @@ class SqlZenStore(BaseZenStore):
         )
 
         return connector_instance.verify(
-            resource_type=resource_type, resource_id=resource_id
+            resource_type=resource_type,
+            resource_id=resource_id,
+            list_resources=list_resources,
         )
 
     def get_service_connector_client(
@@ -4958,26 +4976,24 @@ class SqlZenStore(BaseZenStore):
                 # rudimentary information extracted from the connector model
                 # without actively trying to discover the resources that they
                 # have access to.
+
+                if resource_id and connector.resource_id != resource_id:
+                    # If an explicit resource ID is required, the connector
+                    # has to be configured with it.
+                    continue
+
                 resources = (
                     ServiceConnectorResourcesModel.from_connector_model(
                         connector,
                         resource_type=resource_type,
                     )
                 )
-                if resources.resource_type and not resources.resource_ids:
-                    resources.error = (
-                        f"The service '{connector.type}' connector type is not "
-                        f"available."
-                    )
-
-                if resource_id:
-                    # If an explicit resource ID is required, the connector
-                    # has to be configured with it.
-                    if (
-                        not resources.resource_ids
-                        or resource_id not in resources.resource_ids
-                    ):
-                        continue
+                for r in resources.resources:
+                    if not r.resource_ids:
+                        r.error = (
+                            f"The service '{connector.type}' connector type is "
+                            "not available."
+                        )
 
             else:
                 try:
@@ -4990,6 +5006,7 @@ class SqlZenStore(BaseZenStore):
                     resources = connector_instance.verify(
                         resource_type=resource_type,
                         resource_id=resource_id,
+                        list_resources=True,
                     )
                 except (ValueError, AuthorizationException) as e:
                     error = (

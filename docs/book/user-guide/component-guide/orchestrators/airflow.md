@@ -115,18 +115,18 @@ Airflow server manually.
    updated DAGs. By default, the scheduler will check for new DAGs every 30 seconds. This variable can be used to
    increase or decrease the frequency of the checks, depending on the specific needs of your pipeline.
 
-```bash
-export AIRFLOW_HOME=...
-export AIRFLOW__CORE__DAGS_FOLDER=...
-export AIRFLOW__CORE__LOAD_EXAMPLES=false
-export AIRFLOW__SCHEDULER__DAG_DIR_LIST_INTERVAL=10
+    ```bash
+    export AIRFLOW_HOME=...
+    export AIRFLOW__CORE__DAGS_FOLDER=...
+    export AIRFLOW__CORE__LOAD_EXAMPLES=false
+    export AIRFLOW__SCHEDULER__DAG_DIR_LIST_INTERVAL=10
+    
+    # Prevent crashes during forking on MacOS
+    # https://github.com/apache/airflow/issues/28487
+    export no_proxy=*
+    ```
 
-# Prevent crashes during forking on MacOS
-# https://github.com/apache/airflow/issues/28487
-export no_proxy=*
-```
-
-3. Run `airflow standalone` to initialize the database, create a user, and start all components for you.
+7. Run `airflow standalone` to initialize the database, create a user, and start all components for you.
 {% endhint %}
 {% endtab %}
 
@@ -265,3 +265,6 @@ found [here](https://github.com/zenml-io/zenml/tree/main/examples/airflow\_orche
 For more information and a full list of configurable attributes of the Airflow orchestrator, check out
 the [API Docs](https://apidocs.zenml.io/latest/api\_docs/integration\_code\_docs/integrations-airflow/#zenml.integrations.airflow.orchestrators.airflow\_orchestrator.AirflowOrchestrator)
 .
+
+<!-- For scarf -->
+<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>

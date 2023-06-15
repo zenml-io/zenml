@@ -1,5 +1,7 @@
 ---
-description: Best practices concerning the various authentication methods implemented by Service Connectors.
+description: >-
+  Best practices concerning the various authentication methods implemented by
+  Service Connectors.
 ---
 
 # Security best practices
@@ -29,19 +31,19 @@ Even when passwords are mentioned as credentials, some services (e.g. DockerHub)
 ## Implicit authentication
 
 {% hint style="info" %}
-The key take-away here is that implicit authentication gives you immediate access to some cloud resources and require no configuration, but it may take some extra effort to expand the range of resources that you're initially allowed to access with it. This is not an authentication method you want to use if you're interested in portability and enabling others to reproduce your results.
+The key takeaway here is that implicit authentication gives you immediate access to some cloud resources and requires no configuration, but it may take some extra effort to expand the range of resources that you're initially allowed to access with it. This is not an authentication method you want to use if you're interested in portability and enabling others to reproduce your results.
 
 In some cases, this method may also be perceived as a security risk, because it can give access to the same resources and services that the ZenML Server itself uses for its internals, which should be kept separate from the actual users and ML workloads.
 {% endhint %}
 
-Implicit authentication is just a fancy way of saying that the Service Connector will use locally stored credentials, configuration files, environment variables, basically any form of authentication available on the environment where it is running, either locally or in the cloud.
+Implicit authentication is just a fancy way of saying that the Service Connector will use locally stored credentials, configuration files, environment variables, and basically any form of authentication available in the environment where it is running, either locally or in the cloud.
 
 Most cloud providers and their associated Service Connector Types include some form of implicit authentication that is able to automatically discover and use the following forms of authentication in the environment where they are running:
 
 * configuration and credentials set up and stored locally through the cloud platform CLI
 * configuration and credentials passed as environment variables
 * some form of implicit authentication attached to the workload environment itself. This is only available in virtual environments that are already running inside the same cloud where other resources are available for use. This is called differently depending on the cloud provider in question, but they are essentially the same thing:
-  * in AWS, if you're running on Amazon EC2, ECS, EKS, Lambda or some other form of AWS cloud workload, credentials can be loaded directly from _the instance metadata service._ This [uses the IAM role attached to your workload](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/iam-roles-for-amazon-ec2.html) to authenticate to other AWS services without the need to configure explicit credentials.
+  * in AWS, if you're running on Amazon EC2, ECS, EKS, Lambda, or some other form of AWS cloud workload, credentials can be loaded directly from _the instance metadata service._ This [uses the IAM role attached to your workload](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/iam-roles-for-amazon-ec2.html) to authenticate to other AWS services without the need to configure explicit credentials.
   * in GCP, a similar _metadata service_ allows accessing other GCP cloud resources via [the service account attached to the GCP workload](https://cloud.google.com/docs/authentication/application-default-credentials#attached-sa) (e.g. GCP VMs or GKE clusters).
   * in Azure, the [Azure Managed Identity](https://learn.microsoft.com/en-us/azure/active-directory/managed-identities-azure-resources/overview) services can be used to gain access to other Azure services without requiring explicit credentials
 
@@ -109,7 +111,7 @@ This is the magic formula of authentication methods. When paired with another ab
 
 As a general best practice, but implemented particularly well for cloud platforms, account passwords are never directly used as a credential when authenticating to the cloud platform APIs. There is always a process in place that exchanges the account/password credential for another type of long-lived credential:
 
-* AWS uses the [`aws configure` CLI command](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-configure.html)&#x20;
+* AWS uses the [`aws configure` CLI command](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-configure.html)
 * GCP offers [the `gcloud auth application-default login` CLI commands](https://cloud.google.com/docs/authentication/provide-credentials-adc#how\_to\_provide\_credentials\_to\_adc)
 * Azure provides [the `az login` CLI command](https://learn.microsoft.com/en-us/cli/azure/authenticate-azure-cli)
 
@@ -126,7 +128,7 @@ Different cloud providers use different names for these types of long-lived cred
 
 Generally speaking, a differentiation is being made between the following two classes of credentials:
 
-* _user credentials_: credentials representing a human user and usually directly tied to a user account identity. These credentials are usually associated with a broad spectrum of permissions and it is therefore not recommended to share them or make them available outside the confines of your local host.&#x20;
+* _user credentials_: credentials representing a human user and usually directly tied to a user account identity. These credentials are usually associated with a broad spectrum of permissions and it is therefore not recommended to share them or make them available outside the confines of your local host.
 * _service credentials:_ credentials used with automated processes and programmatic access, where humans are not directly involved. These credentials are not directly tied to a user account identity, but some other form of accounting like a service account or an IAM user devised to be used by non-human actors. It is also usually possible to restrict the range of permissions associated with this class of credentials, which makes them better candidates for sharing them with a larger audience.
 
 ZenML cloud provider Service Connectors can use both classes of credentials, but you should aim to use _service credentials_ as often as possible instead of _user credentials_, especially in production environments. Attaching automated workloads like ML pipelines to service accounts instead of user accounts acts as an extra layer of protection for your user identity and facilitates enforcing another security best practice called [_"the least-privilege principle"_](https://en.wikipedia.org/wiki/Principle\_of\_least\_privilege)_:_ granting each actor only the minimum level of permissions required to function correctly.
@@ -509,3 +511,6 @@ $ zenml service-connector list --name aws-sts-token
 ```
 
 </details>
+
+<!-- For scarf -->
+<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>

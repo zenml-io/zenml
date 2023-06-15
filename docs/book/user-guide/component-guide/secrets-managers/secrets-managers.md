@@ -66,14 +66,13 @@ sources, or other environments.
 Out of the box, ZenML comes with a `local` secrets manager that stores secrets in local files. Additional cloud secrets
 managers are provided by integrations:
 
-| Secrets Manager                                                          | Flavor   | Integration | Scoping Support | Notes                                  |
-| ------------------------------------------------------------------------ | -------- | ----------- | --------------- | -------------------------------------- |
-| [Local](local.md)                                                        | `local`  | _built-in_  | No              | Uses local files to store secrets      |
-| [AWS](aws.md)                                                            | `aws`    | `aws`       | Yes             | Uses AWS to store secrets              |
-| [GCP](gcp.md)                                                            | `gcp`    | `gcp`       | Yes             | Uses GCP to store secretes             |
-| [Azure](azure.md)                                                        | `azure`  | `azure`     | Yes             | Uses Azure Key Vaults to store secrets |
-| [GitHub](../../../learning/component-gallery/secrets-managers/github.md) | `github` | `github`    | No              | Uses GitHub to store secrets           |
-| [HashiCorp Vault](vault.md)                                              | `vault`  | `vault`     | Yes             | Uses HashiCorp Vault to store secrets  |
+| Secrets Manager             | Flavor  | Integration | Scoping Support | Notes                                  |
+|-----------------------------|---------|-------------|-----------------|----------------------------------------|
+| [Local](local.md)           | `local` | _built-in_  | No              | Uses local files to store secrets      |
+| [AWS](aws.md)               | `aws`   | `aws`       | Yes             | Uses AWS to store secrets              |
+| [GCP](gcp.md)               | `gcp`   | `gcp`       | Yes             | Uses GCP to store secretes             |
+| [Azure](azure.md)           | `azure` | `azure`     | Yes             | Uses Azure Key Vaults to store secrets |
+| [HashiCorp Vault](vault.md) | `vault` | `vault`     | Yes             | Uses HashiCorp Vault to store secrets  |
 
 If you would like to see the available flavors of secrets managers, you can use the command:
 
@@ -251,3 +250,6 @@ secrets with other Secrets Manager instances connected to the same back-end doma
       backend and have the same `namespace` attribute value configured (see below). Use a namespace scope when you want
       to fine-tune the visibility of secrets across stacks and projects.
 * `namespace` is a scope namespace value to use with the namespace scope
+
+<!-- For scarf -->
+<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>

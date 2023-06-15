@@ -4,8 +4,7 @@ description: Understanding how and when the version of a pipeline is incremented
 
 # Version pipelines
 
-You might have noticed that when you run a pipeline in ZenML with the same name, but with different steps, it creates a
-new **version** of the pipeline. Consider our example pipeline:
+You might have noticed that when you run a pipeline in ZenML with the same name, but with different steps, it creates a new **version** of the pipeline. Consider our example pipeline:
 
 ```python
 @pipeline
@@ -15,35 +14,21 @@ def first_pipeline(gamma: float = 0.002):
 
 
 if __name__ == "__main__":
-    first_pipeline(gamma=0.002)
+    first_pipeline()
 ```
 
 Running this the first time will create a single `run` for `version 1` of the pipeline called `first_pipeline`.
 
 ```
-$python main.py
+$python run.py
 ...
 Registered pipeline first_pipeline (version 1).
 ...
 ```
 
-If you now do it again with different runtime parameters:
+Running it again (`python run.py`) will create _yet another_ `run` for `version 1` of the pipeline called `first_pipeline`. So now the same pipeline has two runs. You can also verify this in the dashboard.
 
-<pre class="language-python"><code class="lang-python">@pipeline
-def first_pipeline(gamma: float = 0.002):
-    X_train, X_test, y_train, y_test = digits_data_loader()
-    svc_trainer(gamma=gamma, X_train=X_train, y_train=y_train)
-    
-<strong>if __name__ == "__main__":
-</strong>    first_pipeline(gamma=0.0016)
-</code></pre>
-
-This will create _yet another_ `run` for `version 1` of the pipeline called `first_pipeline`. So now the same pipeline
-has two runs. You can also verify this in the dashboard.
-
-However, now let's change the pipeline configuration itself. You can do this by modifying the step connections within
-the `@pipeline` function or by replacing a concrete step with another one. For example, let's create an alternative step
-called `digits_data_loader` which loads a different dataset.
+However, now let's change the pipeline configuration itself. You can do this by modifying the step connections within the `@pipeline` function or by replacing a concrete step with another one. For example, let's create an alternative step called `digits_data_loader` which loads a different dataset.
 
 ```python
 @step
@@ -56,7 +41,7 @@ def digits_data_loader() -> Output(
     """Loads the digits dataset and splits it into train and test data."""
     # Load data from the digits dataset
     digits = load_digits(as_frame=True)
-    # split into datasets
+    # Split into datasets
     X_train, X_test, y_train, y_test = train_test_split(
         digits.data, digits.target, test_size=0.2, shuffle=True
     )
@@ -70,16 +55,19 @@ def first_pipeline(gamma: float = 0.002):
 
 
 if __name__ == "__main__":
-    first_pipeline(gamma=0.0015)
+    first_pipeline()
 ```
 
 ```bash
-python main.py
+python run.py
 ...
 Registered pipeline first_pipeline (version 2).
 ...
 ```
 
-This will now create a single `run` for `version 2` of the pipeline called `first_pipeline`.&#x20;
+This will now create a single `run` for `version 2` of the pipeline called `first_pipeline`.
 
 <figure><img src="../../.gitbook/assets/PipelineVersion.png" alt=""><figcaption></figcaption></figure>
+
+<!-- For scarf -->
+<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>

@@ -58,7 +58,7 @@ For production use cases, some more flavors can be found in specific `integratio
 ZenML features an integration with `label_studio`.
 
 | Annotator                               | Flavor         | Integration    | Notes                                                                |
-| --------------------------------------- | -------------- | -------------- | -------------------------------------------------------------------- |
+|-----------------------------------------|----------------|----------------|----------------------------------------------------------------------|
 | [LabelStudioAnnotator](label-studio.md) | `label_studio` | `label_studio` | Connect ZenML with Label Studio                                      |
 | [Custom Implementation](custom.md)      | _custom_       |                | Extend the annotator abstraction and provide your own implementation |
 
@@ -86,3 +86,6 @@ components and integrations. Key differences to note:
   with Label Studio) we refer to them as 'tasks'.
 
 The remaining core concepts ('annotation' and 'prediction', in particular) are broadly used among annotation tools.
+
+<!-- For scarf -->
+<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>

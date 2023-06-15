@@ -22,8 +22,10 @@ from pydantic import ValidationError
 from zenml.cli.cli import TagGroup, cli
 from zenml.cli.utils import (
     confirmation,
+    convert_structured_str_to_dict,
     declare,
     error,
+    expand_argument_value_from_file,
     fail_secret_creation_on_secrets_manager,
     list_options,
     parse_name_and_extra_arguments,
@@ -36,7 +38,7 @@ from zenml.cli.utils import (
 )
 from zenml.client import Client
 from zenml.console import console
-from zenml.constants import ARBITRARY_SECRET_SCHEMA_TYPE
+from zenml.constants import ARBITRARY_SECRET_SCHEMA_TYPE, SECRET_VALUES
 from zenml.enums import (
     CliCategories,
     SecretScope,
@@ -45,7 +47,7 @@ from zenml.enums import (
 )
 from zenml.exceptions import EntityExistsError, ZenKeyError
 from zenml.logger import get_logger
-from zenml.models.secret_models import SecretFilterModel
+from zenml.models.secret_models import SecretFilterModel, SecretResponseModel
 
 if TYPE_CHECKING:
     from zenml.secrets_managers.base_secrets_manager import BaseSecretsManager
@@ -720,9 +722,18 @@ def secret() -> None:
     help="Use interactive mode to enter the secret values.",
     type=click.BOOL,
 )
+@click.option(
+    "--values",
+    "-v",
+    "values",
+    help="Pass one or more values using JSON or YAML format or reference a file by prefixing the filename with the @ "
+    "special character.",
+    required=False,
+    type=str,
+)
 @click.argument("args", nargs=-1, type=click.UNPROCESSED)
 def create_secret(
-    name: str, scope: str, interactive: bool, args: List[str]
+    name: str, scope: str, interactive: bool, values: str, args: List[str]
 ) -> None:
     """Create a secret.
 
@@ -730,11 +741,16 @@ def create_secret(
         name: The name of the secret to create.
         scope: The scope of the secret to create.
         interactive: Whether to use interactive mode to enter the secret values.
+        values: Secret key-value pairs to be passed as JSON or YAML.
         args: The arguments to pass to the secret.
     """
     name, parsed_args = parse_name_and_extra_arguments(  # type: ignore[assignment]
         list(args) + [name], expand_args=True
     )
+    if values:
+        inline_values = expand_argument_value_from_file(SECRET_VALUES, values)
+        inline_values_dict = convert_structured_str_to_dict(inline_values)
+        parsed_args.update(inline_values_dict)
 
     if "name" in parsed_args:
         error("You can't use 'name' as the key for one of your secrets.")
@@ -757,7 +773,7 @@ def create_secret(
                         warning(
                             f"Key {k} already in this secret. Please restart "
                             f"this process or use 'zenml "
-                            f"secret update {name} --{k}=...' to update this "
+                            f"secret update {name} --values=<JSON/YAML> or --{k}=...' to update this "
                             f"key after the secret is registered. Skipping ..."
                         )
                     else:
@@ -836,30 +852,44 @@ def list_secrets(**kwargs: Any) -> None:
     type=click.Choice([scope.value for scope in list(SecretScope)]),
     default=None,
 )
-def get_secret(name_id_or_prefix: str, scope: str) -> None:
-    """Get a secret for a given name.
+def get_secret(name_id_or_prefix: str, scope: Optional[str] = None) -> None:
+    """Get a secret and print it to the console.
 
     Args:
         name_id_or_prefix: The name of the secret to get.
         scope: The scope of the secret to get.
     """
-    client = Client()
+    secret = _get_secret(name_id_or_prefix, scope)
+    declare(
+        f"Fetched secret with name `{secret.name}` and ID `{secret.id}` in "
+        f"scope `{secret.scope.value}`:"
+    )
+    if not secret.secret_values:
+        warning(f"Secret with name `{name_id_or_prefix}` is empty.")
+    else:
+        pretty_print_secret(secret.secret_values, hide_secret=False)
 
+
+def _get_secret(
+    name_id_or_prefix: str, scope: Optional[str] = None
+) -> SecretResponseModel:
+    """Get a secret with a given name, prefix or id.
+
+    Args:
+        name_id_or_prefix: The name of the secret to get.
+        scope: The scope of the secret to get.
+
+    Returns:
+        The secret response model.
+    """
+    client = Client()
     try:
         if scope:
-            secret = client.get_secret(
+            return client.get_secret(
                 name_id_or_prefix=name_id_or_prefix, scope=SecretScope(scope)
             )
         else:
-            secret = client.get_secret(name_id_or_prefix=name_id_or_prefix)
-        declare(
-            f"Fetched secret with name `{secret.name}` and ID `{secret.id}` in "
-            f"scope `{secret.scope.value}`:"
-        )
-        if not secret.secret_values:
-            warning(f"Secret with name `{name_id_or_prefix}` is empty.")
-        else:
-            pretty_print_secret(secret.secret_values, hide_secret=False)
+            return client.get_secret(name_id_or_prefix=name_id_or_prefix)
     except ZenKeyError as e:
         error(
             f"Error fetching secret with name id or prefix "
@@ -896,6 +926,15 @@ def get_secret(name_id_or_prefix: str, scope: str) -> None:
     help="Use interactive mode to update the secret values.",
     type=click.BOOL,
 )
+@click.option(
+    "--values",
+    "-v",
+    "values",
+    help="Pass one or more values using JSON or YAML format or reference a file by prefixing the filename with the @ "
+    "special character.",
+    required=False,
+    type=str,
+)
 @click.option("--remove-keys", "-r", type=click.STRING, multiple=True)
 @click.argument("extra_args", nargs=-1, type=click.UNPROCESSED)
 def update_secret(
@@ -904,6 +943,7 @@ def update_secret(
     new_scope: Optional[str] = None,
     remove_keys: List[str] = [],
     interactive: bool = False,
+    values: str = "",
 ) -> None:
     """Update a secret for a given name or id.
 
@@ -913,10 +953,15 @@ def update_secret(
         extra_args: The arguments to pass to the secret.
         interactive: Whether to use interactive mode to update the secret.
         remove_keys: The keys to remove from the secret.
+        values: Secret key-value pairs to be passed as JSON or YAML.
     """
     name, parsed_args = parse_name_and_extra_arguments(
         list(extra_args) + [name_or_id], expand_args=True
     )
+    if values:
+        inline_values = expand_argument_value_from_file(SECRET_VALUES, values)
+        inline_values_dict = convert_structured_str_to_dict(inline_values)
+        parsed_args.update(inline_values_dict)
 
     client = Client()
 
@@ -1087,3 +1132,51 @@ def delete_secret(name_or_id: str, yes: bool = False) -> None:
             )
         except NotImplementedError as e:
             error(f"Centralized secrets management is disabled: {str(e)}")
+
+
+@secret.command("export", help="Export a secret as a YAML file.")
+@click.argument(
+    "name_id_or_prefix",
+    type=click.STRING,
+)
+@click.option(
+    "--scope",
+    "-s",
+    type=click.Choice([scope.value for scope in list(SecretScope)]),
+    default=None,
+)
+@click.option(
+    "--filename",
+    "-f",
+    type=click.STRING,
+    default=None,
+    help=(
+        "The name of the file to export the secret to. Defaults to "
+        "<secret_name>.yaml."
+    ),
+)
+def export_secret(
+    name_id_or_prefix: str,
+    scope: Optional[str] = None,
+    filename: Optional[str] = None,
+) -> None:
+    """Export a secret as a YAML file.
+
+    The resulting YAML file can then be imported as a new secret using the
+    `zenml secret create <new_secret_name> -v @<filename>` command.
+
+    Args:
+        name_id_or_prefix: The name of the secret to export.
+        scope: The scope of the secret to export.
+        filename: The name of the file to export the secret to.
+    """
+    from zenml.utils.yaml_utils import write_yaml
+
+    secret = _get_secret(name_id_or_prefix=name_id_or_prefix, scope=scope)
+    if not secret.secret_values:
+        warning(f"Secret with name `{name_id_or_prefix}` is empty.")
+        return
+
+    filename = filename or f"{secret.name}.yaml"
+    write_yaml(filename, secret.secret_values)
+    declare(f"Secret '{secret.name}' successfully exported to '{filename}'.")

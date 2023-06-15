@@ -63,7 +63,7 @@ As you can see a stack can be **active** on your **client**. This simply means t
 
 ## Components of a stack
 
-As you can see in the section above, a stack consists of multiple components. All stacks have at minimum an \*\* orchestrator\*\* and an **artifact store**.
+As you can see in the section above, a stack consists of multiple components. All stacks have at minimum an **orchestrator** and an **artifact store**.
 
 ### Orchestrator
 
@@ -214,7 +214,10 @@ To run a pipeline using the new stack:
 2.  Run your pipeline code (you can use the code from the [previous section](create-an-ml-pipeline.md))
 
     ```bash
-    python main.py
+    python run.py
     ```
 
 Before we can move on to using a cloud stack, we need to find out more about the ZenML server in the next section.
+
+<!-- For scarf -->
+<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>

@@ -81,19 +81,6 @@ class StepEnvironment(BaseEnvironmentComponent):
         return self._step_run_info.run_name
 
     @property
-    def pipeline_run_id(self) -> str:
-        """The ID of the current pipeline run.
-
-        Returns:
-            The ID of the current pipeline run.
-        """
-        logger.warning(
-            "`StepContext.pipeline_run_id` is deprecated. Use "
-            "`StepContext.run_name` instead."
-        )
-        return self.run_name
-
-    @property
     def step_name(self) -> str:
         """The name of the currently running step.
 

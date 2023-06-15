@@ -31,6 +31,8 @@ In this case, ZenML has an integration with `sklearn` so you can use the ZenML C
 Sometimes a step will have multiple outputs. In order to give each output a unique name, use the `Output()` annotation. Here we load an open-source dataset and split it into a train and a test dataset.
 
 ```python
+import logging
+
 @step
 def training_data_loader() -> Output(
     X_train=pd.DataFrame,
@@ -38,14 +40,20 @@ def training_data_loader() -> Output(
     y_train=pd.Series,
     y_test=pd.Series,
 ):
-    """Load the iris dataset as tuple of Pandas DataFrame / Series."""
+    """Load the iris dataset as a tuple of Pandas DataFrame / Series."""
+    logging.info("Loading iris...")
     iris = load_iris(as_frame=True)
+    logging.info("Splitting train and test...")
     X_train, X_test, y_train, y_test = train_test_split(
         iris.data, iris.target, test_size=0.2, shuffle=True, random_state=42
     )
     return X_train, X_test, y_train, y_test
 
 ```
+
+{% hint style="info" %}
+ZenML records the root python logging handler's output into the artifact store as a side-effect of running a step. Therefore, when writing steps, use the `logging` module to record logs, to ensure that these logs then show up in the ZenML dashboard.
+{% endhint %}
 
 #### Parametrizing a step
 
@@ -70,10 +78,10 @@ def svc_trainer(
 ```
 
 {% hint style="info" %}
-If you want to run the step function outside the context of a ZenML pipeline, all you need to do is call the `.entrypoint()` method with the same input signature. For example:
+If you want to run the step function outside the context of a ZenML pipeline, all you need to do is call the step function outside of a ZenML pipeline. For example:
 
 ```python
-svc_trainer.entrypoint(X_train=..., y_train=...)
+svc_trainer(X_train=..., y_train=...)
 ```
 {% endhint %}
 
@@ -99,7 +107,7 @@ if __name__ == "__main__":
 ```
 {% endhint %}
 
-Running `python main.py` should look somewhat like this in the terminal:
+Running `python run.py` should look somewhat like this in the terminal:
 
 <pre class="language-sh" data-line-numbers><code class="lang-sh"><strong>Registered new pipeline with name `first_pipeline`.
 </strong>.
@@ -198,8 +206,14 @@ def first_pipeline(gamma: float = 0.002):
 if __name__ == "__main__":
     first_pipeline()
 
-    # Step one will use cache, step two will rerun due to the decorator config
+    # Step one will use cache, step two will rerun due to caching
+    # being disabled on the @step decorator. Even if caching was
+    # enabled though, ZenML would detect a different value for the
+    # `gamma` input of the second step and disable caching
     first_pipeline(gamma=0.0001)
 ```
 
 </details>
+
+<!-- For scarf -->
+<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>

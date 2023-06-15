@@ -141,7 +141,7 @@ With the service account key downloaded to a local file, you can register a ZenM
 Artifact Store configuration as follows:
 
 ```shell
-# Store the GCP credentials in a ZenML  
+# Store the GCP credentials in a ZenML
 zenml secret create gcp_secret \
     --token=@path/to/service_account_key.json
 
@@ -166,3 +166,6 @@ at [the API docs](https://apidocs.zenml.io/latest/integration\_code\_docs/integr
 
 Aside from the fact that the artifacts are stored in GCP Cloud Storage, using the GCS Artifact Store is no different
 from [using any other flavor of Artifact Store](artifact-stores.md#how-to-use-it).
+
+<!-- For scarf -->
+<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>

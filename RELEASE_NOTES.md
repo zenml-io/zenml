@@ -1,5 +1,40 @@
 <!-- markdown-link-check-disable -->
 
+# 0.40.2
+
+Documentation and example updates.
+
+## What's Changed
+* Update Example for sandbox by @safoinme in https://github.com/zenml-io/zenml/pull/1576
+* Document `zenml show` by @fa9r in https://github.com/zenml-io/zenml/pull/1570
+* Clean up for the new docs by @bcdurak in https://github.com/zenml-io/zenml/pull/1575
+* Add orchestrator outputs for sandbox examples by @strickvl in https://github.com/zenml-io/zenml/pull/1579
+* Docs: Added some adjustments to the code repository page. by @bcdurak in https://github.com/zenml-io/zenml/pull/1582
+* Sandbox documentation (and other docs updates) by @strickvl in https://github.com/zenml-io/zenml/pull/1574
+* Minor README update regarding the sandbox. by @bcdurak in https://github.com/zenml-io/zenml/pull/1586
+* Fix failing `mlflow_tracking` example test by @strickvl in https://github.com/zenml-io/zenml/pull/1581
+* Bump `ruff` and `mypy` by @strickvl in https://github.com/zenml-io/zenml/pull/1590
+* Remove `config.yaml` references in example docs by @strickvl in https://github.com/zenml-io/zenml/pull/1585
+* update mlflow tracking example and reduce number of epochs by @safoinme in https://github.com/zenml-io/zenml/pull/1598
+* Improve error message when requirements file does not exist by @schustmi in https://github.com/zenml-io/zenml/pull/1596
+* Fix build reuse for integrations with apt packages by @schustmi in https://github.com/zenml-io/zenml/pull/1594
+* make the `Github` repo token optional by @safoinme in https://github.com/zenml-io/zenml/pull/1593
+
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.40.1...0.40.2
+
+# 0.40.1
+
+Small bug and docs fixes following the 0.40.0 release.
+
+## What's Changed
+* Convert dict to tuple in ArtifactConfiguration validator by @schustmi in https://github.com/zenml-io/zenml/pull/1571
+* Docs cleanup by @schustmi in https://github.com/zenml-io/zenml/pull/1569
+* Fix `boto3<=1.24.59`  by @safoinme in https://github.com/zenml-io/zenml/pull/1572
+
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.40.0...0.40.1
+
 # 0.40.0
 
 ZenML release 0.40.0 introduces two big updates: a fresh and more flexible pipeline interface and a new way to connect and authenticate with external services in ZenML Connectors. See below for full details on these two major new sets of functionality.
@@ -95,7 +130,7 @@ Here are just a few ways you could use ZenML Service Connectors:
 - Assisted setup with security in mind: Our Service Connectors come with features for configuration validation and verification, the generation of temporary, low-privilege credentials, and pre-authenticated and pre-configured clients for Python libraries.
 - Easy local configuration transfer: ZenML's Service Connectors aim to resolve the reproducibility issue in ML pipelines. They do this by automatically transferring authentication configurations and credentials from your local machine, storing them securely, and allowing for effortless sharing across different environments.
 
-[Visit our documentation pages](https://docs.zenml.io/platform-guide/set-up-your-mlops-platform/connect-to-your-cloud-provider) to learn more about ZenML Connectors and how you can use them in a way that supports your ML workflows.
+[Visit our documentation pages](https://docs.zenml.io/platform-guide/set-up-your-mlops-platform/connect-zenml-to-infrastructure) to learn more about ZenML Connectors and how you can use them in a way that supports your ML workflows.
 
 ## What's Changed
 
@@ -1030,7 +1065,7 @@ further slim down the `zenml` package.
 
 ## Breaking Changes
 
-The following changes introduces with this release mey require some manual
+The following changes introduces with this release may require some manual
 intervention to update your current installations:
 
 - If your code calls some methods of our `Client` class, it might need to be
@@ -1112,7 +1147,7 @@ deployed) instances. For more information see [the Label Studiodocs](https://doc
 
 ## Breaking Changes
 
-The following changes introduces with this release mey require some manual
+The following changes introduces with this release may require some manual
 intervention to update your current installations:
 
 * the Airflow orchestrator now requires a newer version of Airflow
@@ -1208,7 +1243,7 @@ Kubernetes based orchestrators with the new Kubernetes Pod settings feature.
 
 ## Breaking Changes
 
-The following changes introduces with this release mey require some manual
+The following changes introduces with this release may require some manual
 intervention to update your current installations:
 
 * the zenml server helm chart `values.yaml` file has been restructured to make

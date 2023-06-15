@@ -21,14 +21,14 @@ There are three ways to control this containerization process:
 ZenML automatically [builds and pushes Docker images](manage-environments.md#execution-environments) when running a pipeline on a stack requiring Docker images. To run this build step separately without running the pipeline, call:
 
 ```python
-pipeline_instance.build(...)
+my_pipeline.build(...)
 ```
 
 in Python or using the CLI command:
 
 ```shell
 # If running the first time, register pipeline to get name and ID
-zenml pipeline register [OPTIONS] my_module.my_pipeline_instance
+zenml pipeline register [OPTIONS] my_module.my_pipeline
 
 # Build docker images using the image builder defined in the stack and push to the container registry defined in the stack
 zenml pipeline build [OPTIONS] PIPELINE_NAME_OR_ID
@@ -45,7 +45,7 @@ zenml pipeline builds list
 To use a registered build when running a pipeline, pass it as an argument in Python
 
 ```python
-pipeline_instance = pipeline_instance.with_options(build=<BUILD_ID>)
+my_pipeline = my_pipeline.with_options(build=<BUILD_ID>)
 ```
 
 or when running a pipeline from the CLI
@@ -65,13 +65,13 @@ To avoid this, disconnect your code from the build by [connecting a git reposito
 When a [pipeline is run with a remote orchestrator](../starter-guide/create-an-ml-pipeline.md) a [Dockerfile](https://docs.docker.com/engine/reference/builder/) is dynamically generated at runtime. It is then used to build the docker image using the [image builder](manage-environments.md#image-builder-environment) component of your stack. The Dockerfile consists of the following steps:
 
 * **Starts from a parent image** that has **ZenML installed**. By default, this will use the [official ZenML image](https://hub.docker.com/r/zenmldocker/zenml/) for the Python and ZenML version that you're using in the active Python environment. If you want to use a different image as the base for the following steps, check out [this guide](containerize-your-pipeline.md#using-a-custom-parent-image).
-* **Installs additional pip dependencies**. ZenML will automatically detect which integrations are used in your stack and install the required dependencies. If your pipeline needs any additional requirements, check out our [guide on including custom dependencies](containerize-your-pipeline.md#installing-additional-pip-dependencies-or-apt-packages) .
+* **Installs additional pip dependencies**. ZenML will automatically detect which integrations are used in your stack and install the required dependencies. If your pipeline needs any additional requirements, check out our [guide on including custom dependencies](containerize-your-pipeline.md#installing-additional-pip-dependencies-or-apt-packages).
 * **Optionally copies your source files**. Your source files need to be available inside the Docker container so ZenML can execute your step code. Check out [this section](containerize-your-pipeline.md#handling-source-files) for more information on how you can customize how ZenML handles your source files in Docker images.
 * **Sets user-defined environment variables.**
 
-The process described above is automated by ZenML and covers most basic use cases. This section covers various ways to customize the Docker build process to fit your needs.
+The process described above is automated by ZenML and covers the most basic use cases. This section covers various ways to customize the Docker build process to fit your needs.
 
-For a full list of configuration options, check out [our API Docs](https://apidocs.zenml.io/latest/core\_code\_docs/core-config/#zenml.config.docker\_settings.DockerSettings) .
+For a full list of configuration options, check out [our API Docs](https://apidocs.zenml.io/latest/core\_code\_docs/core-config/#zenml.config.docker\_settings.DockerSettings).
 
 For the configuration examples described below, you'll need to import the `DockerSettings` class:
 
@@ -79,12 +79,34 @@ For the configuration examples described below, you'll need to import the `Docke
 from zenml.config import DockerSettings
 ```
 
+Instead of defining the `DockerSettings` on the `@pipeline` decorator like all code snippets below, you can also define them on the `@step` decorator of your steps if you need more control, or by using the `with_options(...)` method on your steps and pipelines:
+
+```python
+docker_settings = DockerSettings()
+
+@step(settings={"docker": docker_settings})
+def my_step() -> None:
+    pass
+
+my_step = my_step.with_options(
+    settings={"docker": docker_settings}
+)
+
+@pipeline(settings={"docker": docker_settings})
+def my_pipeline() -> None:
+    my_step()
+
+my_pipeline = my_pipeline.with_options(
+    settings={"docker": docker_settings}
+)
+```
+
 ### Handling source files
 
 ZenML determines the root directory of your source files in the following order:
 
 * If you've initialized zenml (`zenml init`), the repository root directory will be used.
-* Otherwise, the parent directory of the python file you're executing will be the source root. For example, running `python /path/to/file.py`, the source root would be `/path/to`.
+* Otherwise, the parent directory of the Python file you're executing will be the source root. For example, running `python /path/to/file.py`, the source root would be `/path/to`.
 
 You can specify how these files are handled using the `source_files` attribute on the `DockerSettings`:
 
@@ -106,12 +128,6 @@ When including files in the image, ZenML copies all contents of the root directo
     @pipeline(settings={"docker": docker_settings})
     def my_pipeline(...):
         ...
-        
-    # You can also define the DockerSettings by using the `with_options(...)
-    # method on your steps and pipelines
-    my_pipeline = my_pipeline.with_options(
-        settings={"docker": docker_settings}
-    )
     ```
 
 ### Installing additional pip dependencies or apt packages
@@ -275,3 +291,6 @@ docker_settings = DockerSettings(
 def my_pipeline(...):
     ...
 ```
+
+<!-- For scarf -->
+<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>

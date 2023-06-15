@@ -54,7 +54,7 @@ Out of the box, ZenML comes with a `local` artifact store already part of the de
 your local filesystem. Additional Artifact Stores are provided by integrations:
 
 | Artifact Store                     | Flavor   | Integration | URI Schema(s)      | Notes                                                                                                                            |
-| ---------------------------------- | -------- | ----------- | ------------------ | -------------------------------------------------------------------------------------------------------------------------------- |
+|------------------------------------|----------|-------------|--------------------|----------------------------------------------------------------------------------------------------------------------------------|
 | [Local](local.md)                  | `local`  | _built-in_  | None               | This is the default Artifact Store. It stores artifacts on your local filesystem. Should be used only for running ZenML locally. |
 | [Amazon S3](s3.md)                 | `s3`     | `s3`        | `s3://`            | Uses AWS S3 as an object store backend                                                                                           |
 | [Google Cloud Storage](gcp.md)     | `gcp`    | `gcp`       | `gs://`            | Uses Google Cloud Storage as an object store backend                                                                             |
@@ -209,3 +209,6 @@ with tempfile.NamedTemporaryFile(
     fileio.copy(artifact_uri, f.name)
     external_lib.external_object.load_from_file(f.name)
 ```
+
+<!-- For scarf -->
+<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>

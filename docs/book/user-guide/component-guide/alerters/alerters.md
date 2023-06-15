@@ -14,7 +14,7 @@ Currently, the [SlackAlerter](slack.md) is the only available alerter integratio
 extend ZenML and [build an alerter for other chat services](custom.md).
 
 | Alerter                            | Flavor   | Integration | Notes                                                              |
-| ---------------------------------- | -------- | ----------- | ------------------------------------------------------------------ |
+|------------------------------------|----------|-------------|--------------------------------------------------------------------|
 | [Slack](slack.md)                  | `slack`  | `slack`     | Interacts with a Slack channel                                     |
 | [Custom Implementation](custom.md) | _custom_ |             | Extend the alerter abstraction and provide your own implementation |
 
@@ -45,3 +45,6 @@ zenml stack register ... -al <ALERTER_NAME>
 
 Afterward, you can import the alerter standard steps provided by the respective integration and directly use them in
 your pipelines.
+
+<!-- For scarf -->
+<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>

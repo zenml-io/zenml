@@ -31,6 +31,7 @@ from zenml.pipelines.base_pipeline import (
     PARAM_ENABLE_ARTIFACT_METADATA,
     PARAM_ENABLE_ARTIFACT_VISUALIZATION,
     PARAM_ENABLE_CACHE,
+    PARAM_ENABLE_STEP_LOGS,
     PARAM_EXTRA_OPTIONS,
     PARAM_ON_FAILURE,
     PARAM_ON_SUCCESS,
@@ -62,6 +63,7 @@ def pipeline(
     enable_cache: Optional[bool] = None,
     enable_artifact_metadata: Optional[bool] = None,
     enable_artifact_visualization: Optional[bool] = None,
+    enable_step_logs: Optional[bool] = None,
     settings: Optional[Dict[str, "SettingsOrDict"]] = None,
     extra: Optional[Dict[str, Any]] = None,
 ) -> Callable[[F], Type[BasePipeline]]:
@@ -75,6 +77,7 @@ def pipeline(
     enable_cache: Optional[bool] = None,
     enable_artifact_metadata: Optional[bool] = None,
     enable_artifact_visualization: Optional[bool] = None,
+    enable_step_logs: Optional[bool] = None,
     settings: Optional[Dict[str, "SettingsOrDict"]] = None,
     extra: Optional[Dict[str, Any]] = None,
     on_failure: Optional["HookSpecification"] = None,
@@ -89,6 +92,7 @@ def pipeline(
         enable_cache: Whether to use caching or not.
         enable_artifact_metadata: Whether to enable artifact metadata or not.
         enable_artifact_visualization: Whether to enable artifact visualization.
+        enable_step_logs: Whether to enable step logs.
         settings: Settings for this pipeline.
         extra: Extra configurations for this pipeline.
         on_failure: Callback function in event of failure of the step. Can be
@@ -105,14 +109,16 @@ def pipeline(
         the inner decorator which creates the pipeline class based on the
         ZenML BasePipeline
     """
-    logger.warning(
-        "The `@pipeline` decorator that you use to define your pipeline is "
-        "deprecated. Check out our docs https://docs.zenml.io for "
-        "information on how to define pipelines in a more intuitive and "
-        "flexible way!"
-    )
 
     def inner_decorator(func: F) -> Type[BasePipeline]:
+        pipeline_name = name or func.__name__
+        logger.warning(
+            "The `@pipeline` decorator that you used to define your "
+            f"{pipeline_name} pipeline is deprecated. "
+            "Check out our docs https://docs.zenml.io for information on how "
+            "to define pipelines in a more intuitive and flexible way!"
+        )
+
         return type(
             name or func.__name__,
             (BasePipeline,),
@@ -123,6 +129,7 @@ def pipeline(
                     PARAM_ENABLE_CACHE: enable_cache,
                     PARAM_ENABLE_ARTIFACT_METADATA: enable_artifact_metadata,
                     PARAM_ENABLE_ARTIFACT_VISUALIZATION: enable_artifact_visualization,
+                    PARAM_ENABLE_STEP_LOGS: enable_step_logs,
                     PARAM_SETTINGS: settings,
                     PARAM_EXTRA_OPTIONS: extra,
                     PARAM_ON_FAILURE: on_failure,

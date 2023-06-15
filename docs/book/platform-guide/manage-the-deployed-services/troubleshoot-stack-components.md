@@ -48,8 +48,7 @@ kubectl get nodes
    \
    `zenml stack recipe output gke-cluster-name`\\
 2. Figure out the region that the cluster is deployed to. By default, the region is set to `europe-west1`, which you should use in the next step if you haven't supplied a custom value while creating the cluster.\\
-3. Figure out the project that the cluster is deployed to. You must have passed in a project ID while creating a GCP resource for the first time.\
-
+3. Figure out the project that the cluster is deployed to. You must have passed in a project ID while creating a GCP resource for the first time.\\
 4. Run the following command.\
    `gcloud container clusters get-credentials <NAME> --region <REGION> --project <PROJECT_ID>`
 {% endtab %}
@@ -62,7 +61,7 @@ You may already have your `kubectl` client configured with your cluster. Check b
 1. Get the name of the deployed cluster.\
    \
    `zenml stack recipe output k3d-cluster-name`\\
-2. Set the `KUBECONFIG` env variable to the kubeconfig file from the cluster.\
+2. Set the `KUBECONFIG` env variable to the `kubeconfig` file from the cluster.\
    \
    `export KUBECONFIG=$(k3d kubeconfig get <NAME>)`\\
 3. You can now use the `kubectl` client to talk to the cluster.
@@ -77,3 +76,6 @@ Each recipe might have its own values and here's how you can ascertain those val
 
 * For the cluster name, go into the `outputs.tf` file in the root directory and search for the output that exposes the cluster name.
 * For the region, check out the `variables.tf` or the `locals.tf` file for the default value assigned to it.
+
+<!-- For scarf -->
+<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>

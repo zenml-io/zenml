@@ -163,6 +163,12 @@ zenml secret create s3-seldon-secret \
 --rclone_config_s3_session_token="" \ # AWS Session Token.
 --rclone_config_s3_region="" \ # region to connect to.
 --rclone_config_s3_endpoint="" \ # S3 API endpoint.
+
+# Alternatively for providing key-value pairs, you can utilize the '--values' option by specifying a file path containing 
+# key-value pairs in either JSON or YAML format.
+# File content example: {"rclone_config_s3_type":"s3",...}
+zenml secret create s3-seldon-secret \
+    --values=@path/to/file.json
 ```
 
 Example of configuring a Seldon Core secret for GCS:
@@ -177,6 +183,12 @@ zenml secret create gs-seldon-secret \
 --rclone_config_gs_anonymous=False \ # Access public buckets and objects without credentials. 
 # Set to True if you just want to download files and don't configure credentials.
 --rclone_config_gs_auth_url="" \ # auth server URL.
+
+# Alternatively for providing key-value pairs, you can utilize the '--values' option by specifying a file path containing 
+# key-value pairs in either JSON or YAML format.
+# File content example: {"rclone_config_gs_type":"google cloud storage",...}
+zenml secret create gs-seldon-secret \
+    --values=@path/to/file.json
 ```
 
 Example of configuring a Seldon Core secret for Azure Blob Storage:
@@ -198,6 +210,12 @@ zenml secret create az-seldon-secret \
 # principal to use for authentication.
 --rclone_config_az_tenant="" \ # tenant ID of the service principal
 # to use for authentication.
+
+# Alternatively for providing key-value pairs, you can utilize the '--values' option by specifying a file path containing 
+# key-value pairs in either JSON or YAML format.
+# File content example: {"rclone_config_az_type":"azureblob",...}
+zenml secret create az-seldon-secret \
+    --values=@path/to/file.json
 ```
 
 </details>
@@ -409,3 +427,6 @@ The built-in Seldon Core custom deployment step responsible for packaging, prepa
 be
 found [here](https://apidocs.zenml.io/latest/integration\_code\_docs/integrations-seldon/#zenml.integrations.seldon.steps.seldon\_deployer.seldon\_model\_deployer\_step)
 .
+
+<!-- For scarf -->
+<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>

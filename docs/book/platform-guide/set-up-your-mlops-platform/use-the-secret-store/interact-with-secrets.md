@@ -20,6 +20,10 @@ To create a secret with a name `<SECRET_NAME>` and a key-value pair, you can run
 zenml secret create <SECRET_NAME> \
     --<KEY_1>=<VALUE_1> \
     --<KEY_2>=<VALUE_2>
+
+# Another option is to use the '--values' option and provide key-value pairs in either JSON or YAML format.
+zenml secret create <SECRET_NAME> \
+    --values='{"key1":"value2","key2":"value2"}'
 ```
 
 Alternatively, you can create the secret in an interactive session (in which ZenML will query you for the secret keys and values) by passing the `--interactive/-i` parameter:
@@ -34,6 +38,10 @@ For secret values that are too big to pass as a command line argument, or have s
 zenml secret create <SECRET_NAME> \
    --key=@path/to/file.txt \
    ...
+   
+# Alternatively, you can utilize the '--values' option by specifying a file path containing key-value pairs in either JSON or YAML format.
+zenml secret create <SECRET_NAME> \
+    --values=@path/to/file.txt
 ```
 
 The CLI also includes commands that can be used to list, update and delete secrets. A full guide on using the CLI to create, access, update and delete secrets is available [here](https://apidocs.zenml.io/latest/cli/#zenml.cli--secrets-management).
@@ -106,7 +114,7 @@ In the dashboard values that are considered `Secret` can be set using registered
 zenml secret create mlflow_secret \
     --username=admin \
     --password=abc123
-
+    
 
 # Then reference the username and password in our experiment tracker component
 zenml experiment-tracker register mlflow \
@@ -129,7 +137,7 @@ You can use the environment variable `ZENML_SECRET_VALIDATION_LEVEL` to disable 
 * Setting it to `SECRET_AND_KEY_EXISTS` (the default) validates both the secret existence as well as the existence of the exact key-value pair.
 
 {% hint style="warning" %}
-If you have secrets registered through both the [centralized secrets management](interact-with-secrets.md) and [a secrets manager](interact-with-secrets.md#description-managing-your-secrets-with-zenml), ZenML will first try to fetch the secret from the centralized secrets management and only fall back to the secrets manager if the secret is not found. This means that if you have a secret registered with the same name in both the centralized secrets store and the secrets manager, the secret registered in the secrets store will take precedence.
+If you have secrets registered through both the [centralized secrets management](interact-with-secrets.md) and [a secrets manager](/docs/book/user-guide/component-guide/secrets-managers/secrets-managers.md), ZenML will first try to fetch the secret from the centralized secrets management and only fall back to the secrets manager if the secret is not found. This means that if you have a secret registered with the same name in both the centralized secrets store and the secrets manager, the secret registered in the secrets store will take precedence.
 {% endhint %}
 
 ### Fetch secret values in a step
@@ -155,3 +163,6 @@ def secret_loader() -> None:
     )
     ...
 ```
+
+<!-- For scarf -->
+<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>

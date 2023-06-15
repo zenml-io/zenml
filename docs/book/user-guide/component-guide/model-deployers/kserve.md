@@ -154,19 +154,25 @@ Example of configuring a KServe secret for AWS S3:
 
 ```shell
 zenml secret create s3-kserve-secret \
---aws_access_key_id="<AWS-ACCESS-KEY-ID>" \ # AWS Access Key ID.
---aws_secret_access_key="<AWS-SECRET-ACCESS-KEY>" \ # AWS Secret Access Key.
---s3_region="<AWS_REGION>" \ # region to connect to.
---s3_endpoint="<S3_ENDPOINT>" \ # S3 API endpoint.
---s3_use_https="1" \ # set to 0 to disable https.
---s3_verify_ssl="1" \ # set to 0 to disable SSL certificate verification.
+    --aws_access_key_id="<AWS-ACCESS-KEY-ID>" \ # AWS Access Key ID.
+    --aws_secret_access_key="<AWS-SECRET-ACCESS-KEY>" \ # AWS Secret Access Key.
+    --s3_region="<AWS_REGION>" \ # region to connect to.
+    --s3_endpoint="<S3_ENDPOINT>" \ # S3 API endpoint.
+    --s3_use_https="1" \ # set to 0 to disable https.
+    --s3_verify_ssl="1" \ # set to 0 to disable SSL certificate verification.
+    
+# Alternatively for providing key-value pairs, you can utilize the '--values' option by specifying a file path containing 
+# key-value pairs in either JSON or YAML format.
+# File content example: {"aws_access_key_id":"<AWS-ACCESS-KEY-ID>",...}
+zenml secret create s3-kserve-secret \
+    --values=@path/to/file.json
 ```
 
 Example of configuring a KServe secret for GCS:
 
 ```shell
 zenml secret create gs-kserve-secret \
---google_application_credentials=@path/to/credentials.json \ # service account credentials JSON blob.
+  --google_application_credentials=@path/to/credentials.json \ # service account credentials JSON blob.
 ```
 
 Example of configuring a KServe secret for Azure Blob Storage:
@@ -181,6 +187,12 @@ zenml secret create az-kserve-secret \
 # principal to use for authentication.
 --azure_tenant_id="" \ # tenant ID of the service principal
 # to use for authentication.
+
+# Alternatively for providing key-value pairs, you can utilize the '--values' option by specifying a file path containing 
+# key-value pairs in either JSON or YAML format.
+# File content example: {"azure_subscription_id":"",...}
+zenml secret create az-kserve-secret \
+    --values=@path/to/file.json
 ```
 
 </details>
@@ -382,3 +394,6 @@ the [custom model class](https://apidocs.zenml.io/0.13.0/api\_docs/integrations/
 
 The built-in KServe custom deployment step responsible for packaging, preparing, and deploying to KServe can be
 found [here](https://apidocs.zenml.io/0.13.0/api\_docs/integrations/#zenml.integrations.kserve.steps.kserve\_deployer.kserve\_model\_deployer\_step)
+
+<!-- For scarf -->
+<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
