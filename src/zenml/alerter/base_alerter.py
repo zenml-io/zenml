@@ -23,6 +23,10 @@ from zenml.stack import Flavor, StackComponent
 from zenml.stack.stack_component import StackComponentConfig
 
 
+class BaseAlerterStepParameters(BaseModel):
+    """Step parameters definition for all alerters."""
+
+
 class BaseAlerterConfig(StackComponentConfig):
     """Base config for alerters."""
 
@@ -39,7 +43,9 @@ class BaseAlerter(StackComponent, ABC):
         """
         return cast(BaseAlerterConfig, self._config)
 
-    def post(self, message: str, params: Optional[BaseModel] = None) -> bool:
+    def post(
+        self, message: str, params: Optional[BaseAlerterStepParameters] = None
+    ) -> bool:
         """Post a message to a chat service.
 
         Args:
@@ -51,7 +57,9 @@ class BaseAlerter(StackComponent, ABC):
         """
         return True
 
-    def ask(self, question: str, params: Optional[BaseModel] = None) -> bool:
+    def ask(
+        self, question: str, params: Optional[BaseAlerterStepParameters] = None
+    ) -> bool:
         """Post a message to a chat service and wait for approval.
 
         This can be useful to easily get a human in the loop, e.g., when
