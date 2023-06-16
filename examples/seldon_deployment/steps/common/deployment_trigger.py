@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2023. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -11,9 +11,16 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Initialization for Seldon steps."""
 
-from zenml.integrations.seldon.steps.seldon_deployer import (
-    seldon_custom_model_deployer_step,
-    seldon_model_deployer_step,
-)
+
+from zenml import step
+
+
+@step
+def deployment_trigger(
+    accuracy: float,
+    min_accuracy: float = 0.9,
+) -> bool:
+    """Implements a simple model deployment trigger that looks at the
+    input model accuracy and decides if it is good enough to deploy."""
+    return accuracy > min_accuracy

@@ -384,23 +384,21 @@ Then this `custom_predict` function `path` can be passed to the custom deploymen
 ```python
 from zenml.integrations.seldon.steps import (
     seldon_custom_model_deployer_step,
-    SeldonDeployerStepParameters,
-    CustomDeployParameters,
 )
 from zenml.integrations.seldon.services import SeldonDeploymentConfig
 
-seldon_tensorflow_custom_deployment = seldon_custom_model_deployer_step(
-    config=SeldonDeployerStepParameters(
+seldon_tensorflow_custom_deployment = seldon_custom_model_deployer_step.with_options(
+    parameters=dict(
+        predict_function="seldon_tensorflow.steps.tf_custom_deploy_code.custom_predict",
         service_config=SeldonDeploymentConfig(
             model_name="seldon-tensorflow-custom-model",
             replicas=1,
             implementation="custom",
-            resources={"requests": {"cpu": "200m", "memory": "500m"}},
+            resources=SeldonResourceRequirements(
+                limits={"cpu": "200m", "memory": "250Mi"}
+            ),
         ),
         timeout=240,
-        custom_deploy_parameters=CustomDeployParameters(
-            predict_function="seldon_tensorflow.steps.tf_custom_deploy_code.custom_predict"
-        ),
     )
 )
 ```

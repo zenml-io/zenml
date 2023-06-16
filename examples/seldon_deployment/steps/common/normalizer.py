@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2023. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -11,9 +11,19 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Initialization for Seldon steps."""
 
-from zenml.integrations.seldon.steps.seldon_deployer import (
-    seldon_custom_model_deployer_step,
-    seldon_model_deployer_step,
-)
+
+import numpy as np  # type: ignore [import]
+
+from zenml import step
+from zenml.steps import Output
+
+
+@step
+def normalizer(
+    x_train: np.ndarray, x_test: np.ndarray
+) -> Output(x_train_normed=np.ndarray, x_test_normed=np.ndarray):
+    """Normalize the values for all the images so they are between 0 and 1."""
+    x_train_normed = x_train / 255.0
+    x_test_normed = x_test / 255.0
+    return x_train_normed, x_test_normed

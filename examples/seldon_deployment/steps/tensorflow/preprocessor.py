@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2023. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -11,9 +11,18 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Initialization for Seldon steps."""
 
-from zenml.integrations.seldon.steps.seldon_deployer import (
-    seldon_custom_model_deployer_step,
-    seldon_model_deployer_step,
-)
+import json
+
+import numpy as np  # type: ignore [import]
+
+from zenml import step
+from zenml.steps import Output
+
+
+@step
+def tf_predict_preprocessor(input: np.ndarray) -> Output(data=str):
+    """Prepares the data for inference."""
+    input = input / 255.0
+    request = input.tolist()
+    return json.dumps(request)

@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2023. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -11,9 +11,20 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Initialization for Seldon steps."""
 
-from zenml.integrations.seldon.steps.seldon_deployer import (
-    seldon_custom_model_deployer_step,
-    seldon_model_deployer_step,
-)
+
+import numpy as np  # type: ignore [import]
+from sklearn.base import ClassifierMixin
+
+from zenml import step
+
+
+@step
+def sklearn_evaluator(
+    x_test: np.ndarray,
+    y_test: np.ndarray,
+    model: ClassifierMixin,
+) -> float:
+    """Calculate accuracy score with classifier."""
+    test_acc = model.score(x_test.reshape((x_test.shape[0], -1)), y_test)
+    return test_acc

@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2023. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -11,9 +11,20 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Initialization for Seldon steps."""
 
-from zenml.integrations.seldon.steps.seldon_deployer import (
-    seldon_custom_model_deployer_step,
-    seldon_model_deployer_step,
-)
+
+import numpy as np  # type: ignore [import]
+import tensorflow as tf  # type: ignore [import]
+
+from zenml import step
+
+
+@step
+def tf_evaluator(
+    x_test: np.ndarray,
+    y_test: np.ndarray,
+    model: tf.keras.Model,
+) -> float:
+    """Calculate the loss for the model for each epoch in a graph."""
+    _, test_acc = model.evaluate(x_test, y_test, verbose=2)
+    return test_acc
