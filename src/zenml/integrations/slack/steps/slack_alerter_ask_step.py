@@ -60,7 +60,8 @@ def slack_alerter_ask_step(
             f"{type(alerter)}, which is not a subclass of `SlackAlerter`."
         )
     if (
-        hasattr(params, "include_format_blocks")
+        params
+        and hasattr(params, "include_format_blocks")
         and params.include_format_blocks
     ):
         env = Environment().step_environment
