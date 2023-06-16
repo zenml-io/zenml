@@ -42,7 +42,7 @@ class SlackAlerterPayload(BaseModel):
     stack_name: Optional[str] = None
 
 
-class SlackAlerterParameters(BaseModel):
+class SlackAlerterParameters(BaseAlerterStepParameters):
     """Slack alerter parameters."""
 
     # The ID of the Slack channel to use for communication.
