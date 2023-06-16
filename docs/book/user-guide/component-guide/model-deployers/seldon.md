@@ -315,7 +315,7 @@ def seldon_model_deployer_step(
 
 Within the `SeldonDeploymentConfig` you can configure:
 
-* `model_name`: the name of the model in the KServe cluster and in ZenML.
+* `model_name`: the name of the model in the Seldon cluster and in ZenML.
 * `replicas`: the number of replicas with which to deploy the model
 * `implementation`: the type of Seldon inference server to use for the model. The implementation type can be one of the
   following: `TENSORFLOW_SERVER`, `SKLEARN_SERVER`, `XGBOOST_SERVER`, `custom`.

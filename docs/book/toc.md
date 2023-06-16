@@ -81,7 +81,6 @@
   * [Model Deployers](user-guide/component-guide/model-deployers/model-deployers.md)
     * [MLflow](user-guide/component-guide/model-deployers/mlflow.md)
     * [Seldon](user-guide/component-guide/model-deployers/seldon.md)
-    * [KServe](user-guide/component-guide/model-deployers/kserve.md)
     * [BentoML](user-guide/component-guide/model-deployers/bentoml.md)
     * [Develop a Custom Model Deployer](user-guide/component-guide/model-deployers/custom.md)
   * [Step Operators](user-guide/component-guide/step-operators/step-operators.md)
