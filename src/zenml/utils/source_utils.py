@@ -20,7 +20,7 @@ import site
 import sys
 from distutils.sysconfig import get_python_lib
 from pathlib import Path, PurePath
-from types import FunctionType, ModuleType
+from types import ModuleType
 from typing import (
     Any,
     Callable,
@@ -41,7 +41,10 @@ from zenml.environment import Environment
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
-
+NoneType = type(None)
+NoneTypeSource = Source(
+    module=NoneType.__module__, attribute="NoneType", type=SourceType.BUILTIN
+)
 
 _CUSTOM_SOURCE_ROOT: Optional[str] = None
 
@@ -57,6 +60,11 @@ def load(source: Union[Source, str]) -> Any:
     """
     if isinstance(source, str):
         source = Source.from_import_path(source)
+
+    if source.import_path == NoneTypeSource.import_path:
+        # The class of the `None` object doesn't exist in the `builtin` module
+        # so we need to manually handle it here
+        return NoneType
 
     import_root = None
     if source.type == SourceType.CODE_REPOSITORY:
@@ -94,11 +102,16 @@ def load(source: Union[Source, str]) -> Any:
     return obj
 
 
-def resolve(obj: Union[Type[Any], FunctionType, ModuleType]) -> Source:
+def resolve(
+    obj: Union[Type[Any], Callable[..., Any], ModuleType, NoneType],
+    skip_validation: bool = False,
+) -> Source:
     """Resolve an object.
 
     Args:
         obj: The object to resolve.
+        skip_validation: If True, the validation that the object exist in the
+            module is skipped.
 
     Raises:
         RuntimeError: If the object can't be resolved.
@@ -106,14 +119,22 @@ def resolve(obj: Union[Type[Any], FunctionType, ModuleType]) -> Source:
     Returns:
         The source of the resolved object.
     """
-    if isinstance(obj, ModuleType):
+    if obj is NoneType:  # type: ignore[comparison-overlap]
+        # The class of the `None` object doesn't exist in the `builtin` module
+        # so we need to manually handle it here
+        return NoneTypeSource
+    elif isinstance(obj, ModuleType):
         module = obj
         attribute_name = None
     else:
         module = sys.modules[obj.__module__]
-        attribute_name = obj.__name__
+        attribute_name = obj.__name__  # type: ignore[union-attr]
 
-    if attribute_name and getattr(module, attribute_name, None) is not obj:
+    if (
+        not skip_validation
+        and attribute_name
+        and getattr(module, attribute_name, None) is not obj
+    ):
         raise RuntimeError(
             f"Unable to resolve object `{obj}`. For the resolving to work, the "
             "class or function must be defined as top-level code (= it must "
@@ -432,28 +453,24 @@ def _resolve_module(module: ModuleType) -> str:
             )
         return module.__name__
 
-    module_file = os.path.abspath(module.__file__)
-    source_root = os.path.abspath(get_source_root())
+    module_file = Path(module.__file__).resolve()
+    source_root = Path(get_source_root()).resolve()
 
-    module_source_path = os.path.relpath(module_file, source_root)
-
-    if module_source_path.startswith(os.pardir):
+    if source_root not in module_file.parents:
         raise RuntimeError(
             f"Unable to resolve module `{module}`. The file from which the "
             f"module was loaded ({module_file}) is outside the source root "
             f"({source_root})."
         )
 
-    # Remove the file extension and replace the os-specific path separators
-    # with `.` to get the module source
-    module_source_path, file_extension = os.path.splitext(module_source_path)
-    if file_extension != ".py":
+    if module_file.suffix != ".py":
         raise RuntimeError(
             f"Unable to resolve module `{module}`. The file from which the "
             f"module was loaded ({module_file}) is not a python file."
         )
 
-    module_source = module_source_path.replace(os.path.sep, ".")
+    module_source_path = module_file.relative_to(source_root).with_suffix("")
+    module_source = str(module_source_path).replace(os.path.sep, ".")
 
     logger.debug("Resolved module `%s` to `%s`", module, module_source)
 

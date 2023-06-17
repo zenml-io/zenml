@@ -13,13 +13,13 @@
 #  permissions and limitations under the License.
 """Kubernetes orchestrator flavor."""
 
-from typing import TYPE_CHECKING, Any, Dict, Optional, Type
-
-from pydantic import root_validator
+from typing import TYPE_CHECKING, Optional, Type
 
 from zenml.config.base_settings import BaseSettings
+from zenml.constants import KUBERNETES_CLUSTER_RESOURCE_TYPE
 from zenml.integrations.kubernetes import KUBERNETES_ORCHESTRATOR_FLAVOR
 from zenml.integrations.kubernetes.pod_settings import KubernetesPodSettings
+from zenml.models import ServiceConnectorRequirements
 from zenml.orchestrators import BaseOrchestratorConfig, BaseOrchestratorFlavor
 
 if TYPE_CHECKING:
@@ -44,7 +44,6 @@ class KubernetesOrchestratorSettings(BaseSettings):
 
     synchronous: bool = False
     timeout: int = 0
-
     service_account_name: Optional[str] = None
     pod_settings: Optional[KubernetesPodSettings] = None
 
@@ -55,7 +54,14 @@ class KubernetesOrchestratorConfig(  # type: ignore[misc] # https://github.com/p
     """Configuration for the Kubernetes orchestrator.
 
     Attributes:
+        incluster: If `True`, the orchestrator will run the pipeline inside the
+            same cluster in which it itself is running. This requires the client
+            to run in a Kubernetes pod itself. If set, the `kubernetes_context`
+            config option is ignored. If the stack component is linked to a
+            Kubernetes service connector, this field is ignored.
         kubernetes_context: Name of a Kubernetes context to run pipelines in.
+            If the stack component is linked to a Kubernetes service connector,
+            this field is ignored. Otherwise, it is mandatory.
         kubernetes_namespace: Name of the Kubernetes namespace to be used.
             If not provided, `zenml` namespace will be used.
         local: If `True`, the orchestrator will assume it is connected to a
@@ -68,41 +74,11 @@ class KubernetesOrchestratorConfig(  # type: ignore[misc] # https://github.com/p
             skipped.
     """
 
-    kubernetes_context: str  # TODO: Potential setting
+    incluster: bool = False
+    kubernetes_context: Optional[str] = None
     kubernetes_namespace: str = "zenml"
     local: bool = False
     skip_local_validations: bool = False
-
-    @root_validator(pre=True)
-    def _validate_deprecated_attrs(
-        cls, values: Dict[str, Any]
-    ) -> Dict[str, Any]:
-        """Pydantic root_validator for deprecated attributes.
-
-        This root validator is used for backwards compatibility purposes. E.g.
-        it handles attributes that are no longer available or that have become
-        mandatory in the meantime.
-
-        Args:
-            values: Values passed to the object constructor
-
-        Returns:
-            Values passed to the object constructor
-
-        Raises:
-            ValueError: If the attributes or their values are not valid.
-        """
-        if not values.get("kubernetes_context"):
-            raise ValueError(
-                "An empty value is no longer allowed for the "
-                "`kubernetes_context` attribute of the Kubernetes "
-                "orchestrator, to avoid unpredictable behavior. Please set "
-                "the `kubernetes_context` attribute to the name of the "
-                "Kubernetes config context pointing to the cluster where "
-                "you would like to run pipelines."
-            )
-
-        return values
 
     @property
     def is_remote(self) -> bool:
@@ -141,6 +117,23 @@ class KubernetesOrchestratorFlavor(BaseOrchestratorFlavor):
             The name of the flavor.
         """
         return KUBERNETES_ORCHESTRATOR_FLAVOR
+
+    @property
+    def service_connector_requirements(
+        self,
+    ) -> Optional[ServiceConnectorRequirements]:
+        """Service connector resource requirements for service connectors.
+
+        Specifies resource requirements that are used to filter the available
+        service connector types that are compatible with this flavor.
+
+        Returns:
+            Requirements for compatible service connectors, if a service
+            connector is required for this flavor.
+        """
+        return ServiceConnectorRequirements(
+            resource_type=KUBERNETES_CLUSTER_RESOURCE_TYPE,
+        )
 
     @property
     def docs_url(self) -> Optional[str]:

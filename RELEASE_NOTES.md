@@ -1,5 +1,249 @@
 <!-- markdown-link-check-disable -->
 
+# 0.40.2
+
+Documentation and example updates.
+
+## What's Changed
+* Update Example for sandbox by @safoinme in https://github.com/zenml-io/zenml/pull/1576
+* Document `zenml show` by @fa9r in https://github.com/zenml-io/zenml/pull/1570
+* Clean up for the new docs by @bcdurak in https://github.com/zenml-io/zenml/pull/1575
+* Add orchestrator outputs for sandbox examples by @strickvl in https://github.com/zenml-io/zenml/pull/1579
+* Docs: Added some adjustments to the code repository page. by @bcdurak in https://github.com/zenml-io/zenml/pull/1582
+* Sandbox documentation (and other docs updates) by @strickvl in https://github.com/zenml-io/zenml/pull/1574
+* Minor README update regarding the sandbox. by @bcdurak in https://github.com/zenml-io/zenml/pull/1586
+* Fix failing `mlflow_tracking` example test by @strickvl in https://github.com/zenml-io/zenml/pull/1581
+* Bump `ruff` and `mypy` by @strickvl in https://github.com/zenml-io/zenml/pull/1590
+* Remove `config.yaml` references in example docs by @strickvl in https://github.com/zenml-io/zenml/pull/1585
+* update mlflow tracking example and reduce number of epochs by @safoinme in https://github.com/zenml-io/zenml/pull/1598
+* Improve error message when requirements file does not exist by @schustmi in https://github.com/zenml-io/zenml/pull/1596
+* Fix build reuse for integrations with apt packages by @schustmi in https://github.com/zenml-io/zenml/pull/1594
+* make the `Github` repo token optional by @safoinme in https://github.com/zenml-io/zenml/pull/1593
+
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.40.1...0.40.2
+
+# 0.40.1
+
+Small bug and docs fixes following the 0.40.0 release.
+
+## What's Changed
+* Convert dict to tuple in ArtifactConfiguration validator by @schustmi in https://github.com/zenml-io/zenml/pull/1571
+* Docs cleanup by @schustmi in https://github.com/zenml-io/zenml/pull/1569
+* Fix `boto3<=1.24.59`  by @safoinme in https://github.com/zenml-io/zenml/pull/1572
+
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.40.0...0.40.1
+
+# 0.40.0
+
+ZenML release 0.40.0 introduces two big updates: a fresh and more flexible pipeline interface and a new way to connect and authenticate with external services in ZenML Connectors. See below for full details on these two major new sets of functionality.
+
+The release also contains many bug fixes and quality-of-life improvements. Specifically, we reworked our documentation from the ground up with particular attention to the structure to help you find what you need. Our [Label Studio integration example](https://github.com/zenml-io/zenml/tree/main/examples/label_studio_annotation) is now working again and allows you to use more recent versions of the `label-studio` package that backs it.
+
+## A Fresh Pipeline Interface
+
+This release introduces a completely reworked interface for developing your ZenML steps and pipelines:
+
+* Increased flexibility when defining steps: Steps can now have `Optional`, `Union`, and `Any` type annotations for their inputs and outputs. Additionally, default values are allowed for step inputs.
+
+```python
+@step
+def trainer(data: pd.Dataframe, start_model: Union[svm.SVC, svm.SVR], coef0: Optional[int] = None) -> Any:
+    pass
+```
+
+* You can now easily run a step outside of a pipeline, making it easier to test and debug your code:
+
+```python
+trainer(data=pd.Dataframe(...), start_model=svc.SVC(...))
+```
+
+* External artifacts can be used to pass values to steps that are not produced by an upstream step. This provides more flexibility when working with external data or models:
+
+```python
+from zenml.steps.external_artifact import ExternalArtifact
+
+@pipeline
+def my_pipeline(lr: float):
+    data = process_data()
+    trainer(data=data, start_model=ExternalArtifact(svc.SVC(...)))
+```
+
+* You can now call steps multiple times inside a pipeline, allowing you to create more complex workflows and reuse steps with different parameters:
+
+```python
+@pipeline
+def my_pipeline(step_count: int) -> None:
+    data = load_data_step()
+    after = []
+    for i in range(step_count):
+        train_step(data, learning_rate=i * 0.0001, name=f"train_step_{i}")
+        after.append(f"train_step_{i}")
+    model = select_model_step(..., after=after)
+```
+
+* Pipelines can now define inputs and outputs, providing a clearer interface for working with data and dependencies between pipelines:
+
+```python
+@pipeline(enable_cache=False)
+def subpipeline(pipeline_param: int):
+    out = step_1(k=None)
+    step_2(a=3, b=pipeline_param)
+    return 17
+```
+
+* You can now call pipelines within other pipelines. This currently does not execute the inner pipeline but instead adds its steps to the parent pipeline, allowing you to create modular and reusable workflows:
+
+```python
+@pipeline(enable_cache=False)
+def my_pipeline(a: int = 1):
+    p1_output = subpipeline(pipeline_param=22)
+    step_2(a=a, b=p1_output)
+```
+
+To get started, simply import the new `@step` and `@pipeline` decorator and check out our new [starter guide](https://docs.zenml.io/user-guide/starter-guide) for more information.
+
+```python
+from zenml import step, pipeline
+
+@step
+def my_step(...):
+    ...
+
+@pipeline
+def my_pipeline(...):
+    ...
+```
+
+The old pipeline and step interface is still working using the imports from previous ZenML releases but is deprecated and will be removed in the future.
+
+## 'Connectors' for authentication
+
+In this update, we're pleased to present a new feature to ZenML: Service Connectors. The intention behind these connectors is to offer a reliable and more user-friendly method for integrating ZenML with external resources and services. We aim to simplify processes such as validating, storing, and generating security-sensitive data, along with the authentication and authorization of access to external services. We believe ZenML Service Connectors will be a useful tool to alleviate some of the common challenges in managing pipeline across various Stack Components.
+
+Regardless of your background in infrastructure management - whether you're a beginner looking for quick cloud stack integration, or an experienced engineer focused on maintaining robust infrastructure security practices - our Service Connectors are designed to assist your work while maintaining high security standards.
+
+Here are just a few ways you could use ZenML Service Connectors:
+
+- Easy utilization of cloud resources: With ZenML's Service Connectors, you can use resources from AWS, GCP, and Azure without the need for extensive knowledge of cloud infrastructure or environment configuration. All you'll need is a ZenML Service Connector and a few Python libraries.
+- Assisted setup with security in mind: Our Service Connectors come with features for configuration validation and verification, the generation of temporary, low-privilege credentials, and pre-authenticated and pre-configured clients for Python libraries.
+- Easy local configuration transfer: ZenML's Service Connectors aim to resolve the reproducibility issue in ML pipelines. They do this by automatically transferring authentication configurations and credentials from your local machine, storing them securely, and allowing for effortless sharing across different environments.
+
+[Visit our documentation pages](https://docs.zenml.io/platform-guide/set-up-your-mlops-platform/connect-zenml-to-infrastructure) to learn more about ZenML Connectors and how you can use them in a way that supports your ML workflows.
+
+## What's Changed
+
+* Cleanup remaining references of `zenml.artifacts` by @fa9r in https://github.com/zenml-io/zenml/pull/1534
+* Upgrading the `black` version by @bcdurak in https://github.com/zenml-io/zenml/pull/1535
+* Remove dev breakpoints by @strickvl in https://github.com/zenml-io/zenml/pull/1540
+* Removing old option command from contribution doc by @bhatt-priyadutt in https://github.com/zenml-io/zenml/pull/1544
+* Improve CLI help text for `zenml integration install -i ...` by @strickvl in https://github.com/zenml-io/zenml/pull/1545
+* Fix RestZenStore error handling for list responses by @fa9r in https://github.com/zenml-io/zenml/pull/1539
+* Simplify Dashboard UX via `zenml.show()` by @fa9r in https://github.com/zenml-io/zenml/pull/1511
+* Removed hardcoded variable by @bhatt-priyadutt in https://github.com/zenml-io/zenml/pull/1543
+* Revert Quickstart Changes by @fa9r in https://github.com/zenml-io/zenml/pull/1546
+* Deprecate some long overdue functions by @AlexejPenner in https://github.com/zenml-io/zenml/pull/1541
+* ZenML Connectors by @stefannica in https://github.com/zenml-io/zenml/pull/1514
+* Fix automatic dashboard opening after `zenml up` by @fa9r in https://github.com/zenml-io/zenml/pull/1551
+* Update Neptune README by @strickvl in https://github.com/zenml-io/zenml/pull/1554
+* Update example READMEs following deployment PR by @strickvl in https://github.com/zenml-io/zenml/pull/1555
+* Fix and update Label Studio example by @strickvl in https://github.com/zenml-io/zenml/pull/1542
+* Fix linter errors by @stefannica in https://github.com/zenml-io/zenml/pull/1557
+* Add Vertex as orchestrator and step operator to deploy CLI by @wjayesh in https://github.com/zenml-io/zenml/pull/1559
+* Fix dashboard secret references by @stefannica in https://github.com/zenml-io/zenml/pull/1561
+* New pipeline and step interface by @schustmi in https://github.com/zenml-io/zenml/pull/1466
+* Major Documentation Rehaul by @AlexejPenner in https://github.com/zenml-io/zenml/pull/1562
+* Easy CSV Visualization by @fa9r in https://github.com/zenml-io/zenml/pull/1556
+
+## New Contributors
+* @bhatt-priyadutt made their first contribution in https://github.com/zenml-io/zenml/pull/1544
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.39.1...0.40
+
+# 0.39.1
+
+Minor hotfix release for running ZenML in Google Colab environments.
+
+## What's Changed
+* Fix Source Resolving in Colab by @fa9r in https://github.com/zenml-io/zenml/pull/1530
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.39.0...0.39.1
+
+# 0.39.0
+
+ZenML release 0.39.0 introduces several big new features:
+- The `zenml stack recipe` CLI commands now support fine-grained handling of
+individual stack components.
+- Artifacts are now automatically visualized in the dashboard.
+- Materializers received an overhaul: a new `cloudpickle` default materializer
+was added that works for arbitrary objects, and a `pycaret` materializer
+that can handle various modeling frameworks in a unified format.
+
+The release also contains many bug fixes and quality-of-life improvements, such 
+as new settings options for the SageMaker and Kubernetes orchestrators.
+
+## Individual Stack Component Deployment
+
+In this release, we've enhanced the ZenML stack recipe CLI to support 
+conditional deployment, destruction, and configuration of individual stack 
+components. Users can now quickly deploy and destroy components with options for 
+each flavor, and pass a config file for custom variables. The new `output` CLI 
+command allows users to retrieve outputs from their recipes. Overall, this 
+update streamlines deploying and managing stack components by providing a more 
+efficient and user-friendly experience.
+
+## Artifact Visualization
+
+Artifact visualizations are now automatically extracted by ZenML and embedded in
+the ZenML dashboard. Visualizations can now be defined by overriding the 
+`save_visualizations` method of the materializer that handles an artifact. 
+These visualizations are then automatically shown in the dashboard and can also 
+be displayed in Jupyter notebooks using the new `visualize` post-execution 
+method.
+
+## Default Cloudpickle Materializer
+
+ZenML now uses `cloudpickle` under the hood to save/load artifacts that other 
+materializers cannot handle. This makes it even easier to get started with 
+ZenML since you no longer need to define custom materializers if you just
+want to experiment with some new data types.
+
+## What's Changed
+* Docs/zenml hub documentation by @bcdurak in https://github.com/zenml-io/zenml/pull/1490
+* Sort integration list before display by @strickvl in https://github.com/zenml-io/zenml/pull/1494
+* Update docs to surface CLI filtering syntax by @strickvl in https://github.com/zenml-io/zenml/pull/1496
+* ZenML Hub Tests & CLI Improvements by @fa9r in https://github.com/zenml-io/zenml/pull/1495
+* Delete Legacy Docs  by @fa9r in https://github.com/zenml-io/zenml/pull/1497
+* Improve the REST API error handling by @stefannica in https://github.com/zenml-io/zenml/pull/1451
+* Fix circular import of PipelineRunConfiguration by @schustmi in https://github.com/zenml-io/zenml/pull/1501
+* Delete Deprecated Artifacts and Materializer Code by @fa9r in https://github.com/zenml-io/zenml/pull/1498
+* Allow filtering runs by code repo id by @schustmi in https://github.com/zenml-io/zenml/pull/1499
+* Add example to docs for passing stack component specific settings by @christianversloot in https://github.com/zenml-io/zenml/pull/1506
+* Increase step run field lengths by @schustmi in https://github.com/zenml-io/zenml/pull/1503
+* Fix Sagemaker orchestrator pipeline name bug by @strickvl in https://github.com/zenml-io/zenml/pull/1508
+* Generate unique SageMaker training job name based on pipeline and ste… by @christianversloot in https://github.com/zenml-io/zenml/pull/1505
+* [CI Fix] Pin Llama Index Version by @fa9r in https://github.com/zenml-io/zenml/pull/1516
+* Basic PyCaret integration and materializer by @christianversloot in https://github.com/zenml-io/zenml/pull/1512
+* Specify line endings for different operating systems by @strickvl in https://github.com/zenml-io/zenml/pull/1513
+* Extend SageMakerOrchestratorSettings with processor_args enabling step level configuration by @christianversloot in https://github.com/zenml-io/zenml/pull/1509
+* Fix post execution `get_pipeline()` and `pipeline.get_runs()` by @fa9r in https://github.com/zenml-io/zenml/pull/1510
+* Default `cloudpickle` Materializer & Materializer Inheritance by @fa9r in https://github.com/zenml-io/zenml/pull/1507
+* Artifact Visualization by @fa9r in https://github.com/zenml-io/zenml/pull/1472
+* Add Kubernetes Orchestrator Settings by @fa9r in https://github.com/zenml-io/zenml/pull/1518
+* Bump `ruff` to 0.0.265 by @strickvl in https://github.com/zenml-io/zenml/pull/1520
+* feat: Set cloud function service account to the one defined in Vertex… by @francoisserra in https://github.com/zenml-io/zenml/pull/1519
+* Fix Kubernetes Orchestrator Config Loading by @fa9r in https://github.com/zenml-io/zenml/pull/1523
+* Resolve path during module resolving by @schustmi in https://github.com/zenml-io/zenml/pull/1521
+* Fix `SO_REUSEPORT` issue by @fa9r in https://github.com/zenml-io/zenml/pull/1524
+* Add individual stack component deployment through recipes by @wjayesh in https://github.com/zenml-io/zenml/pull/1328
+* Raise 501 for Unauthenticated Artifact Stores by @fa9r in https://github.com/zenml-io/zenml/pull/1522
+* Fix Duplicate Step Error by @fa9r in https://github.com/zenml-io/zenml/pull/1527
+* Fix pulling of stack recipes on `zenml init` by @wjayesh in https://github.com/zenml-io/zenml/pull/1528
+* Store dockerfile and requirements for builds by @schustmi in https://github.com/zenml-io/zenml/pull/1525
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.38.0...0.39.0
+
 # 0.38.0
 
 The 0.38.0 ZenML release is a major milestone for the ZenML project. It marks
@@ -821,7 +1065,7 @@ further slim down the `zenml` package.
 
 ## Breaking Changes
 
-The following changes introduces with this release mey require some manual
+The following changes introduces with this release may require some manual
 intervention to update your current installations:
 
 - If your code calls some methods of our `Client` class, it might need to be
@@ -903,7 +1147,7 @@ deployed) instances. For more information see [the Label Studiodocs](https://doc
 
 ## Breaking Changes
 
-The following changes introduces with this release mey require some manual
+The following changes introduces with this release may require some manual
 intervention to update your current installations:
 
 * the Airflow orchestrator now requires a newer version of Airflow
@@ -999,7 +1243,7 @@ Kubernetes based orchestrators with the new Kubernetes Pod settings feature.
 
 ## Breaking Changes
 
-The following changes introduces with this release mey require some manual
+The following changes introduces with this release may require some manual
 intervention to update your current installations:
 
 * the zenml server helm chart `values.yaml` file has been restructured to make

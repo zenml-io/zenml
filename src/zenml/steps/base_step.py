@@ -12,7 +12,8 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Base Step for ZenML."""
-
+import copy
+import hashlib
 import inspect
 from abc import abstractmethod
 from collections import defaultdict
@@ -20,12 +21,10 @@ from types import FunctionType
 from typing import (
     TYPE_CHECKING,
     Any,
-    ClassVar,
     Dict,
-    List,
     Mapping,
-    NamedTuple,
     Optional,
+    Sequence,
     Set,
     Tuple,
     Type,
@@ -33,13 +32,12 @@ from typing import (
     Union,
     cast,
 )
+from uuid import UUID
 
-from pydantic import ValidationError
+from pydantic import BaseModel, Extra, ValidationError
 
 from zenml.config.source import Source
 from zenml.config.step_configurations import (
-    ArtifactConfiguration,
-    InputSpec,
     PartialArtifactConfiguration,
     PartialStepConfiguration,
     StepConfiguration,
@@ -51,23 +49,12 @@ from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.materializers.materializer_registry import materializer_registry
 from zenml.steps.base_parameters import BaseParameters
-from zenml.steps.step_context import StepContext
-from zenml.steps.utils import (
-    INSTANCE_CONFIGURATION,
-    PARAM_CREATED_BY_FUNCTIONAL_API,
-    PARAM_ENABLE_ARTIFACT_METADATA,
-    PARAM_ENABLE_CACHE,
-    PARAM_EXPERIMENT_TRACKER,
-    PARAM_EXTRA_OPTIONS,
-    PARAM_ON_FAILURE,
-    PARAM_ON_SUCCESS,
-    PARAM_OUTPUT_MATERIALIZERS,
-    PARAM_SETTINGS,
-    PARAM_STEP_NAME,
-    PARAM_STEP_OPERATOR,
-    parse_return_type_annotations,
-    resolve_type_annotation,
+from zenml.steps.entrypoint_function_utils import (
+    StepArtifact,
+    get_step_entrypoint_signature,
+    validate_entrypoint_function,
 )
+from zenml.steps.external_artifact import ExternalArtifact
 from zenml.utils import (
     dict_utils,
     pydantic_utils,
@@ -76,7 +63,6 @@ from zenml.utils import (
     source_utils,
 )
 
-logger = get_logger(__name__)
 if TYPE_CHECKING:
     from zenml.config.base_settings import SettingsOrDict
 
@@ -84,17 +70,20 @@ if TYPE_CHECKING:
     MaterializerClassOrSource = Union[str, Source, Type["BaseMaterializer"]]
     HookSpecification = Union[str, Source, FunctionType]
     OutputMaterializersSpecification = Union[
-        "MaterializerClassOrSource", Mapping[str, "MaterializerClassOrSource"]
+        "MaterializerClassOrSource",
+        Sequence["MaterializerClassOrSource"],
+        Mapping[str, "MaterializerClassOrSource"],
+        Mapping[str, Sequence["MaterializerClassOrSource"]],
     ]
+
+logger = get_logger(__name__)
 
 
 class BaseStepMeta(type):
     """Metaclass for `BaseStep`.
 
-    Checks whether everything passed in:
-    * Has a matching materializer,
-    * Is a subclass of the Config class,
-    * Is typed correctly.
+    Makes sure that the entrypoint function has valid parameters and type
+    annotations.
     """
 
     def __new__(
@@ -109,104 +98,10 @@ class BaseStepMeta(type):
 
         Returns:
             The new class.
-
-        Raises:
-            StepInterfaceError: When unable to create the step.
         """
-        from zenml.steps.base_parameters import BaseParameters
-
-        dct.setdefault(INSTANCE_CONFIGURATION, {})
         cls = cast(Type["BaseStep"], super().__new__(mcs, name, bases, dct))
-
-        cls.INPUT_SIGNATURE = {}
-        cls.OUTPUT_SIGNATURE = {}
-        cls.PARAMETERS_FUNCTION_PARAMETER_NAME = None
-        cls.PARAMETERS_CLASS = None
-        cls.CONTEXT_PARAMETER_NAME = None
-
-        # Get the signature of the step function
-        step_function_signature = inspect.getfullargspec(
-            inspect.unwrap(cls.entrypoint)
-        )
-
-        if bases:
-            # We're not creating the abstract `BaseStep` class
-            # but a concrete implementation. Make sure the step function
-            # signature does not contain variable *args or **kwargs
-            variable_arguments = None
-            if step_function_signature.varargs:
-                variable_arguments = f"*{step_function_signature.varargs}"
-            elif step_function_signature.varkw:
-                variable_arguments = f"**{step_function_signature.varkw}"
-
-            if variable_arguments:
-                raise StepInterfaceError(
-                    f"Unable to create step '{name}' with variable arguments "
-                    f"'{variable_arguments}'. Please make sure your step "
-                    f"functions are defined with a fixed amount of arguments."
-                )
-
-        step_function_args = (
-            step_function_signature.args + step_function_signature.kwonlyargs
-        )
-
-        # Remove 'self' from the signature if it exists
-        if step_function_args and step_function_args[0] == "self":
-            step_function_args.pop(0)
-
-        # Verify the input arguments of the step function
-        for arg in step_function_args:
-            arg_type = step_function_signature.annotations.get(arg, None)
-            arg_type = resolve_type_annotation(arg_type)
-
-            if not arg_type:
-                raise StepInterfaceError(
-                    f"Missing type annotation for argument '{arg}' when "
-                    f"trying to create step '{name}'. Please make sure to "
-                    f"include type annotations for all your step inputs "
-                    f"and outputs."
-                )
-
-            if issubclass(arg_type, BaseParameters):
-                # Raise an error if we already found a config in the signature
-                if cls.PARAMETERS_CLASS is not None:
-                    raise StepInterfaceError(
-                        f"Found multiple parameter arguments "
-                        f"('{cls.PARAMETERS_FUNCTION_PARAMETER_NAME}' and '{arg}') when "
-                        f"trying to create step '{name}'. Please make sure to "
-                        f"only have one `Parameters` subclass as input "
-                        f"argument for a step."
-                    )
-                cls.PARAMETERS_FUNCTION_PARAMETER_NAME = arg
-                cls.PARAMETERS_CLASS = arg_type
-
-            elif issubclass(arg_type, StepContext):
-                if cls.CONTEXT_PARAMETER_NAME is not None:
-                    raise StepInterfaceError(
-                        f"Found multiple context arguments "
-                        f"('{cls.CONTEXT_PARAMETER_NAME}' and '{arg}') when "
-                        f"trying to create step '{name}'. Please make sure to "
-                        f"only have one `StepContext` as input "
-                        f"argument for a step."
-                    )
-                cls.CONTEXT_PARAMETER_NAME = arg
-            else:
-                # Can't do any check for existing materializers right now
-                # as they might get be defined later, so we simply store the
-                # argument name and type for later use.
-                cls.INPUT_SIGNATURE.update({arg: arg_type})
-
-        # Parse the returns of the step function
-        if "return" not in step_function_signature.annotations:
-            raise StepInterfaceError(
-                "Missing return type annotation when trying to create step "
-                f"'{name}'. Please make sure to include type annotations for "
-                "all your step inputs and outputs. If your step returns "
-                "nothing, please annotate it with `-> None`."
-            )
-        cls.OUTPUT_SIGNATURE = parse_return_type_annotations(
-            step_function_signature.annotations,
-        )
+        if name not in {"BaseStep", "_DecoratedStep"}:
+            validate_entrypoint_function(cls.entrypoint)
 
         return cls
 
@@ -215,62 +110,66 @@ T = TypeVar("T", bound="BaseStep")
 
 
 class BaseStep(metaclass=BaseStepMeta):
-    """Abstract base class for all ZenML steps.
+    """Abstract base class for all ZenML steps."""
 
-    Attributes:
-        name: The name of this step.
-        pipeline_parameter_name: The name of the pipeline parameter for which
-            this step was passed as an argument.
-        enable_cache: A boolean indicating if caching is enabled for this step.
-        enable_artifact_metadata: A boolean indicating if artifact metadata
-            is enabled for this step.
-    """
-
-    INPUT_SIGNATURE: ClassVar[Dict[str, Type[Any]]] = None  # type: ignore[assignment] # noqa
-    OUTPUT_SIGNATURE: ClassVar[Dict[str, Type[Any]]] = None  # type: ignore[assignment] # noqa
-    PARAMETERS_FUNCTION_PARAMETER_NAME: ClassVar[Optional[str]] = None
-    PARAMETERS_CLASS: ClassVar[Optional[Type["BaseParameters"]]] = None
-    CONTEXT_PARAMETER_NAME: ClassVar[Optional[str]] = None
-
-    INSTANCE_CONFIGURATION: Dict[str, Any] = {}
-
-    class _OutputArtifact(NamedTuple):
-        """Internal step output artifact.
-
-        This class is used for inputs/outputs of the __call__ method of
-        BaseStep. It passes all the information about step outputs so downstream
-        steps can finalize their configuration.
-
-        Attributes:
-            name: Name of the output.
-            step_name: Name of the step that produced this output.
-            materializer_source: The source of the materializer used to
-                write the output.
-        """
-
-        name: str
-        step_name: str
-        materializer_source: Source
-
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
+    def __init__(
+        self,
+        *args: Any,
+        name: Optional[str] = None,
+        enable_cache: Optional[bool] = None,
+        enable_artifact_metadata: Optional[bool] = None,
+        enable_artifact_visualization: Optional[bool] = None,
+        enable_step_logs: Optional[bool] = None,
+        experiment_tracker: Optional[str] = None,
+        step_operator: Optional[str] = None,
+        parameters: Optional["ParametersOrDict"] = None,
+        output_materializers: Optional[
+            "OutputMaterializersSpecification"
+        ] = None,
+        settings: Optional[Mapping[str, "SettingsOrDict"]] = None,
+        extra: Optional[Dict[str, Any]] = None,
+        on_failure: Optional["HookSpecification"] = None,
+        on_success: Optional["HookSpecification"] = None,
+        **kwargs: Any,
+    ) -> None:
         """Initializes a step.
 
         Args:
             *args: Positional arguments passed to the step.
+            name: The name of the step.
+            enable_cache: If caching should be enabled for this step.
+            enable_artifact_metadata: If artifact metadata should be enabled
+                for this step.
+            enable_artifact_visualization: If artifact visualization should be
+                enabled for this step.
+            enable_step_logs: Enable step logs for this step.
+            experiment_tracker: The experiment tracker to use for this step.
+            step_operator: The step operator to use for this step.
+            parameters: Function parameters for this step
+            output_materializers: Output materializers for this step. If
+                given as a dict, the keys must be a subset of the output names
+                of this step. If a single value (type or string) is given, the
+                materializer will be used for all outputs.
+            settings: settings for this step.
+            extra: Extra configurations for this step.
+            on_failure: Callback function in event of failure of the step. Can
+                be a function with three possible parameters, `StepContext`,
+                `BaseParameters`, and `BaseException`, or a source path to a
+                function of the same specifications (e.g. `module.my_function`)
+            on_success: Callback function in event of failure of the step. Can
+                be a function with two possible parameters, `StepContext` and
+                `BaseParameters, or a source path to a function of the same
+                specifications (e.g. `module.my_function`).
             **kwargs: Keyword arguments passed to the step.
         """
-        self._has_been_called = False
-        self._upstream_steps: Set[str] = set()
-        self._inputs: Dict[str, InputSpec] = {}
+        self._upstream_steps: Set["BaseStep"] = set()
+        self.entrypoint_definition = validate_entrypoint_function(
+            self.entrypoint, reserved_arguments=["after", "id"]
+        )
 
-        kwargs = {**self.INSTANCE_CONFIGURATION, **kwargs}
-        name = kwargs.pop(PARAM_STEP_NAME, None) or self.__class__.__name__
+        name = name or self.__class__.__name__
 
-        # This value is only used in `BaseStep.__created_by_functional_api()`
-        kwargs.pop(PARAM_CREATED_BY_FUNCTIONAL_API, None)
-
-        requires_context = bool(self.CONTEXT_PARAMETER_NAME)
-        enable_cache = kwargs.pop(PARAM_ENABLE_CACHE, None)
+        requires_context = self.entrypoint_definition.context is not None
         if enable_cache is None:
             if requires_context:
                 # Using the StepContext inside a step provides access to
@@ -288,23 +187,42 @@ class BaseStep(metaclass=BaseStepMeta):
             name,
             "enabled" if enable_cache is not False else "disabled",
         )
-
-        enable_artifact_metadata = kwargs.pop(
-            PARAM_ENABLE_ARTIFACT_METADATA, None
-        )
-
         logger.debug(
             "Step '%s': Artifact metadata %s.",
             name,
             "enabled" if enable_artifact_metadata is not False else "disabled",
+        )
+        logger.debug(
+            "Step '%s': Artifact visualization %s.",
+            name,
+            "enabled"
+            if enable_artifact_visualization is not False
+            else "disabled",
+        )
+
+        logger.debug(
+            "Step '%s': logs %s.",
+            name,
+            "enabled" if enable_step_logs is not False else "disabled",
         )
 
         self._configuration = PartialStepConfiguration(
             name=name,
             enable_cache=enable_cache,
             enable_artifact_metadata=enable_artifact_metadata,
+            enable_artifact_visualization=enable_artifact_visualization,
+            enable_step_logs=enable_step_logs,
         )
-        self._apply_class_configuration(kwargs)
+        self.configure(
+            experiment_tracker=experiment_tracker,
+            step_operator=step_operator,
+            output_materializers=output_materializers,
+            parameters=parameters,
+            settings=settings,
+            extra=extra,
+            on_failure=on_failure,
+            on_success=on_success,
+        )
         self._verify_and_apply_init_params(*args, **kwargs)
 
     @abstractmethod
@@ -320,18 +238,6 @@ class BaseStep(metaclass=BaseStepMeta):
         """
 
     @classmethod
-    def _created_by_functional_api(cls) -> bool:
-        """Returns if the step class was created by the functional API.
-
-        Returns:
-            `True` if the class was created by the functional API,
-            `False` otherwise.
-        """
-        return cls.INSTANCE_CONFIGURATION.get(
-            PARAM_CREATED_BY_FUNCTIONAL_API, False
-        )
-
-    @classmethod
     def load_from_source(cls, source: Union[Source, str]) -> "BaseStep":
         """Loads a step from source.
 
@@ -340,14 +246,29 @@ class BaseStep(metaclass=BaseStepMeta):
 
         Returns:
             The loaded step.
+
+        Raises:
+            ValueError: If the source is not a valid step source.
         """
-        step_class: Type[BaseStep] = source_utils.load_and_validate_class(
-            source, expected_class=BaseStep
-        )
-        return step_class()
+        obj = source_utils.load(source)
+
+        if isinstance(obj, BaseStep):
+            return obj
+        elif isinstance(obj, type) and issubclass(obj, BaseStep):
+            return obj()
+        else:
+            raise ValueError("Invalid step source.")
+
+    def resolve(self) -> Source:
+        """Resolves the step.
+
+        Returns:
+            The step source.
+        """
+        return source_utils.resolve(self.__class__)
 
     @property
-    def upstream_steps(self) -> Set[str]:
+    def upstream_steps(self) -> Set["BaseStep"]:
         """Names of the upstream steps of this step.
 
         This property will only contain the full set of upstream steps once
@@ -383,41 +304,15 @@ class BaseStep(metaclass=BaseStepMeta):
             step: A step which should finish executing before this step is
                 started.
         """
-        self._upstream_steps.add(step.name)
-
-    @property
-    def inputs(self) -> Dict[str, InputSpec]:
-        """Step input specifications.
-
-        This depends on the upstream steps in a pipeline and can therefore
-        only be accessed once the step has been called in a pipeline.
-
-        Raises:
-            RuntimeError: If this property is accessed before the step was
-                called in a pipeline.
-
-        Returns:
-            The step input specifications.
-        """
-        if not self._has_been_called:
-            raise RuntimeError(
-                "Step inputs can only be accessed once a step has been called "
-                "inside a pipeline."
-            )
-        return self._inputs
+        self._upstream_steps.add(step)
 
     @property
     def source_object(self) -> Any:
         """The source object of this step.
 
-        This is either a function wrapped by the `@step` decorator or a custom
-        step class.
-
         Returns:
             The source object of this step.
         """
-        if self._created_by_functional_api():
-            return self.entrypoint
         return self.__class__
 
     @property
@@ -453,38 +348,18 @@ class BaseStep(metaclass=BaseStepMeta):
         for name, output in self.configuration.outputs.items():
             if output.materializer_source:
                 key = f"{name}_materializer_source"
-                materializer_class = source_utils.load(
-                    output.materializer_source
-                )
-                parameters[key] = source_code_utils.get_hashed_source_code(
-                    materializer_class
-                )
+                hash_ = hashlib.md5()
+
+                for source in output.materializer_source:
+                    materializer_class = source_utils.load(source)
+                    code_hash = source_code_utils.get_hashed_source_code(
+                        materializer_class
+                    )
+                    hash_.update(code_hash.encode())
+
+                parameters[key] = hash_.hexdigest()
 
         return parameters
-
-    def _apply_class_configuration(self, options: Dict[str, Any]) -> None:
-        """Applies the configurations specified on the step class.
-
-        Args:
-            options: Class configurations.
-        """
-        step_operator = options.pop(PARAM_STEP_OPERATOR, None)
-        settings = options.pop(PARAM_SETTINGS, None) or {}
-        output_materializers = options.pop(PARAM_OUTPUT_MATERIALIZERS, None)
-        extra = options.pop(PARAM_EXTRA_OPTIONS, None)
-        experiment_tracker = options.pop(PARAM_EXPERIMENT_TRACKER, None)
-        on_failure = options.pop(PARAM_ON_FAILURE, None)
-        on_success = options.pop(PARAM_ON_SUCCESS, None)
-
-        self.configure(
-            experiment_tracker=experiment_tracker,
-            step_operator=step_operator,
-            output_materializers=output_materializers,
-            settings=settings,
-            extra=extra,
-            on_failure=on_failure,
-            on_success=on_success,
-        )
 
     def _verify_and_apply_init_params(self, *args: Any, **kwargs: Any) -> None:
         """Verifies the initialization args and kwargs of this step.
@@ -501,7 +376,9 @@ class BaseStep(metaclass=BaseStepMeta):
             StepInterfaceError: If there are too many arguments or arguments
                 with a wrong name/type.
         """
-        maximum_arg_count = 1 if self.PARAMETERS_CLASS else 0
+        maximum_arg_count = (
+            1 if self.entrypoint_definition.legacy_params else 0
+        )
         arg_count = len(args) + len(kwargs)
         if arg_count > maximum_arg_count:
             raise StepInterfaceError(
@@ -510,18 +387,18 @@ class BaseStep(metaclass=BaseStepMeta):
                 f"'{self.name}' step."
             )
 
-        if self.PARAMETERS_FUNCTION_PARAMETER_NAME and self.PARAMETERS_CLASS:
+        if self.entrypoint_definition.legacy_params:
             if args:
                 config = args[0]
             elif kwargs:
                 key, config = kwargs.popitem()
 
-                if key != self.PARAMETERS_FUNCTION_PARAMETER_NAME:
+                if key != self.entrypoint_definition.legacy_params.name:
                     raise StepInterfaceError(
                         f"Unknown keyword argument '{key}' when creating a "
                         f"'{self.name}' step, only expected a single "
                         "argument with key "
-                        f"'{self.PARAMETERS_FUNCTION_PARAMETER_NAME}'."
+                        f"'{self.entrypoint_definition.legacy_params.name}'."
                     )
             else:
                 # This step requires configuration parameters but no parameters
@@ -531,150 +408,187 @@ class BaseStep(metaclass=BaseStepMeta):
                 # that all parameters are set before running the step
                 return
 
-            if not isinstance(config, self.PARAMETERS_CLASS):
+            if not isinstance(
+                config, self.entrypoint_definition.legacy_params.annotation
+            ):
                 raise StepInterfaceError(
                     f"`{config}` object passed when creating a "
                     f"'{self.name}' step is not a "
-                    f"`{self.PARAMETERS_CLASS.__name__}` instance."
+                    f"`{self.entrypoint_definition.legacy_params.annotation.__name__} "
+                    "` instance."
                 )
 
             self.configure(parameters=config)
 
-    def _validate_input_artifacts(
-        self, *artifacts: _OutputArtifact, **kw_artifacts: _OutputArtifact
-    ) -> Dict[str, _OutputArtifact]:
-        """Verifies and prepares the input artifacts for running this step.
+    def _parse_call_args(
+        self, *args: Any, **kwargs: Any
+    ) -> Tuple[
+        Dict[str, "StepArtifact"],
+        Dict[str, "ExternalArtifact"],
+        Dict[str, Any],
+    ]:
+        """Parses the call args for the step entrypoint.
 
         Args:
-            *artifacts: Positional input artifacts passed to
-                the __call__ method.
-            **kw_artifacts: Keyword input artifacts passed to
-                the __call__ method.
-
-        Returns:
-            Dictionary containing both the positional and keyword input
-            artifacts.
+            *args: Entrypoint function arguments.
+            **kwargs: Entrypoint function keyword arguments.
 
         Raises:
-            StepInterfaceError: If there are too many or too few artifacts.
+            StepInterfaceError: If invalid function arguments were passed.
+
+        Returns:
+            The artifacts, external artifacts and parameters for the step.
         """
-        input_artifact_keys = list(self.INPUT_SIGNATURE.keys())
-        if len(artifacts) > len(input_artifact_keys):
+        signature = get_step_entrypoint_signature(step=self)
+
+        try:
+            bound_args = signature.bind_partial(*args, **kwargs)
+        except TypeError as e:
             raise StepInterfaceError(
-                f"Too many input artifacts for step '{self.name}'. "
-                f"This step expects {len(input_artifact_keys)} artifact(s) "
-                f"but got {len(artifacts) + len(kw_artifacts)}."
-            )
+                f"Wrong arguments when calling step '{self.name}': {e}"
+            ) from e
 
-        combined_artifacts = {}
+        artifacts = {}
+        external_artifacts = {}
+        parameters = {}
 
-        for i, artifact in enumerate(artifacts):
-            if not isinstance(artifact, BaseStep._OutputArtifact):
-                raise StepInterfaceError(
-                    f"Wrong argument type (`{type(artifact)}`) for positional "
-                    f"argument {i} of step '{self.name}'. Only outputs "
-                    f"from previous steps can be used as arguments when "
-                    f"connecting steps."
-                )
+        for key, value in bound_args.arguments.items():
+            self.entrypoint_definition.validate_input(key=key, value=value)
 
-            key = input_artifact_keys[i]
-            combined_artifacts[key] = artifact
+            if isinstance(value, StepArtifact):
+                artifacts[key] = value
+                if key in self.configuration.parameters:
+                    logger.warning(
+                        "Got duplicate value for step input %s, using value "
+                        "provided as artifact.",
+                        key,
+                    )
+            elif isinstance(value, ExternalArtifact):
+                external_artifacts[key] = value
+                if not value._id:
+                    # If the external artifact references a fixed artifact by
+                    # ID, caching behaves as expected.
+                    logger.warning(
+                        "Using an external artifact as step input currently "
+                        "invalidates caching for the step and all downstream "
+                        "steps. Future releases will introduce hashing of "
+                        "artifacts which will improve this behavior."
+                    )
+            else:
+                parameters[key] = value
 
-        for key, artifact in kw_artifacts.items():
-            if key in combined_artifacts:
-                # an artifact for this key was already set by
-                # the positional input artifacts
-                raise StepInterfaceError(
-                    f"Unexpected keyword argument '{key}' for step "
-                    f"'{self.name}'. An artifact for this key was "
-                    f"already passed as a positional argument."
-                )
+        # Above we iterated over the provided arguments which should overwrite
+        # any parameters previously defined on the step instance. Now we apply
+        # the default values on the entrypoint function and add those as
+        # parameters for any argument that has no value yet. If we were to do
+        # that in the above loop, we would overwrite previously configured
+        # parameters with the default values.
+        bound_args.apply_defaults()
+        for key, value in bound_args.arguments.items():
+            self.entrypoint_definition.validate_input(key=key, value=value)
+            if (
+                key not in artifacts
+                and key not in external_artifacts
+                and key not in self.configuration.parameters
+            ):
+                parameters[key] = value
 
-            if not isinstance(artifact, BaseStep._OutputArtifact):
-                raise StepInterfaceError(
-                    f"Wrong argument type (`{type(artifact)}`) for argument "
-                    f"'{key}' of step '{self.name}'. Only outputs from "
-                    f"previous steps can be used as arguments when "
-                    f"connecting steps."
-                )
-
-            combined_artifacts[key] = artifact
-
-        # check if there are any missing or unexpected artifacts
-        expected_artifacts = set(self.INPUT_SIGNATURE.keys())
-        actual_artifacts = set(combined_artifacts.keys())
-        missing_artifacts = expected_artifacts - actual_artifacts
-        unexpected_artifacts = actual_artifacts - expected_artifacts
-
-        if missing_artifacts:
-            raise StepInterfaceError(
-                f"Missing input artifact(s) for step "
-                f"'{self.name}': {missing_artifacts}."
-            )
-
-        if unexpected_artifacts:
-            raise StepInterfaceError(
-                f"Unexpected input artifact(s) for step "
-                f"'{self.name}': {unexpected_artifacts}. This step "
-                f"only requires the following artifacts: {expected_artifacts}."
-            )
-
-        return combined_artifacts
+        return artifacts, external_artifacts, parameters
 
     def __call__(
-        self, *artifacts: _OutputArtifact, **kw_artifacts: _OutputArtifact
-    ) -> Union[_OutputArtifact, List[_OutputArtifact]]:
-        """Finalizes the step input and output configuration.
+        self,
+        *args: Any,
+        id: Optional[str] = None,
+        after: Union[str, Sequence[str], None] = None,
+        **kwargs: Any,
+    ) -> Any:
+        """Handle a call of the step.
+
+        This method does one of two things:
+        * If there is an active pipeline context, it adds an invocation of the
+          step instance to the pipeline.
+        * If no pipeline is active, it calls the step entrypoint function.
 
         Args:
-            *artifacts: Positional input artifacts passed to
-                the __call__ method.
-            **kw_artifacts: Keyword input artifacts passed to
-                the __call__ method.
+            *args: Entrypoint function arguments.
+            id: Invocation ID to use.
+            after: Upstream steps for the invocation.
+            **kwargs: Entrypoint function keyword arguments.
 
         Returns:
-            A single output artifact or a list of output artifacts.
-
-        Raises:
-            StepInterfaceError: If the step has already been called.
+            The outputs of the entrypoint function call.
         """
-        if self._has_been_called:
-            raise StepInterfaceError(
-                f"Step {self.name} has already been called. A ZenML step "
-                f"instance can only be called once per pipeline run."
-            )
-        self._has_been_called = True
+        from zenml.new.pipelines.pipeline import Pipeline
 
-        # Prepare the input artifacts and spec
-        input_artifacts = self._validate_input_artifacts(
-            *artifacts, **kw_artifacts
+        if not Pipeline.ACTIVE_PIPELINE:
+            # The step is being called outside of the context of a pipeline,
+            # we simply call the entrypoint
+            return self.call_entrypoint(*args, **kwargs)
+
+        (
+            input_artifacts,
+            external_artifacts,
+            parameters,
+        ) = self._parse_call_args(*args, **kwargs)
+
+        upstream_steps = {
+            artifact.invocation_id for artifact in input_artifacts.values()
+        }
+        if isinstance(after, str):
+            upstream_steps.add(after)
+        elif isinstance(after, Sequence):
+            upstream_steps = upstream_steps.union(after)
+
+        invocation_id = Pipeline.ACTIVE_PIPELINE.add_step_invocation(
+            step=self,
+            input_artifacts=input_artifacts,
+            external_artifacts=external_artifacts,
+            parameters=parameters,
+            upstream_steps=upstream_steps,
+            custom_id=id,
+            allow_id_suffix=not id,
         )
 
-        for name, input_ in input_artifacts.items():
-            self._upstream_steps.add(input_.step_name)
-            self._inputs[name] = InputSpec(
-                step_name=input_.step_name,
-                output_name=input_.name,
+        outputs = []
+        for key, annotation in self.entrypoint_definition.outputs.items():
+            output = StepArtifact(
+                invocation_id=invocation_id,
+                output_name=key,
+                annotation=annotation,
+                pipeline=Pipeline.ACTIVE_PIPELINE,
             )
+            outputs.append(output)
 
-        config = self._finalize_configuration(input_artifacts=input_artifacts)
-
-        # Resolve the returns in the right order.
-        returns = []
-        for key in self.OUTPUT_SIGNATURE:
-            materializer_source = config.outputs[key].materializer_source
-            output_artifact = BaseStep._OutputArtifact(
-                name=key,
-                step_name=self.name,
-                materializer_source=materializer_source,
-            )
-            returns.append(output_artifact)
-
-        # If its one return we just return the one channel not as a list
-        if len(returns) == 1:
-            return returns[0]
+        if len(outputs) == 1:
+            return outputs[0]
         else:
-            return returns
+            return outputs
+
+    def call_entrypoint(self, *args: Any, **kwargs: Any) -> Any:
+        """Calls the entrypoint function of the step.
+
+        Args:
+            *args: Entrypoint function arguments.
+            **kwargs: Entrypoint function keyword arguments.
+
+        Returns:
+            The return value of the entrypoint function.
+
+        Raises:
+            StepInterfaceError: If the arguments to the entrypoint function are
+                invalid.
+        """
+        try:
+            validated_args = pydantic_utils.validate_function_args(
+                self.entrypoint,
+                {"arbitrary_types_allowed": True, "smart_union": True},
+                *args,
+                **kwargs,
+            )
+        except ValidationError as e:
+            raise StepInterfaceError("Invalid entrypoint arguments.") from e
+
+        return self.entrypoint(**validated_args)
 
     @property
     def name(self) -> str:
@@ -708,6 +622,8 @@ class BaseStep(metaclass=BaseStepMeta):
         name: Optional[str] = None,
         enable_cache: Optional[bool] = None,
         enable_artifact_metadata: Optional[bool] = None,
+        enable_artifact_visualization: Optional[bool] = None,
+        enable_step_logs: Optional[bool] = None,
         experiment_tracker: Optional[str] = None,
         step_operator: Optional[str] = None,
         parameters: Optional["ParametersOrDict"] = None,
@@ -733,10 +649,13 @@ class BaseStep(metaclass=BaseStepMeta):
             step.configuration.extra # {"key2": 2}
 
         Args:
-            name: The name of the step.
+            name: DEPRECATED: The name of the step.
             enable_cache: If caching should be enabled for this step.
             enable_artifact_metadata: If artifact metadata should be enabled
                 for this step.
+            enable_artifact_visualization: If artifact visualization should be
+                enabled for this step.
+            enable_step_logs: If step logs should be enabled for this step.
             experiment_tracker: The experiment tracker to use for this step.
             step_operator: The step operator to use for this step.
             parameters: Function parameters for this step
@@ -746,24 +665,27 @@ class BaseStep(metaclass=BaseStepMeta):
                 materializer will be used for all outputs.
             settings: settings for this step.
             extra: Extra configurations for this step.
+            on_failure: Callback function in event of failure of the step. Can
+                be a function with three possible parameters, `StepContext`,
+                `BaseParameters`, and `BaseException`, or a source path to a
+                function of the same specifications (e.g. `module.my_function`)
+            on_success: Callback function in event of failure of the step. Can
+                be a function with two possible parameters, `StepContext` and
+                `BaseParameters, or a source path to a function of the same
+                specifications (e.g. `module.my_function`).
             merge: If `True`, will merge the given dictionary configurations
                 like `parameters` and `settings` with existing
                 configurations. If `False` the given configurations will
                 overwrite all existing ones. See the general description of this
                 method for an example.
-            on_failure: Callback function in event of failure of the step. Can be
-                a function with three possible parameters, `StepContext`, `BaseParameters`,
-                and `BaseException`, or a source path to a function of the same specifications
-                (e.g. `module.my_function`)
-            on_success: Callback function in event of failure of the step. Can be
-                a function with two possible parameters, `StepContext` and `BaseParameters, or
-                a source path to a function of the same specifications
-                (e.g. `module.my_function`).
 
         Returns:
             The step instance that this method was called on.
         """
         from zenml.hooks.hook_validators import resolve_and_validate_hook
+
+        if name:
+            logger.warning("Configuring the name of a step is deprecated.")
 
         def _resolve_if_necessary(
             value: Union[str, Source, Type[Any]]
@@ -775,20 +697,26 @@ class BaseStep(metaclass=BaseStepMeta):
             else:
                 return source_utils.resolve(value)
 
-        outputs: Dict[str, Dict[str, Source]] = defaultdict(dict)
-        allowed_output_names = set(self.OUTPUT_SIGNATURE)
+        def _convert_to_tuple(value: Any) -> Tuple[Source, ...]:
+            if isinstance(value, str) or not isinstance(value, Sequence):
+                return (_resolve_if_necessary(value),)
+            else:
+                return tuple(_resolve_if_necessary(v) for v in value)
+
+        outputs: Dict[str, Dict[str, Tuple[Source, ...]]] = defaultdict(dict)
+        allowed_output_names = set(self.entrypoint_definition.outputs)
 
         if output_materializers:
             if not isinstance(output_materializers, Mapping):
-                # string of materializer class to be used for all outputs
-                source = _resolve_if_necessary(output_materializers)
+                sources = _convert_to_tuple(output_materializers)
                 output_materializers = {
-                    output_name: source for output_name in allowed_output_names
+                    output_name: sources
+                    for output_name in allowed_output_names
                 }
 
             for output_name, materializer in output_materializers.items():
-                source = _resolve_if_necessary(materializer)
-                outputs[output_name]["materializer_source"] = source
+                sources = _convert_to_tuple(materializer)
+                outputs[output_name]["materializer_source"] = sources
 
         failure_hook_source = None
         if on_failure:
@@ -805,9 +733,10 @@ class BaseStep(metaclass=BaseStepMeta):
 
         values = dict_utils.remove_none_values(
             {
-                "name": name,
                 "enable_cache": enable_cache,
                 "enable_artifact_metadata": enable_artifact_metadata,
+                "enable_artifact_visualization": enable_artifact_visualization,
+                "enable_step_logs": enable_step_logs,
                 "experiment_tracker": experiment_tracker,
                 "step_operator": step_operator,
                 "parameters": parameters,
@@ -821,6 +750,85 @@ class BaseStep(metaclass=BaseStepMeta):
         config = StepConfigurationUpdate(**values)
         self._apply_configuration(config, merge=merge)
         return self
+
+    def with_options(
+        self,
+        enable_cache: Optional[bool] = None,
+        enable_artifact_metadata: Optional[bool] = None,
+        enable_artifact_visualization: Optional[bool] = None,
+        enable_step_logs: Optional[bool] = None,
+        experiment_tracker: Optional[str] = None,
+        step_operator: Optional[str] = None,
+        parameters: Optional["ParametersOrDict"] = None,
+        output_materializers: Optional[
+            "OutputMaterializersSpecification"
+        ] = None,
+        settings: Optional[Mapping[str, "SettingsOrDict"]] = None,
+        extra: Optional[Dict[str, Any]] = None,
+        on_failure: Optional["HookSpecification"] = None,
+        on_success: Optional["HookSpecification"] = None,
+        merge: bool = True,
+    ) -> "BaseStep":
+        """Copies the step and applies the given configurations.
+
+        Args:
+            enable_cache: If caching should be enabled for this step.
+            enable_artifact_metadata: If artifact metadata should be enabled
+                for this step.
+            enable_artifact_visualization: If artifact visualization should be
+                enabled for this step.
+            enable_step_logs: If step logs should be enabled for this step.
+            experiment_tracker: The experiment tracker to use for this step.
+            step_operator: The step operator to use for this step.
+            parameters: Function parameters for this step
+            output_materializers: Output materializers for this step. If
+                given as a dict, the keys must be a subset of the output names
+                of this step. If a single value (type or string) is given, the
+                materializer will be used for all outputs.
+            settings: settings for this step.
+            extra: Extra configurations for this step.
+            on_failure: Callback function in event of failure of the step. Can
+                be a function with three possible parameters, `StepContext`,
+                `BaseParameters`, and `BaseException`, or a source path to a
+                function of the same specifications (e.g. `module.my_function`)
+            on_success: Callback function in event of failure of the step. Can
+                be a function with two possible parameters, `StepContext` and
+                `BaseParameters, or a source path to a function of the same
+                specifications (e.g. `module.my_function`).
+            merge: If `True`, will merge the given dictionary configurations
+                like `parameters` and `settings` with existing
+                configurations. If `False` the given configurations will
+                overwrite all existing ones. See the general description of this
+                method for an example.
+
+        Returns:
+            The copied step instance.
+        """
+        step_copy = self.copy()
+        step_copy.configure(
+            enable_cache=enable_cache,
+            enable_artifact_metadata=enable_artifact_metadata,
+            enable_artifact_visualization=enable_artifact_visualization,
+            enable_step_logs=enable_step_logs,
+            experiment_tracker=experiment_tracker,
+            step_operator=step_operator,
+            parameters=parameters,
+            output_materializers=output_materializers,
+            settings=settings,
+            extra=extra,
+            on_failure=on_failure,
+            on_success=on_success,
+            merge=merge,
+        )
+        return step_copy
+
+    def copy(self) -> "BaseStep":
+        """Copies the step.
+
+        Returns:
+            The step copy.
+        """
+        return copy.deepcopy(self)
 
     def _apply_configuration(
         self,
@@ -869,33 +877,13 @@ class BaseStep(metaclass=BaseStepMeta):
         if not parameters:
             return
 
-        if not self.PARAMETERS_CLASS:
-            raise StepInterfaceError(
-                f"Function parameters configured for step {self.name} which "
-                "does not accept any function parameters."
-            )
+        for key, value in parameters.items():
+            if key in self.entrypoint_definition.inputs:
+                self.entrypoint_definition.validate_input(key=key, value=value)
 
-    def _validate_inputs(
-        self, inputs: Mapping[str, ArtifactConfiguration]
-    ) -> None:
-        """Validates the step input configuration.
-
-        Args:
-            inputs: The configured step inputs.
-
-        Raises:
-            StepInterfaceError: If an input for a non-existent name is
-                configured.
-        """
-        allowed_input_names = set(self.INPUT_SIGNATURE)
-        for input_name in inputs.keys():
-            if input_name not in allowed_input_names:
+            elif not self.entrypoint_definition.legacy_params:
                 raise StepInterfaceError(
-                    f"Got unexpected artifact for non-existent "
-                    f"input '{input_name}' in step '{self.name}'. "
-                    f"Only artifacts for the inputs "
-                    f"{allowed_input_names} of this step can"
-                    f" be registered."
+                    "Can't set parameter without param class."
                 )
 
     def _validate_outputs(
@@ -911,7 +899,7 @@ class BaseStep(metaclass=BaseStepMeta):
                 configured of an output artifact/materializer source does not
                 resolve to the correct class.
         """
-        allowed_output_names = set(self.OUTPUT_SIGNATURE)
+        allowed_output_names = set(self.entrypoint_definition.outputs)
         for output_name, output in outputs.items():
             if output_name not in allowed_output_names:
                 raise StepInterfaceError(
@@ -923,17 +911,46 @@ class BaseStep(metaclass=BaseStepMeta):
                 )
 
             if output.materializer_source:
-                if not source_utils.validate_source_class(
-                    output.materializer_source, expected_class=BaseMaterializer
-                ):
-                    raise StepInterfaceError(
-                        f"Materializer source `{output.materializer_source}` "
-                        f"for output '{output_name}' of step '{self.name}' "
-                        "does not resolve to a  `BaseMaterializer` subclass."
-                    )
+                for source in output.materializer_source:
+                    if not source_utils.validate_source_class(
+                        source, expected_class=BaseMaterializer
+                    ):
+                        raise StepInterfaceError(
+                            f"Materializer source `{source}` "
+                            f"for output '{output_name}' of step '{self.name}' "
+                            "does not resolve to a `BaseMaterializer` subclass."
+                        )
+
+    def _validate_inputs(
+        self,
+        input_artifacts: Dict[str, "StepArtifact"],
+        external_artifacts: Dict[str, UUID],
+    ) -> None:
+        """Validates the step inputs.
+
+        This method makes sure that all inputs are provided either as an
+        artifact or parameter.
+
+        Args:
+            input_artifacts: The input artifacts.
+            external_artifacts: The external input artifacts.
+
+        Raises:
+            StepInterfaceError: If an entrypoint input is missing.
+        """
+        for key in self.entrypoint_definition.inputs.keys():
+            if (
+                key in input_artifacts
+                or key in self.configuration.parameters
+                or key in external_artifacts
+            ):
+                continue
+            raise StepInterfaceError(f"Missing entrypoint input {key}.")
 
     def _finalize_configuration(
-        self, input_artifacts: Dict[str, _OutputArtifact]
+        self,
+        input_artifacts: Dict[str, "StepArtifact"],
+        external_artifacts: Dict[str, UUID],
     ) -> StepConfiguration:
         """Finalizes the configuration after the step was called.
 
@@ -944,44 +961,85 @@ class BaseStep(metaclass=BaseStepMeta):
 
         Args:
             input_artifacts: The input artifacts of this step.
+            external_artifacts: The external artifacts of this step.
 
         Returns:
             The finalized step configuration.
         """
-        outputs: Dict[str, Dict[str, Source]] = defaultdict(dict)
+        outputs: Dict[str, Dict[str, Tuple[Source, ...]]] = defaultdict(dict)
 
-        for output_name, output_class in self.OUTPUT_SIGNATURE.items():
+        for (
+            output_name,
+            output_annotation,
+        ) in self.entrypoint_definition.outputs.items():
             output = self._configuration.outputs.get(
                 output_name, PartialArtifactConfiguration()
             )
 
-            if not output.materializer_source:
-                materializer_class = materializer_registry[output_class]
-                outputs[output_name][
-                    "materializer_source"
-                ] = source_utils.resolve(materializer_class)
+            from pydantic.typing import (
+                get_origin,
+                is_none_type,
+                is_union,
+            )
 
-        function_parameters = self._finalize_function_parameters()
-        values = dict_utils.remove_none_values(
-            {
-                "outputs": outputs or None,
-                "parameters": function_parameters,
-            }
+            from zenml.materializers import CloudpickleMaterializer
+            from zenml.steps.utils import get_args
+
+            if not output.materializer_source:
+                if output_annotation is Any:
+                    logger.warning(
+                        f"No materializer specified for output with `Any` type "
+                        f"annotation (output {output_name} of step {self.name} "
+                        "). The Cloudpickle materializer will be used for the "
+                        "artifact but the artifact won't be readable in "
+                        "different Python versions. Please consider specifying "
+                        "an explicit materializer for this output by following "
+                        "this guide: https://docs.zenml.io/advanced-guide/pipelines/materializers."
+                    )
+
+                    outputs[output_name]["materializer_source"] = (
+                        source_utils.resolve(CloudpickleMaterializer),
+                    )
+
+                if is_union(
+                    get_origin(output_annotation) or output_annotation
+                ):
+                    output_types = tuple(
+                        type(None)
+                        if is_none_type(output_type)
+                        else output_type
+                        for output_type in get_args(output_annotation)
+                    )
+                else:
+                    output_types = (output_annotation,)
+
+                materializer_sources = []
+
+                for output_type in output_types:
+                    materializer_class = materializer_registry[output_type]
+                    materializer_sources.append(
+                        source_utils.resolve(materializer_class)
+                    )
+
+                outputs[output_name]["materializer_source"] = tuple(
+                    materializer_sources
+                )
+
+        parameters = self._finalize_parameters()
+        self.configure(parameters=parameters, merge=False)
+        self._validate_inputs(
+            input_artifacts=input_artifacts,
+            external_artifacts=external_artifacts,
         )
+
+        values = dict_utils.remove_none_values({"outputs": outputs or None})
         config = StepConfigurationUpdate(**values)
         self._apply_configuration(config)
 
-        inputs = {}
-        for input_name, artifact in input_artifacts.items():
-            inputs[input_name] = ArtifactConfiguration(
-                materializer_source=artifact.materializer_source,
-            )
-        self._validate_inputs(inputs)
-
         self._configuration = self._configuration.copy(
             update={
-                "inputs": inputs,
                 "caching_parameters": self.caching_parameters,
+                "external_input_artifacts": external_artifacts,
             }
         )
 
@@ -990,7 +1048,37 @@ class BaseStep(metaclass=BaseStepMeta):
         )
         return complete_configuration
 
-    def _finalize_function_parameters(self) -> Dict[str, Any]:
+    def _finalize_parameters(self) -> Dict[str, Any]:
+        """Finalizes the config parameters for running this step.
+
+        Returns:
+            All parameter values for running this step.
+        """
+        params = {}
+        for key, value in self.configuration.parameters.items():
+            if key not in self.entrypoint_definition.inputs:
+                continue
+
+            annotation = self.entrypoint_definition.inputs[key].annotation
+            if inspect.isclass(annotation) and issubclass(
+                annotation, BaseModel
+            ):
+                # Make sure we have all necessary values to instantiate the
+                # pydantic model later
+                model = annotation(**value)
+                params[key] = model.dict()
+            else:
+                params[key] = value
+
+        if self.entrypoint_definition.legacy_params:
+            legacy_params = self._finalize_legacy_parameters()
+            params[
+                self.entrypoint_definition.legacy_params.name
+            ] = legacy_params
+
+        return params
+
+    def _finalize_legacy_parameters(self) -> Dict[str, Any]:
         """Verifies and prepares the config parameters for running this step.
 
         When the step requires config parameters, this method:
@@ -1006,20 +1094,44 @@ class BaseStep(metaclass=BaseStepMeta):
                 more config parameters.
             StepInterfaceError: If the parameter class validation failed.
         """
-        if not self.PARAMETERS_CLASS:
+        if not self.entrypoint_definition.legacy_params:
             return {}
 
-        # we need to store a value for all config keys inside the
-        # metadata store to make sure caching works as expected
-        missing_keys = []
+        logger.warning(
+            "The `BaseParameters` class to define step parameters is "
+            "deprecated. Check out our docs "
+            "https://docs.zenml.io/user-guide/advanced-guide/configure-steps-pipelines "
+            "for information on how to parameterize your steps. As a quick "
+            "fix to get rid of this warning, make sure your parameter class "
+            "inherits from `pydantic.BaseModel` instead of the "
+            "`BaseParameters` class."
+        )
+
+        # parameters for the `BaseParameters` class specified in the "new" way
+        # by specifying a dict of parameters for the corresponding key
+        params_defined_in_new_way = (
+            self.configuration.parameters.get(
+                self.entrypoint_definition.legacy_params.name
+            )
+            or {}
+        )
+
         values = {}
-        for name, field in self.PARAMETERS_CLASS.__fields__.items():
+        missing_keys = []
+        for (
+            name,
+            field,
+        ) in (
+            self.entrypoint_definition.legacy_params.annotation.__fields__.items()
+        ):
             if name in self.configuration.parameters:
                 # a value for this parameter has been set already
                 values[name] = self.configuration.parameters[name]
-                continue
-
-            if field.required:
+            elif name in params_defined_in_new_way:
+                # a value for this parameter has been set in the "new" way
+                # already
+                values[name] = params_defined_in_new_way[name]
+            elif field.required:
                 # this field has no default value set and therefore needs
                 # to be passed via an initialized config object
                 missing_keys.append(name)
@@ -1029,11 +1141,21 @@ class BaseStep(metaclass=BaseStepMeta):
 
         if missing_keys:
             raise MissingStepParameterError(
-                self.name, missing_keys, self.PARAMETERS_CLASS
+                self.name,
+                missing_keys,
+                self.entrypoint_definition.legacy_params.annotation,
             )
 
+        if (
+            self.entrypoint_definition.legacy_params.annotation.__config__.extra
+            == Extra.allow
+        ):
+            # Add all parameters for the config class for backwards
+            # compatibility if the config class allows extra attributes
+            values.update(self.configuration.parameters)
+
         try:
-            self.PARAMETERS_CLASS(**values)
+            self.entrypoint_definition.legacy_params.annotation(**values)
         except ValidationError:
             raise StepInterfaceError("Failed to validate function parameters.")
 

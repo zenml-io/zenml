@@ -25,6 +25,7 @@ from google.cloud.functions_v2.types import (
     CreateFunctionRequest,
     Function,
     GetFunctionRequest,
+    ServiceConfig,
     Source,
     StorageSource,
 )
@@ -106,6 +107,7 @@ def create_cloud_function(
     location: str,
     function_name: str,
     credentials: Optional["Credentials"] = None,
+    function_service_account_email: Optional[str] = None,
     timeout: int = 1800,
 ) -> str:
     """Create google cloud function from specified directory path.
@@ -117,6 +119,7 @@ def create_cloud_function(
         location: GCP location name.
         function_name: Name of the function to create.
         credentials: Credentials to use for GCP services.
+        function_service_account_email: The service account email the function will run with.
         timeout: Timeout in seconds.
 
     Returns:
@@ -144,6 +147,11 @@ def create_cloud_function(
                     runtime="python38",
                     source=Source(storage_source=storage_source),
                 ),
+                service_config=ServiceConfig(
+                    service_account_email=function_service_account_email
+                )
+                if function_service_account_email
+                else None,
             ),
         )
     )

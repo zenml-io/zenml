@@ -54,14 +54,36 @@ def _get_kubernetes_orchestrator(
 
 def _patch_k8s_clients(mocker):
     """Helper function to patch k8s clients."""
+
+    mock_context = {"name": K8S_CONTEXT}
+
+    def mock_load_kube_config(context: str) -> None:
+        mock_context["name"] = context
+
+    def mock_load_incluster_config() -> None:
+        mock_context["name"] = "incluster"
+
     mocker.patch(
-        "zenml.integrations.kubernetes.orchestrators.kubernetes_orchestrator.KubernetesOrchestrator._initialize_k8s_clients",
+        "zenml.integrations.kubernetes.orchestrators.kubernetes_orchestrator.KubernetesOrchestrator.get_kube_client",
         return_value=(None),
     )
     mocker.patch(
-        "zenml.integrations.kubernetes.orchestrators.kubernetes_orchestrator.KubernetesOrchestrator.get_kubernetes_contexts",
-        return_value=([K8S_CONTEXT], K8S_CONTEXT),
+        "kubernetes.config.load_kube_config",
+        side_effect=mock_load_kube_config,
     )
+    mocker.patch(
+        "kubernetes.config.load_incluster_config",
+        side_effect=mock_load_incluster_config,
+    )
+
+    mocker.patch(
+        "kubernetes.config.list_kube_config_contexts",
+        return_value=([mock_context], mock_context),
+    )
+
+    mocker.patch("kubernetes.client.CoreV1Api")
+    mocker.patch("kubernetes.client.BatchV1beta1Api")
+    mocker.patch("kubernetes.client.RbacAuthorizationV1Api")
 
 
 def test_kubernetes_orchestrator_remote_stack(

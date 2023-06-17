@@ -112,12 +112,39 @@ class SeldonModelDeployer(BaseModelDeployer):
 
         Returns:
             The Seldon Core client.
+
+        Raises:
+            RuntimeError: If the Kubernetes namespace is not configured when
+                using a service connector to deploy models with Seldon Core.
         """
-        if not self._client:
-            self._client = SeldonClient(
-                context=self.config.kubernetes_context,
-                namespace=self.config.kubernetes_namespace,
-            )
+        from kubernetes import client as k8s_client
+
+        # Refresh the client also if the connector has expired
+        if self._client and not self.connector_has_expired():
+            return self._client
+
+        connector = self.get_connector()
+        kube_client: Optional[k8s_client.ApiClient] = None
+        if connector:
+            if not self.config.kubernetes_namespace:
+                raise RuntimeError(
+                    "The Kubernetes namespace must be explicitly configured in "
+                    "the stack component when using a service connector to "
+                    "deploy models with Seldon Core."
+                )
+            kube_client = connector.connect()
+            if not isinstance(kube_client, k8s_client.ApiClient):
+                raise RuntimeError(
+                    f"Expected a k8s_client.ApiClient while trying to use the "
+                    f"linked connector, but got {type(kube_client)}."
+                )
+
+        self._client = SeldonClient(
+            context=self.config.kubernetes_context,
+            namespace=self.config.kubernetes_namespace,
+            kube_client=kube_client,
+        )
+
         return self._client
 
     @property
@@ -191,7 +218,6 @@ class SeldonModelDeployer(BaseModelDeployer):
         # if a Kubernetes secret was explicitly configured in the model
         # deployer, use that instead of creating a new one
         if self.config.kubernetes_secret_name:
-
             logger.warning(
                 "Your Seldon Core model deployer is configured to use a "
                 "pre-existing Kubernetes secret that holds credentials needed "
@@ -210,7 +236,6 @@ class SeldonModelDeployer(BaseModelDeployer):
         # if a ZenML secret reference was configured in the model deployer,
         # create a Kubernetes secret from that
         if self.config.secret:
-
             logger.warning(
                 "Your Seldon Core model deployer is configured to use a "
                 "ZenML secret that holds credentials needed to access the "
@@ -237,7 +262,6 @@ class SeldonModelDeployer(BaseModelDeployer):
             )
 
         else:
-
             # if no ZenML secret was configured, try to convert the credentials
             # configured for the artifact store, if any are included, into
             # the format expected by Seldon Core
@@ -315,22 +339,43 @@ class SeldonModelDeployer(BaseModelDeployer):
             gcp_credentials = artifact_store.get_credentials()
 
             if gcp_credentials:
-
                 # Convert the credentials into the format expected by Seldon
                 # Core
-                if gcp_credentials.get("type") == "service_account":
+                if isinstance(gcp_credentials, dict):
+                    if gcp_credentials.get("type") == "service_account":
+                        return SeldonGSSecretSchema(
+                            name="",
+                            rclone_config_gs_service_account_credentials=json.dumps(
+                                gcp_credentials
+                            ),
+                        )
+                    elif gcp_credentials.get("type") == "authorized_user":
+                        return SeldonGSSecretSchema(
+                            name="",
+                            rclone_config_gs_client_id=gcp_credentials.get(
+                                "client_id"
+                            ),
+                            rclone_config_gs_client_secret=gcp_credentials.get(
+                                "client_secret"
+                            ),
+                            rclone_config_gs_token=json.dumps(
+                                dict(
+                                    refresh_token=gcp_credentials.get(
+                                        "refresh_token"
+                                    )
+                                )
+                            ),
+                        )
+                else:
+                    # Connector token-based authentication
                     return SeldonGSSecretSchema(
                         name="",
-                        rclone_config_gs_service_account_credentials=json.dumps(
-                            gcp_credentials
+                        rclone_config_gs_token=json.dumps(
+                            dict(
+                                access_token=gcp_credentials.token,
+                            )
                         ),
                     )
-
-                # Assume token-based authentication
-                return SeldonGSSecretSchema(
-                    name="",
-                    rclone_config_gs_token=json.dumps(gcp_credentials),
-                )
 
             logger.warning(
                 "No credentials are configured for the active GCS artifact "
@@ -726,7 +771,6 @@ class SeldonModelDeployer(BaseModelDeployer):
         service.stop(timeout=timeout, force=force)
 
         if service.config.secret_name:
-
             # delete the Kubernetes secret used to store the authentication
             # information for the Seldon Core model server storage initializer
             # if no other Seldon Core model servers are using it

@@ -17,21 +17,35 @@ from typing import Any, Dict, List, Optional, Sequence, Tuple, cast
 
 import pandas as pd
 from evidently.model_profile import Profile  # type: ignore[import]
-from pydantic import Field
 
+from zenml import step
 from zenml.integrations.evidently.column_mapping import (
     EvidentlyColumnMapping,
 )
 from zenml.integrations.evidently.data_validators import EvidentlyDataValidator
 from zenml.steps import Output
-from zenml.steps.base_parameters import BaseParameters
-from zenml.steps.base_step import BaseStep
+from zenml.types import HTMLString
 
 
-class EvidentlyProfileParameters(BaseParameters):
-    """Parameters class for Evidently profile steps.
+@step
+def evidently_profile_step(
+    reference_dataset: pd.DataFrame,
+    comparison_dataset: pd.DataFrame,
+    column_mapping: Optional[EvidentlyColumnMapping] = None,
+    ignored_cols: Optional[List[str]] = None,
+    profile_sections: Optional[Sequence[str]] = None,
+    verbose_level: int = 1,
+    profile_options: Optional[Sequence[Tuple[str, Dict[str, Any]]]] = None,
+    dashboard_options: Optional[Sequence[Tuple[str, Dict[str, Any]]]] = None,
+) -> Output(  # type:ignore[valid-type]
+    profile=Profile, dashboard=HTMLString
+):
+    """Run model drift analyses on two input pandas datasets.
 
-    Attributes:
+    Args:
+        reference_dataset: a Pandas DataFrame
+        comparison_dataset: a Pandas DataFrame of new data you wish to
+            compare against the reference data
         column_mapping: properties of the DataFrame columns used
         ignored_cols: columns to ignore during the Evidently profile step
         profile_sections: a list identifying the Evidently profile sections to be
@@ -48,111 +62,55 @@ class EvidentlyProfileParameters(BaseParameters):
             profile constructor. See `EvidentlyDataValidator._unpack_options`.
         dashboard_options: Optional list of options to pass to the
             dashboard constructor. See `EvidentlyDataValidator._unpack_options`.
-    """
-
-    column_mapping: Optional[EvidentlyColumnMapping] = None
-    ignored_cols: Optional[List[str]] = None
-    profile_sections: Optional[Sequence[str]] = None
-    verbose_level: int = 1
-    profile_options: Sequence[Tuple[str, Dict[str, Any]]] = Field(
-        default_factory=list
-    )
-    dashboard_options: Sequence[Tuple[str, Dict[str, Any]]] = Field(
-        default_factory=list
-    )
-
-
-class EvidentlyProfileStep(BaseStep):
-    """Step implementation implementing an Evidently Profile Step."""
-
-    def entrypoint(
-        self,
-        reference_dataset: pd.DataFrame,
-        comparison_dataset: pd.DataFrame,
-        params: EvidentlyProfileParameters,
-    ) -> Output(  # type:ignore[valid-type]
-        profile=Profile, dashboard=str
-    ):
-        """Main entrypoint for the Evidently categorical target drift detection step.
-
-        Args:
-            reference_dataset: a Pandas DataFrame
-            comparison_dataset: a Pandas DataFrame of new data you wish to
-                compare against the reference data
-            params: the parameters for the step
-
-        Returns:
-            profile: Evidently Profile generated for the data drift
-            dashboard: HTML report extracted from an Evidently Dashboard
-              generated for the data drift.
-
-        Raises:
-            ValueError: If ignored_cols is an empty list
-            ValueError: If column is not found in reference or comparison
-                dataset
-        """
-        data_validator = cast(
-            EvidentlyDataValidator,
-            EvidentlyDataValidator.get_active_data_validator(),
-        )
-        column_mapping = None
-
-        if params.ignored_cols is None:
-            pass
-
-        elif not params.ignored_cols:
-            raise ValueError(
-                f"Expects None or list of columns in strings, but got {params.ignored_cols}"
-            )
-
-        elif not (
-            set(params.ignored_cols).issubset(set(reference_dataset.columns))
-        ) or not (
-            set(params.ignored_cols).issubset(set(comparison_dataset.columns))
-        ):
-            raise ValueError(
-                "Column is not found in reference or comparison datasets"
-            )
-
-        else:
-            reference_dataset = reference_dataset.drop(
-                labels=list(params.ignored_cols), axis=1
-            )
-            comparison_dataset = comparison_dataset.drop(
-                labels=list(params.ignored_cols), axis=1
-            )
-
-        if params.column_mapping:
-            column_mapping = (
-                params.column_mapping.to_evidently_column_mapping()
-            )
-        profile, dashboard = data_validator.legacy_data_profiling(
-            dataset=reference_dataset,
-            comparison_dataset=comparison_dataset,
-            profile_list=params.profile_sections,
-            column_mapping=column_mapping,
-            verbose_level=params.verbose_level,
-            profile_options=params.profile_options,
-            dashboard_options=params.dashboard_options,
-        )
-        return [profile, dashboard.html()]
-
-
-def evidently_profile_step(
-    step_name: str,
-    params: EvidentlyProfileParameters,
-) -> BaseStep:
-    """Shortcut function to create a new instance of the EvidentlyProfileConfig step.
-
-    The returned EvidentlyProfileStep can be used in a pipeline to
-    run model drift analyses on two input pd.DataFrame datasets and return the
-    results as an Evidently profile object and a rendered dashboard object.
-
-    Args:
-        step_name: The name of the step
-        params: The parameters for the step
 
     Returns:
-        a EvidentlyProfileStep step instance.
+        profile: Evidently Profile generated for the data drift.
+        dashboard: HTML report extracted from an Evidently Dashboard generated
+            for the data drift.
+
+    Raises:
+        ValueError: If ignored_cols is an empty list.
+        ValueError: If column is not found in reference or comparison dataset.
     """
-    return EvidentlyProfileStep(name=step_name, params=params)
+    data_validator = cast(
+        EvidentlyDataValidator,
+        EvidentlyDataValidator.get_active_data_validator(),
+    )
+    column_mapping = None
+
+    if ignored_cols is None:
+        pass
+
+    elif not ignored_cols:
+        raise ValueError(
+            f"Expects None or list of columns in strings, but got {ignored_cols}"
+        )
+
+    elif not set(ignored_cols).issubset(
+        set(reference_dataset.columns)
+    ) or not set(ignored_cols).issubset(set(comparison_dataset.columns)):
+        raise ValueError(
+            "Column is not found in reference or comparison datasets"
+        )
+
+    else:
+        reference_dataset = reference_dataset.drop(
+            labels=list(ignored_cols), axis=1
+        )
+        comparison_dataset = comparison_dataset.drop(
+            labels=list(ignored_cols), axis=1
+        )
+
+    if column_mapping:
+        column_mapping = column_mapping.to_evidently_column_mapping()
+
+    profile, dashboard = data_validator.legacy_data_profiling(
+        dataset=reference_dataset,
+        comparison_dataset=comparison_dataset,
+        profile_list=profile_sections,
+        column_mapping=column_mapping,
+        verbose_level=verbose_level,
+        profile_options=profile_options or [],
+        dashboard_options=dashboard_options or [],
+    )
+    return [profile, HTMLString(dashboard.html())]

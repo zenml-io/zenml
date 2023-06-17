@@ -199,17 +199,7 @@ Now we're ready. Execute:
 python run.py
 ```
 
-Alternatively, if you want to run based on the `config.yaml` you can run with:
-
-```bash
-# For Training pipeline Use:
-zenml pipeline run pipelines/training_pipeline/training_pipeline.py -c training_pipeline_config.yaml
-# For Deployment pipeline Use:
-zenml pipeline run pipelines/deployment_inference_pipeline/deployment_inference_pipeline.py -c deployment_pipeline_config.yaml
-```
-
 ## Running on a local Kubernetes cluster
-
 
 ## 📄 Infrastructure Requirements (Pre-requisites)
 
@@ -232,7 +222,9 @@ zenml stack recipe deploy k3d-modular
 ```
 
 >**Note**:
-> This recipe comes with MLflow, Kubeflow and Minio enabled by default. If you want any other components like KServe, Seldon or Tekton, you can specify that using the `--install/-i` flag.
+> This recipe comes with MLflow, Kubeflow and Minio enabled by default. If you
+> want any other components like Seldon or Tekton, you can specify that using
+> the relevant flag (i.e. `-o` for orchestrators and so on).
 
 This will deploy a local Kubernetes cluster with MLflow installed. 
 It will also generate a stack YAML file that you can import as a ZenML stack by running:

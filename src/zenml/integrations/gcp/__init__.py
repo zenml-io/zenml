@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2021. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2023. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -49,15 +49,23 @@ class GcpIntegration(Integration):
         "google-cloud-secret-manager",
         "google-cloud-compute",
         "google-cloud-logging",
+        "google-cloud-container>=2.21.0",
+        "google-cloud-storage>=2.9.0",
         "google-cloud-aiplatform>=1.11.0",
         "google-cloud-scheduler>=2.7.3",
         "google-cloud-functions>=1.8.3",
         "google-cloud-build>=3.11.0",
+        "kubernetes",
         # google-cloud-bigquery 2.34.4 is not compatible with shapely 2.0.0
         # which was released on 2021-12-21. This is a temporary fix until
         # google-cloud-bigquery is updated.
         "shapely<2.0",
     ]
+
+    @staticmethod
+    def activate() -> None:
+        """Activate the GCP integration."""
+        from zenml.integrations.gcp import service_connectors  # noqa
 
     @classmethod
     def flavors(cls) -> List[Type[Flavor]]:

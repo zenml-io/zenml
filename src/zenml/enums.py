@@ -30,6 +30,15 @@ class ArtifactType(StrEnum):
     BASE = "BaseArtifact"
 
 
+class VisualizationType(StrEnum):
+    """All currently available visualization types."""
+
+    CSV = "csv"
+    HTML = "html"
+    IMAGE = "image"
+    MARKDOWN = "markdown"
+
+
 class ExecutionStatus(StrEnum):
     """Enum that represents the current status of a step or pipeline run."""
 
@@ -224,3 +233,31 @@ class OperatingSystemType(StrEnum):
     LINUX = "Linux"
     WINDOWS = "Windows"
     MACOS = "Darwin"
+
+
+class SourceContextTypes(StrEnum):
+    """Enum for event source types."""
+
+    CLI = "cli"
+    PYTHON = "python"
+    DASHBOARD = "dashboard"
+    API = "api"
+    UNKNOWN = "unknown"
+
+
+class EnvironmentType(StrEnum):
+    """Enum for environment types."""
+
+    BITBUCKET_CI = "bitbucket_ci"
+    CIRCLE_CI = "circle_ci"
+    COLAB = "colab"
+    CONTAINER = "container"
+    DOCKER = "docker"
+    GENERIC_CI = "generic_ci"
+    GITHUB_ACTION = "github_action"
+    GITLAB_CI = "gitlab_ci"
+    KUBERNETES = "kubernetes"
+    NATIVE = "native"
+    NOTEBOOK = "notebook"
+    PAPERSPACE = "paperspace"
+    WSL = "wsl"

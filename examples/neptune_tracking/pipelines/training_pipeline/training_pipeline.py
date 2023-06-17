@@ -12,9 +12,14 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+from steps.evaluator.evaluator_step import tf_evaluator
+from steps.loader.loader_step import loader_mnist
+from steps.normalizer.normalizer_step import normalizer
+from steps.trainer.trainer_step import tf_trainer
+
+from zenml import pipeline
 from zenml.config import DockerSettings
 from zenml.integrations.constants import TENSORFLOW
-from zenml.pipelines import pipeline
 
 docker_settings = DockerSettings(
     required_integrations=[TENSORFLOW],
@@ -26,16 +31,13 @@ docker_settings = DockerSettings(
     enable_cache=False,
     settings={"docker": docker_settings},
 )
-def neptune_example_pipeline(
-    importer,
-    normalizer,
-    trainer,
-    evaluator,
-):
+def neptune_example_pipeline():
     """Link all the steps artifacts together."""
-    x_train, y_train, x_test, y_test = importer()
+    x_train, y_train, x_test, y_test = loader_mnist()
     x_trained_normed, x_test_normed = normalizer(
         x_train=x_train, x_test=x_test
     )
-    model = trainer(x_train=x_trained_normed, y_train=y_train)
-    evaluator(x_test=x_test_normed, y_test=y_test, model=model)
+    model = tf_trainer(
+        x_train=x_trained_normed, y_train=y_train, epochs=5, lr=0.0003
+    )
+    tf_evaluator(x_test=x_test_normed, y_test=y_test, model=model)

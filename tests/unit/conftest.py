@@ -23,6 +23,7 @@ from zenml.artifact_stores.local_artifact_store import (
     LocalArtifactStoreConfig,
 )
 from zenml.client import Client
+from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.pipeline_spec import PipelineSpec
 from zenml.config.step_configurations import Step
 from zenml.container_registries.base_container_registry import (
@@ -46,6 +47,7 @@ from zenml.models.artifact_models import ArtifactRequestModel
 from zenml.models.hub_plugin_models import HubPluginResponseModel, PluginStatus
 from zenml.models.pipeline_run_models import PipelineRunRequestModel
 from zenml.models.step_run_models import StepRunRequestModel
+from zenml.new.pipelines.pipeline import Pipeline
 from zenml.orchestrators.base_orchestrator import BaseOrchestratorConfig
 from zenml.orchestrators.local.local_orchestrator import LocalOrchestrator
 from zenml.pipelines import pipeline
@@ -58,6 +60,7 @@ from zenml.stack.stack_component import (
 )
 from zenml.step_operators import BaseStepOperator, BaseStepOperatorConfig
 from zenml.steps import StepContext, step
+from zenml.steps.entrypoint_function_utils import StepArtifact
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -290,7 +293,12 @@ def _int_output_step() -> int:
 
 @pytest.fixture
 def int_step_output():
-    return _int_output_step()()
+    return StepArtifact(
+        invocation_id="id",
+        output_name="output_name",
+        annotation=int,
+        pipeline=Pipeline(name="test_pipeline", entrypoint=lambda: None),
+    )
 
 
 @pytest.fixture
@@ -311,7 +319,7 @@ def step_context_with_no_output():
 
 @pytest.fixture
 def step_context_with_single_output():
-    materializers = {"output_1": BaseMaterializer}
+    materializers = {"output_1": (BaseMaterializer,)}
     artifact_uris = {"output_1": ""}
 
     return StepContext(
@@ -324,8 +332,8 @@ def step_context_with_single_output():
 @pytest.fixture
 def step_context_with_two_outputs():
     materializers = {
-        "output_1": BaseMaterializer,
-        "output_2": BaseMaterializer,
+        "output_1": (BaseMaterializer,),
+        "output_2": (BaseMaterializer,),
     }
     artifact_uris = {
         "output_1": "",
@@ -402,7 +410,7 @@ def sample_pipeline_run_model(
     return PipelineRunResponseModel(
         id=uuid4(),
         name="sample_run_name",
-        pipeline_configuration={},
+        pipeline_configuration=PipelineConfiguration(name="aria_pipeline"),
         num_steps=1,
         status=ExecutionStatus.COMPLETED,
         created=datetime.now(),
@@ -418,7 +426,7 @@ def sample_pipeline_run_request_model() -> PipelineRunRequestModel:
     return PipelineRunRequestModel(
         id=uuid4(),
         name="sample_run_name",
-        pipeline_configuration={},
+        pipeline_configuration=PipelineConfiguration(name="aria_pipeline"),
         num_steps=1,
         status=ExecutionStatus.COMPLETED,
         user=uuid4(),
@@ -488,6 +496,7 @@ def create_step_run(
     customizable StepRunResponseModel."""
 
     def f(
+        step_run_name: str = "step_run_name",
         step_name: str = "step_name",
         outputs: Optional[Dict[str, Any]] = None,
         **kwargs: Any,
@@ -496,14 +505,14 @@ def create_step_run(
             {
                 "spec": {"source": "module.step_class", "upstream_steps": []},
                 "config": {
-                    "name": step_name or "step_name",
+                    "name": step_name,
                     "outputs": outputs or {},
                 },
             }
         )
         model_args = {
             "id": uuid4(),
-            "name": "sample_step",
+            "name": step_run_name,
             "pipeline_run_id": uuid4(),
             "step": step,
             "status": ExecutionStatus.COMPLETED,

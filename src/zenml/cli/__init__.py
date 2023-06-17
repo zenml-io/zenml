@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2020. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2023. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -190,6 +190,14 @@ zenml integration install INTEGRATION_NAME
 Note that if you don't specify a specific integration to be installed, the
 ZenML CLI will install **all** available integrations.
 
+If you want to install all integrations apart from one or multiple integrations,
+use the following syntax, for example, which will install all integrations
+except `feast` and `aws`:
+
+```shell
+zenml integration install -i feast -i aws
+```
+
 Uninstalling a specific integration is as simple as typing:
 
 ```bash
@@ -239,9 +247,10 @@ zenml orchestrator list --is_shared="True"
 
 Finally, for fields marked as being of type `DATETIME`, you can pass in datetime
 values in the `%Y-%m-%d %H:%M:%S` format. These can be combined with the `gte`,
-`lte`, `gt` and `lt` keywords to specify the range of the filter. For example,
-if I wanted to find all orchestrators that were created after the 1st of January
-2021, I would type:
+`lte`, `gt` and `lt` keywords (greater than or equal, less than or equal,
+greater than and less than respectively) to specify the range of the filter. For
+example, if I wanted to find all orchestrators that were created after the 1st
+of January 2021, I would type:
 
 ```shell
 zenml orchestrator list --created "gt:2021-01-01 00:00:00"
@@ -459,6 +468,20 @@ command:
 zenml step-operator delete STEP_OPERATOR_NAME
 ```
 
+Deploying Stack Components
+--------------------------
+
+Stack components can be deployed directly via the CLI. You can use the `deploy`
+subcommand for this. For example, you could deploy an S3 artifact store using
+the following command:
+
+```shell
+zenml artifact-store deploy s3_artifact_store --flavor=s3
+```
+
+For full documentation on this functionality, please refer to [the dedicated
+documentation on stack component deploy](https://docs.zenml.io/platform-guide/set-up-your-mlops-platform/deploy-and-set-up-a-cloud-stack/deploy-a-stack-component).
+
 Secrets Management
 ------------------
 
@@ -485,6 +508,9 @@ as command-line arguments:
 
 ```bash
 zenml secret create SECRET_NAME --key1=value1 --key2=value2 --key3=value3 ...
+
+# Another option is to use the '--values' option and provide key-value pairs in either JSON or YAML format.
+zenml secret create SECRET_NAME --values='{"key1":"value2","key2":"value2","key3":"value3"}'
 ```
 
 Note that when using the previous command the keys and values will be preserved in your `bash_history` file, so
@@ -503,6 +529,10 @@ zenml secret create SECRET_NAME \
    --aws_access_key_id=1234567890 \
    --aws_secret_access_key=abcdefghij \
    --aws_session_token=@/path/to/token.txt
+
+# Alternatively for providing key-value pairs, you can utilize the '--values' option by specifying a file path containing
+# key-value pairs in either JSON or YAML format.
+zenml secret create SECRET_NAME --values=@/path/to/token.txt
 ```
 
 To list all the secrets available, use the `list` command:
@@ -521,6 +551,9 @@ To update a secret, use the `update` command:
 
 ```bash
 zenml secret update SECRET_NAME --key1=value1 --key2=value2 --key3=value3 ...
+
+# Another option is to use the '--values' option and provide key-value pairs in either JSON or YAML format.
+zenml secret update SECRET_NAME --values='{"key1":"value2","key2":"value2","key3":"value3"}'
 ```
 
 Note that when using the previous command the keys and values will be preserved in your `bash_history` file, so
@@ -937,19 +970,17 @@ in your Python code. Let's say you have a Python file called `run.py` and
 it contains the following code:
 
 ```python
-from zenml.pipelines import pipeline
+from zenml import pipeline
 
 @pipeline
 def my_pipeline(...):
    # Connect your pipeline steps here
    pass
-
-pipeline_instance = my_pipeline(...)
 ```
 
 You can register your pipeline like this:
 ```bash
-zenml pipeline register run.pipeline_instance
+zenml pipeline register my_pipeline
 ```
 
 To list all registered pipelines, use:
@@ -1092,7 +1123,16 @@ zenml up
 ```
 
 This will start the dashboard on your local machine where you can access it at
-the URL printed to the console. If you want to stop the dashboard, simply run:
+the URL printed to the console. 
+
+If you have closed the dashboard in your browser and want to open it again, 
+you can run:
+
+```bash
+zenml show
+```
+
+If you want to stop the dashboard, simply run:
 
 ```bash
 zenml down
@@ -1230,6 +1270,13 @@ recommended that you supply the password only as a command line argument:
 zenml connect --username zenml --password=Pa@#$#word --config=/path/to/zenml_server_config.yaml
 ```
 
+You can open the ZenML dashboard of your currently connected ZenML server using
+the following command:
+
+```bash
+zenml show
+
+Note that if you have set your `AUTO_OPEN_DASHBOARD` environment variable to `false` then this will not open the dashboard until you set it back to `true`.
 To disconnect from the current ZenML server and revert to using the local
 default database, use the following command:
 
@@ -1554,6 +1601,7 @@ from zenml.cli.feature import *  # noqa
 from zenml.cli.hub import *  # noqa
 from zenml.cli.integration import *  # noqa
 from zenml.cli.served_model import *  # noqa
+from zenml.cli.service_connectors import *  # noqa
 from zenml.cli.model import *  # noqa
 from zenml.cli.pipeline import *  # noqa
 from zenml.cli.workspace import *  # noqa

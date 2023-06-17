@@ -221,3 +221,21 @@ class UUIDEncoder(json.JSONEncoder):
             # if the obj is uuid, we simply return the value of uuid
             return obj.hex
         return json.JSONEncoder.default(self, obj)
+
+
+def is_json_serializable(obj: Any) -> bool:
+    """Checks whether an object is JSON serializable.
+
+    Args:
+        obj: The object to check.
+
+    Returns:
+        Whether the object is JSON serializable using pydantics encoder class.
+    """
+    from pydantic.json import pydantic_encoder
+
+    try:
+        json.dumps(obj, default=pydantic_encoder)
+        return True
+    except TypeError:
+        return False

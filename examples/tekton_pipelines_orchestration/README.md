@@ -74,11 +74,13 @@ To get a stack with Tekton Pipelines and potential other components, you can mak
 Run the following command to deploy the local Tekton Pipelines stack:
 
 ```bash
-zenml stack recipe deploy k3d-modular --install tekton
+zenml stack recipe deploy k3d-modular -o tekton
 ```
 
 >**Note**:
-> This recipe comes with MLflow, Kubeflow and Minio enabled by default. If you want any other components like KServe, or Seldon, you can specify that using the `--install/-i` flag.
+> This recipe comes with MLflow, Kubeflow and Minio enabled by default. If you
+> want any other components like Seldon or Tekton, you can specify that using
+> the relevant flag (i.e. `-o` for orchestrators and so on).
 
 This will deploy a local Kubernetes cluster with Tekton Pipelines installed. You can verify this by running `kubectl get pods` and checking if the Tekton Pipelines pods are running.
 It will also generate a stack YAML file that you can import as a ZenML stack by running 
@@ -108,6 +110,11 @@ to access the GCP container registry.
 * Kubectl can [access](https://cloud.google.com/kubernetes-engine/docs/how-to/cluster-access-for-kubectl) your GCP 
 Kubernetes cluster.
 
+Note that you can deploy the GCP container
+registry, the artifact store and the Tekton orchestrator using the ZenML CLI as
+well, using the `zenml <STACK_COMPONENT> deploy` command. For more information
+on this `deploy` subcommand, please refer to the
+[documentation](https://docs.zenml.io/advanced-guide/practical-mlops/stack-recipes#deploying-stack-components-directly).
 
 ### 🥞 Create a Tekton Pipelines Stack
 
@@ -183,7 +190,8 @@ certain hardware requirements, you can specify them using the step decorator as
 follows:
 
 ```python
-from zenml.steps import step, ResourceSettings
+from zenml import step
+from zenml.steps import ResourceSettings
 
 @step(settings={"resources": ResourceSettings(cpu_count=8, memory="16GB")})
 def my_step(...) -> ...:
@@ -200,6 +208,15 @@ Once you're done experimenting, you can delete the example files by calling:
 
 ```bash
 rm -rf zenml_examples
+```
+
+To destroy any resources deployed using the ZenML `deploy` subcommand, use the
+`destroy` subcommand to delete each individual stack component, as in the
+following example:
+
+```shell
+# replace with the name of the component you want to destroy
+zenml artifact-store destroy gcp_artifact_store
 ```
 
 # 📜 Learn more

@@ -40,9 +40,12 @@ def post(batch: List[str], timeout: int = 15) -> requests.Response:
     Raises:
         AnalyticsAPIError: If the post request has failed.
     """
+    from zenml.analytics import source_context
+
     headers = {
         "accept": "application/json",
         "content-type": "application/json",
+        source_context.name: source_context.get().value,
     }
     response = requests.post(
         url=ANALYTICS_SERVER_URL + "/batch",

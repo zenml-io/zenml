@@ -83,7 +83,7 @@ class BuildConfiguration(BaseModel):
                 log=False,
             )
         )
-        for _, requirements in requirements_files:
+        for _, requirements, _ in requirements_files:
             hash_.update(requirements.encode())
 
         return hash_.hexdigest()

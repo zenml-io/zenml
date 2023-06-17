@@ -407,7 +407,7 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
                 # class directly is deprecated when using the Kubeflow SDK v2.
                 container_op = kfp.components.load_component_from_text(
                     f"""
-                    name: {step.config.name}
+                    name: {step_name}
                     implementation:
                         container:
                             image: {image}
@@ -446,7 +446,7 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
                 )
                 container_op.set_caching_options(enable_caching=False)
 
-                step_name_to_container_op[step.config.name] = container_op
+                step_name_to_container_op[step_name] = container_op
 
         # Save the generated pipeline to a file.
         fileio.makedirs(self.pipeline_directory)
@@ -536,7 +536,33 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
                 "Please update your stack accordingly."
             )
 
-            # Copy over the scheduled pipeline to the artifact store
+        # Get the credentials that would be used to create resources.
+        credentials, project_id = self._get_authentication()
+
+        scheduler_service_account_email: Optional[str] = None
+        if self.config.scheduler_service_account:
+            scheduler_service_account_email = (
+                self.config.scheduler_service_account
+            )
+        elif hasattr(credentials, "signer_email"):
+            scheduler_service_account_email = credentials.signer_email
+        else:
+            scheduler_service_account_email = (
+                self.config.function_service_account
+                or self.config.workload_service_account
+            )
+
+        if not scheduler_service_account_email:
+            raise ValueError(
+                "A GCP service account is required to schedule a pipeline run. "
+                "The credentials used to authenticate with GCP do not have a "
+                "service account associated with them and a service account "
+                "was not configured in the `scheduler_service_account` field "
+                "of the orchestrator config. Please update your orchestrator "
+                "configuration or credentials accordingly."
+            )
+
+        # Copy over the scheduled pipeline to the artifact store
         artifact_store_base_uri = f"{artifact_store.path.rstrip('/')}/vertex_scheduled_pipelines/{pipeline_name}/{run_name}"
         artifact_store_pipeline_uri = (
             f"{artifact_store_base_uri}/vertex_pipeline.json"
@@ -548,9 +574,6 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
             f"{artifact_store_pipeline_uri}",
         )
 
-        # Get the credentials that would be used to create resources.
-        credentials, project_id = self._get_authentication()
-
         # Create cloud function
         function_uri = create_cloud_function(
             directory_path=vertex_scheduler.__path__[0],  # fixed path
@@ -559,6 +582,7 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
             location=self.config.location,
             function_name=run_name,
             credentials=credentials,
+            function_service_account_email=self.config.function_service_account,
         )
 
         # Create the scheduler job
@@ -583,6 +607,7 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
             body=body,
             schedule=str(schedule.cron_expression),
             credentials=credentials,
+            service_account_email=scheduler_service_account_email,
         )
 
     def _upload_and_run_pipeline(

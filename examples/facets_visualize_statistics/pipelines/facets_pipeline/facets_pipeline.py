@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2021. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2023. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -11,20 +11,20 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from zenml.config import DockerSettings
-from zenml.integrations.constants import FACETS, TENSORFLOW
-from zenml.pipelines import pipeline
+from steps.importer.importer_step import importer
 
-docker_settings = DockerSettings(required_integrations=[FACETS, TENSORFLOW])
+from zenml import pipeline
+from zenml.config import DockerSettings
+from zenml.integrations.constants import FACETS, SKLEARN
+from zenml.integrations.facets.steps.facets_visualization_steps import (
+    facets_visualization_step,
+)
+
+docker_settings = DockerSettings(required_integrations=[FACETS, SKLEARN])
 
 
 @pipeline(enable_cache=False, settings={"docker": docker_settings})
-def facets_pipeline(
-    importer,
-    trainer,
-    evaluator,
-):
-    """Links all the steps together in a pipeline."""
-    train_df, test_df = importer()
-    model = trainer(train_df=train_df)
-    evaluator(test_df=test_df, model=model)
+def facets_pipeline():
+    """Simple pipeline comparing two datasets using Facets."""
+    X_train, X_test, y_train, y_test = importer()
+    facets_visualization_step(X_train, X_test)

@@ -29,6 +29,7 @@ from uuid import UUID
 from pydantic import BaseModel, Field
 
 from zenml import __version__ as current_zenml_version
+from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.enums import ExecutionStatus, LogicalOperators
 from zenml.models.base_models import (
     WorkspaceScopedRequestModel,
@@ -69,11 +70,10 @@ class PipelineRunBaseModel(BaseModel):
     )
     schedule_id: Optional[UUID]
     enable_cache: Optional[bool]
-    enable_artifact_metadata: Optional[bool]
     start_time: Optional[datetime]
     end_time: Optional[datetime]
     status: ExecutionStatus
-    pipeline_configuration: Dict[str, Any]
+    pipeline_configuration: PipelineConfiguration
     num_steps: Optional[int]
     client_version: Optional[str] = Field(
         title="Client version.",

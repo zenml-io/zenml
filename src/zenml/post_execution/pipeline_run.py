@@ -118,8 +118,7 @@ class PipelineRunView(BaseView):
         Returns:
             The pipeline settings.
         """
-        settings = self.model.pipeline_configuration["settings"]
-        return cast(Dict[str, Any], settings)
+        return self.model.pipeline_configuration.settings
 
     @property
     def extra(self) -> Dict[str, Any]:
@@ -131,8 +130,7 @@ class PipelineRunView(BaseView):
         Returns:
             The pipeline extras.
         """
-        extra = self.model.pipeline_configuration["extra"]
-        return cast(Dict[str, Any], extra)
+        return self.model.pipeline_configuration.extra
 
     @property
     def enable_cache(self) -> Optional[bool]:
@@ -141,9 +139,7 @@ class PipelineRunView(BaseView):
         Returns:
             True if caching is enabled for this pipeline run.
         """
-        from zenml.pipelines.base_pipeline import PARAM_ENABLE_CACHE
-
-        return self.model.pipeline_configuration.get(PARAM_ENABLE_CACHE)
+        return self.model.pipeline_configuration.enable_cache
 
     @property
     def enable_artifact_metadata(self) -> Optional[bool]:
@@ -152,13 +148,25 @@ class PipelineRunView(BaseView):
         Returns:
             True if artifact metadata is enabled for this pipeline run.
         """
-        from zenml.pipelines.base_pipeline import (
-            PARAM_ENABLE_ARTIFACT_METADATA,
-        )
+        return self.model.pipeline_configuration.enable_artifact_metadata
 
-        return self.model.pipeline_configuration.get(
-            PARAM_ENABLE_ARTIFACT_METADATA
-        )
+    @property
+    def enable_artifact_visualization(self) -> Optional[bool]:
+        """Returns whether artifact visualization is enabled for this run.
+
+        Returns:
+            True if artifact visualization is enabled for this pipeline run.
+        """
+        return self.model.pipeline_configuration.enable_artifact_visualization
+
+    @property
+    def enable_step_logs(self) -> Optional[bool]:
+        """Returns whether step logs are enabled for this pipeline run.
+
+        Returns:
+            True if step logs are enabled for this pipeline run.
+        """
+        return self.model.pipeline_configuration.enable_step_logs
 
     @property
     def commit(self) -> Optional[str]:
@@ -273,6 +281,11 @@ class PipelineRunView(BaseView):
             )
 
         return self._steps[step]
+
+    def visualize(self) -> None:
+        """Visualizes all output artifacts produced by this pipeline run."""
+        for step_ in self.steps:
+            step_.visualize()
 
     def _ensure_steps_fetched(self) -> None:
         """Fetches all steps for this pipeline run from the metadata store."""

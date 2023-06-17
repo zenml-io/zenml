@@ -17,7 +17,9 @@ from typing import TYPE_CHECKING, Any, Dict, Optional, Type
 
 from pydantic import root_validator
 
+from zenml.constants import KUBERNETES_CLUSTER_RESOURCE_TYPE
 from zenml.integrations.tekton import TEKTON_ORCHESTRATOR_FLAVOR
+from zenml.models.service_connector_models import ServiceConnectorRequirements
 from zenml.orchestrators import BaseOrchestratorConfig, BaseOrchestratorFlavor
 
 if TYPE_CHECKING:
@@ -47,7 +49,9 @@ class TektonOrchestratorConfig(  # type: ignore[misc] # https://github.com/pydan
 
     Attributes:
         kubernetes_context: Name of a kubernetes context to run
-            pipelines in.
+            pipelines in. If the stack component is linked to a Kubernetes
+            service connector, this field is ignored. Otherwise, it is
+            mandatory.
         kubernetes_namespace: Name of the kubernetes namespace in which the
             pods that run the pipeline steps should be running.
         local: If `True`, the orchestrator will assume it is connected to a
@@ -60,7 +64,7 @@ class TektonOrchestratorConfig(  # type: ignore[misc] # https://github.com/pydan
             skipped.
     """
 
-    kubernetes_context: str  # TODO: Potential setting
+    kubernetes_context: Optional[str] = None
     kubernetes_namespace: str = "zenml"
     local: bool = False
     skip_local_validations: bool = False
@@ -87,31 +91,9 @@ class TektonOrchestratorConfig(  # type: ignore[misc] # https://github.com/pydan
             "skip_ui_daemon_provisioning",
         ]
 
-        provisioning_attrs_used = [
-            attr for attr in provisioning_attrs if attr in values
-        ]
-
-        msg_header = (
-            "Automatically exposing the Tekton UI TCP port locally as part of "
-            "the stack provisioning using `zenml stack up` has been "
-            "removed in favor of methods better suited for this "
-            "purpose, such as using an Ingress controller in the remote "
-            "cluster. \n"
-            "As a result, the following Kubernetes orchestrator configuration "
-            "attributes have been deprecated: "
-            f"{provisioning_attrs}.\n"
-        )
-
-        if provisioning_attrs_used:
-            logger.warning(
-                msg_header
-                + "To get rid of this warning, you should remove the deprecated "
-                "attributes from your orchestrator configuration (e.g. by "
-                "using the `zenml orchestrator remove-attribute <attr-name>` "
-                "CLI command)."
-            )
-            # remove deprecated attributes from values dict
-            for attr in provisioning_attrs_used:
+        # remove deprecated attributes from values dict
+        for attr in provisioning_attrs:
+            if attr in values:
                 del values[attr]
 
         return values
@@ -153,6 +135,23 @@ class TektonOrchestratorFlavor(BaseOrchestratorFlavor):
             Name of the orchestrator flavor.
         """
         return TEKTON_ORCHESTRATOR_FLAVOR
+
+    @property
+    def service_connector_requirements(
+        self,
+    ) -> Optional[ServiceConnectorRequirements]:
+        """Service connector resource requirements for service connectors.
+
+        Specifies resource requirements that are used to filter the available
+        service connector types that are compatible with this flavor.
+
+        Returns:
+            Requirements for compatible service connectors, if a service
+            connector is required for this flavor.
+        """
+        return ServiceConnectorRequirements(
+            resource_type=KUBERNETES_CLUSTER_RESOURCE_TYPE,
+        )
 
     @property
     def docs_url(self) -> Optional[str]:

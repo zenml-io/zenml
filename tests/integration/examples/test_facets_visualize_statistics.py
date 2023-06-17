@@ -23,6 +23,6 @@ def test_example(request: pytest.FixtureRequest) -> None:
     with run_example(
         request=request,
         name="facets_visualize_statistics",
-        pipelines={"facets_pipeline": (1, 3)},
+        pipelines={"facets_pipeline": (1, 2)},
     ):
         pass

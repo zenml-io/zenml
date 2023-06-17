@@ -59,7 +59,8 @@ class AnalyticsEvent(str, Enum):
     REGISTERED_STACK_COMPONENT = "Stack component registered"
     UPDATED_STACK_COMPONENT = "Stack component updated"
     COPIED_STACK_COMPONENT = "Stack component copied"
-    DELETED_STACK_COMPONENT = "Stack component copied"
+    DELETED_STACK_COMPONENT = "Stack component deleted"
+    CONNECTED_STACK_COMPONENT = "Stack component connected"
 
     # Stack
     REGISTERED_STACK = "Stack registered"
@@ -121,13 +122,23 @@ class AnalyticsEvent(str, Enum):
     UPDATED_SECRET = "Secret updated"
     DELETED_SECRET = "Secret deleted"
 
+    # Service connector
+    CREATED_SERVICE_CONNECTOR = "Service connector created"
+    UPDATED_SERVICE_CONNECTOR = "Service connector updated"
+    DELETED_SERVICE_CONNECTOR = "Service connector deleted"
+
     # Test event
     EVENT_TEST = "Test event"
 
     # Stack recipes
     PULL_STACK_RECIPE = "Stack recipes pulled"
-    RUN_STACK_RECIPE = "Stack recipe created"
+    RUN_STACK_RECIPE = "Stack recipe ran"
     DESTROY_STACK_RECIPE = "Stack recipe destroyed"
+    GET_STACK_RECIPE_OUTPUTS = "Stack recipe outputs fetched"
+
+    # Stack component deploy
+    DEPLOY_STACK_COMPONENT = "Stack component deployed"
+    DESTROY_STACK_COMPONENT = "Stack component destroyed"
 
     # ZenML server events
     ZENML_SERVER_STARTED = "ZenML server started"

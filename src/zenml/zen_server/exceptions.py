@@ -201,9 +201,18 @@ def exception_from_response(
             Tuple of exception name and message.
         """
         try:
-            detail = response.json().get("detail", response.text)
+            response_json = response.json()
         except requests.exceptions.JSONDecodeError:
             return None, response.text
+
+        if isinstance(response_json, dict):
+            detail = response_json.get("detail", response.text)
+        else:
+            detail = response_json
+
+        # The detail can also be a single string
+        if isinstance(detail, str):
+            return None, detail
 
         # The detail should be a list of strings encoding the exception
         # class name and the exception message

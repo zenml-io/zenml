@@ -14,10 +14,12 @@
 """Implementation of a GCP Container Registry class."""
 from typing import Optional
 
+from zenml.constants import DOCKER_REGISTRY_RESOURCE_TYPE
 from zenml.container_registries.base_container_registry import (
     BaseContainerRegistryFlavor,
 )
 from zenml.enums import ContainerRegistryFlavor
+from zenml.models.service_connector_models import ServiceConnectorRequirements
 
 
 class GCPContainerRegistryFlavor(BaseContainerRegistryFlavor):
@@ -31,6 +33,25 @@ class GCPContainerRegistryFlavor(BaseContainerRegistryFlavor):
             The name of the flavor.
         """
         return ContainerRegistryFlavor.GCP.value
+
+    @property
+    def service_connector_requirements(
+        self,
+    ) -> Optional[ServiceConnectorRequirements]:
+        """Service connector resource requirements for service connectors.
+
+        Specifies resource requirements that are used to filter the available
+        service connector types that are compatible with this flavor.
+
+        Returns:
+            Requirements for compatible service connectors, if a service
+            connector is required for this flavor.
+        """
+        return ServiceConnectorRequirements(
+            connector_type="gcp",
+            resource_type=DOCKER_REGISTRY_RESOURCE_TYPE,
+            resource_id_attr="uri",
+        )
 
     @property
     def docs_url(self) -> Optional[str]:

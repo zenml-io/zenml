@@ -18,13 +18,14 @@ import inspect
 from typing import (
     TYPE_CHECKING,
     Any,
-    Callable,
     Dict,
     List,
     Optional,
     Tuple,
     Type,
 )
+
+from pydantic.typing import get_origin, is_union
 
 from zenml.client import Client
 from zenml.config.step_configurations import StepConfiguration
@@ -35,12 +36,9 @@ from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.materializers.unmaterialized_artifact import UnmaterializedArtifact
 from zenml.models.artifact_models import (
-    ArtifactRequestModel,
     ArtifactResponseModel,
 )
 from zenml.orchestrators.publish_utils import (
-    publish_output_artifact_metadata,
-    publish_output_artifacts,
     publish_step_run_metadata,
     publish_successful_step_run,
 )
@@ -51,13 +49,15 @@ from zenml.steps.utils import (
     parse_return_type_annotations,
     resolve_type_annotation,
 )
-from zenml.utils import source_utils
+from zenml.utils import artifact_utils, materializer_utils, source_utils
 
 if TYPE_CHECKING:
+    from uuid import UUID
+
     from zenml.config.source import Source
     from zenml.config.step_configurations import Step
-    from zenml.metadata.metadata_types import MetadataType
     from zenml.stack import Stack
+    from zenml.steps import BaseStep
 
 
 logger = get_logger(__name__)
@@ -101,9 +101,9 @@ class StepRunner:
         Raises:
             BaseException: A general exception if the step fails.
         """
-        step_entrypoint = self._load_step_entrypoint()
+        step_instance = self._load_step()
         output_materializers = self._load_output_materializers()
-        spec = inspect.getfullargspec(inspect.unwrap(step_entrypoint))
+        spec = inspect.getfullargspec(inspect.unwrap(step_instance.entrypoint))
 
         # Parse the inputs for the entrypoint function.
         function_params = self._parse_inputs(
@@ -129,7 +129,9 @@ class StepRunner:
             self._stack.prepare_step_run(info=step_run_info)
             step_failed = False
             try:
-                return_values = step_entrypoint(**function_params)
+                return_values = step_instance.call_entrypoint(
+                    **function_params
+                )
             except BaseException as step_exception:  # noqa: E722
                 step_failed = True
                 failure_hook_source = self.configuration.failure_hook_source
@@ -168,7 +170,7 @@ class StepRunner:
 
             # Store and publish the output artifacts of the step function.
             output_annotations = parse_return_type_annotations(
-                spec.annotations
+                spec.annotations.get("return")
             )
             output_data = self._validate_outputs(
                 return_values, output_annotations
@@ -177,20 +179,17 @@ class StepRunner:
                 is_enabled_on_step=step_run_info.config.enable_artifact_metadata,
                 is_enabled_on_pipeline=step_run_info.pipeline.enable_artifact_metadata,
             )
-            output_artifacts, artifact_metadata = self._store_output_artifacts(
+            artifact_visualization_enabled = is_setting_enabled(
+                is_enabled_on_step=step_run_info.config.enable_artifact_visualization,
+                is_enabled_on_pipeline=step_run_info.pipeline.enable_artifact_visualization,
+            )
+            output_artifact_ids = self._store_output_artifacts(
                 output_data=output_data,
                 output_artifact_uris=output_artifact_uris,
                 output_materializers=output_materializers,
                 artifact_metadata_enabled=artifact_metadata_enabled,
+                artifact_visualization_enabled=artifact_visualization_enabled,
             )
-
-        output_artifact_ids = publish_output_artifacts(
-            output_artifacts=output_artifacts,
-        )
-        publish_output_artifact_metadata(
-            output_artifact_ids=output_artifact_ids,
-            output_artifact_metadata=artifact_metadata,
-        )
 
         # Update the status and output artifacts of the step run.
         publish_successful_step_run(
@@ -198,19 +197,21 @@ class StepRunner:
             output_artifact_ids=output_artifact_ids,
         )
 
-    def _load_step_entrypoint(self) -> Callable[..., Any]:
-        """Load the step entrypoint function.
+    def _load_step(self) -> "BaseStep":
+        """Load the step instance.
 
         Returns:
-            The step entrypoint function.
+            The step instance.
         """
         from zenml.steps import BaseStep
 
         step_instance = BaseStep.load_from_source(self._step.spec.source)
         step_instance._configuration = self._step.config
-        return step_instance.entrypoint
+        return step_instance
 
-    def _load_output_materializers(self) -> Dict[str, Type[BaseMaterializer]]:
+    def _load_output_materializers(
+        self,
+    ) -> Dict[str, Tuple[Type[BaseMaterializer], ...]]:
         """Loads the output materializers for the step.
 
         Returns:
@@ -218,12 +219,18 @@ class StepRunner:
         """
         materializers = {}
         for name, output in self.configuration.outputs.items():
-            materializer_class: Type[
-                BaseMaterializer
-            ] = source_utils.load_and_validate_class(
-                output.materializer_source, expected_class=BaseMaterializer
-            )
-            materializers[name] = materializer_class
+            output_materializers = []
+
+            for source in output.materializer_source:
+                materializer_class: Type[
+                    BaseMaterializer
+                ] = source_utils.load_and_validate_class(
+                    source, expected_class=BaseMaterializer
+                )
+                output_materializers.append(materializer_class)
+
+            materializers[name] = tuple(output_materializers)
+
         return materializers
 
     def _parse_inputs(
@@ -232,7 +239,7 @@ class StepRunner:
         annotations: Dict[str, Any],
         input_artifacts: Dict[str, "ArtifactResponseModel"],
         output_artifact_uris: Dict[str, str],
-        output_materializers: Dict[str, Type[BaseMaterializer]],
+        output_materializers: Dict[str, Tuple[Type[BaseMaterializer], ...]],
     ) -> Dict[str, Any]:
         """Parses the inputs for a step entrypoint function.
 
@@ -245,9 +252,10 @@ class StepRunner:
 
         Returns:
             The parsed inputs for the step entrypoint function.
-        """
-        from zenml.steps import BaseParameters
 
+        Raises:
+            RuntimeError: If a function argument value is missing.
+        """
         function_params: Dict[str, Any] = {}
 
         if args and args[0] == "self":
@@ -257,13 +265,7 @@ class StepRunner:
             arg_type = annotations.get(arg, None)
             arg_type = resolve_type_annotation(arg_type)
 
-            # Parse the parameters
-            if issubclass(arg_type, BaseParameters):
-                step_params = arg_type.parse_obj(self.configuration.parameters)
-                function_params[arg] = step_params
-
-            # Parse the step context
-            elif issubclass(arg_type, StepContext):
+            if inspect.isclass(arg_type) and issubclass(arg_type, StepContext):
                 step_name = self.configuration.name
                 context = arg_type(
                     step_name=step_name,
@@ -271,12 +273,15 @@ class StepRunner:
                     output_artifact_uris=output_artifact_uris,
                 )
                 function_params[arg] = context
-
-            # Parse the input artifacts
-            else:
-                # At this point, it has to be an artifact, so we resolve
+            elif arg in input_artifacts:
                 function_params[arg] = self._load_input_artifact(
                     input_artifacts[arg], arg_type
+                )
+            elif arg in self.configuration.parameters:
+                function_params[arg] = self.configuration.parameters[arg]
+            else:
+                raise RuntimeError(
+                    f"Unable to find value for step function argument `{arg}`."
                 )
 
         return function_params
@@ -287,19 +292,19 @@ class StepRunner:
         annotations: Dict[str, Any],
         step_exception: Optional[BaseException],
         output_artifact_uris: Dict[str, str],
-        output_materializers: Dict[str, Type[BaseMaterializer]],
+        output_materializers: Dict[str, Tuple[Type[BaseMaterializer], ...]],
     ) -> Dict[str, Any]:
-        """Parses the inputs for a step entrypoint function.
+        """Parses the inputs for a hook function.
 
         Args:
-            args: The arguments of the step entrypoint function.
-            annotations: The annotations of the step entrypoint function.
+            args: The arguments of the hook function.
+            annotations: The annotations of the hook function.
             step_exception: The exception of the original step.
             output_artifact_uris: The URIs of the output artifacts of the step.
             output_materializers: The output materializers of the step.
 
         Returns:
-            The parsed inputs for the step entrypoint function.
+            The parsed inputs for the hook function.
 
         Raises:
             TypeError: If hook function is passed a wrong parameter type.
@@ -317,7 +322,9 @@ class StepRunner:
 
             # Parse the parameters
             if issubclass(arg_type, BaseParameters):
-                step_params = arg_type.parse_obj(self.configuration.parameters)
+                step_params = arg_type.parse_obj(
+                    self.configuration.parameters[arg]
+                )
                 function_params[arg] = step_params
 
             # Parse the step context
@@ -358,6 +365,11 @@ class StepRunner:
         if data_type == UnmaterializedArtifact:
             return UnmaterializedArtifact.parse_obj(artifact)
 
+        if data_type is Any or is_union(get_origin(data_type)):
+            # Entrypoint function does not define a specific type for the input,
+            # we use the datatype of the stored artifact
+            data_type = source_utils.load(artifact.data_type)
+
         materializer_class: Type[
             BaseMaterializer
         ] = source_utils.load_and_validate_class(
@@ -385,7 +397,7 @@ class StepRunner:
             StepInterfaceError: If the step function return values do not
                 match the output annotations.
         """
-        step_name = self.configuration.name
+        step_name = self._step.spec.pipeline_parameter_name
 
         # if there are no outputs, the return value must be `None`.
         if len(output_annotations) == 0:
@@ -423,31 +435,37 @@ class StepRunner:
                 f"(return values: {return_values})."
             )
 
-        # Validate the output types.
+        from pydantic.typing import get_origin, is_union
+
+        from zenml.steps.utils import get_args
+
         validated_outputs: Dict[str, Any] = {}
-        for return_value, (output_name, output_type) in zip(
+        for return_value, (output_name, output_annotation) in zip(
             return_values, output_annotations.items()
         ):
-            # The actual output type must be the same as the expected output
-            # type.
-            if not isinstance(return_value, output_type):
-                raise StepInterfaceError(
-                    f"Wrong type for output '{output_name}' of step "
-                    f"'{step_name}' (expected type: {output_type}, "
-                    f"actual type: {type(return_value)})."
-                )
+            if output_annotation is Any:
+                pass
+            else:
+                if is_union(get_origin(output_annotation)):
+                    output_annotation = get_args(output_annotation)
+
+                if not isinstance(return_value, output_annotation):
+                    raise StepInterfaceError(
+                        f"Wrong type for output '{output_name}' of step "
+                        f"'{step_name}' (expected type: {output_annotation}, "
+                        f"actual type: {type(return_value)})."
+                    )
             validated_outputs[output_name] = return_value
         return validated_outputs
 
     def _store_output_artifacts(
         self,
         output_data: Dict[str, Any],
-        output_materializers: Dict[str, Type[BaseMaterializer]],
+        output_materializers: Dict[str, Tuple[Type[BaseMaterializer], ...]],
         output_artifact_uris: Dict[str, str],
         artifact_metadata_enabled: bool,
-    ) -> Tuple[
-        Dict[str, ArtifactRequestModel], Dict[str, Dict[str, "MetadataType"]]
-    ]:
+        artifact_visualization_enabled: bool,
+    ) -> Dict[str, "UUID"]:
         """Stores the output artifacts of the step.
 
         Args:
@@ -457,58 +475,47 @@ class StepRunner:
             output_artifact_uris: The output artifact URIs of the step.
             artifact_metadata_enabled: Whether artifact metadata collection is
                 enabled.
+            artifact_visualization_enabled: Whether artifact visualization is
+                enabled.
 
         Returns:
-            An `ArtifactRequestModel` for each output artifact that was saved,
-            and the metadata of each output artifact.
+            The IDs of the published output artifacts.
         """
         client = Client()
-        active_user_id = client.active_user.id
-        active_workspace_id = client.active_workspace.id
         artifact_stores = client.active_stack_model.components.get(
             StackComponentType.ARTIFACT_STORE
         )
         assert artifact_stores  # Every stack has an artifact store.
         artifact_store_id = artifact_stores[0].id
-        output_artifacts: Dict[str, ArtifactRequestModel] = {}
-        output_artifact_metadata: Dict[str, Dict[str, "MetadataType"]] = {}
+        output_artifacts: Dict[str, "UUID"] = {}
+
         for output_name, return_value in output_data.items():
-            materializer_class = output_materializers[output_name]
-            materializer_source = self.configuration.outputs[
-                output_name
-            ].materializer_source
+            data_type = type(return_value)
+            materializer_classes = output_materializers[output_name]
+            materializer_class = materializer_utils.select_materializer(
+                data_type=data_type, materializer_classes=materializer_classes
+            )
             uri = output_artifact_uris[output_name]
             materializer = materializer_class(uri)
-            materializer.validate_type_compatibility(type(return_value))
-            materializer.save(return_value)
-            if artifact_metadata_enabled:
-                try:
-                    materializer.extract_full_metadata(return_value)
-                except Exception as e:
-                    logger.warning(
-                        f"Failed to extract metadata for output artifact "
-                        f"'{output_name}' of step '{self.configuration.name}': "
-                        f"{e}"
-                    )
-            output_artifact = ArtifactRequestModel(
+
+            artifact_id = artifact_utils.upload_artifact(
                 name=output_name,
-                type=materializer_class.ASSOCIATED_ARTIFACT_TYPE,
-                uri=uri,
-                materializer=materializer_source,
-                data_type=source_utils.resolve(type(return_value)),
-                user=active_user_id,
-                workspace=active_workspace_id,
+                data=return_value,
+                materializer=materializer,
                 artifact_store_id=artifact_store_id,
+                extract_metadata=artifact_metadata_enabled,
+                include_visualizations=artifact_visualization_enabled,
             )
-            output_artifacts[output_name] = output_artifact
-        return output_artifacts, output_artifact_metadata
+            output_artifacts[output_name] = artifact_id
+
+        return output_artifacts
 
     def load_and_run_hook(
         self,
         hook_source: "Source",
         step_exception: Optional[BaseException],
         output_artifact_uris: Dict[str, str],
-        output_materializers: Dict[str, Type[BaseMaterializer]],
+        output_materializers: Dict[str, Tuple[Type[BaseMaterializer], ...]],
     ) -> None:
         """Loads hook source and runs the hook.
 

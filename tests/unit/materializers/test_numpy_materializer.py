@@ -39,6 +39,7 @@ def test_numpy_materializer():
         step_output=numeric_array,
         return_metadata=True,
         expected_metadata_size=7,
+        assert_visualization_exists=True,
     )
 
     # Assert that the materialized array is correct

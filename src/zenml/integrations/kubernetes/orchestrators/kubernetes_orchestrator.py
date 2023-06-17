@@ -70,26 +70,74 @@ ENV_ZENML_KUBERNETES_RUN_ID = "ZENML_KUBERNETES_RUN_ID"
 class KubernetesOrchestrator(ContainerizedOrchestrator):
     """Orchestrator for running ZenML pipelines using native Kubernetes."""
 
-    _k8s_core_api: k8s_client.CoreV1Api = None
-    _k8s_batch_api: k8s_client.BatchV1beta1Api = None
-    _k8s_rbac_api: k8s_client.RbacAuthorizationV1Api = None
+    _k8s_client: Optional[k8s_client.ApiClient] = None
 
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        """Initialize the class and the Kubernetes clients.
+    def get_kube_client(
+        self, incluster: Optional[bool] = None
+    ) -> k8s_client.ApiClient:
+        """Getter for the Kubernetes API client.
 
         Args:
-            *args: The positional arguments to pass to the Pydantic object.
-            **kwargs: The keyword arguments to pass to the Pydantic object.
-        """
-        super().__init__(*args, **kwargs)
-        self._initialize_k8s_clients()
+            incluster: Whether to use the in-cluster config or not. Overrides
+                the `incluster` setting in the config.
 
-    def _initialize_k8s_clients(self) -> None:
-        """Initialize the Kubernetes clients."""
-        kube_utils.load_kube_config(context=self.config.kubernetes_context)
-        self._k8s_core_api = k8s_client.CoreV1Api()
-        self._k8s_batch_api = k8s_client.BatchV1beta1Api()
-        self._k8s_rbac_api = k8s_client.RbacAuthorizationV1Api()
+        Returns:
+            The Kubernetes API client.
+
+        Raises:
+            RuntimeError: if the Kubernetes connector behaves unexpectedly.
+        """
+        if incluster is None:
+            incluster = self.config.incluster
+
+        # Refresh the client also if the connector has expired
+        if self._k8s_client and not self.connector_has_expired():
+            return self._k8s_client
+
+        connector = self.get_connector()
+        if connector:
+            client = connector.connect()
+            if not isinstance(client, k8s_client.ApiClient):
+                raise RuntimeError(
+                    f"Expected a k8s_client.ApiClient while trying to use the "
+                    f"linked connector, but got {type(client)}."
+                )
+            self._k8s_client = client
+        else:
+            kube_utils.load_kube_config(
+                incluster=incluster,
+                context=self.config.kubernetes_context,
+            )
+            self._k8s_client = k8s_client.ApiClient()
+
+        return self._k8s_client
+
+    @property
+    def _k8s_core_api(self) -> k8s_client.CoreV1Api:
+        """Getter for the Kubernetes Core API client.
+
+        Returns:
+            The Kubernetes Core API client.
+        """
+        return k8s_client.CoreV1Api(self.get_kube_client())
+
+    @property
+    def _k8s_batch_api(self) -> k8s_client.BatchV1Api:
+        """Getter for the Kubernetes Batch API client.
+
+        Returns:
+            The Kubernetes Batch API client.
+        """
+        return k8s_client.BatchV1Api(self.get_kube_client())
+
+    @property
+    def _k8s_rbac_api(self) -> k8s_client.RbacAuthorizationV1Api:
+        """Getter for the Kubernetes RBAC API client.
+
+        Returns:
+            The Kubernetes RBAC API client.
+        """
+        return k8s_client.RbacAuthorizationV1Api(self.get_kube_client())
 
     @property
     def config(self) -> KubernetesOrchestratorConfig:
@@ -154,36 +202,51 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             # this, but just in case
             assert container_registry is not None
 
-            contexts, active_context = self.get_kubernetes_contexts()
+            connector = self.get_connector()
+            kubernetes_context = self.config.kubernetes_context
+            msg = f"'{self.name}' Kubernetes orchestrator error: "
 
-            if self.config.kubernetes_context not in contexts:
-                return False, (
-                    f"Could not find a Kubernetes context named "
-                    f"'{self.config.kubernetes_context}' in the local Kubernetes "
-                    f"configuration. Please make sure that the Kubernetes "
-                    f"cluster is running and that the kubeconfig file is "
-                    f"configured correctly. To list all configured "
-                    f"contexts, run:\n\n"
-                    f"  `kubectl config get-contexts`\n"
-                )
-            if self.config.kubernetes_context != active_context:
-                logger.warning(
-                    f"The Kubernetes context '{self.config.kubernetes_context}' "
-                    f"configured for the Kubernetes orchestrator is not "
-                    f"the same as the active context in the local "
-                    f"Kubernetes configuration. If this is not deliberate,"
-                    f" you should update the orchestrator's "
-                    f"`kubernetes_context` field by running:\n\n"
-                    f"  `zenml orchestrator update {self.name} "
-                    f"--kubernetes_context={active_context}`\n"
-                    f"To list all configured contexts, run:\n\n"
-                    f"  `kubectl config get-contexts`\n"
-                    f"To set the active context to be the same as the one "
-                    f"configured in the Kubernetes orchestrator and "
-                    f"silence this warning, run:\n\n"
-                    f"  `kubectl config use-context "
-                    f"{self.config.kubernetes_context}`\n"
-                )
+            if not connector:
+                if not kubernetes_context:
+                    return False, (
+                        f"{msg}you must either link this stack component to a "
+                        "Kubernetes service connector (see the 'zenml "
+                        "orchestrator connect' CLI command) or explicitly set "
+                        "the `kubernetes_context` attribute to the name of the "
+                        "Kubernetes config context pointing to the cluster "
+                        "where you would like to run pipelines."
+                    )
+
+                contexts, active_context = self.get_kubernetes_contexts()
+
+                if kubernetes_context not in contexts:
+                    return False, (
+                        f"{msg}could not find a Kubernetes context named "
+                        f"'{kubernetes_context}' in the local "
+                        "Kubernetes configuration. Please make sure that the "
+                        "Kubernetes cluster is running and that the kubeconfig "
+                        "file is configured correctly. To list all configured "
+                        "contexts, run:\n\n"
+                        "  `kubectl config get-contexts`\n"
+                    )
+                if kubernetes_context != active_context:
+                    logger.warning(
+                        f"{msg}the Kubernetes context '{kubernetes_context}' "
+                        f"configured for the Kubernetes orchestrator is not "
+                        f"the same as the active context in the local "
+                        f"Kubernetes configuration. If this is not deliberate,"
+                        f" you should update the orchestrator's "
+                        f"`kubernetes_context` field by running:\n\n"
+                        f"  `zenml orchestrator update {self.name} "
+                        f"--kubernetes_context={active_context}`\n"
+                        f"To list all configured contexts, run:\n\n"
+                        f"  `kubectl config get-contexts`\n"
+                        f"To set the active context to be the same as the one "
+                        f"configured in the Kubernetes orchestrator and "
+                        f"silence this warning, run:\n\n"
+                        f"  `kubectl config use-context "
+                        f"{kubernetes_context}`\n"
+                    )
 
             silence_local_validations_msg = (
                 f"To silence this warning, set the "
@@ -197,7 +260,6 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                 not self.config.skip_local_validations
                 and not self.config.is_local
             ):
-
                 # if the orchestrator is not running in a local k3d cluster,
                 # we cannot have any other local components in our stack,
                 # because we cannot mount the local path into the container.
@@ -212,11 +274,10 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                     if stack_comp.local_path is None:
                         continue
                     return False, (
-                        f"The Kubernetes orchestrator is configured to run "
-                        f"pipelines in a remote Kubernetes cluster designated "
-                        f"by the '{self.config.kubernetes_context}' configuration "
-                        f"context, but the '{stack_comp.name}' "
-                        f"{stack_comp.type.value} is a local stack component "
+                        f"{msg}the Kubernetes orchestrator is configured to "
+                        f"run pipelines in a remote Kubernetes cluster but the "
+                        f"'{stack_comp.name}' {stack_comp.type.value} "
+                        f"is a local stack component "
                         f"and will not be available in the Kubernetes pipeline "
                         f"step.\nPlease ensure that you always use non-local "
                         f"stack components with a remote Kubernetes orchestrator, "
@@ -231,11 +292,9 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                 # also be remote.
                 if container_registry.config.is_local:
                     return False, (
-                        f"The Kubernetes orchestrator is configured to run "
-                        f"pipelines in a remote Kubernetes cluster designated "
-                        f"by the '{self.config.kubernetes_context}' configuration "
-                        f"context, but the '{container_registry.name}' "
-                        f"container registry URI "
+                        f"{msg}the Kubernetes orchestrator is configured to "
+                        "run pipelines in a remote Kubernetes cluster but the "
+                        f"'{container_registry.name}' container registry URI "
                         f"'{container_registry.config.uri}' "
                         f"points to a local container registry. Please ensure "
                         f"that you always use non-local stack components with "
@@ -284,13 +343,13 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                 "orchestrator."
             )
 
-        for step in deployment.step_configurations.values():
+        for step_name, step in deployment.step_configurations.items():
             if self.requires_resources_in_orchestration_environment(step):
                 logger.warning(
                     "Specifying step resources is not yet supported for "
                     "the Kubernetes orchestrator, ignoring resource "
                     "configuration for step %s.",
-                    step.config.name,
+                    step_name,
                 )
 
         pipeline_name = deployment.pipeline_configuration.name

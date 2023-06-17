@@ -41,6 +41,7 @@ from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
 
 if TYPE_CHECKING:
     from zenml.models import ArtifactResponseModel
+    from zenml.zen_stores.schemas.logs_schemas import LogsSchema
     from zenml.zen_stores.schemas.run_metadata_schemas import RunMetadataSchema
 
 
@@ -129,6 +130,10 @@ class StepRunSchema(NamedSchema, table=True):
     output_artifacts: List["StepRunOutputArtifactSchema"] = Relationship(
         back_populates="step_run", sa_relationship_kwargs={"cascade": "delete"}
     )
+    logs: Optional["LogsSchema"] = Relationship(
+        back_populates="step_run",
+        sa_relationship_kwargs={"cascade": "delete", "uselist": False},
+    )
     parents: List["StepRunParentsSchema"] = Relationship(
         back_populates="child",
         sa_relationship_kwargs={
@@ -215,8 +220,6 @@ class StepRunSchema(NamedSchema, table=True):
             workspace=self.workspace.to_model(),
             user=self.user.to_model() if self.user else None,
             parent_step_ids=parent_step_ids,
-            enable_cache=self.enable_cache,
-            enable_artifact_metadata=self.enable_artifact_metadata,
             cache_key=self.cache_key,
             start_time=self.start_time,
             end_time=self.end_time,
@@ -229,6 +232,7 @@ class StepRunSchema(NamedSchema, table=True):
             input_artifacts=input_artifacts,
             output_artifacts=output_artifacts,
             metadata=metadata,
+            logs=self.logs.to_model() if self.logs else None,
         )
 
     def update(self, step_update: StepRunUpdateModel) -> "StepRunSchema":

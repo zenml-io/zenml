@@ -83,6 +83,66 @@ KFP_POD_LABELS = {
 ENV_KFP_RUN_ID = "KFP_RUN_ID"
 
 
+class KubeClientKFPClient(kfp.Client):  # type: ignore[misc]
+    """KFP client initialized from a Kubernetes client.
+
+    This is a workaround for the fact that the native KFP client does not
+    support initialization from an existing Kubernetes client.
+    """
+
+    def __init__(
+        self, client: k8s_client.ApiClient, *args: Any, **kwargs: Any
+    ) -> None:
+        """Initializes the KFP client from a Kubernetes client.
+
+        Args:
+            client: pre-configured Kubernetes client.
+            args: standard KFP client positional arguments.
+            kwargs: standard KFP client keyword arguments.
+        """
+        self._k8s_client = client
+        super().__init__(*args, **kwargs)
+
+    def _load_config(self, *args: Any, **kwargs: Any) -> Any:
+        """Loads the KFP configuration.
+
+        Initializes the KFP configuration from the Kubernetes client.
+
+        Args:
+            args: standard KFP client positional arguments.
+            kwargs: standard KFP client keyword arguments.
+
+        Returns:
+            The KFP configuration.
+        """
+        from kfp_server_api.configuration import Configuration
+
+        kube_config = self._k8s_client.configuration
+
+        host = (
+            kube_config.host
+            + "/"
+            + self.KUBE_PROXY_PATH.format(kwargs.get("namespace", "kubeflow"))
+        )
+
+        config = Configuration(
+            host=host,
+            api_key=kube_config.api_key,
+            api_key_prefix=kube_config.api_key_prefix,
+            username=kube_config.username,
+            password=kube_config.password,
+            discard_unknown_keys=kube_config.discard_unknown_keys,
+        )
+
+        # Extra attributes not present in the Configuration constructor
+        keys = ["ssl_ca_cert", "cert_file", "key_file", "verify_ssl"]
+        for key in keys:
+            if key in kube_config.__dict__:
+                setattr(config, key, getattr(kube_config, key))
+
+        return config
+
+
 class KubeflowOrchestrator(ContainerizedOrchestrator):
     """Orchestrator responsible for running pipelines using Kubeflow."""
 
@@ -94,15 +154,6 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
             The configuration.
         """
         return cast(KubeflowOrchestratorConfig, self._config)
-
-    @property
-    def kubernetes_context(self) -> str:
-        """Gets the kubernetes context associated with the orchestrator.
-
-        Returns:
-            The kubernetes context associated with the orchestrator.
-        """
-        return self.config.kubernetes_context
 
     def get_kubernetes_contexts(self) -> Tuple[List[str], Optional[str]]:
         """Get the list of configured Kubernetes contexts and the active context.
@@ -138,31 +189,31 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
         Returns:
             A `StackValidator` instance.
         """
+        msg = f"'{self.name}' Kubeflow orchestrator error: "
 
-        def _validate_local_requirements(stack: "Stack") -> Tuple[bool, str]:
-
-            container_registry = stack.container_registry
-
-            # should not happen, because the stack validation takes care of
-            # this, but just in case
-            assert container_registry is not None
-
+        def _validate_kube_context(
+            kubernetes_context: str,
+        ) -> Tuple[bool, str]:
             contexts, active_context = self.get_kubernetes_contexts()
 
-            if self.kubernetes_context not in contexts:
+            if kubernetes_context and kubernetes_context not in contexts:
                 if not self.config.is_local:
                     return False, (
-                        f"Could not find a Kubernetes context named "
-                        f"'{self.kubernetes_context}' in the local Kubernetes "
+                        f"{msg}could not find a Kubernetes context named "
+                        f"'{kubernetes_context}' in the local Kubernetes "
                         f"configuration. Please make sure that the Kubernetes "
                         f"cluster is running and that the kubeconfig file is "
                         f"configured correctly. To list all configured "
                         f"contexts, run:\n\n"
                         f"  `kubectl config get-contexts`\n"
                     )
-            elif active_context and self.kubernetes_context != active_context:
+            elif (
+                kubernetes_context
+                and active_context
+                and kubernetes_context != active_context
+            ):
                 logger.warning(
-                    f"The Kubernetes context '{self.kubernetes_context}' "
+                    f"{msg}the Kubernetes context '{kubernetes_context}' "
                     f"configured for the Kubeflow orchestrator is not the "
                     f"same as the active context in the local Kubernetes "
                     f"configuration. If this is not deliberate, you should "
@@ -176,8 +227,44 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
                     f"configured in the Kubeflow orchestrator and silence "
                     f"this warning, run:\n\n"
                     f"  `kubectl config use-context "
-                    f"{self.kubernetes_context}`\n"
+                    f"{kubernetes_context}`\n"
                 )
+
+            return True, ""
+
+        def _validate_local_requirements(stack: "Stack") -> Tuple[bool, str]:
+            container_registry = stack.container_registry
+
+            # should not happen, because the stack validation takes care of
+            # this, but just in case
+            assert container_registry is not None
+
+            kubernetes_context = self.config.kubernetes_context
+            connector = self.get_connector()
+
+            if not connector:
+                if (
+                    not kubernetes_context
+                    and not self.config.kubeflow_hostname
+                ):
+                    return False, (
+                        f"{msg}the Kubeflow orchestrator is incompletely "
+                        "configured. For a multi-tenant Kubeflow deployment, "
+                        "you must set the `kubeflow_hostname` attribute in the "
+                        "orchestrator configuration. For a single-tenant "
+                        "deployment, you must either set the "
+                        "`kubernetes_context` attribute in the orchestrator "
+                        "configuration to the name of the Kubernetes config "
+                        "context pointing to the cluster where you would like "
+                        "to run pipelines or link this stack component to a "
+                        "Kubernetes cluster via a service connector (see the "
+                        "'zenml orchestrator connect' CLI command)."
+                    )
+
+                if kubernetes_context:
+                    valid, err = _validate_kube_context(kubernetes_context)
+                    if not valid:
+                        return False, err
 
             silence_local_validations_msg = (
                 f"To silence this warning, set the "
@@ -191,7 +278,6 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
                 not self.config.skip_local_validations
                 and not self.config.is_local
             ):
-
                 # if the orchestrator is not running in a local k3d cluster,
                 # we cannot have any other local components in our stack,
                 # because we cannot mount the local path into the container.
@@ -207,13 +293,12 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
                     if not local_path:
                         continue
                     return False, (
-                        f"The Kubeflow orchestrator is configured to run "
-                        f"pipelines in a remote Kubernetes cluster designated "
-                        f"by the '{self.kubernetes_context}' configuration "
-                        f"context, but the '{stack_comp.name}' "
-                        f"{stack_comp.type.value} is a local stack component "
-                        f"and will not be available in the Kubeflow pipeline "
-                        f"step.\nPlease ensure that you always use non-local "
+                        f"{msg}the Kubeflow orchestrator is configured to run "
+                        f"pipelines in a remote Kubernetes cluster but the "
+                        f"'{stack_comp.name}' {stack_comp.type.value} is a "
+                        "local stack component and will not be available in "
+                        "the Kubeflow pipeline step.\n"
+                        "Please ensure that you always use non-local "
                         f"stack components with a remote Kubeflow "
                         f"orchestrator, otherwise you may run into pipeline "
                         f"execution problems. You should use a flavor of "
@@ -226,11 +311,9 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
                 # also be remote.
                 if container_registry.config.is_local:
                     return False, (
-                        f"The Kubeflow orchestrator is configured to run "
-                        f"pipelines in a remote Kubernetes cluster designated "
-                        f"by the '{self.kubernetes_context}' configuration "
-                        f"context, but the '{container_registry.name}' "
-                        f"container registry URI "
+                        f"{msg}the Kubeflow orchestrator is configured to run "
+                        f"pipelines in a remote Kubernetes cluster, but the "
+                        f"'{container_registry.name}' container registry URI "
                         f"'{container_registry.config.uri}' "
                         f"points to a local container registry. Please ensure "
                         f"that you always use non-local stack components with "
@@ -477,7 +560,7 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
                 # out more about how these arguments are parsed and used
                 # in the base entrypoint `run()` method.
                 container_op = dsl.ContainerOp(
-                    name=step.config.name,
+                    name=step_name,
                     image=image,
                     command=command,
                     arguments=arguments,
@@ -514,7 +597,7 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
                     container_op.after(upstream_container_op)
 
                 # Update dictionary of container ops with the current one
-                step_name_to_container_op[step.config.name] = container_op
+                step_name_to_container_op[step_name] = container_op
 
         orchestrator_run_name = get_orchestrator_run_name(
             pipeline_name=deployment.pipeline_configuration.name
@@ -566,11 +649,23 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
         )
         user_namespace = settings.user_namespace
 
+        kubernetes_context = self.config.kubernetes_context
         try:
-            logger.info(
-                "Running in kubernetes context '%s'.",
-                self.kubernetes_context,
-            )
+            if kubernetes_context:
+                logger.info(
+                    "Running in kubernetes context '%s'.",
+                    kubernetes_context,
+                )
+            elif self.config.kubeflow_hostname:
+                logger.info(
+                    "Running on Kubeflow deployment '%s'.",
+                    self.config.kubeflow_hostname,
+                )
+            elif self.connector:
+                logger.info(
+                    "Running with Kubernetes credentials from connector '%s'.",
+                    str(self.connector),
+                )
 
             # upload the pipeline to Kubeflow and start it
 
@@ -642,12 +737,23 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
                         run_id=result.run_id, timeout=settings.timeout
                     )
         except urllib3.exceptions.HTTPError as error:
+            if kubernetes_context:
+                msg = (
+                    f"Please make sure your kubernetes config is present and "
+                    f"the '{kubernetes_context}' kubernetes context is "
+                    "configured correctly."
+                )
+            elif self.connector:
+                msg = (
+                    f"Please check that the '{self.connector}' connector "
+                    f"linked to this component is configured correctly with "
+                    "valid credentials."
+                )
+            else:
+                msg = ""
+
             logger.warning(
-                f"Failed to upload Kubeflow pipeline: %s. "
-                f"Please make sure your kubernetes config is present and the "
-                f"{self.kubernetes_context} kubernetes context is configured "
-                f"correctly.",
-                error,
+                f"Failed to upload Kubeflow pipeline: {error}. {msg}",
             )
 
     def get_orchestrator_run_id(self) -> str:
@@ -680,35 +786,57 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
 
         Returns:
             A KFP client instance.
+
+        Raises:
+            RuntimeError: If the linked Kubernetes connector behaves
+                unexpectedly.
         """
-        client_args = {
-            "kube_context": self.config.kubernetes_context,
-        }
+        connector = self.get_connector()
+        client_args = settings.client_args.copy()
 
-        client_args.update(settings.client_args)
-
-        # The host and namespace are stack component configurations that refer
-        # to the Kubeflow deployment. We don't want these overwritten on a
-        # run by run basis by user settings
-        if self.config.kubeflow_hostname:
-            client_args["host"] = self.config.kubeflow_hostname
+        # The kube_context, host and namespace are stack component
+        # configurations that refer to the Kubeflow deployment. We don't want
+        # these overwritten on a run by run basis by user settings
         client_args["namespace"] = self.config.kubeflow_namespace
 
-        # Handle username and password, ignore the case if one is passed and not the other
-        # Also do not attempt to get cookie if cookie is already passed in client_args
-        if settings.client_username and settings.client_password:
-            # If cookie is already set, then ignore
-            if "cookie" in client_args:
-                logger.warning(
-                    "Cookie already set in `client_args`, ignoring `client_username` and `client_password`..."
-                )
-            else:
-                session_cookie = self._get_session_cookie(
-                    username=settings.client_username,
-                    password=settings.client_password,
+        if connector:
+            client = connector.connect()
+            if not isinstance(client, k8s_client.ApiClient):
+                raise RuntimeError(
+                    f"Expected a k8s_client.ApiClient while trying to use the "
+                    f"linked connector, but got {type(client)}."
                 )
 
-                client_args["cookies"] = session_cookie
+            kfp_client = KubeClientKFPClient(
+                client=client,
+                **client_args,
+            )
+
+            return kfp_client
+
+        elif self.config.kubernetes_context:
+            client_args["kube_context"] = self.config.kubernetes_context
+
+        elif self.config.kubeflow_hostname:
+            client_args["host"] = self.config.kubeflow_hostname
+
+            # Handle username and password, ignore the case if one is passed and
+            # not the other. Also do not attempt to get cookie if cookie is
+            # already passed in client_args
+            if settings.client_username and settings.client_password:
+                # If cookie is already set, then ignore
+                if "cookie" in client_args:
+                    logger.warning(
+                        "Cookie already set in `client_args`, ignoring "
+                        "`client_username` and `client_password`..."
+                    )
+                else:
+                    session_cookie = self._get_session_cookie(
+                        username=settings.client_username,
+                        password=settings.client_password,
+                    )
+
+                    client_args["cookies"] = session_cookie
 
         return kfp.Client(**client_args)
 
@@ -798,7 +926,7 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
 
         settings_key = settings_utils.get_stack_component_setting_key(self)
         run_settings = self.settings_class.parse_obj(
-            run.pipeline_configuration.get(settings_key, self.config)
+            run.pipeline_configuration.dict().get(settings_key, self.config)
         )
         user_namespace = run_settings.user_namespace
 

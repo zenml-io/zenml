@@ -11,11 +11,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 from pipelines import xgboost_pipeline
-from steps import data_loader, predictor, trainer
 
 if __name__ == "__main__":
-
-    pipeline = xgboost_pipeline(
-        data_loader=data_loader(), trainer=trainer(), predictor=predictor()
-    )
-    pipeline.run()
+    xgboost_pipeline()

@@ -16,10 +16,11 @@ import whylogs as why
 from sklearn import datasets
 from whylogs.core import DatasetProfileView  # type: ignore[import]
 
+from zenml import step
 from zenml.integrations.whylogs.flavors.whylogs_data_validator_flavor import (
     WhylogsDataValidatorSettings,
 )
-from zenml.steps import Output, step
+from zenml.steps import Output
 
 
 @step(
@@ -29,9 +30,11 @@ from zenml.steps import Output, step
         )
     }
 )
-def data_loader() -> Output(
-    data=pd.DataFrame,
-    profile=DatasetProfileView,
+def data_loader() -> (
+    Output(
+        data=pd.DataFrame,
+        profile=DatasetProfileView,
+    )
 ):
     """Load the diabetes dataset."""
     X, y = datasets.load_diabetes(return_X_y=True, as_frame=True)

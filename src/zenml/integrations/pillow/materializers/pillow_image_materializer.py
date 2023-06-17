@@ -19,7 +19,7 @@ from typing import TYPE_CHECKING, Any, ClassVar, Dict, Tuple, Type
 
 from PIL import Image
 
-from zenml.enums import ArtifactType
+from zenml.enums import ArtifactType, VisualizationType
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
@@ -87,6 +87,22 @@ class PillowImageMaterializer(BaseMaterializer):
         io_utils.copy(temp_image_path, artifact_store_path, overwrite=True)  # type: ignore[attr-defined]
         temp_dir.cleanup()
 
+    def save_visualizations(
+        self, image: Image.Image
+    ) -> Dict[str, VisualizationType]:
+        """Finds and saves the given image as a visualization.
+
+        Args:
+            image: The image to save as a visualization.
+
+        Returns:
+            A dictionary of visualization URIs and their types.
+        """
+        file_extension = image.format or DEFAULT_IMAGE_EXTENSION
+        full_filename = f"{DEFAULT_IMAGE_FILENAME}.{file_extension}"
+        artifact_store_path = os.path.join(self.uri, full_filename)
+        return {artifact_store_path: VisualizationType.IMAGE}
+
     def extract_metadata(
         self, image: Image.Image
     ) -> Dict[str, "MetadataType"]:
@@ -98,8 +114,11 @@ class PillowImageMaterializer(BaseMaterializer):
         Returns:
             The extracted metadata as a dictionary.
         """
-        return {
+        metadata = {
             "width": image.width,
             "height": image.height,
             "mode": str(image.mode),
         }
+        if hasattr(image, "filename"):
+            metadata["original_filename"] = str(image.filename)
+        return metadata  # type: ignore[return-value]

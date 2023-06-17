@@ -132,7 +132,9 @@ pod.
 zenml stack recipe deploy k3d-modular
 ```
 >**Note**:
-> This recipe comes with MLflow, Kubeflow and Minio enabled by default. If you want any other components like KServe, Seldon or Tekton, you can specify that using the `--install/-i` flag.
+> This recipe comes with MLflow, Kubeflow and Minio enabled by default. If you
+> want any other components like Seldon or Tekton, you can specify that using
+> the relevant flag (i.e. `-o` for orchestrators and so on).
 
 #### 🏁 Deploy the stack using ZenML CLI
 
@@ -150,7 +152,7 @@ zenml stack recipe pull k3d-modular
 3. Deploy the stack using the ZenML CLI:
 
 ```shell
-zenml stack recipe deploy k3d-modular -i kubeflow -i minio --no-server
+zenml stack recipe deploy k3d-modular -o kubeflow -a minio --no-server
 ```
 
 > **Note**
@@ -174,6 +176,20 @@ kubectl get ingress -A  -o jsonpath='{.items[*].spec.rules[*].host}'
 # Output:
 kubeflow.<EXTERNAL-IP>.nip.io mlflow.<EXTERNAL-IP>.nip.io minio-console.<EXTERNAL-IP>.nip.io
 ```
+
+#### ⛽️ Deploy individual stack components using ZenML CLI
+
+As an alternative to deploying the entire stack, you can also deploy individual
+components using the `zenml <STACK_COMPONENT> deploy` command. As an
+illustration, the Kubeflow orchestrator could be deployed in the following way:
+
+```shell
+zenml orchestrator deploy kubeflow --flavor kubeflow ...
+```
+
+For more information on this `deploy`
+subcommand, please refer to the
+[documentation](https://docs.zenml.io/advanced-guide/practical-mlops/stack-recipes#deploying-stack-components-directly).
 
 ### ▶️ Run the pipeline
 We can now run the pipeline by simply executing the python script:
@@ -352,7 +368,8 @@ If you're using the Kubeflow orchestrator and some of your pipelines steps have 
 hardware requirements, you can specify them using the step decorator as follows:
 
 ```python
-from zenml.steps import step, ResourceSettings
+from zenml.steps import ResourceSettings
+from zenml import step
 
 @step(settings={"resources": ResourceSettings(cpu_count=8, memory="16GB")})
 def my_step(...) -> ...:
@@ -373,6 +390,15 @@ If you have created the GCP Kubeflow stack using the recipe, you can delete it u
 
 ```bash
 zenml stack recipe destroy gcp_kubeflow_stack
+```
+
+To destroy any resources deployed using the ZenML `deploy` subcommand, use the
+`destroy` subcommand to delete each individual stack component, as in the
+following example:
+
+```shell
+# replace with the name of the component you want to destroy
+zenml artifact-store destroy s3_artifact_store
 ```
 
 # ⚠️ Important note for multi-tenant Kubeflow deployments

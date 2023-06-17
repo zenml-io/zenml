@@ -165,7 +165,7 @@ def export_requirements(
     "--ignore-integration",
     "-i",
     multiple=True,
-    help="List of integrations to ignore explicitly.",
+    help="Integrations to ignore explicitly (passed in separately).",
 )
 @click.option(
     "--yes",
@@ -188,7 +188,7 @@ def install(
     Args:
         integrations: The name of the integration to install the requirements
             for.
-        ignore_integration: List of integrations to ignore explicitly.
+        ignore_integration: Integrations to ignore explicitly (passed in separately).
         force: Force the installation of the required packages.
     """
     from zenml.integrations.registry import integration_registry

@@ -31,7 +31,7 @@ from zenml.models import (
     PipelineBuildResponseModel,
 )
 from zenml.models.pipeline_deployment_models import PipelineDeploymentBaseModel
-from zenml.pipelines import build_utils
+from zenml.new.pipelines import build_utils
 from zenml.stack import Stack
 from zenml.utils.pipeline_docker_image_builder import (
     PipelineDockerImageBuilder,
@@ -98,7 +98,7 @@ def test_build_is_skipped_when_not_required(mocker):
     mock_build_docker_image = mocker.patch.object(
         PipelineDockerImageBuilder,
         "build_docker_image",
-        return_value="image_name",
+        return_value=("image_name", "", ""),
     )
 
     deployment = PipelineDeploymentBaseModel(
@@ -130,7 +130,7 @@ def test_stack_with_container_registry_creates_non_local_build(
     mocker.patch.object(
         PipelineDockerImageBuilder,
         "build_docker_image",
-        return_value="image_name",
+        return_value=("image_name", "", ""),
     )
 
     deployment = PipelineDeploymentBaseModel(
@@ -158,7 +158,7 @@ def test_build_uses_correct_settings(clean_client, mocker, empty_pipeline):
     mock_build_docker_image = mocker.patch.object(
         PipelineDockerImageBuilder,
         "build_docker_image",
-        return_value="image_name",
+        return_value=("image_name", "", ""),
     )
 
     deployment = PipelineDeploymentBaseModel(
@@ -207,7 +207,7 @@ def test_building_with_identical_keys_and_settings(clean_client, mocker):
     mock_build_docker_image = mocker.patch.object(
         PipelineDockerImageBuilder,
         "build_docker_image",
-        return_value="image_name",
+        return_value=("image_name", "", ""),
     )
 
     deployment = PipelineDeploymentBaseModel(
@@ -241,7 +241,7 @@ def test_building_with_identical_keys_and_different_settings(
     mocker.patch.object(
         PipelineDockerImageBuilder,
         "build_docker_image",
-        return_value="image_name",
+        return_value=("image_name", "", ""),
     )
 
     deployment = PipelineDeploymentBaseModel(
@@ -270,7 +270,7 @@ def test_building_with_different_keys_and_identical_settings(
     mock_build_docker_image = mocker.patch.object(
         PipelineDockerImageBuilder,
         "build_docker_image",
-        return_value="image_name",
+        return_value=("image_name", "", ""),
     )
 
     deployment = PipelineDeploymentBaseModel(
@@ -491,7 +491,7 @@ def test_finding_existing_build(
         ),
     )
     mocker.patch(
-        "zenml.pipelines.build_utils.compute_build_checksum",
+        "zenml.new.pipelines.build_utils.compute_build_checksum",
         return_value="checksum",
     )
     mocker.patch.object(Stack, "get_docker_builds", return_value=[])

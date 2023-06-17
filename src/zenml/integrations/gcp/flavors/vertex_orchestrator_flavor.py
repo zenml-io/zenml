@@ -21,6 +21,7 @@ from zenml.integrations.gcp.google_credentials_mixin import (
     GoogleCredentialsConfigMixin,
 )
 from zenml.integrations.kubernetes.pod_settings import KubernetesPodSettings
+from zenml.models.service_connector_models import ServiceConnectorRequirements
 from zenml.orchestrators import BaseOrchestratorConfig, BaseOrchestratorFlavor
 from zenml.utils import deprecation_utils
 
@@ -86,8 +87,19 @@ class VertexOrchestratorConfig(  # type: ignore[misc] # https://github.com/pydan
             resource is created.
         workload_service_account: the service account for workload run-as
             account. Users submitting jobs must have act-as permission on this
-            run-as account.
-            If not provided, the default service account will be used.
+            run-as account. If not provided, the Compute Engine default service
+            account for the GCP project in which the pipeline is running is
+            used.
+        function_service_account: the service account for cloud function run-as
+            account, for scheduled pipelines. This service account must have
+            the act-as permission on the workload_service_account.
+            If not provided, the Compute Engine default service account for the
+            GCP project in which the pipeline is running is used.
+        scheduler_service_account: the service account used by the Google Cloud
+            Scheduler to trigger and authenticate to the pipeline Cloud Function
+            on a schedule. If not provided, the Compute Engine default service
+            account for the GCP project in which the pipeline is running is
+            used.
         network: the full name of the Compute Engine Network to which the job
             should be peered. For example, `projects/12345/global/networks/myVPC`
             If not provided, the job will not be peered with any network.
@@ -108,6 +120,8 @@ class VertexOrchestratorConfig(  # type: ignore[misc] # https://github.com/pydan
     pipeline_root: Optional[str] = None
     encryption_spec_key_name: Optional[str] = None
     workload_service_account: Optional[str] = None
+    function_service_account: Optional[str] = None
+    scheduler_service_account: Optional[str] = None
     network: Optional[str] = None
 
     cpu_limit: Optional[str] = None
@@ -143,6 +157,23 @@ class VertexOrchestratorFlavor(BaseOrchestratorFlavor):
             Name of the orchestrator flavor.
         """
         return GCP_VERTEX_ORCHESTRATOR_FLAVOR
+
+    @property
+    def service_connector_requirements(
+        self,
+    ) -> Optional[ServiceConnectorRequirements]:
+        """Service connector resource requirements for service connectors.
+
+        Specifies resource requirements that are used to filter the available
+        service connector types that are compatible with this flavor.
+
+        Returns:
+            Requirements for compatible service connectors, if a service
+            connector is required for this flavor.
+        """
+        return ServiceConnectorRequirements(
+            resource_type="gcp-generic",
+        )
 
     @property
     def docs_url(self) -> Optional[str]:

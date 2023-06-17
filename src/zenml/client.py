@@ -27,6 +27,7 @@ from typing import (
     Mapping,
     Optional,
     Set,
+    Tuple,
     Type,
     TypeVar,
     Union,
@@ -57,6 +58,7 @@ from zenml.enums import (
     StoreType,
 )
 from zenml.exceptions import (
+    AuthorizationException,
     EntityExistsError,
     IllegalOperationError,
     InitializationException,
@@ -95,6 +97,12 @@ from zenml.models import (
     SecretRequestModel,
     SecretResponseModel,
     SecretUpdateModel,
+    ServiceConnectorFilterModel,
+    ServiceConnectorRequestModel,
+    ServiceConnectorResourcesModel,
+    ServiceConnectorResponseModel,
+    ServiceConnectorTypeModel,
+    ServiceConnectorUpdateModel,
     StackFilterModel,
     StackRequestModel,
     StackResponseModel,
@@ -139,6 +147,7 @@ from zenml.utils.pagination_utils import depaginate
 
 if TYPE_CHECKING:
     from zenml.metadata.metadata_types import MetadataType
+    from zenml.service_connectors.service_connector import ServiceConnector
     from zenml.stack import Stack, StackComponentConfig
     from zenml.zen_stores.base_zen_store import BaseZenStore
 
@@ -1598,7 +1607,6 @@ class Client(metaclass=ClientMetaClass):
         stack_components = dict()
 
         for c_type, c_identifier in components.items():
-
             # Skip non-existent components.
             if not c_identifier:
                 continue
@@ -2047,6 +2055,7 @@ class Client(metaclass=ClientMetaClass):
         type: Optional[str] = None,
         workspace_id: Optional[Union[str, UUID]] = None,
         user_id: Optional[Union[str, UUID]] = None,
+        connector_id: Optional[Union[str, UUID]] = None,
     ) -> Page[ComponentResponseModel]:
         """Lists all registered stack components.
 
@@ -2062,6 +2071,7 @@ class Client(metaclass=ClientMetaClass):
             type: Use the component type for filtering
             workspace_id: The id of the workspace to filter by.
             user_id: The id of the user to filter by.
+            connector_id: The id of the connector to filter by.
             name: The name of the component to filter by.
             is_shared: The shared status of the component to filter by.
 
@@ -2075,6 +2085,7 @@ class Client(metaclass=ClientMetaClass):
             logical_operator=logical_operator,
             workspace_id=workspace_id or self.active_workspace.id,
             user_id=user_id,
+            connector_id=connector_id,
             name=name,
             is_shared=is_shared,
             flavor=flavor,
@@ -2153,6 +2164,8 @@ class Client(metaclass=ClientMetaClass):
         configuration: Optional[Dict[str, Any]] = None,
         labels: Optional[Dict[str, Any]] = None,
         is_shared: Optional[bool] = None,
+        connector_id: Optional[UUID] = None,
+        connector_resource_id: Optional[str] = None,
     ) -> "ComponentResponseModel":
         """Updates a stack component.
 
@@ -2164,6 +2177,9 @@ class Client(metaclass=ClientMetaClass):
             configuration: The new configuration of the stack component.
             labels: The new labels of the stack component.
             is_shared: The new shared status of the stack component.
+            connector_id: The new connector id of the stack component.
+            connector_resource_id: The new connector resource id of the
+                stack component.
 
         Returns:
             The updated stack component.
@@ -2245,6 +2261,11 @@ class Client(metaclass=ClientMetaClass):
             }
             update_model.labels = existing_labels
 
+        if connector_id is not None:
+            update_model.connector = connector_id
+        if connector_resource_id is not None:
+            update_model.connector_resource_id = connector_resource_id
+
         # Send the updated component to the ZenStore
         return self.zen_store.update_stack_component(
             component_id=component.id,
@@ -2273,6 +2294,244 @@ class Client(metaclass=ClientMetaClass):
             "Deregistered stack component (type: %s) with name '%s'.",
             component.type,
             component.name,
+        )
+
+    def deploy_stack_component(
+        self,
+        name: str,
+        flavor: str,
+        cloud: str,
+        component_type: StackComponentType,
+        configuration: Optional[Dict[str, Any]] = {},
+        labels: Optional[Dict[str, Any]] = None,
+    ) -> Optional["ComponentResponseModel"]:
+        """Deploys a stack component.
+
+        Args:
+            name: The name of the deployed stack component.
+            flavor: The flavor of the deployed stack component.
+            cloud: The cloud of the deployed stack component.
+            component_type: The type of the stack component to deploy.
+            configuration: The configuration of the deployed stack component.
+            labels: The labels of the deployed stack component.
+
+        Returns:
+            The deployed stack component.
+        """
+        STACK_COMPONENT_RECIPE_DIR = "deployed_stack_components"
+
+        if component_type.value not in [
+            "artifact_store",
+            "container_registry",
+            "secrets_manager",
+        ]:
+            enabled_services = [f"{component_type.value}_{flavor}"]
+        else:
+            enabled_services = [f"{component_type.value}"]
+
+        # path should be fixed at a constant in the
+        # global config directory
+        path = Path(
+            os.path.join(
+                io_utils.get_global_config_directory(),
+                STACK_COMPONENT_RECIPE_DIR,
+                f"{cloud}-modular",
+            )
+        )
+
+        with event_handler(
+            event=AnalyticsEvent.DEPLOY_STACK_COMPONENT,
+            v2=True,
+        ) as handler:
+            handler.metadata.update({component_type.value: flavor})
+
+            import python_terraform
+
+            from zenml.recipes import (
+                StackRecipeService,
+                StackRecipeServiceConfig,
+            )
+
+            # create the stack recipe service.
+            stack_recipe_service_config = StackRecipeServiceConfig(
+                directory_path=str(path),
+                enabled_services=enabled_services,
+                input_variables=configuration,
+            )
+
+            stack_recipe_service = StackRecipeService.get_service(str(path))
+
+            if stack_recipe_service:
+                logger.info(
+                    "An existing deployment of the recipe found. "
+                    f"with path {path}. "
+                    "Proceeding to update or create resources. "
+                )
+            else:
+                stack_recipe_service = StackRecipeService(
+                    config=stack_recipe_service_config,
+                    stack_recipe_name=f"{cloud}-modular",
+                )
+
+            try:
+                # start the service (the init and apply operation)
+                stack_recipe_service.start()
+
+            except python_terraform.TerraformCommandError:
+                logger.error(
+                    "Deployment of the stack component failed or was "
+                    "interrupted. "
+                )
+                return None
+
+            # get the outputs from the deployed recipe
+            outputs = stack_recipe_service.get_outputs()
+            outputs = {k: v for k, v in outputs.items() if v != ""}
+
+            # get all outputs that start with the component type into a map
+            comp_outputs = {
+                k: v
+                for k, v in outputs.items()
+                if k.startswith(component_type.value)
+            }
+
+            logger.info(
+                "Registering a new stack component of type %s with name '%s'.",
+                component_type,
+                name or comp_outputs[f"{component_type.value}_name"],
+            )
+
+            # call the register stack component function using the values of the outputs
+            # truncate the component type from the output
+            stack_comp = self.create_stack_component(
+                name=name or comp_outputs[f"{component_type.value}_name"],
+                flavor=comp_outputs[f"{component_type.value}_flavor"],
+                component_type=component_type,
+                configuration=eval(
+                    comp_outputs[f"{component_type.value}_configuration"]
+                ),
+                labels=labels,
+            )
+
+            # if the component is an experiment tracker of flavor mlflow, then
+            # output the name of the mlflow bucket if it exists
+            if (
+                component_type == StackComponentType.EXPERIMENT_TRACKER
+                and flavor == "mlflow"
+            ):
+                mlflow_bucket = outputs.get("mlflow-bucket")
+                if mlflow_bucket:
+                    logger.info(
+                        "The bucket used for MLflow is: %s "
+                        "You can use this bucket as an artifact store to "
+                        "avoid having to create a new one.",
+                        mlflow_bucket,
+                    )
+
+            # if the cloud is k3d, then check the container registry
+            # outputs. If they are set, then create one.
+            if cloud == "k3d":
+                container_registry_outputs = {
+                    k: v
+                    for k, v in outputs.items()
+                    if k.startswith("container_registry")
+                }
+                if container_registry_outputs:
+                    self.create_stack_component(
+                        name=container_registry_outputs[
+                            "container_registry_name"
+                        ],
+                        flavor=container_registry_outputs[
+                            "container_registry_flavor"
+                        ],
+                        component_type=StackComponentType.CONTAINER_REGISTRY,
+                        configuration=eval(
+                            container_registry_outputs[
+                                "container_registry_configuration"
+                            ]
+                        ),
+                    )
+
+        return stack_comp
+
+    def destroy_stack_component(
+        self,
+        component: ComponentResponseModel,
+    ) -> None:
+        """Destroys a stack component.
+
+        Args:
+            component: The stack component to destroy.
+
+        Returns:
+            None
+        """
+        STACK_COMPONENT_RECIPE_DIR = "deployed_stack_components"
+
+        if component.type.value not in [
+            "artifact_store",
+            "container_registry",
+            "secrets_manager",
+        ]:
+            disabled_services = [f"{component.type.value}_{component.flavor}"]
+        else:
+            disabled_services = [f"{component.type.value}"]
+
+        # assert that labels is not None
+        assert component.labels is not None
+        # path should be fixed at a constant in the
+        # global config directory
+        path = Path(
+            os.path.join(
+                io_utils.get_global_config_directory(),
+                STACK_COMPONENT_RECIPE_DIR,
+                f"{component.labels['cloud']}-modular",
+            )
+        )
+
+        with event_handler(
+            event=AnalyticsEvent.DESTROY_STACK_COMPONENT,
+            v2=True,
+        ) as handler:
+            handler.metadata.update({component.type.value: component.flavor})
+
+            import python_terraform
+
+            from zenml.recipes import (
+                StackRecipeService,
+            )
+
+            stack_recipe_service = StackRecipeService.get_service(str(path))
+
+            if not stack_recipe_service:
+                logger.error(
+                    f"No deployed {component.type.value} found with "
+                    f"flavor {component.flavor} and name {component.name}."
+                )
+                return None
+
+            stack_recipe_service.config.disabled_services = disabled_services
+
+            try:
+                # start the service (the init and apply operation)
+                stack_recipe_service.stop()
+
+            except python_terraform.TerraformCommandError:
+                logger.error(
+                    "Destruction of the stack component failed or was "
+                    "interrupted. "
+                )
+                return None
+
+        logger.info(
+            "Deregistering stack component %s...",
+            component.name,
+        )
+
+        # call the delete stack component function
+        self.delete_stack_component(
+            name_id_or_prefix=component.name,
+            component_type=component.type,
         )
 
     def _validate_stack_component_configuration(
@@ -3422,7 +3681,6 @@ class Client(metaclass=ClientMetaClass):
 
         created_metadata: Dict[str, RunMetadataResponseModel] = {}
         for key, value in metadata.items():
-
             # Skip metadata that is too large to be stored in the database.
             if len(json.dumps(value)) > TEXT_FIELD_MAX_LENGTH:
                 logger.warning(
@@ -3639,7 +3897,6 @@ class Client(metaclass=ClientMetaClass):
         )
 
         for search_scope in search_scopes:
-
             partial_matches: List[SecretResponseModel] = []
             for secret in secrets.items:
                 if secret.scope != search_scope:
@@ -4066,6 +4323,856 @@ class Client(metaclass=ClientMetaClass):
             name_id_or_prefix=name_id_or_prefix, allow_name_prefix_match=False
         )
         self.zen_store.delete_code_repository(code_repository_id=repo.id)
+
+    # .--------------------.
+    # | SERVICE CONNECTORS |
+    # '--------------------'
+
+    def get_service_connector(
+        self,
+        name_id_or_prefix: Union[str, UUID],
+        allow_name_prefix_match: bool = True,
+        load_secrets: bool = False,
+    ) -> "ServiceConnectorResponseModel":
+        """Fetches a registered service connector.
+
+        Args:
+            name_id_or_prefix: The id of the service connector to fetch.
+            allow_name_prefix_match: If True, allow matching by name prefix.
+            load_secrets: If True, load the secrets for the service connector.
+
+        Returns:
+            The registered service connector.
+        """
+
+        def scoped_list_method(
+            **kwargs: Any,
+        ) -> Page[ServiceConnectorResponseModel]:
+            """Call `zen_store.list_service_connectors` with workspace scoping.
+
+            Args:
+                **kwargs: Keyword arguments to pass to
+                    `ServiceConnectorFilterModel`.
+
+            Returns:
+                The list of service connectors.
+            """
+            filter_model = ServiceConnectorFilterModel(**kwargs)
+            filter_model.set_scope_workspace(self.active_workspace.id)
+            return self.zen_store.list_service_connectors(
+                filter_model=filter_model,
+            )
+
+        connector = self._get_entity_by_id_or_name_or_prefix(
+            get_method=self.zen_store.get_service_connector,
+            list_method=scoped_list_method,
+            name_id_or_prefix=name_id_or_prefix,
+            allow_name_prefix_match=allow_name_prefix_match,
+        )
+
+        if load_secrets and connector.secret_id:
+            client = Client()
+            try:
+                secret = client.get_secret(
+                    name_id_or_prefix=connector.secret_id,
+                    allow_partial_id_match=False,
+                    allow_partial_name_match=False,
+                )
+            except KeyError as err:
+                logger.error(
+                    "Unable to retrieve secret values associated with "
+                    f"service connector '{connector.name}': {err}"
+                )
+            else:
+                # Add secret values to connector configuration
+                connector.secrets.update(secret.values)
+
+        return connector
+
+    def list_service_connectors(
+        self,
+        sort_by: str = "created",
+        page: int = PAGINATION_STARTING_PAGE,
+        size: int = PAGE_SIZE_DEFAULT,
+        logical_operator: LogicalOperators = LogicalOperators.AND,
+        id: Optional[Union[UUID, str]] = None,
+        created: Optional[datetime] = None,
+        updated: Optional[datetime] = None,
+        is_shared: Optional[bool] = None,
+        name: Optional[str] = None,
+        connector_type: Optional[str] = None,
+        auth_method: Optional[str] = None,
+        resource_type: Optional[str] = None,
+        resource_id: Optional[str] = None,
+        workspace_id: Optional[Union[str, UUID]] = None,
+        user_id: Optional[Union[str, UUID]] = None,
+        labels: Optional[Dict[str, Optional[str]]] = None,
+        secret_id: Optional[Union[str, UUID]] = None,
+    ) -> Page[ServiceConnectorResponseModel]:
+        """Lists all registered service connectors.
+
+        Args:
+            sort_by: The column to sort by
+            page: The page of items
+            size: The maximum size of all pages
+            logical_operator: Which logical operator to use [and, or]
+            id: The id of the service connector to filter by.
+            created: Filter service connectors by time of creation
+            updated: Use the last updated date for filtering
+            connector_type: Use the service connector type for filtering
+            auth_method: Use the service connector auth method for filtering
+            resource_type: Filter service connectors by the resource type that
+                they can give access to.
+            resource_id: Filter service connectors by the resource id that
+                they can give access to.
+            workspace_id: The id of the workspace to filter by.
+            user_id: The id of the user to filter by.
+            name: The name of the service connector to filter by.
+            is_shared: The shared status of the service connector to filter by.
+            labels: The labels of the service connector to filter by.
+            secret_id: Filter by the id of the secret that is referenced by the
+                service connector.
+
+        Returns:
+            A page of service connectors.
+        """
+        connector_filter_model = ServiceConnectorFilterModel(
+            page=page,
+            size=size,
+            sort_by=sort_by,
+            logical_operator=logical_operator,
+            workspace_id=workspace_id or self.active_workspace.id,
+            user_id=user_id,
+            name=name,
+            is_shared=is_shared,
+            connector_type=connector_type,
+            auth_method=auth_method,
+            resource_type=resource_type,
+            resource_id=resource_id,
+            id=id,
+            created=created,
+            updated=updated,
+            labels=labels,
+            secret_id=secret_id,
+        )
+        connector_filter_model.set_scope_workspace(self.active_workspace.id)
+        return self.zen_store.list_service_connectors(
+            filter_model=connector_filter_model
+        )
+
+    def create_service_connector(
+        self,
+        name: str,
+        connector_type: str,
+        resource_type: Optional[str] = None,
+        auth_method: Optional[str] = None,
+        configuration: Optional[Dict[str, str]] = None,
+        resource_id: Optional[str] = None,
+        description: str = "",
+        expiration_seconds: Optional[int] = None,
+        expires_at: Optional[datetime] = None,
+        is_shared: bool = False,
+        labels: Optional[Dict[str, str]] = None,
+        auto_configure: bool = False,
+        verify: bool = True,
+        list_resources: bool = True,
+        register: bool = True,
+    ) -> Tuple[
+        Optional[
+            Union[
+                "ServiceConnectorResponseModel",
+                "ServiceConnectorRequestModel",
+            ]
+        ],
+        Optional[ServiceConnectorResourcesModel],
+    ]:
+        """Create, validate and/or register a service connector.
+
+        Args:
+            name: The name of the service connector.
+            connector_type: The service connector type.
+            auth_method: The authentication method of the service connector.
+                May be omitted if auto-configuration is used.
+            resource_type: The resource type for the service connector.
+            configuration: The configuration of the service connector.
+            resource_id: The resource id of the service connector.
+            description: The description of the service connector.
+            expiration_seconds: The expiration time of the service connector.
+            expires_at: The expiration time of the service connector
+                credentials.
+            is_shared: Whether the service connector is shared or not.
+            labels: The labels of the service connector.
+            auto_configure: Whether to automatically configure the service
+                connector from the local environment.
+            verify: Whether to verify that the service connector configuration
+                and credentials can be used to gain access to the resource.
+            list_resources: Whether to also list the resources that the service
+                connector can give access to (if verify is True).
+            register: Whether to register the service connector or not.
+
+        Returns:
+            The model of the registered service connector and the resources
+            that the service connector can give access to (if verify is True).
+
+        Raises:
+            ValueError: If the arguments are invalid.
+            KeyError: If the service connector type is not found.
+            NotImplementedError: If auto-configuration is not supported or
+                not implemented for the service connector type.
+            AuthorizationException: If the connector verification failed due
+                to authorization issues.
+        """
+        from zenml.service_connectors.service_connector_registry import (
+            service_connector_registry,
+        )
+
+        connector_instance: Optional[ServiceConnector] = None
+        connector_resources: Optional[ServiceConnectorResourcesModel] = None
+
+        # Get the service connector type class
+        try:
+            connector = self.zen_store.get_service_connector_type(
+                connector_type=connector_type,
+            )
+        except KeyError:
+            raise KeyError(
+                f"Service connector type {connector_type} not found."
+                "Please check that you have installed all required "
+                "Python packages and ZenML integrations and try again."
+            )
+
+        if not resource_type:
+            if len(connector.resource_types) == 1:
+                resource_type = connector.resource_types[0].resource_type
+
+        # If auto_configure is set, we will try to automatically configure the
+        # service connector from the local environment
+        if auto_configure:
+            if not connector.supports_auto_configuration:
+                raise NotImplementedError(
+                    f"The {connector.name} service connector type "
+                    "does not support auto-configuration."
+                )
+            if not connector.local:
+                raise NotImplementedError(
+                    f"The {connector.name} service connector type "
+                    "implementation is not available locally. Please "
+                    "check that you have installed all required Python "
+                    "packages and ZenML integrations and try again, or "
+                    "skip auto-configuration."
+                )
+
+            assert connector.connector_class is not None
+
+            connector_instance = connector.connector_class.auto_configure(
+                resource_type=resource_type,
+                auth_method=auth_method,
+                resource_id=resource_id,
+            )
+            assert connector_instance is not None
+            connector_request = connector_instance.to_model(
+                name=name,
+                user=self.active_user.id,
+                workspace=self.active_workspace.id,
+                description=description or "",
+                is_shared=is_shared,
+                labels=labels,
+            )
+
+            if verify:
+                # Prefer to verify the connector config server-side if the
+                # implementation if available there, because it ensures
+                # that the connector can be shared with other users or used
+                # from other machines and because some auth methods rely on the
+                # server-side authentication environment
+                if connector.remote:
+                    connector_resources = (
+                        self.zen_store.verify_service_connector_config(
+                            connector_request,
+                            list_resources=list_resources,
+                        )
+                    )
+                else:
+                    connector_resources = connector_instance.verify(
+                        list_resources=list_resources,
+                    )
+
+                if connector_resources.error:
+                    # Raise an exception if the connector verification failed
+                    raise AuthorizationException(connector_resources.error)
+
+        else:
+            if not auth_method:
+                if len(connector.auth_methods) == 1:
+                    auth_method = connector.auth_methods[0].auth_method
+                else:
+                    raise ValueError(
+                        f"Multiple authentication methods are available for "
+                        f"the {connector.name} service connector type. Please "
+                        f"specify one of the following: "
+                        f"{list(connector.auth_method_dict.keys())}."
+                    )
+
+            connector_request = ServiceConnectorRequestModel(
+                name=name,
+                connector_type=connector_type,
+                description=description,
+                auth_method=auth_method,
+                expiration_seconds=expiration_seconds,
+                expires_at=expires_at,
+                is_shared=is_shared,
+                user=self.active_user.id,
+                workspace=self.active_workspace.id,
+                labels=labels or {},
+            )
+            # Validate and configure the resources
+            connector_request.validate_and_configure_resources(
+                connector_type=connector,
+                resource_types=resource_type,
+                resource_id=resource_id,
+                configuration=configuration,
+            )
+            if verify:
+                # Prefer to verify the connector config server-side if the
+                # implementation if available there, because it ensures
+                # that the connector can be shared with other users or used
+                # from other machines and because some auth methods rely on the
+                # server-side authentication environment
+                if connector.remote:
+                    connector_resources = (
+                        self.zen_store.verify_service_connector_config(
+                            connector_request,
+                            list_resources=list_resources,
+                        )
+                    )
+                else:
+                    connector_instance = (
+                        service_connector_registry.instantiate_connector(
+                            model=connector_request
+                        )
+                    )
+                    connector_resources = connector_instance.verify(
+                        list_resources=list_resources,
+                    )
+
+                if connector_resources.error:
+                    # Raise an exception if the connector verification failed
+                    raise AuthorizationException(connector_resources.error)
+
+                # For resource types that don't support multi-instances, it's
+                # better to save the default resource ID in the connector, if
+                # available. Otherwise, we'll need to instantiate the connector
+                # again to get the default resource ID.
+                connector_request.resource_id = (
+                    connector_request.resource_id
+                    or connector_resources.get_default_resource_id()
+                )
+
+        if not register:
+            return connector_request, connector_resources
+
+        # Register the new model
+        connector_response = self.zen_store.create_service_connector(
+            service_connector=connector_request
+        )
+
+        if connector_resources:
+            connector_resources.id = connector_response.id
+            connector_resources.name = connector_response.name
+            connector_resources.connector_type = (
+                connector_response.connector_type
+            )
+
+        return connector_response, connector_resources
+
+    def update_service_connector(
+        self,
+        name_id_or_prefix: Union[UUID, str],
+        name: Optional[str] = None,
+        auth_method: Optional[str] = None,
+        resource_type: Optional[str] = None,
+        configuration: Optional[Dict[str, str]] = None,
+        resource_id: Optional[str] = None,
+        description: Optional[str] = None,
+        expiration_seconds: Optional[int] = None,
+        is_shared: Optional[bool] = None,
+        labels: Optional[Dict[str, Optional[str]]] = None,
+        verify: bool = True,
+        list_resources: bool = True,
+        update: bool = True,
+    ) -> Tuple[
+        Optional[
+            Union[
+                "ServiceConnectorResponseModel",
+                "ServiceConnectorUpdateModel",
+            ]
+        ],
+        Optional[ServiceConnectorResourcesModel],
+    ]:
+        """Validate and/or register an updated service connector.
+
+        If the `resource_type`, `resource_id` and `expiration_seconds`
+        parameters are set to their "empty" values (empty string for resource
+        type and resource ID, 0 for expiration seconds), the existing values
+        will be removed from the service connector. Setting them to None or
+        omitting them will not affect the existing values.
+
+        If supplied, the `configuration` parameter is a full replacement of the
+        existing configuration rather than a partial update.
+
+        Labels can be updated or removed by setting the label value to None.
+
+        Args:
+            name_id_or_prefix: The name, id or prefix of the service connector
+                to update.
+            name: The new name of the service connector.
+            auth_method: The new authentication method of the service connector.
+            resource_type: The new resource type for the service connector.
+                If set to the empty string, the existing resource type will be
+                removed.
+            configuration: The new configuration of the service connector. If
+                set, this needs to be a full replacement of the existing
+                configuration rather than a partial update.
+            resource_id: The new resource id of the service connector.
+                If set to the empty string, the existing resource ID will be
+                removed.
+            description: The description of the service connector.
+            expiration_seconds: The expiration time of the service connector.
+                If set to 0, the existing expiration time will be removed.
+            is_shared: Whether the service connector is shared or not.
+            labels: The service connector to update or remove. If a label value
+                is set to None, the label will be removed.
+            verify: Whether to verify that the service connector configuration
+                and credentials can be used to gain access to the resource.
+            list_resources: Whether to also list the resources that the service
+                connector can give access to (if verify is True).
+            update: Whether to update the service connector or not.
+
+        Returns:
+            The model of the registered service connector and the resources
+            that the service connector can give access to (if verify is True).
+
+        Raises:
+            AuthorizationException: If the service connector verification
+                fails due to invalid credentials or insufficient permissions.
+        """
+        from zenml.service_connectors.service_connector_registry import (
+            service_connector_registry,
+        )
+
+        connector_model = self.get_service_connector(
+            name_id_or_prefix,
+            allow_name_prefix_match=False,
+            load_secrets=True,
+        )
+
+        connector_instance: Optional[ServiceConnector] = None
+        connector_resources: Optional[ServiceConnectorResourcesModel] = None
+
+        if isinstance(connector_model.connector_type, str):
+            connector = self.get_service_connector_type(
+                connector_model.connector_type
+            )
+        else:
+            connector = connector_model.connector_type
+
+        resource_types: Optional[Union[str, List[str]]] = None
+        if resource_type == "":
+            resource_types = None
+        elif resource_type is None:
+            resource_types = connector_model.resource_types
+        else:
+            resource_types = resource_type
+
+        if not resource_type:
+            if len(connector.resource_types) == 1:
+                resource_types = connector.resource_types[0].resource_type
+
+        if resource_id == "":
+            resource_id = None
+        elif resource_id is None:
+            resource_id = connector_model.resource_id
+
+        if expiration_seconds == 0:
+            expiration_seconds = None
+        elif expiration_seconds is None:
+            expiration_seconds = connector_model.expiration_seconds
+
+        connector_update = ServiceConnectorUpdateModel(
+            name=name or connector_model.name,
+            connector_type=connector.connector_type,
+            description=description or connector_model.description,
+            auth_method=auth_method or connector_model.auth_method,
+            expiration_seconds=expiration_seconds,
+            is_shared=is_shared
+            if is_shared is not None
+            else connector_model.is_shared,
+            user=self.active_user.id,
+            workspace=self.active_workspace.id,
+        )
+        # Validate and configure the resources
+        if configuration is not None:
+            # The supplied configuration is a drop-in replacement for the
+            # existing configuration and secrets
+            connector_update.validate_and_configure_resources(
+                connector_type=connector,
+                resource_types=resource_types,
+                resource_id=resource_id,
+                configuration=configuration,
+            )
+        else:
+            connector_update.validate_and_configure_resources(
+                connector_type=connector,
+                resource_types=resource_types,
+                resource_id=resource_id,
+                configuration=connector_model.configuration,
+                secrets=connector_model.secrets,
+            )
+
+        # Add the labels
+        if labels is not None:
+            # Apply the new label values, but don't keep any labels that
+            # have been set to None in the update
+            connector_update.labels = {
+                **{
+                    label: value
+                    for label, value in connector_model.labels.items()
+                    if label not in labels
+                },
+                **{
+                    label: value
+                    for label, value in labels.items()
+                    if value is not None
+                },
+            }
+        else:
+            connector_update.labels = connector_model.labels
+
+        if verify:
+            # Prefer to verify the connector config server-side if the
+            # implementation if available there, because it ensures
+            # that the connector can be shared with other users or used
+            # from other machines and because some auth methods rely on the
+            # server-side authentication environment
+            if connector.remote:
+                connector_resources = (
+                    self.zen_store.verify_service_connector_config(
+                        connector_update,
+                        list_resources=list_resources,
+                    )
+                )
+            else:
+                connector_instance = (
+                    service_connector_registry.instantiate_connector(
+                        model=connector_update
+                    )
+                )
+                connector_resources = connector_instance.verify(
+                    list_resources=list_resources
+                )
+
+            if connector_resources.error:
+                raise AuthorizationException(connector_resources.error)
+
+            # For resource types that don't support multi-instances, it's
+            # better to save the default resource ID in the connector, if
+            # available. Otherwise, we'll need to instantiate the connector
+            # again to get the default resource ID.
+            connector_update.resource_id = (
+                connector_update.resource_id
+                or connector_resources.get_default_resource_id()
+            )
+
+        if not update:
+            return connector_update, connector_resources
+
+        # Update the model
+        connector_response = self.zen_store.update_service_connector(
+            service_connector_id=connector_model.id,
+            update=connector_update,
+        )
+
+        if connector_resources:
+            connector_resources.id = connector_response.id
+            connector_resources.name = connector_response.name
+            connector_resources.connector_type = (
+                connector_response.connector_type
+            )
+
+        return connector_response, connector_resources
+
+    def delete_service_connector(
+        self,
+        name_id_or_prefix: Union[str, UUID],
+    ) -> None:
+        """Deletes a registered service connector.
+
+        Args:
+            name_id_or_prefix: The ID or name of the service connector to delete.
+        """
+        service_connector = self.get_service_connector(
+            name_id_or_prefix=name_id_or_prefix,
+            allow_name_prefix_match=False,
+        )
+
+        self.zen_store.delete_service_connector(
+            service_connector_id=service_connector.id
+        )
+        logger.info(
+            "Removed service connector (type: %s) with name '%s'.",
+            service_connector.type,
+            service_connector.name,
+        )
+
+    def verify_service_connector(
+        self,
+        name_id_or_prefix: Union[UUID, str],
+        resource_type: Optional[str] = None,
+        resource_id: Optional[str] = None,
+        list_resources: bool = True,
+    ) -> "ServiceConnectorResourcesModel":
+        """Verifies if a service connector has access to one or more resources.
+
+        Args:
+            name_id_or_prefix: The name, id or prefix of the service connector
+                to verify.
+            resource_type: The type of the resource for which to verify access.
+                If not provided, the resource type from the service connector
+                configuration will be used.
+            resource_id: The ID of the resource for which to verify access. If
+                not provided, the resource ID from the service connector
+                configuration will be used.
+            list_resources: Whether to list the resources that the service
+                connector has access to.
+
+        Returns:
+            The list of resources that the service connector has access to,
+            scoped to the supplied resource type and ID, if provided.
+
+        Raises:
+            AuthorizationException: If the service connector does not have
+                access to the resources.
+        """
+        from zenml.service_connectors.service_connector_registry import (
+            service_connector_registry,
+        )
+
+        # Get the service connector model
+        service_connector = self.get_service_connector(
+            name_id_or_prefix=name_id_or_prefix,
+            allow_name_prefix_match=False,
+        )
+
+        connector_type = self.get_service_connector_type(
+            service_connector.type
+        )
+
+        # Prefer to verify the connector config server-side if the
+        # implementation if available there, because it ensures
+        # that the connector can be shared with other users or used
+        # from other machines and because some auth methods rely on the
+        # server-side authentication environment
+        if connector_type.remote:
+            connector_resources = self.zen_store.verify_service_connector(
+                service_connector_id=service_connector.id,
+                resource_type=resource_type,
+                resource_id=resource_id,
+                list_resources=list_resources,
+            )
+        else:
+            connector_instance = (
+                service_connector_registry.instantiate_connector(
+                    model=service_connector
+                )
+            )
+            connector_resources = connector_instance.verify(
+                resource_type=resource_type,
+                resource_id=resource_id,
+                list_resources=list_resources,
+            )
+
+        if connector_resources.error:
+            raise AuthorizationException(connector_resources.error)
+
+        return connector_resources
+
+    def login_service_connector(
+        self,
+        name_id_or_prefix: Union[UUID, str],
+        resource_type: Optional[str] = None,
+        resource_id: Optional[str] = None,
+        **kwargs: Any,
+    ) -> "ServiceConnector":
+        """Use a service connector to authenticate a local client/SDK.
+
+        Args:
+            name_id_or_prefix: The name, id or prefix of the service connector
+                to use.
+            resource_type: The type of the resource to connect to. If not
+                provided, the resource type from the service connector
+                configuration will be used.
+            resource_id: The ID of a particular resource instance to configure
+                the local client to connect to. If the connector instance is
+                already configured with a resource ID that is not the same or
+                equivalent to the one requested, a `ValueError` exception is
+                raised. May be omitted for connectors and resource types that do
+                not support multiple resource instances.
+            kwargs: Additional implementation specific keyword arguments to use
+                to configure the client.
+
+        Returns:
+            The service connector client instance that was used to configure the
+            local client.
+        """
+        connector_client = self.get_service_connector_client(
+            name_id_or_prefix=name_id_or_prefix,
+            resource_type=resource_type,
+            resource_id=resource_id,
+        )
+
+        connector_client.configure_local_client(
+            **kwargs,
+        )
+
+        return connector_client
+
+    def get_service_connector_client(
+        self,
+        name_id_or_prefix: Union[UUID, str],
+        resource_type: Optional[str] = None,
+        resource_id: Optional[str] = None,
+    ) -> "ServiceConnector":
+        """Get the client side of a service connector instance to use with a local client.
+
+        Args:
+            name_id_or_prefix: The name, id or prefix of the service connector
+                to use.
+            resource_type: The type of the resource to connect to. If not
+                provided, the resource type from the service connector
+                configuration will be used.
+            resource_id: The ID of a particular resource instance to configure
+                the local client to connect to. If the connector instance is
+                already configured with a resource ID that is not the same or
+                equivalent to the one requested, a `ValueError` exception is
+                raised. May be omitted for connectors and resource types that do
+                not support multiple resource instances.
+
+        Returns:
+            The client side of the indicated service connector instance that can
+            be used to connect to the resource locally.
+        """
+        from zenml.service_connectors.service_connector_registry import (
+            service_connector_registry,
+        )
+
+        # Get the service connector model
+        service_connector = self.get_service_connector(
+            name_id_or_prefix=name_id_or_prefix,
+            allow_name_prefix_match=False,
+        )
+
+        connector_type = self.get_service_connector_type(
+            service_connector.type
+        )
+
+        # Prefer to fetch the connector client from the server if the
+        # implementation if available there, because some auth methods rely on
+        # the server-side authentication environment
+        if connector_type.remote:
+            connector_client_model = (
+                self.zen_store.get_service_connector_client(
+                    service_connector_id=service_connector.id,
+                    resource_type=resource_type,
+                    resource_id=resource_id,
+                )
+            )
+
+            connector_client = (
+                service_connector_registry.instantiate_connector(
+                    model=connector_client_model
+                )
+            )
+
+            # Verify the connector client on the local machine, because the
+            # server-side implementation may not be able to do so
+            connector_client.verify()
+        else:
+            connector_instance = (
+                service_connector_registry.instantiate_connector(
+                    model=service_connector
+                )
+            )
+
+            # Fetch the connector client
+            connector_client = connector_instance.get_connector_client(
+                resource_type=resource_type,
+                resource_id=resource_id,
+            )
+
+        return connector_client
+
+    def list_service_connector_resources(
+        self,
+        connector_type: Optional[str] = None,
+        resource_type: Optional[str] = None,
+        resource_id: Optional[str] = None,
+    ) -> List[ServiceConnectorResourcesModel]:
+        """List resources that can be accessed by service connectors.
+
+        Args:
+            connector_type: The type of service connector to filter by.
+            resource_type: The type of resource to filter by.
+            resource_id: The ID of a particular resource instance to filter by.
+
+        Returns:
+            The matching list of resources that available service
+            connectors have access to.
+        """
+        return self.zen_store.list_service_connector_resources(
+            user_name_or_id=self.active_user.id,
+            workspace_name_or_id=self.active_workspace.id,
+            connector_type=connector_type,
+            resource_type=resource_type,
+            resource_id=resource_id,
+        )
+
+    def list_service_connector_types(
+        self,
+        connector_type: Optional[str] = None,
+        resource_type: Optional[str] = None,
+        auth_method: Optional[str] = None,
+    ) -> List[ServiceConnectorTypeModel]:
+        """Get a list of service connector types.
+
+        Args:
+            connector_type: Filter by connector type.
+            resource_type: Filter by resource type.
+            auth_method: Filter by authentication method.
+
+        Returns:
+            List of service connector types.
+        """
+        return self.zen_store.list_service_connector_types(
+            connector_type=connector_type,
+            resource_type=resource_type,
+            auth_method=auth_method,
+        )
+
+    def get_service_connector_type(
+        self,
+        connector_type: str,
+    ) -> ServiceConnectorTypeModel:
+        """Returns the requested service connector type.
+
+        Args:
+            connector_type: the service connector type identifier.
+
+        Returns:
+            The requested service connector type.
+        """
+        return self.zen_store.get_service_connector_type(
+            connector_type=connector_type,
+        )
 
     # ---- utility prefix matching get functions -----
 

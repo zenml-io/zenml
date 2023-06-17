@@ -82,14 +82,16 @@ To get a stack with Seldon Core and potential other components, you can make use
 Run the following command to deploy the local Seldon stack:
 
 ```bash
-zenml stack recipe deploy k3d-modular --install seldon
+zenml stack recipe deploy k3d-modular -d seldon
 ```
 
 >**Note**:
-> This recipe comes with MLflow, Kubeflow and Minio enabled by default. If you want any other components like KServe or Tekton, you can specify that using the `--install/-i` flag.
+> This recipe comes with MLflow, Kubeflow and Minio enabled by default. If you
+> want any other components like Seldon or Tekton, you can specify that using
+> the relevant flag (i.e. `-o` for orchestrators and so on).
 
-This will deploy a local Kubernetes cluster with Seldon installed. 
-It will also generate a stack YAML file that you can import as a ZenML stack by running 
+This will deploy a local Kubernetes cluster with Seldon installed.
+It will also generate a stack YAML file that you can import as a ZenML stack by running:
 
 ```bash
 zenml stack import -f <path-to-stack-yaml>
@@ -233,6 +235,12 @@ components are described in this document, but similar stacks may be set up
 using different backends and used to run the example as long as the basic Stack
 prerequisites are met.
 
+#### Deploying Individual Stack Components using the CLI
+
+The Seldon model deployer and the AWS S3 artifact store can be deployed using the ZenML CLI as well, using the `zenml
+<STACK_COMPONENT> deploy` command. For more information on this `deploy`
+subcommand, please refer to the
+[documentation](https://docs.zenml.io/advanced-guide/practical-mlops/stack-recipes#deploying-stack-components-directly).
 
 #### Local and remote authentication
 
@@ -609,7 +617,16 @@ and `zenml model-server delete <uuid>` CLI commands.:
 zenml model-deployer models delete 8cbe671b-9fce-4394-a051-68e001f92765
 ```
 
-Then delete the remaining ZenML references.
+To destroy any resources deployed using the ZenML `deploy` subcommand, use the
+`destroy` subcommand to delete each individual stack component, as in the
+following example:
+
+```shell
+# replace with the name of the component you want to destroy
+zenml artifact-store destroy s3_artifact_store
+```
+
+Then delete the remaining ZenML references:
 
 ```shell
 rm -rf zenml_examples

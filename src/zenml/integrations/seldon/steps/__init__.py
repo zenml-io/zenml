@@ -14,8 +14,6 @@
 """Initialization for Seldon steps."""
 
 from zenml.integrations.seldon.steps.seldon_deployer import (
-    CustomDeployParameters,
-    SeldonDeployerStepParameters,
     seldon_custom_model_deployer_step,
     seldon_model_deployer_step,
 )

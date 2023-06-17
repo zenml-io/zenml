@@ -16,7 +16,7 @@
 import inspect
 from typing import Any, ClassVar, Dict, Tuple, Type, cast
 
-from zenml.enums import ArtifactType
+from zenml.enums import ArtifactType, VisualizationType
 from zenml.exceptions import MaterializerInterfaceError
 from zenml.io import fileio
 from zenml.logger import get_logger
@@ -64,7 +64,7 @@ class BaseMaterializerMeta(type):
                 f"Invalid materializer class '{name}'. When creating a "
                 f"custom materializer, make sure to specify at least one "
                 f"type in its ASSOCIATED_TYPES class variable.",
-                url="https://docs.zenml.io/advanced-guide/pipelines/materializers",
+                url="https://docs.zenml.io/user-guide/advanced-guide/handle-custom-data-types",
             )
 
         # Validate associated artifact type.
@@ -79,7 +79,7 @@ class BaseMaterializerMeta(type):
                     f"custom materializer, make sure to specify a valid "
                     f"artifact type in its ASSOCIATED_ARTIFACT_TYPE class "
                     f"variable.",
-                    url="https://docs.zenml.io/advanced-guide/pipelines/materializers",
+                    url="https://docs.zenml.io/user-guide/advanced-guide/handle-custom-data-types",
                 )
 
         # Validate associated data types.
@@ -88,7 +88,7 @@ class BaseMaterializerMeta(type):
                 raise MaterializerInterfaceError(
                     f"Associated type {associated_type} for materializer "
                     f"{name} is not a class.",
-                    url="https://docs.zenml.io/advanced-guide/pipelines/materializers",
+                    url="https://docs.zenml.io/user-guide/advanced-guide/handle-custom-data-types",
                 )
 
         # Register the materializer.
@@ -144,10 +144,50 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
         """
         # write `data` into self.uri
 
+    def save_visualizations(self, data: Any) -> Dict[str, VisualizationType]:
+        """Save visualizations of the given data.
+
+        If this method is not overridden, no visualizations will be saved.
+
+        When overriding this method, make sure to save all visualizations to
+        files within `self.uri`.
+
+        Example:
+        ```
+        visualization_uri = os.path.join(self.uri, "visualization.html")
+        with fileio.open(visualization_uri, "w") as f:
+            f.write("<html><body>data</body></html>")
+
+        visualization_uri_2 = os.path.join(self.uri, "visualization.png")
+        data.save_as_png(visualization_uri_2)
+
+        return {
+            visualization_uri: ArtifactVisualizationType.HTML,
+            visualization_uri_2: ArtifactVisualizationType.IMAGE
+        }
+        ```
+
+        Args:
+            data: The data of the artifact to visualize.
+
+        Returns:
+            A dictionary of visualization URIs and their types.
+        """
+        # Optionally, save some visualizations of `data` inside `self.uri`.
+        return {}
+
     def extract_metadata(self, data: Any) -> Dict[str, "MetadataType"]:
         """Extract metadata from the given data.
 
         This metadata will be tracked and displayed alongside the artifact.
+
+        Example:
+        ```
+        return {
+            "some_attribute_i_want_to_track": self.some_attribute,
+            "pi": 3.14,
+        }
+        ```
 
         Args:
             data: The data to extract metadata from.
@@ -156,11 +196,6 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
             A dictionary of metadata.
         """
         # Optionally, extract some metadata from `data` for ZenML to store.
-        # E.g.:
-        # return {
-        #     "some_attribute_i_want_to_track": self.some_attribute,
-        #     "pi": 3.14,
-        # }
         return {}
 
     # ================
@@ -176,14 +211,15 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
         Raises:
             TypeError: If the materializer cannot read/write the given type.
         """
-        if not self._can_handle_type(data_type):
+        if not self.can_handle_type(data_type):
             raise TypeError(
                 f"Unable to handle type {data_type}. {self.__class__.__name__} "
                 f"can only read/write artifacts of the following types: "
                 f"{self.ASSOCIATED_TYPES}."
             )
 
-    def _can_handle_type(self, data_type: Type[Any]) -> bool:
+    @classmethod
+    def can_handle_type(cls, data_type: Type[Any]) -> bool:
         """Whether the materializer can read/write a certain type.
 
         Args:
@@ -194,7 +230,7 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
         """
         return any(
             issubclass(data_type, associated_type)
-            for associated_type in self.ASSOCIATED_TYPES
+            for associated_type in cls.ASSOCIATED_TYPES
         )
 
     def extract_full_metadata(self, data: Any) -> Dict[str, "MetadataType"]:
