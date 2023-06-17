@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-APP_NAME="zenml-dasboard"
+APP_NAME="zenml-dashboard"
 REPO_URL="https://github.com/zenml-io/zenml-dashboard"
 
 : "${INSTALL_PATH:=./src/zenml/zen_server}"

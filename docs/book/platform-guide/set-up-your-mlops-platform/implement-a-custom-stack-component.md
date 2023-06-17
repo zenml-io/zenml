@@ -68,7 +68,7 @@ class BaseArtifactStoreConfig(StackComponentConfig):
 
 There are a few things to unpack here. Let's talk about Pydantic first. Pydantic is a library for [data validation and settings management](https://pydantic-docs.helpmanual.io/). By using their `BaseModel` as a base class, ZenML is able to configure and serialize these configuration properties while being able to add a validation layer to each implementation.
 
-If you take a closer look at the example above, you will see that, through the `BaseArtifacStoreConfig`, each artifact store will require users to define a `path` variable along with a list of `SUPPORTED_SCHEMES`. Using this configuration class, ZenML can check if the given `path` is actually supported.
+If you take a closer look at the example above, you will see that, through the `BaseArtifactStoreConfig`, each artifact store will require users to define a `path` variable along with a list of `SUPPORTED_SCHEMES`. Using this configuration class, ZenML can check if the given `path` is actually supported.
 
 {% hint style="info" %}
 Similar to the example above, you can use class variables by denoting them with the `ClassVar[..]`, which are also excluded from the serialization.
@@ -250,3 +250,6 @@ If you would like to learn more about how to build a custom stack component flav
 | [Alerter](../../user-guide/component-guide/alerters/custom.md)                        | Sending alerts through specified channels                         |
 | [Annotator](../../user-guide/component-guide/annotators/custom.md)                    | Annotating and labeling data                                      |
 | [Data Validator](../../user-guide/component-guide/data-validators/custom.md)          | Validating and monitoring your data                               |
+
+<!-- For scarf -->
+<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>

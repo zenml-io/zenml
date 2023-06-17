@@ -34,6 +34,7 @@ class PipelineConfigurationUpdate(StrictBaseModel):
     enable_cache: Optional[bool] = None
     enable_artifact_metadata: Optional[bool] = None
     enable_artifact_visualization: Optional[bool] = None
+    enable_step_logs: Optional[bool] = None
     settings: Dict[str, BaseSettings] = {}
     extra: Dict[str, Any] = {}
     failure_hook_source: Optional[Source] = None

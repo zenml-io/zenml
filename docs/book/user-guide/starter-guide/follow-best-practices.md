@@ -38,6 +38,22 @@ Until now, you probably have kept all your code in one single file. In productio
 
 Keep your steps in separate Python files. This allows you to optionally keep their utils, dependencies, and Dockerfiles separate.
 
+
+#### Logging
+
+ZenML records the root python logging handler's output into the artifact store as a side-effect of running a step. Therefore, when writing steps, use the `logging` module to record logs, to ensure that these logs then show up in the ZenML dashboard.
+
+```python
+# Use root handler
+import logging
+...
+
+@step
+def training_data_loader():
+    # This will show up in the dashboard
+    logging.info("My logs")
+```
+
 #### Pipelines
 
 Just like steps, keep your pipelines in separate Python files. This allows you to optionally keep their utils, dependencies, and Dockerfiles separate.
@@ -77,3 +93,6 @@ All of your import paths should be relative to the source's root.
 #### run.py
 
 Putting your pipeline runners in the root of the repository ensures that all imports that are defined relative to the project root resolve for the pipeline runner. In case there is no `.zen` defined this also defines the implicit source's root.
+
+<!-- For scarf -->
+<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>

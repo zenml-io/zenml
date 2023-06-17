@@ -13,7 +13,7 @@ For example, you can orchestrate your ML pipeline workflows using [Airflow](orch
 or [Kubeflow](orchestrators/kubeflow.md), track experiments using [MLflow Tracking](experiment-trackers/mlflow.md)
 or [Weights & Biases](experiment-trackers/wandb.md), and transition seamlessly from a
 local [MLflow deployment](model-deployers/mlflow.md) to a deployed model on Kubernetes
-using [Seldon Core](model-deployers/seldon.md) or [KServe](model-deployers/kserve.md).
+using [Seldon Core](model-deployers/seldon.md).
 
 There are lots of moving parts for all the MLOps tooling and infrastructure you require for ML in production and ZenML
 brings them all together and enables you to manage them in one place. This also allows you to delay the decision of
@@ -80,3 +80,6 @@ integrations that are visible on our public [roadmap](https://zenml.io/roadmap).
 We also welcome community contributions. Check our [Contribution Guide](https://github.com/zenml-io/zenml/blob/main/CONTRIBUTING.md)
 and [External Integration Guide](https://github.com/zenml-io/zenml/blob/main/src/zenml/integrations/README.md) for more 
 details on how to best contribute to new integrations.
+
+<!-- For scarf -->
+<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>

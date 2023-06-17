@@ -33,6 +33,7 @@ from zenml.cli.utils import (
     print_list_items,
     print_page_info,
     print_table,
+    validate_keys,
     warn_deprecated_secrets_manager,
     warning,
 )
@@ -47,7 +48,7 @@ from zenml.enums import (
 )
 from zenml.exceptions import EntityExistsError, ZenKeyError
 from zenml.logger import get_logger
-from zenml.models.secret_models import SecretFilterModel
+from zenml.models.secret_models import SecretFilterModel, SecretResponseModel
 
 if TYPE_CHECKING:
     from zenml.secrets_managers.base_secrets_manager import BaseSecretsManager
@@ -793,6 +794,8 @@ def create_secret(
                 "interactive mode."
             )
 
+        for key in parsed_args:
+            validate_keys(key)
         declare("The following secret will be registered.")
         pretty_print_secret(secret=parsed_args, hide_secret=True)
 
@@ -852,30 +855,44 @@ def list_secrets(**kwargs: Any) -> None:
     type=click.Choice([scope.value for scope in list(SecretScope)]),
     default=None,
 )
-def get_secret(name_id_or_prefix: str, scope: str) -> None:
-    """Get a secret for a given name.
+def get_secret(name_id_or_prefix: str, scope: Optional[str] = None) -> None:
+    """Get a secret and print it to the console.
 
     Args:
         name_id_or_prefix: The name of the secret to get.
         scope: The scope of the secret to get.
     """
-    client = Client()
+    secret = _get_secret(name_id_or_prefix, scope)
+    declare(
+        f"Fetched secret with name `{secret.name}` and ID `{secret.id}` in "
+        f"scope `{secret.scope.value}`:"
+    )
+    if not secret.secret_values:
+        warning(f"Secret with name `{name_id_or_prefix}` is empty.")
+    else:
+        pretty_print_secret(secret.secret_values, hide_secret=False)
 
+
+def _get_secret(
+    name_id_or_prefix: str, scope: Optional[str] = None
+) -> SecretResponseModel:
+    """Get a secret with a given name, prefix or id.
+
+    Args:
+        name_id_or_prefix: The name of the secret to get.
+        scope: The scope of the secret to get.
+
+    Returns:
+        The secret response model.
+    """
+    client = Client()
     try:
         if scope:
-            secret = client.get_secret(
+            return client.get_secret(
                 name_id_or_prefix=name_id_or_prefix, scope=SecretScope(scope)
             )
         else:
-            secret = client.get_secret(name_id_or_prefix=name_id_or_prefix)
-        declare(
-            f"Fetched secret with name `{secret.name}` and ID `{secret.id}` in "
-            f"scope `{secret.scope.value}`:"
-        )
-        if not secret.secret_values:
-            warning(f"Secret with name `{name_id_or_prefix}` is empty.")
-        else:
-            pretty_print_secret(secret.secret_values, hide_secret=False)
+            return client.get_secret(name_id_or_prefix=name_id_or_prefix)
     except ZenKeyError as e:
         error(
             f"Error fetching secret with name id or prefix "
@@ -1118,3 +1135,51 @@ def delete_secret(name_or_id: str, yes: bool = False) -> None:
             )
         except NotImplementedError as e:
             error(f"Centralized secrets management is disabled: {str(e)}")
+
+
+@secret.command("export", help="Export a secret as a YAML file.")
+@click.argument(
+    "name_id_or_prefix",
+    type=click.STRING,
+)
+@click.option(
+    "--scope",
+    "-s",
+    type=click.Choice([scope.value for scope in list(SecretScope)]),
+    default=None,
+)
+@click.option(
+    "--filename",
+    "-f",
+    type=click.STRING,
+    default=None,
+    help=(
+        "The name of the file to export the secret to. Defaults to "
+        "<secret_name>.yaml."
+    ),
+)
+def export_secret(
+    name_id_or_prefix: str,
+    scope: Optional[str] = None,
+    filename: Optional[str] = None,
+) -> None:
+    """Export a secret as a YAML file.
+
+    The resulting YAML file can then be imported as a new secret using the
+    `zenml secret create <new_secret_name> -v @<filename>` command.
+
+    Args:
+        name_id_or_prefix: The name of the secret to export.
+        scope: The scope of the secret to export.
+        filename: The name of the file to export the secret to.
+    """
+    from zenml.utils.yaml_utils import write_yaml
+
+    secret = _get_secret(name_id_or_prefix=name_id_or_prefix, scope=scope)
+    if not secret.secret_values:
+        warning(f"Secret with name `{name_id_or_prefix}` is empty.")
+        return
+
+    filename = filename or f"{secret.name}.yaml"
+    write_yaml(filename, secret.secret_values)
+    declare(f"Secret '{secret.name}' successfully exported to '{filename}'.")

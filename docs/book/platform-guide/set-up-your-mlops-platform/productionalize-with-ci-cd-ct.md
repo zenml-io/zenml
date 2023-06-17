@@ -42,3 +42,6 @@ In essence, this is what happens:
 * Always make sure to call `zenml connect` in your worker during setup with the above user. Make sure the credentials are secrets in your workflow.
 * Create a `staging` stack when merging to a `develop` branch, and trigger the `production` workflow only when merging to the `main` branch.
 * Understand how [containerization](../../user-guide/advanced-guide/containerize-your-pipeline.md) works in ZenML, and leverage advantages such as build-caching and code repository.
+
+<!-- For scarf -->
+<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>

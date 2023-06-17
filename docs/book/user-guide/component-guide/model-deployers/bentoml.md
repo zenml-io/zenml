@@ -30,8 +30,7 @@ You should use the BentoML Model Deployer to:
   production-ready solution when that time comes.
 
 If you are looking to deploy your models with other Kubernetes-based solutions, you can take a look at one of the
-other [Model Deployer Flavors](model-deployers.md#model-deployers-flavors) available in ZenML (e.g. Seldon Core, KServe,
-etc.)
+other [Model Deployer Flavors](model-deployers.md#model-deployers-flavors) available in ZenML.
 
 BentoML also allows you to deploy your models in a more complex production-grade
 setting. [Bentoctl](https://github.com/bentoml/bentoctl) is one of the tools that can help you get there. Bentoctl takes
@@ -305,3 +304,6 @@ You can check the BentoML deployment example for more details.
 For more information and a full list of configurable attributes of the BentoML Model Deployer, check out
 the [API Docs](https://apidocs.zenml.io/latest/api\_docs/integration\_code\_docs/integrations-bentoml/#zenml.integrations.bentoml)
 .
+
+<!-- For scarf -->
+<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>

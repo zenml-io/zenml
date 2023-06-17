@@ -52,6 +52,7 @@ PARAM_STEP_NAME = "name"
 PARAM_ENABLE_CACHE = "enable_cache"
 PARAM_ENABLE_ARTIFACT_METADATA = "enable_artifact_metadata"
 PARAM_ENABLE_ARTIFACT_VISUALIZATION = "enable_artifact_visualization"
+PARAM_ENABLE_STEP_LOGS = "enable_step_logs"
 PARAM_STEP_OPERATOR = "step_operator"
 PARAM_EXPERIMENT_TRACKER = "experiment_tracker"
 CLASS_CONFIGURATION = "_CLASS_CONFIGURATION"
@@ -97,6 +98,7 @@ def step(
     enable_cache: Optional[bool] = None,
     enable_artifact_metadata: Optional[bool] = None,
     enable_artifact_visualization: Optional[bool] = None,
+    enable_step_logs: Optional[bool] = None,
     experiment_tracker: Optional[str] = None,
     step_operator: Optional[str] = None,
     output_materializers: Optional["OutputMaterializersSpecification"] = None,
@@ -115,6 +117,7 @@ def step(
     enable_cache: Optional[bool] = None,
     enable_artifact_metadata: Optional[bool] = None,
     enable_artifact_visualization: Optional[bool] = None,
+    enable_step_logs: Optional[bool] = None,
     experiment_tracker: Optional[str] = None,
     step_operator: Optional[str] = None,
     output_materializers: Optional["OutputMaterializersSpecification"] = None,
@@ -141,6 +144,7 @@ def step(
         enable_artifact_visualization: Specify whether visualization is enabled
             for this step. If no value is passed, visualization is enabled by
             default.
+        enable_step_logs: Specify whether step logs are enabled for this step.
         experiment_tracker: The experiment tracker to use for this step.
         step_operator: The step operator to use for this step.
         output_materializers: Output materializers for this step. If
@@ -163,12 +167,6 @@ def step(
         The inner decorator which creates the step class based on the
         ZenML BaseStep
     """
-    logger.warning(
-        "The `@step` decorator that you use to define your step is "
-        "deprecated. Check out our docs https://docs.zenml.io for "
-        "information on how to define steps in a more intuitive and "
-        "flexible way!"
-    )
 
     def inner_decorator(func: F) -> Type[BaseStep]:
         """Inner decorator function for the creation of a ZenML Step.
@@ -180,6 +178,14 @@ def step(
         Returns:
             The class of a newly generated ZenML Step.
         """
+        step_name = name or func.__name__
+        logger.warning(
+            "The `@step` decorator that you used to define your "
+            f"{step_name} step is deprecated. Check out our docs "
+            "https://docs.zenml.io/user-guide/advanced-guide/migrate-your-old-pipelines-and-steps "
+            "for information on how to migrate your steps to the new syntax."
+        )
+
         return type(  # noqa
             func.__name__,
             (_DecoratedStep,),
@@ -190,6 +196,7 @@ def step(
                     PARAM_ENABLE_CACHE: enable_cache,
                     PARAM_ENABLE_ARTIFACT_METADATA: enable_artifact_metadata,
                     PARAM_ENABLE_ARTIFACT_VISUALIZATION: enable_artifact_visualization,
+                    PARAM_ENABLE_STEP_LOGS: enable_step_logs,
                     PARAM_EXPERIMENT_TRACKER: experiment_tracker,
                     PARAM_STEP_OPERATOR: step_operator,
                     PARAM_OUTPUT_MATERIALIZERS: output_materializers,

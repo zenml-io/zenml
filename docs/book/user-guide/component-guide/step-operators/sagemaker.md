@@ -117,3 +117,6 @@ Note that if you wish to use this step operator to run steps on a GPU, you will 
 follow [the instructions on this page](/docs/book/user-guide/advanced-guide/scale-compute-to-the-cloud.md) to ensure that it
 works. It requires adding some extra settings customization and is essential to enable CUDA for the GPU to give its full
 acceleration.
+
+<!-- For scarf -->
+<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>

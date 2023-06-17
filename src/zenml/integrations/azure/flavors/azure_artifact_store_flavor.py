@@ -20,15 +20,16 @@ from zenml.artifact_stores import (
     BaseArtifactStoreFlavor,
 )
 from zenml.integrations.azure import AZURE_ARTIFACT_STORE_FLAVOR
-from zenml.integrations.azure.service_connectors.azure_service_connector import (
-    AZURE_CONNECTOR_TYPE,
-    BLOB_RESOURCE_TYPE,
-)
 from zenml.models.service_connector_models import ServiceConnectorRequirements
 from zenml.stack.authentication_mixin import AuthenticationConfigMixin
 
 if TYPE_CHECKING:
     from zenml.integrations.azure.artifact_stores import AzureArtifactStore
+
+
+AZURE_CONNECTOR_TYPE = "azure"
+AZURE_RESOURCE_TYPE = "azure-generic"
+BLOB_RESOURCE_TYPE = "blob-container"
 
 
 class AzureArtifactStoreConfig(
