@@ -12,6 +12,8 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Tests for the Secret Store CLI."""
+import os
+
 import pytest
 from click.testing import CliRunner
 
@@ -27,6 +29,7 @@ secret_get_command = cli.commands["secret"].commands["get"]
 secret_update_command = cli.commands["secret"].commands["update"]
 secret_delete_command = cli.commands["secret"].commands["delete"]
 secret_rename_command = cli.commands["secret"].commands["rename"]
+secret_export_command = cli.commands["secret"].commands["export"]
 
 
 def test_create_secret():
@@ -65,7 +68,6 @@ def test_create_fails_with_bad_scope():
     """Tests that creating a secret with a bad scope fails."""
     runner = CliRunner()
     with cleanup_secrets() as secret_name:
-
         result = runner.invoke(
             secret_create_command,
             [secret_name, "--test_value=aria", "--scope=axl_scope"],
@@ -76,11 +78,28 @@ def test_create_fails_with_bad_scope():
             client.get_secret(secret_name)
 
 
+def test_create_secret_with_values():
+    """Tests creating a secret with a scope."""
+    runner = CliRunner()
+    with cleanup_secrets() as secret_name:
+        result = runner.invoke(
+            secret_create_command,
+            [
+                secret_name,
+                '--values={"test_value":"aria","test_value2":"axl"}',
+            ],
+        )
+        assert result.exit_code == 0
+        client = Client()
+        created_secret = client.get_secret(secret_name)
+        assert created_secret is not None
+        assert created_secret.values["test_value"].get_secret_value() == "aria"
+
+
 def test_list_secret_works():
     """Test that the secret list command works."""
     runner = CliRunner()
     with cleanup_secrets() as secret_name:
-
         result1 = runner.invoke(
             secret_list_command,
         )
@@ -104,7 +123,6 @@ def test_get_secret_works():
     """Test that the secret get command works."""
     runner = CliRunner()
     with cleanup_secrets() as secret_name:
-
         result1 = runner.invoke(
             secret_get_command,
             [secret_name],
@@ -160,7 +178,6 @@ def test_get_secret_with_scope_works():
     """Test that the secret get command works with a scope."""
     runner = CliRunner()
     with cleanup_secrets() as secret_name:
-
         result1 = runner.invoke(
             secret_get_command,
             [secret_name, f"--scope={SecretScope.USER}"],
@@ -231,9 +248,7 @@ def test_rename_secret_works():
     runner = CliRunner()
 
     with cleanup_secrets() as secret_name:
-
         with cleanup_secrets() as new_secret_name:
-
             result1 = runner.invoke(
                 secret_rename_command,
                 [secret_name, "-n", new_secret_name],
@@ -275,7 +290,6 @@ def test_update_secret_works():
     client = Client()
 
     with cleanup_secrets() as secret_name:
-
         result1 = runner.invoke(
             secret_update_command,
             [secret_name, "--test_value=aria", "--test_value2=axl"],
@@ -302,20 +316,72 @@ def test_update_secret_works():
 
         result3 = runner.invoke(
             secret_update_command,
-            [secret_name, "-r", "test_value2"],
+            [
+                secret_name,
+                '--values={"test_value":"json", "test_value2":"yaml"}',
+            ],
         )
         assert result3.exit_code == 0
         assert "updated" in result3.output
+
+        updated_secret = client.get_secret(secret_name)
+        assert updated_secret is not None
+        assert updated_secret.secret_values["test_value"] == "json"
+        assert updated_secret.secret_values["test_value2"] == "yaml"
+
+        result4 = runner.invoke(
+            secret_update_command,
+            [secret_name, "-r", "test_value2"],
+        )
+        assert result4.exit_code == 0
+        assert "updated" in result4.output
         newly_updated_secret = client.get_secret(secret_name)
         assert newly_updated_secret is not None
         assert "test_value2" not in newly_updated_secret.secret_values
 
-        result4 = runner.invoke(
+        result5 = runner.invoke(
             secret_update_command,
             [secret_name, "-s", "user"],
         )
-        assert result4.exit_code == 0
-        assert "updated" in result4.output
+        assert result5.exit_code == 0
+        assert "updated" in result5.output
         final_updated_secret = client.get_secret(secret_name)
         assert final_updated_secret is not None
         assert final_updated_secret.scope == SecretScope.USER
+
+
+def test_export_import_secret():
+    """Test that exporting and importing a secret works."""
+    runner = CliRunner()
+    with cleanup_secrets() as secret_name:
+        # Create a secret
+        result = runner.invoke(
+            secret_create_command,
+            [secret_name, "--test_value=aria", "--test_value2=axl"],
+        )
+        assert result.exit_code == 0
+
+        filename = f"{secret_name}.yaml"
+
+        try:
+            # Export the secret
+            result = runner.invoke(secret_export_command, [secret_name])
+            assert result.exit_code == 0
+            assert os.path.exists(filename)
+
+            # Import the secret
+            new_secret_name = f"{secret_name}_new"
+            result = runner.invoke(
+                secret_create_command, [new_secret_name, "-v", f"@{filename}"]
+            )
+            assert result.exit_code == 0
+
+        finally:
+            if os.path.exists(filename):
+                os.remove(filename)
+
+        # Check that the secret was imported correctly
+        client = Client()
+        created_secret = client.get_secret(secret_name)
+        imported_secret = client.get_secret(new_secret_name)
+        assert created_secret.values == imported_secret.values

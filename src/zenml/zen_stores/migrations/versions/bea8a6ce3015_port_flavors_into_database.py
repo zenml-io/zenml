@@ -20,7 +20,6 @@ depends_on = None
 def upgrade() -> None:
     """Upgrade database schema and/or data, creating a new revision."""
     with op.batch_alter_table("flavor", schema=None) as batch_op:
-
         batch_op.add_column(
             sa.Column(
                 "logo_url", sqlmodel.sql.sqltypes.AutoString(), nullable=True
@@ -47,7 +46,6 @@ def upgrade() -> None:
 def downgrade() -> None:
     """Downgrade database schema and/or data back to the previous revision."""
     with op.batch_alter_table("flavor", schema=None) as batch_op:
-
         batch_op.drop_column("logo_url")
         batch_op.drop_column("docs_url")
         batch_op.drop_column("is_custom")

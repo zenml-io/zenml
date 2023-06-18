@@ -16,13 +16,16 @@ from torch.utils.data import DataLoader
 from torchvision import datasets
 from torchvision.transforms import ToTensor
 
-from zenml.steps import Output, step
+from zenml import step
+from zenml.steps import Output
 
 
 @step
-def importer_mnist() -> Output(
-    train_dataloader=DataLoader,
-    test_dataloader=DataLoader,
+def importer_mnist() -> (
+    Output(
+        train_dataloader=DataLoader,
+        test_dataloader=DataLoader,
+    )
 ):
     """Download the Fashion MNIST dataset."""
     # Download training data from open datasets.

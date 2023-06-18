@@ -22,6 +22,7 @@ from zenml.integrations.gcp import GCP_IMAGE_BUILDER_FLAVOR
 from zenml.integrations.gcp.google_credentials_mixin import (
     GoogleCredentialsConfigMixin,
 )
+from zenml.models.service_connector_models import ServiceConnectorRequirements
 
 if TYPE_CHECKING:
     from zenml.integrations.gcp.image_builders import GCPImageBuilder
@@ -66,6 +67,24 @@ class GCPImageBuilderFlavor(BaseImageBuilderFlavor):
             The name of the flavor.
         """
         return GCP_IMAGE_BUILDER_FLAVOR
+
+    @property
+    def service_connector_requirements(
+        self,
+    ) -> Optional[ServiceConnectorRequirements]:
+        """Service connector resource requirements for service connectors.
+
+        Specifies resource requirements that are used to filter the available
+        service connector types that are compatible with this flavor.
+
+        Returns:
+            Requirements for compatible service connectors, if a service
+            connector is required for this flavor.
+        """
+        return ServiceConnectorRequirements(
+            connector_type="gcp",
+            resource_type="gcp-generic",
+        )
 
     @property
     def docs_url(self) -> Optional[str]:

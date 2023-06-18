@@ -307,7 +307,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
                     "The ZenML global configuration version (%s) is higher "
                     "than the version of ZenML currently being used (%s). "
                     "Read more about this issue and how to solve it here: "
-                    "`https://docs.zenml.io/guidelines/global-config#zenml-version-mismatch---downgrading-the-global-config`",
+                    "`https://docs.zenml.io/user-guide/advanced-guide/global-settings-of-zenml#version-mismatch-downgrading`",
                     config_version,
                     curr_version,
                 )
@@ -592,7 +592,6 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
             )
 
         if len(env_secrets_store_config):
-
             if "type" not in env_secrets_store_config:
                 env_secrets_store_config["type"] = config.type.value
 

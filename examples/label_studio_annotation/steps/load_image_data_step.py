@@ -19,6 +19,9 @@ from typing import Dict
 
 from PIL import Image
 
+from zenml.integrations.pillow.materializers.pillow_image_materializer import (
+    DEFAULT_IMAGE_FILENAME,
+)
 from zenml.steps import BaseParameters, Output, step
 from zenml.steps.step_context import StepContext
 
@@ -38,10 +41,16 @@ def load_image_data(
     """Gets images from a cloud artifact store directory."""
     image_dir_path = os.path.join(params.base_path, params.dir_name)
     image_files = glob.glob(f"{image_dir_path}/*.jpeg")
+    uri = context.get_output_artifact_uri("images")
+
     images = {}
-    for image_file in image_files:
+    for i, image_file in enumerate(image_files):
         image = Image.open(image_file)
         image.load()
-        images[os.path.basename(image_file)] = image
-    uri = context.get_output_artifact_uri("images")
+        artifact_filepath = (
+            f"{uri}/1/{i}/{DEFAULT_IMAGE_FILENAME}.{image.format}"
+        )
+
+        images[artifact_filepath] = image
+
     return images, uri

@@ -42,7 +42,6 @@ from zenml.services import (
 from zenml.services.service import BaseDeploymentService
 
 if TYPE_CHECKING:
-
     from zenml.integrations.kserve.model_deployers.kserve_model_deployer import (  # noqa
         KServeModelDeployer,
     )
@@ -114,8 +113,6 @@ class KServeDeploymentConfig(ServiceConfig):
             labels["zenml.pipeline_name"] = self.pipeline_name
         if self.run_name:
             labels["zenml.run_name"] = self.run_name
-        if self.pipeline_run_id:
-            labels["zenml.pipeline_run_id"] = self.run_name
         if self.pipeline_step_name:
             labels["zenml.pipeline_step_name"] = self.pipeline_step_name
         if self.model_name:

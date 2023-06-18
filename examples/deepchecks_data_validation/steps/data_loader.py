@@ -15,12 +15,13 @@ import pandas as pd
 from deepchecks.tabular.datasets.classification import iris
 from sklearn.model_selection import train_test_split
 
-from zenml.steps import Output, step
+from zenml import step
+from zenml.steps import Output
 
 
 @step
-def data_loader() -> Output(
-    reference_dataset=pd.DataFrame, comparison_dataset=pd.DataFrame
+def data_loader() -> (
+    Output(reference_dataset=pd.DataFrame, comparison_dataset=pd.DataFrame)
 ):
     """Load the iris dataset."""
     iris_df = iris.load_data(data_format="Dataframe", as_train_test=False)

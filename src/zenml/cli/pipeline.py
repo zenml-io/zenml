@@ -12,8 +12,9 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """CLI functionality to interact with pipelines."""
+import json
 import os
-from typing import Any, Optional, Union
+from typing import Any, Dict, Optional, Union
 
 import click
 
@@ -31,7 +32,7 @@ from zenml.models import (
 )
 from zenml.models.pipeline_build_models import PipelineBuildBaseModel
 from zenml.models.schedule_model import ScheduleFilterModel
-from zenml.pipelines import BasePipeline
+from zenml.new.pipelines.pipeline import Pipeline
 from zenml.utils import source_utils, uuid_utils
 
 logger = get_logger(__name__)
@@ -49,11 +50,22 @@ def pipeline() -> None:
     "`my_module.my_pipeline_instance`.",
 )
 @click.argument("source")
-def register_pipeline(source: str) -> None:
+@click.option(
+    "--parameters",
+    "-p",
+    "parameters_path",
+    type=click.Path(exists=True, dir_okay=False),
+    required=False,
+    help="Path to JSON file containing parameters for the pipeline function.",
+)
+def register_pipeline(
+    source: str, parameters_path: Optional[str] = None
+) -> None:
     """Register a pipeline.
 
     Args:
         source: Importable source resolving to a pipeline instance.
+        parameters_path: Path to pipeline parameters file.
     """
     cli_utils.print_active_config()
 
@@ -84,10 +96,26 @@ def register_pipeline(source: str) -> None:
     except AttributeError as e:
         cli_utils.error("Unable to load attribute from module: " + str(e))
 
-    if not isinstance(pipeline_instance, BasePipeline):
+    if not isinstance(pipeline_instance, Pipeline):
         cli_utils.error(
             f"The given source path `{source}` does not resolve to a pipeline "
             "object."
+        )
+
+    parameters: Dict[str, Any] = {}
+    if parameters_path:
+        with open(parameters_path, "r") as f:
+            parameters = json.load(f)
+
+    try:
+        pipeline_instance.prepare(**parameters)
+    except ValueError:
+        cli_utils.error(
+            "Pipeline preparation failed. This is most likely due to your "
+            "pipeline entrypoint function requiring arguments that were not "
+            "provided. Please provide a JSON file with the parameters for "
+            f"your pipeline like this: `zenml pipeline register {source} "
+            "--parameters=<PATH_TO_JSON>`."
         )
 
     pipeline_instance.register()
@@ -159,7 +187,7 @@ def build_pipeline(
     )
 
     with cli_utils.temporary_active_stack(stack_name_or_id=stack_name_or_id):
-        pipeline_instance = BasePipeline.from_model(pipeline_model)
+        pipeline_instance = Pipeline.from_model(pipeline_model)
         build = pipeline_instance.build(config_path=config_path)
 
     if build:
@@ -275,12 +303,13 @@ def run_pipeline(
             )
 
     with cli_utils.temporary_active_stack(stack_name_or_id=stack_name_or_id):
-        pipeline_instance = BasePipeline.from_model(pipeline_model)
-        pipeline_instance.run(
+        pipeline_instance = Pipeline.from_model(pipeline_model)
+        pipeline_instance = pipeline_instance.with_options(
             config_path=config_path,
             build=build,
             prevent_build_reuse=prevent_build_reuse,
         )
+        pipeline_instance()
 
 
 @pipeline.command("list", help="List all registered pipelines.")
@@ -294,7 +323,6 @@ def list_pipelines(**kwargs: Any) -> None:
     cli_utils.print_active_config()
     client = Client()
     with console.status("Listing pipelines...\n"):
-
         pipelines = client.list_pipelines(**kwargs)
 
         if not pipelines.items:

@@ -91,6 +91,18 @@ from zenml.models.stack_models import (
     StackResponseModel,
     StackUpdateModel,
 )
+from zenml.models.service_connector_models import (
+    AuthenticationMethodModel,
+    ResourceTypeModel,
+    ServiceConnectorBaseModel,
+    ServiceConnectorFilterModel,
+    ServiceConnectorRequestModel,
+    ServiceConnectorRequirements,
+    ServiceConnectorResourcesModel,
+    ServiceConnectorResponseModel,
+    ServiceConnectorTypeModel,
+    ServiceConnectorUpdateModel,
+)
 from zenml.models.step_run_models import (
     StepRunFilterModel,
     StepRunRequestModel,
@@ -127,6 +139,11 @@ from zenml.models.code_repository_models import (
     CodeRepositoryUpdateModel,
     CodeReferenceRequestModel,
     CodeReferenceResponseModel,
+)
+from zenml.models.logs_models import (
+    LogsBaseModel,
+    LogsRequestModel,
+    LogsResponseModel,
 )
 
 ComponentResponseModel.update_forward_refs(
@@ -227,7 +244,11 @@ CodeRepositoryResponseModel.update_forward_refs(
     UserResponseModel=UserResponseModel,
     WorkspaceResponseModel=WorkspaceResponseModel,
 )
-CodeReferenceResponseModel.update_forward_refs(
+ServiceConnectorResponseModel.update_forward_refs(
+    UserResponseModel=UserResponseModel,
+    WorkspaceResponseModel=WorkspaceResponseModel,
+)
+ServiceConnectorResponseModel.update_forward_refs(
     UserResponseModel=UserResponseModel,
     WorkspaceResponseModel=WorkspaceResponseModel,
 )
@@ -294,6 +315,16 @@ __all__ = [
     "SecretFilterModel",
     "SecretResponseModel",
     "SecretUpdateModel",
+    "AuthenticationMethodModel",
+    "ResourceTypeModel",
+    "ServiceConnectorTypeModel",
+    "ServiceConnectorBaseModel",
+    "ServiceConnectorFilterModel",
+    "ServiceConnectorRequestModel",
+    "ServiceConnectorRequirements",
+    "ServiceConnectorResourcesModel",
+    "ServiceConnectorResponseModel",
+    "ServiceConnectorUpdateModel",
     "StackRequestModel",
     "StackResponseModel",
     "StackUpdateModel",
@@ -311,4 +342,7 @@ __all__ = [
     "UserUpdateModel",
     "UserFilterModel",
     "UserAuthModel",
+    "LogsBaseModel",
+    "LogsRequestModel",
+    "LogsResponseModel",
 ]

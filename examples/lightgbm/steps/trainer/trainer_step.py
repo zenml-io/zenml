@@ -13,40 +13,39 @@
 #  permissions and limitations under the License.
 import lightgbm as lgb
 
-from zenml.steps import BaseParameters, step
-
-
-class LightGBMParameters(BaseParameters):
-    boosting_type: str = "gbdt"
-    objective: str = "regression"
-    num_leaves: int = 31
-    learning_rate: float = 0.05
-    feature_fraction: float = 0.9
-    bagging_fraction: float = 0.8
-    bagging_freq: int = 5
-    verbose: int = 0
+from zenml import step
 
 
 @step
 def trainer(
-    params: LightGBMParameters, mat_train: lgb.Dataset, mat_test: lgb.Dataset
+    mat_train: lgb.Dataset,
+    mat_test: lgb.Dataset,
+    boosting_type: str = "gbdt",
+    objective: str = "regression",
+    num_leaves: int = 31,
+    learning_rate: float = 0.05,
+    feature_fraction: float = 0.9,
+    bagging_fraction: float = 0.8,
+    bagging_freq: int = 5,
+    verbose: int = 0,
+    stopping_rounds: int = 5,
 ) -> lgb.Booster:
     """Trains a LightGBM model on the data."""
     params = {
-        "boosting_type": params.boosting_type,
-        "objective": params.objective,
-        "num_leaves": params.num_leaves,
-        "learning_rate": params.learning_rate,
-        "feature_fraction": params.feature_fraction,
-        "bagging_fraction": params.bagging_fraction,
-        "bagging_freq": params.bagging_freq,
-        "verbose": params.verbose,
+        "boosting_type": boosting_type,
+        "objective": objective,
+        "num_leaves": num_leaves,
+        "learning_rate": learning_rate,
+        "feature_fraction": feature_fraction,
+        "bagging_fraction": bagging_fraction,
+        "bagging_freq": bagging_freq,
+        "verbose": verbose,
     }
     gbm = lgb.train(
         params,
         mat_train,
         num_boost_round=20,
         valid_sets=mat_test,
-        callbacks=[lgb.early_stopping(stopping_rounds=5)],
+        callbacks=[lgb.early_stopping(stopping_rounds=stopping_rounds)],
     )
     return gbm

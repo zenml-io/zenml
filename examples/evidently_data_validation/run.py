@@ -14,23 +14,11 @@
 from pipelines.text_report_test_pipeline.text_report_test import (
     text_data_report_test_pipeline,
 )
-from steps.data_loader.data_loader_step import data_loader
-from steps.data_splitter.data_splitter_step import data_splitter
-from steps.text_data_analyzer.text_analyzer_step import text_analyzer
-from steps.text_data_report.text_data_report_step import text_data_report
-from steps.text_data_test.text_data_test_step import text_data_test
 
 if __name__ == "__main__":
-    pipeline_instance = text_data_report_test_pipeline(
-        data_loader=data_loader(),
-        data_splitter=data_splitter(),
-        text_report=text_data_report,
-        text_test=text_data_test,
-        text_analyzer=text_analyzer(),
-    )
-    pipeline_instance.run()
+    text_data_report_test_pipeline()
 
-    last_run = pipeline_instance.get_runs()[0]
+    last_run = text_data_report_test_pipeline.get_runs()[0]
     text_analysis_step = last_run.get_step(step="text_analyzer")
 
     print(

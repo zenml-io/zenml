@@ -38,7 +38,8 @@ in the whylogs Data Validator stack component to work, as detailed in the
 [Run it locally](#-run-it-locally) section.
 
 ```python
-from zenml.steps import Output, step
+from zenml import step
+from zenml.steps import Output
 from whylogs.core import DatasetProfileView
 from zenml.integrations.whylogs.flavors.whylogs_data_validator_flavor import (
     WhylogsDataValidatorSettings,

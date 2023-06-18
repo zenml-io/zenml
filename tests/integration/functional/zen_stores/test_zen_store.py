@@ -14,8 +14,11 @@
 import os
 import uuid
 from contextlib import ExitStack as does_not_raise
+from datetime import datetime
+from typing import Dict, List, Optional, Tuple
 
 import pytest
+from pydantic import SecretStr
 
 from tests.integration.functional.utils import sample_name
 from tests.integration.functional.zen_stores.utils import (
@@ -24,6 +27,8 @@ from tests.integration.functional.zen_stores.utils import (
     CrudTestConfig,
     PipelineRunContext,
     RoleContext,
+    ServiceConnectorContext,
+    ServiceConnectorTypeContext,
     StackContext,
     TeamContext,
     UserContext,
@@ -33,8 +38,9 @@ from tests.unit.pipelines.test_build_utils import (
     StubLocalRepositoryContext,
 )
 from zenml.client import Client
-from zenml.enums import StackComponentType, StoreType
+from zenml.enums import SecretScope, StackComponentType, StoreType
 from zenml.exceptions import (
+    DoesNotExistException,
     EntityExistsError,
     IllegalOperationError,
     StackExistsError,
@@ -47,6 +53,8 @@ from zenml.models import (
     RoleFilterModel,
     RoleRequestModel,
     RoleUpdateModel,
+    ServiceConnectorFilterModel,
+    ServiceConnectorUpdateModel,
     StackFilterModel,
     StackRequestModel,
     StackUpdateModel,
@@ -63,6 +71,10 @@ from zenml.models.base_models import (
 )
 from zenml.models.flavor_models import FlavorBaseModel
 from zenml.utils import code_repository_utils, source_utils
+from zenml.utils.artifact_utils import (
+    _load_artifact_store,
+    _load_file_from_artifact_store,
+)
 from zenml.zen_stores.base_zen_store import (
     DEFAULT_ADMIN_ROLE,
     DEFAULT_GUEST_ROLE,
@@ -306,7 +318,6 @@ def test_removing_user_from_team_succeeds():
 
     with UserContext() as created_user:
         with TeamContext() as created_team:
-
             team_update = TeamUpdateModel(users=[created_user.id])
             team_update = zen_store.update_team(
                 team_id=created_team.id, team_update=team_update
@@ -447,7 +458,6 @@ def test_deleting_assigned_role_fails():
     zen_store = Client().zen_store
     with RoleContext() as created_role:
         with UserContext() as created_user:
-
             role_assignment = UserRoleAssignmentRequestModel(
                 role=created_role.id,
                 user=created_user.id,
@@ -511,7 +521,6 @@ def test_assigning_role_if_assignment_already_exists_fails():
 
     with RoleContext() as created_role:
         with UserContext() as created_user:
-
             role_assignment = UserRoleAssignmentRequestModel(
                 role=created_role.id,
                 user=created_user.id,
@@ -787,7 +796,6 @@ def test_register_stack_fails_when_stack_exists():
                 StackComponentType.ARTIFACT_STORE: [artifact_store.id],
             }
             with StackContext(components=components) as stack:
-
                 new_stack = StackRequestModel(
                     name=stack.name,
                     components=components,
@@ -998,7 +1006,6 @@ def test_list_runs_is_ordered():
 
     num_runs = 5
     with PipelineRunContext(num_runs):
-
         pipelines = store.list_runs(PipelineRunFilterModel()).items
         assert len(pipelines) == num_pipelines_before + num_runs
         assert all(
@@ -1082,7 +1089,6 @@ def test_get_run_step_inputs_succeeds():
     store = client.zen_store
 
     with PipelineRunContext(1):
-
         steps = store.list_run_steps(StepRunFilterModel(name="step_2"))
         for step in steps.items:
             run_step_inputs = store.get_run_step(step.id).input_artifacts
@@ -1105,7 +1111,6 @@ def test_list_unused_artifacts():
     ).total
     num_runs = 1
     with PipelineRunContext(num_runs):
-
         artifacts = store.list_artifacts(ArtifactFilterModel())
         assert artifacts.total == num_artifacts_before + num_runs * 2
 
@@ -1121,7 +1126,6 @@ def test_artifacts_are_not_deleted_with_run():
     num_artifacts_before = store.list_artifacts(ArtifactFilterModel()).total
     num_runs = 1
     with PipelineRunContext(num_runs):
-
         artifacts = store.list_artifacts(ArtifactFilterModel())
         assert artifacts.total == num_artifacts_before + num_runs * 2
 
@@ -1132,3 +1136,1224 @@ def test_artifacts_are_not_deleted_with_run():
 
         artifacts = store.list_artifacts(ArtifactFilterModel())
         assert artifacts.total == num_artifacts_before + num_runs * 2
+
+
+# .---------.
+# | Logs    |
+# '---------'
+
+
+def test_logs_are_recorded_properly(clean_client):
+    """Tests if logs are stored in the artifact store."""
+    client = Client()
+    store = client.zen_store
+
+    with PipelineRunContext(2):
+        steps = store.list_run_steps(StepRunFilterModel())
+        step1_logs = steps[0].logs
+        step2_logs = steps[1].logs
+        artifact_store = _load_artifact_store(
+            step1_logs.artifact_store_id, store
+        )
+        step1_logs_content = _load_file_from_artifact_store(
+            step1_logs.uri, artifact_store=artifact_store, mode="r"
+        )
+        step2_logs_content = _load_file_from_artifact_store(
+            step2_logs.uri, artifact_store=artifact_store, mode="r"
+        )
+
+        # Step 1 has the word log! Defined in PipelineRunContext
+        assert "log" in step1_logs_content
+
+        # Step 2 does not have logs!
+        assert step2_logs_content == ""
+
+
+def test_logs_are_recorded_properly_when_disabled():
+    """Tests no logs are stored in the artifact store when disabled"""
+    client = Client()
+    store = client.zen_store
+
+    with PipelineRunContext(2, enable_step_logs=False):
+        steps = store.list_run_steps(StepRunFilterModel())
+        step1_logs = steps[0].logs
+        step2_logs = steps[1].logs
+        artifact_store = _load_artifact_store(
+            step1_logs.artifact_store_id, store
+        )
+
+        with pytest.raises(DoesNotExistException):
+            _load_file_from_artifact_store(
+                step1_logs.uri, artifact_store=artifact_store, mode="r"
+            )
+            _load_file_from_artifact_store(
+                step2_logs.uri, artifact_store=artifact_store, mode="r"
+            )
+
+
+# .--------------------.
+# | Service Connectors |
+# '--------------------'
+
+
+def test_connector_with_no_secrets():
+    """Tests that a connector with no secrets has no attached secret."""
+    client = Client()
+    store = client.zen_store
+
+    config = {
+        "language": "meow",
+        "foods": "tuna",
+    }
+    with ServiceConnectorContext(
+        connector_type="cat'o'matic",
+        auth_method="paw-print",
+        resource_types=["cat"],
+        resource_id="aria",
+        configuration=config,
+    ) as connector:
+        assert connector.id is not None
+        assert connector.type == "cat'o'matic"
+        assert connector.auth_method == "paw-print"
+        assert connector.resource_types == ["cat"]
+        assert connector.resource_id == "aria"
+        assert connector.configuration == config
+        assert len(connector.secrets) == 0
+        assert connector.secret_id is None
+
+        registered_connector = store.get_service_connector(connector.id)
+
+        assert registered_connector.id == connector.id
+        assert registered_connector.name == connector.name
+        assert registered_connector.type == connector.type
+        assert registered_connector.auth_method == connector.auth_method
+        assert registered_connector.resource_types == connector.resource_types
+        assert registered_connector.configuration == config
+        assert len(registered_connector.secrets) == 0
+        assert registered_connector.secret_id is None
+
+
+def test_connector_with_secrets():
+    """Tests that a connector with secrets has an attached secret."""
+    client = Client()
+    store = client.zen_store
+
+    config = {
+        "language": "meow",
+        "foods": "tuna",
+    }
+    secrets = {
+        "hiding-place": SecretStr("thatsformetoknowandyouneverfindout"),
+        "dreams": SecretStr("notyourbusiness"),
+    }
+    with ServiceConnectorContext(
+        connector_type="cat'o'matic",
+        auth_method="paw-print",
+        resource_types=["cat"],
+        resource_id="blupus",
+        configuration=config,
+        secrets=secrets,
+    ) as connector:
+        assert connector.id is not None
+        assert connector.type == "cat'o'matic"
+        assert connector.auth_method == "paw-print"
+        assert connector.resource_types == ["cat"]
+        assert connector.resource_id == "blupus"
+        assert connector.configuration == config
+        assert len(connector.secrets) == 0
+        assert connector.secret_id is not None
+
+        secret = store.get_secret(connector.secret_id)
+        assert secret.id == connector.secret_id
+        assert secret.name.startswith(f"connector-{connector.name}")
+        assert secret.values == secrets
+
+        registered_connector = store.get_service_connector(connector.id)
+
+        assert registered_connector.id == connector.id
+        assert registered_connector.name == connector.name
+        assert registered_connector.type == connector.type
+        assert registered_connector.auth_method == connector.auth_method
+        assert registered_connector.resource_types == connector.resource_types
+        assert registered_connector.configuration == config
+        assert len(registered_connector.secrets) == 0
+        assert registered_connector.secret_id == connector.secret_id
+
+
+def test_connector_with_no_config_no_secrets():
+    """Tests that a connector with no config and no secrets is possible."""
+    client = Client()
+    store = client.zen_store
+
+    with ServiceConnectorContext(
+        connector_type="cat'o'matic",
+        auth_method="whiskers",
+        resource_types=["spacecat"],
+        resource_id="axl",
+    ) as connector:
+        assert connector.id is not None
+        assert connector.type == "cat'o'matic"
+        assert connector.auth_method == "whiskers"
+        assert connector.resource_types == ["spacecat"]
+        assert connector.resource_id == "axl"
+        assert len(connector.configuration) == 0
+        assert len(connector.secrets) == 0
+        assert connector.secret_id is None
+
+        registered_connector = store.get_service_connector(connector.id)
+
+        assert registered_connector.id == connector.id
+        assert registered_connector.name == connector.name
+        assert registered_connector.type == connector.type
+        assert registered_connector.auth_method == connector.auth_method
+        assert registered_connector.resource_types == connector.resource_types
+        assert len(connector.configuration) == 0
+        assert len(registered_connector.secrets) == 0
+        assert registered_connector.secret_id is None
+
+
+def test_connector_with_labels():
+    """Tests that a connector with labels is possible."""
+    client = Client()
+    store = client.zen_store
+
+    config = {
+        "language": "meow",
+        "foods": "tuna",
+    }
+    secrets = {
+        "hiding-place": SecretStr("thatsformetoknowandyouneverfindout"),
+        "dreams": SecretStr("notyourbusiness"),
+    }
+    labels = {
+        "whereabouts": "unknown",
+        "age": "eternal",
+    }
+    with ServiceConnectorContext(
+        connector_type="cat'o'matic",
+        auth_method="tail-print",
+        resource_types=["cat"],
+        resource_id="aria",
+        configuration=config,
+        secrets=secrets,
+        labels=labels,
+    ) as connector:
+        assert connector.id is not None
+        assert connector.type == "cat'o'matic"
+        assert connector.auth_method == "tail-print"
+        assert connector.resource_types == ["cat"]
+        assert connector.resource_id == "aria"
+        assert connector.configuration == config
+        assert len(connector.secrets) == 0
+        assert connector.secret_id is not None
+        assert connector.labels == labels
+
+        secret = store.get_secret(connector.secret_id)
+        assert secret.id == connector.secret_id
+        assert secret.name.startswith(f"connector-{connector.name}")
+        assert secret.values == secrets
+
+        registered_connector = store.get_service_connector(connector.id)
+
+        assert registered_connector.id == connector.id
+        assert registered_connector.name == connector.name
+        assert registered_connector.type == connector.type
+        assert registered_connector.auth_method == connector.auth_method
+        assert registered_connector.resource_types == connector.resource_types
+        assert registered_connector.configuration == config
+        assert len(registered_connector.secrets) == 0
+        assert registered_connector.secret_id == connector.secret_id
+        assert registered_connector.labels == labels
+
+
+def test_connector_secret_share_lifespan():
+    """Tests that a connector's secret shares its lifespan."""
+    client = Client()
+    store = client.zen_store
+
+    config = {
+        "language": "meow",
+        "foods": "tuna",
+    }
+    secrets = {
+        "hiding-place": SecretStr("thatsformetoknowandyouneverfindout"),
+        "dreams": SecretStr("notyourbusiness"),
+    }
+    with ServiceConnectorContext(
+        connector_type="cat'o'matic",
+        auth_method="paw-print",
+        resource_types=["cat"],
+        resource_id="blupus",
+        configuration=config,
+        secrets=secrets,
+    ) as connector:
+        assert connector.id is not None
+        assert connector.type == "cat'o'matic"
+        assert connector.auth_method == "paw-print"
+        assert connector.resource_types == ["cat"]
+        assert connector.resource_id == "blupus"
+        assert connector.configuration == config
+        assert len(connector.secrets) == 0
+        assert connector.secret_id is not None
+
+        secret = store.get_secret(connector.secret_id)
+        assert secret.id == connector.secret_id
+        assert secret.name.startswith(f"connector-{connector.name}")
+        assert secret.values == secrets
+
+        store.delete_service_connector(connector.id)
+
+        with pytest.raises(KeyError):
+            store.get_service_connector(connector.id)
+
+        with pytest.raises(KeyError):
+            store.get_secret(connector.secret_id)
+
+
+def test_connector_name_reuse_for_same_user_fails():
+    """Tests that a connector's name cannot be re-used for the same user."""
+
+    with ServiceConnectorContext(
+        connector_type="cat'o'matic",
+        auth_method="paw-print",
+        resource_types=["cat"],
+    ) as connector_one:
+        with pytest.raises(EntityExistsError):
+            with ServiceConnectorContext(
+                name=connector_one.name,
+                connector_type="cat'o'matic",
+                auth_method="paw-print",
+                resource_types=["cat"],
+            ):
+                pass
+
+
+def test_connector_same_name_different_users():
+    """Tests that a connector's name can be used if another user has it."""
+
+    if Client().zen_store.type == StoreType.SQL:
+        pytest.skip("SQL Zen Stores do not support user switching.")
+
+    with ServiceConnectorContext(
+        connector_type="cat'o'matic",
+        auth_method="paw-print",
+        resource_types=["cat"],
+    ) as connector_one:
+        with UserContext(login=True):
+            #  Client() needs to be instantiated here with the new
+            #  logged-in user
+            other_client = Client()
+
+            with ServiceConnectorContext(
+                name=connector_one.name,
+                connector_type="cat'o'matic",
+                auth_method="paw-print",
+                resource_types=["cat"],
+                client=other_client,
+            ):
+                pass
+
+
+def test_connector_same_name_different_users_shared():
+    """Tests that a connector's name can be used even if another user has it shared."""
+
+    if Client().zen_store.type == StoreType.SQL:
+        pytest.skip("SQL Zen Stores do not support user switching.")
+
+    with ServiceConnectorContext(
+        connector_type="cat'o'matic",
+        auth_method="paw-print",
+        resource_types=["cat"],
+        is_shared=True,
+    ) as connector_one:
+        with UserContext(login=True):
+            #  Client() needs to be instantiated here with the new
+            #  logged-in user
+            other_client = Client()
+
+            with ServiceConnectorContext(
+                name=connector_one.name,
+                connector_type="cat'o'matic",
+                auth_method="paw-print",
+                resource_types=["cat"],
+                client=other_client,
+            ):
+                pass
+
+
+def test_connector_same_name_different_users_both_shared():
+    """Tests that a shared connector's name cannot be used if another user also has it shared."""
+
+    if Client().zen_store.type == StoreType.SQL:
+        pytest.skip("SQL Zen Stores do not support user switching.")
+
+    with ServiceConnectorContext(
+        connector_type="cat'o'matic",
+        auth_method="paw-print",
+        resource_types=["cat"],
+        is_shared=True,
+    ) as connector_one:
+        with UserContext(login=True):
+            #  Client() needs to be instantiated here with the new
+            #  logged-in user
+            other_client = Client()
+
+            with pytest.raises(EntityExistsError):
+                with ServiceConnectorContext(
+                    name=connector_one.name,
+                    connector_type="cat'o'matic",
+                    auth_method="paw-print",
+                    resource_types=["cat"],
+                    client=other_client,
+                    is_shared=True,
+                ):
+                    pass
+
+
+def test_connector_list():
+    """Tests connector listing and filtering."""
+    client = Client()
+    store = client.zen_store
+
+    config1 = {
+        "language": "meow",
+        "foods": "tuna",
+    }
+    secrets1 = {
+        "hiding-place": SecretStr("thatsformetoknowandyouneverfindout"),
+        "dreams": SecretStr("notyourbusiness"),
+    }
+    labels1 = {
+        "whereabouts": "unknown",
+        "age": "eternal",
+    }
+    config2 = {
+        "language": "beast",
+        "foods": "everything",
+    }
+    secrets2 = {
+        "hiding-place": SecretStr("someplaceyouwillneverfindme"),
+        "dreams": SecretStr("milkandmiceandeverythingnice"),
+    }
+    labels2 = {
+        "whereabouts": "everywhere",
+        "weight": "ethereal",
+    }
+    config3 = {
+        "language": "mousespeech",
+        "foods": "cheese",
+    }
+    secrets3 = {
+        "hiding-place": SecretStr("underthebed"),
+        "dreams": SecretStr("cheesecheesecheese"),
+    }
+    labels3 = {
+        "whereabouts": "unknown",
+        "nick": "rodent",
+    }
+
+    with ServiceConnectorContext(
+        connector_type="cat'o'matic",
+        auth_method="paw-print",
+        resource_types=["cat"],
+        resource_id="aria",
+        configuration=config1,
+        secrets=secrets1,
+        labels=labels1,
+    ) as aria_connector:
+        with ServiceConnectorContext(
+            connector_type="tail'o'matic",
+            auth_method="tail-print",
+            resource_types=["cat", "mouse"],
+            configuration=config2,
+            secrets=secrets2,
+            labels=labels2,
+        ) as multi_connector:
+            with ServiceConnectorContext(
+                connector_type="tail'o'matic",
+                auth_method="tail-print",
+                resource_types=["mouse"],
+                resource_id="bartholomew",
+                configuration=config3,
+                secrets=secrets3,
+                labels=labels3,
+            ) as rodent_connector:
+                # List all connectors
+                connectors = store.list_service_connectors(
+                    ServiceConnectorFilterModel()
+                ).items
+                assert len(connectors) >= 3
+                assert aria_connector in connectors
+                assert multi_connector in connectors
+                assert rodent_connector in connectors
+
+                # Filter by name
+                connectors = store.list_service_connectors(
+                    ServiceConnectorFilterModel(name=aria_connector.name)
+                ).items
+                assert len(connectors) == 1
+                assert aria_connector.id == connectors[0].id
+
+                connectors = store.list_service_connectors(
+                    ServiceConnectorFilterModel(name=multi_connector.name)
+                ).items
+                assert len(connectors) == 1
+                assert multi_connector.id == connectors[0].id
+
+                # Filter by connector type
+                connectors = store.list_service_connectors(
+                    ServiceConnectorFilterModel(connector_type="cat'o'matic")
+                ).items
+                assert len(connectors) >= 1
+                assert aria_connector.id in [c.id for c in connectors]
+                assert multi_connector.id not in [c.id for c in connectors]
+                assert rodent_connector.id not in [c.id for c in connectors]
+
+                connectors = store.list_service_connectors(
+                    ServiceConnectorFilterModel(connector_type="tail'o'matic")
+                ).items
+                assert len(connectors) >= 2
+                assert aria_connector.id not in [c.id for c in connectors]
+                assert multi_connector.id in [c.id for c in connectors]
+                assert rodent_connector.id in [c.id for c in connectors]
+
+                # Filter by auth method
+                connectors = store.list_service_connectors(
+                    ServiceConnectorFilterModel(auth_method="paw-print")
+                ).items
+                assert len(connectors) >= 1
+                assert aria_connector.id in [c.id for c in connectors]
+                assert multi_connector.id not in [c.id for c in connectors]
+                assert rodent_connector.id not in [c.id for c in connectors]
+
+                connectors = store.list_service_connectors(
+                    ServiceConnectorFilterModel(auth_method="tail-print")
+                ).items
+                assert len(connectors) >= 1
+                assert aria_connector.id not in [c.id for c in connectors]
+                assert multi_connector.id in [c.id for c in connectors]
+                assert rodent_connector.id in [c.id for c in connectors]
+
+                # Filter by resource type
+                connectors = store.list_service_connectors(
+                    ServiceConnectorFilterModel(resource_type="cat")
+                ).items
+                assert len(connectors) >= 2
+                assert aria_connector.id in [c.id for c in connectors]
+                assert multi_connector.id in [c.id for c in connectors]
+                assert rodent_connector.id not in [c.id for c in connectors]
+
+                connectors = store.list_service_connectors(
+                    ServiceConnectorFilterModel(resource_type="mouse")
+                ).items
+                assert len(connectors) >= 2
+                assert aria_connector.id not in [c.id for c in connectors]
+                assert multi_connector.id in [c.id for c in connectors]
+                assert rodent_connector.id in [c.id for c in connectors]
+
+                # Filter by resource id
+                connectors = store.list_service_connectors(
+                    ServiceConnectorFilterModel(
+                        resource_type="cat",
+                        resource_id="aria",
+                    )
+                ).items
+                assert len(connectors) >= 1
+                assert aria_connector.id in [c.id for c in connectors]
+                assert multi_connector.id not in [c.id for c in connectors]
+                assert rodent_connector.id not in [c.id for c in connectors]
+
+                connectors = store.list_service_connectors(
+                    ServiceConnectorFilterModel(
+                        resource_type="mouse",
+                        resource_id="bartholomew",
+                    )
+                ).items
+                assert len(connectors) >= 1
+                assert aria_connector.id not in [c.id for c in connectors]
+                assert multi_connector.id not in [c.id for c in connectors]
+                assert rodent_connector.id in [c.id for c in connectors]
+
+                # Filter by labels
+                connectors = store.list_service_connectors(
+                    ServiceConnectorFilterModel(
+                        labels={"whereabouts": "unknown"}
+                    )
+                ).items
+                assert len(connectors) >= 2
+                assert aria_connector.id in [c.id for c in connectors]
+                assert multi_connector.id not in [c.id for c in connectors]
+                assert rodent_connector.id in [c.id for c in connectors]
+
+                connectors = store.list_service_connectors(
+                    ServiceConnectorFilterModel(labels={"whereabouts": None})
+                ).items
+                assert len(connectors) >= 3
+                assert aria_connector.id in [c.id for c in connectors]
+                assert multi_connector.id in [c.id for c in connectors]
+                assert rodent_connector.id in [c.id for c in connectors]
+
+                connectors = store.list_service_connectors(
+                    ServiceConnectorFilterModel(
+                        labels={"nick": "rodent", "whereabouts": "unknown"}
+                    )
+                ).items
+                assert len(connectors) >= 1
+                assert aria_connector.id not in [c.id for c in connectors]
+                assert multi_connector.id not in [c.id for c in connectors]
+                assert rodent_connector.id in [c.id for c in connectors]
+
+                connectors = store.list_service_connectors(
+                    ServiceConnectorFilterModel(
+                        labels={"weight": None, "whereabouts": None}
+                    )
+                ).items
+                assert len(connectors) >= 1
+                assert aria_connector.id not in [c.id for c in connectors]
+                assert multi_connector.id in [c.id for c in connectors]
+                assert rodent_connector.id not in [c.id for c in connectors]
+
+
+def test_private_connector_not_visible_to_other_user():
+    """Tests that a private connector is not visible to another user."""
+
+    if Client().zen_store.type == StoreType.SQL:
+        pytest.skip("SQL Zen Stores do not support user switching.")
+
+    with ServiceConnectorContext(
+        connector_type="cat'o'matic",
+        auth_method="paw-print",
+        resource_types=["cat"],
+        is_shared=False,
+    ) as connector:
+        with UserContext(login=True):
+            #  Client() needs to be instantiated here with the new
+            #  logged-in user
+            other_client = Client()
+            other_store = other_client.zen_store
+
+            with pytest.raises(KeyError):
+                other_store.get_service_connector(connector.id)
+
+            connectors = other_store.list_service_connectors(
+                ServiceConnectorFilterModel()
+            ).items
+
+            assert connector.id not in [c.id for c in connectors]
+
+
+def test_shared_connector_is_visible_to_other_user():
+    """Tests that a shared connector is visible to another user."""
+
+    if Client().zen_store.type == StoreType.SQL:
+        pytest.skip("SQL Zen Stores do not support user switching.")
+
+    with ServiceConnectorContext(
+        connector_type="cat'o'matic",
+        auth_method="paw-print",
+        resource_types=["cat"],
+        is_shared=True,
+    ) as connector:
+        with UserContext(login=True):
+            #  Client() needs to be instantiated here with the new
+            #  logged-in user
+            other_client = Client()
+            other_store = other_client.zen_store
+
+            other_store.get_service_connector(connector.id)
+
+            connectors = other_store.list_service_connectors(
+                ServiceConnectorFilterModel()
+            ).items
+
+            assert connector.id in [c.id for c in connectors]
+
+
+def _update_connector_and_test(
+    new_name: Optional[str] = None,
+    new_connector_type: Optional[str] = None,
+    new_auth_method: Optional[str] = None,
+    new_resource_types: Optional[List[str]] = None,
+    new_resource_id_or_not: Optional[Tuple[Optional[str]]] = None,
+    new_config: Optional[Dict[str, str]] = None,
+    new_secrets: Optional[Dict[str, Optional[SecretStr]]] = None,
+    new_expires_at: Optional[datetime] = None,
+    new_expiration_seconds_or_not: Optional[Tuple[Optional[int]]] = None,
+    new_labels: Optional[Dict[str, str]] = None,
+):
+    """Helper function to update a connector and test that the update was successful."""
+    client = Client()
+    store = client.zen_store
+
+    config = {
+        "language": "meow",
+        "foods": "tuna",
+    }
+    secrets = {
+        "hiding-place": SecretStr("thatsformetoknowandyouneverfindout"),
+        "dreams": SecretStr("notyourbusiness"),
+    }
+    labels = {
+        "whereabouts": "unknown",
+        "age": "eternal",
+    }
+    now = datetime.utcnow()
+    with ServiceConnectorContext(
+        connector_type="cat'o'matic",
+        auth_method="paw-print",
+        resource_types=["cat"],
+        resource_id="blupus",
+        configuration=config,
+        secrets=secrets,
+        expires_at=now,
+        expiration_seconds=60,
+        labels=labels,
+    ) as connector:
+        assert connector.id is not None
+        assert connector.type == "cat'o'matic"
+        assert connector.auth_method == "paw-print"
+        assert connector.resource_types == ["cat"]
+        assert connector.resource_id == "blupus"
+        assert connector.configuration == config
+        assert len(connector.secrets) == 0
+        assert connector.secret_id is not None
+        assert connector.labels == labels
+
+        secret = store.get_secret(connector.secret_id)
+        assert secret.id == connector.secret_id
+        assert secret.name.startswith(f"connector-{connector.name}")
+        assert secret.values == secrets
+
+        # Update the connector
+        # NOTE: we need to pass the `resource_id` and `expiration_seconds`
+        # fields in the update model, otherwise the update will remove them
+        # from the connector.
+        new_resource_id = (
+            new_resource_id_or_not[0]
+            if new_resource_id_or_not
+            else connector.resource_id
+        )
+        new_expiration_seconds = (
+            new_expiration_seconds_or_not[0]
+            if new_expiration_seconds_or_not
+            else connector.expiration_seconds
+        )
+        store.update_service_connector(
+            connector.id,
+            update=ServiceConnectorUpdateModel(
+                name=new_name,
+                connector_type=new_connector_type,
+                auth_method=new_auth_method,
+                resource_types=new_resource_types,
+                resource_id=new_resource_id,
+                configuration=new_config,
+                secrets=new_secrets,
+                expires_at=new_expires_at,
+                expiration_seconds=new_expiration_seconds,
+                labels=new_labels,
+            ),
+        )
+
+        # Check that the connector has been updated
+        registered_connector = store.get_service_connector(connector.id)
+
+        assert registered_connector.id == connector.id
+        assert registered_connector.name == new_name or connector.name
+        assert (
+            registered_connector.type == new_connector_type or connector.type
+        )
+        assert (
+            registered_connector.auth_method == new_auth_method
+            or connector.auth_method
+        )
+        assert (
+            registered_connector.resource_types == new_resource_types
+            or connector.resource_types
+        )
+        assert registered_connector.resource_id == new_resource_id
+        assert len(registered_connector.secrets) == 0
+
+        # the `configuration` and `secrets` fields represent a full
+        # valid configuration update, not just a partial update. If either is
+        # set (i.e. not None) in the update, their values
+        # will replace the existing configuration and secrets values.
+
+        if new_config is not None:
+            assert registered_connector.configuration == new_config or {}
+        else:
+            assert (
+                registered_connector.configuration == connector.configuration
+            )
+
+        if new_secrets is not None:
+            if not new_secrets:
+                # Existing secret is deleted if no new secrets are provided
+                assert registered_connector.secret_id is None
+            else:
+                # New secret is created if secrets are updated
+                assert registered_connector.secret_id != connector.secret_id
+        else:
+            assert registered_connector.secret_id == connector.secret_id
+
+        assert registered_connector.labels == new_labels or connector.labels
+
+        if new_secrets is not None:
+            if not new_secrets:
+                # Existing secret is deleted if secrets are removed
+                with pytest.raises(KeyError):
+                    store.get_secret(connector.secret_id)
+            else:
+                # Previous secret is deleted if secrets are updated
+                with pytest.raises(KeyError):
+                    store.get_secret(connector.secret_id)
+
+                # Check that a new secret has been created
+                new_secret = store.get_secret(registered_connector.secret_id)
+                assert new_secret.id == registered_connector.secret_id
+                # Secret name should have changed
+                assert new_secret.name.startswith(
+                    f"connector-{new_name or connector.name}"
+                )
+                assert new_secret.values == new_secrets
+        else:
+            new_secret = store.get_secret(connector.secret_id)
+            assert new_secret.id == connector.secret_id
+            # Secret name should not have changed
+            assert new_secret.name == secret.name
+            assert new_secret.values == secrets
+
+
+def test_connector_update_name():
+    """Tests that a connector's name can be updated."""
+    _update_connector_and_test(
+        new_name="axl-incognito",
+    )
+
+
+def test_connector_update_type():
+    """Tests that a connector's type can be updated."""
+    _update_connector_and_test(
+        new_connector_type="dog'o'matic",
+    )
+
+
+def test_connector_update_resource_types():
+    """Tests that a connector's resource types can be updated."""
+    _update_connector_and_test(new_resource_types=["cat", "dog"])
+
+
+def test_connector_update_resource_id():
+    """Tests that a connector's resource ID can be updated or removed."""
+    _update_connector_and_test(new_resource_id_or_not=("axl",))
+    _update_connector_and_test(new_resource_id_or_not=(None,))
+
+
+def test_connector_update_auth_method():
+    """Tests that a connector's auth method can be updated."""
+    _update_connector_and_test(
+        new_auth_method="collar",
+    )
+
+
+def test_connector_update_config():
+    """Tests that a connector's configuration and secrets can be updated."""
+
+    new_config = {
+        "language": "purr",
+        "chase": "own-tail",
+    }
+    new_secrets = {
+        "hiding-place": SecretStr("anotherplaceyouwillneverfindme"),
+        "food": SecretStr("firebreathingdragon"),
+    }
+
+    _update_connector_and_test(
+        new_config=new_config,
+    )
+    _update_connector_and_test(
+        new_secrets=new_secrets,
+    )
+    _update_connector_and_test(
+        new_config=new_config,
+        new_secrets=new_secrets,
+    )
+    _update_connector_and_test(
+        new_config={},
+    )
+    _update_connector_and_test(
+        new_secrets={},
+    )
+
+
+def test_connector_update_expiration():
+    """Tests that a connector's expiration period can be updated or removed."""
+    _update_connector_and_test(new_expiration_seconds_or_not=(90,))
+    _update_connector_and_test(new_expiration_seconds_or_not=(None,))
+
+
+def test_connector_update_expires_at():
+    """Tests that a connector's expiration date can be updated."""
+    _update_connector_and_test(new_expires_at=datetime.now())
+
+
+def test_connector_update_labels():
+    """Tests that a connector's labels can be updated."""
+    labels = {
+        "whereabouts": "everywhere",
+        "form": "fluid",
+    }
+    _update_connector_and_test(new_labels=labels)
+    _update_connector_and_test(new_labels={})
+
+
+def test_connector_name_update_fails_if_exists():
+    """Tests that a connector's name cannot be updated to an existing name."""
+
+    client = Client()
+    store = client.zen_store
+
+    with ServiceConnectorContext(
+        connector_type="cat'o'matic",
+        auth_method="paw-print",
+        resource_types=["cat"],
+    ) as connector_one:
+        with ServiceConnectorContext(
+            connector_type="cat'o'matic",
+            auth_method="paw-print",
+            resource_types=["cat"],
+        ) as connector_two:
+            with pytest.raises(EntityExistsError):
+                store.update_service_connector(
+                    connector_one.id,
+                    update=ServiceConnectorUpdateModel(
+                        name=connector_two.name
+                    ),
+                )
+
+
+def test_connector_sharing():
+    """Tests that a connector can be shared."""
+
+    client = Client()
+    store = client.zen_store
+
+    if client.zen_store.type == StoreType.SQL:
+        pytest.skip("SQL Zen Stores do not support user switching.")
+
+    config = {
+        "language": "meow",
+        "foods": "tuna",
+    }
+    secrets = {
+        "hiding-place": SecretStr("thatsformetoknowandyouneverfindout"),
+        "dreams": SecretStr("notyourbusiness"),
+    }
+
+    with ServiceConnectorContext(
+        connector_type="cat'o'matic",
+        auth_method="paw-print",
+        resource_types=["cat"],
+        configuration=config,
+        secrets=secrets,
+        is_shared=False,
+    ) as connector:
+        assert connector.secret_id is not None
+        secret = store.get_secret(connector.secret_id)
+        assert secret.scope == SecretScope.USER
+
+        with UserContext(login=True):
+            #  Client() needs to be instantiated here with the new
+            #  logged-in user
+            other_client = Client()
+            other_store = other_client.zen_store
+
+            with pytest.raises(KeyError):
+                other_store.get_service_connector(connector.id)
+
+            connectors = other_store.list_service_connectors(
+                ServiceConnectorFilterModel()
+            ).items
+
+            assert connector.id not in [c.id for c in connectors]
+
+        updated_connector = store.update_service_connector(
+            connector.id,
+            update=ServiceConnectorUpdateModel(is_shared=True),
+        )
+
+        assert updated_connector.secret_id is not None
+        assert updated_connector.secret_id == connector.secret_id
+        secret = store.get_secret(updated_connector.secret_id)
+        assert secret.scope == SecretScope.WORKSPACE
+
+        with UserContext(login=True):
+            #  Client() needs to be instantiated here with the new
+            #  logged-in user
+            other_client = Client()
+            other_store = other_client.zen_store
+
+            other_store.get_service_connector(connector.id)
+
+            connectors = other_store.list_service_connectors(
+                ServiceConnectorFilterModel()
+            ).items
+
+            assert connector.id in [c.id for c in connectors]
+
+
+def test_connector_sharing_fails_if_name_shared():
+    """Tests that a connector cannot be shared if the name is already shared."""
+
+    client = Client()
+
+    if client.zen_store.type == StoreType.SQL:
+        pytest.skip("SQL Zen Stores do not support user switching.")
+
+    with ServiceConnectorContext(
+        connector_type="cat'o'matic",
+        auth_method="paw-print",
+        resource_types=["cat"],
+        is_shared=True,
+    ) as connector:
+        with UserContext(login=True):
+            #  Client() needs to be instantiated here with the new
+            #  logged-in user
+            other_client = Client()
+            other_store = other_client.zen_store
+
+            other_store.get_service_connector(connector.id)
+
+            connectors = other_store.list_service_connectors(
+                ServiceConnectorFilterModel()
+            ).items
+
+            assert connector.id in [c.id for c in connectors]
+
+            with ServiceConnectorContext(
+                name=connector.name,
+                connector_type="cat'o'matic",
+                auth_method="paw-print",
+                resource_types=["cat"],
+                is_shared=False,
+            ) as other_connector:
+                with pytest.raises(EntityExistsError):
+                    other_store.update_service_connector(
+                        other_connector.id,
+                        update=ServiceConnectorUpdateModel(is_shared=True),
+                    )
+
+
+# .-------------------------.
+# | Service Connector Types |
+# '-------------------------'
+
+
+def test_connector_type_register():
+    """Tests that a connector type can be registered locally."""
+
+    client = Client()
+    store = client.zen_store
+
+    connector_type = sample_name("cat'o'matic")
+    resource_type_one = sample_name("scratch")
+    resource_type_two = sample_name("purr")
+
+    with pytest.raises(KeyError):
+        store.get_service_connector_type(connector_type)
+    assert (
+        store.list_service_connector_types(connector_type=connector_type) == []
+    )
+    assert (
+        store.list_service_connector_types(resource_type=resource_type_one)
+        == []
+    )
+    assert (
+        store.list_service_connector_types(resource_type=resource_type_two)
+        == []
+    )
+
+    with ServiceConnectorTypeContext(
+        connector_type=connector_type,
+        resource_type_one=resource_type_one,
+        resource_type_two=resource_type_two,
+    ) as connector_type_spec:
+        assert (
+            store.get_service_connector_type(connector_type)
+            == connector_type_spec
+        )
+        assert store.list_service_connector_types(
+            resource_type=resource_type_one
+        ) == [connector_type_spec]
+        assert store.list_service_connector_types(
+            resource_type=resource_type_two
+        ) == [connector_type_spec]
+
+
+def test_connector_validation():
+    """Tests that a connector type is used to validate a connector."""
+
+    client = Client()
+    store = client.zen_store
+
+    if store.type != StoreType.SQL:
+        pytest.skip("Only applicable to SQL store")
+
+    connector_type = sample_name("cat'o'matic")
+    resource_type_one = sample_name("scratch")
+    resource_type_two = sample_name("purr")
+
+    with ServiceConnectorTypeContext(
+        connector_type=connector_type,
+        resource_type_one=resource_type_one,
+        resource_type_two=resource_type_two,
+    ):
+        # All attributes
+        config = {
+            "color": "pink",
+            "name": "aria",
+        }
+        secrets = {
+            "hiding_spot": SecretStr("thatsformetoknowandyouneverfindout"),
+            "secret_word": SecretStr("meowmeowmeow"),
+        }
+        with ServiceConnectorContext(
+            connector_type=connector_type,
+            auth_method="voice-print",
+            resource_types=[resource_type_one, resource_type_two],
+            configuration=config,
+            secrets=secrets,
+        ) as connector:
+            assert connector.configuration == config
+            assert connector.secrets == {}
+            assert connector.secret_id is not None
+            secret = store.get_secret(connector.secret_id)
+            assert secret.values == secrets
+
+        # Only required attributes
+        config = {
+            "name": "aria",
+        }
+        secrets = {
+            "secret_word": SecretStr("meowmeowmeow"),
+        }
+        with ServiceConnectorContext(
+            connector_type=connector_type,
+            auth_method="voice-print",
+            resource_types=[resource_type_one, resource_type_two],
+            configuration=config,
+            secrets=secrets,
+        ) as connector:
+            assert connector.configuration == config
+            assert connector.secrets == {}
+            assert connector.secret_id is not None
+            secret = store.get_secret(connector.secret_id)
+            assert secret.values == secrets
+
+        # Missing required configuration attribute
+        config = {}
+        secrets = {
+            "secret_word": SecretStr("meowmeowmeow"),
+        }
+        with pytest.raises(ValueError):
+            with ServiceConnectorContext(
+                connector_type=connector_type,
+                auth_method="voice-print",
+                resource_types=[resource_type_one, resource_type_two],
+                configuration=config,
+                secrets=secrets,
+            ):
+                pass
+
+        # Missing required secret attribute
+        config = {
+            "name": "aria",
+        }
+        secrets = {}
+        with pytest.raises(ValueError):
+            with ServiceConnectorContext(
+                connector_type=connector_type,
+                auth_method="voice-print",
+                resource_types=[resource_type_one, resource_type_two],
+                configuration=config,
+                secrets=secrets,
+            ):
+                pass
+
+        # All attributes mashed together
+        config = {
+            "color": "pink",
+            "name": "aria",
+        }
+        secrets = {
+            "hiding_spot": SecretStr("thatsformetoknowandyouneverfindout"),
+            "secret_word": SecretStr("meowmeowmeow"),
+        }
+        full_config = config.copy()
+        full_config.update(
+            {k: v.get_secret_value() for k, v in secrets.items()}
+        )
+        with ServiceConnectorContext(
+            connector_type=connector_type,
+            auth_method="voice-print",
+            resource_types=[resource_type_one, resource_type_two],
+            configuration=full_config,
+        ) as connector:
+            assert connector.configuration == config
+            assert connector.secrets == {}
+            assert connector.secret_id is not None
+            secret = store.get_secret(connector.secret_id)
+            assert secret.values == secrets
+
+        # Different auth method
+        with pytest.raises(ValueError):
+            with ServiceConnectorContext(
+                connector_type=connector_type,
+                auth_method="claw-marks",
+                resource_types=[resource_type_one, resource_type_two],
+                configuration=config,
+                secrets=secrets,
+            ):
+                pass
+
+        # Wrong auth method
+        with pytest.raises(ValueError):
+            with ServiceConnectorContext(
+                connector_type=connector_type,
+                auth_method="paw-print",
+                resource_types=[resource_type_one, resource_type_two],
+                configuration=config,
+                secrets=secrets,
+            ):
+                pass
+
+        # Single type
+        with ServiceConnectorContext(
+            connector_type=connector_type,
+            auth_method="voice-print",
+            resource_types=[resource_type_one],
+            configuration=config,
+            secrets=secrets,
+        ):
+            pass
+
+        # Wrong resource type
+        with pytest.raises(ValueError):
+            with ServiceConnectorContext(
+                connector_type=connector_type,
+                auth_method="voice-print",
+                resource_types=["purr"],
+                configuration=config,
+                secrets=secrets,
+            ):
+                pass
+
+        # Single instance
+        with ServiceConnectorContext(
+            connector_type=connector_type,
+            auth_method="voice-print",
+            resource_types=[resource_type_one],
+            resource_id="aria",
+            configuration=config,
+            secrets=secrets,
+        ):
+            pass

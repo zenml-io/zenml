@@ -64,6 +64,10 @@ def _patch_k8s_clients(mocker):
         mock_context["name"] = "incluster"
 
     mocker.patch(
+        "zenml.integrations.kubernetes.orchestrators.kubernetes_orchestrator.KubernetesOrchestrator.get_kube_client",
+        return_value=(None),
+    )
+    mocker.patch(
         "kubernetes.config.load_kube_config",
         side_effect=mock_load_kube_config,
     )
@@ -181,32 +185,4 @@ def test_kubernetes_orchestrator_uses_service_account_from_settings(mocker):
     assert (
         orchestrator._get_service_account_name(settings)
         == service_account_name
-    )
-
-
-@pytest.mark.parametrize("incluster", [True, False])
-@pytest.mark.parametrize(
-    "kubernetes_context", [None, "aria-kubernetes-context"]
-)
-def test_kubernetes_orchestrator_uses_k8s_config_from_settings(
-    mocker, incluster, kubernetes_context
-):
-    """Test that the k8s config can be set from the settings."""
-    _patch_k8s_clients(mocker)
-    orchestrator = _get_kubernetes_orchestrator(local=True)
-    settings = KubernetesOrchestratorSettings(
-        kubernetes_context=kubernetes_context, incluster=incluster
-    )
-    orchestrator._initialize_k8s_clients(
-        incluster=settings.incluster, context=settings.kubernetes_context
-    )
-
-    expected_context = K8S_CONTEXT
-    if incluster:
-        expected_context = "incluster"
-    elif kubernetes_context:
-        expected_context = kubernetes_context
-    assert orchestrator.get_kubernetes_contexts() == (
-        [expected_context],
-        expected_context,
     )

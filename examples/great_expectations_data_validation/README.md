@@ -46,7 +46,7 @@ Suite that we later on use to check that the validation dataset is not skewed.
 ```python
 from zenml.config import DockerSettings
 from zenml.integrations.constants import GREAT_EXPECTATIONS, SKLEARN
-from zenml.pipelines import pipeline
+from zenml import pipeline
 
 docker_settings = DockerSettings(
     required_integrations=[SKLEARN, GREAT_EXPECTATIONS]
@@ -125,3 +125,9 @@ In order to clean up, delete the remaining ZenML references.
 ```shell
 rm -rf zenml_examples
 ```
+
+# Run it on the sandbox
+
+ZenML offers a sandbox environment where you can effortlessly run your pipelines on a Kubernetes cluster. This complimentary service is an excellent way to try out a production deployment.
+
+You can execute this example in the sandbox by following a few simple commands. Learn more about the sandbox in the [official documentation](https://docs.zenml.io/user-guide/advanced-guide/sandbox), or visit the [sandbox homepage](https://sandbox.zenml.io/).

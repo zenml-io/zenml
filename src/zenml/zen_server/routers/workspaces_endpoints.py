@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Endpoint definitions for workspaces."""
-from typing import Dict, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Security
@@ -28,6 +28,8 @@ from zenml.constants import (
     RUNS,
     SCHEDULES,
     SECRETS,
+    SERVICE_CONNECTOR_RESOURCES,
+    SERVICE_CONNECTORS,
     STACK_COMPONENTS,
     STACKS,
     STATISTICS,
@@ -61,6 +63,12 @@ from zenml.models import (
     RunMetadataResponseModel,
     ScheduleRequestModel,
     ScheduleResponseModel,
+    SecretRequestModel,
+    SecretResponseModel,
+    ServiceConnectorFilterModel,
+    ServiceConnectorRequestModel,
+    ServiceConnectorResourcesModel,
+    ServiceConnectorResponseModel,
     StackFilterModel,
     StackRequestModel,
     StackResponseModel,
@@ -74,7 +82,6 @@ from zenml.models import (
     WorkspaceUpdateModel,
 )
 from zenml.models.page_model import Page
-from zenml.models.secret_models import SecretRequestModel, SecretResponseModel
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.utils import (
@@ -82,11 +89,6 @@ from zenml.zen_server.utils import (
     make_dependable,
     zen_store,
 )
-
-# This is a workaround to slowly deprecate the workspaces routes. This along with
-#  all the decorators using it, can be removed in a few releases.
-PROJECTS = "/projects"
-
 
 router = APIRouter(
     prefix=API + VERSION_1,
@@ -99,12 +101,6 @@ router = APIRouter(
     WORKSPACES,
     response_model=Page[WorkspaceResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
-)
-@router.get(
-    PROJECTS,
-    response_model=Page[WorkspaceResponseModel],
-    responses={401: error_response, 404: error_response, 422: error_response},
-    deprecated=True,
 )
 @handle_exceptions
 def list_workspaces(
@@ -132,12 +128,6 @@ def list_workspaces(
     response_model=WorkspaceResponseModel,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
-@router.post(
-    PROJECTS,
-    response_model=WorkspaceResponseModel,
-    responses={401: error_response, 409: error_response, 422: error_response},
-    deprecated=True,
-)
 @handle_exceptions
 def create_workspace(
     workspace: WorkspaceRequestModel,
@@ -161,12 +151,6 @@ def create_workspace(
     response_model=WorkspaceResponseModel,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@router.get(
-    PROJECTS + "/{workspace_name_or_id}",
-    response_model=WorkspaceResponseModel,
-    responses={401: error_response, 404: error_response, 422: error_response},
-    deprecated=True,
-)
 @handle_exceptions
 def get_workspace(
     workspace_name_or_id: Union[str, UUID],
@@ -189,12 +173,6 @@ def get_workspace(
     WORKSPACES + "/{workspace_name_or_id}",
     response_model=WorkspaceResponseModel,
     responses={401: error_response, 404: error_response, 422: error_response},
-)
-@router.put(
-    PROJECTS + "/{workspace_name_or_id}",
-    response_model=WorkspaceResponseModel,
-    responses={401: error_response, 404: error_response, 422: error_response},
-    deprecated=True,
 )
 @handle_exceptions
 def update_workspace(
@@ -223,11 +201,6 @@ def update_workspace(
     WORKSPACES + "/{workspace_name_or_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@router.delete(
-    PROJECTS + "/{workspace_name_or_id}",
-    responses={401: error_response, 404: error_response, 422: error_response},
-    deprecated=True,
-)
 @handle_exceptions
 def delete_workspace(
     workspace_name_or_id: Union[str, UUID],
@@ -245,12 +218,6 @@ def delete_workspace(
     WORKSPACES + "/{workspace_name_or_id}" + USER_ROLE_ASSIGNMENTS,
     response_model=Page[UserRoleAssignmentResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
-)
-@router.get(
-    PROJECTS + "/{workspace_name_or_id}" + USER_ROLE_ASSIGNMENTS,
-    response_model=Page[UserRoleAssignmentResponseModel],
-    responses={401: error_response, 404: error_response, 422: error_response},
-    deprecated=True,
 )
 @handle_exceptions
 def list_user_role_assignments_for_workspace(
@@ -282,12 +249,6 @@ def list_user_role_assignments_for_workspace(
     response_model=Page[TeamRoleAssignmentResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@router.get(
-    PROJECTS + "/{workspace_name_or_id}" + TEAM_ROLE_ASSIGNMENTS,
-    response_model=Page[TeamRoleAssignmentResponseModel],
-    responses={401: error_response, 404: error_response, 422: error_response},
-    deprecated=True,
-)
 @handle_exceptions
 def list_team_role_assignments_for_workspace(
     workspace_name_or_id: Union[str, UUID],
@@ -317,12 +278,6 @@ def list_team_role_assignments_for_workspace(
     WORKSPACES + "/{workspace_name_or_id}" + STACKS,
     response_model=Page[StackResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
-)
-@router.get(
-    PROJECTS + "/{workspace_name_or_id}" + STACKS,
-    response_model=Page[StackResponseModel],
-    responses={401: error_response, 404: error_response, 422: error_response},
-    deprecated=True,
 )
 @handle_exceptions
 def list_workspace_stacks(
@@ -356,12 +311,6 @@ def list_workspace_stacks(
     WORKSPACES + "/{workspace_name_or_id}" + STACKS,
     response_model=StackResponseModel,
     responses={401: error_response, 409: error_response, 422: error_response},
-)
-@router.post(
-    PROJECTS + "/{workspace_name_or_id}" + STACKS,
-    response_model=StackResponseModel,
-    responses={401: error_response, 409: error_response, 422: error_response},
-    deprecated=True,
 )
 @handle_exceptions
 def create_stack(
@@ -407,12 +356,6 @@ def create_stack(
     response_model=Page[ComponentResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@router.get(
-    PROJECTS + "/{workspace_name_or_id}" + STACK_COMPONENTS,
-    response_model=Page[ComponentResponseModel],
-    responses={401: error_response, 404: error_response, 422: error_response},
-    deprecated=True,
-)
 @handle_exceptions
 def list_workspace_stack_components(
     workspace_name_or_id: Union[str, UUID],
@@ -448,12 +391,6 @@ def list_workspace_stack_components(
     WORKSPACES + "/{workspace_name_or_id}" + STACK_COMPONENTS,
     response_model=ComponentResponseModel,
     responses={401: error_response, 409: error_response, 422: error_response},
-)
-@router.post(
-    PROJECTS + "/{workspace_name_or_id}" + STACK_COMPONENTS,
-    response_model=ComponentResponseModel,
-    responses={401: error_response, 409: error_response, 422: error_response},
-    deprecated=True,
 )
 @handle_exceptions
 def create_stack_component(
@@ -503,12 +440,6 @@ def create_stack_component(
     response_model=Page[PipelineResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@router.get(
-    PROJECTS + "/{workspace_name_or_id}" + PIPELINES,
-    response_model=Page[PipelineResponseModel],
-    responses={401: error_response, 404: error_response, 422: error_response},
-    deprecated=True,
-)
 @handle_exceptions
 def list_workspace_pipelines(
     workspace_name_or_id: Union[str, UUID],
@@ -540,12 +471,6 @@ def list_workspace_pipelines(
     WORKSPACES + "/{workspace_name_or_id}" + PIPELINES,
     response_model=PipelineResponseModel,
     responses={401: error_response, 409: error_response, 422: error_response},
-)
-@router.post(
-    PROJECTS + "/{workspace_name_or_id}" + PIPELINES,
-    response_model=PipelineResponseModel,
-    responses={401: error_response, 409: error_response, 422: error_response},
-    deprecated=True,
 )
 @handle_exceptions
 def create_pipeline(
@@ -742,12 +667,6 @@ def create_deployment(
     response_model=Page[PipelineRunResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@router.get(
-    PROJECTS + "/{workspace_name_or_id}" + RUNS,
-    response_model=Page[PipelineRunResponseModel],
-    responses={401: error_response, 404: error_response, 422: error_response},
-    deprecated=True,
-)
 @handle_exceptions
 def list_runs(
     workspace_name_or_id: Union[str, UUID],
@@ -776,12 +695,6 @@ def list_runs(
     WORKSPACES + "/{workspace_name_or_id}" + SCHEDULES,
     response_model=ScheduleResponseModel,
     responses={401: error_response, 409: error_response, 422: error_response},
-)
-@router.post(
-    PROJECTS + "/{workspace_name_or_id}" + SCHEDULES,
-    response_model=ScheduleResponseModel,
-    responses={401: error_response, 409: error_response, 422: error_response},
-    deprecated=True,
 )
 @handle_exceptions
 def create_schedule(
@@ -825,12 +738,6 @@ def create_schedule(
     WORKSPACES + "/{workspace_name_or_id}" + RUNS,
     response_model=PipelineRunResponseModel,
     responses={401: error_response, 409: error_response, 422: error_response},
-)
-@router.post(
-    PROJECTS + "/{workspace_name_or_id}" + RUNS,
-    response_model=PipelineRunResponseModel,
-    responses={401: error_response, 409: error_response, 422: error_response},
-    deprecated=True,
 )
 @handle_exceptions
 def create_pipeline_run(
@@ -1089,11 +996,6 @@ def create_code_repository(
     response_model=Dict[str, str],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@router.get(
-    PROJECTS + "/{workspace_name_or_id}" + STATISTICS,
-    response_model=Dict[str, str],
-    responses={401: error_response, 404: error_response, 422: error_response},
-)
 @handle_exceptions
 def get_workspace_statistics(
     workspace_name_or_id: Union[str, UUID],
@@ -1127,3 +1029,124 @@ def get_workspace_statistics(
         .list_runs(PipelineRunFilterModel(scope_workspace=workspace.id))
         .total,
     }
+
+
+@router.get(
+    WORKSPACES + "/{workspace_name_or_id}" + SERVICE_CONNECTORS,
+    response_model=Page[ServiceConnectorResponseModel],
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@handle_exceptions
+def list_workspace_service_connectors(
+    workspace_name_or_id: Union[str, UUID],
+    connector_filter_model: ServiceConnectorFilterModel = Depends(
+        make_dependable(ServiceConnectorFilterModel)
+    ),
+    auth_context: AuthContext = Security(
+        authorize, scopes=[PermissionType.READ]
+    ),
+) -> Page[ServiceConnectorResponseModel]:
+    """List service connectors that are part of a specific workspace.
+
+    # noqa: DAR401
+
+    Args:
+        workspace_name_or_id: Name or ID of the workspace.
+        connector_filter_model: Filter model used for pagination, sorting,
+            filtering
+        auth_context: Authentication Context
+
+    Returns:
+        All service connectors part of the specified workspace.
+    """
+    workspace = zen_store().get_workspace(workspace_name_or_id)
+    connector_filter_model.set_scope_workspace(workspace.id)
+    connector_filter_model.set_scope_user(user_id=auth_context.user.id)
+    return zen_store().list_service_connectors(
+        filter_model=connector_filter_model
+    )
+
+
+@router.post(
+    WORKSPACES + "/{workspace_name_or_id}" + SERVICE_CONNECTORS,
+    response_model=ServiceConnectorResponseModel,
+    responses={401: error_response, 409: error_response, 422: error_response},
+)
+@handle_exceptions
+def create_service_connector(
+    workspace_name_or_id: Union[str, UUID],
+    connector: ServiceConnectorRequestModel,
+    auth_context: AuthContext = Security(
+        authorize, scopes=[PermissionType.WRITE]
+    ),
+) -> ServiceConnectorResponseModel:
+    """Creates a service connector.
+
+    Args:
+        workspace_name_or_id: Name or ID of the workspace.
+        connector: Service connector to register.
+        auth_context: Authentication context.
+
+    Returns:
+        The created service connector.
+
+    Raises:
+        IllegalOperationError: If the workspace or user specified in the service
+            connector does not match the current workspace or authenticated
+            user.
+    """
+    workspace = zen_store().get_workspace(workspace_name_or_id)
+
+    if connector.workspace != workspace.id:
+        raise IllegalOperationError(
+            "Creating connectors outside of the workspace scope "
+            f"of this endpoint `{workspace_name_or_id}` is "
+            f"not supported."
+        )
+    if connector.user != auth_context.user.id:
+        raise IllegalOperationError(
+            "Creating connectors for a user other than yourself "
+            "is not supported."
+        )
+
+    return zen_store().create_service_connector(service_connector=connector)
+
+
+@router.get(
+    WORKSPACES
+    + "/{workspace_name_or_id}"
+    + SERVICE_CONNECTORS
+    + SERVICE_CONNECTOR_RESOURCES,
+    response_model=List[ServiceConnectorResourcesModel],
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@handle_exceptions
+def list_service_connector_resources(
+    workspace_name_or_id: Union[str, UUID],
+    connector_type: Optional[str] = None,
+    resource_type: Optional[str] = None,
+    resource_id: Optional[str] = None,
+    auth_context: AuthContext = Security(
+        authorize, scopes=[PermissionType.READ]
+    ),
+) -> List[ServiceConnectorResourcesModel]:
+    """List resources that can be accessed by service connectors.
+
+    Args:
+        workspace_name_or_id: Name or ID of the workspace.
+        connector_type: the service connector type identifier to filter by.
+        resource_type: the resource type identifier to filter by.
+        resource_id: the resource identifier to filter by.
+        auth_context: Authentication context.
+
+    Returns:
+        The matching list of resources that available service
+        connectors have access to.
+    """
+    return zen_store().list_service_connector_resources(
+        user_name_or_id=auth_context.user.id,
+        workspace_name_or_id=workspace_name_or_id,
+        connector_type=connector_type,
+        resource_type=resource_type,
+        resource_id=resource_id,
+    )

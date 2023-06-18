@@ -13,7 +13,10 @@
 #  permissions and limitations under the License.
 """Utility functions for the CLI."""
 import contextlib
+import datetime
+import json
 import os
+import re
 import subprocess
 import sys
 from typing import (
@@ -34,7 +37,11 @@ from typing import (
 )
 
 import click
+import yaml
+from pydantic import SecretStr
 from rich import box, table
+from rich.emoji import Emoji, NoEmoji
+from rich.markdown import Markdown
 from rich.markup import escape
 from rich.prompt import Confirm
 from rich.style import Style
@@ -76,9 +83,15 @@ if TYPE_CHECKING:
     from zenml.integrations.integration import Integration
     from zenml.model_deployers import BaseModelDeployer
     from zenml.models import (
+        AuthenticationMethodModel,
         ComponentResponseModel,
         FlavorResponseModel,
         PipelineRunResponseModel,
+        ResourceTypeModel,
+        ServiceConnectorRequestModel,
+        ServiceConnectorResourcesModel,
+        ServiceConnectorResponseModel,
+        ServiceConnectorTypeModel,
         StackResponseModel,
     )
     from zenml.stack import Stack
@@ -369,6 +382,8 @@ def print_flavor_list(flavors: Page["FlavorResponseModel"]) -> None:
                 "FLAVOR": f.name,
                 "INTEGRATION": f.integration,
                 "SOURCE": f.source,
+                "CONNECTOR TYPE": f.connector_type or "",
+                "RESOURCE TYPE": f.connector_resource_type or "",
             }
         )
 
@@ -433,34 +448,45 @@ def print_stack_component_configuration(
 
     if not component.labels:
         declare("No labels are set for this component.")
-        return
+    else:
+        rich_table = table.Table(
+            box=box.HEAVY_EDGE,
+            title="Labels",
+            show_lines=True,
+        )
+        rich_table.add_column("LABEL")
+        rich_table.add_column("VALUE", overflow="fold")
 
-    title_ = (
-        f"'{component.name}' {component.type.value.upper()} "
-        f"Component Labels"
-    )
+        for label, value in component.labels.items():
+            rich_table.add_row(label, value)
 
-    if active_status:
-        title_ += " (ACTIVE)"
-    rich_table = table.Table(
-        box=box.HEAVY_EDGE,
-        title=title_,
-        show_lines=True,
-    )
-    rich_table.add_column("COMPONENT_PROPERTY")
-    rich_table.add_column("VALUE", overflow="fold")
+        console.print(rich_table)
 
-    items = component.labels.items()
-    for item in items:
-        elements = []
-        for idx, elem in enumerate(item):
-            if idx == 0:
-                elements.append(f"{elem.upper()}")
-            else:
-                elements.append(str(elem))
-        rich_table.add_row(*elements)
+    if not component.connector:
+        declare("No connector is set for this component.")
+    else:
+        rich_table = table.Table(
+            box=box.HEAVY_EDGE,
+            title="Service Connector",
+            show_lines=True,
+        )
+        rich_table.add_column("PROPERTY")
+        rich_table.add_column("VALUE", overflow="fold")
 
-    console.print(rich_table)
+        connector_dict = {
+            "ID": str(component.connector.id),
+            "NAME": component.connector.name,
+            "TYPE": component.connector.type,
+            "RESOURCE TYPE": component.connector.resource_types[0],
+            "RESOURCE NAME": component.connector_resource_id
+            or component.connector.resource_id
+            or "N/A",
+        }
+
+        for label, value in connector_dict.items():
+            rich_table.add_row(label, value)
+
+        console.print(rich_table)
 
 
 def print_active_config() -> None:
@@ -555,6 +581,41 @@ def expand_argument_value_from_file(name: str, value: str) -> str:
         )
 
 
+def convert_structured_str_to_dict(string: str) -> Dict[str, str]:
+    """Convert a structured string (JSON or YAML) into a dict.
+
+    Examples:
+        >>> convert_structured_str_to_dict('{"location": "Nevada", "aliens":"many"}')
+        {'location': 'Nevada', 'aliens': 'many'}
+        >>> convert_structured_str_to_dict('location: Nevada \\naliens: many')
+        {'location': 'Nevada', 'aliens': 'many'}
+        >>> convert_structured_str_to_dict("{'location': 'Nevada', 'aliens': 'many'}")
+        {'location': 'Nevada', 'aliens': 'many'}
+
+    Args:
+        string: JSON or YAML string value
+
+    Returns:
+        dict_: dict from structured JSON or YAML str
+    """
+    try:
+        dict_: Dict[str, str] = json.loads(string)
+        return dict_
+    except ValueError:
+        pass
+
+    try:
+        # Here, Dict type in str is implicitly supported by yaml.safe_load()
+        dict_ = yaml.safe_load(string)
+        return dict_
+    except yaml.YAMLError:
+        pass
+
+    error(
+        f"Invalid argument: '{string}'. Please provide the value in JSON or YAML format."
+    )
+
+
 def parse_name_and_extra_arguments(
     args: List[str],
     expand_args: bool = False,
@@ -592,6 +653,9 @@ def parse_name_and_extra_arguments(
     # The name was not supplied as the first argument, we have to
     # search the other arguments for the name.
     for i, arg in enumerate(args):
+        if not arg:
+            # Skip empty arguments.
+            continue
         if arg.startswith("--"):
             continue
         name = args.pop(i)
@@ -610,6 +674,9 @@ def parse_name_and_extra_arguments(
     )
     args_dict: Dict[str, str] = {}
     for a in args:
+        if not a:
+            # Skip empty arguments.
+            continue
         if not a.startswith("--") or "=" not in a:
             error(f"Invalid argument: '{a}'. {message}")
         key, value = a[2:].split("=", maxsplit=1)
@@ -645,6 +712,110 @@ def parse_unknown_component_attributes(args: List[str]) -> List[str]:
     p_args = [a.lstrip("-") for a in args]
     assert all(v.isidentifier() for v in p_args), warning_message
     return p_args
+
+
+def prompt_configuration(
+    config_schema: Dict[str, Any],
+    show_secrets: bool = False,
+    existing_config: Optional[Dict[str, str]] = None,
+) -> Dict[str, str]:
+    """Prompt the user for configuration values using the provided schema.
+
+    Args:
+        config_schema: The configuration schema.
+        show_secrets: Whether to show secrets in the terminal.
+        existing_config: The existing configuration values.
+
+    Returns:
+        The configuration values provided by the user.
+    """
+    is_update = False
+    if existing_config is not None:
+        is_update = True
+    existing_config = existing_config or {}
+
+    config_dict = {}
+    for attr_name, attr_schema in config_schema.get("properties", {}).items():
+        title = attr_schema.get("title", attr_name)
+        attr_type = attr_schema.get("type", "string")
+        title = f"[{attr_name}] {title}"
+        required = attr_name in config_schema.get("required", [])
+        hidden = attr_schema.get("format", "") == "password"
+        subtitles: List[str] = []
+        subtitles.append(attr_type)
+        if hidden:
+            subtitles.append("secret")
+        if required:
+            subtitles.append("required")
+        else:
+            subtitles.append("optional")
+        if subtitles:
+            title += f" {{{', '.join(subtitles)}}}"
+
+        existing_value = existing_config.get(attr_name)
+        if is_update:
+            if existing_value:
+                if isinstance(existing_value, SecretStr):
+                    existing_value = existing_value.get_secret_value()
+                if hidden and not show_secrets:
+                    title += " is currently set to: [HIDDEN]"
+                else:
+                    title += f" is currently set to: '{existing_value}'"
+            else:
+                title += " is not currently set"
+
+            click.echo(title)
+
+            if existing_value:
+                title = (
+                    "Please enter a new value or press Enter to keep the "
+                    "existing one"
+                )
+            elif required:
+                title = "Please enter a new value"
+            else:
+                title = "Please enter a new value or press Enter to skip it"
+
+        while True:
+            # Ask the user to enter a value for the attribute
+            value = click.prompt(
+                title,
+                type=str,
+                hide_input=hidden and not show_secrets,
+                default=existing_value or ("" if not required else None),
+                show_default=False,
+            )
+            if not value:
+                if required:
+                    warning(
+                        f"The attribute '{title}' is mandatory. "
+                        "Please enter a non-empty value."
+                    )
+                    continue
+                else:
+                    value = None
+                    break
+            else:
+                break
+
+        if (
+            is_update
+            and value is not None
+            and value == existing_value
+            and not required
+        ):
+            confirm = click.confirm(
+                "You left this optional attribute unchanged. Would you "
+                "like to remove its value instead?",
+                default=False,
+            )
+            if confirm:
+                value = None
+
+        if value:
+            config_dict[attr_name] = value
+
+    return config_dict
 
 
 def install_packages(
@@ -1028,7 +1199,6 @@ def describe_pydantic_object(schema_json: Dict[str, Any]) -> None:
     if properties:
         warning("Properties", bold=True)
         for prop, prop_schema in properties.items():
-
             if "$ref" not in prop_schema.keys():
                 warning(
                     f"{prop}, {prop_schema['type']}"
@@ -1049,6 +1219,26 @@ def get_shared_emoji(is_shared: bool) -> str:
         The emoji for whether the stack is shared or not.
     """
     return ":white_heavy_check_mark:" if is_shared else ":heavy_minus_sign:"
+
+
+def replace_emojis(text: str) -> str:
+    """Replaces emoji shortcuts with their unicode equivalent.
+
+    Args:
+        text: Text to expand.
+
+    Returns:
+        Text with expanded emojis.
+    """
+    emoji_pattern = r":(\w+):"
+    emojis = re.findall(emoji_pattern, text)
+    for emoji in emojis:
+        try:
+            text = text.replace(f":{emoji}:", str(Emoji(emoji)))
+        except NoEmoji:
+            # If the emoji text is not a valid emoji, just ignore it
+            pass
+    return text
 
 
 def print_stacks_table(
@@ -1126,6 +1316,559 @@ def print_components_table(
         }
         configurations.append(component_config)
     print_table(configurations)
+
+
+def seconds_to_human_readable(time_seconds: int) -> str:
+    """Converts seconds to human readable format.
+
+    Args:
+        time_seconds: Seconds to convert.
+
+    Returns:
+        Human readable string.
+    """
+    seconds = time_seconds % 60
+    minutes = (time_seconds // 60) % 60
+    hours = (time_seconds // 3600) % 24
+    days = time_seconds // 86400
+    tokens = []
+    if days:
+        tokens.append(f"{days}d")
+    if hours:
+        tokens.append(f"{hours}h")
+    if minutes:
+        tokens.append(f"{minutes}m")
+    if seconds:
+        tokens.append(f"{seconds}s")
+
+    return "".join(tokens)
+
+
+def expires_in(expires_at: datetime.datetime, expired_str: str) -> str:
+    """Returns a human readable string of the time until the token expires.
+
+    Args:
+        expires_at: Datetime object of the token expiration.
+        expired_str: String to return if the token is expired.
+
+    Returns:
+        Human readable string.
+    """
+    now = datetime.datetime.now(datetime.timezone.utc)
+    expires_at = expires_at.replace(tzinfo=datetime.timezone.utc)
+    if expires_at < now:
+        return expired_str
+    return seconds_to_human_readable((expires_at - now).seconds)
+
+
+def print_service_connectors_table(
+    client: "Client",
+    connectors: Sequence["ServiceConnectorResponseModel"],
+) -> None:
+    """Prints a table with details for a list of service connectors.
+
+    Args:
+        client: Instance of the Repository singleton
+        connectors: List of service connectors to print.
+    """
+    if len(connectors) == 0:
+        return
+
+    active_stack = client.active_stack_model
+    active_connector_ids: List["UUID"] = []
+    for components in active_stack.components.values():
+        active_connector_ids.extend(
+            [
+                component.connector.id
+                for component in components
+                if component.connector
+            ]
+        )
+
+    configurations = []
+    for connector in connectors:
+        is_active = connector.id in active_connector_ids
+        labels = [
+            f"{label}:{value}" for label, value in connector.labels.items()
+        ]
+        resource_name = connector.resource_id or "<multiple>"
+
+        connector_config = {
+            "ACTIVE": ":point_right:" if is_active else "",
+            "NAME": connector.name,
+            "ID": connector.id,
+            "TYPE": connector.emojified_connector_type,
+            "RESOURCE TYPES": "\n".join(connector.emojified_resource_types),
+            "RESOURCE NAME": resource_name,
+            "SHARED": get_shared_emoji(connector.is_shared),
+            "OWNER": f"{connector.user.name if connector.user else 'DELETED!'}",
+            "EXPIRES IN": expires_in(
+                connector.expires_at, ":name_badge: Expired!"
+            )
+            if connector.expires_at
+            else "",
+            "LABELS": "\n".join(labels),
+        }
+        configurations.append(connector_config)
+    print_table(configurations)
+
+
+def print_service_connector_resource_table(
+    resources: List["ServiceConnectorResourcesModel"],
+    show_resources_only: bool = False,
+) -> None:
+    """Prints a table with details for a list of service connector resources.
+
+    Args:
+        resources: List of service connector resources to print.
+        show_resources_only: If True, only the resources will be printed.
+    """
+    resource_table = []
+    for resource_model in resources:
+        printed_connector = False
+        resource_row: Dict[str, Any] = {}
+
+        if resource_model.error:
+            # Global error
+            if not show_resources_only:
+                resource_row = {
+                    "CONNECTOR ID": str(resource_model.id),
+                    "CONNECTOR NAME": resource_model.name,
+                    "CONNECTOR TYPE": resource_model.emojified_connector_type,
+                }
+            resource_row.update(
+                {
+                    "RESOURCE TYPE": "\n".join(
+                        resource_model.get_emojified_resource_types()
+                    ),
+                    "RESOURCE NAMES": f":collision: error: {resource_model.error}",
+                }
+            )
+            resource_table.append(resource_row)
+            continue
+
+        for resource in resource_model.resources:
+            resource_type = resource_model.get_emojified_resource_types(
+                resource.resource_type
+            )[0]
+            if resource.error:
+                # Error fetching resources
+                resource_ids = [f":collision: error: {resource.error}"]
+            elif resource.resource_ids:
+                resource_ids = resource.resource_ids
+            else:
+                resource_ids = [":person_shrugging: none listed"]
+
+            resource_row = {}
+            if not show_resources_only:
+                resource_row = {
+                    "CONNECTOR ID": str(resource_model.id)
+                    if not printed_connector
+                    else "",
+                    "CONNECTOR NAME": resource_model.name
+                    if not printed_connector
+                    else "",
+                    "CONNECTOR TYPE": resource_model.emojified_connector_type
+                    if not printed_connector
+                    else "",
+                }
+            resource_row.update(
+                {
+                    "RESOURCE TYPE": resource_type,
+                    "RESOURCE NAMES": "\n".join(resource_ids),
+                }
+            )
+            resource_table.append(resource_row)
+            printed_connector = True
+    print_table(resource_table)
+
+
+def print_service_connector_configuration(
+    connector: Union[
+        "ServiceConnectorResponseModel", "ServiceConnectorRequestModel"
+    ],
+    active_status: bool,
+    show_secrets: bool,
+) -> None:
+    """Prints the configuration options of a service connector.
+
+    Args:
+        connector: The service connector to print.
+        active_status: Whether the connector is active.
+        show_secrets: Whether to show secrets.
+    """
+    from uuid import UUID
+
+    from zenml.models import ServiceConnectorResponseModel
+
+    if connector.user:
+        if isinstance(connector.user, UUID):
+            user_name = str(connector.user)
+        else:
+            user_name = connector.user.name
+    else:
+        user_name = "[DELETED]"
+
+    if isinstance(connector, ServiceConnectorResponseModel):
+        declare(
+            f"Service connector '{connector.name}' of type "
+            f"'{connector.type}' with id '{connector.id}' is owned by "
+            f"user '{user_name}' and is "
+            f"'{'shared' if connector.is_shared else 'private'}'."
+        )
+    else:
+        declare(
+            f"Service connector '{connector.name}' of type "
+            f"'{connector.type}' is "
+            f"'{'shared' if connector.is_shared else 'private'}'."
+        )
+
+    title_ = (
+        f"'{connector.name}' {connector.type} Service Connector " "Details"
+    )
+
+    if active_status:
+        title_ += " (ACTIVE)"
+    rich_table = table.Table(
+        box=box.HEAVY_EDGE,
+        title=title_,
+        show_lines=True,
+    )
+    rich_table.add_column("PROPERTY")
+    rich_table.add_column("VALUE", overflow="fold")
+
+    if connector.expiration_seconds is None:
+        expiration = "N/A"
+    else:
+        expiration = str(connector.expiration_seconds) + "s"
+
+    if isinstance(connector, ServiceConnectorResponseModel):
+        properties = {
+            "ID": connector.id,
+            "NAME": connector.name,
+            "TYPE": connector.emojified_connector_type,
+            "AUTH METHOD": connector.auth_method,
+            "RESOURCE TYPES": ", ".join(connector.emojified_resource_types),
+            "RESOURCE NAME": connector.resource_id or "<multiple>",
+            "SECRET ID": connector.secret_id or "",
+            "SESSION DURATION": expiration,
+            "EXPIRES IN": expires_in(
+                connector.expires_at, ":name_badge: Expired!"
+            )
+            if connector.expires_at
+            else "N/A",
+            "OWNER": user_name,
+            "WORKSPACE": connector.workspace.name,
+            "SHARED": get_shared_emoji(connector.is_shared),
+            "CREATED_AT": connector.created,
+            "UPDATED_AT": connector.updated,
+        }
+    else:
+        properties = {
+            "NAME": connector.name,
+            "TYPE": connector.emojified_connector_type,
+            "AUTH METHOD": connector.auth_method,
+            "RESOURCE TYPES": ", ".join(connector.emojified_resource_types),
+            "RESOURCE NAME": connector.resource_id or "<multiple>",
+            "SESSION DURATION": expiration,
+            "EXPIRES IN": expires_in(
+                connector.expires_at, ":name_badge: Expired!"
+            )
+            if connector.expires_at
+            else "N/A",
+            "SHARED": get_shared_emoji(connector.is_shared),
+        }
+
+    for item in properties.items():
+        elements = [str(elem) for elem in item]
+        rich_table.add_row(*elements)
+
+    console.print(rich_table)
+
+    if len(connector.configuration) == 0 and len(connector.secrets) == 0:
+        declare("No configuration options are set for this connector.")
+
+    else:
+        rich_table = table.Table(
+            box=box.HEAVY_EDGE,
+            title="Configuration",
+            show_lines=True,
+        )
+        rich_table.add_column("PROPERTY")
+        rich_table.add_column("VALUE", overflow="fold")
+
+        config = connector.configuration.copy()
+        secrets = connector.secrets.copy()
+        for key, value in secrets.items():
+            if not show_secrets:
+                config[key] = "[HIDDEN]"
+            elif value is None:
+                config[key] = "[UNAVAILABLE]"
+            else:
+                config[key] = value.get_secret_value()
+
+        for item in config.items():
+            elements = [str(elem) for elem in item]
+            rich_table.add_row(*elements)
+
+        console.print(rich_table)
+
+    if not connector.labels:
+        declare("No labels are set for this service connector.")
+        return
+
+    rich_table = table.Table(
+        box=box.HEAVY_EDGE,
+        title="Labels",
+        show_lines=True,
+    )
+    rich_table.add_column("LABEL")
+    rich_table.add_column("VALUE", overflow="fold")
+
+    items = connector.labels.items()
+    for item in items:
+        elements = [str(elem) for elem in item]
+        rich_table.add_row(*elements)
+
+    console.print(rich_table)
+
+
+def print_service_connector_types_table(
+    connector_types: Sequence["ServiceConnectorTypeModel"],
+) -> None:
+    """Prints a table with details for a list of service connectors types.
+
+    Args:
+        connector_types: List of service connector types to print.
+    """
+    if len(connector_types) == 0:
+        warning("No service connector types found.")
+        return
+
+    configurations = []
+    for connector_type in connector_types:
+        supported_auth_methods = list(connector_type.auth_method_dict.keys())
+
+        connector_type_config = {
+            "NAME": connector_type.name,
+            "TYPE": connector_type.emojified_connector_type,
+            "RESOURCE TYPES": "\n".join(
+                connector_type.emojified_resource_types
+            ),
+            "AUTH METHODS": "\n".join(supported_auth_methods),
+            "LOCAL": get_shared_emoji(connector_type.local),
+            "REMOTE": get_shared_emoji(connector_type.remote),
+        }
+        configurations.append(connector_type_config)
+    print_table(configurations)
+
+
+def print_service_connector_resource_type(
+    resource_type: "ResourceTypeModel",
+    title: str = "",
+    heading: str = "#",
+    footer: str = "---",
+    print: bool = True,
+) -> str:
+    """Prints details for a service connector resource type.
+
+    Args:
+        resource_type: Service connector resource type to print.
+        title: Markdown title to use for the resource type details.
+        heading: Markdown heading to use for the resource type title.
+        footer: Markdown footer to use for the resource type description.
+        print: Whether to print the resource type details to the console or
+            just return the message as a string.
+
+    Returns:
+        The MarkDown resource type details as a string.
+    """
+    message = f"{title}\n" if title else ""
+    emoji = replace_emojis(resource_type.emoji) if resource_type.emoji else ""
+    supported_auth_methods = [
+        f'{Emoji("lock")} {a}' for a in resource_type.auth_methods
+    ]
+    message += (
+        f"{heading} {emoji} {resource_type.name} "
+        f"(resource type: {resource_type.resource_type})\n"
+    )
+    message += (
+        f"**Authentication methods**: "
+        f"{', '.join(resource_type.auth_methods)}\n\n"
+    )
+    message += (
+        f"**Supports resource instances**: "
+        f"{resource_type.supports_instances}\n\n"
+    )
+    message += (
+        "**Authentication methods**:\n\n- "
+        + "\n- ".join(supported_auth_methods)
+        + "\n\n"
+    )
+    message += f"{resource_type.description}\n"
+
+    message += footer
+
+    if print:
+        console.print(Markdown(message), justify="left", width=80)
+
+    return message
+
+
+def print_service_connector_auth_method(
+    auth_method: "AuthenticationMethodModel",
+    title: str = "",
+    heading: str = "#",
+    footer: str = "---",
+    print: bool = True,
+) -> str:
+    """Prints details for a service connector authentication method.
+
+    Args:
+        auth_method: Service connector authentication method to print.
+        title: Markdown title to use for the authentication method details.
+        heading: Markdown heading to use for the authentication method title.
+        footer: Markdown footer to use for the authentication method description.
+        print: Whether to print the authentication method details to the console
+            or just return the message as a string.
+
+    Returns:
+        The MarkDown authentication method details as a string.
+    """
+    message = f"{title}\n" if title else ""
+    emoji = Emoji("lock")
+    message += (
+        f"{heading} {emoji} {auth_method.name} "
+        f"(auth method: {auth_method.auth_method})\n"
+    )
+    message += (
+        f"**Supports issuing temporary credentials**: "
+        f"{auth_method.supports_temporary_credentials()}\n\n"
+    )
+    message += f"{auth_method.description}\n"
+
+    attributes: List[str] = []
+    for attr_name, attr_schema in auth_method.config_schema.get(
+        "properties", {}
+    ).items():
+        title = attr_schema.get("title", "<no description>")
+        attr_type = attr_schema.get("type", "string")
+        required = attr_name in auth_method.config_schema.get("required", [])
+        hidden = attr_schema.get("format", "") == "password"
+        subtitles: List[str] = []
+        subtitles.append(attr_type)
+        if hidden:
+            subtitles.append("secret")
+        if required:
+            subtitles.append("required")
+        else:
+            subtitles.append("optional")
+
+        description = f"- `{attr_name}`"
+        if subtitles:
+            description = f"{description} {{{', '.join(subtitles)}}}"
+        description = f"{description}: _{title}_"
+        attributes.append(description)
+    if attributes:
+        message += "\n**Attributes**:\n"
+        message += "\n".join(attributes) + "\n"
+
+    message += footer
+
+    if print:
+        console.print(Markdown(message), justify="left", width=80)
+
+    return message
+
+
+def print_service_connector_type(
+    connector_type: "ServiceConnectorTypeModel",
+    title: str = "",
+    heading: str = "#",
+    footer: str = "---",
+    include_resource_types: bool = True,
+    include_auth_methods: bool = True,
+    print: bool = True,
+) -> str:
+    """Prints details for a service connector type.
+
+    Args:
+        connector_type: Service connector type to print.
+        title: Markdown title to use for the service connector type details.
+        heading: Markdown heading to use for the service connector type title.
+        footer: Markdown footer to use for the service connector type
+            description.
+        include_resource_types: Whether to include the resource types for the
+            service connector type.
+        include_auth_methods: Whether to include the authentication methods for
+            the service connector type.
+        print: Whether to print the service connector type details to the
+            console or just return the message as a string.
+
+    Returns:
+        The MarkDown service connector type details as a string.
+    """
+    message = f"{title}\n" if title else ""
+    supported_auth_methods = [
+        f'{Emoji("lock")} {a.auth_method}' for a in connector_type.auth_methods
+    ]
+    supported_resource_types = [
+        f"{replace_emojis(r.emoji)} {r.resource_type}"
+        if r.emoji
+        else r.resource_type
+        for r in connector_type.resource_types
+    ]
+
+    emoji = (
+        replace_emojis(connector_type.emoji) if connector_type.emoji else ""
+    )
+
+    message += (
+        f"{heading} {emoji} {connector_type.name} "
+        f"(connector type: {connector_type.connector_type})\n"
+    )
+    message += (
+        "**Authentication methods**:\n\n- "
+        + "\n- ".join(supported_auth_methods)
+        + "\n\n"
+    )
+    message += (
+        "**Resource types**:\n\n- "
+        + "\n- ".join(supported_resource_types)
+        + "\n\n"
+    )
+    message += (
+        f"**Supports auto-configuration**: "
+        f"{connector_type.supports_auto_configuration}\n\n"
+    )
+    message += f"**Available locally**: {connector_type.local}\n\n"
+    message += f"**Available remotely**: {connector_type.remote}\n\n"
+    message += f"{connector_type.description}\n"
+
+    if include_resource_types:
+        for r in connector_type.resource_types:
+            message += print_service_connector_resource_type(
+                r,
+                heading=heading + "#",
+                footer="",
+                print=False,
+            )
+
+    if include_auth_methods:
+        for a in connector_type.auth_methods:
+            message += print_service_connector_auth_method(
+                a,
+                heading=heading + "#",
+                footer="",
+                print=False,
+            )
+
+    message += footer
+
+    if print:
+        console.print(Markdown(message), justify="left", width=80)
+
+    return message
 
 
 def _get_stack_components(
@@ -1259,7 +2002,6 @@ def print_pipeline_runs_table(
     """
     runs_dicts = []
     for pipeline_run in pipeline_runs:
-
         if pipeline_run.user:
             user_name = pipeline_run.user.name
         else:
@@ -1432,7 +2174,6 @@ def list_options(filter_model: Type[BaseFilterModel]) -> Callable[[F], F]:
     """
 
     def inner_decorator(func: F) -> F:
-
         options = []
         data_type_descriptors = set()
         for k, v in filter_model.__fields__.items():
@@ -1553,26 +2294,70 @@ def warn_deprecated_secrets_manager() -> None:
         "migrating all your secrets to the centralized secrets store by means "
         "of the `zenml secrets-manager secret migrate` CLI command. "
         "See the `zenml secret` CLI command and the "
-        "https://docs.zenml.io/starter-guide/production-fundamentals/secrets-management "
+        "https://docs.zenml.io/platform-guide/set-up-your-mlops-platform/use-the-secret-store "
         "documentation page for more information."
     )
 
 
-def get_parsed_labels(labels: Optional[List[str]]) -> Dict[str, str]:
+def fail_secrets_manager_creation() -> None:
+    """Warning for deprecating secrets managers."""
+    error(
+        "Creating secrets managers is no longer supported. Existing secrets "
+        "managers will be removed in an upcoming release in favor of the "
+        "centralized secrets management. Please consider migrating all your "
+        "existing secrets to the centralized secrets store by means of the "
+        "`zenml secrets-manager secret migrate` CLI command."
+        " See the `zenml secret` CLI command or the "
+        "https://docs.zenml.io/platform-guide/set-up-your-mlops-platform/use-the-secret-store "
+        "documentation page for more information. "
+    )
+
+
+def fail_secret_creation_on_secrets_manager() -> None:
+    """Warning for deprecating secrets managers."""
+    error(
+        "Creating secrets within the stack component `secrets manager` is no "
+        "longer supported. "
+        "Existing secrets managers will be removed in an "
+        "upcoming release in favor of the centralized secrets management. "
+        "Learn more about this in our documentation:"
+        "https://docs.zenml.io/platform-guide/set-up-your-mlops-platform/use-the-secret-store "
+        "Please also consider migrating all your existing secrets to the "
+        "centralized secrets store by means of the "
+        "`zenml secrets-manager secret migrate` CLI command. "
+        "See the `zenml secret --help` for more information."
+    )
+
+
+def get_parsed_labels(
+    labels: Optional[List[str]], allow_label_only: bool = False
+) -> Dict[str, Optional[str]]:
     """Parse labels into a dictionary.
 
     Args:
         labels: The labels to parse.
+        allow_label_only: Whether to allow labels without values.
 
     Returns:
         A dictionary of the metadata.
+
+    Raises:
+        ValueError: If the labels are not in the correct format.
     """
     if not labels:
         return {}
 
     metadata_dict = {}
     for m in labels:
-        key, value = m.split("=")
+        try:
+            key, value = m.split("=")
+        except ValueError:
+            if not allow_label_only:
+                raise ValueError(
+                    "Labels must be in the format key=value"
+                ) from None
+            key = m
+            value = None
         metadata_dict[key] = value
 
     return metadata_dict

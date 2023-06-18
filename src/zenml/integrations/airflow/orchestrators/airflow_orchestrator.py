@@ -256,12 +256,12 @@ class AirflowOrchestrator(ContainerizedOrchestrator):
                         "Specifying step resources is only supported when "
                         "using KubernetesPodOperators, ignoring resource "
                         "configuration for step %s.",
-                        step.config.name,
+                        step_name,
                     )
 
             task = dag_generator_values.task_configuration_class(
                 id=step_name,
-                zenml_step_name=step.config.name,
+                zenml_step_name=step_name,
                 upstream_steps=step.spec.upstream_steps,
                 docker_image=image,
                 command=command,

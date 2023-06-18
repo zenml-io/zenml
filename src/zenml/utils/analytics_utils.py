@@ -59,7 +59,8 @@ class AnalyticsEvent(str, Enum):
     REGISTERED_STACK_COMPONENT = "Stack component registered"
     UPDATED_STACK_COMPONENT = "Stack component updated"
     COPIED_STACK_COMPONENT = "Stack component copied"
-    DELETED_STACK_COMPONENT = "Stack component copied"
+    DELETED_STACK_COMPONENT = "Stack component deleted"
+    CONNECTED_STACK_COMPONENT = "Stack component connected"
 
     # Stack
     REGISTERED_STACK = "Stack registered"
@@ -120,6 +121,11 @@ class AnalyticsEvent(str, Enum):
     CREATED_SECRET = "Secret created"
     UPDATED_SECRET = "Secret updated"
     DELETED_SECRET = "Secret deleted"
+
+    # Service connector
+    CREATED_SERVICE_CONNECTOR = "Service connector created"
+    UPDATED_SERVICE_CONNECTOR = "Service connector updated"
+    DELETED_SERVICE_CONNECTOR = "Service connector deleted"
 
     # Test event
     EVENT_TEST = "Test event"

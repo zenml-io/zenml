@@ -13,16 +13,19 @@
 #  permissions and limitations under the License.
 """Class to launch (run directly or using a step operator) steps."""
 
+import logging
 import time
 from datetime import datetime
 from typing import TYPE_CHECKING, Dict, Optional, Tuple
 
+from zenml.artifact_stores import step_logging_utils
 from zenml.client import Client
 from zenml.config.step_configurations import Step
 from zenml.config.step_run_info import StepRunInfo
 from zenml.enums import ExecutionStatus
 from zenml.environment import get_run_environment_dict
 from zenml.logger import get_logger
+from zenml.models.logs_models import LogsRequestModel
 from zenml.models.pipeline_run_models import (
     PipelineRunRequestModel,
     PipelineRunResponseModel,
@@ -44,6 +47,9 @@ from zenml.stack import Stack
 from zenml.utils import string_utils
 
 if TYPE_CHECKING:
+    from zenml.artifact_stores.base_artifact_store_logging_handler import (
+        ArtifactStoreLoggingHandler,
+    )
     from zenml.models.artifact_models import ArtifactResponseModel
     from zenml.models.pipeline_deployment_models import (
         PipelineDeploymentResponseModel,
@@ -51,25 +57,6 @@ if TYPE_CHECKING:
     from zenml.step_operators import BaseStepOperator
 
 logger = get_logger(__name__)
-
-
-def _get_step_name_in_pipeline(
-    step: "Step", deployment: "PipelineDeploymentResponseModel"
-) -> str:
-    """Gets the step name of a step inside a pipeline.
-
-    Args:
-        step: The step for which to get the name.
-        deployment: The pipeline deployment that contains the step.
-
-    Returns:
-        The name of the step inside the pipeline.
-    """
-    step_name_mapping = {
-        step_.config.name: key
-        for key, step_ in deployment.step_configurations.items()
-    }
-    return step_name_mapping[step.config.name]
 
 
 def _get_step_operator(
@@ -149,15 +136,37 @@ class StepLauncher:
             )
 
         self._stack = Stack.from_model(deployment.stack)
-        self._step_name = _get_step_name_in_pipeline(
-            step=step, deployment=deployment
-        )
+        self._step_name = step.spec.pipeline_parameter_name
 
     def launch(self) -> None:
         """Launches the step."""
         logger.info(f"Step `{self._step_name}` has started.")
 
         pipeline_run, run_was_created = self._create_or_reuse_run()
+
+        # Set up logging
+        step_logging_enabled = is_setting_enabled(
+            is_enabled_on_step=self._step.config.enable_step_logs,
+            is_enabled_on_pipeline=self._deployment.pipeline_configuration.enable_step_logs,
+        )
+        logs_uri = step_logging_utils.prepare_logs_uri(
+            self._stack.artifact_store,
+            self._step.config.name,
+        )
+
+        zenml_handler: Optional["ArtifactStoreLoggingHandler"] = None
+        if step_logging_enabled:
+            try:
+                zenml_handler = step_logging_utils.get_step_logging_handler(
+                    logs_uri
+                )
+                root_logger = logging.getLogger()
+                root_logger.addHandler(zenml_handler)
+            except Exception as e:
+                logger.warning(
+                    f"Logging handler creation failed with error: {e}. Skipping recording logs.."
+                )
+
         try:
             if run_was_created:
                 pipeline_run_metadata = self._stack.get_pipeline_run_metadata(
@@ -179,6 +188,10 @@ class StepLauncher:
                 start_time=datetime.utcnow(),
                 user=client.active_user.id,
                 workspace=client.active_workspace.id,
+                logs=LogsRequestModel(
+                    uri=logs_uri,
+                    artifact_store_id=self._stack.artifact_store.id,
+                ),
             )
             try:
                 execution_needed, step_run = self._prepare(step_run=step_run)
@@ -208,6 +221,13 @@ class StepLauncher:
             logger.error(f"Pipeline run `{pipeline_run.name}` failed.")
             publish_utils.publish_failed_pipeline_run(pipeline_run.id)
             raise
+        finally:
+            # Only do this if handler is initialized
+            if zenml_handler:
+                # Still write the logs to the artifact store regardless if we fail or not
+                zenml_handler.flush()
+                zenml_handler.close()
+                root_logger.removeHandler(zenml_handler)
 
     def _get_step_docstring_and_source_code(self) -> Tuple[Optional[str], str]:
         """Gets the docstring and source code of the step.

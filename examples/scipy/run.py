@@ -12,13 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 from pipelines import scipy_example_pipeline
-from steps import importer, predictor, trainer, vectorizer
 
 if __name__ == "__main__":
-    run = scipy_example_pipeline(
-        importer=importer(),
-        vectorizer=vectorizer(),
-        trainer=trainer(),
-        predictor=predictor(),
-    )
-    run.run()
+    scipy_example_pipeline()
