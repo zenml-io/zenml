@@ -32,7 +32,7 @@ Specifically, you can edit the following [dictionary](https://github.com/zenml-i
 ```
 allowed_flavors = {
             "experiment_tracker": ["mlflow"],
-            "model_deployer": ["seldon", "kserve"],
+            "model_deployer": ["seldon"],
             "artifact_store": ["s3", "gcp", "minio"],
             "container_registry": ["gcp", "aws"],
             "orchestrator": ["kubernetes", "kubeflow", ...],

@@ -114,9 +114,9 @@ def pipeline(
         pipeline_name = name or func.__name__
         logger.warning(
             "The `@pipeline` decorator that you used to define your "
-            f"{pipeline_name} pipeline is deprecated. "
-            "Check out our docs https://docs.zenml.io for information on how "
-            "to define pipelines in a more intuitive and flexible way!"
+            f"{pipeline_name} pipeline is deprecated. Check out our docs "
+            "https://docs.zenml.io/user-guide/advanced-guide/migrate-your-old-pipelines-and-steps "
+            "for information on how to migrate your pipelines to the new syntax."
         )
 
         return type(

@@ -38,11 +38,6 @@ from zenml.integrations.azure.flavors.azure_artifact_store_flavor import (
     AZURE_RESOURCE_TYPE,
     BLOB_RESOURCE_TYPE,
 )
-from zenml.integrations.kubernetes.service_connectors.kubernetes_service_connector import (
-    KubernetesAuthenticationMethods,
-    KubernetesServiceConnector,
-    KubernetesTokenConfig,
-)
 from zenml.logger import get_logger
 from zenml.models import (
     AuthenticationMethodModel,
@@ -1769,6 +1764,18 @@ class AzureServiceConnector(ServiceConnector):
 
             # Create a client-side Kubernetes connector instance with the
             # Kubernetes credentials
+            try:
+                # Import libraries only when needed
+                from zenml.integrations.kubernetes.service_connectors.kubernetes_service_connector import (
+                    KubernetesAuthenticationMethods,
+                    KubernetesServiceConnector,
+                    KubernetesTokenConfig,
+                )
+            except ImportError as e:
+                raise RuntimeError(
+                    f"The Kubernetes Service Connector functionality could not be used "
+                    f"due to missing dependencies: {e}"
+                )
             cluster_name = kubeconfig["clusters"][0]["name"]
             cluster = kubeconfig["clusters"][0]["cluster"]
             user = kubeconfig["users"][0]["user"]
