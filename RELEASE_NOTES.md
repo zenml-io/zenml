@@ -7,7 +7,7 @@ This is a minor ZenML release that introduces a couple of new features:
 * the [Azure Service Connector](https://docs.zenml.io/platform-guide/set-up-your-mlops-platform/connect-to-your-cloud-provider/azure-service-connector) is now available in addition to the AWS and GCP ones. It can be used to connect ZenML and Stack Components to Azure cloud infrastructure resources like Azure Blob Storage, Azure Container Registry and Azure Kubernetes Service.
 * Service Connectors can now also be managed through the ZenML Dashboard
 * adds `zenml secret export` CLI command to export secrets from the ZenML Secret Store to a local file
-* adds the ability to create/update ZenML secrets from JSON/YAML files or command line arguments (curtesy of @bhatt-priyadutt)
+* adds the ability to create/update ZenML secrets from JSON/YAML files or command line arguments (courtesy of @bhatt-priyadutt)
 
 In addition to that, this release also contains a couple of bug fixes and improvements, including:
 
@@ -31,7 +31,7 @@ In addition to that, this release also contains a couple of bug fixes and improv
 * Add cloud orchestrator warning message by @strickvl in https://github.com/zenml-io/zenml/pull/1418
 * Update custom code run in sandbox docs by @safoinme in https://github.com/zenml-io/zenml/pull/1610
 * Remove the GH Actions review reminder bot by @strickvl in https://github.com/zenml-io/zenml/pull/1624
-* Automatically optimise image sizes on PR creation by @strickvl in https://github.com/zenml-io/zenml/pull/1626
+* Automatically optimize image sizes on PR creation by @strickvl in https://github.com/zenml-io/zenml/pull/1626
 * Deprecation Warning Improvements by @fa9r in https://github.com/zenml-io/zenml/pull/1620
 * Fix ZenML Installation when FastAPI is not Installed by @fa9r in https://github.com/zenml-io/zenml/pull/1627
 * Fix unnecessary / extra deprecation warnings by @strickvl in https://github.com/zenml-io/zenml/pull/1630
