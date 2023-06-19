@@ -41,6 +41,7 @@ if TYPE_CHECKING:
 class StepRunBaseModel(BaseModel):
     """Base model for step runs."""
 
+    # TODO: refactor fields to make accessing config/... easier
     name: str = Field(
         title="The name of the pipeline run step.",
         max_length=STR_FIELD_MAX_LENGTH,
@@ -84,6 +85,64 @@ class StepRunResponseModel(StepRunBaseModel, WorkspaceScopedResponseModel):
         title="Metadata associated with this step run.",
     )
     logs: Optional["LogsResponseModel"] = None
+
+    @property
+    def inputs(self) -> Dict[str, ArtifactResponseModel]:
+        """Returns all input artifacts that were used to run this step.
+
+        Returns:
+            A dictionary of artifact names to artifact views.
+        """
+        # TODO: delete this and maybe rename `input_artifacts` to `inputs`
+        return self.input_artifacts
+
+    @property
+    def input(self) -> ArtifactResponseModel:
+        """Returns the input artifact that was used to run this step.
+
+        Returns:
+            The input artifact.
+
+        Raises:
+            ValueError: If there were zero or multiple inputs to this step.
+        """
+        if not self.inputs:
+            raise ValueError(f"Step {self.name} has no inputs.")
+        if len(self.inputs) > 1:
+            raise ValueError(
+                f"Step {self.name} has multiple inputs, so `Step.input` is "
+                "ambiguous. Please use `Step.inputs` instead."
+            )
+        return next(iter(self.inputs.values()))
+
+    @property
+    def outputs(self) -> Dict[str, ArtifactResponseModel]:
+        """Returns all output artifacts that were written by this step.
+
+        Returns:
+            A dictionary of artifact names to artifact views.
+        """
+        # TODO: delete this and maybe rename `output_artifacts` to `outputs`
+        return self.output_artifacts
+
+    @property
+    def output(self) -> ArtifactResponseModel:
+        """Returns the output artifact that was written by this step.
+
+        Returns:
+            The output artifact.
+
+        Raises:
+            ValueError: If there were zero or multiple step outputs.
+        """
+        if not self.outputs:
+            raise ValueError(f"Step {self.name} has no outputs.")
+        if len(self.outputs) > 1:
+            raise ValueError(
+                f"Step {self.name} has multiple outputs, so `Step.output` is "
+                "ambiguous. Please use `Step.outputs` instead."
+            )
+        return next(iter(self.outputs.values()))
 
 
 # ------ #

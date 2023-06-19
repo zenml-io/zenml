@@ -18,6 +18,7 @@ from typing import List, Optional, Tuple, Union
 from pydantic import BaseModel
 
 from zenml.enums import ExecutionStatus
+from zenml.models.step_run_models import StepRunResponseModel
 from zenml.post_execution.lineage.edge import Edge
 from zenml.post_execution.lineage.node import (
     ArtifactNode,
@@ -26,7 +27,6 @@ from zenml.post_execution.lineage.node import (
     StepNodeDetails,
 )
 from zenml.post_execution.pipeline_run import PipelineRunView
-from zenml.post_execution.step import StepView
 
 ARTIFACT_PREFIX = "artifact_"
 STEP_PREFIX = "step_"
@@ -40,7 +40,9 @@ class LineageGraph(BaseModel):
     root_step_id: Optional[str] = None
     run_metadata: List[Tuple[str, str, str]] = []
 
-    def generate_step_nodes_and_edges(self, step: StepView) -> None:
+    def generate_step_nodes_and_edges(
+        self, step: StepRunResponseModel
+    ) -> None:
         """Generates the step nodes and the edges between them.
 
         Args:
@@ -49,7 +51,7 @@ class LineageGraph(BaseModel):
         step_id = STEP_PREFIX + str(step.id)
         if self.root_step_id is None:
             self.root_step_id = step_id
-        step_config = step.step_configuration.dict()
+        step_config = step.step.config.dict()
         if step_config:
             step_config = {
                 key: value
@@ -63,8 +65,8 @@ class LineageGraph(BaseModel):
                     execution_id=str(step.id),
                     name=step.name,  # redundant for consistency
                     status=step.status,
-                    entrypoint_name=step.entrypoint_name,  # redundant for consistency
-                    parameters=step.parameters,
+                    entrypoint_name=step.step.config.name,  # redundant for consistency
+                    parameters=step.step.config.parameters,
                     configuration=step_config,
                     inputs={k: v.uri for k, v in step.inputs.items()},
                     outputs={k: v.uri for k, v in step.outputs.items()},

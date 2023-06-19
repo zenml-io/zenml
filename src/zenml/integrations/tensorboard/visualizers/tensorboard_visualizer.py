@@ -32,7 +32,8 @@ from zenml.integrations.tensorboard.services.tensorboard_service import (
     TensorboardServiceConfig,
 )
 from zenml.logger import get_logger
-from zenml.post_execution import StepView, get_pipeline
+from zenml.models.step_run_models import StepRunResponseModel
+from zenml.post_execution import get_pipeline
 
 logger = get_logger(__name__)
 
@@ -67,7 +68,7 @@ class TensorboardVisualizer:
 
     def visualize(
         self,
-        object: StepView,
+        object: StepRunResponseModel,
         height: int = 800,
         *args: Any,
         **kwargs: Any,
@@ -79,7 +80,7 @@ class TensorboardVisualizer:
         logged by past and future step runs.
 
         Args:
-            object: StepView fetched from run.get_step().
+            object: StepRunResponseModel fetched from run.get_step().
             height: Height of the generated visualization.
             *args: Additional arguments.
             **kwargs: Additional keyword arguments.
@@ -142,12 +143,12 @@ class TensorboardVisualizer:
 
     def stop(
         self,
-        object: StepView,
+        object: StepRunResponseModel,
     ) -> None:
         """Stop the TensorBoard server previously started for a pipeline step.
 
         Args:
-            object: StepView fetched from run.get_step().
+            object: StepRunResponseModel fetched from run.get_step().
         """
         for _, artifact_view in object.outputs.items():
             # filter out anything but model artifacts
@@ -176,15 +177,15 @@ class TensorboardVisualizer:
                 return
 
 
-def get_step(pipeline_name: str, step_name: str) -> StepView:
-    """Get the StepView for the specified pipeline and step name.
+def get_step(pipeline_name: str, step_name: str) -> StepRunResponseModel:
+    """Get the StepRunResponseModel for the specified pipeline and step name.
 
     Args:
         pipeline_name: The name of the pipeline.
         step_name: The name of the step.
 
     Returns:
-        The StepView for the specified pipeline and step name.
+        The StepRunResponseModel for the specified pipeline and step name.
 
     Raises:
         RuntimeError: If the step is not found.
@@ -202,7 +203,7 @@ def get_step(pipeline_name: str, step_name: str) -> StepView:
             f"No pipeline step with name `{step_name}` was found in "
             f"pipeline `{pipeline_name}`"
         )
-    return cast(StepView, step)
+    return cast(StepRunResponseModel, step)
 
 
 def visualize_tensorboard(pipeline_name: str, step_name: str) -> None:

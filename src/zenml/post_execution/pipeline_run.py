@@ -22,8 +22,8 @@ from zenml.enums import ExecutionStatus
 from zenml.logger import get_apidocs_link, get_logger
 from zenml.models import PipelineRunResponseModel
 from zenml.models.base_models import BaseResponseModel
+from zenml.models.step_run_models import StepRunResponseModel
 from zenml.post_execution.base_view import BaseView
-from zenml.post_execution.step import StepView
 from zenml.utils.pagination_utils import depaginate
 
 logger = get_logger(__name__)
@@ -97,7 +97,7 @@ class PipelineRunView(BaseView):
             model: The model to initialize this object from.
         """
         super().__init__(model)
-        self._steps: Dict[str, StepView] = OrderedDict()
+        self._steps: Dict[str, StepRunResponseModel] = OrderedDict()
 
     @property
     def model(self) -> PipelineRunResponseModel:
@@ -197,7 +197,7 @@ class PipelineRunView(BaseView):
         return Client().get_pipeline_run(self.model.id).status
 
     @property
-    def steps(self) -> List[StepView]:
+    def steps(self) -> List[StepRunResponseModel]:
         """Returns all steps that were executed as part of this pipeline run.
 
         Returns:
@@ -219,7 +219,7 @@ class PipelineRunView(BaseView):
         self,
         step: Optional[str] = None,
         **kwargs: Any,
-    ) -> StepView:
+    ) -> StepRunResponseModel:
         """Returns a step for the given name.
 
         The name refers to the name of the step in the pipeline definition, not
@@ -282,11 +282,6 @@ class PipelineRunView(BaseView):
 
         return self._steps[step]
 
-    def visualize(self) -> None:
-        """Visualizes all output artifacts produced by this pipeline run."""
-        for step_ in self.steps:
-            step_.visualize()
-
     def _ensure_steps_fetched(self) -> None:
         """Fetches all steps for this pipeline run from the metadata store."""
         if self._steps:
@@ -298,4 +293,4 @@ class PipelineRunView(BaseView):
             partial(client.list_run_steps, pipeline_run_id=self.model.id)
         )
 
-        self._steps = {step.name: StepView(step) for step in steps}
+        self._steps = {step.name: step for step in steps}

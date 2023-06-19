@@ -39,13 +39,11 @@ from zenml.post_execution.pipeline_run import (
     get_run,
     get_unlisted_runs,
 )
-from zenml.post_execution.step import StepView
 
 __all__ = [
     "PipelineVersionView",
     "PipelineView",
     "PipelineRunView",
-    "StepView",
     "BaseNode",
     "ArtifactNode",
     "StepNode",
