@@ -9948,6 +9948,8 @@ AWSServiceConnector            (<a class="autorefs autorefs-internal" title="zen
 <span class="sd">        Raises:</span>
 <span class="sd">            AuthorizationException: If authentication failed.</span>
 <span class="sd">            ValueError: If the resource type is not supported.</span>
+<span class="sd">            RuntimeError: If the Kubernetes connector is not installed and the</span>
+<span class="sd">                resource type is Kubernetes.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">connector_name</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">:</span>
@@ -10145,8 +10147,8 @@ AWSServiceConnector            (<a class="autorefs autorefs-internal" title="zen
                 <span class="p">)</span>
             <span class="k">except</span> <span class="ne">ImportError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
-                    <span class="sa">f</span><span class="s2">&quot;The Kubernetes Service Connector functionality could not be used &quot;</span>
-                    <span class="sa">f</span><span class="s2">&quot;due to missing dependencies: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;The Kubernetes Service Connector functionality could not &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;be used due to missing dependencies: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span>
                 <span class="p">)</span>
             <span class="k">return</span> <span class="n">KubernetesServiceConnector</span><span class="p">(</span>
                 <span class="nb">id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>

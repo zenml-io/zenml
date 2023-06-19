@@ -9704,6 +9704,8 @@ AzureServiceConnector            (<a class="autorefs autorefs-internal" title="z
 <span class="sd">        Raises:</span>
 <span class="sd">            AuthorizationException: If authentication failed.</span>
 <span class="sd">            ValueError: If the resource type is not supported.</span>
+<span class="sd">            RuntimeError: If the Kubernetes connector is not installed and the</span>
+<span class="sd">                resource type is Kubernetes.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">connector_name</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">:</span>
@@ -9854,8 +9856,8 @@ AzureServiceConnector            (<a class="autorefs autorefs-internal" title="z
                 <span class="p">)</span>
             <span class="k">except</span> <span class="ne">ImportError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
-                    <span class="sa">f</span><span class="s2">&quot;The Kubernetes Service Connector functionality could not be used &quot;</span>
-                    <span class="sa">f</span><span class="s2">&quot;due to missing dependencies: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;The Kubernetes Service Connector functionality could not &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;be used due to missing dependencies: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span>
                 <span class="p">)</span>
             <span class="n">cluster_name</span> <span class="o">=</span> <span class="n">kubeconfig</span><span class="p">[</span><span class="s2">&quot;clusters&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="s2">&quot;name&quot;</span><span class="p">]</span>
             <span class="n">cluster</span> <span class="o">=</span> <span class="n">kubeconfig</span><span class="p">[</span><span class="s2">&quot;clusters&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="s2">&quot;cluster&quot;</span><span class="p">]</span>
