@@ -87,7 +87,7 @@ class StepRunResponseModel(StepRunBaseModel, WorkspaceScopedResponseModel):
     logs: Optional["LogsResponseModel"] = None
 
     @property
-    def input(self) -> ArtifactResponseModel:
+    def input(self) -> "ArtifactResponseModel":
         """Returns the input artifact that was used to run this step.
 
         Returns:
@@ -106,7 +106,7 @@ class StepRunResponseModel(StepRunBaseModel, WorkspaceScopedResponseModel):
         return next(iter(self.inputs.values()))
 
     @property
-    def output(self) -> ArtifactResponseModel:
+    def output(self) -> "ArtifactResponseModel":
         """Returns the output artifact that was written by this step.
 
         Returns:
