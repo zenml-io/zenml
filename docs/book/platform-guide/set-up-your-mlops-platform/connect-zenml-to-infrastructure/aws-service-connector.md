@@ -1217,6 +1217,7 @@ zenml service-connector list --name aws-session-token
 ┃        │                   │                                      │        │ 🐳 docker-registry    │               │        │         │            │        ┃
 ┗━━━━━━━━┷━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━┷━━━━━━━━┷━━━━━━━━━┷━━━━━━━━━━━━┷━━━━━━━━┛
 ```
+{% endcode %}
 
 This checks the Kubernetes clusters that the AWS Service Connector has access to:
 
@@ -1232,6 +1233,7 @@ Service connector 'aws-session-token' is correctly configured with valid credent
 ┠───────────────────────┼──────────────────┨
 ┃ 🌀 kubernetes-cluster │ zenhacks-cluster ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━┛
+```
 {% endcode %}
 
 Running the login CLI command will configure the local `kubectl` CLI to access the Kubernetes cluster:
