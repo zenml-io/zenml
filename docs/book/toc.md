@@ -152,7 +152,7 @@
 
 ## Reference
 
-* [🤷 SDK & CLI reference](https://apidocs.zenml.io/)
+* [🤷 SDK & CLI reference](https://apidocs.zenml.io/0.40.1)
 * [🤷 Server API reference](https://demoserver.zenml.io/docs)
 * [💜 Community & content](reference/community-and-content.md)
 * [❓ FAQ](reference/faq.md)
