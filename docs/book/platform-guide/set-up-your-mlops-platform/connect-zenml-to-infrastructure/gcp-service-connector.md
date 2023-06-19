@@ -73,7 +73,7 @@ If set, the resource name must identify a GCS bucket using one of the following 
 * GCS bucket URI (canonical resource name): gs://{bucket-name}
 * GCS bucket name: {bucket-name}
 
-### EKS Kubernetes cluster
+### GKE Kubernetes cluster
 
 Allows Stack Components to access a GKE cluster as a standard Kubernetes cluster resource. When used by Stack Components, they are provided a pre-authenticated Python Kubernetes client instance.
 
@@ -90,7 +90,7 @@ If set, the resource name must identify a GKE cluster using one of the following
 
 GKE cluster names are project scoped. The connector can only be used to access GKE clusters in the GCP project that it is configured to use.
 
-### ECR container registry
+### GCR container registry
 
 Allows Stack Components to access a GCR registry as a standard Docker registry resource. When used by Stack Components, they are provided a pre-authenticated Python Docker client instance.
 
