@@ -153,5 +153,5 @@
 * [Glossary](reference/glossary.md)
 * [FAQ](reference/faq.md)
 * [CLI Cheat Sheet](reference/cheat-sheet.md)
-* [CLI Reference](https://apidocs.zenml.io/latest/cli/)
-* [API Reference](https://apidocs.zenml.io/latest/)
+* [CLI Reference](https://apidocs.zenml.io/0.39.0/cli/)
+* [API Reference](https://apidocs.zenml.io/0.39.0/)
