@@ -331,7 +331,7 @@ class StepLauncher:
             workspace_id=Client().active_workspace.id,
         )
 
-        step_run.input_artifacts = input_artifact_ids
+        step_run.inputs = input_artifact_ids
         step_run.parent_step_ids = parent_step_ids
         step_run.cache_key = cache_key
 
@@ -348,9 +348,9 @@ class StepLauncher:
             if cached_step_run:
                 logger.info(f"Using cached version of `{self._step_name}`.")
                 execution_needed = False
-                cached_outputs = cached_step_run.output_artifacts
+                cached_outputs = cached_step_run.outputs
                 step_run.original_step_run_id = cached_step_run.id
-                step_run.output_artifacts = {
+                step_run.outputs = {
                     output_name: artifact.id
                     for output_name, artifact in cached_outputs.items()
                 }
@@ -395,7 +395,7 @@ class StepLauncher:
             else:
                 self._run_step_without_step_operator(
                     step_run_info=step_run_info,
-                    input_artifacts=step_run.input_artifacts,
+                    input_artifacts=step_run.inputs,
                     output_artifact_uris=output_artifact_uris,
                 )
         except:  # noqa: E722

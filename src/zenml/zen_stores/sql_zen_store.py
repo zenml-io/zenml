@@ -3489,7 +3489,7 @@ class SqlZenStore(BaseZenStore):
                 )
 
             # Save input artifact IDs into the database.
-            for input_name, artifact_id in step_run.input_artifacts.items():
+            for input_name, artifact_id in step_run.inputs.items():
                 self._set_run_step_input_artifact(
                     run_step_id=step_schema.id,
                     artifact_id=artifact_id,
@@ -3498,7 +3498,7 @@ class SqlZenStore(BaseZenStore):
                 )
 
             # Save output artifact IDs into the database.
-            for output_name, artifact_id in step_run.output_artifacts.items():
+            for output_name, artifact_id in step_run.outputs.items():
                 self._set_run_step_output_artifact(
                     step_run_id=step_schema.id,
                     artifact_id=artifact_id,
@@ -3802,7 +3802,7 @@ class SqlZenStore(BaseZenStore):
             session.add(existing_step_run)
 
             # Update the output artifacts.
-            for name, artifact_id in step_run_update.output_artifacts.items():
+            for name, artifact_id in step_run_update.outputs.items():
                 self._set_run_step_output_artifact(
                     step_run_id=step_run_id,
                     artifact_id=artifact_id,

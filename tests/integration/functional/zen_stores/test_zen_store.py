@@ -1079,7 +1079,7 @@ def test_get_run_step_outputs_succeeds():
         steps = store.list_run_steps(StepRunFilterModel(name="step_2"))
 
         for step in steps.items:
-            run_step_outputs = store.get_run_step(step.id).output_artifacts
+            run_step_outputs = store.get_run_step(step.id).outputs
             assert len(run_step_outputs) == 1
 
 
@@ -1091,7 +1091,7 @@ def test_get_run_step_inputs_succeeds():
     with PipelineRunContext(1):
         steps = store.list_run_steps(StepRunFilterModel(name="step_2"))
         for step in steps.items:
-            run_step_inputs = store.get_run_step(step.id).input_artifacts
+            run_step_inputs = store.get_run_step(step.id).inputs
             assert len(run_step_inputs) == 1
 
 

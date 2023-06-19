@@ -233,8 +233,8 @@ class StepRunSchema(NamedSchema, table=True):
             source_code=self.source_code,
             created=self.created,
             updated=self.updated,
-            input_artifacts=input_artifacts,
-            output_artifacts=output_artifacts,
+            inputs=input_artifacts,
+            outputs=output_artifacts,
             metadata=metadata,
             logs=self.logs.to_model() if self.logs else None,
         )

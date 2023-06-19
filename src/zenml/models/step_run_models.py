@@ -78,23 +78,13 @@ class StepRunBaseModel(BaseModel):
 class StepRunResponseModel(StepRunBaseModel, WorkspaceScopedResponseModel):
     """Response model for step runs."""
 
-    input_artifacts: Dict[str, "ArtifactResponseModel"] = {}
-    output_artifacts: Dict[str, "ArtifactResponseModel"] = {}
+    inputs: Dict[str, "ArtifactResponseModel"] = {}
+    outputs: Dict[str, "ArtifactResponseModel"] = {}
     metadata: Dict[str, "RunMetadataResponseModel"] = Field(
         default={},
         title="Metadata associated with this step run.",
     )
     logs: Optional["LogsResponseModel"] = None
-
-    @property
-    def inputs(self) -> Dict[str, ArtifactResponseModel]:
-        """Returns all input artifacts that were used to run this step.
-
-        Returns:
-            A dictionary of artifact names to artifact views.
-        """
-        # TODO: delete this and maybe rename `input_artifacts` to `inputs`
-        return self.input_artifacts
 
     @property
     def input(self) -> ArtifactResponseModel:
@@ -114,16 +104,6 @@ class StepRunResponseModel(StepRunBaseModel, WorkspaceScopedResponseModel):
                 "ambiguous. Please use `Step.inputs` instead."
             )
         return next(iter(self.inputs.values()))
-
-    @property
-    def outputs(self) -> Dict[str, ArtifactResponseModel]:
-        """Returns all output artifacts that were written by this step.
-
-        Returns:
-            A dictionary of artifact names to artifact views.
-        """
-        # TODO: delete this and maybe rename `output_artifacts` to `outputs`
-        return self.output_artifacts
 
     @property
     def output(self) -> ArtifactResponseModel:
@@ -205,8 +185,8 @@ class StepRunFilterModel(WorkspaceScopedFilterModel):
 class StepRunRequestModel(StepRunBaseModel, WorkspaceScopedRequestModel):
     """Request model for step runs."""
 
-    input_artifacts: Dict[str, UUID] = {}
-    output_artifacts: Dict[str, UUID] = {}
+    inputs: Dict[str, UUID] = {}
+    outputs: Dict[str, UUID] = {}
     logs: Optional["LogsRequestModel"] = None
 
 
@@ -218,6 +198,6 @@ class StepRunRequestModel(StepRunBaseModel, WorkspaceScopedRequestModel):
 class StepRunUpdateModel(BaseModel):
     """Update model for step runs."""
 
-    output_artifacts: Dict[str, UUID] = {}
+    outputs: Dict[str, UUID] = {}
     status: Optional[ExecutionStatus] = None
     end_time: Optional[datetime] = None
