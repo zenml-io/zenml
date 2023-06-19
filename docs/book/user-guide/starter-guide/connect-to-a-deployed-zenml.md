@@ -18,7 +18,7 @@ The SQLite database that you can see in this diagram is used to store informatio
 
 In order to move into production, you will need to deploy this server somewhere centrally so that the different cloud stack components can read from and write to the server. Additionally, this also allows all your team members to connect to it and share stacks and pipelines.
 
-![Scenario 3: Deployed ZenML Server](../../.gitbook/assets/Scenario3.2.png)
+![Scenario 3: Deployed ZenML Server](../../.gitbook/assets/Scenario3.png)
 
 #### Connect your client to the server
 
@@ -45,8 +45,7 @@ In order to use the `zenml connect` command, you need to first deploy a remote Z
 Alternatively, if you are just getting started and want to try things out along with this starter guide, take a look at the [MLOps Platform Sandbox](switch-to-production.md), which allows you to spin up a remote sandbox ZenML deployment.
 {% endhint %}
 
-And just like that, your client should be connected to the server. 
-You can verify this by running `zenml status`:
+And just like that, your client should be connected to the server. You can verify this by running `zenml status`:
 
 ```bash
 Using configuration from: '/home/apenner/.config/zenml'
@@ -57,8 +56,6 @@ The active workspace is: 'default' (global)
 The active stack is: 'default' (global)
 ```
 
-Similar to the local case, you can now run `zenml show` to open the dashboard
-of the server that you are currently connected to.
+Similar to the local case, you can now run `zenml show` to open the dashboard of the server that you are currently connected to.
 
-Finally, if you would like to **disconnect** from the current ZenML server and 
-revert to using the local default database, simply run `zenml disconnect`.
+Finally, if you would like to **disconnect** from the current ZenML server and revert to using the local default database, simply run `zenml disconnect`.
