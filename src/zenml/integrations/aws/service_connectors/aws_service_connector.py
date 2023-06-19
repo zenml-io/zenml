@@ -1956,17 +1956,17 @@ class AWSServiceConnector(ServiceConnector):
             # Create a client-side Kubernetes connector instance with the
             # temporary Kubernetes credentials
             try:
-              # Import libraries only when needed
-              from zenml.integrations.kubernetes.service_connectors.kubernetes_service_connector import (
-                  KubernetesAuthenticationMethods,
-                  KubernetesServiceConnector,
-                  KubernetesTokenConfig,
-              )
+                # Import libraries only when needed
+                from zenml.integrations.kubernetes.service_connectors.kubernetes_service_connector import (
+                    KubernetesAuthenticationMethods,
+                    KubernetesServiceConnector,
+                    KubernetesTokenConfig,
+                )
             except ImportError as e:
-              raise RuntimeError(
-                f"The Kubernetes Service Connector functionality could not be used "
-                f"due to missing dependencies: {e}"
-              )
+                raise RuntimeError(
+                    f"The Kubernetes Service Connector functionality could not be used "
+                    f"due to missing dependencies: {e}"
+                )
             return KubernetesServiceConnector(
                 id=self.id,
                 name=connector_name,
