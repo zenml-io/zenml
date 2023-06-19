@@ -1264,19 +1264,29 @@ def replace_emojis(text: str) -> str:
 
 
 def print_stacks_table(
-    client: "Client", stacks: Sequence["StackResponseModel"]
+    client: "Client",
+    stacks: Sequence["StackResponseModel"],
+    show_active: bool = False,
 ) -> None:
     """Print a prettified list of all stacks supplied to this method.
 
     Args:
         client: Repository instance
         stacks: List of stacks
+        show_active: Flag to decide whether to append the active stack on the
+            top of the list.
     """
     stack_dicts = []
 
-    stacks = [client.active_stack_model] + [
-        s for s in stacks if s.id != client.active_stack_model.id
-    ]
+    stacks = list(stacks)
+    active_stack = client.active_stack_model
+    if show_active:
+        if active_stack.id not in [s.id for s in stacks]:
+            stacks.append(active_stack)
+
+        stacks = [s for s in stacks if s.id == active_stack.id] + [
+            s for s in stacks if s.id != active_stack.id
+        ]
 
     active_stack_model_id = client.active_stack_model.id
     for stack in stacks:
@@ -1376,7 +1386,7 @@ def seconds_to_human_readable(time_seconds: int) -> str:
 
 
 def expires_in(expires_at: datetime.datetime, expired_str: str) -> str:
-    """Returns a human readable string of the time until the token expires.
+    """Returns a human-readable string of the time until the token expires.
 
     Args:
         expires_at: Datetime object of the token expiration.
@@ -2403,3 +2413,31 @@ def get_parsed_labels(
         metadata_dict[key] = value
 
     return metadata_dict
+
+
+def is_sorted_or_filtered(ctx: click.Context) -> bool:
+    """Decides whether any filtering/sorting happens during a 'list' CLI call.
+
+    Args:
+        ctx: the Click context of the CLI call.
+
+    Return:
+        a boolean indicating whether any sorting or filtering parameters were
+        used during the list CLI call.
+    """
+    ignored_parameters = ["page", "size"]
+    try:
+        for name, source in ctx._parameter_source.items():
+            if (
+                name not in ignored_parameters
+                and source != click.core.ParameterSource.DEFAULT
+            ):
+                return True
+        return False
+
+    except Exception as e:
+        logger.debug(
+            f"There was a problem accessing the parameter source for "
+            f'the "sort_by" option: {e}'
+        )
+        return False
