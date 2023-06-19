@@ -19,7 +19,6 @@ interfaces with which the user can interact with artifacts, the pipeline, steps,
 and the post-run pipeline object.
 """
 
-from zenml.post_execution.artifact import ArtifactView
 from zenml.post_execution.lineage import (
     ArtifactNode,
     ArtifactNodeDetails,
@@ -47,7 +46,6 @@ __all__ = [
     "PipelineView",
     "PipelineRunView",
     "StepView",
-    "ArtifactView",
     "BaseNode",
     "ArtifactNode",
     "StepNode",

@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Models representing artifacts."""
 
-from typing import TYPE_CHECKING, ClassVar, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional, Union
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -73,6 +73,41 @@ class ArtifactResponseModel(ArtifactBaseModel, WorkspaceScopedResponseModel):
     metadata: Dict[str, "RunMetadataResponseModel"] = Field(
         default={}, title="Metadata of the artifact."
     )
+
+    def load(self) -> Any:
+        """Materializes (loads) the data stored in this artifact.
+
+        Returns:
+            The materialized data.
+        """
+        from zenml.utils.artifact_utils import load_artifact
+
+        return load_artifact(self)
+
+    def read(self) -> Any:
+        """(Deprecated) Materializes (loads) the data stored in this artifact.
+
+        Returns:
+            The materialized data.
+        """
+        from zenml.logger import get_logger
+
+        logger = get_logger(__name__)
+        logger.warning(
+            "`output.read()` is deprecated and will be removed in a future "
+            "release. Please use `output.load()` instead."
+        )
+        return self.load()
+
+    def visualize(self, title: Optional[str] = None) -> None:
+        """Visualize the artifact in notebook environments.
+
+        Args:
+            title: Optional title to show before the visualizations.
+        """
+        from zenml.utils.visualization_utils import visualize_artifact
+
+        visualize_artifact(self, title=title)
 
 
 # ------ #

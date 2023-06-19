@@ -21,8 +21,8 @@ from zenml.exceptions import DoesNotExistException
 from zenml.models import (
     StepRunResponseModel,
 )
+from zenml.models.artifact_models import ArtifactResponseModel
 from zenml.models.base_models import BaseResponseModel
-from zenml.post_execution.artifact import ArtifactView
 from zenml.post_execution.base_view import BaseView
 from zenml.utils.artifact_utils import (
     _load_artifact_store,
@@ -53,8 +53,8 @@ class StepView(BaseView):
             model: The model to initialize this object from.
         """
         super().__init__(model)
-        self._inputs: Dict[str, ArtifactView] = {}
-        self._outputs: Dict[str, ArtifactView] = {}
+        self._inputs: Dict[str, ArtifactResponseModel] = {}
+        self._outputs: Dict[str, ArtifactResponseModel] = {}
 
     @property
     def model(self) -> StepRunResponseModel:
@@ -247,7 +247,7 @@ class StepView(BaseView):
         return self.status == ExecutionStatus.COMPLETED
 
     @property
-    def inputs(self) -> Dict[str, ArtifactView]:
+    def inputs(self) -> Dict[str, ArtifactResponseModel]:
         """Returns all input artifacts that were used to run this step.
 
         Returns:
@@ -257,7 +257,7 @@ class StepView(BaseView):
         return self._inputs
 
     @property
-    def input(self) -> ArtifactView:
+    def input(self) -> ArtifactResponseModel:
         """Returns the input artifact that was used to run this step.
 
         Returns:
@@ -274,7 +274,7 @@ class StepView(BaseView):
         return next(iter(self.inputs.values()))
 
     @property
-    def outputs(self) -> Dict[str, ArtifactView]:
+    def outputs(self) -> Dict[str, ArtifactResponseModel]:
         """Returns all output artifacts that were written by this step.
 
         Returns:
@@ -284,7 +284,7 @@ class StepView(BaseView):
         return self._outputs
 
     @property
-    def output(self) -> ArtifactView:
+    def output(self) -> ArtifactResponseModel:
         """Returns the output artifact that was written by this step.
 
         Returns:
@@ -303,8 +303,8 @@ class StepView(BaseView):
     def visualize(self) -> None:
         """Visualizes all output artifacts of the step."""
         output_artifacts = self.outputs.values()
-        for artifact in sorted(output_artifacts, key=lambda a: a.model.name):
-            title = f"{self.model.name} - {artifact.model.name}"
+        for artifact in sorted(output_artifacts, key=lambda a: a.name):
+            title = f"{self.model.name} - {artifact.name}"
             artifact.visualize(title=title)
 
     def _ensure_inputs_fetched(self) -> None:
@@ -313,10 +313,7 @@ class StepView(BaseView):
             # we already fetched inputs, no need to do anything
             return
 
-        self._inputs = {
-            name: ArtifactView(artifact_model)
-            for name, artifact_model in self.model.input_artifacts.items()
-        }
+        self._inputs = self.model.input_artifacts
 
     def _ensure_outputs_fetched(self) -> None:
         """Fetches all step outputs from the ZenStore."""
@@ -324,7 +321,4 @@ class StepView(BaseView):
             # we already fetched outputs, no need to do anything
             return
 
-        self._outputs = {
-            name: ArtifactView(artifact_model)
-            for name, artifact_model in self.model.output_artifacts.items()
-        }
+        self._outputs = self.model.output_artifacts
