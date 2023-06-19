@@ -158,7 +158,7 @@ def create_cloud_function(
 
     state = Function.State.DEPLOYING
     logger.info(
-        "Creating function... This might take a few minutes. "
+        "Creating cloud function to run pipeline... This might take a few minutes. "
         "Please do not exit the program at this point..."
     )
 
@@ -173,6 +173,12 @@ def create_cloud_function(
 
         if time.time() - start_time > timeout:
             raise TimeoutError("Timed out waiting for function to deploy!")
+
+        if state == Function.State.FAILED:
+            error_messages = ', '.join([msg.text for msg in response.state_messages])
+            raise RuntimeError(
+                f"Scheduling failed with the following messages: {error_messages}"
+            )
 
     logger.info(f"Done! Function available at {response.service_config.uri}")
     return str(response.service_config.uri)
