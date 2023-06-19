@@ -94,8 +94,12 @@ Note that the discovered credentials inherit the full set of permissions of the 
 
 The following assumes the local Azure CLI has already been configured with user account credentials by running the `az login` command:
 
+```sh
+zenml service-connector register azure-implicit --type azure --auth-method implicit --auto-configure
 ```
-$ zenml service-connector register azure-implicit --type azure --auth-method implicit --auto-configure
+
+{% code title="Example Command Output" %}
+```text
 ⠙ Registering service connector 'azure-implicit'...
 Successfully registered service connector `azure-implicit` with access to the following resources:
 ┏━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
@@ -109,13 +113,17 @@ Successfully registered service connector `azure-implicit` with access to the fo
 ┠───────────────────────┼───────────────────────────────────────────────┨
 ┃  🐳 docker-registry   │ demozenmlcontainerregistry.azurecr.io         ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
-
 ```
+{% endcode %}
 
 No credentials are stored with the Service Connector:
 
+```sh
+zenml service-connector describe azure-implicit
 ```
-$ $ zenml service-connector describe azure-implicit
+
+{% code title="Example Command Output" %}
+```text
 Service connector 'azure-implicit' of type 'azure' with id 'ad645002-0cd4-4d4f-ae20-499ce888a00a' is owned by user 'default' and is 'private'.
                           'azure-implicit' azure Service Connector Details                           
 ┏━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
@@ -150,6 +158,7 @@ Service connector 'azure-implicit' of type 'azure' with id 'ad645002-0cd4-4d4f-a
 ┃ UPDATED_AT       │ 2023-06-05 09:47:42.415954                                                     ┃
 ┗━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 ```
+{% endcode %}
 
 </details>
 
@@ -163,8 +172,12 @@ Given that Azure access tokens are scoped to a particular Azure resource and the
 
 Fetching Azure session tokens from the local Azure CLI is possible if the Azure CLI is already configured with valid credentials (i.e. by running `az login`):
 
+```sh
+zenml service-connector register azure-session-token --type azure --auto-configure
 ```
-$ $ zenml service-connector register azure-session-token --type azure --auto-configure
+
+{% code title="Example Command Output" %}
+```text
 ⠙ Registering service connector 'azure-session-token'...
 connector authorization failure: the 'access-token' authentication method is not supported for blob storage resources
 Successfully registered service connector `azure-session-token` with access to the following resources:
@@ -179,8 +192,15 @@ Successfully registered service connector `azure-session-token` with access to t
 ┠───────────────────────┼─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┨
 ┃  🐳 docker-registry   │ demozenmlcontainerregistry.azurecr.io                                                                                           ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+```
+{% endcode %}
 
-$ $ zenml service-connector describe azure-session-token 
+```sh
+zenml service-connector describe azure-session-token 
+```
+
+{% code title="Example Command Output" %}
+```text
 Service connector 'azure-session-token' of type 'azure' with id '94d64103-9902-4aa5-8ce4-877061af89af' is owned by user 'default' and is 'private'.
                         'azure-session-token' azure Service Connector Details                        
 ┏━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
@@ -221,11 +241,16 @@ Service connector 'azure-session-token' of type 'azure' with id '94d64103-9902-4
 ┃ token    │ [HIDDEN] ┃
 ┗━━━━━━━━━━┷━━━━━━━━━━┛
 ```
+{% endcode %}
 
 Note the temporary nature of the Service Connector. It will expire and become unusable in approximately 1 hour:
 
+```sh
+zenml service-connector list --name azure-session-token 
 ```
-$ zenml service-connector list --name azure-session-token 
+
+{% code title="Example Command Output" %}
+```text
 Could not import GCP service connector: No module named 'google.api_core'.
 ┏━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━┯━━━━━━━━┯━━━━━━━━━┯━━━━━━━━━━━━┯━━━━━━━━┓
 ┃ ACTIVE │ NAME                │ ID                                   │ TYPE     │ RESOURCE TYPES        │ RESOURCE NAME │ SHARED │ OWNER   │ EXPIRES IN │ LABELS ┃
@@ -236,6 +261,7 @@ Could not import GCP service connector: No module named 'google.api_core'.
 ┃        │                     │                                      │          │ 🐳 docker-registry    │               │        │         │            │        ┃
 ┗━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━┷━━━━━━━━┷━━━━━━━━━┷━━━━━━━━━━━━┷━━━━━━━━┛
 ```
+{% endcode %}
 
 </details>
 
@@ -262,8 +288,12 @@ The local Kubernetes `kubectl` CLI and the Docker CLI can be [configured with cr
 
 The following shows an example of configuring the local Kubernetes CLI to access an AKS cluster reachable through an Azure Service Connector:
 
+```sh
+zenml service-connector list --name azure-service-principal
 ```
-$ zenml service-connector list --name azure-service-principal
+
+{% code title="Example Command Output" %}
+```text
 ┏━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━┯━━━━━━━━┯━━━━━━━━━┯━━━━━━━━━━━━┯━━━━━━━━┓
 ┃ ACTIVE │ NAME                    │ ID                                   │ TYPE     │ RESOURCE TYPES        │ RESOURCE NAME │ SHARED │ OWNER   │ EXPIRES IN │ LABELS ┃
 ┠────────┼─────────────────────────┼──────────────────────────────────────┼──────────┼───────────────────────┼───────────────┼────────┼─────────┼────────────┼────────┨
@@ -272,8 +302,17 @@ $ zenml service-connector list --name azure-service-principal
 ┃        │                         │                                      │          │ 🌀 kubernetes-cluster │               │        │         │            │        ┃
 ┃        │                         │                                      │          │ 🐳 docker-registry    │               │        │         │            │        ┃
 ┗━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━┷━━━━━━━━┷━━━━━━━━━┷━━━━━━━━━━━━┷━━━━━━━━┛
+```
+{% endcode %}
 
-$ zenml service-connector verify azure-service-principal --resource-type kubernetes-cluster
+The verify CLI command can be used to list all Kubernetes clusters accessible through the Azure Service Connector:
+
+```sh
+zenml service-connector verify azure-service-principal --resource-type kubernetes-cluster
+```
+
+{% code title="Example Command Output" %}
+```text
 ⠙ Verifying service connector 'azure-service-principal'...
 Service connector 'azure-service-principal' is correctly configured with valid credentials and has access to the following resources:
 ┏━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
@@ -281,22 +320,45 @@ Service connector 'azure-service-principal' is correctly configured with valid c
 ┠───────────────────────┼───────────────────────────────────────────────┨
 ┃ 🌀 kubernetes-cluster │ demo-zenml-demos/demo-zenml-terraform-cluster ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+```
+{% endcode %}
 
-$ $ zenml service-connector login azure-service-principal --resource-type kubernetes-cluster --resource-id demo-zenml-demos/demo-zenml-terraform-cluster
+The login CLI command can be used to configure the local Kubernetes CLI to access a Kubernetes cluster reachable through an Azure Service Connector:
+
+```sh
+zenml service-connector login azure-service-principal --resource-type kubernetes-cluster --resource-id demo-zenml-demos/demo-zenml-terraform-cluster
+```
+
+{% code title="Example Command Output" %}
+```text
 ⠙ Attempting to configure local client using service connector 'azure-service-principal'...
 Updated local kubeconfig with the cluster details. The current kubectl context was set to 'demo-zenml-terraform-cluster'.
 The 'azure-service-principal' Kubernetes Service Connector connector was used to successfully configure the local Kubernetes cluster client/SDK.
+```
+{% endcode %}
 
-$ kubectl cluster-info
+The local Kubernetes CLI can now be used to interact with the Kubernetes cluster:
+
+```sh
+kubectl cluster-info
+```
+
+{% code title="Example Command Output" %}
+```text
 Kubernetes control plane is running at https://demo-43c5776f7.hcp.westeurope.azmk8s.io:443
 CoreDNS is running at https://demo-43c5776f7.hcp.westeurope.azmk8s.io:443/api/v1/namespaces/kube-system/services/kube-dns:dns/proxy
 Metrics-server is running at https://demo-43c5776f7.hcp.westeurope.azmk8s.io:443/api/v1/namespaces/kube-system/services/https:metrics-server:/proxy
 ```
+{% endcode %}
 
 A similar process is possible with ACR container registries:
 
+```sh
+zenml service-connector verify azure-service-principal --resource-type docker-registry
 ```
-$ $ zenml service-connector verify azure-service-principal --resource-type docker-registry
+
+{% code title="Example Command Output" %}
+```text
 ⠦ Verifying service connector 'azure-service-principal'...
 Service connector 'azure-service-principal' is correctly configured with valid credentials and has access to the following resources:
 ┏━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
@@ -304,16 +366,32 @@ Service connector 'azure-service-principal' is correctly configured with valid c
 ┠────────────────────┼───────────────────────────────────────┨
 ┃ 🐳 docker-registry │ demozenmlcontainerregistry.azurecr.io ┃
 ┗━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+```
+{% endcode %}
 
-$ $ zenml service-connector login azure-service-principal --resource-type docker-registry --resource-id demozenmlcontainerregistry.azurecr.io
+```sh
+zenml service-connector login azure-service-principal --resource-type docker-registry --resource-id demozenmlcontainerregistry.azurecr.io
+```
+
+{% code title="Example Command Output" %}
+```text
 ⠹ Attempting to configure local client using service connector 'azure-service-principal'...
 WARNING! Your password will be stored unencrypted in /home/stefan/.docker/config.json.
 Configure a credential helper to remove this warning. See
 https://docs.docker.com/engine/reference/commandline/login/#credentials-store
 
 The 'azure-service-principal' Docker Service Connector connector was used to successfully configure the local Docker/OCI container registry client/SDK.
+```
+{% endcode %}
 
-$ docker push demozenmlcontainerregistry.azurecr.io/zenml:example_pipeline
+The local Docker CLI can now be used to interact with the container registry:
+
+```sh
+docker push demozenmlcontainerregistry.azurecr.io/zenml:example_pipeline
+```
+
+{% code title="Example Command Output" %}
+```text
 The push refers to repository [demozenmlcontainerregistry.azurecr.io/zenml]
 d4aef4f5ed86: Pushed 
 2d69a4ce1784: Pushed 
@@ -331,6 +409,7 @@ a1d005f5264e: Layer already exists
 8553b91047da: Layer already exists 
 connectors: digest: sha256:a4cfb18a5cef5b2201759a42dd9fe8eb2f833b788e9d8a6ebde194765b42fe46 size: 3256
 ```
+{% endcode %}
 
 </details>
 
@@ -365,175 +444,234 @@ This example needs to use a remote ZenML Server that is reachable from Azure.
 
 1. Configure an Azure service principal with a client secret and give it permissions to access an Azure blob storage container, an AKS Kubernetes cluster and an ACR container registry. Also make sure you have the Azure ZenML integration installed:
 
-```
-$ zenml integration install -y azure
-```
+    ```sh
+    zenml integration install -y azure
+    ```
 
 2. Make sure the Azure Service Connector Type is available
 
-```
-$ $ zenml service-connector list-types --type azure
-Could not import GCP service connector: No module named 'google.api_core'.
-┏━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━┯━━━━━━━┯━━━━━━━━┓
-┃          NAME           │ TYPE     │ RESOURCE TYPES        │ AUTH METHODS      │ LOCAL │ REMOTE ┃
-┠─────────────────────────┼──────────┼───────────────────────┼───────────────────┼───────┼────────┨
-┃ Azure Service Connector │ 🇦 azure │ 🇦 azure-generic      │ implicit          │ ✅    │ ➖     ┃
-┃                         │          │ 📦 blob-container     │ service-principal │       │        ┃
-┃                         │          │ 🌀 kubernetes-cluster │ access-token      │       │        ┃
-┃                         │          │ 🐳 docker-registry    │                   │       │        ┃
-┗━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━┷━━━━━━━┷━━━━━━━━┛
-```
+    ```sh
+    zenml service-connector list-types --type azure
+    ```
+
+    {% code title="Example Command Output" %}
+    ```text
+    ┏━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━┯━━━━━━━┯━━━━━━━━┓
+    ┃          NAME           │ TYPE     │ RESOURCE TYPES        │ AUTH METHODS      │ LOCAL │ REMOTE ┃
+    ┠─────────────────────────┼──────────┼───────────────────────┼───────────────────┼───────┼────────┨
+    ┃ Azure Service Connector │ 🇦 azure │ 🇦 azure-generic      │ implicit          │ ✅    │ ✅     ┃
+    ┃                         │          │ 📦 blob-container     │ service-principal │       │        ┃
+    ┃                         │          │ 🌀 kubernetes-cluster │ access-token      │       │        ┃
+    ┃                         │          │ 🐳 docker-registry    │                   │       │        ┃
+    ┗━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━┷━━━━━━━┷━━━━━━━━┛
+    ```
+    {% endcode %}
 
 2. Register a multi-type Azure Service Connector using the Azure service principal credentials set up at the first step. Note the resources that it has access to:
 
-```
-$ zenml service-connector register azure-service-principal --type azure --auth-method service-principal --tenant_id=a79ff3633-8f45-4a74-a42e-68871c17b7fb --client_id=8926254a-8c3f-430a-a2fd-bdab234fd491e --client_secret=AzureSuperSecret
-⠸ Registering service connector 'azure-service-principal'...
-Successfully registered service connector `azure-service-principal` with access to the following resources:
-┏━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃     RESOURCE TYPE     │ RESOURCE NAMES                                ┃
-┠───────────────────────┼───────────────────────────────────────────────┨
-┃   🇦 azure-generic    │ ZenML Subscription                            ┃
-┠───────────────────────┼───────────────────────────────────────────────┨
-┃   📦 blob-container   │ az://demo-zenmlartifactstore                  ┃
-┠───────────────────────┼───────────────────────────────────────────────┨
-┃ 🌀 kubernetes-cluster │ demo-zenml-demos/demo-zenml-terraform-cluster ┃
-┠───────────────────────┼───────────────────────────────────────────────┨
-┃  🐳 docker-registry   │ demozenmlcontainerregistry.azurecr.io         ┃
-┗━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
-```
+    ```sh
+    zenml service-connector register azure-service-principal --type azure --auth-method service-principal --tenant_id=a79ff3633-8f45-4a74-a42e-68871c17b7fb --client_id=8926254a-8c3f-430a-a2fd-bdab234fd491e --client_secret=AzureSuperSecret
+    ```
+
+    {% code title="Example Command Output" %}
+    ```text
+    ⠸ Registering service connector 'azure-service-principal'...
+    Successfully registered service connector `azure-service-principal` with access to the following resources:
+    ┏━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+    ┃     RESOURCE TYPE     │ RESOURCE NAMES                                ┃
+    ┠───────────────────────┼───────────────────────────────────────────────┨
+    ┃   🇦 azure-generic    │ ZenML Subscription                            ┃
+    ┠───────────────────────┼───────────────────────────────────────────────┨
+    ┃   📦 blob-container   │ az://demo-zenmlartifactstore                  ┃
+    ┠───────────────────────┼───────────────────────────────────────────────┨
+    ┃ 🌀 kubernetes-cluster │ demo-zenml-demos/demo-zenml-terraform-cluster ┃
+    ┠───────────────────────┼───────────────────────────────────────────────┨
+    ┃  🐳 docker-registry   │ demozenmlcontainerregistry.azurecr.io         ┃
+    ┗━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+    ```
+    {% endcode %}
 
 3. register and connect an Azure Blob Storage Artifact Store Stack Component to an Azure blob container:
 
-```
-$ zenml artifact-store register azure-demo --flavor azure --path=az://demo-zenmlartifactstore
-Successfully registered artifact_store `azure-demo`.
+    ```sh
+    zenml artifact-store register azure-demo --flavor azure --path=az://demo-zenmlartifactstore
+    ```
+    
+    {% code title="Example Command Output" %}
+    ```text
+    Successfully registered artifact_store `azure-demo`.
+    ```
+    {% endcode %}
 
-$ zenml artifact-store connect azure-demo --connector azure-service-principal
-Successfully connected artifact store `azure-demo` to the following resources:
-┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃             CONNECTOR ID             │ CONNECTOR NAME          │ CONNECTOR TYPE │ RESOURCE TYPE     │ RESOURCE NAMES               ┃
-┠──────────────────────────────────────┼─────────────────────────┼────────────────┼───────────────────┼──────────────────────────────┨
-┃ f2316191-d20b-4348-a68b-f5e347862196 │ azure-service-principal │ 🇦 azure       │ 📦 blob-container │ az://demo-zenmlartifactstore ┃
-┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
-```
+    ```sh
+    zenml artifact-store connect azure-demo --connector azure-service-principal
+    ```
+
+    {% code title="Example Command Output" %}
+    ```text
+    Successfully connected artifact store `azure-demo` to the following resources:
+    ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+    ┃             CONNECTOR ID             │ CONNECTOR NAME          │ CONNECTOR TYPE │ RESOURCE TYPE     │ RESOURCE NAMES               ┃
+    ┠──────────────────────────────────────┼─────────────────────────┼────────────────┼───────────────────┼──────────────────────────────┨
+    ┃ f2316191-d20b-4348-a68b-f5e347862196 │ azure-service-principal │ 🇦 azure       │ 📦 blob-container │ az://demo-zenmlartifactstore ┃
+    ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+    ```
+    {% endcode %}
 
 4. register and connect a Kubernetes Orchestrator Stack Component to an AKS cluster:
 
-```
-$ zenml orchestrator register aks-demo-cluster --flavor kubernetes --synchronous=true --kubernetes_namespace=zenml-workloads
-Successfully registered orchestrator `aks-demo-cluster`.
+    ```sh
+    zenml orchestrator register aks-demo-cluster --flavor kubernetes --synchronous=true --kubernetes_namespace=zenml-workloads
+    ```
 
-$ zenml orchestrator connect aks-demo-cluster --connector azure-service-principal
-Successfully connected orchestrator `aks-demo-cluster` to the following resources:
-┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃             CONNECTOR ID             │ CONNECTOR NAME          │ CONNECTOR TYPE │ RESOURCE TYPE         │ RESOURCE NAMES                                ┃
-┠──────────────────────────────────────┼─────────────────────────┼────────────────┼───────────────────────┼───────────────────────────────────────────────┨
-┃ f2316191-d20b-4348-a68b-f5e347862196 │ azure-service-principal │ 🇦 azure       │ 🌀 kubernetes-cluster │ demo-zenml-demos/demo-zenml-terraform-cluster ┃
-┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
-```
+    {% code title="Example Command Output" %}
+    ```text
+    Successfully registered orchestrator `aks-demo-cluster`.
+    ```
+    {% endcode %}
+
+    ```sh
+    zenml orchestrator connect aks-demo-cluster --connector azure-service-principal
+    ```
+
+    {% code title="Example Command Output" %}
+    ```text
+    Successfully connected orchestrator `aks-demo-cluster` to the following resources:
+    ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+    ┃             CONNECTOR ID             │ CONNECTOR NAME          │ CONNECTOR TYPE │ RESOURCE TYPE         │ RESOURCE NAMES                                ┃
+    ┠──────────────────────────────────────┼─────────────────────────┼────────────────┼───────────────────────┼───────────────────────────────────────────────┨
+    ┃ f2316191-d20b-4348-a68b-f5e347862196 │ azure-service-principal │ 🇦 azure       │ 🌀 kubernetes-cluster │ demo-zenml-demos/demo-zenml-terraform-cluster ┃
+    ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+    ```
+    {% endcode %}
 
 5. Register and connect an Azure Container Registry Stack Component to an ACR container registry:
 
-```
-$ zenml container-registry register acr-demo-registry --flavor azure --uri=demozenmlcontainerregistry.azurecr.io
-Successfully registered container_registry `acr-demo-registry`.
+    ```sh
+    zenml container-registry register acr-demo-registry --flavor azure --uri=demozenmlcontainerregistry.azurecr.io
+    ```
 
-$ zenml container-registry connect acr-demo-registry --connector azure-service-principal
-Successfully connected container registry `acr-demo-registry` to the following resources:
-┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃             CONNECTOR ID             │ CONNECTOR NAME          │ CONNECTOR TYPE │ RESOURCE TYPE      │ RESOURCE NAMES                        ┃
-┠──────────────────────────────────────┼─────────────────────────┼────────────────┼────────────────────┼───────────────────────────────────────┨
-┃ f2316191-d20b-4348-a68b-f5e347862196 │ azure-service-principal │ 🇦 azure       │ 🐳 docker-registry │ demozenmlcontainerregistry.azurecr.io ┃
-┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
-```
+    {% code title="Example Command Output" %}
+    ```text
+    Successfully registered container_registry `acr-demo-registry`.
+    ```
+    {% endcode %}
+
+    ```sh
+    zenml container-registry connect acr-demo-registry --connector azure-service-principal
+    ```
+
+    {% code title="Example Command Output" %}
+    ```text
+    Successfully connected container registry `acr-demo-registry` to the following resources:
+    ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+    ┃             CONNECTOR ID             │ CONNECTOR NAME          │ CONNECTOR TYPE │ RESOURCE TYPE      │ RESOURCE NAMES                        ┃
+    ┠──────────────────────────────────────┼─────────────────────────┼────────────────┼────────────────────┼───────────────────────────────────────┨
+    ┃ f2316191-d20b-4348-a68b-f5e347862196 │ azure-service-principal │ 🇦 azure       │ 🐳 docker-registry │ demozenmlcontainerregistry.azurecr.io ┃
+    ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+    ```
+    {% endcode %}
 
 6. Combine all Stack Components together into a Stack and set it as active (also throw in a local Image Builder for completion):
 
-```
-$ zenml image-builder register local --flavor local
-Running with active workspace: 'default' (global)
-Running with active stack: 'default' (global)
-Successfully registered image_builder `local`.
+    ```sh
+    zenml image-builder register local --flavor local
+    ```
 
-$ zenml stack register gcp-demo -a azure-demo -o aks-demo-cluster -c acr-demo-registry -i local --set
-Stack 'gcp-demo' successfully registered!
-Active repository stack set to:'gcp-demo'
-```
+    {% code title="Example Command Output" %}
+    ```text
+    Running with active workspace: 'default' (global)
+    Running with active stack: 'default' (global)
+    Successfully registered image_builder `local`.
+    ```
+    {% endcode %}
+
+    ```sh
+    zenml stack register gcp-demo -a azure-demo -o aks-demo-cluster -c acr-demo-registry -i local --set
+    ```
+
+    {% code title="Example Command Output" %}
+    ```text
+    Stack 'gcp-demo' successfully registered!
+    Active repository stack set to:'gcp-demo'
+    ```
+    {% endcode %}
 
 7. Finally, run a simple pipeline to prove that everything works as expected. We'll use the simplest pipelines possible for this example:
 
-```python
-from zenml import pipeline, step
+    ```python
+    from zenml import pipeline, step
 
 
-@step
-def step_1() -> str:
-    """Returns the `world` string."""
-    return "world"
+    @step
+    def step_1() -> str:
+        """Returns the `world` string."""
+        return "world"
 
 
-@step(enable_cache=False)
-def step_2(input_one: str, input_two: str) -> None:
-    """Combines the two strings at its input and prints them."""
-    combined_str = f"{input_one} {input_two}"
-    print(combined_str)
+    @step(enable_cache=False)
+    def step_2(input_one: str, input_two: str) -> None:
+        """Combines the two strings at its input and prints them."""
+        combined_str = f"{input_one} {input_two}"
+        print(combined_str)
 
 
-@pipeline
-def my_pipeline():
-    output_step_one = step_1()
-    step_2(input_one="hello", input_two=output_step_one)
+    @pipeline
+    def my_pipeline():
+        output_step_one = step_1()
+        step_2(input_one="hello", input_two=output_step_one)
 
 
-if __name__ == "__main__":
-    my_pipeline()
-```
+    if __name__ == "__main__":
+        my_pipeline()
+    ```
 
-Saving that to a `run.py` file and running it gives us:
+    Saving that to a `run.py` file and running it gives us:
 
-```
-$ python run.py 
-Registered pipeline simple_pipeline (version 1).
-Building Docker image(s) for pipeline simple_pipeline.
-Building Docker image demozenmlcontainerregistry.azurecr.io/zenml:simple_pipeline-orchestrator.
-- Including integration requirements: adlfs==2021.10.0, azure-identity==1.10.0, azure-keyvault-keys, azure-keyvault-secrets, azure-mgmt-containerservice>=20.0.0, azureml-core==1.48.0, kubernetes, kubernetes==18.20.0
-No .dockerignore found, including all files inside build context.
-Step 1/10 : FROM zenmldocker/zenml:0.40.0-py3.8
-Step 2/10 : WORKDIR /app
-Step 3/10 : COPY .zenml_user_requirements .
-Step 4/10 : RUN pip install --default-timeout=60 --no-cache-dir  -r .zenml_user_requirements
-Step 5/10 : COPY .zenml_integration_requirements .
-Step 6/10 : RUN pip install --default-timeout=60 --no-cache-dir  -r .zenml_integration_requirements
-Step 7/10 : ENV ZENML_ENABLE_REPO_INIT_WARNINGS=False
-Step 8/10 : ENV ZENML_CONFIG_PATH=/app/.zenconfig
-Step 9/10 : COPY . .
-Step 10/10 : RUN chmod -R a+rw .
-Pushing Docker image demozenmlcontainerregistry.azurecr.io/zenml:simple_pipeline-orchestrator.
-Finished pushing Docker image.
-Finished building Docker image(s).
-Running pipeline simple_pipeline on stack gcp-demo (caching disabled)
-Waiting for Kubernetes orchestrator pod...
-Kubernetes orchestrator pod started.
-Waiting for pod of step simple_step_one to start...
-Step simple_step_one has started.
-INFO:azure.identity._internal.get_token_mixin:ClientSecretCredential.get_token succeeded
-INFO:azure.identity._internal.get_token_mixin:ClientSecretCredential.get_token succeeded
-INFO:azure.identity._internal.get_token_mixin:ClientSecretCredential.get_token succeeded
-INFO:azure.identity.aio._internal.get_token_mixin:ClientSecretCredential.get_token succeeded
-Step simple_step_one has finished in 0.396s.
-Pod of step simple_step_one completed.
-Waiting for pod of step simple_step_two to start...
-Step simple_step_two has started.
-INFO:azure.identity._internal.get_token_mixin:ClientSecretCredential.get_token succeeded
-INFO:azure.identity._internal.get_token_mixin:ClientSecretCredential.get_token succeeded
-INFO:azure.identity.aio._internal.get_token_mixin:ClientSecretCredential.get_token succeeded
-Hello World!
-Step simple_step_two has finished in 3.203s.
-Pod of step simple_step_two completed.
-Orchestration pod completed.
-Dashboard URL: https://zenml.stefan.20.23.46.143.nip.io/workspaces/default/pipelines/98c41e2a-1ab0-4ec9-8375-6ea1ab473686/runs
-```
+    {% code title="Example Command Output" %}
+    ```text
+    $ python run.py 
+    Registered pipeline simple_pipeline (version 1).
+    Building Docker image(s) for pipeline simple_pipeline.
+    Building Docker image demozenmlcontainerregistry.azurecr.io/zenml:simple_pipeline-orchestrator.
+    - Including integration requirements: adlfs==2021.10.0, azure-identity==1.10.0, azure-keyvault-keys, azure-keyvault-secrets, azure-mgmt-containerservice>=20.0.0, azureml-core==1.48.0, kubernetes, kubernetes==18.20.0
+    No .dockerignore found, including all files inside build context.
+    Step 1/10 : FROM zenmldocker/zenml:0.40.0-py3.8
+    Step 2/10 : WORKDIR /app
+    Step 3/10 : COPY .zenml_user_requirements .
+    Step 4/10 : RUN pip install --default-timeout=60 --no-cache-dir  -r .zenml_user_requirements
+    Step 5/10 : COPY .zenml_integration_requirements .
+    Step 6/10 : RUN pip install --default-timeout=60 --no-cache-dir  -r .zenml_integration_requirements
+    Step 7/10 : ENV ZENML_ENABLE_REPO_INIT_WARNINGS=False
+    Step 8/10 : ENV ZENML_CONFIG_PATH=/app/.zenconfig
+    Step 9/10 : COPY . .
+    Step 10/10 : RUN chmod -R a+rw .
+    Pushing Docker image demozenmlcontainerregistry.azurecr.io/zenml:simple_pipeline-orchestrator.
+    Finished pushing Docker image.
+    Finished building Docker image(s).
+    Running pipeline simple_pipeline on stack gcp-demo (caching disabled)
+    Waiting for Kubernetes orchestrator pod...
+    Kubernetes orchestrator pod started.
+    Waiting for pod of step simple_step_one to start...
+    Step simple_step_one has started.
+    INFO:azure.identity._internal.get_token_mixin:ClientSecretCredential.get_token succeeded
+    INFO:azure.identity._internal.get_token_mixin:ClientSecretCredential.get_token succeeded
+    INFO:azure.identity._internal.get_token_mixin:ClientSecretCredential.get_token succeeded
+    INFO:azure.identity.aio._internal.get_token_mixin:ClientSecretCredential.get_token succeeded
+    Step simple_step_one has finished in 0.396s.
+    Pod of step simple_step_one completed.
+    Waiting for pod of step simple_step_two to start...
+    Step simple_step_two has started.
+    INFO:azure.identity._internal.get_token_mixin:ClientSecretCredential.get_token succeeded
+    INFO:azure.identity._internal.get_token_mixin:ClientSecretCredential.get_token succeeded
+    INFO:azure.identity.aio._internal.get_token_mixin:ClientSecretCredential.get_token succeeded
+    Hello World!
+    Step simple_step_two has finished in 3.203s.
+    Pod of step simple_step_two completed.
+    Orchestration pod completed.
+    Dashboard URL: https://zenml.stefan.20.23.46.143.nip.io/workspaces/default/pipelines/98c41e2a-1ab0-4ec9-8375-6ea1ab473686/runs
+    ```
+    {% endcode %}
 
 </details>
 
