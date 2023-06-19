@@ -1,0 +1,39 @@
+name: Update API docs
+
+on:
+  push:
+    branches:
+      - 'release/**'
+
+jobs:
+  update_docs:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out branch
+        uses: actions/checkout@v2
+
+      - name: Set VERSION
+        id: set_version
+        run: |
+          VERSION=$(echo '${{ github.ref }}' | awk -F "/" '{print $NF}')
+          echo "::set-output name=version::$VERSION"
+
+      - name: Update API docs links
+        run: |
+          FILE="docs/book/toc.md"
+          VERSION=${{ steps.set_version.outputs.version }}
+          # Space or end-of-line, no trailing /
+          sed -i "s#https://apidocs.zenml.io\(\([[:space:]]\|$\)\)#https://apidocs.zenml.io/$VERSION\1#g" $FILE
+          # Trailing /
+          sed -i "s#https://apidocs.zenml.io/\([[:space:]]\)#https://apidocs.zenml.io/$VERSION/\1#g" $FILE
+          # Version or "latest"
+          sed -i "s#https://apidocs.zenml.io/\(latest\|[0-9]*\.[0-9]*\.[0-9]*\)\(/\?\)#https://apidocs.zenml.io/$VERSION\2#g" $FILE
+
+      - name: Commit and push changes
+        run: |
+          git config --global user.name 'Code Monkey'
+          git config --global user.email 'codemonkey@zenml.io'
+          git add docs/book/toc.md
+          git commit -m "Update API docs links" || { echo "No changes to commit" && exit 0; }
+          git push
