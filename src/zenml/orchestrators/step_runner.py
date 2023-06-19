@@ -46,7 +46,7 @@ from zenml.orchestrators.utils import is_setting_enabled
 from zenml.steps.step_context import StepContext
 from zenml.steps.step_environment import StepEnvironment
 from zenml.steps.utils import (
-    parse_return_type_annotations,
+    new_parse_return_type_annotations,
     resolve_type_annotation,
 )
 from zenml.utils import artifact_utils, materializer_utils, source_utils
@@ -169,8 +169,8 @@ class StepRunner:
                         )
 
             # Store and publish the output artifacts of the step function.
-            output_annotations = parse_return_type_annotations(
-                spec.annotations.get("return")
+            output_annotations = new_parse_return_type_annotations(
+                func=step_instance.entrypoint
             )
             output_data = self._validate_outputs(
                 return_values, output_annotations

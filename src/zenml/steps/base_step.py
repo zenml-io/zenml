@@ -1000,6 +1000,7 @@ class BaseStep(metaclass=BaseStepMeta):
                     outputs[output_name]["materializer_source"] = (
                         source_utils.resolve(CloudpickleMaterializer),
                     )
+                    continue
 
                 if is_union(
                     get_origin(output_annotation) or output_annotation

@@ -31,7 +31,7 @@ from zenml.exceptions import StepInterfaceError
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.steps.external_artifact import ExternalArtifact
-from zenml.steps.utils import parse_return_type_annotations
+from zenml.steps.utils import new_parse_return_type_annotations
 from zenml.utils import yaml_utils
 
 if TYPE_CHECKING:
@@ -304,14 +304,7 @@ def validate_entrypoint_function(
         else:
             inputs[key] = parameter
 
-    if signature.return_annotation is signature.empty:
-        raise StepInterfaceError(
-            f"Missing return type annotation for function {func.__name__}."
-        )
-
-    outputs = parse_return_type_annotations(
-        return_annotation=signature.return_annotation
-    )
+    outputs = new_parse_return_type_annotations(func=func)
 
     return EntrypointFunctionDefinition(
         inputs=inputs,
