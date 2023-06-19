@@ -181,7 +181,8 @@ class StepLauncher:
             step_run = StepRunRequestModel(
                 name=self._step_name,
                 pipeline_run_id=pipeline_run.id,
-                step=self._step,
+                config=self._step.config,
+                spec=self._step.spec,
                 status=ExecutionStatus.RUNNING,
                 docstring=docstring,
                 source_code=source_code,

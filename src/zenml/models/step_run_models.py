@@ -19,7 +19,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field
 
-from zenml.config.step_configurations import Step
+from zenml.config.step_configurations import StepConfiguration, StepSpec
 from zenml.enums import ExecutionStatus
 from zenml.models.base_models import (
     WorkspaceScopedRequestModel,
@@ -41,12 +41,12 @@ if TYPE_CHECKING:
 class StepRunBaseModel(BaseModel):
     """Base model for step runs."""
 
-    # TODO: refactor fields to make accessing config/... easier
     name: str = Field(
         title="The name of the pipeline run step.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    step: Step
+    config: StepConfiguration
+    spec: StepSpec
     pipeline_run_id: UUID
     original_step_run_id: Optional[UUID] = None
     status: ExecutionStatus

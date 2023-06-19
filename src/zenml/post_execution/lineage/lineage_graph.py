@@ -51,7 +51,7 @@ class LineageGraph(BaseModel):
         step_id = STEP_PREFIX + str(step.id)
         if self.root_step_id is None:
             self.root_step_id = step_id
-        step_config = step.step.config.dict()
+        step_config = step.config.dict()
         if step_config:
             step_config = {
                 key: value
@@ -65,8 +65,8 @@ class LineageGraph(BaseModel):
                     execution_id=str(step.id),
                     name=step.name,  # redundant for consistency
                     status=step.status,
-                    entrypoint_name=step.step.config.name,  # redundant for consistency
-                    parameters=step.step.config.parameters,
+                    entrypoint_name=step.config.name,  # redundant for consistency
+                    parameters=step.config.parameters,
                     configuration=step_config,
                     inputs={k: v.uri for k, v in step.inputs.items()},
                     outputs={k: v.uri for k, v in step.outputs.items()},

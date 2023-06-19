@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """SQLModel implementation of step run tables."""
+from __future__ import annotations
 
 import json
 from datetime import datetime
@@ -159,7 +160,8 @@ class StepRunSchema(NamedSchema, table=True):
         Returns:
             The step run schema.
         """
-        step_config = request.step.config
+        step_config = request.config
+        full_step_config = Step(spec=request.spec, config=request.config)
         return cls(
             name=request.name,
             pipeline_run_id=request.pipeline_run_id,
@@ -180,7 +182,7 @@ class StepRunSchema(NamedSchema, table=True):
                 default=pydantic_encoder,
                 sort_keys=True,
             ),
-            step_configuration=request.step.json(sort_keys=True),
+            step_configuration=full_step_config.json(sort_keys=True),
             caching_parameters=json.dumps(
                 step_config.caching_parameters,
                 default=pydantic_encoder,
@@ -212,6 +214,7 @@ class StepRunSchema(NamedSchema, table=True):
             metadata_schema.key: metadata_schema.to_model()
             for metadata_schema in self.run_metadata
         }
+        full_step_config = Step.parse_raw(self.step_configuration)
         return StepRunResponseModel(
             id=self.id,
             name=self.name,
@@ -223,7 +226,8 @@ class StepRunSchema(NamedSchema, table=True):
             cache_key=self.cache_key,
             start_time=self.start_time,
             end_time=self.end_time,
-            step=Step.parse_raw(self.step_configuration),
+            config=full_step_config.config,
+            spec=full_step_config.spec,
             status=self.status,
             docstring=self.docstring,
             source_code=self.source_code,
