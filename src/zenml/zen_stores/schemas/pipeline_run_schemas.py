@@ -130,7 +130,7 @@ class PipelineRunSchema(NamedSchema, table=True):
     enable_cache: Optional[bool] = Field(nullable=True)
     enable_artifact_metadata: Optional[bool] = Field(nullable=True)
     start_time: Optional[datetime] = Field(nullable=True)
-    end_time: Optional[datetime] = Field(nullable=True)
+    end_time: Optional[datetime] = Field(nullable=True, default=None)
     status: ExecutionStatus
     pipeline_configuration: str = Field(sa_column=Column(TEXT, nullable=False))
     num_steps: Optional[int]
@@ -142,8 +142,7 @@ class PipelineRunSchema(NamedSchema, table=True):
     orchestrator_environment: Optional[str] = Field(
         sa_column=Column(TEXT, nullable=True)
     )
-    # This is deprecated, The warning is on the associated model class
-    git_sha: Optional[str] = Field(nullable=True)
+    git_sha: Optional[str] = Field(nullable=True, default=None)  # DEPRECATED
 
     run_metadata: List["RunMetadataSchema"] = Relationship(
         back_populates="pipeline_run",
@@ -191,7 +190,6 @@ class PipelineRunSchema(NamedSchema, table=True):
             status=request.status,
             pipeline_configuration=config.json(sort_keys=True),
             num_steps=request.num_steps,
-            git_sha=request.git_sha,
             client_version=request.client_version,
             server_version=request.server_version,
             client_environment=client_environment,
@@ -225,58 +223,39 @@ class PipelineRunSchema(NamedSchema, table=True):
         }
         config = PipelineConfiguration.parse_raw(self.pipeline_configuration)
 
-        if _block_recursion:
-            return PipelineRunResponseModel(
-                id=self.id,
-                name=self.name,
-                workspace=self.workspace.to_model(),
-                user=self.user.to_model(True) if self.user else None,
-                schedule_id=self.schedule_id,
-                orchestrator_run_id=self.orchestrator_run_id,
-                start_time=self.start_time,
-                end_time=self.end_time,
-                status=self.status,
-                pipeline_configuration=config,
-                num_steps=self.num_steps,
-                git_sha=self.git_sha,
-                client_version=self.client_version,
-                server_version=self.server_version,
-                client_environment=client_environment,
-                orchestrator_environment=orchestrator_environment,
-                created=self.created,
-                updated=self.updated,
-                metadata=metadata,
+        pipeline, build, deployment, schedule_id = None, None, None, None
+        if not _block_recursion:
+            pipeline = self.pipeline.to_model(False) if self.pipeline else None
+            build = self.build.to_model() if self.build else None
+            deployment = (
+                self.deployment.to_model() if self.deployment else None
             )
-        else:
-            return PipelineRunResponseModel(
-                id=self.id,
-                name=self.name,
-                stack=self.stack.to_model() if self.stack else None,
-                workspace=self.workspace.to_model(),
-                user=self.user.to_model(True) if self.user else None,
-                orchestrator_run_id=self.orchestrator_run_id,
-                start_time=self.start_time,
-                end_time=self.end_time,
-                status=self.status,
-                pipeline=(
-                    self.pipeline.to_model(False) if self.pipeline else None
-                ),
-                build=self.build.to_model() if self.build else None,
-                deployment=self.deployment.to_model()
-                if self.deployment
-                else None,
-                schedule_id=self.schedule_id,
-                pipeline_configuration=config,
-                num_steps=self.num_steps,
-                git_sha=self.git_sha,
-                client_version=self.client_version,
-                server_version=self.server_version,
-                client_environment=client_environment,
-                orchestrator_environment=orchestrator_environment,
-                created=self.created,
-                updated=self.updated,
-                metadata=metadata,
-            )
+            schedule_id = self.schedule_id
+
+        return PipelineRunResponseModel(
+            id=self.id,
+            name=self.name,
+            stack=self.stack.to_model() if self.stack else None,
+            workspace=self.workspace.to_model(),
+            user=self.user.to_model(True) if self.user else None,
+            orchestrator_run_id=self.orchestrator_run_id,
+            start_time=self.start_time,
+            end_time=self.end_time,
+            status=self.status,
+            pipeline=pipeline,
+            build=build,
+            deployment=deployment,
+            schedule_id=schedule_id,
+            pipeline_configuration=config,
+            num_steps=self.num_steps,
+            client_version=self.client_version,
+            server_version=self.server_version,
+            client_environment=client_environment,
+            orchestrator_environment=orchestrator_environment,
+            created=self.created,
+            updated=self.updated,
+            metadata=metadata,
+        )
 
     def update(
         self, run_update: "PipelineRunUpdateModel"

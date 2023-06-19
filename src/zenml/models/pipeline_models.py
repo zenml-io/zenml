@@ -53,7 +53,7 @@ class PipelineBaseModel(BaseModel):
         title="The docstring of the pipeline.",
         max_length=TEXT_FIELD_MAX_LENGTH,
     )
-    spec: PipelineSpec
+    spec: PipelineSpec = Field(title="The spec of the pipeline.")
 
 
 # -------- #

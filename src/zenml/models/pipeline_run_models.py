@@ -37,7 +37,6 @@ from zenml.models.base_models import (
 )
 from zenml.models.constants import STR_FIELD_MAX_LENGTH
 from zenml.models.filter_models import WorkspaceScopedFilterModel
-from zenml.utils import deprecation_utils
 
 if TYPE_CHECKING:
     from sqlalchemy.sql.elements import BinaryExpression, BooleanClauseList
@@ -68,13 +67,32 @@ class PipelineRunBaseModel(BaseModel):
         max_length=STR_FIELD_MAX_LENGTH,
         default=None,
     )
-    schedule_id: Optional[UUID]
-    enable_cache: Optional[bool]
-    start_time: Optional[datetime]
-    end_time: Optional[datetime]
-    status: ExecutionStatus
-    pipeline_configuration: PipelineConfiguration
-    num_steps: Optional[int]
+    schedule_id: Optional[UUID] = Field(
+        title="The ID of the schedule that triggered this pipeline run.",
+        default=None,
+    )
+    enable_cache: Optional[bool] = Field(
+        title="Whether to enable caching for this pipeline run.",
+        default=None,
+    )
+    start_time: Optional[datetime] = Field(
+        title="The start time of the pipeline run.",
+        default=None,
+    )
+    end_time: Optional[datetime] = Field(
+        title="The end time of the pipeline run.",
+        default=None,
+    )
+    status: ExecutionStatus = Field(
+        title="The status of the pipeline run.",
+    )
+    pipeline_configuration: PipelineConfiguration = Field(
+        title="The pipeline configuration used for this pipeline run.",
+    )
+    num_steps: Optional[int] = Field(
+        title="The number of steps in this pipeline run.",
+        default=None,
+    )
     client_version: Optional[str] = Field(
         title="Client version.",
         default=current_zenml_version,
@@ -97,11 +115,6 @@ class PipelineRunBaseModel(BaseModel):
             "Environment of the orchestrator that executed this pipeline run "
             "(OS, Python version, etc.)."
         ),
-    )
-    git_sha: Optional[str] = None
-
-    _deprecation_validator = deprecation_utils.deprecate_pydantic_attributes(
-        "git_sha"
     )
 
 

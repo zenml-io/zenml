@@ -43,8 +43,10 @@ class ArtifactBaseModel(BaseModel):
         title="Name of the output in the parent step.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    artifact_store_id: Optional[UUID]
-    type: ArtifactType
+    artifact_store_id: Optional[UUID] = Field(
+        title="ID of the artifact store in which this artifact is stored.",
+    )
+    type: ArtifactType = Field(title="Type of the artifact.")
     uri: str = Field(
         title="URI of the artifact.", max_length=STR_FIELD_MAX_LENGTH
     )
@@ -69,7 +71,9 @@ class ArtifactBaseModel(BaseModel):
 class ArtifactResponseModel(ArtifactBaseModel, WorkspaceScopedResponseModel):
     """Response model for artifacts."""
 
-    producer_step_run_id: Optional[UUID]
+    producer_step_run_id: Optional[UUID] = Field(
+        title="ID of the step run that produced this artifact.",
+    )
     metadata: Dict[str, "RunMetadataResponseModel"] = Field(
         default={}, title="Metadata of the artifact."
     )
