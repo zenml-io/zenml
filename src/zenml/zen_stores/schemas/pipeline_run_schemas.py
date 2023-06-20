@@ -200,13 +200,11 @@ class PipelineRunSchema(NamedSchema, table=True):
     def to_model(
         self,
         steps: Optional[Dict[str, "StepRunResponseModel"]] = None,
-        _block_recursion: bool = False,
     ) -> PipelineRunResponseModel:
         """Convert a `PipelineRunSchema` to a `PipelineRunResponseModel`.
 
         Args:
             steps: The steps to include in the response.
-            _block_recursion: If other models should be recursively filled
 
         Returns:
             The created `PipelineRunResponseModel`.
@@ -227,13 +225,10 @@ class PipelineRunSchema(NamedSchema, table=True):
         }
         config = PipelineConfiguration.parse_raw(self.pipeline_configuration)
 
-        pipeline, build, deployment = None, None, None
-        if not _block_recursion:
-            pipeline = self.pipeline.to_model(False) if self.pipeline else None
-            build = self.build.to_model() if self.build else None
-            deployment = (
-                self.deployment.to_model() if self.deployment else None
-            )
+        pipeline = self.pipeline.to_model() if self.pipeline else None
+        build = self.build.to_model() if self.build else None
+        deployment = self.deployment.to_model() if self.deployment else None
+        steps = steps or {}
 
         return PipelineRunResponseModel(
             id=self.id,
@@ -258,7 +253,7 @@ class PipelineRunSchema(NamedSchema, table=True):
             created=self.created,
             updated=self.updated,
             metadata=metadata,
-            steps=steps or {},
+            steps=steps,
         )
 
     def update(
