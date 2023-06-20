@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Models representing pipelines."""
 
-from typing import List, Optional, Union
+from typing import Any, List, Optional, Union
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -70,6 +70,34 @@ class PipelineResponseModel(PipelineBaseModel, WorkspaceScopedResponseModel):
     status: Optional[List[ExecutionStatus]] = Field(
         default=None, title="The status of the last x Pipeline Runs."
     )
+
+    @property
+    def num_runs(self) -> int:
+        """Returns the number of runs of this pipeline.
+
+        Returns:
+            The number of runs of this pipeline.
+        """
+        from zenml.client import Client
+
+        return Client().list_pipeline_runs(pipeline_id=self.id).total
+
+    def get_runs(self, **kwargs: Any) -> List["PipelineRunResponseModel"]:
+        """Get runs of this pipeline.
+
+        Can be used to fetch runs other than `self.runs` and supports
+        fine-grained filtering and pagination.
+
+        Args:
+            **kwargs: Further arguments for filtering or pagination that are
+                passed to `client.list_pipeline_runs()`.
+
+        Returns:
+            List of runs of this pipeline.
+        """
+        from zenml.client import Client
+
+        return Client().list_pipeline_runs(pipeline_id=self.id, **kwargs).items
 
 
 # ------ #

@@ -14,17 +14,14 @@
 """Implementation of the post-execution pipeline."""
 
 from functools import partial
-from typing import TYPE_CHECKING, Any, List, Optional, Type, Union, cast
+from typing import TYPE_CHECKING, Any, List, Optional, Type, Union
 
 from zenml.client import Client
 from zenml.logger import get_logger
 from zenml.models import (
     PipelineResponseModel,
-    PipelineRunFilterModel,
     PipelineRunResponseModel,
 )
-from zenml.models.base_models import BaseResponseModel
-from zenml.post_execution.base_view import BaseView
 from zenml.utils.analytics_utils import AnalyticsEvent, track
 from zenml.utils.pagination_utils import depaginate
 
@@ -35,25 +32,25 @@ logger = get_logger(__name__)
 
 
 @track(event=AnalyticsEvent.GET_PIPELINES)
-def get_pipelines() -> List["PipelineVersionView"]:
+def get_pipelines() -> List["PipelineResponseModel"]:
     """Fetches all post-execution pipeline views in the active workspace.
 
     Returns:
         A list of post-execution pipeline views.
     """
-    client = Client()
-    pipelines = client.list_pipelines(
-        workspace_id=client.active_workspace.id,
-        sort_by="desc:created",
+    logger.warning(
+        "`zenml.post_execution.get_pipelines()` is deprecated and will be "
+        "removed in a future release. Please use "
+        "`zenml.client.Client().list_pipelines()` instead."
     )
-    return [PipelineVersionView(model) for model in pipelines.items]
+    return Client().list_pipelines().items
 
 
 @track(event=AnalyticsEvent.GET_PIPELINE)
 def get_pipeline(
     pipeline: Union["Pipeline", Type["Pipeline"], str],
     version: Optional[str] = None,
-) -> Optional[Union["PipelineView", "PipelineVersionView"]]:
+) -> Optional[Union["PipelineView", "PipelineResponseModel"]]:
     """Fetches a post-execution pipeline view.
 
     Use it in one of these ways:
@@ -95,7 +92,7 @@ def get_pipeline(
     if isinstance(pipeline, Pipeline):
         pipeline_model = pipeline._get_registered_model()
         if pipeline_model:
-            return PipelineVersionView(model=pipeline_model)
+            return pipeline_model
         else:
             return None
 
@@ -122,10 +119,9 @@ def get_pipeline(
     # Otherwise, find the corresponding pipeline version in the DB.
     client = Client()
     try:
-        pipeline_model = client.get_pipeline(
+        return client.get_pipeline(
             name_id_or_prefix=pipeline_name, version=version
         )
-        return PipelineVersionView(model=pipeline_model)
     except KeyError:
         return None
 
@@ -142,7 +138,7 @@ class PipelineView:
         self.name = name
 
     @property
-    def versions(self) -> List["PipelineVersionView"]:
+    def versions(self) -> List["PipelineResponseModel"]:
         """Returns all versions/instances of this pipeline name/class.
 
         Returns:
@@ -158,7 +154,7 @@ class PipelineView:
                 sort_by="desc:created",
             )
         )
-        return [PipelineVersionView(model) for model in pipelines]
+        return pipelines
 
     @property
     def num_runs(self) -> int:
@@ -181,7 +177,9 @@ class PipelineView:
         Returns:
             A list of all stored runs of this pipeline name/class.
         """
-        all_runs = [run for version in self.versions for run in version.runs]
+        all_runs = [
+            run for version in self.versions for run in (version.runs or [])
+        ]
         sorted_runs = sorted(all_runs, key=lambda x: x.created, reverse=True)
         return sorted_runs[:50]
 
@@ -197,59 +195,3 @@ class PipelineView:
         if not isinstance(other, PipelineView):
             return False
         return self.name == other.name
-
-
-class PipelineVersionView(BaseView):
-    """Post-execution class for a specific version/instance of a pipeline."""
-
-    MODEL_CLASS: Type[BaseResponseModel] = PipelineResponseModel
-    REPR_KEYS = ["id", "name", "version"]
-
-    @property
-    def model(self) -> PipelineResponseModel:
-        """Returns the underlying `PipelineResponseModel`.
-
-        Returns:
-            The underlying `PipelineResponseModel`.
-        """
-        return cast(PipelineResponseModel, self._model)
-
-    @property
-    def num_runs(self) -> int:
-        """Returns the number of runs of this pipeline.
-
-        Returns:
-            The number of runs of this pipeline.
-        """
-        active_workspace_id = Client().active_workspace.id
-        return (
-            Client()
-            .zen_store.list_runs(
-                PipelineRunFilterModel(
-                    workspace_id=active_workspace_id,
-                    pipeline_id=self._model.id,
-                )
-            )
-            .total
-        )
-
-    @property
-    def runs(self) -> List["PipelineRunResponseModel"]:
-        """Returns the last 50 stored runs of this pipeline.
-
-        The runs are returned in reverse chronological order, so the latest
-        run will be the first element in this list.
-
-        Returns:
-            A list of all stored runs of this pipeline.
-        """
-        # Do not cache runs as new runs might appear during this objects
-        # lifecycle
-        active_workspace_id = Client().active_workspace.id
-        runs = Client().list_pipeline_runs(
-            workspace_id=active_workspace_id,
-            pipeline_id=self.model.id,
-            size=50,
-            sort_by="desc:created",
-        )
-        return list(runs.items)

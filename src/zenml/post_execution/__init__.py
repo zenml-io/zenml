@@ -29,7 +29,6 @@ from zenml.post_execution.lineage import (
     StepNodeDetails,
 )
 from zenml.post_execution.pipeline import (
-    PipelineVersionView,
     PipelineView,
     get_pipeline,
     get_pipelines,
@@ -40,7 +39,6 @@ from zenml.post_execution.pipeline_run import (
 )
 
 __all__ = [
-    "PipelineVersionView",
     "PipelineView",
     "BaseNode",
     "ArtifactNode",

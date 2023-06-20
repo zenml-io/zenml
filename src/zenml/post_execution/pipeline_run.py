@@ -40,8 +40,7 @@ def get_run(name: str) -> "PipelineRunResponseModel":
         "removed in a future release. Please use "
         "`zenml.client.Client().get_pipeline_run(<name>)` instead."
     )
-    client = Client()
-    return client.get_pipeline_run(name)
+    return Client().get_pipeline_run(name)
 
 
 def get_unlisted_runs() -> List["PipelineRunResponseModel"]:
@@ -57,9 +56,4 @@ def get_unlisted_runs() -> List["PipelineRunResponseModel"]:
         "removed in a future release. Please use "
         "`zenml.client.Client().list_pipeline_runs(unlisted=True)` instead."
     )
-    client = Client()
-    runs = client.list_pipeline_runs(
-        workspace_id=client.active_workspace.id,
-        unlisted=True,
-    )
-    return list(runs.items)
+    return Client().list_pipeline_runs(unlisted=True).items

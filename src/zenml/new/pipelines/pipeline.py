@@ -89,7 +89,6 @@ if TYPE_CHECKING:
     from zenml.config.base_settings import SettingsOrDict
     from zenml.config.source import Source
     from zenml.post_execution import (
-        PipelineVersionView,
         PipelineView,
     )
 
@@ -129,7 +128,7 @@ class GetRunsDescriptor:
         """
         from zenml.post_execution import get_pipeline
 
-        pipeline_view: Union["PipelineVersionView", "PipelineView"]
+        pipeline_view: Union["PipelineResponseModel", "PipelineView"]
         if instance is None:
             pipeline_view = get_pipeline(cls)
         else:
@@ -137,7 +136,7 @@ class GetRunsDescriptor:
             pipeline_view = get_pipeline(instance)
 
         if pipeline_view:
-            return lambda: pipeline_view.runs
+            return lambda: pipeline_view.runs or []
         raise RuntimeError(
             "The pipeline view for this pipeline was not found. Please check "
             "that the pipeline has been run already."
