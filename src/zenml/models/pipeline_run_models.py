@@ -48,6 +48,7 @@ if TYPE_CHECKING:
         PipelineResponseModel,
         RunMetadataResponseModel,
         StackResponseModel,
+        StepRunResponseModel,
     )
 
 # ---- #
@@ -134,18 +135,18 @@ class PipelineRunResponseModel(
     stack: Optional["StackResponseModel"] = Field(
         default=None, title="The stack that was used for this run."
     )
-
     metadata: Dict[str, "RunMetadataResponseModel"] = Field(
         default={},
         title="Metadata associated with this pipeline run.",
     )
-
     build: Optional["PipelineBuildResponseModel"] = Field(
         default=None, title="The pipeline build that was used for this run."
     )
-
     deployment: Optional["PipelineDeploymentResponseModel"] = Field(
         default=None, title="The deployment that was used for this run."
+    )
+    steps: Dict[str, "StepRunResponseModel"] = Field(
+        default={}, title="The steps of this run."
     )
 
 

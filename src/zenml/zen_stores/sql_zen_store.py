@@ -3296,7 +3296,24 @@ class SqlZenStore(BaseZenStore):
             session.add(new_run)
             session.commit()
 
-            return new_run.to_model()
+            return self._run_schema_to_model(new_run)
+
+    def _run_schema_to_model(
+        self, run: PipelineRunSchema
+    ) -> PipelineRunResponseModel:
+        """Converts a pipeline run schema to a pipeline run model incl. steps.
+
+        Args:
+            run: The pipeline run schema to convert.
+
+        Returns:
+            The converted pipeline run model with steps hydrated into it.
+        """
+        steps = {
+            step.name: self._run_step_schema_to_model(step)
+            for step in run.step_runs
+        }
+        return run.to_model(steps=steps)
 
     def get_run(
         self, run_name_or_id: Union[str, UUID]
@@ -3311,7 +3328,7 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             run = self._get_run_schema(run_name_or_id, session=session)
-            return run.to_model()
+            return self._run_schema_to_model(run)
 
     def get_or_create_run(
         self, pipeline_run: PipelineRunRequestModel
@@ -3394,7 +3411,7 @@ class SqlZenStore(BaseZenStore):
             session.commit()
 
             session.refresh(existing_run)
-            return existing_run.to_model()
+            return self._run_schema_to_model(existing_run)
 
     def delete_run(self, run_id: UUID) -> None:
         """Deletes a pipeline run.

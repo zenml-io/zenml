@@ -15,7 +15,7 @@
 
 import json
 from datetime import datetime
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, Dict, List, Optional
 from uuid import UUID
 
 from sqlalchemy import TEXT, Column
@@ -27,6 +27,7 @@ from zenml.models import (
     PipelineRunRequestModel,
     PipelineRunResponseModel,
     PipelineRunUpdateModel,
+    StepRunResponseModel,
 )
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.pipeline_build_schemas import PipelineBuildSchema
@@ -197,11 +198,14 @@ class PipelineRunSchema(NamedSchema, table=True):
         )
 
     def to_model(
-        self, _block_recursion: bool = False
+        self,
+        steps: Optional[Dict[str, "StepRunResponseModel"]] = None,
+        _block_recursion: bool = False,
     ) -> PipelineRunResponseModel:
         """Convert a `PipelineRunSchema` to a `PipelineRunResponseModel`.
 
         Args:
+            steps: The steps to include in the response.
             _block_recursion: If other models should be recursively filled
 
         Returns:
@@ -255,6 +259,7 @@ class PipelineRunSchema(NamedSchema, table=True):
             created=self.created,
             updated=self.updated,
             metadata=metadata,
+            steps=steps or {},
         )
 
     def update(
