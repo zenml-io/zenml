@@ -25,6 +25,7 @@ from tensorboard.manager import (  # type: ignore [import]
     get_all,
 )
 
+from zenml.client import Client
 from zenml.enums import ArtifactType
 from zenml.environment import Environment
 from zenml.integrations.tensorboard.services.tensorboard_service import (
@@ -33,7 +34,6 @@ from zenml.integrations.tensorboard.services.tensorboard_service import (
 )
 from zenml.logger import get_logger
 from zenml.models.step_run_models import StepRunResponseModel
-from zenml.post_execution import get_pipeline
 
 logger = get_logger(__name__)
 
@@ -190,7 +190,7 @@ def get_step(pipeline_name: str, step_name: str) -> StepRunResponseModel:
     Raises:
         RuntimeError: If the step is not found.
     """
-    pipeline = get_pipeline(pipeline_name)
+    pipeline = Client().get_pipeline(pipeline_name)
     if pipeline is None:
         raise RuntimeError(
             f"No pipeline with name `{pipeline_name}` was found"
