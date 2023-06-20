@@ -62,14 +62,8 @@ to [authentication](azure.md#authentication-methods) to match your deployment sc
 #### Authentication Methods
 
 Integrating and using an Azure Artifact Store in your pipelines is not possible without employing some form of
-authentication. ZenML currently provides two options for managing Azure authentication: one for which you don't need to
-manage credentials explicitly, and the other one that requires you to generate Azure credentials and store them in
-a [ZenML Secret](/docs/book/platform-guide/set-up-your-mlops-platform/use-the-secret-store/use-the-secret-store.md). 
-Each method has advantages and disadvantages, and you should choose the one that best suits your use case. If you're 
-looking for a quick way to get started locally, we recommend using the _Implicit Authentication_ method. However, if 
-you would like to experiment with ZenML stacks that combine the Azure Artifact Store with other remote stack 
-components, we recommend using the _Azure Credentials_ method, especially if you don't have a lot of experience 
-with Azure Managed Identities.
+authentication. If you're looking for a quick
+way to get started locally, you can use the _Implicit Authentication_ method. However, the recommended way to authenticate to the Azure cloud platform is through [an Azure Service Connector](../../../platform-guide/set-up-your-mlops-platform/connect-zenml-to-infrastructure/azure-service-connector.md). This is particularly useful if you are configuring ZenML stacks that combine the Azure Artifact Store with other remote stack components also running in Azure.
 
 You will need the following information to configure Azure credentials for ZenML, depending on which type of Azure
 credentials you want to use:

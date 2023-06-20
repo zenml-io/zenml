@@ -180,6 +180,18 @@ A non-interactive version that connects the GCS Artifact Store to a target GCP S
 zenml artifact-store connect <GCS_STORE_NAME> --connector <CONNECTOR_ID>
 ```
 
+{% code title="Example Command Output" %}
+```text
+$ zenml artifact-store connect gcs-zenml-bucket-sl --connector gcs-zenml-bucket-sl
+Successfully connected artifact store `gcs-zenml-bucket-sl` to the following resources:
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━┓
+┃             CONNECTOR ID             │ CONNECTOR NAME      │ CONNECTOR TYPE │ RESOURCE TYPE │ RESOURCE NAMES       ┃
+┠──────────────────────────────────────┼─────────────────────┼────────────────┼───────────────┼──────────────────────┨
+┃ 2a0bec1b-9787-4bd7-8d4a-9a47b6f61643 │ gcs-zenml-bucket-sl │ 🔵 gcp         │ 📦 gcs-bucket │ gs://zenml-bucket-sl ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━┛
+``` 
+{% endcode %}
+
 A similar experience is available when you configure the GCS Artifact Store through the ZenML dashboard:
 
 ![GCS Artifact Store Configuration](../../../.gitbook/assets/gcs-artifact-store-service-connector.png)

@@ -160,6 +160,110 @@ Service connector 'azure-implicit' of type 'azure' with id 'ad645002-0cd4-4d4f-a
 ```
 {% endcode %}
 
+### Azure Service Principal
+
+Azure service principal credentials consisting of an Azure client ID and
+client secret. These credentials are used to authenticate clients to Azure
+services.
+
+For this authentication method, the Azure Service Connector requires
+[an Azure service principal to be created](https://learn.microsoft.com/en-us/azure/developer/python/sdk/authentication-on-premises-apps?tabs=azure-portal)
+and a client secret to be generated.
+
+<details>
+
+<summary>Example configuration</summary>
+
+The following assumes an Azure service principal was configured with a client secret and has permissions to access an Azure blob storage container, an AKS Kubernetes cluster and an ACR container registry. The service principal client ID, tenant ID and client secret are then used to configure the Azure Service Connector.
+
+```sh
+zenml service-connector register azure-service-principal --type azure --auth-method service-principal --tenant_id=a79f3633-8f45-4a74-a42e-68871c17b7fb --client_id=8926254a-8c3f-430a-a2fd-bdab234d491e --client_secret=AzureSuperSecret
+```
+
+{% code title="Example Command Output" %}
+```text
+⠙ Registering service connector 'azure-service-principal'...
+Successfully registered service connector `azure-service-principal` with access to the following resources:
+┏━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃     RESOURCE TYPE     │ RESOURCE NAMES                                ┃
+┠───────────────────────┼───────────────────────────────────────────────┨
+┃   🇦 azure-generic    │ ZenML Subscription                            ┃
+┠───────────────────────┼───────────────────────────────────────────────┨
+┃   📦 blob-container   │ az://demo-zenmlartifactstore                  ┃
+┠───────────────────────┼───────────────────────────────────────────────┨
+┃ 🌀 kubernetes-cluster │ demo-zenml-demos/demo-zenml-terraform-cluster ┃
+┠───────────────────────┼───────────────────────────────────────────────┨
+┃  🐳 docker-registry   │ demozenmlcontainerregistry.azurecr.io         ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+```
+{% endcode %}
+
+The Service Connector configuration shows that the connector is configured with service principal credentials:
+
+```sh
+zenml service-connector describe azure-service-principal
+```
+
+{% code title="Example Command Output" %}
+```text
+┏━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ PROPERTY         │ VALUE                                                                          ┃
+┠──────────────────┼────────────────────────────────────────────────────────────────────────────────┨
+┃ ID               │ 273d2812-2643-4446-82e6-6098b8ccdaa4                                           ┃
+┠──────────────────┼────────────────────────────────────────────────────────────────────────────────┨
+┃ NAME             │ azure-service-principal                                                        ┃
+┠──────────────────┼────────────────────────────────────────────────────────────────────────────────┨
+┃ TYPE             │ 🇦  azure                                                                       ┃
+┠──────────────────┼────────────────────────────────────────────────────────────────────────────────┨
+┃ AUTH METHOD      │ service-principal                                                              ┃
+┠──────────────────┼────────────────────────────────────────────────────────────────────────────────┨
+┃ RESOURCE TYPES   │ 🇦  azure-generic, 📦 blob-container, 🌀 kubernetes-cluster, 🐳 docker-registry ┃
+┠──────────────────┼────────────────────────────────────────────────────────────────────────────────┨
+┃ RESOURCE NAME    │ <multiple>                                                                     ┃
+┠──────────────────┼────────────────────────────────────────────────────────────────────────────────┨
+┃ SECRET ID        │ 50d9f230-c4ea-400e-b2d7-6b52ba2a6f90                                           ┃
+┠──────────────────┼────────────────────────────────────────────────────────────────────────────────┨
+┃ SESSION DURATION │ N/A                                                                            ┃
+┠──────────────────┼────────────────────────────────────────────────────────────────────────────────┨
+┃ EXPIRES IN       │ N/A                                                                            ┃
+┠──────────────────┼────────────────────────────────────────────────────────────────────────────────┨
+┃ OWNER            │ default                                                                        ┃
+┠──────────────────┼────────────────────────────────────────────────────────────────────────────────┨
+┃ WORKSPACE        │ default                                                                        ┃
+┠──────────────────┼────────────────────────────────────────────────────────────────────────────────┨
+┃ SHARED           │ ➖                                                                             ┃
+┠──────────────────┼────────────────────────────────────────────────────────────────────────────────┨
+┃ CREATED_AT       │ 2023-06-20 19:16:26.802374                                                     ┃
+┠──────────────────┼────────────────────────────────────────────────────────────────────────────────┨
+┃ UPDATED_AT       │ 2023-06-20 19:16:26.802378                                                     ┃
+┗━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+                     Configuration                      
+┏━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ PROPERTY      │ VALUE                                ┃
+┠───────────────┼──────────────────────────────────────┨
+┃ tenant_id     │ a79ff333-8f45-4a74-a42e-68871c17b7fb ┃
+┠───────────────┼──────────────────────────────────────┨
+┃ client_id     │ 8926254a-8c3f-430a-a2fd-bdab234d491e ┃
+┠───────────────┼──────────────────────────────────────┨
+┃ client_secret │ [HIDDEN]                             ┃
+┗━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+```
+{% endcode %}
+
+</details>
+
+### Azure Access Token
+
+Uses [temporary Azure access tokens](best-security-practices.md#short-lived-credentials) explicitly configured by the user or auto-configured from a local environment.
+
+This method has the major limitation that the user must regularly generate new tokens and update the connector configuration as API tokens expire. On the other hand, this method is ideal in
+cases where the connector only needs to be used for a short period of time, such as sharing access temporarily with someone else in your team.
+
+This is the authentication method used during auto-configuration, if you have
+[the local Azure CLI set up with credentials](https://learn.microsoft.com/en-us/cli/azure/authenticate-azure-cli).
+The connector will generate an access token from the Azure CLI credentials and
+store it in the connector configuration.
+
 </details>
 
 {% hint style="warning" %}
@@ -276,7 +380,7 @@ The Azure service connector auto-configuration comes with two limitations:
 2. it doesn't support authenticating to the Azure blob storage service. [The Azure service principal authentication method](azure-service-connector.md#azure-service-principal) can be used instead.
 {% endhint %}
 
-For an auto-configuration example, please refer to the [section about Azure access tokens](azure-service-connector.md#azure-access-token).&#x20;
+For an auto-configuration example, please refer to the [section about Azure access tokens](azure-service-connector.md#azure-access-token).
 
 ## Local client provisioning
 
@@ -467,7 +571,7 @@ zenml service-connector list-types --type azure
 ```
 {% endcode %}
 
-2. Register a multi-type Azure Service Connector using the Azure service principal credentials set up at the first step. Note the resources that it has access to:
+3. Register a multi-type Azure Service Connector using the Azure service principal credentials set up at the first step. Note the resources that it has access to:
 
 ```sh
 zenml service-connector register azure-service-principal --type azure --auth-method service-principal --tenant_id=a79ff3633-8f45-4a74-a42e-68871c17b7fb --client_id=8926254a-8c3f-430a-a2fd-bdab234fd491e --client_secret=AzureSuperSecret
@@ -491,7 +595,7 @@ Successfully registered service connector `azure-service-principal` with access 
 ```
 {% endcode %}
 
-3. register and connect an Azure Blob Storage Artifact Store Stack Component to an Azure blob container:
+4. register and connect an Azure Blob Storage Artifact Store Stack Component to an Azure blob container:
 
 ```sh
 zenml artifact-store register azure-demo --flavor azure --path=az://demo-zenmlartifactstore
@@ -518,7 +622,7 @@ Successfully connected artifact store `azure-demo` to the following resources:
 ```
 {% endcode %}
 
-4. register and connect a Kubernetes Orchestrator Stack Component to an AKS cluster:
+5. register and connect a Kubernetes Orchestrator Stack Component to an AKS cluster:
 
 ```sh
 zenml orchestrator register aks-demo-cluster --flavor kubernetes --synchronous=true --kubernetes_namespace=zenml-workloads
@@ -545,7 +649,7 @@ Successfully connected orchestrator `aks-demo-cluster` to the following resource
 ```
 {% endcode %}
 
-5. Register and connect an Azure Container Registry Stack Component to an ACR container registry:
+6. Register and connect an Azure Container Registry Stack Component to an ACR container registry:
 
 ```sh
 zenml container-registry register acr-demo-registry --flavor azure --uri=demozenmlcontainerregistry.azurecr.io
@@ -572,7 +676,7 @@ Successfully connected container registry `acr-demo-registry` to the following r
 ```
 {% endcode %}
 
-6. Combine all Stack Components together into a Stack and set it as active (also throw in a local Image Builder for completion):
+7. Combine all Stack Components together into a Stack and set it as active (also throw in a local Image Builder for completion):
 
 ```sh
 zenml image-builder register local --flavor local
@@ -597,7 +701,7 @@ Active repository stack set to:'gcp-demo'
 ```
 {% endcode %}
 
-7. Finally, run a simple pipeline to prove that everything works as expected. We'll use the simplest pipelines possible for this example:
+8. Finally, run a simple pipeline to prove that everything works as expected. We'll use the simplest pipelines possible for this example:
 
 ```python
 from zenml import pipeline, step
