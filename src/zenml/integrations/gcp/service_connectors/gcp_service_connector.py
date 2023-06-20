@@ -1312,6 +1312,8 @@ class GCPServiceConnector(ServiceConnector):
         Raises:
             AuthorizationException: If authentication failed.
             ValueError: If the resource type is not supported.
+            RuntimeError: If the Kubernetes connector is not installed and the
+                resource type is Kubernetes.
         """
         connector_name = ""
         if self.name:
@@ -1420,8 +1422,8 @@ class GCPServiceConnector(ServiceConnector):
                 )
             except ImportError as e:
                 raise RuntimeError(
-                    f"The Kubernetes Service Connector functionality could not be used "
-                    f"due to missing dependencies: {e}"
+                    f"The Kubernetes Service Connector functionality could not "
+                    f"be used due to missing dependencies: {e}"
                 )
             return KubernetesServiceConnector(
                 id=self.id,

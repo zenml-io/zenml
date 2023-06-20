@@ -7,7 +7,7 @@ This is a minor ZenML release that introduces a couple of new features:
 * the [Azure Service Connector](https://docs.zenml.io/platform-guide/set-up-your-mlops-platform/connect-to-your-cloud-provider/azure-service-connector) is now available in addition to the AWS and GCP ones. It can be used to connect ZenML and Stack Components to Azure cloud infrastructure resources like Azure Blob Storage, Azure Container Registry and Azure Kubernetes Service.
 * Service Connectors can now also be managed through the ZenML Dashboard
 * adds `zenml secret export` CLI command to export secrets from the ZenML Secret Store to a local file
-* adds the ability to create/update ZenML secrets from JSON/YAML files or command line arguments (curtesy of @bhatt-priyadutt)
+* adds the ability to create/update ZenML secrets from JSON/YAML files or command line arguments (courtesy of @bhatt-priyadutt)
 
 In addition to that, this release also contains a couple of bug fixes and improvements, including:
 
