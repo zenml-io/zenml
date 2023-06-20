@@ -15,7 +15,7 @@
 
 import os
 import sys
-from typing import Any, Optional, cast
+from typing import Any, Optional
 
 import psutil
 from rich import print
@@ -203,7 +203,7 @@ def get_step(pipeline_name: str, step_name: str) -> StepRunResponseModel:
             f"No pipeline step with name `{step_name}` was found in "
             f"pipeline `{pipeline_name}`"
         )
-    return cast(StepRunResponseModel, step)
+    return step
 
 
 def visualize_tensorboard(pipeline_name: str, step_name: str) -> None:
