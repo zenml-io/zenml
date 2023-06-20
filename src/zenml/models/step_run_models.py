@@ -27,7 +27,7 @@ from zenml.models.base_models import (
 )
 from zenml.models.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.models.filter_models import WorkspaceScopedFilterModel
-from zenml.models.logs_models import LogsResponseModel
+from zenml.models.logs_models import LogsRequestModel, LogsResponseModel
 
 if TYPE_CHECKING:
     from zenml.models import ArtifactResponseModel, RunMetadataResponseModel
@@ -82,10 +82,6 @@ class StepRunBaseModel(BaseModel):
         title="The end time of the step run.",
         default=None,
     )
-    logs: Optional["LogsResponseModel"] = Field(
-        title="Logs associated with this step run.",
-        default=None,
-    )
 
 
 # -------- #
@@ -107,6 +103,10 @@ class StepRunResponseModel(StepRunBaseModel, WorkspaceScopedResponseModel):
     metadata: Dict[str, "RunMetadataResponseModel"] = Field(
         title="Metadata associated with this step run.",
         default={},
+    )
+    logs: Optional["LogsResponseModel"] = Field(
+        title="Logs associated with this step run.",
+        default=None,
     )
 
     @property
@@ -215,6 +215,10 @@ class StepRunRequestModel(StepRunBaseModel, WorkspaceScopedRequestModel):
     outputs: Dict[str, UUID] = Field(
         title="The IDs of the output artifacts of the step run.",
         default={},
+    )
+    logs: Optional["LogsRequestModel"] = Field(
+        title="Logs associated with this step run.",
+        default=None,
     )
 
 

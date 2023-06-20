@@ -140,7 +140,7 @@ class PipelineRunContext:
                 StepRunFilterModel(pipeline_run_id=run.id)
             ).items
             for s in self.steps:
-                self.artifacts += [a for a in s.output_artifacts.values()]
+                self.artifacts += [a for a in s.outputs.values()]
         return self.runs
 
     def __exit__(self, exc_type, exc_value, exc_traceback):

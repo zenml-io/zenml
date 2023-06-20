@@ -30,10 +30,6 @@ def get_run(name: str) -> "PipelineRunResponseModel":
 
     Returns:
         The post-execution view of the run with the given name.
-
-    Raises:
-        KeyError: If no run with the given name exists.
-        RuntimeError: If multiple runs with the given name exist.
     """
     logger.warning(
         "`zenml.post_execution.get_run(<name>)` is deprecated and will be "

@@ -227,14 +227,13 @@ class PipelineRunSchema(NamedSchema, table=True):
         }
         config = PipelineConfiguration.parse_raw(self.pipeline_configuration)
 
-        pipeline, build, deployment, schedule_id = None, None, None, None
+        pipeline, build, deployment = None, None, None
         if not _block_recursion:
             pipeline = self.pipeline.to_model(False) if self.pipeline else None
             build = self.build.to_model() if self.build else None
             deployment = (
                 self.deployment.to_model() if self.deployment else None
             )
-            schedule_id = self.schedule_id
 
         return PipelineRunResponseModel(
             id=self.id,
@@ -249,7 +248,7 @@ class PipelineRunSchema(NamedSchema, table=True):
             pipeline=pipeline,
             build=build,
             deployment=deployment,
-            schedule_id=schedule_id,
+            schedule_id=self.schedule_id,
             config=config,
             num_steps=self.num_steps,
             client_version=self.client_version,

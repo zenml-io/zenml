@@ -45,6 +45,7 @@ class ArtifactBaseModel(BaseModel):
     )
     artifact_store_id: Optional[UUID] = Field(
         title="ID of the artifact store in which this artifact is stored.",
+        default=None,
     )
     type: ArtifactType = Field(title="Type of the artifact.")
     uri: str = Field(
@@ -73,6 +74,7 @@ class ArtifactResponseModel(ArtifactBaseModel, WorkspaceScopedResponseModel):
 
     producer_step_run_id: Optional[UUID] = Field(
         title="ID of the step run that produced this artifact.",
+        default=None,
     )
     metadata: Dict[str, "RunMetadataResponseModel"] = Field(
         default={}, title="Metadata of the artifact."

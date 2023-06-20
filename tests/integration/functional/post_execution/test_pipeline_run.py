@@ -41,7 +41,7 @@ def test_get_run_fails_for_non_existent_run(clean_client: Client):
 
 
 def test_get_unlisted_runs(clean_client: Client, connected_two_step_pipeline):
-    """Test that `get_unlisted_runs()` only returns unlisted runs."""
+    """Test that listing unlisted runs works."""
     assert len(clean_client.list_pipeline_runs(unlisted=True)) == 0
     pipeline_instance = connected_two_step_pipeline(
         step_1=constant_int_output_test_step(),

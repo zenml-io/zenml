@@ -31,7 +31,7 @@ In addition to that, this release also contains a couple of bug fixes and improv
 * Add cloud orchestrator warning message by @strickvl in https://github.com/zenml-io/zenml/pull/1418
 * Update custom code run in sandbox docs by @safoinme in https://github.com/zenml-io/zenml/pull/1610
 * Remove the GH Actions review reminder bot by @strickvl in https://github.com/zenml-io/zenml/pull/1624
-* Automatically optimise image sizes on PR creation by @strickvl in https://github.com/zenml-io/zenml/pull/1626
+* Automatically optimize image sizes on PR creation by @strickvl in https://github.com/zenml-io/zenml/pull/1626
 * Deprecation Warning Improvements by @fa9r in https://github.com/zenml-io/zenml/pull/1620
 * Fix ZenML Installation when FastAPI is not Installed by @fa9r in https://github.com/zenml-io/zenml/pull/1627
 * Fix unnecessary / extra deprecation warnings by @strickvl in https://github.com/zenml-io/zenml/pull/1630
