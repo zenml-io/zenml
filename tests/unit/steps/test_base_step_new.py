@@ -98,3 +98,33 @@ def test_passing_valid_parameters():
 
     with does_not_raise():
         test_pipeline()
+
+
+def test_step_parameter_merging():
+    """Tests that parameters defined in the run config overwrite values defined
+    in code."""
+    from zenml.client import Client
+    from zenml.config.compiler import Compiler
+    from zenml.config.pipeline_run_configuration import (
+        PipelineRunConfiguration,
+    )
+
+    @pipeline
+    def test_pipeline():
+        step_with_int_input(input_=1)
+
+    run_config = PipelineRunConfiguration.parse_obj(
+        {"steps": {"step_with_int_input": {"parameters": {"input_": 5}}}}
+    )
+    test_pipeline.prepare()
+    deployment, _ = Compiler().compile(
+        pipeline=test_pipeline,
+        stack=Client().active_stack,
+        run_configuration=run_config,
+    )
+    assert (
+        deployment.step_configurations[
+            "step_with_int_input"
+        ].config.parameters["input_"]
+        == 5
+    )
