@@ -3335,6 +3335,21 @@ class Client(metaclass=ClientMetaClass):
         runs_filter_model.set_scope_workspace(self.active_workspace.id)
         return self.zen_store.list_runs(runs_filter_model=runs_filter_model)
 
+    def list_runs(self, **kwargs: Any) -> Page[PipelineRunResponseModel]:
+        """(Deprecated) List all pipeline runs.
+
+        Args:
+            **kwargs: The filter arguments passed to `list_pipeline_runs`.
+
+        Returns:
+            A page with Pipeline Runs fitting the filter description
+        """
+        logger.warning(
+            "`Client.list_runs()` is deprecated and will be removed in a "
+            "future release. Please use `Client.list_pipeline_runs()` instead."
+        )
+        return self.list_pipeline_runs(**kwargs)
+
     def get_pipeline_run(
         self,
         name_id_or_prefix: Union[str, UUID],
