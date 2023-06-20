@@ -18,14 +18,14 @@ from typing import List, Optional, Tuple, Union
 from pydantic import BaseModel
 
 from zenml.enums import ExecutionStatus
-from zenml.models import PipelineRunResponseModel, StepRunResponseModel
-from zenml.post_execution.lineage.edge import Edge
-from zenml.post_execution.lineage.node import (
+from zenml.lineage_graph.edge import Edge
+from zenml.lineage_graph.node import (
     ArtifactNode,
     ArtifactNodeDetails,
     StepNode,
     StepNodeDetails,
 )
+from zenml.models import PipelineRunResponseModel, StepRunResponseModel
 
 ARTIFACT_PREFIX = "artifact_"
 STEP_PREFIX = "step_"

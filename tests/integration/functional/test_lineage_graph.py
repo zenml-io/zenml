@@ -17,12 +17,12 @@ from tests.integration.functional.zen_stores.utils import (
     constant_int_output_test_step,
     int_plus_one_test_step,
 )
-from zenml.metadata.metadata_types import MetadataTypeEnum, Uri
-from zenml.post_execution.lineage.lineage_graph import (
+from zenml.lineage_graph.lineage_graph import (
     ARTIFACT_PREFIX,
     STEP_PREFIX,
     LineageGraph,
 )
+from zenml.metadata.metadata_types import MetadataTypeEnum, Uri
 
 
 def test_generate_run_nodes_and_edges(
