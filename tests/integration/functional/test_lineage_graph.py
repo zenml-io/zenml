@@ -55,7 +55,7 @@ def test_generate_run_nodes_and_edges(
 
     # Write some metadata for all steps
     steps = pipeline_run.steps
-    for step_ in steps:
+    for step_ in steps.values():
         clean_client.create_run_metadata(
             metadata={
                 "experiment_tracker_url": Uri("https://www.aria_and_blupus.ai")
@@ -85,12 +85,14 @@ def test_generate_run_nodes_and_edges(
     assert (
         len(graph.edges) == 3
     )  # step_1 -> artifact_1 -> step_2 -> artifact_2
-    assert graph.root_step_id == STEP_PREFIX + str(pipeline_run.steps[0].id)
+    assert graph.root_step_id == STEP_PREFIX + str(
+        pipeline_run.steps["step_1"].id
+    )
 
     # Check that the graph makes sense
     edge_id_to_model_mapping = {edge.id: edge for edge in graph.edges}
     node_id_to_model_mapping = {node.id: node for node in graph.nodes}
-    for step_ in pipeline_run.steps:
+    for step_ in pipeline_run.steps.values():
         step_id = STEP_PREFIX + str(step_.id)
 
         # Check that each step has a corresponding node
