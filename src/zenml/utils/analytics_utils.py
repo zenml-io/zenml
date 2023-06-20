@@ -726,3 +726,22 @@ class event_handler(object):
 
         if self.v2:
             track_event(self.event, self.metadata, v1=False, v2=True)
+
+
+def email_opt_int(
+    opted_in: bool,
+    email: Optional[str],
+    source: str
+):
+    # If the user opted in, associate email with the anonymous distinct ID
+    if opted_in:
+        identify_user(
+            user_metadata={"email": email, "source": source},
+            v2=True,
+        )
+    # Track that the user answered the prompt
+    track_event(
+        AnalyticsEvent.OPT_IN_OUT_EMAIL,
+        {"opted_in": opted_in, "source": source},
+        v2=True,
+    )
