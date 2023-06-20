@@ -2822,8 +2822,8 @@ class Client(metaclass=ClientMetaClass):
 
         Args:
             name_id_or_prefix: The name, ID or ID prefix of the pipeline.
-            version: The pipeline version. If left empty, will return
-                the latest version.
+            version: The pipeline version. If not specified, the latest
+                version is returned.
 
         Returns:
             The pipeline.

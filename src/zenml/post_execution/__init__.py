@@ -29,7 +29,6 @@ from zenml.post_execution.lineage import (
     StepNodeDetails,
 )
 from zenml.post_execution.pipeline import (
-    PipelineView,
     get_pipeline,
     get_pipelines,
 )

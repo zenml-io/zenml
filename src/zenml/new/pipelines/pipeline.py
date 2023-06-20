@@ -29,7 +29,6 @@ from typing import (
     Optional,
     Set,
     Tuple,
-    Type,
     TypeVar,
     Union,
 )
@@ -88,9 +87,6 @@ from zenml.utils.analytics_utils import AnalyticsEvent, event_handler
 if TYPE_CHECKING:
     from zenml.config.base_settings import SettingsOrDict
     from zenml.config.source import Source
-    from zenml.post_execution import (
-        PipelineView,
-    )
 
     StepConfigurationUpdateOrDict = Union[
         Dict[str, Any], StepConfigurationUpdate
@@ -101,46 +97,6 @@ logger = get_logger(__name__)
 
 T = TypeVar("T", bound="Pipeline")
 F = TypeVar("F", bound=Callable[..., None])
-
-
-class GetRunsDescriptor:
-    """Descriptor to define the `BasePipeline.get_runs`.
-
-    Descriptors (https://docs.python.org/3/reference/datamodel.html#implementing-descriptors)
-    allow us to define different behaviors for pipeline classes and instances.
-    """
-
-    def __get__(
-        self, instance: Optional["Pipeline"], cls: Type["Pipeline"]
-    ) -> Callable[[], List["PipelineRunResponseModel"]]:
-        """Get all runs of this pipeline instance or class.
-
-        Args:
-            instance: The pipeline instance if called on an instance else None.
-            cls: The pipeline class.
-
-        Returns:
-            A list of all runs of this pipeline instance or class.
-
-        Raises:
-            RuntimeError: If the method is called on a pipeline instance that
-                has not been run yet.
-        """
-        from zenml.post_execution import get_pipeline
-
-        pipeline_view: Union["PipelineResponseModel", "PipelineView"]
-        if instance is None:
-            pipeline_view = get_pipeline(cls)
-        else:
-            instance._prepare_if_possible()
-            pipeline_view = get_pipeline(instance)
-
-        if pipeline_view:
-            return lambda: pipeline_view.runs or []
-        raise RuntimeError(
-            "The pipeline view for this pipeline was not found. Please check "
-            "that the pipeline has been run already."
-        )
 
 
 class Pipeline:
@@ -690,7 +646,21 @@ class Pipeline:
                         f"infrastructure.",
                     )
 
-    get_runs = GetRunsDescriptor()
+    def get_runs(self, **kwargs: Any) -> List[PipelineRunResponseModel]:
+        """Get runs of this pipeline.
+
+        Args:
+            **kwargs: Further arguments for filtering or pagination that are
+                passed to `client.list_pipeline_runs()`.
+
+        Returns:
+            List of runs of this pipeline.
+        """
+        self._prepare_if_possible()
+        model = self._get_registered_model()
+        if not model:
+            return []
+        return model.get_runs(**kwargs)
 
     def write_run_configuration_template(
         self, path: str, stack: Optional["Stack"] = None
