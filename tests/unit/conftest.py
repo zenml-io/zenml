@@ -410,7 +410,7 @@ def sample_pipeline_run_model(
     return PipelineRunResponseModel(
         id=uuid4(),
         name="sample_run_name",
-        pipeline_configuration=PipelineConfiguration(name="aria_pipeline"),
+        config=PipelineConfiguration(name="aria_pipeline"),
         num_steps=1,
         status=ExecutionStatus.COMPLETED,
         created=datetime.now(),
@@ -426,7 +426,7 @@ def sample_pipeline_run_request_model() -> PipelineRunRequestModel:
     return PipelineRunRequestModel(
         id=uuid4(),
         name="sample_run_name",
-        pipeline_configuration=PipelineConfiguration(name="aria_pipeline"),
+        config=PipelineConfiguration(name="aria_pipeline"),
         num_steps=1,
         status=ExecutionStatus.COMPLETED,
         user=uuid4(),

@@ -170,7 +170,7 @@ class PipelineRunSchema(NamedSchema, table=True):
         Returns:
             The created `PipelineRunSchema`.
         """
-        config = request.pipeline_configuration
+        config = request.config
         client_environment = json.dumps(request.client_environment)
         orchestrator_environment = json.dumps(request.orchestrator_environment)
 
@@ -250,7 +250,7 @@ class PipelineRunSchema(NamedSchema, table=True):
             build=build,
             deployment=deployment,
             schedule_id=schedule_id,
-            pipeline_configuration=config,
+            config=config,
             num_steps=self.num_steps,
             client_version=self.client_version,
             server_version=self.server_version,

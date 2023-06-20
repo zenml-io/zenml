@@ -3254,9 +3254,9 @@ class Client(metaclass=ClientMetaClass):
     # - PIPELINE RUNS -
     # -----------------
 
-    def list_runs(
+    def list_pipeline_runs(
         self,
-        sort_by: str = "created",
+        sort_by: str = "desc:created",
         page: int = PAGINATION_STARTING_PAGE,
         size: int = PAGE_SIZE_DEFAULT,
         logical_operator: LogicalOperators = LogicalOperators.AND,
@@ -3351,7 +3351,7 @@ class Client(metaclass=ClientMetaClass):
         """
         return self._get_entity_by_id_or_name_or_prefix(
             get_method=self.zen_store.get_run,
-            list_method=self.list_runs,
+            list_method=self.list_pipeline_runs,
             name_id_or_prefix=name_id_or_prefix,
             allow_name_prefix_match=allow_name_prefix_match,
         )

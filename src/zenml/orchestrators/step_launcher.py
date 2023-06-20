@@ -295,7 +295,7 @@ class StepLauncher:
             if self._deployment.schedule
             else None,
             status=ExecutionStatus.RUNNING,
-            pipeline_configuration=self._deployment.pipeline_configuration,
+            config=self._deployment.pipeline_configuration,
             num_steps=len(self._deployment.step_configurations),
             client_environment=self._deployment.client_environment,
             orchestrator_environment=get_run_environment_dict(),

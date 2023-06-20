@@ -18,10 +18,13 @@ from typing import TYPE_CHECKING, Any, List, Optional, Type, Union, cast
 
 from zenml.client import Client
 from zenml.logger import get_logger
-from zenml.models import PipelineResponseModel, PipelineRunFilterModel
+from zenml.models import (
+    PipelineResponseModel,
+    PipelineRunFilterModel,
+    PipelineRunResponseModel,
+)
 from zenml.models.base_models import BaseResponseModel
 from zenml.post_execution.base_view import BaseView
-from zenml.post_execution.pipeline_run import PipelineRunView
 from zenml.utils.analytics_utils import AnalyticsEvent, track
 from zenml.utils.pagination_utils import depaginate
 
@@ -169,7 +172,7 @@ class PipelineView:
         return sum(version.num_runs for version in self.versions)
 
     @property
-    def runs(self) -> List["PipelineRunView"]:
+    def runs(self) -> List["PipelineRunResponseModel"]:
         """Returns the last 50 stored runs of this pipeline name/class.
 
         The runs are returned in reverse chronological order, so the latest
@@ -179,9 +182,7 @@ class PipelineView:
             A list of all stored runs of this pipeline name/class.
         """
         all_runs = [run for version in self.versions for run in version.runs]
-        sorted_runs = sorted(
-            all_runs, key=lambda x: x.model.created, reverse=True
-        )
+        sorted_runs = sorted(all_runs, key=lambda x: x.created, reverse=True)
         return sorted_runs[:50]
 
     def __eq__(self, other: Any) -> bool:
@@ -233,7 +234,7 @@ class PipelineVersionView(BaseView):
         )
 
     @property
-    def runs(self) -> List["PipelineRunView"]:
+    def runs(self) -> List["PipelineRunResponseModel"]:
         """Returns the last 50 stored runs of this pipeline.
 
         The runs are returned in reverse chronological order, so the latest
@@ -245,11 +246,10 @@ class PipelineVersionView(BaseView):
         # Do not cache runs as new runs might appear during this objects
         # lifecycle
         active_workspace_id = Client().active_workspace.id
-        runs = Client().list_runs(
+        runs = Client().list_pipeline_runs(
             workspace_id=active_workspace_id,
             pipeline_id=self.model.id,
             size=50,
             sort_by="desc:created",
         )
-
-        return [PipelineRunView(run) for run in runs.items]
+        return list(runs.items)

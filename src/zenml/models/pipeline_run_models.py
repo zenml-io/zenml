@@ -87,7 +87,7 @@ class PipelineRunBaseModel(BaseModel):
     status: ExecutionStatus = Field(
         title="The status of the pipeline run.",
     )
-    pipeline_configuration: PipelineConfiguration = Field(
+    config: PipelineConfiguration = Field(
         title="The pipeline configuration used for this pipeline run.",
     )
     num_steps: Optional[int] = Field(
@@ -148,6 +148,24 @@ class PipelineRunResponseModel(
     steps: Dict[str, "StepRunResponseModel"] = Field(
         default={}, title="The steps of this run."
     )
+
+    def get_step(self, step: str) -> "StepRunResponseModel":
+        """(Deprecated) Get a step by name.
+
+        Args:
+            step: Name of the step to get.
+
+        Returns:
+            The step with the given name.
+        """
+        from zenml.logger import get_logger
+
+        logger = get_logger(__name__)
+        logger.warning(
+            "`run.get_step(<step_name>)` is deprecated and will be removed in "
+            "a future release. Please use `run.steps[<step_name>]` instead."
+        )
+        return self.steps[step]
 
 
 # ------ #

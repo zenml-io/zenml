@@ -59,6 +59,7 @@ from zenml.models import (
     PipelineDeploymentResponseModel,
     PipelineRequestModel,
     PipelineResponseModel,
+    PipelineRunResponseModel,
     ScheduleRequestModel,
 )
 from zenml.models.pipeline_build_models import (
@@ -88,7 +89,6 @@ if TYPE_CHECKING:
     from zenml.config.base_settings import SettingsOrDict
     from zenml.config.source import Source
     from zenml.post_execution import (
-        PipelineRunView,
         PipelineVersionView,
         PipelineView,
     )
@@ -113,7 +113,7 @@ class GetRunsDescriptor:
 
     def __get__(
         self, instance: Optional["Pipeline"], cls: Type["Pipeline"]
-    ) -> Callable[[], List["PipelineRunView"]]:
+    ) -> Callable[[], List["PipelineRunResponseModel"]]:
         """Get all runs of this pipeline instance or class.
 
         Args:
@@ -670,7 +670,7 @@ class Pipeline:
                 constants.SHOULD_PREVENT_PIPELINE_EXECUTION = False
 
             if deployment_model:
-                runs = Client().list_runs(
+                runs = Client().list_pipeline_runs(
                     deployment_id=deployment_model.id,
                     sort_by="asc:start_time",
                     size=1,

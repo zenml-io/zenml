@@ -18,7 +18,7 @@ from typing import List, Optional, Tuple, Union
 from pydantic import BaseModel
 
 from zenml.enums import ExecutionStatus
-from zenml.models.step_run_models import StepRunResponseModel
+from zenml.models import PipelineRunResponseModel, StepRunResponseModel
 from zenml.post_execution.lineage.edge import Edge
 from zenml.post_execution.lineage.node import (
     ArtifactNode,
@@ -26,14 +26,13 @@ from zenml.post_execution.lineage.node import (
     StepNode,
     StepNodeDetails,
 )
-from zenml.post_execution.pipeline_run import PipelineRunView
 
 ARTIFACT_PREFIX = "artifact_"
 STEP_PREFIX = "step_"
 
 
 class LineageGraph(BaseModel):
-    """A lineage graph representation of a PipelineRunView."""
+    """A lineage graph representation of a PipelineRunResponseModel."""
 
     nodes: List[Union[StepNode, ArtifactNode]] = []
     edges: List[Edge] = []
@@ -118,14 +117,16 @@ class LineageGraph(BaseModel):
                 )
             )
 
-    def generate_run_nodes_and_edges(self, run: PipelineRunView) -> None:
+    def generate_run_nodes_and_edges(
+        self, run: PipelineRunResponseModel
+    ) -> None:
         """Generates the run nodes and the edges between them.
 
         Args:
-            run: The PipelineRunView to generate the lineage graph for.
+            run: The PipelineRunResponseModel to generate the lineage graph for.
         """
         self.run_metadata = [
             (m.key, str(m.value), str(m.type)) for m in run.metadata.values()
         ]
-        for step in run.steps:
+        for step in run.steps.values():
             self.generate_step_nodes_and_edges(step)

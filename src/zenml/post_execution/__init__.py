@@ -35,7 +35,6 @@ from zenml.post_execution.pipeline import (
     get_pipelines,
 )
 from zenml.post_execution.pipeline_run import (
-    PipelineRunView,
     get_run,
     get_unlisted_runs,
 )
@@ -43,7 +42,6 @@ from zenml.post_execution.pipeline_run import (
 __all__ = [
     "PipelineVersionView",
     "PipelineView",
-    "PipelineRunView",
     "BaseNode",
     "ArtifactNode",
     "StepNode",

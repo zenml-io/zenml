@@ -728,7 +728,7 @@ pipeline_run_crud_test_config = CrudTestConfig(
         id=uuid.uuid4(),
         name=sample_name("sample_pipeline_run"),
         status=ExecutionStatus.RUNNING,
-        pipeline_configuration=PipelineConfiguration(name="aria_pipeline"),
+        config=PipelineConfiguration(name="aria_pipeline"),
         user=uuid.uuid4(),
         workspace=uuid.uuid4(),
     ),
