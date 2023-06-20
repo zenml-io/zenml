@@ -64,23 +64,9 @@ class PipelineBaseModel(BaseModel):
 class PipelineResponseModel(PipelineBaseModel, WorkspaceScopedResponseModel):
     """Pipeline response model user, workspace, runs, and status hydrated."""
 
-    runs: Optional[List["PipelineRunResponseModel"]] = Field(
-        default=None, title="A list of the last x Pipeline Runs."
-    )
     status: Optional[List[ExecutionStatus]] = Field(
-        default=None, title="The status of the last x Pipeline Runs."
+        default=None, title="The status of the last 3 Pipeline Runs."
     )
-
-    @property
-    def num_runs(self) -> int:
-        """Returns the number of runs of this pipeline.
-
-        Returns:
-            The number of runs of this pipeline.
-        """
-        from zenml.client import Client
-
-        return Client().list_pipeline_runs(pipeline_id=self.id).total
 
     def get_runs(self, **kwargs: Any) -> List["PipelineRunResponseModel"]:
         """Get runs of this pipeline.
@@ -98,6 +84,26 @@ class PipelineResponseModel(PipelineBaseModel, WorkspaceScopedResponseModel):
         from zenml.client import Client
 
         return Client().list_pipeline_runs(pipeline_id=self.id, **kwargs).items
+
+    @property
+    def runs(self) -> List["PipelineRunResponseModel"]:
+        """Returns the 50 most recent runs of this pipeline in descending order.
+
+        Returns:
+            The 50 most recent runs of this pipeline in descending order.
+        """
+        return self.get_runs()
+
+    @property
+    def num_runs(self) -> int:
+        """Returns the number of runs of this pipeline.
+
+        Returns:
+            The number of runs of this pipeline.
+        """
+        from zenml.client import Client
+
+        return Client().list_pipeline_runs(pipeline_id=self.id).total
 
 
 # ------ #
