@@ -22,7 +22,7 @@ from zenml.pipelines.base_pipeline import BasePipeline
 
 def _get_first_step_of_last_run(clean_client: Client) -> StepRunResponseModel:
     """Get the output of the last run."""
-    return list(clean_client.list_pipeline_runs()[0].steps.values())[0]
+    return clean_client.list_pipeline_runs()[0].steps["step_"]
 
 
 def _assert_step_logs_enabled(clean_client: Client):

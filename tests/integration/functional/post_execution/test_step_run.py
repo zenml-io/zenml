@@ -33,8 +33,8 @@ def test_step_run_has_source_code(clean_client, connected_two_step_pipeline):
     pipeline_run = clean_client.get_pipeline(
         "connected_two_step_pipeline"
     ).runs[0]
-    step_1 = pipeline_run.steps[0]
-    step_2 = pipeline_run.steps[1]
+    step_1 = pipeline_run.steps["step_1"]
+    step_2 = pipeline_run.steps["step_2"]
     assert step_1.source_code == inspect.getsource(
         constant_int_output_test_step.entrypoint
     )
@@ -58,8 +58,8 @@ def test_step_run_with_too_long_source_code_is_truncated(
     pipeline_run = clean_client.get_pipeline(
         "connected_two_step_pipeline"
     ).runs[0]
-    step_1 = pipeline_run.steps[0]
-    step_2 = pipeline_run.steps[1]
+    step_1 = pipeline_run.steps["step_1"]
+    step_2 = pipeline_run.steps["step_2"]
     assert step_1.source_code == random_source[:1000] + "..."
     assert step_2.source_code == random_source[:1000] + "..."
 
@@ -74,8 +74,8 @@ def test_step_run_has_docstring(clean_client, connected_two_step_pipeline):
     pipeline_run = clean_client.get_pipeline(
         "connected_two_step_pipeline"
     ).runs[0]
-    step_1 = pipeline_run.steps[0]
-    step_2 = pipeline_run.steps[1]
+    step_1 = pipeline_run.steps["step_1"]
+    step_2 = pipeline_run.steps["step_2"]
     assert step_1.docstring == constant_int_output_test_step.entrypoint.__doc__
     assert step_2.docstring == int_plus_one_test_step.entrypoint.__doc__
 
@@ -96,7 +96,7 @@ def test_step_run_with_too_long_docstring_is_truncated(
     pipeline_run = clean_client.get_pipeline(
         "connected_two_step_pipeline"
     ).runs[0]
-    step_1 = pipeline_run.steps[0]
-    step_2 = pipeline_run.steps[1]
+    step_1 = pipeline_run.steps["step_1"]
+    step_2 = pipeline_run.steps["step_2"]
     assert step_1.docstring == random_docstring[:1000] + "..."
     assert step_2.docstring == random_docstring[:1000] + "..."
