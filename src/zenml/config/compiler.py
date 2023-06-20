@@ -14,7 +14,16 @@
 """Class for compiling ZenML pipelines into a serializable format."""
 import copy
 import string
-from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional, Tuple
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    List,
+    Mapping,
+    Optional,
+    Set,
+    Tuple,
+)
 
 from zenml.config.base_settings import BaseSettings, ConfigurationLevel
 from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
@@ -80,16 +89,24 @@ class Compiler:
             if ConfigurationLevel.STEP in settings.LEVEL
         }
 
+        run_config_parameters = {
+            invocation_id: set(update.parameters)
+            for invocation_id, update in run_configuration.steps.items()
+        }
         steps = {
-            name: self._compile_step_invocation(
-                invocation=step,
+            invocation_id: self._compile_step_invocation(
+                invocation=invocation,
                 pipeline_settings=settings_to_passdown,
                 pipeline_extra=pipeline.configuration.extra,
                 stack=stack,
+                run_config_parameters=run_config_parameters.get(invocation_id)
+                or set(),
                 pipeline_failure_hook_source=pipeline.configuration.failure_hook_source,
                 pipeline_success_hook_source=pipeline.configuration.success_hook_source,
             )
-            for name, step in self._get_sorted_invocations(pipeline=pipeline)
+            for invocation_id, invocation in self._get_sorted_invocations(
+                pipeline=pipeline
+            )
         }
 
         self._ensure_required_stack_components_exist(stack=stack, steps=steps)
@@ -373,6 +390,7 @@ class Compiler:
         pipeline_settings: Dict[str, "BaseSettings"],
         pipeline_extra: Dict[str, Any],
         stack: "Stack",
+        run_config_parameters: Set[str],
         pipeline_failure_hook_source: Optional["Source"] = None,
         pipeline_success_hook_source: Optional["Source"] = None,
     ) -> Step:
@@ -384,6 +402,7 @@ class Compiler:
                 pipeline of the step.
             pipeline_extra: Extra values configured on the pipeline of the step.
             stack: The stack on which the pipeline will be run.
+            run_config_parameters: Run config parameters applied to the step.
             pipeline_failure_hook_source: Source for the failure hook.
             pipeline_success_hook_source: Source for the success hook.
 
@@ -420,7 +439,9 @@ class Compiler:
             merge=True,
         )
 
-        complete_step_configuration = invocation.finalize()
+        complete_step_configuration = invocation.finalize(
+            parameters_to_ignore=run_config_parameters
+        )
         return Step(spec=step_spec, config=complete_step_configuration)
 
     @staticmethod
