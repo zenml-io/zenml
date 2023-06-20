@@ -3377,6 +3377,7 @@ class SqlZenStore(BaseZenStore):
                 query=query,
                 table=PipelineRunSchema,
                 filter_model=runs_filter_model,
+                custom_schema_to_model_conversion=self._run_schema_to_model,
             )
 
     def update_run(
