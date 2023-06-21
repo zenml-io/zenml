@@ -1317,6 +1317,7 @@ def print_components_table(
     client: "Client",
     component_type: StackComponentType,
     components: Sequence["ComponentResponseModel"],
+    show_active: bool = False,
 ) -> None:
     """Prints a table with configuration options for a list of stack components.
 
@@ -1327,6 +1328,8 @@ def print_components_table(
         client: Instance of the Repository singleton
         component_type: Type of stack component
         components: List of stack components to print.
+        show_active: Flag to decide whether to append the active stack component
+            on the top of the list.
     """
     display_name = _component_display_name(component_type, plural=True)
 
@@ -1340,9 +1343,14 @@ def print_components_table(
         active_components = active_stack.components[component_type]
         active_component = active_components[0] if active_components else None
 
-    components = [active_component] + [
-        c for c in components if c.id != active_component.id
-    ]
+    components = list(components)
+    if show_active:
+        if active_component.id not in [c.id for c in components]:
+            components.append(active_component)
+
+        components = [c for c in components if c.id == active_component.id] + [
+            c for c in components if c.id != active_component.id
+        ]
 
     configurations = []
     for component in components:
