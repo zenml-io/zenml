@@ -103,7 +103,42 @@ class PipelineResponseModel(PipelineBaseModel, WorkspaceScopedResponseModel):
         """
         from zenml.client import Client
 
-        return Client().list_pipeline_runs(pipeline_id=self.id).total
+        return Client().list_pipeline_runs(pipeline_id=self.id, size=1).total
+
+    @property
+    def last_run(self) -> "PipelineRunResponseModel":
+        """Returns the last run of this pipeline.
+
+        Returns:
+            The last run of this pipeline.
+
+        Raises:
+            RuntimeError: If no runs were found for this pipeline.
+        """
+        runs = self.get_runs(size=1)
+        if not runs:
+            raise RuntimeError(
+                f"No runs found for pipeline '{self.name}' with id {self.id}."
+            )
+        return runs[0]
+
+    @property
+    def last_successful_run(self) -> "PipelineRunResponseModel":
+        """Returns the last successful run of this pipeline.
+
+        Returns:
+            The last successful run of this pipeline.
+
+        Raises:
+            RuntimeError: If no successful runs were found for this pipeline.
+        """
+        runs = self.get_runs(status=ExecutionStatus.COMPLETED, size=1)
+        if not runs:
+            raise RuntimeError(
+                f"No successful runs found for pipeline '{self.name}' with id "
+                f"{self.id}."
+            )
+        return runs[0]
 
 
 # ------ #
