@@ -30,7 +30,11 @@ from zenml.models.filter_models import WorkspaceScopedFilterModel
 from zenml.models.logs_models import LogsRequestModel, LogsResponseModel
 
 if TYPE_CHECKING:
-    from zenml.models import ArtifactResponseModel, RunMetadataResponseModel
+    from zenml.models import (
+        ArtifactResponseModel,
+        PipelineRunResponseModel,
+        RunMetadataResponseModel,
+    )
 
 
 # ---- #
@@ -108,6 +112,17 @@ class StepRunResponseModel(StepRunBaseModel, WorkspaceScopedResponseModel):
         title="Logs associated with this step run.",
         default=None,
     )
+
+    @property
+    def run(self) -> "PipelineRunResponseModel":
+        """Returns the pipeline run that this step run belongs to.
+
+        Returns:
+            The pipeline run.
+        """
+        from zenml.client import Client
+
+        return Client().get_pipeline_run(self.pipeline_run_id)
 
     @property
     def input(self) -> "ArtifactResponseModel":

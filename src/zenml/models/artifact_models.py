@@ -30,6 +30,7 @@ from zenml.models.visualization_models import VisualizationModel
 
 if TYPE_CHECKING:
     from zenml.models.run_metadata_models import RunMetadataResponseModel
+    from zenml.models.step_run_models import StepRunResponseModel
 
 # ---- #
 # BASE #
@@ -79,6 +80,20 @@ class ArtifactResponseModel(ArtifactBaseModel, WorkspaceScopedResponseModel):
     metadata: Dict[str, "RunMetadataResponseModel"] = Field(
         default={}, title="Metadata of the artifact."
     )
+
+    @property
+    def step(self) -> "StepRunResponseModel":
+        """Get the step that produced this artifact.
+
+        Returns:
+            The step that produced this artifact.
+
+        Raises:
+            RuntimeError: If the artifact has no step associated with it.
+        """
+        from zenml.utils.artifact_utils import get_producer_step_of_artifact
+
+        return get_producer_step_of_artifact(self)
 
     def load(self) -> Any:
         """Materializes (loads) the data stored in this artifact.
