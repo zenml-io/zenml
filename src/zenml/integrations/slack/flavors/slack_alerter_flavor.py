@@ -47,7 +47,6 @@ class SlackAlerterConfig(BaseAlerterConfig):
             True if the stack component is valid, False otherwise.
         """
         try:
-
             from slack_sdk import WebClient
             from slack_sdk.errors import SlackApiError
         except ImportError:
