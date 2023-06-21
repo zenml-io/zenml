@@ -1421,12 +1421,15 @@ def expires_in(expires_at: datetime.datetime, expired_str: str) -> str:
 def print_service_connectors_table(
     client: "Client",
     connectors: Sequence["ServiceConnectorResponseModel"],
+    show_active: bool = False,
 ) -> None:
     """Prints a table with details for a list of service connectors.
 
     Args:
         client: Instance of the Repository singleton
         connectors: List of service connectors to print.
+        show_active: lag to decide whether to append the active connectors
+            on the top of the list.
     """
     if len(connectors) == 0:
         return
@@ -1448,12 +1451,18 @@ def print_service_connectors_table(
                         )
                     active_connectors.append(connector)
 
+    connectors = list(connectors)
+    if show_active:
+        active_ids = [c.id for c in connectors]
+        for active_connector in active_connectors:
+            if active_connector.id not in active_ids:
+                connectors.append(active_connector)
+
+            connectors = [c for c in connectors if c.id in active_ids] + [
+                c for c in connectors if c.id not in active_ids
+            ]
+
     configurations = []
-
-    connectors = active_connectors + [
-        c for c in connectors if c.id not in [a.id for a in active_connectors]
-    ]
-
     for connector in connectors:
         is_active = connector.id in [c.id for c in active_connectors]
         labels = [
