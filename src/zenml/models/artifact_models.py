@@ -29,6 +29,7 @@ from zenml.models.filter_models import WorkspaceScopedFilterModel
 from zenml.models.visualization_models import VisualizationModel
 
 if TYPE_CHECKING:
+    from zenml.models.pipeline_run_models import PipelineRunResponseModel
     from zenml.models.run_metadata_models import RunMetadataResponseModel
     from zenml.models.step_run_models import StepRunResponseModel
 
@@ -94,6 +95,15 @@ class ArtifactResponseModel(ArtifactBaseModel, WorkspaceScopedResponseModel):
         from zenml.utils.artifact_utils import get_producer_step_of_artifact
 
         return get_producer_step_of_artifact(self)
+
+    @property
+    def run(self) -> "PipelineRunResponseModel":
+        """Get the pipeline run that produced this artifact.
+
+        Returns:
+            The pipeline run that produced this artifact.
+        """
+        return self.step.run
 
     def load(self) -> Any:
         """Materializes (loads) the data stored in this artifact.
