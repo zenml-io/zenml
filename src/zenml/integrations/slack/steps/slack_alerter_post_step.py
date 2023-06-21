@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Step that allows you to post messages to Slack."""
+from typing import Optional
 
 from zenml import step
 from zenml.alerter.alerter_utils import (
@@ -29,14 +30,16 @@ from zenml.steps import StepContext
 
 @step
 def slack_alerter_post_step(
-    params: SlackAlerterParameters, context: StepContext, message: str
+    context: StepContext,
+    message: str,
+    params: Optional[SlackAlerterParameters] = None,
 ) -> bool:
     """Post a message to the Slack alerter component of the active stack.
 
     Args:
-        params: Parameters for the Slack alerter.
         context: StepContext of the ZenML repository.
         message: Message to be posted.
+        params: Parameters for the Slack alerter.
 
     Returns:
         True if operation succeeded, else False.
@@ -52,7 +55,8 @@ def slack_alerter_post_step(
             f"{type(alerter)}, which is not a subclass of `SlackAlerter`."
         )
     if (
-        hasattr(params, "include_format_blocks")
+        params
+        and hasattr(params, "include_format_blocks")
         and params.include_format_blocks
     ):
         env = Environment().step_environment
