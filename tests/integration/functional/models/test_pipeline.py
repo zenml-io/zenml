@@ -41,7 +41,7 @@ def test_pipeline_run_linkage(
         assert runs == model.runs
         assert runs[0] == model.last_run == model.last_successful_run
 
-    # Check different versions of the pipeline do not interfer with each other
+    # Check different versions of the pipeline do not interfere with each other
     assert pipeline_instance.model.num_runs == 3
     pipeline_instance_2: BasePipeline = connected_two_step_pipeline(
         step_1=constant_int_output_test_step(),
