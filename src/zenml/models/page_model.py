@@ -38,8 +38,6 @@
 The code contained within this file has been inspired by the
 fastapi-pagination library: https://github.com/uriyyo/fastapi-pagination
 """
-from __future__ import annotations
-
 from typing import Generic, List, TypeVar
 
 from pydantic import SecretStr

@@ -80,7 +80,7 @@ class TensorboardVisualizer:
         logged by past and future step runs.
 
         Args:
-            object: StepRunResponseModel fetched from run.get_step().
+            object: StepRunResponseModel fetched from get_step().
             height: Height of the generated visualization.
             *args: Additional arguments.
             **kwargs: Additional keyword arguments.
@@ -148,7 +148,7 @@ class TensorboardVisualizer:
         """Stop the TensorBoard server previously started for a pipeline step.
 
         Args:
-            object: StepRunResponseModel fetched from run.get_step().
+            object: StepRunResponseModel fetched from get_step().
         """
         for _, artifact_view in object.outputs.items():
             # filter out anything but model artifacts
@@ -197,7 +197,7 @@ def get_step(pipeline_name: str, step_name: str) -> StepRunResponseModel:
         )
 
     last_run = pipeline.runs[0]
-    step = last_run.get_step(step=step_name)
+    step = last_run.steps[step_name]
     if step is None:
         raise RuntimeError(
             f"No pipeline step with name `{step_name}` was found in "
