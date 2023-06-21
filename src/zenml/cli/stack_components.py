@@ -31,10 +31,10 @@ from zenml.cli.served_model import register_model_deployer_subcommands
 from zenml.cli.utils import (
     _component_display_name,
     fail_secrets_manager_creation,
+    is_sorted_or_filtered,
     list_options,
     print_page_info,
     warn_deprecated_secrets_manager,
-is_sorted_or_filtered,
 )
 from zenml.client import Client
 from zenml.console import console
@@ -147,7 +147,9 @@ def generate_stack_component_list_command(
 
     @list_options(ComponentFilterModel)
     @click.pass_context
-    def list_stack_components_command(ctx: click.Context, **kwargs: Any) -> None:
+    def list_stack_components_command(
+        ctx: click.Context, **kwargs: Any
+    ) -> None:
         """Prints a table of stack components.
 
         Args:

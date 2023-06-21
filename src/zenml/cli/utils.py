@@ -227,6 +227,7 @@ def print_pydantic_models(
     columns: Optional[List[str]] = None,
     exclude_columns: Optional[List[str]] = None,
     active_models: Optional[List[T]] = None,
+    show_active: bool = False,
 ) -> None:
     """Prints the list of Pydantic models in a table.
 
@@ -237,6 +238,8 @@ def print_pydantic_models(
         exclude_columns: Optionally specify columns to exclude. (Note: `columns`
             takes precedence over `exclude_columns`.)
         active_models: Optional list of active models of the given type T.
+        show_active: Flag to decide whether to append the active model on the
+            top of the list.
     """
     if exclude_columns is None:
         exclude_columns = list()
@@ -300,26 +303,31 @@ def print_pydantic_models(
             else items
         )
 
+    active_ids = [a.id for a in active_models]
     if isinstance(models, Page):
-        table_items = models.items
+        table_items = list(models.items)
 
-        if active_models is not None:
-            table_items = active_models + [
-                i
-                for i in table_items
-                if all(i.id != a.id for a in active_models)
+        if show_active:
+            for active_model in active_models:
+                if active_model.id not in [i.id for i in table_items]:
+                    table_items.append(active_model)
+
+            table_items = [i for i in table_items if i.id in active_ids] + [
+                i for i in table_items if i.id not in active_ids
             ]
 
         print_table([__dictify(model) for model in table_items])
         print_page_info(models)
     else:
-        table_items = models
+        table_items = list(models)
 
-        if active_models is not None:
-            table_items = active_models + [
-                i
-                for i in table_items
-                if all(i.id != a.id for a in active_models)
+        if show_active:
+            for active_model in active_models:
+                if active_model.id not in [i.id for i in table_items]:
+                    table_items.append(active_model)
+
+            table_items = [i for i in table_items if i.id in active_ids] + [
+                i for i in table_items if i.id not in active_ids
             ]
 
         print_table([__dictify(model) for model in table_items])
@@ -2433,13 +2441,9 @@ def is_sorted_or_filtered(ctx: click.Context) -> bool:
         a boolean indicating whether any sorting or filtering parameters were
         used during the list CLI call.
     """
-    ignored_parameters = ["page", "size"]
     try:
-        for name, source in ctx._parameter_source.items():
-            if (
-                name not in ignored_parameters
-                and source != click.core.ParameterSource.DEFAULT
-            ):
+        for _, source in ctx._parameter_source.items():
+            if source != click.core.ParameterSource.DEFAULT:
                 return True
         return False
 
