@@ -344,7 +344,7 @@ the connector.
 - allow listing the containers in a storage account (e.g. the `Reader and Data
 Access` role)
 
-If set, the resource name must identify an S3 bucket using one of the following
+If set, the resource name must identify an Azure blob container using one of the following
 formats:
 
 - Azure blob container URI (canonical resource name): `{az|abfs}://{container-name}`
@@ -369,7 +369,7 @@ resources is the service principal authentication method.
             emoji=":package:",
         ),
         ResourceTypeModel(
-            name="Azure AKS Kubernetes cluster",
+            name="AKS Kubernetes cluster",
             resource_type=KUBERNETES_CLUSTER_RESOURCE_TYPE,
             description="""
 Allows Stack Components to access an AKS cluster as a standard Kubernetes
@@ -378,7 +378,7 @@ pre-authenticated python-kubernetes client instance.
 
 The configured credentials must have at least the following
 Azure IAM permissions associated with the AKS clusters
-that the connector that the connector will be allowed to access:
+that the connector will be allowed to access:
 
 - allow listing the AKS clusters and fetching their credentials (e.g. the
 `Azure Kubernetes Service Cluster Admin Role` role)
@@ -408,7 +408,7 @@ resource group will be accessible.
             emoji=":cyclone:",
         ),
         ResourceTypeModel(
-            name="Azure ACR container registry",
+            name="ACR container registry",
             resource_type=DOCKER_REGISTRY_RESOURCE_TYPE,
             description="""
 Allows Stack Components to access one or more ACR registries as a standard

@@ -55,7 +55,7 @@ The configured credentials must have at least the following Azure IAM permission
 * allow listing the storage accounts (e.g. the `Reader and Data Access` role). This is only required if a storage account is not configured in the connector.
 * allow listing the containers in a storage account (e.g. the `Reader and Data Access` role)
 
-If set, the resource name must identify an S3 bucket using one of the following formats:
+If set, the resource name must identify an Azure blob storage container using one of the following formats:
 
 * Azure blob container URI (canonical resource name): `{az|abfs}://{container-name}`
 * Azure blob container name: `{container-name}`
@@ -67,6 +67,56 @@ The only Azure authentication method that works with Azure blob storage resource
 {% endhint %}
 
 ### AKS Kubernetes cluster
+
+Allows Stack Components to access an AKS cluster as a standard Kubernetes
+cluster resource. When used by Stack Components, they are provided a
+pre-authenticated python-kubernetes client instance.
+
+The configured credentials must have at least the following
+Azure IAM permissions associated with the AKS clusters
+that the connector will be allowed to access:
+
+- allow listing the AKS clusters and fetching their credentials (e.g. the
+`Azure Kubernetes Service Cluster Admin Role` role)
+
+If set, the resource name must identify an EKS cluster using one of the
+following formats:
+
+- resource group scoped AKS cluster name (canonical): `[{resource-group}/]{cluster-name}`
+- AKS cluster name: `{cluster-name}`
+
+Given that the AKS cluster name is unique within a resource group, the
+resource group name may be included in the resource name to avoid ambiguity. If
+a resource group is configured in the connector, the resource group name
+in the resource name must match the configured resource group. If no resource
+group is configured in the connector and a resource group name is not included
+in the resource name, the connector will attempt to find the AKS cluster in
+any resource group.
+
+If a resource group is configured in the connector, only AKS clusters in that
+resource group will be accessible.
+
+### ACR container registry
+
+Allows Stack Components to access one or more ACR registries as a standard
+Docker registry resource. When used by Stack Components, they are provided a
+pre-authenticated python-docker client instance.
+
+The configured credentials must have at least the following
+Azure IAM permissions associated with the ACR registries
+that the connector that the connector will be allowed to access:
+
+- allow access to pull and push images (e.g. the `AcrPull` and `AcrPush` roles)
+- allow access to list registries (e.g. the `Contributor` role)
+
+If set, the resource name must identify an ACR registry using one of the
+following formats:
+
+- ACR registry URI (canonical resource name): `[https://]{registry-name}.azurecr.io`
+- ACR registry name: `{registry-name}`
+
+If a resource group is configured in the connector, only ACR registries in that
+resource group will be accessible.
 
 If an authentication method other than the Azure service principal is used for authentication, the admin account must be enabled for the registry, otherwise clients will not be able to authenticate to the registry. See the official Azure [documentation on the admin account](https://docs.microsoft.com/en-us/azure/container-registry/container-registry-authentication#admin-account) for more information.
 
