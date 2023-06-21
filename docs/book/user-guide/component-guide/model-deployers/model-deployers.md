@@ -246,10 +246,10 @@ In Python, you can alternatively discover the prediction URL of a deployed model
 that deployed the model:
 
 ```python
-from zenml.post_execution import get_run
+from zenml.client import Client
 
-pipeline_run = get_run("<PIPELINE_RUN_NAME>")
-deployer_step = pipeline_run.get_step("<NAME_OF_MODEL_DEPLOYER_STEP>")
+pipeline_run = Client().get_pipeline_run("<PIPELINE_RUN_NAME>")
+deployer_step = pipeline_run.steps["<NAME_OF_MODEL_DEPLOYER_STEP>"]
 deployed_model_url = deployer_step.metadata["deployed_model_url"].value
 ```
 
