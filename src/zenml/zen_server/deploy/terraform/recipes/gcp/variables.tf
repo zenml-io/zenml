@@ -126,6 +126,14 @@ variable "database_ssl_verify_server_cert" {
 }
 
 
+# Enable secrets manager API. Listing services might need elevated permissions.
+# Disable this if you don't have the ListServices permission.
+variable "enable_secrets_manager_api" {
+  description = "Should the recipe enable the secrets manager API?"
+  default     = true
+  type        = bool
+}
+
 # set to true if you don't already have an nginx ingress
 # controller in your cluster
 variable "create_ingress_controller" {

@@ -7,6 +7,7 @@ resource "kubernetes_namespace" "zen-server" {
 
 # enable secret manager
 resource "google_project_service" "secret_manager" {
+  count = var.enable_secrets_manager_api ? 1 : 0
   project = var.project_id
   service = "secretmanager.googleapis.com"
 
@@ -43,7 +44,7 @@ resource "helm_release" "zen-server" {
 
   set {
     name  = "zenml.secretsStore.type"
-    value = "gcp"
+    value = var.enable_secrets_manager_api? "gcp" : "sql"
   }
   set {
     name  = "zenml.secretsStore.gcp.project_idd"
