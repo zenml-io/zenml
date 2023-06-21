@@ -84,7 +84,7 @@ Stacks using the Azure Container Registry set up with local authentication are n
 {% endtab %}
 
 {% tab title="Azure Service Connector (recommended)" %}
-It is recommended to leverage the many features provided by [the Azure Service Connector](../../../platform-guide/set-up-your-mlops-platform/connect-zenml-to-infrastructure/azure-service-connector.md) such as auto-configuration, local login, best security practices regarding long-lived credentials and reusing the same credentials across multiple stack components.
+To set up the Azure Container Registry to authenticate to Azure and access an ACR registry, it is recommended to leverage the many features provided by [the Azure Service Connector](../../../platform-guide/set-up-your-mlops-platform/connect-zenml-to-infrastructure/azure-service-connector.md) such as auto-configuration, local login, best security practices regarding long-lived credentials and reusing the same credentials across multiple stack components.
 
 If you don't already have an Azure Service Connector configured in your ZenML deployment, you can register one using the interactive CLI command. You have the option to configure an Azure Service Connector that can be used to access a ACR registry or even more than one type of Azure resource:
 

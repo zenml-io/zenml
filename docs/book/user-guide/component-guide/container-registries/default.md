@@ -69,7 +69,7 @@ Stacks using the Default Container Registry set up with local authentication are
 {% endtab %}
 
 {% tab title="Docker Service Connector (recommended)" %}
-It is recommended to leverage the features provided by [the Docker Service Connector](../../../platform-guide/set-up-your-mlops-platform/connect-zenml-to-infrastructure/docker-service-connector.md) such as local login and reusing the same credentials across multiple stack components.
+To set up the Default Container Registry to authenticate to and access a private container registry, it is recommended to leverage the features provided by [the Docker Service Connector](../../../platform-guide/set-up-your-mlops-platform/connect-zenml-to-infrastructure/docker-service-connector.md) such as local login and reusing the same credentials across multiple stack components.
 
 If you don't already have a Docker Service Connector configured in your ZenML deployment, you can register one using the interactive CLI command:
 

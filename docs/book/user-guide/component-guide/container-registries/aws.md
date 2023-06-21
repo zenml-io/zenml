@@ -110,7 +110,7 @@ Stacks using the AWS Container Registry set up with local authentication are not
 {% endtab %}
 
 {% tab title="AWS Service Connector (recommended)" %}
-It is recommended to leverage the many features provided by [the AWS Service Connector](../../../platform-guide/set-up-your-mlops-platform/connect-zenml-to-infrastructure/aws-service-connector.md) such as auto-configuration, local login, best security practices regarding long-lived credentials and fine-grained access control and reusing the same credentials across multiple stack components.
+To set up the AWS Container Registry to authenticate to AWS and access an ECR registry, it is recommended to leverage the many features provided by [the AWS Service Connector](../../../platform-guide/set-up-your-mlops-platform/connect-zenml-to-infrastructure/aws-service-connector.md) such as auto-configuration, local login, best security practices regarding long-lived credentials and fine-grained access control and reusing the same credentials across multiple stack components.
 
 If you don't already have an AWS Service Connector configured in your ZenML deployment, you can register one using the interactive CLI command. You have the option to configure an AWS Service Connector that can be used to access an ECR registry or even more than one type of AWS resource:
 

@@ -106,7 +106,7 @@ To enable these use-cases, it is recommended to use [a GCP Service Connector](..
 
 
 {% tab title="GCP Service Connector (recommended)" %}
-It is recommended to leverage the many features provided by [the GCP Service Connector](../../../platform-guide/set-up-your-mlops-platform/connect-zenml-to-infrastructure/gcp-service-connector.md) such as auto-configuration, best security practices regarding long-lived credentials and reusing the same credentials across multiple stack components.
+To set up the GCS Artifact Store to authenticate to GCP and access a GCS bucket, it is recommended to leverage the many features provided by [the GCP Service Connector](../../../platform-guide/set-up-your-mlops-platform/connect-zenml-to-infrastructure/gcp-service-connector.md) such as auto-configuration, best security practices regarding long-lived credentials and reusing the same credentials across multiple stack components.
 
 If you don't already have a GCP Service Connector configured in your ZenML deployment, you can register one using the interactive CLI command. You have the option to configure a GCP Service Connector that can be used to access more than one GCS bucket or even more than one type of GCP resource:
 

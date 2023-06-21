@@ -120,7 +120,7 @@ To enable these use-cases, it is recommended to use [an Azure Service Connector]
 
 
 {% tab title="Azure Service Connector (recommended)" %}
-It is recommended to leverage the many features provided by [the Azure Service Connector](../../../platform-guide/set-up-your-mlops-platform/connect-zenml-to-infrastructure/azure-service-connector.md) such as auto-configuration, best security practices regarding long-lived credentials and reusing the same credentials across multiple stack components.
+To set up the Azure Artifact Store to authenticate to Azure and access an Azure Blob storage container, it is recommended to leverage the many features provided by [the Azure Service Connector](../../../platform-guide/set-up-your-mlops-platform/connect-zenml-to-infrastructure/azure-service-connector.md) such as auto-configuration, best security practices regarding long-lived credentials and reusing the same credentials across multiple stack components.
 
 If you don't already have an Azure Service Connector configured in your ZenML deployment, you can register one using the interactive CLI command. You have the option to configure an Azure Service Connector that can be used to access more than one Azure blob storage container or even more than one type of Azure resource:
 
