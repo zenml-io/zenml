@@ -31,7 +31,7 @@ from zenml.exceptions import StepInterfaceError
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.steps.external_artifact import ExternalArtifact
-from zenml.steps.utils import new_parse_return_type_annotations
+from zenml.steps.utils import parse_return_type_annotations
 from zenml.utils import yaml_utils
 
 if TYPE_CHECKING:
@@ -304,7 +304,7 @@ def validate_entrypoint_function(
         else:
             inputs[key] = parameter
 
-    outputs = new_parse_return_type_annotations(func=func)
+    outputs = parse_return_type_annotations(func=func)
 
     return EntrypointFunctionDefinition(
         inputs=inputs,

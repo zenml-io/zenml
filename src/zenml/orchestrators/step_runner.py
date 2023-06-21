@@ -46,7 +46,7 @@ from zenml.orchestrators.utils import is_setting_enabled
 from zenml.steps.step_context import StepContext
 from zenml.steps.step_environment import StepEnvironment
 from zenml.steps.utils import (
-    new_parse_return_type_annotations,
+    parse_return_type_annotations,
     resolve_type_annotation,
 )
 from zenml.utils import artifact_utils, materializer_utils, source_utils
@@ -169,7 +169,7 @@ class StepRunner:
                         )
 
             # Store and publish the output artifacts of the step function.
-            output_annotations = new_parse_return_type_annotations(
+            output_annotations = parse_return_type_annotations(
                 func=step_instance.entrypoint
             )
             output_data = self._validate_outputs(
@@ -263,7 +263,7 @@ class StepRunner:
 
         for arg in args:
             arg_type = annotations.get(arg, None)
-            arg_type = resolve_type_annotation(arg_type)
+            arg_type, _ = resolve_type_annotation(arg_type)
 
             if inspect.isclass(arg_type) and issubclass(arg_type, StepContext):
                 step_name = self.configuration.name
@@ -318,7 +318,7 @@ class StepRunner:
 
         for arg in args:
             arg_type = annotations.get(arg, None)
-            arg_type = resolve_type_annotation(arg_type)
+            arg_type, _ = resolve_type_annotation(arg_type)
 
             # Parse the parameters
             if issubclass(arg_type, BaseParameters):

@@ -17,19 +17,24 @@ import pytest
 from numpy import ndarray
 
 from zenml.steps.utils import (
-    new_parse_return_type_annotations,
+    parse_return_type_annotations,
     resolve_type_annotation,
 )
 
 
 def test_type_annotation_resolving():
     """Tests that resolving type annotations works as expected."""
-    assert resolve_type_annotation(Dict) is dict
-    assert resolve_type_annotation(List[int]) is list
-    assert resolve_type_annotation(Set[str]) is set
+    assert resolve_type_annotation(Dict)[0] is dict
+    assert resolve_type_annotation(List[int])[0] is list
+    assert resolve_type_annotation(Set[str])[0] is set
 
-    assert resolve_type_annotation(set) is set
-    assert resolve_type_annotation(ndarray) is ndarray
+    assert resolve_type_annotation(set)[0] is set
+    assert resolve_type_annotation(ndarray)[0] is ndarray
+
+    assert resolve_type_annotation(Annotated[Set[int], "test"]) == (
+        set,
+        "test",
+    )
 
 
 def func_with_no_output_annoation_and_no_return():
@@ -89,7 +94,7 @@ def func_with_multiple_annotated_outputs() -> (
     ],
 )
 def test_step_output_annotation_parsing(func, expected_output):
-    assert new_parse_return_type_annotations(func) == expected_output
+    assert parse_return_type_annotations(func) == expected_output
 
 
 def func_with_multiple_annotations() -> Annotated[int, "a", "b"]:
@@ -121,4 +126,4 @@ def func_with_duplicate_output_name() -> (
 )
 def test_invalid_step_output_annotations(func, exception):
     with pytest.raises(exception):
-        new_parse_return_type_annotations(func)
+        parse_return_type_annotations(func)
