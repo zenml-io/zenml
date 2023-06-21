@@ -23,13 +23,13 @@ logger = get_logger(__name__)
 
 
 def get_run(name: str) -> "PipelineRunResponseModel":
-    """Fetches the post-execution view of a run with the given name.
+    """(Deprecated) Fetches the run with the given name.
 
     Args:
         name: The name of the run to fetch.
 
     Returns:
-        The post-execution view of the run with the given name.
+        The run with the given name.
     """
     logger.warning(
         "`zenml.post_execution.get_run(<name>)` is deprecated and will be "
@@ -40,12 +40,12 @@ def get_run(name: str) -> "PipelineRunResponseModel":
 
 
 def get_unlisted_runs() -> List["PipelineRunResponseModel"]:
-    """Fetches the post-execution views of the 50 most recent unlisted runs.
+    """(Deprecated) Fetches the 50 most recent unlisted runs.
 
     Unlisted runs are runs that are not associated with any pipeline.
 
     Returns:
-        A list of post-execution run views.
+        A list of the 50 most recent unlisted runs.
     """
     logger.warning(
         "`zenml.post_execution.get_unlisted_runs()` is deprecated and will be "
