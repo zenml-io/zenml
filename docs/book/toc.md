@@ -31,7 +31,7 @@
   * [Fetch metadata within steps](user-guide/advanced-guide/fetch-metadata-within-steps.md)
   * [Use failure/success hooks](user-guide/advanced-guide/use-failure-success-hooks.md)
   * [Handle custom data types](user-guide/advanced-guide/handle-custom-data-types.md)
-  * [Hyper-parameter tuning](user-guide/advanced-guide/hyper-parameter-tuning.md)
+  * [Hyperparameter tuning](user-guide/advanced-guide/hyperparameter-tuning.md)
   * [Scale compute to the cloud](user-guide/advanced-guide/scale-compute-to-the-cloud.md)
   * [Global settings of ZenML](user-guide/advanced-guide/global-settings-of-zenml.md)
   * [Migrate your old pipelines and steps](user-guide/advanced-guide/migrate-your-old-pipelines-and-steps.md)
