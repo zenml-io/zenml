@@ -240,6 +240,35 @@ class Pipeline:
 
         return load_pipeline(model=model)
 
+    @property
+    def model(self) -> "PipelineResponseModel":
+        """Gets the registered pipeline model for this instance.
+
+        Returns:
+            The registered pipeline model.
+
+        Raises:
+            RuntimeError: If the pipeline has not been registered yet.
+        """
+        self._prepare_if_possible()
+
+        pipeline_spec = Compiler().compile_spec(self)
+        version_hash = self._compute_unique_identifier(
+            pipeline_spec=pipeline_spec
+        )
+
+        pipelines = Client().list_pipelines(
+            name=self.name, version_hash=version_hash
+        )
+        if len(pipelines) == 1:
+            return pipelines.items[0]
+
+        raise RuntimeError(
+            f"Cannot get the model of pipeline '{self.name}' because it has "
+            f"not been registered yet. Please ensure that the pipeline has "
+            f"been run and that at least one step has been executed."
+        )
+
     def configure(
         self: T,
         enable_cache: Optional[bool] = None,
@@ -647,7 +676,7 @@ class Pipeline:
                     )
 
     def get_runs(self, **kwargs: Any) -> List[PipelineRunResponseModel]:
-        """Get runs of this pipeline.
+        """(Deprecated) Get runs of this pipeline.
 
         Args:
             **kwargs: Further arguments for filtering or pagination that are
@@ -656,11 +685,11 @@ class Pipeline:
         Returns:
             List of runs of this pipeline.
         """
-        self._prepare_if_possible()
-        model = self._get_registered_model()
-        if not model:
-            return []
-        return model.get_runs(**kwargs)
+        logger.warning(
+            "`Pipeline.get_runs()` is deprecated and will be removed in a "
+            "future version. Please use `Pipeline.model.get_runs()` instead."
+        )
+        return self.model.get_runs(**kwargs)
 
     def write_run_configuration_template(
         self, path: str, stack: Optional["Stack"] = None
@@ -928,27 +957,6 @@ class Pipeline:
             return int(all_pipelines.items[0].version)
         else:
             return None
-
-    def _get_registered_model(self) -> Optional[PipelineResponseModel]:
-        """Gets the registered pipeline model for this instance.
-
-        Returns:
-            The registered pipeline model or None if no model is registered yet.
-        """
-        self._prepare_if_possible()
-
-        pipeline_spec = Compiler().compile_spec(self)
-        version_hash = self._compute_unique_identifier(
-            pipeline_spec=pipeline_spec
-        )
-
-        pipelines = Client().list_pipelines(
-            name=self.name, version_hash=version_hash
-        )
-        if len(pipelines) == 1:
-            return pipelines.items[0]
-
-        return None
 
     def add_step_invocation(
         self,
