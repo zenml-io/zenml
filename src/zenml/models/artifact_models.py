@@ -88,9 +88,6 @@ class ArtifactResponseModel(ArtifactBaseModel, WorkspaceScopedResponseModel):
 
         Returns:
             The step that produced this artifact.
-
-        Raises:
-            RuntimeError: If the artifact has no step associated with it.
         """
         from zenml.utils.artifact_utils import get_producer_step_of_artifact
 
