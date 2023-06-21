@@ -84,3 +84,6 @@ If you want to create your own custom secrets store implementation, you can foll
    image that is used to run the ZenML server. Then, use environment variables or helm chart values to configure the
    ZenML server to use your custom secrets store, as covered in
    the [deployment guide](/docs/book/platform-guide/set-up-your-mlops-platform/deploy-zenml/deploy-zenml.md).
+
+<!-- For scarf -->
+<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>

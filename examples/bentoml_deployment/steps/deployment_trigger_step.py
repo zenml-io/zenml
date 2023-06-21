@@ -12,19 +12,13 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from zenml.steps import BaseParameters, step
-
-
-class DeploymentTriggerParameters(BaseParameters):
-    """Parameters that are used to trigger the deployment."""
-
-    min_accuracy: float
+from zenml import step
 
 
 @step
 def deployment_trigger(
     accuracy: float,
-    params: DeploymentTriggerParameters,
+    min_accuracy: float,
 ) -> bool:
     """Implement a simple model deployment trigger.
 
@@ -33,9 +27,10 @@ def deployment_trigger(
 
     Args:
         accuracy: The accuracy of the model.
-        params: The parameters for the deployment trigger.
+        min_accuracy: The minimum accuracy required to deploy the model.
+
 
     Returns:
         True if the model is good enough to deploy, False otherwise.
     """
-    return accuracy > params.min_accuracy
+    return accuracy > min_accuracy

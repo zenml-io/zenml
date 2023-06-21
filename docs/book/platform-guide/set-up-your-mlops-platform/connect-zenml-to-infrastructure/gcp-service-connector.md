@@ -1103,10 +1103,10 @@ As a last step, a simple pipeline is run on the resulting Stack.
     ```
 6.  register and connect a Vertex AI Orchestrator Stack Component to the target GCP project
 
-    **NOTE**: If we do not specify a workload service account, the Vertex AI Pipelines Orchestrator uses the Compute Engine default service account in the target project to run pipelines. In our case, that didn't work and issued an inexplicable "Internal error" when trying to run a pipeline, so we had to also create a `connectors-vertex-ai-workload@zenml-core.iam.gserviceaccount.com` GCP service account, grant it the Vertex AI Service Agent role and pass it as it in the `workload_service_account` configuration attribute:
+    **NOTE**: If we do not specify a workload service account, the Vertex AI Pipelines Orchestrator uses the Compute Engine default service account in the target project to run pipelines. You must grant this account the Vertex AI Service Agent role, otherwise the pipelines will fail. More information on other configurations possible for the Vertex AI Orchestrator can be found [here](../../../user-guide/component-guide/orchestrators/vertex.md#how-to-use-it).
 
     ```
-    $ zenml orchestrator register vertex-ai-zenml-core --flavor=vertex --location=europe-west1 --workload_service_account=connectors-vertex-ai-workload@zenml-core.iam.gserviceaccount.com --synchronous=true
+    $ zenml orchestrator register vertex-ai-zenml-core --flavor=vertex --location=europe-west1 --synchronous=true
     Running with active workspace: 'default' (repository)
     Running with active stack: 'default' (repository)
     Successfully registered orchestrator `vertex-ai-zenml-core`.
@@ -1225,3 +1225,6 @@ As a last step, a simple pipeline is run on the resulting Stack.
     ```
 
 </details>
+
+<!-- For scarf -->
+<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>

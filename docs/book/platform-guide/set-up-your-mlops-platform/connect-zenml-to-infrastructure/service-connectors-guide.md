@@ -208,7 +208,7 @@ Attributes:
 
 Resource Types are a way of organizing resources into logical, well-known classes based on the standard and/or protocol used to access them, or simply based on their vendor. This creates a unified language that can be used to declare the types of resources that are provided by Service Connectors on one hand and the types of resources that are required by Stack Components on the other hand.
 
-For example, we use the generic `kubernetes-cluster` resource type to refer to any and all Kubernetes clusters, since they are all generally accessible using the same standard libraries, clients and API regardless of whether they are Amazon EKS, Google GKE, Azure AKS or another flavor of managed or self-hosted deployment. Similarly, there is a generic `docker-registry` resource type that covers any and all container registries that implement the Docker/OCI interface, be it DockerHub, Amazon ECR, Google GCR, Azure ACR, K3D or something similar. Stack Components that need to connect to a Kubernetes cluster (e.g. the Kubernetes Orchestrator or the KServe Model Deployer) can use the `kubernetes-cluster` resource type identifier to describe their resource requirements and remain agnostic of their vendor.
+For example, we use the generic `kubernetes-cluster` resource type to refer to any and all Kubernetes clusters, since they are all generally accessible using the same standard libraries, clients and API regardless of whether they are Amazon EKS, Google GKE, Azure AKS or another flavor of managed or self-hosted deployment. Similarly, there is a generic `docker-registry` resource type that covers any and all container registries that implement the Docker/OCI interface, be it DockerHub, Amazon ECR, Google GCR, Azure ACR, K3D or something similar. Stack Components that need to connect to a Kubernetes cluster (e.g. the Kubernetes Orchestrator or the Seldon Model Deployer) can use the `kubernetes-cluster` resource type identifier to describe their resource requirements and remain agnostic of their vendor.
 
 The term Resource Type is used in ZenML everywhere resources accessible through Service Connectors are involved. For example, to list all Service Connector Types that can be used to broker access to Kubernetes Clusters, you can pass the `--resource-type` flag to the CLI command:
 
@@ -1160,3 +1160,6 @@ To get an idea of what a complete end-to-end journey looks like, from registerin
 * [the AWS Service Connector end-to-end examples](aws-service-connector.md#end-to-end-examples)
 * [the GCP Service Connector end-to-end examples](gcp-service-connector.md#end-to-end-examples)
 * [the Azure Service Connector end-to-end examples](azure-service-connector.md#end-to-end-examples)
+
+<!-- For scarf -->
+<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>

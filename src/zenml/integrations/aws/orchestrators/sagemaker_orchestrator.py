@@ -287,6 +287,10 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
 
         pipeline.create(role_arn=self.config.execution_role)
         pipeline_execution = pipeline.start()
+        logger.warning(
+            "Steps can take 5-15 minutes to start running "
+            "when using the Sagemaker Orchestrator."
+        )
 
         # mainly for testing purposes, we wait for the pipeline to finish
         if self.config.synchronous:

@@ -17,7 +17,7 @@ import io
 import time
 from logging import LogRecord
 from logging.handlers import TimedRotatingFileHandler
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 from zenml.io import fileio
 from zenml.logger import get_logger
@@ -49,6 +49,7 @@ class ArtifactStoreLoggingHandler(TimedRotatingFileHandler):
         self.buffer = io.StringIO()
         self.message_count = 0
         self.last_upload_time = time.time()
+        self.local_temp_file: Optional[str] = None
 
         # set local_logging_file to self.logs_uri if self.logs_uri is a local path
         # otherwise, set local_logging_file to a temporary file
@@ -57,6 +58,7 @@ class ArtifactStoreLoggingHandler(TimedRotatingFileHandler):
             # TimedRotatingFileHandler does not support writing
             # to a remote file, but still needs a file to get going
             local_logging_file = f".zenml_tmp_logs_{int(time.time())}"
+            self.local_temp_file = local_logging_file
         else:
             local_logging_file = self.logs_uri
 
@@ -103,3 +105,10 @@ class ArtifactStoreLoggingHandler(TimedRotatingFileHandler):
         """Flushes the buffer and performs a rollover."""
         self.flush()
         super().doRollover()
+
+    def close(self) -> None:
+        """Tidy up any resources used by the handler."""
+        self.flush()
+        if self.local_temp_file and fileio.exists(self.local_temp_file):
+            fileio.remove(self.local_temp_file)
+        super().close()

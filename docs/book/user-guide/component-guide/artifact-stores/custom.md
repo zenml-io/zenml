@@ -224,3 +224,6 @@ implementation in the environment where you have deployed ZenML.
 You can do so either by building a custom Dockerfile based on
 the [ZenML base.Dockerfile](https://github.com/zenml-io/zenml/blob/main/docker/base.Dockerfile) and using that to
 redeploy your ZenML instance or by installing the respective packages in the deployed environment manually.
+
+<!-- For scarf -->
+<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>

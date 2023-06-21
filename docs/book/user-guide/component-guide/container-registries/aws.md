@@ -97,3 +97,6 @@ aws ecr get-login-password --region <REGION> | docker login --username AWS --pas
 For more information and a full list of configurable attributes of the AWS container registry, check out
 the [API Docs](https://apidocs.zenml.io/latest/integration\_code\_docs/integrations-aws/#zenml.integrations.aws.container\_registries.aws\_container\_registry.AWSContainerRegistry)
 .
+
+<!-- For scarf -->
+<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>

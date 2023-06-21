@@ -38,3 +38,6 @@ zenml image-builder flavor list
 You don't need to directly interact with any image builder in your code. As long as the image builder that you want to
 use is part of your active [ZenML stack](/docs/book/user-guide/starter-guide/understand-stacks.md), it will be used
 automatically by any component that needs to build container images.
+
+<!-- For scarf -->
+<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>

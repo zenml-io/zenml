@@ -33,10 +33,10 @@ from zenml.constants import (
     KUBERNETES_CLUSTER_RESOURCE_TYPE,
 )
 from zenml.exceptions import AuthorizationException
-from zenml.integrations.kubernetes.service_connectors.kubernetes_service_connector import (
-    KubernetesAuthenticationMethods,
-    KubernetesServiceConnector,
-    KubernetesTokenConfig,
+from zenml.integrations.azure.flavors.azure_artifact_store_flavor import (
+    AZURE_CONNECTOR_TYPE,
+    AZURE_RESOURCE_TYPE,
+    BLOB_RESOURCE_TYPE,
 )
 from zenml.logger import get_logger
 from zenml.models import (
@@ -57,10 +57,6 @@ from zenml.utils.enum_utils import StrEnum
 
 logger = get_logger(__name__)
 
-
-AZURE_CONNECTOR_TYPE = "azure"
-AZURE_RESOURCE_TYPE = "azure-generic"
-BLOB_RESOURCE_TYPE = "blob-container"
 
 AZURE_MANAGEMENT_TOKEN_SCOPE = "https://management.azure.com/.default"
 AZURE_SESSION_TOKEN_DEFAULT_EXPIRATION_TIME = 60 * 60  # 1 hour
@@ -1627,6 +1623,8 @@ class AzureServiceConnector(ServiceConnector):
         Raises:
             AuthorizationException: If authentication failed.
             ValueError: If the resource type is not supported.
+            RuntimeError: If the Kubernetes connector is not installed and the
+                resource type is Kubernetes.
         """
         connector_name = ""
         if self.name:
@@ -1768,6 +1766,18 @@ class AzureServiceConnector(ServiceConnector):
 
             # Create a client-side Kubernetes connector instance with the
             # Kubernetes credentials
+            try:
+                # Import libraries only when needed
+                from zenml.integrations.kubernetes.service_connectors.kubernetes_service_connector import (
+                    KubernetesAuthenticationMethods,
+                    KubernetesServiceConnector,
+                    KubernetesTokenConfig,
+                )
+            except ImportError as e:
+                raise RuntimeError(
+                    f"The Kubernetes Service Connector functionality could not "
+                    f"be used due to missing dependencies: {e}"
+                )
             cluster_name = kubeconfig["clusters"][0]["name"]
             cluster = kubeconfig["clusters"][0]["cluster"]
             user = kubeconfig["users"][0]["user"]

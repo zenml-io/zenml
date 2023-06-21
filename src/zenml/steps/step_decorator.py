@@ -167,12 +167,6 @@ def step(
         The inner decorator which creates the step class based on the
         ZenML BaseStep
     """
-    logger.warning(
-        "The `@step` decorator that you use to define your step is "
-        "deprecated. Check out our docs https://docs.zenml.io for "
-        "information on how to define steps in a more intuitive and "
-        "flexible way!"
-    )
 
     def inner_decorator(func: F) -> Type[BaseStep]:
         """Inner decorator function for the creation of a ZenML Step.
@@ -184,6 +178,14 @@ def step(
         Returns:
             The class of a newly generated ZenML Step.
         """
+        step_name = name or func.__name__
+        logger.warning(
+            "The `@step` decorator that you used to define your "
+            f"{step_name} step is deprecated. Check out our docs "
+            "https://docs.zenml.io/user-guide/advanced-guide/migrate-your-old-pipelines-and-steps "
+            "for information on how to migrate your steps to the new syntax."
+        )
+
         return type(  # noqa
             func.__name__,
             (_DecoratedStep,),
