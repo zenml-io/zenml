@@ -44,7 +44,6 @@ integrations:
 | [MLflow](mlflow.md)                | `mlflow`  | `mlflow`      | Deploys ML Model locally                                                     |
 | [BentoML](bentoml.md)              | `bentoml` | `bentoml`     | Build and Deploy ML models locally or for production grade (Cloud, K8s)      |
 | [Seldon Core](seldon.md)           | `seldon`  | `seldon Core` | Built on top of Kubernetes to deploy models for production grade environment |
-| [KServe](kserve.md)                | `kserve`  | `kserve`      | Kubernetes based model deployment framework                                  |
 | [Custom Implementation](custom.md) | _custom_  |               | Extend the Artifact Store abstraction and provide your own implementation    |
 
 {% hint style="info" %}
@@ -193,7 +192,6 @@ ZenML allows you to define your own pre- and post-processing in two ways:
 {% hint style="info" %}
 The custom model deployment support is available only for the following integrations:
 
-* [KServe Custom Predictor](kserve.md#custom-model-deployment)
 * [Seldon Core Custom Python Model](seldon.md#custom-model-deployment)
   {% endhint %}
 
@@ -274,3 +272,6 @@ directly be inserted into any pipeline to achieve a continuous model deployment 
 the aspects of continuously deploying models to an external server and saving the Service configuration into the
 Artifact Store, where they can be loaded at a later time and re-create the initial conditions used to serve a particular
 model.
+
+<!-- For scarf -->
+<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>

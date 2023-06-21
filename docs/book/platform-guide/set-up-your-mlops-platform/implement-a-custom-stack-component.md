@@ -250,3 +250,6 @@ If you would like to learn more about how to build a custom stack component flav
 | [Alerter](../../user-guide/component-guide/alerters/custom.md)                        | Sending alerts through specified channels                         |
 | [Annotator](../../user-guide/component-guide/annotators/custom.md)                    | Annotating and labeling data                                      |
 | [Data Validator](../../user-guide/component-guide/data-validators/custom.md)          | Validating and monitoring your data                               |
+
+<!-- For scarf -->
+<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>

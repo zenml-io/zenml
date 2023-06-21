@@ -120,6 +120,7 @@ class PipelineDockerImageBuilder:
             # pipeline?
             return docker_settings.parent_image, dockerfile, requirements
 
+        stack.validate_image_builder()
         image_builder = stack.image_builder
         if not image_builder:
             raise RuntimeError(

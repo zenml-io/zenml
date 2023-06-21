@@ -11,3 +11,6 @@ ZenML Projects are small-scale production-grade ML use cases powered by ZenML. T
 ## Start working on your own projects with ZenML Templates
 
 If you like the projects listed above and you are interested in creating your own project, you can take a look at our [ZenML Project Templates](https://github.com/zenml-io/zenml-project-templates). The goal of these templates is to help you generate ready-to-use scaffolding for your own projects, with everything you need to get started: steps, pipelines, stack configurations, and other useful resources.
+
+<!-- For scarf -->
+<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>

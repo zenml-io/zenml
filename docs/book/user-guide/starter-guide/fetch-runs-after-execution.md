@@ -209,12 +209,14 @@ steps = run.steps
 # get the step that was executed first
 first_step = steps[0]
 
-# or get a specific step by its name
+# or get a specific step by its invocation ID
 step = run.get_step(step="first_step")
 ```
 
 {% hint style="info" %}
-The step `name` refers to the pipeline attribute which might differ from the actual step implementation name.
+If you're only calling each step once inside your pipeline, the **invocation ID** will be the same as the name of your step. For more complex
+pipelines, check out [this page](../advanced-guide/configure-steps-pipelines.md#using-a-custom-step-invocation-id) to learn more about the
+invocation ID.
 {% endhint %}
 
 {% hint style="warning" %}
@@ -347,3 +349,6 @@ def my_step():
 ```
 
 You can get a lot more metadata within a step as well, something we'll learn in more detail in the [advanced docs](../advanced-guide/fetch-metadata-within-steps.md).
+
+<!-- For scarf -->
+<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>

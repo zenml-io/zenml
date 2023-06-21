@@ -75,7 +75,7 @@ This variable is then passed as input to the underlying modular recipe. If you c
 
 </details>
 
-<table><thead><tr><th width="374">Component Type</th><th>Flavor</th></tr></thead><tbody><tr><td>Experiment Tracker</td><td>mlflow</td></tr><tr><td>Model Deployer</td><td>seldon</td></tr><tr><td></td><td>kserve</td></tr><tr><td>Artifact Store</td><td>s3</td></tr><tr><td></td><td>gcs</td></tr><tr><td></td><td>minio</td></tr><tr><td>Orchestrator</td><td>kubernetes</td></tr><tr><td></td><td>kubeflow</td></tr><tr><td></td><td>tekton</td></tr><tr><td></td><td>sagemaker</td></tr><tr><td></td><td>vertex</td></tr><tr><td>Step Operator</td><td>sagemaker</td></tr><tr><td></td><td>vertex</td></tr><tr><td>Container Registry</td><td>gcr</td></tr><tr><td></td><td>ecr</td></tr><tr><td></td><td>k3d-registry</td></tr></tbody></table>
+<table><thead><tr><th width="374">Component Type</th><th>Flavor</th></tr></thead><tbody><tr><td>Experiment Tracker</td><td>mlflow</td></tr><tr><td>Model Deployer</td><td>seldon</td></tr><tr><td>Artifact Store</td><td>s3</td></tr><tr><td></td><td>gcs</td></tr><tr><td></td><td>minio</td></tr><tr><td>Orchestrator</td><td>kubernetes</td></tr><tr><td></td><td>kubeflow</td></tr><tr><td></td><td>tekton</td></tr><tr><td></td><td>sagemaker</td></tr><tr><td></td><td>vertex</td></tr><tr><td>Step Operator</td><td>sagemaker</td></tr><tr><td></td><td>vertex</td></tr><tr><td>Container Registry</td><td>gcr</td></tr><tr><td></td><td>ecr</td></tr><tr><td></td><td>k3d-registry</td></tr></tbody></table>
 
 ### ✨ Customizing your stack components
 
@@ -157,3 +157,7 @@ zenml <STACK_COMPONENT> describe <NAME>
 ```
 
 </details>
+
+<!-- For scarf -->
+<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
+
