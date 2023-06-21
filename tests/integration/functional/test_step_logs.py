@@ -20,19 +20,19 @@ from zenml.models.step_run_models import StepRunResponseModel
 from zenml.pipelines.base_pipeline import BasePipeline
 
 
-def _get_first_step_of_last_run(clean_client: Client) -> StepRunResponseModel:
+def _get_first_step_of_last_run(pipe: BasePipeline) -> StepRunResponseModel:
     """Get the output of the last run."""
-    return clean_client.list_pipeline_runs()[0].steps["step_"]
+    return pipe.model.last_run.steps["step_"]
 
 
-def _assert_step_logs_enabled(clean_client: Client):
+def _assert_step_logs_enabled(pipe: BasePipeline):
     """Assert that step logs were enabled in the last run."""
-    assert _get_first_step_of_last_run(clean_client).logs
+    assert _get_first_step_of_last_run(pipe).logs
 
 
-def _assert_step_logs_disabled(clean_client: Client):
+def _assert_step_logs_disabled(pipe: BasePipeline):
     """Assert that step logs were disabled in the last run."""
-    assert not _get_first_step_of_last_run(clean_client).logs
+    assert not _get_first_step_of_last_run(pipe).logs
 
 
 def test_disabling_step_logs(clean_client: Client, one_step_pipeline):
@@ -42,34 +42,34 @@ def test_disabling_step_logs(clean_client: Client, one_step_pipeline):
     step_ = step_with_logs()
     pipe: BasePipeline = one_step_pipeline(step_)
     pipe.configure(enable_cache=False)
-    pipe.run(unlisted=True)
-    _assert_step_logs_enabled(clean_client)
+    pipe.run()
+    _assert_step_logs_enabled(pipe)
 
     # Test disabling step logs on pipeline level
     pipe.configure(enable_step_logs=False)
-    pipe.run(unlisted=True)
-    _assert_step_logs_disabled(clean_client)
+    pipe.run()
+    _assert_step_logs_disabled(pipe)
 
     pipe.configure(enable_step_logs=True)
-    pipe.run(unlisted=True)
-    _assert_step_logs_enabled(clean_client)
+    pipe.run()
+    _assert_step_logs_enabled(pipe)
 
     # Test disabling step logs on step level
     # This should override the pipeline level setting
     step_.configure(enable_step_logs=False)
-    pipe.run(unlisted=True)
-    _assert_step_logs_disabled(clean_client)
+    pipe.run()
+    _assert_step_logs_disabled(pipe)
 
     step_.configure(enable_step_logs=True)
-    pipe.run(unlisted=True)
-    _assert_step_logs_enabled(clean_client)
+    pipe.run()
+    _assert_step_logs_enabled(pipe)
 
     # Test disabling step logs on run level
     # This should override both the pipeline and step level setting
-    pipe.run(unlisted=True, enable_step_logs=False)
-    _assert_step_logs_disabled(clean_client)
+    pipe.run(enable_step_logs=False)
+    _assert_step_logs_disabled(pipe)
 
     pipe.configure(enable_step_logs=False)
     step_.configure(enable_step_logs=False)
-    pipe.run(unlisted=True, enable_step_logs=True)
-    _assert_step_logs_enabled(clean_client)
+    pipe.run(enable_step_logs=True)
+    _assert_step_logs_enabled(pipe)
