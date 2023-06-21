@@ -39,8 +39,11 @@ from zenml.exceptions import GitNotFoundError, InitializationException
 from zenml.integrations.registry import integration_registry
 from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.utils.analytics_utils import AnalyticsEvent, event_handler, \
-    email_opt_int
+from zenml.utils.analytics_utils import (
+    AnalyticsEvent,
+    email_opt_int,
+    event_handler,
+)
 from zenml.utils.enum_utils import StrEnum
 from zenml.utils.io_utils import copy_dir, get_global_config_directory
 from zenml.utils.yaml_utils import write_yaml
@@ -414,11 +417,7 @@ def _prompt_email(event_source: AnalyticsEventSource) -> bool:
         else:
             console.print(zenml_cli_thank_you_message, width=80)
 
-            email_opt_int(
-                opted_in=True,
-                email=email,
-                source="zenml go"
-            )
+            email_opt_int(opted_in=True, email=email, source="zenml go")
 
             GlobalConfiguration().user_email_opt_in = True
 
@@ -432,11 +431,7 @@ def _prompt_email(event_source: AnalyticsEventSource) -> bool:
     else:
         GlobalConfiguration().user_email_opt_in = False
 
-        email_opt_int(
-            opted_in=False,
-            email=None,
-            source="zenml go"
-        )
+        email_opt_int(opted_in=False, email=None, source="zenml go")
 
         # This is the case where user opts out
         client.update_user(

@@ -35,7 +35,7 @@ from zenml.constants import (
     ENV_ZENML_STORE_PREFIX,
     LOCAL_STORES_DIRECTORY_NAME,
 )
-from zenml.enums import AnalyticsEventSource, StoreType
+from zenml.enums import StoreType
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.utils import io_utils, yaml_utils
@@ -44,8 +44,6 @@ from zenml.utils.analytics_utils import (
     AnalyticsGroup,
     event_handler,
     identify_group,
-    identify_user,
-    track_event,
 )
 
 if TYPE_CHECKING:

@@ -728,11 +728,14 @@ class event_handler(object):
             track_event(self.event, self.metadata, v1=False, v2=True)
 
 
-def email_opt_int(
-    opted_in: bool,
-    email: Optional[str],
-    source: str
-):
+def email_opt_int(opted_in: bool, email: Optional[str], source: str):
+    """Track the event of the users response to the email prompt and identify the user.
+
+    Args:
+        opted_in: Did the user decide to opt in
+        email: The email the user optionally provided
+        source: Location when the user replied ["zenml go", "zenml server"]
+    """
     # If the user opted in, associate email with the anonymous distinct ID
     if opted_in:
         identify_user(
