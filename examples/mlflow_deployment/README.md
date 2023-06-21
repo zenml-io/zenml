@@ -108,6 +108,7 @@ from zenml.integrations.mlflow.model_deployers.mlflow_model_deployer import (
     MLFlowModelDeployer,
 )
 from zenml.integrations.mlflow.services import MLFlowDeploymentService
+from zenml.steps import Output, StepContext
 
 
 @step(enable_cache=False)
@@ -161,18 +162,6 @@ def predictor(
     prediction = prediction.argmax(axis=-1)
 
     return prediction
-
-# Initialize an inference pipeline run
-inference = inference_pipeline(
-    ...,
-    prediction_service_loader=prediction_service_loader(
-        MLFlowDeploymentLoaderStepParameters(
-            pipeline_name="continuous_deployment_pipeline",
-            step_name="model_deployer",
-        )
-    ),
-    predictor=predictor(),
-)
 ```
 
 # 🖥 Run it locally

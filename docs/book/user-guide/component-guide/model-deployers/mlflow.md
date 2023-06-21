@@ -79,6 +79,7 @@ from zenml.integrations.mlflow.model_deployers.mlflow_model_deployer import (
     MLFlowModelDeployer,
 )
 from zenml.integrations.mlflow.services import MLFlowDeploymentService
+from zenml.steps import Output, StepContext
 
 
 @step(enable_cache=False)
@@ -123,8 +124,8 @@ def prediction_service_loader(
 # Use the service for inference
 @step
 def predictor(
-        service: MLFlowDeploymentService,
-        data: np.ndarray,
+    service: MLFlowDeploymentService,
+    data: np.ndarray,
 ) -> Output(predictions=np.ndarray):
     """Run a inference request against a prediction service"""
 
@@ -139,10 +140,8 @@ def predictor(
 inference = inference_pipeline(
     ...,
     prediction_service_loader=prediction_service_loader(
-        MLFlowDeploymentLoaderStepParams(
-            pipeline_name="continuous_deployment_pipeline",
-            step_name="model_deployer",
-        )
+        pipeline_name="continuous_deployment_pipeline",
+        step_name="model_deployer",
     ),
     predictor=predictor(),
 )
