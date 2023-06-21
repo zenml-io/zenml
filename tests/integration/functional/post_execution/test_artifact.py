@@ -14,19 +14,48 @@
 """Integration tests for artifact post-execution functionality."""
 
 
-from typing import Dict, List, Optional
+from typing import TYPE_CHECKING, Dict, List, Optional
 
-from tests.integration.functional.conftest import visualizable_step
-from zenml.client import Client
+from tests.integration.functional.conftest import (
+    constant_int_output_test_step,
+    visualizable_step,
+)
+from zenml.enums import ExecutionStatus
 from zenml.models.artifact_models import ArtifactResponseModel
 from zenml.models.run_metadata_models import RunMetadataResponseModel
 from zenml.models.visualization_models import VisualizationModel
 from zenml.pipelines.base_pipeline import BasePipeline
 from zenml.utils.artifact_utils import load_artifact_visualization
 
+if TYPE_CHECKING:
+    from zenml.client import Client
+
+
+def test_artifact_step_run_linkage(clean_client: "Client", one_step_pipeline):
+    """Integration test for `artifact.step` and `artifact.run` properties."""
+    step_ = constant_int_output_test_step()
+    pipe: BasePipeline = one_step_pipeline(step_)
+    pipe.run()
+
+    # Non-cached run: producer step is the step that was just run
+    pipeline_run = pipe.model.last_run
+    step_run = pipeline_run.steps["step_"]
+    artifact = step_run.output
+    assert artifact.step == step_run
+    assert artifact.run == pipeline_run
+
+    # Cached run: producer step is the step that was cached
+    pipe.run()
+    step_run_2 = pipe.model.last_run.steps["step_"]
+    assert step_run_2.status == ExecutionStatus.CACHED
+    assert step_run_2.original_step_run_id == step_run.id
+    artifact_2 = step_run_2.output
+    assert artifact_2.step == step_run
+    assert artifact_2.run == pipeline_run
+
 
 def test_disabling_artifact_visualization(
-    clean_client: Client, one_step_pipeline
+    clean_client: "Client", one_step_pipeline
 ):
     """Test that disabling artifact visualization works."""
 
@@ -122,40 +151,40 @@ def test_disabling_artifact_metadata(clean_client, one_step_pipeline):
     _assert_metadata_enabled(clean_client)
 
 
-def _get_output_of_last_run(clean_client: Client) -> ArtifactResponseModel:
+def _get_output_of_last_run(clean_client: "Client") -> ArtifactResponseModel:
     """Get the output of the last run."""
     return list(clean_client.list_pipeline_runs()[0].steps.values())[0].output
 
 
 def _get_visualizations_of_last_run(
-    clean_client: Client,
+    clean_client: "Client",
 ) -> Optional[List[VisualizationModel]]:
     """Get the artifact visualizations of the last run."""
     return _get_output_of_last_run(clean_client).visualizations
 
 
 def _get_metadata_of_last_run(
-    clean_client: Client,
+    clean_client: "Client",
 ) -> Dict[str, "RunMetadataResponseModel"]:
     """Get the artifact metadata of the last run."""
     return _get_output_of_last_run(clean_client).metadata
 
 
-def _assert_visualization_enabled(clean_client: Client):
+def _assert_visualization_enabled(clean_client: "Client"):
     """Assert that artifact visualization was enabled in the last run."""
     assert _get_visualizations_of_last_run(clean_client)
 
 
-def _assert_visualization_disabled(clean_client: Client):
+def _assert_visualization_disabled(clean_client: "Client"):
     """Assert that artifact visualization was disabled in the last run."""
     assert not _get_visualizations_of_last_run(clean_client)
 
 
-def _assert_metadata_enabled(clean_client: Client):
+def _assert_metadata_enabled(clean_client: "Client"):
     """Assert that artifact metadata was enabled in the last run."""
     assert _get_metadata_of_last_run(clean_client)
 
 
-def _assert_metadata_disabled(clean_client: Client):
+def _assert_metadata_disabled(clean_client: "Client"):
     """Assert that artifact metadata was disabled in the last run."""
     assert not _get_metadata_of_last_run(clean_client)

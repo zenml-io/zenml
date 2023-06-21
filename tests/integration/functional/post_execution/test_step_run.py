@@ -16,11 +16,35 @@
 import inspect
 import random
 import string
+from typing import TYPE_CHECKING
 
 from tests.integration.functional.zen_stores.utils import (
     constant_int_output_test_step,
     int_plus_one_test_step,
 )
+from zenml.enums import ExecutionStatus
+
+if TYPE_CHECKING:
+    from zenml.client import Client
+    from zenml.pipelines.base_pipeline import BasePipeline
+
+
+def test_step_run_linkage(clean_client: "Client", one_step_pipeline):
+    """Integration test for `step.run` property."""
+    step_ = constant_int_output_test_step()
+    pipe: BasePipeline = one_step_pipeline(step_)
+    pipe.run()
+
+    # Non-cached run
+    pipeline_run = pipe.model.last_run
+    step_run = pipeline_run.steps["step_"]
+    assert step_run.run == pipeline_run
+
+    # Cached run
+    pipe.run()
+    pipeline_run_2 = pipe.model.last_run
+    step_run_2 = pipeline_run_2.steps["step_"]
+    assert step_run_2.status == ExecutionStatus.CACHED
 
 
 def test_step_run_has_source_code(clean_client, connected_two_step_pipeline):
