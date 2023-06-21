@@ -11,18 +11,18 @@ and allows you to come up with ways to
 [implement your own stack component flavors](/docs/book/platform-guide/set-up-your-mlops-platform/implement-a-custom-stack-component.md) 
 in order to fill in any gaps that are remaining.
 
-However, what if you want to make your extension of ZenML part of the main 
-codebase, to share it with others? If you are such a person, e.g., a tooling 
+_However, what if you want to make your extension of ZenML part of the main 
+codebase, to share it with others?_ If you are such a person, e.g., a tooling 
 provider in the ML/MLOps space, or just want to contribute a tooling integration 
 to ZenML, this guide is intended for you.
 
 ## Step 1: Plan out your integration
 
-In [previous page](/docs/book/platform-guide/set-up-your-mlops-platform/implement-a-custom-stack-component.md), 
-we already looked at the categories and abstractions that core ZenML defines. 
+In [the previous page](/docs/book/platform-guide/set-up-your-mlops-platform/implement-a-custom-stack-component.md), 
+we looked at the categories and abstractions that core ZenML defines. 
 In order to create a new integration into ZenML, you would need to first find 
 the categories that your integration belongs to. The list of categories can be 
-found on [this page](/docs/book/user-guide/component-guide/component-guide.md).
+found [here](/docs/book/user-guide/component-guide/component-guide.md) as well.
 
 Note that one integration may belong to different categories: For example, the 
 cloud integrations (AWS/GCP/Azure) contain 
@@ -36,20 +36,12 @@ etc.
 Each category selected above would correspond to a 
 [stack component type](/docs/book/user-guide/component-guide/component-guide.md). 
 You can now start developing individual stack component flavors for this type by 
-following the detailed instructions on each stack component page.
+following the detailed instructions on the respective pages.
 
 Before you package your new components into an integration, you may want to 
-first register them with the `zenml <STACK_COMPONENT> flavor register` command 
-and use/test them as a regular custom flavor. E.g., when 
-[developing an orchestrator](/docs/book/user-guide/component-guide/orchestrators/custom.md) 
-you can use:
-
-```shell
-zenml orchestrator flavor register <path.to.MyOrchestratorFlavor>
-```
-
-For example, if your flavor class `MyOrchestratorFlavor` is defined in `flavors/my_flavor.py`,
-you'd register it by doing:
+use/test them as a regular custom flavor. For instance, if you are [developing a custom orchestrator](/docs/book/user-guide/component-guide/orchestrators/custom.md) 
+and your flavor class `MyOrchestratorFlavor` is defined in `flavors/my_flavor.py`,
+you can register it by using:
 
 ```shell
 zenml orchestrator flavor register flavors.my_flavor.MyOrchestratorFlavor
@@ -74,11 +66,13 @@ zenml orchestrator flavor list
 
 See the docs on extensibility of the different components 
 [here](/docs/book/user-guide/component-guide/component-guide.md) or get inspired 
-by the many integrations that are already implemented, for example [the MLflow experiment tracker](https://github.com/zenml-io/zenml/blob/main/src/zenml/integrations/mlflow/experiment_trackers/mlflow_experiment_tracker.py).
+by the many integrations that are already implemented such 
+as [the MLflow experiment tracker](https://github.com/zenml-io/zenml/blob/main/src/zenml/integrations/mlflow/experiment_trackers/mlflow_experiment_tracker.py).
 
 ## Step 3: Create an integration class
 
-You can now start the process of including your integration into the base ZenML 
+Once you are finished with your flavor implementations, you can start the 
+process of packaging them into your integration and ultimately the base ZenML 
 package. Follow this checklist to prepare everything:
 
 #### 1. Clone Repo
@@ -88,7 +82,7 @@ Once your stack components work as a custom flavor, you can now
 the [contributing guide](https://github.com/zenml-io/zenml/blob/main/CONTRIBUTING.md) 
 to set up your local environment for develop.
 
-#### 2. **Create the integration directory**
+#### 2. Create the integration directory
 
 All integrations live within [`src/zenml/integrations/`](https://github.com/zenml-io/zenml/tree/main/src/zenml/integrations) 
 in their own sub-folder. You should create a new folder in this directory with 
