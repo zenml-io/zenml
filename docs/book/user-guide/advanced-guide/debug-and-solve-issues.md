@@ -25,8 +25,9 @@ Slack channel.
 
     ![Searching on crowd.dev.](/docs/book/.gitbook/assets/opendev_search_bar.png)
 
-* Check out the [common errors](#-common-errors) section below.
-* Understand the problem by studying the [additional logs](#-additional-logs) and [client/server logs](#-view-client-and-server-logs).
+* Check out the [common errors](#most-common-errors) section below.
+* Understand the problem by studying the [additional logs](#41-additional-logs) 
+and [client/server logs](#client-and-server-logs).
 
 Chances are you'd find your answers there. If you can't find any clue, then 
 it's time to post your question on [Slack](https://zenml.io/slack).

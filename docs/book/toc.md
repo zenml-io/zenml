@@ -33,7 +33,7 @@
   * [Handle custom data types](user-guide/advanced-guide/handle-custom-data-types.md)
   * [Hyper-parameter tuning](user-guide/advanced-guide/hyper-parameter-tuning.md)
   * [Scale compute to the cloud](user-guide/advanced-guide/scale-compute-to-the-cloud.md)
-  * [Debug common ZenML issues](user-guide/advanced-guide/debug-common-zenml-issues.md)
+  * [Debug and solve issues](user-guide/advanced-guide/debug-and-solve-issues.md)
   * [Global settings of ZenML](user-guide/advanced-guide/global-settings-of-zenml.md)
   * [Migrate your old pipelines and steps](user-guide/advanced-guide/migrate-your-old-pipelines-and-steps.md)
 * [📜 Component guide](user-guide/component-guide/component-guide.md)
