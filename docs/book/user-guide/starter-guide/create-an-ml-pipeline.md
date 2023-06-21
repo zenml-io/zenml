@@ -26,7 +26,7 @@ zenml integration install sklearn
 
 In this case, ZenML has an integration with `sklearn` so you can use the ZenML CLI to install the right version directly.
 
-#### Steps with multiple outputs
+## Steps with multiple outputs
 
 Sometimes a step will have multiple outputs. In order to give each output a unique name, use the `Output()` annotation. Here we load an open-source dataset and split it into a train and a test dataset.
 
@@ -55,7 +55,7 @@ def training_data_loader() -> Output(
 ZenML records the root python logging handler's output into the artifact store as a side-effect of running a step. Therefore, when writing steps, use the `logging` module to record logs, to ensure that these logs then show up in the ZenML dashboard.
 {% endhint %}
 
-#### Parametrizing a step
+## Parametrizing a step
 
 Here we are creating a training step for a support vector machine classifier with `sklearn`. As we might want to adjust the hyperparameter `gamma` later on, we define it as an input value to the step as well.
 
@@ -120,7 +120,7 @@ In the dashboard, you should now be able to see this new run, along with its run
 
 <figure><img src="../../.gitbook/assets/RunWithVisualization.png" alt=""><figcaption><p>Run created by the code in this section along with a visualization of the ground-truth distribution.</p></figcaption></figure>
 
-#### Give each pipeline run a name
+## Give each pipeline run a name
 
 In the output logs of a pipeline run you will see the name of the run:
 
@@ -147,6 +147,25 @@ first_pipeline = first_pipeline.with_options(
     run_name="custom_pipeline_run_name_{{date}}_{{time}}"
 )
 first_pipeline()
+```
+
+## Configure with a yaml file
+
+Instead of configuring your pipeline runs in code, you can also do so from a 
+yaml file. To do so, simply reference the file like this:
+
+```python
+first_pipeline = first_pipeline.with_options(
+    config_path='/local/path/to/config.yaml'
+)
+first_pipeline()
+```
+
+If you are unsure how to format this config file, you can generate a template
+
+config file from a pipeline instance.
+```python
+first_pipeline.write_run_configuration_template(path='/local/path/to/config.yaml')
 ```
 
 ## Code Example

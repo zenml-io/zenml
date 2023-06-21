@@ -38,9 +38,9 @@ Further down in the Platform Guide you can find a guide on the different
 This will help you deploy a ZenML Serve ron the backedn of your choice.
 
 Alternatively, if you do not yet want to deploy ZenML yourself, you can use
-the [Sandbox](https://sandbox.zenml.io/) offering to try ZenML with a 
-production stack. Once you have set up your sandbox, you can continue with the 
-guide below to connect to the deployed ZenML server.
+the [MLOps Sandbox](https://sandbox.zenml.io/) offering to try ZenML with a 
+production stack. You can find a more in-depth guide on this in the next chapter
+on the [Switch to production](switch-to-production.md).
 
 #### Connect your client to the server
 
