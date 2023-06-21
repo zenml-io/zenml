@@ -149,22 +149,27 @@ class StepLauncher:
             is_enabled_on_step=self._step.config.enable_step_logs,
             is_enabled_on_pipeline=self._deployment.pipeline_configuration.enable_step_logs,
         )
-        logs_uri = step_logging_utils.prepare_logs_uri(
-            self._stack.artifact_store,
-            self._step.config.name,
-        )
-
+        logs_model: Optional[LogsRequestModel] = None
         zenml_handler: Optional["ArtifactStoreLoggingHandler"] = None
         if step_logging_enabled:
             try:
+                logs_uri = step_logging_utils.prepare_logs_uri(
+                    self._stack.artifact_store,
+                    self._step.config.name,
+                )
                 zenml_handler = step_logging_utils.get_step_logging_handler(
                     logs_uri
                 )
                 root_logger = logging.getLogger()
                 root_logger.addHandler(zenml_handler)
+                logs_model = LogsRequestModel(
+                    uri=logs_uri,
+                    artifact_store_id=self._stack.artifact_store.id,
+                )
             except Exception as e:
                 logger.warning(
-                    f"Logging handler creation failed with error: {e}. Skipping recording logs.."
+                    f"Logging handler creation failed with error: {e}. "
+                    "Skipping recording logs.."
                 )
 
         try:
@@ -189,10 +194,7 @@ class StepLauncher:
                 start_time=datetime.utcnow(),
                 user=client.active_user.id,
                 workspace=client.active_workspace.id,
-                logs=LogsRequestModel(
-                    uri=logs_uri,
-                    artifact_store_id=self._stack.artifact_store.id,
-                ),
+                logs=logs_model,
             )
             try:
                 execution_needed, step_run = self._prepare(step_run=step_run)
