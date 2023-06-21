@@ -261,6 +261,7 @@ class Environment(metaclass=SingletonMetaClass):
             if get_ipython().__class__.__name__ in [
                 "TerminalInteractiveShell",
                 "ZMQInteractiveShell",
+                "DatabricksShell",
             ]:
                 return True
         return False
