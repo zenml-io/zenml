@@ -43,6 +43,7 @@ if TYPE_CHECKING:
     from sqlmodel import SQLModel
 
     from zenml.models import (
+        ArtifactResponseModel,
         PipelineBuildResponseModel,
         PipelineDeploymentResponseModel,
         PipelineResponseModel,
@@ -148,6 +149,17 @@ class PipelineRunResponseModel(
     steps: Dict[str, "StepRunResponseModel"] = Field(
         default={}, title="The steps of this run."
     )
+
+    @property
+    def artifacts(self) -> List["ArtifactResponseModel"]:
+        """Get all artifacts produced during this pipeline run.
+
+        Returns:
+            A list of all artifacts produced during this pipeline run.
+        """
+        from zenml.utils.artifact_utils import get_artifacts_of_pipeline_run
+
+        return get_artifacts_of_pipeline_run(self)
 
     def get_step(self, step: str) -> "StepRunResponseModel":
         """(Deprecated) Get a step by name.

@@ -21,7 +21,7 @@ from uuid import UUID
 
 from zenml.client import Client
 from zenml.constants import MODEL_METADATA_YAML_FILE_NAME
-from zenml.enums import StackComponentType, VisualizationType
+from zenml.enums import ExecutionStatus, StackComponentType, VisualizationType
 from zenml.exceptions import DoesNotExistException
 from zenml.io import fileio
 from zenml.logger import get_logger
@@ -38,6 +38,7 @@ if TYPE_CHECKING:
     from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
     from zenml.config.source import Source
     from zenml.materializers.base_materializer import BaseMaterializer
+    from zenml.models.pipeline_run_models import PipelineRunResponseModel
     from zenml.models.step_run_models import StepRunResponseModel
     from zenml.zen_stores.base_zen_store import BaseZenStore
 
@@ -441,3 +442,21 @@ def get_producer_step_of_artifact(
             "longer exists. This can happen if the run was deleted."
         )
     return Client().get_run_step(artifact.producer_step_run_id)
+
+
+def get_artifacts_of_pipeline_run(
+    pipeline_run: "PipelineRunResponseModel",
+) -> List["ArtifactResponseModel"]:
+    """Get all artifacts produced during a pipeline run.
+
+    Args:
+        pipeline_run: The pipeline run.
+
+    Returns:
+        A list of all artifacts produced during the pipeline run.
+    """
+    artifacts: List["ArtifactResponseModel"] = []
+    for step in pipeline_run.steps.values():
+        if step.status == ExecutionStatus.COMPLETED:  # no cached artifacts
+            artifacts.extend(step.outputs.values())
+    return artifacts
