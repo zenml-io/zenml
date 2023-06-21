@@ -228,6 +228,26 @@ A non-interactive version that connects the GCP Container Registry to a target G
 zenml container-registry connect <CONTAINER_REGISTRY_NAME> --connector <CONNECTOR_ID>
 ```
 
+{% hint style="info" %}
+Linking the GCP Container Registry to a Service Connector means that your local Docker client is no longer authenticated to access the remote registry. If you need to manually interact with the remote registry via the Docker CLI, you can use the [local login Service Connector feature](../../../platform-guide/set-up-your-mlops-platform/connect-zenml-to-infrastructure/service-connectors-guide.md#configure-local-clients) to temporarily authenticate your local Docker client to the remote registry:
+
+```sh
+zenml service-connector login <CONNECTOR_NAME> --resource-type docker-registry
+```
+
+{% code title="Example Command Output" %}
+```text
+$ zenml service-connector login gcp-zenml-core --resource-type docker-registry
+⠋ Attempting to configure local client using service connector 'gcp-zenml-core'...
+WARNING! Your password will be stored unencrypted in /home/stefan/.docker/config.json.
+Configure a credential helper to remove this warning. See
+https://docs.docker.com/engine/reference/commandline/login/#credentials-store
+
+The 'gcp-zenml-core' Docker Service Connector connector was used to successfully configure the local Docker/OCI container registry client/SDK.
+```
+{% endcode %}
+{% endhint %}
+
 {% code title="Example Command Output" %}
 ```text
 $ zenml container-registry connect gcp-zenml-core --connector gcp-zenml-core 

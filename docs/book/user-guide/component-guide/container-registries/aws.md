@@ -203,6 +203,26 @@ As a final step, you can use the AWS Container Registry in a ZenML Stack:
 zenml stack register <STACK_NAME> -c <CONTAINER_REGISTRY_NAME> ... --set
 ```
 
+{% hint style="info" %}
+Linking the AWS Container Registry to a Service Connector means that your local Docker client is no longer authenticated to access the remote registry. If you need to manually interact with the remote registry via the Docker CLI, you can use the [local login Service Connector feature](../../../platform-guide/set-up-your-mlops-platform/connect-zenml-to-infrastructure/service-connectors-guide.md#configure-local-clients) to temporarily authenticate your local Docker client to the remote registry:
+
+```sh
+zenml service-connector login <CONNECTOR_NAME> --resource-type docker-registry
+```
+
+{% code title="Example Command Output" %}
+```text
+$ zenml service-connector login aws-us-east-1 --resource-type docker-registry
+⠼ Attempting to configure local client using service connector 'aws-us-east-1'...
+WARNING! Your password will be stored unencrypted in /home/stefan/.docker/config.json.
+Configure a credential helper to remove this warning. See
+https://docs.docker.com/engine/reference/commandline/login/#credentials-store
+
+The 'aws-us-east-1' Docker Service Connector connector was used to successfully configure the local Docker/OCI container registry client/SDK.
+```
+{% endcode %}
+{% endhint %}
+
 {% endtab %}
 
 {% endtabs %}
