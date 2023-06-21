@@ -21,7 +21,6 @@ from typing import (
     List,
     Mapping,
     Optional,
-    Set,
     Tuple,
 )
 
@@ -29,7 +28,12 @@ from zenml.config.base_settings import BaseSettings, ConfigurationLevel
 from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
 from zenml.config.pipeline_spec import PipelineSpec
 from zenml.config.settings_resolver import SettingsResolver
-from zenml.config.step_configurations import InputSpec, Step, StepSpec
+from zenml.config.step_configurations import (
+    InputSpec,
+    Step,
+    StepConfigurationUpdate,
+    StepSpec,
+)
 from zenml.environment import get_run_environment_dict
 from zenml.exceptions import StackValidationError
 from zenml.models.pipeline_deployment_models import PipelineDeploymentBaseModel
@@ -89,18 +93,13 @@ class Compiler:
             if ConfigurationLevel.STEP in settings.LEVEL
         }
 
-        run_config_parameters = {
-            invocation_id: set(update.parameters)
-            for invocation_id, update in run_configuration.steps.items()
-        }
         steps = {
             invocation_id: self._compile_step_invocation(
                 invocation=invocation,
                 pipeline_settings=settings_to_passdown,
                 pipeline_extra=pipeline.configuration.extra,
                 stack=stack,
-                run_config_parameters=run_config_parameters.get(invocation_id)
-                or set(),
+                step_config=run_configuration.steps.get(invocation_id),
                 pipeline_failure_hook_source=pipeline.configuration.failure_hook_source,
                 pipeline_success_hook_source=pipeline.configuration.success_hook_source,
             )
@@ -188,12 +187,9 @@ class Compiler:
             extra=config.extra,
         )
 
-        for step_name, step_config in config.steps.items():
-            if step_name not in pipeline.invocations:
-                raise KeyError(f"No step with name {step_name}.")
-            pipeline.invocations[step_name].step._apply_configuration(
-                step_config
-            )
+        for invocation_id in config.steps:
+            if invocation_id not in pipeline.invocations:
+                raise KeyError(f"No step invocation with id {invocation_id}.")
 
         # Override `enable_cache` of all steps if set at run level
         if config.enable_cache is not None:
@@ -390,7 +386,7 @@ class Compiler:
         pipeline_settings: Dict[str, "BaseSettings"],
         pipeline_extra: Dict[str, Any],
         stack: "Stack",
-        run_config_parameters: Set[str],
+        step_config: Optional["StepConfigurationUpdate"],
         pipeline_failure_hook_source: Optional["Source"] = None,
         pipeline_success_hook_source: Optional["Source"] = None,
     ) -> Step:
@@ -402,7 +398,7 @@ class Compiler:
                 pipeline of the step.
             pipeline_extra: Extra values configured on the pipeline of the step.
             stack: The stack on which the pipeline will be run.
-            run_config_parameters: Run config parameters applied to the step.
+            step_config: Run configuration for the step.
             pipeline_failure_hook_source: Source for the failure hook.
             pipeline_success_hook_source: Source for the success hook.
 
@@ -414,6 +410,9 @@ class Compiler:
         invocation = copy.deepcopy(invocation)
 
         step = invocation.step
+        if step_config:
+            step._apply_configuration(step_config)
+
         step_spec = self._get_step_spec(invocation=invocation)
         step_settings = self._filter_and_validate_settings(
             settings=step.configuration.settings,
@@ -439,8 +438,11 @@ class Compiler:
             merge=True,
         )
 
+        parameters_to_ignore = (
+            set(step_config.parameters) if step_config else set()
+        )
         complete_step_configuration = invocation.finalize(
-            parameters_to_ignore=run_config_parameters
+            parameters_to_ignore=parameters_to_ignore
         )
         return Step(spec=step_spec, config=complete_step_configuration)
 
