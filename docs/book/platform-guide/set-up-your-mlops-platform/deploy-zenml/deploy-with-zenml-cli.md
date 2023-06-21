@@ -224,6 +224,10 @@ db_instance_tier: db-n1-standard-1
 
 # Allocated storage of CloudSQL database, in GB, to create.
 db_disk_size: 10
+
+# Whether or not to enable the Secrets Manager API. Disable this if you
+# don't have ListServices permissions on the project.
+enable_secrets_manager_api: true
 </code></pre>
 
 * The `project_id` is required to be set.
