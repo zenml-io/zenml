@@ -44,23 +44,11 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 
-def get_step_entrypoint_signature(
-    step: "BaseStep",
-    include_step_context: bool = False,
-    include_legacy_parameters: bool = False,
-) -> inspect.Signature:
+def get_step_entrypoint_signature(step: "BaseStep") -> inspect.Signature:
     """Get the entrypoint signature of a step.
 
     Args:
         step: The step for which to get the entrypoint signature.
-        include_step_context: Whether to include the `StepContext` as a
-            parameter of the returned signature. If `False`, a potential
-            signature parameter of type `StepContext` will be removed before
-            returning the signature.
-        include_legacy_parameters: Whether to include the `BaseParameters`
-            subclass as a parameter of the returned signature. If `False`, a
-            potential signature parameter of type `BaseParameters` will be
-            removed before returning the signature.
 
     Returns:
         The entrypoint function signature.
@@ -74,19 +62,13 @@ def get_step_entrypoint_signature(
 
     parameters = list(signature.parameters.values())
 
-    if not include_step_context:
-        parameters = [
-            param
-            for param in parameters
-            if not _is_param_of_class(param.annotation, class_=StepContext)
-        ]
-
-    if not include_legacy_parameters:
-        parameters = [
-            param
-            for param in parameters
-            if not _is_param_of_class(param.annotation, class_=BaseParameters)
-        ]
+    # Filter out deprecated args: step context and legacy parameters
+    parameters = [
+        param
+        for param in parameters
+        if not _is_param_of_class(param.annotation, class_=BaseParameters)
+        and not _is_param_of_class(param.annotation, class_=StepContext)
+    ]
 
     signature = signature.replace(parameters=parameters)
     return signature
