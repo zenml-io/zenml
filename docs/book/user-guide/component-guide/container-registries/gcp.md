@@ -160,6 +160,10 @@ Stacks using the GCP Container Registry set up with local authentication are not
 {% tab title="GCP Service Connector (recommended)" %}
 To set up the GCP Container Registry to authenticate to GCP and access a GCR registry, it is recommended to leverage the many features provided by [the GCP Service Connector](../../../platform-guide/set-up-your-mlops-platform/connect-zenml-to-infrastructure/gcp-service-connector.md) such as auto-configuration, local login, best security practices regarding long-lived credentials and reusing the same credentials across multiple stack components.
 
+{% hint style="warning" %}
+The GCP Service Connector does not support the Google Artifact Registry yet. If you need to connect your GCP Container Registry to a Google Artifact Registry, you can use the _Local Authentication_ method instead.
+{% endhint %}
+
 If you don't already have a GCP Service Connector configured in your ZenML deployment, you can register one using the interactive CLI command. You have the option to configure a GCP Service Connector that can be used to access a GCR registry or even more than one type of GCP resource:
 
 ```sh
