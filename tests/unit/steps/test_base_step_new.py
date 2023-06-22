@@ -128,3 +128,22 @@ def test_step_parameter_merging():
         ].config.parameters["input_"]
         == 5
     )
+
+
+@step
+def step_with_non_generic_inputs(
+    a: dict[str, int], b: list[float]
+) -> set[bytes]:
+    return set()
+
+
+def test_step_allows_dict_list_annotations():
+    """Tests that a step can use `list`, `dict` annotations instead of
+    `typing.Dict`/`typing.List`"""
+
+    @pipeline
+    def test_pipeline():
+        step_with_non_generic_inputs(a={"key": 1}, b=[2.1])
+
+    with does_not_raise():
+        test_pipeline()

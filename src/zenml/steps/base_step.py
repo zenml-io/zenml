@@ -55,6 +55,9 @@ from zenml.steps.entrypoint_function_utils import (
     validate_entrypoint_function,
 )
 from zenml.steps.external_artifact import ExternalArtifact
+from zenml.steps.utils import (
+    resolve_type_annotation,
+)
 from zenml.utils import (
     dict_utils,
     pydantic_utils,
@@ -1060,6 +1063,7 @@ class BaseStep(metaclass=BaseStepMeta):
                 continue
 
             annotation = self.entrypoint_definition.inputs[key].annotation
+            annotation = resolve_type_annotation(annotation)
             if inspect.isclass(annotation) and issubclass(
                 annotation, BaseModel
             ):
