@@ -46,16 +46,13 @@ def alerter_failure_hook(
         rich_traceback = output_captured.getvalue()
 
         message = "*Failure Hook Notification! Step failed!*" + "\n\n"
-        message += f"Pipeline name: `{context.pipeline_name}`" + "\n"
-        message += f"Run name: `{context.run_name}`" + "\n"
-        message += f"Step name: `{context.step_name}`" + "\n"
-        message += f"Parameters: `{context.parameters}`" + "\n"
+        message += f"Run name: `{context.pipeline_run.name}`" + "\n"
+        message += f"Step name: `{context.step_run.name}`" + "\n"
         message += (
-            f"Exception: `({type(exception)}) {rich_traceback}`" + "\n\n"
+            f"Parameters: `{context.step_run.step.config.parameters}`" + "\n"
         )
         message += (
-            f"Step Cache Enabled: `{'True' if context.cache_enabled else 'False'}`"
-            + "\n"
+            f"Exception: `({type(exception)}) {rich_traceback}`" + "\n\n"
         )
         context.stack.alerter.post(message)
     else:
@@ -76,13 +73,10 @@ def alerter_success_hook(context: StepContext) -> None:
         message = (
             "*Success Hook Notification! Step completed successfully*" + "\n\n"
         )
-        message += f"Pipeline name: `{context.pipeline_name}`" + "\n"
-        message += f"Run name: `{context.run_name}`" + "\n"
-        message += f"Step name: `{context.step_name}`" + "\n"
-        message += f"Parameters: `{context.parameters}`" + "\n"
+        message += f"Run name: `{context.pipeline_run.name}`" + "\n"
+        message += f"Step name: `{context.step_run.name}`" + "\n"
         message += (
-            f"Step Cache Enabled: `{'True' if context.cache_enabled else 'False'}`"
-            + "\n"
+            f"Parameters: `{context.step_run.step.config.parameters}`" + "\n"
         )
         context.stack.alerter.post(message)
     else:
