@@ -175,7 +175,9 @@ def create_cloud_function(
             raise TimeoutError("Timed out waiting for function to deploy!")
 
         if state == Function.State.FAILED:
-            error_messages = ", ".join([msg.message for msg in response.state_messages])
+            error_messages = ", ".join(
+                [msg.message for msg in response.state_messages]
+            )
             raise RuntimeError(
                 f"Scheduling failed with the following messages: {error_messages}"
             )
