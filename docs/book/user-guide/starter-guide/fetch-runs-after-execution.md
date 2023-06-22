@@ -7,7 +7,7 @@ description: Inspecting a finished pipeline run and its outputs.
 Once a pipeline run has been completed, we can access the corresponding
 information in code, which enables several use cases:
 - Loading artifacts like models or datasets saved by previous runs
-- Accessing metadata or config information of previous runs
+- Accessing metadata or configurations of previous runs
 - Programmatically inspecting the lineage of pipeline runs and their artifacts
 
 The hierarchy of pipelines, runs, steps, and artifacts is as follows:
@@ -23,8 +23,6 @@ As you can see from the diagram, there are many layers of 1-to-N relationships.
 Let us investigate how to traverse this hierarchy level-by-level:
 
 ## Pipelines
-
-ZenML automatically tracks and versions all pipelines that you run.
 
 ### Access Pipeline From Class 
 
@@ -210,7 +208,7 @@ pipelines, check out [this page](../advanced-guide/configure-steps-pipelines.md#
 invocation ID.
 {% endhint %}
 
-Similar to the run, for reproducibility, you can use the `step` object to access a variety of useful information:
+Similar to the run, you can use the `step` object to access a variety of useful information:
 
 * The parameters used to run the step via `step.config.parameters`,
 * The step-level settings via `step.config.settings`,
@@ -218,21 +216,24 @@ Similar to the run, for reproducibility, you can use the `step` object to access
 
 See the 
 [StepRunResponseModel](https://github.com/zenml-io/zenml/blob/main/src/zenml/models/step_run_models.py)
-definition for a comprehensive list.
+definition for a comprehensive list of available information.
 
-## Outputs
+## Artifacts
 
-Finally, this is how you can inspect the output of a step:
+Each step of a pipeline run can have multiple output and input artifacts that
+we can inspect via the `outputs` and `inputs` properties.
 
-* If there only is a single output, use the `output` attribute
-* If there are multiple outputs, use the `outputs` attribute, which is a dictionary that can be indexed using the name of an output:
+To inspect the output artifacts of a step, you can use the `outputs` attribute, 
+which is a dictionary that can be indexed using the name of an output.
+Alternatively, if your step only has a single output, you can use the `output`
+property as a shortcut directly:
 
 ```python
 # The outputs of a step
 # If there are multiple outputs they are accessible by name
 output = step.outputs["output_name"]
 
-# If there is only one output, use the `.output` property instead 
+# If there is only one output, you can use the `.output` property instead 
 output = step.output
 
 # load the output artifact into memory
@@ -240,32 +241,31 @@ output.load()
 ```
 
 {% hint style="info" %}
-The names of the outputs can be found in the `Output` typing of your steps:
+Similarly, you can use the `inputs` and `input` properties to get the input
+artifacts of a step.
+
+The names of the outputs can be found in the `Output` typing of your steps and
+the input names are names of the corresponding arguments in the step function
+definition:
 
 ```python
 from zenml import step
 from zenml.steps import Output
 
-
 @step
-def some_step() -> Output(output_name=int):
+def some_step(input_name: int) -> Output(output_name=int):
     ...
 ```
 {% endhint %}
 
-#### Visualizing Artifacts
+### Artifact Information
 
-ZenML automatically saves visualizations for many common data types. For instance, 3D NumPy Arrays with three channels are automatically visualized as images and data validation reports as embedded HTML visualizations. In Jupyter Notebooks, you can view the visualization of an artifact using the `visualize()` method:
+Similar to the other entities, each artifact is represented by a corresponding
+[ArtifactResponseModel](https://github.com/zenml-io/zenml/blob/main/src/zenml/models/artifact_models.py)
+which contains a lot of general information of the artifact as well as
+component-specific metadata and visualizations.
 
-```python
-output.visualize()
-```
-
-![output.visualize() Output](/docs/book/.gitbook/assets/artifact_visualization_evidently.png)
-
-In all other runtime environments, please open your ZenML dashboard using `zenml up` and view the visualizations by clicking on the respective artifact in the pipeline run DAG.
-
-#### Output Artifact Metadata
+#### Artifact Metadata
 
 All output artifacts saved through ZenML will automatically have certain datatype-specific metadata saved with them. NumPy Arrays, for instance, always have their storage size, `shape`, `dtype`, and some statistical properties saved with them. You can access such metadata via the `metadata` attribute of an output, e.g.:
 
@@ -273,6 +273,28 @@ All output artifacts saved through ZenML will automatically have certain datatyp
 output_metadata = output.metadata
 storage_size = output_metadata["storage_size"]
 ```
+
+#### Artifact Visualizations
+
+ZenML automatically saves visualizations for many common data types.
+Using the `visualize()` method you can programmatically show these 
+visualizations in Jupyer notebooks:
+
+```python
+output.visualize()
+```
+
+![output.visualize() Output](/docs/book/.gitbook/assets/artifact_visualization_evidently.png)
+
+{% hint style="info" %}
+If you're not in a Jupyter notebook, you can simply view the visualizations in
+the ZenML dashboard by running `zenml up` and clicking on the respective 
+artifact in the pipeline run DAG. 
+
+Checkout the
+[artifact visualization page](../advanced-guide/visualize-artifacts.md) to learn
+more about how to build and view artifact visualizations in ZenML!
+{% endhint %}
 
 ## Code Example
 
@@ -290,17 +312,11 @@ model = trainer_step.output.load()
 or alternatively:
 
 ```python
-# Definition of pipeline
 @pipeline
-def example_pipeline(...):
+def first_pipeline(...):
     ...
 
-
-# Run the pipeline
-example_pipeline()
-
-# Get the model via the pipeline class and load it
-last_run = example_pipeline.model.last_run
+last_run = first_pipeline.model.last_run
 trainer_step = last_run.steps["svc_trainer"]
 model = trainer_step.output.load()
 ```
@@ -311,31 +327,30 @@ While most of this document has been focused on fetching objects after a pipelin
 
 This is often desirable in cases where a pipeline is running continuously over time and decisions have to be made according to older runs.
 
-E.g., we can fetch from within a step the last pipeline run of the same pipeline:
+For example, this is how we can fetch the last pipeline run of the same pipeline
+from within a ZenML step:
 
 ```python
 from zenml.client import Client
 from zenml.environment import Environment
 
-
 @step
 def my_step():
-    # Get the name of the current run
+    # Get the name of the current pipeline run
     current_run_name = Environment().step_environment.run_name
 
-    # Fetch the current run
+    # Fetch the current pipeline run
     current_run = Client().get_pipeline_run(current_run_name)
-
-    # Fetch the pipeline of the run
 
     # Fetch the previous run of the same pipeline 
     previous_run = current_run.pipeline.runs[1]  # index 0 is the current run
-
-    # Use the older run to make a decision
-    ...
 ```
 
-You can get a lot more metadata within a step as well, something we'll learn in more detail in the [advanced docs](../advanced-guide/fetch-metadata-within-steps.md).
+{% hint style="info" %}
+As shown in the example, we can get additional information about the current
+run using the `StepEnvironment`, something we will learn in more detail in the 
+[advanced docs](../advanced-guide/fetch-metadata-within-steps.md).
+{% endhint %}
 
 <!-- For scarf -->
 <figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>

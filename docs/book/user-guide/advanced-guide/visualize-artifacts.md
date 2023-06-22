@@ -8,7 +8,7 @@ ZenML automatically saves visualizations of many common data types and allows yo
 
 ![ZenML Artifact Visualizations](../../.gitbook/assets/artifact\_visualization\_dashboard.png)
 
-Alternatively, any of these visualizations can also be displayed in Jupyter notebooks using the [artifact.visualize() method](../starter-guide/fetch-runs-after-execution.md#visualizing-artifacts):
+Alternatively, any of these visualizations can also be displayed in Jupyter notebooks using the [artifact.visualize() method](../starter-guide/fetch-runs-after-execution.md#artifact-visualizations):
 
 ![output.visualize() Output](../../.gitbook/assets/artifact\_visualization\_evidently.png)
 
